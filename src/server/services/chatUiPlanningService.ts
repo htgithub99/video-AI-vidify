@@ -122,6 +122,8 @@ import { getClaudeComposerScope, observeClaudeUploads, waitForClaudeUploads } fr
 import { selectClaudeChatModel } from "./claudeModelService.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { selectDeepSeekChatModel } from "./deepseekModelService.js";
+import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
+import { selectGeminiThinkingModel } from "./geminiModelService.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
 import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
@@ -1261,8 +1263,13 @@ const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefine
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.SELECTED_MODEL_UNAVAILABLE);
   throw new Error(CHAT_UI_AUTOMATION_MESSAGES.SELECTED_MODEL_UNAVAILABLE);
 };
-const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | undefined, allowDefaultModel = false): Promise<void> => {
+const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | undefined, allowDefaultModel = false, signal?: AbortSignal): Promise<void> => {
   if (!model) return;
+  if (parseGeminiChatModel(model)?.level) {
+    await selectGeminiThinkingModel(page, model, signal);
+    await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_SELECTED_WITH_THINKING_LEVEL });
+    return;
+  }
   const requestedModelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
   const baseModelLabel = GEMINI_CHAT_BASE_MODEL_LABELS[model];
   if (!baseModelLabel) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_UNAVAILABLE);
@@ -1439,7 +1446,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
   const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
   await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-  await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel);
+  await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel, request.signal);
   const response = await submitPrompt(
     room,
     getPlanningRoomKey(request),
@@ -1549,7 +1556,7 @@ export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Pro
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
     const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
     await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR);
-    await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel);
+    await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel, request.signal);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {

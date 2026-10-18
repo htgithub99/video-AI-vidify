@@ -3,7 +3,7 @@ import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
 import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../constants/motionSceneCatalog.js";
 import { MOTION_SOUND_CONFIG } from "../constants/motionSound.js";
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../constants/motionVoice.js";
-import { motionVoiceSignature, voiceChannelRef } from "../lib/motionVoice.js";
+import { motionVoiceCast, motionVoiceSignature, voiceChannelRef } from "../lib/motionVoice.js";
 import type { MotionCompiledPreview, MotionLogEntry, MotionSoundOverride, MotionStyleReference, MotionVoiceChannels } from "../types/motionVideo.js";
 import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../services/motionWorkflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../constants/workflowActivity";
@@ -110,6 +110,7 @@ interface PersistedState {
   activeStoryJobId: string;
   autoContinue: boolean;
   autoExport?: boolean;
+  autoRun?: boolean;
   parts?: number;
   series?: MotionSeriesState | null;
   seo: MotionSeoPack | null;
@@ -153,6 +154,7 @@ const DEFAULTS: PersistedState = {
   activeStoryJobId: MR.MOTION_TEXT_EMPTY,
   autoContinue: true,
   autoExport: false,
+  autoRun: false,
   parts: MOTION_PARTS.DEFAULT,
   series: null,
   seo: null,
@@ -163,6 +165,8 @@ const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, langu
   const started = motionSeriesStart(full, parts || MOTION_PARTS.DEFAULT, language);
   return { ...analyzedState(started.analysis, look), series: started.series };
 };
+const chainOn = (s: PersistedState): boolean => s.autoContinue !== false || s.autoRun === true;
+const exportOn = (s: PersistedState): boolean => s.autoExport === true || s.autoRun === true;
 export interface MotionScenesRequest { beats?: string[]; locations?: string[]; restart?: boolean; restyle?: boolean; note?: string; }
 const compileStateKey = (state: PersistedState): string => JSON.stringify([state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.subtitles !== false, state.sfx, state.sfxVolume, state.soundOverrides]);
 export const narrationSignature = motionVoiceSignature;
@@ -372,15 +376,20 @@ export function useMotionStudio() {
         if (final.kind === MotionStoryJobKind.THUMBNAIL) patch({ thumbnail: { image: (final.result as any).thumbnail, prompt: (final.result as any).prompt } });
         if (final.kind === MotionStoryJobKind.SEO) patch({ seo: final.result as MotionSeoPack });
         setCompiled(null);
-        if (stateRef.current.autoContinue !== false) {
+        if (chainOn(stateRef.current)) {
           if (final.kind === MotionStoryJobKind.ANALYZE) chainAfterResume = () => writeScriptRef.current?.(undefined, final.result as MotionStoryAnalysis);
           if (final.kind === MotionStoryJobKind.SCRIPT && stateRef.current.analysis) {
             const script = final.result as MotionStoryScript;
             const analysis = stateRef.current.analysis;
             chainAfterResume = async () => {
               await seoRef.current?.(script, analysis, true);
-              await scenesRef.current?.({}, script, analysis);
+              const built = await scenesRef.current?.({}, script, analysis);
+              await finishAutoRunRef.current?.(built, analysis);
             };
+          }
+          if (final.kind === MotionStoryJobKind.SCENES && stateRef.current.autoRun && stateRef.current.analysis) {
+            const analysis = stateRef.current.analysis;
+            chainAfterResume = () => finishAutoRunRef.current?.(final.result as MotionStoryScript, analysis);
           }
         }
       } catch {
@@ -409,6 +418,7 @@ export function useMotionStudio() {
   const analyze = useCallback(async () => {
     if (!state.source) return;
     setLogHistory([]);
+    patch({ autoRun: true });
     await inFlow(async () => {
       try {
         const full = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, {
@@ -420,7 +430,7 @@ export function useMotionStudio() {
           characterMotion: state.characterMotion,
           aspect: state.aspect,
           aiExecution,
-          keepBrowser: state.autoContinue !== false,
+          keepBrowser: true,
           libraryMode: state.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO,
           videoGenre: state.videoGenre || MOTION_VIDEO_GENRES.AUTO,
           stylePreset: state.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : state.stylePreset || MOTION_STYLE_PRESET_NONE,
@@ -430,8 +440,9 @@ export function useMotionStudio() {
         patch(started);
         setCompiled(null);
         toast.success(MOTION_TEMPLATE_AI_CHUONG_NHAN_VAT(String(analysis.chapters.length), String(analysis.cast.length)));
-        if (state.autoContinue !== false && writeScriptRef.current) await writeScriptRef.current(undefined, analysis);
+        if (writeScriptRef.current) await writeScriptRef.current(undefined, analysis);
       } catch (e: any) {
+        patch({ autoRun: false });
         reportStoryError(e);
       }
     });
@@ -451,7 +462,7 @@ export function useMotionStudio() {
               length: state.length,
               drawingMode: state.drawingMode,
               aiExecution,
-              keepBrowser: state.autoContinue !== false,
+              keepBrowser: chainOn(stateRef.current),
               voiceChannel: selectedChannelRef(state, channelsRef.current),
               chapterIds,
               beats: analysisOverride ? [] : state.script?.beats || [],
@@ -465,14 +476,19 @@ export function useMotionStudio() {
           patch({ script, seo: null });
           setCompiled(null);
           const missing = _.filter(analysis.chapters, (c) => !_.some(script.beats, { chapterId: c.id })).length;
-          if (missing) toast.warning(MR.MOTION_TEMPLATE_CON_CHUONG_CHUA_VIET_DUOC_BAM_VIET_TIEP_CHUONG_CON_THIEU(missing));
-          if (state.autoContinue !== false && seoRef.current) await seoRef.current(script, analysis, true);
-          if (state.autoContinue !== false && scenesRef.current) {
+          if (missing) {
+            toast.warning(MR.MOTION_TEMPLATE_CON_CHUONG_CHUA_VIET_DUOC_BAM_VIET_TIEP_CHUONG_CON_THIEU(missing));
+            patch({ autoRun: false });
+          }
+          if (chainOn(stateRef.current) && seoRef.current) await seoRef.current(script, analysis, true);
+          if (chainOn(stateRef.current) && scenesRef.current) {
             const built = await scenesRef.current({}, script, analysis);
-            if (built && !built.gen?.failed?.length && stateRef.current.autoExport && autoRenderRef.current) await autoRenderRef.current();
+            await finishAutoRunRef.current?.(built, analysis);
           }
         } catch (e: any) {
           reportStoryError(e);
+        } finally {
+          if (stateRef.current.autoRun) patch({ autoRun: false });
         }
       });
     },
@@ -515,6 +531,7 @@ export function useMotionStudio() {
     [inFlow, state.analysis, state.seo, state.language, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.thumbnails, runStoryJob, patch],
   );
   const autoRenderRef = useRef<(() => Promise<void>) | null>(null);
+  const finishAutoRunRef = useRef<((built: MotionStoryScript | undefined, analysis: MotionStoryAnalysis) => Promise<void>) | null>(null);
   const scenesRef = useRef<((req: MotionScenesRequest, scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis) => Promise<MotionStoryScript | undefined>) | null>(null);
   const buildScenes = useCallback(
     async (req: MotionScenesRequest = {}, scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis) => {
@@ -525,7 +542,7 @@ export function useMotionStudio() {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: state.aspect, aiExecution: sceneAiExecution, mainAiExecution: aiExecution, asrCheck: state.asrCheck === true, drawingMode: state.drawingMode, styleReferences: state.styleReferences, characterMotion: state.characterMotion, review: state.aiReview !== false, previews: stateRef.current.autoExport !== true, ...req },
+            { script, analysis, aspect: state.aspect, aiExecution: sceneAiExecution, mainAiExecution: aiExecution, asrCheck: state.asrCheck === true, drawingMode: state.drawingMode, styleReferences: state.styleReferences, characterMotion: state.characterMotion, review: state.aiReview !== false, previews: !exportOn(stateRef.current), ...req },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           patch({ script: result });
@@ -556,7 +573,9 @@ export function useMotionStudio() {
           const track = (await runStoryJob(API_ROUTES.MOTION_STORY_VOICE, { script, analysis: snapshot.analysis, aspect: snapshot.aspect, asrCheck: snapshot.asrCheck === true, aiExecution: { provider: snapshot.aiProvider, model: snapshot.aiModel, mode: snapshot.aiMode, chromeHeadless: snapshot.aiHeadless } })) as MotionVoiceTrack;
           if (narrationSignature(stateRef.current.script, stateRef.current.analysis) !== signature || track.signature !== signature) return;
           const current = stateRef.current;
-          const next = { ...current, voice: { ...track, signature }, uploadedAudio: null, ...(current.seo && current.analysis && track.durations?.length === script.beats.length ? { seo: retimeSeoPack(current.seo, script.beats, current.analysis.chapters, current.language !== MR.MOTION_TEXT_EN, track.durations) } : {}) };
+          const voiceCast = track.plan?.roles && current.script?.gen ? motionVoiceCast(current.script.gen.voiceCast, track.plan.roles) : undefined;
+          const withCast = voiceCast && current.script?.gen ? { script: { ...current.script, gen: { ...current.script.gen, voiceCast } } } : {};
+          const next = { ...current, ...withCast, voice: { ...track, signature }, uploadedAudio: null, ...(current.seo && current.analysis && track.durations?.length === script.beats.length ? { seo: retimeSeoPack(current.seo, script.beats, current.analysis.chapters, current.language !== MR.MOTION_TEXT_EN, track.durations) } : {}) };
           stateRef.current = next;
           setState(next);
           setCompiled(null);
@@ -577,8 +596,9 @@ export function useMotionStudio() {
   );
   const cancelStory = useCallback(async () => {
     if (flowDepth.current) flowCancelled.current = true;
+    patch({ autoRun: false });
     await motionRequest(API_ROUTES.MOTION_STORY_CANCEL, { jobId: storyJob?.id }).catch(_.noop);
-  }, [storyJob]);
+  }, [storyJob, patch]);
   const voiceValid = state.voice?.provider === MOTION_VOICE.PROVIDER && state.voice.signature === narrationSignature(state.script, state.analysis);
   useEffect(() => {
     if (voiceValid) setVoiceError(MR.MOTION_TEXT_EMPTY);
@@ -753,6 +773,21 @@ export function useMotionStudio() {
     [inFlow, compiled, compile, buildScenes, generateVoice, state.drawingMode, state.characterMotion, state.quality, state.aspect, state.fps, state.encoder, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch],
   );
   autoRenderRef.current = render;
+  const finishAutoRun = useCallback(
+    async (built: MotionStoryScript | undefined, analysis: MotionStoryAnalysis) => {
+      try {
+        if (!built || !exportOn(stateRef.current)) return;
+        let ready = built;
+        const failed = ready.gen?.failed || [];
+        if (failed.length && stateRef.current.autoRun && scenesRef.current) ready = (await scenesRef.current({ beats: failed }, ready, analysis)) || ready;
+        if (!ready.gen?.failed?.length && autoRenderRef.current) await autoRenderRef.current();
+      } finally {
+        if (stateRef.current.autoRun) patch({ autoRun: false });
+      }
+    },
+    [patch],
+  );
+  finishAutoRunRef.current = finishAutoRun;
   const setParts = useCallback(
     (parts: number) => {
       const current = stateRef.current;

@@ -1,4 +1,4 @@
-import { AiPlanningChatModel } from "../types.js";
+import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types.js";
 export const MOTION_SCENE_LIBRARY_PATTERNS = { WHITESPACE: /\s+/g, HYPHEN: /-/g, DIACRITICS: /[\u0300-\u036f]/g, LOWER_D: /đ/g, TOKENS: /[^a-z0-9]+/ } as const;
 export const MOTION_SCENE_LIBRARY = {
   FOLDER: "scene-library",
@@ -9,6 +9,7 @@ export const MOTION_SCENE_LIBRARY = {
   STYLE_FILE: "style.json",
   PREVIEW_FOLDER: "library",
   VERSION: 1,
+  FINGERPRINT_LENGTH: 24,
   PAGE_SIZE: 20,
   KIND_LOCATION: "location",
   KIND_CHARACTER: "character",
@@ -156,6 +157,22 @@ export const MOTION_SCENE_LIBRARY = {
 export const MOTION_SCENE_AI = {
   MODEL: AiPlanningChatModel.ClaudeSonnet55,
   EFFORT: "medium" as const,
+  PRIMARY_PROVIDER: AiPlanningFallbackProvider.ChatGptUi,
+  PRIMARY_MODEL: AiPlanningChatModel.ChatGptAuto,
+  PRIMARY_TURNS: 3,
+  SECONDARY_PROVIDER: AiPlanningFallbackProvider.ClaudeChat,
+  SECONDARY_TURNS: 3,
+  RETRY_DELAY_MS: 4000,
+  BLOCKED_WAIT_MS: 90 * 1000,
+} as const;
+export const MOTION_DRAW_ROUTING_LOGS = {
+  ATTEMPT: (task: string, provider: string, turn: number, turns: number, total: number): string => `Vẽ ${task}: gửi ${provider} lượt ${turn}/${turns} (tổng ${total})`,
+  UNUSABLE: (task: string, provider: string, reason: string): string => `Vẽ ${task}: ${provider} chưa trả dữ liệu dùng được (${reason}) – gửi lại yêu cầu gốc, không kèm nhận xét`,
+  SWITCH: (task: string, from: string, to: string): string => `Vẽ ${task}: ${from} lỗi đủ lượt – chuyển sang ${to}`,
+  WAIT_BLOCKED: (provider: string, seconds: number): string => `${provider} đang tạm ngưng – chờ ${seconds}s rồi gửi tiếp (không đổi AI)`,
+  DONE: (task: string, provider: string, total: number): string => `Vẽ ${task}: ${provider} trả dữ liệu dùng được sau ${total} lượt`,
+  NO_DATA: "không có dữ liệu",
+  GAVE_UP: (task: string, total: number): string => `Vẽ ${task}: dừng sau ${total} lượt theo giới hạn cấu hình`,
 } as const;
 export const MOTION_SCENE_LIBRARY_PROMPT = {
   CATALOG_HEADER: `ASSET LIBRARY – places and characters ALREADY DRAWN in this exact drawing style by earlier videos. Reusing one costs nothing, drawing a new one is slow, so reuse whenever it fits.
@@ -226,7 +243,7 @@ export const MOTION_SCENE_LIBRARY_TEXT = {
     NO_STYLE: "Chưa có bộ ảnh mẫu nào trong kho",
     IMAGES: "ảnh",
     SEED_TITLE: "Nạp tài nguyên",
-    SEED_SUB: "Tải lên file .json của kho (hoặc nạp bộ dựng sẵn). Không tốn request; tài nguyên nạp vào dùng chung cho mọi bộ ảnh mẫu cùng chế độ vẽ, mục trùng tên được bỏ qua.",
+    SEED_SUB: "Tải lên file .json của kho (hoặc nạp bộ dựng sẵn). Không tốn request; tài nguyên nạp vào dùng chung cho mọi bộ ảnh mẫu cùng chế độ vẽ; mục đã có cùng nội dung được bỏ qua, mục cùng tên nhưng khác nội dung vẫn được nạp.",
     SEED_RUNNING: "Đang nạp vào kho…",
     SEED_DONE: "Đã nạp xong vào kho",
     SEED_NEED_STYLE: "Hãy chọn ảnh mẫu và chế độ vẽ ở Tạo video trước.",
@@ -309,7 +326,7 @@ export const MOTION_SCENE_LIBRARY_TEXT = {
     NO_STYLE: "No reference sets in the library yet",
     IMAGES: "images",
     SEED_TITLE: "Import assets",
-    SEED_SUB: "Upload a library .json file (or import the built-in pack). No requests; imported assets are shared by every reference set of the same drawing mode, items with the same name are skipped.",
+    SEED_SUB: "Upload a library .json file (or import the built-in pack). No requests; imported assets are shared by every reference set of the same drawing mode; items whose content is already stored are skipped, same-named items with different content are still imported.",
     SEED_RUNNING: "Importing…",
     SEED_DONE: "Import finished",
     SEED_NEED_STYLE: "Select reference images and a drawing mode in Create first.",

@@ -241,11 +241,12 @@ const speechRanges = (clip: MotionVoiceClip, origin: number): number[][] => {
   }
   return out;
 };
-export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number, end: number, speechStart: number, beatIndex = 0, speech?: Record<string, number[][]>): MotionShot[] => {
+export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number, end: number, speechStart: number, beatIndex = 0, speech?: Record<string, number[][]>, lines?: Record<string, number>): MotionShot[] => {
   const stg: any = gen.staging[beat.id];
   const dur = end - start;
   const cams: any[] = planMotionCoverage(stg, dur, beatIndex, MR.MOTION_TEMPLATE_SYMBOL_115(beat.narration, beat.action || MR.MOTION_TEXT_EMPTY), beat);
-  const cuts = _.map(cams, (c, i) => (i === 0 ? 0 : _.clamp(_.toNumber(c.at) || 0, 0.15, 0.9)));
+  const authored = _.map(cams, (c, i) => (i === 0 ? 0 : _.clamp(c.utterance && lines?.[c.utterance] != null ? lines[c.utterance] / dur : _.toNumber(c.at) || 0, 0.15, 0.9)));
+  const cuts = _.map(authored, (cut, i) => (i && cut <= authored[i - 1] ? _.clamp(_.toNumber(cams[i].at) || 0, 0.15, 0.9) : cut));
   const shots: MotionShot[] = [];
   cams.forEach((cam, i) => {
     const s0 = start + cuts[i] * dur;
@@ -283,7 +284,13 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
         ),
         (clips) => _.flatMap(clips, (clip) => speechRanges(clip, start)),
       );
-      const list = sceneShots(beat, gen, start, end, starts[i], i, speech);
+      const lines = _.fromPairs(
+        _.map(
+          _.filter(opts.voiceTrack?.clips, (clip) => clip.beatId === beat.id),
+          (clip) => [clip.id, clip.start - start],
+        ),
+      );
+      const list = sceneShots(beat, gen, start, end, starts[i], i, speech, lines);
       if (list.length) list[0].transition = i === 0 && analysis?.videoDna ? { type: MR.MOTION_TEXT_CUT, duration: 0 } : transition;
       usedLocations.add(_.get(gen.staging, [beat.id, MOTION_TEXT_LOCATION]) as string);
       shots.push(...list);
@@ -327,5 +334,5 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     _.map(_.filter(shots, { template: MOTION_HISTORY.VERDICT }), (shot) => ({ id: MOTION_HISTORY.STAMP_CUE_ID(shot.id), beatId: shot.id, kind: MOTION_HISTORY.VERDICT_SFX_KIND, layer: MOTION_HISTORY.VERDICT_SFX_LAYER, t: +(shot.start + MOTION_HISTORY.VERDICT_STAMP_AT * (shot.end - shot.start)).toFixed(3), duration: MOTION_HISTORY.VERDICT_SFX_SECONDS })),
     spec.duration,
   );
-  return { spec, starts, ends, sfxCues: [...compileMotionSoundPlan(spec, script, analysis, opts.voiceTrack?.plan?.direction, opts.voiceTrack?.plan?.roles), ...stampCues], missing };
+  return { spec, starts, ends, sfxCues: [...compileMotionSoundPlan(spec, script, analysis, opts.voiceTrack?.plan?.direction, opts.voiceTrack?.plan?.roles, opts.voiceTrack?.clips), ...stampCues], missing };
 };

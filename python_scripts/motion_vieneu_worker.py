@@ -74,7 +74,12 @@ def execute(request):
     target = Path(request[T.FILE]).resolve()
     if not target.is_relative_to(root) or target.suffix != T.WAV:
         raise ValueError(T.INVALID_SPEECH_DESTINATION)
-    wav = np.asarray(engine.infer(text, voice=request[T.VOICE], max_chars=256), dtype=np.float32).reshape(-1)
+    delivery = {}
+    if request.get(T.TEMPERATURE) is not None:
+        delivery[T.TEMPERATURE] = min(1.0, max(0.5, float(request[T.TEMPERATURE])))
+    if request.get(T.SILENCE) is not None:
+        delivery[T.SILENCE_P] = min(0.4, max(0.05, float(request[T.SILENCE])))
+    wav = np.asarray(engine.infer(text, voice=request[T.VOICE], max_chars=256, **delivery), dtype=np.float32).reshape(-1)
     if not wav.size or not np.isfinite(wav).all() or np.max(np.abs(wav)) < 0.0001:
         raise ValueError(T.EMPTY_SPEECH_AUDIO)
     target.parent.mkdir(parents=True, exist_ok=True)

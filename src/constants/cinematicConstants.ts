@@ -1,5 +1,6 @@
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
 import { CLAUDE_CHAT_MODEL_OPTIONS } from "./claudeChatModels";
+import { GEMINI_CHAT_MODEL_OPTIONS } from "./geminiChatModels.js";
 import { DEEPSEEK_CHAT_MODES } from "./deepseekChat";
 export const CINEMATIC_CHAT_DEFAULT_MODELS: Record<AiPlanningFallbackProvider, AiPlanningChatModel> = {
   [AiPlanningFallbackProvider.GeminiChat]: AiPlanningChatModel.GeminiFlash,
@@ -257,14 +258,7 @@ export const createCinematicArtifactRequestId = (runId: unknown, artifactType: s
 export const CINEMATIC_AI_CREATIVE_REQUIRED_FIELDS = ["id", "generationPrompt"] as const;
 export const CINEMATIC_PRODUCTION_BLOCKER_PATTERNS = [/:result:missing_scene$/, /:id:(?:duplicate|unexpected)$/, /:generationPrompt:missing$/] as const;
 export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, ReadonlyArray<{ value: AiPlanningChatModel; label: string }>> = {
-  [AiPlanningFallbackProvider.GeminiChat]: [
-    { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },
-    { value: AiPlanningChatModel.GeminiFlash, label: "3.8 Flash" },
-    { value: AiPlanningChatModel.GeminiPro, label: "3.1 Pro" },
-    { value: AiPlanningChatModel.GeminiArgon, label: "4 Argon" },
-    { value: AiPlanningChatModel.GeminiThinking, label: "Pro · Tư duy mở rộng" },
-    { value: AiPlanningChatModel.GeminiDeepThink, label: "Pro · Deep Think" },
-  ],
+  [AiPlanningFallbackProvider.GeminiChat]: GEMINI_CHAT_MODEL_OPTIONS,
   [AiPlanningFallbackProvider.GrokChat]: [
     { value: AiPlanningChatModel.GrokFast, label: "Nhanh" },
     { value: AiPlanningChatModel.GrokBuild, label: "Build" },

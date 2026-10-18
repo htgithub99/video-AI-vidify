@@ -2,10 +2,10 @@ import { motionMusicMoodKey as musicMoodOf } from "../../lib/motionMusic.js";
 import { MOTION_PATTERNS as MP } from "../../constants/motionPatterns.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
-import { MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../../constants/motionReference.js";
+import { MOTION_QA_MESSAGES, MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../../constants/motionReference.js";
 import { normalizeMotionReferenceStyle } from "../../lib/motionReference.js";
 import { MOTION_STORY_VOICE_PROMPT, MOTION_VOICE } from "../../constants/motionVoice.js";
-import { normalizeMotionUtterances } from "../../lib/motionVoice.js";
+import { normalizeMotionSceneMood, normalizeMotionUtterances } from "../../lib/motionVoice.js";
 import { motionAudioContext } from "../../lib/motionAudioDirection.js";
 import { withMotionReferenceFiles } from "./motionReferenceService.js";
 import { withCachedMotionReferenceStyle } from "./motionReferenceCacheService.js";
@@ -51,7 +51,6 @@ import {
   MOTION_TEMPLATE_SYMBOL_53,
   MOTION_TEMPLATE_SYMBOL_54,
   MOTION_TEMPLATE_SYMBOL_55,
-  MOTION_TEMPLATE_YOUR_PREVIOUS_ANSWER_FAILED_RETURN_ONLY_THE_JSON,
   MOTION_TEXT_0,
   MOTION_TEXT_1_2,
   MOTION_TEXT_ABORT,
@@ -153,6 +152,7 @@ import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifi
 import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 import { parseClaudeChatModel } from "../../constants/claudeChatModels.js";
+import { GEMINI_MODEL_ENCODING, parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { DEEPSEEK_CHAT_CONFIG, DEEPSEEK_CHAT_MODES } from "../../constants/deepseekChat.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDnaSettings } from "../../types/motionVideo.js";
@@ -475,6 +475,11 @@ const acquireProviderGate = async (provider: string): Promise<() => void> => {
     gate.queue.shift()?.();
   });
 };
+export const motionRoomBlockedMs = (provider: string): number => Math.max(0, (blockedRoomProviders.get(provider) || 0) - Date.now());
+export const resetMotionAiRoom = async (): Promise<void> => {
+  const run = motionAiRunStore.getStore();
+  if (run?.workerId) await closeMotionAiRoom(run, run.workerId);
+};
 const countMotionRequest = (provider: string, log?: (s: string) => void): void => {
   const run = motionAiRunStore.getStore();
   if (!run) return;
@@ -496,7 +501,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
     log?.(MOTION_STORY_CONFIG.ROOM_SWITCH_LOG(provider, target.provider));
     return runMotionAi(prompt, artifactType, { ...exec, provider: target.provider as AiPlanningFallbackProvider, model: target.model as AiPlanningChatModel }, signal, log, images, 0);
   };
-  if (useRoom && isBlocked(provider)) {
+  if (useRoom && isBlocked(provider) && !exec.strictProvider) {
     if (limitTo && !isBlocked(limitTo.provider)) return runSwitched(limitTo);
     if (provider !== AiPlanningFallbackProvider.GeminiChat && !isBlocked(AiPlanningFallbackProvider.GeminiChat)) return runGeminiFallback();
   }
@@ -530,13 +535,17 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
           ? parseClaudeChatModel(exec.model)
             ? (exec.model as AiPlanningChatModel)
             : AiPlanningChatModel.ClaudeAuto
-          : provider === AiPlanningFallbackProvider.DeepSeekChat
-            ? pickEnum(
-                DEEPSEEK_CHAT_MODES.map((item) => item.value),
-                exec.model,
-                AiPlanningChatModel.DeepSeekAuto,
-              )
-            : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
+          : provider === AiPlanningFallbackProvider.GeminiChat
+            ? parseGeminiChatModel(exec.model)
+              ? (exec.model as AiPlanningChatModel)
+              : AiPlanningChatModel.GeminiFlash
+            : provider === AiPlanningFallbackProvider.DeepSeekChat
+              ? pickEnum(
+                  DEEPSEEK_CHAT_MODES.map((item) => item.value),
+                  exec.model,
+                  AiPlanningChatModel.DeepSeekAuto,
+                )
+              : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
       if (run && run.rooms.has(workerId!) && run.rooms.get(workerId!) !== provider) await closeMotionAiRoom(run, workerId!);
       if (run && !run.rooms.has(workerId!)) {
         const prepared = run.roomQueue.then(() => prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true }));
@@ -550,6 +559,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       return extractJson(r.text);
     } catch (caught: any) {
       if (signal?.aborted && !timedOut) throw caught;
+      if (_.toString(caught?.message).includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE)) throw caught;
       if (!switchTo && _.toString(caught?.message).includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) throw caught;
       if (_.toString(caught?.message).includes(XRT.DEEPSEEK_MODEL_UNAVAILABLE_CODE)) throw caught;
       const diag = _.get(caught, MOTION_TEXT_DIAGNOSTICS) as { lastCandidate?: string; candidateChars?: number; busy?: boolean; identityMatch?: boolean; elapsedMs?: number; responseCount?: number; initialCount?: number } | undefined;
@@ -570,6 +580,13 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         log?.(MOTION_STORY_CONFIG.ROOM_CAPTCHA_LOG(provider, limitTo?.provider || AiPlanningFallbackProvider.GeminiChat));
       }
       const noInput = !limited && !captcha && limitText[0] === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
+      if (exec.strictProvider) {
+        if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
+        restartBrowser = noInput;
+        const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
+        log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(String(_.truncate(_.toString(error?.message), { length: 140 }))));
+        throw error;
+      }
       const unavailable = noInput && !!limitTo && !switchTo && attempt > 0;
       if (captcha) {
         fallbackToLimit = !!limitTo && !isBlocked(limitTo.provider);
@@ -778,21 +795,18 @@ export const analyzeStory = async (
     MR.MOTION_TEXT_SYMBOL_27 +
     MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS));
   let errors: string[] = [];
-  let roomHasContext = false;
   let lastRaw: any = null;
   for (let attempt = 0; attempt < MOTION_ANALYSIS_ATTEMPTS; attempt++) {
-    const request = !errors.length || !roomHasContext ? MR.MOTION_TEMPLATE_SYMBOL_305(fullRequest, errors.length ? MR.MOTION_TEMPLATE_CORRECT_THESE_EXACT_CONTRACT_FAILURES(errors.join(MR.MOTION_TEXT_SYMBOL_41)) : MR.MOTION_TEXT_EMPTY) : MR.MOTION_TEMPLATE_CORRECTION_YOUR_PREVIOUS_ANALYSIS_JSON_FAILED_THESE_EXACT_CHECKS_(errors.join(MR.MOTION_TEXT_SYMBOL_41));
+    if (attempt) await resetMotionAiRoom().catch(_.noop);
     let raw: any;
     try {
-      raw = normalizeMotionAnalysisResponse(await (opts.ai || runMotionAi)(request, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log));
+      raw = normalizeMotionAnalysisResponse(await (opts.ai || runMotionAi)(fullRequest, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log));
     } catch (error) {
       if (opts.signal?.aborted || attempt === MOTION_ANALYSIS_ATTEMPTS - 1) throw error;
-      roomHasContext = false;
       errors = [MR.MOTION_TEMPLATE_NO_VALID_JSON_RETURNED(_.truncate(_.toString((error as Error)?.message || error), { length: 160 }))];
       opts.log?.(MR.MOTION_TEMPLATE_PHAN_TICH_LAN_LOI_THU_LAI(attempt + 1, errors[0]));
       continue;
     }
-    roomHasContext = !!raw;
     if (raw?.chapters) lastRaw = raw;
     const baseErrors = raw ? videoDnaErrors(raw.videoDna) : [MR.MOTION_TEXT_NO_JSON_OBJECT_RETURNED];
     errors = raw ? [...baseErrors, ...videoDnaProfileErrors(raw.videoDna)] : baseErrors;
@@ -850,7 +864,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
         if (!beat || !ids.has(beat.chapterId) || !narration) continue;
         const ratio = narration.split(MP.WHITESPACE).length / Math.max(1, beat.narration.split(MP.WHITESPACE).length);
         if (ratio < 0.6 || ratio > 1.5) continue;
-        byId.set(beat.id, { ...beat, narration: _.truncate(narration, { length: 600 }) });
+        byId.set(beat.id, { ..._.omit(beat, MR.MOTION_TEXT_UTTERANCES), narration: _.truncate(narration, { length: 600 }) });
         rewritten++;
         if (e?.reason) notes.push(MR.MOTION_TEMPLATE_SYMBOL_306(beat.id, _.truncate(_.toString(e.reason), { length: 140 })));
       }
@@ -923,13 +937,18 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
     }),
   );
   const usedPlaces = new Set<string>();
+  const placeNames = new Map<string, Set<string>>();
   const places: MotionPlace[] = _.take(
     _.compact(
       _.map(_.castArray(raw?.places || []), (p: any) => {
         if (!p) return null;
         const obj = _.isString(p) ? { key: p, name: p, description: p } : p;
-        let key = slugKey(obj.key || obj.name);
-        if (usedPlaces.has(key)) return null;
+        const rawKey = slugKey(obj.key || obj.name);
+        const sameKey = placeNames.get(rawKey) || new Set<string>();
+        if (sameKey.has(slugKey(obj.name || rawKey))) return null;
+        placeNames.set(rawKey, sameKey.add(slugKey(obj.name || rawKey)));
+        let key = rawKey;
+        while (usedPlaces.has(key)) key = MOTION_TEMPLATE_2_2(String(key));
         usedPlaces.add(key);
         return {
           key,
@@ -1043,17 +1062,21 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
   let best: MotionBeat[] | null = null;
   const factual = (analysis.videoDna?.format?.factual ?? analysis.factual) !== false && source.kind !== MR.MOTION_TEXT_BRIEF;
   const quotesIndex = factual ? transcriptIndex(source.text) : null;
+  const request = MR.MOTION_TEMPLATE_SYMBOL_325(prompt, analysis.videoDna ? VIDEO_SCENE_PLAN_INSTRUCTIONS : MR.MOTION_TEXT_EMPTY, MR.MOTION_TEXT_EMPTY);
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const retryNote = attempt ? MOTION_TEMPLATE_YOUR_PREVIOUS_ANSWER_FAILED_RETURN_ONLY_THE_JSON(String(getMotionErrorMessage(lastError, 300))) : MR.MOTION_TEXT_EMPTY;
-      const raw = await (opts.ai || runMotionAi)(MR.MOTION_TEMPLATE_SYMBOL_325(prompt, analysis.videoDna ? VIDEO_SCENE_PLAN_INSTRUCTIONS : MR.MOTION_TEXT_EMPTY, retryNote), MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log);
+      if (attempt) await resetMotionAiRoom().catch(_.noop);
+      const raw = await (opts.ai || runMotionAi)(request, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log);
       const rawBeats = _.castArray(raw?.beats || []);
-      const beats = normalizeBeats(rawBeats, chapter.id, analysis);
-      if (beats.length < 1) throw new Error(MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO_2);
+      const normalized = normalizeBeats(rawBeats, chapter.id, analysis);
+      if (normalized.length < 1) throw new Error(MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO_2);
+      const fixed = quotesIndex && quoteErrors(rawBeats, quotesIndex).length ? unattributeUnverifiedQuotes(normalized, quotesIndex) : { beats: normalized, changed: 0 };
+      if (fixed.changed) opts.log?.(MR.MOTION_TEMPLATE_BO_GHI_TEN_CAU_TRICH_KHONG_CO_TRONG_NGUON(fixed.changed));
+      const beats = fixed.beats;
       best = beats;
+      const advisory = analysis.videoDna ? rawBeats.flatMap((beat: any, i: number) => (!beat.visual || beat.visual === MR.MOTION_TEXT_SCENE ? scenePlanErrors(beat.scenePlan).map((error) => MR.MOTION_TEMPLATE_BEAT_2(i + 1, error)) : [])).slice(0, 6) : [];
+      if (advisory.length) opts.log?.(MOTION_QA_MESSAGES.ADVISORY(advisory));
       const problems: string[] = [];
-      if (analysis.videoDna) problems.push(...rawBeats.flatMap((beat: any, i: number) => (!beat.visual || beat.visual === MR.MOTION_TEXT_SCENE ? scenePlanErrors(beat.scenePlan).map((error) => MR.MOTION_TEMPLATE_BEAT_2(i + 1, error)) : [])).slice(0, 6));
-      if (quotesIndex) problems.push(...quoteErrors(rawBeats, quotesIndex).slice(0, 4));
       if (analysis.videoDna) {
         const spokenUnits = beats.reduce((sum, beat) => sum + beat.narration.split(MP.WHITESPACE).filter(Boolean).length, 0);
         const expectedUnits = seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
@@ -1068,9 +1091,8 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
     }
   }
   if (best) {
-    const { beats, changed } = quotesIndex ? unattributeUnverifiedQuotes(best, quotesIndex) : { beats: best, changed: 0 };
-    opts.log?.(MR.MOTION_TEMPLATE_CHUONG_DUNG_BAN_TOT_NHAT_SAU_3_LAN_SUA(chapter.id, changed ? MR.MOTION_TEMPLATE_BO_GHI_TEN_CAU_TRICH_KHONG_CO_TRONG_NGUON(changed) : MR.MOTION_TEXT_EMPTY));
-    return beats;
+    opts.log?.(MR.MOTION_TEMPLATE_CHUONG_DUNG_BAN_TOT_NHAT_SAU_3_LAN_SUA(chapter.id, MR.MOTION_TEXT_EMPTY));
+    return best;
   }
   const lines = _.compact([chapter.hook, ...(chapter.keyPoints || []).map((k) => k.replace(MP.TRANSCRIPT_TIME_PREFIX, MR.MOTION_TEXT_EMPTY)), chapter.summary, chapter.handoff]).slice(0, Math.max(2, beatsWanted));
   if (!lines.length) throw lastError;
@@ -1084,8 +1106,16 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
 export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: MotionStoryAnalysis): MotionBeat[] => {
   const castKeys = _.map(analysis.cast, MOTION_TEXT_KEY);
   const placeKeys = _.map(analysis.places, MOTION_TEXT_KEY);
-  const castOf = (k: string) => (_.includes(castKeys, k) ? k : _.find(analysis.cast, (c) => slugKey(c.name) === slugKey(k) || _.includes(slugKey(c.name), slugKey(k)) || slugKey(k).includes(c.key))?.key);
-  const placeOf = (k: string) => (_.includes(placeKeys, k) ? k : _.find(analysis.places, (p) => slugKey(p.name) === slugKey(k) || slugKey(k).includes(p.key) || p.key.includes(slugKey(k)))?.key);
+  const matchOf = <T extends { key: string; name: string }>(list: T[], raw: string): T | undefined => {
+    const slug = slugKey(raw);
+    if (!_.trim(raw)) return undefined;
+    const exact = _.find(list, (entry) => entry.key === raw || entry.key === slug || slugKey(entry.name) === slug);
+    if (exact || slug.length < MOTION_STORY_CONFIG.LOOSE_MATCH_MIN) return exact;
+    const loose = _.filter(list, (entry) => slugKey(entry.name).includes(slug) || slug.includes(entry.key) || entry.key.includes(slug));
+    return loose.length === 1 ? loose[0] : undefined;
+  };
+  const castOf = (k: string) => matchOf(analysis.cast, k)?.key;
+  const placeOf = (k: string) => matchOf(analysis.places, k)?.key;
   const out: MotionBeat[] = [];
   _.forEach(rawBeats, (b: any) => {
     const narration = _.trim(_.toString(b?.narration || MR.MOTION_TEXT_EMPTY));
@@ -1097,8 +1127,13 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
     const beat: MotionBeat = { id, chapterId, narration: _.truncate(narration, { length: 600 }), visual };
     const utterances = normalizeMotionUtterances(b?.utterances, id, [MOTION_VOICE.NARRATOR, ...castKeys], beat.narration);
     if (utterances.length) beat.utterances = utterances;
+    const sceneMood = normalizeMotionSceneMood(b?.sceneMood);
+    if (sceneMood) beat.sceneMood = sceneMood;
     if (visual === MOTION_TEXT_SCENE) {
-      beat.place = placeOf(_.toString(v?.place || v?.env || MR.MOTION_TEXT_EMPTY)) || _.first(placeKeys);
+      const rawPlace = _.trim(_.toString(v?.place || v?.env || MR.MOTION_TEXT_EMPTY));
+      const known = placeOf(rawPlace);
+      beat.place = known || (rawPlace ? slugKey(rawPlace) : _.first(placeKeys));
+      if (!known && rawPlace) beat.placeName = _.truncate(rawPlace, { length: 60 });
       const place = _.find(analysis.places, { key: beat.place });
       beat.time = pickEnum(TIMES, v?.time, (place?.time as string) || MOTION_TEXT_DAY);
       beat.weather = pickEnum(WEATHERS, v?.weather, MOTION_TEXT_NONE);

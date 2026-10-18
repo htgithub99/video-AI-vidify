@@ -6,7 +6,7 @@ import { randomUUID } from "crypto";
 import { MOTION_VOICE as V, MOTION_VOICE_LIBRARY as L } from "../../constants/motionVoice.js";
 import type { MotionVoicePreset } from "../../types/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
-import { listVieneuVoices, synthesizeVieneuSpeech } from "./vieneuTtsService.js";
+import { listVieneuVoices, synthesizeVieneuSpeech, type VieneuDelivery } from "./vieneuTtsService.js";
 import { getAi33ApiKey, synthesizeAi33Speech } from "./ai33TtsService.js";
 import { API_QUERY_PARAMS, EXTERNAL_URLS, HTTP_HEADERS } from "../../constants";
 import { runMotionAudioProcess } from "./motionSoundMixService.js";
@@ -86,8 +86,8 @@ export const ai33VoiceSample = async (id: string, file: string, signal?: AbortSi
   await toWav(Buffer.from(await response.arrayBuffer()), file, signal);
   return true;
 };
-export const synthesizeMotionSpeech = async (speech: string, voiceId: string, file: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ seconds: number }> => {
-  if (!isAi33Voice(voiceId)) return synthesizeVieneuSpeech(speech, voiceId, file, signal, log);
+export const synthesizeMotionSpeech = async (speech: string, voiceId: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery?: VieneuDelivery): Promise<{ seconds: number }> => {
+  if (!isAi33Voice(voiceId)) return synthesizeVieneuSpeech(speech, voiceId, file, signal, log, delivery);
   const voice = readAi33()[voiceId];
   if (!voice) throw new Error(L.VOICE_NOT_FOUND);
   const prefix = voice.provider ? voice.provider + L.AI33_PROVIDER_SEP : MR.MOTION_TEXT_EMPTY;

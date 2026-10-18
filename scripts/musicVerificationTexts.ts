@@ -34,7 +34,7 @@ export const MUSIC_VERIFICATION_TEXTS = {
   VALUE_PREPARECHATPLANNINGROOM_S_S_ALLOWDEFAULTGEMINIMODEL_TRUE: /prepareChatPlanningRoom\(\{[\s\S]*?allowDefaultGeminiModel: true/,
   VALUE_CLOSEROOMONCOMPLETE_FALSE_S_ALLOWDEFAULTGEMINIMODEL_TRUE: /closeRoomOnComplete: false,\s*allowDefaultGeminiModel: true/,
   VALUE_IF_ALLOWDEFAULTMODEL_RETURN_S_THROW_NEW_ERROR_CHAT_UI_AUTOMATION_MESSAGES_GEMINI_MODE: /if \(allowDefaultModel\) return;\s*throw new Error\(CHAT_UI_AUTOMATION_MESSAGES\.GEMINI_MODEL_PICKER_NOT_FOUND\)/,
-  VALUE_SELECTGEMINICHATMODEL_ROOM_REQUEST_MODEL_REQUEST_ALLOWDEFAULTGEMINIMODEL: /selectGeminiChatModel\(room, request\.model, request\.allowDefaultGeminiModel\)/,
+  VALUE_SELECTGEMINICHATMODEL_ROOM_REQUEST_MODEL_REQUEST_ALLOWDEFAULTGEMINIMODEL: /selectGeminiChatModel\(room, request\.model, request\.allowDefaultGeminiModel, request\.signal\)/,
   VALUE_DOWNLOADSUNOEVALUATIONAUDIO_FLATMAP_GROUPSBYCHUNK_GROUPS_FLATMAP_GROUPS_CANDIDATES_AU: /downloadSunoEvaluationAudio\(_\.flatMap\(groupsByChunk, \(groups\) => _\.flatMap\(groups, "candidates"\)\), audioCacheKey, planningRun\.signal\)/,
   VALUE_READMUSICEVALUATIONAUDIO_CACHEKEY_SONGID: /readMusicEvaluationAudio\(cacheKey, songId\)/,
   VALUE_WRITEMUSICEVALUATIONAUDIO_CACHEKEY_SONGID_AUDIO: /writeMusicEvaluationAudio\(cacheKey, songId, audio\)/,

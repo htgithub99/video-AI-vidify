@@ -1,5 +1,9 @@
 (function (root) {
   root.MotionEngineText = {
+    GEN_COLOR_RE: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i,
+    GEN_ID_RE: /^[A-Za-z][\w-]{0,40}$/,
+    GEN_WORD_SEPARATOR_RE: /[\s-]+/g,
+    GEN_NUMBER_RE: /^-?\d+(\.\d+)?$/,
     FINISH_MATERIAL: { CLAY: "clay", WOOD: "wood", CARDBOARD: "cardboard", PLASTIC: "plastic", LOWPOLY: "lowpoly", KRAFT: 0xc9a77a },
     WHITESPACE_RE: /\s+/,
     CHARACTER_GEOMETRY_REQUIRED: "Character parts need visible authored geometry; rebuild characters before rendering.",
@@ -282,6 +286,7 @@
     FACE_TALK_MIN: 0.8,
     FACE_TALK_RANGE: 0.9,
     FACE_BLINK_PERIOD: 3.4,
+    POSE_BLEND: 0.35,
     FACE_BLINK_JITTER: 1.8,
     FACE_BLINK_DURATION: 0.14,
     FACE_HEAD_YAW: 4,

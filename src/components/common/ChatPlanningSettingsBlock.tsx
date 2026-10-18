@@ -7,6 +7,7 @@ import { Bot, ChevronDown, Cpu, Eye, Sparkles } from "lucide-react";
 import { CHAT_PLANNING_STYLES } from "../../constants/chatPlanningStyles.js";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../../constants/cinematicConstants";
 import { CLAUDE_CHAT_MODELS, CLAUDE_CHAT_BASE_MODEL_OPTIONS, CLAUDE_MODEL_ENCODING, CLAUDE_EFFORT_OPTIONS, encodeClaudeChatModel, parseClaudeChatModel, type ClaudeEffort } from "../../constants/claudeChatModels";
+import { GEMINI_CHAT_BASE_MODEL_OPTIONS, GEMINI_THINKING_LEVEL_OPTIONS, encodeGeminiChatModel, parseGeminiChatModel, type GeminiThinkingLevel } from "../../constants/geminiChatModels.js";
 import { SOURCE_TEMPLATE_SYMBOL_32, SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE, SOURCE_TEXT_HIDDEN, SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2, SOURCE_TEXT_VI, SOURCE_TEXT_VISIBLE } from "../../constants/sourceText";
 import { CINEMATIC_SETUP_TEXTS } from "../../constants/texts";
 import { Lang } from "../../lib/lang";
@@ -27,17 +28,19 @@ const PlanningSelectField = ({ title, icon: Icon, iconClassName, value, onChange
     <ChevronDown className={CHAT_PLANNING_STYLES.CHEVRON} />
   </div>
 );
-interface PlanningTexts {
-  readonly GEMINI_CHAT_OPTION: string;
-  readonly GROK_CHAT_OPTION: string;
-  readonly CHATGPT_UI_OPTION: string;
-  readonly CLAUDE_CHAT_OPTION: string;
-  readonly DEEPSEEK_CHAT_OPTION: string;
-  readonly PLANNING_API_ONLY: string;
-  readonly PLANNING_HYBRID: string;
-  readonly PLANNING_CHROME_HIDDEN: string;
-  readonly PLANNING_CHROME_VISIBLE: string;
-}
+const PlanningLevelField = ({ title, defaultLabel, value, onChange, disabled, options, currentLang }: { title: string; defaultLabel: string; value: string; onChange: (value: string) => void; disabled: boolean; options: readonly { value: string; label: string; labelEn: string }[]; currentLang: Lang }) => (
+  <PlanningSelectField title={title} icon={Sparkles} iconClassName={CHAT_PLANNING_STYLES.MODEL_ICON} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} fieldDisabled={disabled}>
+    <option value={C.EMPTY} className={CHAT_PLANNING_STYLES.OPTION}>
+      {defaultLabel}
+    </option>
+    {options.map((option) => (
+      <option key={option.value} value={option.value} className={CHAT_PLANNING_STYLES.OPTION}>
+        {currentLang === ST.SOURCE_TEXT_EN ? option.labelEn : option.label}
+      </option>
+    ))}
+  </PlanningSelectField>
+);
+interface PlanningTexts { readonly GEMINI_CHAT_OPTION: string; readonly GROK_CHAT_OPTION: string; readonly CHATGPT_UI_OPTION: string; readonly CLAUDE_CHAT_OPTION: string; readonly DEEPSEEK_CHAT_OPTION: string; readonly PLANNING_API_ONLY: string; readonly PLANNING_HYBRID: string; readonly PLANNING_CHROME_HIDDEN: string; readonly PLANNING_CHROME_VISIBLE: string; }
 interface ChatPlanningSettingsBlockProps {
   provider: AiPlanningFallbackProvider;
   model: AiPlanningChatModel;
@@ -64,7 +67,7 @@ const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackPro
   if (isApiOnly) return texts.PLANNING_API_ONLY;
   const name = resolveProviderName(provider, texts);
   const modeText = chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE;
-  return SOURCE_TEMPLATE_SYMBOL_32(`${name}`, `${modeText}`);
+  return SOURCE_TEMPLATE_SYMBOL_32(name, modeText);
 };
 export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, extraControl }: ChatPlanningSettingsBlockProps) {
   const texts = CINEMATIC_SETUP_TEXTS[currentLang] || CINEMATIC_SETUP_TEXTS.vi;
@@ -72,9 +75,12 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
   const resolvedProvider = _.isEqual(provider, AiPlanningFallbackProvider.Disabled) ? AiPlanningFallbackProvider.GeminiChat : provider;
   const availableModels = CINEMATIC_CHAT_MODEL_OPTIONS[resolvedProvider] || [];
   const isClaude = resolvedProvider === AiPlanningFallbackProvider.ClaudeChat;
+  const isGemini = resolvedProvider === AiPlanningFallbackProvider.GeminiChat;
   const claudeSelection = isClaude ? parseClaudeChatModel(model) : undefined;
-  const modelOptions = isClaude ? CLAUDE_CHAT_BASE_MODEL_OPTIONS : availableModels;
+  const geminiSelection = isGemini ? parseGeminiChatModel(model) : undefined;
+  const modelOptions = isClaude ? CLAUDE_CHAT_BASE_MODEL_OPTIONS : isGemini ? GEMINI_CHAT_BASE_MODEL_OPTIONS : availableModels;
   const hasClaudeEffort = isClaude && Boolean(claudeSelection?.spec?.efforts.length);
+  const hasGeminiThinking = isGemini && !!geminiSelection && !geminiSelection.legacy;
   useEffect(() => {
     if (!isApiOnly && availableModels.length && !availableModels.some((option) => option.value === model)) onModelChange(availableModels[0].value);
   }, [isApiOnly, availableModels, model, onModelChange]);
@@ -117,7 +123,7 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
           <span className={CHAT_PLANNING_STYLES.BADGE_TEXT}>{badgeSummary}</span>
         </div>
       </div>
-      <div className={cn(CHAT_PLANNING_STYLES.GRID, extraControl || hasClaudeEffort ? CHAT_PLANNING_STYLES.GRID_WITH_EXTRA : CHAT_PLANNING_STYLES.GRID_DEFAULT, CHAT_PLANNING_STYLES.GAP)}>
+      <div className={cn(CHAT_PLANNING_STYLES.GRID, extraControl || hasClaudeEffort || hasGeminiThinking ? CHAT_PLANNING_STYLES.GRID_WITH_EXTRA : CHAT_PLANNING_STYLES.GRID_DEFAULT, CHAT_PLANNING_STYLES.GAP)}>
         <PlanningSelectField title={texts.PLANNING_AI_LABEL} icon={Bot} iconClassName={CHAT_PLANNING_STYLES.PROVIDER_ICON} value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)}>
           <option value={AiPlanningFallbackProvider.GeminiChat} className={CHAT_PLANNING_STYLES.OPTION}>
             {texts.GEMINI_CHAT_OPTION}
@@ -147,8 +153,8 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
           title={texts.PLANNING_MODEL_LABEL}
           icon={Cpu}
           iconClassName={CHAT_PLANNING_STYLES.MODEL_ICON}
-          value={claudeSelection?.model || model}
-          onChange={(e) => onModelChange(isClaude ? encodeClaudeChatModel(e.target.value as AiPlanningChatModel, claudeSelection?.effort) : (e.target.value as AiPlanningChatModel))}
+          value={claudeSelection?.model || geminiSelection?.model || model}
+          onChange={(e) => onModelChange(isClaude ? encodeClaudeChatModel(e.target.value as AiPlanningChatModel, claudeSelection?.effort) : isGemini ? encodeGeminiChatModel(e.target.value as AiPlanningChatModel, geminiSelection?.level) : (e.target.value as AiPlanningChatModel))}
           disabled={isApiOnly || _.isEmpty(availableModels)}
           fieldDisabled={isApiOnly}>
           {_.map(modelOptions, (item) => (
@@ -158,17 +164,19 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
             </option>
           ))}
         </PlanningSelectField>
+        {hasGeminiThinking && (
+          <PlanningLevelField title={texts.GEMINI_THINKING_LEVEL_LABEL} defaultLabel={texts.GEMINI_THINKING_LEVEL_DEFAULT} value={geminiSelection.level || C.EMPTY} onChange={(value) => onModelChange(encodeGeminiChatModel(geminiSelection.model, value ? (value as GeminiThinkingLevel) : undefined))} disabled={isApiOnly} options={GEMINI_THINKING_LEVEL_OPTIONS} currentLang={currentLang} />
+        )}
         {hasClaudeEffort && (
-          <PlanningSelectField title={texts.CLAUDE_EFFORT_LABEL} icon={Sparkles} iconClassName={CHAT_PLANNING_STYLES.MODEL_ICON} value={claudeSelection?.effort || C.EMPTY} onChange={(e) => onModelChange(encodeClaudeChatModel(claudeSelection!.model, e.target.value ? (e.target.value as ClaudeEffort) : undefined))} disabled={isApiOnly} fieldDisabled={isApiOnly}>
-            <option value={C.EMPTY} className={CHAT_PLANNING_STYLES.OPTION}>
-              {texts.CLAUDE_EFFORT_DEFAULT}
-            </option>
-            {CLAUDE_EFFORT_OPTIONS.filter((option) => claudeSelection?.spec?.efforts.includes(option.value)).map((option) => (
-              <option key={option.value} value={option.value} className={CHAT_PLANNING_STYLES.OPTION}>
-                {currentLang === ST.SOURCE_TEXT_EN ? option.labelEn : option.label}
-              </option>
-            ))}
-          </PlanningSelectField>
+          <PlanningLevelField
+            title={texts.CLAUDE_EFFORT_LABEL}
+            defaultLabel={texts.CLAUDE_EFFORT_DEFAULT}
+            value={claudeSelection?.effort || C.EMPTY}
+            onChange={(value) => onModelChange(encodeClaudeChatModel(claudeSelection!.model, value ? (value as ClaudeEffort) : undefined))}
+            disabled={isApiOnly}
+            options={CLAUDE_EFFORT_OPTIONS.filter((option) => claudeSelection?.spec?.efforts.includes(option.value))}
+            currentLang={currentLang}
+          />
         )}
         <PlanningSelectField title={texts.PLANNING_CHROME_LABEL} icon={Eye} iconClassName={CHAT_PLANNING_STYLES.CHROME_ICON} value={chromeHeadless ? CHROME_WINDOW_MODE.HIDDEN : CHROME_WINDOW_MODE.VISIBLE} onChange={(e) => handleChromeModeChange(e.target.value)} disabled={isApiOnly} fieldDisabled={isApiOnly}>
           <option value={CHROME_WINDOW_MODE.HIDDEN} className={CHAT_PLANNING_STYLES.OPTION}>

@@ -215,7 +215,15 @@
     actor.group.rotation.y = yaw;
     actor.group.updateMatrixWorld(true);
     const segment = A.segs.find((item) => t >= item.t0 && t < item.t1) || A.segs[A.segs.length - 1];
-    actor.sample(segment.id, A.motion ? t - segment.t0 + (A.def.offset || 0) : 0, A.motion, faceState(A, S, faceTime));
+    const previous = A.segs[A.segs.indexOf(segment) - 1];
+    const into = previous && A.motion ? t - segment.t0 : Infinity;
+    if (into < MT.POSE_BLEND) {
+      actor.sample(previous.id, segment.t0 - previous.t0 + (A.def.offset || 0), A.motion, faceState(A, S, faceTime));
+      const from = actor.snapshot();
+      actor.sample(segment.id, into + (A.def.offset || 0), A.motion, faceState(A, S, faceTime));
+      const k = into / MT.POSE_BLEND;
+      actor.blendFrom(from, k * k * (3 - 2 * k));
+    } else actor.sample(segment.id, A.motion ? t - segment.t0 + (A.def.offset || 0) : 0, A.motion, faceState(A, S, faceTime));
     A.poseLocked = !A.motion;
     A.lockedSegment = segment.id;
   };

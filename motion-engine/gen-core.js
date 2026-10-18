@@ -29,7 +29,7 @@
     for (let i = 0; i < n; i++) out.push(num(v[i], d ? d[i] : 0, a, b));
     return out;
   };
-  const COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+  const COLOR_RE = MT.GEN_COLOR_RE;
   const NAMED = { white: MT.F2F2F2, black: MT.VALUE_111111, red: MT.C0262D, blue: MT.VALUE_2456B8, green: MT.VALUE_2F7D3A, yellow: MT.E8C33A, orange: MT.E07A26, grey: MT.VALUE_808080, gray: MT.VALUE_808080, silver: MT.B9BCC0, gold: MT.C9A24A, brown: MT.VALUE_6B4A2E, navy: MT.VALUE_1C2A4A, beige: MT.D8C8A8, cream: MT.EFE6D0, pink: MT.E59AB0, purple: MT.VALUE_6B3FA0, teal: MT.VALUE_2A7F80 };
   const color = (v, d) => {
     if (typeof v !== MT.STRING) return d;
@@ -40,7 +40,7 @@
   GEN.num = num;
   GEN.vec = vec;
   GEN.color = color;
-  const idOk = (s) => typeof s === MT.STRING && /^[A-Za-z][\w-]{0,40}$/.test(s);
+  const idOk = (s) => typeof s === MT.STRING && MT.GEN_ID_RE.test(s);
   GEN.idOk = idOk;
   const cleanMaterial = (m, errors, key) => {
     if (typeof m === MT.STRING) m = { color: m };
@@ -242,7 +242,8 @@
         out.weight = num(n.weight, 700, 300, 900);
         break;
       case MT.ARROW: {
-        const from = vec(n.from, null), to = vec(n.to, null);
+        const from = vec(n.from, null),
+          to = vec(n.to, null);
         if (!from || !to) {
           errors.push(where + MT.ARROW_NEEDS);
           return null;
@@ -396,7 +397,9 @@
     return { value: out, errors: st.errors, warnings: st.warnings, stats: { nodes: st.count, lights: st.lights, instances: st.instances } };
   };
   GEN.validateCharacter = (raw) => {
-    const source = raw && typeof raw === MT.OBJECT ? raw : {}, st = newState(), out = { materials: cleanMaterials(source.materials, st), parts: [], anchors: Object.create(null), poses: Object.create(null), motions: Object.create(null), expressions: Object.create(null) };
+    const source = raw && typeof raw === MT.OBJECT ? raw : {},
+      st = newState(),
+      out = { materials: cleanMaterials(source.materials, st), parts: [], anchors: Object.create(null), poses: Object.create(null), motions: Object.create(null), expressions: Object.create(null) };
     st.materials = out.materials;
     const cleanTransform = (value) => {
       const result = {};
@@ -447,7 +450,8 @@
     }
     for (const [name, motion] of Object.entries(source.motions || {}).slice(0, 64)) {
       if (!idOk(name) || !motion || typeof motion !== MT.OBJECT) continue;
-      const duration = num(motion.duration, 1, 0.05, 120), tracks = [];
+      const duration = num(motion.duration, 1, 0.05, 120),
+        tracks = [];
       for (const track of (Array.isArray(motion.tracks) ? motion.tracks : []).slice(0, 64)) {
         if (!track || !ids.has(track.part)) continue;
         const keys = (Array.isArray(track.keys) ? track.keys : [])
@@ -501,7 +505,7 @@
     const name = String(value || MT.IDLE)
       .trim()
       .toLowerCase()
-      .replace(/[\s-]+/g, MT.SYMBOL_10);
+      .replace(MT.GEN_WORD_SEPARATOR_RE, MT.SYMBOL_10);
     return idOk(name) ? name : null;
   };
   GEN.SHOTS = [MT.WIDE, MT.MEDIUM, MT.CLOSE, MT.EXTREME_CLOSE, MT.OVER_SHOULDER, MT.LOW, MT.HIGH, MT.AERIAL, MT.INSERT, MT.POV];
@@ -537,7 +541,7 @@
       const o = { cast, action, at };
       if (a.y != null) o.y = num(a.y, 0, -50, 200);
       if (a.face != null) {
-        if (typeof a.face === MT.NUMBER || (typeof a.face === MT.STRING && /^-?\d+(\.\d+)?$/.test(a.face))) o.face = num(a.face, 0, -720, 720);
+        if (typeof a.face === MT.NUMBER || (typeof a.face === MT.STRING && MT.GEN_NUMBER_RE.test(a.face))) o.face = num(a.face, 0, -720, 720);
         else if (a.face === MT.CAMERA) o.face = MT.CAMERA;
         else if (typeof a.face === MT.STRING && castKeys.includes(a.face)) o.faceActor = a.face;
         else {
@@ -599,6 +603,7 @@
       if ([MT.FRONT, MT.PROFILE, MT.REAR].includes(cam.view)) c.view = cam.view;
       if (cam.follow && castKeys.includes(cam.follow)) c.follow = cam.follow;
       if (cam.dof != null) c.dof = num(cam.dof, 0.4, 0, 1);
+      if (typeof cam.utterance === MT.STRING && cam.utterance) c.utterance = cam.utterance.slice(0, 100);
       return c;
     };
     const camList = Array.isArray(s.cameras) && s.cameras.length ? s.cameras : [s.camera || {}];

@@ -159,6 +159,22 @@
         for (const [id, delta] of Object.entries(actor.partShift)) parts[id].position.add(delta);
         group.updateMatrixWorld(true);
       },
+      snapshot() {
+        const out = Object.create(null);
+        for (const [id, object] of Object.entries(parts)) out[id] = { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone() };
+        return out;
+      },
+      blendFrom(from, weight) {
+        const w = Math.max(0, Math.min(1, weight));
+        for (const [id, object] of Object.entries(parts)) {
+          const start = from[id];
+          if (!start) continue;
+          object.position.lerpVectors(start.position, object.position.clone(), w);
+          object.quaternion.copy(start.quaternion.clone().slerp(object.quaternion, w));
+          object.scale.lerpVectors(start.scale, object.scale.clone(), w);
+        }
+        group.updateMatrixWorld(true);
+      },
       animatedFace: !!(faces[MT.BLINK] || faces[MT.TALK]),
       limbSplay: {},
       partShift: {},
@@ -368,7 +384,7 @@
         low = Infinity;
       for (const o of own) {
         const b = box.setFromObject(o);
-        if (b.min.y < low) ((low = b.min.y), (hand = o));
+        if (b.min.y < low) (low = b.min.y), (hand = o);
       }
       const p = box.setFromObject(hand).getCenter(V3());
       ray.set(new T.Vector3(p.x, p.y, 50), down);

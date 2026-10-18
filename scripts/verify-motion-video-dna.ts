@@ -106,6 +106,7 @@ await analyzeStory(source, {
 });
 assert.equal(paletteCalls, 2);
 let corrections = 0;
+let firstPrompt = VT.EMPTY_2;
 const other = await analyzeStory(parseStorySource(VT.TEACH_SAFE_WORKSHOP_OBSERVATION_WITH_RESTRAINED_REALISTIC_MA), {
   language: VT.VI,
   length: MotionStoryLength.FIVE,
@@ -113,8 +114,11 @@ const other = await analyzeStory(parseStorySource(VT.TEACH_SAFE_WORKSHOP_OBSERVA
   exec: {} as any,
   ai: async (prompt) => {
     corrections++;
-    if (corrections === 1) return { ...raw, videoDna: { ...rawDna(VT.WORKSHOP), qualityChecks: [] } };
-    assert.ok(prompt.includes(VT.VIDEODNA_QUALITYCHECKS));
+    if (corrections === 1) {
+      firstPrompt = prompt;
+      return { ...raw, videoDna: { ...rawDna(VT.WORKSHOP), qualityChecks: [] } };
+    }
+    assert.equal(prompt, firstPrompt, VT.RETRIES_RESEND_THE_ORIGINAL_REQUEST_WITHOUT_THE_FAILED_FIELDS_AS_FEEDBAC);
     return { ...raw, videoDna: { ...rawDna(VT.WORKSHOP), settings: { drawingMode: VT.VALUE_2D, language: VT.EN } } };
   },
 });
@@ -167,11 +171,13 @@ const beats = await writeChapterBeats(
     },
   },
 );
-assert.equal(chapterCalls, 2, VT.WRITING_MUST_CORRECT_MISSING_SCENE_EXECUTION_PLANS);
+assert.equal(chapterCalls, 1, VT.A_MISSING_OPTIONAL_SCENE_PLAN_IS_ADVISORY_AND_MUST_NOT_TRIGGER_ANOTHER_A);
+assert.equal(beats[0].scenePlan, undefined);
+beats[0].scenePlan = plan;
 const shortChapter = await writeChapterBeats(source, analysis, { ...analysis.chapters[0], targetSeconds: 60 }, { language: VT.EN, exec: {} as any, isFirst: true, isLast: true, ai: async () => ({ beats: [{ visual: VT.SCENE, narration: VT.TWO_FORMS_REMAIN_VISIBLE, scenePlan: plan }] }) });
 assert.ok(shortChapter.length && shortChapter[0].narration);
-assert.deepEqual(beats[0].scenePlan, plan);
-assert.notEqual(sceneExecutionKey(beats[0]), sceneExecutionKey({ ...beats[0], scenePlan: { ...plan, after: VT.NEW_STATE } }), VT.EDITING_EXECUTION_PLANS_MUST_INVALIDATE_SCENE_ASSETS);
+assert.deepEqual(shortChapter[0].scenePlan, plan);
+assert.notEqual(sceneExecutionKey(shortChapter[0]), sceneExecutionKey({ ...shortChapter[0], scenePlan: { ...plan, after: VT.NEW_STATE } }), VT.EDITING_EXECUTION_PLANS_MUST_INVALIDATE_SCENE_ASSETS);
 beats[0].duration = 8;
 const fixture = JSON.parse(fs.readFileSync(VT.MOTION_ENGINE_DEMO_EDITORIAL_QA_JSON, VT.UTF8));
 const location = fixture.gen.locations.studio;

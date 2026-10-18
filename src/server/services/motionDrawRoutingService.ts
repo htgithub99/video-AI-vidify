@@ -1,0 +1,71 @@
+import _ from "lodash";
+import { encodeClaudeChatModel } from "../../constants/claudeChatModels.js";
+import { MOTION_DRAW_ROUTING_LOGS as L, MOTION_SCENE_AI } from "../../constants/motionSceneLibrary.js";
+import { MOTION_TEXT_ABORT, MOTION_TEXT_CANCELLED } from "../../constants/motionRuntime.js";
+import { getMotionErrorSummary } from "../../lib/motionUtils.js";
+import { AiPlanningExecutionMode } from "../../types.js";
+import type { MotionAiExecution } from "../../types/motionVideo.js";
+import { motionRoomBlockedMs, resetMotionAiRoom } from "./motionStoryService.js";
+export interface MotionDrawTurn { provider: string; model: string; turn: number; turns: number; total: number; }
+export interface MotionDrawTaskOptions<T> { task: string; exec: MotionAiExecution; signal?: AbortSignal; log: (s: string) => void; attempt: (exec: MotionAiExecution, turn: MotionDrawTurn) => Promise<T | undefined>; maxAttempts?: number; retryDelayMs?: number; }
+const ROUTE = [
+  { provider: MOTION_SCENE_AI.PRIMARY_PROVIDER as string, model: MOTION_SCENE_AI.PRIMARY_MODEL as string, turns: MOTION_SCENE_AI.PRIMARY_TURNS },
+  { provider: MOTION_SCENE_AI.SECONDARY_PROVIDER as string, model: encodeClaudeChatModel(MOTION_SCENE_AI.MODEL, MOTION_SCENE_AI.EFFORT) as string, turns: MOTION_SCENE_AI.SECONDARY_TURNS },
+];
+const cancelled = (signal?: AbortSignal): Error => (signal?.reason instanceof Error ? signal.reason : new Error(MOTION_TEXT_CANCELLED));
+const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(cancelled(signal));
+    const timer = setTimeout(done, ms);
+    function done() {
+      signal?.removeEventListener(MOTION_TEXT_ABORT, stop);
+      resolve();
+    }
+    function stop() {
+      clearTimeout(timer);
+      reject(cancelled(signal));
+    }
+    signal?.addEventListener(MOTION_TEXT_ABORT, stop, { once: true });
+  });
+export const motionDrawExec = (base: MotionAiExecution, provider: string, model: string): MotionAiExecution => ({
+  provider,
+  model,
+  mode: base.mode === AiPlanningExecutionMode.ApiOnly || !base.mode ? AiPlanningExecutionMode.RoomOnly : base.mode,
+  chromeHeadless: base.chromeHeadless,
+  strictProvider: true,
+});
+export const runMotionDrawTask = async <T>(o: MotionDrawTaskOptions<T>): Promise<T> => {
+  let total = 0;
+  for (let cycle = 0; ; cycle++) {
+    for (let step = 0; step < ROUTE.length; step++) {
+      const route = ROUTE[step];
+      if (total) o.log(L.SWITCH(o.task, ROUTE[(step + ROUTE.length - 1) % ROUTE.length].provider, route.provider));
+      for (let turn = 1; turn <= route.turns; turn++) {
+        if (o.signal?.aborted) throw cancelled(o.signal);
+        const blocked = motionRoomBlockedMs(route.provider);
+        if (blocked > 0) {
+          const wait = Math.min(blocked, MOTION_SCENE_AI.BLOCKED_WAIT_MS);
+          o.log(L.WAIT_BLOCKED(route.provider, Math.ceil(wait / 1000)));
+          await sleep(wait, o.signal);
+        }
+        total++;
+        o.log(L.ATTEMPT(o.task, route.provider, turn, route.turns, total));
+        let reason: string = L.NO_DATA;
+        try {
+          const value = await o.attempt(motionDrawExec(o.exec, route.provider, route.model), { provider: route.provider, model: route.model, turn, turns: route.turns, total });
+          if (value !== undefined) {
+            o.log(L.DONE(o.task, route.provider, total));
+            return value;
+          }
+          await resetMotionAiRoom().catch(_.noop);
+        } catch (error) {
+          if (o.signal?.aborted) throw error;
+          reason = getMotionErrorSummary(error);
+        }
+        o.log(L.UNUSABLE(o.task, route.provider, reason));
+        if (o.maxAttempts && total >= o.maxAttempts) throw new Error(L.GAVE_UP(o.task, total));
+        await sleep(o.retryDelayMs ?? MOTION_SCENE_AI.RETRY_DELAY_MS, o.signal);
+      }
+    }
+  }
+};

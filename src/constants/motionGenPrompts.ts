@@ -9,10 +9,8 @@ export const MOTION_GEN_CONFIG = {
   ARTIFACT_LOCATION_REVIEW: "motion-gen-location-review",
   ARTIFACT_STAGING: "motion-gen-staging",
   ARTIFACT_STAGING_REVIEW: "motion-gen-staging-review",
-  LOCATION_ROUNDS: 1,
   STAGING_TRIES: 3,
   LONG_VIDEO_SCENE_BEATS: 60,
-  LONG_LOCATION_ROUNDS: 1,
   SCORE_KEY: "score",
   NOTE_KEY: "note",
   REVIEW_OFF_LOG: "Đã tắt bước AI xem ảnh (Cấu hình AI) – chỉ sửa theo lỗi máy tự phát hiện.",
@@ -50,6 +48,10 @@ export const MOTION_GEN_CONFIG = {
   AUTO_SEATED_RE: /^(sit|seat|drive|ride)/i,
   AUTO_WORD_SPLIT: /[_\s-]+/,
   AUTO_CLAUSE_SPLIT: /[,.;:!?]|\s(?:and|while|then|as|but|và|trong khi|rồi|còn)\s/i,
+  LOG_PLACES_ADDED: (names: string): string => `Phân cảnh dùng bối cảnh chưa có trong phân tích – thêm và vẽ mới: ${names}`,
+  LOG_LOCATION_KEPT: (beat: string, asked: string, kept: string): string => `Cảnh ${beat}: AI đặt ở "${asked}" – giữ đúng bối cảnh của phân cảnh "${kept}"`,
+  LOG_ACTION_FALLBACK: (beat: string, items: string): string => `Cảnh ${beat}: hành động nhân vật chưa vẽ – dùng tư thế đã có gần nhất (${items})`,
+  ACTION_FALLBACK_ITEM: (cast: string, asked: string | undefined, used: string): string => `${cast}: ${asked || "?"} → ${used}`,
   AUTO_EMOTION_EXPRESSION: { sad: "sad", tense: "scared", surprised: "surprised", excited: "happy", warm: "happy", serious: "serious" } as Record<string, string>,
   LOG_LIBRARY_PLAN: (castReused: number, placesReused: number, castDraw: number, placesDraw: number, requests: number): string => `Kho cảnh: dùng lại ${castReused} nhân vật, ${placesReused} bối cảnh – cần vẽ mới ${castDraw} nhân vật, ${placesDraw} bối cảnh (≈ ${requests} request AI vẽ)`,
   LOG_LIBRARY_FILLED: (castCount: number, placeCount: number): string => `Tự lấy mẫu cùng loại trong kho cho ${castCount} nhân vật, ${placeCount} bối cảnh chưa có`,
@@ -248,9 +250,9 @@ It will be used for: ${o.uses}
 Automatic checks: ${o.engineNotes || "none"}
 Judge: does it clearly look like that place (architecture, era, key objects)? Are sizes consistent with the supplied stage and object dimensions? Anything floating, cut through, missing or ugly? Is the subject readable in the selected drawing mode (not black, not burnt out)? For 2D evaluate flat colour separation rather than photorealistic lighting. Is the stage free for the actors?
 Return JSON: {"score":0..10,"issues":["concrete fix instruction with object names and numbers", …]} – max 8 issues, [] if it is already excellent (score ≥ 8).`;
-export const MOTION_GEN_LOCATION_FIX_PROMPT = (o: { preamble: string; guide: string; library: string; key: string; description: string; previous: string; issues: string; errors: string }): string => `${o.preamble}
+export const MOTION_GEN_LOCATION_FIX_PROMPT = (o: { preamble: string; guide: string; library: string; key: string; description: string; previous: string; issues: string }): string => `${o.preamble}
 ROLE: production designer. Improve the 3D location "${o.key}" (${o.description}).
-${o.errors ? `The previous JSON had format errors – fix them:\n${o.errors}\n` : ""}${o.issues ? `Art director notes – apply ALL of them:\n${o.issues}\n` : ""}
+${o.issues ? `Art director notes – apply ALL of them:\n${o.issues}\n` : ""}
 ${o.guide}
 
 MODEL LIBRARY (ref | name | default size width×height×depth in metres):
@@ -260,12 +262,12 @@ PREVIOUS LOCATION JSON:
 ${o.previous}
 
 Return JSON: {"location":{ …the full corrected LOCATION JSON… }}`;
-export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string; errors: string }): string => `${o.preamble}
+export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string }): string => `${o.preamble}
 ROLE: character artist. Design original characters for NEW scenes from the story. When a PROJECT STYLE KIT or uploaded reference images exist they are authoritative: follow kit.character exactly (head:body ratio, head shape, eyes, brows, mouth, nose, hair, arms, hands, legs, clothing detail, expressions) and kit.animals for animals; they override generic visual direction and cast descriptions. Without references, choose proportions that suit this story, its audience and Video DNA – realistic, semi-realistic or cartoon are all valid; do not default to big heads, armless bodies or pill/cylinder bodies. Every character must have a clearly different silhouette from the others (height, build, hair, clothing shape) and the body parts the style shows (arms and hands when the style has them). Animals keep their own anatomy (e.g. a cat: four legs, tail, ears, muzzle). No body templates, compulsory anatomy, fixed heights or automatic proportion fitting exist in the renderer.
 STORY: ${o.story}
 ERA / COUNTRY: ${o.era}. Visual direction: ${o.look}.
 CAST: ${o.cast}
-${o.errors ? `Correct these failures: ${o.errors}` : ""}
+
 Every node uses the key "shape" (never "type"). Do not use legacy fields body/height/build/layers/drawnBody/socket. Return JSON {"style":{"grade":"neutral","notes":"project-specific visual direction"},"cast":{"each_cast_key":{"materials":{},"parts":[{"id":"silhouette","pos":[0,0,0],"nodes":[...]}],"anchors":{"body":"silhouette"},"poses":{"idle":{}},"motions":{}}}}.
 A character is a FREE hierarchy of named parts. Each part has id, optional parent (another part id), pos [x,y,z], optional rot [degrees] and scale [x,y,z], and nodes in that part's local coordinates. Parent links must be acyclic. Use as few or as many parts as the design needs; no prescribed joint names or count. Clothing, face, hair and silhouette are drawn geometry. Coordinates use scene metres, +Y up and +Z forward. Place the base at y=0; choose actual geometry dimensions to preserve reference proportions without normalization. Include expressive eyes/mouth and distinctive silhouettes when shown in references, rather than generic blocks.
 Nodes support box (size [w,h,d], bevel), sphere (radius, scale), cylinder/cone (radius,height; the axis is vertical, so a flat face-on disc with thickness needs rot [90,0,0]), capsule (radius,height), torus (radius,tube), plane (size [w,h]), disc/ring (radius), extrude (points [[x,y],...], depth), lathe (points [[radius,y],...]), tube (path [[x,y,z],...],radius), stroke (points [[x,y],...] in the local XY plane facing +Z, width, optional closed, fill, straight – a smooth drawn line or filled curve for eyebrows, eyelids, mouths, lips, nose lines, hair locks, wrinkles, tears, sweat drops, whiskers, cracks; place it just in front of the surface it is drawn on), and group (children). Supply pos, optional rot in degrees and mat {color:'#hex',roughness:0..1,metalness:0..1,unlit:true} or a key in materials. Use shallow geometry/extruded silhouettes for flat cartoons and authored volumes for 3D. No external character models, lights or annotation text.
@@ -336,3 +338,22 @@ export const MOTION_SERIES_PROMPT = {
   OPENING: (index: number, count: number, previous: string): string => `This is the first chapter of part ${index}/${count}; the previous part ended with: ${previous}. Pick up naturally from there.`,
   CLOSING: (next: string): string => `This is the last chapter of this part; the next part begins with: ${next}. Hand over to it with a cliffhanger, do not cover its points.`,
 };
+export const MOTION_GEN_VOICE_TIMING = {
+  RULE: `VOICE TIMELINE: the narration of the beats below is already recorded. "voice" lists every spoken line with its id and measured seconds from the beat start, and the beat lasts the recorded length. Time actions, camera cuts and sounds to these lines: a camera may add "utterance":"<line id>" to cut when that line starts (this replaces its "at"); a sound event may add "utterance":"<line id>" and "edge":"start"|"end" with an optional "t" offset in seconds. The story content decides what happens and where; the voice only sets the rhythm – never change the place or action because a line merely mentions something.`,
+  LINE: (lines: { id: string; speaker: string; text: string; from: number; to: number }[]): string => (lines.length ? "\n  voice: " + lines.map((line) => `${line.id} ${line.speaker} ${line.from.toFixed(2)}-${line.to.toFixed(2)}s "${line.text.length > 60 ? line.text.slice(0, 60) + "…" : line.text}"`).join("; ") : ""),
+  LOG: (beats: number): string => `Dàn dựng theo giọng đọc đã ghi cho ${beats} cảnh (thời lượng và mốc câu thực tế)`,
+  UNAVAILABLE: (reason: string): string => `Chưa đo được giọng đọc trước khi dàn dựng (${reason}) – dàn dựng theo thời lượng ước tính`,
+} as const;
+export const MOTION_GEN_POSE_PROMPTS = {
+  RULE: (poses: string[], expressions: string[]): string =>
+    `POSE NAMES: name poses with these standard names whenever the action matches – ${poses.join(", ")} – and expressions with ${expressions.join(", ")}; add other names only for actions none of them covers. Every listed "needs" entry of a character must exist in its poses/expressions. When a character has arms and legs, set anchors "arm_l", "arm_r", "leg_l", "leg_r" to the top part of each limb (pivot at the shoulder/hip), plus "body" and "head".`,
+  NEEDS: (key: string, needs: { poses: string[]; expressions: string[]; lines: string[] }): string => `- ${key} needs: poses ${needs.poses.join(", ") || "idle"}; expressions ${needs.expressions.join(", ") || "none"}${needs.lines.length ? `; what it does in the script: ${needs.lines.map((line) => `"${line.length > 90 ? line.slice(0, 90) + "…" : line}"`).join(" | ")}` : ""}`,
+  STAGING: `CHARACTER NAMES: for every actor use only an action from that character's "poses" (or "motions" when motion is on) and an expression from its "expressions"; "height" is its size in metres and "parts"/"anchors" are the ids for hold.part. Do not invent action or expression names.`,
+  PATCH: (o: { name: string; summary: string; poses: string[]; expressions: string[]; lines: string[]; motion: boolean }): string => `ROLE: character animator. The character "${o.name}" is already drawn; add only the missing named poses${o.expressions.length ? " and expressions" : ""} to it. Never change, add or remove parts or nodes.
+CHARACTER (part ids, parents, rest pos/rot, approximate size; +Y up, +Z toward the camera; rot in degrees replaces the part's rest rotation; with +Z toward the camera, rot z>0 swings a hanging limb toward +X, and rot x<0 swings a hanging leg or arm forward):
+${o.summary}
+WHAT IT DOES IN THE SCRIPT: ${o.lines.join(" | ") || "-"}
+ADD POSES: ${o.poses.join(", ") || "-"}${o.expressions.length ? `\nADD EXPRESSIONS (part transforms and "visible" swaps of existing face parts): ${o.expressions.join(", ")}` : ""}
+Keep the feet on the floor for standing poses. ${o.motion ? "Motions are optional; poses are required." : "Character motion is off: poses only."}
+Return JSON {"poses":{"<name>":{"<part id>":{"rot":[x,y,z],"pos":[x,y,z]}}},"expressions":{"<name>":{"<part id>":{"scale":[x,y,z],"visible":true}}}} with only the requested names.`,
+} as const;

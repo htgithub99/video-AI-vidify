@@ -435,6 +435,8 @@ export const MOTION_TEXT_WORDS = "words" as const;
 export const MOTION_TEXT_NONE_2 = "(none)" as const;
 export const MOTION_TEXT_INSERT = "insert" as const;
 export const MOTION_TEXT_USER = "user" as const;
+export const MOTION_TEXT_UTTERANCES = "utterances" as const;
+export const MOTION_TEXT_AT = "at" as const;
 export const MOTION_TEXT_SYMBOL_41 = "; " as const;
 export const MOTION_TEMPLATE_JPG_2 = (value0: string): string => value0 + ".jpg";
 export const MOTION_TEXT_REVIEW = "review" as const;
@@ -508,11 +510,9 @@ export const MOTION_TEXT_SYMBOL_51 = "]" as const;
 export const MOTION_TEXT_GEN_RUNID = "gen.runId" as const;
 export const MOTION_TEMPLATE_SYMBOL_50 = (value0: string, value1: string): string => value0 + " — " + value1;
 export const MOTION_TEMPLATE_LOOK = (value0: string, value1: string, value2: string, value3: string, value4: string): string => "- " + value0 + " (" + value1 + "): " + value2 + ", " + value3 + ". Look: " + value4;
-export const MOTION_TEMPLATE_AI_SUA_TRANG_PHUC_LAN = (value0: string): string => "AI sửa trang phục (lần " + value0 + ")…";
 export const MOTION_TEXT_AI_THIET_KE_TRANG_PHUC_MA_NO_CANH = "AI thiết kế nhân vật theo phong cách và tông màu…" as const;
 export const MOTION_TEXT_NEUTRAL = "neutral" as const;
 export const MOTION_TEXT_E9EAEC = "#e9eaec" as const;
-export const MOTION_TEMPLATE_CAST_IS_MISSING = (value0: string): string => "cast." + value0 + " is missing";
 export const MOTION_TEMPLATE_CAST_2 = (value0: string, value1: string): string => "cast." + value0 + ": " + value1;
 export const MOTION_TEXT_TROUSERS = "trousers" as const;
 export const MOTION_TEXT_JEANS = "jeans" as const;
@@ -539,15 +539,10 @@ export const MOTION_TEMPLATE_LOC = (value0: string): string => "loc_" + value0;
 export const MOTION_TEMPLATE_FILM_LOOK_GRADE = (value0: string, value1: string, value2: string): string => value0 + " film look, " + value1 + " grade " + value2;
 export const MOTION_TEMPLATE_USER_NOTE = (value0: string): string => "USER NOTE: " + value0;
 export const MOTION_TEMPLATE_AI_VE_BOI_CANH = (value0: string): string => "AI vẽ bối cảnh “" + value0 + "”…";
-export const MOTION_TEMPLATE_AI_SUA_LOI_DINH_DANG_BOI_CANH = (value0: string): string => "AI sửa lỗi định dạng bối cảnh “" + value0 + "”…";
-export const MOTION_TEMPLATE_AI_CHINH_BOI_CANH_THEO_NHAN_XET = (value0: string): string => "AI chỉnh bối cảnh “" + value0 + "” theo nhận xét…";
-export const MOTION_TEMPLATE_BO_QUA_LOI = (value0: string): string => " (bỏ qua " + value0 + " lỗi)";
 export const MOTION_TEMPLATE_BOI_CANH_KHOI_DEN = (value0: string, value1: string, value2: string, value3: string): string => "Bối cảnh “" + value0 + "”: " + value1 + " khối, " + value2 + " đèn" + value3 + ".";
-export const MOTION_TEMPLATE_BOI_CANH_CO_LOI_DINH_DANG_NHO_AI = (value0: string, value1: string): string => "Bối cảnh “" + value0 + "” có " + value1 + " lỗi định dạng – nhờ AI sửa.";
 export const MOTION_TEMPLATE_BO_QUA_BUOC_AI_CHAM_BOI_CANH = (value0: string): string => "Bỏ qua bước AI chấm bối cảnh: " + value0;
 export const MOTION_TEMPLATE_DIEM_CAN_SUA = (value0: string): string => " – " + value0 + " điểm cần sửa";
 export const MOTION_TEMPLATE_AI_CHAM_BOI_CANH_10 = (value0: string, value1: string, value2: string): string => "AI chấm bối cảnh “" + value0 + "”: " + value1 + "/10" + value2 + ".";
-export const MOTION_TEMPLATE_KHONG_VE_DUOC_BOI_CANH = (value0: string): string => "Không vẽ được bối cảnh “" + value0 + "”";
 export const MOTION_TEXT_BOX = "box" as const;
 export const MOTION_TEXT_CYLINDER = "cylinder" as const;
 export const MOTION_TEXT_CONE = "cone" as const;
@@ -577,7 +572,7 @@ export const MOTION_TEMPLATE_CONTINUITY_THE_SHOT_BEFORE_THIS_GROUP_WAS_AT = (val
 export const MOTION_TEMPLATE_AI_DAN_DUNG_LAI_CANH_CON_LOI = (value0: string): string => "AI dàn dựng lại " + value0 + " cảnh còn lỗi…";
 export const MOTION_TEMPLATE_AI_DAN_DUNG_CANH_VI_TRI_DONG_TAC = (value0: string): string => "AI dàn dựng " + value0 + " cảnh (vị trí, động tác, máy quay)…";
 export const MOTION_TEMPLATE_DAN_DUNG_LOI = (value0: string): string => "Dàn dựng lỗi: " + value0;
-export const MOTION_TEXT_THIS_BEAT_WAS_MISSING_FROM_YOUR_ANSWER = "this beat was missing from your answer" as const;
+export const MOTION_TEXT_THIS_BEAT_WAS_MISSING_FROM_YOUR_ANSWER = "AI không trả cảnh này" as const;
 export const MOTION_TEMPLATE_FORMAT_ERRORS = (value0: string): string => "format errors: " + value0;
 export const MOTION_TEXT_DRAFT = "draft" as const;
 export const MOTION_TEMPLATE_RENDER_ERROR = (value0: string): string => "render error: " + value0;
@@ -624,7 +619,6 @@ export const MOTION_TEMPLATE_SYMBOL_53 = (value0: string): string => '"' + value
 export const MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED_2 = (value0: string): string => "Continue naturally from the previous chapter, which ended with:\n" + value0;
 export const MOTION_TEMPLATE_SYMBOL_54 = (value0: string, value1: string, value2: string, value3: string): string => "- " + value0 + ": " + value1 + " (" + value2 + ") – " + value3;
 export const MOTION_TEMPLATE_SYMBOL_55 = (value0: string, value1: string, value2: string): string => "- " + value0 + ": " + value1 + " – " + value2;
-export const MOTION_TEMPLATE_YOUR_PREVIOUS_ANSWER_FAILED_RETURN_ONLY_THE_JSON = (value0: string): string => "\n\nYOUR PREVIOUS ANSWER FAILED (" + value0 + "). Return only the JSON object.";
 export const MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO_2 = "Chương không có beat nào" as const;
 export const MOTION_TEXT_ACTION = "action" as const;
 export const MOTION_TEMPLATE_SYMBOL_56 = (value0: string): string => value0 + "**";
@@ -1196,8 +1190,6 @@ export const MOTION_TEMPLATE_SYMBOL_147 = (value0: unknown, value1: unknown, val
 ${value1}
 ${value2}`;
 export const MOTION_TEMPLATE_CHARACTER_SCHEMA_MISMATCH_ROOT_FIELDS_CAST_KEYS_EXPECTED = (value0: unknown, value1: unknown, value2: unknown): string => `Character schema mismatch: root fields [${value0}], cast keys [${value1}], expected ${value2}`;
-export const MOTION_TEMPLATE_COMPLETE_VALID_CUSTOM_CHARACTER_DESIGN_REQUIRED = (value0: unknown, value1: unknown): string => `${value0}: complete valid custom character design required; ${value1}`;
-export const MOTION_TEMPLATE_CANNOT_BUILD_CUSTOM_CHARACTERS = (value0: unknown): string => `Cannot build custom characters: ${value0}`;
 export const MOTION_TEMPLATE_SYMBOL_152 = (value0: unknown, value1: unknown): string => `${value0} ${value1}`;
 export const MOTION_TEMPLATE_SYMBOL_156 = (value0: unknown, value1: unknown): string => `${value0}
 ${value1}`;
@@ -1215,7 +1207,7 @@ export const MOTION_TEMPLATE_SYMBOL_214 = (value0: unknown, value1: unknown, val
 ${value1}
 ${value2}`;
 export const MOTION_TEMPLATE_ACTOR_IS_NOT_REQUESTED_BY_THIS_BEAT_USE_ONLY_BEAT_CAST_AN_EMPTY_C = (value0: unknown): string => `Actor ${value0} is not requested by this beat. Use only beat.cast; an empty cast means no people.`;
-export const MOTION_TEMPLATE_CANNOT_STAGE_AFTER_CORRECTION_ATTEMPTS = (value0: unknown, value1: unknown, value2: unknown): string => `Cannot stage ${value0} after ${value1} correction attempts: ${value2}`;
+export const MOTION_TEMPLATE_CANNOT_STAGE_AFTER_CORRECTION_ATTEMPTS = (value0: unknown, value1: unknown, value2: unknown): string => `Cannot stage ${value0} after ${value1} attempts: ${value2}`;
 export const MOTION_TEMPLATE_OPENING = (value0: unknown): string => `${value0}-opening`;
 export const MOTION_TEMPLATE_CAMERA = (value0: unknown, value1: unknown): string => `${value0}-camera-${value1}`;
 export const MOTION_TEMPLATE_ENDING = (value0: unknown): string => `${value0}-ending`;
@@ -1366,8 +1358,6 @@ ${value4}
 ${value5}
 ${value6}`;
 export const MOTION_TEMPLATE_SYMBOL_305 = (value0: unknown, value1: unknown): string => `${value0}${value1}`;
-export const MOTION_TEMPLATE_CORRECTION_YOUR_PREVIOUS_ANALYSIS_JSON_FAILED_THESE_EXACT_CHECKS_ = (value0: unknown): string =>
-  `CORRECTION: your previous analysis JSON failed these exact checks: ${value0}. Use the source and instructions already given in this conversation. Return the COMPLETE analysis JSON again. Root fields: title, logline, genre, genre2, factual, videoDna, look, accent, era, sfxMood, chapters (with weight and mustKeep), cast, places, facts. Inside videoDna include every required DNA field, including audienceProfile, era, format, editDna, narrativeDna and influences. Keep chapters, cast, places and facts outside videoDna. videoDna.visualDna.palette must be one useful non-empty string, not an array or object. Fix the failed fields and preserve the rest. Raw JSON only.`;
 export const MOTION_TEMPLATE_NO_VALID_JSON_RETURNED = (value0: unknown): string => `no valid JSON returned (${value0})`;
 export const MOTION_TEMPLATE_PHAN_TICH_LAN_LOI_THU_LAI = (value0: unknown, value1: unknown): string => `Phân tích lần ${value0} lỗi, thử lại: ${value1}`;
 export const MOTION_TEXT_NO_JSON_OBJECT_RETURNED = "no JSON object returned" as const;
@@ -1485,8 +1475,6 @@ export const MOTION_TEMPLATE_NGUON = (value0: unknown, value1: unknown, value2: 
 export const MOTION_TEMPLATE_SYMBOL_339 = (value0: unknown): string => ` [${value0}]`;
 export const MOTION_TEMPLATE_SYMBOL_340 = (value0: unknown): string => ` "${value0}"`;
 export const MOTION_TEMPLATE_PHAN_DUNG_TRICH_DOAN_GOC = (value0: unknown): string => ` (${value0} phần dùng trích đoạn gốc)`;
-export const MOTION_TEMPLATE_CORRECT_THESE_EXACT_CONTRACT_FAILURES = (value0: unknown): string => `
-Correct these exact contract failures: ${value0}`;
 export const MOTION_TEXT_SYMBOL_56 = " | " as const;
 export const MOTION_TEMPLATE_TOWARD = (value0: unknown): string => `toward "${value0}"`;
 export const MOTION_TEXT_THE_ENDING = "the ending" as const;
@@ -1857,3 +1845,13 @@ export const MOTION_TEXT_DRAWNBODY = "drawnBody" as const;
 export const MOTION_TEXT_SOCKET = "socket" as const;
 export const MOTION_TEXT_LAYERS = "layers" as const;
 export const MOTION_TEXT_BUILD = "build" as const;
+export const MOTION_TEXT_TORUS = "torus" as const;
+export const MOTION_TEXT_DISC = "disc" as const;
+export const MOTION_TEXT_RING = "ring" as const;
+export const MOTION_TEXT_STROKE = "stroke" as const;
+export const MOTION_TEXT_LATHE = "lathe" as const;
+export const MOTION_TEXT_TUBE = "tube" as const;
+export const MOTION_TEXT_NFC = "NFC" as const;
+export const MOTION_TEXT_HITS = "hits" as const;
+export const MOTION_TEXT_SYMBOL_58 = ". " as const;
+export const MOTION_TEXT_EMOTION = "emotion" as const;

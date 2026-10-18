@@ -1,0 +1,54 @@
+import { MOTION_VERIFICATION_TEXTS as VT, MOTION_VERIFICATION_FORMATS as VF } from "./motionVerificationTexts.js";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+process.env.VIDIFY_STORAGE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), VT.MOTION_VOICE_MOOD));
+const { normalizeMotionSceneMood, normalizeMotionUtterances, resolveMotionDelivery, motionVoiceSignature } = await import("../src/lib/motionVoice.ts");
+const { buildMotionVoiceTrack } = await import("../src/server/services/motionAudioService.ts");
+const { motionWavHeader } = await import("../src/server/services/motionSoundMixService.ts");
+const { MOTION_VOICE_DELIVERY: D } = await import("../src/constants/motionVoice.ts");
+const line = (speaker: string, text: string, emotion = VT.NEUTRAL, intensity?: number): any => ({ id: VF.VOICE_MOOD_LINE_ID(speaker, text.length, emotion), speaker, role: speaker === VT.NARRATOR ? VT.NARRATION : VT.DIALOGUE, text, emotion, ...(intensity != null ? { intensity } : {}), speed: 1, pauseBefore: 0, pauseAfter: 0.2, emphasis: [] });
+const sad = resolveMotionDelivery(line(VT.MAN, VT.ME_OI, VT.SAD));
+assert.equal(sad.mood, VT.SAD);
+assert.equal(sad.temperature, D.MOODS.sad.temperature);
+assert.equal(sad.pause, D.MOODS.sad.pause);
+const told = resolveMotionDelivery(line(VT.NARRATOR, VT.CANH_CUA_TU_TU_MO_RA), { mood: VT.TENSE, intensity: 0.8 });
+assert.equal(told.mood, VT.TENSE);
+assert.equal(told.strength, 0.4, VT.NARRATOR_FOLLOWS_THE_SCENE_MOOD_AT_HALF_STRENGTH);
+assert.ok(told.temperature > D.NEUTRAL.temperature && told.temperature < D.MOODS.tense.temperature);
+assert.equal(resolveMotionDelivery(line(VT.NARRATOR, VT.TROI_SANG)).strength, 0, VT.NO_MOOD_IN_THE_SOURCE_KEEPS_A_NATURAL_READING);
+assert.equal(resolveMotionDelivery(line(VT.MAN, VT.CHAO), { mood: VT.TENSE, intensity: 1 }).mood, VT.NEUTRAL, VT.A_CHARACTER_S_NEUTRAL_LINE_IS_NOT_FORCED_INTO_THE_SCENE_MOOD);
+assert.equal(normalizeMotionSceneMood({ mood: VT.NEUTRAL, intensity: 1 }), undefined);
+assert.deepEqual(normalizeMotionSceneMood({ mood: VT.SAD, intensity: 3 }), { mood: VT.SAD, intensity: 1 });
+assert.equal(normalizeMotionUtterances([{ text: VT.CHAO, emotion: VT.EXCITED, intensity: 0.3 }], VT.B, [VT.NARRATOR])[0].intensity, 0.3);
+const voices = [{ id: VT.HAI_DANG, name: VT.HAI_DANG, gender: VT.MALE }];
+const calls: { text: string; voice: string; delivery: any }[] = [];
+const deps: any = {
+  voices: async () => voices,
+  synthesize: async (text: string, voice: string, file: string, _signal?: AbortSignal, _log?: unknown, delivery?: unknown) => {
+    calls.push({ text, voice, delivery });
+    const samples = Buffer.alloc(48000);
+    for (let frame = 0; frame < samples.length / 2; frame++) samples.writeInt16LE(Math.round(Math.sin(frame * 0.03) * 5000), frame * 2);
+    fs.writeFileSync(file, Buffer.concat([motionWavHeader(samples.length, 1), samples]));
+    return { seconds: 0.5 };
+  },
+};
+const text = VT.CANH_CUA_TU_TU_MO_RA_2;
+const scriptWith = (mood?: any): any => ({ title: VT.MOOD, language: VT.VI, beats: [{ id: VT.B1, chapterId: VT.C1, visual: VT.TITLE, narration: text, ...(mood ? { sceneMood: mood } : {}), utterances: [line(VT.NARRATOR, text)] }] });
+const opts: any = { exec: {}, log: () => {}, ai: async () => ({}) };
+const calm = await buildMotionVoiceTrack(scriptWith(), null, opts, deps);
+assert.equal(calls.length, 1);
+assert.deepEqual(calls[0].delivery, { temperature: D.NEUTRAL.temperature, silence: D.NEUTRAL.silence });
+assert.equal(calm.clips[0].delivery?.mood, VT.NEUTRAL, VT.THE_TRACK_RECORDS_THE_DELIVERY_ACTUALLY_APPLIED);
+await buildMotionVoiceTrack(scriptWith(), null, opts, deps);
+assert.equal(calls.length, 1, VT.SAME_WORDS_VOICE_AND_DELIVERY_REUSE_THE_CACHED_CLIP);
+assert.notEqual(motionVoiceSignature(scriptWith()), motionVoiceSignature(scriptWith({ mood: VT.SAD, intensity: 1 })), VT.A_NEW_SCENE_MOOD_INVALIDATES_THE_VOICE_PLAN);
+const grief = await buildMotionVoiceTrack(scriptWith({ mood: VT.SAD, intensity: 1 }), null, opts, deps);
+assert.equal(calls.length, 2, VT.SAME_WORDS_IN_A_SAD_SCENE_ARE_SYNTHESIZED_AGAIN_INSTEAD_OF_REUSING_THE_N);
+assert.equal(calls[1].voice, calls[0].voice, VT.MOOD_NEVER_CHANGES_THE_VOICE);
+assert.ok(calls[1].delivery.temperature < calls[0].delivery.temperature && calls[1].delivery.silence > calls[0].delivery.silence, VT.THE_ENGINE_RECEIVES_THE_SAD_DELIVERY);
+assert.notEqual(grief.clips[0].audioId, calm.clips[0].audioId);
+assert.equal(grief.clips[0].text, text, VT.SPOKEN_WORDS_ARE_UNCHANGED_NO_TAGS_ADDED);
+fs.rmSync(process.env.VIDIFY_STORAGE_DIR!, { recursive: true, force: true });
+process.stdout.write(VT.VOICE_MOOD_PASSED_SCENE_SPEAKER_MOOD_RESOLVES_TO_REAL_ENGINE_INPUTS_NARR + VT.EMPTY);

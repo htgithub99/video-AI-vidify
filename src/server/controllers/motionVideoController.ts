@@ -74,7 +74,9 @@ import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStory
 import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
 import { libraryMime } from "../services/motionAssetLibraryService.js";
-import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
+import { buildMotionVoiceTrack, fitUploadedVoice, measureMotionVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
+import { motionVoiceCast } from "../../lib/motionVoice.js";
+import { MOTION_GEN_VOICE_TIMING } from "../../constants/motionGenPrompts.js";
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY, MOTION_VOICE_PATTERNS } from "../../constants/motionVoice.js";
 import { applyVoiceLibrary, deleteVoiceChannel, readVoiceChannels, removeCustomVoice, saveVoiceChannel, updateVoiceMeta } from "../services/motionVoiceLibraryService.js";
 import { directMotionVoice } from "../services/motionVoiceDirectionService.js";
@@ -343,7 +345,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = _.every(chapters, (c) => byChapter[c.id]?.length);
-      if ((_.isEmpty(only) || req.body?.resume === true) && complete && req.body?.editorPass !== false) {
+      if ((_.isEmpty(only) || req.body?.resume === true) && complete && req.body?.editorPass === true) {
         ctx.log(MR.MOTION_TEXT_BIEN_TAP_VIEN_DOC_LAI_TOAN_BO_LOI_DAN);
         try {
           const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log });
@@ -407,7 +409,21 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     if (req.body?.restart) delete script.gen;
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.SCENES, async (ctx) => {
       const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listMotionVoiceSources(ctx.signal, ctx.log), { exec: mainExec, signal: ctx.signal, log: ctx.log }) : undefined;
+      const voiceTiming = voicePlan
+        ? measureMotionVoice(script, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, signal: ctx.signal, log: ctx.log })
+            .then((timing) => {
+              ctx.log(MOTION_GEN_VOICE_TIMING.LOG(_.size(timing.beats)));
+              return timing;
+            })
+            .catch((error) => {
+              if (ctx.signal.aborted) throw error;
+              ctx.log(MOTION_GEN_VOICE_TIMING.UNAVAILABLE(_.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
+              return undefined;
+            })
+        : undefined;
+      voiceTiming?.catch(_.noop);
       const result = await buildScenes(script, analysis, {
+        voiceTiming,
         audioDirection: voicePlan?.direction,
         exec,
         mainExec,
@@ -426,6 +442,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
         skipPreviews: req.body?.previews === false,
         drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
       });
+      if (voicePlan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, voicePlan.roles);
       if (req.body?.autoVoice !== false && !result.gen?.failed?.length) {
         ctx.progress(0.95, MOTION_VOICE.GENERATING);
         result.voiceTrack = await buildMotionVoiceTrack(result, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(0.95 + (0.04 * done) / total, MOTION_VOICE.GENERATING) });
@@ -599,7 +616,7 @@ export const compileMotionStory = async (req: Request, res: Response): Promise<v
         _.map(script.beats, (b) => estimateBeatSeconds(b, script.language)),
         uploadedSeconds,
       );
-    const directedScript = typeof req.body?.characterMotion === "boolean" && script.gen ? { ...script, gen: { ...script.gen, characterMotion: req.body.characterMotion } } : script;
+    const directedScript = typeof req.body?.characterMotion === MR.MOTION_TEXT_BOOLEAN && script.gen ? { ...script, gen: { ...script.gen, characterMotion: req.body.characterMotion } } : script;
     const compiled = compileStorySpec(directedScript, analysis, { aspect, durations, look: req.body?.look, accent: req.body?.accent, voiceTrack });
     const duration = compiled.spec.duration || 1,
       voiceId = voiceTrack?.audioId || (req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);

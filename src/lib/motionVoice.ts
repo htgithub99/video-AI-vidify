@@ -1,10 +1,11 @@
 import { motionFiniteNumber } from "./motionNumber.js";
 import * as MR from "../constants/motionRuntime.js";
-import { MOTION_VOICE as C, MOTION_VOICE_GROUP as G, MOTION_VOICE_LIBRARY, MOTION_VOICE_FILTER as F, MOTION_VOICE_PATTERNS as P } from "../constants/motionVoice.js";
+import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_GROUP as G, MOTION_VOICE_LIBRARY, MOTION_VOICE_FILTER as F, MOTION_VOICE_PATTERNS as P } from "../constants/motionVoice.js";
 import { soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
-import type { MotionStoryScript, MotionUtterance, MotionVoicePreset, MotionVoicePlan, MotionStoryAnalysis, MotionAudioDirection, MotionVoiceChannel, MotionVoiceGroup } from "../types/motionVideo.js";
-export const motionVoiceSignature = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null = null): string => JSON.stringify([C.VERSION, script?.language, script?.beats.map((beat) => [beat.id, beat.chapterId, beat.visual, beat.narration, beat.utterances]), script?.voiceSettings, analysis?.cast, motionAudioDirection(script, analysis), script?.voiceChannel || MR.MOTION_TEXT_EMPTY]);
+import type { MotionSceneMood, MotionVoiceDelivery, MotionStoryScript, MotionUtterance, MotionVoicePreset, MotionVoicePlan, MotionStoryAnalysis, MotionAudioDirection, MotionVoiceChannel, MotionVoiceGroup } from "../types/motionVideo.js";
+export const motionVoiceSignature = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null = null): string =>
+  JSON.stringify([C.VERSION, script?.language, script?.beats.map((beat) => [beat.id, beat.chapterId, beat.visual, beat.narration, beat.utterances, beat.sceneMood]), script?.voiceSettings, analysis?.cast, motionAudioDirection(script, analysis), script?.voiceChannel || MR.MOTION_TEXT_EMPTY]);
 export const voiceChannelRef = (channel?: Pick<MotionVoiceChannel, "id" | "updatedAt"> | null): string => (channel ? channel.id + MOTION_VOICE_LIBRARY.REF_SEPARATOR + channel.updatedAt : MR.MOTION_TEXT_EMPTY);
 export const motionLanguageCode = (value: unknown): string => {
   const raw = String(value ?? MR.MOTION_TEXT_EMPTY)
@@ -35,7 +36,7 @@ export const directedSpeechText = (line: MotionUtterance): string => line.text.r
 export const normalizeMotionUtterances = (raw: unknown, beatId: string, speakers: string[], narration?: string): MotionUtterance[] => {
   const used = new Set<string>();
   const lines = (Array.isArray(raw) ? raw : []).slice(0, C.MAX_LINES).flatMap((item, index): MotionUtterance[] => {
-    if (!item || typeof item.text !== "string" || !item.text.trim() || item.text.length > C.MAX_CHARS) return [];
+    if (!item || typeof item.text !== MR.MOTION_TEXT_STRING || !item.text.trim() || item.text.length > C.MAX_CHARS) return [];
     const speaker = speakers.includes(item.speaker) ? item.speaker : C.NARRATOR;
     let id = String(item.id || MR.MOTION_TEMPLATE_EMPTY(beatId, index + 1))
       .replace(P.LINE_ID, MR.MOTION_TEXT_EMPTY)
@@ -49,10 +50,11 @@ export const normalizeMotionUtterances = (raw: unknown, beatId: string, speakers
         role: speaker === C.NARRATOR ? MR.MOTION_TEXT_NARRATION : ([MR.MOTION_TEXT_DIALOGUE, MR.MOTION_TEXT_THOUGHT, MR.MOTION_TEXT_OFFSCREEN] as readonly string[]).includes(item.role) ? item.role : MR.MOTION_TEXT_DIALOGUE,
         text: item.text.trim().replace(C.TAGS, MR.MOTION_TEXT_EMPTY),
         emotion: C.EMOTIONS.includes(item.emotion) ? item.emotion : MR.MOTION_TEXT_NEUTRAL,
+        ...(item.intensity != null ? { intensity: motionFiniteNumber(item.intensity, 1, 0, 1) } : {}),
         speed: motionFiniteNumber(item.speed, 1, 0.85, 1.15),
         pauseBefore: motionFiniteNumber(item.pauseBefore, 0, 0, 2),
         pauseAfter: motionFiniteNumber(item.pauseAfter, 0.18, 0, 3),
-        emphasis: (Array.isArray(item.emphasis) ? item.emphasis : []).filter((word: unknown) => typeof word === "string" && item.text.includes(word)).slice(0, 6),
+        emphasis: (Array.isArray(item.emphasis) ? item.emphasis : []).filter((word: unknown) => typeof word === MR.MOTION_TEXT_STRING && item.text.includes(word)).slice(0, 6),
       },
     ];
   });
@@ -66,11 +68,12 @@ export const motionVoiceAge = (voice: MotionVoicePreset): string => {
   return C.CHILD_TAG.test(text) ? MR.MOTION_TEXT_CHILD : C.ADULT;
 };
 export const motionVoiceGroup = (gender?: string, age?: string): MotionVoiceGroup => (age === MR.MOTION_TEXT_CHILD ? G.CHILD : age === MR.MOTION_TEXT_SENIOR ? (gender === MR.MOTION_TEXT_FEMALE ? G.SENIOR_FEMALE : G.SENIOR_MALE) : gender === MR.MOTION_TEXT_FEMALE ? G.FEMALE_ADULT : G.MALE_ADULT);
-export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], requested: Record<string, string> = {}, direction?: MotionAudioDirection, inferred: Record<string, { gender?: "male" | "female"; age?: string }> = {}, channel?: MotionVoiceChannel | null): MotionVoicePlan["roles"] => {
+export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], requested: Record<string, string> = {}, direction?: MotionAudioDirection, inferred: Record<string, { gender?: "male" | "female"; age?: string }> = {}, channel?: MotionVoiceChannel | null, fixed: Record<string, string> = {}): MotionVoicePlan["roles"] => {
   const existing = (name: string) => voices.find((voice) => voice.id === name || voice.name === name);
   const used = new Set<string>();
-  const reserved = new Set<string>(channel ? [channel.narratorVoiceId, ...Object.values(channel.roleVoices || {})].filter((id): id is string => !!id && !!existing(id)) : []);
   const cast = [{ key: C.NARRATOR, name: C.NARRATOR, description: direction?.narrationStyle || MR.MOTION_TEXT_EMPTY, role: MR.MOTION_TEXT_EMPTY, look: MR.MOTION_TEXT_EMPTY }, ...(analysis?.cast || [])];
+  const kept: Record<string, string> = Object.fromEntries(Object.entries(fixed).filter(([key, id]) => cast.some((member) => member.key === key) && !!existing(id) && !(key === C.NARRATOR && channel && channel.narratorVoiceId !== id)));
+  const reserved = new Set<string>([...(channel ? [channel.narratorVoiceId, ...Object.values(channel.roleVoices || {})].filter((id): id is string => !!id && !!existing(id)) : []), ...Object.values(kept)]);
   return cast.map((member) => {
     const traits = motionSpeakerTraits(member),
       gender = traits.gender || inferred[member.key]?.gender,
@@ -84,8 +87,13 @@ export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voi
     const compatible = (voice: MotionVoicePreset | undefined): voice is MotionVoicePreset => !!voice && (!gender || voice.gender === gender);
     const fresh = (voice: MotionVoicePreset | undefined): voice is MotionVoicePreset => compatible(voice) && !used.has(voice.id) && !reserved.has(voice.id);
     const lockedId = !channel ? undefined : member.key === C.NARRATOR ? channel.narratorVoiceId : channel.roleVoices?.[motionVoiceGroup(gender, wantedAge)];
-    const locked = lockedId && !used.has(lockedId) ? existing(lockedId) : undefined;
+    const locked = lockedId && !used.has(lockedId) && !Object.entries(kept).some(([key, id]) => key !== member.key && id === lockedId) ? existing(lockedId) : undefined;
     const ageOk = (voice: MotionVoicePreset) => motionVoiceAge(voice) === wantedAge;
+    const own = kept[member.key] ? existing(kept[member.key]) : undefined;
+    if (own && compatible(own) && !used.has(own.id)) {
+      used.add(own.id);
+      return { speaker: member.key, name: member.name, voiceId: own.id, gender: gender || own.gender, age, ...(own.id === lockedId ? { locked: true } : {}) };
+    }
     const preferred = existing(requested[member.key]);
     const narrator = member.key === C.NARRATOR && direction?.mode === MR.MOTION_TEXT_STORYTELLING ? voices.find((voice) => fresh(voice) && ageOk(voice) && P.NARRATOR.test(soundText([voice.name, voice.description].join(MR.MOTION_TEXT_SYMBOL_13)))) : undefined;
     const chosen = locked || (fresh(preferred) ? preferred : undefined) || narrator || candidates.find(fresh) || voices.find((voice) => fresh(voice) && ageOk(voice)) || voices.find(fresh) || candidates.find(compatible) || voices.find(compatible);
@@ -94,3 +102,13 @@ export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voi
     return { speaker: member.key, name: member.name, voiceId: chosen.id, gender: gender || chosen.gender, age, ...(locked ? { locked: true } : {}) };
   });
 };
+export const normalizeMotionSceneMood = (raw: any): MotionSceneMood | undefined => (raw && C.EMOTIONS.includes(raw.mood) && raw.mood !== MR.MOTION_TEXT_NEUTRAL ? { mood: raw.mood, intensity: motionFiniteNumber(raw.intensity, 0.6, 0, 1) } : undefined);
+export const resolveMotionDelivery = (line: MotionUtterance, sceneMood?: MotionSceneMood): MotionVoiceDelivery => {
+  const own = line.emotion !== MR.MOTION_TEXT_NEUTRAL;
+  const mood = own ? line.emotion : line.speaker === C.NARRATOR && sceneMood ? sceneMood.mood : MR.MOTION_TEXT_NEUTRAL;
+  const strength = mood === MR.MOTION_TEXT_NEUTRAL ? 0 : Math.round(Math.min(1, own ? (line.intensity ?? 1) : (sceneMood?.intensity ?? 0) * D.NARRATOR_SHARE) * 100) / 100;
+  const target = D.MOODS[mood] || D.NEUTRAL;
+  const values = Object.fromEntries(Object.entries(D.NEUTRAL).map(([key, neutral]) => [key, Math.round((neutral + (target[key as keyof typeof target] - neutral) * strength) * 1000) / 1000])) as Omit<MotionVoiceDelivery, "mood" | "strength">;
+  return { mood, strength, ...values };
+};
+export const motionVoiceCast = (previous: Record<string, string> | undefined, roles: MotionVoicePlan["roles"]): Record<string, string> => ({ ...(previous || {}), ...Object.fromEntries(roles.map((role) => [role.speaker, role.voiceId])) });

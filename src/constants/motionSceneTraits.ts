@@ -337,6 +337,7 @@ export const MOTION_LIBRARY_LOG = {
   PLACE: (name: string, item: string, score: number, redress: string): string => `Dùng lại bối cảnh từ kho: ${name} ← ${item} (khớp ${Math.round(score * 100)}%${redress ? `, sửa lại cho ${redress}` : ""}) – không tốn request`,
   DRAW: (name: string, reason: string): string => `Cần vẽ mới bối cảnh: ${name} – ${reason}`,
   NO_MATCH: "không có bối cảnh cùng loại, đúng vùng và đúng thời đại trong kho",
+  NO_SAME_TYPE: "đã quá số bối cảnh vẽ mới dự kiến nhưng kho không có bối cảnh cùng loại, đúng vùng – vẽ mới thay vì mượn bối cảnh khác loại",
   OVER_BUDGET: (name: string, item: string): string => `Đã đủ ${MOTION_LIBRARY_FIT.DRAW_MAX} bối cảnh vẽ mới – ${name} dùng ${item} và sửa lại bằng code`,
   REDRESS: (name: string, swapped: number, removed: number): string => `Sửa lại bối cảnh ${name}: đổi ${swapped} đạo cụ, bỏ ${removed} đạo cụ sai vùng/thời đại`,
 };

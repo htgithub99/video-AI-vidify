@@ -154,7 +154,8 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
   });
 };
 export const listVieneuVoices = (signal?: AbortSignal, log?: (value: string) => void): Promise<MotionVoicePreset[]> => request({ command: MR.MOTION_TEXT_VOICES }, signal, log);
-export const synthesizeVieneuSpeech = (text: string, voice: string, file: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ seconds: number; sampleRate: number; backend: string }> => request({ command: MR.MOTION_TEXT_SYNTHESIZE, text, voice, file }, signal, log);
+export interface VieneuDelivery { temperature?: number; silence?: number; }
+export const synthesizeVieneuSpeech = (text: string, voice: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery: VieneuDelivery = {}): Promise<{ seconds: number; sampleRate: number; backend: string }> => request({ command: MR.MOTION_TEXT_SYNTHESIZE, text, voice, file, ...delivery }, signal, log);
 export const registerVieneuVoice = (voice: string, name: string, gender: string, file: string, signal?: AbortSignal): Promise<MotionVoicePreset> => request({ command: MR.MOTION_TEXT_REGISTER, voice, name, gender, file }, signal);
 export const transcribeVieneuAudio = async (file: string, language: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ text: string; words: { w: string; s: number; e: number }[] }> => {
   await ensureVieneuAsr(signal, log);

@@ -1,4 +1,5 @@
 export const CHAT_PLANNING_RUNTIME = {
+  STRING: "string",
   EMPTY: "",
   CODE_BLOCK_SELECTOR: "pre code",
   CLAUDE_USAGE_NOTICE_SELECTOR: '[role="alert"], [data-testid="usage-limit-notice"]',

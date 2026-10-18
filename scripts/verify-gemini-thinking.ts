@@ -1,0 +1,153 @@
+import { GEMINI_VERIFICATION_TEXTS as T, GEMINI_VERIFICATION_FORMATS as F } from "./geminiVerificationTexts.ts";
+import assert from "node:assert/strict";
+import { build } from "esbuild";
+import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { chromium } from "playwright";
+import { GEMINI_CHAT_BASE_MODEL_OPTIONS, GEMINI_CHAT_MODEL_OPTIONS, GEMINI_THINKING_LEVEL_OPTIONS, encodeGeminiChatModel, parseGeminiChatModel } from "../src/constants/geminiChatModels.ts";
+import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../src/constants/cinematicConstants.ts";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../src/types.ts";
+import { isPlanningChatModel } from "../src/lib/chatPlanningUtils.ts";
+import { resolvePipelineAiExecution } from "../src/services/pipelineAiExecutionService.ts";
+import { resolveFlowVideoPlanningModel } from "../src/services/flowVideoPlanningModel.ts";
+import { selectGeminiThinkingModel } from "../src/server/services/geminiModelService.ts";
+const provider = AiPlanningFallbackProvider.GeminiChat;
+for (const { value } of GEMINI_CHAT_MODEL_OPTIONS) {
+  assert.ok(parseGeminiChatModel(value));
+  assert.equal(isPlanningChatModel(value), true);
+  assert.equal(resolveFlowVideoPlanningModel(provider, value), value);
+  assert.equal(resolvePipelineAiExecution({ planningFallbackProvider: provider, planningChatModel: value, planningExecutionMode: AiPlanningExecutionMode.RoomOnly }, null, true).model, value);
+  const saved = JSON.parse(JSON.stringify({ config: { planningFallbackProvider: provider, planningChatModel: value } }));
+  assert.equal(resolvePipelineAiExecution({}, saved, true).model, value, T.RELOAD_PRESERVES_GEMINI_MODEL_AND_THINKING_LEVEL);
+}
+for (const invalid of [T.GEMINI_ARGON_MAX, T.GEMINI_UNKNOWN_LOW, T.GEMINI_ARGON_HIGH_LOW, T.GEMINI_ARGON, T.GEMINI_DEEP_THINK_HIGH, T.CLAUDE_AUTO_LOW]) {
+  assert.equal(parseGeminiChatModel(invalid), undefined);
+}
+const browser = await chromium.launch({ channel: T.CHROME, headless: true });
+const page = await browser.newPage();
+const waitForOutput = (value: string) => page.waitForFunction(({ selector, value }) => document.querySelector(selector)?.textContent === value, { selector: T.OUTPUT, value });
+const originalTimeout = CONFIG.MODEL_PICKER_TIMEOUT_MS;
+(CONFIG as unknown as { MODEL_PICKER_TIMEOUT_MS: number }).MODEL_PICKER_TIMEOUT_MS = 350;
+const resetPicker = async (mode: string = T.READY, english = false, materialMenu = false) => {
+  await page.setContent(F.PICKER_HTML(JSON.stringify(mode), JSON.stringify(GEMINI_CHAT_BASE_MODEL_OPTIONS.slice(0, 4)), JSON.stringify(GEMINI_THINKING_LEVEL_OPTIONS.map((option) => ({ ...option, label: english ? option.labelEn : option.label }))), JSON.stringify(materialMenu), english ? T.THINKING_LEVEL : T.THINKING_LABEL, english ? T.SELECTED : T.DA_CHON));
+};
+try {
+  await resetPicker(T.READY, false, true);
+  await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.LOW));
+  assert.equal(await page.evaluate(() => (window as any).level), T.LOW, T.RECOGNIZE_THE_ALREADY_SELECTED_DA_CHON_THAP_MENU_ITEM);
+  for (const level of [T.HIGH, T.MEDIUM, T.LOW] as const) {
+    await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, level));
+    assert.equal(await page.evaluate(() => (window as any).level), level, T.VERIFY_A_SELECTION_AFTER_GEMINI_ADDS_ITS_SELECTED_ICON_ACCESSIBLE_LABEL);
+  }
+  await resetPicker(T.READY, true, true);
+  await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.LOW));
+  await resetPicker();
+  for (const model of GEMINI_CHAT_BASE_MODEL_OPTIONS.slice(0, 4)) {
+    for (const level of GEMINI_THINKING_LEVEL_OPTIONS) {
+      await selectGeminiThinkingModel(page, encodeGeminiChatModel(model.value, level.value));
+      assert.deepEqual(await page.evaluate(() => ({ model: (window as any).current, level: (window as any).level })), { model: model.value, level: level.value });
+      assert.equal(await page.getByRole(T.MENU).count(), 0, T.CLOSE_THE_PICKER_AFTER_VERIFICATION);
+    }
+  }
+  await resetPicker(T.READY, true);
+  await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.HIGH));
+  assert.equal(await page.evaluate(() => (window as any).level), T.HIGH);
+  for (const mode of [T.MISSING, T.DISABLED, T.IGNORE_LEVEL, T.IGNORE_MODEL]) {
+    await resetPicker(mode);
+    const base = mode === T.IGNORE_MODEL ? AiPlanningChatModel.GeminiPro : AiPlanningChatModel.GeminiArgon;
+    await assert.rejects(selectGeminiThinkingModel(page, encodeGeminiChatModel(base, T.HIGH)), T.PATTERN_GEMINI_THINKING_UNAVAILABLE, mode);
+    assert.equal(await page.getByRole(T.MENU).count(), 0, T.CLOSE_THE_PICKER_AFTER_FAILURE);
+  }
+  const abort = new AbortController();
+  abort.abort();
+  await assert.rejects(selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.HIGH), abort.signal), T.PATTERN_CHAT_PLANNING_CANCELLED);
+  const ui = await build({
+    stdin: {
+      contents: T.UI_ENTRY,
+      loader: T.TSX,
+      resolveDir: process.cwd(),
+    },
+    bundle: true,
+    write: false,
+    platform: T.BROWSER,
+    format: T.IIFE,
+    jsx: T.AUTOMATIC,
+    define: { "import.meta": T.EMPTY },
+  });
+  await page.route(T.SETTINGS_ROUTE, (route) => route.fulfill({ contentType: T.TEXT_HTML, body: T.ROOT_HTML }));
+  const mount = async () => {
+    await page.goto(T.SETTINGS_URL);
+    await page.addScriptTag({ content: ui.outputFiles[0].text });
+    await page.getByRole(T.COMBOBOX, { name: T.THINKING_LABEL, exact: true }).waitFor();
+  };
+  await mount();
+  const modelControl = page.getByRole(T.COMBOBOX, { name: T.MODEL_LABEL, exact: true });
+  const levelControl = page.getByRole(T.COMBOBOX, { name: T.THINKING_LABEL, exact: true });
+  assert.equal(await modelControl.inputValue(), AiPlanningChatModel.GeminiArgon);
+  assert.deepEqual(await levelControl.locator(T.OPTION).allTextContents(), [T.THEO_GEMINI, T.THAP, T.TRUNG_BINH, T.CAO]);
+  await levelControl.selectOption(T.HIGH);
+  await waitForOutput(T.GEMINI_ARGON_HIGH);
+  await modelControl.selectOption(AiPlanningChatModel.GeminiPro);
+  assert.equal(await levelControl.inputValue(), T.HIGH, T.KEEP_THE_LEVEL_WHEN_CHANGING_THE_BASE_MODEL);
+  await waitForOutput(T.GEMINI_PRO_HIGH);
+  await mount();
+  assert.equal(await modelControl.inputValue(), AiPlanningChatModel.GeminiPro);
+  assert.equal(await levelControl.inputValue(), T.HIGH, T.RELOAD_RESTORES_THE_LEVEL_WITHOUT_RESETTING_THE_MODEL);
+  await levelControl.selectOption(T.EMPTY_2);
+  await waitForOutput(T.GEMINI_PRO);
+  await modelControl.selectOption(AiPlanningChatModel.GeminiDeepThink);
+  assert.equal(await levelControl.count(), 0, T.PRESERVE_LEGACY_DEEP_THINK_WITHOUT_CONFLICTING_NUMERIC_LEVELS);
+  await modelControl.selectOption(AiPlanningChatModel.GeminiArgon);
+  await page.locator(T.SELECT).first().selectOption(AiPlanningExecutionMode.ApiOnly);
+  assert.equal(await levelControl.isDisabled(), true);
+  await page.locator(T.SELECT).first().selectOption(AiPlanningFallbackProvider.GrokChat);
+  assert.equal(await levelControl.count(), 0, T.OTHER_PROVIDERS_DO_NOT_SHOW_GEMINI_THINKING_CONTROLS);
+  const motionBundle = await build({
+    entryPoints: [T.SRC_SERVER_SERVICES_MOTIONSTORYSERVICE_TS],
+    bundle: true,
+    write: false,
+    platform: T.NODE,
+    format: T.ESM,
+    packages: T.EXTERNAL,
+    plugins: [
+      {
+        name: T.ISOLATED_GEMINI_ROOM,
+        setup(builder) {
+          builder.onResolve({ filter: T.PATTERN_CHATUIPLANNINGSERVICE_JS }, () => ({ path: T.ROOM, namespace: T.GEMINI_TEST }));
+          builder.onLoad({ filter: T.PATTERN_EMPTY, namespace: T.GEMINI_TEST }, () => ({ loader: T.JS, contents: T.ROOM_STUB }));
+        },
+      },
+    ],
+  });
+  fs.mkdirSync(T.SCRATCH, { recursive: true });
+  const bundlePath = path.resolve(F.MOTION_BUNDLE_PATH(process.pid));
+  const room = { calls: [] as { stage: string; model: string }[], fail: false };
+  (globalThis as any).__geminiRoomTest = room;
+  try {
+    fs.writeFileSync(bundlePath, motionBundle.outputFiles[0].text);
+    const motion = await import(pathToFileURL(bundlePath).href);
+    const model = encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.MEDIUM);
+    const execution = { provider, model, mode: AiPlanningExecutionMode.RoomOnly };
+    assert.deepEqual(await motion.runInMotionAiSession(T.GEMINI_THINKING_TEST, () => motion.runMotionAi(T.TEST, T.TEST, execution)), { ok: true });
+    assert.deepEqual(
+      room.calls,
+      [
+        { stage: T.PREPARE, model },
+        { stage: T.SEND, model },
+      ],
+      T.MOTION_PRESERVES_THE_SELECTED_LEVEL_THROUGH_PREPARE_AND_SEND,
+    );
+    room.fail = true;
+    room.calls = [];
+    await assert.rejects(motion.runMotionAi(T.TEST, T.TEST, { ...execution, mode: AiPlanningExecutionMode.Hybrid }), T.PATTERN_GEMINI_THINKING_UNAVAILABLE);
+    assert.equal(room.calls.length, 1, T.AN_UNAVAILABLE_EXPLICIT_LEVEL_MUST_NOT_FALL_BACK_TO_ANOTHER_MODEL_OR_API);
+  } finally {
+    delete (globalThis as any).__geminiRoomTest;
+    fs.rmSync(bundlePath, { force: true });
+  }
+  process.stdout.write(T.PASSED);
+} finally {
+  (CONFIG as unknown as { MODEL_PICKER_TIMEOUT_MS: number }).MODEL_PICKER_TIMEOUT_MS = originalTimeout;
+  await browser.close();
+}

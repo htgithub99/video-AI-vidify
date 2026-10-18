@@ -3,7 +3,7 @@ import { MOTION_SOUND_BEDS, MOTION_SOUND_CONFIG as C, MOTION_SOUND_GENRE_BED, MO
 import { motionCueLimit, normalizeSoundEvents, normalizeSoundCues, soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
-import type { MotionSoundCue, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoicePlan } from "../types/motionVideo.js";
+import type { MotionSoundCue, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceClip, MotionVoicePlan } from "../types/motionVideo.js";
 export const motionSoundSpatial = (spec: MotionSpec, time: number, actor: any, duration: number, localTime: number): { pan?: number; position?: number[]; attenuation: number } => {
   if (!actor || !Array.isArray(actor.at)) return { attenuation: 0 };
   const shot = spec.shots.find((item) => item.start <= time && item.end > time),
@@ -18,7 +18,7 @@ export const motionSoundSpatial = (spec: MotionSpec, time: number, actor: any, d
   const screenX = ((position[0] - camera.target[0]) * -dz + (position[2] - camera.target[2]) * dx) / span;
   return { position, pan: Math.max(-0.8, Math.min(0.8, screenX / Math.max(1, distance * 0.65))), attenuation: -Math.min(12, Math.max(0, 20 * Math.log10(Math.max(1, distance / 2)))) };
 };
-export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScript, analysis?: MotionStoryAnalysis | null, direction = motionAudioDirection(script || null, analysis || null), roles?: MotionVoicePlan["roles"]): MotionSoundCue[] => {
+export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScript, analysis?: MotionStoryAnalysis | null, direction = motionAudioDirection(script || null, analysis || null), roles?: MotionVoicePlan["roles"], clips?: MotionVoiceClip[]): MotionSoundCue[] => {
   const result: MotionSoundCue[] = [],
     seen = new Set<string>(),
     cueLimit = motionCueLimit(spec.duration || 0);
@@ -79,7 +79,9 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
       if (event.prop && !JSON.stringify([location?.nodes, staging.props]).includes(MR.MOTION_TEMPLATE_EMPTY_4(event.prop))) continue;
       const cut = event.anchor === MR.MOTION_TEXT_CUT ? spec.shots.filter((shot) => (shot.params as any)?.soundBeatId === beatId).sort((a, b) => a.start - b.start)[(event.camera || 1) - 1] : undefined;
       if (event.anchor === MR.MOTION_TEXT_CUT && !cut) continue;
-      const localTime = cut ? cut.start - start + (event.t || 0) : (event.t ?? (event.at || 0) * duration);
+      const line = event.utterance ? clips?.find((clip) => clip.beatId === beatId && clip.id === event.utterance) : undefined;
+      const localTime = line ? (event.edge === C.EDGE_END ? line.end : line.start) - start + (event.t || 0) : cut ? cut.start - start + (event.t || 0) : event.utterance ? (event.at || 0) * duration : (event.t ?? (event.at || 0) * duration);
+      if (localTime < 0) continue;
       if (localTime >= duration) continue;
       const spatial = motionSoundSpatial(spec, start + localTime, actor, duration, localTime);
       add({ ...event, id: MR.MOTION_TEMPLATE_EVENT(beatId, event.id), beatId, t: start + localTime, duration: Math.min(event.duration || (event.layer === MR.MOTION_TEXT_AMBIENCE ? duration : MOTION_SOUND_KINDS.find((item) => item.kind === event.kind)!.duration), duration - localTime), ...spatial, gainDb: event.gainDb });
@@ -122,7 +124,7 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
               kind: MR.MOTION_TEXT_FOOTSTEP,
               layer: MR.MOTION_TEXT_ACTION,
               duration: 0.28,
-              description: (typeof location?.ground?.mat === "string" ? location?.materials?.[location.ground.mat]?.pattern : location?.ground?.mat?.pattern) || place?.description || C.EMPTY,
+              description: (typeof location?.ground?.mat === MR.MOTION_TEXT_STRING ? location?.materials?.[location.ground.mat]?.pattern : location?.ground?.mat?.pattern) || place?.description || C.EMPTY,
               ...motionSoundSpatial(spec, start + time, actor, duration, time),
             });
         }

@@ -84,14 +84,19 @@ export const motionAssetStyleKey = (references: unknown, drawingMode: unknown): 
 };
 export const sharedStyleKey = (styleKey: string): string => C.STYLE_SHARED + (styleKey.startsWith(MR.MOTION_TEXT_2D + C.TEXT.DASH) || styleKey.endsWith(C.TEXT.DASH + MR.MOTION_TEXT_2D) ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D);
 export const sharedStyleKeyOf = (drawingMode: unknown): string => C.STYLE_SHARED + drawingModeOf(drawingMode);
-const otherSharedKey = (styleKey: string): string => C.STYLE_SHARED + (sharedStyleKey(styleKey) === C.STYLE_SHARED + MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_3D : MR.MOTION_TEXT_2D);
-export const sceneStyleFits = (itemKey: string, styleKey: string): boolean => itemKey === styleKey || itemKey === sharedStyleKey(styleKey) || itemKey === otherSharedKey(styleKey);
-export const listSceneAssets = (styleKey?: string, kind?: MotionSceneAssetKind): MotionSceneAsset[] => {
-  const items = readIndex().items.filter((item) => (!styleKey || sceneStyleFits(item.styleKey, styleKey)) && (!kind || item.kind === kind));
-  if (!styleKey) return items;
-  const other = otherSharedKey(styleKey),
-    own = new Set(items.filter((item) => item.styleKey !== other).map((item) => item.kind + C.TEXT.PIPE + item.name));
-  return items.filter((item) => item.styleKey !== other || !own.has(item.kind + C.TEXT.PIPE + item.name));
+export const sceneStyleFits = (itemKey: string, styleKey: string): boolean => itemKey === styleKey || itemKey === sharedStyleKey(styleKey);
+export const listSceneAssets = (styleKey?: string, kind?: MotionSceneAssetKind): MotionSceneAsset[] => readIndex().items.filter((item) => (!styleKey || sceneStyleFits(item.styleKey, styleKey)) && (!kind || item.kind === kind));
+const canonicalJson = (value: unknown): unknown => (Array.isArray(value) ? value.map(canonicalJson) : value && typeof value === MR.MOTION_TEXT_OBJECT ? _.fromPairs(_.map(_.sortBy(_.keys(value)), (key) => [key, canonicalJson((value as Record<string, unknown>)[key])])) : value);
+export const sceneAssetFingerprint = (data: unknown): string =>
+  createHash(SHA)
+    .update(JSON.stringify(canonicalJson(data ?? null)))
+    .digest(HEX)
+    .slice(0, C.FINGERPRINT_LENGTH);
+const storedFingerprint = (item: MotionSceneAsset): string | undefined => item.fingerprint || (isSceneAssetId(item.id) ? sceneAssetFingerprint(readJson<any>(itemFile(item.id), null)) : undefined);
+export const findSameSceneAsset = (kind: MotionSceneAssetKind, styleKey: string, name: string, data: unknown): string | undefined => {
+  const print = sceneAssetFingerprint(data);
+  const clean = cleanText(name, C.NAME_MAX);
+  return readIndex().items.find((item) => item.kind === kind && sceneStyleFits(item.styleKey, styleKey) && (item.fingerprint || item.name === clean) && (item.sourceFingerprint === print || storedFingerprint(item) === print))?.id;
 };
 export const clearSceneLibrary = (): void => {
   [C.ITEMS_FOLDER, C.THUMBS_FOLDER, C.STYLES_FOLDER].forEach((name) => fs.rmSync(path.join(libraryRoot(), name), { recursive: true, force: true }));
@@ -104,7 +109,7 @@ export const getSceneAsset = (id: unknown): { item: MotionSceneAsset; data: any 
   const data = readJson<any>(itemFile(id), null);
   return data ? { item, data } : null;
 };
-export const saveSceneAsset = (input: { kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description?: string; tags?: unknown; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string }, data: unknown, thumb?: string | null): MotionSceneAsset => {
+export const saveSceneAsset = (input: { kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description?: string; tags?: unknown; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string; sourceFingerprint?: string }, data: unknown, thumb?: string | null): MotionSceneAsset => {
   const id = C.ID_PREFIX[input.kind] + randomUUID().replace(LP.HYPHEN, MR.MOTION_TEXT_EMPTY).slice(0, 10);
   writeMotionJsonAtomic(itemFile(id), data);
   let hasThumb = false;
@@ -129,6 +134,8 @@ export const saveSceneAsset = (input: { kind: MotionSceneAssetKind; styleKey: st
       size: input.size,
       from: input.from ? cleanText(input.from, C.NAME_MAX) : undefined,
       thumb: hasThumb,
+      fingerprint: sceneAssetFingerprint(data),
+      sourceFingerprint: input.sourceFingerprint,
       uses: 0,
       createdAt: Date.now(),
     },
@@ -382,7 +389,9 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
       const pool = _.find([regional(same), regional(ofType(fallback)), same], (list) => list.length > 0) || [];
       return leastUsed(pool, usedCharacters, assetFit([member.role, member.description, member.look, ...(member.tags || [])]));
     };
-    const chosen = (mode === MODES.AI && characters.find((item) => item.id === member.reuse)) || typed();
+    const picked = mode === MODES.AI ? characters.find((item) => item.id === member.reuse) : undefined;
+    const aiFits = !!picked && genderFits(picked, member.gender) && (!type || _.includes([type, ...fallback], picked.type));
+    const chosen = (aiFits ? picked : undefined) || typed();
     if (!chosen) return strip(member);
     const variant = usedCharacters.get(chosen.id) || 0;
     usedCharacters.set(chosen.id, variant + 1);
@@ -403,7 +412,7 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
   const places = analysis.places.map((place, index): MotionPlace => {
     const traits = motionPlaceTraits(place, story);
     const ai = mode === MODES.AI ? locations.find((item) => item.id === place.reuse) : undefined;
-    if (ai) return keep(place, traits, ai);
+    if (ai && ai.interior === !!place.interior && (!place.type || place.type === MOTION_SCENE_TYPE_OTHER || ai.type === place.type)) return keep(place, traits, ai);
     const best = place.type && place.type !== MOTION_SCENE_TYPE_OTHER ? pickPlace(place, traits, false) : undefined;
     if (best && best.score >= FIT.LOCATION_MIN && motionRegionFits(sceneAssetTraits(best.item).region, traits.region)) return keep(place, traits, best.item);
     pending.push({ index, place, traits });
@@ -416,8 +425,11 @@ export const assignSceneLibrary = (analysis: MotionStoryAnalysis, styleKey: stri
         plan.log?.(MOTION_LIBRARY_LOG.DRAW(entry.place.name, MOTION_LIBRARY_LOG.NO_MATCH));
         return;
       }
-      const near = (entry.place.type && entry.place.type !== MOTION_SCENE_TYPE_OTHER ? pickPlace(entry.place, entry.traits, false) : undefined) || pickPlace(entry.place, entry.traits, true);
-      if (!near) return;
+      const near = entry.place.type && entry.place.type !== MOTION_SCENE_TYPE_OTHER ? pickPlace(entry.place, entry.traits, false) : undefined;
+      if (!near || !motionRegionFits(sceneAssetTraits(near.item).region, entry.traits.region)) {
+        plan.log?.(MOTION_LIBRARY_LOG.DRAW(entry.place.name, MOTION_LIBRARY_LOG.NO_SAME_TYPE));
+        return;
+      }
       places[entry.index] = keep(entry.place, entry.traits, near.item);
       plan.log?.(MOTION_LIBRARY_LOG.OVER_BUDGET(entry.place.name, near.item.name));
     });
@@ -477,13 +489,12 @@ export const exportSceneLibrary = (styleKey?: string): MotionBaseLibrary => {
 export const pendingBaseLibrary = (drawingMode: unknown, pack?: MotionBaseLibrary): MotionBaseLibrary => {
   const base = pack || readBaseLibrary();
   const shared = sharedStyleKeyOf(drawingMode);
-  const known = new Set(
-    readIndex()
-      .items.filter((item) => item.styleKey === shared)
-      .map((item) => item.kind + C.TEXT.PIPE + item.name),
-  );
-  const fresh = (kind: string, name: string) => !known.has(kind + C.TEXT.PIPE + name);
-  return { characters: base.characters.filter((c) => fresh(C.KIND_CHARACTER, c.name)), locations: base.locations.filter((l) => fresh(C.KIND_LOCATION, l.name)), props: base.props.filter((p) => fresh(C.KIND_PROP, p.name)) };
+  const items = readIndex().items.filter((item) => item.styleKey === shared);
+  const prints = new Set(_.compact(_.flatMap(items, (item) => [item.fingerprint, item.sourceFingerprint])));
+  const typeOf = (value: unknown) => value || MOTION_SCENE_TYPE_OTHER;
+  const fresh = (kind: string, entry: { name: string; type?: string; gender?: string }, data: unknown) =>
+    !prints.has(sceneAssetFingerprint(data)) && !items.some((item) => !item.fingerprint && item.kind === kind && item.name === cleanText(entry.name, C.NAME_MAX) && typeOf(item.type) === typeOf(entry.type) && (kind !== C.KIND_CHARACTER || (item.gender || MR.MOTION_TEXT_MALE) === (entry.gender || MR.MOTION_TEXT_MALE)));
+  return { characters: base.characters.filter((c) => fresh(C.KIND_CHARACTER, c, c.design)), locations: base.locations.filter((l) => fresh(C.KIND_LOCATION, l, l.location)), props: base.props.filter((p) => fresh(C.KIND_PROP, p, p.nodes)) };
 };
 export const pendingBaseCounts = (): Record<MotionDrawingMode, number> =>
   _.fromPairs(

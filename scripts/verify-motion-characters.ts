@@ -50,8 +50,8 @@ await designBible(analysis, gen, {
   log: () => {},
   ai: async (prompt, _artifact, _exec, _signal, _log, images) => {
     calls++;
-    assert.match(prompt, /Without references, choose proportions/);
-    assert.match(prompt, /Dinner/);
+    assert.match(prompt, VT.DEFAULT_PROPORTIONS_RE);
+    assert.match(prompt, VT.DINNER_RE);
     assert.equal(images?.length || 0, 0);
     return { style: { notes: VT.STORY_DERIVED_DESIGN }, cast: { hero: design } };
   },
@@ -59,13 +59,13 @@ await designBible(analysis, gen, {
 assert.equal(calls, 1);
 assert.equal((gen.cast.hero as MotionCharacterDesign).parts.length, 3);
 assert.equal(needsAuthoredCharacters({ gen } as MotionStoryScript), false);
-assert.equal(needsAuthoredCharacters({ gen: { ...gen, cast: { hero: {} } } } as MotionStoryScript), true);
+assert.equal(needsAuthoredCharacters({ gen: { ...gen, cast: { hero: {} } } } as unknown as MotionStoryScript), true);
 assert.equal(needsAuthoredCharacters({ gen } as MotionStoryScript, [VT.MISSING]), true);
 const previous = { ...gen, staging: { b1: {} }, previews: { b1: { file: VT.OLD_JPG } }, creativeSignature: VT.OBSOLETE };
 const refreshed = prepareMotionGen(previous, analysis);
 assert.deepEqual(refreshed.cast, {});
 assert.deepEqual(refreshed.previews, {});
-assert.match(MOTION_GEN_BIBLE_PROMPT({ preamble: VT.EMPTY_2, story: VT.DINNER, era: VT.EMPTY_2, look: VT.EMPTY_2, cast: VT.HERO, errors: VT.EMPTY_2 }), /PROJECT STYLE KIT or uploaded reference images exist they are authoritative/);
+assert.match(MOTION_GEN_BIBLE_PROMPT({ preamble: VT.EMPTY_2, story: VT.DINNER, era: VT.EMPTY_2, look: VT.EMPTY_2, cast: VT.HERO }), VT.REFERENCE_AUTHORITY_RE);
 const spec = JSON.parse(fs.readFileSync(VT.MOTION_ENGINE_DEMO_EDITORIAL_QA_JSON, VT.UTF8));
 spec.gen.cast = { hero: design };
 spec.shots = [{ id: VT.FREE, template: VT.GEN3D, start: 0, end: 2, params: { location: VT.STUDIO, actors: [{ cast: VT.HERO, action: VT.LOOK, at: [0, 0], face: 0 }], camera: { shot: VT.MEDIUM, move: VT.STATIC } } }];
