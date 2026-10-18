@@ -1,3 +1,5 @@
+import { MOTION_STYLE_RULES } from "./motionStyleConstraints.js";
+import type { MotionStyleRules } from "../lib/motionStyleConstraints.js";
 import { MOTION_HISTORY_STAGING, MOTION_HISTORY_STORYBOARD } from "./motionHistory.js";
 import { MOTION_SOUND_PROMPT } from "./motionSound.js";
 import { MOTION_SFX_MOODS } from "./motionAudio.js";
@@ -173,6 +175,15 @@ JSON (example shape – a different story):
 
 SOURCE TRANSCRIPT FOR THIS CHAPTER:
 ${o.transcript}`;
+export const MOTION_GEN_DRAW_MODE = {
+  ROLE_3D: "production designer of a 3D story video",
+  ROLE_2D: "production designer of a 2D illustrated story video (orthographic, flat unlit surfaces)",
+  KIND_3D: "3D",
+  KIND_2D: "2D illustrated",
+  GUIDE_HEAD_3D: "SCENE-GRAPH FORMAT (you draw everything yourself with simple 3D shapes):",
+  GUIDE_HEAD_2D: "SCENE-GRAPH FORMAT (you draw everything yourself with simple shapes; the renderer shows them as a flat, unlit 2D illustration seen through an orthographic camera):",
+  EXAMPLE_NOTE_2D: "The example below only shows the JSON format and how a location is structured; its realism, materials, lights and amount of detail do not apply here – follow the project's style kit and the 2D drawing mode.",
+} as const;
 export const MOTION_GEN_DSL_GUIDE = `SCENE-GRAPH FORMAT (you draw everything yourself with simple 3D shapes):
 UNITS & AXES: metres. Y is up, the ground is y=0. +Z points toward the default camera ("front"), +X to the right of the camera view. Rotations "rot" are degrees [x,y,z]. "pos" is the CENTRE of the shape (a box of height 2 standing on the ground has pos y=1).
 REAL SIZES (keep them!): adult 1.6–1.85 tall; door 0.9×2.1; ceiling 2.7–3.5; table top 0.75 high; chair seat 0.45; desk 1.4×0.7; car 4.6 long × 1.8 wide × 1.45 high, wheel radius 0.33; bus 12×2.5×3.2; lamp post 4–6; storey of a building 3–3.5; stair step 0.17×0.28; window sill 0.9; kerb 0.15.
@@ -227,8 +238,8 @@ export const MOTION_GEN_DSL_EXAMPLE = `EXAMPLE (an underground garage – parts 
  {"shape":"group","name":"police_car","pos":[-4.2,0,1.2],"rot":[0,20,0],"mat":"paint_black","children":[{"shape":"use","ref":"sedan"},{"shape":"use","ref":"police_bar"},{"shape":"light","type":"point","pos":[0.3,1.7,-0.1],"intensity":6,"distance":18,"flash":{"hz":2.2,"colors":["#ff2020"],"duty":0.45}},{"shape":"light","type":"point","pos":[-0.3,1.7,-0.1],"intensity":8,"distance":20,"flash":{"hz":2.2,"colors":["#2050ff"],"phase":0.5,"duty":0.45}}]},
  {"shape":"model","name":"parked_van","ref":"k:car-kit/van","pos":[6,0,-3],"rot":[0,-90,0],"length":4.9},
  {"shape":"light","type":"spot","pos":[0.5,3.3,1.5],"target":[0.5,0,0.5],"angle":45,"penumbra":0.7,"intensity":2,"color":"#cfdcff","shadow":true}]`;
-export const MOTION_GEN_LOCATION_PROMPT = (o: { preamble: string; guide: string; example: string; era: string; story: string; key: string; name: string; description: string; interior: boolean; time: string; uses: string; style: string; note: string; library: string }): string => `${o.preamble}
-ROLE: production designer of a 3D story video. Draw ONE location as a scene-graph.
+export const MOTION_GEN_LOCATION_PROMPT = (o: { preamble: string; guide: string; example: string; era: string; story: string; key: string; name: string; description: string; interior: boolean; time: string; uses: string; style: string; note: string; library: string; role?: string }): string => `${o.preamble}
+ROLE: ${o.role ?? MOTION_GEN_DRAW_MODE.ROLE_3D}. Draw ONE location as a scene-graph.
 STORY: ${o.story}
 ERA / COUNTRY: ${o.era}
 LOCATION "${o.key}" (${o.name}): ${o.description}
@@ -246,6 +257,28 @@ ${o.library}
 ${o.example}
 
 Return JSON: {"location":{ …the full LOCATION JSON… }}`;
+export const MOTION_GEN_LOCATIONS_ITEM = (o: { key: string; name: string; description: string; interior: boolean; time: string; uses: string; brief: string }): string => `LOCATION "${o.key}" (${o.name}): ${o.description}
+Interior: ${o.interior ? "yes" : "no"}. Usual time: ${o.time}.
+WHAT HAPPENS HERE (the people will be added later on the stage):
+${o.uses}
+${o.brief}`;
+export const MOTION_GEN_LOCATIONS_PROMPT = (o: { preamble: string; role: string; story: string; era: string; style: string; locations: string; guide: string; library: string; example: string }): string => `${o.preamble}
+ROLE: ${o.role}. Draw EACH location below as its own complete scene-graph (same rules as drawing one location; the locations share only the visual style).
+STORY: ${o.story}
+ERA / COUNTRY: ${o.era}
+VISUAL STYLE: ${o.style}
+
+LOCATIONS:
+${o.locations}
+
+${o.guide}
+
+MODEL LIBRARY (ref | name | default size width×height×depth in metres) – place with {"shape":"model","ref":…}:
+${o.library}
+
+${o.example}
+
+Return JSON: {"locations":{"<location key>":{ …the full LOCATION JSON… }, …}} with exactly one complete entry for every location key above.`;
 export const MOTION_GEN_LOCATION_REVIEW_PROMPT = (o: { preamble: string; key: string; description: string; uses: string; engineNotes: string }): string => `${o.preamble}
 ROLE: art director. The two attached images are test renders in the selected drawing mode of the location "${o.key}" (wide view and reverse view). The stage dimensions and object coordinates define scene scale.
 The location should be: ${o.description}
@@ -253,8 +286,8 @@ It will be used for: ${o.uses}
 Automatic checks: ${o.engineNotes || "none"}
 Judge: does it clearly look like that place (architecture, era, key objects)? Are sizes consistent with the supplied stage and object dimensions? Anything floating, cut through, missing or ugly? Is the subject readable in the selected drawing mode (not black, not burnt out)? For 2D evaluate flat colour separation rather than photorealistic lighting. Is the stage free for the actors?
 Return JSON: {"score":0..10,"issues":["concrete fix instruction with object names and numbers", …]} – max 8 issues, [] if it is already excellent (score ≥ 8).`;
-export const MOTION_GEN_LOCATION_FIX_PROMPT = (o: { preamble: string; guide: string; library: string; key: string; description: string; previous: string; issues: string }): string => `${o.preamble}
-ROLE: production designer. Improve the 3D location "${o.key}" (${o.description}).
+export const MOTION_GEN_LOCATION_FIX_PROMPT = (o: { preamble: string; guide: string; library: string; key: string; description: string; previous: string; issues: string; kind?: string }): string => `${o.preamble}
+ROLE: production designer. Improve the ${o.kind ?? MOTION_GEN_DRAW_MODE.KIND_3D} location "${o.key}" (${o.description}).
 ${o.issues ? `Art director notes – apply ALL of them:\n${o.issues}\n` : ""}
 ${o.guide}
 
@@ -265,16 +298,16 @@ PREVIOUS LOCATION JSON:
 ${o.previous}
 
 Return JSON: {"location":{ …the full corrected LOCATION JSON… }}`;
-export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string }): string => `${o.preamble}
-ROLE: character artist. Design original characters for NEW scenes from the story. When a PROJECT STYLE KIT or uploaded reference images exist they are authoritative: follow kit.character exactly (head:body ratio, head shape, eyes, brows, mouth, nose, hair, arms, hands, legs, clothing detail, expressions) and kit.animals for animals; they override generic visual direction and cast descriptions. Without references, choose proportions that suit this story, its audience and Video DNA – realistic, semi-realistic or cartoon are all valid; do not default to big heads, armless bodies or pill/cylinder bodies. Every character must have a clearly different silhouette from the others (height, build, hair, clothing shape) and the body parts the style shows (arms and hands when the style has them). Animals keep their own anatomy (e.g. a cat: four legs, tail, ears, muzzle). No body templates, compulsory anatomy, fixed heights or automatic proportion fitting exist in the renderer.
+export const MOTION_GEN_BIBLE_PROMPT = (o: { preamble: string; story: string; era: string; look: string; cast: string; rules?: MotionStyleRules }): string => `${o.preamble}
+ROLE: character artist. Design original characters for NEW scenes from the story. When a PROJECT STYLE KIT or uploaded reference images exist they are authoritative: follow kit.character exactly (head:body ratio, head shape, eyes, brows, mouth, nose, hair, arms, hands, legs, clothing detail, expressions) and kit.animals for animals; they override generic visual direction and cast descriptions. Without references, choose proportions that suit this story, its audience and Video DNA – realistic, semi-realistic or cartoon are all valid; do not default to big heads, armless bodies or pill/cylinder bodies. ${o.rules?.distinguish ?? MOTION_STYLE_RULES.DISTINGUISH_DEFAULT} Animals keep their own anatomy (e.g. a cat: four legs, tail, ears, muzzle). No body templates, compulsory anatomy, fixed heights or automatic proportion fitting exist in the renderer.
 STORY: ${o.story}
 ERA / COUNTRY: ${o.era}. Visual direction: ${o.look}.
 CAST: ${o.cast}
-
+${o.rules?.limits ? o.rules.limits + "\n" : ""}${o.rules?.precedence ? o.rules.precedence + "\n" : ""}
 Every node uses the key "shape" (never "type"). Do not use legacy fields body/height/build/layers/drawnBody/socket. Return JSON {"style":{"grade":"neutral","notes":"project-specific visual direction"},"cast":{"each_cast_key":{"materials":{},"parts":[{"id":"silhouette","pos":[0,0,0],"nodes":[...]}],"anchors":{"body":"silhouette"},"poses":{"idle":{}},"motions":{}}}}.
 A character is a FREE hierarchy of named parts. Each part has id, optional parent (another part id), pos [x,y,z], optional rot [degrees] and scale [x,y,z], and nodes in that part's local coordinates. Parent links must be acyclic. Use as few or as many parts as the design needs; no prescribed joint names or count. Clothing, face, hair and silhouette are drawn geometry. Coordinates use scene metres, +Y up and +Z forward. Place the base at y=0; choose actual geometry dimensions to preserve reference proportions without normalization. Include expressive eyes/mouth and distinctive silhouettes when shown in references, rather than generic blocks.
 Nodes support box (size [w,h,d], bevel), sphere (radius, scale), cylinder/cone (radius,height; the axis is vertical, so a flat face-on disc with thickness needs rot [90,0,0]), capsule (radius,height), torus (radius,tube), plane (size [w,h]), disc/ring (radius), extrude (points [[x,y],...], depth), lathe (points [[radius,y],...]), tube (path [[x,y,z],...],radius), stroke (points [[x,y],...] in the local XY plane facing +Z, width, optional closed, fill, straight – a smooth drawn line or filled curve for eyebrows, eyelids, mouths, lips, nose lines, hair locks, wrinkles, tears, sweat drops, whiskers, cracks; place it just in front of the surface it is drawn on), and group (children). Supply pos, optional rot in degrees and mat {color:'#hex',roughness:0..1,metalness:0..1,unlit:true} or a key in materials. Use shallow geometry/extruded silhouettes for flat cartoons and authored volumes for 3D. No external character models, lights or annotation text.
-Faces must read at a medium shot. Skin colour, eye/mouth shape and size and line weight come from the style kit and the reference image details; where they say nothing, use a real skin tone (not the white/cream of clothing or background), eyes at least 1/8 of the head height and strokes at least 1/30 of the head width. Features sit just in front of the face surface on the +Z side. Hair, hoods, hats and buns sit on top/behind (negative z) and never cover the face. The face plate (flat skin, or with the kit's own shading tones when kit.render uses shading) must be the front-most surface of the head where the eyes and mouth are: a head ball, hood shell or cap dome must not bulge in front of it (keep their front z behind the face plate, or draw a hood as a ring around the face opening). Human and animal heads follow the head shape of the style kit or references (usually round or oval); do not build a person's head or face from a plain box unless the style is blocky (voxel, papercraft, robot) or the references show square heads. Arms hang outside the torso silhouette: with +Z toward the camera, rot z>0 swings a hanging limb toward +X, so the arm on the -X side uses a small negative z rotation and the arm on the +X side a positive one; hands must be visible from the front. Alternate face shapes (mouth_open, eyes_wide…) are hidden until an expression shows them. Draw facial features as separate small parts (eyes, brows, mouth, extras such as tears/blush/sweat) so they can change. Optional "expressions" map names to part transforms layered over any pose, with "visible":false|true to swap shapes, e.g. {"sad":{"brows":{"rot":[0,0,-12]},"mouth":{"scale":[1,-1,1]},"tears":{"visible":true}},"talk":{"mouth":{"visible":false},"mouthOpen":{"visible":true}},"blink":{"eyes":{"scale":[1,0.12,1]}}}. Author the emotions the story needs (e.g. happy, sad, scared, angry, surprised, crying) when the style shows faces; "talk" and "blink" are played automatically. Parts may start hidden with "visible":false. Optional anchors map head/body/base or any attachment name to authored part ids; positions come from the design. poses map action names to part transforms, e.g. {"sit":{"leg":{"rot":[-70,0,0]}}}. Transforms replace the part's rest transform; omitted fields preserve it. Design named poses needed by the story; the renderer has no preset action library. All pivots and geometry lengths are authored by you.
+Faces must read at a medium shot. Skin colour, eye/mouth shape and size and line weight come from the style kit and the reference image details; ${o.rules?.face ?? MOTION_STYLE_RULES.FACE_DEFAULT}. Features sit just in front of the face surface on the +Z side. Hair, hoods, hats and buns sit on top/behind (negative z) and never cover the face. The face plate (flat skin, or with the kit's own shading tones when kit.render uses shading) must be the front-most surface of the head where the eyes and mouth are: a head ball, hood shell or cap dome must not bulge in front of it (keep their front z behind the face plate, or draw a hood as a ring around the face opening). Human and animal heads follow the head shape of the style kit or references (usually round or oval); do not build a person's head or face from a plain box unless the style is blocky (voxel, papercraft, robot) or the references show square heads. ${o.rules?.arms ?? MOTION_STYLE_RULES.ARMS_DEFAULT} ${MOTION_STYLE_RULES.NO_OUTLINE_SHELLS} Alternate face shapes (mouth_open, eyes_wide…) are hidden until an expression shows them. Draw facial features as separate small parts (eyes, brows, mouth, extras such as tears/blush/sweat) so they can change. Optional "expressions" map names to part transforms layered over any pose, with "visible":false|true to swap shapes, e.g. {"sad":{"brows":{"rot":[0,0,-12]},"mouth":{"scale":[1,-1,1]},"tears":{"visible":true}},"talk":{"mouth":{"visible":false},"mouthOpen":{"visible":true}},"blink":{"eyes":{"scale":[1,0.12,1]}}}. Author the emotions the story needs (e.g. happy, sad, scared, angry, surprised, crying) when the style shows faces; "talk" and "blink" are played automatically. Parts may start hidden with "visible":false. Optional anchors map head/body/base or any attachment name to authored part ids; positions come from the design. poses map action names to part transforms, e.g. {"sit":{"leg":{"rot":[-70,0,0]}}}. Transforms replace the part's rest transform; omitted fields preserve it. Design named poses needed by the story; the renderer has no preset action library. All pivots and geometry lengths are authored by you.
 When AUTHORITATIVE CHARACTER MOTION is enabled, author motions for story actions: {"wave":{"duration":2,"loop":true,"tracks":[{"part":"arm","keys":[{"t":0,"rot":[0,0,-20]},{"t":1,"rot":[0,0,20]},{"t":2,"rot":[0,0,-20]}]}]}}. Keys use seconds and absolute local pos/rot/scale; omitted properties preserve the selected pose. Animate only existing parts while preserving geometry and proportions. Motion is optional; no external animation clips are loaded. When disabled, poses still apply and motion tracks stay frozen.
 ${MOTION_SOUND_PROMPT}
 Return only style and cast.`;
@@ -349,8 +382,11 @@ export const MOTION_GEN_VOICE_TIMING = {
   UNAVAILABLE: (reason: string): string => `Chưa đo được giọng đọc trước khi dàn dựng (${reason}) – dàn dựng theo thời lượng ước tính`,
 } as const;
 export const MOTION_GEN_POSE_PROMPTS = {
-  RULE: (poses: string[], expressions: string[]): string =>
-    `POSE NAMES: name poses with these standard names whenever the action matches – ${poses.join(", ")} – and expressions with ${expressions.join(", ")}; add other names only for actions none of them covers. Every listed "needs" entry of a character must exist in its poses/expressions. When a character has arms and legs, set anchors "arm_l", "arm_r", "leg_l", "leg_r" to the top part of each limb (pivot at the shoulder/hip), plus "body" and "head".`,
+  RULE: (poses: string[], expressions: string[], anchors: string): string => `POSE NAMES: name poses with these standard names whenever the action matches – ${poses.join(", ")} – and expressions with ${expressions.join(", ")}; add other names only for actions none of them covers. Every listed "needs" entry of a character must exist in its poses/expressions. ${anchors}`,
+  ANCHORS_FULL: `When a character has arms and legs, set anchors "arm_l", "arm_r", "leg_l", "leg_r" to the top part of each limb (pivot at the shoulder/hip), plus "body" and "head".`,
+  ANCHORS_ARMS: `Set anchors "arm_l", "arm_r" to the top part of each arm (pivot at the shoulder), plus "body" and "head". This style shows no legs: do not add legs or leg anchors.`,
+  ANCHORS_LEGS: `Set anchors "leg_l", "leg_r" to the top part of each leg (pivot at the hip), plus "body" and "head". This style draws no arms: do not add arms or arm anchors.`,
+  ANCHORS_NONE: `Set anchors "body" and "head" only. This style draws no limbs: express actions with the whole body (lean, bob, turn) and never add arms or legs.`,
   NEEDS: (key: string, needs: { poses: string[]; expressions: string[]; lines: string[] }): string => `- ${key} needs: poses ${needs.poses.join(", ") || "idle"}; expressions ${needs.expressions.join(", ") || "none"}${needs.lines.length ? `; what it does in the script: ${needs.lines.map((line) => `"${line.length > 90 ? line.slice(0, 90) + "…" : line}"`).join(" | ")}` : ""}`,
   STAGING: `CHARACTER NAMES: for every actor use only an action from that character's "poses" (or "motions" when motion is on) and an expression from its "expressions"; "height" is its size in metres and "parts"/"anchors" are the ids for hold.part. Do not invent action or expression names.`,
   PATCH: (o: { name: string; summary: string; poses: string[]; expressions: string[]; lines: string[]; motion: boolean }): string => `ROLE: character animator. The character "${o.name}" is already drawn; add only the missing named poses${o.expressions.length ? " and expressions" : ""} to it. Never change, add or remove parts or nodes.

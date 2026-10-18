@@ -1,0 +1,69 @@
+{
+  "description": "A minimalist flat 2D vector animation style with thick uniform black outlines, muted desaturated earth tones and slate greys, and very simple geometric shapes. Characters are faceless-mask-like figures with huge white circular heads, tiny black oval eyes and a small oval mouth, set on plain rounded-capsule bodies. Backgrounds are orthographic front-on views with flat colour fills, faint line texture, and a moody, deadpan, slightly eerie atmosphere; night scenes are handled by darkening the whole palette to near-black navy and charcoal rather than adding glow effects.",
+  "palette": ["#9AA3AB", "#47573B", "#6B4A3A", "#A89F86", "#3B2B1E", "#8B5A3C", "#C9A94F", "#7B6A4F", "#5A6068", "#1C2024", "#0F1424", "#8A8670"],
+  "outlineColor": "#0A0A0A",
+  "outlineWidth": 0.02,
+  "kit": {
+    "render": {
+      "mode": "flat",
+      "shadingTones": "1",
+      "outline": "all inner lines, thick uniform weight (about 3-4 px at 1024 width) in near-black; secondary detail lines such as plank seams and siding are thin, low-contrast tone-on-tone strokes",
+      "texture": "none apart from faint thin horizontal or diagonal tone-on-tone lines on ground and walls suggesting planks, tiles or siding; a subtle soft vertical gradient fade appears on a few objects (the translucent tarp, the lower edges of figures)",
+      "lighting": "No cast shadows or glow. Daytime is a flat overcast grey-blue sky with muted fills. Night is shown by overlaying a deep navy/charcoal tint (#0F1424 to #1C2024) over the whole scene so shapes become near-silhouettes with only faint edge lines visible. Pale light-grey surfaces (#A9B0B8) are used for lit or translucent objects against the dark."
+    },
+    "character": {
+      "headToBody": "roughly 1:1.5 to 1:2; the head is very large relative to a short, bulbous body",
+      "headShape": "perfect circle, pure white (#EEF3F6) fill with thick black outline, sitting directly on the torso with no neck",
+      "eyes": "two tall narrow black ovals, widely spaced and placed slightly below the head's centre; no whites, no pupils, no highlights; in the far shot they shrink to small round-ish dots",
+      "brows": "none",
+      "mouth": "small black vertical oval placed centrally below the eyes, giving a permanently surprised, hollow, deadpan look; in the far shot icon-like faces use a small dark trapezoid mouth",
+      "nose": "none",
+      "ears": "none",
+      "hair": "none; heads are bald and bare white",
+      "arms": "present: thin rounded tubes (capsule strokes) in the same colour as the torso, thick black outline on the body but the limbs look like soft stubs; one arm can be raised and bent in a long curved gesture, the other hangs at the side",
+      "hands": "none; arms end in rounded stub tips with no fingers",
+      "legs": "not visible; figures are cropped at the torso or bottom edge of the frame",
+      "body": "tall rounded dome or capsule torso, wider at the base, rounded shoulders, no waist; in distant shots, tiny figures are a small round head plus a trapezoid or boxy torso with a thin stalk neck",
+      "clothing": "no detail; each figure is a single flat colour block with a subtle darkening gradient toward the bottom: slate grey (#5A6068) for one character, muted brown/khaki (#7B6A4F, #6B5A3A) for the other",
+      "skin": "no real skin; the face is pure white #EEF3F6 with no blush; distant background figures are tan/brown #8B6A4A with brown heads",
+      "expressions": "Emotion is conveyed almost entirely by pose, head position and camera framing; the face stays fixed with the same oval eyes and oval mouth. No tears, sweat drops or blush are shown. Variation could come from eye size or mouth shape change (taller oval, small dot)."
+    },
+    "animals": "no animals shown in the references; if needed, draw them with the same blobby flat shapes, thick black outline, tiny oval eyes and a single muted colour fill",
+    "background": {
+      "perspective": "flat orthographic front view with a horizon line, buildings facing the camera straight on, ground as a horizontal band filling the lower third to half",
+      "layers": "sky band, far hills or tree blobs, the main building as a mid-ground element, a ground plane with a flat patch or yard shape, then foreground characters cropped at the bottom edge",
+      "detail": "low: simple geometric buildings with a trapezoid or gable roof, rectangular dark doorways, a lean-to or sheared roof for damaged variants, a small padlock icon on a door; ground uses brick/tile grid lines or plank lines in a slightly darker tone; trees are chunky angular polygon silhouettes in dark green (#47573B) or tiny clustered flat leaf discs on a thin branch",
+      "sky": "flat solid grey-blue (#9AA3AB) in the day and a flat deep navy (#0F1424) at night; a second slightly different band suggests a horizon or sea behind the building",
+      "props": "drawn as plain flat shapes with the same thick black outline: an oval yard patch (#C9A94F) with a darker brown oval pit, a dark shed box with a tiny grey padlock icon, a translucent grey tarp structure with three framed icon-portraits, simple dark window rectangles"
+    },
+    "fx": "No particles, rain or fog shown. Atmosphere comes from full-scene colour darkening, translucent pale overlay shapes with a soft vertical fade, and low-contrast tone-on-tone lines. Keep effects minimal and flat.",
+    "typography": "no text is present; only a tiny padlock pictogram on a door. Any signs would be minimal icon-style glyphs in light grey (#A9B0B8) with no decorative lettering.",
+    "camera": "Static, locked-off, front-on wide establishing shots with the characters small at the bottom of the frame, alternating with tight medium two-shot close-ups where heads fill the top half of the frame and the torsos are cropped at the bottom. Compositions are symmetrical or centred, deadpan, with possible slow push-ins and little to no camera movement."
+  },
+  "images": [
+    {
+      "name": "style-reference-1",
+      "role": "scene",
+      "subjects": ["a long single-storey barn or warehouse with three dark doors", "a grey masked character at the bottom left", "an oval dirt yard with a pit", "two small tan background figures", "angular green tree shapes"],
+      "details": "Daytime wide shot in flat vector style with thick black outlines. Sky is flat grey-blue #9AA3AB. Two large angular polygonal tree silhouettes in dark green #47573B sit at the top left and right edges. The building is a wide, low, flat-front structure with beige-khaki walls #A89F86 carrying faint diagonal tone-on-tone streaks, a wide low-pitched hip-style roof in warm brown #6B4A3A with a slight overhang, and three evenly spaced rectangular doorways filled with dark brown #3B2B1E. The ground is a terracotta-brown #8B5A3C band with a thin darker grid of tile or brick lines. On it sits a large mustard-yellow oval yard patch #C9A94F with a black outline, containing a darker brown oval pit #6B5A3A on the left and two small tan figures #8A7050 on the right, each with a round brown head on a thin stalk neck and a boxy trapezoid torso. In the bottom-left foreground a single character has a pure white circular head with two tall black oval eyes and a small black oval mouth, on a slate-grey #5A6068 dome torso that is cropped at the bottom edge. Flat fills only, no shadows or gradients, deadpan mood."
+    },
+    {
+      "name": "style-reference-2",
+      "role": "scene",
+      "subjects": ["the same building in a damaged or altered state", "a dark shed with an unlocked padlock icon", "a small bonsai-like tree on the roof", "two masked characters in the foreground"],
+      "details": "Overcast daytime scene with thick black outlines. The sky is a two-band flat grey-blue, lighter #9AA3AB at the top and a slightly darker bluish #7F8A96 band behind the building suggesting a distant horizon or sea. The building has dull beige walls #9A9378 with two dark brown doorways #3B2B1E and a heavily sagging, warped dark-brown roof #45302A that dips in the middle and has stick-like poles angled upward at both ends. In front of the right side stands a dark charcoal shed #1C2024 with a lighter flat roof #2A211C, a black doorway and a small light-grey open padlock icon #A9B0B8 on the door. On the roof grows a small twisted tree with a thin brown branch and flat round olive-green leaf discs #4F6040 with dark outlines. The ground fills the lower third as a flat khaki-olive #8A8670 with thin, faint horizontal plank lines. Two characters stand at the bottom edge, cropped at the shoulders: left one has a slate-grey #5A6068 body, right one has a muted brown #7B6A4F body, both with large white round heads, tall oval black eyes and small oval mouths. Mood is quiet, slightly ominous, and flat-lit."
+    },
+    {
+      "name": "style-reference-3",
+      "role": "scene",
+      "subjects": ["night version of the building", "a translucent grey tarp or tent structure with three framed portraits", "face icons with trapezoid mouths"],
+      "details": "Night scene made by tinting the whole image in near-black navy #0F1424, with the sky a flat deep navy, the tree silhouettes barely visible dark shapes #121A2A, and the building reduced to a dark outline with dim brown roof #3A2A28 and faintly visible dark doorways. The ground is a dark brown tile grid #2A1E1C. In the foreground a bright, semi-translucent pale grey-blue tarp-like structure #A9B0B8 with a soft vertical gradient to darker grey at the bottom, a sloped angular roof with a light edge outline #D5DADF, and thin vertical seams. It is held up by tiny stick legs and has a faded yellowish patch #C9B97A on its upper face. Inside are three evenly spaced framed rectangles with dark-brown picture frames #4A3626, each containing a light-grey panel with a pale round face with two small black oval eyes and a dark trapezoid mouth, resembling a tidy screen or portrait icon. Outlines on the tarp are a light grey rather than black, while the rest keep dark outlines. Mood is eerie, cold and quiet; the light object is the visual focal point."
+    },
+    {
+      "name": "style-reference-4",
+      "role": "character",
+      "subjects": ["a brown-clad masked character with a raised bent arm", "a grey-clad masked character", "a dark interior with window panels"],
+      "details": "Dark interior close two-shot in a low-key charcoal palette: the background is a near-black #1C2024 wall with a darker horizontal ceiling beam band #111418 across the top with thin black lines, and four tall dark rectangular window panels #14181C with thin dark-grey mullions on the right. On the left the character wears a muted olive-brown #6B5A3A dome torso with a thick black outline and a subtle vertical darkening gradient, its pure white #EEF3F6 circular head has a thick black outline, two tall black oval eyes widely spaced and a small black oval mouth below. Its right arm is a long, thick, rounded brown tube curving up and to the right to a rounded tip at upper centre, while the other arm hangs at its side as a short stub. On the right stands a second character with a slate-grey #5A6068 dome torso that fades darker toward the bottom, with an identical white head, the same face layout, and a short stub arm at the right side. The heads are large, about 40 percent of the torso height, with no neck, no nose, no brows and no hands. Flat fills with only a faint vertical gradient on the bodies; mood is tense, deadpan and cropped at the bottom of the frame."
+    }
+  ]
+}

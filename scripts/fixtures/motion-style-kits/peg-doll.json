@@ -1,0 +1,50 @@
+{
+  "description": "A charming minimalist 2D illustrative aesthetic centered on limb-less peg-doll characters with oversized rounded heads and compact capsule bodies. Scenes are defined by clean black contour linework and flat, desaturated earthy color fills enveloped in an omnipresent fine grain texture.",
+  "palette": ["#1A1918", "#F2EAE4", "#8B986C", "#83796E", "#EFE9BF", "#5A7EB6", "#745137", "#634335", "#6A504B", "#2B2C35"],
+  "outlineColor": "#1A1918",
+  "outlineWidth": 0.018,
+  "kit": {
+    "render": {
+      "mode": "flat",
+      "shadingTones": "1",
+      "outline": "all inner lines, uniform medium weight",
+      "texture": "grain",
+      "lighting": "flat diffuse ambient daylight with zero cast shadows, directional shading, or highlights"
+    },
+    "character": {
+      "headToBody": "1:1.2",
+      "headShape": "large rounded egg-like oval with soft cheeks and a curved chin base",
+      "eyes": "small expressive almond and oval shapes outlined in bold black with white sclera and solid black circular pupils",
+      "brows": "minimalist black curved or arched single-stroke ink lines floating above the eyes",
+      "mouth": "delicate single black stroke forming gentle arcs, straight lines, or downturned curves",
+      "nose": "omitted entirely",
+      "ears": "small simple C-shaped curved outlines on the sides of the head",
+      "hair": "graphic solid color silhouettes with clean contours and minimal inner separation lines; colors include jet black #1B1B1B, grizzled dark grey #484344, and muted aged grey #78757A",
+      "arms": "none",
+      "hands": "none",
+      "legs": "none",
+      "body": "smooth armless cylindrical capsule that tapers slightly toward the neck and terminates at a flat rounded peg base",
+      "clothing": "simplified mid-century cultural attire composed of flat color blocks with sparse ink line accents for collars, front seams, pockets, and vertical stripes",
+      "skin": "porcelain pale cream #F2EAE4 with no blush",
+      "expressions": "subtle graphic expressions articulated solely through pupil orientation, eyebrow angle, and mouth curvature"
+    },
+    "background": {
+      "perspective": "three-quarter",
+      "layers": "foreground curving unpaved earth road, grassy road margins with sparse foliage tufts, and upper overhead greenery",
+      "detail": "low graphic detail relying on sparse two-stroke grass marks and fine ink contours for road ruts",
+      "sky": "not visible in frame",
+      "props": "wearable folk accents including a knotted brown fabric headband #5B4339, a draped cotton neck towel #C6C3BA, and small black stud earrings #1A1918"
+    },
+    "fx": "uniform fine film grain and speckled print noise covering all visual elements",
+    "typography": "understated hand-drawn or clean vintage sans-serif text",
+    "camera": "stable eye-level to slight high-angle medium ensemble framing keeping full figures grounded"
+  },
+  "images": [
+    {
+      "name": "style-reference-1",
+      "role": "scene",
+      "subjects": ["four stylized peg-doll human figures standing on a rural unpaved path flanked by grass"],
+      "details": "The scene displays four limb-less humanoid characters arranged across a curving dirt road (#83796E) bordered by muted green terrain (#8B986C) with sparse black blade marks and an upper right tree trunk with foliage (#93A64D). From left to right: the first figure is a young woman with a shoulder-length black bob (#1B1B1B), black stud earrings, angled almond eyes, a slight smile stroke, wearing a high-collared warm brown tunic (#745137) over a dark charcoal peg base (#222020). The second figure is a man with combed side-parted black hair (#1B1B1B), wide circular eyes, a black mustache bar above his mouth, dressed in a pale cream vest (#EFE9BF) over a vertically striped blue-and-white tunic (#5A7EB6). The third figure is a laborer man with disheveled dark grey hair (#484344) tied by a brown cloth wrap (#5B4339), chin stubble dots, wide oval eyes, a split-collar brown work vest (#634335), a light grey shoulder cloth (#C6C3BA), and a charcoal base (#353C43). The fourth figure is an elderly woman with silver-grey hair (#78757A) pinned in a low bun, downward-slanting worried eyes, a downturned frown, a dusty mauve-brown blouse (#6A504B) with a left breast pocket line, and a navy-black base (#2B2C35). All characters share extremely pale cream skin (#F2EAE4), possess no noses or limbs, and feature solid black line art (#1A1918) without any cast shadows or directional lighting beneath an overall heavy grain overlay."
+    }
+  ]
+}

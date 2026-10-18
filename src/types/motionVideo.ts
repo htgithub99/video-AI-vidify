@@ -168,7 +168,7 @@ export interface MotionCharacterDesign {
   poses?: Record<string, Record<string, MotionCharacterTransform>>;
   motions?: Record<string, { duration: number; loop?: boolean; events?: MotionSoundEvent[]; tracks: { part: string; keys: (MotionCharacterTransform & { t: number })[] }[] }>;
 }
-export interface MotionGenStyle { outlineColor?: string; outlineWidth?: number; grade?: string; palette?: string[]; notes?: string; outlineSilhouette?: boolean; faceShading?: boolean; }
+export interface MotionGenStyle { outlineColor?: string; outlineWidth?: number; grade?: string; palette?: string[]; notes?: string; outlineSilhouette?: boolean; faceShading?: boolean; framing?: string; }
 export interface MotionGenPreview { file?: string; files?: string[]; issues?: string[]; score?: number; note?: string; at?: string; }
 export interface MotionGenState {
   soundDirectionKey?: string;

@@ -23,6 +23,7 @@ export const MOTION_POSES = {
     { name: "fear", keys: ["afraid", "scared", "frightened", "sợ hãi", "hoảng sợ", "run sợ"], grounded: true },
   ],
   AUTOMATIC: ["idle", "talk"] as string[],
+  LIMBS: { walk: ["legs"], run: ["legs"], sit: ["legs"], kneel: ["legs"], point: ["arms"], wave: ["arms"], raise_hands: ["arms"], hold: ["arms"] } as Record<string, ("arms" | "legs")[]>,
   EXPRESSIONS: ["happy", "sad", "scared", "angry", "surprised", "crying", "serious"],
   LIMB_ANCHORS: { armLeft: "arm_l", armRight: "arm_r", legLeft: "leg_l", legRight: "leg_r", body: "body", head: "head" },
   LIMB_RE: { ARM: /(^|_)(arm|tay|hand)(_|$|l|r)/i, LEG: /(^|_)(leg|chan|thigh|foot)(_|$|l|r)/i, HEAD: /(^|_)(head|dau)(_|$)/i, BODY: /(^|_)(body|torso|chest|than|silhouette)(_|$)/i },

@@ -1,0 +1,69 @@
+{
+  "description": "Flat 2D cartoon illustration with simple rounded geometric shapes, thin uniform dark outlines and two-tone cel shading. Muted, moody palette: warm wood browns and rust red indoors, deep night blues outside, soft cream lamp light. Quiet, melancholic Vietnamese countryside mood with strong lighting contrast: warm glowing lamps, windows and doorways against dark interiors, cool moonlight and low fog outdoors.",
+  "palette": ["#1c1b20", "#2a1c14", "#5c4028", "#94442b", "#f2c4a0", "#d3a080", "#e79a96", "#3b6e9a", "#14223f", "#f5c04a", "#fdf1d6", "#6d7480"],
+  "outlineColor": "#141214",
+  "outlineWidth": 0.012,
+  "kit": {
+    "render": {
+      "mode": "cel",
+      "shadingTones": "2",
+      "outline": "thin uniform dark outline on every shape",
+      "texture": "none, flat fills with soft gradients only in backgrounds",
+      "lighting": "warm point glows from lamps and windows, cool blue moonlight, dark vignette edges, light ground fog outdoors"
+    },
+    "character": {
+      "headToBody": "big heads: about 1:2.5 for children, 1:3 for adults",
+      "headShape": "wide soft oval head, flat chin",
+      "eyes": "small black dot or bead eyes; closed downward arcs for calm or sad moments",
+      "brows": "thin short dark strokes, often slanted sad",
+      "mouth": "short flat line or small dark oval",
+      "nose": "tiny single stroke",
+      "ears": "small round ears, adult women with small gold stud earrings",
+      "hair": "solid charcoal masses: bun with bangs for women, bowl cut for boys",
+      "arms": "short tube arms close to the body",
+      "hands": "simple round mitten hands",
+      "legs": "short straight columns, often hidden by clothing",
+      "body": "simple trapezoid torso with sloped shoulders",
+      "clothing": "plain flat-color everyday Vietnamese clothes: buttoned tunic with patch pocket, striped tee for kids, dark trousers",
+      "skin": "warm beige #f2c4a0 with one darker shade #d3a080, pink blush circles on children",
+      "expressions": "quiet, sad or thoughtful; few strong expressions"
+    },
+    "animals": "round simple animals in the same flat style: black cat with round head, pointed ears, big yellow eyes with slit pupils, white whisker strokes and a curling tail",
+    "background": {
+      "perspective": "flat straight-on side view",
+      "layers": "dark foreground frame, middle plane with characters and buildings, misty background with layered hills or a night sky",
+      "detail": "medium detail: vertical wood planks, simple shelves, barred windows, shop sign boards, tiled roofs",
+      "sky": "smooth gradient, night blue with a bright round moon or grey dusk with mountain silhouettes",
+      "props": "everyday rural objects: oil lamps, ceramic bowls, wooden beds and benches, signboards"
+    },
+    "fx": "soft circular glow halos around lights, light rain streaks, low grey ground fog, moonbeams through windows",
+    "typography": "cream signboards with dark red uppercase Vietnamese lettering and a thin dark border",
+    "camera": "static eye-level framing, centered compositions, framing through doors and windows, mostly medium and wide shots"
+  },
+  "images": [
+    {
+      "name": "style-reference-1",
+      "role": "character",
+      "subjects": ["black cat", "lamp glow"],
+      "details": "black cat sitting in a warm amber radial glow, yellow eyes, white paw, holding a small light, dark brown background"
+    },
+    {
+      "name": "style-reference-2",
+      "role": "character",
+      "subjects": ["older woman", "young boy", "wooden interior"],
+      "details": "woman with charcoal bun, rust buttoned tunic and gold earrings beside a sleepy boy in a blue striped shirt; dark plank wall, barred moonlit window, shelf with bowls, wooden bed"
+    },
+    {
+      "name": "style-reference-3",
+      "role": "scene",
+      "subjects": ["traditional medicine shop", "night street", "mountains"],
+      "details": "wooden shop front with cream signboard, two glowing yellow windows, double wooden door, small side shed, grey misty sky and layered mountains"
+    },
+    {
+      "name": "style-reference-4",
+      "role": "scene",
+      "subjects": ["black cat", "window", "full moon"],
+      "details": "black cat sitting on a wooden sill in front of a window with a deep blue night sky, full moon, light rain and distant hills; dark wooden room"
+    }
+  ]
+}

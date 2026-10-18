@@ -6,6 +6,8 @@
     U = root.MotionEngine.util;
   if (!T) return;
   const DEG = Math.PI / 180;
+  const OUTLINE_METRES = 0.5,
+    OUTLINE_MAX_GROW = 1.8;
   const wobble = (t, rate, seed) => (U.noise(t * rate, seed) - 0.5) * 2;
   GEN.blinking = (t, seed) => {
     const clock = t + seed * MT.FACE_BLINK_PERIOD * 0.37,
@@ -31,7 +33,7 @@
       parts = Object.create(null),
       base = Object.create(null);
     group.add(model);
-    const env = GEN.newBuildEnv({ root: model, materials: definition.materials, shadowBudget: 0 });
+    const env = GEN.newBuildEnv({ root: model, materials: definition.materials, shadowBudget: 0, outlined: (opts.style || {}).outlineWidth > 0, outlineColor: (opts.style || {}).outlineColor });
     for (const part of definition.parts) {
       const object = new T.Group();
       object.name = part.id;
@@ -74,16 +76,19 @@
       model.traverse((object) => {
         if (object.isMesh) meshes.push(object);
       });
+      model.updateMatrixWorld(true);
+      const stroke = Math.min(0.06, style.outlineWidth) * OUTLINE_METRES;
       for (const mesh of meshes) {
         const geometry = mesh.geometry.clone();
         geometry.computeBoundingBox();
         const center = geometry.boundingBox.getCenter(new T.Vector3()),
           size = geometry.boundingBox.getSize(new T.Vector3()),
+          world = mesh.getWorldScale(new T.Vector3()),
           flat = Math.min(size.x, size.y, size.z) < 0.0001,
           material = new T.MeshBasicMaterial({ color: style.outlineColor || MT.VALUE_111111, side: flat ? T.DoubleSide : T.BackSide, toneMapped: false, polygonOffset: flat, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
-          width = Math.min(0.06, style.outlineWidth);
+          grow = (extent, factor) => (extent < 0.0001 ? 1 : Math.min(OUTLINE_MAX_GROW, 1 + (2 * stroke) / Math.max(0.0001, extent * Math.abs(factor || 1))));
         geometry.translate(-center.x, -center.y, -center.z);
-        geometry.scale(1 + width, 1 + width, 1 + width);
+        geometry.scale(grow(size.x, world.x), grow(size.y, world.y), grow(size.z, world.z));
         geometry.translate(center.x, center.y, center.z);
         const outline = new T.Mesh(geometry, material);
         outline.position.copy(mesh.position);
@@ -101,6 +106,13 @@
       bounds() {
         group.updateMatrixWorld(true);
         return new T.Box3().setFromObject(model);
+      },
+      headBounds() {
+        const target = parts[definition.anchors[MT.HEAD]] || parts[MT.HEAD];
+        if (!target) return null;
+        group.updateMatrixWorld(true);
+        const box = new T.Box3().setFromObject(target);
+        return box.isEmpty() ? null : box;
       },
       anchor(name) {
         const target = parts[definition.anchors[name]] || parts[name];

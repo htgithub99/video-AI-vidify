@@ -1,5 +1,6 @@
 (function (root) {
   root.MotionEngineText = {
+    HEADS_TOP_HALF: "heads_top_half",
     LIGHT_TYPE_SEPARATORS_RE: /[\s_-]/g,
     LIGHT_TYPE_SUFFIX_RE: /light$/,
     GEN_COLOR_RE: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i,

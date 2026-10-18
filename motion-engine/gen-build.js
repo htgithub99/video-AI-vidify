@@ -29,7 +29,9 @@
   const blotches = (g, w, h, seed, n, alpha) => {
     const r = rng(seed);
     for (let i = 0; i < n; i++) {
-      const x = r() * w, y = r() * h, rad = 10 + r() * w * 0.18;
+      const x = r() * w,
+        y = r() * h,
+        rad = 10 + r() * w * 0.18;
       const gr = g.createRadialGradient(x, y, 0, x, y, rad);
       const dark = r() > 0.45;
       gr.addColorStop(0, dark ? MT.RGBA_0_0_0_2 + alpha + MT.SYMBOL_17 : MT.RGBA_255_255_255 + alpha * 0.7 + MT.SYMBOL_17);
@@ -95,8 +97,10 @@
       noiseFill(g, w, h, 9, 0.05, 2);
     },
     brick(g, w, h, m) {
-      const rows = m.rows || 8, cols = m.cols || 4;
-      const bh = h / rows, bw = w / cols;
+      const rows = m.rows || 8,
+        cols = m.cols || 4;
+      const bh = h / rows,
+        bw = w / cols;
       const r = rng(21);
       g.fillStyle = m.patternColor || MT.RGBA_220_215_205_0_9;
       g.fillRect(0, 0, w, h);
@@ -140,7 +144,8 @@
       for (let i = 0; i < 14; i++) {
         g.strokeStyle = MT.RGBA_90_90_100 + (0.06 + r() * 0.12).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 0.6 + r() * 2.2;
-        let x = r() * w, y = 0;
+        let x = r() * w,
+          y = 0;
         g.beginPath();
         g.moveTo(x, y);
         while (y < h) {
@@ -186,7 +191,8 @@
         const v = r();
         g.strokeStyle = v > 0.5 ? MT.RGBA_200_230_120 + (0.08 + r() * 0.12).toFixed(3) + MT.SYMBOL_17 : MT.RGBA_0_30_0 + (0.08 + r() * 0.15).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 1;
-        const x = r() * w, y = r() * h;
+        const x = r() * w,
+          y = r() * h;
         g.beginPath();
         g.moveTo(x, y);
         g.lineTo(x + (r() - 0.5) * 4, y - 3 - r() * 7);
@@ -216,7 +222,9 @@
       for (let i = 0; i < 260; i++) {
         g.strokeStyle = MT.RGBA_255_255_255 + (r() * 0.12).toFixed(3) + MT.SYMBOL_17;
         g.lineWidth = 1 + r() * 2;
-        const x = r() * w, y = r() * h, l = 10 + r() * 40;
+        const x = r() * w,
+          y = r() * h,
+          l = 10 + r() * 40;
         g.beginPath();
         g.moveTo(x, y);
         g.quadraticCurveTo(x + l / 2, y - 3, x + l, y);
@@ -248,7 +256,8 @@
       noiseFill(g, w, h, 103, 0.06, 2);
     },
     panels(g, w, h, m) {
-      const cols = m.cols || 4, rows = m.rows || 4;
+      const cols = m.cols || 4,
+        rows = m.rows || 4;
       g.strokeStyle = m.patternColor || MT.RGBA_0_0_0_0_5;
       g.lineWidth = Math.max(3, w / 120);
       for (let i = 0; i <= cols; i++) {
@@ -348,12 +357,17 @@
     return mat;
   };
   const boxUV = (geo, scale) => {
-    const pos = geo.attributes.position, nor = geo.attributes.normal;
+    const pos = geo.attributes.position,
+      nor = geo.attributes.normal;
     if (!pos || !nor) return geo;
     const uv = new Float32Array(pos.count * 2);
     for (let i = 0; i < pos.count; i++) {
-      const nx = Math.abs(nor.getX(i)), ny = Math.abs(nor.getY(i)), nz = Math.abs(nor.getZ(i));
-      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      const nx = Math.abs(nor.getX(i)),
+        ny = Math.abs(nor.getY(i)),
+        nz = Math.abs(nor.getZ(i));
+      const x = pos.getX(i),
+        y = pos.getY(i),
+        z = pos.getZ(i);
       let u, v;
       if (ny >= nx && ny >= nz) {
         u = x;
@@ -389,7 +403,10 @@
   };
   const roundedBox = (w, h, d, r) => {
     const sh = new T.Shape();
-    const x = -w / 2 + r, y = -h / 2 + r, W = w - 2 * r, H = h - 2 * r;
+    const x = -w / 2 + r,
+      y = -h / 2 + r,
+      W = w - 2 * r,
+      H = h - 2 * r;
     sh.moveTo(x, y - r);
     sh.lineTo(x + W, y - r);
     sh.quadraticCurveTo(x + W + r, y - r, x + W + r, y);
@@ -409,10 +426,14 @@
     const pts = n.straight || raw.length < 3 ? raw : new T.CatmullRomCurve3(raw, !!n.closed, MT.CENTRIPETAL).getPoints(Math.max(12, raw.length * 10));
     if (n.fill && pts.length >= 3) return new T.ShapeGeometry(new T.Shape(pts.map((p) => new T.Vector2(p.x, p.y))));
     const loop = n.closed && !n.fill ? [...pts, pts[0]] : pts;
-    const half = n.width / 2, position = [], index = [];
+    const half = n.width / 2,
+      position = [],
+      index = [];
     for (let i = 0; i < loop.length; i++) {
-      const prev = loop[Math.max(0, i - 1)], next = loop[Math.min(loop.length - 1, i + 1)];
-      let dx = next.x - prev.x, dy = next.y - prev.y;
+      const prev = loop[Math.max(0, i - 1)],
+        next = loop[Math.min(loop.length - 1, i + 1)];
+      let dx = next.x - prev.x,
+        dy = next.y - prev.y;
       const len = Math.hypot(dx, dy) || 1;
       dx /= len;
       dy /= len;
@@ -517,7 +538,8 @@
     const tex = new T.CanvasTexture(c);
     tex.colorSpace = T.SRGBColorSpace;
     tex.anisotropy = 8;
-    const h = n.height, w = (h * c.width) / c.height;
+    const h = n.height,
+      w = (h * c.width) / c.height;
     const mat = n.glow ? new T.MeshBasicMaterial({ map: tex, transparent: !n.bg, toneMapped: false }) : new T.MeshStandardMaterial({ map: tex, transparent: !n.bg, roughness: 0.6, emissive: new T.Color(MT.FFFFFF), emissiveMap: tex, emissiveIntensity: 0.25 });
     if (n.glow) mat.color = new T.Color(1.8, 1.8, 1.8);
     const m = new T.Mesh(new T.PlaneGeometry(w, h), mat);
@@ -690,6 +712,45 @@
     o.add(inner);
     return o;
   };
+  const SHELL_VOLUMES = [MT.CAPSULE, MT.SPHERE, MT.CYLINDER, MT.CONE, MT.BOX];
+  const SHELL_FLATS = [MT.DISC, MT.RING];
+  const shellDims = (n) => {
+    const s = Array.isArray(n.scale) ? n.scale : [1, 1, 1];
+    if (n.shape === MT.BOX && Array.isArray(n.size)) return [n.size[0] * s[0], n.size[1] * s[1], n.size[2] * s[2]];
+    const r = Number(n.radius) || 0.5;
+    if (n.shape === MT.SPHERE) return [r * s[0], r * s[1], r * s[2]];
+    if (n.shape === MT.DISC || n.shape === MT.RING) return [r * s[0], r * s[1]];
+    return [r * s[0], (Number(n.height) || 1) * s[1], r * s[2]];
+  };
+  const shellColor = (n, env, inheritedMat) => {
+    const m = n.mat != null ? (typeof n.mat === MT.STRING ? env.materials[n.mat] : n.mat) : inheritedMat;
+    return m && m.color ? new T.Color(m.color) : null;
+  };
+  const shellable = (n, env) => SHELL_VOLUMES.includes(n.shape) || (!!env.outlined && SHELL_FLATS.includes(n.shape));
+  const shellSkip = (list, env, inheritedMat) => {
+    const skip = new Set();
+    if (!Array.isArray(list) || list.length < 2) return skip;
+    const outline = env.outlineColor ? new T.Color(env.outlineColor) : null;
+    const dark = (c) => !!c && (c.r * 0.3 + c.g * 0.59 + c.b * 0.11 < 0.06 || (outline && Math.abs(c.r - outline.r) + Math.abs(c.g - outline.g) + Math.abs(c.b - outline.b) < 0.05));
+    const same = (a, b) => (a || [0, 0, 0]).every((v, i) => Math.abs(v - ((b || [0, 0, 0])[i] || 0)) < 0.5);
+    for (const a of list) {
+      if (!a || !shellable(a, env)) continue;
+      const ca = shellColor(a, env, inheritedMat);
+      if (!dark(ca)) continue;
+      const da = shellDims(a);
+      const hit = list.find((b) => {
+        if (b === a || !b || b.shape !== a.shape || dark(shellColor(b, env, inheritedMat))) return false;
+        const pa = a.pos || [0, 0, 0],
+          pb = b.pos || [0, 0, 0];
+        if (Math.hypot(pa[0] - pb[0], pa[1] - pb[1], pa[2] - pb[2]) > 0.05 || !same(a.rot, b.rot)) return false;
+        const db = shellDims(b);
+        const ratios = da.map((v, i) => (db[i] > 1e-6 ? v / db[i] : 1));
+        return ratios.every((k) => k >= 0.98 && k <= 1.3) && ratios.some((k) => k > 1.01);
+      });
+      if (hit) skip.add(a);
+    }
+    return skip;
+  };
   const build = (n, env, inheritedMat, depth) => {
     if (n.hidden) return null;
     if (depth > 12) return null;
@@ -698,7 +759,9 @@
     if (n.shape === MT.GROUP) {
       o = new T.Group();
       const mdef = n.mat != null ? (typeof n.mat === MT.STRING ? env.materials[n.mat] : n.mat) : inheritedMat;
+      const skip = shellSkip(n.children, env, mdef);
       for (const c of n.children) {
+        if (skip.has(c)) continue;
         const k = build(c, env, mdef, depth + 1);
         if (k) o.add(k);
       }
@@ -706,7 +769,9 @@
       o = new T.Group();
       const list = env.defs[n.ref] || [];
       const mdef = n.tint ? Object.assign({}, env.defaultMat, { color: n.tint }) : n.mat != null ? (typeof n.mat === MT.STRING ? env.materials[n.mat] : n.mat) : inheritedMat;
+      const skip = shellSkip(list, env, mdef);
       for (const c of list) {
+        if (skip.has(c)) continue;
         const k = build(c, env, mdef, depth + 1);
         if (k) o.add(k);
       }
@@ -721,7 +786,8 @@
         for (let j = 0; j < ny; j++)
           for (let k = 0; k < nz; k++) {
             if (n.skip && r() < n.skip) continue;
-            const jx = n.jitter ? (r() - 0.5) * n.jitter : 0, jz = n.jitter ? (r() - 0.5) * n.jitter : 0;
+            const jx = n.jitter ? (r() - 0.5) * n.jitter : 0,
+              jz = n.jitter ? (r() - 0.5) * n.jitter : 0;
             offs.push([i * n.step[0] + jx, j * n.step[1], k * n.step[2] + jz]);
           }
       if (simple && offs.length > 3) {
@@ -769,12 +835,15 @@
     return o;
   };
   GEN.newBuildEnv = (opts) => {
-    const env = { materials: (opts && opts.materials) || {}, defs: (opts && opts.defs) || {}, root: (opts && opts.root) || new T.Group(), matCache: new Map(), disposables: [], animated: [], lights: [], shadowBudget: opts && opts.shadowBudget != null ? opts.shadowBudget : 3, defaultMat: { color: MT.VALUE_9A9A9A, roughness: 0.8, metalness: 0 } };
+    const outline = { outlined: !!(opts && opts.outlined), outlineColor: (opts && opts.outlineColor) || null };
+    const env = { ...outline, materials: (opts && opts.materials) || {}, defs: (opts && opts.defs) || {}, root: (opts && opts.root) || new T.Group(), matCache: new Map(), disposables: [], animated: [], lights: [], shadowBudget: opts && opts.shadowBudget != null ? opts.shadowBudget : 3, defaultMat: { color: MT.VALUE_9A9A9A, roughness: 0.8, metalness: 0 } };
     return env;
   };
   GEN.buildNodes = (nodes, env, parent, inheritedMat) => {
     const target = parent || env.root;
+    const skip = shellSkip(nodes, env, inheritedMat);
     for (const n of nodes || []) {
+      if (skip.has(n)) continue;
       const o = build(n, env, inheritedMat, 0);
       if (o) target.add(o);
     }
@@ -795,7 +864,8 @@
       const k = U.clamp((p - v.start) / Math.max(0.01, v.end - v.start), 0, 1);
       const e = k * k * (3 - 2 * k) * 0.35 + k * 0.65;
       v.o.position.lerpVectors(v.from, v.to, e);
-      const dx = v.to.x - v.from.x, dz = v.to.z - v.from.z;
+      const dx = v.to.x - v.from.x,
+        dz = v.to.z - v.from.z;
       if (dx * dx + dz * dz > MT.TRAVEL_MIN_TURN * MT.TRAVEL_MIN_TURN) v.o.rotation.y = Math.atan2(dx, dz);
     }
   };

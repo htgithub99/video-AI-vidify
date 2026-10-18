@@ -1,0 +1,2656 @@
+{
+  "drawingMode": "2d",
+  "style": {
+    "grade": "neutral",
+    "notes": "A minimalist flat 2D vector animation style with thick uniform black outlines, muted desaturated earth tones and slate greys, and very simple geometric shapes. Characters are faceless-mask-like fig...",
+    "palette": ["#9AA3AB", "#47573B", "#6B4A3A", "#A89F86", "#3B2B1E", "#8B5A3C", "#C9A94F", "#7B6A4F", "#5A6068", "#1C2024", "#0F1424", "#8A8670"],
+    "outlineColor": "#0A0A0A",
+    "outlineWidth": 0.02,
+    "outlineSilhouette": false,
+    "faceShading": false
+  },
+  "cast": {
+    "di_tu": {
+      "materials": {
+        "skin": {
+          "color": "#eef3f6",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "hair": {
+          "color": "#eef3f6",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "top": {
+          "color": "#6b5a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "top_low": {
+          "color": "#4f4230",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "bottom": {
+          "color": "#6b5a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "shoes": {
+          "color": "#6b5a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "accent": {
+          "color": "#6b5a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "line": {
+          "color": "#0a0a0a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        }
+      },
+      "parts": [
+        {
+          "id": "silhouette",
+          "pos": [0, 0, 0],
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, 0.45, -0.02],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.27,
+              "height": 0.5
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, 0.45, 0],
+              "mat": {
+                "color": "#6b5a3a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.25,
+              "height": 0.5
+            },
+            {
+              "shape": "capsule",
+              "name": "top_low",
+              "pos": [0, 0.22, 0.005],
+              "mat": {
+                "color": "#4f4230",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.25,
+              "height": 0.12
+            }
+          ]
+        },
+        {
+          "id": "head",
+          "pos": [0, 0.98, 0],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, -0.01],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.4,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "name": "skin",
+              "pos": [0, 0, 0],
+              "mat": {
+                "color": "#eef3f6",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.38,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "eye_l",
+          "pos": [-0.15, -0.04, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.7, 1.6, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.05,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "eye_r",
+          "pos": [0.15, -0.04, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.7, 1.6, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.05,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "mouth",
+          "pos": [0, -0.2, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.8, 1.4, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.04,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "mouthOpen",
+          "pos": [0, -0.2, 0.02],
+          "visible": false,
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.9, 1.8, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.06,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "arm_l",
+          "pos": [-0.25, 0.68, 0.01],
+          "rot": [0, 0, -8],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, -0.17, -0.005],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.075,
+              "height": 0.28
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, -0.17, 0],
+              "mat": {
+                "color": "#6b5a3a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.062,
+              "height": 0.28
+            }
+          ]
+        },
+        {
+          "id": "arm_r",
+          "pos": [0.25, 0.68, 0.01],
+          "rot": [0, 0, 8],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, -0.17, -0.005],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.075,
+              "height": 0.28
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, -0.17, 0],
+              "mat": {
+                "color": "#6b5a3a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.062,
+              "height": 0.28
+            }
+          ]
+        }
+      ],
+      "anchors": {
+        "body": "silhouette",
+        "head": "head",
+        "arm_l": "arm_l",
+        "arm_r": "arm_r",
+        "base": "silhouette"
+      },
+      "poses": {
+        "idle": {},
+        "sit": {
+          "silhouette": {
+            "pos": [0, 0, 0]
+          },
+          "arm_l": {
+            "rot": [0, 0, -4]
+          },
+          "arm_r": {
+            "rot": [0, 0, 4]
+          }
+        },
+        "fear": {
+          "head": {
+            "rot": [0, 0, -4]
+          },
+          "arm_l": {
+            "rot": [0, 0, -14]
+          },
+          "arm_r": {
+            "rot": [0, 0, 14]
+          }
+        },
+        "bow": {
+          "silhouette": {
+            "rot": [8, 0, 0]
+          },
+          "head": {
+            "rot": [14, 0, 0]
+          }
+        },
+        "talk": {},
+        "hold": {
+          "arm_l": {
+            "rot": [-35, 0, -5]
+          },
+          "arm_r": {
+            "rot": [-35, 0, 5]
+          }
+        }
+      },
+      "motions": {
+        "tremble": {
+          "duration": 1.2,
+          "loop": true,
+          "tracks": [
+            {
+              "part": "silhouette",
+              "keys": [
+                {
+                  "t": 0,
+                  "rot": [0, 0, -1]
+                },
+                {
+                  "t": 0.3,
+                  "rot": [0, 0, 1]
+                },
+                {
+                  "t": 0.6,
+                  "rot": [0, 0, -1]
+                },
+                {
+                  "t": 0.9,
+                  "rot": [0, 0, 1]
+                },
+                {
+                  "t": 1.2,
+                  "rot": [0, 0, -1]
+                }
+              ]
+            }
+          ],
+          "events": []
+        },
+        "slump": {
+          "duration": 2,
+          "loop": false,
+          "tracks": [
+            {
+              "part": "silhouette",
+              "keys": [
+                {
+                  "t": 0,
+                  "rot": [0, 0, 0]
+                },
+                {
+                  "t": 2,
+                  "rot": [16, 0, 0]
+                }
+              ]
+            },
+            {
+              "part": "head",
+              "keys": [
+                {
+                  "t": 0,
+                  "rot": [0, 0, 0]
+                },
+                {
+                  "t": 2,
+                  "rot": [18, 0, 0]
+                }
+              ]
+            }
+          ],
+          "events": []
+        }
+      },
+      "expressions": {
+        "scared": {
+          "eye_l": {
+            "scale": [1.25, 1.35, 1]
+          },
+          "eye_r": {
+            "scale": [1.25, 1.35, 1]
+          },
+          "mouth": {
+            "visible": false
+          },
+          "mouthOpen": {
+            "visible": true
+          }
+        },
+        "sad": {
+          "eye_l": {
+            "scale": [1, 0.85, 1]
+          },
+          "eye_r": {
+            "scale": [1, 0.85, 1]
+          },
+          "mouth": {
+            "scale": [0.8, 0.7, 1]
+          },
+          "head": {
+            "rot": [8, 0, 0]
+          }
+        },
+        "serious": {
+          "mouth": {
+            "scale": [1, 0.8, 1]
+          }
+        },
+        "talk": {
+          "mouth": {
+            "visible": false
+          },
+          "mouthOpen": {
+            "visible": true
+          }
+        },
+        "blink": {
+          "eye_l": {
+            "scale": [1, 0.12, 1]
+          },
+          "eye_r": {
+            "scale": [1, 0.12, 1]
+          }
+        }
+      }
+    },
+    "ong_noi": {
+      "materials": {
+        "skin": {
+          "color": "#eef3f6",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "hair": {
+          "color": "#eef3f6",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "top": {
+          "color": "#5a6068",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "top_low": {
+          "color": "#41464c",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "bottom": {
+          "color": "#5a6068",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "shoes": {
+          "color": "#5a6068",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "accent": {
+          "color": "#41464c",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "line": {
+          "color": "#0a0a0a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        }
+      },
+      "parts": [
+        {
+          "id": "silhouette",
+          "pos": [0, 0, 0],
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, 0.5, -0.02],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.3,
+              "height": 0.56
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, 0.5, 0],
+              "mat": {
+                "color": "#5a6068",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.28,
+              "height": 0.56
+            },
+            {
+              "shape": "capsule",
+              "name": "top_low",
+              "pos": [0, 0.25, 0.005],
+              "mat": {
+                "color": "#41464c",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.28,
+              "height": 0.14
+            }
+          ]
+        },
+        {
+          "id": "head",
+          "pos": [0, 1.1, 0],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, -0.01],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.44,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "name": "skin",
+              "pos": [0, 0, 0],
+              "mat": {
+                "color": "#eef3f6",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.42,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "eye_l",
+          "pos": [-0.17, -0.04, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.7, 1.6, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.055,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "eye_r",
+          "pos": [0.17, -0.04, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.7, 1.6, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.055,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "mouth",
+          "pos": [0, -0.22, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.8, 1.4, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.042,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "mouthOpen",
+          "pos": [0, -0.22, 0.02],
+          "visible": false,
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.9, 1.8, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.065,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "arm_l",
+          "pos": [-0.28, 0.76, 0.01],
+          "rot": [0, 0, -6],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, -0.18, -0.005],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.08,
+              "height": 0.3
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, -0.18, 0],
+              "mat": {
+                "color": "#5a6068",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.066,
+              "height": 0.3
+            }
+          ]
+        },
+        {
+          "id": "arm_r",
+          "pos": [0.28, 0.76, 0.01],
+          "rot": [0, 0, 6],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, -0.18, -0.005],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.08,
+              "height": 0.3
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, -0.18, 0],
+              "mat": {
+                "color": "#5a6068",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.066,
+              "height": 0.3
+            }
+          ]
+        }
+      ],
+      "anchors": {
+        "body": "silhouette",
+        "head": "head",
+        "arm_l": "arm_l",
+        "arm_r": "arm_r",
+        "base": "silhouette"
+      },
+      "poses": {
+        "idle": {},
+        "sit": {
+          "silhouette": {
+            "pos": [0, 0, 0]
+          }
+        },
+        "bow": {
+          "silhouette": {
+            "rot": [6, 0, 0]
+          },
+          "head": {
+            "rot": [18, 0, 0]
+          }
+        },
+        "talk": {},
+        "raise_hands": {
+          "arm_r": {
+            "rot": [0, 0, 150]
+          }
+        },
+        "hold": {
+          "arm_l": {
+            "rot": [-30, 0, -5]
+          },
+          "arm_r": {
+            "rot": [-30, 0, 5]
+          }
+        }
+      },
+      "motions": {
+        "salute": {
+          "duration": 2.5,
+          "loop": false,
+          "tracks": [
+            {
+              "part": "arm_r",
+              "keys": [
+                {
+                  "t": 0,
+                  "rot": [0, 0, 6]
+                },
+                {
+                  "t": 1,
+                  "rot": [0, 0, 145]
+                },
+                {
+                  "t": 2.5,
+                  "rot": [0, 0, 145]
+                }
+              ]
+            },
+            {
+              "part": "head",
+              "keys": [
+                {
+                  "t": 0,
+                  "rot": [0, 0, 0]
+                },
+                {
+                  "t": 1,
+                  "rot": [8, 0, 0]
+                },
+                {
+                  "t": 2.5,
+                  "rot": [8, 0, 0]
+                }
+              ]
+            }
+          ],
+          "events": []
+        },
+        "bow_head": {
+          "duration": 2,
+          "loop": false,
+          "tracks": [
+            {
+              "part": "head",
+              "keys": [
+                {
+                  "t": 0,
+                  "rot": [0, 0, 0]
+                },
+                {
+                  "t": 2,
+                  "rot": [20, 0, 0]
+                }
+              ]
+            }
+          ],
+          "events": []
+        }
+      },
+      "expressions": {
+        "sad": {
+          "eye_l": {
+            "scale": [1, 0.85, 1]
+          },
+          "eye_r": {
+            "scale": [1, 0.85, 1]
+          },
+          "mouth": {
+            "scale": [0.8, 0.7, 1]
+          },
+          "head": {
+            "rot": [8, 0, 0]
+          }
+        },
+        "serious": {
+          "mouth": {
+            "scale": [1, 0.8, 1]
+          }
+        },
+        "scared": {
+          "eye_l": {
+            "scale": [1.2, 1.3, 1]
+          },
+          "eye_r": {
+            "scale": [1.2, 1.3, 1]
+          },
+          "mouth": {
+            "visible": false
+          },
+          "mouthOpen": {
+            "visible": true
+          }
+        },
+        "talk": {
+          "mouth": {
+            "visible": false
+          },
+          "mouthOpen": {
+            "visible": true
+          }
+        },
+        "blink": {
+          "eye_l": {
+            "scale": [1, 0.12, 1]
+          },
+          "eye_r": {
+            "scale": [1, 0.12, 1]
+          }
+        }
+      }
+    },
+    "liet_si_thanh": {
+      "materials": {
+        "skin": {
+          "color": "#eef3f6",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "hair": {
+          "color": "#eef3f6",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "top": {
+          "color": "#7b6a4f",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "top_low": {
+          "color": "#5c4f3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "bottom": {
+          "color": "#7b6a4f",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "shoes": {
+          "color": "#7b6a4f",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "accent": {
+          "color": "#47573b",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "line": {
+          "color": "#0a0a0a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        }
+      },
+      "parts": [
+        {
+          "id": "silhouette",
+          "pos": [0, 0, 0],
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, 0.42, -0.02],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.24,
+              "height": 0.46
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, 0.42, 0],
+              "mat": {
+                "color": "#7b6a4f",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.22,
+              "height": 0.46
+            },
+            {
+              "shape": "capsule",
+              "name": "top_low",
+              "pos": [0, 0.2, 0.005],
+              "mat": {
+                "color": "#5c4f3a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.22,
+              "height": 0.12
+            }
+          ]
+        },
+        {
+          "id": "head",
+          "pos": [0, 0.9, 0],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, -0.01],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.37,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "name": "skin",
+              "pos": [0, 0, 0],
+              "mat": {
+                "color": "#eef3f6",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.35,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "eye_l",
+          "pos": [-0.14, -0.04, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.7, 1.6, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.048,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "eye_r",
+          "pos": [0.14, -0.04, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.7, 1.6, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.048,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "mouth",
+          "pos": [0, -0.19, 0.02],
+          "parent": "head",
+          "nodes": [
+            {
+              "shape": "disc",
+              "name": "line",
+              "pos": [0, 0, 0],
+              "scale": [0.8, 1.4, 1],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.037,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "id": "arm_l",
+          "pos": [-0.22, 0.62, 0.01],
+          "rot": [0, 0, -6],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, -0.16, -0.005],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.07,
+              "height": 0.26
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, -0.16, 0],
+              "mat": {
+                "color": "#7b6a4f",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.058,
+              "height": 0.26
+            }
+          ]
+        },
+        {
+          "id": "arm_r",
+          "pos": [0.22, 0.62, 0.01],
+          "rot": [0, 0, 6],
+          "parent": "silhouette",
+          "nodes": [
+            {
+              "shape": "capsule",
+              "name": "line",
+              "pos": [0, -0.16, -0.005],
+              "mat": {
+                "color": "#0a0a0a",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.07,
+              "height": 0.26
+            },
+            {
+              "shape": "capsule",
+              "name": "top",
+              "pos": [0, -0.16, 0],
+              "mat": {
+                "color": "#7b6a4f",
+                "roughness": 1,
+                "metalness": 0,
+                "unlit": true
+              },
+              "radius": 0.058,
+              "height": 0.26
+            }
+          ]
+        }
+      ],
+      "anchors": {
+        "body": "silhouette",
+        "head": "head",
+        "arm_l": "arm_l",
+        "arm_r": "arm_r",
+        "base": "silhouette"
+      },
+      "poses": {
+        "idle": {},
+        "bow": {
+          "head": {
+            "rot": [14, 0, 0]
+          }
+        },
+        "talk": {}
+      },
+      "motions": {},
+      "expressions": {
+        "serious": {},
+        "sad": {
+          "mouth": {
+            "scale": [0.8, 0.7, 1]
+          },
+          "head": {
+            "rot": [8, 0, 0]
+          }
+        },
+        "talk": {
+          "mouth": {
+            "scale": [1.1, 1.6, 1]
+          }
+        },
+        "blink": {
+          "eye_l": {
+            "scale": [1, 0.12, 1]
+          },
+          "eye_r": {
+            "scale": [1, 0.12, 1]
+          }
+        }
+      }
+    }
+  },
+  "locations": {
+    "san_gach": {
+      "name": "San Gach Va Goc Tre",
+      "interior": false,
+      "time": "night",
+      "materials": {
+        "sky_navy": {
+          "color": "#0f1424",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "sky_band": {
+          "color": "#16203a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "wall": {
+          "color": "#a89f86",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "wall_line": {
+          "color": "#8e866d",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "roof": {
+          "color": "#6b4a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "door": {
+          "color": "#3b2b1e",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "door_dark": {
+          "color": "#1c2024",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "line": {
+          "color": "#0a0a0a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "ground": {
+          "color": "#8b5a3c",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "ground_far": {
+          "color": "#7a4e34",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "tile_line": {
+          "color": "#6f4630",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "patch": {
+          "color": "#c9a94f",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "pit": {
+          "color": "#6b5a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "pit_deep": {
+          "color": "#3b2b1e",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "tree": {
+          "color": "#47573b",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "tree_dark": {
+          "color": "#121a2a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "canteen": {
+          "color": "#a9b0b8",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "bamboo": {
+          "color": "#47573b",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "night_tint": {
+          "color": "#0f1424",
+          "roughness": 1,
+          "metalness": 0,
+          "opacity": 0.55,
+          "unlit": true
+        },
+        "lamp_glow": {
+          "color": "#d5dadf",
+          "roughness": 1,
+          "metalness": 0,
+          "opacity": 0.35,
+          "unlit": true
+        }
+      },
+      "defs": {
+        "doorway": [
+          {
+            "shape": "box",
+            "pos": [0, 1.15, 0],
+            "mat": "line",
+            "size": [1.3, 2.3, 0.06]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 1.15, 0.01],
+            "mat": "door",
+            "size": [1.18, 2.18, 0.07]
+          }
+        ],
+        "poly_tree": [
+          {
+            "shape": "extrude",
+            "pos": [0, 0, 0],
+            "mat": "tree",
+            "points": [
+              [-0.35, 0],
+              [0.35, 0],
+              [0.3, 2.2],
+              [1.5, 3.4],
+              [1.1, 5],
+              [0.5, 6.4],
+              [-0.4, 7.2],
+              [-1.3, 6],
+              [-1.7, 4.4],
+              [-1.4, 3.2],
+              [-0.3, 2.2]
+            ],
+            "depth": 0.1
+          }
+        ],
+        "tile_row": [
+          {
+            "shape": "box",
+            "pos": [0, 0, 0],
+            "mat": "tile_line",
+            "size": [26, 0.02, 0.04]
+          }
+        ]
+      },
+      "nodes": [
+        {
+          "shape": "plane",
+          "name": "sky_backdrop",
+          "pos": [0, 14, -14],
+          "mat": "sky_navy",
+          "size": [80, 30]
+        },
+        {
+          "shape": "box",
+          "name": "horizon_band",
+          "pos": [0, 2.2, -13.5],
+          "mat": "sky_band",
+          "size": [80, 3.2, 0.05]
+        },
+        {
+          "shape": "box",
+          "name": "river_bank_silhouette",
+          "pos": [0, 1.2, -13],
+          "mat": "tree_dark",
+          "size": [80, 0.9, 0.06]
+        },
+        {
+          "shape": "use",
+          "name": "cay_da_goc_vuon",
+          "pos": [-9.5, 0, -9],
+          "scale": [1, 1, 1],
+          "ref": "poly_tree"
+        },
+        {
+          "shape": "use",
+          "name": "tree_right",
+          "pos": [9.5, 0, -9],
+          "scale": [0.01, 1, 1],
+          "ref": "poly_tree"
+        },
+        {
+          "shape": "plane",
+          "name": "painted_ground_far",
+          "pos": [0, 0.01, -4],
+          "rot": [-90, 0, 0],
+          "mat": "ground_far",
+          "size": [60, 14]
+        },
+        {
+          "shape": "plane",
+          "name": "painted_ground",
+          "pos": [0, 0.02, 6],
+          "rot": [-90, 0, 0],
+          "mat": "ground",
+          "size": [60, 22]
+        },
+        {
+          "shape": "repeat",
+          "name": "tile_rows",
+          "pos": [0, 0.03, -3],
+          "count": [1, 1, 12],
+          "step": [0, 0, 1.2],
+          "node": {
+            "shape": "box",
+            "pos": [0, 0, 0],
+            "mat": "tile_line",
+            "size": [40, 0.02, 0.05]
+          }
+        },
+        {
+          "shape": "repeat",
+          "name": "tile_cols",
+          "pos": [-12, 0.03, 4],
+          "count": [25, 1, 1],
+          "step": [1, 0, 0],
+          "node": {
+            "shape": "box",
+            "pos": [0, 0, 0],
+            "mat": "tile_line",
+            "size": [0.05, 0.02, 16]
+          }
+        },
+        {
+          "shape": "group",
+          "name": "nha_ba_gian",
+          "pos": [0, 0, -3.2],
+          "children": [
+            {
+              "shape": "box",
+              "name": "wall_outline",
+              "pos": [0, 1.6, -0.03],
+              "mat": "line",
+              "size": [12.2, 3.2, 0.1]
+            },
+            {
+              "shape": "box",
+              "name": "wall",
+              "pos": [0, 1.6, 0],
+              "mat": "wall",
+              "size": [12, 3.1, 0.1]
+            },
+            {
+              "shape": "repeat",
+              "pos": [0, 0.5, 0.06],
+              "count": [1, 5, 1],
+              "step": [0, 0.55, 0],
+              "node": {
+                "shape": "box",
+                "pos": [0, 0, 0],
+                "mat": "wall_line",
+                "size": [11.6, 0.02, 0.02]
+              }
+            },
+            {
+              "shape": "extrude",
+              "name": "roof_outline",
+              "pos": [0, 0, 0.05],
+              "mat": "line",
+              "points": [
+                [-6.9, 3],
+                [6.9, 3],
+                [5.4, 4.5],
+                [-5.4, 4.5]
+              ],
+              "depth": 0.9
+            },
+            {
+              "shape": "extrude",
+              "name": "roof",
+              "pos": [0, 0, 0.07],
+              "mat": "roof",
+              "points": [
+                [-6.75, 3.05],
+                [6.75, 3.05],
+                [5.3, 4.4],
+                [-5.3, 4.4]
+              ],
+              "depth": 0.95
+            },
+            {
+              "shape": "use",
+              "pos": [-3.6, 0, 0.1],
+              "ref": "doorway"
+            },
+            {
+              "shape": "use",
+              "pos": [0, 0, 0.1],
+              "ref": "doorway"
+            },
+            {
+              "shape": "use",
+              "pos": [3.6, 0, 0.1],
+              "ref": "doorway"
+            }
+          ]
+        },
+        {
+          "shape": "group",
+          "name": "ho_dat_goc_tre",
+          "pos": [4.6, 0, 2],
+          "children": [
+            {
+              "shape": "disc",
+              "pos": [0, 0.035, 0],
+              "rot": [-90, 0, 0],
+              "mat": "line",
+              "radius": 1.55,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "pos": [0, 0.04, 0],
+              "rot": [-90, 0, 0],
+              "mat": "patch",
+              "radius": 1.5,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "pos": [0, 0.05, 0],
+              "rot": [-90, 0, 0],
+              "mat": "line",
+              "radius": 0.95,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "pos": [0, 0.055, 0],
+              "rot": [-90, 0, 0],
+              "mat": "pit",
+              "radius": 0.9,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "pos": [0, 0.06, 0],
+              "rot": [-90, 0, 0],
+              "mat": "pit_deep",
+              "radius": 0.5,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "shape": "group",
+          "name": "ho_khai_quat",
+          "pos": [-4.4, 0, 2.6],
+          "children": [
+            {
+              "shape": "box",
+              "pos": [0, 0.035, 0],
+              "mat": "line",
+              "size": [1.7, 0.02, 1.1]
+            },
+            {
+              "shape": "box",
+              "pos": [0, 0.045, 0],
+              "mat": "pit",
+              "size": [1.6, 0.02, 1]
+            },
+            {
+              "shape": "box",
+              "pos": [0, 0.055, 0],
+              "mat": "pit_deep",
+              "size": [1.2, 0.02, 0.7]
+            },
+            {
+              "shape": "group",
+              "name": "bi_dong_nhom",
+              "pos": [0.1, 0.07, 0],
+              "children": [
+                {
+                  "shape": "box",
+                  "pos": [0, 0, 0],
+                  "rot": [0, 20, 0],
+                  "mat": "line",
+                  "size": [0.3, 0.01, 0.46]
+                },
+                {
+                  "shape": "box",
+                  "pos": [0, 0.005, 0],
+                  "rot": [0, 20, 0],
+                  "mat": "canteen",
+                  "size": [0.26, 0.012, 0.42]
+                },
+                {
+                  "shape": "cylinder",
+                  "pos": [0.04, 0.012, -0.17],
+                  "mat": "line",
+                  "radius": 0.05,
+                  "height": 0.012,
+                  "segments": 24
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "shape": "group",
+          "name": "san_gach_tau",
+          "pos": [0, 0, 0],
+          "children": [
+            {
+              "shape": "box",
+              "name": "bamboo_clump_stub",
+              "pos": [7.4, 0.45, -1.5],
+              "mat": "bamboo",
+              "size": [0.12, 0.9, 0.05]
+            },
+            {
+              "shape": "box",
+              "pos": [7.7, 0.6, -1.5],
+              "rot": [0, 0, 6],
+              "mat": "bamboo",
+              "size": [0.1, 1.2, 0.05]
+            }
+          ]
+        },
+        {
+          "shape": "box",
+          "name": "night_overlay",
+          "pos": [0, 5, -2.8],
+          "mat": "night_tint",
+          "noShadow": true,
+          "size": [40, 14, 0.02]
+        },
+        {
+          "shape": "light",
+          "type": "ambient",
+          "color": "#3a4a6a",
+          "intensity": 1.2
+        },
+        {
+          "shape": "light",
+          "type": "hemi",
+          "color": "#5a6a8a",
+          "intensity": 0.6,
+          "ground": "#3a3530"
+        },
+        {
+          "shape": "light",
+          "type": "point",
+          "color": "#d5dadf",
+          "intensity": 2.5,
+          "pos": [-4.4, 1.6, 3.6],
+          "distance": 9,
+          "flicker": 0.15
+        },
+        {
+          "shape": "light",
+          "type": "spot",
+          "color": "#8a9ab8",
+          "intensity": 1.2,
+          "pos": [0, 6, 8],
+          "distance": 30,
+          "target": [0, 0, 2],
+          "angle": 55,
+          "penumbra": 0.8
+        }
+      ],
+      "ground": {
+        "size": [80, 80],
+        "mat": {
+          "color": "#5d6056",
+          "roughness": 0.92,
+          "pattern": "dirt"
+        },
+        "none": true
+      },
+      "sky": {
+        "top": "#0f1424",
+        "horizon": "#0f1424",
+        "clouds": 0.3,
+        "stars": false,
+        "city": 0
+      },
+      "fog": {
+        "color": "#0f1424",
+        "density": 0.002
+      },
+      "exposure": 1,
+      "ambient": 1.1,
+      "marks": {
+        "stand_center": [0, 3.2],
+        "stand_left": [-2.6, 3.4],
+        "stand_right": [2.6, 3.4],
+        "stand_pit_left": [2.9, 3.6],
+        "stand_pit_edge": [4.6, 3.9],
+        "stand_dig": [-4.4, 3.9],
+        "stand_altar_a": [-0.6, 3.4],
+        "stand_altar_b": [0.6, 3.4],
+        "stand_bank": [0, 4.2]
+      },
+      "stage": {
+        "center": [0, 3.2],
+        "size": [12, 5]
+      },
+      "camera": {
+        "pos": [0, 1.6, 14],
+        "target": [0, 1.3, 0],
+        "fov": 38
+      }
+    },
+    "gian_nha_tren": {
+      "name": "Gian Tho Nha Tren",
+      "interior": true,
+      "time": "interior_dark",
+      "materials": {
+        "wall": {
+          "color": "#1c2024",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "wall_panel": {
+          "color": "#14181c",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "wall_seam": {
+          "color": "#2a3036",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "beam": {
+          "color": "#111418",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "line": {
+          "color": "#0a0a0a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "floor": {
+          "color": "#2a1e1c",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "floor_line": {
+          "color": "#1f1614",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "altar_wood": {
+          "color": "#3b2b1e",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "altar_top": {
+          "color": "#4a3626",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "bench_wood": {
+          "color": "#3b2b1e",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "brass": {
+          "color": "#c9a94f",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "canteen": {
+          "color": "#a9b0b8",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "canteen_dark": {
+          "color": "#8a9199",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "canteen_text": {
+          "color": "#3a3f45",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "backdrop_slate": {
+          "color": "#5a6068",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "lamp_body": {
+          "color": "#6b4a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "lamp_glass": {
+          "color": "#d5dadf",
+          "roughness": 1,
+          "metalness": 0,
+          "opacity": 0.8,
+          "unlit": true
+        },
+        "smoke": {
+          "color": "#a9b0b8",
+          "roughness": 1,
+          "metalness": 0,
+          "opacity": 0.35,
+          "unlit": true
+        },
+        "incense": {
+          "color": "#6b4a3a",
+          "roughness": 1,
+          "metalness": 0,
+          "unlit": true
+        },
+        "night_tint": {
+          "color": "#0f1424",
+          "roughness": 1,
+          "metalness": 0,
+          "opacity": 0.35,
+          "unlit": true
+        }
+      },
+      "defs": {
+        "ban_tho_go": [
+          {
+            "shape": "box",
+            "pos": [0, 0.95, 0],
+            "mat": "line",
+            "size": [2.04, 0.04, 0.64]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.96, 0.01],
+            "mat": "altar_top",
+            "size": [2, 0.08, 0.6]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.45, 0],
+            "mat": "line",
+            "size": [2.04, 0.9, 0.64]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.45, 0.015],
+            "mat": "altar_wood",
+            "size": [1.96, 0.86, 0.6]
+          },
+          {
+            "shape": "box",
+            "pos": [-0.5, 0.45, 0.33],
+            "mat": "line",
+            "size": [0.9, 0.5, 0.02]
+          },
+          {
+            "shape": "box",
+            "pos": [-0.5, 0.45, 0.335],
+            "mat": "altar_top",
+            "size": [0.84, 0.44, 0.02]
+          },
+          {
+            "shape": "box",
+            "pos": [0.5, 0.45, 0.33],
+            "mat": "line",
+            "size": [0.9, 0.5, 0.02]
+          },
+          {
+            "shape": "box",
+            "pos": [0.5, 0.45, 0.335],
+            "mat": "altar_top",
+            "size": [0.84, 0.44, 0.02]
+          }
+        ],
+        "ly_nuoc_dong": [
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.05, 0],
+            "mat": "line",
+            "radius": 0.065,
+            "radiusTop": 0.065,
+            "radiusBottom": 0.045,
+            "height": 0.1,
+            "segments": 32
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.052, 0],
+            "mat": "brass",
+            "radius": 0.058,
+            "radiusTop": 0.058,
+            "radiusBottom": 0.04,
+            "height": 0.1,
+            "segments": 32
+          }
+        ],
+        "den_dau": [
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.02, 0],
+            "mat": "line",
+            "radius": 0.07,
+            "height": 0.04,
+            "segments": 32
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.025, 0],
+            "mat": "lamp_body",
+            "radius": 0.05,
+            "height": 0.04,
+            "segments": 32
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.14, 0],
+            "mat": "line",
+            "radius": 0.045,
+            "radiusTop": 0.03,
+            "radiusBottom": 0.055,
+            "height": 0.2,
+            "segments": 32
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.14, 0],
+            "mat": "lamp_glass",
+            "radius": 0.038,
+            "radiusTop": 0.025,
+            "radiusBottom": 0.048,
+            "height": 0.2,
+            "segments": 32
+          }
+        ],
+        "bat_huong": [
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.035, 0],
+            "mat": "line",
+            "radius": 0.07,
+            "radiusTop": 0.07,
+            "radiusBottom": 0.05,
+            "height": 0.07,
+            "segments": 32
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.037, 0],
+            "mat": "brass",
+            "radius": 0.06,
+            "radiusTop": 0.06,
+            "radiusBottom": 0.042,
+            "height": 0.07,
+            "segments": 32
+          },
+          {
+            "shape": "box",
+            "pos": [-0.02, 0.17, 0],
+            "mat": "incense",
+            "size": [0.008, 0.2, 0.008]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.17, 0],
+            "mat": "incense",
+            "size": [0.008, 0.2, 0.008]
+          },
+          {
+            "shape": "box",
+            "pos": [0.02, 0.17, 0],
+            "mat": "incense",
+            "size": [0.008, 0.2, 0.008]
+          }
+        ],
+        "bi_dong": [
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.13, 0],
+            "rot": [90, 0, 0],
+            "mat": "line",
+            "radius": 0.13,
+            "height": 0.22,
+            "segments": 48
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.13, 0.005],
+            "rot": [90, 0, 0],
+            "mat": "canteen",
+            "radius": 0.115,
+            "height": 0.2,
+            "segments": 48
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.27, 0],
+            "mat": "line",
+            "radius": 0.04,
+            "height": 0.05,
+            "segments": 24
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0.272, 0],
+            "mat": "canteen_dark",
+            "radius": 0.032,
+            "height": 0.05,
+            "segments": 24
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.17, 0.112],
+            "mat": "canteen_text",
+            "size": [0.12, 0.012, 0.012]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.13, 0.112],
+            "mat": "canteen_text",
+            "size": [0.09, 0.012, 0.012]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.09, 0.112],
+            "mat": "canteen_text",
+            "size": [0.1, 0.012, 0.012]
+          }
+        ],
+        "bi_dong_khac_chu": [
+          {
+            "shape": "cylinder",
+            "pos": [0, 0, 0],
+            "rot": [90, 0, 0],
+            "mat": "line",
+            "radius": 0.62,
+            "height": 0.1,
+            "segments": 64
+          },
+          {
+            "shape": "cylinder",
+            "pos": [0, 0, 0.01],
+            "rot": [90, 0, 0],
+            "mat": "canteen",
+            "radius": 0.58,
+            "height": 0.1,
+            "segments": 64
+          },
+          {
+            "shape": "ring",
+            "pos": [0, 0, 0.065],
+            "mat": "canteen_dark",
+            "radius": 0.5,
+            "inner": 0.47
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.66, 0],
+            "mat": "line",
+            "size": [0.3, 0.14, 0.09]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.66, 0.005],
+            "mat": "canteen_dark",
+            "size": [0.26, 0.12, 0.09]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.12, 0.07],
+            "mat": "canteen_text",
+            "size": [0.7, 0.07, 0.01]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0, 0.07],
+            "mat": "canteen_text",
+            "size": [0.5, 0.07, 0.01]
+          },
+          {
+            "shape": "box",
+            "pos": [0, -0.12, 0.07],
+            "mat": "canteen_text",
+            "size": [0.6, 0.07, 0.01]
+          }
+        ],
+        "ghe_bang": [
+          {
+            "shape": "box",
+            "pos": [0, 0.44, 0],
+            "mat": "line",
+            "size": [1.64, 0.06, 0.44]
+          },
+          {
+            "shape": "box",
+            "pos": [0, 0.44, 0.01],
+            "mat": "bench_wood",
+            "size": [1.6, 0.04, 0.4]
+          },
+          {
+            "shape": "box",
+            "pos": [-0.7, 0.21, 0],
+            "mat": "line",
+            "size": [0.1, 0.42, 0.34]
+          },
+          {
+            "shape": "box",
+            "pos": [-0.7, 0.21, 0.01],
+            "mat": "bench_wood",
+            "size": [0.06, 0.4, 0.3]
+          },
+          {
+            "shape": "box",
+            "pos": [0.7, 0.21, 0],
+            "mat": "line",
+            "size": [0.1, 0.42, 0.34]
+          },
+          {
+            "shape": "box",
+            "pos": [0.7, 0.21, 0.01],
+            "mat": "bench_wood",
+            "size": [0.06, 0.4, 0.3]
+          }
+        ]
+      },
+      "nodes": [
+        {
+          "shape": "box",
+          "name": "floor",
+          "pos": [0, -0.05, 0],
+          "mat": "floor",
+          "size": [14, 0.1, 10]
+        },
+        {
+          "shape": "repeat",
+          "name": "floor_lines",
+          "pos": [0, 0.005, -4.5],
+          "count": [1, 1, 9],
+          "step": [0, 0, 1.1],
+          "node": {
+            "shape": "box",
+            "pos": [0, 0, 0],
+            "mat": "floor_line",
+            "size": [14, 0.01, 0.03]
+          }
+        },
+        {
+          "shape": "box",
+          "name": "vach_go_nha_tren_outline",
+          "pos": [0, 2.1, -3.02],
+          "mat": "line",
+          "size": [14.2, 4.2, 0.1]
+        },
+        {
+          "shape": "box",
+          "name": "vach_go_nha_tren",
+          "pos": [0, 2.05, -3],
+          "mat": "wall",
+          "size": [14, 4.1, 0.1]
+        },
+        {
+          "shape": "repeat",
+          "name": "wall_seams",
+          "pos": [-6, 1.85, -2.93],
+          "count": [13, 1, 1],
+          "step": [1, 0, 0],
+          "node": {
+            "shape": "box",
+            "pos": [0, 0, 0],
+            "mat": "wall_seam",
+            "size": [0.03, 3.6, 0.02]
+          }
+        },
+        {
+          "shape": "box",
+          "name": "window_panel_1",
+          "pos": [3.2, 2, -2.92],
+          "mat": "wall_panel",
+          "size": [0.9, 1.9, 0.04]
+        },
+        {
+          "shape": "box",
+          "name": "window_panel_2",
+          "pos": [4.3, 2, -2.92],
+          "mat": "wall_panel",
+          "size": [0.9, 1.9, 0.04]
+        },
+        {
+          "shape": "box",
+          "name": "window_panel_3",
+          "pos": [5.4, 2, -2.92],
+          "mat": "wall_panel",
+          "size": [0.9, 1.9, 0.04]
+        },
+        {
+          "shape": "box",
+          "name": "horizontal_beam_outline",
+          "pos": [0, 3.75, -2.9],
+          "mat": "line",
+          "size": [14.2, 0.5, 0.14]
+        },
+        {
+          "shape": "box",
+          "name": "horizontal_beam",
+          "pos": [0, 3.75, -2.88],
+          "mat": "beam",
+          "size": [14, 0.44, 0.14]
+        },
+        {
+          "shape": "box",
+          "name": "wall_left",
+          "pos": [-7, 2.05, 2],
+          "mat": "wall",
+          "size": [0.1, 4.1, 10]
+        },
+        {
+          "shape": "box",
+          "name": "wall_right",
+          "pos": [7, 2.05, 2],
+          "mat": "wall",
+          "size": [0.1, 4.1, 10]
+        },
+        {
+          "shape": "box",
+          "name": "slate_backdrop",
+          "pos": [0, 1.2, -2.85],
+          "mat": "backdrop_slate",
+          "size": [3.6, 2.2, 0.04]
+        },
+        {
+          "shape": "use",
+          "name": "ban_tho_gia_dinh",
+          "pos": [0, 0, -2.2],
+          "ref": "ban_tho_go"
+        },
+        {
+          "shape": "use",
+          "name": "ly_nuoc",
+          "pos": [-0.55, 1, -2.1],
+          "ref": "ly_nuoc_dong"
+        },
+        {
+          "shape": "use",
+          "name": "den_dau_left",
+          "pos": [-0.85, 1, -2.2],
+          "ref": "den_dau"
+        },
+        {
+          "shape": "use",
+          "name": "bat_huong",
+          "pos": [0.55, 1, -2.1],
+          "ref": "bat_huong"
+        },
+        {
+          "shape": "use",
+          "name": "bi_dong_ky_vat",
+          "pos": [0, 1, -2],
+          "ref": "bi_dong"
+        },
+        {
+          "shape": "group",
+          "name": "incense_smoke",
+          "pos": [0.55, 0, -2.1],
+          "children": [
+            {
+              "shape": "disc",
+              "pos": [0.01, 1.45, 0.02],
+              "mat": "smoke",
+              "radius": 0.05,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "pos": [-0.02, 1.62, 0.02],
+              "mat": "smoke",
+              "radius": 0.07,
+              "segments": 32
+            },
+            {
+              "shape": "disc",
+              "pos": [0.03, 1.82, 0.02],
+              "mat": "smoke",
+              "radius": 0.09,
+              "segments": 32
+            }
+          ]
+        },
+        {
+          "shape": "use",
+          "name": "ghe_bang",
+          "pos": [0, 0, 1.2],
+          "ref": "ghe_bang"
+        },
+        {
+          "shape": "group",
+          "name": "bi_dong_insert",
+          "pos": [0, 1.2, -3.5],
+          "children": [
+            {
+              "shape": "use",
+              "name": "bi_dong_khac_chu",
+              "pos": [0, 0, 0],
+              "ref": "bi_dong_khac_chu"
+            }
+          ]
+        },
+        {
+          "shape": "box",
+          "name": "night_overlay",
+          "pos": [0, 2, -2.7],
+          "mat": "night_tint",
+          "noShadow": true,
+          "size": [16, 6, 0.02]
+        },
+        {
+          "shape": "light",
+          "type": "ambient",
+          "color": "#3a4048",
+          "intensity": 1
+        },
+        {
+          "shape": "light",
+          "type": "point",
+          "color": "#d5dadf",
+          "intensity": 2.2,
+          "pos": [-0.85, 1.4, -1.7],
+          "distance": 7,
+          "flicker": 0.12
+        },
+        {
+          "shape": "light",
+          "type": "spot",
+          "color": "#8a94a0",
+          "intensity": 1.3,
+          "pos": [0, 3.4, 6],
+          "distance": 30,
+          "target": [0, 1.2, 0],
+          "angle": 50,
+          "penumbra": 0.9
+        },
+        {
+          "shape": "light",
+          "type": "hemi",
+          "color": "#5a6068",
+          "intensity": 0.5,
+          "ground": "#3a3530"
+        }
+      ],
+      "ground": {
+        "size": [80, 80],
+        "mat": {
+          "color": "#6d6a66",
+          "roughness": 0.92,
+          "pattern": "concrete"
+        },
+        "none": true
+      },
+      "sky": {
+        "clouds": 0.3
+      },
+      "fog": {
+        "color": "#1c2024",
+        "density": 0.002
+      },
+      "background": "#1c2024",
+      "exposure": 1,
+      "ambient": 1.2,
+      "marks": {
+        "stand_center": [0, 1],
+        "stand_left": [-1.2, 1],
+        "stand_right": [1.2, 1],
+        "stand_altar_left": [-1, -0.8],
+        "stand_altar_right": [1, -0.8],
+        "seat_bench_left": [-0.45, 1.2],
+        "seat_bench_right": [0.45, 1.2],
+        "stand_facing_left": [-1, 0.9],
+        "stand_facing_right": [1, 0.9]
+      },
+      "stage": {
+        "center": [0, 0.8],
+        "size": [8, 5]
+      },
+      "camera": {
+        "pos": [0, 1.5, 9],
+        "target": [0, 1.3, 0.5],
+        "fov": 36
+      }
+    }
+  },
+  "staging": {
+    "c1_b3": {
+      "location": "gian_nha_tren",
+      "time": "interior_dark",
+      "actors": [
+        {
+          "cast": "di_tu",
+          "action": "bow",
+          "at": [-0.45, 1.2],
+          "face": 90,
+          "expression": "sad",
+          "talk": [0.22, 0.92]
+        },
+        {
+          "cast": "ong_noi",
+          "action": "sit",
+          "at": [0.45, 1.2],
+          "face": -90,
+          "expression": "serious"
+        }
+      ],
+      "props": [],
+      "hide": ["bi_dong_insert"],
+      "cameras": [
+        {
+          "shot": "close",
+          "move": "dolly_in",
+          "amount": 0.3,
+          "angle": 0,
+          "fov": 32,
+          "at": 0,
+          "pos": [0, 1.3, 3.8],
+          "target": [0, 1.1, 1.2],
+          "focus": "di_tu"
+        }
+      ],
+      "camera": {
+        "shot": "close",
+        "move": "dolly_in",
+        "amount": 0.3,
+        "angle": 0,
+        "fov": 32,
+        "at": 0,
+        "pos": [0, 1.3, 3.8],
+        "target": [0, 1.1, 1.2],
+        "focus": "di_tu"
+      },
+      "weather": "none",
+      "soundEvents": [
+        {
+          "id": "s_altar_hum",
+          "kind": "room",
+          "layer": "ambience",
+          "at": 0,
+          "duration": 9.5,
+          "anchor": "beat",
+          "camera": 1,
+          "description": "khong gian im ang u uat trong gian nha tho",
+          "source": "visible",
+          "gainDb": -24,
+          "pan": 0
+        },
+        {
+          "id": "s_water_cup",
+          "kind": "glass",
+          "layer": "action",
+          "at": 0.28,
+          "duration": 1.1,
+          "anchor": "beat",
+          "camera": 1,
+          "description": "tieng ly nuoc dong cham nhe xuong mat ban go",
+          "source": "visible",
+          "prop": "ly_nuoc",
+          "gainDb": -14,
+          "pan": -0.3
+        }
+      ],
+      "soundSilence": false,
+      "soundDirected": true
+    },
+    "c1_b4": {
+      "location": "gian_nha_tren",
+      "time": "interior_dark",
+      "actors": [
+        {
+          "cast": "ong_noi",
+          "action": "salute",
+          "at": [0, 1],
+          "face": 0,
+          "expression": "sad",
+          "talk": [0.51, 0.97]
+        }
+      ],
+      "props": [],
+      "hide": ["ghe_bang", "bi_dong_insert"],
+      "cameras": [
+        {
+          "shot": "medium",
+          "move": "dolly_in",
+          "amount": 0.4,
+          "angle": 0,
+          "fov": 32,
+          "at": 0,
+          "pos": [0, 1.3, 3.2],
+          "target": [0, 1.15, 1],
+          "focus": "ong_noi"
+        }
+      ],
+      "camera": {
+        "shot": "medium",
+        "move": "dolly_in",
+        "amount": 0.4,
+        "angle": 0,
+        "fov": 32,
+        "at": 0,
+        "pos": [0, 1.3, 3.2],
+        "target": [0, 1.15, 1],
+        "focus": "ong_noi"
+      },
+      "weather": "none",
+      "soundEvents": [
+        {
+          "id": "snd_creak_wood",
+          "kind": "creak",
+          "layer": "action",
+          "at": 0.05,
+          "duration": 1.4,
+          "anchor": "beat",
+          "camera": 1,
+          "description": "wooden floor creaking under kneeling motion",
+          "source": "visible",
+          "actor": "ong_noi",
+          "gainDb": -18,
+          "pan": 0
+        },
+        {
+          "id": "snd_night_drone",
+          "kind": "night",
+          "layer": "ambience",
+          "at": 0,
+          "duration": 6.9,
+          "anchor": "beat",
+          "camera": 1,
+          "description": "low ominous nocturnal room resonance",
+          "source": "offscreen",
+          "gainDb": -22,
+          "pan": 0
+        }
+      ],
+      "soundSilence": false,
+      "soundDirected": true
+    },
+    "c1_b7": {
+      "location": "san_gach",
+      "time": "night",
+      "actors": [
+        {
+          "cast": "ong_noi",
+          "action": "bow_head",
+          "at": [0, 4.2],
+          "face": 180,
+          "expression": "sad"
+        }
+      ],
+      "props": [],
+      "hide": ["san_gach_tau", "ho_khai_quat"],
+      "cameras": [
+        {
+          "shot": "wide",
+          "move": "static",
+          "amount": 0.3,
+          "angle": 0,
+          "fov": 42,
+          "at": 0,
+          "pos": [0, 1.6, 13.5],
+          "target": [0, 1.3, 0],
+          "focus": "ong_noi"
+        }
+      ],
+      "camera": {
+        "shot": "wide",
+        "move": "static",
+        "amount": 0.3,
+        "angle": 0,
+        "fov": 42,
+        "at": 0,
+        "pos": [0, 1.6, 13.5],
+        "target": [0, 1.3, 0],
+        "focus": "ong_noi"
+      },
+      "weather": "none",
+      "soundEvents": [
+        {
+          "id": "snd_c1_b7_night",
+          "kind": "night",
+          "layer": "ambience",
+          "at": 0,
+          "duration": 9.1,
+          "anchor": "beat",
+          "camera": 1,
+          "description": "quiet nocturnal riverbank wind and distant cicadas",
+          "source": "offscreen",
+          "gainDb": -18,
+          "pan": 0
+        },
+        {
+          "id": "snd_c1_b7_river",
+          "kind": "water",
+          "layer": "ambience",
+          "at": 0.05,
+          "duration": 8.8,
+          "anchor": "beat",
+          "camera": 1,
+          "description": "subtle slow river current lapping against the far bank",
+          "source": "visible",
+          "gainDb": -22,
+          "pan": 0
+        }
+      ],
+      "soundSilence": false,
+      "soundDirected": true
+    }
+  }
+}

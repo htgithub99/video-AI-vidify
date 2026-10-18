@@ -8,7 +8,7 @@ import type { MotionAiExecution } from "../../types/motionVideo.js";
 import { resolveMotionSceneExecution } from "../../lib/motionSceneAi.js";
 import { motionRoomBlockedMs, resetMotionAiRoom } from "./motionStoryService.js";
 export interface MotionDrawTurn { provider: string; model: string; turn: number; turns: number; total: number; }
-export interface MotionDrawTaskOptions<T> { task: string; exec: MotionAiExecution; signal?: AbortSignal; log: (s: string) => void; attempt: (exec: MotionAiExecution, turn: MotionDrawTurn) => Promise<T | undefined>; maxAttempts?: number; retryDelayMs?: number; }
+export interface MotionDrawTaskOptions<T> { task: string; exec: MotionAiExecution; signal?: AbortSignal; log: (s: string) => void; attempt: (exec: MotionAiExecution, turn: MotionDrawTurn) => Promise<T | undefined>; maxAttempts?: number; retryDelayMs?: number; canAttempt?: () => boolean; }
 const cancelled = (signal?: AbortSignal): Error => (signal?.reason instanceof Error ? signal.reason : new Error(MOTION_TEXT_CANCELLED));
 const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -44,6 +44,7 @@ export const runMotionDrawTask = async <T>(o: MotionDrawTaskOptions<T>): Promise
       if (total) o.log(L.SWITCH(o.task, routes[(step + routes.length - 1) % routes.length].provider, route.provider));
       for (let turn = 1; turn <= route.turns; turn++) {
         if (o.signal?.aborted) throw cancelled(o.signal);
+        if (o.canAttempt && !o.canAttempt()) throw new Error(L.GAVE_UP(o.task, total));
         const blocked = motionRoomBlockedMs(route.provider);
         if (blocked > 0) {
           const wait = Math.min(blocked, MOTION_SCENE_AI.BLOCKED_WAIT_MS);

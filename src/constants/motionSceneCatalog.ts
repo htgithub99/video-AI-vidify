@@ -147,11 +147,13 @@ export const MOTION_CHARACTER_VARIANT = {
   COLOUR: (role: string, colour: string): string => `${role} ${colour}`,
   JOIN: ", ",
 } as const;
+export const motionCharacterSchema = (o: { hair: boolean; clothing: boolean; accessories: boolean }): string =>
+  `MATERIAL NAMES (needed so the drawing can be reused and recoloured later): give materials these exact names when the character has them: "skin"${o.hair ? ', "hair"' : ""}${o.clothing ? ', "top" (shirt/blouse/dress/robe/jacket), "bottom" (trousers/skirt/shorts), "shoes", "accent" (scarf/hat/belt/bag)' : ', "body" (the single body colour of this style)'}, plus any extra names you need.${o.accessories ? ' Optionally add 1-2 hidden accessory parts with ids starting "opt_" (e.g. opt_hat, opt_glasses, opt_beard, opt_scarf) drawn in place with "visible":false.' : ""}`;
 export const MOTION_SCENE_CATALOG_PROMPT = {
   TYPES: (list: string): string => `ASSET TYPES – give every "cast" entry and every "places" entry a "type" id from this list (use "other" only when nothing fits):
 ${list}`,
   COLOURS: `For every cast entry add "colors": the clothing and hair colours the STORY ITSELF states, as hex, e.g. {"top":"#f2b234","bottom":"#2c2f38","hair":"#1a191a","accent":"#d4a32b"}; leave out every colour the story does not mention.`,
-  CHARACTER_SCHEMA: `MATERIAL NAMES (needed so the drawing can be reused and recoloured later): give materials these exact names when the character has them: "skin", "hair", "top" (shirt/blouse/dress/robe/jacket), "bottom" (trousers/skirt/shorts), "shoes", "accent" (scarf/hat/belt/bag), plus any extra names you need. Optionally add 1-2 hidden accessory parts with ids starting "opt_" (e.g. opt_hat, opt_glasses, opt_beard, opt_scarf) drawn in place with "visible":false.`,
+  CHARACTER_SCHEMA: motionCharacterSchema({ hair: true, clothing: true, accessories: true }),
 };
 export const MOTION_SCENE_SHOWROOM = {
   KEY_PREFIX: "showroom_",

@@ -391,22 +391,55 @@
     cam.position.y = Math.max(0.4, tgt.y + flat * Math.tan(18 * DEG));
     issues.push(MT.CAMERA_LOWERED);
   };
-  const SHOT_SIZE = { wide: [0.28, 0.42, 0.62], medium: [0.45, 0.6, 0.8], over_shoulder: [0.4, 0.55, 0.8], close: [0.42, 0.55, 0.72], extreme_close: [0.55, 0.7, 0.9] };
+  const PARTNER_RANGE = 1.6;
+  const framedCast = (S, focus, shot) => {
+    if (!focus) return S.actors;
+    const lead = S.actors.filter((A) => A.def.cast === focus);
+    if (!lead.length || !S.flatView || shot === MT.EXTREME_CLOSE || shot === MT.INSERT || shot === MT.OVER_SHOULDER) return lead;
+    return S.actors.filter((A) => lead.includes(A) || lead.some((L) => Math.hypot(A.def.at[0] - L.def.at[0], A.def.at[1] - L.def.at[1]) <= PARTNER_RANGE));
+  };
+  const SHOT_SIZE = { wide: [0.28, 0.42, 0.62], medium: [0.5, 0.67, 0.85], over_shoulder: [0.4, 0.55, 0.8], close: [0.42, 0.55, 0.72], extreme_close: [0.55, 0.7, 0.9] };
+  const BIG_HEAD_SIZE = { wide: SHOT_SIZE.wide, medium: [0.72, 0.82, 0.92], over_shoulder: [0.66, 0.78, 0.9], close: [0.74, 0.84, 0.94], extreme_close: [0.74, 0.84, 0.94] };
+  const BIG_HEAD_SHARE = 0.3;
+  const FRAMING = { close: { body: 0.3, heads: 1.6 }, over_shoulder: { body: 0.2, heads: 2.6 }, medium: { body: 0.05, heads: 4 } };
+  GEN.framingOf = (actor, shot, style) => {
+    const body = actor.bounds(),
+      height = Math.max(0.01, body.max.y - body.min.y);
+    let head = actor.headBounds ? actor.headBounds() : null;
+    if (head && head.max.y - head.min.y > height * 0.9) head = null;
+    const top = head ? Math.max(head.max.y, body.max.y - height * 0.02) : body.max.y,
+      headBottom = head ? head.min.y : body.max.y - height * 0.13,
+      headH = Math.max(0.01, top - headBottom),
+      below = Math.max(0, headBottom - body.min.y),
+      cropped = style && style.framing === MT.HEADS_TOP_HALF;
+    if (shot === MT.WIDE || shot === MT.AERIAL) return { hi: body.max.y, lo: body.min.y, headH, height };
+    if (shot === MT.EXTREME_CLOSE) return { hi: top + headH * 0.05, lo: headBottom - headH * 0.1, headH, height };
+    const rule = FRAMING[shot] || FRAMING.medium;
+    const lo = Math.max(body.min.y + below * (cropped && shot !== MT.MEDIUM ? Math.max(rule.body, 0.45) : rule.body), headBottom - headH * rule.heads);
+    return { hi: top + headH * 0.08, lo: Math.min(lo, headBottom - headH * 0.1), headH, height };
+  };
   const sizeShot = (S, cam, tgt, subjects, shot, issues) => {
-    const want = SHOT_SIZE[shot];
+    const bigHead = subjects.some((A) => {
+      const f = GEN.framingOf(A.actor, shot, S.style);
+      return f.headH / f.height > BIG_HEAD_SHARE;
+    });
+    const want = (bigHead ? BIG_HEAD_SIZE : SHOT_SIZE)[shot];
     if (!want || !subjects.length || (S.stg.camera || {}).focusProp) return;
     cam.updateMatrixWorld(true);
     let top = -Infinity,
       bot = Infinity,
       headTopY = -Infinity,
-      lowY = Infinity;
+      lowY = Infinity,
+      left = Infinity,
+      right = -Infinity;
     const v = new T.Vector3();
     for (const A of subjects) {
       const bounds = A.actor.bounds(),
+        frame = GEN.framingOf(A.actor, shot, S.style),
         head = bounds.getCenter(v.clone()),
         low = head.clone();
-      head.y = bounds.max.y;
-      low.y = bounds.min.y + (shot === MT.WIDE ? 0 : shot === MT.CLOSE || shot === MT.EXTREME_CLOSE ? 0.65 : 0.4) * (bounds.max.y - bounds.min.y);
+      head.y = frame.hi;
+      low.y = frame.lo;
       headTopY = Math.max(headTopY, head.y);
       lowY = Math.min(lowY, low.y);
       const qh = project(cam, head),
@@ -414,11 +447,18 @@
       if (qh.z > 1 || ql.z > 1) return;
       top = Math.max(top, qh.y, ql.y);
       bot = Math.min(bot, qh.y, ql.y);
+      for (const x of [bounds.min.x, bounds.max.x]) {
+        const qx = project(cam, new T.Vector3(x, (frame.hi + frame.lo) / 2, (bounds.min.z + bounds.max.z) / 2));
+        left = Math.min(left, qx.x);
+        right = Math.max(right, qx.x);
+      }
     }
     if (!isFinite(top)) return;
     const tallest = Math.max(...subjects.map((A) => A.actor.bounds().getSize(v.clone()).y)),
-      frac = ((top - bot) / 2) * (shot === MT.WIDE ? Math.max(1, 1.6 / Math.max(0.1, tallest)) : 1);
-    if (frac >= want[0] && frac <= want[2]) return;
+      wide = (right - left) / 2,
+      frac = Math.max(((top - bot) / 2) * (shot === MT.WIDE ? Math.max(1, 1.6 / Math.max(0.1, tallest)) : 1), shot === MT.WIDE ? 0 : (wide * want[1]) / 0.9),
+      inside = top <= 0.98 && bot >= -0.98;
+    if (frac >= want[0] && frac <= want[2] && (inside || shot === MT.WIDE)) return;
     const center = new T.Vector3();
     for (const A of subjects) center.add(A.actor.bounds().getCenter(v.clone()));
     center.divideScalar(subjects.length);
@@ -439,7 +479,7 @@
       if (inStage(S, start) && !inStage(S, p)) break;
       done = dd;
     }
-    if (Math.abs(done - d) < 0.05) return;
+    if (Math.abs(done - d) < 0.05 && inside) return;
     tgt.copy(center);
     cam.position.copy(tgt).addScaledVector(dir, done);
     cam.lookAt(tgt);
@@ -733,7 +773,7 @@
     for (const A of S.actors) updateActor(A, S, S.t0, cam);
     const definition = S.stg.camera || {},
       shot = definition.shot || MT.MEDIUM;
-    const subjects = definition.focus ? S.actors.filter((A) => A.def.cast === definition.focus) : S.actors;
+    const subjects = framedCast(S, definition.focus, definition.shot || MT.MEDIUM);
     const detail = definition.focusProp || shot === MT.INSERT;
     const points = [],
       sightPoints = [];
@@ -833,7 +873,7 @@
     clearCamera(S, cam, tgt, issues);
     if (!S.actors.length) return { pos: cam.position.clone(), tgt, issues };
     const focusKey = (S.stg.camera || {}).focus;
-    const subjects = focusKey ? S.actors.filter((a) => a.def.cast === focusKey) : S.actors;
+    const subjects = framedCast(S, focusKey, (S.stg.camera || {}).shot || MT.MEDIUM);
     const pts = [];
     const shot = (S.stg.camera || {}).shot || MT.MEDIUM;
     const upper = shot !== MT.WIDE && shot !== MT.AERIAL && shot !== MT.HIGH && shot !== MT.LOW;
@@ -935,14 +975,16 @@
     const dist = fwd.length();
     fwd.normalize();
     const right = new T.Vector3().crossVectors(fwd, new T.Vector3(0, 1, 0)).normalize();
+    const shotKind = (S.stg.camera || {}).shot || MT.MEDIUM,
+      reach = shotKind === MT.CLOSE || shotKind === MT.EXTREME_CLOSE ? 0.1 : 0.22;
     switch (m) {
       case MT.STATIC:
         break;
       case MT.DOLLY_IN:
-        pos.addScaledVector(fwd, dist * 0.22 * amt * k);
+        pos.addScaledVector(fwd, dist * reach * amt * k);
         break;
       case MT.DOLLY_OUT:
-        pos.addScaledVector(fwd, dist * 0.22 * amt * (1 - k));
+        pos.addScaledVector(fwd, dist * reach * amt * (1 - k));
         break;
       case MT.PAN_LEFT:
       case MT.PAN_RIGHT: {
@@ -1270,8 +1312,9 @@
           needOf = (A) => {
             const b = A.actor.bounds(),
               h = b.max.y - b.min.y,
-              top = b.max.y + h * 0.04,
-              low = b.max.y - h * 0.45;
+              frame = GEN.framingOf(A.actor, shotKind, S.style),
+              top = shotKind === MT.WIDE || shotKind === MT.AERIAL ? b.max.y + h * 0.04 : frame.hi,
+              low = shotKind === MT.WIDE || shotKind === MT.AERIAL ? b.max.y - h * 0.45 : frame.lo;
             let n = 1;
             for (const x of [b.min.x, b.max.x])
               for (const z of [b.min.z, b.max.z])
@@ -1284,10 +1327,11 @@
         cam.updateMatrixWorld(true);
         cam.updateProjectionMatrix();
         const subjects = [],
-          bystanders = [];
+          bystanders = [],
+          partners = framedCast(S, focusCast, shotKind);
         for (const A of S.actors) {
           if (!A.actor.group.visible) continue;
-          if (focusCast ? A.def.cast === focusCast : !detail) subjects.push(A);
+          if (focusCast ? partners.includes(A) : !detail) subjects.push(A);
           else if (inPicture(A)) bystanders.push(A);
         }
         let need = 1;
@@ -1313,7 +1357,7 @@
         }
         if (shotKind !== MT.WIDE && shotKind !== MT.AERIAL)
           for (const A of S.actors) {
-            if (!A.actor.group.visible || (focusCast && A.def.cast === focusCast) || !inPicture(A)) continue;
+            if (!A.actor.group.visible || (focusCast && partners.includes(A)) || !inPicture(A)) continue;
             const head = A.actor.anchor(MT.HEAD).project(cam);
             if (Math.abs(head.x) > 1.02 || head.y > 1.02) {
               A.actor.group.visible = false;

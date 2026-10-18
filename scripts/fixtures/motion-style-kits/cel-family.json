@@ -1,0 +1,69 @@
+{
+  "description": "A 2D graphic illustrative art style characterized by clean geometric silhouettes, uniform dark outlines, and a desaturated, atmospheric color palette centered around earthy wood tones, warm terracottas, and deep nocturnal blues. Compositions emphasize quiet emotional depth and dramatic cinematic lighting through high-contrast cast moonlight beams, warm glowing lantern apertures, and soft low-lying fog contrasting against pitch-dark interiors.",
+  "palette": ["#1e1f26", "#94442b", "#f4c29e", "#cf9b7c", "#e99595", "#3b6e9a", "#f5b847", "#fbc02d", "#1e3250", "#4a2c14", "#6a737d", "#e2efff"],
+  "outlineColor": "#121212",
+  "outlineWidth": 0.02,
+  "kit": {
+    "render": {
+      "mode": "cel",
+      "shadingTones": "2",
+      "outline": "all inner lines, uniform medium weight",
+      "texture": "none",
+      "lighting": "High-contrast atmospheric lighting utilizing volumetric moonlight shafts, soft radial lantern glows, warm window illumination, and subtle warm rim highlights on dark silhouettes."
+    },
+    "character": {
+      "headToBody": "1:2.5 to 1:3 for children, 1:3.5 to 1:4 for adults",
+      "headShape": "Broad rounded ovals with gentle contours and flat chins",
+      "eyes": "Minimalist closed downward-curving line arcs conveying solemnity or repose, without rendered irises or eye whites",
+      "brows": "Thin, expressive arched or slanted black stroke lines placed high above the eyes",
+      "mouth": "Simple horizontal line or small dark-filled rounded oval, without lip contouring",
+      "nose": "Single short vertical stroke marking the nose bridge, highly simplified",
+      "ears": "Small rounded C-shapes level with the eye line; adult characters feature round golden stud earrings #d4af37",
+      "hair": "Solid graphic masses in dark charcoal #211f20 with clean exterior silhouettes, rendered as neat bowl-cut bangs or combed-back traditional buns with thin headbands",
+      "arms": "Simplified tubular forms resting naturally against the torso",
+      "hands": "Minimalist mittens or concealed silhouettes with minimal finger delineation",
+      "legs": "Straight columnar forms beneath garments",
+      "body": "Soft trapezoidal and flared bell-shaped torso silhouettes with sloping shoulders",
+      "clothing": "Functional traditional and casual attire in flat color blocks, such as terracotta buttoned tunics #94442b with patch pockets #7c3722 and nautical horizontal striped crewnecks in cobalt #3b6e9a and white #ffffff",
+      "skin": "Fair to warm beige skin tone #f4c29e with warm muted shadow tone #cf9b7c, with circular soft pink blush #e99595 on youth",
+      "expressions": "Melancholic, serene, and introspective, indicated by downward angled eyebrows, closed eye arcs, and subtle curved age lines near the mouth"
+    },
+    "animals": "Stylized geometric black cats with spherical heads #1e1f26, pointed triangular ears with mauve-pink interior accents #5b3e4e, bright golden-yellow oval or almond eyes #fbc02d with dark pupil slits, thin white horizontal whisker lines, smooth curving tails, and contrasting solid white front paws #ffffff",
+    "background": {
+      "perspective": "flat side view",
+      "layers": "Silhouetted foreground elements, midground character/architectural plane, and atmospheric background separated by mist layers or window frames",
+      "detail": "Moderate architectural detailing focusing on vertical wooden planks, simple linear shelves, barred windows, and layered mountain silhouettes",
+      "sky": "gradient",
+      "props": "Vernacular domestic and architectural objects such as ceramic bowls, hanging globe lanterns #fdf4db, wooden benches, and framed shop fascia boards"
+    },
+    "fx": "Diagonal linear rain dashes, soft ground-level fog bands #6a737d, trapezoidal volumetric moonlight beams, and soft circular ambient glow halos",
+    "typography": "Clean uppercase Vietnamese signage in dark red-brown #701a14 with bold sans-serif lettering, centered on parchment-cream rectangular boards #f3ebd7 with dark double borders",
+    "camera": "Static, theatrical straight-on eye-level framing with centered symmetrical compositions and natural architectural framing via doors and windows"
+  },
+  "images": [
+    {
+      "name": "style-reference-1",
+      "role": "character",
+      "subjects": ["black cat", "radial glow vignette"],
+      "details": "Stylized black cat seated in three-quarter profile facing forward against a dark brown background. The cat features a circular head #1e1f26, pointed triangular ears with mauve inner shading #5b3e4e, large round golden-yellow eyes #fbc02d with dark vertical slits, three thin white whisker strokes on each side, a teardrop-shaped body #1e1f26, an upward curving tail, and a solid white vertical left paw #ffffff. Warm amber rim lighting #c89665 accents the right side of the head and chest. All forms have solid dark outlines #121212. The background is a soft radial gradient glowing from warm amber-brown #4a2c14 in the center out to near-black #0c0704 at the edges."
+    },
+    {
+      "name": "style-reference-2",
+      "role": "character",
+      "subjects": ["older woman", "young boy", "dark wooden interior"],
+      "details": "Interior shot of two stylized human characters against a dark wooden plank wall #22160f. The adult figure on the left has an oval head #f4c29e, smooth charcoal hair #211f20 pulled into a round bun, gold stud earrings #d4af37, downward-curved line eyes, arched brows, a short vertical nose line, and a small line mouth with age creases. She wears a rust-brown flared tunic #94442b with three dark buttons #522416 and a square pocket #7c3722 over dark trousers #2b2e3a. To her right, a young boy with a rounded head #f6cbb3 features dark bowl-cut hair #211f20, closed curved eye lines, a small open oval mouth #592e2e, soft pink circular blush #e99595, and a half-shadow tone #d3a38d across his face. He wears a blue and white striped shirt #3b6e9a and #ffffff. The background features a barred window revealing a moonlit sky #101c36, a wooden cot #5c4028, and a shelf with dark ceramic bowls #28303d."
+    },
+    {
+      "name": "style-reference-3",
+      "role": "scene",
+      "subjects": ["traditional wooden medicine shop", "mountain ridges", "night landscape"],
+      "details": "Straight-on exterior view of a wooden apothecary building at night. The main structure has vertical timber siding in warm ochre-brown #8e5f38, dark double sliding central doors #573b26, and two square windows glowing with warm amber interior light #f5b847. A hanging globe lantern #fdf4db is suspended above the door. A rectangular illuminated sign above the corrugated roof #606870 displays uppercase red-brown text #701a14 reading THUOC BAC - THUOC NAM HANH LAM on a cream board #f3ebd7. An auxiliary wooden shed #6b492d with an open dark entry sits on the right. Soft grey fog bands #6a737d drift across the base, set against silhouetted dark mountain peaks #323f4f under a slate-blue gradient night sky #435368 to #263342."
+    },
+    {
+      "name": "style-reference-4",
+      "role": "scene",
+      "subjects": ["black cat on windowsill", "rainy night window", "moonlit interior"],
+      "details": "Interior medium composition framed by a large multi-pane dark wood window frame #3d2618. A stylized black cat #1e1f26 with triangular ears #5b3e4e, yellow slit eyes #e7b416, white whiskers, and a white front paw #ffffff sits on a brown sill #5c3d28 in profile. Outside the window, a glowing circular white full moon #e2efff illuminates a dark indigo night sky #1e3250 with silhouetted mountain ridges #162438 and diagonal falling rain streaks #839fb5. Inside the dark room #16110d, a wide diagonal trapezoid of blue-grey volumetric moonlight #2b3547 is projected across the vertical wood plank floorboards."
+    }
+  ]
+}

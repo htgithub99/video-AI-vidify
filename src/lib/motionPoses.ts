@@ -1,8 +1,11 @@
+import { MOTION_STYLE_VALUES as SV } from "../constants/motionStyleConstraints.js";
 import * as MR from "../constants/motionRuntime.js";
 import _ from "lodash";
 import { MOTION_POSES as P } from "../constants/motionPoses.js";
 import { roundMotionNumber } from "./motionUtils.js";
 import type { MotionBeat, MotionCastMember } from "../types/motionVideo.js";
+import { MOTION_GEN_POSE_PROMPTS } from "../constants/motionGenPrompts.js";
+import { motionStyleShowsPart, type MotionStyleConstraints } from "./motionStyleConstraints.js";
 type V3 = [number, number, number];
 type M3 = number[];
 interface Transform { pos?: number[]; rot?: number[]; scale?: number[]; }
@@ -208,7 +211,7 @@ export const motionPoseNamesIn = (text: string): string[] => {
   );
 };
 export interface MotionCastNeeds { poses: string[]; expressions: string[]; lines: string[]; }
-export const motionCastNeeds = (beats: MotionBeat[], cast: MotionCastMember[], emotionExpression: Record<string, string>): Record<string, MotionCastNeeds> =>
+export const motionCastNeeds = (beats: MotionBeat[], cast: MotionCastMember[], emotionExpression: Record<string, string>, constraints?: MotionStyleConstraints): Record<string, MotionCastNeeds> =>
   _.fromPairs(
     _.map(cast, (member) => {
       const own = _.filter(beats, (beat) => _.includes(beat.cast || [], member.key));
@@ -222,7 +225,7 @@ export const motionCastNeeds = (beats: MotionBeat[], cast: MotionCastMember[], e
           }),
         ),
       ).slice(0, P.MAX_ACTION_LINES);
-      const poses = _.uniq(_.flatMap(lines, motionPoseNamesIn)).filter((name) => !_.includes(P.AUTOMATIC, name));
+      const poses = _.uniq(_.flatMap(lines, motionPoseNamesIn)).filter((name) => !_.includes(P.AUTOMATIC, name) && motionPoseFits(name, constraints));
       const feelings = _.flatMap(own, (beat) => [
         ..._.map(
           _.filter(beat.utterances || [], (line) => line.speaker === member.key),
@@ -255,4 +258,15 @@ export const motionPartOutline = (design: any): Record<string, unknown>[] => {
     const size = [0, 1, 2].map((axis) => (points.length ? roundMotionNumber(Math.max(...points.map((p) => p[axis])) - Math.min(...points.map((p) => p[axis]))) : 0));
     return _.omitBy({ id: part.id, parent: part.parent, pos: part.pos, rot: part.rot, size, world: frames[part.id].t.map(roundMotionNumber) }, _.isUndefined);
   });
+};
+export const motionPoseFits = (name: string, constraints?: MotionStyleConstraints): boolean => !constraints || _.every(P.LIMBS[name] || [], (part) => motionStyleShowsPart(constraints, part));
+export const motionPoseRule = (constraints: MotionStyleConstraints): string => {
+  const arms = motionStyleShowsPart(constraints, SV.ARMS),
+    legs = motionStyleShowsPart(constraints, SV.LEGS);
+  const anchors = arms && legs ? MOTION_GEN_POSE_PROMPTS.ANCHORS_FULL : arms ? MOTION_GEN_POSE_PROMPTS.ANCHORS_ARMS : legs ? MOTION_GEN_POSE_PROMPTS.ANCHORS_LEGS : MOTION_GEN_POSE_PROMPTS.ANCHORS_NONE;
+  return MOTION_GEN_POSE_PROMPTS.RULE(
+    _.filter(_.map(P.POSES, MR.MOTION_TEXT_NAME), (name) => motionPoseFits(name, constraints)),
+    [...P.EXPRESSIONS],
+    anchors,
+  );
 };
