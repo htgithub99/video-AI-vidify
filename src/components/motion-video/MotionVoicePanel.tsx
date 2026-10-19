@@ -16,6 +16,7 @@ import { Modal } from "../ui/Modal";
 import { MotionVoicePreviewButton } from "./MotionVoicePreviewButton.js";
 import { ActionBtn, StepHeader } from "./MotionControls.js";
 import { formatBytes, motionRequest, readFileBase64 } from "./motionApi";
+import { MotionVoiceTrainPanel } from "./MotionVoiceTrainPanel";
 import { VoiceSelectionDialog, type Voice } from "../VoiceSelectionDialog";
 type Draft = { id?: string; name: string; narratorVoiceId: string; roleVoices: Partial<Record<MotionVoiceGroup, string>> };
 type VoiceFilter = (typeof F)[keyof typeof F];
@@ -599,6 +600,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
               {speedSettings?.target?.pauses && <div className={S.STAT_DETAIL}>{sp.PAUSES(speedSettings.target.pauses.clause ?? speedSettings.target.pauses.sentence, speedSettings.target.pauses.sentence, speedSettings.target.pauses.suspense, speedSettings.target.pauses.beat)}</div>}
               {speedSettings?.target?.source === SP.SOURCE_AUDIO && speedSettings.target.pauses && <div className={S.STAT_DETAIL}>{sp.AUDIO_STATS(speedSettings.target.pauses.articulation, speedSettings.target.phrase || 0, Math.round((speedSettings.target.speechRatio || 0) * 100))}</div>}
             </div>
+            <MotionVoiceTrainPanel lang={currentLang} onTrained={() => void loadVoices()} />
             <div className={S.FILTER_SECTION}>
               <div className={S.FILTER_ROW}>
                 <div className={S.SEARCH_WRAPPER}>

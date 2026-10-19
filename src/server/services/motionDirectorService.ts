@@ -304,7 +304,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
   const lead = MOTION_STORY_CONFIG.LEAD_SECONDS;
   const shotStarts = _.map(starts, (s, i) => (i === 0 ? 0 : Math.max(0, s - lead, ends[i - 1] + MOTION_STORY_CONFIG.SPEECH_HOLD_SECONDS)));
   const shots: MotionShot[] = [];
-  const subtitles: { start: number; end: number; text: string; speaker?: string }[] = [];
+  const subtitles: { start: number; end: number; text: string; dialogue?: boolean }[] = [];
   const missing: string[] = [];
   const usedLocations = new Set<string>();
   const hudStates = motionHudStates(beats);
@@ -345,8 +345,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
       for (const clip of lines) {
         const lineBeat = { ...beat, narration: clip.text };
         const spoken = spokenClip(beat, clip, [MOTION_BOARD2D.DIALOGUE]);
-        const speakerName = gen?.drawingMode === MOTION_VIDEO_CONSTANTS.DRAWING_2D && spoken ? _.find(analysis?.cast || [], { key: clip.speaker })?.name : undefined;
-        subtitles.push(..._.map(buildSubtitles(lineBeat, clip.start, clip.end), (sub) => (speakerName ? { ...sub, speaker: speakerName } : sub)));
+        subtitles.push(..._.map(buildSubtitles(lineBeat, clip.start, clip.end), (sub) => (spoken ? { ...sub, dialogue: true } : sub)));
       }
     } else if (!_.includes([MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_ENDING, MOTION_TEXT_HEADLINE], beat.visual)) subtitles.push(...buildSubtitles(beat, starts[i], ends[i]));
   });

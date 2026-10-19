@@ -59,7 +59,7 @@ export interface MotionSpec {
   subtitleStyle?: string;
   gen?: MotionGenSpec;
   shots: MotionShot[];
-  subtitles?: { start: number; end: number; text: string; speaker?: string }[];
+  subtitles?: { start: number; end: number; text: string; speaker?: string; dialogue?: boolean }[];
   hud?: MotionHudSegment[];
   music?: { mood: string; cues: number[]; segments?: MotionMusicSegment[]; instrument?: string; ambience?: string };
   finish?: MotionStyleFinish;
@@ -254,6 +254,7 @@ export enum MotionStoryJobKind {
   SEO = "seo",
   THUMBNAIL = "thumbnail",
   LIBRARY = "library",
+  TRAIN_VOICE = "train_voice",
 }
 export interface MotionLogEntry { id: string; kind: string; lines: string[]; }
 export interface MotionAiExecution { provider?: string; model?: string; mode?: string; chromeHeadless?: boolean; strictProvider?: boolean; }

@@ -15,6 +15,7 @@ for stream in (sys.stdout, sys.stdin, sys.stderr):
     if isinstance(stream, io.TextIOWrapper):
         stream.reconfigure(encoding=T.UTF_8)
 root = Path(sys.argv[1]).resolve()
+model_dir = sys.argv[2] if len(sys.argv) > 2 else None
 root.mkdir(parents=True, exist_ok=True)
 os.environ[T.HF_HOME] = str(root / T.MODELS)
 os.environ[T.HF_HUB_DISABLE_PROGRESS_BARS] = T.VALUE_1
@@ -48,6 +49,8 @@ def execute(request):
     from vieneu import Vieneu
     import numpy as np
     import soundfile as sf
+    if engine is None and model_dir:
+        engine = Vieneu(mode=T.V3TURBO, backbone_repo=model_dir, backend=T.PYTORCH, max_batch_size=8, babble_retries=1)
     if engine is None:
         from huggingface_hub import hf_hub_download
         from vieneu._v3_turbo_engine.onnx_runtime_lite import OnnxV3LiteEngine

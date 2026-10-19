@@ -8,10 +8,14 @@ import { MOTION_VOICE as C } from "../../constants/motionVoice.js";
 import type { MotionVoicePreset } from "../../types/motionVideo.js";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../utils/paths.js";
 let setup: Promise<string> | undefined;
-let worker: ChildProcessWithoutNullStreams | undefined;
-let queue: Promise<unknown> = Promise.resolve();
-let idle: ReturnType<typeof setTimeout> | undefined;
-const requests = new Map<string, { resolve: (value: any) => void; reject: (error: Error) => void }>();
+interface WorkerSlot { child?: ChildProcessWithoutNullStreams; queue: Promise<unknown>; idle?: ReturnType<typeof setTimeout>; requests: Map<string, { resolve: (value: any) => void; reject: (error: Error) => void }>; }
+export interface VieneuModelTarget { model: string; python: string; }
+const slots = new Map<string, WorkerSlot>();
+const slotOf = (key: string): WorkerSlot => {
+  let slot = slots.get(key);
+  if (!slot) slots.set(key, (slot = { queue: Promise.resolve(), requests: new Map() }));
+  return slot;
+};
 export const vieneuRoot = (): string => path.join(getDataDirectory(), C.ROOT);
 const execute = (python: string, args: string[], signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
@@ -78,23 +82,27 @@ export const ensureVieneuAsr = (signal?: AbortSignal, log?: (value: string) => v
     });
   return asrSetup;
 };
-export const closeVieneuWorker = (): void => {
-  clearTimeout(idle);
-  const child = worker;
-  worker = undefined;
+const closeSlot = (slot: WorkerSlot): void => {
+  clearTimeout(slot.idle);
+  const child = slot.child;
+  slot.child = undefined;
   child?.kill();
-  for (const pending of requests.values()) pending.reject(new Error(C.CANCELLED));
-  requests.clear();
+  for (const pending of slot.requests.values()) pending.reject(new Error(C.CANCELLED));
+  slot.requests.clear();
 };
-const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal, log?: (value: string) => void): Promise<T> => {
+export const closeVieneuWorker = (): void => {
+  for (const slot of slots.values()) closeSlot(slot);
+};
+const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal, log?: (value: string) => void, target?: VieneuModelTarget): Promise<T> => {
+  const slot = slotOf(target ? target.model : MR.MOTION_TEXT_EMPTY);
   const work = async (): Promise<T> => {
     if (signal?.aborted) throw new Error(C.CANCELLED);
-    clearTimeout(idle);
-    if (!worker) {
-      const python = await ensureVieneuRuntime(signal, log);
+    clearTimeout(slot.idle);
+    if (!slot.child) {
+      const python = target ? target.python : await ensureVieneuRuntime(signal, log);
       if (signal?.aborted) throw new Error(C.CANCELLED);
-      const child = spawn(python, [MR.MOTION_TEXT_U, getStaticResourcePath(C.WORKER), vieneuRoot()], { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: MR.MOTION_TEXT_UTF_8 } });
-      worker = child;
+      const child = spawn(python, [MR.MOTION_TEXT_U, getStaticResourcePath(C.WORKER), vieneuRoot(), ...(target ? [target.model] : [])], { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: MR.MOTION_TEXT_UTF_8 } });
+      slot.child = child;
       let errors: string = MR.MOTION_TEXT_EMPTY;
       child.stderr.on(MR.MOTION_TEXT_DATA, (chunk) => {
         errors = (errors + String(chunk)).slice(-2000);
@@ -102,18 +110,18 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
       createInterface({ input: child.stdout }).on(MR.MOTION_TEXT_LINE, (line) => {
         try {
           const response = JSON.parse(line),
-            pending = requests.get(response.id);
+            pending = slot.requests.get(response.id);
           if (pending) {
-            requests.delete(response.id);
+            slot.requests.delete(response.id);
             response.error ? pending.reject(new Error(response.error)) : pending.resolve(response.result);
           }
         } catch {}
       });
       const failed = () => {
-        if (worker !== child) return;
-        worker = undefined;
-        for (const pending of requests.values()) pending.reject(new Error(errors || C.FAILED));
-        requests.clear();
+        if (slot.child !== child) return;
+        slot.child = undefined;
+        for (const pending of slot.requests.values()) pending.reject(new Error(errors || C.FAILED));
+        slot.requests.clear();
       };
       child.on(MR.MOTION_TEXT_ERROR, failed);
       child.on(MR.MOTION_TEXT_CLOSE, failed);
@@ -121,16 +129,16 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
     }
     return new Promise<T>((resolve, reject) => {
       const id = randomUUID(),
-        abort = () => closeVieneuWorker();
+        abort = () => closeSlot(slot);
       const timer = setTimeout(abort, C.TIMEOUT);
       signal?.addEventListener(MR.MOTION_TEXT_ABORT, abort, { once: true });
       const clear = () => {
         clearTimeout(timer);
         signal?.removeEventListener(MR.MOTION_TEXT_ABORT, abort);
-        idle = setTimeout(closeVieneuWorker, C.IDLE);
-        idle.unref();
+        slot.idle = setTimeout(() => closeSlot(slot), C.IDLE);
+        slot.idle.unref();
       };
-      requests.set(id, {
+      slot.requests.set(id, {
         resolve: (value) => {
           clear();
           resolve(value);
@@ -140,11 +148,11 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
           reject(error);
         },
       });
-      worker!.stdin.write(JSON.stringify({ ...command, id }) + MR.MOTION_TEXT_SYMBOL_27);
+      slot.child!.stdin.write(JSON.stringify({ ...command, id }) + MR.MOTION_TEXT_SYMBOL_27);
     });
   };
-  const pending = queue.then(work, work);
-  queue = pending.catch(() => {});
+  const pending = slot.queue.then(work, work);
+  slot.queue = pending.catch(() => {});
   if (!signal) return pending;
   return new Promise<T>((resolve, reject) => {
     const aborted = () => reject(new Error(C.CANCELLED));
@@ -155,7 +163,7 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
 };
 export const listVieneuVoices = (signal?: AbortSignal, log?: (value: string) => void): Promise<MotionVoicePreset[]> => request({ command: MR.MOTION_TEXT_VOICES }, signal, log);
 export interface VieneuDelivery { temperature?: number; silence?: number; }
-export const synthesizeVieneuSpeech = (text: string, voice: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery: VieneuDelivery = {}): Promise<{ seconds: number; sampleRate: number; backend: string }> => request({ command: MR.MOTION_TEXT_SYNTHESIZE, text, voice, file, ...delivery }, signal, log);
+export const synthesizeVieneuSpeech = (text: string, voice: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery: VieneuDelivery = {}, target?: VieneuModelTarget): Promise<{ seconds: number; sampleRate: number; backend: string }> => request({ command: MR.MOTION_TEXT_SYNTHESIZE, text, voice, file, ...delivery }, signal, log, target);
 export const registerVieneuVoice = (voice: string, name: string, gender: string, file: string, signal?: AbortSignal): Promise<MotionVoicePreset> => request({ command: MR.MOTION_TEXT_REGISTER, voice, name, gender, file }, signal);
 export const transcribeVieneuAudio = async (file: string, language: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ text: string; words: { w: string; s: number; e: number }[] }> => {
   await ensureVieneuAsr(signal, log);

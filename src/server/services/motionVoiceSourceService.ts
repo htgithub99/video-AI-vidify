@@ -7,6 +7,8 @@ import { MOTION_VOICE as V, MOTION_VOICE_LIBRARY as L } from "../../constants/mo
 import type { MotionVoicePreset } from "../../types/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { listVieneuVoices, synthesizeVieneuSpeech, type VieneuDelivery } from "./vieneuTtsService.js";
+import { listTrainedVoices, trainedVoice, trainedVoiceTarget } from "./motionVoiceTrainService.js";
+import { MOTION_VOICE_TRAIN } from "../../constants/motionVoiceTrain.js";
 import { getAi33ApiKey, synthesizeAi33Speech } from "./ai33TtsService.js";
 import { API_QUERY_PARAMS, EXTERNAL_URLS, HTTP_HEADERS } from "../../constants";
 import { runMotionAudioProcess } from "./motionSoundMixService.js";
@@ -43,7 +45,7 @@ export const removeAi33Voice = (id: string): void => {
   writeMotionJsonAtomic(ai33File(), _.omit(all, id));
 };
 export const listMotionVoices = async (signal?: AbortSignal, log?: (value: string) => void): Promise<MotionVoicePreset[]> => {
-  const extra = listAi33Voices();
+  const extra = [...listAi33Voices(), ..._.map(listTrainedVoices(), (v) => ({ id: v.id, name: v.name, gender: v.gender, description: v.description + MOTION_VOICE_TRAIN.LORA_TAG }) as MotionVoicePreset)];
   try {
     return [...(await listVieneuVoices(signal, log)), ...extra];
   } catch (error) {
@@ -87,6 +89,11 @@ export const ai33VoiceSample = async (id: string, file: string, signal?: AbortSi
   return true;
 };
 export const synthesizeMotionSpeech = async (speech: string, voiceId: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery?: VieneuDelivery): Promise<{ seconds: number }> => {
+  if (_.startsWith(voiceId, MOTION_VOICE_TRAIN.ID_PREFIX)) {
+    const trained = trainedVoice(voiceId);
+    if (!trained) throw new Error(L.VOICE_NOT_FOUND);
+    return synthesizeVieneuSpeech(speech, trained.name, file, signal, log, delivery, trainedVoiceTarget(trained));
+  }
   if (!isAi33Voice(voiceId)) return synthesizeVieneuSpeech(speech, voiceId, file, signal, log, delivery);
   const voice = readAi33()[voiceId];
   if (!voice) throw new Error(L.VOICE_NOT_FOUND);

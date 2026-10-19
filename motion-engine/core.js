@@ -746,14 +746,14 @@
   ME.drawSubtitle = (g, sub, t, o) => {
     const { W, H, unit } = o;
     const portrait = H > W;
-    const size = (portrait ? 38 : 30) * unit;
-    const quote = !!sub.speaker;
-    const font = (quote ? MT.SUB_ITALIC : MT.EMPTY) + ME.font(600, size, MT.BODY);
-    const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + sub.text + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.82 : 0.64), font).slice(0, 2);
-    const life = U.clamp((t - sub.start) / 0.18) * U.clamp((sub.end - t) / 0.18);
-    const rise = (1 - U.easeOut(U.clamp((t - sub.start) / 0.25))) * size * 0.25;
-    const lh = size * 1.32;
-    let baseY = portrait ? H * 0.84 : H - (o.letterbox ? H * 0.155 : H * 0.095);
+    const size = (portrait ? 36 : 29) * unit;
+    const quote = !!(sub.dialogue || sub.speaker);
+    const font = (quote ? MT.SUB_ITALIC : MT.EMPTY) + ME.font(quote ? 600 : 500, size, MT.BODY);
+    const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + sub.text + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.8 : 0.62), font).slice(0, 2);
+    const life = U.clamp((t - sub.start) / 0.2) * U.clamp((sub.end - t) / 0.2);
+    const rise = (1 - U.easeOut(U.clamp((t - sub.start) / 0.3))) * size * 0.18;
+    const lh = size * 1.36;
+    let baseY = portrait ? H * 0.84 : H - (o.letterbox ? H * 0.155 : H * 0.09);
     baseY -= (lines.length - 1) * lh;
     g.save();
     g.globalAlpha = U.smooth(life);
@@ -762,30 +762,36 @@
     g.textBaseline = MT.ALPHABETIC;
     if (o.style === MT.BOXED || o.style === MT.CINEMA) {
       const maxW = Math.max(...lines.map((l) => g.measureText(l).width));
-      g.fillStyle = MT.RGBA_6_8_12_0_68;
-      ME.roundRect(g, W / 2 - maxW / 2 - size * 0.6, baseY - size * 1.05 + rise, maxW + size * 1.2, lh * lines.length + size * 0.35, size * 0.25);
+      const padX = size * 0.75,
+        padY = size * 0.42;
+      const bx = W / 2 - maxW / 2 - padX,
+        by = baseY - size * 0.98 - padY * 0.5 + rise,
+        bw = maxW + padX * 2,
+        bh = lh * (lines.length - 1) + size * 1.3 + padY;
+      g.shadowColor = MT.SUB_SHADOW;
+      g.shadowBlur = size * 0.6;
+      g.shadowOffsetY = size * 0.08;
+      g.fillStyle = MT.SUB_BOX;
+      ME.roundRect(g, bx, by, bw, bh, Math.min(bh / 2, size * 0.5));
       g.fill();
-    }
-    if (quote) {
-      const ls = size * 0.62;
-      g.font = ME.font(800, ls, MT.BODY);
-      g.fillStyle = MT.SUB_SPEAKER_COLOR;
-      g.shadowColor = MT.RGBA_0_0_0_0_85;
-      g.shadowBlur = ls * 0.4;
-      g.fillText(String(sub.speaker).toUpperCase(), W / 2, baseY - size * 1.15 + rise);
       g.shadowBlur = 0;
-      g.font = font;
+      g.shadowOffsetY = 0;
+      g.lineWidth = Math.max(1, unit);
+      g.strokeStyle = MT.SUB_BORDER;
+      g.stroke();
+      if (quote) {
+        const aw = Math.min(bw * 0.28, size * 3);
+        g.fillStyle = MT.SUB_ACCENT;
+        ME.roundRect(g, W / 2 - aw / 2, by - size * 0.06, aw, Math.max(2, size * 0.09), size * 0.05);
+        g.fill();
+      }
     }
     lines.forEach((ln, i) => {
       const y = baseY + i * lh + rise;
-      g.shadowColor = MT.RGBA_0_0_0_0_85;
-      g.shadowBlur = size * 0.35;
-      g.shadowOffsetY = size * 0.04;
-      g.lineWidth = size * 0.1;
-      g.strokeStyle = MT.RGBA_0_0_0_0_35;
-      g.lineJoin = MT.ROUND;
-      g.strokeText(ln, W / 2, y);
-      g.fillStyle = quote ? MT.SUB_QUOTE_COLOR : MT.F6F3EE;
+      g.shadowColor = MT.SUB_SHADOW;
+      g.shadowBlur = size * 0.25;
+      g.shadowOffsetY = size * 0.03;
+      g.fillStyle = quote ? MT.SUB_QUOTE_COLOR : MT.SUB_TEXT;
       g.fillText(ln, W / 2, y);
       g.shadowBlur = 0;
     });

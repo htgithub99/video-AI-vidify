@@ -12,7 +12,7 @@ const quantile = (list: number[], q: number): number => {
   const sorted = _.sortBy(list);
   return sorted.length ? sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))))] : 0;
 };
-const decode = async (file: string, signal?: AbortSignal): Promise<Int16Array> => {
+export const decodeVoicePcm = async (file: string, signal?: AbortSignal): Promise<Int16Array> => {
   const raw = path.join(os.tmpdir(), A.TMP_PREFIX + randomUUID() + A.RAW_EXT);
   try {
     await runMotionAudioProcess([A.ARG_INPUT, file, A.ARG_CHANNELS, A.CHANNELS, A.ARG_RATE, String(A.SAMPLE_RATE), A.ARG_FORMAT, A.FORMAT, raw], signal);
@@ -90,4 +90,28 @@ export const analyzeVoicePace = (pcm: Int16Array): MotionVoicePaceReport => {
     pauses: { clause: at(A.Q.CLAUSE), sentence: at(A.Q.SENTENCE), suspense: at(A.Q.SUSPENSE), beat: at(A.Q.BEAT), articulation: _.round(syllables / Math.max(1, speech), 2) },
   };
 };
-export const measureVoicePaceFile = async (file: string, signal?: AbortSignal): Promise<MotionVoicePaceReport> => analyzeVoicePace(await decode(file, signal));
+export const measureVoicePaceFile = async (file: string, signal?: AbortSignal): Promise<MotionVoicePaceReport> => analyzeVoicePace(await decodeVoicePcm(file, signal));
+export const voicePauses = (pcm: Int16Array, minPause: number): { seconds: number; pauses: { at: number; d: number }[] } => {
+  const hop = Math.round((A.SAMPLE_RATE * A.HOP_MS) / 1000);
+  const frames = Math.floor(pcm.length / hop);
+  const db: number[] = [];
+  for (let f = 0; f < frames; f++) {
+    let e = 0;
+    for (let i = f * hop; i < (f + 1) * hop; i++) e += (pcm[i] / 32768) ** 2;
+    db.push(10 * Math.log10(e / hop + 1e-12));
+  }
+  const thr = quantile(db, A.LOUD_Q) - A.SILENCE_DB;
+  const minRun = Math.round((minPause * 1000) / A.HOP_MS);
+  const pauses: { at: number; d: number }[] = [];
+  for (let i = 0; i < frames; ) {
+    if (db[i] > thr) {
+      i++;
+      continue;
+    }
+    let j = i;
+    while (j < frames && db[j] <= thr) j++;
+    if (j - i >= minRun || i === 0 || j === frames) pauses.push({ at: (i * A.HOP_MS) / 1000, d: ((j - i) * A.HOP_MS) / 1000 });
+    i = j;
+  }
+  return { seconds: (frames * A.HOP_MS) / 1000, pauses };
+};

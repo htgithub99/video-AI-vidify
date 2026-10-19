@@ -1,3 +1,5 @@
+import { deleteTrainedVoice, listTrainedVoices, trainVieneuVoice } from "../services/motionVoiceTrainService.js";
+import { MOTION_VOICE_TRAIN } from "../../constants/motionVoiceTrain.js";
 import { buildScenes2d } from "../services/motion2d/pipeline2d.js";
 import { board2dSheet } from "../services/motion2d/sheet2d.js";
 import { MOTION_SOUND_CONFIG as SOUND } from "../../constants/motionSound.js";
@@ -558,6 +560,26 @@ export const measureMotionVoiceSpeed = async (req: Request, res: Response): Prom
 export const measureMotionVoiceSpeedAudio = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ success: true, settings: await measureVoiceSpeedAudio(_.toString(req.body?.name), _.toString(req.body?.base64)) });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const trainMotionVoice = (req: Request, res: Response): void => {
+  try {
+    const input = { name: _.toString(req.body?.name), gender: _.toString(req.body?.gender), description: _.toString(req.body?.description), consent: req.body?.consent === true, files: _.map(_.castArray(req.body?.files || []), (f: any) => ({ name: _.toString(f?.name), base64: _.toString(f?.base64) })) };
+    if (!input.consent) throw new Error(MOTION_VOICE_TRAIN.ERR.CONSENT);
+    const job = startStoryJob(false, MotionStoryJobKind.TRAIN_VOICE, (ctx) => trainVieneuVoice(input, ctx));
+    res.json({ success: true, job });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const listMotionTrainedVoices = (_req: Request, res: Response): void => {
+  res.json({ success: true, voices: listTrainedVoices() });
+};
+export const deleteMotionTrainedVoice = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, voices: await deleteTrainedVoice(_.toString(req.body?.id)) });
   } catch (error) {
     fail(res, 400, error);
   }
