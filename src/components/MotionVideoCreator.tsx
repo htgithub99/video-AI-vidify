@@ -115,6 +115,7 @@ import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryJobKin
 import type { StorageJunkReport } from "../types/storage.js";
 import { MotionAiSettings } from "./motion-video/MotionAiSettings.js";
 import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motion-video/motionApi";
+import { MotionBoard2dPanel } from "./motion-video/MotionBoard2dPanel";
 import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
 import { MotionSeoCard } from "./motion-video/MotionSeoCard.js";
 import { MotionSpecPlayer } from "./motion-video/MotionSpecPlayer";
@@ -215,7 +216,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   );
   const gen = state.script?.gen;
   const sceneBeats = useMemo(() => _.filter(state.script?.beats || [], (b) => b.visual === MOTION_TEXT_SCENE), [state.script]);
-  const builtCount = _.size(_.filter(sceneBeats, (b) => !!gen?.staging?.[b.id]));
+  const flat = gen?.drawingMode === MR.MOTION_TEXT_2D;
+  const builtCount = flat ? (gen?.board2d ? _.size(_.filter(sceneBeats, (b) => !!b.place && !!gen.board2d?.sets?.[b.place])) : 0) : _.size(_.filter(sceneBeats, (b) => !!gen?.staging?.[b.id]));
   const estimateTotal = studio.compiled?.spec.duration || 0;
   const previewSpec = useMemo(() => {
     const spec = studio.compiled?.spec;
@@ -778,11 +780,11 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </ActionBtn>
                     {!!builtCount && (
                       <>
-                        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.buildScenes({ restyle: true, beats: [], note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
+                        {!flat && <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.buildScenes({ restyle: true, beats: [], note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
                           <Users className={MOTION_STYLES.W_3_H_3} />
                           {MR.MOTION_TEXT_SYMBOL_13}
                           {text.SCENES_RESTYLE}
-                        </Button>
+                        </Button>}
                         <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.buildScenes({ restart: true, note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
                           <RefreshCw className={MOTION_STYLES.W_3_H_3} />
                           {MR.MOTION_TEXT_SYMBOL_13}
@@ -792,7 +794,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     )}
                   </div>
                 )}
-                {!_.isEmpty(gen?.locationInfo) && (
+                {!flat && !_.isEmpty(gen?.locationInfo) && (
                   <div className={MOTION_STYLES.SPACE_Y_1_5}>
                     <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_UPPERCASE_TRACKING_WIDER}>{text.SCENES_LOCATIONS}</div>
                     <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2}>
@@ -849,7 +851,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </div>
                   </div>
                 )}
-                {!!builtCount && (
+                {!flat && !!builtCount && (
                   <div className={MOTION_STYLES.SPACE_Y_1_5}>
                     <div className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_500_UPPERCASE_TRACKING_WIDER}>
                       {text.SCENES_BEATS}
@@ -921,6 +923,20 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       })}
                     </div>
                   </div>
+                )}
+                {flat && state.script && (
+                  <MotionBoard2dPanel
+                    lang={currentLang}
+                    script={state.script}
+                    analysis={state.analysis}
+                    spec={studio.compiled?.spec}
+                    busy={studio.storyBusy}
+                    onChange={(sentences) => state.script?.gen?.board2d && patch({ script: { ...state.script, gen: { ...state.script.gen, board2d: { ...state.script.gen.board2d, sentences } } } })}
+                    onRedo={() => void studio.buildScenes({})}
+                    onCompile={async () => (await studio.compile())?.spec}
+                    onRedoPlace={(place) => void studio.buildScenes({ locations: [place], note: sceneNote || undefined })}
+                    onOpen={(imageUrl, title, narration) => setPreviewModal({ type: MR.MOTION_TEXT_BEAT, id: title, title, imageUrl, narration })}
+                  />
                 )}
               </div>
             </StudioCard>

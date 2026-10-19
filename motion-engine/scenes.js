@@ -16,11 +16,17 @@
     }
     g.globalAlpha = 1;
   };
-  const bgScene = (ctx, bg) => (bg && ME.GEN && ME.GEN.bgInit ? ME.GEN.bgInit(ctx, bg) : null);
+  const bgApi = (st) => (st && st.svg2d ? ME.SVG2D : ME.GEN);
+  const bgScene = (ctx, bg) => {
+    const flat = ctx.params.bg2d;
+    if (flat && ME.SVG2D && ME.SVG2D.bgInit) return ME.SVG2D.bgInit(ctx, flat);
+    return bg && ME.GEN && ME.GEN.bgInit ? ME.GEN.bgInit(ctx, bg) : null;
+  };
   const drawBg = (g, ctx, st, darken = 0.55) => {
-    if (st && ME.GEN) {
+    const api = bgApi(st);
+    if (st && api) {
       try {
-        ME.GEN.bgDraw(g, ctx, st);
+        api.bgDraw(g, ctx, st);
         g.setTransform(1, 0, 0, 1, 0, 0);
         g.fillStyle = MF.RGBA_4_6_10(`${darken}`);
         g.fillRect(0, 0, ctx.W, ctx.H);
@@ -36,7 +42,7 @@
     g.fillRect(0, 0, ctx.W, ctx.H);
     dust(g, ctx.W, ctx.H, ctx.t, ctx.unit, 0.25);
   };
-  const bgDispose = (st) => { if (st && ME.GEN && ME.GEN.disposeShot) ME.GEN.disposeShot(st); };
+  const bgDispose = (st) => { if (st && !st.svg2d && ME.GEN && ME.GEN.disposeShot) ME.GEN.disposeShot(st); };
   const accentOf = (ctx) => ctx.params.accent || (ctx.spec && ctx.spec.accent) || MT.FFB070;
   ME.registerTemplate(MT.TITLE, {
     name: MT.TIEU_DE_MO_DAU,

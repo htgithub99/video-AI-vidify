@@ -1,3 +1,4 @@
+import { MOTION_BOARD2D } from "../constants/motionBoard2d.js";
 import { MOTION_PATTERNS as MP } from "../constants/motionPatterns.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
 import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../constants/motionSceneCatalog.js";
@@ -735,11 +736,14 @@ export function useMotionStudio() {
         const state = stateRef.current;
         try {
           let c = compiled;
-          const changedScenePlan = !!state.analysis?.videoDna && state.script?.beats.some((beat) => beat.visual === MR.MOTION_TEXT_SCENE && state.script?.gen?.scenePlanKeys?.[beat.id] !== sceneExecutionKey(beat));
+          const flat = state.drawingMode === MR.MOTION_TEXT_2D;
+          const board = state.script?.gen?.board2d;
+          const stale2d = flat && (state.script?.gen?.drawingMode !== MR.MOTION_TEXT_2D || !board || board.version !== MOTION_BOARD2D.VERSION || !board.cast);
+          const changedScenePlan = !flat && !!state.analysis?.videoDna && state.script?.beats.some((beat) => beat.visual === MR.MOTION_TEXT_SCENE && state.script?.gen?.scenePlanKeys?.[beat.id] !== sceneExecutionKey(beat));
           if (
             state.script &&
             state.analysis &&
-            (changedScenePlan ||
+            (flat ? stale2d : changedScenePlan ||
               (state.sfx && state.script.gen?.soundPlanVersion !== MOTION_SOUND_CONFIG.VERSION) ||
               state.script.gen?.characterMotion !== state.characterMotion ||
               needsAuthoredCharacters(
@@ -924,6 +928,7 @@ export function useMotionStudio() {
     analyze,
     writeScript,
     buildScenes,
+    compile,
     generateSeo,
     generateThumbnail,
     cancelStory,

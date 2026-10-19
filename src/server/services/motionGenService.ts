@@ -1,3 +1,5 @@
+import { MOTION_BOARD2D } from "../../constants/motionBoard2d.js";
+import { buildBoard2d } from "./motion2d/board2d.js";
 import { MOTION_PATTERNS as MP } from "../../constants/motionPatterns.js";
 import { MOTION_SOUND_CONFIG, MOTION_SOUND_EXISTING_PROMPT, MOTION_SOUND_PROMPT } from "../../constants/motionSound.js";
 import { normalizeSoundEvents } from "../../lib/motionSound.js";
@@ -230,6 +232,7 @@ const previewRoot = (): string => {
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 };
+export const genPreviewDir = (...parts: string[]): string => path.join(previewRoot(), ...parts);
 export const genPreviewRel = (file: string): string => path.relative(previewRoot(), file).split(path.sep).join(MOTION_TEXT_SYMBOL_16);
 export const resolveGenPreview = (rel: string): string | null => {
   const root = path.resolve(previewRoot());
@@ -246,12 +249,12 @@ const drawLimit = (o: GenOptions): number => poolLimit(o.exec);
 const talkExec = (o: GenOptions): MotionAiExecution => o.mainExec || o.exec;
 const storyLine = (a: MotionStoryAnalysis): string => MOTION_TEMPLATE_SYMBOL_50(String(a.title), String(a.logline));
 const castLines = (a: MotionStoryAnalysis): string => _.map(a.cast, (c) => MOTION_TEMPLATE_LOOK(String(c.key), String(c.gender || MOTION_TEXT_MALE), String(c.name), String(c.role || MR.MOTION_TEXT_EMPTY), String(c.look || c.description || MOTION_TEXT_SYMBOL_25))).join(MOTION_TEXT_SYMBOL_27);
-const kitRenderStyle = (analysis: MotionStoryAnalysis, drawingMode?: string): Partial<MotionGenState["style"]> => {
-  if (!analysis.referenceStyle?.kit) return {};
+export const kitRenderStyle = (analysis: MotionStoryAnalysis, drawingMode?: string): Partial<MotionGenState["style"]> => {
+  if (!analysis.referenceStyle?.kit) return analysis.referenceStyle?.metrics ? { metrics: analysis.referenceStyle.metrics } : {};
   const constraints = motionStyleConstraints(analysis.referenceStyle, drawingMode);
-  return _.omitBy({ outlineSilhouette: constraints.outline.kind === MOTION_STYLE_SILHOUETTE, faceShading: _.includes(MOTION_STYLE_SHADED, constraints.shading.kind), outlineWidth: constraints.outline.width, framing: constraints.framing, flatCamera: motionFlatCamera(analysis.referenceStyle, drawingMode) }, _.isUndefined) as Partial<MotionGenState["style"]>;
+  return _.omitBy({ outlineSilhouette: constraints.outline.kind === MOTION_STYLE_SILHOUETTE, faceShading: _.includes(MOTION_STYLE_SHADED, constraints.shading.kind), outlineWidth: constraints.outline.width, framing: constraints.framing, flatCamera: motionFlatCamera(analysis.referenceStyle, drawingMode), metrics: analysis.referenceStyle.metrics }, _.isUndefined) as Partial<MotionGenState["style"]>;
 };
-const applyReferenceRenderStyle = (analysis: MotionStoryAnalysis, gen: MotionGenState): void => {
+export const applyReferenceRenderStyle = (analysis: MotionStoryAnalysis, gen: MotionGenState): void => {
   if (!analysis.referenceStyle) return;
   gen.style = { ...gen.style, grade: MOTION_TEXT_NEUTRAL, notes: _.truncate(analysis.referenceStyle.description, { length: 200 }), palette: [...(analysis.referenceStyle.palette || [])], outlineColor: analysis.referenceStyle.outlineColor, outlineWidth: analysis.referenceStyle.outlineWidth, ...kitRenderStyle(analysis, gen.drawingMode) };
 };
@@ -1480,6 +1483,16 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     emit();
   } finally {
     await session.close();
+  }
+  if (gen.drawingMode === MR.MOTION_TEXT_2D) {
+    try {
+      progress(0.9, MOTION_BOARD2D.STAGE);
+      await buildBoard2d(out, analysis, gen, MOTION_TEXT_SCENE, { exec: o.exec, mainExec: talkExec(o), signal: o.signal, log: o.log, ai: o.ai, progress: (p) => progress(0.9 + 0.05 * p, MOTION_BOARD2D.STAGE) });
+      emit();
+    } catch (e) {
+      if (o.signal?.aborted) throw e;
+      o.log(MOTION_BOARD2D.LOG_SCRIPT_FAIL(getMotionErrorSummary(e)));
+    }
   }
   progress(0.95, MOTION_TEXT_REVIEW);
   gen.failed = _.map(

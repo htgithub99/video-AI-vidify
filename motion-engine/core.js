@@ -747,8 +747,9 @@
     const { W, H, unit } = o;
     const portrait = H > W;
     const size = (portrait ? 38 : 30) * unit;
-    const font = ME.font(600, size, MT.BODY);
-    const lines = ME.wrap(g, sub.text, W * (portrait ? 0.82 : 0.64), font).slice(0, 2);
+    const quote = !!sub.speaker;
+    const font = (quote ? MT.SUB_ITALIC : MT.EMPTY) + ME.font(600, size, MT.BODY);
+    const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + sub.text + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.82 : 0.64), font).slice(0, 2);
     const life = U.clamp((t - sub.start) / 0.18) * U.clamp((sub.end - t) / 0.18);
     const rise = (1 - U.easeOut(U.clamp((t - sub.start) / 0.25))) * size * 0.25;
     const lh = size * 1.32;
@@ -765,6 +766,16 @@
       ME.roundRect(g, W / 2 - maxW / 2 - size * 0.6, baseY - size * 1.05 + rise, maxW + size * 1.2, lh * lines.length + size * 0.35, size * 0.25);
       g.fill();
     }
+    if (quote) {
+      const ls = size * 0.62;
+      g.font = ME.font(800, ls, MT.BODY);
+      g.fillStyle = MT.SUB_SPEAKER_COLOR;
+      g.shadowColor = MT.RGBA_0_0_0_0_85;
+      g.shadowBlur = ls * 0.4;
+      g.fillText(String(sub.speaker).toUpperCase(), W / 2, baseY - size * 1.15 + rise);
+      g.shadowBlur = 0;
+      g.font = font;
+    }
     lines.forEach((ln, i) => {
       const y = baseY + i * lh + rise;
       g.shadowColor = MT.RGBA_0_0_0_0_85;
@@ -774,7 +785,7 @@
       g.strokeStyle = MT.RGBA_0_0_0_0_35;
       g.lineJoin = MT.ROUND;
       g.strokeText(ln, W / 2, y);
-      g.fillStyle = MT.F6F3EE;
+      g.fillStyle = quote ? MT.SUB_QUOTE_COLOR : MT.F6F3EE;
       g.fillText(ln, W / 2, y);
       g.shadowBlur = 0;
     });

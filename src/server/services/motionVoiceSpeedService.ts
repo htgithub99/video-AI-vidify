@@ -5,6 +5,11 @@ import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { cleanVoiceSpeed, motionVoiceLibraryFile, readMotionVoiceLibraryJson, readVoiceLibrary } from "./motionVoiceLibraryService.js";
 import { fetchLinkSource } from "./motionSourceFetchService.js";
 import { speechUnits } from "./motionSpeechRateService.js";
+import os from "os";
+import path from "path";
+import fs from "fs";
+import { randomUUID } from "crypto";
+import { measureVoicePaceFile } from "./motionVoicePaceService.js";
 const round = (value: number, step = V.STEP): number => Math.round(value / step) * step;
 export const readVoiceSpeedSettings = (): MotionVoiceSpeedSettings => {
   const data = readMotionVoiceLibraryJson<Partial<MotionVoiceSpeedSettings>>(V.FILE, {});
@@ -14,7 +19,7 @@ const writeVoiceSpeedSettings = (settings: MotionVoiceSpeedSettings): MotionVoic
   writeMotionJsonAtomic(motionVoiceLibraryFile(V.FILE), settings);
   return settings;
 };
-export const measureTranscriptRate = (raw: string, focus?: number): { rate: number; window?: number } => {
+export const measureTranscriptRate = (raw: string, focus?: number): { rate: number; window?: number; pauses?: MotionVoiceSpeedTarget["pauses"] } => {
   const segments = _.compact(
     raw.split(/\r?\n/).map((line) => {
       const m = V.STAMP_RE.exec(line.trim());
@@ -31,15 +36,47 @@ export const measureTranscriptRate = (raw: string, focus?: number): { rate: numb
   if (!rate) throw new Error(V.ERRORS.TOO_SHORT);
   const near = focus == null ? [] : _.filter(segments, (s) => Math.abs(s.t - focus) <= V.WINDOW_SECONDS);
   const window = span(near);
-  return { rate: _.round(rate, 3), ...(window ? { window: _.round(window, 3) } : {}) };
+  const pauses = measurePauses(segments);
+  return { rate: _.round(rate, 3), ...(window ? { window: _.round(window, 3) } : {}), ...(pauses ? { pauses } : {}) };
+};
+const quantile = (list: number[], q: number): number => {
+  const sorted = _.sortBy(list);
+  return sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))))];
+};
+const measurePauses = (segments: { t: number; units: number }[]): MotionVoiceSpeedTarget["pauses"] | undefined => {
+  const steps = _.compact(_.map(_.initial(segments), (s, i) => {
+    const dt = segments[i + 1].t - s.t;
+    return dt > 0 && dt <= V.PAUSE_MAX_STEP && s.units >= V.MIN_UNITS ? { dt, units: s.units } : null;
+  }));
+  if (steps.length < V.PAUSE_MIN_STEPS) return undefined;
+  const articulation = quantile(_.map(steps, (x) => x.units / x.dt), V.PAUSE_ARTICULATION_Q);
+  const gaps = _.filter(_.map(steps, (x) => x.dt - x.units / articulation), (g) => g >= V.PAUSE_MIN);
+  if (gaps.length < V.PAUSE_MIN_STEPS / 2) return undefined;
+  const at = (q: number) => _.round(_.clamp(quantile(gaps, q), V.PAUSE_RANGE[0], V.PAUSE_RANGE[1]), 2);
+  return { sentence: at(V.PAUSE_Q[0]), suspense: at(V.PAUSE_Q[1]), beat: at(V.PAUSE_Q[2]), articulation: _.round(articulation, 2) };
 };
 export const measureVoiceSpeedReference = async (url: string, signal?: AbortSignal): Promise<MotionVoiceSpeedSettings> => {
   const fetched = await fetchLinkSource(url, signal);
   if (!fetched.ok) throw new Error(fetched.note || V.ERRORS.NO_TRANSCRIPT);
   const focus = Number(V.TIME_PARAM_RE.exec(url)?.[1]);
   const measured = measureTranscriptRate(fetched.raw, Number.isFinite(focus) ? focus : undefined);
-  const target: MotionVoiceSpeedTarget = { rate: measured.rate, url, title: fetched.title, ...(measured.window ? { window: measured.window } : {}), at: Date.now() };
+  const target: MotionVoiceSpeedTarget = { rate: measured.rate, url, title: fetched.title, ...(measured.window ? { window: measured.window } : {}), ...(measured.pauses ? { pauses: measured.pauses } : {}), at: Date.now() };
   return writeVoiceSpeedSettings({ ...readVoiceSpeedSettings(), target, correction: 1 });
+};
+export const measureVoiceSpeedAudio = async (name: string, base64: string, signal?: AbortSignal): Promise<MotionVoiceSpeedSettings> => {
+  const ext = _.toLower(path.extname(name));
+  if (!_.includes(V.AUDIO.EXTS as readonly string[], ext)) throw new Error(V.ERRORS.AUDIO_FORMAT);
+  const buf = Buffer.from(base64.replace(V.AUDIO.DATA_URL_RE, V.EMPTY), V.BASE64);
+  if (buf.length < V.MIN_AUDIO_BYTES) throw new Error(V.ERRORS.AUDIO_EMPTY);
+  const file = path.join(os.tmpdir(), V.AUDIO.TMP_PREFIX + randomUUID() + ext);
+  try {
+    await fs.promises.writeFile(file, buf);
+    const r = await measureVoicePaceFile(file, signal);
+    const target: MotionVoiceSpeedTarget = { rate: _.round(r.articulation / V.GAP_FACTOR, 3), url: V.EMPTY, title: path.basename(name), source: V.SOURCE_AUDIO, pauses: r.pauses, phrase: r.phrase, speechRatio: r.speechRatio, at: Date.now() };
+    return writeVoiceSpeedSettings({ ...readVoiceSpeedSettings(), target, correction: 1 });
+  } finally {
+    await fs.promises.rm(file, { force: true }).catch(_.noop);
+  }
 };
 export const clearVoiceSpeedReference = (): MotionVoiceSpeedSettings => writeVoiceSpeedSettings(_.omit({ ...readVoiceSpeedSettings(), correction: 1 }, "target") as MotionVoiceSpeedSettings);
 export const voiceSpeedKey = (voiceId: string): string => {

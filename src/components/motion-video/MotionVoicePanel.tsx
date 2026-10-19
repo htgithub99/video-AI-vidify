@@ -47,6 +47,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
   });
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const paceInputRef = useRef<HTMLInputElement | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const { channels, defaultId } = studio.voiceChannels;
   const stopAudio = useCallback(() => {
@@ -84,6 +85,12 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
     run(SP.MEASURE_URL, async () => {
       const data = await motionRequest<{ settings: MotionVoiceSpeedSettings }>(SP.MEASURE_URL, { url: referenceUrl.trim() });
       setSpeedSettings(data.settings);
+    });
+  const measureAudio = (file: File) =>
+    run(SP.AUDIO_URL, async () => {
+      const data = await motionRequest<{ settings: MotionVoiceSpeedSettings }>(SP.AUDIO_URL, { name: file.name, base64: await readFileBase64(file) });
+      setSpeedSettings(data.settings);
+      setReferenceUrl(MR.MOTION_TEXT_EMPTY);
     });
   const setVoiceSpeed = (voice: MotionVoicePreset, value: string) => {
     const speed = value === SP.AUTO ? undefined : Number(value);
@@ -571,7 +578,26 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                   {sp.MEASURE}
                 </ActionBtn>
               </div>
+              <div className={S.INLINE_ROW}>
+                <StudioInput
+                  type={MR.MOTION_TEXT_FILE}
+                  ref={paceInputRef}
+                  accept={SP.AUDIO.ACCEPT}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = MR.MOTION_TEXT_EMPTY;
+                    if (file) measureAudio(file);
+                  }}
+                  className={S.HIDDEN}
+                />
+                <ActionBtn icon={Upload} busy={busy === SP.AUDIO_URL} disabled={!!busy} onClick={() => paceInputRef.current?.click()}>
+                  {busy === SP.AUDIO_URL ? sp.AUDIO_BUSY : sp.AUDIO}
+                </ActionBtn>
+                <span className={S.HINT}>{sp.AUDIO_HINT}</span>
+              </div>
               <div className={S.STAT_DETAIL}>{speedSettings?.target ? sp.MEASURED((speedSettings.target.window || speedSettings.target.rate).toFixed(2), speedSettings.target.title) : sp.NONE}</div>
+              {speedSettings?.target?.pauses && <div className={S.STAT_DETAIL}>{sp.PAUSES(speedSettings.target.pauses.clause ?? speedSettings.target.pauses.sentence, speedSettings.target.pauses.sentence, speedSettings.target.pauses.suspense, speedSettings.target.pauses.beat)}</div>}
+              {speedSettings?.target?.source === SP.SOURCE_AUDIO && speedSettings.target.pauses && <div className={S.STAT_DETAIL}>{sp.AUDIO_STATS(speedSettings.target.pauses.articulation, speedSettings.target.phrase || 0, Math.round((speedSettings.target.speechRatio || 0) * 100))}</div>}
             </div>
             <div className={S.FILTER_SECTION}>
               <div className={S.FILTER_ROW}>

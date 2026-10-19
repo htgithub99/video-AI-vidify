@@ -1,3 +1,10 @@
+import { MOTION_BOARD2D } from "../../constants/motionBoard2d.js";
+import { board2dSpec } from "./motion2d/board2d.js";
+import { cast2dSpec } from "./motion2d/cast2d.js";
+import { MOTION_2D } from "../../constants/motion2d.js";
+import { motionAutoSoundEvents } from "../../lib/motionSound.js";
+import { board2dSentenceKey, splitBoard2dSentences } from "../../lib/motionBoard2d.js";
+import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { budgetShotText } from "../../lib/motionTextBudget.js";
 import { motionStyleFinish } from "../../constants/motionStyleFinish.js";
 import { compileMotionSoundPlan } from "../../lib/motionSoundPlan.js";
@@ -125,8 +132,9 @@ const pickTransition = (beat: MotionBeat, prev: MotionBeat | undefined, index: n
   if (locA !== locB) return beat.time !== prev.time ? { type: MOTION_TEXT_DIP, duration: 0.6 } : { type: MOTION_TEXT_FADE, duration: 0.5 };
   return { type: MOTION_TEXT_CUT, duration: 0 };
 };
+const is2d = (gen?: MotionGenState): boolean => gen?.drawingMode === MOTION_VIDEO_CONSTANTS.DRAWING_2D;
 const nearestScene = (beats: MotionBeat[], i: number, gen?: MotionGenState): MotionBeat | undefined => {
-  const ok = (b?: MotionBeat) => !!b && b.visual === MOTION_TEXT_SCENE && !!gen?.staging?.[b.id];
+  const ok = (b?: MotionBeat) => !!b && b.visual === MOTION_TEXT_SCENE && (is2d(gen) ? !!b.place : !!gen?.staging?.[b.id]);
   for (let d = 0; d < beats.length; d++) {
     if (ok(beats[i + d])) return beats[i + d];
     if (ok(beats[i - d])) return beats[i - d];
@@ -136,6 +144,7 @@ const nearestScene = (beats: MotionBeat[], i: number, gen?: MotionGenState): Mot
 const bgOf = (beats: MotionBeat[], i: number, gen?: MotionGenState): Record<string, unknown> => {
   const b = nearestScene(beats, i, gen);
   if (!b) return {};
+  if (is2d(gen)) return { [MOTION_2D.BG2D]: { location: b.place, time: b.time } };
   const stg: any = gen!.staging[b.id];
   return { bg3d: { location: stg.location, time: stg.time } };
 };
@@ -253,11 +262,39 @@ export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number,
     const s1 = i + 1 < cams.length ? start + cuts[i + 1] * dur : end;
     if (s1 - s0 < 0.8 && i > 0) return;
     const params = { ..._.omit(stg, [MOTION_TEXT_CAMERA, MOTION_TEXT_CAMERAS]), ...(speech && !_.isEmpty(speech) ? { speech } : {}), soundBeatId: beat.id, cameras: [cam], beatDur: +dur.toFixed(3), tOffset: +(s0 - start).toFixed(3) };
-    shots.push({ id: i ? MOTION_TEMPLATE_C_3(String(beat.id), String(i + 1)) : beat.id, start: +s0.toFixed(3), end: +s1.toFixed(3), template: MOTION_TEXT_GEN3D, params, transition: i === 0 ? undefined : { type: MOTION_TEXT_CUT, duration: 0 } });
+    shots.push({ id: i ? MOTION_TEMPLATE_C_3(String(beat.id), String(i + 1)) : beat.id, start: +s0.toFixed(3), end: +s1.toFixed(3), template: gen.drawingMode === MOTION_VIDEO_CONSTANTS.DRAWING_2D ? MOTION_VIDEO_CONSTANTS.TEMPLATE_2D : MOTION_TEXT_GEN3D, params, transition: i === 0 ? undefined : { type: MOTION_TEXT_CUT, duration: 0 } });
   });
   void speechStart;
   return shots;
 };
+const beatSentences2d = (beat: MotionBeat, gen: MotionGenState): string[] => {
+  const sentences = gen.board2d?.sentences || {};
+  const texts = beat.utterances?.length ? _.map(beat.utterances, MOTION_2D.F_TEXT) : [beat.narration];
+  return _.flatMap(_.compact(_.flatMap(texts, (t) => _.map(splitBoard2dSentences(t), (x) => sentences[board2dSentenceKey(x)]))), (e) => _.compact([e.kind, ..._.map(e.objects, MOTION_2D.F_KEY), ..._.map(e.actors, MOTION_2D.F_POSE), e.light]));
+};
+export const sceneShots2d = (beat: MotionBeat, gen: MotionGenState, start: number, end: number, speech?: Record<string, number[][]>): MotionShot[] => {
+  const known = new Set([..._.keys(gen.board2d?.cast || {}), ..._.keys(gen.cast || {})]);
+  const cast = _.take(_.uniq(_.filter(beat.cast || [], (c) => !known.size || known.has(c))), MOTION_2D.ACTOR_MAX);
+  const n = cast.length;
+  const actors = _.map(cast, (c, i) => ({ cast: c, at: [+((i - (n - 1) / 2) * MOTION_2D.ACTOR_GAP).toFixed(3), 0], face: n < 2 ? 0 : i === 0 ? 90 : i === n - 1 ? -90 : 0, action: MOTION_2D.ACTION_IDLE }));
+  const dur = end - start;
+  const params = {
+    location: beat.place,
+    time: beat.time,
+    weather: beat.weather,
+    actors,
+    props: [],
+    hide: [],
+    soundEvents: motionAutoSoundEvents([beat.narration, beat.action, ...beatSentences2d(beat, gen)]),
+    ...(speech && !_.isEmpty(speech) ? { speech } : {}),
+    soundBeatId: beat.id,
+    cameras: [{ shot: MOTION_2D.SHOT_WIDE, move: MOTION_2D.MOVE_STATIC }],
+    beatDur: +dur.toFixed(3),
+    tOffset: 0,
+  };
+  return [{ id: beat.id, start: +start.toFixed(3), end: +end.toFixed(3), template: MOTION_VIDEO_CONSTANTS.TEMPLATE_2D, params }];
+};
+const spokenClip = (beat: MotionBeat, clip: MotionVoiceClip, roles: readonly string[] = MOTION_2D.SPEAK_ROLES): boolean => _.some(beat.utterances || [], (u) => u.speaker === clip.speaker && _.includes(roles, u.role) && (u.id === clip.id || _.includes(clip.text, _.trim(u.text).slice(0, 12))));
 export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect: string; durations?: number[]; look?: string; accent?: string; voiceTrack?: MotionVoiceTrack }): CompiledStory => {
   const beats = script.beats;
   if (_.isEmpty(beats)) throw new Error(MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO_2);
@@ -265,9 +302,9 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
   const durations = _.map(beats, (b, i) => opts.durations?.[i] || b.duration || estimateBeatSeconds(b, script.language));
   const { starts, ends, total } = computeBeatTimeline(beats, durations);
   const lead = MOTION_STORY_CONFIG.LEAD_SECONDS;
-  const shotStarts = _.map(starts, (s, i) => (i === 0 ? 0 : Math.max(0, s - lead)));
+  const shotStarts = _.map(starts, (s, i) => (i === 0 ? 0 : Math.max(0, s - lead, ends[i - 1] + MOTION_STORY_CONFIG.SPEECH_HOLD_SECONDS)));
   const shots: MotionShot[] = [];
-  const subtitles: { start: number; end: number; text: string }[] = [];
+  const subtitles: { start: number; end: number; text: string; speaker?: string }[] = [];
   const missing: string[] = [];
   const usedLocations = new Set<string>();
   const hudStates = motionHudStates(beats);
@@ -276,10 +313,11 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     let end = i + 1 < beats.length ? shotStarts[i + 1] : total;
     if (end - start < MOTION_STORY_CONFIG.MIN_SHOT_SECONDS && i + 1 < beats.length) end = start + MOTION_STORY_CONFIG.MIN_SHOT_SECONDS;
     const transition = pickTransition(beat, beats[i - 1], i, gen);
-    if (beat.visual === MOTION_TEXT_SCENE && gen?.staging?.[beat.id] && gen.locations?.[_.get(gen.staging, [beat.id, MOTION_TEXT_LOCATION]) as string]) {
+    const scene2d = beat.visual === MOTION_TEXT_SCENE && is2d(gen) && !!beat.place;
+    if (scene2d || (beat.visual === MOTION_TEXT_SCENE && gen?.staging?.[beat.id] && gen.locations?.[_.get(gen.staging, [beat.id, MOTION_TEXT_LOCATION]) as string])) {
       const speech = _.mapValues(
         _.groupBy(
-          _.filter(opts.voiceTrack?.clips, (clip) => clip.beatId === beat.id && !!clip.speaker),
+          _.filter(opts.voiceTrack?.clips, (clip) => clip.beatId === beat.id && !!clip.speaker && (!scene2d || spokenClip(beat, clip))),
           (clip) => clip.speaker,
         ),
         (clips) => _.flatMap(clips, (clip) => speechRanges(clip, start)),
@@ -290,9 +328,9 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
           (clip) => [clip.id, clip.start - start],
         ),
       );
-      const list = sceneShots(beat, gen, start, end, starts[i], i, speech, lines);
+      const list = scene2d ? sceneShots2d(beat, gen!, start, end, speech) : sceneShots(beat, gen!, start, end, starts[i], i, speech, lines);
       if (list.length) list[0].transition = i === 0 && analysis?.videoDna ? { type: MR.MOTION_TEXT_CUT, duration: 0 } : transition;
-      usedLocations.add(_.get(gen.staging, [beat.id, MOTION_TEXT_LOCATION]) as string);
+      if (!scene2d) usedLocations.add(_.get(gen!.staging, [beat.id, MOTION_TEXT_LOCATION]) as string);
       shots.push(...list);
     } else {
       if (beat.visual === MOTION_TEXT_SCENE) missing.push(beat.id);
@@ -306,7 +344,9 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     if (lines?.length) {
       for (const clip of lines) {
         const lineBeat = { ...beat, narration: clip.text };
-        subtitles.push(...buildSubtitles(lineBeat, clip.start, clip.end));
+        const spoken = spokenClip(beat, clip, [MOTION_BOARD2D.DIALOGUE]);
+        const speakerName = gen?.drawingMode === MOTION_VIDEO_CONSTANTS.DRAWING_2D && spoken ? _.find(analysis?.cast || [], { key: clip.speaker })?.name : undefined;
+        subtitles.push(..._.map(buildSubtitles(lineBeat, clip.start, clip.end), (sub) => (speakerName ? { ...sub, speaker: speakerName } : sub)));
       }
     } else if (!_.includes([MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_ENDING, MOTION_TEXT_HEADLINE], beat.visual)) subtitles.push(...buildSubtitles(beat, starts[i], ends[i]));
   });
@@ -320,7 +360,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     subtitleStyle: MOTION_TEXT_CINEMA,
     fadeIn: analysis?.videoDna ? 0 : undefined,
     fadeOut: analysis?.videoDna ? 0 : undefined,
-    gen: gen ? { characterMotion: gen.characterMotion, characterMode: gen.characterMode, videoDna: gen.videoDna, drawingMode: gen.drawingMode, style: gen.style, cast: gen.cast, locations: _.pick(gen.locations, [...usedLocations]) } : undefined,
+    gen: gen ? { characterMotion: gen.characterMotion, characterMode: gen.characterMode, videoDna: gen.videoDna, drawingMode: gen.drawingMode, style: { ...gen.style, ...(gen.style?.metrics || !analysis?.referenceStyle?.metrics ? {} : { metrics: analysis.referenceStyle.metrics }) }, cast: is2d(gen) && gen.board2d?.cast ? cast2dSpec(gen.board2d.cast) : gen.cast, locations: is2d(gen) ? {} : _.pick(gen.locations, [...usedLocations]), ...(is2d(gen) ? { board2d: board2dSpec(gen) } : {}) } : undefined,
     shots,
     subtitles,
     duration: +total.toFixed(3),
@@ -334,5 +374,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     _.map(_.filter(shots, { template: MOTION_HISTORY.VERDICT }), (shot) => ({ id: MOTION_HISTORY.STAMP_CUE_ID(shot.id), beatId: shot.id, kind: MOTION_HISTORY.VERDICT_SFX_KIND, layer: MOTION_HISTORY.VERDICT_SFX_LAYER, t: +(shot.start + MOTION_HISTORY.VERDICT_STAMP_AT * (shot.end - shot.start)).toFixed(3), duration: MOTION_HISTORY.VERDICT_SFX_SECONDS })),
     spec.duration,
   );
-  return { spec, starts, ends, sfxCues: [...compileMotionSoundPlan(spec, script, analysis, opts.voiceTrack?.plan?.direction, opts.voiceTrack?.plan?.roles, opts.voiceTrack?.clips), ...stampCues], missing };
+  const sfxCues = [...compileMotionSoundPlan(spec, script, analysis, opts.voiceTrack?.plan?.direction, opts.voiceTrack?.plan?.roles, opts.voiceTrack?.clips), ...stampCues];
+  if (gen?.drawingMode === MOTION_VIDEO_CONSTANTS.DRAWING_2D) spec.fxCues = sfxCues.filter((cue) => MOTION_VIDEO_CONSTANTS.FX_CUE_RE.test(cue.kind)).map((cue) => ({ t: cue.t, kind: cue.kind }));
+  return { spec, starts, ends, sfxCues, missing };
 };

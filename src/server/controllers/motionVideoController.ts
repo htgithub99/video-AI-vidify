@@ -1,3 +1,5 @@
+import { buildScenes2d } from "../services/motion2d/pipeline2d.js";
+import { board2dSheet } from "../services/motion2d/sheet2d.js";
 import { MOTION_SOUND_CONFIG as SOUND } from "../../constants/motionSound.js";
 import { normalizeSoundCues } from "../../lib/motionSound.js";
 import { buildMotionSoundTrack, mixMotionSoundAudio, motionSoundAudition } from "../services/motionSoundMixService.js";
@@ -14,7 +16,8 @@ import { motionStylePreset } from "../../constants/motionStylePresets.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
 import { motionSpeechRate, recordSpeechRate, speechUnits } from "../services/motionSpeechRateService.js";
-import { clearVoiceSpeedReference, measureVoiceSpeedReference, readVoiceSpeedSettings, recordVoiceSpeedFeedback, voicesUseAutoSpeed } from "../services/motionVoiceSpeedService.js";
+import { clearVoiceSpeedReference, measureVoiceSpeedReference,
+  measureVoiceSpeedAudio, readVoiceSpeedSettings, recordVoiceSpeedFeedback, voicesUseAutoSpeed } from "../services/motionVoiceSpeedService.js";
 import path from "path";
 import {
   MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM,
@@ -148,6 +151,13 @@ export const checkMotionVideo = async (req: Request, res: Response): Promise<voi
     res.json({ success: true, ...(await checkMotionSpec(validateSpec(req.body?.spec))) });
   } catch (error) {
     logger.error(MOTION_TEXT_MOTION_VIDEO_CHECK_FAILED, error);
+    fail(res, 400, error);
+  }
+};
+export const renderBoard2dSheet = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, items: await board2dSheet(validateSpec(req.body?.spec)) });
+  } catch (error) {
     fail(res, 400, error);
   }
 };
@@ -424,7 +434,8 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
             })
         : undefined;
       voiceTiming?.catch(_.noop);
-      const result = await buildScenes(script, analysis, {
+      const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
+      const result = await (drawingMode === MR.MOTION_TEXT_2D ? buildScenes2d : buildScenes)(script, analysis, {
         voiceTiming,
         audioDirection: voicePlan?.direction,
         exec,
@@ -442,7 +453,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
         note: note || undefined,
         review: req.body?.review !== false,
         skipPreviews: req.body?.previews === false,
-        drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
+        drawingMode,
       });
       if (voicePlan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, voicePlan.roles);
       if (req.body?.autoVoice !== false && !result.gen?.failed?.length) {
@@ -540,6 +551,13 @@ export const measureMotionVoiceSpeed = async (req: Request, res: Response): Prom
   try {
     const url = _.toString(req.body?.url).trim();
     res.json({ success: true, settings: url ? await measureVoiceSpeedReference(url) : clearVoiceSpeedReference() });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const measureMotionVoiceSpeedAudio = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.json({ success: true, settings: await measureVoiceSpeedAudio(_.toString(req.body?.name), _.toString(req.body?.base64)) });
   } catch (error) {
     fail(res, 400, error);
   }

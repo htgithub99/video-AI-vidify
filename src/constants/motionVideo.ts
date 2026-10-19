@@ -24,7 +24,12 @@ export const MOTION_QUALITY_PRESETS: Record<MotionQuality, MotionQualityPreset> 
 export const MOTION_ASPECT_BASE: Record<string, { w: number; h: number }> = { [MotionAspect.LANDSCAPE]: { w: 1920, h: 1080 }, [MotionAspect.PORTRAIT]: { w: 1080, h: 1920 }, [MotionAspect.SQUARE]: { w: 1080, h: 1080 }, [MotionAspect.FOUR_FIVE]: { w: 1080, h: 1350 } };
 export const MOTION_VIDEO_CONSTANTS = {
   ENGINE_DIR: "motion-engine",
-  ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
+  TEMPLATE_2D: "gen2d",
+  DRAWING_2D: "2d",
+  FX_CUE_RE: /^(stinger|thunder|explosion|impact)$/,
+  ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js", "svg2d.js"],
+  ENGINE_3D_FILES: ["vendor/three.min.js", "three-core.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
+  TEMPLATE_3D: "gen3d",
   CLIENT_ONLY_FILES: ["vendor/three.min.js", "three-core.js", "style-finish.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
   FONTS_DIR: "fonts",
   FONTS_MANIFEST: "fonts.json",
@@ -80,6 +85,7 @@ export const MOTION_STORY_CONFIG = {
   SPEECH_RATE_LOG: (rate: number, seconds: number): string => `Tốc độ đọc thực tế: ${rate.toFixed(2)} âm tiết (từ)/giây – kịch bản sau sẽ tính theo tốc độ này để khớp thời lượng ≈${seconds}s.`,
   SPEECH_RATE_MEASURED: (rate: number): string => `Đã đo tốc độ đọc: ${rate.toFixed(2)} âm tiết (từ)/giây, lưu lại để viết kịch bản lần sau đúng thời lượng.`,
   LEAD_SECONDS: 0.3,
+  SPEECH_HOLD_SECONDS: 0.12,
   BEAT_GAP_SECONDS: 0.18,
   CHAPTER_GAP_SECONDS: 0.7,
   TAIL_SECONDS: 2.2,

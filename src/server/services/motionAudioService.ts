@@ -2,8 +2,8 @@ import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
-import { voiceSpeedKey, voiceTempoFactor } from "./motionVoiceSpeedService.js";
+import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_PACING as PACE, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
+import { readVoiceSpeedSettings, voiceSpeedKey, voiceTempoFactor } from "./motionVoiceSpeedService.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance, MotionVoiceDelivery, MotionVoicePlan, MotionVoiceTiming } from "../../types/motionVideo.js";
 import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
@@ -106,10 +106,46 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
 };
 type VoiceClipLayout = { beatId: string; line: MotionUtterance; voiceId: string; audio: SpeechClipAudio; t: number; delivery: MotionVoiceDelivery }[];
 const voicePlan = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<MotionVoicePlan> => directMotionVoice(script, analysis, await (deps.voices || listMotionVoices)(opts.signal, opts.log), opts);
-const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScript, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<{ local: VoiceClipLayout; durations: number[] }> => {
+type Pacing = (typeof PACE)["HORROR"];
+const PACE_KIND = PACE.KIND;
+export const motionVoicePacing = (analysis: MotionStoryAnalysis | null): Pacing | null => {
+  const target = readVoiceSpeedSettings().target;
+  const p = target?.pauses;
+  if (p) return { ...PACE.HORROR, key: PACE.MEASURED_KEY, narrationTempo: 1, dialogueTempo: 1, clauseGap: p.clause ?? p.sentence, sentenceGap: p.sentence, suspenseGap: p.suspense, revealGap: _.round((p.sentence + p.suspense) / 2, 2), gaps: { FIRST: [PACE.FIRST_MIN, p.sentence], SAME_SPEAKER: [p.sentence * PACE.SAME_SHARE, p.suspense], SPEAKER_CHANGE: [p.sentence, p.suspense], BEAT_END: [p.suspense, p.beat] } } as unknown as Pacing;
+  if (!(analysis && PACE.HORROR_RE.test([analysis.videoGenre, analysis.genre, analysis.genre2, analysis.sfxMood, analysis.musicMood].join(MR.MOTION_TEXT_SYMBOL_13)))) return null;
+  return target ? ({ ...PACE.HORROR, narrationTempo: 1, dialogueTempo: 1 } as unknown as Pacing) : PACE.HORROR;
+};
+export const motionPacedLines = (line: MotionUtterance, pacing: Pacing | null): { line: MotionUtterance; gap: number }[] => {
+  if (!pacing || line.role !== MR.MOTION_TEXT_NARRATION) return [{ line, gap: 0 }];
+  const words = (x: string) => _.compact(x.split(PACE.WORD_RE)).length;
+  const parts: { text: string; clause: boolean }[] = [];
+  for (const sentence of _.compact(_.map(line.text.match(PACE.SENTENCE_RE) || [line.text], _.trim))) {
+    const clauses: string[] = [];
+    for (const piece of _.compact(_.map(sentence.split(PACE.CLAUSE_RE), _.trim))) {
+      const last = clauses.length - 1;
+      if (last >= 0 && (words(piece) < PACE.MIN_WORDS || words(clauses[last]) < PACE.MIN_WORDS) && words(clauses[last]) + words(piece) <= PACE.MAX_PHRASE_WORDS) clauses[last] += MR.MOTION_TEXT_SYMBOL_13 + piece;
+      else clauses.push(piece);
+    }
+    _.forEach(clauses, (text, k) => {
+      const last = parts.length - 1;
+      if (k === 0 && last >= 0 && words(text) < PACE.MIN_WORDS) parts[last].text += MR.MOTION_TEXT_SYMBOL_13 + text;
+      else parts.push({ text, clause: false });
+      if (k < clauses.length - 1) parts[parts.length - 1].clause = true;
+    });
+  }
+  if (parts.length < 2) return [{ line, gap: 0 }];
+  return _.map(parts, ({ text, clause }, k) => {
+    const next = parts[k + 1]?.text;
+    const gap = !next ? 0 : PACE.SUSPENSE_END_RE.test(text) ? pacing.suspenseGap : clause ? pacing.clauseGap : words(next) <= pacing.revealWords ? pacing.revealGap : pacing.sentenceGap;
+    return { line: { ...line, id: line.id + PACE.SUFFIX + k, text, emphasis: _.filter(line.emphasis || [], (w) => _.includes(text, w)) }, gap };
+  });
+};
+const pacedGap = (value: number, kind: keyof Pacing["gaps"], pacing: Pacing | null, cap: number): number => (pacing ? _.clamp(value, pacing.gaps[kind][0], pacing.gaps[kind][1]) : Math.min(value, cap));
+const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScript, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, pacing: Pacing | null = null): Promise<{ local: VoiceClipLayout; durations: number[] }> => {
   const local: VoiceClipLayout = [],
     durations: number[] = [];
   const totalLines = plan.beats.reduce((sum, beat) => sum + beat.utterances.length, 0);
+  let split = 0;
   let done = 0;
   const moods: Record<string, number> = {};
   let ai33 = 0;
@@ -125,23 +161,30 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
       const delivery = resolveMotionDelivery(line, sceneMood);
       if (delivery.strength) moods[delivery.mood] = (moods[delivery.mood] || 0) + 1;
       if (delivery.strength && isAi33Voice(voiceId)) ai33++;
-      const audio = await speechClip(line, voiceId, script.language, opts, deps, delivery);
-      const gapBefore = previous ? 0 : Math.min(line.pauseBefore * delivery.pause, C.PAUSE.FIRST),
-        gapAfter = Math.min(Math.max(line.pauseAfter, next?.pauseBefore || 0) * delivery.pause, !next ? C.PAUSE.BEAT_END : next.speaker === line.speaker ? C.PAUSE.SAME_SPEAKER : C.PAUSE.SPEAKER_CHANGE);
+      const paced = pacing ? { ...delivery, tempo: delivery.tempo * (line.role === MR.MOTION_TEXT_NARRATION ? pacing.narrationTempo : pacing.dialogueTempo) } : delivery;
+      const pieces = motionPacedLines(line, pacing);
+      if (pieces.length > 1) split++;
+      const gapBefore = previous ? 0 : pacedGap(line.pauseBefore * delivery.pause, PACE_KIND.FIRST, pacing, C.PAUSE.FIRST),
+        gapAfter = pacedGap(Math.max(line.pauseAfter, next?.pauseBefore || 0) * delivery.pause, !next ? PACE_KIND.BEAT_END : next.speaker === line.speaker ? PACE_KIND.SAME_SPEAKER : PACE_KIND.SPEAKER_CHANGE, pacing, !next ? C.PAUSE.BEAT_END : next.speaker === line.speaker ? C.PAUSE.SAME_SPEAKER : C.PAUSE.SPEAKER_CHANGE);
       cursor += gapBefore;
-      local.push({ beatId: beat.id, line, voiceId, audio, t: cursor, delivery });
-      cursor += audio.duration + gapAfter;
+      for (const piece of pieces) {
+        const audio = await speechClip(piece.line, voiceId, script.language, opts, deps, paced);
+        local.push({ beatId: beat.id, line: piece.line, voiceId, audio, t: cursor, delivery: paced });
+        cursor += audio.duration + piece.gap;
+      }
+      cursor += gapAfter;
       opts.onProgress?.(++done, totalLines);
     }
     durations.push(Math.max(0.6, cursor));
   }
   if (!totalLines) throw new Error(C.EMPTY);
   opts.log?.(D.LOG(moods, ai33));
+  if (pacing) opts.log?.(PACE.LOG(pacing.key, split));
   return { local, durations };
 };
 export const measureMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTiming> => {
   const plan = await voicePlan(script, analysis, opts, deps);
-  const { local, durations } = await layoutMotionVoice(plan, script, opts, deps);
+  const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, motionVoicePacing(analysis));
   return {
     signature: plan.signature,
     beats: Object.fromEntries(plan.beats.map((beat, index) => [beat.id, { duration: durations[index], lines: local.filter((item) => item.beatId === beat.id).map((item) => ({ id: item.line.id, speaker: item.line.speaker, text: item.line.text, from: +item.t.toFixed(3), to: +(item.t + item.audio.duration).toFixed(3) })) }])),
@@ -149,7 +192,8 @@ export const measureMotionVoice = async (script: MotionStoryScript, analysis: Mo
 };
 export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> => {
   const plan = await voicePlan(script, analysis, opts, deps);
-  const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging, opts.asr === true]) + MR.MOTION_TEXT_WAV,
+  const pacing = motionVoicePacing(analysis);
+  const id = C.PREFIX + hash([C.VERSION, C.TRACK_VERSION, C.PACKAGE, plan, opts.aspect, script.gen?.staging, opts.asr === true, ...(pacing ? [PACE.VERSION, pacing] : [])]) + MR.MOTION_TEXT_WAV,
     folder = getMotionAudioDirectory(),
     file = path.join(folder, id),
     metadata = file + MR.MOTION_TEXT_JSON;
@@ -161,7 +205,7 @@ export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis:
   if (running) return running;
   const task = (async (): Promise<MotionVoiceTrack> => {
     opts.log?.(C.GENERATING);
-    const { local, durations } = await layoutMotionVoice(plan, script, opts, deps);
+    const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, pacing);
     const timeline = computeBeatTimeline(script.beats, durations),
       temporary = file + randomUUID() + MR.MOTION_TEXT_WAV,
       frames = Math.ceil(timeline.total * C.SAMPLE_RATE),

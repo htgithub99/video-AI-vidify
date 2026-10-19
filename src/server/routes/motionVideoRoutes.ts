@@ -4,7 +4,7 @@ import { listMotionVoices, registerMotionVoice, updateMotionVoiceMeta, removeMot
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../../constants/motionVoice.js";
 import express from "express";
 import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
-import { calibrateSceneLibraryStyleJob, getMotionVoiceSpeed, measureMotionVoiceSpeed, serveSceneStyleCalibration } from "../controllers/motionVideoController.js";
+import { calibrateSceneLibraryStyleJob, getMotionVoiceSpeed, measureMotionVoiceSpeed, measureMotionVoiceSpeedAudio, serveSceneStyleCalibration } from "../controllers/motionVideoController.js";
 import { MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
 import { MOTION_STYLE_CALIBRATION } from "../../constants/motionStyleMetrics.js";
 import { getSceneLibraryStyle, listSceneLibrary, removeSceneLibraryItem, removeSceneLibraryStyle, renameSceneLibraryItem, renameSceneLibraryStyle, seedSceneLibraryJob, importSceneLibraryJob, clearSceneLibraryItems, exportSceneLibraryFile, serveSceneLibraryThumb } from "../controllers/motionVideoController.js";
@@ -16,6 +16,7 @@ import {
   cancelMotionStory,
   cancelMotionVideo,
   checkMotionVideo,
+  renderBoard2dSheet,
   cleanStorageJunkHandler,
   clearMotionVideoResults,
   compileMotionStory,
@@ -50,6 +51,7 @@ router.post(MOTION_VOICE.PREVIEW_ROUTE, previewMotionVoice);
 router.post(MOTION_VOICE_LIBRARY.META_ROUTE, updateMotionVoiceMeta);
 router.get(MOTION_VOICE_SPEED.ROUTE, getMotionVoiceSpeed);
 router.post(MOTION_VOICE_SPEED.MEASURE_ROUTE, measureMotionVoiceSpeed);
+router.post(MOTION_VOICE_SPEED.AUDIO_ROUTE, measureMotionVoiceSpeedAudio);
 router.post(MOTION_VOICE_LIBRARY.REMOVE_ROUTE, removeMotionVoice);
 router.post(MOTION_VOICE_LIBRARY.AI33_ROUTE, addMotionAi33Voice);
 router.get(MOTION_VOICE_LIBRARY.CHANNELS_ROUTE, listMotionVoiceChannels);
@@ -77,6 +79,7 @@ router.get(MOTION_VIDEO_API_PATHS.GEN_PREVIEW, serveGenPreview);
 router.get(MOTION_VIDEO_API_PATHS.STYLE_PREVIEW, serveStylePreview);
 router.post(MOTION_VIDEO_API_PATHS.AUDIO, uploadMotionAudio);
 router.post(MOTION_VIDEO_API_PATHS.CHECK, checkMotionVideo);
+router.post(MOTION_VIDEO_API_PATHS.BOARD2D_SHEET, renderBoard2dSheet);
 router.post(MOTION_VIDEO_API_PATHS.RENDER, startMotionVideoRender);
 router.get(MOTION_VIDEO_API_PATHS.STATUS, getMotionVideoStatus);
 router.post(MOTION_VIDEO_API_PATHS.CANCEL, cancelMotionVideo);
