@@ -119,7 +119,6 @@ export const MOTION_BOARD2D = {
   ERR_SIZE: "SVG quá lớn",
   ERR_EMPTY: "AI không trả về dữ liệu",
 } as const;
-
 export const MOTION_BOARD2D_STYLE_RULES = [
   "STYLE (match the reference video exactly): flat 2D vector illustration like a simple Vietnamese horror-story cartoon.",
   "Only flat solid fills, no gradients except one soft radial light pool, no textures, no tiny details, no text, no letters, no logos.",
@@ -127,7 +126,6 @@ export const MOTION_BOARD2D_STYLE_RULES = [
   "Muted palette: grey-blue, brick brown, cream, moss green, dark wood brown, night navy. Night scenes are dark blue-grey, never pure black everywhere.",
   "Front-facing flat composition (front elevation), no strong perspective, horizon about 55% of height.",
 ];
-
 export const MOTION_BOARD2D_PROMPTS = {
   SCRIPT: (p: { story: string; cast: string; narrator: string; places: string; catalog: string; sentences: string; previous: string }): string =>
     [
@@ -140,8 +138,10 @@ export const MOTION_BOARD2D_PROMPTS = {
       "CATALOG: " + p.catalog,
       p.previous ? "PREVIOUS SENTENCES (context only): " + p.previous : "",
       "SENTENCES (index | beat place | dialogue speaker | cast present in the beat | text):\n" + p.sentences,
-      'Return JSON {"sentences":[{"i":index,"mode":"people|vignette|cutaway","kind":"vignette kind or null","subject":"cast key or null","target":"cast key or null","objects":[{"key":"snake_case english noun","color":"#rrggbb or null","count":1,"state":"state or null"}],"actors":[{"cast":"key","pose":"pose","expression":"expression","face":"cast key or left|right|front|back"}],"camera":"wide|medium|close","light":"day|night|lamp|dawn or null","items":[{"key":"object key","x":0.5,"y":0.7,"scale":0.4}]}]}.',
-      "RULES: one entry per sentence index. mode=people: list every visible actor with the pose that matches what THAT actor does in THIS sentence (e.g. 'tay ôm bụng bầu' -> hold_belly, 'lắc đầu' -> shake_head, 'dìu' -> support with face toward the helped person, 'trao/đưa' -> give facing the receiver, the receiver pose reach). Actors not doing anything use idle and face the speaker. Dialogue: the speaker uses talk (or the matching gesture) and camera close or medium.",
+      "Return JSON {\"sentences\":[{\"i\":index,\"mode\":\"people|vignette|cutaway\",\"kind\":\"vignette kind or null\",\"subject\":\"cast key or null\",\"target\":\"cast key or null\",\"objects\":[{\"key\":\"snake_case english noun\",\"color\":\"#rrggbb or null\",\"count\":1,\"state\":\"state or " +
+        "null\"}],\"actors\":[{\"cast\":\"key\",\"pose\":\"pose\",\"expression\":\"expression\",\"face\":\"cast key or left|right|front|back\"}],\"camera\":\"wide|medium|close\",\"light\":\"day|night|lamp|dawn or null\",\"items\":[{\"key\":\"object key\",\"x\":0.5,\"y\":0.7,\"scale\":0.4}]}]}.",
+      "RULES: one entry per sentence index. mode=people: list every visible actor with the pose that matches what THAT actor does in THIS sentence (e.g. 'tay ôm bụng bầu' -> hold_belly, 'lắc đầu' -> shake_head, 'dìu' -> support with face toward the helped person, 'trao/đưa' -> give facing the receiver, the " +
+        "receiver pose reach). Actors not doing anything use idle and face the speaker. Dialogue: the speaker uses talk (or the matching gesture) and camera close or medium.",
       "mode=vignette: kind from the catalog; subject = who does the action, target = the other person; objects lists the object(s) with color/count/state (state 'down'/'up' for face down/up cards, 'out' for extinguished, 'lit', 'cold', 'warm', 'fade', 'shake').",
       "mode=cutaway: for things not in the vignette kinds (an animal, a tree, a locked door, a grave, a coffin, a crowd...): items = 1 to 6 objects placed on a 0..1 canvas (x center, y = where the object stands, scale = height fraction). objects must list the same keys.",
       "Object keys are short English snake_case nouns (red_card, dog, areca_tree, padlock, coffin). Keep the same key and color for the same object across the whole story.",
@@ -166,13 +166,13 @@ export const MOTION_BOARD2D_PROMPTS = {
       "PLACE: " + p.place,
       "WHAT HAPPENS THERE: " + p.uses,
       "DEFAULT TIME: " + p.time,
-      'SVG: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"> with exactly these groups in order: <g id="sky">, <g id="back"> (walls, facade, doors, hills), <g id="mid"> (furniture, altar, bed, gate placed against the back), <g id="floor"> (ground: brick tiles, planks, sand or grass drawn as flat bands and simple lines), <g id="fg"> (optional low foreground items at the very bottom edge only).',
+      "SVG: <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1920 1080\"> with exactly these groups in order: <g id=\"sky\">, <g id=\"back\"> (walls, facade, doors, hills), <g id=\"mid\"> (furniture, altar, bed, gate placed against the back), <g id=\"floor\"> (ground: brick tiles, planks, sand or grass drawn as " +
+        "flat bands and simple lines), <g id=\"fg\"> (optional low foreground items at the very bottom edge only).",
       "Characters will be added later standing on the floor line: do NOT draw people. Keep the area x 420..1500, y 380..1000 free of tall objects in front of the back wall. Floor top edge (where feet stand) around y=820..880.",
       "Only <g>, <path>, <rect>, <circle>, <ellipse>, <polygon>, <polyline>, <line> with inline fill/stroke. No text, no images, no filters except none.",
       'Return JSON {"svg":"<svg ...>...</svg>","floorY":850,"marks":[[x,y],...],"lights":[{"x":0,"y":0,"color":"#ffcc88","kind":"lamp|candle|incense|window|moon"}]} where marks are 3 to 6 standing spots on the floor line from left to right.',
     ].join("\n"),
 } as const;
-
 export const MOTION_BOARD2D_TEXTS = {
   vi: {
     TITLE: "Phân cảnh 2D theo từng câu",
@@ -221,7 +221,6 @@ export const MOTION_BOARD2D_TEXTS = {
     SHEET_AUTO: "Frame sheet (built after the scene step)",
   },
 } as const;
-
 export const MOTION_BOARD2D_UI = {
   WRAP: "space-y-2 pt-3 border-t border-slate-800/80",
   HEAD: "flex items-center justify-between gap-2",
@@ -237,7 +236,7 @@ export const MOTION_BOARD2D_UI = {
   CONTROLS: "flex flex-wrap items-center gap-1.5 pl-8",
   SELECT: "h-7 rounded-md bg-slate-950 border border-slate-700 text-[11px] text-slate-200 px-1.5",
   ACTOR: "inline-flex items-center gap-1 text-[10px] text-slate-400",
-  ICON_BTN: "ml-auto p-1 rounded-md text-slate-400 hover:text-amber-300 hover:bg-slate-800",
+  ICON_BTN: "ml-auto p-1 rounded-md text-slate-400 hover:text-amber-300 bg-transparent hover:bg-transparent",
   ICON: "w-3.5 h-3.5",
   SHEET: "grid grid-cols-3 gap-2 max-h-[480px] overflow-y-auto custom-scrollbar pr-1",
   SHEET_CARD: "rounded-lg overflow-hidden border border-slate-800 bg-slate-950 cursor-pointer",

@@ -235,6 +235,9 @@
   box-shadow: none !important;
 }
 :root:is(.light, .dark) .studio-button[data-icon-only="true"] {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
   color: var(--studio-accent);
 }
 :root:is(.light, .dark) .studio-button[data-icon-only="true"][data-variant="danger"] {
@@ -451,5 +454,21 @@
 @media (min-width: 1024px) {
   :root .app-header .studio-menu-button {
     display: none !important;
+  }
+}
+.motion-voice-tool {
+  container-type: inline-size;
+}
+@container (min-width: 440px) {
+  .motion-voice-tool-fields {
+    grid-template-columns: minmax(0, 1fr) 140px;
+  }
+  .motion-voice-tool-source {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+@container (min-width: 760px) {
+  .motion-voice-tool-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
   }
 }
