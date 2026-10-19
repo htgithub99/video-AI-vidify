@@ -1,6 +1,8 @@
 export const MOTION_AUDIO_DIRECTION = {
   MODES: ["film", "storytelling", "documentary", "explainer", "mixed"] as const,
   ARTIFACT: "motion-audio-casting",
+  ADULT_AGE: "adult" as const,
+  AGES: ["child", "adult", "senior"] as readonly string[],
   MAX_CONTEXT: 24000,
   SFX_VOLUME: 0.5,
   SOUND_OFFSETS: { film: { ambience: 0, action: 0, character: 0, accent: 0 }, storytelling: { ambience: -2, action: 0, character: 0, accent: -2 }, documentary: { ambience: -4, action: -3, character: -2, accent: -5 }, explainer: { ambience: -4, action: -2, character: -2, accent: -3 }, mixed: { ambience: -1, action: 0, character: 0, accent: -1 } },
@@ -21,3 +23,12 @@ export const MOTION_AUDIO_DIRECTION = {
   CONTEXT: "AUTOMATIC AUDIO DIRECTION: ",
 } as const;
 export const MOTION_AUDIO_CAST_PROMPT = `Read the complete script and source-derived video analysis to direct audio automatically. Distinguish film, storytelling, documentary, explainer or mixed from the actual content, not the number of visible characters. Respect an explicit source-derived format and factual flag. Return JSON {audioDirection:{mode,narrationStyle,soundStyle},roles:[{speaker:"narrator or exact cast key",voiceId:"exact supplied catalogue id",gender:"male|female only when supported by character evidence",age:"child|adult|senior only when supported",reason:"source clue and catalogue suitability"}]}. Select appropriate available voices using catalogue gender, description, accent and reading character; use the narrator style and script audience. Keep character gender from analysis authoritative. Distinguish elderly, child, female and male where matching available profiles exist, without inventing age metadata for a preset. One character keeps one voice throughout; use distinct voices when possible. Only select catalogue ids. Never use a voice with a known incompatible gender. Narration is not spoken by whoever happens to be onscreen. Do not invent speech, audio references or unavailable voices. This is an audio plan, not QA scoring or a request for manual input.`;
+export const MOTION_SPEAKER_TRAITS = {
+  YEARS_RE: /\b(\d{1,3}) (?:tuoi|years? old|yo)\b/,
+  SENIOR_FROM: 55,
+  CHILD_UNTIL: 14,
+  SENIOR_RE: /\b(?:ba ngoai|ba noi|ong ngoai|ong noi|ba co|ong co|ma vo|me vo|bo vo|cha vo|ba gia vo|me chong|ma chong|bo chong|cha chong|su ong|su ba|hoa thuong|lao ba|lao ong|cu ong|cu ba|grandma|grandpa|mother in law|father in law|abbot)\b/,
+  CHILD_RE: /\b(?:chu tieu|tieu dong|thang be|con be|dua tre|dua be|nhoc|kid|young monk|schoolboy|schoolgirl)\b/,
+  MALE_RE: /\b(?:chu tieu|su ong|hoa thuong|ong ngoai|ong noi|bo vo|cha vo|bo chong|cha chong|nguoi chong|chang trai|thang be)\b/,
+  FEMALE_RE: /\b(?:ba ngoai|ba noi|ma vo|me vo|me chong|ma chong|nguoi vo|su ba|con be|co be)\b/,
+} as const;

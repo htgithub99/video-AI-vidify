@@ -273,6 +273,22 @@
     dir.applyAxisAngle(new T.Vector3(0, 1, 0), yawOff);
     return { pos: [cx + dir.x * d, py, cz + dir.z * d], target: [cx, ty, cz], fov };
   };
+  const flatPitched = (S, camDef) => {
+    const fc = S.style && S.style.flatCamera;
+    if (!fc || !camDef || !camDef.pos || !camDef.target || (S.stg.camera || {}).shot === MT.AERIAL) return camDef;
+    const base = S.L.camera,
+      dir = new T.Vector3(base.pos[0] - base.target[0], 0, base.pos[2] - base.target[2]);
+    if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1);
+    dir.normalize();
+    const tgt = new T.Vector3(...camDef.target),
+      dist = Math.max(0.5, new T.Vector3(...camDef.pos).distanceTo(tgt)),
+      pitch = (Number(fc.pitch) || 0) * DEG;
+    const pos = tgt
+      .clone()
+      .addScaledVector(dir, dist * Math.cos(pitch))
+      .add(new T.Vector3(0, dist * Math.sin(pitch), 0));
+    return Object.assign({}, camDef, { pos: pos.toArray() });
+  };
   const project = (cam, v) => v.clone().project(cam);
   const reaches = (a) => !!a.faceAt && !a.moveTo;
   const walkBoxes = (S) => {
@@ -392,6 +408,9 @@
     issues.push(MT.CAMERA_LOWERED);
   };
   const PARTNER_RANGE = 1.6;
+  const FLAT_WIDE_FOOT = 0.1;
+  const FLAT_MIN_RISE = 0.03;
+  const FLAT_FLOOR_MARGIN = 0.5;
   const framedCast = (S, focus, shot) => {
     if (!focus) return S.actors;
     const lead = S.actors.filter((A) => A.def.cast === focus);
@@ -1244,7 +1263,7 @@
     let cam = new T.PerspectiveCamera(40, W / H, 0.05, 3000);
     S.camera = cam;
     for (const actor of S.actors) updateActor(actor, S, S.t0, cam);
-    const camDef = stg.camera && stg.camera.pos && stg.camera.target ? { pos: stg.camera.pos, target: stg.camera.target, fov: stg.camera.fov || 38 } : shotCamera(S, stg);
+    const camDef = flatPitched(S, stg.camera && stg.camera.pos && stg.camera.target ? { pos: stg.camera.pos, target: stg.camera.target, fov: stg.camera.fov || 38 } : shotCamera(S, stg));
     const focusedBounds = propBounds(S, (stg.camera || {}).focusProp);
     if (
       focusedBounds &&
@@ -1326,6 +1345,30 @@
           };
         cam.updateMatrixWorld(true);
         cam.updateProjectionMatrix();
+        const flatFrame = S.style && S.style.flatCamera;
+        if (flatFrame && flatFrame.wideFigure && (shotKind === MT.WIDE || shotKind === MT.AERIAL)) {
+          const shown = S.actors.filter((A) => A.actor.group.visible);
+          if (shown.length) {
+            const boxes = shown.map((A) => A.actor.bounds()),
+              tall = Math.max(...boxes.map((b) => b.max.y - b.min.y)),
+              feet = Math.min(...boxes.map((b) => b.min.y)),
+              mid = boxes.reduce((v, b) => v.add(b.getCenter(new T.Vector3())), new T.Vector3()).multiplyScalar(1 / boxes.length),
+              halfFrame = tall / flatFrame.wideFigure / 2;
+            cam.left = (-halfFrame * W) / H;
+            cam.right = (halfFrame * W) / H;
+            cam.top = halfFrame;
+            cam.bottom = -halfFrame;
+            cam.updateProjectionMatrix();
+            const up = new T.Vector3().setFromMatrixColumn(cam.matrixWorld, 1),
+              foot = new T.Vector3(mid.x, feet, mid.z).project(cam),
+              shift = (foot.y - (-1 + 2 * FLAT_WIDE_FOOT)) * halfFrame;
+            cam.position.addScaledVector(up, shift);
+            fit.pos.addScaledVector(up, shift);
+            fit.tgt.addScaledVector(up, shift);
+            cam.updateMatrixWorld(true);
+            fit.issues.push(MT.FLAT_WIDE_FRAMED + flatFrame.wideFigure);
+          }
+        }
         const subjects = [],
           bystanders = [],
           partners = framedCast(S, focusCast, shotKind);
@@ -1364,6 +1407,20 @@
               fit.issues.push(A.def.cast + MT.LEFT_OUT_BLOCKED_FOCUS);
             }
           }
+      }
+      {
+        const view = new T.Vector3();
+        cam.getWorldDirection(view);
+        if (S.style && S.style.flatCamera && -view.y > FLAT_MIN_RISE) {
+          const up = new T.Vector3().setFromMatrixColumn(cam.matrixWorld, 1),
+            low = cam.position.clone().addScaledVector(up, cam.bottom / cam.zoom),
+            deficit = FLAT_FLOOR_MARGIN - low.y;
+          if (deficit > 0) {
+            cam.position.addScaledVector(view, -deficit / -view.y);
+            fit.pos.copy(cam.position);
+            cam.updateMatrixWorld(true);
+          }
+        }
       }
       S.camera = cam;
       scene.fog = null;

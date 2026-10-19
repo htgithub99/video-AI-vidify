@@ -7,9 +7,10 @@ import { MOTION_AUDIO_DIRECTION } from "../../constants/motionAudioDirection.js"
 import { motionSoundCatalogPrompt } from "./motionSfxLibraryService.js";
 import { MOTION_REFERENCE_PROMPTS, MOTION_QA_MESSAGES } from "../../constants/motionReference.js";
 import { needsMotionPreview } from "../../lib/motionReference.js";
-import type { MotionStyleReference } from "../../types/motionVideo.js";
+import type { MotionSceneAssetKind, MotionStyleReference } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
+import { spawnSync } from "child_process";
 import { createHash } from "crypto";
 import { motionVideoGenreDirective } from "../../constants/motionGenre.js";
 import { MOTION_STYLE_PRESET_KEY, motionStylePreset } from "../../constants/motionStylePresets.js";
@@ -19,7 +20,7 @@ import { MOTION_ECONOMY_FALLBACK } from "../../constants/motionDrawEconomy.js";
 import { createMotionDrawBudget, motionDrawLeft, motionDrawSpend, motionDrawSummary, type MotionDrawBudget } from "../../lib/motionDrawBudget.js";
 import { motionFallbackCharacter, motionFallbackLocation, motionLocationGroups, motionMatchPlace, motionTrimRepeats, type MotionPlaceRef } from "../../lib/motionDrawEconomy.js";
 import path from "path";
-import { MOTION_PRODUCTION_BRIEF, productionBriefFor, productionLocationErrors, productionStaging, productionStagingErrors } from "../../lib/motionProductionDesign.js";
+import { MOTION_PRODUCTION_BRIEF, productionBriefFor, productionLocationErrors, productionStaging, productionStagingErrors, separateMotionActors, focusMotionCameras } from "../../lib/motionProductionDesign.js";
 import { bindVideoDnaSettings, hasAuthoredCharacter, sceneExecutionKey, scenePlanPrompt, scenePlanStagingErrors } from "../../lib/motionVideoDna.js";
 import { MOTION_LIB_TEXT } from "../../constants/motionAssetLibrary.js";
 import {
@@ -126,17 +127,21 @@ import {
 import { cloneJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { planningPrompt, productionPreamble } from "../../lib/motionDirection.js";
 import { getMotionErrorSummary, roundMotionNumber as r2 } from "../../lib/motionUtils.js";
-import type { MotionAiExecution, MotionBeat, MotionCastMember, MotionGenState, MotionPlace, MotionReferenceStyle, MotionSceneCustomItem, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTiming } from "../../types/motionVideo.js";
+import type { MotionAiExecution, MotionBeat, MotionCastMember, MotionGenState, MotionPlace, MotionReferenceStyle, MotionSceneCustomItem, MotionSceneStyleSet, MotionSpec, MotionStyleCalibration, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTiming } from "../../types/motionVideo.js";
 import { ensureLibraryModel, ensureMotionLibrary, libraryCandidates, libraryPromptList } from "./motionAssetLibraryService.js";
 import { estimateBeatSeconds, sceneShots } from "./motionDirectorService.js";
 import { validateGenLocation, validateGenCharacter, validateGenStaging } from "./motionEngineService.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { openStillSession, type MotionStillSession } from "./motionRenderService.js";
-import { mapMotionAiPool, releaseMotionAiSession, resolveMotionReferenceStyle, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
+import { analyzeMotionReferenceStyleFresh, mapMotionAiPool, releaseMotionAiSession, resolveMotionReferenceStyle, reviewMotionStyleCalibration, runMotionAi, type MotionAiImage } from "./motionStoryService.js";
+import { storeMotionReferenceStyle } from "./motionReferenceCacheService.js";
+import { getFfmpegPath } from "./shortsPreprocessService.js";
 import { runMotionDrawTask } from "./motionDrawRoutingService.js";
 import { MOTION_POSES } from "../../constants/motionPoses.js";
 import { motionCastNeeds, motionCastSummary, motionPartOutline, motionPoseNamesIn, motionPoseRule, motionProceduralPose, motionSanitizePoses, type MotionCastNeeds } from "../../lib/motionPoses.js";
-import { motionEnforceStyle, motionStyleConstraints, motionStyleHasPart, motionStyleRules } from "../../lib/motionStyleConstraints.js";
+import { motionEnforceStyle, motionStyleConstraints, motionStyleHasPart, motionStyleRules, type MotionStyleConstraints } from "../../lib/motionStyleConstraints.js";
+import { mergeMotionStyleMetrics, motionTemplateFits, motionCalibrationCast, motionCalibrationSet, motionFitCharacter, motionFitFlatLocation, motionFlatCamera, motionMetricsText } from "../../lib/motionStyleMetrics.js";
+import { MOTION_STYLE_CALIBRATION, MOTION_STYLE_CALIBRATION_SET, MOTION_STYLE_METRICS_LOG, MOTION_STYLE_METRICS_PROMPT } from "../../constants/motionStyleMetrics.js";
 import { MOTION_STYLE_AXIS, MOTION_STYLE_LOG, MOTION_STYLE_PART, MOTION_STYLE_SHADED, MOTION_STYLE_SILHOUETTE } from "../../constants/motionStyleConstraints.js";
 import { motionCharacterSchema } from "../../constants/motionSceneCatalog.js";
 import { MOTION_SCENE_LIBRARY, MOTION_SCENE_LIBRARY_PROMPT } from "../../constants/motionSceneLibrary.js";
@@ -165,11 +170,14 @@ import {
   extractSceneProps,
   pendingBaseLibrary,
   findSameSceneAsset,
+  findSceneIdentity,
   sceneAssetFingerprint,
   getSceneAsset,
   listSceneAssets,
   motionAssetStyleKey,
   readSceneStyle,
+  sceneStyleCalibrationPath,
+  sceneStyleReferences,
   saveSceneAsset,
   saveSceneStyle,
   sceneAssetThumbPath,
@@ -241,11 +249,41 @@ const castLines = (a: MotionStoryAnalysis): string => _.map(a.cast, (c) => MOTIO
 const kitRenderStyle = (analysis: MotionStoryAnalysis, drawingMode?: string): Partial<MotionGenState["style"]> => {
   if (!analysis.referenceStyle?.kit) return {};
   const constraints = motionStyleConstraints(analysis.referenceStyle, drawingMode);
-  return _.omitBy({ outlineSilhouette: constraints.outline.kind === MOTION_STYLE_SILHOUETTE, faceShading: _.includes(MOTION_STYLE_SHADED, constraints.shading.kind), outlineWidth: constraints.outline.width, framing: constraints.framing }, _.isUndefined) as Partial<MotionGenState["style"]>;
+  return _.omitBy({ outlineSilhouette: constraints.outline.kind === MOTION_STYLE_SILHOUETTE, faceShading: _.includes(MOTION_STYLE_SHADED, constraints.shading.kind), outlineWidth: constraints.outline.width, framing: constraints.framing, flatCamera: motionFlatCamera(analysis.referenceStyle, drawingMode) }, _.isUndefined) as Partial<MotionGenState["style"]>;
 };
 const applyReferenceRenderStyle = (analysis: MotionStoryAnalysis, gen: MotionGenState): void => {
   if (!analysis.referenceStyle) return;
   gen.style = { ...gen.style, grade: MOTION_TEXT_NEUTRAL, notes: _.truncate(analysis.referenceStyle.description, { length: 200 }), palette: [...(analysis.referenceStyle.palette || [])], outlineColor: analysis.referenceStyle.outlineColor, outlineWidth: analysis.referenceStyle.outlineWidth, ...kitRenderStyle(analysis, gen.drawingMode) };
+};
+const fitStyledCharacter = (design: any, name: string, analysis: MotionStoryAnalysis, gen: MotionGenState, constraints: MotionStyleConstraints, log: (line: string) => void, type?: string): any => {
+  const fit = motionFitCharacter(design, analysis.referenceStyle, constraints, gen.drawingMode, !!motionSceneType(type)?.animal);
+  if (!fit.template && !fit.changes.length) return design;
+  const checked = validateGenCharacter(fit.design).value;
+  if (!hasAuthoredCharacter(checked) || _.isEqual(checked, design)) return design;
+  log(fit.template ? MOTION_STYLE_METRICS_LOG.TEMPLATE(name) : MOTION_STYLE_METRICS_LOG.FACE_FIT(name, fit.changes.join(MR.MOTION_TEXT_SYMBOL_41)));
+  return checked;
+};
+const fitStyledLocation = (location: any, name: string, referenceStyle: MotionReferenceStyle | undefined, drawingMode: string | undefined, log: (line: string) => void): any => {
+  const fit = motionFitFlatLocation(location, referenceStyle, drawingMode);
+  if (!fit.changes.length) return location;
+  const checked = validateGenLocation(fit.location);
+  if (!checked.value?.nodes?.length) return location;
+  log(MOTION_STYLE_METRICS_LOG.LOCATION_FIT(name, fit.changes.join(MR.MOTION_TEXT_SYMBOL_41)));
+  return checked.value;
+};
+const restyleExistingDesigns = (script: MotionStoryScript, analysis: MotionStoryAnalysis, gen: MotionGenState, log: (line: string) => void): void => {
+  if (!analysis.referenceStyle?.metrics) return;
+  applyReferenceRenderStyle(analysis, gen);
+  const constraints = motionStyleConstraints(analysis.referenceStyle, gen.drawingMode);
+  for (const c of analysis.cast) if (hasAuthoredCharacter(gen.cast[c.key])) gen.cast[c.key] = fitStyledCharacter(gen.cast[c.key], c.name, analysis, gen, constraints, log, c.type);
+  for (const place of analysis.places) {
+    const before = gen.locations[place.key];
+    if (!before) continue;
+    const after = fitStyledLocation(before, place.name, analysis.referenceStyle, gen.drawingMode, log);
+    if (after === before) continue;
+    gen.locations[place.key] = after;
+    for (const beat of script.beats) if (beat.place === place.key) delete gen.previews[beat.id];
+  }
 };
 const LEGACY_CHARACTER_KEYS = [MR.MOTION_TEXT_DRAWNBODY, MR.MOTION_TEXT_SOCKET, MR.MOTION_TEXT_LAYERS, MR.MOTION_TEXT_BUILD, MR.MOTION_TEXT_BODY];
 const characterNodes = (nodes: any[], materials: Record<string, any>): any[] =>
@@ -322,7 +360,7 @@ export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenS
             if (v.errors.length) o.log(MOTION_TEMPLATE_CAST_2(String(c.key), String(_.take(v.errors, 3).join(MOTION_TEXT_SYMBOL_41))));
             const enforced = motionEnforceStyle(v.value, constraints);
             if (enforced.changes.length) o.log(MOTION_STYLE_LOG.ENFORCED(c.name, enforced.changes.join(MR.MOTION_TEXT_SYMBOL_41)));
-            gen.cast[c.key] = enforced.design;
+            gen.cast[c.key] = fitStyledCharacter(enforced.design, c.name, analysis, gen, constraints, o.log, c.type);
           }
           open = failed;
           return open.length ? undefined : true;
@@ -333,7 +371,7 @@ export const designBible = async (analysis: MotionStoryAnalysis, gen: MotionGenS
         for (const c of open) {
           o.log(MOTION_DRAW_LOG.FALLBACK_CAST(c.name));
           const design = validateGenCharacter(motionFallbackCharacter(constraints, _.findIndex(analysis.cast, { key: c.key }), gen.style.palette || analysis.referenceStyle?.palette, bodies, gen.drawingMode)).value;
-          gen.cast[c.key] = motionEnforceStyle(design, constraints).design;
+          gen.cast[c.key] = fitStyledCharacter(motionEnforceStyle(design, constraints).design, c.name, analysis, gen, constraints, o.log, c.type);
         }
       });
     },
@@ -419,6 +457,8 @@ const locationSetup = (place: MotionPlace, script: MotionStoryScript, analysis: 
     style: MOTION_TEMPLATE_FILM_LOOK_GRADE(String(analysis.look), String(gen.style.notes || MR.MOTION_TEXT_EMPTY), String(gen.style.grade || MOTION_TEXT_NEUTRAL)),
     styleKey,
     useLibrary,
+    referenceStyle: analysis.referenceStyle,
+    drawingMode: gen.drawingMode,
     library: _.compact([useLibrary ? libraryFor(place, uses, analysis.era || MR.MOTION_TEXT_EMPTY) : MR.MOTION_TEXT_EMPTY, useLibrary && styleKey ? scenePropCatalog(styleKey, [place.name, place.description, uses].join(MOTION_SCENE_LIBRARY.TEXT.NEWLINE)) : MR.MOTION_TEXT_EMPTY, MOTION_SCENE_LIBRARY_PROMPT.LOCATION_DEFS]).join(MOTION_TEXT_SYMBOL_27),
   };
 };
@@ -439,7 +479,7 @@ const acceptLocation = async (place: MotionPlace, raw: any, setup: LocationSetup
   if (v.errors.length) o.log(MR.MOTION_TEMPLATE_GEOMETRY_CORRECTIONS(v.errors.slice(0, 4).join(MR.MOTION_TEXT_SYMBOL_41)));
   if (!v.value?.nodes?.length || (v.stats?.instances || 0) > MOTION_DRAW_BUDGET.MAX_INSTANCES) return undefined;
   if (v.errors.length) o.log(MOTION_DRAW_LOG.SALVAGED(place.name, v.errors.length));
-  const ready = await materializeModels(v.value, o);
+  const ready = await materializeModels(fitStyledLocation(v.value, place.name, setup.referenceStyle, setup.drawingMode, o.log), o);
   o.log(MOTION_TEMPLATE_BOI_CANH_KHOI_DEN(String(place.name), String(v.stats?.nodes || 0), String(v.stats?.lights || 0), MR.MOTION_TEXT_EMPTY));
   return ready;
 };
@@ -739,6 +779,8 @@ export const stageBeats = async (beats: MotionBeat[], script: MotionStoryScript,
       let prepared: any;
       try {
         prepared = productionStaging(input, gen.locations[input.location]);
+        separateMotionActors(prepared, gen.locations[input.location]);
+        focusMotionCameras(prepared);
       } catch (e) {
         failed.push(b);
         reasons[b.id] = getMotionErrorSummary(e);
@@ -1164,7 +1206,7 @@ const applySceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o
       const variant = applyCharacterVariant(asset.data, costume ? MOTION_COSTUME.RANK_TYPES[costume.rank] : c.type || asset.item.type, { index: c.variant || 0, colors: c.colors }).design;
       const fitted = motionEnforceStyle(costume ? motionApplyCostume(variant, costume, baseWardrobe()) : motionStripForeignParts(variant, traits), constraints);
       if (fitted.changes.length) o.log(MOTION_STYLE_LOG.ENFORCED(c.name, fitted.changes.join(MR.MOTION_TEXT_SYMBOL_41)));
-      gen.cast[c.key] = fitted.design;
+      gen.cast[c.key] = fitStyledCharacter(fitted.design, c.name, analysis, gen, constraints, o.log, c.type || asset.item.type);
       sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] = asset.item.id;
       used.push(asset.item.id);
       o.log(MOTION_LIBRARY_LOG.CAST(c.name, asset.item.name, costume?.label || MR.MOTION_TEXT_EMPTY));
@@ -1176,7 +1218,7 @@ const applySceneLibrary = (analysis: MotionStoryAnalysis, gen: MotionGenState, o
     const traits = place.traits || motionPlaceTraits(place, story);
     const fits = motionTraitsFit(sceneAssetTraits(asset.item), traits);
     const dressed = fits ? { location: cloneJson(asset.data), swapped: [], removed: [] } : motionRedressLocation(asset.data, traits, baseRedressProps());
-    gen.locations[place.key] = dressed.location;
+    gen.locations[place.key] = fitStyledLocation(dressed.location, place.name, analysis.referenceStyle, gen.drawingMode, o.log);
     if (dressed.swapped.length || dressed.removed.length) o.log(MOTION_LIBRARY_LOG.REDRESS(place.name, dressed.swapped.length, dressed.removed.length));
     sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key] = asset.item.id;
     const rel = libraryPreviewRel(asset.item.id);
@@ -1221,6 +1263,12 @@ const recordSceneLibrary = async (script: MotionStoryScript, analysis: MotionSto
   let characters = 0,
     locations = 0,
     props = 0;
+  const replaced: string[] = [];
+  const runIds = new Set<string>();
+  const savedThisRun = (kind: MotionSceneAssetKind, name: string): string | undefined => {
+    const id = findSceneIdentity(kind, styleKey, name, from);
+    return id && runIds.has(id) ? id : undefined;
+  };
   try {
     saveSceneStyle(styleKey, { references: o.styleReferences, drawingMode: gen.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, referenceStyle: analysis.referenceStyle, genStyle: gen.style, name: from });
     const dir = path.join(previewRoot(), runId(script, o), MOTION_SCENE_LIBRARY.PREVIEW_FOLDER);
@@ -1233,9 +1281,16 @@ const recordSceneLibrary = async (script: MotionStoryScript, analysis: MotionSto
         sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] = sameCharacter;
         continue;
       }
+      const takenCharacter = savedThisRun(MOTION_SCENE_LIBRARY.KIND_CHARACTER, c.name);
+      if (takenCharacter) {
+        sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] = takenCharacter;
+        continue;
+      }
       const thumb = await renderCharacterThumb(session, gen, c.key, dir).catch(() => null);
-      const item = saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_CHARACTER, styleKey, type: c.type, name: c.name, description: _.compact([c.look, c.description]).join(MOTION_SCENE_LIBRARY.TEXT.SEP), tags: c.tags, gender: c.gender, role: c.role, motion: !_.isEmpty(design?.motions), from }, design, thumb);
+      const item = saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_CHARACTER, styleKey, type: c.type, name: c.name, description: _.compact([c.look, c.description]).join(MOTION_SCENE_LIBRARY.TEXT.SEP), tags: c.tags, gender: c.gender, role: c.role, motion: !_.isEmpty(design?.motions), from, story: from }, design, thumb);
+      runIds.add(item.id);
       sources[MOTION_SCENE_LIBRARY.SOURCE_CAST + c.key] = item.id;
+      if (item.updatedAt) replaced.push(item.name);
       characters++;
     }
     const savedProps = new Set<string>();
@@ -1247,20 +1302,30 @@ const recordSceneLibrary = async (script: MotionStoryScript, analysis: MotionSto
         sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key] = samePlace;
         continue;
       }
+      const takenPlace = savedThisRun(MOTION_SCENE_LIBRARY.KIND_LOCATION, place.name);
+      if (takenPlace) {
+        sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key] = takenPlace;
+        continue;
+      }
       const preview = gen.locationInfo[place.key]?.files?.[0];
-      const item = saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_LOCATION, styleKey, type: place.type, name: place.name, description: place.description, tags: place.tags, time: location.time || place.time, interior: !!(location.interior ?? place.interior), from }, location, preview ? resolveGenPreview(preview) : null);
+      const item = saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_LOCATION, styleKey, type: place.type, name: place.name, description: place.description, tags: place.tags, time: location.time || place.time, interior: !!(location.interior ?? place.interior), from, story: from }, location, preview ? resolveGenPreview(preview) : null);
+      runIds.add(item.id);
       sources[MOTION_SCENE_LIBRARY.SOURCE_PLACE + place.key] = item.id;
+      if (item.updatedAt) replaced.push(item.name);
       locations++;
       for (const prop of extractSceneProps(location, measureNodes)) {
         const print = sceneAssetFingerprint(prop.nodes);
-        if (savedProps.has(print) || findSameSceneAsset(MOTION_SCENE_LIBRARY.KIND_PROP, styleKey, prop.name, prop.nodes)) continue;
+        if (savedProps.has(print) || findSameSceneAsset(MOTION_SCENE_LIBRARY.KIND_PROP, styleKey, prop.name, prop.nodes) || savedThisRun(MOTION_SCENE_LIBRARY.KIND_PROP, prop.name)) continue;
         savedProps.add(print);
         const thumb = await renderPropThumb(session, gen, prop.nodes, prop.size, dir, prop.name).catch(() => null);
-        saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_PROP, styleKey, name: prop.name, description: place.name, tags: [prop.name.replace(MP.UNDERSCORE, MOTION_SCENE_LIBRARY.TEXT.SPACE)], size: prop.size, from: place.name }, prop.nodes, thumb);
+        const saved = saveSceneAsset({ kind: MOTION_SCENE_LIBRARY.KIND_PROP, styleKey, name: prop.name, description: place.name, tags: [prop.name.replace(MP.UNDERSCORE, MOTION_SCENE_LIBRARY.TEXT.SPACE)], size: prop.size, from: place.name, story: from }, prop.nodes, thumb);
+        runIds.add(saved.id);
+        if (saved.updatedAt) replaced.push(saved.name);
         props++;
       }
     }
     if (characters || locations || props) o.log(MOTION_SCENE_LIBRARY.LOGS.SAVED(locations, characters, props));
+    if (replaced.length) o.log(MOTION_SCENE_LIBRARY.LOGS.REPLACED(_.uniq(replaced).join(MOTION_SCENE_LIBRARY.TEXT.LIST)));
   } catch (error) {
     o.log(MOTION_SCENE_LIBRARY.LOGS.SAVE_FAILED(getMotionErrorSummary(error)));
   }
@@ -1277,6 +1342,7 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
     gen.previews = {};
   }
   gen.characterMotion = o.characterMotion === true;
+  restyleExistingDesigns(script, analysis, gen, o.log);
   const rid = runId(script, o);
   _.set(gen, MOTION_TEXT_RUNID, rid);
   const drawPreamble = genPreamble(analysis, gen, o, MR.MOTION_TEXT_EMPTY, false);
@@ -1425,7 +1491,11 @@ export const buildScenes = async (script: MotionStoryScript, analysis: MotionSto
   progress(1, MOTION_TEXT_DONE);
   return out;
 };
-export interface MotionSceneSeed { cast: MotionSeedCast[]; places: MotionSeedPlace[]; showrooms: MotionSeedProp[][]; }
+export interface MotionSceneSeed {
+  cast: MotionSeedCast[];
+  places: MotionSeedPlace[];
+  showrooms: MotionSeedProp[][];
+}
 export const customSceneSeed = (items: MotionSceneCustomItem[]): MotionSceneSeed => {
   const groupOf = (item: MotionSceneCustomItem) => motionSceneType(item.type)?.group || item.group;
   const key = (item: MotionSceneCustomItem, index: number) => MOTION_SCENE_SHOWROOM.KEY_PREFIX + index + MOTION_SCENE_LIBRARY.TEXT.DASH + item.type;
@@ -1610,4 +1680,76 @@ export const renderStylePreview = (presetId: string): Promise<string | null> => 
   });
   stylePreviewChain = run.catch(_.noop);
   return run;
+};
+
+export const renderStyleCalibration = async (referenceStyle: MotionReferenceStyle, drawingMode: MotionGenState["drawingMode"], file: string): Promise<string> => {
+  const K = MOTION_STYLE_CALIBRATION,
+    CS = MOTION_STYLE_CALIBRATION_SET;
+  const constraints = motionStyleConstraints(referenceStyle, drawingMode);
+  const bodies = _.toString(referenceStyle.kit?.character?.clothing).match(MOTION_ECONOMY_FALLBACK.CLOTHING_HEX) || [];
+  const shared = motionTemplateFits(constraints, drawingMode);
+  const base = shared ? [] : _.compact(_.map(MOTION_STYLE_PREVIEW.CAST_TYPES, (type) => _.find(readBaseLibrary().characters, { type })?.design));
+  const designs = shared || base.length < K.CAST.length ? motionCalibrationCast(referenceStyle, constraints, bodies) : _.map(base, (design) => motionFitCharacter(motionEnforceStyle(validateGenCharacter(design).value, constraints).design, referenceStyle, constraints, drawingMode).design);
+  const analysis = { referenceStyle, cast: _.map(K.CAST, (key, index) => ({ key, name: K.CAST_NAMES[index] })) } as unknown as MotionStoryAnalysis;
+  const gen: MotionGenState = { ...emptyGen(), cast: _.fromPairs(_.map(K.CAST, (key, index) => [key, validateGenCharacter(designs[index]).value])), locations: { [K.PLACE]: validateGenLocation(motionCalibrationSet(referenceStyle)).value }, characterMotion: false, drawingMode };
+  applyReferenceRenderStyle(analysis, gen);
+  const dir = path.dirname(file);
+  fs.mkdirSync(dir, { recursive: true });
+  const frames: string[] = [];
+  const session = await openStillSession();
+  try {
+    for (const [id, shot] of [
+      [K.BEAT_WIDE, CS.SHOT_WIDE],
+      [K.BEAT_TWO, CS.SHOT_TWO],
+    ]) {
+      const beat: MotionBeat = { id, chapterId: id, narration: MR.MOTION_TEXT_EMPTY, visual: MOTION_TEXT_SCENE, place: K.PLACE, cast: [...K.CAST], action: CS.ACTION, shot };
+      const script = { language: MR.MOTION_TEXT_VI, beats: [beat] } as unknown as MotionStoryScript;
+      autoStageBeats([beat], script, analysis, gen, { exec: {}, log: _.noop } as unknown as GenOptions);
+      const { spec } = beatPreviewSpec(beat, gen, MR.MOTION_TEXT_VI, MOTION_TEXT_16_9, 0);
+      const out = await session.render({ ...spec, subtitles: [] }, [{ id, t: K.AT }], dir, { width: K.WIDTH, height: K.HEIGHT, quality: MOTION_TEXT_HIGH });
+      if (out[0]?.file) frames.push(out[0].file);
+    }
+  } finally {
+    await session.close();
+  }
+  if (frames.length < 2) throw new Error(MOTION_STYLE_METRICS_LOG.CALIBRATE_RENDER);
+  const joined = spawnSync(getFfmpegPath(), [K.FLAG_Y, K.FLAG_I, frames[0], K.FLAG_I, frames[1], MR.MOTION_TEXT_FILTER_COMPLEX, K.SHEET_FILTER, file], { windowsHide: true });
+  if (joined.status !== 0 || !fs.existsSync(file)) fs.copyFileSync(frames[0], file);
+  return file;
+};
+export const calibrateSceneStyle = async (key: string, o: GenOptions): Promise<MotionSceneStyleSet> => {
+  const set = readSceneStyle(key);
+  const target = sceneStyleCalibrationPath(key);
+  if (!set || !target) throw new Error(MOTION_SCENE_LIBRARY.ERRORS.NOT_FOUND);
+  const references = sceneStyleReferences(key);
+  const log = o.log;
+  log(MOTION_STYLE_METRICS_LOG.CALIBRATE_START(set.name));
+  let style = await analyzeMotionReferenceStyleFresh(references, { exec: o.exec, signal: o.signal, log });
+  if (!style) throw new Error(MOTION_REFERENCE_PROMPTS.STYLE_FAILED);
+  aborted(o);
+  log(MOTION_STYLE_METRICS_LOG.CALIBRATE_RENDER);
+  const draft = path.join(path.dirname(target), MOTION_STYLE_CALIBRATION.NAME + MOTION_STYLE_CALIBRATION.EXT);
+  await renderStyleCalibration(style, set.drawingMode, draft);
+  aborted(o);
+  log(MOTION_STYLE_METRICS_LOG.CALIBRATE_REVIEW);
+  let changes: string[] = [];
+  let notes: string = MR.MOTION_TEXT_EMPTY;
+  try {
+    const raw = await reviewMotionStyleCalibration(references, { name: MOTION_STYLE_CALIBRATION.NAME + MOTION_STYLE_CALIBRATION.EXT, mimeType: MOTION_STYLE_CALIBRATION.MIME, path: draft }, MOTION_STYLE_METRICS_PROMPT.CALIBRATE(motionMetricsText(style.metrics)), MOTION_STYLE_METRICS_PROMPT.CALIBRATE_ARTIFACT, { exec: o.exec, signal: o.signal, log });
+    const merged = mergeMotionStyleMetrics(style.metrics, raw?.metrics);
+    changes = merged.changes;
+    notes = _.truncate(_.toString(raw?.notes || MR.MOTION_TEXT_EMPTY), { length: MOTION_SCENE_LIBRARY.DESCRIPTION_MAX });
+    style = { ...style, metrics: merged.metrics };
+    log(changes.length ? MOTION_STYLE_METRICS_LOG.CALIBRATE_CHANGES(changes.join(MR.MOTION_TEXT_SYMBOL_14)) : MOTION_STYLE_METRICS_LOG.CALIBRATE_NONE);
+  } catch (error) {
+    if (o.signal?.aborted) throw error;
+    log(MOTION_STYLE_METRICS_LOG.CALIBRATE_REVIEW_FAILED(getMotionErrorSummary(error)));
+  }
+  style = { ...style, metrics: { ...(style.metrics || {}), calibrated: true } };
+  await renderStyleCalibration(style, set.drawingMode, target);
+  fs.rmSync(draft, { force: true });
+  storeMotionReferenceStyle(references, style);
+  const saved = saveSceneStyle(key, { drawingMode: set.drawingMode, referenceStyle: style, calibration: _.omitBy({ at: Date.now(), image: true, notes: notes || undefined, changes: changes.length ? changes : undefined }, _.isUndefined) as unknown as MotionStyleCalibration });
+  log(MOTION_STYLE_METRICS_LOG.CALIBRATE_DONE(set.name));
+  return saved;
 };

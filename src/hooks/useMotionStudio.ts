@@ -85,6 +85,7 @@ interface PersistedState extends MotionSceneAiChoice {
   script: MotionStoryScript | null;
   voice: (MotionVoiceTrack & { signature: string }) | null;
   uploadedAudio: { id: string; name: string; durationSeconds: number } | null;
+  voiceHold?: string;
   aspect: MotionAspect;
   quality: MotionQuality;
   fps: number;
@@ -363,6 +364,7 @@ export function useMotionStudio() {
         );
         if (!mounted.current) return;
         logStoryTerminal(final);
+        if (final.kind === MotionStoryJobKind.VOICE && final.status === MotionJobStatus.CANCELLED) patch({ voiceHold: narrationSignature(stateRef.current.script, stateRef.current.analysis) });
         if (final.status !== MotionJobStatus.COMPLETED || !final.result) return;
         if (final.kind === MotionStoryJobKind.SCRIPT || final.kind === MotionStoryJobKind.SCENES) patch({ script: final.result as MotionStoryScript });
         if (final.kind === MotionStoryJobKind.ANALYZE) patch(seriesState(final.result as MotionStoryAnalysis, stateRef.current.parts, stateRef.current.language, stateRef.current.look));
@@ -575,6 +577,7 @@ export function useMotionStudio() {
       const promise = inFlow(async () => {
         try {
           setVoiceError(MR.MOTION_TEXT_EMPTY);
+          if (stateRef.current.voiceHold) patch({ voiceHold: MR.MOTION_TEXT_EMPTY });
           const track = (await runStoryJob(API_ROUTES.MOTION_STORY_VOICE, { script, analysis: snapshot.analysis, aspect: snapshot.aspect, asrCheck: snapshot.asrCheck === true, aiExecution: { provider: snapshot.aiProvider, model: snapshot.aiModel, mode: snapshot.aiMode, chromeHeadless: snapshot.aiHeadless } })) as MotionVoiceTrack;
           if (narrationSignature(stateRef.current.script, stateRef.current.analysis) !== signature || track.signature !== signature) return;
           const current = stateRef.current;
@@ -586,6 +589,7 @@ export function useMotionStudio() {
           setCompiled(null);
           return track;
         } catch (e: any) {
+          if (getMotionErrorMessage(e) === MOTION_TEXT_CANCELLED) patch({ voiceHold: signature });
           setVoiceError(getMotionErrorMessage(e));
           reportStoryError(e);
         }
@@ -881,6 +885,7 @@ export function useMotionStudio() {
     if (!hydrated || storyBusy || renderBusy || state.uploadedAudio || voiceValid || !state.script?.beats?.length) return;
     if (state.script.beats.some((beat) => beat.visual === MR.MOTION_TEXT_SCENE && !state.script?.gen?.staging?.[beat.id])) return;
     const signature = narrationSignature(state.script, state.analysis);
+    if (state.voiceHold === signature) return;
     if (voiceAttempt.current.signature !== signature) voiceAttempt.current = { signature, count: 0 };
     if (voiceAttempt.current.count >= MOTION_VOICE.AUTO_ATTEMPTS) return;
     const timer = setTimeout(
@@ -891,7 +896,7 @@ export function useMotionStudio() {
       voiceAttempt.current.count ? MOTION_VOICE.RETRY_DELAY : MOTION_VOICE.AUTO_DELAY,
     );
     return () => clearTimeout(timer);
-  }, [hydrated, storyBusy, renderBusy, state.uploadedAudio, voiceValid, state.script, state.analysis, voiceError, generateVoice]);
+  }, [hydrated, storyBusy, renderBusy, state.uploadedAudio, voiceValid, state.script, state.analysis, state.voiceHold, voiceError, generateVoice]);
   return {
     state,
     patch,

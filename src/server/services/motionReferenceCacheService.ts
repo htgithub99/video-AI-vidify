@@ -14,7 +14,7 @@ const usableStyle = (value: unknown, count: number): MotionReferenceStyle | unde
   const style = normalizeMotionReferenceStyle(value);
   return style?.kit && !MOTION_REFERENCE_PROMPTS.STYLE_UNSEEN.test(style.description) && Array.from({ length: count }, (_, index) => C.NAME_PREFIX + (index + 1)).every((name) => style.images?.some((image) => image.name === name)) ? style : undefined;
 };
-export const withCachedMotionReferenceStyle = async (value: unknown, analyze: () => Promise<MotionReferenceStyle | undefined>, options: { signal?: AbortSignal; log?: (line: string) => void } = {}): Promise<MotionReferenceStyle> => {
+const cacheTarget = (value: unknown) => {
   const references = normalizeMotionReferences(value);
   const fingerprints = references.map((reference) =>
     createHash(SRT.SOURCE_TEXT_SHA256)
@@ -23,7 +23,15 @@ export const withCachedMotionReferenceStyle = async (value: unknown, analyze: ()
   );
   const key = createHash(SRT.SOURCE_TEXT_SHA256).update(JSON.stringify(fingerprints)).digest(SRT.SOURCE_TEXT_HEX);
   const directory = path.join(getMotionRootDirectory(), C.CACHE_FOLDER);
-  const file = path.join(directory, XRT.JSON_FILENAME(key));
+  return { references, key, directory, file: path.join(directory, XRT.JSON_FILENAME(key)) };
+};
+export const storeMotionReferenceStyle = (value: unknown, style: MotionReferenceStyle): void => {
+  const { key, directory, file } = cacheTarget(value);
+  fs.mkdirSync(directory, { recursive: true });
+  writeMotionJsonAtomic(file, { version: C.CACHE_VERSION, key, style });
+};
+export const withCachedMotionReferenceStyle = async (value: unknown, analyze: () => Promise<MotionReferenceStyle | undefined>, options: { signal?: AbortSignal; log?: (line: string) => void } = {}): Promise<MotionReferenceStyle> => {
+  const { references, key, directory, file } = cacheTarget(value);
   const previous = pending.get(file);
   let release!: () => void;
   const completed = new Promise<void>((resolve) => {
@@ -49,15 +57,23 @@ export const withCachedMotionReferenceStyle = async (value: unknown, analyze: ()
         });
       });
     throwIfPlanningCancelled(options.signal);
+    let previousStyle: MotionReferenceStyle | undefined;
     try {
       const stored = JSON.parse(fs.readFileSync(file, SRT.SOURCE_TEXT_UTF8));
-      const style = stored.version === C.CACHE_VERSION && stored.key === key ? usableStyle(stored.style, references.length) : undefined;
-      if (style) {
+      const style = stored.key === key ? usableStyle(stored.style, references.length) : undefined;
+      if (style && stored.version === C.CACHE_VERSION) {
         options.log?.(C.CACHE_HIT_LOG);
         return style;
       }
+      previousStyle = style;
     } catch {}
-    const style = usableStyle(await analyze(), references.length);
+    const fresh = await analyze().catch((error) => {
+      if (!previousStyle || options.signal?.aborted) throw error;
+      options.log?.(C.CACHE_PREVIOUS_LOG);
+      return previousStyle;
+    });
+    if (fresh === previousStyle) return previousStyle!;
+    const style = usableStyle(fresh, references.length);
     throwIfPlanningCancelled(options.signal);
     if (!style) throw new Error(MOTION_REFERENCE_PROMPTS.STYLE_FAILED);
     fs.mkdirSync(directory, { recursive: true });

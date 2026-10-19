@@ -15,11 +15,13 @@ import { MOTION_CHARACTER_REGION_PARTS, MOTION_LIBRARY_FIT as FIT, MOTION_LIBRAR
 import { motionCostumeFor, motionCostumeNation, motionCostumeType, motionStripParts } from "../../lib/motionCostume.js";
 import { motionLocationPropKeys } from "../../lib/motionRedress.js";
 import { motionCombineTraits, motionMergeTraits, motionPropTraits, motionRegionFits, motionRegionGroup, motionTextTraits, motionTraitsFit } from "../../lib/motionSceneTraits.js";
-import type { MotionCastMember, MotionDrawingMode, MotionGenStyle, MotionPlace, MotionStoryAnalysis, MotionReferenceStyle, MotionSceneAsset, MotionSceneAssetKind, MotionSceneStyleSet, MotionStyleReference } from "../../types/motionVideo.js";
+import type { MotionCastMember, MotionDrawingMode, MotionGenStyle, MotionPlace, MotionStoryAnalysis, MotionReferenceStyle, MotionSceneAsset, MotionSceneAssetKind, MotionSceneStyleSet, MotionStyleCalibration, MotionStyleReference } from "../../types/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
+import { MOTION_STYLE_CALIBRATION as CAL } from "../../constants/motionStyleMetrics.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { getMotionEngineDir } from "./motionEngineService.js";
-interface SceneIndex { version: number; items: MotionSceneAsset[]; }
+import { logger } from "../../lib/logger.js";
+interface SceneIndex { version: number; items: MotionSceneAsset[]; aliases?: Record<string, string>; }
 const SHA = SRT.SOURCE_TEXT_SHA256;
 const HEX = SRT.SOURCE_TEXT_HEX;
 const B64 = SRT.SOURCE_TEXT_BASE64;
@@ -42,10 +44,69 @@ const readJson = <T>(file: string, fallback: T): T => {
 };
 let indexCache: SceneIndex | null = null;
 const validThumb = (file: string): boolean => fs.existsSync(file) && fs.statSync(file).size >= C.THUMB_MIN_BYTES;
+const sceneNameKey = (value: unknown): string =>
+  _.toString(value ?? MR.MOTION_TEXT_EMPTY)
+    .normalize(C.TEXT.NFC)
+    .replace(LP.STORY_PART, C.TEXT.EMPTY)
+    .replace(LP.WHITESPACE, C.TEXT.SPACE)
+    .trim()
+    .toLowerCase();
+const SHARED_FROMS = new Set(_.map([C.BASE_FROM, C.SEED_TITLE], sceneNameKey));
+const sceneIdentity = (kind: string, styleKey: string, name: unknown, story: unknown): string | undefined => {
+  const storyKey = sceneNameKey(story);
+  const nameKey = sceneNameKey(name);
+  return storyKey && nameKey && !SHARED_FROMS.has(storyKey) ? [kind, styleKey, nameKey, storyKey].join(C.TEXT.KEY_SEP) : undefined;
+};
+const itemIdentity = (item: MotionSceneAsset): string | undefined => sceneIdentity(item.kind, item.styleKey, item.name, item.story || item.from);
+const keeperOf = (items: MotionSceneAsset[]): MotionSceneAsset => _.orderBy(items, [(item) => item.uses || 0, (item) => item.updatedAt || item.createdAt || 0], [C.TEXT.DESC, C.TEXT.DESC])[0];
+const mergedItem = (keeper: MotionSceneAsset, group: MotionSceneAsset[]): MotionSceneAsset => _.omitBy({ ...keeper, uses: _.sumBy(group, (item) => item.uses || 0), usedAt: _.max(_.compact(_.map(group, (item) => item.usedAt))) }, _.isUndefined) as unknown as MotionSceneAsset;
+const dropAssetFiles = (ids: string[]): void =>
+  ids.forEach((id) => {
+    fs.rmSync(itemFile(id), { force: true });
+    fs.rmSync(thumbFile(id), { force: true });
+  });
+const pointAliases = (aliases: Record<string, string> | undefined, dropped: string[], target: string): Record<string, string> => {
+  const gone = new Set(dropped);
+  const next = _.mapValues(aliases || {}, (to) => (gone.has(to) ? target : to));
+  dropped.forEach((id) => {
+    if (id !== target) next[id] = target;
+  });
+  return next;
+};
+const forgetAliases = (aliases: Record<string, string> | undefined, removed: Set<string>): Record<string, string> | undefined => {
+  const next = _.omitBy(aliases || {}, (to, from) => removed.has(to) || removed.has(from));
+  return _.isEmpty(next) ? undefined : next;
+};
+const resolveSceneId = (index: SceneIndex, id: string): string => index.aliases?.[id] || id;
+const mergeDuplicates = (index: SceneIndex): { index: SceneIndex; dropped: string[] } => {
+  const groups = _.groupBy(index.items, (item) => itemIdentity(item) || item.id);
+  const dropped: string[] = [];
+  const keep = new Map<string, MotionSceneAsset>();
+  let aliases = index.aliases;
+  _.forEach(groups, (group) => {
+    if (group.length < 2) return;
+    const keeper = keeperOf(group);
+    const extra = _.map(_.reject(group, (item) => item.id === keeper.id), (item) => item.id);
+    keep.set(keeper.id, mergedItem(keeper, group));
+    aliases = pointAliases(aliases, extra, keeper.id);
+    dropped.push(...extra);
+  });
+  if (!dropped.length) return { index, dropped };
+  const gone = new Set(dropped);
+  return { index: { ...index, items: _.map(_.reject(index.items, (item) => gone.has(item.id)), (item) => keep.get(item.id) || item), aliases }, dropped };
+};
 const readIndex = (): SceneIndex => {
   if (indexCache) return indexCache;
   const data = readJson<SceneIndex>(indexFile(), { version: C.VERSION, items: [] });
-  indexCache = { version: C.VERSION, items: Array.isArray(data.items) ? data.items.filter((item) => C.ID_RE.test(item?.id || MR.MOTION_TEXT_EMPTY)).map((item) => (item.thumb && !validThumb(thumbFile(item.id)) ? { ...item, thumb: false } : item)) : [] };
+  const items = Array.isArray(data.items) ? data.items.filter((item) => C.ID_RE.test(item?.id || MR.MOTION_TEXT_EMPTY)).map((item) => (item.thumb && !validThumb(thumbFile(item.id)) ? { ...item, thumb: false } : item)) : [];
+  const aliases = _.pickBy(data.aliases || {}, (to, from) => C.ID_RE.test(from) && C.ID_RE.test(to));
+  const merged = mergeDuplicates(_.omitBy({ version: C.VERSION, items, aliases: _.isEmpty(aliases) ? undefined : aliases }, _.isUndefined) as unknown as SceneIndex);
+  indexCache = merged.index;
+  if (merged.dropped.length) {
+    dropAssetFiles(merged.dropped);
+    writeMotionJsonAtomic(indexFile(), indexCache);
+    logger.info(C.LOGS.MERGED(merged.dropped.length));
+  }
   return indexCache;
 };
 const writeIndex = (index: SceneIndex): void => {
@@ -104,19 +165,25 @@ export const clearSceneLibrary = (): void => {
 };
 export const getSceneAsset = (id: unknown): { item: MotionSceneAsset; data: any } | null => {
   if (!isSceneAssetId(id)) return null;
-  const item = readIndex().items.find((entry) => entry.id === id);
+  const index = readIndex();
+  const target = resolveSceneId(index, id);
+  const item = index.items.find((entry) => entry.id === target);
   if (!item) return null;
-  const data = readJson<any>(itemFile(id), null);
+  const data = readJson<any>(itemFile(target), null);
   return data ? { item, data } : null;
 };
-export const saveSceneAsset = (input: { kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description?: string; tags?: unknown; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string; sourceFingerprint?: string }, data: unknown, thumb?: string | null): MotionSceneAsset => {
-  const id = C.ID_PREFIX[input.kind] + randomUUID().replace(LP.HYPHEN, MR.MOTION_TEXT_EMPTY).slice(0, 10);
+export const saveSceneAsset = (input: { kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description?: string; tags?: unknown; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string; story?: string; sourceFingerprint?: string }, data: unknown, thumb?: string | null): MotionSceneAsset => {
+  const index = readIndex();
+  const identity = input.story ? sceneIdentity(input.kind, input.styleKey, cleanText(input.name, C.NAME_MAX), input.story) : undefined;
+  const same = identity ? index.items.filter((entry) => itemIdentity(entry) === identity) : [];
+  const keeper = same.length ? keeperOf(same) : undefined;
+  const id = keeper?.id || C.ID_PREFIX[input.kind] + randomUUID().replace(LP.HYPHEN, MR.MOTION_TEXT_EMPTY).slice(0, 10);
   writeMotionJsonAtomic(itemFile(id), data);
   let hasThumb = false;
   if (thumb && validThumb(thumb)) {
     fs.copyFileSync(thumb, thumbFile(id));
     hasThumb = true;
-  }
+  } else if (keeper) fs.rmSync(thumbFile(id), { force: true });
   const item: MotionSceneAsset = _.omitBy(
     {
       id,
@@ -133,31 +200,48 @@ export const saveSceneAsset = (input: { kind: MotionSceneAssetKind; styleKey: st
       motion: input.motion,
       size: input.size,
       from: input.from ? cleanText(input.from, C.NAME_MAX) : undefined,
+      story: input.story ? cleanText(input.story, C.NAME_MAX) : undefined,
       thumb: hasThumb,
       fingerprint: sceneAssetFingerprint(data),
       sourceFingerprint: input.sourceFingerprint,
-      uses: 0,
-      createdAt: Date.now(),
+      uses: _.sumBy(same, (entry) => entry.uses || 0),
+      usedAt: _.max(_.compact(_.map(same, (entry) => entry.usedAt))),
+      createdAt: keeper?.createdAt || Date.now(),
+      updatedAt: keeper ? Date.now() : undefined,
     },
     _.isUndefined,
   ) as unknown as MotionSceneAsset;
-  const index = readIndex();
-  writeIndex({ ...index, items: [...index.items, item] });
+  const dropped = _.map(_.reject(same, (entry) => entry.id === id), (entry) => entry.id);
+  dropAssetFiles(dropped);
+  const gone = new Set(_.map(same, (entry) => entry.id));
+  const aliases = dropped.length ? pointAliases(index.aliases, dropped, id) : index.aliases;
+  writeIndex(_.omitBy({ ...index, items: [..._.reject(index.items, (entry) => gone.has(entry.id)), item], aliases }, _.isUndefined) as unknown as SceneIndex);
   return item;
+};
+export const findSceneIdentity = (kind: MotionSceneAssetKind, styleKey: string, name: string, story: string): string | undefined => {
+  const identity = sceneIdentity(kind, styleKey, cleanText(name, C.NAME_MAX), story);
+  if (!identity) return undefined;
+  const same = readIndex().items.filter((entry) => itemIdentity(entry) === identity);
+  return same.length ? keeperOf(same).id : undefined;
 };
 export const touchSceneAssets = (ids: string[]): void => {
   if (!ids.length) return;
   const now = Date.now();
   const index = readIndex();
-  writeIndex({ ...index, items: index.items.map((item) => (ids.includes(item.id) ? { ...item, uses: (item.uses || 0) + 1, usedAt: now } : item)) });
+  const used = new Set(_.map(ids, (id) => resolveSceneId(index, id)));
+  writeIndex({ ...index, items: index.items.map((item) => (used.has(item.id) ? { ...item, uses: (item.uses || 0) + 1, usedAt: now } : item)) });
 };
-export const removeSceneAsset = (id: unknown): void => {
-  if (!isSceneAssetId(id) || !getSceneAsset(id)) throw new Error(C.ERRORS.NOT_FOUND);
-  fs.rmSync(itemFile(id), { force: true });
-  fs.rmSync(thumbFile(id), { force: true });
+export const removeSceneAssets = (ids: unknown): string[] => {
   const index = readIndex();
-  writeIndex({ ...index, items: index.items.filter((item) => item.id !== id) });
+  const wanted = new Set(_.filter(_.castArray(ids ?? []), isSceneAssetId));
+  const removed = _.map(_.filter(index.items, (item) => wanted.has(item.id)), (item) => item.id);
+  if (!removed.length) throw new Error(C.ERRORS.NOT_FOUND);
+  dropAssetFiles(removed);
+  const gone = new Set(removed);
+  writeIndex(_.omitBy({ ...index, items: _.reject(index.items, (item) => gone.has(item.id)), aliases: forgetAliases(index.aliases, gone) }, _.isUndefined) as unknown as SceneIndex);
+  return removed;
 };
+export const removeSceneAsset = (id: unknown): void => void removeSceneAssets([id]);
 export const renameSceneAsset = (id: unknown, name: unknown): MotionSceneAsset => {
   const clean = cleanText(name, C.NAME_MAX);
   if (!clean) throw new Error(C.ERRORS.NAME_REQUIRED);
@@ -165,6 +249,8 @@ export const renameSceneAsset = (id: unknown, name: unknown): MotionSceneAsset =
   const item = index.items.find((entry) => entry.id === id);
   if (!item) throw new Error(C.ERRORS.NOT_FOUND);
   const next = { ...item, name: clean };
+  const identity = itemIdentity(next);
+  if (identity && index.items.some((entry) => entry.id !== item.id && itemIdentity(entry) === identity)) throw new Error(C.ERRORS.NAME_TAKEN);
   writeIndex({ ...index, items: index.items.map((entry) => (entry.id === item.id ? next : entry)) });
   return next;
 };
@@ -263,7 +349,7 @@ export const extractSceneProps = (location: any, measure: (nodes: any[]) => numb
 };
 const styleFile = (key: string): string => path.join(styleDir(key), C.STYLE_FILE);
 export const readSceneStyle = (key: unknown): MotionSceneStyleSet | null => (isSceneStyleKey(key) ? readJson<MotionSceneStyleSet | null>(styleFile(key), null) : null);
-export const saveSceneStyle = (key: string, patch: { references?: MotionStyleReference[]; drawingMode: MotionDrawingMode; referenceStyle?: MotionReferenceStyle; genStyle?: MotionGenStyle; name?: string }): MotionSceneStyleSet => {
+export const saveSceneStyle = (key: string, patch: { references?: MotionStyleReference[]; drawingMode: MotionDrawingMode; referenceStyle?: MotionReferenceStyle; genStyle?: MotionGenStyle; name?: string; calibration?: MotionStyleCalibration }): MotionSceneStyleSet => {
   if (!isSceneStyleKey(key)) throw new Error(C.ERRORS.INVALID);
   const dir = ensureDir(styleDir(key));
   const previous = readSceneStyle(key);
@@ -284,6 +370,7 @@ export const saveSceneStyle = (key: string, patch: { references?: MotionStyleRef
       images,
       referenceStyle: patch.referenceStyle || previous?.referenceStyle,
       genStyle: patch.genStyle && !_.isEmpty(patch.genStyle) ? patch.genStyle : previous?.genStyle,
+      calibration: patch.calibration || (patch.referenceStyle && !patch.referenceStyle.metrics?.calibrated ? undefined : previous?.calibration),
       createdAt: previous?.createdAt || Date.now(),
       usedAt: Date.now(),
     },
@@ -320,6 +407,11 @@ export const sceneStyleReferences = (key: unknown): MotionStyleReference[] => {
     if (!fs.existsSync(full)) return [];
     return [{ name: RC.NAME_PREFIX + (index + 1), dataUrl: C.TEXT.DATA_PREFIX + mimeOf(file) + C.TEXT.BASE64_SUFFIX + fs.readFileSync(full).toString(B64) }];
   });
+};
+export const sceneStyleCalibrationPath = (key: unknown): string | null => {
+  const style = readSceneStyle(key);
+  if (!style) return null;
+  return path.join(styleDir(style.key), CAL.FILE);
 };
 export const removeSceneStyle = (key: unknown): void => {
   if (!readSceneStyle(key)) throw new Error(C.ERRORS.NOT_FOUND);
@@ -496,13 +588,20 @@ export const pendingBaseLibrary = (drawingMode: unknown, pack?: MotionBaseLibrar
     !prints.has(sceneAssetFingerprint(data)) && !items.some((item) => !item.fingerprint && item.kind === kind && item.name === cleanText(entry.name, C.NAME_MAX) && typeOf(item.type) === typeOf(entry.type) && (kind !== C.KIND_CHARACTER || (item.gender || MR.MOTION_TEXT_MALE) === (entry.gender || MR.MOTION_TEXT_MALE)));
   return { characters: base.characters.filter((c) => fresh(C.KIND_CHARACTER, c, c.design)), locations: base.locations.filter((l) => fresh(C.KIND_LOCATION, l, l.location)), props: base.props.filter((p) => fresh(C.KIND_PROP, p, p.nodes)) };
 };
-export const pendingBaseCounts = (): Record<MotionDrawingMode, number> =>
-  _.fromPairs(
+let pendingCache: { index: SceneIndex; base: MotionBaseLibrary; counts: Record<MotionDrawingMode, number> } | null = null;
+export const pendingBaseCounts = (): Record<MotionDrawingMode, number> => {
+  const index = readIndex();
+  const base = readBaseLibrary();
+  if (pendingCache?.index === index && pendingCache.base === base) return pendingCache.counts;
+  const counts = _.fromPairs(
     _.map([MR.MOTION_TEXT_2D, MR.MOTION_TEXT_3D], (mode) => {
       const pending = pendingBaseLibrary(mode);
       return [mode, pending.characters.length + pending.locations.length + pending.props.length];
     }),
   ) as Record<MotionDrawingMode, number>;
+  pendingCache = { index, base, counts };
+  return counts;
+};
 export const baseLibraryCounts = (): { characters: number; locations: number; props: number } => {
   const base = readBaseLibrary();
   return { characters: base.characters.length, locations: base.locations.length, props: base.props.length };

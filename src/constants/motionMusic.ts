@@ -31,11 +31,13 @@ export const MOTION_MUSIC_INSTRUMENTS: Record<string, MotionMusicInstrument> = {
 export const MOTION_MUSIC_AMBIENCE: Record<string, { gain: number }> = { projector: { gain: 0.22 }, vinyl: { gain: 0.2 }, paper: { gain: 0.16 }, chalk: { gain: 0.16 }, night: { gain: 0.2 } };
 export const MOTION_MUSIC_VOICES = { NONE: "none", PLUCK: "pluck", CHIP: "chip", BELL: "bell", PIANO: "piano", PROJECTOR: "projector", VINYL: "vinyl", NIGHT: "night", CHALK: "chalk" } as const;
 export const MOTION_MUSIC_SCALES = { MAJOR_PENTATONIC: [0, 2, 4, 7, 9], MINOR_PENTATONIC: [0, 3, 5, 7, 10], MINOR_THIRD: 3 };
+const MOTION_MUSIC_LOUDNESS = { LUFS: -28, MIN: -42, MAX: -20, TRUE_PEAK: -9, RANGE: 15 } as const;
+const MOTION_MUSIC_DEFAULT_VOLUME = 0.35;
 export const MOTION_MUSIC = {
-  VERSION: 3,
+  VERSION: 4,
   AUTO: "auto",
   DEFAULT_MOOD: "neutral",
-  DEFAULT_VOLUME: 0.35,
+  DEFAULT_VOLUME: MOTION_MUSIC_DEFAULT_VOLUME,
   SAMPLE_RATE: 24000,
   CHANNELS: 2,
   TABLE_SIZE: 4096,
@@ -54,7 +56,11 @@ export const MOTION_MUSIC = {
   PREFIX: "music-",
   MIX_PREFIX: "music-mix-",
   WAV: ".wav",
-  MIX_GRAPH: (volume: number): string => `[1:a]aresample=48000,aformat=channel_layouts=stereo,volume=${volume.toFixed(3)}[m];[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[v][k];[m][k]sidechaincompress=threshold=0.02:ratio=10:attack=15:release=400[d];[v][d]amix=inputs=2:duration=first:normalize=0[out]`,
+  LOUDNESS: MOTION_MUSIC_LOUDNESS,
+  MIX_GRAPH: (volume: number): string => {
+    const target = Math.max(MOTION_MUSIC_LOUDNESS.MIN, Math.min(MOTION_MUSIC_LOUDNESS.MAX, MOTION_MUSIC_LOUDNESS.LUFS + 20 * Math.log10(Math.max(0.01, volume) / MOTION_MUSIC_DEFAULT_VOLUME)));
+    return `[1:a]aresample=48000,aformat=channel_layouts=stereo,loudnorm=I=${target.toFixed(1)}:TP=${MOTION_MUSIC_LOUDNESS.TRUE_PEAK}:LRA=${MOTION_MUSIC_LOUDNESS.RANGE},aresample=48000[m];[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[v][k];[m][k]sidechaincompress=threshold=0.015:ratio=12:attack=10:release=500[d];[v][d]amix=inputs=2:duration=first:normalize=0[out]`;
+  },
   MIX_OUT: "[out]",
   GENRE_MOOD: { horror: "eerie", history_map: "tense", what_if: "tense", story: "warm", kids: "playful", explainer: "neutral", documentary: "neutral" } as Record<string, string>,
   SFX_MOOD: { dark: "tense", horror: "eerie", sad: "sad", warm: "warm", epic: "epic", playful: "playful", tense: "tense" } as Record<string, string>,

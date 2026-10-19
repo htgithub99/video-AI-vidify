@@ -1,5 +1,6 @@
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_REFERENCE_CONFIG as C, MOTION_REFERENCE_TEXTS as T, MOTION_QA_MESSAGES } from "../constants/motionReference.js";
+import { normalizeMotionStyleMetrics } from "./motionStyleMetrics.js";
 import type { MotionStyleReference, MotionReferenceStyle, MotionStyleKit, MotionReferenceImageInfo, MotionGenPreview } from "../types/motionVideo.js";
 export const normalizeMotionReferences = (value: unknown): MotionStyleReference[] => {
   if (value == null) return [];
@@ -65,6 +66,7 @@ export const normalizeMotionReferenceStyle = (value: any): MotionReferenceStyle 
     outlineWidth: Number.isFinite(value.outlineWidth) ? Math.max(0, Math.min(C.OUTLINE_MAX, value.outlineWidth)) : 0,
     kit,
     images: normalizeReferenceImages(value.images),
+    ...(normalizeMotionStyleMetrics(value.metrics ?? value.kit?.metrics) ? { metrics: normalizeMotionStyleMetrics(value.metrics ?? value.kit?.metrics) } : {}),
   };
 };
 export const hasMotionRenderFailure = (issues?: string[]): boolean => !!issues?.some((issue) => MOTION_QA_MESSAGES.RENDER_FAILURE.test(issue));

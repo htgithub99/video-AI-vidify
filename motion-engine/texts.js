@@ -398,6 +398,7 @@
     CONTACT_ACTION_RE: /hug|embrac|carry|carrie|hold|lift|kiss|fight|wrestl|dance|piggy|cuddl|comfort|support|drag|pull|push|shake_hand|handshake|ôm|bế|bồng|cõng/i,
     SET_CUTAWAY_FOR_VIEW: "Set pieces between the camera and the subject were cut away for this shot",
     FLAT_VIEW_WIDENED: "2D view widened to keep heads in frame x",
+    FLAT_WIDE_FRAMED: "2D wide shot framed to the reference figure size ",
     VOLUME_VEIL_HIDDEN: "see-through volume around the camera or subject left out of this view",
     EXPOSURE_LOWERED: "exposure lowered: picture or faces were blown out",
     EXPOSURE_RAISED: "exposure raised: picture was almost black",

@@ -6,22 +6,61 @@ import { MOTION_SOUND_CONFIG as C, MOTION_SOUND_KINDS } from "../../constants/mo
 import { soundAssetKinds, soundText } from "../../lib/motionSound.js";
 import { motionSpeakerTraits } from "../../lib/motionAudioDirection.js";
 import type { MotionSoundAsset, MotionSoundCue } from "../../types/motionVideo.js";
-import { getDataDirectory } from "../utils/paths.js";
+import { getDataDirectory, getStaticResourcePath } from "../utils/paths.js";
+import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 let pending: Promise<MotionSoundAsset[]> | undefined;
 let cachedRoot: string = C.EMPTY;
 let cached: MotionSoundAsset[] | undefined;
 export const motionSfxRoot = (): string => path.join(getDataDirectory(), C.FOLDER);
 const hash = (value: Buffer | string): string => createHash(C.HASH).update(value).digest(C.HEX);
+const builtinSource = (): string => {
+  const resource = getStaticResourcePath(path.join(MOTION_VIDEO_CONSTANTS.ENGINE_DIR, C.BUILTIN_DIR));
+  return fs.existsSync(resource) ? resource : path.join(process.cwd(), MOTION_VIDEO_CONSTANTS.ENGINE_DIR, C.BUILTIN_DIR);
+};
+const importSource = async (sourceRoot: string, root: string, assets: Map<string, MotionSoundAsset>): Promise<void> => {
+  const manifest = path.join(sourceRoot, C.MANIFEST);
+  if (!fs.existsSync(manifest)) return;
+  const list = JSON.parse(await fs.promises.readFile(manifest, C.UTF8));
+  for (const entry of (Array.isArray(list) ? list : []).slice(0, C.IMPORT_LIMIT)) {
+    if (!entry || typeof entry.file !== "string" || !entry.file.toLowerCase().endsWith(C.MP3)) continue;
+    const file = path.resolve(sourceRoot, entry.file);
+    if (!file.startsWith(sourceRoot + path.sep) || !fs.existsSync(file) || !fs.realpathSync(file).startsWith(fs.realpathSync(sourceRoot) + path.sep)) continue;
+    try {
+      const data = await fs.promises.readFile(file),
+        id = hash(data),
+        origin = { source: String(entry.nguon || C.EMPTY), file: entry.file, license: String(entry.giay_phep || C.EMPTY) };
+      const existing = assets.get(id);
+      if (existing) {
+        existing.sources.push(origin);
+        continue;
+      }
+      const name = path
+          .basename(entry.file, C.MP3)
+          .replace(/^.*?__\d+_/, C.EMPTY)
+          .replace(/[_-]/g, MR.MOTION_TEXT_SYMBOL_13)
+          .trim(),
+        text = soundText(name);
+      const kinds = soundAssetKinds(name, entry.file);
+      if (!(Number(entry.giay) > 0)) continue;
+      const target = path.join(root, C.ASSETS, id + C.MP3);
+      if (!fs.existsSync(target)) await fs.promises.writeFile(target, data);
+      assets.set(id, { id, file: id + C.MP3, name, duration: Number(entry.giay), kinds, tags: [...new Set(text.split(/\W+/).filter((word) => word.length > 2))], sources: [origin] });
+    } catch {}
+  }
+};
 export const ensureMotionSfxLibrary = async (source = process.env[C.SOURCE_ENV] || C.SOURCE): Promise<MotionSoundAsset[]> => {
   const root = motionSfxRoot(),
-    sourceRoot = path.resolve(source),
-    manifest = path.join(sourceRoot, C.MANIFEST);
-  let sourceSignature: string | undefined;
-  try {
-    const stat = fs.statSync(manifest);
-    sourceSignature = hash(JSON.stringify([sourceRoot, stat.size, stat.mtimeMs]));
-  } catch {}
+    sourceRoots = [...new Set([path.resolve(source), path.resolve(builtinSource())])];
+  const stamps = sourceRoots.flatMap((sourceRoot) => {
+    try {
+      const stat = fs.statSync(path.join(sourceRoot, C.MANIFEST));
+      return [[sourceRoot, stat.size, stat.mtimeMs]];
+    } catch {
+      return [];
+    }
+  });
+  const sourceSignature = stamps.length ? hash(JSON.stringify(stamps)) : undefined;
   const cacheKey = root + (sourceSignature || C.EMPTY);
   if (cachedRoot === cacheKey && cached) return cached;
   if (cachedRoot === cacheKey && pending) return pending;
@@ -34,37 +73,11 @@ export const ensureMotionSfxLibrary = async (source = process.env[C.SOURCE_ENV] 
       if (index.version === C.VERSION && (!sourceSignature || index.sourceSignature === sourceSignature) && Array.isArray(index.assets) && index.assets.length)
         return index.assets.filter((asset: MotionSoundAsset) => /^[a-f0-9]{64}$/.test(asset.id) && fs.existsSync(path.join(root, C.ASSETS, asset.id + C.MP3))).map((asset: MotionSoundAsset) => ({ ...asset, kinds: soundAssetKinds(asset.name, asset.sources?.[0]?.file) }));
     } catch {}
-    if (!fs.existsSync(manifest)) return [];
-    const list = JSON.parse(await fs.promises.readFile(manifest, C.UTF8)),
-      assets = new Map<string, MotionSoundAsset>();
-    for (const entry of (Array.isArray(list) ? list : []).slice(0, C.IMPORT_LIMIT)) {
-      if (!entry || typeof entry.file !== "string" || !entry.file.toLowerCase().endsWith(C.MP3)) continue;
-      const file = path.resolve(sourceRoot, entry.file);
-      if (!file.startsWith(sourceRoot + path.sep) || !fs.existsSync(file) || !fs.realpathSync(file).startsWith(fs.realpathSync(sourceRoot) + path.sep)) continue;
-      try {
-        const data = await fs.promises.readFile(file),
-          id = hash(data),
-          origin = { source: String(entry.nguon || C.EMPTY), file: entry.file, license: String(entry.giay_phep || C.EMPTY) };
-        const existing = assets.get(id);
-        if (existing) {
-          existing.sources.push(origin);
-          continue;
-        }
-        const name = path
-            .basename(entry.file, C.MP3)
-            .replace(/^.*?__\d+_/, C.EMPTY)
-            .replace(/[_-]/g, MR.MOTION_TEXT_SYMBOL_13)
-            .trim(),
-          text = soundText(name);
-        const kinds = soundAssetKinds(name, entry.file);
-        if (!(Number(entry.giay) > 0)) continue;
-        const target = path.join(root, C.ASSETS, id + C.MP3);
-        if (!fs.existsSync(target)) await fs.promises.writeFile(target, data);
-        assets.set(id, { id, file: id + C.MP3, name, duration: Number(entry.giay), kinds, tags: [...new Set(text.split(/\W+/).filter((word) => word.length > 2))], sources: [origin] });
-      } catch {}
-    }
+    if (!stamps.length) return [];
+    const assets = new Map<string, MotionSoundAsset>();
+    for (const [sourceRoot] of stamps) await importSource(String(sourceRoot), root, assets).catch(() => undefined);
     const result = [...assets.values()];
-    writeMotionJsonAtomic(indexFile, { version: C.VERSION, sourceSignature, importedAt: new Date().toISOString(), source: sourceRoot, assets: result });
+    writeMotionJsonAtomic(indexFile, { version: C.VERSION, sourceSignature, importedAt: new Date().toISOString(), sources: stamps.map(([sourceRoot]) => sourceRoot), assets: result });
     return result;
   })();
   try {

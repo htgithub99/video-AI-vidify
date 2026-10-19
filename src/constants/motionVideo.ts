@@ -67,6 +67,7 @@ export const MOTION_STORY_CONFIG = {
   ARTIFACT_ANALYSIS: "motion-story-analysis",
   ARTIFACT_STYLE: "motion-style-kit",
   ARTIFACT_CHAPTER: "motion-story-chapter",
+  CHAPTER_RETRY_NOTE: (problems: string, spoken: number, target: number): string => `PREVIOUS ATTEMPT WAS REJECTED: ${problems} Your previous narration had ${spoken} units in total; the whole chapter must total about ${target} units (count every spoken syllable/word across all beats). ${spoken > target ? "Cut descriptive filler and merge beats; keep only the events that move the story." : "Add concrete events and sensory detail from the source."}`,
   VI_SYLLABLES_PER_SECOND: 3.4,
   EN_WORDS_PER_SECOND: 2.4,
   TARGET_BEAT_SECONDS: 7,

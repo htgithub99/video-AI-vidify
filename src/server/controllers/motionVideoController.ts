@@ -13,7 +13,8 @@ import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMot
 import { motionStylePreset } from "../../constants/motionStylePresets.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
-import { motionSpeechRate, recordSpeechRate } from "../services/motionSpeechRateService.js";
+import { motionSpeechRate, recordSpeechRate, speechUnits } from "../services/motionSpeechRateService.js";
+import { clearVoiceSpeedReference, measureVoiceSpeedReference, readVoiceSpeedSettings, recordVoiceSpeedFeedback, voicesUseAutoSpeed } from "../services/motionVoiceSpeedService.js";
 import path from "path";
 import {
   MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM,
@@ -85,10 +86,10 @@ import { createHash } from "crypto";
 import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
 import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
-import { buildScenes, customSceneSeed, emptyGen, importBaseLibrary, renderStylePreview, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
+import { buildScenes, calibrateSceneStyle, customSceneSeed, emptyGen, importBaseLibrary, renderStylePreview, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
 import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_GROUPS, MOTION_SCENE_LIBRARY_MODES, motionSceneType, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
-import { baseLibraryCounts, pendingBaseCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAsset, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
+import { baseLibraryCounts, pendingBaseCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAssets, sceneStyleCalibrationPath, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
 import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration, startMotionRender } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
@@ -491,6 +492,8 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
       ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(String(Math.round(track.totalSeconds))));
       const measured = recordSpeechRate(script, track.totalSeconds);
       if (measured) ctx.log(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
+      const feedback = recordVoiceSpeedFeedback(_.sumBy(track.clips || [], (clip) => speechUnits(clip.text)), track.totalSeconds, voicesUseAutoSpeed(_.uniq(_.map(track.clips || [], (clip) => clip.voiceId))));
+      if (feedback) ctx.log(feedback);
       return track;
     });
     res.json({ success: true, job });
@@ -530,11 +533,22 @@ export const previewMotionVoice = async (req: Request, res: Response): Promise<v
     fail(res, 400, error);
   }
 };
+export const getMotionVoiceSpeed = (_req: Request, res: Response): void => {
+  res.json({ success: true, settings: readVoiceSpeedSettings() });
+};
+export const measureMotionVoiceSpeed = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const url = _.toString(req.body?.url).trim();
+    res.json({ success: true, settings: url ? await measureVoiceSpeedReference(url) : clearVoiceSpeedReference() });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
 export const updateMotionVoiceMeta = async (req: Request, res: Response): Promise<void> => {
   try {
     const id = String(req.body?.id || MR.MOTION_TEXT_EMPTY);
     if (!applyVoiceLibrary(await listMotionVoiceSources()).some((voice) => voice.id === id)) throw new Error(MOTION_VOICE_LIBRARY.VOICE_NOT_FOUND);
-    res.json({ success: true, meta: updateVoiceMeta(id, { name: req.body?.name, gender: req.body?.gender, age: req.body?.age }) });
+    res.json({ success: true, meta: updateVoiceMeta(id, { name: req.body?.name, gender: req.body?.gender, age: req.body?.age, speed: req.body?.speed }) });
   } catch (error) {
     fail(res, 400, error);
   }
@@ -679,8 +693,7 @@ export const listSceneLibrary = (_req: Request, res: Response): void => {
 };
 export const removeSceneLibraryItem = (req: Request, res: Response): void => {
   try {
-    removeSceneAsset(req.body?.id);
-    res.json({ success: true });
+    res.json({ success: true, removed: removeSceneAssets(req.body?.ids ?? [req.body?.id]) });
   } catch (error) {
     fail(res, 400, error);
   }
@@ -718,6 +731,22 @@ export const renameSceneLibraryStyle = (req: Request, res: Response): void => {
   } catch (error) {
     fail(res, 400, error);
   }
+};
+export const calibrateSceneLibraryStyleJob = (req: Request, res: Response): void => {
+  try {
+    const key = _.toString(req.body?.key);
+    if (!isSceneStyleKey(key)) throw new Error(MOTION_SCENE_LIBRARY.ERRORS.NOT_FOUND);
+    const exec = aiExec(req.body?.aiExecution);
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, (ctx) => calibrateSceneStyle(key, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress }));
+    res.json({ success: true, job });
+  } catch (error) {
+    fail(res, 400, error);
+  }
+};
+export const serveSceneStyleCalibration = (req: Request, res: Response): void => {
+  const file = sceneStyleCalibrationPath(_.toString(req.query.key));
+  if (!file || !fs.existsSync(file)) return void res.status(404).end();
+  res.sendFile(file);
 };
 const customSeedItems = (value: unknown): MotionSceneCustomItem[] =>
   _.take(_.castArray(value || []), MOTION_SCENE_LIBRARY.CUSTOM_MAX).flatMap((raw: any) => {

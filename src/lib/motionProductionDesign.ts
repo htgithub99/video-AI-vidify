@@ -50,6 +50,54 @@ export const productionLocationErrors = (location: any): string[] => {
   errors.push(...buriedSurfaceErrors(location));
   return errors;
 };
+export const MOTION_ACTOR_SPACING = { MIN: 0.55, CLEAR: 0.75, STEP: 0.8 } as const;
+export const separateMotionActors = (staging: any, location: any): number => {
+  const placed: number[][] = [];
+  let moved = 0;
+  for (const actor of staging?.actors || []) {
+    const requested = typeof actor.at === MR.MOTION_TEXT_STRING ? location?.marks?.[actor.at] : actor.at;
+    const point = Array.isArray(requested) && requested.length >= 3 ? [requested[0], requested[2]] : requested;
+    if (!finiteVector(point, 2) || actor.y) {
+      if (finiteVector(point, 2)) placed.push(point);
+      continue;
+    }
+    const clear = (p: number[], gap: number) => placed.every((other) => Math.hypot(p[0] - other[0], p[1] - other[1]) >= gap);
+    if (clear(point, MOTION_ACTOR_SPACING.MIN)) {
+      placed.push(point);
+      continue;
+    }
+    const marks = Object.entries(location?.marks || {}).filter(([, mark]: any) => finiteVector(mark, 2) && clear(mark, MOTION_ACTOR_SPACING.CLEAR)).sort(([, a]: any, [, b]: any) => Math.hypot(a[0] - point[0], a[1] - point[1]) - Math.hypot(b[0] - point[0], b[1] - point[1]));
+    const offsets = [1, -1, 2, -2].map((k) => [point[0] + k * MOTION_ACTOR_SPACING.STEP, point[1]]);
+    const next = marks[0] ? (marks[0][1] as number[]) : offsets.find((p) => clear(p, MOTION_ACTOR_SPACING.CLEAR)) || offsets[0];
+    actor.at = marks[0] ? marks[0][0] : next;
+    placed.push(next);
+    moved++;
+  }
+  return moved;
+};
+export const MOTION_CAMERA_FOCUS = { SPEAKING_RE: /^(talk|sit_talk|shout|point|explain|cry|fear|surprised)$/, DETAIL: ["insert", "extreme_close"] as readonly string[], FRAMED: ["close", "medium", "over_shoulder", "insert", "extreme_close"] as readonly string[] } as const;
+export const focusMotionCameras = (staging: any): number => {
+  const actors: any[] = staging?.actors || [];
+  if (!actors.length) return 0;
+  const lead = actors.find((actor) => MOTION_CAMERA_FOCUS.SPEAKING_RE.test(actor.action || MR.MOTION_TEXT_EMPTY)) || actors[0];
+  let changed = 0;
+  for (const camera of staging.cameras || (staging.camera ? [staging.camera] : [])) {
+    if (!camera || !MOTION_CAMERA_FOCUS.FRAMED.includes(camera.shot)) continue;
+    if (MOTION_CAMERA_FOCUS.DETAIL.includes(camera.shot) && !camera.focusProp && !camera.focus) {
+      camera.shot = MR.MOTION_TEXT_CLOSE;
+      camera.focus = lead.cast;
+      changed++;
+    } else if (!camera.focus && !camera.focusProp) {
+      camera.focus = lead.cast;
+      changed++;
+    }
+    if (camera.focus && !actors.some((actor) => actor.cast === camera.focus) && !camera.focusProp) {
+      camera.focus = lead.cast;
+      changed++;
+    }
+  }
+  return changed;
+};
 export const productionStagingErrors = (staging: any, location: any): string[] => {
   if (!location) return [MR.MOTION_TEXT_STAGING_REFERENCES_A_MISSING_LOCATION];
   const errors: string[] = [], positions: { cast: string; point: number[]; y: number; }[] = [];

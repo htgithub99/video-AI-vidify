@@ -1,9 +1,10 @@
 import * as MR from "../constants/motionRuntime.js";
-import { MOTION_SOUND_BEDS, MOTION_SOUND_CONFIG as C, MOTION_SOUND_GENRE_BED, MOTION_SOUND_KINDS, MOTION_SOUND_SCARY_PLACE } from "../constants/motionSound.js";
+import { MOTION_SOUND_BEDS, MOTION_SOUND_CONFIG as C, MOTION_SOUND_GENRE_ALIAS, MOTION_SOUND_GENRE_CUE as G, MOTION_SOUND_GENRES, MOTION_SOUND_KINDS, MOTION_SOUND_SCARY_PLACE } from "../constants/motionSound.js";
+import { MOTION_VIDEO_GENRES } from "../constants/motionGenre.js";
 import { motionCueLimit, normalizeSoundEvents, normalizeSoundCues, soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
-import type { MotionSoundCue, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceClip, MotionVoicePlan } from "../types/motionVideo.js";
+import type { MotionSoundCue, MotionSoundGenrePalette, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceClip, MotionVoicePlan } from "../types/motionVideo.js";
 export const motionSoundSpatial = (spec: MotionSpec, time: number, actor: any, duration: number, localTime: number): { pan?: number; position?: number[]; attenuation: number } => {
   if (!actor || !Array.isArray(actor.at)) return { attenuation: 0 };
   const shot = spec.shots.find((item) => item.start <= time && item.end > time),
@@ -17,6 +18,18 @@ export const motionSoundSpatial = (spec: MotionSpec, time: number, actor: any, d
     distance = Math.hypot(position[0] - camera.pos[0], position[2] - camera.pos[2]);
   const screenX = ((position[0] - camera.target[0]) * -dz + (position[2] - camera.target[2]) * dx) / span;
   return { position, pan: Math.max(-0.8, Math.min(0.8, screenX / Math.max(1, distance * 0.65))), attenuation: -Math.min(12, Math.max(0, 20 * Math.log10(Math.max(1, distance / 2)))) };
+};
+export const motionSoundGenre = (analysis?: MotionStoryAnalysis | null): MotionSoundGenrePalette | undefined => {
+  const chosen = analysis?.videoGenre && analysis.videoGenre !== MOTION_VIDEO_GENRES.AUTO ? analysis.videoGenre : MOTION_SOUND_GENRE_ALIAS[analysis?.genre || C.EMPTY];
+  return chosen ? MOTION_SOUND_GENRES[chosen] : undefined;
+};
+const wordTime = (clips: MotionVoiceClip[], pattern: RegExp): number | undefined => {
+  for (const clip of clips) {
+    const text = soundText(clip.text),
+      match = pattern.exec(text);
+    if (match) return clip.start + ((clip.end - clip.start) * match.index) / Math.max(1, text.length) - G.WORD_LEAD;
+  }
+  return undefined;
 };
 export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScript, analysis?: MotionStoryAnalysis | null, direction = motionAudioDirection(script || null, analysis || null), roles?: MotionVoicePlan["roles"], clips?: MotionVoiceClip[]): MotionSoundCue[] => {
   const result: MotionSoundCue[] = [],
@@ -42,8 +55,12 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
       start = shot.start - (Number(staging.tOffset) || 0);
     if (!groups.has(key)) groups.set(key, { start, duration: Number(staging.beatDur) || shot.end - start, staging, camera: staging.cameras?.[0] || staging.camera });
   }
+  const palette = motionSoundGenre(analysis),
+    suppressed = new Set(palette?.suppress || []),
+    lastAccent = new Map<string, number>();
   let lastBed: MotionSoundCue | undefined,
-    lastPlace: string = C.EMPTY;
+    lastPlace: string = C.EMPTY,
+    lastChapter: string | undefined;
   for (const [beatId, group] of groups) {
     const { start, duration, staging } = group,
       beat = script?.beats.find((item) => item.id === beatId),
@@ -57,9 +74,23 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
     const context = soundText([place?.description, location?.name, location?.time, staging.time, beat?.time, staging.weather, beat?.weather].join(MR.MOTION_TEXT_SYMBOL_13));
     const interior = place?.interior ?? location?.interior;
     const bed = MOTION_SOUND_BEDS.find((item) => item.pattern.test(context) && !(item.exteriorOnly && interior))?.kind || (interior ? MR.MOTION_TEXT_ROOM : undefined);
-    const genreBed = MOTION_SOUND_GENRE_BED[(analysis?.genre || C.EMPTY) as keyof typeof MOTION_SOUND_GENRE_BED];
+    const genreBed = palette?.bed;
     if (genreBed && (genreBed.always || MOTION_SOUND_SCARY_PLACE.test(context) || (!interior && C.NIGHT_RE.test(context)))) add({ id: MR.MOTION_TEMPLATE_AMBIENCE(beatId, genreBed.kind), beatId, t: start, kind: genreBed.kind, layer: MR.MOTION_TEXT_AMBIENCE, duration, gainDb: genreBed.gainDb, description: place?.description || location?.name, source: MR.MOTION_TEXT_OFFSCREEN });
-    const events = normalizeSoundEvents(staging.soundEvents || beat?.data?.soundEvents);
+    const events = normalizeSoundEvents(staging.soundEvents || beat?.data?.soundEvents).filter((event) => !suppressed.has(event.kind));
+    if (palette?.chapter && beat?.chapterId && lastChapter !== undefined && beat.chapterId !== lastChapter) add({ id: MR.MOTION_TEMPLATE_EVENT(beatId, G.CHAPTER), beatId, t: start + G.CHAPTER_OFFSET, kind: palette.chapter.kind, layer: palette.chapter.layer, duration: MOTION_SOUND_KINDS.find((item) => item.kind === palette.chapter!.kind)!.duration, gainDb: palette.chapter.gainDb, description: palette.chapter.description, source: MR.MOTION_TEXT_OFFSCREEN });
+    if (beat?.chapterId) lastChapter = beat.chapterId;
+    const beatText = soundText([beat?.narration, ...(beat?.utterances || []).map((line) => line.text)].join(C.SPACE)),
+      beatClips = (clips || []).filter((clip) => clip.beatId === beatId);
+    for (const accent of palette?.accents || []) {
+      const worded = accent.pattern.test(beatText),
+        moved = !!beat?.sceneMood && (accent.moods || []).some((item) => item.mood === beat.sceneMood!.mood && beat.sceneMood!.intensity >= item.min);
+      if ((!worded && !moved) || events.some((event) => event.kind === accent.kind)) continue;
+      const at = Math.max(start, accent.at === G.WORD ? ((worded ? wordTime(beatClips, accent.pattern) : undefined) ?? start + duration * G.WORD_FALLBACK) : start + duration * accent.at);
+      if (at < start || at >= start + duration || at - (lastAccent.get(accent.kind) ?? -Infinity) < accent.gap) continue;
+      lastAccent.set(accent.kind, at);
+      add({ id: MR.MOTION_TEMPLATE_EVENT(beatId, G.ACCENT + accent.kind), beatId, t: at, kind: accent.kind, layer: accent.layer, duration: Math.min(MOTION_SOUND_KINDS.find((item) => item.kind === accent.kind)!.duration, start + duration - at), gainDb: accent.gainDb, description: accent.description, source: MR.MOTION_TEXT_OFFSCREEN });
+      break;
+    }
     if (bed && !events.some((event) => event.layer === MR.MOTION_TEXT_AMBIENCE)) {
       const placeKey = MR.MOTION_TEMPLATE_EMPTY_3(staging.location, staging.time || location?.time, bed);
       if (lastBed && lastPlace === placeKey && Math.abs(lastBed.t + lastBed.duration - start) < 0.25) lastBed.duration = start + duration - lastBed.t;
@@ -99,6 +130,7 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
           const offset = Math.max(0, Number(actor.offset) || 0),
             period = Math.max(0.05, Math.min(120, motion.duration));
           for (const marker of markers) {
+            if (suppressed.has(marker.kind)) continue;
             if (marker.part && !design.parts?.some((part: any) => part.id === marker.part)) continue;
             if (marker.kind === MR.MOTION_TEXT_FOOTSTEP && actor.moveTo && !(segment.action === actor.action)) continue;
             const cycles = motion.loop ? Math.ceil((segment.end - segment.start + offset) / period) : 1;

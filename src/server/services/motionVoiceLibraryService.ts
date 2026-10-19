@@ -3,12 +3,12 @@ import fs from "fs";
 import path from "path";
 import _ from "lodash";
 import { randomUUID } from "crypto";
-import { MOTION_VOICE_LIBRARY as L } from "../../constants/motionVoice.js";
+import { MOTION_VOICE_LIBRARY as L, MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
 import type { MotionVoiceChannel, MotionVoiceChannels, MotionVoiceGroup, MotionVoicePreset } from "../../types/motionVideo.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { vieneuRoot } from "./vieneuTtsService.js";
 import { isAi33Voice } from "../../lib/motionVoice.js";
-interface VoiceMeta { name?: string; gender?: string; age?: string; hidden?: boolean; }
+interface VoiceMeta { name?: string; gender?: string; age?: string; hidden?: boolean; speed?: number; }
 type VoiceLibrary = Record<string, VoiceMeta>;
 export const motionVoiceLibraryFile = (name: string): string => {
   const root = vieneuRoot();
@@ -36,16 +36,21 @@ export const applyVoiceLibrary = (voices: MotionVoicePreset[]): MotionVoicePrese
     .filter((voice) => !library[voice.id]?.hidden)
     .map((voice) => {
       const meta = library[voice.id] || {};
-      return { ...voice, name: meta.name || voice.name, gender: meta.gender || voice.gender, ...(meta.age ? { age: meta.age } : {}), custom: isCustomVoice(voice.id) };
+      return { ...voice, name: meta.name || voice.name, gender: meta.gender || voice.gender, ...(meta.age ? { age: meta.age } : {}), ...(meta.speed ? { speed: meta.speed } : {}), custom: isCustomVoice(voice.id) };
     });
 };
-export const updateVoiceMeta = (id: string, patch: { name?: unknown; gender?: unknown; age?: unknown }, restore = false): VoiceMeta => {
+export const cleanVoiceSpeed = (value: unknown): number | undefined => {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? _.clamp(Math.round(n / MOTION_VOICE_SPEED.STEP) * MOTION_VOICE_SPEED.STEP, MOTION_VOICE_SPEED.MIN, MOTION_VOICE_SPEED.MAX) : undefined;
+};
+export const updateVoiceMeta = (id: string, patch: { name?: unknown; gender?: unknown; age?: unknown; speed?: unknown }, restore = false): VoiceMeta => {
   const library = readVoiceLibrary(),
     current = library[id] || {};
   const next: VoiceMeta = { ...current };
   if (patch.name !== undefined && cleanText(patch.name)) next.name = cleanText(patch.name);
   if (patch.gender !== undefined) next.gender = cleanGender(patch.gender) || undefined;
   if (patch.age !== undefined) next.age = cleanAge(patch.age) || undefined;
+  if (patch.speed !== undefined) next.speed = patch.speed === MOTION_VOICE_SPEED.AUTO ? undefined : cleanVoiceSpeed(patch.speed);
   if (restore) delete next.hidden;
   library[id] = next;
   writeMotionJsonAtomic(motionVoiceLibraryFile(L.LIBRARY_FILE), library);

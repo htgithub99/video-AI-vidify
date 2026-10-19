@@ -25,6 +25,7 @@ import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { ActionBtn, MotionSelectField } from "./MotionControls.js";
 import { motionRequest } from "./motionApi";
+import { MOTION_STYLE_CALIBRATION as CAL } from "../../constants/motionStyleMetrics.js";
 const STYLES_TAB = C.STYLES_FOLDER;
 type LibraryTab = MotionSceneGroup | typeof STYLES_TAB;
 const ALL = SRT.SOURCE_BROWSER_TEXT_SYMBOL;
@@ -45,6 +46,7 @@ const ACTIVE = [MotionJobStatus.RENDERING, MotionJobStatus.QUEUED, MotionJobStat
 const textOf = (lang: Lang) => MOTION_SCENE_LIBRARY_TEXT[lang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
 const sortNewestFirst = <T extends { createdAt?: number }>(items: T[]): T[] => _.orderBy(items, [(item) => item.createdAt || 0], [C.TEXT.DESC]);
 const groupOf = (item: MotionSceneAsset): MotionSceneGroup => motionSceneType(item.type)?.group || (item.kind === C.KIND_CHARACTER ? C.KIND_CHARACTER : item.kind === C.KIND_LOCATION ? C.KIND_LOCATION : (C.KIND_PROP as MotionSceneGroup));
+const thumbUrl = (item: MotionSceneAsset): string => C.URLS.THUMB + encodeURIComponent(item.id) + C.TEXT.VERSION_QUERY + (item.updatedAt || item.createdAt || 0);
 const typeLabel = (id: string | undefined, lang: Lang): string => {
   const type = motionSceneType(id);
   return type ? (lang === MR.MOTION_TEXT_EN ? type.en : type.vi) : MR.MOTION_TEXT_EMPTY;
@@ -60,12 +62,16 @@ const useSceneLibrary = () => {
   const [data, setData] = useState<MotionSceneLibraryList>({ items: [], styles: [] });
   const [loading, setLoading] = useState(true);
   const requestId = useRef(0);
+  const loaded = useRef(false);
   const reload = useCallback(async (showLoading = true) => {
     const id = ++requestId.current;
-    if (showLoading) setLoading(true);
+    if (showLoading && !loaded.current) setLoading(true);
     try {
       const result = await motionRequest<MotionSceneLibraryList>(C.URLS.LIST);
-      if (id === requestId.current) setData({ items: result.items || [], styles: result.styles || [], base: result.base, pending: result.pending });
+      if (id === requestId.current) {
+        loaded.current = true;
+        setData({ items: result.items || [], styles: result.styles || [], base: result.base, pending: result.pending });
+      }
     } catch (error) {
       if (id === requestId.current) toast.error(getMotionErrorMessage(error));
     } finally {
@@ -78,7 +84,11 @@ const useSceneLibrary = () => {
       requestId.current++;
     };
   }, [reload]);
-  return { data, reload, loading };
+  const mutate = useCallback((change: (current: MotionSceneLibraryList) => MotionSceneLibraryList) => {
+    requestId.current++;
+    setData(change);
+  }, []);
+  return { data, reload, loading, mutate };
 };
 const applyStyleSet = async (studio: MotionStudio, style: MotionSceneStyleSet, t: ReturnType<typeof textOf>): Promise<void> => {
   const result = await motionRequest<{ references: MotionStyleReference[] }>(C.URLS.STYLE + encodeURIComponent(style.key));
@@ -135,7 +145,8 @@ const emptyDraft = (): MotionSceneCustomItem => ({
 });
 export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: Lang }> = ({ studio, currentLang }) => {
   const t = textOf(currentLang);
-  const { data, reload, loading } = useSceneLibrary();
+  const { data, reload, loading, mutate } = useSceneLibrary();
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [page, setPage] = useState(1);
   const [tab, setTab] = useState<LibraryTab>(C.KIND_CHARACTER);
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
@@ -149,6 +160,9 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
   const [showAddModal, setShowAddModal] = useState(false);
   const [previewItem, setPreviewItem] = useState<MotionSceneAsset | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  const bulkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingOps = useRef(0);
   const chipsContainerRef = useRef<HTMLDivElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -157,6 +171,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
     () => () => {
       if (timer.current) clearTimeout(timer.current);
       if (clearTimer.current) clearTimeout(clearTimer.current);
+      if (bulkTimer.current) clearTimeout(bulkTimer.current);
     },
     [],
   );
@@ -191,6 +206,17 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
   useEffect(() => {
     setPage(1);
   }, [tab, typeFilter, styleFilter, normalizedQuery]);
+  useEffect(() => {
+    setSelected(new Set());
+    setConfirmBulk(false);
+  }, [tab, typeFilter, styleFilter, normalizedQuery]);
+  useEffect(() => {
+    setSelected((current) => {
+      const alive = new Set(data.items.map((item) => item.id));
+      const next = new Set([...current].filter((id) => alive.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [data.items]);
   useEffect(() => {
     setPage((value) => Math.min(value, pageCount));
   }, [pageCount]);
@@ -263,30 +289,62 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
     });
   };
   const exportLibrary = () => window.location.assign(styleFilter === ALL ? C.URLS.EXPORT : C.URLS.EXPORT_STYLE + encodeURIComponent(styleFilter));
-  const remove = (item: MotionSceneAsset) =>
-    run(item.id, async () => {
-      await motionRequest(C.URLS.REMOVE, { id: item.id });
-      toast.success(t.DELETED);
-      if (previewItem?.id === item.id) setPreviewItem(null);
-      await reload();
+  const background = (task: Promise<unknown>, success: string) => {
+    pendingOps.current++;
+    return task
+      .then(() => {
+        toast.success(success);
+        if (--pendingOps.current === 0) void reload(false);
+      })
+      .catch((error) => {
+        pendingOps.current--;
+        toast.error(getMotionErrorMessage(error));
+        void reload(false);
+      });
+  };
+  const removeMany = (ids: string[]) => {
+    if (!ids.length) return;
+    const gone = new Set(ids);
+    mutate((current) => ({ ...current, items: current.items.filter((item) => !gone.has(item.id)) }));
+    setSelected((current) => new Set([...current].filter((id) => !gone.has(id))));
+    if (previewItem && gone.has(previewItem.id)) setPreviewItem(null);
+    void background(motionRequest(C.URLS.REMOVE, { ids }), t.DELETED);
+  };
+  const removeSelected = () => {
+    if (bulkTimer.current) clearTimeout(bulkTimer.current);
+    if (!confirmBulk) {
+      setConfirmBulk(true);
+      bulkTimer.current = setTimeout(() => setConfirmBulk(false), CLEAR_CONFIRM_MS);
+      return;
+    }
+    setConfirmBulk(false);
+    removeMany([...selected]);
+  };
+  const remove = (item: MotionSceneAsset) => removeMany([item.id]);
+  const removeStyle = (style: MotionSceneStyleSet) => {
+    mutate((current) => ({ ...current, styles: current.styles.filter((entry) => entry.key !== style.key) }));
+    void background(motionRequest(C.URLS.STYLE_REMOVE, { key: style.key }), t.DELETED);
+  };
+  const rename = () => {
+    if (!editing) return;
+    const name = editing.name.trim();
+    if (!name) return void toast.error(C.ERRORS.NAME_REQUIRED);
+    const target = editing;
+    const previous = target.style ? data.styles.find((entry) => entry.key === target.id)?.name : data.items.find((entry) => entry.id === target.id)?.name;
+    if (previous === name) return void setEditing(null);
+    mutate((current) => (target.style ? { ...current, styles: current.styles.map((entry) => (entry.key === target.id ? { ...entry, name } : entry)) } : { ...current, items: current.items.map((entry) => (entry.id === target.id ? { ...entry, name } : entry)) }));
+    if (previewItem && previewItem.id === target.id) setPreviewItem({ ...previewItem, name });
+    setEditing(null);
+    void background(motionRequest(target.style ? C.URLS.STYLE_RENAME : C.URLS.RENAME, target.style ? { key: target.id, name } : { id: target.id, name }), t.RENAMED);
+  };
+  const toggleSelected = (id: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-  const removeStyle = (style: MotionSceneStyleSet) =>
-    run(style.key, async () => {
-      await motionRequest(C.URLS.STYLE_REMOVE, { key: style.key });
-      toast.success(t.DELETED);
-      await reload();
-    });
-  const rename = () =>
-    editing &&
-    run(editing.id, async () => {
-      await motionRequest(editing.style ? C.URLS.STYLE_RENAME : C.URLS.RENAME, editing.style ? { key: editing.id, name: editing.name } : { id: editing.id, name: editing.name });
-      if (previewItem && previewItem.id === editing.id) {
-        setPreviewItem({ ...previewItem, name: editing.name });
-      }
-      setEditing(null);
-      toast.success(t.RENAMED);
-      await reload();
-    });
+  const selectIds = (ids: string[]) => setSelected((current) => new Set([...current, ...ids]));
   const draftTypes = MOTION_SCENE_TYPES.filter((type) => type.group === draft.group);
   const addDraft = () => {
     if (!draft.name.trim() || !draft.description.trim()) return void toast.error(C.ERRORS.NAME_REQUIRED);
@@ -519,11 +577,20 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
                       </div>
                     )}
                     <div className={S.ITEM_META}>{styleLabel(style.key, data.styles, t) + C.TEXT.SEP + style.images.length + C.TEXT.SPACE + t.IMAGES}</div>
+                    <div className={style.calibration ? S.CALIBRATED : S.NOT_CALIBRATED} title={style.calibration?.notes || t.CALIBRATE_HINT}>
+                      {style.calibration ? t.CALIBRATED + C.TEXT.SEP + new Date(style.calibration.at).toLocaleDateString() : t.NOT_CALIBRATED}
+                    </div>
+                    {style.calibration?.image && <img className={S.CALIBRATION_IMAGE} src={CAL.URLS.IMAGE + encodeURIComponent(style.key) + C.TEXT.VERSION_QUERY + style.calibration.at} alt={t.CALIBRATED} loading={MR.MOTION_TEXT_LAZY} />}
                     <div className={S.ITEM_ACTIONS}>
                       {style.images.length > 0 && (
                         <ActionBtn icon={Check} variant={C.TEXT.SECONDARY} disabled={studio.storyBusy} onClick={() => void run(style.key, () => applyStyleSet(studio, style, t))} className={S.MR_AUTO_TEXT_11PX_PY_1_PX_2_5}>
                           {t.USE_STYLE}
                         </ActionBtn>
+                      )}
+                      {style.images.length > 0 && (
+                        <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_PURPLE_400_TRANSI} title={t.CALIBRATE + C.TEXT.SEP + t.CALIBRATE_HINT} disabled={seeding || studio.storyBusy} onClick={() => void startSeed({ key: style.key }, CAL.URLS.CALIBRATE)}>
+                          <Wand2 className={S.ICON} />
+                        </Button>
                       )}
                       <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_SKY_400_TRANSITIO} title={t.RENAME} onClick={() => setEditing({ id: style.key, name: style.name, style: true })}>
                         <Pencil className={S.ICON} />
@@ -543,88 +610,110 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
             </div>
           )
         ) : visible.length ? (
-          <div className={S.GRID}>
-            {pageItems.map((item) => {
-              const itemTypeStr = typeLabel(item.type, currentLang);
-              const isCharacter = item.kind === C.KIND_CHARACTER;
-              const isLocation = item.kind === C.KIND_LOCATION;
-              return (
-                <div key={item.id} className={S.ITEM}>
-                  <div className={cn(S.THUMB_WRAPPER, isCharacter ? S.ASPECT_SQUARE_BG_SLATE_950 : isLocation ? S.ASPECT_VIDEO_BG_SLATE_950 : S.ASPECT_4_3_BG_SLATE_950)} onClick={() => setPreviewItem(item)} title={t.PREVIEW}>
-                    {item.thumb ? <img className={isCharacter ? S.THUMB_SQUARE : isLocation ? S.THUMB : S.THUMB_PROP} src={C.URLS.THUMB + encodeURIComponent(item.id)} alt={item.name} loading={MR.MOTION_TEXT_LAZY} /> : <div className={S.THUMB_EMPTY}>{item.kind === C.KIND_PROP ? (item.size || []).join(C.TEXT.TIMES) : item.name}</div>}
-                  </div>
-                  <div className={S.P_3_FLEX_1_FLEX_FLEX_COL_JUSTIFY_BETWEEN_SPACE_Y_2}>
-                    <div className={S.SPACE_Y_1}>
-                      <div className={S.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_1_TEXT_10PX}>
-                        <span className={S.FONT_SEMIBOLD_TEXT_PURPLE_400_TRUNCATE_TRACKING_WIDE}>{itemTypeStr || item.kind}</span>
-                        {item.from && (
-                          <span className={S.TEXT_SLATE_500_TRUNCATE_MAX_W_80PX} title={item.from}>
-                            {item.from}
-                          </span>
+          <div className={S.SPACE_Y_3}>
+            <div className={S.SELECT_BAR}>
+              <ActionBtn icon={Check} variant={C.TEXT.SECONDARY} onClick={() => selectIds(pageItems.map((item) => item.id))} className={S.TEXT_XS_PX_3_5_PY_2}>
+                {t.SELECT_PAGE}
+              </ActionBtn>
+              <ActionBtn icon={Check} variant={C.TEXT.SECONDARY} onClick={() => selectIds(visible.map((item) => item.id))} className={S.TEXT_XS_PX_3_5_PY_2}>
+                {t.SELECT_ALL + C.TEXT.SPACE + visible.length}
+              </ActionBtn>
+              {selected.size > 0 && (
+                <>
+                  <span className={S.SELECT_COUNT}>{selected.size + C.TEXT.SPACE + t.SELECTED}</span>
+                  <ActionBtn icon={X} variant={C.TEXT.SECONDARY} onClick={() => setSelected(new Set())} className={S.TEXT_XS_PX_3_5_PY_2}>
+                    {t.CLEAR_SELECTION}
+                  </ActionBtn>
+                  <ActionBtn icon={Trash2} variant={C.TEXT.DANGER} disabled={seeding} onClick={removeSelected} className={cn(S.TEXT_XS_PX_3_5_PY_2, confirmBulk && S.ANIMATE_PULSE)}>
+                    {confirmBulk ? t.DELETE_CONFIRM + C.TEXT.SPACE + selected.size : t.DELETE_SELECTED}
+                  </ActionBtn>
+                </>
+              )}
+            </div>
+            <div className={S.GRID}>
+              {pageItems.map((item) => {
+                const itemTypeStr = typeLabel(item.type, currentLang);
+                const isCharacter = item.kind === C.KIND_CHARACTER;
+                const isLocation = item.kind === C.KIND_LOCATION;
+                return (
+                  <div key={item.id} className={cn(S.ITEM, selected.has(item.id) && S.ITEM_SELECTED)}>
+                    <input type={C.TEXT.CHECKBOX} className={S.SELECT_BOX} checked={selected.has(item.id)} onChange={() => toggleSelected(item.id)} title={t.SELECT_ITEM} aria-label={t.SELECT_ITEM + C.TEXT.SEP + item.name} />
+                    <div className={cn(S.THUMB_WRAPPER, isCharacter ? S.ASPECT_SQUARE_BG_SLATE_950 : isLocation ? S.ASPECT_VIDEO_BG_SLATE_950 : S.ASPECT_4_3_BG_SLATE_950)} onClick={() => setPreviewItem(item)} title={t.PREVIEW}>
+                      {item.thumb ? <img className={isCharacter ? S.THUMB_SQUARE : isLocation ? S.THUMB : S.THUMB_PROP} src={thumbUrl(item)} alt={item.name} loading={MR.MOTION_TEXT_LAZY} /> : <div className={S.THUMB_EMPTY}>{item.kind === C.KIND_PROP ? (item.size || []).join(C.TEXT.TIMES) : item.name}</div>}
+                    </div>
+                    <div className={S.P_3_FLEX_1_FLEX_FLEX_COL_JUSTIFY_BETWEEN_SPACE_Y_2}>
+                      <div className={S.SPACE_Y_1}>
+                        <div className={S.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_1_TEXT_10PX}>
+                          <span className={S.FONT_SEMIBOLD_TEXT_PURPLE_400_TRUNCATE_TRACKING_WIDE}>{itemTypeStr || item.kind}</span>
+                          {item.from && (
+                            <span className={S.TEXT_SLATE_500_TRUNCATE_MAX_W_80PX} title={item.from}>
+                              {item.from}
+                            </span>
+                          )}
+                        </div>
+                        {editing?.id === item.id ? (
+                          <div className={S.ROW}>
+                            <StudioInput className={S.INPUT} value={editing.name} autoFocus onChange={(event) => setEditing({ ...editing, name: event.target.value })} onKeyDown={(event) => event.key === C.TEXT.ENTER && void rename()} />
+                            <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.ICON_BTN} onClick={() => void rename()} title={t.SAVE}>
+                              <Check className={S.ICON} />
+                            </Button>
+                            <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.ICON_BTN} onClick={() => setEditing(null)} title={t.CANCEL}>
+                              <X className={S.ICON} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <h3 className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_100_TRUNCATE_GROUP_HOVER_TEXT_PURPLE_300_TRANSITION} title={item.name}>
+                            {item.name}
+                          </h3>
                         )}
+                        <p className={S.TEXT_11PX_TEXT_SLATE_400_TRUNCATE} title={item.description || item.role}>
+                          {item.description || item.role || item.time || SRT.SOURCE_TEXT_SYMBOL_48}
+                        </p>
                       </div>
-                      {editing?.id === item.id ? (
-                        <div className={S.ROW}>
-                          <StudioInput className={S.INPUT} value={editing.name} autoFocus onChange={(event) => setEditing({ ...editing, name: event.target.value })} onKeyDown={(event) => event.key === C.TEXT.ENTER && void rename()} />
-                          <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.ICON_BTN} onClick={() => void rename()} title={t.SAVE}>
-                            <Check className={S.ICON} />
+                      <div className={S.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_1_5_BORDER_T_BORDER_SLATE_800_60_MT_AUTO}>
+                        <span className={S.FLEX_ITEMS_CENTER_GAP_1_FONT_MONO_TEXT_10PX_TEXT_SLATE_400}>
+                          <Repeat className={S.W_3_H_3_TEXT_PURPLE_400_80} />
+                          {(item.uses || 0) + C.TEXT.SPACE + t.USES}
+                        </span>
+                        <div className={S.FLEX_ITEMS_CENTER_GAP_1_5}>
+                          <Button
+                            variant={MR.MOTION_TEXT_UNSTYLED}
+                            className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_PURPLE_400_TRANSI}
+                            title={t.PREVIEW}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewItem(item);
+                            }}>
+                            <Eye className={S.ICON} />
                           </Button>
-                          <Button variant={MR.MOTION_TEXT_UNSTYLED} className={S.ICON_BTN} onClick={() => setEditing(null)} title={t.CANCEL}>
-                            <X className={S.ICON} />
+                          <Button
+                            variant={MR.MOTION_TEXT_UNSTYLED}
+                            className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_SKY_400_TRANSITIO}
+                            title={t.RENAME}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditing({ id: item.id, name: item.name });
+                            }}>
+                            <Pencil className={S.ICON} />
+                          </Button>
+                          <Button
+                            variant={MR.MOTION_TEXT_UNSTYLED}
+                            className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_ROSE_400_TRANSITI}
+                            title={t.DELETE}
+                            disabled={busy === item.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void remove(item);
+                            }}>
+                            <Trash2 className={S.ICON} />
                           </Button>
                         </div>
-                      ) : (
-                        <h3 className={S.TEXT_XS_FONT_SEMIBOLD_TEXT_SLATE_100_TRUNCATE_GROUP_HOVER_TEXT_PURPLE_300_TRANSITION} title={item.name}>
-                          {item.name}
-                        </h3>
-                      )}
-                      <p className={S.TEXT_11PX_TEXT_SLATE_400_TRUNCATE} title={item.description || item.role}>
-                        {item.description || item.role || item.time || SRT.SOURCE_TEXT_SYMBOL_48}
-                      </p>
-                    </div>
-                    <div className={S.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_1_5_BORDER_T_BORDER_SLATE_800_60_MT_AUTO}>
-                      <span className={S.FLEX_ITEMS_CENTER_GAP_1_FONT_MONO_TEXT_10PX_TEXT_SLATE_400}>
-                        <Repeat className={S.W_3_H_3_TEXT_PURPLE_400_80} />
-                        {(item.uses || 0) + C.TEXT.SPACE + t.USES}
-                      </span>
-                      <div className={S.FLEX_ITEMS_CENTER_GAP_1_5}>
-                        <Button
-                          variant={MR.MOTION_TEXT_UNSTYLED}
-                          className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_PURPLE_400_TRANSI}
-                          title={t.PREVIEW}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewItem(item);
-                          }}>
-                          <Eye className={S.ICON} />
-                        </Button>
-                        <Button
-                          variant={MR.MOTION_TEXT_UNSTYLED}
-                          className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_SKY_400_TRANSITIO}
-                          title={t.RENAME}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditing({ id: item.id, name: item.name });
-                          }}>
-                          <Pencil className={S.ICON} />
-                        </Button>
-                        <Button
-                          variant={MR.MOTION_TEXT_UNSTYLED}
-                          className={S.W_6_H_6_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_400_HOVER_TEXT_ROSE_400_TRANSITI}
-                          title={t.DELETE}
-                          disabled={busy === item.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void remove(item);
-                          }}>
-                          <Trash2 className={S.ICON} />
-                        </Button>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className={S.PY_16_TEXT_CENTER_SPACE_Y_4}>
@@ -648,7 +737,7 @@ export const MotionSceneLibraryPanel: FC<{ studio: MotionStudio; currentLang: La
           <div className={S.SPACE_Y_5}>
             <div className={S.GRID_GRID_COLS_1_MD_GRID_COLS_2_GAP_5_ITEMS_START}>
               <div className={S.RELATIVE_ROUNDED_2XL_OVERFLOW_HIDDEN_BG_SLATE_950_BORDER_BORDER_SLATE_800_FLEX_ITEMS}>
-                {previewItem.thumb ? <img src={C.URLS.THUMB + encodeURIComponent(previewItem.id)} alt={previewItem.name} className={S.MAX_H_380PX_W_AUTO_MAX_W_FULL_OBJECT_CONTAIN_ROUNDED_XL} /> : <div className={S.TEXT_SM_TEXT_SLATE_500_FONT_MONO}>{previewItem.kind === C.KIND_PROP ? (previewItem.size || []).join(C.TEXT.TIMES) : previewItem.name}</div>}
+                {previewItem.thumb ? <img src={thumbUrl(previewItem)} alt={previewItem.name} className={S.MAX_H_380PX_W_AUTO_MAX_W_FULL_OBJECT_CONTAIN_ROUNDED_XL} /> : <div className={S.TEXT_SM_TEXT_SLATE_500_FONT_MONO}>{previewItem.kind === C.KIND_PROP ? (previewItem.size || []).join(C.TEXT.TIMES) : previewItem.name}</div>}
               </div>
               <div className={S.SPACE_Y_3_5}>
                 <div className={S.SPACE_Y_1}>

@@ -4,13 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "reac
 import { toast } from "sonner";
 import { Check, ChevronDown, ChevronUp, Mic, Mic2, Music, Pencil, Plus, Radio, RotateCcw, Search, Sparkles, Star, Trash2, Upload, Volume2, X } from "lucide-react";
 import * as MR from "../../constants/motionRuntime.js";
-import { MOTION_VOICE, MOTION_VOICE_PATTERNS, MOTION_VOICE_AUDIO, MOTION_VOICE_FILTER as F, MOTION_VOICE_PANEL_TEXT as P, MOTION_VOICE_CHANNEL_TEXT, MOTION_VOICE_LIBRARY as L, MOTION_VOICE_PANEL_STYLES as S } from "../../constants/motionVoice.js";
+import { MOTION_VOICE, MOTION_VOICE_PATTERNS, MOTION_VOICE_AUDIO, MOTION_VOICE_FILTER as F, MOTION_VOICE_PANEL_TEXT as P, MOTION_VOICE_CHANNEL_TEXT, MOTION_VOICE_LIBRARY as L, MOTION_VOICE_PANEL_STYLES as S, MOTION_VOICE_SPEED as SP } from "../../constants/motionVoice.js";
 import type { MotionStudio } from "../../hooks/useMotionStudio.js";
 import type { Lang } from "../../lib/lang.js";
 import { getMotionErrorMessage } from "../../lib/motionUtils.js";
 import { motionLanguageCode, motionVoiceMatchesFilter, motionVoiceSpeaks } from "../../lib/motionVoice.js";
 import { cn } from "../../lib/utils";
-import type { MotionVoiceChannel, MotionVoiceGroup, MotionVoicePreset } from "../../types/motionVideo.js";
+import type { MotionVoiceChannel, MotionVoiceGroup, MotionVoicePreset, MotionVoiceSpeedSettings } from "../../types/motionVideo.js";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
 import { MotionVoicePreviewButton } from "./MotionVoicePreviewButton.js";
@@ -27,6 +27,9 @@ const emptyDraft = (voiceId: string = MR.MOTION_TEXT_EMPTY): Draft => ({
 export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> = ({ studio, currentLang }) => {
   const t = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const [voices, setVoices] = useState<MotionVoicePreset[]>([]);
+  const sp = SP.TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+  const [speedSettings, setSpeedSettings] = useState<MotionVoiceSpeedSettings | null>(null);
+  const [referenceUrl, setReferenceUrl] = useState<string>(SP.DEFAULT_REFERENCE);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [makeDefaultDraft, setMakeDefaultDraft] = useState(false);
   const [busy, setBusy] = useState<string>(MR.MOTION_TEXT_EMPTY);
@@ -70,7 +73,28 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
   useEffect(() => {
     void loadVoices();
     void studio.reloadVoiceChannels();
+    void motionRequest<{ settings: MotionVoiceSpeedSettings }>(SP.URL)
+      .then((data) => {
+        setSpeedSettings(data.settings);
+        if (data.settings.target?.url) setReferenceUrl(data.settings.target.url);
+      })
+      .catch(_.noop);
   }, []);
+  const measureSpeed = () =>
+    run(SP.MEASURE_URL, async () => {
+      const data = await motionRequest<{ settings: MotionVoiceSpeedSettings }>(SP.MEASURE_URL, { url: referenceUrl.trim() });
+      setSpeedSettings(data.settings);
+    });
+  const setVoiceSpeed = (voice: MotionVoicePreset, value: string) => {
+    const speed = value === SP.AUTO ? undefined : Number(value);
+    setVoices((current) => current.map((item) => (item.id === voice.id ? _.omitBy({ ...item, speed }, _.isUndefined) as MotionVoicePreset : item)));
+    void motionRequest(L.META_URL, { id: voice.id, speed: value })
+      .then(() => toast.success(sp.SAVED))
+      .catch((error) => {
+        toast.error(getMotionErrorMessage(error));
+        void loadVoices();
+      });
+  };
   const voicesById = useMemo(() => new Map(voices.map((voice) => [voice.id, voice])), [voices]);
   const voiceItem = useCallback((id?: string) => (id ? voicesById.get(id) : undefined), [voicesById]);
   const voiceName = useCallback((id?: string) => voiceItem(id)?.name || id || MR.MOTION_TEXT_EMPTY, [voiceItem]);
@@ -538,6 +562,17 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                 ))}
               </div>
             </div>
+            <div className={S.SPEED_SECTION}>
+              <div className={S.SPEED_TITLE}>{sp.TITLE}</div>
+              <p className={S.HINT}>{sp.HINT}</p>
+              <div className={S.INLINE_ROW}>
+                <StudioInput value={referenceUrl} onChange={(event) => setReferenceUrl(event.target.value)} placeholder={sp.PLACEHOLDER} className={S.INPUT} />
+                <ActionBtn icon={Radio} busy={busy === SP.MEASURE_URL} disabled={!!busy} onClick={measureSpeed}>
+                  {sp.MEASURE}
+                </ActionBtn>
+              </div>
+              <div className={S.STAT_DETAIL}>{speedSettings?.target ? sp.MEASURED((speedSettings.target.window || speedSettings.target.rate).toFixed(2), speedSettings.target.title) : sp.NONE}</div>
+            </div>
             <div className={S.FILTER_SECTION}>
               <div className={S.FILTER_ROW}>
                 <div className={S.SEARCH_WRAPPER}>
@@ -600,6 +635,17 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
                           </>
                         )}
                       </div>
+                      <label className={S.SPEED_FIELD} title={sp.SPEED}>
+                        <span className={S.SPEED_LABEL}>{sp.SPEED}</span>
+                        <StudioSelect value={voice.speed ? String(voice.speed) : SP.AUTO} onChange={(event) => setVoiceSpeed(voice, event.target.value)} className={S.SPEED_SELECT}>
+                          <option value={SP.AUTO}>{sp.AUTO}</option>
+                          {_.map(SP.OPTIONS, (option) => (
+                            <option key={option} value={String(option)}>
+                              {option.toFixed(2) + MR.MOTION_TEXT_X}
+                            </option>
+                          ))}
+                        </StudioSelect>
+                      </label>
                       {isPlaying && (
                         <div className={S.EQUALIZER}>
                           <span className={S.EQUALIZER_LEFT} />
