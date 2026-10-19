@@ -1,5 +1,5 @@
 import type { MotionReferenceStyle, MotionStyleKit } from "../types/motionVideo.js";
-export interface MotionStylePreset { id: string; mode: "2d" | "3d"; label: { vi: string; en: string }; look: string; palette: string[]; outlineColor?: string; outlineWidth?: number; description: string; kit: MotionStyleKit; }
+export interface MotionStylePreset { id: string; mode: "2d" | "3d"; genre?: string; label: { vi: string; en: string }; look: string; palette: string[]; outlineColor?: string; outlineWidth?: number; description: string; kit: MotionStyleKit; }
 export const MOTION_STYLE_PRESET_NONE = "";
 export const MOTION_STYLE_PRESET_KEY = (id: string, mode: string): string => `${mode}-preset-${id}`;
 const preset = (id: string, mode: "2d" | "3d", vi: string, en: string, look: string, palette: string[], outline: [string, number] | null, description: string, render: Record<string, string>, character: Record<string, string>, background: Record<string, string>, fx: string, camera: string): MotionStylePreset => ({
@@ -373,6 +373,24 @@ export const MOTION_STYLE_PRESETS: MotionStylePreset[] = [
     "fog, flickering lights, dust",
     "slow creeping push-ins, long holds",
   ),
+  {
+    ...preset(
+      "ghost_story_2d",
+      "2d",
+      "Truyện ma 2D (kể chuyện)",
+      "Ghost story 2D (narrated)",
+      "cold_thriller",
+      ["#1d2433", "#3a3f4a", "#6b5a3a", "#c9bfa8", "#eef3f6", "#8e3a2c"],
+      ["#17161b", 0.004],
+      "Flat 2D narrated ghost-story cartoon: simple round-headed figures with plain white faces and large dark oval eyes, single-colour robes, mitten hands; flat village sets with dark outlines; muted night palette of navy, grey-brown and cream with a few warm lamp lights; one picture per narrated sentence, close-ups of hands and objects for small actions.",
+      { mode: "flat colour fills", outline: "uniform dark outline", shadingTones: "1", texture: "none" },
+      { proportions: "round head, rounded body, no legs", eyes: "large dark ovals", mouth: "small simple shape", hands: "round mitten hands" },
+      { sky: "flat night navy or dusk tones", ground: "flat bands of brick, earth or wood", props: "few, large, simple" },
+      "lamp glow, incense smoke, slow fog, faint flicker",
+      "static framing that cuts per sentence, slow push-ins on reveals",
+    ),
+    genre: "horror",
+  },
 ];
 export const motionStylePreset = (id: unknown): MotionStylePreset | undefined => MOTION_STYLE_PRESETS.find((item) => item.id === id);
 export const motionPresetReferenceStyle = (item: MotionStylePreset): MotionReferenceStyle => ({ description: item.description, palette: item.palette, outlineColor: item.outlineColor, outlineWidth: item.outlineWidth, kit: item.kit });

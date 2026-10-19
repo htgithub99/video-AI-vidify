@@ -92,7 +92,7 @@ export const MOTION_SOUND_KINDS = [
   { kind: "whoosh", layer: "accent", pattern: /\bw(?:h)?oosh\b|\bswoosh\b|\briser\b|\bsweep\b|\btransition\b|\bzoom\b|chuyen canh|vut qua/, duration: 1.2 },
   { kind: "cartoon", layer: "accent", pattern: /\bboing\b|\bcartoon\b|\bcomedy\b|\btrombone\b|\bsqueaky\b|\bclown\b|\bpop\b|\bvideo game\b|\barcade\b|\bgame (?:over|level|ball)\b|\bplayer\b|\bbonus\b|\btreasure\b|hai huoc/, duration: 1 },
   { kind: "owl", layer: "ambience", pattern: /\bowls?\b|cu meo|con cu keu/, duration: 6 },
-  { kind: "cat", layer: "character", pattern: /\bcats?\b|\bkittens?\b|\bmeow|\bpurr|con meo|meo (?:den|keu|gu|meo|hoang|mun)|\bhiss(?:es|ing)?\b|meo keu|tieng meo|meo gu/, duration: 2 },
+  { kind: "cat", layer: "character", pattern: /\bcats\b|\b(?:the|a|black|white|stray) cat\b|\bkittens?\b|\bmeow|\bpurr|con meo|meo (?:den|keu|gu|meo|hoang|mun)|\bhiss(?:es|ing)?\b|meo keu|tieng meo|meo gu/, duration: 2 },
   { kind: "dog", layer: "character", pattern: /\bdogs?\b|\bpupp(?:y|ies)\b|\bbark(?:s|ing)?\b|cho sua|tieng cho/, duration: 2 },
   { kind: "horse", layer: "character", pattern: /\bhorses?\b|\bstallion\b|\bgallop|\bneigh|\btrot\b|ngua hi|vo ngua|tieng ngua/, duration: 3 },
   { kind: "wolf", layer: "accent", pattern: /\bwol(?:f|ves)\b|\bhowl(?:s|ing)?\b|soi hu|tieng hu/, duration: 5 },

@@ -1,5 +1,5 @@
 export const MOTION_BOARD2D = {
-  VERSION: 3,
+  VERSION: 4,
   SCRIPT_VERSION: 2,
   STAGE: "board2d",
   SHEET_DIR: "board2d-sheet",

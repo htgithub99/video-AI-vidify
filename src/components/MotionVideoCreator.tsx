@@ -427,7 +427,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   value={state.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : state.stylePreset || MOTION_STYLE_PRESET_NONE}
                   onChange={(e) => {
                     const chosen = motionStylePreset(e.target.value);
-                    patch(chosen ? { stylePreset: chosen.id, drawingMode: chosen.mode, styleReferences: [] } : { stylePreset: MOTION_STYLE_PRESET_NONE });
+                    patch(chosen ? { stylePreset: chosen.id, drawingMode: chosen.mode, styleReferences: [], ...(chosen.genre ? { videoGenre: chosen.genre as MotionVideoGenre } : {}) } : { stylePreset: MOTION_STYLE_PRESET_NONE });
                   }}
                   disabled={studio.storyBusy}
                   title={presetText.HINT}

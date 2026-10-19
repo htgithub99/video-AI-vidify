@@ -29,6 +29,10 @@
     ACTION_ALIAS: [[/raise|hands_up|surrender|cheer|celebrat/, "raise_hands"], [/hold|carry|give|offer|show|present|grip|clutch|hand_over|receive|take/, "hold"], [/point|gesture|indicate/, "point"], [/pray|bow|kowtow|worship|incense/, "bow"], [/scare|fear|trembl|shiver|panic|flinch|recoil|startl|shock/, "fear"], [/cry|sob|weep|mourn|griev/, "cry"], [/kneel|crouch|squat/, "kneel"], [/sit|seat/, "sit"], [/lie|lying|collapse|faint|dead/, "lie"], [/fall|trip/, "fall"], [/run|flee|rush|chase/, "run"], [/walk|step|approach|enter|leave|exit|go_/, "walk"], [/look|search|glance|peer|watch|stare/, "look_around"], [/think|ponder|wonder|recall|remember/, "think"], [/wave|greet|beckon/, "wave"], [/laugh|giggl/, "laugh"], [/shout|yell|scream|call/, "shout"], [/dig|shovel/, "dig"], [/talk|speak|say|tell|explain|whisper|ask|answer|argu/, "talk"]],
     SMOOTH: { ATTACK: 0.3, RELEASE: 0.5, SWITCH: 0.35 },
     VIG: {
+      TAKE_POCKET: "pocket",
+      TAKE_FLOOR: "floor",
+      TAKE_POCKET_RE: /túi|móc ra|pocket/,
+      TAKE_FLOOR_RE: /nhặt|lượm|dưới đất|trên đất|dưới nền|trên nền|dưới sàn|trên sàn|cúi xuống|pick up|picked up|from the floor|from the ground/,
       MIN_SENT: 1.6,
       END_RE: /[.!?…]["”']?\s*$/,
       DIALOGUE_RE: /[:"“”]/,
@@ -149,6 +153,7 @@
       SET_SPREAD: 0.8,
       SET_DEPTH: 0.03,
       INTERACT: ["give", "hug", "support", "reach"],
+      FOOT_MAX: 0.9,
       INTERACT_GAP: 0.8,
       HOLD_POSES: ["hold", "give", "read"],
       LIGHT_NIGHT: "night",
@@ -1548,7 +1553,7 @@
     if (has(K.BOARD.UP)) mods.down = false;
     if (has(K.BOARD.DOWN)) mods.up = false;
     if (has(K.BOARD.LIT)) mods.out = false;
-    return { kind: e.mode === K.BOARD.CUTAWAY ? K.BOARD.CUTAWAY : e.kind, objs, color: o0.color || null, count: o0.count || 1, mods, casts: [e.subject, e.target].filter(Boolean), self: false, items: e.items || [], light: e.light || null, board: true, text: low };
+    return { kind: e.mode === K.BOARD.CUTAWAY ? K.BOARD.CUTAWAY : e.kind, objs, color: o0.color || null, count: o0.count || 1, mods, casts: [e.subject, e.target].filter(Boolean), solo: !e.target, self: false, items: e.items || [], light: e.light || null, board: true, text: low };
   }
 
   function propAsset(key) {
@@ -2080,7 +2085,40 @@
       let pass = ease(clamp((k - 0.35) / 0.25, 0, 1));
       if (vg.mods.back) pass = pass * (1 - ease(clamp((k - 0.7) / 0.2, 0, 1)));
       const outK = vg.mods.back ? 0 : ease(clamp((k - 0.7) / 0.3, 0, 1));
-      if (kind === "take") {
+      const takeText = String(vg.text || sent.text || "").toLowerCase();
+      const takeMode = kind !== "take" ? null : K.VIG.TAKE_POCKET_RE.test(takeText) ? K.VIG.TAKE_POCKET : K.VIG.TAKE_FLOOR_RE.test(takeText) || vg.solo || !who[1] ? K.VIG.TAKE_FLOOR : null;
+      if (takeMode === K.VIG.TAKE_FLOOR) {
+        const reach = ease(clamp(k / 0.4, 0, 1)), lift = ease(clamp((k - 0.45) / 0.45, 0, 1));
+        const floorY = H * 0.64;
+        g.fillStyle = scaleHex(S.loc.ground.color, 0.8);
+        g.fillRect(0, floorY, W, H - floorY);
+        g.strokeStyle = line;
+        g.lineWidth = lw;
+        g.beginPath();
+        g.moveTo(0, floorY);
+        g.lineTo(W, floorY);
+        g.stroke();
+        const cx = W * 0.56, cy = H * 0.74;
+        const hx = lerp(lerp(W * 0.2, cx, reach), W * 0.5, lift), hy = lerp(lerp(-H * 0.1, cy - H * 0.04, reach), H * 0.4, lift);
+        if (lift > 0) vigObject(g, obj, hx + T * 0.3, hy + H * 0.02, H * 0.22, objStyle({ rot: lerp(78, -8, lift) }), line, lw, tt);
+        else vigObject(g, obj, cx, cy, H * 0.2, objStyle({ rot: 78 }), line, lw, tt);
+        vigArm(g, -W * 0.1, -H * 0.2, hx, hy, T, sleeveOf(main, K.VIG.SLEEVE), skinOf(main), line, lw, false);
+      } else if (takeMode === K.VIG.TAKE_POCKET) {
+        const dip = ease(clamp(k / 0.35, 0, 1)), pull = ease(clamp((k - 0.4) / 0.45, 0, 1));
+        const torso = sleeveOf(main, K.VIG.SLEEVE);
+        g.beginPath();
+        if (g.roundRect) g.roundRect(W * 0.56, H * 0.1, W * 0.6, H * 1.05, H * 0.14);
+        else g.rect(W * 0.56, H * 0.1, W * 0.6, H * 1.05);
+        fillStroke(g, torso, line, lw);
+        const px = W * 0.66, py = H * 0.5, pw = W * 0.17, ph = H * 0.17;
+        const hx = lerp(lerp(-W * 0.05, px + pw * 0.45, dip), W * 0.44, pull), hy = lerp(lerp(H * 0.7, py + ph * 0.2, dip), H * 0.36, pull);
+        if (pull > 0) vigObject(g, obj, hx + T * 0.35, hy - H * 0.05, H * 0.22, objStyle({ rot: -14 + 10 * pull }), line, lw, tt);
+        else if (dip >= 1) vigObject(g, obj, px + pw * 0.5, py + ph * 0.1, H * 0.2, objStyle({ rot: -4 }), line, lw, tt);
+        g.beginPath();
+        g.rect(px, py, pw, ph);
+        fillStroke(g, scaleHex(torso, 0.78), line, lw);
+        vigArm(g, -W * 0.1, H * 0.9, hx, hy, T, torso, skinOf(main), line, lw, false);
+      } else if (kind === "take") {
         const grab = ease(clamp(k / 0.45, 0, 1)), pull = ease(clamp((k - 0.55) / 0.45, 0, 1));
         vigArm(g, W * 1.05, H * 0.75, W * 0.72, H * 0.62, T, sleeveOf(other, K.VIG.SLEEVE_B), skinOf(other), line, lw, true);
         const hx = lerp(-W * 0.05, W * 0.62, grab) - pull * W * 0.5;
@@ -2445,7 +2483,7 @@
       if (set) {
         const fit = setFit(S, set);
         const rel = clamp((s.z - st.zBack) / Math.max(0.1, st.zNear - st.zBack), 0, 1);
-        pos = [S.VW / 2 + (pos[0] - S.VW / 2) * K.BOARD.SET_SPREAD, fit.oy + set.meta.floorY * fit.sc + rel * K.BOARD.SET_DEPTH * S.VH];
+        pos = [S.VW / 2 + (pos[0] - S.VW / 2) * K.BOARD.SET_SPREAD, Math.min(fit.oy + set.meta.floorY * fit.sc + rel * K.BOARD.SET_DEPTH * S.VH, fit.oy + K.BOARD.SET_H * K.BOARD.FOOT_MAX * fit.sc)];
         k = st.S0;
       }
       const talk = speech[a.cast] ? speechLevel(speech[a.cast], stT) : Array.isArray(a.talk) ? speechLevel([[num(a.talk[0], 0) * beatDur, num(a.talk[1], 1) * beatDur]], stT) : 0;
@@ -2612,7 +2650,7 @@
       let pose = rigPose(A.R, A.s.action, tt, A.talk, A.s.moving, A.env);
       if (A.s.prev && A.s.mix < 1) pose = blendPose(rigPose(A.R, A.s.prev, tt, A.talk, A.s.moving, A.env), pose, ease(A.s.mix));
       pose.held = A.held;
-      if (A.s.front && (A.s.action === K.ACTION.BOW || A.s.action === K.ACTION.PRAY)) {
+      if (A.s.action === K.ACTION.BOW || A.s.action === K.ACTION.PRAY) {
         pose.tilt = 0;
         pose.head = 0;
         pose.bob = -K.FRONT_BOW.DIP * (0.6 + 0.4 * Math.sin(tt * 1.3));

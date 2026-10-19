@@ -285,7 +285,7 @@ export const sceneShots2d = (beat: MotionBeat, gen: MotionGenState, start: numbe
     actors,
     props: [],
     hide: [],
-    soundEvents: motionAutoSoundEvents([beat.narration, beat.action, ...beatSentences2d(beat, gen)]),
+    ...(beat.data?.[MOTION_2D.SOUND_FLAG] ? {} : { soundEvents: motionAutoSoundEvents([beat.narration, beat.action, ...beatSentences2d(beat, gen)]) }),
     ...(speech && !_.isEmpty(speech) ? { speech } : {}),
     soundBeatId: beat.id,
     cameras: [{ shot: MOTION_2D.SHOT_WIDE, move: MOTION_2D.MOVE_STATIC }],
@@ -294,7 +294,12 @@ export const sceneShots2d = (beat: MotionBeat, gen: MotionGenState, start: numbe
   };
   return [{ id: beat.id, start: +start.toFixed(3), end: +end.toFixed(3), template: MOTION_VIDEO_CONSTANTS.TEMPLATE_2D, params }];
 };
-const spokenClip = (beat: MotionBeat, clip: MotionVoiceClip, roles: readonly string[] = MOTION_2D.SPEAK_ROLES): boolean => _.some(beat.utterances || [], (u) => u.speaker === clip.speaker && _.includes(roles, u.role) && (u.id === clip.id || _.includes(clip.text, _.trim(u.text).slice(0, 12))));
+const quotedIn = (narration: string, text: string): boolean => {
+  const head = _.trim(text).slice(0, MOTION_2D.QUOTE_HEAD);
+  const at = head ? narration.indexOf(head) : -1;
+  return at >= 0 && MOTION_2D.QUOTE_BEFORE_RE.test(narration.slice(Math.max(0, at - MOTION_2D.QUOTE_LOOKBACK), at));
+};
+const spokenClip = (beat: MotionBeat, clip: MotionVoiceClip, roles: readonly string[] = MOTION_2D.SPEAK_ROLES): boolean => _.some(beat.utterances || [], (u) => u.speaker === clip.speaker && _.includes(roles, u.role) && (u.id === clip.id || _.includes(clip.text, _.trim(u.text).slice(0, 12))) && quotedIn(beat.narration, u.text));
 export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect: string; durations?: number[]; look?: string; accent?: string; voiceTrack?: MotionVoiceTrack }): CompiledStory => {
   const beats = script.beats;
   if (_.isEmpty(beats)) throw new Error(MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO_2);

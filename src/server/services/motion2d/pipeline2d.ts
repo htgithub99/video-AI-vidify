@@ -15,6 +15,7 @@ import { releaseMotionAiSession, resolveMotionReferenceStyle } from "../motionSt
 import { board2dStyleKey, buildBoard2d, type Board2dOptions } from "./board2d.js";
 import { buildCast2d } from "./cast2d.js";
 import { board2dSheet } from "./sheet2d.js";
+import { directSound2d } from "./sound2d.js";
 
 const missingLines = (script: MotionStoryScript): number => {
   const sentences = script.gen?.board2d?.sentences || {};
@@ -49,6 +50,11 @@ export const buildScenes2d = async (script: MotionStoryScript, analysis: MotionS
     emit();
     if (!missingLines(out) || o.signal?.aborted) break;
   }
+  progress(0.72, C.STAGE_SOUND);
+  await directSound2d(out, analysis, gen, { ...bo, direction: o.audioDirection }).catch((e) => {
+    if (o.signal?.aborted) throw e;
+  });
+  emit();
   await releaseMotionAiSession(o.log).catch(_.noop);
   const board = gen.board2d!;
   const places = _.uniq(_.compact(_.map(sceneBeats, MR.MOTION_TEXT_PLACE)));

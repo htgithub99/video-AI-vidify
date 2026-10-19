@@ -122,6 +122,7 @@ export const MOTION_2D = {
   LOG_START: "Dựng cảnh 2D (dây chuyền 2D riêng, không dùng dữ liệu 3D).",
   STAGE_CAST: "cast2d",
   STAGE_SHEET: "sheet2d",
+  STAGE_SOUND: "sound2d",
   GATE_TRIES: 2,
   ACTOR_GAP: 1.5,
   ACTOR_MAX: 4,
@@ -133,6 +134,14 @@ export const MOTION_2D = {
   F_KEY: "key",
   F_POSE: "pose",
   SPEAK_ROLES: ["dialogue", "offscreen"],
+  SOUND_FLAG: "sound2d",
+  QUOTE_HEAD: 12,
+  QUOTE_LOOKBACK: 4,
+  QUOTE_BEFORE_RE: /["“”«»'‘’:—–-]\s*$/,
+  HORROR_RE: /(horror|ghost|kinh dị|truyện ma)/i,
+  SOUND_VERSION: 1,
+  SOUND_BEATS_PER_CALL: 14,
+  ABORTED: "aborted",
 } as const;
 
 export const MOTION_2D_PROMPTS = {
@@ -144,6 +153,16 @@ export const MOTION_2D_PROMPTS = {
       "CHARACTERS (key | name | role | gender | age | look):\n" + p.cast,
       'Return JSON {"cast":[{"key":"same key","top":"#rrggbb","bottom":"#rrggbb or null","hair":"#rrggbb or null","hairKind":"short|long|spike|side|null","hat":"#rrggbb or null","hatKind":"cone|helmet|turban|cap|null","beard":"#rrggbb or null","glasses":false,"scarf":"#rrggbb or null","skirt":false,"ghost":false}]}.',
       "RULES: every character gets a clearly different top color from the others; muted era-appropriate colors; ghost=true only for ghosts or spirits.",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  SOUND: (p: { genre: string; beats: string }): string =>
+    [
+      "This is a 2D narrated story video: every sentence is illustrated on screen, so actions and sounds described by the narration ARE visible or audible in that picture.",
+      p.genre ? "GENRE: " + p.genre + (MOTION_2D.HORROR_RE.test(p.genre) ? ". Horror: low ambience beds for night places, sharp accents on reveals and sudden events, creaks, wind, distant bells, knocks; leave short silences before reveals." : "") : "",
+      "BEATS (lines = spoken text in order, pictures = what each sentence shows): " + p.beats,
+      "For each beat add 1-4 sound events that match what happens: physical actions (knock, door, footsteps, card flip, cloth, bell, incense hiss, crying), weather and place ambience, and one accent for a scary reveal. Set at (0..1 of the beat) close to where that sentence is spoken. Do not add sounds for things only remembered or mentioned in the past.",
+      'Return JSON {"beats":[{"id":"beat id","soundEvents":[...],"soundSilence":false}]}.',
     ]
       .filter(Boolean)
       .join("\n"),
