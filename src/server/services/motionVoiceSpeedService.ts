@@ -85,7 +85,7 @@ export const voiceSpeedKey = (voiceId: string): string => {
   const settings = readVoiceSpeedSettings();
   return settings.target ? [V.AUTO, settings.target.rate, settings.correction.toFixed(3)].join("|") : String(1);
 };
-export const voiceTempoFactor = (voiceId: string, text: string, rawSeconds: number): number => {
+export const voiceTempoFactor = (voiceId: string, text: string, rawSeconds: number, paced = false): number => {
   const manual = cleanVoiceSpeed(readVoiceLibrary()[voiceId]?.speed);
   if (manual) return manual;
   const settings = readVoiceSpeedSettings();
@@ -98,7 +98,8 @@ export const voiceTempoFactor = (voiceId: string, text: string, rawSeconds: numb
     writeVoiceSpeedSettings({ ...settings, rates: { ...settings.rates, [voiceId]: _.round(previous ? previous * (1 - V.RATE_WEIGHT) + measured * V.RATE_WEIGHT : measured, 3) } });
   }
   if (!natural) return 1;
-  return _.clamp(round((settings.target.rate * V.GAP_FACTOR * settings.correction) / natural), V.AUTO_MIN, V.AUTO_MAX);
+  const gapFactor = paced && settings.target.source !== V.SOURCE_AUDIO ? (settings.target.speechRatio ? _.clamp(1 / settings.target.speechRatio, V.GAP_FACTOR, V.PACED_GAP_MAX) : V.PACED_GAP_FACTOR) : V.GAP_FACTOR;
+  return _.clamp(round((settings.target.rate * gapFactor * settings.correction) / natural), V.AUTO_MIN, paced ? V.PACED_AUTO_MAX : V.AUTO_MAX);
 };
 export const recordVoiceSpeedFeedback = (units: number, totalSeconds: number, usedAuto: boolean): string | undefined => {
   const settings = readVoiceSpeedSettings();

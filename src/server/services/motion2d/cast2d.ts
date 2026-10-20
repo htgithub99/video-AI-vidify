@@ -9,6 +9,7 @@ import * as MR from "../../../constants/motionRuntime.js";
 import type { MotionCast2d, MotionCastMember, MotionGenState, MotionStoryAnalysis } from "../../../types/motionVideo.js";
 import { loadMotionEngine } from "../motionEngineService.js";
 import { runMotionAi } from "../motionStoryService.js";
+import { motion2dSpecies } from "../../../lib/motion2dSpecies.js";
 import { board2dSha, readBoard2dLib, writeBoard2dLib, type Board2dOptions } from "./board2d.js";
 
 type Found = string | null | undefined;
@@ -48,6 +49,29 @@ const pick = <T>(list: readonly T[], i: number): T => list[((i % list.length) + 
 const heightOf = (c: MotionCastMember): number => {
   const base = c.age === C.AGE_CHILD ? C.HEIGHT.child : c.age === C.AGE_SENIOR ? C.HEIGHT.senior : C.HEIGHT.adult;
   return +(base * (c.gender === C.FEMALE ? C.HEIGHT.female : 1)).toFixed(3);
+};
+
+const deriveAnimal = (c: MotionCastMember, species: string): MotionCast2d => {
+  const look = lookText(c);
+  const nameColor = colorIn(String(c.name || C.EMPTY).normalize(MR.MOTION_TEXT_NFC).toLowerCase());
+  const fur = hexOr(c.colors?.top) || nameColor || colorIn(look.replace(C.ROLE_RE.hat, C.EMPTY)) || C.SPECIES_FUR[species] || C.DEFAULT_TOP;
+  return {
+    skin: fur,
+    top: fur,
+    bottom: null,
+    hair: null,
+    hairKind: null,
+    hat: null,
+    hatKind: null,
+    scarf: null,
+    eye: C.DEFAULT_EYE,
+    legs: true,
+    arms: false,
+    animal: true,
+    species,
+    height: C.SPECIES_HEIGHT[species] || C.SPECIES_HEIGHT.dog,
+    ghost: isGhost(c),
+  };
 };
 
 const deriveFree = (c: MotionCastMember, i: number, skin: string): { info: MotionCast2d; guessed: boolean } => {
@@ -164,6 +188,11 @@ export const buildCast2d = async (analysis: MotionStoryAnalysis, gen: MotionGenS
   const out: Record<string, MotionCast2d> = {};
   const free: { c: MotionCastMember; i: number; info: MotionCast2d; guessed: boolean }[] = [];
   _.forEach(analysis.cast, (c, i) => {
+    const species = motion2dSpecies(c);
+    if (species) {
+      out[c.key] = deriveAnimal(c, species);
+      return;
+    }
     const legacy = gen.cast?.[c.key];
     if (hasDesign(legacy)) {
       const info = designInfoOf(legacy);

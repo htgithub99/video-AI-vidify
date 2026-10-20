@@ -1,6 +1,6 @@
 import { motionFiniteNumber } from "./motionNumber.js";
 import * as MR from "../constants/motionRuntime.js";
-import { MOTION_VOICE as C, MOTION_VOICE_RANK as RANK, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_GROUP as G, MOTION_VOICE_LIBRARY, MOTION_VOICE_FILTER as F, MOTION_VOICE_PATTERNS as P } from "../constants/motionVoice.js";
+import { MOTION_VOICE as C, MOTION_VOICE_RANK as RANK, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_GROUP as G, MOTION_VOICE_LIBRARY, MOTION_VOICE_FILTER as F, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_FX as FX } from "../constants/motionVoice.js";
 import { soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
 import type { MotionSceneMood, MotionVoiceDelivery, MotionStoryScript, MotionUtterance, MotionVoicePreset, MotionVoicePlan, MotionStoryAnalysis, MotionAudioDirection, MotionVoiceChannel, MotionVoiceGroup, MotionCastMember } from "../types/motionVideo.js";
@@ -32,7 +32,31 @@ export const motionVoiceMatchesFilter = (voice: MotionVoicePreset, filter: (type
   }
 };
 export const speechWords = (text: string): string => text.replace(C.TAGS, MR.MOTION_TEXT_EMPTY).replace(P.NON_WORD, MR.MOTION_TEXT_EMPTY).toLowerCase();
-export const directedSpeechText = (line: MotionUtterance): string => line.text.replace(P.QUOTES, MR.MOTION_TEXT_EMPTY).replace(P.MULTIPLE_SPACES, MR.MOTION_TEXT_SYMBOL_13).trim();
+const fxStrength = (line: MotionUtterance, delivery: Pick<MotionVoiceDelivery, "mood" | "strength">): number => {
+  const share = FX.ROLES.includes(line.role) ? 1 : FX.NARRATOR_SHARE;
+  const s = Math.round(delivery.strength * share * 100) / 100;
+  return s >= FX.MIN_STRENGTH && FX.MOODS[delivery.mood] ? s : 0;
+};
+export const directedSpeechText = (line: MotionUtterance): string => {
+  const text = line.text.replace(P.QUOTES, MR.MOTION_TEXT_EMPTY).replace(P.MULTIPLE_SPACES, MR.MOTION_TEXT_SYMBOL_13).trim();
+  const ending = FX.ENDINGS[line.emotion];
+  if (!ending || !FX.ROLES.includes(line.role) || (line.intensity ?? 1) < FX.ENDING_STRENGTH) return text;
+  return text.replace(FX.END_PUNCT_RE, MR.MOTION_TEXT_EMPTY) + ending;
+};
+export const motionVoiceFilter = (line: MotionUtterance, delivery: Pick<MotionVoiceDelivery, "mood" | "strength">, tempo: number): string => {
+  const s = fxStrength(line, delivery);
+  const fx = s ? FX.MOODS[delivery.mood] : FX.NONE;
+  const r = Math.pow(FX.SEMITONE, fx.pitch * s);
+  const parts: string[] = [FX.CLEAN.TRIM, FX.F.RESAMPLE(FX.SAMPLE_RATE)];
+  if (Math.abs(r - 1) > 0.001) parts.push(FX.F.SETRATE(Math.round(FX.SAMPLE_RATE * r)), FX.F.RESAMPLE(FX.SAMPLE_RATE));
+  parts.push(FX.F.ATEMPO(tempo / r), FX.CLEAN.FILTER);
+  if (fx.vibrato * s > 0.01) parts.push(FX.F.VIBRATO(fx.vibratoHz, fx.vibrato * s));
+  if (Math.abs(fx.treble * s) > 0.2) parts.push(FX.F.TREBLE(fx.treble * s));
+  if (Math.abs(fx.presence * s) > 0.2) parts.push(FX.F.PRESENCE(fx.presence * s));
+  if (fx.lowpass && s > 0.3) parts.push(FX.F.LOWPASS(fx.lowpass));
+  parts.push(FX.CLEAN.TAIL);
+  return parts.join(FX.SEP);
+};
 export const normalizeMotionUtterances = (raw: unknown, beatId: string, speakers: string[], narration?: string): MotionUtterance[] => {
   const used = new Set<string>();
   const lines = (Array.isArray(raw) ? raw : []).slice(0, C.MAX_LINES).flatMap((item, index): MotionUtterance[] => {

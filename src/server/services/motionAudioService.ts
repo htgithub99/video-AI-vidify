@@ -2,13 +2,13 @@ import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_PACING as PACE, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
+import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_FX as FX, MOTION_VOICE_PACING as PACE, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
 import { readVoiceSpeedSettings, voiceSpeedKey, voiceTempoFactor } from "./motionVoiceSpeedService.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance, MotionVoiceDelivery, MotionVoicePlan, MotionVoiceTiming } from "../../types/motionVideo.js";
 import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
 import { motionSoundSpatial } from "../../lib/motionSoundPlan.js";
-import { directedSpeechText, isAi33Voice, motionVoiceSignature, resolveMotionDelivery } from "../../lib/motionVoice.js";
+import { directedSpeechText, isAi33Voice, motionVoiceFilter, motionVoiceSignature, resolveMotionDelivery } from "../../lib/motionVoice.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { directMotionVoice, type MotionVoiceOptions } from "./motionVoiceDirectionService.js";
 import { transcribeVieneuAudio, vieneuRoot, type VieneuDelivery } from "./vieneuTtsService.js";
@@ -20,6 +20,7 @@ import { motionAudioHash as hash, motionWavData } from "./motionAudioUtils.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
 export interface MotionVoiceDependencies { voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>; synthesize?: typeof synthesizeMotionSpeech; }
 const deliveryTempo = (line: MotionUtterance, delivery: MotionVoiceDelivery): number => _.clamp(_.clamp(line.speed || 1, C.TEMPO.SPEED_MIN, C.TEMPO.SPEED_MAX) * delivery.tempo, C.TEMPO.MIN, C.TEMPO.MAX);
+const directedBase = (line: MotionUtterance): string => directedSpeechText({ ...line, emotion: MR.MOTION_TEXT_NEUTRAL as MotionUtterance["emotion"] });
 const engineDelivery = (voiceId: string, delivery: MotionVoiceDelivery): VieneuDelivery => (isAi33Voice(voiceId) ? {} : { temperature: delivery.temperature, silence: delivery.silence });
 const speechTokens = (text: string): string[] => _.compact(text.toLowerCase().normalize(C.ASR.NORMALIZE).split(C.ASR.TOKEN_RE));
 const speechError = (expected: string, heard: string): number => {
@@ -46,9 +47,36 @@ const checkClip = async (file: string, line: MotionUtterance, language: unknown,
     return null;
   }
 };
-const speechClip = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery): Promise<SpeechClipAudio> => {
-  const rawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, engineDelivery(voiceId, delivery)]) + MR.MOTION_TEXT_WAV,
-    id = C.CLIP_PREFIX + hash([rawId, C.TEMPO, line.speed, delivery.tempo, voiceSpeedKey(voiceId)]) + MR.MOTION_TEXT_WAV,
+const normalizeClip = (wav: Buffer): Buffer => {
+  const { start, length } = motionWavData(wav);
+  const n = Math.floor(length / 2),
+    N = FX.NORM;
+  let energy = 0,
+    count = 0,
+    peak = 0;
+  for (let f = 0; f + N.FRAME <= n; f += N.FRAME) {
+    let e = 0;
+    for (let i = 0; i < N.FRAME; i++) {
+      const v = wav.readInt16LE(start + (f + i) * 2) / 32768;
+      e += v * v;
+      peak = Math.max(peak, Math.abs(v));
+    }
+    if (10 * Math.log10(e / N.FRAME + 1e-12) > N.ACTIVE_DB) {
+      energy += e;
+      count += N.FRAME;
+    }
+  }
+  if (!count) return wav;
+  const rms = Math.sqrt(energy / count);
+  const gain = _.clamp(Math.min(Math.pow(10, N.TARGET_DB / 20) / rms, N.PEAK / Math.max(peak, 1e-6)), N.MIN_GAIN, N.MAX_GAIN);
+  const out = Buffer.from(wav);
+  for (let i = 0; i < n; i++) out.writeInt16LE(Math.round(_.clamp(wav.readInt16LE(start + i * 2) * gain, -32767, 32767)), start + i * 2);
+  return out;
+};
+const speechClip = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false): Promise<SpeechClipAudio> => {
+  const spoken = directedSpeechText(line);
+  const rawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, engineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV,
+    id = C.CLIP_PREFIX + hash([rawId, C.TEMPO, line.speed, delivery.tempo, voiceSpeedKey(voiceId), FX.VERSION, motionVoiceFilter(line, delivery, 1), paced]) + MR.MOTION_TEXT_WAV,
     file = path.join(getMotionAudioDirectory(), id),
     wordsFile = file + C.ASR.WORDS_EXT;
   let words: ClipWords | undefined;
@@ -65,7 +93,7 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
         for (let attempt = 0; attempt < 2 && !(fs.existsSync(original) && fs.statSync(original).size >= 48); attempt++) {
           if (opts.signal?.aborted) throw new Error(C.CANCELLED);
           try {
-            await (deps.synthesize || synthesizeMotionSpeech)(directedSpeechText(line), voiceId, original, opts.signal, opts.log, engineDelivery(voiceId, delivery));
+            await (deps.synthesize || synthesizeMotionSpeech)(spoken, voiceId, original, opts.signal, opts.log, engineDelivery(voiceId, delivery));
             failure = undefined;
             break;
           } catch (error) {
@@ -74,12 +102,12 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
           }
         }
         if (failure) throw failure;
-        const render = (value: number) => runMotionAudioProcess([MR.MOTION_TEXT_I, original, MR.MOTION_TEXT_AF, MR.MOTION_TEMPLATE_ATEMPO_HIGHPASS_F_65_DYNAUDNORM_F_150_G_5_P_0_75_M_3_AFADE_T(value.toFixed(3)), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
+        const render = (value: number) => runMotionAudioProcess([MR.MOTION_TEXT_I, original, MR.MOTION_TEXT_AF, motionVoiceFilter(line, delivery, value), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
         const tempo = deliveryTempo(line, delivery);
         await render(tempo);
-        const factor = voiceTempoFactor(voiceId, line.text, motionWavData(await fs.promises.readFile(temp)).length / 2 / C.SAMPLE_RATE * tempo);
+        const factor = voiceTempoFactor(voiceId, line.text, motionWavData(await fs.promises.readFile(temp)).length / 2 / C.SAMPLE_RATE * tempo, paced);
         if (Math.abs(factor - 1) > MOTION_VOICE_SPEED.REPROCESS_DELTA) await render(_.clamp(tempo * factor, MOTION_VOICE_SPEED.MIN, MOTION_VOICE_SPEED.MAX));
-        const wav = await fs.promises.readFile(temp);
+        const wav = normalizeClip(await fs.promises.readFile(temp));
         const { start, length, availableBytes } = motionWavData(wav);
         if (!length || length > availableBytes) throw new Error(C.FAILED);
         await fs.promises.writeFile(temp, Buffer.concat([motionWavHeader(length, 1), wav.subarray(start, start + length)]));
@@ -115,6 +143,20 @@ export const motionVoicePacing = (analysis: MotionStoryAnalysis | null): Pacing 
   if (!(analysis && PACE.HORROR_RE.test([analysis.videoGenre, analysis.genre, analysis.genre2, analysis.sfxMood, analysis.musicMood].join(MR.MOTION_TEXT_SYMBOL_13)))) return null;
   return target ? ({ ...PACE.HORROR, narrationTempo: 1, dialogueTempo: 1 } as unknown as Pacing) : PACE.HORROR;
 };
+const splitLongPhrase = (text: string): string[] => {
+  const words = _.compact(text.split(PACE.WORD_RE));
+  if (words.length <= PACE.PHRASE_MAX_WORDS) return [text];
+  const lower = _.map(words, (w) => w.toLowerCase());
+  const mid = words.length / 2;
+  let best = -1;
+  for (let i = PACE.PHRASE_MIN_WORDS; i <= words.length - PACE.PHRASE_MIN_WORDS; i++) {
+    const hit = _.some(PACE.CONJ, (c) => _.isEqual(lower.slice(i, i + c.split(MR.MOTION_TEXT_SYMBOL_13).length), c.split(MR.MOTION_TEXT_SYMBOL_13)));
+    if (hit && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))) best = i;
+  }
+  if (best < 0) return [text];
+  if (best - 1 >= PACE.PHRASE_MIN_WORDS && _.includes(PACE.CONJ, lower[best - 1])) best -= 1;
+  return [...splitLongPhrase(words.slice(0, best).join(MR.MOTION_TEXT_SYMBOL_13)), ...splitLongPhrase(words.slice(best).join(MR.MOTION_TEXT_SYMBOL_13))];
+};
 export const motionPacedLines = (line: MotionUtterance, pacing: Pacing | null): { line: MotionUtterance; gap: number }[] => {
   if (!pacing || line.role !== MR.MOTION_TEXT_NARRATION) return [{ line, gap: 0 }];
   const words = (x: string) => _.compact(x.split(PACE.WORD_RE)).length;
@@ -126,11 +168,12 @@ export const motionPacedLines = (line: MotionUtterance, pacing: Pacing | null): 
       if (last >= 0 && (words(piece) < PACE.MIN_WORDS || words(clauses[last]) < PACE.MIN_WORDS) && words(clauses[last]) + words(piece) <= PACE.MAX_PHRASE_WORDS) clauses[last] += MR.MOTION_TEXT_SYMBOL_13 + piece;
       else clauses.push(piece);
     }
-    _.forEach(clauses, (text, k) => {
+    const phrases = _.flatMap(clauses, (c) => splitLongPhrase(c));
+    _.forEach(phrases, (text, k) => {
       const last = parts.length - 1;
       if (k === 0 && last >= 0 && words(text) < PACE.MIN_WORDS) parts[last].text += MR.MOTION_TEXT_SYMBOL_13 + text;
       else parts.push({ text, clause: false });
-      if (k < clauses.length - 1) parts[parts.length - 1].clause = true;
+      if (k < phrases.length - 1) parts[parts.length - 1].clause = true;
     });
   }
   if (parts.length < 2) return [{ line, gap: 0 }];
@@ -161,14 +204,15 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
       const delivery = resolveMotionDelivery(line, sceneMood);
       if (delivery.strength) moods[delivery.mood] = (moods[delivery.mood] || 0) + 1;
       if (delivery.strength && isAi33Voice(voiceId)) ai33++;
-      const paced = pacing ? { ...delivery, tempo: delivery.tempo * (line.role === MR.MOTION_TEXT_NARRATION ? pacing.narrationTempo : pacing.dialogueTempo) } : delivery;
+      const narration = line.role === MR.MOTION_TEXT_NARRATION;
+      const paced = pacing ? { ...delivery, tempo: delivery.tempo * (narration ? pacing.narrationTempo : pacing.dialogueTempo), ...(narration ? { silence: PACE.NARRATION_SILENCE } : {}) } : delivery;
       const pieces = motionPacedLines(line, pacing);
       if (pieces.length > 1) split++;
       const gapBefore = previous ? 0 : pacedGap(line.pauseBefore * delivery.pause, PACE_KIND.FIRST, pacing, C.PAUSE.FIRST),
         gapAfter = pacedGap(Math.max(line.pauseAfter, next?.pauseBefore || 0) * delivery.pause, !next ? PACE_KIND.BEAT_END : next.speaker === line.speaker ? PACE_KIND.SAME_SPEAKER : PACE_KIND.SPEAKER_CHANGE, pacing, !next ? C.PAUSE.BEAT_END : next.speaker === line.speaker ? C.PAUSE.SAME_SPEAKER : C.PAUSE.SPEAKER_CHANGE);
       cursor += gapBefore;
       for (const piece of pieces) {
-        const audio = await speechClip(piece.line, voiceId, script.language, opts, deps, paced);
+        const audio = await speechClip(piece.line, voiceId, script.language, opts, deps, paced, !!pacing && narration);
         local.push({ beatId: beat.id, line: piece.line, voiceId, audio, t: cursor, delivery: paced });
         cursor += audio.duration + piece.gap;
       }

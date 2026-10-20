@@ -183,6 +183,7 @@ export const MOTION_DRAW_ROUTING_LOGS = {
   DONE: (task: string, provider: string, total: number): string => `Vẽ ${task}: ${provider} trả dữ liệu dùng được sau ${total} lượt`,
   NO_DATA: "không có dữ liệu",
   GAVE_UP: (task: string, total: number): string => `Vẽ ${task}: dừng sau ${total} lượt theo giới hạn cấu hình`,
+  ALL_FAILED: (task: string, total: number): string => `Vẽ ${task}: đã thử hết các AI vẽ (${total} lượt) đều lỗi`,
 } as const;
 export const MOTION_SCENE_LIBRARY_PROMPT = {
   CATALOG_HEADER: `ASSET LIBRARY – places and characters ALREADY DRAWN in this exact drawing style by earlier videos. Reusing one costs nothing, drawing a new one is slow, so reuse whenever it fits.

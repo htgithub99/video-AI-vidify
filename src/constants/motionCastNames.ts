@@ -1,0 +1,17 @@
+export const MOTION_CAST_NAMES = {
+  INITIAL_RE: /(?<![\p{L}\p{N}])([A-ZĐ])\.?(?![\p{L}\p{N}])/u,
+  INITIAL_ALL_RE: /(?<![\p{L}\p{N}])([A-ZĐ])\.?(?![\p{L}\p{N}])/gu,
+  MALE: { A: ["An", "Anh"], B: ["Bình", "Bảo"], C: ["Cường", "Chiến"], D: ["Dũng", "Duy"], Đ: ["Đức", "Đạt"], E: ["Em"], G: ["Giang", "Gia"], H: ["Hùng", "Hải"], K: ["Khang", "Khôi"], L: ["Long", "Lâm"], M: ["Minh", "Mạnh"], N: ["Nam", "Nghĩa"], O: ["Oanh"], P: ["Phúc", "Phong"], Q: ["Quân", "Quang"], R: ["Rạng"], S: ["Sơn", "Sang"], T: ["Tuấn", "Thắng"], U: ["Uy"], V: ["Việt", "Vinh"], X: ["Xuân"], Y: ["Yên"] } as Record<string, string[]>,
+  FEMALE: { A: ["An", "Ánh"], B: ["Bích", "Bình"], C: ["Cúc", "Chi"], D: ["Dung", "Duyên"], Đ: ["Đào", "Điệp"], E: ["Em"], G: ["Giang", "Gấm"], H: ["Hoa", "Hằng"], K: ["Khánh", "Kim"], L: ["Lan", "Linh"], M: ["Mai", "My"], N: ["Nga", "Nhung"], O: ["Oanh"], P: ["Phương", "Phượng"], Q: ["Quyên", "Quỳnh"], R: ["Rạng"], S: ["Sen", "Sương"], T: ["Thảo", "Tâm"], U: ["Uyên"], V: ["Vân", "Vy"], X: ["Xuân"], Y: ["Yến"] } as Record<string, string[]>,
+  ESCAPE_RE: /[.*+?^${}()|[\]\\]/g,
+  ESCAPE_TO: "\\$&",
+  BOUND_HEAD: "(?<![\\p{L}\\p{N}])",
+  BOUND_TAIL: "(?![\\p{L}\\p{N}])",
+  FLAGS: "gu",
+  BARE: (letter: string): string => `(?<![\\p{L}\\p{N}])${letter}\\.?(?![\\p{L}\\p{N}!?])`,
+  SKIP_BARE: ["A", "E", "O", "U", "Y"] as string[],
+  FALLBACK: "Bình",
+  FEMALE_KEY: "female",
+  RULE: "CHARACTER NAMES: every character is always called by the full cast name given in CAST. When the source abbreviates a name with an initial (e.g. 'cậu D', 'dì T', 'anh H.'), write the full cast name instead in narration and dialogue; never write a bare initial as a name.",
+  ALIAS: (alias: string): string => ` [source writes "${alias}"]`,
+} as const;

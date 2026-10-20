@@ -94,6 +94,7 @@ import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } fr
 import { buildScenes, calibrateSceneStyle, customSceneSeed, emptyGen, importBaseLibrary, renderStylePreview, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
 import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
 import { MOTION_SCENE_GROUPS, MOTION_SCENE_LIBRARY_MODES, motionSceneType, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
+import { MOTION_AI_ROLE } from "../../constants/motionAiFallback.js";
 import { baseLibraryCounts, pendingBaseCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAssets, sceneStyleCalibrationPath, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
 import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration, startMotionRender } from "../services/motionRenderService.js";
@@ -255,6 +256,7 @@ export const saveMotionVideo = async (req: Request, res: Response): Promise<void
 const storyLanguage = (v: unknown): string => (v === MOTION_TEXT_EN ? MOTION_TEXT_EN : MOTION_TEXT_VI);
 const storyLength = (v: unknown): MotionStoryLength => (_.includes(_.values(MotionStoryLength), v) ? (v as MotionStoryLength) : MotionStoryLength.FULL);
 const aiExec = (v: any): MotionAiExecution => ({ provider: _.toString(v?.provider || MR.MOTION_TEXT_EMPTY), model: _.toString(v?.model || MR.MOTION_TEXT_EMPTY), mode: _.toString(v?.mode || MR.MOTION_TEXT_EMPTY), chromeHeadless: v?.chromeHeadless !== false });
+const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MOTION_AI_ROLE.DRAW });
 export const parseMotionStory = async (req: Request, res: Response): Promise<void> => {
   try {
     res.json({ success: true, source: await readStorySource(_.toString(req.body?.text)) });
@@ -358,7 +360,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = _.every(chapters, (c) => byChapter[c.id]?.length);
-      if ((_.isEmpty(only) || req.body?.resume === true) && complete && req.body?.editorPass === true) {
+      if ((_.isEmpty(only) || req.body?.resume === true) && complete && req.body?.editorPass !== false && chapters.length > 1) {
         ctx.log(MR.MOTION_TEXT_BIEN_TAP_VIEN_DOC_LAI_TOAN_BO_LOI_DAN);
         try {
           const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log });
@@ -413,8 +415,8 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const analysis = req.body?.analysis as MotionStoryAnalysis;
     const script = req.body?.script as MotionStoryScript;
     if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
-    const exec = aiExec(req.body?.aiExecution);
-    const mainExec = req.body?.mainAiExecution ? aiExec(req.body.mainAiExecution) : exec;
+    const exec = drawExec(req.body?.aiExecution);
+    const mainExec = req.body?.mainAiExecution ? aiExec(req.body.mainAiExecution) : { ...exec, role: MOTION_AI_ROLE.MAIN };
     const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const onlyBeats: string[] = _.map(_.castArray(req.body?.beats || []), _.toString);
     const onlyLocations: string[] = _.map(_.castArray(req.body?.locations || []), _.toString);
@@ -776,7 +778,7 @@ export const calibrateSceneLibraryStyleJob = (req: Request, res: Response): void
   try {
     const key = _.toString(req.body?.key);
     if (!isSceneStyleKey(key)) throw new Error(MOTION_SCENE_LIBRARY.ERRORS.NOT_FOUND);
-    const exec = aiExec(req.body?.aiExecution);
+    const exec = drawExec(req.body?.aiExecution);
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, (ctx) => calibrateSceneStyle(key, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress }));
     res.json({ success: true, job });
   } catch (error) {
@@ -801,7 +803,7 @@ export const seedSceneLibraryJob = (req: Request, res: Response): void => {
     const seed = customSceneSeed(customSeedItems(req.body?.items));
     if (!seed.cast.length && !seed.places.length && !seed.showrooms.length) throw new Error(MOTION_SCENE_LIBRARY.ERRORS.SEED_EMPTY);
     const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
-    const exec = aiExec(req.body?.aiExecution);
+    const exec = drawExec(req.body?.aiExecution);
     const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
     const characterMotion = req.body?.characterMotion === true;
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, async (ctx) => {
@@ -819,7 +821,7 @@ export const importSceneLibraryJob = (req: Request, res: Response): void => {
     const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
     const pack = req.body?.pack ? parseLibraryPack(req.body.pack) : undefined;
-    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, (ctx) => importBaseLibrary({ exec: aiExec(req.body?.aiExecution), signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode }, pack));
+    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, (ctx) => importBaseLibrary({ exec: drawExec(req.body?.aiExecution), signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode }, pack));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);

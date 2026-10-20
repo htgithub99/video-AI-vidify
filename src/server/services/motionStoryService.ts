@@ -1,3 +1,5 @@
+import { expandInitialCastNames, fullCastNames } from "../../lib/motionCastNames.js";
+import { MOTION_CAST_NAMES } from "../../constants/motionCastNames.js";
 import { MOTION_AUDIO_DIRECTION } from "../../constants/motionAudioDirection.js";
 import { motionMusicMoodKey as musicMoodOf } from "../../lib/motionMusic.js";
 import { MOTION_PATTERNS as MP } from "../../constants/motionPatterns.js";
@@ -11,6 +13,7 @@ import { motionAudioContext } from "../../lib/motionAudioDirection.js";
 import { withMotionReferenceFiles } from "./motionReferenceService.js";
 import { withCachedMotionReferenceStyle } from "./motionReferenceCacheService.js";
 import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
+import { MOTION_AI_FALLBACK, MOTION_AI_ROLE } from "../../constants/motionAiFallback.js";
 import { assignSceneLibrary, cleanSceneTags, isSceneAssetId, motionAssetStyleKey, saveSceneStyle, sceneLibraryCatalog, sceneTypeOf } from "./motionSceneLibraryService.js";
 import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
 import { cleanCharacterColors } from "../../lib/motionCharacterVariant.js";
@@ -21,7 +24,7 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import { MOTION_HISTORY } from "../../constants/motionHistory.js";
 import { normalizeMotionHud } from "../../lib/motionHistory.js";
-import { motionVideoGenre, motionVideoGenreDirective, type MotionVideoGenre } from "../../constants/motionGenre.js";
+import { MOTION_CREATIVE_EDITOR, motionGenreCreative, motionVideoGenre, motionVideoGenreDirective, type MotionVideoGenre } from "../../constants/motionGenre.js";
 import { MOTION_STYLE_PRESET_KEY, motionPresetReferenceStyle, motionStylePreset } from "../../constants/motionStylePresets.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../constants/motionMusic.js";
 import _ from "lodash";
@@ -487,20 +490,49 @@ const countMotionRequest = (provider: string, log?: (s: string) => void): void =
   run.counts[provider] = (run.counts[provider] || 0) + 1;
   log?.(MOTION_STORY_CONFIG.REQUEST_COUNT_LOG(run.counts));
 };
+export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => {
+  const primary = { ...exec, strictProvider: true, chained: true };
+  const list = exec.role === MOTION_AI_ROLE.DRAW ? MOTION_AI_FALLBACK.DRAW : MOTION_AI_FALLBACK.MAIN;
+  const rest = _.map(
+    _.filter(list, (r) => r.provider !== exec.provider),
+    (r): MotionAiExecution => ({ ...exec, provider: r.provider, model: r.model, mode: AiPlanningExecutionMode.RoomOnly, strictProvider: true, chained: true }),
+  );
+  const open = _.filter(rest, (r) => !motionRoomBlockedMs(String(r.provider)));
+  return motionRoomBlockedMs(String(exec.provider)) && open.length ? open : [primary, ...(open.length ? open : rest)];
+};
 export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: (s: string) => void, images?: MotionAiImage[], attempt = 0): Promise<any> => {
+  const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
+  if (exec.strictProvider || exec.chained || attempt || mode === AiPlanningExecutionMode.ApiOnly || exec.provider === AiPlanningFallbackProvider.Disabled) return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, attempt);
+  const routes = motionAiRoutes(exec);
+  let first: unknown = null;
+  for (let i = 0; i < routes.length; i++) {
+    try {
+      return await runMotionAiOnce(prompt, artifactType, routes[i], signal, log, images, 0);
+    } catch (error: any) {
+      if (signal?.aborted) throw error;
+      first = first || error;
+      const next = routes[i + 1];
+      if (next) log?.(MOTION_AI_FALLBACK.LOG_SWITCH(String(routes[i].provider), String(next.provider), _.truncate(_.toString(error?.message), { length: MOTION_AI_FALLBACK.REASON_MAX })));
+    }
+  }
+  log?.(MOTION_AI_FALLBACK.LOG_ALL_FAILED(_.map(routes, (r) => String(r.provider)).join(MOTION_AI_FALLBACK.LIST_SEP)));
+  if (mode === AiPlanningExecutionMode.Hybrid) return runMotionAiOnce(prompt, artifactType, { ...exec, mode: AiPlanningExecutionMode.ApiOnly }, signal, log, images, 0);
+  throw first;
+};
+const runMotionAiOnce = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: (s: string) => void, images?: MotionAiImage[], attempt = 0): Promise<any> => {
   const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
   const provider = pickEnum(_.values(AiPlanningFallbackProvider), exec.provider, AiPlanningFallbackProvider.GeminiChat);
   const useRoom = mode !== AiPlanningExecutionMode.ApiOnly && provider !== AiPlanningFallbackProvider.Disabled;
   const requestId = MOTION_TEMPLATE_SYMBOL_5(String(artifactType), String(randomUUID().slice(0, 8)));
   const identity = MOTION_TEMPLATE_ARTIFACTTYPE_REQUESTID(String(artifactType), String(requestId));
   const fullPrompt = MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(String(prompt), String(identity));
-  const runGeminiFallback = () => runMotionAi(prompt, artifactType, { ...exec, provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash }, signal, log, images, 0);
+  const runGeminiFallback = () => runMotionAiOnce(prompt, artifactType, { ...exec, provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash }, signal, log, images, 0);
   const switchTo = MOTION_STORY_CONFIG.ROOM_SWITCH[provider];
   const limitTo = switchTo || MOTION_STORY_CONFIG.LIMIT_SWITCH[provider];
   const isBlocked = (name: string): boolean => (blockedRoomProviders.get(name) || 0) > Date.now();
   const runSwitched = (target = switchTo) => {
     log?.(MOTION_STORY_CONFIG.ROOM_SWITCH_LOG(provider, target.provider));
-    return runMotionAi(prompt, artifactType, { ...exec, provider: target.provider as AiPlanningFallbackProvider, model: target.model as AiPlanningChatModel }, signal, log, images, 0);
+    return runMotionAiOnce(prompt, artifactType, { ...exec, provider: target.provider as AiPlanningFallbackProvider, model: target.model as AiPlanningChatModel }, signal, log, images, 0);
   };
   if (useRoom && isBlocked(provider) && !exec.strictProvider) {
     if (limitTo && !isBlocked(limitTo.provider)) return runSwitched(limitTo);
@@ -586,7 +618,11 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         log?.(MOTION_STORY_CONFIG.ROOM_CAPTCHA_LOG(provider, limitTo?.provider || AiPlanningFallbackProvider.GeminiChat));
       }
       const noInput = !limited && !captcha && limitText[0] === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
-      if (exec.strictProvider) {
+      if (exec.strictProvider && noInput && attempt === 0) {
+        retryRoom = true;
+        restartBrowser = true;
+        log?.(MOTION_STORY_CONFIG.ROOM_RESTART_LOG(provider));
+      } else if (exec.strictProvider) {
         if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
         restartBrowser = noInput;
         const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
@@ -643,7 +679,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       }
       if (motionAiSessions || retryRoom) cancelGlobalBrowserCleanup();
     }
-    if (retryRoom) return runMotionAi(prompt, artifactType, exec, signal, log, images, attempt + 1);
+    if (retryRoom) return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, attempt + 1);
     if (fallbackToLimit) return runSwitched(limitTo);
     if (fallbackToSwitch) return runSwitched();
     if (fallbackToGemini) return runGeminiFallback();
@@ -807,7 +843,7 @@ export const analyzeStory = async (
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
   const libraryMode = opts.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO;
   const assetStyleKey = opts.assetStyleKey || motionAssetStyleKey([], opts.drawingMode);
-  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...assignSceneLibrary(analysis, assetStyleKey, libraryMode, opts.characterMotion), videoGenre: motionVideoGenre(opts.videoGenre), libraryMode });
+  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...assignSceneLibrary(analysis, assetStyleKey, libraryMode, opts.characterMotion), videoGenre: motionVideoGenre(opts.videoGenre), libraryMode, ...(motionGenreCreative(opts.videoGenre) ? { factual: false } : {}) });
   const catalog = sceneLibraryCatalog(assetStyleKey, _.truncate([source.title, source.text].join(MOTION_SCENE_LIBRARY.TEXT.NEWLINE), { length: MOTION_SCENE_LIBRARY.CONTEXT_MAX }), { characterMotion: opts.characterMotion, items: libraryMode === MOTION_SCENE_LIBRARY_MODES.AI });
   if (catalog.locations || catalog.characters) opts.log?.(MOTION_SCENE_LIBRARY.LOGS.CATALOG(catalog.locations, catalog.characters));
   const genreDirective = motionVideoGenreDirective(opts.videoGenre);
@@ -870,7 +906,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     chars += size;
   }
   if (current.length) groups.push(current);
-  const brief = JSON.stringify({ audience: dna?.audienceProfile, narrativeVoice: dna?.narrativeDna?.narrativeVoice || dna?.narrative.voice, callbacks: dna?.narrativeDna?.callbacks, mustPreserve: dna?.mustPreserve, mustNotCopy: dna?.mustNotCopy });
+  const brief = JSON.stringify({ audience: dna?.audienceProfile, narrativeVoice: dna?.narrativeDna?.narrativeVoice || dna?.narrative.voice, callbacks: dna?.narrativeDna?.callbacks, mustPreserve: dna?.mustPreserve, mustNotCopy: dna?.mustNotCopy, ...(motionGenreCreative(analysis.videoGenre) ? { adaptation: MOTION_CREATIVE_EDITOR } : {}) });
   const byId = new Map(beats.map((b) => [b.id, b]));
   const notes: string[] = [];
   let rewritten = 0;
@@ -887,9 +923,9 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
       for (const e of _.take(_.castArray(raw?.edits || []), limit)) {
         const beat = byId.get(_.toString(e?.id));
         const narration = _.trim(_.toString(e?.narration));
-        if (!beat || !ids.has(beat.chapterId) || !narration) continue;
+        if (!beat || !ids.has(beat.chapterId) || !narration || _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role))) continue;
         const ratio = narration.split(MP.WHITESPACE).length / Math.max(1, beat.narration.split(MP.WHITESPACE).length);
-        if (ratio < 0.6 || ratio > 1.5) continue;
+        if (ratio < MOTION_STORY_CONFIG.EDIT_RATIO_MIN || ratio > MOTION_STORY_CONFIG.EDIT_RATIO_MAX) continue;
         byId.set(beat.id, { ..._.omit(beat, MR.MOTION_TEXT_UTTERANCES), narration: _.truncate(narration, { length: 600 }) });
         rewritten++;
         if (e?.reason) notes.push(MR.MOTION_TEMPLATE_SYMBOL_306(beat.id, _.truncate(_.toString(e.reason), { length: 140 })));
@@ -941,7 +977,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
   const total = _.sum(shares);
   chapters = _.map(chapters, (c, i) => ({ ...c, targetSeconds: Math.max(c.mustKeep ? 25 : 15, Math.round((shares[i] / total) * target)) }));
   const used = new Set<string>();
-  const cast: MotionCastMember[] = _.compact(
+  const cast: MotionCastMember[] = expandInitialCastNames(_.compact(
     _.map(_.castArray(raw?.cast || []), (m: any) => {
       if (!m?.name) return null;
       let key = slugKey(m.key || m.name);
@@ -963,7 +999,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
         ...(cleanCharacterColors(m.colors) ? { colors: cleanCharacterColors(m.colors) } : {}),
       } as MotionCastMember;
     }),
-  );
+  ));
   const usedPlaces = new Set<string>();
   const placeNames = new Map<string, Set<string>>();
   const places: MotionPlace[] = _.take(
@@ -1081,14 +1117,14 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
     firstNote: opts.isFirst ? (analysis.series?.previous ? MOTION_SERIES_PROMPT.FIRST(analysis.series.index + 1, analysis.series.count, analysis.series.previous) : MR.MOTION_TEXT_OPEN_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY) : MR.MOTION_TEXT_EMPTY,
     lastNote: opts.isLast ? (analysis.series?.next ? MOTION_SERIES_PROMPT.LAST(analysis.series.index + 1, analysis.series.count, analysis.series.next) : MR.MOTION_TEXT_END_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY_) : MR.MOTION_TEXT_EMPTY,
     previous: prev ? MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED_2(String(prev)) : MR.MOTION_TEXT_EMPTY,
-    rules: _.compact([MOTION_GEN_STORYBOARD_RULES(language), MOTION_STORY_VOICE_PROMPT, motionAudioContext(null, analysis), motionVideoGenreDirective(analysis.videoGenre)]).join(MR.MOTION_TEXT_SYMBOL_27),
-    cast: _.map(analysis.cast, (c) => MOTION_TEMPLATE_SYMBOL_54(String(c.key), String(c.name), String(c.role || MR.MOTION_TEXT_EMPTY), String(c.look || c.description || MR.MOTION_TEXT_EMPTY))).join(MOTION_TEXT_SYMBOL_27) || MOTION_TEXT_NONE_2,
+    rules: _.compact([MOTION_GEN_STORYBOARD_RULES(language), MOTION_CAST_NAMES.RULE, MOTION_STORY_VOICE_PROMPT, motionAudioContext(null, analysis), motionVideoGenreDirective(analysis.videoGenre)]).join(MR.MOTION_TEXT_SYMBOL_27),
+    cast: _.map(analysis.cast, (c) => MOTION_TEMPLATE_SYMBOL_54(String(c.key), String(c.name) + (c.alias ? MOTION_CAST_NAMES.ALIAS(c.alias) : MR.MOTION_TEXT_EMPTY), String(c.role || MR.MOTION_TEXT_EMPTY), String(c.look || c.description || MR.MOTION_TEXT_EMPTY))).join(MOTION_TEXT_SYMBOL_27) || MOTION_TEXT_NONE_2,
     places: _.map(analysis.places, (p) => MOTION_TEMPLATE_SYMBOL_55(String(p.key), String(p.name), String(p.description))).join(MOTION_TEXT_SYMBOL_27),
     transcript: sourceSlice(source, chapter.from, chapter.to),
   });
   let lastError: unknown;
   let best: MotionBeat[] | null = null;
-  const factual = (analysis.videoDna?.format?.factual ?? analysis.factual) !== false && source.kind !== MR.MOTION_TEXT_BRIEF;
+  const factual = !motionGenreCreative(analysis.videoGenre) && (analysis.videoDna?.format?.factual ?? analysis.factual) !== false && source.kind !== MR.MOTION_TEXT_BRIEF;
   const quotesIndex = factual ? transcriptIndex(source.text) : null;
   const request = MR.MOTION_TEMPLATE_SYMBOL_325(prompt, analysis.videoDna ? VIDEO_SCENE_PLAN_INSTRUCTIONS : MR.MOTION_TEXT_EMPTY, MR.MOTION_TEXT_EMPTY);
   const expectedUnits = seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
@@ -1154,7 +1190,7 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
   const placeOf = (k: string) => matchOf(analysis.places, k)?.key;
   const out: MotionBeat[] = [];
   _.forEach(rawBeats, (b: any) => {
-    const narration = _.trim(_.toString(b?.narration || MR.MOTION_TEXT_EMPTY));
+    const narration = fullCastNames(_.trim(_.toString(b?.narration || MR.MOTION_TEXT_EMPTY)), analysis.cast);
     if (!narration) return;
     const id = MOTION_TEMPLATE_B(String(chapterId), String(out.length + 1));
     const shots = _.filter(_.castArray(b?.shots || []), (sh) => _.isPlainObject(sh));
@@ -1162,7 +1198,7 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
     const visual = pickEnum(VISUALS, v?.visual, MOTION_TEXT_SCENE);
     const beat: MotionBeat = { id, chapterId, narration: _.truncate(narration, { length: 600 }), visual };
     const utterances = normalizeMotionUtterances(b?.utterances, id, [MOTION_VOICE.NARRATOR, ...castKeys], beat.narration);
-    if (utterances.length) beat.utterances = utterances;
+    if (utterances.length) beat.utterances = _.map(utterances, (u) => ({ ...u, text: fullCastNames(u.text, analysis.cast) }));
     const sceneMood = normalizeMotionSceneMood(b?.sceneMood);
     if (sceneMood) beat.sceneMood = sceneMood;
     if (visual === MOTION_TEXT_SCENE) {

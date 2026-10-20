@@ -1,6 +1,7 @@
 import type { MotionReferenceStyle, MotionStyleKit } from "../types/motionVideo.js";
 export interface MotionStylePreset { id: string; mode: "2d" | "3d"; genre?: string; label: { vi: string; en: string }; look: string; palette: string[]; outlineColor?: string; outlineWidth?: number; description: string; kit: MotionStyleKit; }
 export const MOTION_STYLE_PRESET_NONE = "";
+export const MOTION_GHOST_TALE_PRESET = "ghost_story_2d";
 export const MOTION_STYLE_PRESET_KEY = (id: string, mode: string): string => `${mode}-preset-${id}`;
 const preset = (id: string, mode: "2d" | "3d", vi: string, en: string, look: string, palette: string[], outline: [string, number] | null, description: string, render: Record<string, string>, character: Record<string, string>, background: Record<string, string>, fx: string, camera: string): MotionStylePreset => ({
   id,
@@ -375,7 +376,7 @@ export const MOTION_STYLE_PRESETS: MotionStylePreset[] = [
   ),
   {
     ...preset(
-      "ghost_story_2d",
+      MOTION_GHOST_TALE_PRESET,
       "2d",
       "Truyện ma 2D (kể chuyện)",
       "Ghost story 2D (narrated)",
@@ -389,7 +390,6 @@ export const MOTION_STYLE_PRESETS: MotionStylePreset[] = [
       "lamp glow, incense smoke, slow fog, faint flicker",
       "static framing that cuts per sentence, slow push-ins on reveals",
     ),
-    genre: "horror",
   },
 ];
 export const motionStylePreset = (id: unknown): MotionStylePreset | undefined => MOTION_STYLE_PRESETS.find((item) => item.id === id);

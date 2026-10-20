@@ -21,7 +21,7 @@ export const motionSoundSpatial = (spec: MotionSpec, time: number, actor: any, d
 };
 export const motionSoundGenre = (analysis?: MotionStoryAnalysis | null): MotionSoundGenrePalette | undefined => {
   const chosen = analysis?.videoGenre && analysis.videoGenre !== MOTION_VIDEO_GENRES.AUTO ? analysis.videoGenre : MOTION_SOUND_GENRE_ALIAS[analysis?.genre || C.EMPTY];
-  return chosen ? MOTION_SOUND_GENRES[chosen] : undefined;
+  return chosen ? MOTION_SOUND_GENRES[chosen] || MOTION_SOUND_GENRES[MOTION_SOUND_GENRE_ALIAS[chosen]] : undefined;
 };
 const wordTime = (clips: MotionVoiceClip[], pattern: RegExp): number | undefined => {
   for (const clip of clips) {

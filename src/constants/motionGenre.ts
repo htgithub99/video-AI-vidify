@@ -1,21 +1,35 @@
 import _ from "lodash";
-export const MOTION_VIDEO_GENRES = { AUTO: "auto", STORY: "story", HORROR: "horror", HISTORY_MAP: "history_map", WHAT_IF: "what_if", EXPLAINER: "explainer", DOCUMENTARY: "documentary", KIDS: "kids" } as const;
+export const MOTION_VIDEO_GENRES = { AUTO: "auto", STORY: "story", HORROR: "horror", GHOST_TALE: "ghost_tale", HISTORY_MAP: "history_map", WHAT_IF: "what_if", EXPLAINER: "explainer", DOCUMENTARY: "documentary", KIDS: "kids" } as const;
 export type MotionVideoGenre = (typeof MOTION_VIDEO_GENRES)[keyof typeof MOTION_VIDEO_GENRES];
 export const MOTION_VIDEO_GENRE_TEXT = {
   vi: {
     LABEL: "Thể loại",
     HINT: "Định hướng cách dựng: hình ảnh ưu tiên, nhịp, âm thanh. Tự động = AI tự suy ra từ nội dung.",
-    OPTIONS: { auto: "Tự động", story: "Truyện kể", horror: "Truyện ma / kinh dị", history_map: "Lịch sử / chiến tranh (bản đồ)", what_if: "Lịch sử giả định (What-if)", explainer: "Giải thích / khoa học", documentary: "Tin tức / tài liệu", kids: "Thiếu nhi" },
+    OPTIONS: { auto: "Tự động", story: "Truyện kể", horror: "Truyện ma / kinh dị", ghost_tale: "Kỳ truyện ma dân gian", history_map: "Lịch sử / chiến tranh (bản đồ)", what_if: "Lịch sử giả định (What-if)", explainer: "Giải thích / khoa học", documentary: "Tin tức / tài liệu", kids: "Thiếu nhi" },
   },
   en: {
     LABEL: "Genre",
     HINT: "Steers visuals, pacing and sound. Auto = AI infers it from the content.",
-    OPTIONS: { auto: "Auto", story: "Story", horror: "Ghost / horror", history_map: "History / war (map)", what_if: "What-if history", explainer: "Explainer / science", documentary: "News / documentary", kids: "Kids" },
+    OPTIONS: { auto: "Auto", story: "Story", horror: "Ghost / horror", ghost_tale: "Folk ghost tale", history_map: "History / war (map)", what_if: "What-if history", explainer: "Explainer / science", documentary: "News / documentary", kids: "Kids" },
   },
 } as const;
 const DIRECTIVES: Record<Exclude<MotionVideoGenre, "auto">, string> = {
   story: "Narrated story. Scenes carry almost every beat; characters speak their own lines when the source quotes them; graphics only for a title, chapter cards or a rare key number. Pace follows the emotion of each moment.",
   horror: "Ghost / horror story. Build dread slowly: night, dim interiors, fog, long corridors, empty rooms; reveal threats late, small and half hidden; short sentences with pauses before each reveal; low ambient drones, creaks and sharp stingers on reveals; almost no graphics; no gore.",
+  ghost_tale:
+    "Vietnamese folk ghost tale ('kỳ truyện') told by ONE first-person narrator ('tôi'), an ordinary family member recalling, years later, what happened to their own family; every sentence becomes one clear picture. VOICE: plain everyday spoken Vietnamese of the countryside (bố/mẹ or ba/má, bà, chú, thầy, con ạ), very short declarative sentences, one action or one fact per sentence, the subject repeated instead of pronouns ('Mẹ tôi… Mẹ tôi…'), no literary metaphors, numbers spelled out; dread comes from what is stated flatly, not from adjectives. TECHNIQUES TO USE (as craft, never copying any existing story): " +
+    "(1) COLD OPEN: the first two or three sentences state the most shocking fact of the whole story as a plain summary with a count and a time span, plus one small human aftermath detail, then rewind and tell how it began. " +
+    "(2) CONCRETE SPECIFICS everywhere: exact ages, months, hours, distances, durations, and what each person was doing that morning, so the tale feels like a true family memory. " +
+    "(3) PATTERNS OF THREE that escalate: three events, three nights, three calls, a presence coming closer step by step (outside the gate, then the yard, then inside the room); counting itself becomes the threat. " +
+    "(4) THE VILLAGE REACTS: gossip that stops when the narrator passes, neighbours keeping away or using small folk protections, which shows the danger before the supernatural is seen. " +
+    "(5) THE ELDER AND THE RULES: an old ritual master, monk or grandparent explains the folk belief behind the haunting in a few slow, plain lines through short question-and-answer dialogue with the narrator ('Thế… thì sao hả thầy?' - a brief answer ending in 'con ạ'); the explanation sets explicit RULES with stated consequences (do not call a name, do not answer when called, do not look back, do not come back to visit, do the ritual before the rooster crows). Every rule set up must later be tested, and at least one must be broken. " +
+    "(6) FALSE CALM then a LOVING MISTAKE: the ritual seems to work and life returns to normal for a long time; then a character breaks a rule out of love or desperation, and the haunting returns worse and more personal. " +
+    "(7) SENSORY, PHYSICAL SIGNS instead of monsters: a cold spot, a sound of something dragging, a dog that stares and does not bark, a mark that appears on the body, a ritual object that cracks or moves; reveal almost nothing directly. " +
+    "(8) THE INNOCENT: a child or a naive person who does not understand the rules talks to someone no one else sees and becomes the most vulnerable one; the haunting lures people with the voice of a loved one who died. " +
+    "(9) RITUAL SET PIECE at the climax with clear, visual steps and constraints (a circle that must not be crossed, objects with names written inside, a lamp, a sealed jar, a burial far from home) and a cost: the ritual only partly succeeds. " +
+    "(10) ENDING: jump to the present ('Chuyện đó qua … năm rồi'), give each surviving character's current life in one plain sentence, then end on a quiet present-tense image showing the curse is not over, a final line that leaves the listener uneasy. " +
+    "The examples above only show the KIND of detail: invent new rules, signs, objects and rituals that grow from this story's own folk belief and setting, and never reuse the plot of a known video. " +
+    "STRUCTURE across the chapters (scale to their number): hook and the losses -> first signs and the village's fear -> the elder, the rules and the first ritual -> false calm -> the broken rule and the return -> the climactic ritual and its cost -> present-day aftermath and the last chill. End every chapter on a line that pulls into the next. Dialogue lines are short, natural and each its own utterance; the elder speaks slowly and kindly, the narrator's family speaks in fear, grief or love. Rural settings that can be drawn: house with ancestral altar, yard, gate and lane, well, bamboo hedge, rice fields, riverbank, pagoda, village edge, graveyard. No gore, no cruelty to children or animals shown on screen. Visuals: scenes for almost every beat; chapter cards only; no maps, charts or statistics.",
   history_map:
     'History / war map documentary in the style of animated map channels. geomap is the primary visual: open every chapter with a geomap that sets the context, and use geomap whenever the narration names countries, cities, fronts, invasion routes, supply lines or distances (animate fronts with "to" and movements with arrows; zoom in on the place being discussed). Use icons for quantities and ratios, stats/counter/timeline for figures and dates. Put a persistent hud on the first beat with a part counter and the running date, update the date as time passes and add resource bars when resources, production or casualties matter. Scenes are short illustrative inserts: soldiers, officers, vehicles (tank columns, trucks, aircraft and ships with travel), factories, headquarters, signposts with place names and distances. Brisk, punchy narration with concrete numbers; tense martial music, engines, artillery and radio SFX.',
   what_if:
@@ -27,6 +41,7 @@ const DIRECTIVES: Record<Exclude<MotionVideoGenre, "auto">, string> = {
 const PACKAGING: Record<Exclude<MotionVideoGenre, "auto">, string> = {
   story: "Narrated story: titles promise the emotional turn or mystery of the story without spoiling the ending; tags cover the story's themes and setting.",
   horror: "Ghost / horror story: titles build dread and curiosity (a place, a night, an unexplained event), never gore; thumbnails dark with one half-hidden threat; tags include horror story, ghost story and the setting.",
+  ghost_tale: "Folk ghost tale: titles name the eerie object, place or forbidden rule plus a hint of the curse (e.g. 'The card that must not be turned'), never gore; thumbnails dark with one glowing object or half-hidden figure; tags include ghost story, folk tale, Vietnamese horror and the setting.",
   history_map: "History / war map documentary: titles name the war, front or decision with a concrete number or date; thumbnails a bold map with arrows or fronts; tags include the war, countries, battles and years.",
   what_if: 'What-if / alternate history played as a war game: titles pose the counterfactual question ("What if … had …?", "Could … have won?") or the number of replays; thumbnails a war-game board or map with two sides and a verdict stamp; tags include what if, alternate history, counterfactual, the war and both sides.',
   explainer: "Explainer / science: titles state the question or surprising fact the video answers; thumbnails one clear visual metaphor with a short number or word; tags cover the concept and related questions.",
@@ -38,7 +53,13 @@ export const motionVideoGenrePackaging = (value: unknown): string => {
   return genre === MOTION_VIDEO_GENRES.AUTO ? "" : `VIDEO GENRE (chosen by the user, follow it): ${PACKAGING[genre]}`;
 };
 export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.includes(_.values(MOTION_VIDEO_GENRES), value) ? (value as MotionVideoGenre) : MOTION_VIDEO_GENRES.AUTO);
+export const MOTION_CREATIVE_GENRES: string[] = [MOTION_VIDEO_GENRES.GHOST_TALE];
+export const motionGenreCreative = (value: unknown): boolean => _.includes(MOTION_CREATIVE_GENRES, motionVideoGenre(value));
+export const MOTION_CREATIVE_ADAPTATION =
+  "CREATIVE ADAPTATION (the user allows it for this genre): the source is raw material and inspiration, not a script to preserve. Keep its core premise and its most striking images, then rewrite it into the most gripping version of the tale: you may rename people and places, merge or drop characters, cut slow, confusing or repetitive parts, reorder events for suspense, add scenes, dialogue, folk beliefs, rituals, sensory details, foreshadowing and a recurring motif, raise the stakes and sharpen or change the ending. Never copy the source's sentences; tell everything in fresh words. Inner logic must stay consistent: every rule, warning and object introduced must pay off later. Facts, quotes and names from the source do not need to be kept and must not be checked against it.";
+export const MOTION_CREATIVE_EDITOR = "This video is a creative adaptation: never flag differences from the source; flag repetitions, weak suspense, logic holes, rules or objects that never pay off, and broken hand-offs.";
 export const motionVideoGenreDirective = (value: unknown): string => {
   const genre = motionVideoGenre(value);
-  return genre === MOTION_VIDEO_GENRES.AUTO ? "" : `VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ${DIRECTIVES[genre]}`;
+  if (genre === MOTION_VIDEO_GENRES.AUTO) return "";
+  return motionGenreCreative(genre) ? `VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer): ${DIRECTIVES[genre]}\n${MOTION_CREATIVE_ADAPTATION}` : `VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ${DIRECTIVES[genre]}`;
 };

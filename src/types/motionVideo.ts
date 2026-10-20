@@ -79,7 +79,7 @@ export interface MotionJobState { id: string; status: MotionJobStatus; progress:
 export interface MotionResultItem { id: string; title: string; fileName: string; videoUrl: string; aspect: string; quality: string; width: number; height: number; fps: number; durationSeconds: number; sizeBytes: number; renderSeconds: number; encoder: string; createdAt: string; }
 export interface MotionStorySegment { t: number; text: string; }
 export interface MotionStorySource { kind?: "brief" | "transcript" | "article"; title: string; notes?: string; fetched?: { kind: "youtube" | "page"; ok: boolean; note: string; url: string }; cleaned?: { splitNumbers: number; soundCues: number; missingQuotes: number }; url?: string; text: string; segments: MotionStorySegment[]; words: number; sourceSeconds: number; }
-export interface MotionCastMember { key: string; name: string; role?: string; description?: string; look?: string; gender?: "male" | "female"; age?: "child" | "adult" | "senior"; narrator?: boolean; reuse?: string; tags?: string[]; type?: string; colors?: Record<string, string>; variant?: number; costume?: MotionCostume; traits?: MotionTraits; }
+export interface MotionCastMember { key: string; name: string; alias?: string; role?: string; description?: string; look?: string; gender?: "male" | "female"; age?: "child" | "adult" | "senior"; narrator?: boolean; reuse?: string; tags?: string[]; type?: string; colors?: Record<string, string>; variant?: number; costume?: MotionCostume; traits?: MotionTraits; }
 export interface MotionPlace { key: string; name: string; description: string; interior?: boolean; time?: string; reuse?: string; tags?: string[]; type?: string; traits?: MotionTraits; redress?: boolean; }
 export interface MotionChapter { id: string; title: string; summary: string; from?: number; to?: number; targetSeconds?: number; weight?: number; mustKeep?: boolean; hook?: string; keyPoints?: string[]; handoff?: string; musicMood?: string; }
 export interface MotionFact { claim: string; status: "ok" | "uncertain" | "wrong"; note?: string; }
@@ -176,12 +176,13 @@ export interface MotionFlatCamera { pitch: number; wideFigure?: number; horizon?
 export interface MotionGenStyle { metrics?: MotionStyleMetrics; outlineColor?: string; outlineWidth?: number; grade?: string; palette?: string[]; notes?: string; outlineSilhouette?: boolean; faceShading?: boolean; framing?: string; flatCamera?: MotionFlatCamera; }
 export interface MotionGenPreview { file?: string; files?: string[]; issues?: string[]; score?: number; note?: string; at?: string; }
 export interface MotionBoard2dObject { key: string; color?: string | null; count?: number; state?: string | null; }
-export interface MotionBoard2dActor { cast: string; pose: string; expression?: string; face?: string; }
+export interface MotionBoard2dActor { cast: string; pose: string; expression?: string; face?: string; wear?: string | null; hold?: string | null; small?: boolean; }
 export interface MotionBoard2dItem { key: string; x: number; y: number; scale: number; }
-export interface MotionBoard2dSentence { mode: "people" | "vignette" | "cutaway"; kind?: string | null; subject?: string | null; target?: string | null; objects: MotionBoard2dObject[]; actors: MotionBoard2dActor[]; camera?: string; light?: string | null; items?: MotionBoard2dItem[]; text?: string; redo?: boolean; }
+export interface MotionBoard2dDetail { text: string; key: string; as: string; who?: string | null; }
+export interface MotionBoard2dSentence { mode: "people" | "vignette" | "cutaway" | "place"; place?: string | null; placeDesc?: string | null; details?: MotionBoard2dDetail[]; fixed?: number; kind?: string | null; subject?: string | null; target?: string | null; objects: MotionBoard2dObject[]; actors: MotionBoard2dActor[]; camera?: string; light?: string | null; items?: MotionBoard2dItem[]; text?: string; redo?: boolean; }
 export interface MotionBoard2dProp { svg: string; grip: number[]; base: number[]; height: number; }
 export interface MotionBoard2dSet { svg: string; code?: string; time?: string; floorY: number; marks: number[][]; lights: { x: number; y: number; color: string; kind: string }[]; }
-export interface MotionCast2d { skin: string; top: string; bottom?: string | null; shoes?: string | null; hair?: string | null; hairKind?: string | null; beard?: string | null; hat?: string | null; hatKind?: string | null; glasses?: boolean; scarf?: string | null; skirt?: boolean; buttons?: boolean; eye?: string; legs?: boolean; arms?: boolean; animal?: boolean; brows?: boolean; height: number; template?: boolean; ghost?: boolean; }
+export interface MotionCast2d { skin: string; top: string; bottom?: string | null; shoes?: string | null; hair?: string | null; hairKind?: string | null; beard?: string | null; hat?: string | null; hatKind?: string | null; glasses?: boolean; scarf?: string | null; skirt?: boolean; buttons?: boolean; eye?: string; legs?: boolean; arms?: boolean; animal?: boolean; species?: string | null; brows?: boolean; height: number; template?: boolean; ghost?: boolean; }
 export interface MotionBoard2dSheetItem { t: number; text: string; file: string; }
 export interface MotionBoard2dReport { sentences: number; fallback: number; sets: number; codeSets: string[]; cast: number; }
 export interface MotionBoard2d { version: number; styleKey: string; sentences: Record<string, MotionBoard2dSentence>; props: string[]; sets: Record<string, string>; codeSets?: Record<string, string>; cast?: Record<string, MotionCast2d>; sheet?: MotionBoard2dSheetItem[]; report?: MotionBoard2dReport; }
@@ -219,7 +220,7 @@ export interface MotionSeoOption { title: string; description: string; hashtags:
 export interface MotionThumbnail { image: string; prompt: string; optionIndex?: number; }
 export interface MotionSeoPack { options: MotionSeoOption[]; chapters: { id: string; t: number; title: string }[]; timingFrom: "estimate" | "voice"; scriptKey: string; }
 export interface MotionVoiceTrack { provider?: "vieneu"; signature?: string; plan?: MotionVoicePlan; clips?: MotionVoiceClip[]; subtitles?: { start: number; end: number; text: string; speaker?: string }[]; audioId: string; voiceId: string; durations: number[]; totalSeconds: number; }
-export interface MotionUtterance { id: string; speaker: string; role: "narration" | "dialogue" | "thought" | "offscreen"; text: string; emotion: "neutral" | "warm" | "serious" | "tense" | "surprised" | "sad" | "excited"; intensity?: number; speed: number; pauseBefore: number; pauseAfter: number; emphasis: string[]; }
+export interface MotionUtterance { id: string; speaker: string; role: "narration" | "dialogue" | "thought" | "offscreen"; text: string; emotion: "neutral" | "warm" | "serious" | "tense" | "surprised" | "sad" | "excited" | "scared" | "angry"; intensity?: number; speed: number; pauseBefore: number; pauseAfter: number; emphasis: string[]; }
 export interface MotionVoiceSettings { voices?: Record<string, string>; utterances?: Record<string, MotionUtterance[]>; }
 export interface MotionVoicePreset { id: string; name: string; gender?: string; description?: string; age?: string; custom?: boolean; source?: string; language?: string; speed?: number; }
 export interface MotionVoiceSpeedTarget { rate: number; url: string; title: string; window?: number; pauses?: { clause?: number; sentence: number; suspense: number; beat: number; articulation: number }; source?: "captions" | "audio"; phrase?: number; speechRatio?: number; at: number; }
@@ -235,6 +236,7 @@ export enum MotionStoryLength {
   FULL = "full",
   TEN = "10min",
   FIVE = "5min",
+  FIFTEEN = "15min",
   TWENTY = "20min",
   THIRTY = "30min",
   FORTY = "40min",
@@ -257,7 +259,7 @@ export enum MotionStoryJobKind {
   TRAIN_VOICE = "train_voice",
 }
 export interface MotionLogEntry { id: string; kind: string; lines: string[]; }
-export interface MotionAiExecution { provider?: string; model?: string; mode?: string; chromeHeadless?: boolean; strictProvider?: boolean; }
+export interface MotionAiExecution { provider?: string; model?: string; mode?: string; chromeHeadless?: boolean; strictProvider?: boolean; role?: string; chained?: boolean; }
 export interface MotionStoryJobState { id: string; kind: MotionStoryJobKind; status: MotionJobStatus; progress: number; stage?: string; log: string[]; error?: string; result?: unknown; startedAt: number; }
 export type MotionSceneAssetKind = "location" | "character" | "prop";
 export interface MotionSceneAsset { id: string; kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description: string; tags: string[]; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string; story?: string; thumb?: boolean; fingerprint?: string; sourceFingerprint?: string; uses: number; createdAt: number; updatedAt?: number; usedAt?: number; }

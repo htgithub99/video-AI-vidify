@@ -25,7 +25,37 @@
     INTERIOR: "interior",
     SHOT: { WIDE: "wide", MEDIUM: "medium", CLOSE: "close", EXTREME: "extreme_close", INSERT: "insert", OVER: "over_shoulder", AERIAL: "aerial", HIGH: "high", LOW: "low" },
     MOVE: { IN: "dolly_in", OUT: "dolly_out", ORBIT_L: "orbit_left", ORBIT_R: "orbit_right", PAN_L: "pan_left", PAN_R: "pan_right", PUSH: "push_in", PULL: "pull_out", CRANE_UP: "crane_up", CRANE_DOWN: "crane_down", SHAKE: "shake" },
-    ACTION: { WALK: "walk", RUN: "run", TALK: "talk", SIT: "sit", SIT_TALK: "sit_talk", KNEEL: "kneel", FEAR: "fear", CRY: "cry", POINT: "point", WAVE: "wave", BOW: "bow", PRAY: "pray", LIE: "lie", SLEEP: "sleep", LAUGH: "laugh", SHOUT: "shout", THINK: "think", LOOK: "look_around", FALL: "fall", CARRY: "carry", DIG: "dig", DRINK: "drink", EAT: "eat", READ: "read", WRITE: "write", HOLD: "hold", RAISE: "raise_hands", GIVE: "give", REACH: "reach", COVER: "cover_mouth", CROSSED: "arms_crossed", BEHIND: "hands_behind", BELLY: "hold_belly", HUG: "hug", SHAKE: "shake_head", NOD: "nod", SUPPORT: "support", IDLE: "idle" },
+    ACTION: { WALK: "walk", RUN: "run", TALK: "talk", SIT: "sit", SIT_TALK: "sit_talk", KNEEL: "kneel", FEAR: "fear", CRY: "cry", POINT: "point", WAVE: "wave", BOW: "bow", PRAY: "pray", LIE: "lie", SLEEP: "sleep", LAUGH: "laugh", SHOUT: "shout", THINK: "think", LOOK: "look_around", FALL: "fall", CARRY: "carry", DIG: "dig", DRINK: "drink", EAT: "eat", READ: "read", WRITE: "write", HOLD: "hold", RAISE: "raise_hands", GIVE: "give", REACH: "reach", COVER: "cover_mouth", CROSSED: "arms_crossed", BEHIND: "hands_behind", BELLY: "hold_belly", HUG: "hug", SHAKE: "shake_head", NOD: "nod", SUPPORT: "support", IDLE: "idle", COWER: "cower", CROUCH: "crouch", STAND_UP: "stand_up", SNIFF: "sniff", WALK_UP: "walk_upright" },
+    ANIMAL: {
+      SPEC: {
+        dog: { legLen: 0.4, rx: 0.42, ry: 0.15, hr: 0.18, snout: [0.15, 0.085], ear: "flop", tail: "up", legT: 0.075 },
+        cat: { legLen: 0.34, rx: 0.36, ry: 0.13, hr: 0.16, snout: [0.06, 0.055], ear: "tri", tail: "long", legT: 0.06 },
+        buffalo: { legLen: 0.38, rx: 0.55, ry: 0.22, hr: 0.17, snout: [0.13, 0.1], ear: "horn", tail: "thin", legT: 0.1 },
+        pig: { legLen: 0.22, rx: 0.5, ry: 0.24, hr: 0.19, snout: [0.08, 0.09], ear: "tri", tail: "curl", legT: 0.1 },
+      },
+      UPRIGHT: ["stand_up", "walk_upright", "raise_hands", "wave", "point", "give", "hold", "pray", "bow", "reach", "carry", "hug", "support", "read", "arms_crossed", "hands_behind", "cover_mouth", "think", "hold_belly"],
+      SIT: ["sit", "sit_talk", "kneel"],
+      LOW: ["fear", "cower", "crouch", "cry"],
+      DOWN: ["sniff", "dig", "look_down", "eat", "drink"],
+      LIE: /^(lie|sleep|fall)$/,
+      UP_ANGLE: 72,
+      SIT_ANGLE: 34,
+      SHADE: 0.72,
+      LIGHT: 1.18,
+      NOSE: "#1a1416",
+      TONGUE: "#c9636b",
+      PIG_SNOUT: "#e7a2a6",
+      HORN: "#e4dccb",
+      BEAK: "#d7a23a",
+      BIRD_LEG: "#c98d2e",
+      W: 2.4,
+      HEAD_CY: 0.78,
+      DARK_FUR: 0.3,
+      MOUTH: [1.05, 0.35],
+      OPEN_MOUTH: 0.75,
+      BEAK_AT: [0.36, -0.47],
+      EYE_WHITE: "#f1ece0",
+    },
     ACTION_ALIAS: [[/raise|hands_up|surrender|cheer|celebrat/, "raise_hands"], [/hold|carry|give|offer|show|present|grip|clutch|hand_over|receive|take/, "hold"], [/point|gesture|indicate/, "point"], [/pray|bow|kowtow|worship|incense/, "bow"], [/scare|fear|trembl|shiver|panic|flinch|recoil|startl|shock/, "fear"], [/cry|sob|weep|mourn|griev/, "cry"], [/kneel|crouch|squat/, "kneel"], [/sit|seat/, "sit"], [/lie|lying|collapse|faint|dead/, "lie"], [/fall|trip/, "fall"], [/run|flee|rush|chase/, "run"], [/walk|step|approach|enter|leave|exit|go_/, "walk"], [/look|search|glance|peer|watch|stare/, "look_around"], [/think|ponder|wonder|recall|remember/, "think"], [/wave|greet|beckon/, "wave"], [/laugh|giggl/, "laugh"], [/shout|yell|scream|call/, "shout"], [/dig|shovel/, "dig"], [/talk|speak|say|tell|explain|whisper|ask|answer|argu/, "talk"]],
     SMOOTH: { ATTACK: 0.3, RELEASE: 0.5, SWITCH: 0.35 },
     VIG: {
@@ -102,7 +132,7 @@
       WORD_L: "(^|[^\\p{L}])(",
       WORD_R: ")(?=[^\\p{L}]|$)",
       MAX_COUNT: 9,
-      BG: { night: ["#0b0f1a", "#1b2232"], day: ["#bfb6a2", "#8f846f"], interior: ["#1d1915", "#33291f"] },
+      BG: { night: ["#1c2436", "#2e3a54"], day: ["#bfb6a2", "#8f846f"], interior: ["#2e261e", "#46382a"] },
       SPOT: "rgba(255,236,200,0.16)",
       SKIN: "#eef0f2",
       SLEEVE: "#6a6f78",
@@ -128,11 +158,12 @@
     UNDEF: "undefined",
     FUNCTION: "function",
     INFO_DEFAULT: { skin: "#eef0f2", top: "#5a6068", bottom: null, shoes: null, hair: null, hairKind: null, beard: null, hat: null, hatKind: null, glasses: false, scarf: null, skirt: false, buttons: false, eye: "#141318", legs: false, arms: true, animal: false, brows: false, height: 1.6, template: false },
-    BG: { DUR: 6, ZOOM0: 1.03, ZOOM1: 0.05, NIGHT_FILL: "rgba(18,24,40,0.45)" },
+    BG: { DUR: 6, ZOOM0: 1.03, ZOOM1: 0.05, NIGHT_FILL: "rgba(18,24,40,0.28)" },
     BOARD: {
       NFC: "NFC",
       NORM_RE: /[^\p{L}\p{N}]+/gu,
       SENT_RE: /[^.!?…]+[.!?…]+["”']?|[^.!?…]+$/g,
+      FRAG_RE: /[:“”"«»]+/,
       SVG_URL: "data:image/svg+xml;charset=utf-8,",
       SVG_MIME: "image/svg+xml",
       XMLNS: "xmlns",
@@ -166,8 +197,45 @@
       BACK: "back",
       MULTIPLY: "multiply",
       DARK_RE: /night|dark|midnight/,
+      PLACE: "place",
+      FILTER: "filter",
+      FILTER_NONE: "none",
+      NIGHT_GRADE: "#9aa6c8",
+      VIG_ZOOM: 1.5,
+      VIG_FY: 0.72,
+      VIG_BLUR: "blur(5px)",
+      VIG_DIM: "rgba(12,14,20,0.2)",
+      VIG_FLOOR_SHADE: 0.8,
+      VIG_FLOOR_ALPHA: 0.72,
+      CUT_DIM: "rgba(12,14,20,0.1)",
+      ITEM_H: 1.0,
+      ITEM_Y0: 0.75,
+      ITEM_DEPTH: 0.12,
+      CUT_ZOOM: 1.08,
+      CUT_FY: 0.85,
+      CUT_FIGURE: 0.5,
+      HANG_RE: /(lamp|lantern|bell|sign|picture|portrait|photo|clock|hook|rope|bird|bat|moon|star|cloud|smoke|ghost|spirit|flame|fire|curtain|banner|talisman)/,
+      FLOOR_PAD: 0.03,
+      CUT_FLOOR_Y: 0.86,
+      PLACE_MOVES: ["push_in", "pan_left", "pan_right", "pull_out"],
     },
     ARM_CROSS: 12,
+    WEAR: {
+      HAT_RE: /(hat|cap|helmet|turban|non|conical|headscarf|khan)/,
+      CONE_RE: /(cone|conical|non|straw|leaf)/,
+      HELMET_RE: /helmet/,
+      TURBAN_RE: /(turban|headscarf|khan)/,
+      CONE: "cone",
+      HELMET: "helmet",
+      TURBAN: "turban",
+      CAP: "cap",
+      CONE_COLOR: "#d9c48f",
+      CAP_COLOR: "#4a3a2c",
+      HELD_M: 0.5,
+      HELD_MIN: 0.2,
+      HELD_MAX: 0.9,
+    },
+    SEAT: { ACTIONS: /^(sit|sit_talk)$/, TOP: 0.34, W: 2.1, PLANK: 0.1 },
     LIE: { ACTIONS: /^(lie|sleep|fall)$/, BOX_W: 1.3, BOX_H: 0.42, BED_W: 0.66, BED_H: 0.14, BLANKET_H: 0.2, PILLOW: 0.16 },
     ARM_SPLIT: 0.5,
     POSE2: {
@@ -183,6 +251,7 @@
       support: [6, 0, -50, -22, null, null],
       read: [10, -80, -10, 80, 8, null],
       hands_behind: [14, 0, -14, 0, null, null],
+      carry: [-38, -55, -44, -50, 4, null],
     },
     ACTS: [
       ["hold_belly", "ôm bụng|xoa bụng|tay ôm bụng|ôm cái bụng|hold her belly"],
@@ -268,6 +337,11 @@
     HEAD_DIAMETER: 0.72,
     HEAD_OVERLAP: 0.12,
     LEG_RATIO: 0.62,
+    FRAME_FLOOR: { close: 0.26, medium: 0.36 },
+    FRAME_FOOT: 0.4,
+    SMALL_SCALE: 0.55,
+    SMALL_SUBJECT: 0.22,
+    UPRIGHT_BOX: 1.55,
     FRAME: { close: 4.2, extreme_close: 2.6, medium: 1.3, over_shoulder: 1.25, insert: 2.2 },
     SAFE: 0.86,
     CUES: { SHAKE: /^(stinger|thunder|explosion|impact)$/, FLASH: /^(thunder|stinger)$/ },
@@ -688,6 +762,7 @@
     const unit = info.height / total;
     const profile = K.PROFILE[m.bodyShape] || K.PROFILE.dome;
     const bodyPts = profile.map(([x, y]) => [x * bodyW, -legH - y * bodyH]).concat(profile.slice(0, -1).reverse().map(([x, y]) => [-x * bodyW, -legH - y * bodyH]));
+    const spec = info.animal && info.species ? K.ANIMAL.SPEC[info.species] || K.ANIMAL.SPEC.dog : null;
     const ghost = design && design.info2d ? design.ghost === true : K.RE.GHOST.test(String(key).toLowerCase()) || K.RE.GHOST.test(String((design && design.tags) || "").toLowerCase());
     return {
       key,
@@ -703,7 +778,8 @@
       ghost,
       outline: styleOutline || K.OUTLINE,
       seed: seedOf(String(key)),
-      headCy: -legH - bodyH - headH / 2 + headH * K.HEAD_OVERLAP,
+      headCy: spec ? -total * K.ANIMAL.HEAD_CY : -legH - bodyH - headH / 2 + headH * K.HEAD_OVERLAP,
+      animalW: spec ? total * spec.rx * K.ANIMAL.W : 0,
     };
   }
 
@@ -776,13 +852,28 @@
       p.armF = lerp(p.armF, -22 - 16 * (0.5 + 0.5 * Math.sin(t * 1.7 + s)), gest);
       p.head += Math.sin(t * 1.9) * 2.5 * gest;
     }
-    if (action === A.FEAR) {
-      p.armB = 150 + Math.sin(t * 16) * 3;
-      p.armF = -150 + Math.sin(t * 17) * 3;
-      p.tilt = -6;
-      p.dx = Math.sin(t * 19) * 0.004;
+    if (action === A.FEAR || action === A.COWER) {
+      p.armB = -14 + Math.sin(t * 16) * 2;
+      p.elbowB = -150;
+      p.armF = 14 + Math.sin(t * 17) * 2;
+      p.elbowF = 150;
+      p.tilt = -7;
+      p.head = 6;
+      p.squat = action === A.COWER ? 0.2 : 0.1;
+      p.dx = Math.sin(t * 19) * 0.006;
       p.wide = 1.18;
       p.mouthShape = 1;
+    }
+    if (action === A.CROUCH) {
+      p.squat = 0.42;
+      p.tilt = R.info.legs ? 14 : 5;
+      p.head = -6;
+      p.armB = -20;
+      p.armF = -38;
+    }
+    if (action === A.SNIFF) {
+      p.tilt = 10;
+      p.head = 14;
     }
     if (action === A.POINT) p.armF = -100;
     const P2 = K.POSE2[action];
@@ -847,11 +938,16 @@
     if (action === A.LIE || action === A.SLEEP || action === A.FALL) p.lie = true;
     if ((t + R.seed * 7) % 3.7 < 0.12 && action !== A.FEAR) p.eye = Math.min(p.eye, 0.1);
     if (action === A.SLEEP) p.eye = 0.08;
+    p.action = action || A.IDLE;
+    p.t = t;
+    p.gait = moving || action === A.WALK || action === A.RUN || action === A.WALK_UP ? t * (action === A.RUN ? 11 : 7.2) : null;
+    p.run = action === A.RUN;
     return p;
   }
 
   function drawRig(g, R, p, facing, lw, tint) {
     const I = R.info;
+    if (I.animal && I.species) return drawAnimal(g, R, p, facing, lw, tint);
     const col = (c) => (tint < 0.999 ? scaleHex(c, tint) : c);
     const line = R.outline;
     const top = col(I.top),
@@ -882,6 +978,18 @@
     const hand = { r: armT * 0.55, color: skin };
     const backFront = p.armB + (p.elbowB || 0) * 0.5 < -K.ARM_CROSS;
     if (I.arms && !backFront) arm(g, -sx, shoulderY, armL, armT, p.armB, p.elbowB || 0, top, line, lw, hand);
+    if (!I.legs && K.SEAT.ACTIONS.test(p.action || "")) {
+      const by = -R.bodyH * K.SEAT.TOP, bw = R.bodyW * K.SEAT.W, bh = R.bodyH * K.SEAT.PLANK;
+      const wood = col(K.VIG.WOOD);
+      g.beginPath();
+      g.rect(-bw / 2, by, bw, bh);
+      fillStroke(g, wood, line, lw);
+      for (const lx of [-bw / 2 + bh * 0.4, bw / 2 - bh * 1.4]) {
+        g.beginPath();
+        g.rect(lx, by + bh, bh, -by - bh);
+        fillStroke(g, scaleHex(wood, 0.8), line, lw);
+      }
+    }
     pathPoly(g, R.bodyPts);
     fillStroke(g, top, line, lw);
     if (I.skirt) {
@@ -912,6 +1020,11 @@
     }
     if (I.arms && backFront) arm(g, -sx, shoulderY, armL, armT, p.armB, p.elbowB || 0, top, line, lw, hand);
     if (I.arms) arm(g, sx, shoulderY, armL, armT, p.armF, p.elbowF || 0, top, line, lw, hand);
+    {
+      const hp0 = I.arms ? handAt(sx, shoulderY, armL, armT, p.armF, p.elbowF || 0) : [R.bodyW * 0.5, shoulderY + R.bodyH * 0.35];
+      const ct = Math.cos(p.tilt * DEG), st = Math.sin(p.tilt * DEG);
+      R.anchor = [(hp0[0] * ct - hp0[1] * st) * facing + p.dx, hp0[0] * st + hp0[1] * ct - p.bob + p.squat * R.legH];
+    }
     if (p.held && p.held.length) {
       const hp = handAt(sx, shoulderY, armL, armT, p.armF, p.elbowF || 0);
       const hxp = I.arms ? hp[0] : 0,
@@ -1049,11 +1162,317 @@
     g.restore();
   }
 
+  function animalLimb(g, x0, y0, x1, y1, th, fill, line, w, paw) {
+    g.lineCap = K.ROUND;
+    g.strokeStyle = line;
+    g.lineWidth = th + w * 2;
+    g.beginPath();
+    g.moveTo(x0, y0);
+    g.lineTo(x1, y1);
+    g.stroke();
+    g.strokeStyle = fill;
+    g.lineWidth = th;
+    g.stroke();
+    if (paw) {
+      g.beginPath();
+      g.ellipse(x1 + th * 0.18, y1 - th * 0.12, th * 0.62, th * 0.4, 0, 0, Math.PI * 2);
+      fillStroke(g, paw, line, w);
+    }
+  }
+
+  function animalHat(g, I, col, line, w, hx, hy, hr) {
+    if (!I.hat) return;
+    const hc = col(I.hat);
+    const top = hy - hr * 0.78;
+    g.beginPath();
+    if (I.hatKind === "cone") {
+      g.moveTo(hx - hr * 1.75, top + hr * 0.18);
+      g.lineTo(hx + hr * 0.1, top - hr * 1.05);
+      g.lineTo(hx + hr * 1.85, top + hr * 0.18);
+      g.quadraticCurveTo(hx, top + hr * 0.42, hx - hr * 1.75, top + hr * 0.18);
+    } else {
+      g.ellipse(hx, top + hr * 0.12, hr * 0.92, hr * 0.62, 0, Math.PI, Math.PI * 2);
+      g.lineTo(hx + hr * 1.3, top + hr * 0.14);
+      g.lineTo(hx - hr * 0.92, top + hr * 0.14);
+      g.closePath();
+    }
+    fillStroke(g, hc, line, w);
+    if (I.hatKind === "cone") {
+      g.strokeStyle = scaleHex(hc, 0.72);
+      g.lineWidth = w * 0.7;
+      g.beginPath();
+      for (const k of [-0.9, 0, 0.9]) {
+        g.moveTo(hx + hr * 0.1, top - hr * 0.95);
+        g.lineTo(hx + hr * k * 1.6, top + hr * 0.2);
+      }
+      g.stroke();
+    }
+  }
+
+  function drawBird(g, I, p, col, line, w) {
+    const fur = col(I.top), dark = col(scaleHex(I.top, K.ANIMAL.SHADE));
+    const t = p.t || 0, act = p.action;
+    const hop = p.gait != null ? Math.abs(Math.sin(p.gait)) * 0.05 : 0;
+    const by = -0.3 - hop, flap = K.ANIMAL.UPRIGHT.indexOf(act) >= 0 || K.ANIMAL.LOW.indexOf(act) >= 0;
+    g.strokeStyle = col(K.ANIMAL.BIRD_LEG);
+    g.lineWidth = 0.025;
+    g.beginPath();
+    for (const dx of [-0.05, 0.05]) {
+      g.moveTo(dx, by + 0.12);
+      g.lineTo(dx + 0.02, 0);
+      g.lineTo(dx + 0.07, 0);
+    }
+    g.stroke();
+    g.beginPath();
+    g.moveTo(-0.2, by - 0.02);
+    g.lineTo(-0.38, by - 0.1);
+    g.lineTo(-0.36, by + 0.06);
+    g.closePath();
+    fillStroke(g, dark, line, w);
+    g.beginPath();
+    g.ellipse(0, by, 0.23, 0.16, -0.12, 0, Math.PI * 2);
+    fillStroke(g, fur, line, w);
+    const wa = flap ? -0.9 + Math.sin(t * 14) * 0.5 : 0.15;
+    g.save();
+    g.translate(-0.02, by - 0.04);
+    g.rotate(wa);
+    g.beginPath();
+    g.ellipse(-0.08, 0, 0.16, 0.08, 0, 0, Math.PI * 2);
+    fillStroke(g, dark, line, w);
+    g.restore();
+    const hx = 0.17, hy = by - 0.17 + (K.ANIMAL.DOWN.indexOf(act) >= 0 ? 0.14 : 0);
+    g.beginPath();
+    g.arc(hx, hy, 0.1, 0, Math.PI * 2);
+    fillStroke(g, fur, line, w);
+    g.beginPath();
+    const open = clamp(p.mouth || 0, 0, 1) * 0.03;
+    g.moveTo(hx + 0.08, hy - 0.025 - open);
+    g.lineTo(hx + 0.2, hy + 0.005);
+    g.lineTo(hx + 0.08, hy + 0.03 + open);
+    g.closePath();
+    fillStroke(g, col(K.ANIMAL.BEAK), line, w);
+    g.fillStyle = K.ANIMAL.NOSE;
+    g.beginPath();
+    g.arc(hx + 0.035, hy - 0.025, 0.018 * (p.eye > 0.3 ? 1 : 0.4), 0, Math.PI * 2);
+    g.fill();
+    animalHat(g, I, col, line, w, hx, hy, 0.1);
+  }
+
+  function drawAnimal(g, R, p, facing, lw, tint) {
+    const I = R.info, AN = K.ANIMAL, sp = AN.SPEC[I.species] || AN.SPEC.dog;
+    const T = R.legH + R.bodyH + R.headH * (1 - K.HEAD_OVERLAP);
+    const col = (c) => (tint < 0.999 ? scaleHex(c, tint) : c);
+    const line = R.outline, w = lw / T;
+    const fur = col(I.top), far = col(scaleHex(I.top, AN.SHADE));
+    const act = p.action || K.ACTION.IDLE, t = p.t || 0, seed = R.seed * 10;
+    g.save();
+    g.translate(p.dx || 0, 0);
+    g.scale(facing, 1);
+    g.scale(T, T);
+    if (I.species === "bird") {
+      drawBird(g, I, p, col, line, w);
+      R.anchor = [K.ANIMAL.BEAK_AT[0] * T * facing + (p.dx || 0), K.ANIMAL.BEAK_AT[1] * T];
+      g.restore();
+      return;
+    }
+    const upright = AN.UPRIGHT.indexOf(act) >= 0, sit = AN.SIT.indexOf(act) >= 0, low = AN.LOW.indexOf(act) >= 0, down = AN.DOWN.indexOf(act) >= 0, lie = AN.LIE.test(act);
+    const L = sp.legLen, rx = sp.rx, ry = sp.ry, hr = sp.hr, th = sp.legT;
+    const ang = (upright ? -AN.UP_ANGLE : sit ? -AN.SIT_ANGLE : 0) * DEG;
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    const rot = (x, y) => [x * ca - y * sa, x * sa + y * ca];
+    const shake = low ? Math.sin(t * 22) * 0.006 : 0;
+    const breathe = Math.sin(t * 2.2 + seed) * 0.006;
+    const hipY = lie ? -ry * 0.9 : upright ? -L * 0.96 : sit ? -L * 0.42 : -(L * (low ? 0.62 : 1)) - breathe;
+    const hip = [-rx * 0.62 + shake, hipY];
+    const at = (x, y) => {
+      const v = rot(x, y);
+      return [hip[0] + v[0], hip[1] + v[1]];
+    };
+    const shoulder = at(rx * 1.24, 0);
+    const bodyC = at(rx * 0.62, -ry * 0.35);
+    const g0 = p.gait;
+    const swing = (o) => (g0 != null ? Math.sin(g0 + o) * (p.run ? 0.55 : 0.38) : 0);
+    const legEnd = (x0, y0, o) => [x0 + Math.sin(swing(o)) * L * 0.9, 0];
+    const tailBase = at(-rx * 0.08, -ry * 0.55);
+    const wag = Math.sin(t * (low ? 3 : 9) + seed) * (low ? 0.05 : 0.18);
+    const drawTail = () => {
+      g.strokeStyle = line;
+      g.lineCap = K.ROUND;
+      const tw = sp.tail === "thin" ? th * 0.35 : sp.tail === "curl" ? th * 0.4 : th * 0.6;
+      const pts = sp.tail === "long" ? [tailBase[0] - 0.12, tailBase[1] - 0.05 - wag * 0.3, tailBase[0] - 0.2, tailBase[1] - 0.28 + wag * 0.4] : sp.tail === "curl" ? [tailBase[0] - 0.08, tailBase[1] - 0.1, tailBase[0] - 0.04, tailBase[1] - 0.04] : sp.tail === "thin" ? [tailBase[0] - 0.08, tailBase[1] + 0.12, tailBase[0] - 0.06 + wag * 0.2, tailBase[1] + 0.3] : low ? [tailBase[0] - 0.1, tailBase[1] + 0.08, tailBase[0] - 0.06, tailBase[1] + 0.2] : [tailBase[0] - 0.12, tailBase[1] - 0.06 + wag * 0.4, tailBase[0] - 0.16 + wag * 0.3, tailBase[1] - 0.24];
+      for (const [c, k] of [[line, tw + w * 2], [fur, tw]]) {
+        g.strokeStyle = c;
+        g.lineWidth = k;
+        g.beginPath();
+        g.moveTo(tailBase[0], tailBase[1]);
+        g.quadraticCurveTo(pts[0], pts[1], pts[2], pts[3]);
+        g.stroke();
+      }
+    };
+    let anchor = null;
+    const legs = (near) => {
+      const fill = near ? fur : far, paw = near ? fur : far, dx = near ? th * 0.35 : -th * 0.35;
+      if (lie) {
+        animalLimb(g, hip[0] + dx + rx * 0.2, hip[1] + ry * 0.6, hip[0] + dx + rx * 0.55, -th * 0.45, th, fill, line, w, paw);
+        animalLimb(g, shoulder[0] + dx - rx * 0.1, shoulder[1] + ry * 0.6, shoulder[0] + dx + rx * 0.35, -th * 0.45, th, fill, line, w, paw);
+        return;
+      }
+      if (sit) {
+        g.beginPath();
+        g.ellipse(hip[0] + dx + rx * 0.12, hip[1] + 0.02, rx * 0.34, ry * 0.95, -0.35, 0, Math.PI * 2);
+        fillStroke(g, fill, line, w);
+        animalLimb(g, hip[0] + dx + rx * 0.2, -th * 0.5, hip[0] + dx + rx * 0.5, -th * 0.45, th, fill, line, w, paw);
+        animalLimb(g, shoulder[0] + dx - th * 0.4, shoulder[1] + th, shoulder[0] + dx - th * 0.2, -th * 0.45, th, fill, line, w, paw);
+        return;
+      }
+      const he = upright ? [hip[0] + dx + th * 0.5 + (g0 != null ? Math.sin(g0 + (near ? 0 : Math.PI)) * L * 0.35 : 0), -th * 0.45] : legEnd(hip[0] + dx, hip[1], near ? 0 : Math.PI);
+      animalLimb(g, hip[0] + dx, hip[1] + ry * 0.35, he[0], low ? -th * 0.45 : he[1] - th * 0.45, th, fill, line, w, paw);
+      if (upright) {
+        const wave = act === K.ACTION.WAVE || act === K.ACTION.RAISE ? -0.55 + Math.sin(t * 9) * 0.25 : act === K.ACTION.POINT ? -0.05 : 0.45;
+        const ax = shoulder[0] + dx, ay = shoulder[1] + ry * 0.5;
+        const len = L * 0.62;
+        animalLimb(g, ax, ay, ax + Math.cos(wave) * len, ay + Math.sin(wave) * len, th * 0.9, fill, line, w, paw);
+        if (near) anchor = [ax + Math.cos(wave) * len, ay + Math.sin(wave) * len];
+        return;
+      }
+      const fe = legEnd(shoulder[0] + dx, shoulder[1], near ? Math.PI : 0);
+      animalLimb(g, shoulder[0] + dx - th * 0.3, shoulder[1] + ry * 0.35, fe[0] - th * 0.3, -th * 0.45, th, fill, line, w, paw);
+    };
+    legs(false);
+    drawTail();
+    g.save();
+    g.translate(bodyC[0], bodyC[1]);
+    g.rotate(ang);
+    g.beginPath();
+    g.ellipse(0, 0, rx * 0.72, ry, 0, 0, Math.PI * 2);
+    fillStroke(g, fur, line, w);
+    g.beginPath();
+    g.ellipse(rx * 0.55, -ry * 0.05, rx * 0.36, ry * 0.92, 0, 0, Math.PI * 2);
+    fillStroke(g, fur, line, w);
+    g.beginPath();
+    g.ellipse(rx * 0.1, -ry * 0.05, rx * 0.62, ry * 0.86, 0, 0, Math.PI * 2);
+    g.fillStyle = fur;
+    g.fill();
+    g.restore();
+    legs(true);
+    const neck = at(rx * 1.24, -ry * 0.5);
+    let hx = neck[0] + hr * 0.55, hy = neck[1] - hr * 0.75;
+    if (upright) {
+      hx = neck[0] + hr * 0.25;
+      hy = neck[1] - hr * 0.95;
+    }
+    if (down) {
+      hx = shoulder[0] + hr * 1.1;
+      hy = -hr * 1.05 + Math.sin(t * 6) * 0.01;
+    }
+    if (lie) {
+      hx = shoulder[0] + hr * 0.9;
+      hy = -hr * 1.0;
+    }
+    if (low) hy += hr * 0.45;
+    if (!anchor) anchor = [hx + hr * K.ANIMAL.MOUTH[0], hy + hr * K.ANIMAL.MOUTH[1]];
+    R.anchor = [anchor[0] * T * facing + (p.dx || 0), anchor[1] * T];
+    g.save();
+    g.translate(hx, hy);
+    g.rotate(((p.head || 0) * 0.8 + (low ? 12 : 0)) * DEG);
+    if (sp.ear === "flop") {
+      g.beginPath();
+      g.ellipse(-hr * 0.42, -hr * 0.1, hr * 0.32, hr * 0.62, 0.35, 0, Math.PI * 2);
+      fillStroke(g, far, line, w);
+    }
+    g.beginPath();
+    g.arc(0, 0, hr, 0, Math.PI * 2);
+    fillStroke(g, fur, line, w);
+    if (sp.ear === "tri") {
+      for (const ex of [-0.45, 0.15]) {
+        g.beginPath();
+        g.moveTo(hr * ex, -hr * 0.7);
+        g.lineTo(hr * (ex + 0.18), -hr * 1.45);
+        g.lineTo(hr * (ex + 0.48), -hr * 0.82);
+        g.closePath();
+        fillStroke(g, ex < 0 ? far : fur, line, w);
+      }
+    }
+    if (sp.ear === "horn") {
+      g.strokeStyle = line;
+      g.lineWidth = hr * 0.26 + w * 2;
+      g.lineCap = K.ROUND;
+      g.beginPath();
+      g.moveTo(-hr * 0.3, -hr * 0.7);
+      g.quadraticCurveTo(-hr * 1.5, -hr * 1.2, -hr * 0.9, -hr * 1.8);
+      g.stroke();
+      g.strokeStyle = col(AN.HORN);
+      g.lineWidth = hr * 0.26;
+      g.stroke();
+    }
+    const open = clamp(p.mouth || 0, 0, 1);
+    const sx = hr * 0.78, sy = hr * 0.28;
+    if (open > 0.08) {
+      g.beginPath();
+      g.ellipse(sx + sp.snout[0] * 0.2, sy + sp.snout[1] * (0.7 + open * 0.6), sp.snout[0] * 0.8, sp.snout[1] * (0.35 + open * 0.4), 0, 0, Math.PI * 2);
+      fillStroke(g, col(AN.TONGUE), line, w);
+    }
+    g.beginPath();
+    g.ellipse(sx, sy, sp.snout[0], sp.snout[1], 0, 0, Math.PI * 2);
+    fillStroke(g, I.species === "pig" ? col(AN.PIG_SNOUT) : fur, line, w);
+    g.fillStyle = AN.NOSE;
+    g.beginPath();
+    if (I.species === "pig") {
+      g.ellipse(sx + sp.snout[0] * 0.55, sy - sp.snout[1] * 0.1, sp.snout[0] * 0.12, sp.snout[1] * 0.2, 0, 0, Math.PI * 2);
+      g.ellipse(sx + sp.snout[0] * 0.15, sy - sp.snout[1] * 0.1, sp.snout[0] * 0.12, sp.snout[1] * 0.2, 0, 0, Math.PI * 2);
+    } else g.ellipse(sx + sp.snout[0] * 0.9, sy - sp.snout[1] * 0.35, sp.snout[1] * 0.42, sp.snout[1] * 0.32, 0, 0, Math.PI * 2);
+    g.fill();
+    const eyeOpen = lie && act === K.ACTION.SLEEP ? 0.08 : p.eye;
+    if (lum(I.top) < AN.DARK_FUR && eyeOpen > 0.3) {
+      g.beginPath();
+      g.ellipse(hr * 0.32, -hr * 0.18, hr * 0.22 * (p.wide || 1), hr * 0.24 * (p.wide || 1), 0, 0, Math.PI * 2);
+      fillStroke(g, AN.EYE_WHITE, line, w * 0.6);
+    }
+    g.fillStyle = col(I.eye || K.VIG.EYE);
+    g.beginPath();
+    g.ellipse(hr * 0.32, -hr * 0.18, hr * 0.12 * (p.wide || 1), Math.max(hr * 0.02, hr * 0.15 * eyeOpen * (p.wide || 1)), 0, 0, Math.PI * 2);
+    g.fill();
+    if (I.species === "cat") {
+      g.strokeStyle = line;
+      g.lineWidth = w * 0.6;
+      g.beginPath();
+      for (const k of [-1, 0, 1]) {
+        g.moveTo(sx + sp.snout[0] * 0.6, sy);
+        g.lineTo(sx + hr * 0.75, sy + k * hr * 0.16);
+      }
+      g.stroke();
+    }
+    animalHat(g, I, col, line, w, 0, 0, hr);
+    g.restore();
+    g.restore();
+  }
+
+  function wornRig(R, key) {
+    const W = K.WEAR;
+    const k = String(key || "");
+    if (!W.HAT_RE.test(k)) return R;
+    const kind = W.CONE_RE.test(k) ? W.CONE : W.HELMET_RE.test(k) ? W.HELMET : W.TURBAN_RE.test(k) ? W.TURBAN : W.CAP;
+    const color = wordColor(k.replace(K.VIG.UNDERSCORE_RE, " "), null) || (kind === W.CONE ? W.CONE_COLOR : W.CAP_COLOR);
+    return Object.assign({}, R, { info: Object.assign({}, R.info, { hat: color, hatKind: kind }) });
+  }
+
+  function drawHeld(g, R, key, lw, t) {
+    const total = R.legH + R.bodyH + R.headH;
+    const a = propAsset(key);
+    const h = clamp((a && a.meta.height ? a.meta.height : K.WEAR.HELD_M) / R.unit, total * K.WEAR.HELD_MIN, total * K.WEAR.HELD_MAX);
+    const [x, y] = R.anchor;
+    if (a) {
+      const m = a.meta, box = K.BOARD.PROP_BOX;
+      const gy = m.grip && m.base ? (m.base[1] - m.grip[1]) / box : 0.4;
+      drawPropImage(g, key, x, y + h * gy, h, 0, 1);
+    } else if (codeAlias(key)) vigObject(g, key, x, y, h, {}, R.outline, lw, t);
+  }
+
   function rigBounds(R, x, y, k) {
     const h = R.unit * (R.legH + R.bodyH + R.headH) * k;
     const headTop = y + R.unit * (R.headCy - R.headH / 2) * k,
       headBottom = y + R.unit * (R.headCy + R.headH / 2) * k;
-    return { x, y, top: y - h, h, w: R.unit * Math.max(R.bodyW, R.headW) * k * 1.3, headTop, headBottom, headCy: (headTop + headBottom) / 2 };
+    return { x, y, top: y - h, h, w: R.unit * (R.animalW || Math.max(R.bodyW, R.headW)) * k * 1.3, headTop, headBottom, headCy: (headTop + headBottom) / 2 };
   }
 
   function blendPose(a, b, k) {
@@ -1253,15 +1672,15 @@
     const hh = b.headBottom - b.headTop;
     if (shot === K.SHOT.CLOSE || shot === K.SHOT.EXTREME) {
       const k = shot === K.SHOT.EXTREME ? K.FRAME.extreme_close : K.FRAME.close;
-      const h = hh * k;
+      const h = Math.max(hh * k, VH * K.FRAME_FLOOR.close);
       const box = { x0: b.x - b.w / 2, x1: b.x + b.w / 2, top: b.headTop, bottom: b.headBottom };
       return { cx: b.x, cy: b.headTop - hh * K.HEADROOM + h / 2, h, need: box };
     }
     const group = subj.filter((a) => a === focus || Math.abs(a.b.x - b.x) < b.w * K.GROUP_SPAN);
     const box = subjectBox(shot === K.SHOT.OVER ? subj.slice(0, 2) : group);
     const f = fit(box, 0.12, 0.04);
-    f.h = Math.max(f.h, b.h * K.FRAME.medium);
-    f.cy = box.bottom + VH * 0.0 - f.h * 0.46;
+    f.h = Math.max(f.h, b.h * K.FRAME.medium, VH * K.FRAME_FLOOR.medium);
+    f.cy = box.bottom - f.h * K.FRAME_FOOT;
     return f;
   }
 
@@ -1533,17 +1952,30 @@
 
   function boardEntry(board, text) {
     if (!board || !board.sentences) return null;
+    const whole = board.sentences[boardKey(text)];
+    if (whole) return whole;
     const parts = String(text || "").match(K.BOARD.SENT_RE) || [text];
-    let best = null;
+    const frags = [];
     for (const p of parts) {
-      const e = board.sentences[boardKey(p)];
-      if (e && (!best || (best.mode === K.BOARD.PEOPLE && e.mode !== K.BOARD.PEOPLE))) best = e;
+      const bits = String(p).split(K.BOARD.FRAG_RE).filter((x) => boardKey(x));
+      frags.push(p);
+      for (let i = 0; i < bits.length; i++) {
+        frags.push(bits[i]);
+        if (i + 1 < bits.length) frags.push(bits[i] + " " + bits[i + 1]);
+      }
     }
-    return best || board.sentences[boardKey(text)] || null;
+    let best = null, speech = null;
+    for (const f of frags) {
+      const e = board.sentences[boardKey(f)];
+      if (!e) continue;
+      if (e.mode === K.BOARD.PEOPLE && (e.actors || []).some((a) => K.RE.SPEAKING.test(a.pose || ""))) speech = speech || e;
+      if (!best || (best.mode === K.BOARD.PEOPLE && e.mode !== K.BOARD.PEOPLE)) best = e;
+    }
+    return speech || best || null;
   }
 
   function boardVignette(e, text) {
-    if (e.mode === K.BOARD.PEOPLE) return null;
+    if (e.mode === K.BOARD.PEOPLE || e.mode === K.BOARD.PLACE) return null;
     const objs = (e.objects || []).map((o) => o.key);
     const o0 = (e.objects || [])[0] || {};
     const low = String(text || "").toLowerCase();
@@ -1553,7 +1985,7 @@
     if (has(K.BOARD.UP)) mods.down = false;
     if (has(K.BOARD.DOWN)) mods.up = false;
     if (has(K.BOARD.LIT)) mods.out = false;
-    return { kind: e.mode === K.BOARD.CUTAWAY ? K.BOARD.CUTAWAY : e.kind, objs, color: o0.color || null, count: o0.count || 1, mods, casts: [e.subject, e.target].filter(Boolean), solo: !e.target, self: false, items: e.items || [], light: e.light || null, board: true, text: low };
+    return { actors: e.mode === K.BOARD.CUTAWAY ? e.actors || [] : [], kind: e.mode === K.BOARD.CUTAWAY ? K.BOARD.CUTAWAY : e.kind, objs, color: o0.color || null, count: o0.count || 1, mods, casts: [e.subject, e.target].filter(Boolean), solo: !e.target, self: false, items: e.items || [], light: e.light || null, board: true, text: low };
   }
 
   function propAsset(key) {
@@ -1579,12 +2011,24 @@
   function drawCutaway(g, ctx, S, vg, k, line, lw) {
     const W = ctx.W, H = ctx.H;
     const items = vg.items && vg.items.length ? vg.items : vg.objs.map((key, i, arr) => ({ key, x: (i + 1) / (arr.length + 1), y: 0.8, scale: 0.45 }));
-    vigBackdrop(g, S, W, H, K.BOARD.CUT_FLOOR, vg.light);
+    let floorK = 0;
+    if (S.vset) {
+      const pl = setPlate(g, S, S.vset, W, H, { zoom: K.BOARD.CUT_ZOOM * (1 + 0.025 * k), fy: K.BOARD.CUT_FY, dim: K.BOARD.CUT_DIM });
+      floorK = (pl.y + num(S.vset.meta.floorY, K.BOARD.SET_H * 0.8) * pl.sc) / H;
+    } else vigBackdrop(g, S, W, H, K.BOARD.CUT_FLOOR, vg.light);
+    const acts = (vg.actors || []).filter((a) => S.rigs[a.cast] || (vigEnsureRig(S, a.cast), S.rigs[a.cast]));
+    acts.forEach((a, i) => {
+      const R = S.rigs[a.cast];
+      const x = W * (items.length ? 0.28 + i * 0.16 : 0.5 + (i - (acts.length - 1) / 2) * 0.22);
+      const h = H * K.BOARD.CUT_FIGURE * (R.info.animal ? clamp(num(R.info.height, 0.7) / 1.1, 0.35, 1.2) : 1);
+      vigRig(g, S, a.cast, x, H * K.BOARD.CUT_FLOOR_Y, h, rigPose(R, a.pose || K.ACTION.IDLE, ctx.abs + R.seed * 5, 0, false, 0), x < W / 2 ? 1 : -1, lw, false);
+    });
     items.forEach((it, i) => {
       const enter = ease(clamp(k * 4 - i * 0.25, 0, 1));
       if (enter <= 0) return;
       const sway = Math.sin(ctx.abs * 1.3 + i * 1.7) * K.BOARD.SWAY;
-      const x = it.x * W, y = it.y * H, h = it.scale * H * (0.92 + 0.08 * enter);
+      const iy = floorK && !K.BOARD.HANG_RE.test(it.key) ? Math.max(it.y, floorK + K.BOARD.FLOOR_PAD) : it.y;
+      const x = it.x * W, y = iy * H, h = it.scale * H * (0.92 + 0.08 * enter);
       g.globalAlpha = enter;
       if (!drawPropImage(g, it.key, x, y, h, sway, enter) && codeAlias(it.key)) vigObject(g, it.key, x, y - h / 2, h, { color: vg.color, rot: sway }, line, lw, ctx.abs);
       g.globalAlpha = 1;
@@ -1645,7 +2089,7 @@
     g.drawImage(set.img, fit.ox, fit.oy, sw, sh);
     if (S.grade && K.BOARD.DARK_RE.test(S.timeKey) !== K.BOARD.DARK_RE.test(String(set.meta.time || K.BOARD.LIGHT_DAY))) {
       g.globalCompositeOperation = K.BOARD.MULTIPLY;
-      g.fillStyle = S.grade;
+      g.fillStyle = K.BOARD.NIGHT_GRADE;
       g.fillRect(fit.ox, fit.oy, sw, sh);
       g.globalCompositeOperation = K.SOURCE_OVER;
     }
@@ -1665,9 +2109,11 @@
     g.globalCompositeOperation = K.SOURCE_OVER;
   }
 
-  function setOf(S) {
-    const b = ASSETS.board, k = S.P.location;
-    return b && b.sets && b.sets[k] && ASSETS.sets[k] && ASSETS.sets[k].meta.svg === b.sets[k].svg ? ASSETS.sets[k] : null;
+  function setOf(S, sent) {
+    const b = ASSETS.board;
+    const ok = (k) => !!(k && b && b.sets && b.sets[k] && ASSETS.sets[k] && ASSETS.sets[k].meta.svg === b.sets[k].svg);
+    const k = sent && ok(sent.place) ? sent.place : S.P.location;
+    return ok(k) ? ASSETS.sets[k] : null;
   }
 
   function buildSentences(S, ctx) {
@@ -1717,13 +2163,19 @@
       }
       const sp = best > (b - a) * 0.25 ? speaker : null;
       const e = boardEntry(boardOf(ctx.spec), m.text);
-      let vg, act = null, acts = null, cam = null, light = null;
-      if (e) {
+      let vg, act = null, acts = null, cam = null, light = null, placeOnly = false;
+      if (e && e.mode === K.BOARD.PLACE) {
+        vg = null;
+        acts = {};
+        placeOnly = true;
+        light = e.light || null;
+        cam = { shot: K.SHOT.WIDE, move: K.BOARD.PLACE_MOVES[i % K.BOARD.PLACE_MOVES.length] };
+      } else if (e) {
         vg = boardVignette(e, m.text);
         light = e.light || null;
         if (!vg) {
           acts = {};
-          for (const ac of e.actors || []) acts[ac.cast] = { action: ac.pose, expression: ac.expression, face: ac.face };
+          for (const ac of e.actors || []) acts[ac.cast] = { action: ac.pose, expression: ac.expression, face: ac.face, wear: ac.wear || null, hold: ac.hold || null, small: !!ac.small };
           if (sp && S.rigs[sp]) {
             for (const c of Object.keys(acts)) if (c !== sp && acts[c].action === K.ACTION.TALK) acts[c].action = K.ACTION.IDLE;
             const listener = Object.keys(acts).find((c) => c !== sp);
@@ -1738,7 +2190,7 @@
         if (act) act.cast = act.cast === K.SELF_KEY ? S.narrator : act.cast || sp;
       }
       if (vg && !vg.color && vg.objs[0] && mem[vg.objs[0]]) vg.color = mem[vg.objs[0]](m.start);
-      return Object.assign(m, { i, speaker: sp, vg, act, acts, cam, light });
+      return Object.assign(m, { i, speaker: sp, vg, act, acts, cam, light, placeOnly, place: (e && e.place) || null, items: e && e.mode === K.BOARD.PEOPLE ? e.items || [] : [] });
     });
   }
 
@@ -1774,7 +2226,40 @@
     return S.sents.find((m) => abs >= m.start && abs < m.end) || S.sents[S.sents.length - 1] || null;
   }
 
+  function setPlate(g, S, a, W, H, o) {
+    const zoom = o.zoom || 1;
+    const sc = Math.max(W / K.BOARD.SET_W, H / K.BOARD.SET_H) * zoom;
+    const w = K.BOARD.SET_W * sc, h = K.BOARD.SET_H * sc;
+    const x = (W - w) * (o.fx == null ? 0.5 : o.fx), y = (H - h) * (o.fy == null ? 0.5 : o.fy);
+    g.save();
+    if (o.blur && K.BOARD.FILTER in g) g.filter = o.blur;
+    g.drawImage(a.img, x, y, w, h);
+    if (a.fg && !o.noFg) g.drawImage(a.fg, x, y, w, h);
+    if (o.blur && K.BOARD.FILTER in g) g.filter = K.BOARD.FILTER_NONE;
+    if (S.grade && K.BOARD.DARK_RE.test(S.timeKey) !== K.BOARD.DARK_RE.test(String(a.meta.time || K.BOARD.LIGHT_DAY))) {
+      g.globalCompositeOperation = K.BOARD.MULTIPLY;
+      g.fillStyle = K.BOARD.NIGHT_GRADE;
+      g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = K.SOURCE_OVER;
+    }
+    if (o.dim) {
+      g.fillStyle = o.dim;
+      g.fillRect(0, 0, W, H);
+    }
+    g.restore();
+    return { x, y, sc };
+  }
+
   function vigBackdrop(g, S, W, H, floor, light) {
+    if (S.vset) {
+      setPlate(g, S, S.vset, W, H, { zoom: K.BOARD.VIG_ZOOM, fy: K.BOARD.VIG_FY, blur: K.BOARD.VIG_BLUR, dim: K.BOARD.VIG_DIM, noFg: true });
+      if (floor) {
+        const fy = H * floor;
+        g.fillStyle = rgba(scaleHex(S.loc.ground.color, K.BOARD.VIG_FLOOR_SHADE), K.BOARD.VIG_FLOOR_ALPHA);
+        g.fillRect(0, fy, W, H - fy);
+      }
+      return;
+    }
     const key = light === K.BOARD.LIGHT_NIGHT ? "night" : light === K.BOARD.LIGHT_DAY || light === K.BOARD.LIGHT_DAWN ? "day" : light === K.BOARD.LIGHT_LAMP ? "interior" : S.night ? "night" : S.stage.interior ? "interior" : "day";
     const c = K.VIG.BG[key];
     const gr = g.createLinearGradient(0, 0, 0, H);
@@ -2048,6 +2533,7 @@
 
   function drawVignette(g, ctx, S, sent) {
     const vg = sent.vg;
+    S.vset = setOf(S, sent);
     vigEnsureRig(S, S.narrator);
     for (const c of vg.casts) vigEnsureRig(S, c);
     const W = ctx.W, H = ctx.H, u = H / 720;
@@ -2446,14 +2932,14 @@
       if (sent.speaker) cam0 = Object.assign({}, baseCam, { shot: K.VIG.SPEAKER_SHOTS[sent.i % K.VIG.SPEAKER_SHOTS.length], focus: sent.speaker });
       else if (sent.i) cam0 = Object.assign({}, baseCam, { shot: K.VIG.CYCLE[sent.i % K.VIG.CYCLE.length] });
     }
-    if (sent && sent.cam && sent.cam.shot) cam0 = Object.assign({}, baseCam, { shot: sent.cam.shot, focus: sent.cam.focus || baseCam.focus });
-    const set = setOf(S);
+    if (sent && sent.cam && sent.cam.shot) cam0 = Object.assign({}, baseCam, { shot: sent.cam.shot, focus: sent.cam.focus || baseCam.focus }, sent.cam.move ? { move: sent.cam.move } : {});
+    const set = setOf(S, sent);
     const camU = sent ? clamp((ctx.abs - sent.start) / Math.max(0.3, sent.end - sent.start), 0, 1) : ctx.u;
     const marks = S.L.marks || {};
     const speech = P.speech || {};
     const actors = [];
     const acts = sent && sent.acts;
-    let roster = (P.actors || []).filter((a) => a && S.rigs[a.cast]);
+    let roster = sent && sent.placeOnly ? [] : (P.actors || []).filter((a) => a && S.rigs[a.cast]);
     if (acts && Object.keys(acts).length) roster = roster.filter((a) => acts[a.cast]);
     if (acts) {
       const present = roster.map((a) => a.cast);
@@ -2474,7 +2960,7 @@
       const act = sent && sent.act;
       if (acts) {
         const own = acts[a0.cast];
-        a = own ? Object.assign({}, a0, { action: own.action, then: null, moveTo: null, expression: own.expression || a0.expression, hold: K.BOARD.HOLD_POSES.indexOf(own.action) >= 0 ? a0.hold : null, boardFace: own.face }) : Object.assign({}, a0, { action: K.ACTION.IDLE, then: null, hold: null });
+        a = own ? Object.assign({}, a0, { action: own.action, then: null, moveTo: null, expression: own.expression || a0.expression, hold: K.BOARD.HOLD_POSES.indexOf(own.action) >= 0 ? a0.hold : null, boardFace: own.face, wear: own.wear, holdKey: own.hold, small: own.small }) : Object.assign({}, a0, { action: K.ACTION.IDLE, then: null, hold: null });
       } else if (act && act.cast === a0.cast) a = Object.assign({}, a0, act.action ? { action: act.action, then: null, hold: act.action === K.ACTION.HOLD ? a0.hold : null } : {}, act.expression ? { expression: act.expression } : {});
       else if (act && act.action && K.STRONG_ACTS.indexOf(aliasAction(a0.action)) >= 0 && !(sent.speaker === a0.cast)) a = Object.assign({}, a0, { action: K.ACTION.IDLE, then: null });
       const s = actorState(a, marks, beatDur, stT);
@@ -2492,6 +2978,15 @@
       actors.push({ a, R, s, z: s.z, x: pos[0], y: pos[1], k: k * R.unit, talk, env, speaking: talk > 0, b, cast: a.cast, held: heldItems(a, S.L.materials || {}) });
     }
     const lieBox = (A) => {
+      if (A.a.small) {
+        const k = K.SMALL_SCALE, y = A.y;
+        A.b = Object.assign({}, A.b, { h: A.b.h * k, w: A.b.w * k, top: y - (y - A.b.top) * k, headTop: y - (y - A.b.headTop) * k, headBottom: y - (y - A.b.headBottom) * k });
+      }
+      if (A.R.info.animal && K.ANIMAL.UPRIGHT.indexOf(A.s.action) >= 0) {
+        const hh = A.b.headBottom - A.b.headTop, top = A.y - A.b.h * K.UPRIGHT_BOX;
+        A.b = Object.assign({}, A.b, { top, h: A.b.h * K.UPRIGHT_BOX, headTop: top, headBottom: top + hh, w: A.b.w * 0.6 });
+        return;
+      }
       if (!K.LIE.ACTIONS.test(A.s.action || "")) return;
       A.lying = true;
       A.b = Object.assign({}, A.b, { w: A.b.h * K.LIE.BOX_W, top: A.y - A.b.h * K.LIE.BOX_H, h: A.b.h * K.LIE.BOX_H, headTop: A.y - A.b.h * K.LIE.BOX_H, headBottom: A.y });
@@ -2539,6 +3034,7 @@
       }
     }
     if (actors.some((A) => A.lying) && (cam0.shot === K.SHOT.CLOSE || cam0.shot === K.SHOT.EXTREME)) cam0 = Object.assign({}, cam0, { shot: K.SHOT.MEDIUM, focus: null });
+    if (actors.length && (!cam0.shot || cam0.shot === K.SHOT.WIDE) && Math.max.apply(null, actors.map((A) => A.b.h)) < S.VH * K.SMALL_SUBJECT) cam0 = Object.assign({}, cam0, { shot: K.SHOT.MEDIUM, focus: actors.slice().sort((p, q) => q.b.h - p.b.h)[0].cast });
     const f0 = frameFor(S, cam0, actors);
     const f = finalFrame(S, f0, cam0, camU, ctx.abs);
     if (set) {
@@ -2626,6 +3122,12 @@
     const front = [];
     let ai = 0;
     if (set) {
+      const sfit = setFit(S, set);
+      for (const it of (sent && sent.items) || []) {
+        const ih = it.scale * S.VH * K.BOARD.ITEM_H;
+        const ix = S.VW * it.x, iy = sfit.oy + set.meta.floorY * sfit.sc + (clamp(it.y, K.BOARD.ITEM_Y0, 1) - K.BOARD.ITEM_Y0) * S.VH * K.BOARD.ITEM_DEPTH;
+        if (!drawPropImage(g, it.key, ix, iy, ih, 0, 1) && codeAlias(it.key)) vigObject(g, it.key, ix, iy - ih / 2, ih, {}, S.outline, lw, ctx.abs);
+      }
       for (const A of order) drawActor(A);
       if (set.fg) {
         const fit = setFit(S, set);
@@ -2675,7 +3177,7 @@
       g.save();
       g.translate(A.x, A.y);
       g.scale(A.k, A.k);
-      if (A.lying && !A.R.ghost) {
+      if (A.lying && !A.R.ghost && !A.R.info.animal) {
         drawLying(g, A, pose, lw / A.k, S, tt);
         g.restore();
         return;
@@ -2689,7 +3191,11 @@
         g.fillStyle = "rgba(0,0,0,0.25)";
         g.fill();
       }
-      drawRig(g, A.R, pose, A.s.facing, lw / A.k, S.grade ? K.ACTOR_TINT : 1);
+      if (A.a.small) g.scale(K.SMALL_SCALE, K.SMALL_SCALE);
+      if (A.R.info.animal && (K.RE.FEAR.test(ex) || K.RE.ANGRY.test(ex))) pose.mouth = Math.max(pose.mouth || 0, K.ANIMAL.OPEN_MOUTH);
+      const R = A.a.wear ? wornRig(A.R, A.a.wear) : A.R;
+      drawRig(g, R, pose, A.s.facing, lw / A.k, S.grade ? K.ACTOR_TINT : 1);
+      if (A.a.holdKey && R.anchor) drawHeld(g, R, A.a.holdKey, lw / A.k, ctx.abs);
       g.restore();
       g.globalAlpha = 1;
     }

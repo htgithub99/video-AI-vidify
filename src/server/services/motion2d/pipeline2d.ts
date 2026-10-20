@@ -16,6 +16,7 @@ import { board2dStyleKey, buildBoard2d, type Board2dOptions } from "./board2d.js
 import { buildCast2d } from "./cast2d.js";
 import { board2dSheet } from "./sheet2d.js";
 import { directSound2d } from "./sound2d.js";
+import { library2dKey, save2dLibrary } from "./library2d.js";
 
 const missingLines = (script: MotionStoryScript): number => {
   const sentences = script.gen?.board2d?.sentences || {};
@@ -37,15 +38,19 @@ export const buildScenes2d = async (script: MotionStoryScript, analysis: MotionS
   analysis = withBeatPlaces(analysis, sceneBeats, o);
   const out: MotionStoryScript = { ...script, gen };
   const emit = () => o.partial?.({ ...out, gen: _.cloneDeep(gen) });
-  const bo: Board2dOptions = { exec: o.exec, mainExec: o.mainExec || o.exec, signal: o.signal, log: o.log, ai: o.ai, allPlaces: true, places: o.onlyLocations?.length ? o.onlyLocations : undefined, redraw: !!o.onlyLocations?.length };
+  const libKey = library2dKey(gen, analysis);
+  const bo: Board2dOptions = { exec: o.exec, mainExec: o.mainExec || o.exec, signal: o.signal, log: o.log, ai: o.ai, allPlaces: true, places: o.onlyLocations?.length ? o.onlyLocations : undefined, redraw: !!o.onlyLocations?.length, library: libKey ? { key: libKey, story: analysis.title || MR.MOTION_TEXT_EMPTY } : null };
   const styleKey = board2dStyleKey(gen);
   progress(0.03, C.STAGE_CAST);
   const cast = await buildCast2d(analysis, gen, styleKey, bo);
   emit();
+  const fromLib = { sets: [] as string[], props: [] as string[] };
   for (let round = 0; round <= C.GATE_TRIES; round++) {
     if (round) o.log(C.LOG_GATE_RETRY(round));
     progress(0.1 + 0.1 * round, B.STAGE);
-    await buildBoard2d(out, analysis, gen, MR.MOTION_TEXT_SCENE, { ...bo, ...(round ? { places: [], redraw: false } : {}), progress: (p) => progress(0.1 + 0.6 * p, B.STAGE) });
+    const used = await buildBoard2d(out, analysis, gen, MR.MOTION_TEXT_SCENE, { ...bo, ...(round ? { places: [], redraw: false } : {}), progress: (p) => progress(0.1 + 0.6 * p, B.STAGE) });
+    fromLib.sets.push(...used.sets);
+    fromLib.props.push(...used.props);
     if (gen.board2d) gen.board2d.cast = cast;
     emit();
     if (!missingLines(out) || o.signal?.aborted) break;
@@ -57,14 +62,18 @@ export const buildScenes2d = async (script: MotionStoryScript, analysis: MotionS
   emit();
   await releaseMotionAiSession(o.log).catch(_.noop);
   const board = gen.board2d!;
-  const places = _.uniq(_.compact(_.map(sceneBeats, MR.MOTION_TEXT_PLACE)));
-  board.report = { sentences: _.size(board.sentences), fallback: missingLines(out), sets: _.size(_.pick(board.sets, places)), codeSets: _.keys(_.pick(board.codeSets || {}, places)), cast: _.size(cast) };
+  board.report = { sentences: _.size(board.sentences), fallback: missingLines(out), sets: _.size(board.sets), codeSets: _.keys(board.codeSets || {}), cast: _.size(cast) };
   o.log(C.LOG_GATE(board.report.sentences, board.report.fallback, board.report.sets, board.report.codeSets.length, board.report.cast));
   progress(0.8, C.STAGE_SHEET);
   try {
     const { spec } = compileStorySpec(out, analysis, { aspect: o.aspect || MR.MOTION_TEXT_16_9 });
     board.sheet = _.map(await board2dSheet(spec), (it) => ({ t: it.t, text: it.text, file: it.file }));
     o.log(C.LOG_SHEET(board.sheet.length));
+    if (libKey)
+      await save2dLibrary(spec, analysis, gen, { sets: _.difference(_.keys(board.sets), [..._.keys(board.codeSets || {}), ...fromLib.sets]), props: _.difference(board.props, fromLib.props) }, libKey, o.log).catch((e: any) => {
+        if (o.signal?.aborted) throw e;
+        o.log(C.LIB.LOG_SAVE_FAIL(String(e?.message || e)));
+      });
   } catch (e: any) {
     if (o.signal?.aborted) throw e;
     o.log(C.LOG_SHEET_FAIL(String(e?.message || e)));

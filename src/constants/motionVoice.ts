@@ -84,12 +84,12 @@ export const MOTION_VOICE = {
   SENIOR_TAG: /ong lao|ba lao|ba cu|ong cu|cao tuoi|nguoi gia|elderly|\bold\b|grandpa|grandma/,
   CHILD_TAG: /tre em|giong be|thieu nhi|\bchild|\bkid/,
   GENDER_UNAVAILABLE: "Chưa có giọng VieNeu phù hợp với giới tính nhân vật trong thư viện.",
-  EMOTIONS: ["neutral", "warm", "serious", "tense", "surprised", "sad", "excited"] as const,
+  EMOTIONS: ["neutral", "warm", "serious", "tense", "surprised", "sad", "excited", "scared", "angry"] as const,
   TAGS: /\[(?:cười|thở dài|hắng giọng)\]/gi,
 } as const;
-export const MOTION_VOICE_PROMPT = `Direct speech ONLY for the provided existing story. Split each beat.narration into ordered utterances, preserve its exact spoken words in order, no additions or omissions. Narration belongs to narrator; only direct speech with a clear source belongs to a cast key. Do not turn descriptions into invented dialogue. Distinguish narration, dialogue, thought, offscreen. Keep one voice per character. Return JSON {beats:[{id,utterances:[{id,speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text:"unchanged source words",emotion:"neutral|warm|serious|tense|surprised|sad|excited",intensity:0..1,speed:0.85..1.15,pauseBefore:seconds,pauseAfter:seconds,emphasis:["words in this text"]}]}]}. Speech must flow like one continuous telling: pauses normally 0.05..0.3 seconds, up to 0.6 only for a motivated dramatic beat; do not split a sentence into separate utterances unless the speaker changes. emphasis only marks words to stress, it never adds a pause. Describe expression without adding bracket tags to text. Each input beat may give its sceneMood; set each line's emotion and intensity from that beat's situation and the speaker's state, keep neutral when unclear, and keep the narrator restrained. Unknown speaker remains narrator. Do not assume every video needs dialogue. Factual quotations must keep their actual attribution. No QA score or redraw request.`;
-export const MOTION_VOICE_MOOD_RULE = `Each beat may also carry "sceneMood":{"mood":"neutral|warm|serious|tense|surprised|sad|excited","intensity":0..1} – the mood of what is happening in that beat (not of the whole place or video; the same room can be calm, then tense, then relieved). Take it from the source events, the user's directions and the speaker's situation; use the Video DNA only as background. A speaker's own utterance emotion may differ from the scene mood. When the source does not show a clear feeling use neutral or a low intensity – never invent fear because a scene is dark or excitement because the music is cheerful. The narrator keeps a restrained storytelling delivery that suits the genre and does not act out the characters. Never add bracket tags, sound words or extra words to spoken text to show emotion.`;
-export const MOTION_STORY_VOICE_PROMPT = `Include optional utterances for each beat: [{speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text,emotion:"neutral|warm|serious|tense|surprised|sad|excited",intensity:0..1,speed:0.85..1.15,pauseBefore:0..0.3,pauseAfter:0..0.6,emphasis:["words in text"]}]. ${MOTION_VOICE_MOOD_RULE} The ordered utterance texts must contain exactly the spoken words of beat.narration, including narration and attribution, with no extra words or missing words. For films keep camera, stage instructions and speaker labels in action/scenePlan, never in spoken narration. For any narrative told as a story (folk tales, horror, drama, children's stories, memoirs, recollections and true stories told as stories – not lectures, news or explainers), the characters must speak in their own voices like an animated story: in at least a third of the beats where a speaking character is present, include one or two short lines of direct speech (a call, a question, a reaction, a promise) inside beat.narration, assign each line to the speaker's exact cast key with role dialogue, and keep the narrator for the rest. For true stories and memoirs, take these lines from what the source reports the characters saying (a transcript often has no quotation marks) and do not invent new facts; for fiction you may write new short lines. Whenever beat.narration contains direct speech, that speech must be its own utterance with the speaker's cast key, never left inside a narrator utterance. Animals speak only if the story treats them as speaking; otherwise their sounds are sound effects. The added lines count toward the beat length, so trim narration to keep the timing. Lectures, news, explainers and documentaries must preserve attribution and may only use dialogue supported by source quotations; never invent dialogue. Do not add acting tags inside spoken text. Narrator is a separate role, not a character visible in every shot. Expression is advisory and must not trigger repeated QA.`;
+export const MOTION_VOICE_PROMPT = `Direct speech ONLY for the provided existing story. Split each beat.narration into ordered utterances, preserve its exact spoken words in order, no additions or omissions. Narration belongs to narrator; only direct speech with a clear source belongs to a cast key. Do not turn descriptions into invented dialogue. Distinguish narration, dialogue, thought, offscreen. Keep one voice per character. Return JSON {beats:[{id,utterances:[{id,speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text:"unchanged source words",emotion:"neutral|warm|serious|tense|surprised|sad|excited|scared|angry",intensity:0..1,speed:0.85..1.15,pauseBefore:seconds,pauseAfter:seconds,emphasis:["words in this text"]}]}]}. Speech must flow like one continuous telling: pauses normally 0.05..0.3 seconds, up to 0.6 only for a motivated dramatic beat; do not split a sentence into separate utterances unless the speaker changes. emphasis only marks words to stress, it never adds a pause. Describe expression without adding bracket tags to text. Each input beat may give its sceneMood; set each line's emotion and intensity from that beat's situation and the speaker's state, keep neutral when unclear, and keep the narrator restrained. Unknown speaker remains narrator. Do not assume every video needs dialogue. Factual quotations must keep their actual attribution. No QA score or redraw request.`;
+export const MOTION_VOICE_MOOD_RULE = `Each beat may also carry "sceneMood":{"mood":"neutral|warm|serious|tense|surprised|sad|excited|scared|angry","intensity":0..1} – the mood of what is happening in that beat (not of the whole place or video; the same room can be calm, then tense, then relieved). Take it from the source events, the user's directions and the speaker's situation; use the Video DNA only as background. A speaker's own utterance emotion may differ from the scene mood. When the source does not show a clear feeling use neutral or a low intensity – never invent fear because a scene is dark or excitement because the music is cheerful. A character's direct speech, however, must carry that character's feeling in this exact moment, judged from the words and the situation: a cry or plea in danger is scared (0.7-1), scolding or shouting at someone is angry, mourning or regret is sad, a joyful call or reunion is excited, a hushed warning is tense; never leave a clearly emotional line neutral. The narrator keeps a restrained storytelling delivery that suits the genre and does not act out the characters. Never add bracket tags, sound words or extra words to spoken text to show emotion.`;
+export const MOTION_STORY_VOICE_PROMPT = `Include optional utterances for each beat: [{speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text,emotion:"neutral|warm|serious|tense|surprised|sad|excited|scared|angry",intensity:0..1,speed:0.85..1.15,pauseBefore:0..0.3,pauseAfter:0..0.6,emphasis:["words in text"]}]. ${MOTION_VOICE_MOOD_RULE} The ordered utterance texts must contain exactly the spoken words of beat.narration, including narration and attribution, with no extra words or missing words. For films keep camera, stage instructions and speaker labels in action/scenePlan, never in spoken narration. For any narrative told as a story (folk tales, horror, drama, children's stories, memoirs, recollections and true stories told as stories – not lectures, news or explainers), the characters must speak in their own voices like an animated story: in at least a third of the beats where a speaking character is present, include one or two short lines of direct speech (a call, a question, a reaction, a promise) inside beat.narration, assign each line to the speaker's exact cast key with role dialogue, and keep the narrator for the rest. For true stories and memoirs, take these lines from what the source reports the characters saying (a transcript often has no quotation marks) and do not invent new facts; for fiction you may write new short lines. Whenever beat.narration contains direct speech, that speech must be its own utterance with the speaker's cast key, never left inside a narrator utterance. Animals speak only if the story treats them as speaking; otherwise their sounds are sound effects. The added lines count toward the beat length, so trim narration to keep the timing. Lectures, news, explainers and documentaries must preserve attribution and may only use dialogue supported by source quotations; never invent dialogue. Do not add acting tags inside spoken text. Narrator is a separate role, not a character visible in every shot. Expression is advisory and must not trigger repeated QA.`;
 export const MOTION_VOICE_TEXT = {
   vi: { preparing: "Đang tự phân vai, tạo lời thoại và phối âm thanh theo kịch bản", previewError: "Không phát được âm thanh xem trước" },
   en: { preparing: "Automatically casting voices and mixing sound for the script", previewError: "Preview audio could not be played" },
@@ -154,7 +154,7 @@ export const MOTION_VOICE_LIBRARY = {
   NAME_MAX: 60,
   CHANNELS_MAX: 50,
   SAMPLE_SECONDS: "10",
-  SAMPLE_FILTER: "highpass=f=70,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.1,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.1,areverse,loudnorm=I=-18:TP=-2:LRA=11",
+  SAMPLE_FILTER: "highpass=f=70,afftdn=nr=12:nf=-40:tn=1,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.1,areverse,silenceremove=start_periods=1:start_threshold=-45dB:start_silence=0.1,areverse,loudnorm=I=-18:TP=-2:LRA=11",
   ID_PREFIX: "ch-",
   CHANNEL_NOT_FOUND: "Không tìm thấy kênh giọng.",
   CHANNEL_INVALID: "Kênh cần có tên và giọng người kể.",
@@ -500,6 +500,8 @@ export const MOTION_VOICE_DELIVERY = {
     surprised: { temperature: 0.9, silence: 0.12, tempo: 1.04, pause: 0.9, gain: 1.04 },
     sad: { temperature: 0.7, silence: 0.24, tempo: 0.96, pause: 1.25, gain: 0.92 },
     excited: { temperature: 0.92, silence: 0.1, tempo: 1.06, pause: 0.85, gain: 1.05 },
+    scared: { temperature: 0.9, silence: 0.1, tempo: 1.05, pause: 0.8, gain: 0.95 },
+    angry: { temperature: 0.88, silence: 0.1, tempo: 1.04, pause: 0.85, gain: 1.1 },
   } as Record<string, { temperature: number; silence: number; tempo: number; pause: number; gain: number }>,
   NARRATOR_SHARE: 0.5,
   LOG: (counts: Record<string, number>, ai33: number): string =>
@@ -518,6 +520,9 @@ export const MOTION_VOICE_SPEED = {
   AUTO_MIN: 0.82,
   AUTO_MAX: 1.32,
   GAP_FACTOR: 1.12,
+  PACED_GAP_FACTOR: 1.4,
+  PACED_GAP_MAX: 1.55,
+  PACED_AUTO_MAX: 1.4,
   MIN_UNITS: 6,
   RATE_WEIGHT: 0.25,
   RATE_RANGE: [1.5, 9],
@@ -585,7 +590,7 @@ export const MOTION_VOICE_SPEED = {
 } as const;
 
 export const MOTION_VOICE_PACING = {
-  VERSION: 1,
+  VERSION: 2,
   HORROR_RE: /(horror|ghost|kinh dị|truyện ma|tâm linh|ma quỷ|rùng rợn)/iu,
   SENTENCE_RE: /[^.!?…]+(?:\.\.\.|[.!?…])+["”']?|[^.!?…]+$/g,
   WORD_RE: /\s+/,
@@ -598,6 +603,10 @@ export const MOTION_VOICE_PACING = {
   KIND: { FIRST: "FIRST", SAME_SPEAKER: "SAME_SPEAKER", SPEAKER_CHANGE: "SPEAKER_CHANGE", BEAT_END: "BEAT_END" },
   CLAUSE_RE: /(?<=[,;:—–])\s+/,
   MAX_PHRASE_WORDS: 18,
+  PHRASE_MAX_WORDS: 13,
+  PHRASE_MIN_WORDS: 4,
+  CONJ: ["thì", "mà", "rồi", "nhưng", "và", "khi", "lúc", "để", "nên", "vì", "bỗng", "chợt", "liền", "cho đến", "and", "but", "when", "then", "while", "because", "until", "so"] as string[],
+  NARRATION_SILENCE: 0.06,
   HORROR: {
     key: "horror",
     narrationTempo: 1,
@@ -610,4 +619,44 @@ export const MOTION_VOICE_PACING = {
     gaps: { FIRST: [0.2, 0.4], SAME_SPEAKER: [0.5, 0.65], SPEAKER_CHANGE: [0.5, 0.75], BEAT_END: [0.65, 0.85] },
   },
   LOG: (key: string, split: number): string => `Nhịp đọc "${key}": tách ${split} lời kể thành từng vế ngắn, ngắt nghỉ 0,45–0,8 giây như giọng kể truyện ma.`,
+} as const;
+
+export interface MotionVoiceFx { pitch: number; vibrato: number; vibratoHz: number; treble: number; presence: number; lowpass: number; }
+export const MOTION_VOICE_FX = {
+  VERSION: 1,
+  NONE: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: 0, presence: 0, lowpass: 0 } as MotionVoiceFx,
+  MOODS: {
+    warm: { pitch: -0.2, vibrato: 0, vibratoHz: 6, treble: -1, presence: 0, lowpass: 0 },
+    serious: { pitch: -0.5, vibrato: 0, vibratoHz: 6, treble: -1, presence: 1, lowpass: 0 },
+    tense: { pitch: 0.3, vibrato: 0.06, vibratoHz: 6.5, treble: 0, presence: 1.5, lowpass: 0 },
+    surprised: { pitch: 1.2, vibrato: 0, vibratoHz: 6, treble: 1.5, presence: 1.5, lowpass: 0 },
+    sad: { pitch: -0.9, vibrato: 0.05, vibratoHz: 5, treble: -3, presence: -1, lowpass: 6500 },
+    excited: { pitch: 1, vibrato: 0, vibratoHz: 6, treble: 2, presence: 2, lowpass: 0 },
+    scared: { pitch: 0.8, vibrato: 0.2, vibratoHz: 7.5, treble: 0.5, presence: 1, lowpass: 0 },
+    angry: { pitch: -0.3, vibrato: 0, vibratoHz: 6, treble: 1, presence: 4, lowpass: 0 },
+  } as Record<string, MotionVoiceFx>,
+  ROLES: ["dialogue", "thought", "offscreen"] as string[],
+  NARRATOR_SHARE: 0.35,
+  MIN_STRENGTH: 0.15,
+  SAMPLE_RATE: 48000,
+  SEMITONE: Math.pow(2, 1 / 12),
+  ENDINGS: { scared: "...", sad: "...", excited: "!", angry: "!", surprised: "!" } as Record<string, string>,
+  ENDING_STRENGTH: 0.55,
+  END_PUNCT_RE: /[.!?…]+["”']?\s*$/,
+  CLEAN: {
+    TRIM: "silenceremove=start_periods=1:start_threshold=-48dB:start_silence=0.03,areverse,silenceremove=start_periods=1:start_threshold=-48dB:start_silence=0.06,areverse",
+    FILTER: "highpass=f=75,lowpass=f=10000,lowpass=f=10000,afftdn=nr=10:nf=-42:tn=1,deesser=i=0.35,acompressor=threshold=0.1:ratio=2.5:attack=6:release=140:makeup=1.5",
+    TAIL: "alimiter=limit=0.9:attack=3:release=60,afade=t=in:d=0.01,areverse,afade=t=in:d=0.035,areverse",
+  },
+  F: {
+    RESAMPLE: (sr: number): string => `aresample=${sr}`,
+    SETRATE: (sr: number): string => `asetrate=${sr}`,
+    ATEMPO: (v: number): string => `atempo=${v.toFixed(3)}`,
+    VIBRATO: (hz: number, d: number): string => `vibrato=f=${hz}:d=${d.toFixed(3)}`,
+    TREBLE: (g: number): string => `treble=g=${g.toFixed(2)}:f=4000`,
+    PRESENCE: (g: number): string => `equalizer=f=2800:t=q:w=1.2:g=${g.toFixed(2)}`,
+    LOWPASS: (f: number): string => `lowpass=f=${f}`,
+  },
+  NORM: { TARGET_DB: -19, ACTIVE_DB: -42, FRAME: 960, MIN_GAIN: 0.4, MAX_GAIN: 3.5, PEAK: 0.92 },
+  SEP: ",",
 } as const;

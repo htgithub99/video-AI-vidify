@@ -746,10 +746,10 @@
   ME.drawSubtitle = (g, sub, t, o) => {
     const { W, H, unit } = o;
     const portrait = H > W;
-    const size = (portrait ? 36 : 29) * unit;
+    const size = (portrait ? MT.SUB_SIZE_PORTRAIT : MT.SUB_SIZE) * unit;
     const quote = !!(sub.dialogue || sub.speaker);
     const font = (quote ? MT.SUB_ITALIC : MT.EMPTY) + ME.font(quote ? 600 : 500, size, MT.BODY);
-    const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + sub.text + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.8 : 0.62), font).slice(0, 2);
+    const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + sub.text + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.84 : MT.SUB_WRAP), font).slice(0, 2);
     const life = U.clamp((t - sub.start) / 0.2) * U.clamp((sub.end - t) / 0.2);
     const rise = (1 - U.easeOut(U.clamp((t - sub.start) / 0.3))) * size * 0.18;
     const lh = size * 1.36;

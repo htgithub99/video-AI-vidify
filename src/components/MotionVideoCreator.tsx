@@ -333,6 +333,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       [MotionStoryLength.SHORT, text.LENGTH_SHORT],
                       [MotionStoryLength.FIVE, text.LENGTH_5],
                       [MotionStoryLength.TEN, text.LENGTH_10],
+                      [MotionStoryLength.FIFTEEN, text.LENGTH_15],
                       [MotionStoryLength.TWENTY, text.LENGTH_20],
                       [MotionStoryLength.THIRTY, text.LENGTH_30],
                       [MotionStoryLength.FORTY, text.LENGTH_40],
@@ -427,7 +428,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   value={state.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : state.stylePreset || MOTION_STYLE_PRESET_NONE}
                   onChange={(e) => {
                     const chosen = motionStylePreset(e.target.value);
-                    patch(chosen ? { stylePreset: chosen.id, drawingMode: chosen.mode, styleReferences: [], ...(chosen.genre ? { videoGenre: chosen.genre as MotionVideoGenre } : {}) } : { stylePreset: MOTION_STYLE_PRESET_NONE });
+                    patch(chosen ? { stylePreset: chosen.id, drawingMode: chosen.mode, styleReferences: [] } : { stylePreset: MOTION_STYLE_PRESET_NONE });
                   }}
                   disabled={studio.storyBusy}
                   title={presetText.HINT}
