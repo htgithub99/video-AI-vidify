@@ -157,6 +157,33 @@
     HOLD_BOOST: 1.7,
     UNDEF: "undefined",
     FUNCTION: "function",
+    LEGLESS: { SEAT_SINK: 0.6, MAX_LEAN: 0 },
+    COMPOSE: {
+      ALIAS: { close: "bust", over_shoulder: "ots", extreme_close: "bust", aerial: "wide", high: "wide", low: "medium" },
+      SHOTS: {
+        bust: { head: 0.27, top: 0.22, offset: 0.15 },
+        ots: { head: 0.22, top: 0.28, offset: 0.16 },
+        back: { head: 0.3, top: 0.25, offset: 0.2 },
+        medium: { body: 0.52, feet: 0.93, offset: 0.17, span: 0.6 },
+        group: { body: 0.5, feet: 0.94, offset: 0.12, span: 0.75 },
+        wide: { body: 0.28, feet: 0.82, offset: 0.15, span: 0.8 },
+        insert: { body: 0.5, feet: 0.93, offset: 0, span: 0.8 },
+        top: { width: 0.55 },
+      },
+      FORE_SCALE: 1.3,
+      FORE_X: 0.38,
+      FORE_DROP: 0.3,
+      FORE_FILTER: "brightness(0.82) blur(2px)",
+      BACK_SCALE: 0.55,
+      BACK_LIFT: 0.035,
+      BACK_FILTER: "blur(2.5px)",
+      NO_FILTER: "none",
+      GROUP_MAX_W: 0.5,
+      BACK: "back",
+      GROUP: "group",
+    },
+    HORROR: { TENSE_RE: /scar|fear|terr|shock/, FOG: "#c9ced8", FOG_A: 0.06, FOG_BANDS: 2, FOG_Y: 0.62, FOG_STEP: 0.16, FOG_SPEED: 0.012, VIG: "#000000", VIG_IN: 0.35, VIG_OUT: 1.05, VIG_BASE: 0.38, VIG_TENSE: 0.62, PUSH_RE: /scar|fear|terr|shock|surpris/ },
+    APPARITION: { COLOR: "#08070b", ALPHA: 0.62, BLUR: "blur(2px)", H: 0.55, FAR_H: 0.22, WINDOW_Y: 0.32, PEEK_X: 0.04, GLIDE: 0.3 },
     INFO_DEFAULT: { skin: "#eef0f2", top: "#5a6068", bottom: null, shoes: null, hair: null, hairKind: null, beard: null, hat: null, hatKind: null, glasses: false, scarf: null, skirt: false, buttons: false, eye: "#141318", legs: false, arms: true, animal: false, brows: false, height: 1.6, template: false },
     BG: { DUR: 6, ZOOM0: 1.03, ZOOM1: 0.05, NIGHT_FILL: "rgba(18,24,40,0.28)" },
     BOARD: {
@@ -184,8 +211,25 @@
       SET_SPREAD: 0.8,
       SET_DEPTH: 0.03,
       INTERACT: ["give", "hug", "support", "reach"],
+      INTERACT_AUTO: ["give", "hug", "support", "reach"],
+      TRAVEL_POSES: ["walk", "run", "walk_upright"],
+      TRAVEL: 0.45,
+      WALK_SPEED: 0.05,
+      RUN_SPEED: 0.12,
+      ITEM_ASPECT: 1,
+      PERSON_M: 1.6,
+      ITEM_MIN: 0.03,
+      ITEM_MAX: 0.9,
+      EFFECT_TOP: 0.9,
+      EFFECT_SIZE: 2.2,
+      EXTRA_RE: /^(extra|villager|neighbo|passer|crowd)/,
+      EXTRA_TOPS: ["#6b5b4b", "#4f5d6b", "#7a6a55", "#5d6b4f", "#6b4f5d"],
+      EXTRA_HEIGHT: 1.6,
       FOOT_MAX: 0.9,
+      FOOT_INTO: 0.3,
       INTERACT_GAP: 0.8,
+      INTERACT_REACH: 1.05,
+      HUG: "hug",
       HOLD_POSES: ["hold", "give", "read"],
       LIGHT_NIGHT: "night",
       LIGHT_DAY: "day",
@@ -194,6 +238,7 @@
       LEFT: "left",
       RIGHT: "right",
       FRONT: "front",
+      DIRS: ["left", "right", "front", "back"],
       BACK: "back",
       MULTIPLY: "multiply",
       DARK_RE: /night|dark|midnight/,
@@ -209,11 +254,15 @@
       VIG_FLOOR_ALPHA: 0.72,
       CUT_DIM: "rgba(12,14,20,0.1)",
       ITEM_H: 1.0,
+      COUNT: { MAX: 12, ROW_MAX: 4, SPAN: 0.88, GAP_MAX: 0.24, WIDTH_RATIO: 1.0, ROW_DY: 0.14, BACK_SCALE: 0.85 },
       ITEM_Y0: 0.75,
       ITEM_DEPTH: 0.12,
       CUT_ZOOM: 1.08,
       CUT_FY: 0.85,
       CUT_FIGURE: 0.5,
+      CUT_SAFE_Y: 0.84,
+      LIGHT_R: 0.22,
+      LIGHT_A: 0.3,
       HANG_RE: /(lamp|lantern|bell|sign|picture|portrait|photo|clock|hook|rope|bird|bat|moon|star|cloud|smoke|ghost|spirit|flame|fire|curtain|banner|talisman)/,
       FLOOR_PAD: 0.03,
       CUT_FLOOR_Y: 0.86,
@@ -221,7 +270,10 @@
     },
     ARM_CROSS: 12,
     WEAR: {
-      HAT_RE: /(hat|cap|helmet|turban|non|conical|headscarf|khan)/,
+      HAT_RE: /(hat|cap|helmet|turban|non|conical|headscarf|khan|headband|mourning)/,
+      BAND_RE: /(headband|mourning|khan_tang)/,
+      BAND: "band",
+      BAND_COLOR: "#f4f2ea",
       CONE_RE: /(cone|conical|non|straw|leaf)/,
       HELMET_RE: /helmet/,
       TURBAN_RE: /(turban|headscarf|khan)/,
@@ -232,11 +284,25 @@
       CONE_COLOR: "#d9c48f",
       CAP_COLOR: "#4a3a2c",
       HELD_M: 0.5,
-      HELD_MIN: 0.2,
+      HELD_MIN: 0.08,
+      TOOL_LONG_M: 0.5,
+      GRIP_Y: 0.6,
       HELD_MAX: 0.9,
     },
     SEAT: { ACTIONS: /^(sit|sit_talk)$/, TOP: 0.34, W: 2.1, PLANK: 0.1 },
-    LIE: { ACTIONS: /^(lie|sleep|fall)$/, BOX_W: 1.3, BOX_H: 0.42, BED_W: 0.66, BED_H: 0.14, BLANKET_H: 0.2, PILLOW: 0.16 },
+    LIE: { ACTIONS: /^(lie|sleep|fall)$/, BOX_W: 1.3, BOX_H: 0.42, BED_W: 0.66, BED_H: 0.14, BLANKET_H: 0.2, PILLOW: 0.16, ARM: 6, BREATH: 0.012, SHADOW: "rgba(0,0,0,0.22)", BED_RE: /giường|chiếu|chăn|ngủ|nằm nghỉ|bed|mat|blanket|sleep/i, GROUND_H: 0.05 },
+    GRIP: {
+      hand: null,
+      long_handle: { armF: -40, elbowF: -15, rot: -50 },
+      pour: { armF: -85, elbowF: -25, rot: 105, tip: [0.45, -0.1] },
+      raise: { armF: -165, elbowF: 0, rot: -15, up: true },
+      offer: { armF: -88, elbowF: 0, rot: 0 },
+      mouth: { armF: -150, elbowF: -125, rot: 0 },
+      shoulder: { armF: -165, elbowF: -150, rot: 85 },
+      chest: { armF: -55, elbowF: -95, armB: 55, elbowB: 95, rot: 0 },
+      arm_around: { armF: -115, elbowF: -25, rot: 0 },
+    },
+    EFFECT: { POUR_LEN: 0.55, POUR_W: 0.035, STEAM_N: 3, STEAM_RISE: 0.35, SPLASH_R: 0.18, SPARK_N: 6, COLOR_WATER: "#9ec9e6", COLOR_STEAM: "rgba(235,235,240,", COLOR_SPARK: "#ffcf6b", RIPPLE_N: 3 },
     ARM_SPLIT: 0.5,
     POSE2: {
       hold_belly: [8, -75, -8, 75, 4, null],
@@ -945,6 +1011,56 @@
     return p;
   }
 
+  function drawHat(g, I, hc, rx, ry, line, lw, back) {
+    if (I.hatKind === K.WEAR.BAND || (back && I.hatKind === K.WEAR.TURBAN)) {
+      g.save();
+      g.beginPath();
+      g.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+      g.clip();
+      g.beginPath();
+      g.rect(-rx * 1.1, -ry * 0.62, rx * 2.2, ry * 0.34);
+      fillStroke(g, hc, line, lw);
+      g.restore();
+      g.beginPath();
+      g.ellipse(0, -ry * 0.45, rx, ry * 0.17, 0, 0, Math.PI);
+      g.strokeStyle = line;
+      g.lineWidth = lw;
+      g.stroke();
+    } else {
+      g.beginPath();
+      if (I.hatKind === "cone") {
+        g.moveTo(-rx * 1.7, -ry * 0.55);
+        g.lineTo(0, -ry * 1.75);
+        g.lineTo(rx * 1.7, -ry * 0.55);
+        g.closePath();
+      } else if (I.hatKind === "helmet") {
+        g.ellipse(0, -ry * 0.45, rx * 1.12, ry * 0.75, 0, Math.PI, Math.PI * 2);
+        g.lineTo(rx * 1.3, -ry * 0.42);
+        g.lineTo(-rx * 1.3, -ry * 0.42);
+        g.closePath();
+      } else if (I.hatKind === "turban") {
+        g.ellipse(0, -ry * 0.7, rx * 1.02, ry * 0.42, 0, 0, Math.PI * 2);
+      } else {
+        g.ellipse(0, -ry * 0.62, rx * 0.95, ry * 0.5, 0, Math.PI, Math.PI * 2);
+        g.lineTo(rx * 1.35, -ry * 0.6);
+        g.lineTo(-rx * 0.95, -ry * 0.6);
+        g.closePath();
+      }
+      fillStroke(g, hc, line, lw);
+    }
+    if (back && (I.hatKind === K.WEAR.TURBAN || I.hatKind === K.WEAR.BAND)) {
+      for (const sx of [-1, 1]) {
+        g.beginPath();
+        g.moveTo(sx * rx * 0.08, -ry * 0.55);
+        g.lineTo(sx * rx * 0.32, ry * 0.9);
+        g.lineTo(sx * rx * 0.12, ry * 0.95);
+        g.lineTo(-sx * rx * 0.02, -ry * 0.5);
+        g.closePath();
+        fillStroke(g, hc, line, lw);
+      }
+    }
+  }
+
   function drawRig(g, R, p, facing, lw, tint) {
     const I = R.info;
     if (I.animal && I.species) return drawAnimal(g, R, p, facing, lw, tint);
@@ -959,9 +1075,15 @@
       g.rotate(-88 * DEG * facing);
       g.translate(0, R.bodyW * 0.3);
     }
-    g.translate(p.dx, -p.bob + p.squat * R.legH);
+    const legless = !I.legs && !p.lie;
+    const seated = K.SEAT.ACTIONS.test(p.action || "");
+    const drop = legless ? (seated ? p.squat * R.bodyH * K.LEGLESS.SEAT_SINK : 0) : p.squat * R.legH;
+    const lean = legless ? clamp(p.tilt, -K.LEGLESS.MAX_LEAN, K.LEGLESS.MAX_LEAN) : p.tilt;
+    g.translate(p.dx, -p.bob + drop);
     g.scale(facing, 1);
-    g.rotate(p.tilt * DEG);
+    if (legless) {
+      if (lean) g.transform(1, 0, -Math.tan(lean * DEG), 1, 0, 0);
+    } else g.rotate(p.tilt * DEG);
     const hipY = -R.legH;
     if (I.legs) {
       const legT = Math.max(0.07, R.bodyW * 0.24);
@@ -978,20 +1100,15 @@
     const hand = { r: armT * 0.55, color: skin };
     const backFront = p.armB + (p.elbowB || 0) * 0.5 < -K.ARM_CROSS;
     if (I.arms && !backFront) arm(g, -sx, shoulderY, armL, armT, p.armB, p.elbowB || 0, top, line, lw, hand);
-    if (!I.legs && K.SEAT.ACTIONS.test(p.action || "")) {
-      const by = -R.bodyH * K.SEAT.TOP, bw = R.bodyW * K.SEAT.W, bh = R.bodyH * K.SEAT.PLANK;
-      const wood = col(K.VIG.WOOD);
+    if (legless && drop > 0) {
+      g.save();
       g.beginPath();
-      g.rect(-bw / 2, by, bw, bh);
-      fillStroke(g, wood, line, lw);
-      for (const lx of [-bw / 2 + bh * 0.4, bw / 2 - bh * 1.4]) {
-        g.beginPath();
-        g.rect(lx, by + bh, bh, -by - bh);
-        fillStroke(g, scaleHex(wood, 0.8), line, lw);
-      }
+      g.rect(-R.bodyW * 4, -R.bodyH * 8, R.bodyW * 8, R.bodyH * 8 - drop);
+      g.clip();
     }
     pathPoly(g, R.bodyPts);
     fillStroke(g, top, line, lw);
+    if (legless && drop > 0) g.restore();
     if (I.skirt) {
       g.beginPath();
       g.moveTo(-R.bodyW * 0.5, hipY);
@@ -1020,10 +1137,22 @@
     }
     if (I.arms && backFront) arm(g, -sx, shoulderY, armL, armT, p.armB, p.elbowB || 0, top, line, lw, hand);
     if (I.arms) arm(g, sx, shoulderY, armL, armT, p.armF, p.elbowF || 0, top, line, lw, hand);
+    if (!I.legs && K.SEAT.ACTIONS.test(p.action || "")) {
+      const by = -drop - R.bodyH * K.SEAT.TOP, bw = R.bodyW * K.SEAT.W, bh = R.bodyH * K.SEAT.PLANK;
+      const wood = col(K.VIG.WOOD);
+      g.beginPath();
+      g.rect(-bw / 2, by, bw, bh);
+      fillStroke(g, wood, line, lw);
+      for (const lx of [-bw / 2 + bh * 0.4, bw / 2 - bh * 1.4]) {
+        g.beginPath();
+        g.rect(lx, by + bh, bh, -drop - by - bh);
+        fillStroke(g, scaleHex(wood, 0.8), line, lw);
+      }
+    }
     {
       const hp0 = I.arms ? handAt(sx, shoulderY, armL, armT, p.armF, p.elbowF || 0) : [R.bodyW * 0.5, shoulderY + R.bodyH * 0.35];
       const ct = Math.cos(p.tilt * DEG), st = Math.sin(p.tilt * DEG);
-      R.anchor = [(hp0[0] * ct - hp0[1] * st) * facing + p.dx, hp0[0] * st + hp0[1] * ct - p.bob + p.squat * R.legH];
+      R.anchor = legless ? [(hp0[0] - Math.tan(lean * DEG) * hp0[1]) * facing + p.dx, hp0[1] - p.bob + drop] : [(hp0[0] * ct - hp0[1] * st) * facing + p.dx, hp0[0] * st + hp0[1] * ct - p.bob + drop];
     }
     if (p.held && p.held.length) {
       const hp = handAt(sx, shoulderY, armL, armT, p.armF, p.elbowF || 0);
@@ -1062,6 +1191,7 @@
     g.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
     fillStroke(g, p.back ? hair || K.BACK_HEAD : skin, line, lw);
     if (p.back) {
+      if (I.hat) drawHat(g, I, col(I.hat), rx, ry, line, lw, true);
       g.restore();
       g.restore();
       return;
@@ -1135,29 +1265,7 @@
       g.quadraticCurveTo(0, ry * 0.85, -rx * 0.5, ry * 0.55);
       fillStroke(g, col(I.beard), line, lw * 0.8);
     }
-    if (I.hat) {
-      const hc = col(I.hat);
-      g.beginPath();
-      if (I.hatKind === "cone") {
-        g.moveTo(-rx * 1.7, -ry * 0.55);
-        g.lineTo(0, -ry * 1.75);
-        g.lineTo(rx * 1.7, -ry * 0.55);
-        g.closePath();
-      } else if (I.hatKind === "helmet") {
-        g.ellipse(0, -ry * 0.45, rx * 1.12, ry * 0.75, 0, Math.PI, Math.PI * 2);
-        g.lineTo(rx * 1.3, -ry * 0.42);
-        g.lineTo(-rx * 1.3, -ry * 0.42);
-        g.closePath();
-      } else if (I.hatKind === "turban") {
-        g.ellipse(0, -ry * 0.7, rx * 1.02, ry * 0.42, 0, 0, Math.PI * 2);
-      } else {
-        g.ellipse(0, -ry * 0.62, rx * 0.95, ry * 0.5, 0, Math.PI, Math.PI * 2);
-        g.lineTo(rx * 1.35, -ry * 0.6);
-        g.lineTo(-rx * 0.95, -ry * 0.6);
-        g.closePath();
-      }
-      fillStroke(g, hc, line, lw);
-    }
+    if (I.hat) drawHat(g, I, col(I.hat), rx, ry, line, lw, false);
     g.restore();
     g.restore();
   }
@@ -1451,21 +1559,81 @@
     const W = K.WEAR;
     const k = String(key || "");
     if (!W.HAT_RE.test(k)) return R;
-    const kind = W.CONE_RE.test(k) ? W.CONE : W.HELMET_RE.test(k) ? W.HELMET : W.TURBAN_RE.test(k) ? W.TURBAN : W.CAP;
-    const color = wordColor(k.replace(K.VIG.UNDERSCORE_RE, " "), null) || (kind === W.CONE ? W.CONE_COLOR : W.CAP_COLOR);
+    const kind = W.BAND_RE.test(k) ? W.BAND : W.CONE_RE.test(k) ? W.CONE : W.HELMET_RE.test(k) ? W.HELMET : W.TURBAN_RE.test(k) ? W.TURBAN : W.CAP;
+    const color = wordColor(k.replace(K.VIG.UNDERSCORE_RE, " "), null) || (kind === W.BAND ? W.BAND_COLOR : kind === W.CONE ? W.CONE_COLOR : W.CAP_COLOR);
     return Object.assign({}, R, { info: Object.assign({}, R.info, { hat: color, hatKind: kind }) });
   }
 
-  function drawHeld(g, R, key, lw, t) {
+  function drawHeld(g, R, key, lw, t, grip, facing) {
     const total = R.legH + R.bodyH + R.headH;
     const a = propAsset(key);
     const h = clamp((a && a.meta.height ? a.meta.height : K.WEAR.HELD_M) / R.unit, total * K.WEAR.HELD_MIN, total * K.WEAR.HELD_MAX);
     const [x, y] = R.anchor;
+    const rot = (grip && grip.rot ? grip.rot : 0) * (facing || 1);
     if (a) {
-      const m = a.meta, box = K.BOARD.PROP_BOX;
-      const gy = m.grip && m.base ? (m.base[1] - m.grip[1]) / box : 0.4;
-      drawPropImage(g, key, x, y + h * gy, h, 0, 1);
-    } else if (codeAlias(key)) vigObject(g, key, x, y, h, {}, R.outline, lw, t);
+      const m = a.meta, box = K.BOARD.PROP_BOX, s = h / box;
+      const gp = m.grip || [box / 2, box * K.WEAR.GRIP_Y];
+      const turn = m.head && m.height >= K.WEAR.TOOL_LONG_M ? (grip && grip.up ? 180 : 0) - Math.atan2(gp[0] - m.head[0], m.head[1] - gp[1]) / DEG : 0;
+      g.save();
+      g.translate(x, y);
+      g.rotate((turn + rot) * DEG);
+      g.drawImage(a.img, -gp[0] * s, -gp[1] * s, box * s, box * s);
+      g.restore();
+    } else if (codeAlias(key)) vigObject(g, key, x, y, h, { rot }, R.outline, lw, t);
+  }
+
+  function drawEffect(g, kind, x, y, size, t, lw, seed) {
+    const E = K.EFFECT;
+    g.save();
+    if (kind === "pour") {
+      const len = size * E.POUR_LEN;
+      g.strokeStyle = E.COLOR_WATER;
+      g.lineCap = K.ROUND;
+      g.lineWidth = size * E.POUR_W;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.quadraticCurveTo(x + size * 0.03, y + len * 0.5, x + Math.sin(t * 9) * size * 0.01, y + len);
+      g.stroke();
+      for (let i = 0; i < 4; i++) {
+        const ph = (t * 1.6 + i / 4) % 1;
+        g.fillStyle = E.COLOR_WATER;
+        g.beginPath();
+        g.arc(x + (hash(i + seed) - 0.5) * size * 0.08, y + len + ph * size * 0.06, size * 0.012, 0, Math.PI * 2);
+        g.fill();
+      }
+    } else if (kind === "steam" || kind === "smoke") {
+      g.lineCap = K.ROUND;
+      for (let i = 0; i < E.STEAM_N; i++) {
+        const ph = (t * 0.45 + i / E.STEAM_N) % 1;
+        const yy = y - ph * size * E.STEAM_RISE;
+        g.strokeStyle = E.COLOR_STEAM + (0.45 * (1 - ph)).toFixed(3) + ")";
+        g.lineWidth = size * (0.012 + ph * 0.03);
+        g.beginPath();
+        g.moveTo(x + (i - 1) * size * 0.05, yy);
+        g.bezierCurveTo(x + (i - 1) * size * 0.05 + size * 0.04, yy - size * 0.05, x + (i - 1) * size * 0.05 - size * 0.04, yy - size * 0.1, x + (i - 1) * size * 0.05, yy - size * 0.15);
+        g.stroke();
+      }
+    } else if (kind === "splash" || kind === "ripple") {
+      g.strokeStyle = E.COLOR_WATER;
+      g.lineWidth = lw;
+      for (let i = 0; i < E.RIPPLE_N; i++) {
+        const ph = (t * 0.5 + i / E.RIPPLE_N) % 1;
+        g.globalAlpha = 1 - ph;
+        g.beginPath();
+        g.ellipse(x, y, size * E.SPLASH_R * (0.4 + ph), size * E.SPLASH_R * 0.25 * (0.4 + ph), 0, 0, Math.PI * 2);
+        g.stroke();
+      }
+    } else if (kind === "sparks") {
+      g.fillStyle = E.COLOR_SPARK;
+      for (let i = 0; i < E.SPARK_N; i++) {
+        const ph = (t * 0.8 + hash(i + seed)) % 1;
+        g.globalAlpha = 1 - ph;
+        g.beginPath();
+        g.arc(x + (hash(i * 3 + seed) - 0.5) * size * 0.2, y - ph * size * 0.3, size * 0.01, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    g.restore();
   }
 
   function rigBounds(R, x, y, k) {
@@ -1622,7 +1790,7 @@
     const freq = {};
     for (const sh of (ctx.spec && ctx.spec.shots) || []) for (const a of (sh.params && sh.params.actors) || []) if (a && a.cast) freq[a.cast] = (freq[a.cast] || 0) + 1;
     const narrator = Object.keys(freq).sort((x, y) => freq[y] - freq[x])[0] || focusCast;
-    return { P, G, L, stage, loc, rigs, focusCast, narrator, metrics, sky, stars, hills, VW, VH, timeKey, night, grade, cues, outlinePx, outline, weather: String(P.weather || L.weather || "").toLowerCase(), dust: Array.from({ length: K.DUST }, (_, i) => [hash(i * 1.7), hash(i * 2.9), hash(i * 4.3)]) };
+    return { P, G, L, stage, loc, rigs, focusCast, narrator, metrics, sky, stars, hills, VW, VH, timeKey, night, grade, cues, outlinePx, outline, horror: !!G.horror, motion: G.characterMotion === true, weather: String(P.weather || L.weather || "").toLowerCase(), dust: Array.from({ length: K.DUST }, (_, i) => [hash(i * 1.7), hash(i * 2.9), hash(i * 4.3)]) };
   }
 
   function subjectBox(list) {
@@ -2008,12 +2176,34 @@
     return true;
   }
 
+  function expandItems(items, aspect) {
+    const C = K.BOARD.COUNT;
+    const out = [];
+    for (const it of items || []) {
+      const n = clamp(Math.round(num(it.count, 1)), 1, C.MAX);
+      if (n < 2) {
+        out.push(it);
+        continue;
+      }
+      const rows = n > C.ROW_MAX ? 2 : 1;
+      const back = Math.ceil(n / rows), front = n - back;
+      const gap = Math.min(C.SPAN / back, C.GAP_MAX);
+      const scale = Math.min(it.scale, (gap * aspect) / C.WIDTH_RATIO);
+      const cx = clamp(num(it.x, 0.5), (gap * back) / 2, 1 - (gap * back) / 2);
+      for (let i = 0; i < back; i++) out.push(Object.assign({}, it, { count: 1, x: cx + (i - (back - 1) / 2) * gap, y: rows > 1 ? it.y - C.ROW_DY : it.y, scale: rows > 1 ? scale * C.BACK_SCALE : scale }));
+      for (let i = 0; i < front; i++) out.push(Object.assign({}, it, { count: 1, x: cx + (i - (front - 1) / 2) * gap, y: it.y, scale }));
+    }
+    return out;
+  }
+
   function drawCutaway(g, ctx, S, vg, k, line, lw) {
     const W = ctx.W, H = ctx.H;
-    const items = vg.items && vg.items.length ? vg.items : vg.objs.map((key, i, arr) => ({ key, x: (i + 1) / (arr.length + 1), y: 0.8, scale: 0.45 }));
+    const src = vg.items && vg.items.length ? vg.items : vg.objs.map((key, i, arr) => ({ key, x: (i + 1) / (arr.length + 1), y: 0.8, scale: 0.45 }));
+    const items = expandItems(src.map((it) => (K.BOARD.HANG_RE.test(String(it.key || "")) ? it : Object.assign({}, it, { y: Math.min(num(it.y, 0.8), K.BOARD.CUT_SAFE_Y) }))), W / H);
     let floorK = 0;
     if (S.vset) {
       const pl = setPlate(g, S, S.vset, W, H, { zoom: K.BOARD.CUT_ZOOM * (1 + 0.025 * k), fy: K.BOARD.CUT_FY, dim: K.BOARD.CUT_DIM });
+      drawSetLights(g, ctx, S.vset, pl.x, pl.y, pl.sc, H);
       floorK = (pl.y + num(S.vset.meta.floorY, K.BOARD.SET_H * 0.8) * pl.sc) / H;
     } else vigBackdrop(g, S, W, H, K.BOARD.CUT_FLOOR, vg.light);
     const acts = (vg.actors || []).filter((a) => S.rigs[a.cast] || (vigEnsureRig(S, a.cast), S.rigs[a.cast]));
@@ -2026,8 +2216,8 @@
     items.forEach((it, i) => {
       const enter = ease(clamp(k * 4 - i * 0.25, 0, 1));
       if (enter <= 0) return;
-      const sway = Math.sin(ctx.abs * 1.3 + i * 1.7) * K.BOARD.SWAY;
-      const iy = floorK && !K.BOARD.HANG_RE.test(it.key) ? Math.max(it.y, floorK + K.BOARD.FLOOR_PAD) : it.y;
+      const sway = K.RE.SWAY.test(String(it.key || "")) ? Math.sin(ctx.abs * 1.3 + i * 1.7) * K.BOARD.SWAY : 0;
+      const iy = floorK && !K.BOARD.HANG_RE.test(it.key) ? Math.min(Math.max(it.y, floorK + K.BOARD.FLOOR_PAD), Math.max(K.BOARD.CUT_SAFE_Y, floorK + K.BOARD.FLOOR_PAD)) : it.y;
       const x = it.x * W, y = iy * H, h = it.scale * H * (0.92 + 0.08 * enter);
       g.globalAlpha = enter;
       if (!drawPropImage(g, it.key, x, y, h, sway, enter) && codeAlias(it.key)) vigObject(g, it.key, x, y - h / 2, h, { color: vg.color, rot: sway }, line, lw, ctx.abs);
@@ -2040,43 +2230,41 @@
     return { sc, ox: (S.VW - K.BOARD.SET_W * sc) / 2, oy: S.VH - K.BOARD.SET_H * sc };
   }
 
-  function drawLying(g, A, pose, lw, S, tt) {
-    const R = A.R, I = R.info;
+  function drawLying(g, A, pose, lw, S, tt, ground) {
+    const R = A.R;
     const tot = R.legH + R.bodyH + R.headH;
     const L = K.LIE;
     const dir = A.s.facing >= 0 ? -1 : 1;
     const tint = (c) => (S.grade ? scaleHex(c, K.ACTOR_TINT) : c);
-    g.beginPath();
-    g.rect(-tot * L.BED_W, -tot * L.BED_H, tot * L.BED_W * 2, tot * L.BED_H);
-    fillStroke(g, tint(K.VIG.WOOD), R.outline, lw);
-    const hx = dir * tot * (L.BED_W - L.PILLOW * 1.2), hy = -tot * L.BED_H - R.headH * 0.32;
-    g.beginPath();
-    g.ellipse(hx, -tot * L.BED_H - R.headH * 0.05, R.headW * 0.62, R.headH * 0.16, 0, 0, Math.PI * 2);
-    fillStroke(g, tint(K.VIG.PAPER), R.outline, lw);
-    const br = 1 + Math.sin(tt * 1.6) * 0.03;
-    const bx0 = Math.min(hx - dir * R.headW * 0.4, -dir * tot * (L.BED_W - 0.04)), bx1 = Math.max(hx - dir * R.headW * 0.4, -dir * tot * (L.BED_W - 0.04));
-    g.beginPath();
-    if (g.roundRect) g.roundRect(bx0, -tot * (L.BED_H + L.BLANKET_H * br), bx1 - bx0, tot * L.BLANKET_H * br, tot * 0.08);
-    else g.rect(bx0, -tot * (L.BED_H + L.BLANKET_H * br), bx1 - bx0, tot * L.BLANKET_H * br);
-    fillStroke(g, tint(I.top), R.outline, lw);
-    const r = R.headH * 0.5;
-    g.beginPath();
-    g.arc(hx, hy, r, 0, Math.PI * 2);
-    fillStroke(g, I.skin, R.outline, lw);
-    g.fillStyle = I.eye || K.VIG.EYE;
-    g.strokeStyle = I.eye || K.VIG.EYE;
-    const closed = pose.eye < 0.5 || !K.RE.FEAR.test(String(A.a.expression || ""));
-    for (const dx of [-0.36, 0.36]) {
+    const half = Math.max(R.bodyW, R.headW) * 0.5;
+    const lift = ground ? tot * L.GROUND_H : tot * L.BED_H;
+    if (!ground) {
       g.beginPath();
-      if (closed) {
-        g.lineWidth = r * 0.08;
-        g.moveTo(hx + dx * r - r * 0.16, hy - r * 0.05);
-        g.lineTo(hx + dx * r + r * 0.16, hy - r * 0.05);
-        g.stroke();
-      } else {
-        g.ellipse(hx + dx * r, hy - r * 0.05, r * 0.15, r * 0.25, 0, 0, Math.PI * 2);
-        g.fill();
-      }
+      g.rect(-tot * L.BED_W, -tot * L.BED_H, tot * L.BED_W * 2, tot * L.BED_H);
+      fillStroke(g, tint(K.VIG.WOOD), R.outline, lw);
+      g.beginPath();
+      g.ellipse(dir * (tot / 2 - R.headH * 0.5), -lift - R.headH * 0.05, R.headW * 0.62, R.headH * 0.16, 0, 0, Math.PI * 2);
+      fillStroke(g, tint(K.VIG.PAPER), R.outline, lw);
+    } else {
+      g.beginPath();
+      g.ellipse(0, 0, tot * L.BED_W, tot * L.GROUND_H, 0, 0, Math.PI * 2);
+      g.fillStyle = L.SHADOW;
+      g.fill();
+    }
+    const still = Object.assign({}, pose, { back: false, lie: false, bob: 0, squat: 0, tilt: 0, dx: 0, head: 0, armB: L.ARM, armF: -L.ARM, elbowB: 0, elbowF: 0, legB: 0, legF: 0, eye: A.s.action === K.ACTION.SLEEP || !K.RE.FEAR.test(String(A.a.expression || "")) ? 0 : pose.eye, action: K.ACTION.IDLE });
+    const br = 1 + Math.sin(tt * 1.6) * L.BREATH;
+    g.save();
+    g.translate(-dir * tot / 2, -lift - half);
+    g.rotate(dir * 90 * DEG);
+    g.scale(br, 1);
+    drawRig(g, R, still, 1, lw, S.grade ? K.ACTOR_TINT : 1);
+    g.restore();
+    if (!ground) {
+      const x0 = -dir * tot * (L.BED_W - 0.04), x1 = dir * (tot / 2 - R.headH * 1.05);
+      g.beginPath();
+      if (g.roundRect) g.roundRect(Math.min(x0, x1), -lift - half * 2 * br, Math.abs(x1 - x0), half * 2 * br, tot * 0.06);
+      else g.rect(Math.min(x0, x1), -lift - half * 2 * br, Math.abs(x1 - x0), half * 2 * br);
+      fillStroke(g, tint(R.info.top), R.outline, lw);
     }
   }
 
@@ -2093,20 +2281,25 @@
       g.fillRect(fit.ox, fit.oy, sw, sh);
       g.globalCompositeOperation = K.SOURCE_OVER;
     }
+    drawSetLights(g, ctx, set, fit.ox, fit.oy, fit.sc, S.VH);
+  }
+
+  function drawSetLights(g, ctx, set, ox, oy, sc, H) {
+    g.save();
     g.globalCompositeOperation = K.LIGHTER;
     for (const l of set.meta.lights || []) {
-      const x = fit.ox + l.x * fit.sc, y = fit.oy + l.y * fit.sc;
+      const x = ox + l.x * sc, y = oy + l.y * sc;
       const fl = 0.8 + 0.2 * noise(ctx.abs * 8, l.x * 0.01);
-      const r = S.VH * 0.22;
+      const r = H * K.BOARD.LIGHT_R;
       const gr = g.createRadialGradient(x, y, 0, x, y, r);
-      gr.addColorStop(0, rgba(l.color, 0.3 * fl));
+      gr.addColorStop(0, rgba(l.color, K.BOARD.LIGHT_A * fl));
       gr.addColorStop(1, rgba(l.color, 0));
       g.fillStyle = gr;
       g.beginPath();
       g.arc(x, y, r, 0, Math.PI * 2);
       g.fill();
     }
-    g.globalCompositeOperation = K.SOURCE_OVER;
+    g.restore();
   }
 
   function setOf(S, sent) {
@@ -2149,7 +2342,7 @@
     const mem = vigColorMemory(ctx.spec, casts);
     const speech = S.P.speech || {};
     const tOff = num(S.P.tOffset, 0);
-    return merged.map((m, i) => {
+    const built = merged.map((m, i) => {
       const a = m.start - s0 + tOff, b = m.end - s0 + tOff;
       let speaker = null, best = 0;
       for (const c of Object.keys(speech)) {
@@ -2175,7 +2368,7 @@
         light = e.light || null;
         if (!vg) {
           acts = {};
-          for (const ac of e.actors || []) acts[ac.cast] = { action: ac.pose, expression: ac.expression, face: ac.face, wear: ac.wear || null, hold: ac.hold || null, small: !!ac.small };
+          for (const ac of e.actors || []) acts[ac.cast] = { action: ac.pose, expression: ac.expression, face: ac.face, wear: ac.wear || null, hold: ac.hold || null, small: !!ac.small, grip: ac.grip || null, effect: ac.effect || null, view: ac.view || null, depth: ac.depth || null };
           if (sp && S.rigs[sp]) {
             for (const c of Object.keys(acts)) if (c !== sp && acts[c].action === K.ACTION.TALK) acts[c].action = K.ACTION.IDLE;
             const listener = Object.keys(acts).find((c) => c !== sp);
@@ -2183,6 +2376,7 @@
             else if (acts[sp].action === K.ACTION.IDLE) acts[sp].action = K.ACTION.TALK;
           }
           cam = { shot: e.camera, focus: e.subject || sp || ((e.actors || [])[0] || {}).cast };
+          if (S.G && S.G.horror && (e.apparition || (e.actors || []).some((ac) => K.HORROR.PUSH_RE.test(String(ac.expression || ""))))) cam.move = K.MOVE.PUSH;
         }
       } else {
         vg = parseVignette(m.text, casts);
@@ -2190,8 +2384,9 @@
         if (act) act.cast = act.cast === K.SELF_KEY ? S.narrator : act.cast || sp;
       }
       if (vg && !vg.color && vg.objs[0] && mem[vg.objs[0]]) vg.color = mem[vg.objs[0]](m.start);
-      return Object.assign(m, { i, speaker: sp, vg, act, acts, cam, light, placeOnly, place: (e && e.place) || null, items: e && e.mode === K.BOARD.PEOPLE ? e.items || [] : [] });
+      return Object.assign(m, { i, speaker: sp, vg, act, acts, cam, light, placeOnly, place: (e && e.place) || null, items: e && e.mode === K.BOARD.PEOPLE ? e.items || [] : [], ambient: (e && e.ambient) || [], apparition: (e && e.apparition) || null });
     });
+    return built;
   }
 
   function vigColorMemory(spec, casts) {
@@ -2527,8 +2722,22 @@
   }
 
   function vigEnsureRig(S, c) {
-    if (!c || S.rigs[c] || !(S.G.cast || {})[c]) return;
-    S.rigs[c] = buildRig(c, S.G.cast[c], S.metrics, S.outline);
+    if (!c || S.rigs[c]) return;
+    if ((S.G.cast || {})[c]) S.rigs[c] = buildRig(c, S.G.cast[c], S.metrics, S.outline);
+    else if (K.BOARD.EXTRA_RE.test(String(c))) {
+      const tops = K.BOARD.EXTRA_TOPS;
+      S.rigs[c] = buildRig(c, { info2d: { top: tops[Math.floor(hash(seedOf(String(c))) * tops.length) % tops.length], height: K.BOARD.EXTRA_HEIGHT } }, S.metrics, S.outline);
+    }
+  }
+  function boardItemPlace(S, set, it) {
+    const sfit = setFit(S, set);
+    const a = propAsset(it.key);
+    const ih = a && a.meta.height && S.personH ? clamp((a.meta.height / K.BOARD.PERSON_M) * S.personH, S.VH * K.BOARD.ITEM_MIN, S.VH * K.BOARD.ITEM_MAX) : it.scale * S.VH * K.BOARD.ITEM_H;
+    return { ih, ix: S.VW * it.x, iy: sfit.oy + standY(set) * sfit.sc + (clamp(it.y, K.BOARD.ITEM_Y0, 1) - K.BOARD.ITEM_Y0) * S.VH * K.BOARD.ITEM_DEPTH };
+  }
+  function standY(set) {
+    const fy = set.meta.floorY;
+    return fy + (K.BOARD.SET_H - fy) * K.BOARD.FOOT_INTO;
   }
 
   function drawVignette(g, ctx, S, sent) {
@@ -2914,6 +3123,83 @@
     g.restore();
   }
 
+  function composeShot(shot) {
+    const C = K.COMPOSE;
+    const s = C.ALIAS[shot] || shot;
+    return C.SHOTS[s] ? s : "medium";
+  }
+
+  function setLandmark(S, set) {
+    const l = set && set.meta && (set.meta.landmarks || [])[0];
+    if (!l) return null;
+    const fit = setFit(S, set);
+    return { x0: fit.ox + l.x * fit.sc, x1: fit.ox + (l.x + l.w) * fit.sc, top: fit.oy + l.y * fit.sc, bottom: fit.oy + (l.y + l.h) * fit.sc };
+  }
+
+  function composeBoardFrame(S, shot0, actors, focusCast, set) {
+    const C = K.COMPOSE, A = S.VW / S.VH;
+    const people = actors.filter((X) => X.b && !X.fore && !X.depthBack);
+    const shot = shot0 === C.BACK && people.length > 1 ? C.GROUP : shot0;
+    const spec = C.SHOTS[shot];
+    const all = actors.filter((X) => X.b && !X.fore);
+    if (!people.length || !spec) return null;
+    const focus = people.find((X) => X.cast === focusCast) || people.find((X) => X.speaking) || people[0];
+    const b = focus.b;
+    const land = (shot === "wide" || shot0 === C.BACK) && setLandmark(S, set);
+    if (land && shot === "back") focus.s.facing = (land.x0 + land.x1) / 2 >= b.x ? 1 : -1;
+    const side = focus.s.facing >= 0 ? -1 : 1;
+    if (shot === "top") {
+      const h = Math.max(b.w, b.h) / (spec.width * A);
+      return { cx: b.x, cy: (b.top + b.y) / 2, h, need: null, top: true };
+    }
+    if (spec.head) {
+      const hh = b.headBottom - b.headTop;
+      const h = hh / spec.head;
+      const w = h * A;
+      return { cx: b.x - side * spec.offset * w, cy: b.headTop - spec.top * h + h / 2, h, need: { x0: b.x - (b.headBottom - b.headTop) * 0.5, x1: b.x + (b.headBottom - b.headTop) * 0.5, top: b.headTop, bottom: b.headBottom } };
+    }
+    const subj = shot === "group" || shot === "wide" ? all : [focus];
+    const box0 = subjectBox(subj);
+    const box = land && shot !== "back" ? { x0: Math.min(box0.x0, land.x0), x1: Math.max(box0.x1, land.x1), top: Math.min(box0.top, land.top), bottom: box0.bottom } : box0;
+    const bh = box.bottom - box.top;
+    const h = Math.max(bh / spec.body, (box.x1 - box.x0) / (A * spec.span));
+    const w = h * A;
+    const gx = (box.x0 + box.x1) / 2;
+    const off = shot === "group" && box.x1 - box.x0 > C.GROUP_MAX_W * w ? 0 : spec.offset;
+    return { cx: gx - side * off * w, cy: box.bottom - spec.feet * h + h / 2, h, need: box };
+  }
+
+  function drawApparition(g, ap, f, ctx, k) {
+    const P = K.APPARITION;
+    const W = ctx.W, H = ctx.H;
+    let x = W * ap.x, y = H * 0.82, h = H * P.H;
+    if (ap.kind === "far") h = H * P.FAR_H;
+    if (ap.kind === "window") {
+      h = H * P.FAR_H;
+      y = H * (P.WINDOW_Y + 0.2);
+    }
+    if (ap.kind === "peek") x = ap.x < 0.5 ? W * P.PEEK_X : W * (1 - P.PEEK_X);
+    if (ap.kind === "glide") x = W * (ap.x + (k - 0.5) * P.GLIDE * (ap.x < 0.5 ? 1 : -1));
+    const a = P.ALPHA * (0.75 + 0.25 * Math.sin(ctx.abs * 2.1)) * clamp(k * 4, 0, 1);
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.filter = P.BLUR;
+    g.globalAlpha = a;
+    g.fillStyle = P.COLOR;
+    const r = h * 0.13;
+    g.beginPath();
+    g.arc(x, y - h + r, r, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.moveTo(x - r * 0.9, y - h + r * 2);
+    g.quadraticCurveTo(x - r * 1.6, y - h * 0.4, x - r * 1.2, y);
+    g.lineTo(x + r * 1.2, y);
+    g.quadraticCurveTo(x + r * 1.6, y - h * 0.4, x + r * 0.9, y - h + r * 2);
+    g.closePath();
+    g.fill();
+    g.restore();
+  }
+
   function draw(g, ctx) {
     ASSETS.board = boardOf(ctx.spec);
     const S = ctx.state;
@@ -2960,7 +3246,7 @@
       const act = sent && sent.act;
       if (acts) {
         const own = acts[a0.cast];
-        a = own ? Object.assign({}, a0, { action: own.action, then: null, moveTo: null, expression: own.expression || a0.expression, hold: K.BOARD.HOLD_POSES.indexOf(own.action) >= 0 ? a0.hold : null, boardFace: own.face, wear: own.wear, holdKey: own.hold, small: own.small }) : Object.assign({}, a0, { action: K.ACTION.IDLE, then: null, hold: null });
+        a = own ? Object.assign({}, a0, { action: own.action, then: null, moveTo: null, expression: own.expression || a0.expression, hold: K.BOARD.HOLD_POSES.indexOf(own.action) >= 0 ? a0.hold : null, boardFace: own.face, wear: own.wear, holdKey: own.hold, small: own.small, grip: own.grip, effect: own.effect, view: own.view, depth: own.depth }) : Object.assign({}, a0, { action: K.ACTION.IDLE, then: null, hold: null });
       } else if (act && act.cast === a0.cast) a = Object.assign({}, a0, act.action ? { action: act.action, then: null, hold: act.action === K.ACTION.HOLD ? a0.hold : null } : {}, act.expression ? { expression: act.expression } : {});
       else if (act && act.action && K.STRONG_ACTS.indexOf(aliasAction(a0.action)) >= 0 && !(sent.speaker === a0.cast)) a = Object.assign({}, a0, { action: K.ACTION.IDLE, then: null });
       const s = actorState(a, marks, beatDur, stT);
@@ -2969,7 +3255,7 @@
       if (set) {
         const fit = setFit(S, set);
         const rel = clamp((s.z - st.zBack) / Math.max(0.1, st.zNear - st.zBack), 0, 1);
-        pos = [S.VW / 2 + (pos[0] - S.VW / 2) * K.BOARD.SET_SPREAD, Math.min(fit.oy + set.meta.floorY * fit.sc + rel * K.BOARD.SET_DEPTH * S.VH, fit.oy + K.BOARD.SET_H * K.BOARD.FOOT_MAX * fit.sc)];
+        pos = [S.VW / 2 + (pos[0] - S.VW / 2) * K.BOARD.SET_SPREAD, Math.min(fit.oy + standY(set) * fit.sc + rel * K.BOARD.SET_DEPTH * S.VH, fit.oy + K.BOARD.SET_H * K.BOARD.FOOT_MAX * fit.sc)];
         k = st.S0;
       }
       const talk = speech[a.cast] ? speechLevel(speech[a.cast], stT) : Array.isArray(a.talk) ? speechLevel([[num(a.talk[0], 0) * beatDur, num(a.talk[1], 1) * beatDur]], stT) : 0;
@@ -3015,12 +3301,14 @@
       for (const A of actors) byCast[A.cast] = A;
       for (const A of actors) {
         const face = A.a.boardFace;
-        const T = face && byCast[face] && byCast[face] !== A ? byCast[face] : null;
+        const others = actors.filter((O) => O !== A);
+        const auto = !face && K.BOARD.INTERACT_AUTO.indexOf(A.s.action) >= 0 && others.length ? others.slice().sort((p, q) => (q.R.info.animal ? 1 : 0) - (p.R.info.animal ? 1 : 0) || Math.abs(p.x - A.x) - Math.abs(q.x - A.x))[0] : null;
+        const T = face && byCast[face] && byCast[face] !== A ? byCast[face] : auto;
         if (T) {
           A.s.facing = T.x >= A.x ? 1 : -1;
           A.s.back = false;
           if (K.BOARD.INTERACT.indexOf(A.s.action) >= 0) {
-            const gap = ((A.b.w + T.b.w) / 2) * K.BOARD.INTERACT_GAP;
+            const gap = ((A.b.w + T.b.w) / 2) * (A.s.action === K.BOARD.HUG ? K.BOARD.INTERACT_GAP : K.BOARD.INTERACT_REACH);
             A.x = T.x - A.s.facing * gap;
             A.b = rigBounds(A.R, A.x, A.y, A.k / A.R.unit);
           }
@@ -3033,17 +3321,107 @@
         }
       }
     }
+    if (acts && actors.length > 1) {
+      const pair = (P0, Q) => (K.BOARD.INTERACT.indexOf(P0.s.action) >= 0 && (P0.a.boardFace === Q.cast || !P0.a.boardFace)) || (K.BOARD.INTERACT.indexOf(Q.s.action) >= 0 && (Q.a.boardFace === P0.cast || !Q.a.boardFace));
+      const row = actors.filter((A) => !A.lying).sort((p, q) => p.x - q.x);
+      for (let i = 1; i < row.length; i++) {
+        const prev = row[i - 1], cur = row[i];
+        if (pair(prev, cur)) continue;
+        const gap = ((prev.b.w + cur.b.w) / 2) * K.SPACING;
+        if (cur.x - prev.x < gap) {
+          for (let j = i; j < row.length; j++) row[j].x += gap - (cur.x - prev.x);
+        }
+      }
+      for (const A of row) A.b = rigBounds(A.R, A.x, A.y, A.k / A.R.unit);
+      for (const A of row) lieBox(A);
+    }
+    if (set && acts && S.motion) {
+      for (const A of actors) {
+        if (K.BOARD.TRAVEL_POSES.indexOf(A.s.action) < 0) continue;
+        const dir = A.s.facing || 1;
+        const span = Math.min((A.s.action === K.ACTION.RUN ? K.BOARD.RUN_SPEED : K.BOARD.WALK_SPEED) * (sent ? sent.end - sent.start : ctx.dur), K.BOARD.TRAVEL);
+        let dx = (camU - 0.5) * span * S.VW * dir;
+        for (const O of actors) {
+          if (O === A || O.lying) continue;
+          const room = (O.x - A.x) * Math.sign(dx) - ((O.b.w + A.b.w) / 2) * K.SPACING;
+          if ((O.x - A.x) * Math.sign(dx) > 0) dx = Math.sign(dx) * Math.max(0, Math.min(Math.abs(dx), room));
+        }
+        A.x += dx;
+        A.b = rigBounds(A.R, A.x, A.y, A.k / A.R.unit);
+        lieBox(A);
+      }
+    }
+    const boardShot = set && acts ? composeShot(cam0.shot || K.SHOT.MEDIUM) : null;
+    if (boardShot) {
+      const C = K.COMPOSE;
+      const focus = actors.find((A) => A.cast === cam0.focus) || actors.find((A) => A.speaking) || actors[0];
+      for (const A of actors) {
+        if (A.a.depth === "back" && A !== focus) {
+          A.depthBack = true;
+          A.k *= C.BACK_SCALE;
+          A.y -= S.VH * C.BACK_LIFT;
+          A.z -= 1;
+          A.b = rigBounds(A.R, A.x, A.y, A.k / A.R.unit);
+          lieBox(A);
+        }
+        if (A.a.depth === "fore" && A !== focus) A.fore = true;
+      }
+      if (boardShot === C.BACK) {
+        const row = actors.filter((A) => !A.fore && !A.depthBack);
+        for (const A of row) {
+          if (A.speaking || (A.a.boardFace && K.BOARD.DIRS.indexOf(A.a.boardFace) < 0)) continue;
+          A.s.back = true;
+          A.s.front = false;
+        }
+        const land = row.length > 1 && setLandmark(S, set);
+        if (land) {
+          const box = subjectBox(row);
+          const dx = (land.x0 + land.x1) / 2 - (box.x0 + box.x1) / 2;
+          for (const A of row) {
+            A.x += dx;
+            A.b = rigBounds(A.R, A.x, A.y, A.k / A.R.unit);
+            lieBox(A);
+          }
+        }
+      }
+      for (const A of actors) if (A.fore) A.s.back = true;
+    }
     if (actors.some((A) => A.lying) && (cam0.shot === K.SHOT.CLOSE || cam0.shot === K.SHOT.EXTREME)) cam0 = Object.assign({}, cam0, { shot: K.SHOT.MEDIUM, focus: null });
     if (actors.length && (!cam0.shot || cam0.shot === K.SHOT.WIDE) && Math.max.apply(null, actors.map((A) => A.b.h)) < S.VH * K.SMALL_SUBJECT) cam0 = Object.assign({}, cam0, { shot: K.SHOT.MEDIUM, focus: actors.slice().sort((p, q) => q.b.h - p.b.h)[0].cast });
-    const f0 = frameFor(S, cam0, actors);
+    const people = actors.filter((A) => !A.R.info.animal && !A.a.small && !A.lying).map((A) => A.b.h).sort((p, q) => p - q);
+    S.personH = people.length ? people[Math.floor(people.length / 2)] : 0;
+    const f0 = (boardShot && composeBoardFrame(S, boardShot === "top" && !actors.some((A) => A.lying) ? "medium" : boardShot, actors, cam0.focus, set)) || frameFor(S, cam0, actors);
+    if (set && sent && sent.items && sent.items.length) {
+      const boxes = expandItems(sent.items, S.VW / S.VH).map((it) => boardItemPlace(S, set, it)).map((q) => ({ x0: q.ix - (q.ih * K.BOARD.ITEM_ASPECT) / 2, x1: q.ix + (q.ih * K.BOARD.ITEM_ASPECT) / 2, top: q.iy - q.ih, bottom: q.iy }));
+      const n = f0.need;
+      const all = n ? boxes.concat([n]) : boxes;
+      f0.need = { x0: Math.min.apply(null, all.map((q) => q.x0)), x1: Math.max.apply(null, all.map((q) => q.x1)), top: Math.min.apply(null, all.map((q) => q.top)), bottom: Math.max.apply(null, all.map((q) => q.bottom)) };
+      if (!n) f0.cx = (f0.need.x0 + f0.need.x1) / 2;
+    }
     const f = finalFrame(S, f0, cam0, camU, ctx.abs);
-    if (set) {
+    if (set && !f0.top) {
       const fit = setFit(S, set);
       const sw = K.BOARD.SET_W * fit.sc, sh = K.BOARD.SET_H * fit.sc;
       f.h = Math.min(f.h, sh, (sw * ctx.H) / ctx.W);
       const vw = (f.h * ctx.W) / ctx.H;
       f.cx = clamp(f.cx, fit.ox + vw / 2, fit.ox + sw - vw / 2);
       f.cy = clamp(f.cy, fit.oy + f.h / 2, fit.oy + sh - f.h / 2);
+    }
+    if (boardShot) {
+      const C = K.COMPOSE;
+      const vw = (f.h * ctx.W) / ctx.H;
+      const focus = actors.find((A) => !A.fore && A.cast === cam0.focus) || actors.find((A) => !A.fore && A.speaking) || actors.find((A) => !A.fore);
+      const side = focus && focus.x >= f.cx ? -1 : 1;
+      for (const A of actors) {
+        if (!A.fore) continue;
+        A.k *= C.FORE_SCALE;
+        A.x = f.cx + side * C.FORE_X * vw;
+        const bh = rigBounds(A.R, A.x, 0, A.k / A.R.unit).h;
+        A.y = f.cy + f.h / 2 + bh * C.FORE_DROP;
+        A.z = 1e6;
+        A.s.facing = side > 0 ? -1 : 1;
+        A.b = rigBounds(A.R, A.x, A.y, A.k / A.R.unit);
+      }
     }
     const sc = ctx.H / f.h;
     const tx = ctx.W / 2 - f.cx * sc,
@@ -3053,7 +3431,14 @@
     g.save();
     g.setTransform(1, 0, 0, 1, 0, 0);
     if (set) drawSetBack(g, ctx, S, set, sc, tx, ty);
-    else {
+    if (set && f0.top) {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      const fk = set.meta.floorY / K.BOARD.SET_H;
+      const dh = ctx.H / Math.max(0.05, 1 - fk);
+      g.drawImage(set.img, 0, -dh * fk, ctx.W, dh);
+      g.setTransform(sc, 0, 0, sc, tx, ty);
+    }
+    if (!set) {
     const skyG = g.createLinearGradient(0, ty, 0, ty + st.horizon * sc);
     skyG.addColorStop(0, S.sky[0]);
     skyG.addColorStop(1, S.sky[1]);
@@ -3122,11 +3507,10 @@
     const front = [];
     let ai = 0;
     if (set) {
-      const sfit = setFit(S, set);
-      for (const it of (sent && sent.items) || []) {
-        const ih = it.scale * S.VH * K.BOARD.ITEM_H;
-        const ix = S.VW * it.x, iy = sfit.oy + set.meta.floorY * sfit.sc + (clamp(it.y, K.BOARD.ITEM_Y0, 1) - K.BOARD.ITEM_Y0) * S.VH * K.BOARD.ITEM_DEPTH;
+      for (const it of expandItems((sent && sent.items) || [], S.VW / S.VH)) {
+        const { ih, ix, iy } = boardItemPlace(S, set, it);
         if (!drawPropImage(g, it.key, ix, iy, ih, 0, 1) && codeAlias(it.key)) vigObject(g, it.key, ix, iy - ih / 2, ih, {}, S.outline, lw, ctx.abs);
+        if (it.effect) drawEffect(g, it.effect, ix, iy - ih * K.BOARD.EFFECT_TOP, ih * K.BOARD.EFFECT_SIZE, ctx.abs, lw, ix);
       }
       for (const A of order) drawActor(A);
       if (set.fg) {
@@ -3147,6 +3531,7 @@
     }
     while (ai < order.length) drawActor(order[ai++]);
     for (const it of front) drawItem(it);
+    if (sent && sent.apparition && S.horror) drawApparition(g, sent.apparition, f, ctx, camU);
     function drawActor(A) {
       const tt = stT + A.R.seed * 5;
       let pose = rigPose(A.R, A.s.action, tt, A.talk, A.s.moving, A.env);
@@ -3174,11 +3559,15 @@
         pose.eye = Math.min(pose.eye, 0.75);
       }
       pose.back = A.s.back;
+      const grip = A.a.grip && K.GRIP[A.a.grip];
+      if (grip && !A.R.info.animal) for (const k of ["armF", "elbowF", "armB", "elbowB"]) if (grip[k] != null) pose[k] = grip[k];
       g.save();
+      if (A.fore) g.filter = K.COMPOSE.FORE_FILTER;
+      else if (A.depthBack) g.filter = K.COMPOSE.BACK_FILTER;
       g.translate(A.x, A.y);
       g.scale(A.k, A.k);
       if (A.lying && !A.R.ghost && !A.R.info.animal) {
-        drawLying(g, A, pose, lw / A.k, S, tt);
+        drawLying(g, A, pose, lw / A.k, S, tt, !(K.LIE.BED_RE.test(String((sent && sent.text) || "")) || A.s.action === K.ACTION.SLEEP));
         g.restore();
         return;
       }
@@ -3195,7 +3584,8 @@
       if (A.R.info.animal && (K.RE.FEAR.test(ex) || K.RE.ANGRY.test(ex))) pose.mouth = Math.max(pose.mouth || 0, K.ANIMAL.OPEN_MOUTH);
       const R = A.a.wear ? wornRig(A.R, A.a.wear) : A.R;
       drawRig(g, R, pose, A.s.facing, lw / A.k, S.grade ? K.ACTOR_TINT : 1);
-      if (A.a.holdKey && R.anchor) drawHeld(g, R, A.a.holdKey, lw / A.k, ctx.abs);
+      if (A.a.holdKey && R.anchor) drawHeld(g, R, A.a.holdKey, lw / A.k, ctx.abs, grip, A.s.facing);
+      if (A.a.effect && R.anchor) drawEffect(g, A.a.effect, R.anchor[0] + (grip && grip.tip ? grip.tip[0] * A.s.facing * R.bodyW : 0), R.anchor[1], R.legH + R.bodyH + R.headH, ctx.abs, lw / A.k, 0);
       g.restore();
       g.globalAlpha = 1;
     }
@@ -3259,6 +3649,29 @@
         g.lineTo(x - ctx.H * 0.012, y + ctx.H * 0.045);
       }
       g.stroke();
+    }
+    if (S.horror) {
+      const HZ = K.HORROR;
+      const tense = !!(sent && (sent.apparition || (sent.acts && Object.keys(sent.acts).some((c) => HZ.TENSE_RE.test(String(sent.acts[c].expression || ""))))));
+      if (S.night || /dark/.test(S.timeKey)) {
+        for (let i = 0; i < HZ.FOG_BANDS; i++) {
+          const y = ctx.H * (HZ.FOG_Y + i * HZ.FOG_STEP), drift = ((ctx.abs * HZ.FOG_SPEED * (i + 1)) % 1) * ctx.W;
+          const gr = g.createLinearGradient(0, y - ctx.H * 0.08, 0, y + ctx.H * 0.08);
+          gr.addColorStop(0, rgba(HZ.FOG, 0));
+          gr.addColorStop(0.5, rgba(HZ.FOG, HZ.FOG_A));
+          gr.addColorStop(1, rgba(HZ.FOG, 0));
+          g.fillStyle = gr;
+          g.save();
+          g.translate(drift - ctx.W, 0);
+          g.fillRect(0, y - ctx.H * 0.08, ctx.W * 2, ctx.H * 0.16);
+          g.restore();
+        }
+      }
+      const vr = g.createRadialGradient(ctx.W / 2, ctx.H / 2, ctx.H * HZ.VIG_IN, ctx.W / 2, ctx.H / 2, ctx.H * HZ.VIG_OUT);
+      vr.addColorStop(0, rgba(HZ.VIG, 0));
+      vr.addColorStop(1, rgba(HZ.VIG, tense ? HZ.VIG_TENSE : HZ.VIG_BASE));
+      g.fillStyle = vr;
+      g.fillRect(0, 0, ctx.W, ctx.H);
     }
     if (f.flash > 0) {
       g.fillStyle = rgba("#e6eef4", 0.2 * f.flash);

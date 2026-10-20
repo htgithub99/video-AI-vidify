@@ -12,7 +12,7 @@ import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../l
 import { randomUUID } from "crypto";
 import type { Request, Response } from "express";
 import fs from "fs";
-import { motionVideoGenre } from "../../constants/motionGenre.js";
+import { motionGenreCreative, motionVideoGenre } from "../../constants/motionGenre.js";
 import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMotionVoiceSources, removeAi33Voice, synthesizeMotionSpeech } from "../services/motionVoiceSourceService.js";
 import { motionStylePreset } from "../../constants/motionStylePresets.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
@@ -351,7 +351,8 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
         ctx.log(MOTION_TEMPLATE_BEAT(String(byChapter[chapter.id].length)));
         ctx.partial({ title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []) });
       };
-      await mapMotionAiPool(todo, writeOne);
+      if (motionGenreCreative(analysis.videoGenre)) for (const chapter of todo) await writeOne(chapter);
+      else await mapMotionAiPool(todo, writeOne);
       const retry = failed.splice(0);
       for (const chapter of retry) await writeOne(chapter);
       if (failed.length) ctx.log(MR.MOTION_TEMPLATE_CON_CHUONG_CHUA_VIET_DUOC_CAC_CHUONG_KHAC_VAN_DUOC_GIU_BAM_VIET_T(failed.length, _.map(failed, MR.MOTION_TEXT_TITLE).join(MR.MOTION_TEXT_SYMBOL_14)));
@@ -412,7 +413,8 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
 };
 export const scenesMotionStory = (req: Request, res: Response): void => {
   try {
-    const analysis = req.body?.analysis as MotionStoryAnalysis;
+    const raw = req.body?.analysis as MotionStoryAnalysis;
+    const analysis = (raw && req.body?.libraryMode ? { ...raw, libraryMode: motionLibraryMode(req.body.libraryMode) } : raw) as MotionStoryAnalysis;
     const script = req.body?.script as MotionStoryScript;
     if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
     const exec = drawExec(req.body?.aiExecution);

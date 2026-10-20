@@ -1,4 +1,5 @@
 import { MOTION_BOARD2D } from "../../constants/motionBoard2d.js";
+import { MOTION_VOICE_PACING } from "../../constants/motionVoice.js";
 import { board2dSpec } from "./motion2d/board2d.js";
 import { cast2dSpec } from "./motion2d/cast2d.js";
 import { MOTION_2D } from "../../constants/motion2d.js";
@@ -38,6 +39,7 @@ import {
   MOTION_TEXT_HEADLINE,
   MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO_2,
   MOTION_TEXT_LOCATION,
+  MOTION_TEXT_LIGHT,
   MOTION_TEXT_MAP,
   MOTION_TEXT_NHAT_BAO,
   MOTION_TEXT_QUOTE,
@@ -51,6 +53,7 @@ import {
 } from "../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_DIRECTOR_PATTERNS as P } from "../../constants/motionVideo.js";
 import { planMotionCoverage } from "../../lib/motionCoverage.js";
+import { MOTION_GEN_CONFIG } from "../../constants/motionGenPrompts.js";
 import type { MotionBeat, MotionGenState, MotionShot, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceClip, MotionVoiceTrack } from "../../types/motionVideo.js";
 const NON_SCENE_TRANSITION_IN = 0.55;
 const GRAPHIC_HOLD = [MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
@@ -254,14 +257,15 @@ export const sceneShots = (beat: MotionBeat, gen: MotionGenState, start: number,
   const stg: any = gen.staging[beat.id];
   const dur = end - start;
   const cams: any[] = planMotionCoverage(stg, dur, beatIndex, MR.MOTION_TEMPLATE_SYMBOL_115(beat.narration, beat.action || MR.MOTION_TEXT_EMPTY), beat);
-  const authored = _.map(cams, (c, i) => (i === 0 ? 0 : _.clamp(c.utterance && lines?.[c.utterance] != null ? lines[c.utterance] / dur : _.toNumber(c.at) || 0, 0.15, 0.9)));
-  const cuts = _.map(authored, (cut, i) => (i && cut <= authored[i - 1] ? _.clamp(_.toNumber(cams[i].at) || 0, 0.15, 0.9) : cut));
+  const authored = _.map(cams, (c, i) => (i === 0 ? 0 : _.clamp(c.utterance && lines?.[c.utterance] != null ? lines[c.utterance] / dur : _.toNumber(c.at) || 0, MOTION_GEN_CONFIG.CUT_MIN, MOTION_GEN_CONFIG.CUT_MAX)));
+  const cuts = _.map(authored, (cut, i) => (i && cut <= authored[i - 1] ? _.clamp(_.toNumber(cams[i].at) || 0, MOTION_GEN_CONFIG.CUT_MIN, MOTION_GEN_CONFIG.CUT_MAX) : cut));
   const shots: MotionShot[] = [];
   cams.forEach((cam, i) => {
     const s0 = start + cuts[i] * dur;
     const s1 = i + 1 < cams.length ? start + cuts[i + 1] * dur : end;
     if (s1 - s0 < 0.8 && i > 0) return;
-    const params = { ..._.omit(stg, [MOTION_TEXT_CAMERA, MOTION_TEXT_CAMERAS]), ...(speech && !_.isEmpty(speech) ? { speech } : {}), soundBeatId: beat.id, cameras: [cam], beatDur: +dur.toFixed(3), tOffset: +(s0 - start).toFixed(3) };
+    const shown = { ...(Array.isArray(cam.cast) ? { actors: _.filter(stg.actors || [], (a: any) => _.includes(cam.cast, a.cast)) } : {}), ...(Array.isArray(cam.props) ? { props: _.filter(stg.props || [], (p: any) => p?.shape === MOTION_TEXT_LIGHT || _.includes(cam.props, p?.name)) } : {}), ...(Array.isArray(cam.hide) && cam.hide.length ? { hide: _.uniq([...(stg.hide || []), ...cam.hide]) } : {}) };
+    const params = { ..._.omit(stg, [MOTION_TEXT_CAMERA, MOTION_TEXT_CAMERAS]), ...shown, ...(speech && !_.isEmpty(speech) ? { speech } : {}), soundBeatId: beat.id, cameras: [cam], beatDur: +dur.toFixed(3), tOffset: +(s0 - start).toFixed(3) };
     shots.push({ id: i ? MOTION_TEMPLATE_C_3(String(beat.id), String(i + 1)) : beat.id, start: +s0.toFixed(3), end: +s1.toFixed(3), template: gen.drawingMode === MOTION_VIDEO_CONSTANTS.DRAWING_2D ? MOTION_VIDEO_CONSTANTS.TEMPLATE_2D : MOTION_TEXT_GEN3D, params, transition: i === 0 ? undefined : { type: MOTION_TEXT_CUT, duration: 0 } });
   });
   void speechStart;
@@ -364,7 +368,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     subtitleStyle: MOTION_TEXT_CINEMA,
     fadeIn: analysis?.videoDna ? 0 : undefined,
     fadeOut: analysis?.videoDna ? 0 : undefined,
-    gen: gen ? { characterMotion: gen.characterMotion, characterMode: gen.characterMode, videoDna: gen.videoDna, drawingMode: gen.drawingMode, style: { ...gen.style, ...(gen.style?.metrics || !analysis?.referenceStyle?.metrics ? {} : { metrics: analysis.referenceStyle.metrics }) }, cast: is2d(gen) && gen.board2d?.cast ? cast2dSpec(gen.board2d.cast) : gen.cast, locations: is2d(gen) ? {} : _.pick(gen.locations, [...usedLocations]), ...(is2d(gen) ? { board2d: board2dSpec(gen) } : {}) } : undefined,
+    gen: gen ? { characterMotion: gen.characterMotion, characterMode: gen.characterMode, videoDna: gen.videoDna, drawingMode: gen.drawingMode, style: { ...gen.style, ...(gen.style?.metrics || !analysis?.referenceStyle?.metrics ? {} : { metrics: analysis.referenceStyle.metrics }) }, cast: is2d(gen) && gen.board2d?.cast ? cast2dSpec(gen.board2d.cast) : gen.cast, locations: is2d(gen) ? {} : _.pick(gen.locations, [...usedLocations]), ...(is2d(gen) ? { board2d: board2dSpec(gen), horror: MOTION_VOICE_PACING.HORROR_RE.test([analysis?.videoGenre, analysis?.genre, analysis?.genre2, analysis?.musicMood].join(MR.MOTION_TEXT_SYMBOL_13)) } : {}) } : undefined,
     shots,
     subtitles,
     duration: +total.toFixed(3),

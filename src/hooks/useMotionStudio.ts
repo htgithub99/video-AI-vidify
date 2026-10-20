@@ -1,4 +1,6 @@
 import { MOTION_BOARD2D } from "../constants/motionBoard2d.js";
+import { MOTION_CAPTCHA } from "../constants/motionCaptcha.js";
+import { motionAlertBeep } from "../lib/motionAlertBeep.js";
 import { MOTION_PATTERNS as MP } from "../constants/motionPatterns.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
 import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../constants/motionSceneCatalog.js";
@@ -200,7 +202,11 @@ export function useMotionStudio() {
   const [flowCount, setFlowCount] = useState(0);
   const flowDepth = useRef(0);
   const [logHistory, setLogHistory] = useState<MotionLogEntry[]>([]);
+  const alertLines = useRef<Record<string, string[]>>({});
   const trackLog = useCallback((id: string, kind: string, lines: string[] | undefined) => {
+    const alerts = _.filter(lines || [], (line) => _.includes(line, MOTION_CAPTCHA.MARKER));
+    if (_.some(alerts, (line) => !_.includes(alertLines.current[id] || [], line))) motionAlertBeep();
+    alertLines.current[id] = alerts;
     setLogHistory((history) => {
       const entry = { id, kind, lines: lines || [] };
       const index = history.findIndex((item) => item.id === id);
@@ -305,7 +311,6 @@ export function useMotionStudio() {
     void resumeStoryJob(state.activeStoryJobId);
   }, [hydrated]);
   const aiExecution = motionMainAiExecution(state);
-  const sceneAiExecution = motionSceneAiExecution(state);
   const runStoryJob = useCallback(async (url: string, body: unknown, onPartial?: (r: any) => void): Promise<any> => {
     if (flowCancelled.current) throw new Error(MOTION_TEXT_CANCELLED);
     pollAbort.current?.abort();
@@ -424,24 +429,25 @@ export function useMotionStudio() {
   );
   const writeScriptRef = useRef<((chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume?: boolean, carryGen?: MotionSeriesState["carryGen"]) => Promise<void>) | null>(null);
   const analyze = useCallback(async () => {
-    if (!state.source) return;
+    const now = stateRef.current;
+    if (!now.source) return;
     setLogHistory([]);
     patch({ autoRun: true });
     await inFlow(async () => {
       try {
         const full = (await runStoryJob(API_ROUTES.MOTION_STORY_ANALYZE, {
-          source: state.source,
-          language: state.language,
-          length: state.length,
-          drawingMode: state.drawingMode,
-          styleReferences: state.styleReferences,
-          characterMotion: state.characterMotion,
-          aspect: state.aspect,
-          aiExecution,
+          source: now.source,
+          language: now.language,
+          length: now.length,
+          drawingMode: now.drawingMode,
+          styleReferences: now.styleReferences,
+          characterMotion: now.characterMotion,
+          aspect: now.aspect,
+          aiExecution: motionMainAiExecution(now),
           keepBrowser: true,
-          libraryMode: state.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO,
-          videoGenre: state.videoGenre || MOTION_VIDEO_GENRES.AUTO,
-          stylePreset: state.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : state.stylePreset || MOTION_STYLE_PRESET_NONE,
+          libraryMode: now.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO,
+          videoGenre: now.videoGenre || MOTION_VIDEO_GENRES.AUTO,
+          stylePreset: now.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : now.stylePreset || MOTION_STYLE_PRESET_NONE,
         })) as MotionStoryAnalysis;
         const started = seriesState(full, stateRef.current.parts, stateRef.current.language, stateRef.current.look);
         const analysis = started.analysis!;
@@ -457,26 +463,27 @@ export function useMotionStudio() {
   }, [inFlow, state.source, state.language, state.length, state.drawingMode, state.styleReferences, state.characterMotion, state.aspect, state.libraryMode, state.videoGenre, state.stylePreset, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
   const writeScript = useCallback(
     async (chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume = false, carryGen?: MotionSeriesState["carryGen"]) => {
-      const analysis = analysisOverride || state.analysis;
-      if (!state.source || !analysis) return;
+      const now = stateRef.current;
+      const analysis = analysisOverride || now.analysis;
+      if (!now.source || !analysis) return;
       await inFlow(async () => {
         try {
           const script = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCRIPT,
             {
-              source: state.source,
+              source: now.source,
               analysis,
-              language: state.language,
-              length: state.length,
-              drawingMode: state.drawingMode,
-              aiExecution,
-              keepBrowser: chainOn(stateRef.current),
-              voiceChannel: selectedChannelRef(state, channelsRef.current),
+              language: now.language,
+              length: now.length,
+              drawingMode: now.drawingMode,
+              aiExecution: motionMainAiExecution(now),
+              keepBrowser: chainOn(now),
+              voiceChannel: selectedChannelRef(now, channelsRef.current),
               chapterIds,
-              beats: analysisOverride ? [] : state.script?.beats || [],
-              gen: chapterIds?.length ? state.script?.gen : undefined,
-              carryGen: carryGen || (stateRef.current.series?.index ? stateRef.current.series.carryGen : undefined),
-              aspect: state.aspect,
+              beats: analysisOverride ? [] : now.script?.beats || [],
+              gen: chapterIds?.length ? now.script?.gen : undefined,
+              carryGen: carryGen || (now.series?.index ? now.series.carryGen : undefined),
+              aspect: now.aspect,
               resume,
             },
             (partial) => partial?.beats && patch({ script: partial }),
@@ -545,12 +552,13 @@ export function useMotionStudio() {
     async (req: MotionScenesRequest = {}, scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis) => {
       const script = withVoiceChannel({ ...stateRef.current, script: scriptOverride || stateRef.current.script }, channelsRef.current).script;
       const analysis = analysisOverride || stateRef.current.analysis;
+      const now = stateRef.current;
       if (!script?.beats?.length || !analysis) return;
       return inFlow(async () => {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: state.aspect, aiExecution: sceneAiExecution, mainAiExecution: aiExecution, asrCheck: state.asrCheck === true, drawingMode: state.drawingMode, styleReferences: state.styleReferences, characterMotion: state.characterMotion, review: state.aiReview !== false, previews: !exportOn(stateRef.current), ...req },
+            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), libraryMode: now.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO, asrCheck: now.asrCheck === true, drawingMode: now.drawingMode, styleReferences: now.styleReferences, characterMotion: now.characterMotion, review: now.aiReview !== false, previews: !exportOn(now), ...req },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           patch({ script: result });
@@ -571,7 +579,7 @@ export function useMotionStudio() {
   const generateVoice = useCallback(
     async (scriptOverride?: MotionStoryScript): Promise<MotionVoiceTrack | undefined> => {
       const snapshot = stateRef.current,
-        script = scriptOverride || snapshot.script;
+        script = withVoiceChannel({ ...snapshot, script: scriptOverride || snapshot.script }, channelsRef.current).script;
       if (!script?.beats?.length) return;
       const signature = narrationSignature(script, snapshot.analysis);
       if (voicePending.current?.signature === signature) return voicePending.current.promise;

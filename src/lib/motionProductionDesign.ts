@@ -77,12 +77,26 @@ export const separateMotionActors = (staging: any, location: any): number => {
 };
 export const MOTION_CAMERA_FOCUS = { SPEAKING_RE: /^(talk|sit_talk|shout|point|explain|cry|fear|surprised)$/, DETAIL: ["insert", "extreme_close"] as readonly string[], FRAMED: ["close", "medium", "over_shoulder", "insert", "extreme_close"] as readonly string[] } as const;
 export const focusMotionCameras = (staging: any): number => {
-  const actors: any[] = staging?.actors || [];
-  if (!actors.length) return 0;
-  const lead = actors.find((actor) => MOTION_CAMERA_FOCUS.SPEAKING_RE.test(actor.action || MR.MOTION_TEXT_EMPTY)) || actors[0];
+  const all: any[] = staging?.actors || [];
+  const named: string[] = (staging?.props || []).map((prop: any) => prop?.name).filter((name: any) => typeof name === MR.MOTION_TEXT_STRING && name);
   let changed = 0;
-  for (const camera of staging.cameras || (staging.camera ? [staging.camera] : [])) {
-    if (!camera || !MOTION_CAMERA_FOCUS.FRAMED.includes(camera.shot)) continue;
+  for (const camera of staging?.cameras || (staging?.camera ? [staging.camera] : [])) {
+    if (!camera) continue;
+    const actors = Array.isArray(camera.cast) ? all.filter((actor) => camera.cast.includes(actor.cast)) : all;
+    const shownProps = Array.isArray(camera.props) ? named.filter((name) => camera.props.includes(name)) : named;
+    if (Array.isArray(camera.cast) && !camera.cast.length && !camera.focusProp && shownProps.length) {
+      camera.focusProp = shownProps[0];
+      changed++;
+      continue;
+    }
+    if (!MOTION_CAMERA_FOCUS.FRAMED.includes(camera.shot)) continue;
+    if (MOTION_CAMERA_FOCUS.DETAIL.includes(camera.shot) && !camera.focusProp && !camera.focus && shownProps.length) {
+      camera.focusProp = shownProps[0];
+      changed++;
+      continue;
+    }
+    if (!actors.length) continue;
+    const lead = actors.find((actor) => MOTION_CAMERA_FOCUS.SPEAKING_RE.test(actor.action || MR.MOTION_TEXT_EMPTY)) || actors[0];
     if (MOTION_CAMERA_FOCUS.DETAIL.includes(camera.shot) && !camera.focusProp && !camera.focus) {
       camera.shot = MR.MOTION_TEXT_CLOSE;
       camera.focus = lead.cast;

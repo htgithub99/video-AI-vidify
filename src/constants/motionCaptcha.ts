@@ -1,0 +1,20 @@
+const MARKER = "[CẦN XÁC MINH]";
+export const MOTION_CAPTCHA = {
+  MARKER,
+  FLAG: "motionCaptcha",
+  PATTERN: /unusual traffic|google\.com\/sorry|not a robot|recaptcha|hcaptcha|lưu lượng truy cập bất thường|verify you are human|verifying you are human|xác minh bạn là (?:con )?người|performing security verification|đang thực hiện xác minh bảo mật|grok_security_verification|challenges\.cloudflare\.com|just a moment/i,
+  BODY_SELECTOR: "body",
+  TEXT_TIMEOUT_MS: 5000,
+  POLL_MS: 3000,
+  STABLE_POLLS: 2,
+  REMIND_MS: 60 * 1000,
+  WAIT_MS: 30 * 60 * 1000,
+  OPEN_FAILS_MAX: 3,
+  PROJECT: (provider: string): string => `captcha-${provider}`,
+  LOG_WAIT: (provider: string): string => `${MARKER} ${provider} đang yêu cầu xác minh "không phải robot". Tool đã mở Chrome – hãy tự bấm xác minh trong cửa sổ đó. Xác minh xong tool tự chạy tiếp bằng ${provider}, không chuyển sang AI khác.`,
+  LOG_REMIND: (provider: string, minutes: number): string => `${MARKER} Vẫn đang chờ bạn xác minh ${provider} (${minutes} phút)…`,
+  LOG_SOLVED: (provider: string): string => `Đã xác minh xong ${provider} – gửi lại yêu cầu bằng ${provider}.`,
+  LOG_HOLD: "Đang chờ xác minh \"không phải robot\" xong rồi mới gửi yêu cầu tiếp…",
+  ERR_TIMEOUT: (provider: string, minutes: number): string => `${provider} chưa được xác minh sau ${minutes} phút – dừng lại. Hãy xác minh trong Chrome của tool rồi chạy lại.`,
+  BEEP: { FREQ: 880, ON_MS: 200, GAP_MS: 140, COUNT: 3, GAIN: 0.3, TYPE: "square" as OscillatorType },
+} as const;

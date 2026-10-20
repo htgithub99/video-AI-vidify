@@ -23,7 +23,7 @@ const beatContext = (beat: MotionBeat, gen: MotionGenState) => {
     lines: texts,
     pictures: _.compact(_.flatMap(texts, (t) => _.map(splitBoard2dSentences(t.text), (x) => {
       const e = sentences[board2dSentenceKey(x)];
-      return e ? { text: x, mode: e.mode, kind: e.kind, objects: _.map(e.objects, C.F_KEY), poses: _.map(e.actors, (a) => a.cast + C.SEP + a.pose), light: e.light } : null;
+      return e ? _.omitBy({ text: x, mode: e.mode, kind: e.kind, objects: _.map(e.objects, C.F_KEY), poses: _.map(e.actors, (a) => a.cast + C.SEP + a.pose), light: e.light, apparition: e.apparition?.kind, effects: _.compact([..._.map(e.actors, (a) => a.effect), ..._.map(e.items || [], (it) => it.effect)]) }, _.isNil) : null;
     }))),
   };
 };

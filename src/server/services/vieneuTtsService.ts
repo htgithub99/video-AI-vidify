@@ -163,7 +163,69 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
 };
 export const listVieneuVoices = (signal?: AbortSignal, log?: (value: string) => void): Promise<MotionVoicePreset[]> => request({ command: MR.MOTION_TEXT_VOICES }, signal, log);
 export interface VieneuDelivery { temperature?: number; silence?: number; }
-export const synthesizeVieneuSpeech = (text: string, voice: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery: VieneuDelivery = {}, target?: VieneuModelTarget): Promise<{ seconds: number; sampleRate: number; backend: string }> => request({ command: MR.MOTION_TEXT_SYNTHESIZE, text, voice, file, ...delivery }, signal, log, target);
+type SpeechResult = { seconds: number; sampleRate: number; backend: string };
+interface SpeechEntry { text: string; voice: string; file: string; delivery: VieneuDelivery; signal?: AbortSignal; log?: (value: string) => void; resolve: (value: SpeechResult) => void; reject: (error: Error) => void; }
+const speechPending = new Map<string, SpeechEntry[]>();
+const speechDraining = new Set<string>();
+const backendLogged = new Set<string>();
+const speechGroup = (entry: SpeechEntry): string => [entry.voice, entry.delivery.temperature ?? MR.MOTION_TEXT_EMPTY, entry.delivery.silence ?? MR.MOTION_TEXT_EMPTY].join(C.BATCH_SEP);
+const takeSpeech = (key: string): SpeechEntry[] => {
+  const list = speechPending.get(key) || [];
+  for (const entry of list.filter((item) => item.signal?.aborted)) entry.reject(new Error(C.CANCELLED));
+  const live = list.filter((item) => !item.signal?.aborted);
+  if (!live.length) {
+    speechPending.delete(key);
+    return [];
+  }
+  const group = speechGroup(live[0]);
+  const taken = live.filter((item) => speechGroup(item) === group).slice(0, C.BATCH_MAX);
+  speechPending.set(key, live.filter((item) => !taken.includes(item)));
+  return taken;
+};
+const drainSpeech = (key: string, target?: VieneuModelTarget): void => {
+  if (speechDraining.has(key)) return;
+  speechDraining.add(key);
+  void slotOf(key).queue.then(async () => {
+    speechDraining.delete(key);
+    const taken = takeSpeech(key);
+    if (!taken.length) return;
+    const head = taken[0];
+    const logBackend = (result: SpeechResult) => {
+      if (!result?.backend || backendLogged.has(key)) return;
+      backendLogged.add(key);
+      head.log?.(C.BACKEND_LOG(String(result.backend)));
+    };
+    try {
+      if (taken.length === 1) {
+        const result = await request<SpeechResult>({ command: MR.MOTION_TEXT_SYNTHESIZE, text: head.text, voice: head.voice, file: head.file, ...head.delivery }, head.signal, head.log, target);
+        logBackend(result);
+        head.resolve(result);
+      } else {
+        const results = await request<({ error?: string } & SpeechResult)[]>({ command: C.BATCH_COMMAND, voice: head.voice, ...head.delivery, items: taken.map((item) => ({ text: item.text, file: item.file })) }, head.signal, head.log, target);
+        taken.forEach((item, index) => {
+          const result = results?.[index];
+          if (!result || result.error) item.reject(new Error(result?.error || C.FAILED));
+          else {
+            logBackend(result);
+            item.resolve(result);
+          }
+        });
+      }
+    } catch (error) {
+      for (const item of taken) item.reject(error as Error);
+    }
+    if (speechPending.get(key)?.length) drainSpeech(key, target);
+  });
+};
+export const synthesizeVieneuSpeech = (text: string, voice: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery: VieneuDelivery = {}, target?: VieneuModelTarget): Promise<SpeechResult> =>
+  new Promise<SpeechResult>((resolve, reject) => {
+    if (signal?.aborted) return reject(new Error(C.CANCELLED));
+    const key = target ? target.model : MR.MOTION_TEXT_EMPTY;
+    const list = speechPending.get(key) || [];
+    list.push({ text, voice, file, delivery, signal, log, resolve, reject });
+    speechPending.set(key, list);
+    drainSpeech(key, target);
+  });
 export const registerVieneuVoice = (voice: string, name: string, gender: string, file: string, signal?: AbortSignal): Promise<MotionVoicePreset> => request({ command: MR.MOTION_TEXT_REGISTER, voice, name, gender, file }, signal);
 export const transcribeVieneuAudio = async (file: string, language: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ text: string; words: { w: string; s: number; e: number }[] }> => {
   await ensureVieneuAsr(signal, log);

@@ -95,6 +95,7 @@ export interface MotionCreativeBlueprint {
   uncertainties: string[];
   evidence: { claim: string; sourceClue: string }[];
 }
+export interface MotionFolkBelief { name: string; meaning: string; signs: string[]; taboos: string[]; remedies: string[]; }
 export interface MotionStoryAnalysis {
   characterMotion?: boolean;
   referenceStyle?: MotionReferenceStyle;
@@ -119,6 +120,9 @@ export interface MotionStoryAnalysis {
   cast: MotionCastMember[];
   places: MotionPlace[];
   facts: MotionFact[];
+  modelCraft?: string[];
+  modelAvoid?: string[];
+  folkBelief?: MotionFolkBelief;
 }
 export interface MotionSceneMood { mood: MotionUtterance["emotion"]; intensity: number; }
 export interface MotionVoiceDelivery { mood: MotionUtterance["emotion"]; strength: number; temperature: number; silence: number; tempo: number; pause: number; gain: number; }
@@ -176,12 +180,13 @@ export interface MotionFlatCamera { pitch: number; wideFigure?: number; horizon?
 export interface MotionGenStyle { metrics?: MotionStyleMetrics; outlineColor?: string; outlineWidth?: number; grade?: string; palette?: string[]; notes?: string; outlineSilhouette?: boolean; faceShading?: boolean; framing?: string; flatCamera?: MotionFlatCamera; }
 export interface MotionGenPreview { file?: string; files?: string[]; issues?: string[]; score?: number; note?: string; at?: string; }
 export interface MotionBoard2dObject { key: string; color?: string | null; count?: number; state?: string | null; }
-export interface MotionBoard2dActor { cast: string; pose: string; expression?: string; face?: string; wear?: string | null; hold?: string | null; small?: boolean; }
-export interface MotionBoard2dItem { key: string; x: number; y: number; scale: number; }
+export interface MotionBoard2dActor { cast: string; pose: string; expression?: string; face?: string; wear?: string | null; hold?: string | null; small?: boolean; grip?: string; effect?: string; depth?: string; }
+export interface MotionBoard2dItem { key: string; x: number; y: number; scale: number; effect?: string; count?: number; }
 export interface MotionBoard2dDetail { text: string; key: string; as: string; who?: string | null; }
-export interface MotionBoard2dSentence { mode: "people" | "vignette" | "cutaway" | "place"; place?: string | null; placeDesc?: string | null; details?: MotionBoard2dDetail[]; fixed?: number; kind?: string | null; subject?: string | null; target?: string | null; objects: MotionBoard2dObject[]; actors: MotionBoard2dActor[]; camera?: string; light?: string | null; items?: MotionBoard2dItem[]; text?: string; redo?: boolean; }
-export interface MotionBoard2dProp { svg: string; grip: number[]; base: number[]; height: number; }
-export interface MotionBoard2dSet { svg: string; code?: string; time?: string; floorY: number; marks: number[][]; lights: { x: number; y: number; color: string; kind: string }[]; }
+export interface MotionBoard2dSentence { mode: "people" | "vignette" | "cutaway" | "place"; place?: string | null; placeDesc?: string | null; details?: MotionBoard2dDetail[]; fixed?: number; kind?: string | null; subject?: string | null; target?: string | null; objects: MotionBoard2dObject[]; actors: MotionBoard2dActor[]; camera?: string; light?: string | null; items?: MotionBoard2dItem[]; text?: string; redo?: boolean; ambient?: string[]; apparition?: MotionBoard2dApparition | null; }
+export interface MotionBoard2dApparition { kind: string; x: number; }
+export interface MotionBoard2dProp { svg: string; grip: number[]; base: number[]; height: number; head?: number[] | null; view?: number; }
+export interface MotionBoard2dSet { svg: string; code?: string; time?: string; landmarks?: { key: string; x: number; y: number; w: number; h: number }[]; floorY: number; marks: number[][]; lights: { x: number; y: number; color: string; kind: string }[]; }
 export interface MotionCast2d { skin: string; top: string; bottom?: string | null; shoes?: string | null; hair?: string | null; hairKind?: string | null; beard?: string | null; hat?: string | null; hatKind?: string | null; glasses?: boolean; scarf?: string | null; skirt?: boolean; buttons?: boolean; eye?: string; legs?: boolean; arms?: boolean; animal?: boolean; species?: string | null; brows?: boolean; height: number; template?: boolean; ghost?: boolean; }
 export interface MotionBoard2dSheetItem { t: number; text: string; file: string; }
 export interface MotionBoard2dReport { sentences: number; fallback: number; sets: number; codeSets: string[]; cast: number; }
@@ -247,6 +252,9 @@ export enum MotionStoryLength {
   ONE_HUNDRED_FIVE = "105min",
   SHORT = "short",
   ONE = "1min",
+  TWO = "2min",
+  THREE = "3min",
+  FOUR = "4min",
 }
 export enum MotionStoryJobKind {
   ANALYZE = "analyze",

@@ -583,6 +583,17 @@
         warnings.push(...st.warnings);
         if (nodes.length) o.hold = { part: idOk(a.hold.part || a.part) ? a.hold.part || a.part : MT.BODY, nodes };
       }
+      const wear = (Array.isArray(a.wear) ? a.wear : a.wear ? [a.wear] : []).slice(0, MT.WEAR_MAX);
+      wear.forEach((w, k) => {
+        if (!w || typeof w !== MT.OBJECT) return;
+        const part = idOk(w.part) ? w.part : MT.HEAD;
+        if (w.kind === MT.WEAR_BAND) return (o.wear = o.wear || []).push({ kind: MT.WEAR_BAND, part, color: typeof w.color === MT.STRING && MT.WEAR_HEX_RE.test(w.color) ? w.color : MT.WEAR_BAND_COLOR });
+        const st = newState(L.materials || {});
+        const nodes = GEN.smallNodes(Array.isArray(w.nodes) ? w.nodes : [], st, MT.ACTORS + i + MT.WEAR + k, 2.4);
+        errors.push(...st.errors);
+        warnings.push(...st.warnings);
+        if (nodes.length) (o.wear = o.wear || []).push({ part, nodes });
+      });
       out.actors.push(o);
     });
     const st = newState(L.materials || {});
@@ -614,15 +625,18 @@
       if (cam.follow && castKeys.includes(cam.follow)) c.follow = cam.follow;
       if (cam.dof != null) c.dof = num(cam.dof, 0.4, 0, 1);
       if (typeof cam.utterance === MT.STRING && cam.utterance) c.utterance = cam.utterance.slice(0, 100);
+      if (Array.isArray(cam.cast)) c.cast = cam.cast.filter((k) => castKeys.includes(k)).slice(0, MT.CAM_SHOW_MAX);
+      if (Array.isArray(cam.props)) c.props = cam.props.filter((k) => typeof k === MT.STRING).map((k) => k.slice(0, 40)).slice(0, MT.CAM_SHOW_MAX);
+      if (Array.isArray(cam.hide)) c.hide = cam.hide.filter((k) => typeof k === MT.STRING).map((k) => k.slice(0, 40)).slice(0, MT.CAM_SHOW_MAX);
       return c;
     };
     const camList = Array.isArray(s.cameras) && s.cameras.length ? s.cameras : [s.camera || {}];
     out.cameras = camList
-      .slice(0, 4)
+      .slice(0, MT.CAM_MAX)
       .map(cleanCam)
       .sort((a, b) => a.at - b.at);
     out.cameras[0].at = 0;
-    out.cameras = out.cameras.filter((c, i, arr) => i === 0 || c.at - arr[i - 1].at >= 0.12);
+    out.cameras = out.cameras.filter((c, i, arr) => i === 0 || !!c.utterance || c.at - arr[i - 1].at >= MT.CAM_GAP);
     out.camera = out.cameras[0];
     if (s.tOffset != null) out.tOffset = num(s.tOffset, 0, 0, 600);
     if (s.beatDur != null) out.beatDur = num(s.beatDur, 0, 0, 600) || undefined;

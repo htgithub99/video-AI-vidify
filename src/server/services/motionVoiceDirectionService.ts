@@ -7,7 +7,7 @@ import { applyVoiceLibrary, findVoiceChannel } from "./motionVoiceLibraryService
 import { MOTION_AUDIO_DIRECTION, MOTION_AUDIO_CAST_PROMPT } from "../../constants/motionAudioDirection.js";
 import { motionAudioDirection, motionSpeakerTraits } from "../../lib/motionAudioDirection.js";
 import { motionSceneType } from "../../constants/motionSceneCatalog.js";
-import { motionVoiceSignature, motionVoiceSpeaks, normalizeMotionUtterances, fallbackMotionUtterances, selectMotionVoiceRoles } from "../../lib/motionVoice.js";
+import { motionVoiceSignature, motionVoiceSpeaks, normalizeMotionUtterances, fallbackMotionUtterances, selectMotionVoiceRoles, motionNarratorCastKey, motionNarratorLines } from "../../lib/motionVoice.js";
 import type { MotionBeat, MotionStoryScript, MotionStoryAnalysis, MotionVoicePlan, MotionAiExecution, MotionVoicePreset } from "../../types/motionVideo.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { mapMotionAiPool, resetMotionAiRoom, runMotionAi } from "./motionStoryService.js";
@@ -48,14 +48,14 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
     getMotionRootDirectory(),
     MR.MOTION_TEXT_TTS_CACHE,
     createHash(MR.MOTION_TEXT_SHA256)
-      .update(signature + JSON.stringify(analysis?.cast || []) + JSON.stringify(fixed))
+      .update(signature + JSON.stringify(analysis?.cast || []) + JSON.stringify(fixed) + JSON.stringify(channel || {}))
       .digest(MR.MOTION_TEXT_HEX) + MR.MOTION_TEXT_PLAN_JSON,
   );
   let saved: MotionVoicePlan | undefined;
   try {
     saved = JSON.parse(fs.readFileSync(planFile, MR.MOTION_TEXT_UTF8));
   } catch {}
-  if (saved?.signature === signature && saved.version === C.VERSION && saved.roles.every((role) => voices.some((voice) => voice.id === role.voiceId && (!role.gender || voice.gender === role.gender))) && (!channel || saved.roles.some((role) => role.speaker === C.NARRATOR && role.voiceId === channel.narratorVoiceId))) return saved;
+  if (saved?.signature === signature && saved.version === C.PLAN_VERSION && saved.roles.every((role) => voices.some((voice) => voice.id === role.voiceId && (!role.gender || voice.gender === role.gender))) && (!channel || saved.roles.some((role) => role.speaker === C.NARRATOR && role.voiceId === channel.narratorVoiceId))) return saved;
   opts.log?.(C.PLANNING);
   let casting: any;
   const settled = castingSettled(analysis, voices, motionAudioDirection(script, analysis), channel, fixed);
@@ -132,7 +132,8 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
     if (group.some((beat) => !planned.has(beat.id))) opts.log?.(C.PLAN_FALLBACK);
     for (const beat of group) if (!planned.has(beat.id)) planned.set(beat.id, fallbackBeat(beat));
   });
-  const plan = { version: C.VERSION, signature, direction, roles, beats: script.beats.map((beat) => planned.get(beat.id)!) };
+  const narratorKey = motionNarratorCastKey(analysis);
+  const plan = { version: C.PLAN_VERSION, signature, direction, roles, beats: script.beats.map((beat) => { const b = planned.get(beat.id)!; return { ...b, utterances: motionNarratorLines(b.utterances, narratorKey) }; }) };
   fs.mkdirSync(path.dirname(planFile), { recursive: true });
   writeMotionJsonAtomic(planFile, plan);
   return plan;

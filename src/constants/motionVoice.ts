@@ -1,11 +1,12 @@
 export const MOTION_VOICE_RANK = { REGION: 4, REGION_MISS: -3, STORY: 1, NEWS: -2 } as const;
 export const MOTION_VOICE = {
   VERSION: 4,
+  PLAN_VERSION: 6,
   DIRECT_SPEECH_RE: /[:：]\s*["“«‘']?\s*\p{Lu}|["“«][^"”»]{2,}["”»]/u,
   CLIP_VERSION: 4,
   TRACK_VERSION: 4,
   PAUSE: { FIRST: 0.15, SAME_SPEAKER: 0.1, SPEAKER_CHANGE: 0.22, BEAT_END: 0.22 },
-  TEMPO: { MIN: 0.9, MAX: 1.15, SPEED_MIN: 0.95, SPEED_MAX: 1.08 },
+  TEMPO: { MIN: 0.97, MAX: 1.03, SPEED_MIN: 1, SPEED_MAX: 1 },
   PROVIDER: "vieneu",
   ASR: {
     PACKAGE: "faster-whisper==1.1.1",
@@ -49,6 +50,11 @@ export const MOTION_VOICE = {
   RETRY_DELAY: 3000,
   PREFIX: "voice-vieneu-",
   CLIP_PREFIX: "line-vieneu-",
+  CLIP_PARALLEL: 8,
+  BATCH_MAX: 8,
+  BATCH_SEP: "|",
+  BATCH_COMMAND: "batch",
+  BACKEND_LOG: (backend: string): string => `VieNeu đang chạy bằng: ${backend}`,
   ARTIFACT: "motion-voice-direction",
   VOICES_ROUTE: "/voices",
   VOICES_URL: "/api/motion-video/voices",
@@ -108,6 +114,8 @@ export const MOTION_VOICE_PATTERNS = {
   REGION_SHORT: { nam: "south", bac: "north", trung: "central" } as Record<string, string>,
   GENDER_PART: /^(?:nam|nu|male|female)$/,
   STORY_STYLE: /ke chuyen|doc truyen|truyen|story|dien xuat|cam xuc/,
+  NARRATOR_SELF: /^(toi|tui|ta|minh|i|me|narrator|nguoi ke|nguoi ke chuyen)$/,
+  NARRATOR_ROLE: /nguoi ke|narrator|ngoi thu nhat|first person/,
   NEWS_STYLE: /tin tuc|news|quang cao/,
   PART_SEPARATOR: "·",
   VOICE_TRACK: /^voice-vieneu-[a-f0-9]{32}\.wav$/,
@@ -503,7 +511,7 @@ export const MOTION_VOICE_DELIVERY = {
     scared: { temperature: 0.9, silence: 0.1, tempo: 1.05, pause: 0.8, gain: 0.95 },
     angry: { temperature: 0.88, silence: 0.1, tempo: 1.04, pause: 0.85, gain: 1.1 },
   } as Record<string, { temperature: number; silence: number; tempo: number; pause: number; gain: number }>,
-  NARRATOR_SHARE: 0.5,
+  NARRATOR_SHARE: 0.35,
   LOG: (counts: Record<string, number>, ai33: number): string =>
     `Giọng theo tâm trạng: ${
       Object.entries(counts)
@@ -520,9 +528,6 @@ export const MOTION_VOICE_SPEED = {
   AUTO_MIN: 0.82,
   AUTO_MAX: 1.32,
   GAP_FACTOR: 1.12,
-  PACED_GAP_FACTOR: 1.4,
-  PACED_GAP_MAX: 1.55,
-  PACED_AUTO_MAX: 1.4,
   MIN_UNITS: 6,
   RATE_WEIGHT: 0.25,
   RATE_RANGE: [1.5, 9],
@@ -623,17 +628,17 @@ export const MOTION_VOICE_PACING = {
 
 export interface MotionVoiceFx { pitch: number; vibrato: number; vibratoHz: number; treble: number; presence: number; lowpass: number; }
 export const MOTION_VOICE_FX = {
-  VERSION: 1,
+  VERSION: 3,
   NONE: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: 0, presence: 0, lowpass: 0 } as MotionVoiceFx,
   MOODS: {
-    warm: { pitch: -0.2, vibrato: 0, vibratoHz: 6, treble: -1, presence: 0, lowpass: 0 },
-    serious: { pitch: -0.5, vibrato: 0, vibratoHz: 6, treble: -1, presence: 1, lowpass: 0 },
-    tense: { pitch: 0.3, vibrato: 0.06, vibratoHz: 6.5, treble: 0, presence: 1.5, lowpass: 0 },
-    surprised: { pitch: 1.2, vibrato: 0, vibratoHz: 6, treble: 1.5, presence: 1.5, lowpass: 0 },
-    sad: { pitch: -0.9, vibrato: 0.05, vibratoHz: 5, treble: -3, presence: -1, lowpass: 6500 },
-    excited: { pitch: 1, vibrato: 0, vibratoHz: 6, treble: 2, presence: 2, lowpass: 0 },
-    scared: { pitch: 0.8, vibrato: 0.2, vibratoHz: 7.5, treble: 0.5, presence: 1, lowpass: 0 },
-    angry: { pitch: -0.3, vibrato: 0, vibratoHz: 6, treble: 1, presence: 4, lowpass: 0 },
+    warm: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: -1, presence: 0, lowpass: 0 },
+    serious: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: -1, presence: 1, lowpass: 0 },
+    tense: { pitch: 0, vibrato: 0, vibratoHz: 6.5, treble: 0, presence: 1.5, lowpass: 0 },
+    surprised: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: 1.5, presence: 1.5, lowpass: 0 },
+    sad: { pitch: 0, vibrato: 0, vibratoHz: 5, treble: -3, presence: -1, lowpass: 6500 },
+    excited: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: 2, presence: 2, lowpass: 0 },
+    scared: { pitch: 0, vibrato: 0, vibratoHz: 7.5, treble: 0.5, presence: 1, lowpass: 0 },
+    angry: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: 1, presence: 4, lowpass: 0 },
   } as Record<string, MotionVoiceFx>,
   ROLES: ["dialogue", "thought", "offscreen"] as string[],
   NARRATOR_SHARE: 0.35,

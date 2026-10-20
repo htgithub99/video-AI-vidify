@@ -12,6 +12,9 @@ export const MOTION_GEN_CONFIG = {
   ARTIFACT_STAGING: "motion-gen-staging",
   ARTIFACT_STAGING_REVIEW: "motion-gen-staging-review",
   STAGING_TRIES: 3,
+  CAMERA_MAX: 8,
+  CUT_MIN: 0.05,
+  CUT_MAX: 0.95,
   LONG_VIDEO_SCENE_BEATS: 60,
   SCORE_KEY: "score",
   NOTE_KEY: "note",
@@ -144,6 +147,7 @@ export const MOTION_GEN_CHAPTER_PROMPT = (o: {
   cast: string;
   places: string;
   transcript: string;
+  transcriptLabel?: string;
 }): string => `${o.preamble}
 ROLE: ${o.role}. Write the narration and the shot list (JSON) for one chapter.
 Story: "${o.title}" — ${o.logline}
@@ -152,7 +156,7 @@ CHAPTER ${o.chapterId}: "${o.chapterTitle}" — ${o.chapterSummary}
 NARRATION:
 - ${o.languageNote}. The "narration" field MUST be written in ${o.language}.
 - Write original narration according to the project's purpose and voice. Preserve established facts in factual work and the supplied premise in fiction; do not invent real-world claims. Do not translate the source sentence by sentence.
-- Total ≈ ${o.units} ${o.unitName} (≈${o.seconds} s of speech). HARD LIMIT: never more than ${o.units} ${o.unitName} for all beats together. About ${o.beats} beats, each 1–3 short sentences (≈${o.perBeat} ${o.unitName}).
+- Total ≈ ${o.units} ${o.unitName} (≈${o.seconds} s of speech). HARD LIMIT: never more than ${o.units} ${o.unitName} for all beats together. About ${o.beats} beats, each 1–3 sentences (≈${o.perBeat} ${o.unitName}); vary sentence length like a real storyteller.
 - Spell out numbers a TTS voice may misread.${o.firstNote}${o.lastNote}
 ${o.previous}
 ${o.outline || ""}
@@ -173,7 +177,7 @@ JSON (example shape – a different story):
  {"narration":"…","visual":"stats","data":{"title":"…","items":[{"value":3,"suffix":" days","label":"…"}]}}
 ]}
 
-SOURCE TRANSCRIPT FOR THIS CHAPTER:
+${o.transcriptLabel || "SOURCE TRANSCRIPT FOR THIS CHAPTER:"}
 ${o.transcript}`;
 export const MOTION_GEN_DRAW_MODE = {
   ROLE_3D: "production designer of a 3D story video",
@@ -216,7 +220,7 @@ LOCATION JSON:
  "marks":{"name":[x,z]} = named floor spots people use (by_the_door, at_the_counter, driver_door, behind_desk…),
  "camera":{"pos":[x,y,z],"target":[x,y,z],"fov":35..50} = a good establishing view of the stage.}
 QUALITY RULES:
-- Draw the place richly and recognisably: correct geometry and materials rather than a target node count, real proportions, era-correct details, several materials (surface patterns only where the style shows texture), small props that tell the story. Walls of an interior: floor, walls, ceiling, a door, windows/light fixtures. Outdoor: ground, roads/pavements, buildings around (also BEHIND the camera so glass and car paint reflect something), sky colours.
+- Draw the place richly and recognisably: correct geometry and materials rather than a target node count, real proportions, era-correct details, several materials (surface patterns only where the style shows texture). Draw the structure and the one or two landmark objects that define the place (an altar, a hearth, a gate, a bed) and keep the stage floor clean and empty: no loose clutter, because the objects of each moment are added later as props. Walls of an interior: floor, walls, ceiling, a door, windows/light fixtures. Outdoor: ground, roads/pavements, buildings around (also BEHIND the camera so glass and car paint reflect something), sky colours.
 - Derive palette, material texture, reflectance, lighting contrast and background treatment from the PROJECT STYLE KIT when one is given (it wins over everything else, including the example below), otherwise from the project Video DNA, and from each actual object. Do not impose dark walls, warm accents, cool rims, a restricted colour count or a documentary aesthetic. Keep important subjects readable without washing out material distinctions. Choose supported patterns at a believable scale and metalness only where physically or stylistically justified.
 - Everything stands on the ground or on another object – nothing floats, nothing intersects through the stage.
 - Light it like a film: at night or inside, add motivated lights (lamps, windows, street lights, car headlights, police lights) – at least 2–6 lights; keep the stage readable.
@@ -314,6 +318,13 @@ Return only style and cast.`;
 export const MOTION_GEN_ACTIONS_GUIDE = (): string => `ACTIONS are names from each character's authored poses and motions in CAST.design. Choose an existing name, or idle for the rest design. Do not assume any action has a built-in animation.
 - Follow AUTHORITATIVE CHARACTER MOTION: when enabled, authored motion tracks, safe moveTo paths and then transitions may play; when disabled, use a single fixed authored pose and omit movement/transitions.
 - For held objects use hold:{part:"authored part id or anchor name",nodes:[complete geometry nodes]}. Local coordinates belong to that attachment part. No automatic hand attachments or default props exist.`;
+export const MOTION_GEN_PICTURE_RULES = [
+  "- ONE PICTURE PER SENTENCE (like the reference video): each camera shows ONE clear subject, exactly what its sentence says, big and readable, in a simple place seen straight on. Use the camera cast, props and hide lists so that each shot contains only what its sentence mentions.",
+  "- WHO IS ON SCREEN: people appear only when the sentence is about what people do or feel in that moment. A sentence that reports a result, a count or what happened over a span of time ('mười tháng trời nhà tôi đóng bảy cỗ áo quan', 'ba ngôi mộ mới đắp') shows the RESULT itself: a shot with cast [] and those objects big and clear. A person named only as an owner or a household ('nhà tôi', 'làng tôi') is not on screen. When someone does a concrete action right now, show that person doing it with the object.",
+  "- COUNTS: when the sentence gives a number of things (bảy cỗ áo quan, hai ngôi mộ), add exactly that many as ONE named prop group laid out in neat rows on the free floor (at most 4 per row, rows one behind the other, every object facing the camera): {\"shape\":\"group\",\"name\":\"seven_coffins\",\"pos\":[x,0,z],\"children\":[{\"shape\":\"repeat\",\"pos\":[x,0,z],\"count\":[per row,1,1],\"step\":[dx,0,0],\"node\":{complete object}}, …one repeat per row]}; an object-only shot of them uses cast [] and focusProp set to that group name. When the counted thing is worn or held by people (ba chiếc khăn tang, ba người chịu tang), it means that many people, each wearing or holding it.",
+  "- MOURNING AND FUNERALS: mourners wear a white mourning band (wear kind band); the deceased are shown by a portrait on the altar with incense and candles; grief, mourning, loss and longing are filmed from behind (view rear) with the mourners standing in front of the altar or the grave facing it (face 180 toward it), quiet and dark with one warm light.",
+  "- ONLY WHAT IS SAID: never add people, animals, objects or effects that the sentence does not mention. Every object is exactly what the Vietnamese words mean in this setting (áo quan or quan tài = a wooden coffin, khăn tang = white mourning band, di ảnh = memorial portrait, bát hương = incense bowl, nón lá = conical hat, cuốc = hoe); never a vaguer or different object.",
+].join("\n");
 export const MOTION_GEN_STAGING_PROMPT = (o: { preamble: string; story: string; actions: string; cast: string; locations: string; beats: string; continuity: string; notes: string }): string => `${o.preamble}
 ROLE: film director. Stage each beat according to AUTHORITATIVE CHARACTER MOTION, with readable poses, props and cameras.
 STORY: ${o.story}
@@ -328,12 +339,13 @@ ${o.actions}
 STAGING JSON per beat:
 {"id":"beat id","location":"location key","time":"optional override",
  "actors":[{"cast":"key","action":"action id","at":[x,z] or "mark name","face":degrees (0 = toward +Z/the camera side, 90 = toward +X, 180 = away, -90 = toward -X) or "camera" or a cast key or [x,z],
-            "hold":{"part":"authored attachment part or anchor","nodes":[complete local geometry nodes]},"y":base height (optional),"ghost":true (optional for ghosts and spirits),"expression":"an expression name authored in this character's design (optional, matches the emotion of the beat)","talk":true or [from,to] fractions of the beat when this character is the one speaking aloud (optional; mouth moves only if the design has a talk expression)}],
+            "hold":{"part":"authored attachment part or anchor","nodes":[complete local geometry nodes]},"wear":[{"kind":"band","color":"#f4f2ea"} for a headband or mourning band tied around the head, or {"part":"authored part or anchor","nodes":[complete local geometry nodes]} for another worn item],"y":base height (optional),"ghost":true (optional for ghosts and spirits),"expression":"an expression name authored in this character's design (optional, matches the emotion of the beat)","talk":true or [from,to] fractions of the beat when this character is the one speaking aloud (optional; mouth moves only if the design has a talk expression)}],
  "props":[extra nodes only needed for this beat, same shape format, e.g. a document on the table, a dropped bag, sparks],
  "hide":["names of location objects to hide in this beat"],
  "weather":"none|rain|snow|fog|dust",
- "cameras":[{"at":0,"shot":"wide|medium|close|extreme_close|over_shoulder|low|high|aerial|insert","pos":[x,y,z],"target":[x,y,z],"fov":20..60,"move":"static|dolly_in|dolly_out|pan_left|pan_right|orbit_left|orbit_right|crane_up|crane_down|truck_left|truck_right|follow|handheld","amount":0.3..1.5,"focus":"cast key (optional)","focusProp":"exact existing node name for object detail (required on insert)","follow":"cast key for move follow","dof":0..1 (background blur, close shots)}]}
+ "cameras":[{"at":0,"shot":"wide|medium|close|extreme_close|over_shoulder|low|high|aerial|insert","pos":[x,y,z],"target":[x,y,z],"fov":20..60,"move":"static|dolly_in|dolly_out|pan_left|pan_right|orbit_left|orbit_right|crane_up|crane_down|truck_left|truck_right|follow|handheld","amount":0.3..1.5,"focus":"cast key (optional)","focusProp":"exact existing node name for object detail (required on insert)","view":"front|profile|rear","cast":["cast keys visible in this shot; [] for an object-only shot; omit for everyone"],"props":["names of the beat props visible in this shot; omit for all"],"hide":["names of location objects hidden in this shot"],"utterance":"voice line id where this shot starts","follow":"cast key for move follow","dof":0..1 (background blur, close shots)}]}
 RULES:
+${MOTION_GEN_PICTURE_RULES}
 - For actor framing set camera view to front, profile or rear when the story calls for it. A deliberate rear/over-shoulder composition is supported. Otherwise choose a clear view on the actor's facing side rather than its back.
 - props must contain COMPLETE scene graph nodes: explicit pos [x,y,z], dimensions and mat, including all children for composite objects. Never return placeholder object descriptions. Objects already listed in the location exist; do not duplicate them in props. Use focusProp with their exact name. If changing an object state, hide the original by name and replace it at the same world position with full geometry.
 - Reuse a location component as {"shape":"use","ref":"an exact key from location geometry.defs","pos":[x,y,z]}. Never invent a ref. Held objects require complete inline geometry. Lights use {"shape":"light","type":"point|spot|sun|hemi|ambient","color":"#fff4e0","intensity":1}; choose one supported type, not the literal list.
@@ -352,7 +364,7 @@ ${MOTION_HISTORY_STAGING}
 - Working on an object: select an existing authored pose or motion, set "face" to the object's [x,z] and choose distance based on actual character dimensions. Put the camera at the side or three-quarter front of the actor (about 60–90° from where the actor looks) so the face, the hands and the object are all visible – never behind the actor's back.
 - Use numeric "face" or a fixed object coordinate. Only emit moveTo/then when AUTHORITATIVE CHARACTER MOTION is enabled; avoid complex contact interactions.
 - Camera: derive height, distance and target from actual authored character geometry and anchors. Stylized subjects can have any proportions or height. Keep the camera inside interior walls and clear of objects.
-- One to four supported cameras per beat: cuts use "at" times (0..1). Use only the camera coverage needed by this input and blueprint; preserve spatial continuity between views.
+- Cameras: one camera per narration sentence of the beat (up to 8), each starting at its sentence with "utterance" (or "at" 0..1), so every sentence gets its own picture; preserve spatial continuity between views.
 ${o.continuity}
 ${o.notes}
 BEATS TO STAGE:
@@ -363,7 +375,7 @@ export const MOTION_GEN_STAGING_REVIEW_PROMPT = (o: { preamble: string; beats: s
 ROLE: film editor. The attached images are test renders of these shots, in this order (one image per shot, the shot id is written in the corner):
 ${o.beats}
 ACTUAL SCENE AND SHOT DATA: ${o.sceneData || "not supplied"}
-Use these transforms to prescribe exact corrected coordinates, facing and focusProp names. For object detail target the relevant child surface (not a support stand's origin). State changes need actual changed geometry, not narration alone. For a front/profile character shot, place the camera on that actor's facing side using its numeric face or faceAt, never behind it. Return concrete numeric fixes grounded in this data.
+Use these transforms to prescribe exact corrected coordinates, facing and focusProp names. For object detail target the relevant child surface (not a support stand's origin). State changes need actual changed geometry, not narration alone. For a front/profile character shot, place the camera on that actor's facing side using its numeric face or faceAt; only a shot with view "rear" (mourners facing an altar or a grave, someone looking at a far place) is filmed from behind on purpose. Return concrete numeric fixes grounded in this data.
   For each shot check: does the picture show what the narration/action says (right people, place, objects, action)? Is it readable and well framed (people not cut, not tiny, not hidden behind objects, camera not inside a wall)? People inside furniture or each other?
 Compare consecutive images for narrated object-state changes: the initial state and result must visibly differ. A final-state object repeated throughout does not demonstrate an event. Ask for corrected before/after geometry, not character animation.
 If an existing set object lacks functional details, has buried surfaces or wrong geometry/materials, report locationFix separately. Camera/staging changes cannot repair the set geometry. Check layered surfaces: dial/display/controls must be in front of the casing, not inside an opaque cap. Use staging fix only for actor positions, facing, extra props and camera.

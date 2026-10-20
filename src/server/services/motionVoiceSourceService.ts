@@ -88,6 +88,12 @@ export const ai33VoiceSample = async (id: string, file: string, signal?: AbortSi
   await toWav(Buffer.from(await response.arrayBuffer()), file, signal);
   return true;
 };
+let ai33Queue: Promise<unknown> = Promise.resolve();
+const ai33Serial = <T>(work: () => Promise<T>): Promise<T> => {
+  const job = ai33Queue.then(work, work);
+  ai33Queue = job.catch(() => {});
+  return job;
+};
 export const synthesizeMotionSpeech = async (speech: string, voiceId: string, file: string, signal?: AbortSignal, log?: (value: string) => void, delivery?: VieneuDelivery): Promise<{ seconds: number }> => {
   if (_.startsWith(voiceId, MOTION_VOICE_TRAIN.ID_PREFIX)) {
     const trained = trainedVoice(voiceId);
@@ -98,7 +104,7 @@ export const synthesizeMotionSpeech = async (speech: string, voiceId: string, fi
   const voice = readAi33()[voiceId];
   if (!voice) throw new Error(L.VOICE_NOT_FOUND);
   const prefix = voice.provider ? voice.provider + L.AI33_PROVIDER_SEP : MR.MOTION_TEXT_EMPTY;
-  const result = await synthesizeAi33Speech({ text: speech, voiceId: prefix && !_.startsWith(voice.voiceId, prefix) ? prefix + voice.voiceId : voice.voiceId, provider: voice.provider, signal });
+  const result = await ai33Serial(() => synthesizeAi33Speech({ text: speech, voiceId: prefix && !_.startsWith(voice.voiceId, prefix) ? prefix + voice.voiceId : voice.voiceId, provider: voice.provider, signal }));
   await toWav(result.buffer, file, signal);
   const bytes = Math.max(0, fs.statSync(file).size - 44);
   return { seconds: bytes / 2 / V.SAMPLE_RATE };

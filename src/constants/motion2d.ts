@@ -1,3 +1,4 @@
+import { MOTION_BOARD2D } from "./motionBoard2d.js";
 export const MOTION_2D = {
   CAST: "cast",
   CAST_VERSION: 1,
@@ -140,7 +141,7 @@ export const MOTION_2D = {
   QUOTE_LOOKBACK: 4,
   QUOTE_BEFORE_RE: /["“”«»'‘’:—–-]\s*$/,
   HORROR_RE: /(horror|ghost|kinh dị|truyện ma)/i,
-  SOUND_VERSION: 1,
+  SOUND_VERSION: 2,
   SOUND_BEATS_PER_CALL: 14,
   ABORTED: "aborted",
   LIB: {
@@ -194,6 +195,7 @@ export const MOTION_2D_PROMPTS = {
       "This is a 2D narrated story video: every sentence is illustrated on screen, so actions and sounds described by the narration ARE visible or audible in that picture.",
       p.genre ? "GENRE: " + p.genre + (MOTION_2D.HORROR_RE.test(p.genre) ? ". Horror: low ambience beds for night places, sharp accents on reveals and sudden events, creaks, wind, distant bells, knocks; leave short silences before reveals." : "") : "",
       "BEATS (lines = spoken text in order, pictures = what each sentence shows): " + p.beats,
+      "A picture with apparition (an unseen presence) gets a stinger accent exactly at that sentence and a low ambience bed before it; pictures with effect pour, steam, fire or water get the matching sound (pouring water, simmering pot, crackling fire, splash).",
       "For each beat add 1-4 sound events that match what happens: physical actions (knock, door, footsteps, card flip, cloth, bell, incense hiss, crying), weather and place ambience, and one accent for a scary reveal. Set at (0..1 of the beat) close to where that sentence is spoken. Do not add sounds for things only remembered or mentioned in the past.",
       'Return JSON {"beats":[{"id":"beat id","soundEvents":[...],"soundSilence":false}]}.',
     ]
@@ -207,8 +209,9 @@ export const MOTION_2D_PROMPTS = {
       "TIME: " + p.time,
       p.why ? "YOUR PREVIOUS ANSWER WAS REJECTED: " + p.why + ". Fix it." : "",
       'Allowed elements ONLY: <svg>, <g>, <path>, <rect>, <circle>, <ellipse>, <polygon>, <polyline>, <line>. Every element uses inline fill and stroke attributes. NO text, NO image, NO filter, NO style tag, NO href, NO script.',
-      'Root: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">. Groups in order: <g id="sky">, <g id="back">, <g id="mid">, <g id="floor">. No people. Floor top edge at y=850. Keep x 420..1500, y 380..840 free of tall objects.',
-      'Return ONE line of JSON: {"svg":"<svg ...>...</svg>","floorY":850,"marks":[[600,850],[960,850],[1320,850]],"lights":[]}',
+      'Root: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">. Groups in order: <g id="sky">, <g id="back">, <g id="mid">, <g id="floor">. No people. Floor top edge at y=620 (lower 40% is ground), the floor stays empty and plain (no loose objects, discs or clutter). The defining object of the place stands large on one side third. Keep x 500..1420, y 300..610 free of tall objects.',
+      'Return ONE line of JSON: {"svg":"<svg ...>...</svg>","floorY":620,"marks":[[600,620],[960,620],[1320,620]],"lights":[],"landmarks":[]}',
+      MOTION_BOARD2D.SVG_ESCAPE_RULE,
     ]
       .filter(Boolean)
       .join("\n"),

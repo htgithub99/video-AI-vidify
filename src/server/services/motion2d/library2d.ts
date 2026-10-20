@@ -20,14 +20,13 @@ export const library2dKey = (gen: MotionGenState, analysis: MotionStoryAnalysis)
 const nameKey = (s: string): string => board2dSentenceKey(s);
 
 export const find2dSet = (place: MotionPlace, libKey: string, story: string): { set: MotionBoard2dSet; id: string; name: string } | null => {
-  const need = FIT.BASE_WEIGHT + FIT.INTERIOR_WEIGHT + FIT.TAG_WEIGHT * C.LIB.MIN_TAGS;
   const pool = _.filter(listSceneAssets(libKey, SL.KIND_LOCATION), (it) => it.from === C.LIB.FROM_2D && it.interior === !!place.interior && !(it.story === story && nameKey(it.name) !== nameKey(place.name)));
   const ranked = _.orderBy(
     _.map(pool, (it) => ({ it, exact: nameKey(it.name) === nameKey(place.name), fit: motionPlaceFit(it, place) - (it.time === place.time ? FIT.TIME_WEIGHT : 0) })),
     [(r) => (r.exact ? 0 : 1), (r) => -r.fit, (r) => r.it.uses || 0],
   );
   for (const r of ranked) {
-    if (!r.exact && r.fit < need) break;
+    if (!r.exact) break;
     const asset = getSceneAsset(r.it.id);
     if (asset?.data?.svg2d?.svg) {
       touchSceneAssets([r.it.id]);

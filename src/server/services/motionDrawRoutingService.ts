@@ -6,7 +6,7 @@ import { getMotionErrorSummary } from "../../lib/motionUtils.js";
 import { AiPlanningExecutionMode } from "../../types.js";
 import type { MotionAiExecution } from "../../types/motionVideo.js";
 import { resolveMotionSceneExecution } from "../../lib/motionSceneAi.js";
-import { motionRoomBlockedMs, resetMotionAiRoom } from "./motionStoryService.js";
+import { logMotionAiChain, motionCaptchaError, motionRoomBlockedMs, resetMotionAiRoom } from "./motionStoryService.js";
 export interface MotionDrawTurn { provider: string; model: string; turn: number; turns: number; total: number; }
 export interface MotionDrawTaskOptions<T> { task: string; exec: MotionAiExecution; signal?: AbortSignal; log: (s: string) => void; attempt: (exec: MotionAiExecution, turn: MotionDrawTurn) => Promise<T | undefined>; maxAttempts?: number; retryDelayMs?: number; canAttempt?: () => boolean; }
 const cancelled = (signal?: AbortSignal): Error => (signal?.reason instanceof Error ? signal.reason : new Error(MOTION_TEXT_CANCELLED));
@@ -42,10 +42,6 @@ export const runMotionDrawTask = async <T>(o: MotionDrawTaskOptions<T>): Promise
       if (o.signal?.aborted) throw cancelled(o.signal);
       if (o.canAttempt && !o.canAttempt()) throw new Error(L.GAVE_UP(o.task, total));
       const blocked = motionRoomBlockedMs(route.provider);
-      if (blocked > 0 && step > 0 && step < routes.length - 1) {
-        o.log(MOTION_AI_FALLBACK.LOG_SKIP_BLOCKED(route.provider));
-        break;
-      }
       if (blocked > 0) {
         const wait = Math.min(blocked, MOTION_SCENE_AI.BLOCKED_WAIT_MS);
         o.log(L.WAIT_BLOCKED(route.provider, Math.ceil(wait / 1000)));
@@ -58,12 +54,14 @@ export const runMotionDrawTask = async <T>(o: MotionDrawTaskOptions<T>): Promise
         const value = await o.attempt(motionDrawExec(o.exec, route.provider, route.model), { provider: route.provider, model: route.model, turn, turns: route.turns, total });
         if (value !== undefined) {
           o.log(L.DONE(o.task, route.provider, total));
+          logMotionAiChain({ artifact: o.task, step: step + 1, total: routes.length, provider: route.provider, model: route.model, result: MOTION_AI_FALLBACK.RESULT_OK });
           return value;
         }
         await resetMotionAiRoom().catch(_.noop);
       } catch (error) {
-        if (o.signal?.aborted) throw error;
         reason = getMotionErrorSummary(error);
+        logMotionAiChain({ artifact: o.task, step: step + 1, total: routes.length, provider: route.provider, model: route.model, result: motionCaptchaError(error) ? MOTION_AI_FALLBACK.RESULT_CAPTCHA : MOTION_AI_FALLBACK.RESULT_FAIL, reason });
+        if (o.signal?.aborted || motionCaptchaError(error)) throw error;
       }
       o.log(L.UNUSABLE(o.task, route.provider, reason));
       if (o.maxAttempts && total >= o.maxAttempts) throw new Error(L.GAVE_UP(o.task, total));

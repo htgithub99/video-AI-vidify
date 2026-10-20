@@ -206,6 +206,28 @@
           fit = tall > 0 ? Math.min(1, (MT.HOLD_MAX_WIDTH * tall) / Math.max(1e-6, dims[1]), (MT.HOLD_MAX_LENGTH * tall) / Math.max(1e-6, dims[2])) : 1;
         if (fit < 1) held.scale.multiplyScalar(fit);
       },
+      wear(item) {
+        const key = item.part || MT.HEAD,
+          target = parts[definition.anchors[key]] || parts[key];
+        if (!target) return;
+        group.updateMatrixWorld(true);
+        const box = new T.Box3().setFromObject(target),
+          size = box.getSize(new T.Vector3()),
+          mid = box.getCenter(new T.Vector3()),
+          worn = new T.Group(),
+          ws = target.getWorldScale(new T.Vector3());
+        target.add(worn);
+        worn.position.copy(target.worldToLocal(mid.clone()));
+        worn.quaternion.copy(target.getWorldQuaternion(new T.Quaternion()).invert());
+        worn.scale.set(1 / ws.x, 1 / ws.y, 1 / ws.z);
+        if (item.kind !== MT.WEAR_BAND) return GEN.buildNodes(item.nodes || [], env, worn);
+        const r = (Math.max(size.x, size.z) / 2) * MT.WEAR_BAND_R,
+          y = size.y * MT.WEAR_BAND_Y,
+          h = size.y * MT.WEAR_BAND_H,
+          mat = { color: item.color || MT.WEAR_BAND_COLOR, roughness: 0.9 },
+          tail = (side) => ({ shape: MT.BOX, size: [size.x * MT.WEAR_TAIL_W, size.y * MT.WEAR_TAIL_H, size.z * MT.WEAR_TAIL_T], pos: [side * size.x * MT.WEAR_TAIL_X, y - (size.y * MT.WEAR_TAIL_H) / 2, -r * 1.01], rot: [0, 0, side * MT.WEAR_TAIL_ROT], mat });
+        GEN.buildNodes([{ shape: MT.CYLINDER, radius: r, height: h, pos: [0, y, 0], mat }, tail(-1), tail(1)], env, worn);
+      },
       dispose() {
         GEN.disposeEnv(env);
         group.removeFromParent();

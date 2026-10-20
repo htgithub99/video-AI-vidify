@@ -717,7 +717,7 @@ const applyVoiceAnchors = (staging: any, beat: MotionVoiceTiming["beats"][string
   };
   _.forEach(staging.cameras, (camera: any, index: number) => {
     const cut = index ? at(camera.utterance) : undefined;
-    if (cut !== undefined) camera.at = _.clamp(cut, 0.15, 0.9);
+    if (cut !== undefined) camera.at = _.clamp(cut, MOTION_GEN_CONFIG.CUT_MIN, MOTION_GEN_CONFIG.CUT_MAX);
   });
   if (Array.isArray(staging.cameras) && staging.cameras.length) {
     staging.cameras = _.sortBy(staging.cameras, MR.MOTION_TEXT_AT);

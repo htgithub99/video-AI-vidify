@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { MOTION_BOARD2D as B } from "../constants/motionBoard2d.js";
-import type { MotionBeat, MotionBoard2dDetail, MotionBoard2dSentence, MotionStoryScript } from "../types/motionVideo.js";
+import type { MotionBeat, MotionBoard2dDetail, MotionBoard2dItem, MotionBoard2dSentence, MotionStoryScript } from "../types/motionVideo.js";
 import { motion2dObjectSpecies } from "./motion2dSpecies.js";
 
 export interface Board2dLine { key: string; text: string; beatId: string; place?: string; speaker?: string; chapterId: string; cast: string[]; }
@@ -8,7 +8,8 @@ export const board2dSentenceKey = (text: string): string => _.trim(String(text |
 export const splitBoard2dSentences = (text: string): string[] => _.compact(_.map(String(text || B.EMPTY).match(B.SENTENCE_RE) || [], _.trim));
 export const board2dPoint = (v: unknown, d: number[]): number[] => (Array.isArray(v) && v.length >= 2 && _.every(v.slice(0, 2), _.isFinite) ? [Number(v[0]), Number(v[1])] : d);
 const pick = (v: unknown, list: readonly string[], d: string | null): string | null => (_.isString(v) && list.includes(v) ? v : d);
-const castKey = (v: unknown, cast: string[]): string | null => (_.isString(v) && cast.includes(v) ? v : null);
+const inCast = (v: unknown, cast: string[]): v is string => _.isString(v) && (cast.includes(v) || B.EXTRA_KEY_RE.test(v));
+const castKey = (v: unknown, cast: string[]): string | null => (inCast(v, cast) ? v : null);
 export const board2dObjKey = (v: unknown): string | null => {
   const k = _.snakeCase(String(v || B.EMPTY));
   return B.KEY_RE.test(k) ? k : null;
@@ -35,7 +36,7 @@ export const normalizeBoard2dSentence = (raw: any, cast: string[]): MotionBoard2
         const c = castKey(a?.cast, cast);
         if (!c) return null;
         const face = castKey(a?.face, cast) || pick(a?.face, B.FACES, null) || undefined;
-        return _.omitBy({ cast: c, pose: pick(a?.pose, B.POSES, B.POSE_DEFAULT) as string, expression: pick(a?.expression, B.EXPRESSIONS, B.EXPR_DEFAULT) as string, face, wear: board2dObjKey(a?.wear), hold: board2dObjKey(a?.hold), small: a?.small === true ? true : undefined }, _.isNil) as MotionBoard2dSentence["actors"][number];
+        return _.omitBy({ cast: c, pose: pick(a?.pose, B.POSES, B.POSE_DEFAULT) as string, expression: pick(a?.expression, B.EXPRESSIONS, B.EXPR_DEFAULT) as string, face, wear: board2dObjKey(a?.wear), hold: board2dObjKey(a?.hold), small: a?.small === true ? true : undefined, grip: pick(a?.grip, B.GRIPS, null) || undefined, effect: pick(a?.effect, B.EFFECTS, null) || undefined, depth: pick(a?.depth, B.DEPTHS, null) || undefined }, (v) => _.isNil(v) || (_.isArray(v) && !v.length)) as unknown as MotionBoard2dSentence["actors"][number];
       }),
     ),
     B.F_CAST,
@@ -45,7 +46,8 @@ export const normalizeBoard2dSentence = (raw: any, cast: string[]): MotionBoard2
       _.map(_.castArray(r.items || []), (it: any) => {
         const key = board2dObjKey(it?.key);
         if (!key) return null;
-        return { key, x: _.clamp(Number(it?.x) || 0.5, 0, 1), y: _.clamp(Number(it?.y) || 0.75, 0, 1), scale: _.clamp(Number(it?.scale) || 0.4, 0.05, 1) };
+        const count = _.clamp(Math.round(Number(it?.count) || _.find(objects, { key })?.count || 1), 1, B.MAX_COUNT);
+        return _.omitBy({ key, x: _.clamp(Number(it?.x) || 0.5, 0, 1), y: _.clamp(Number(it?.y) || 0.75, 0, 1), scale: _.clamp(Number(it?.scale) || 0.4, 0.05, 1), effect: pick(it?.effect, B.EFFECTS, null), count: count > 1 ? count : null }, _.isNil) as unknown as MotionBoard2dItem;
       }),
     ),
     B.MAX_ITEMS,
@@ -66,8 +68,9 @@ export const normalizeBoard2dSentence = (raw: any, cast: string[]): MotionBoard2
     ),
     B.MAX_DETAILS,
   );
-  const out: MotionBoard2dSentence = { mode, kind, subject: castKey(r.subject, cast), target: castKey(r.target, cast), objects, actors, camera: pick(r.camera, B.CAMERAS, B.CAMERA_DEFAULT) as string, light: pick(r.light, B.LIGHTS, null), items, place, placeDesc, ...(details.length ? { details } : {}) };
-  if (mode === B.MODE_CUTAWAY && !items.length) out.items = _.map(objects, (o, i) => ({ key: o.key, x: (i + 1) / (objects.length + 1), y: 0.8, scale: 0.35 }));
+  const apparition = pick(r.apparition?.kind, B.APPARITIONS, null) ? { kind: r.apparition.kind as string, x: _.clamp(Number(r.apparition?.x) || 0.8, 0, 1) } : null;
+  const out: MotionBoard2dSentence = { mode, kind, subject: castKey(r.subject, cast), target: castKey(r.target, cast), objects, actors, camera: pick(r.camera, B.CAMERAS, B.CAMERA_DEFAULT) as string, light: pick(r.light, B.LIGHTS, null), items, place, placeDesc, ...(details.length ? { details } : {}), ...(apparition ? { apparition } : {}) };
+  if (mode === B.MODE_CUTAWAY && !items.length) out.items = _.map(objects, (o, i) => ({ key: o.key, x: (i + 1) / (objects.length + 1), y: 0.8, scale: 0.35, ...(o.count && o.count > 1 ? { count: o.count } : {}) }));
   return out;
 };
 
@@ -78,7 +81,7 @@ export const applyBoard2dDetails = (s: MotionBoard2dSentence, cast: string[]): M
   let fixed = 0;
   const actorOf = (c: string) => _.find(next.actors, { cast: c });
   const ensureActor = (c: string) => {
-    if (actorOf(c) || next.mode === B.MODE_VIGNETTE) return actorOf(c);
+    if (actorOf(c) || next.mode === B.MODE_VIGNETTE || next.mode === B.MODE_CUTAWAY || next.mode === B.MODE_PLACE) return actorOf(c);
     next.actors.push({ cast: c, pose: B.POSE_DEFAULT, expression: B.EXPR_DEFAULT });
     fixed++;
     return actorOf(c);
@@ -92,16 +95,16 @@ export const applyBoard2dDetails = (s: MotionBoard2dSentence, cast: string[]): M
   };
   for (const d of details) {
     if (d.as === B.AS.ACTOR) {
-      if (_.includes(cast, d.key)) ensureActor(d.key);
+      if (inCast(d.key, cast)) ensureActor(d.key);
       else addThing(d.key);
-    } else if ((d.as === B.AS.WEAR || d.as === B.AS.HOLD) && d.who && _.includes(cast, d.who)) {
+    } else if ((d.as === B.AS.WEAR || d.as === B.AS.HOLD) && d.who && inCast(d.who, cast)) {
       const a = ensureActor(d.who);
       if (a && !a[d.as as "wear" | "hold"]) {
         a[d.as as "wear" | "hold"] = d.key;
         fixed++;
       } else if (!a) addThing(d.key);
     } else if (d.as === B.AS.WEAR || d.as === B.AS.HOLD || d.as === B.AS.ITEM || d.as === B.AS.OBJECT) addThing(d.key);
-    else if (d.as === B.AS.POSE && d.who && _.includes(cast, d.who)) {
+    else if (d.as === B.AS.POSE && d.who && inCast(d.who, cast)) {
       const a = ensureActor(d.who);
       if (a && a.pose === B.POSE_DEFAULT && d.key !== B.POSE_DEFAULT) {
         a.pose = d.key;
@@ -139,7 +142,7 @@ export const refineBoard2dSentence = (s: MotionBoard2dSentence, cast: Board2dCas
   const objects = _.filter(s.objects, (o) => keep(o.key));
   const items = _.filter(s.items || [], (it) => keep(it.key));
   const place = s.place && (placeKeys.includes(s.place) || s.placeDesc) ? s.place : beatPlace || null;
-  const next: MotionBoard2dSentence = { ...s, objects, items, actors, place, placeDesc: place && !placeKeys.includes(place) ? s.placeDesc || null : null };
+  const next: MotionBoard2dSentence = { ...s, objects, items, actors, ambient: undefined, place, placeDesc: place && !placeKeys.includes(place) ? s.placeDesc || null : null };
   if (s.mode === B.MODE_PEOPLE && !actors.length) next.mode = B.MODE_PLACE;
   if (s.mode === B.MODE_CUTAWAY && !items.length) next.mode = actors.length ? B.MODE_PEOPLE : B.MODE_PLACE;
   if (s.mode === B.MODE_VIGNETTE && !objects.length && actors.length > s.actors.length) next.mode = B.MODE_PEOPLE;

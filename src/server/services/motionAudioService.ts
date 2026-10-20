@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_FX as FX, MOTION_VOICE_PACING as PACE, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
-import { readVoiceSpeedSettings, voiceSpeedKey, voiceTempoFactor } from "./motionVoiceSpeedService.js";
+import { knownVoiceTempoFactor, readVoiceSpeedSettings, voiceSpeedKey, voiceTempoFactor } from "./motionVoiceSpeedService.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance, MotionVoiceDelivery, MotionVoicePlan, MotionVoiceTiming } from "../../types/motionVideo.js";
 import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
@@ -73,7 +73,16 @@ const normalizeClip = (wav: Buffer): Buffer => {
   for (let i = 0; i < n; i++) out.writeInt16LE(Math.round(_.clamp(wav.readInt16LE(start + i * 2) * gain, -32767, 32767)), start + i * 2);
   return out;
 };
-const speechClip = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false): Promise<SpeechClipAudio> => {
+const clipJobs = new Map<string, Promise<SpeechClipAudio>>();
+const speechClip = (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false, preset?: number | null): Promise<SpeechClipAudio> => {
+  const key = hash([line.text, line.speed, line.emotion, line.intensity, line.role, voiceId, language, delivery, paced, opts.asr === true]);
+  const running = clipJobs.get(key);
+  if (running) return running;
+  const job = speechClipOnce(line, voiceId, language, opts, deps, delivery, paced, preset).finally(() => clipJobs.delete(key));
+  clipJobs.set(key, job);
+  return job;
+};
+const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false, preset?: number | null): Promise<SpeechClipAudio> => {
   const spoken = directedSpeechText(line);
   const rawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, engineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV,
     id = C.CLIP_PREFIX + hash([rawId, C.TEMPO, line.speed, delivery.tempo, voiceSpeedKey(voiceId), FX.VERSION, motionVoiceFilter(line, delivery, 1), paced]) + MR.MOTION_TEXT_WAV,
@@ -104,10 +113,17 @@ const speechClip = async (line: MotionUtterance, voiceId: string, language: unkn
         if (failure) throw failure;
         const render = (value: number) => runMotionAudioProcess([MR.MOTION_TEXT_I, original, MR.MOTION_TEXT_AF, motionVoiceFilter(line, delivery, value), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
         const tempo = deliveryTempo(line, delivery);
-        await render(tempo);
-        const factor = voiceTempoFactor(voiceId, line.text, motionWavData(await fs.promises.readFile(temp)).length / 2 / C.SAMPLE_RATE * tempo, paced);
-        if (Math.abs(factor - 1) > MOTION_VOICE_SPEED.REPROCESS_DELTA) await render(_.clamp(tempo * factor, MOTION_VOICE_SPEED.MIN, MOTION_VOICE_SPEED.MAX));
-        const wav = normalizeClip(await fs.promises.readFile(temp));
+        const scaled = (factor: number): number => (Math.abs(factor - 1) > MOTION_VOICE_SPEED.REPROCESS_DELTA ? _.clamp(tempo * factor, MOTION_VOICE_SPEED.MIN, MOTION_VOICE_SPEED.MAX) : tempo);
+        const known = preset !== undefined ? preset : knownVoiceTempoFactor(voiceId);
+        const first = known === null ? tempo : scaled(known);
+        await render(first);
+        let rendered = await fs.promises.readFile(temp);
+        const factor = voiceTempoFactor(voiceId, line.text, (motionWavData(rendered).length / 2 / C.SAMPLE_RATE) * first);
+        if (known === null && scaled(factor) !== tempo) {
+          await render(scaled(factor));
+          rendered = await fs.promises.readFile(temp);
+        }
+        const wav = normalizeClip(rendered);
         const { start, length, availableBytes } = motionWavData(wav);
         if (!length || length > availableBytes) throw new Error(C.FAILED);
         await fs.promises.writeFile(temp, Buffer.concat([motionWavHeader(length, 1), wav.subarray(start, start + length)]));
@@ -183,6 +199,25 @@ export const motionPacedLines = (line: MotionUtterance, pacing: Pacing | null): 
     return { line: { ...line, id: line.id + PACE.SUFFIX + k, text, emphasis: _.filter(line.emphasis || [], (w) => _.includes(text, w)) }, gap };
   });
 };
+const runClipPool = async <T, R>(items: T[], limit: number, signal: AbortSignal | undefined, fn: (item: T) => Promise<R>): Promise<R[]> => {
+  const out: R[] = new Array(items.length);
+  let next = 0,
+    failed = false;
+  const lane = async (): Promise<void> => {
+    while (!failed && next < items.length) {
+      if (signal?.aborted) throw new Error(C.CANCELLED);
+      const index = next++;
+      try {
+        out[index] = await fn(items[index]);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, lane));
+  return out;
+};
 const pacedGap = (value: number, kind: keyof Pacing["gaps"], pacing: Pacing | null, cap: number): number => (pacing ? _.clamp(value, pacing.gaps[kind][0], pacing.gaps[kind][1]) : Math.min(value, cap));
 const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScript, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, pacing: Pacing | null = null): Promise<{ local: VoiceClipLayout; durations: number[] }> => {
   const local: VoiceClipLayout = [],
@@ -192,32 +227,47 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
   let done = 0;
   const moods: Record<string, number> = {};
   let ai33 = 0;
+  const lines: { beatId: string; voiceId: string; paced: MotionVoiceDelivery; narration: boolean; pieces: { line: MotionUtterance; gap: number }[]; gapBefore: number; gapAfter: number }[][] = [];
   for (const beat of plan.beats) {
     const sceneMood = script.beats.find((item) => item.id === beat.id)?.sceneMood;
+    lines.push(
+      beat.utterances.map((line, index) => {
+        const previous = beat.utterances[index - 1],
+          next = beat.utterances[index + 1];
+        const voiceId = plan.roles.find((role) => role.speaker === line.speaker)?.voiceId || plan.roles[0].voiceId;
+        const delivery = resolveMotionDelivery(line, sceneMood);
+        if (delivery.strength) moods[delivery.mood] = (moods[delivery.mood] || 0) + 1;
+        if (delivery.strength && isAi33Voice(voiceId)) ai33++;
+        const narration = line.role === MR.MOTION_TEXT_NARRATION;
+        const paced = pacing ? { ...delivery, tempo: delivery.tempo * (narration ? pacing.narrationTempo : pacing.dialogueTempo), ...(narration ? { silence: PACE.NARRATION_SILENCE } : {}) } : delivery;
+        const pieces = motionPacedLines(line, pacing);
+        if (pieces.length > 1) split++;
+        const gapBefore = previous ? 0 : pacedGap(line.pauseBefore * delivery.pause, PACE_KIND.FIRST, pacing, C.PAUSE.FIRST),
+          gapAfter = pacedGap(Math.max(line.pauseAfter, next?.pauseBefore || 0) * delivery.pause, !next ? PACE_KIND.BEAT_END : next.speaker === line.speaker ? PACE_KIND.SAME_SPEAKER : PACE_KIND.SPEAKER_CHANGE, pacing, !next ? C.PAUSE.BEAT_END : next.speaker === line.speaker ? C.PAUSE.SAME_SPEAKER : C.PAUSE.SPEAKER_CHANGE);
+        return { beatId: beat.id, voiceId, paced, narration, pieces, gapBefore, gapAfter };
+      }),
+    );
+  }
+  const flat = lines.flat();
+  const factors: Record<string, number | null> = Object.fromEntries(_.map(_.uniq(_.map(flat, (item) => item.voiceId)), (voiceId) => [voiceId, knownVoiceTempoFactor(voiceId)]));
+  const audios = await runClipPool(flat, C.CLIP_PARALLEL, opts.signal, async (item) => {
+    const out = [];
+    for (const piece of item.pieces) out.push(speechClip(piece.line, item.voiceId, script.language, opts, deps, item.paced, !!pacing && item.narration, factors[item.voiceId]));
+    const ready = await Promise.all(out);
+    opts.onProgress?.(++done, totalLines);
+    return ready;
+  });
+  let k = 0;
+  for (const beatLines of lines) {
     let cursor = 0;
-    for (let index = 0; index < beat.utterances.length; index++) {
-      const line = beat.utterances[index],
-        previous = beat.utterances[index - 1],
-        next = beat.utterances[index + 1];
-      if (opts.signal?.aborted) throw new Error(C.CANCELLED);
-      const voiceId = plan.roles.find((role) => role.speaker === line.speaker)?.voiceId || plan.roles[0].voiceId;
-      const delivery = resolveMotionDelivery(line, sceneMood);
-      if (delivery.strength) moods[delivery.mood] = (moods[delivery.mood] || 0) + 1;
-      if (delivery.strength && isAi33Voice(voiceId)) ai33++;
-      const narration = line.role === MR.MOTION_TEXT_NARRATION;
-      const paced = pacing ? { ...delivery, tempo: delivery.tempo * (narration ? pacing.narrationTempo : pacing.dialogueTempo), ...(narration ? { silence: PACE.NARRATION_SILENCE } : {}) } : delivery;
-      const pieces = motionPacedLines(line, pacing);
-      if (pieces.length > 1) split++;
-      const gapBefore = previous ? 0 : pacedGap(line.pauseBefore * delivery.pause, PACE_KIND.FIRST, pacing, C.PAUSE.FIRST),
-        gapAfter = pacedGap(Math.max(line.pauseAfter, next?.pauseBefore || 0) * delivery.pause, !next ? PACE_KIND.BEAT_END : next.speaker === line.speaker ? PACE_KIND.SAME_SPEAKER : PACE_KIND.SPEAKER_CHANGE, pacing, !next ? C.PAUSE.BEAT_END : next.speaker === line.speaker ? C.PAUSE.SAME_SPEAKER : C.PAUSE.SPEAKER_CHANGE);
-      cursor += gapBefore;
-      for (const piece of pieces) {
-        const audio = await speechClip(piece.line, voiceId, script.language, opts, deps, paced, !!pacing && narration);
-        local.push({ beatId: beat.id, line: piece.line, voiceId, audio, t: cursor, delivery: paced });
-        cursor += audio.duration + piece.gap;
-      }
-      cursor += gapAfter;
-      opts.onProgress?.(++done, totalLines);
+    for (const item of beatLines) {
+      const clips = audios[k++];
+      cursor += item.gapBefore;
+      item.pieces.forEach((piece, p) => {
+        local.push({ beatId: item.beatId, line: piece.line, voiceId: item.voiceId, audio: clips[p], t: cursor, delivery: item.paced });
+        cursor += clips[p].duration + piece.gap;
+      });
+      cursor += item.gapAfter;
     }
     durations.push(Math.max(0.6, cursor));
   }

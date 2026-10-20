@@ -71,23 +71,45 @@ def execute(request):
         engine.save_voices(str(temporary))
         temporary.replace(root / T.VOICES_V3_TURBO_JSON)
         return {T.ID: request[T.VOICE], T.NAME: request.get(T.NAME, request[T.VOICE]), T.GENDER: request.get(T.GENDER, T.EMPTY_2)}
-    text = str(request.get(T.TEXT, T.EMPTY_2)).strip()
-    if not text or len(text) > 1800:
-        raise ValueError(T.INVALID_SPEECH_TEXT)
-    target = Path(request[T.FILE]).resolve()
-    if not target.is_relative_to(root) or target.suffix != T.WAV:
-        raise ValueError(T.INVALID_SPEECH_DESTINATION)
     delivery = {}
     if request.get(T.TEMPERATURE) is not None:
         delivery[T.TEMPERATURE] = min(1.0, max(0.5, float(request[T.TEMPERATURE])))
     if request.get(T.SILENCE) is not None:
         delivery[T.SILENCE_P] = min(0.4, max(0.05, float(request[T.SILENCE])))
-    wav = np.asarray(engine.infer(text, voice=request[T.VOICE], max_chars=256, **delivery), dtype=np.float32).reshape(-1)
-    if not wav.size or not np.isfinite(wav).all() or np.max(np.abs(wav)) < 0.0001:
-        raise ValueError(T.EMPTY_SPEECH_AUDIO)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    sf.write(str(target), wav, engine.sample_rate, subtype=T.PCM_16)
-    return {T.SECONDS: wav.size / engine.sample_rate, T.SAMPLE_RATE: engine.sample_rate, T.BACKEND: engine.backend}
+    def checked(item):
+        text = str(item.get(T.TEXT, T.EMPTY_2)).strip()
+        if not text or len(text) > 1800:
+            raise ValueError(T.INVALID_SPEECH_TEXT)
+        target = Path(item[T.FILE]).resolve()
+        if not target.is_relative_to(root) or target.suffix != T.WAV:
+            raise ValueError(T.INVALID_SPEECH_DESTINATION)
+        return text, target
+    def save(raw, target):
+        wav = np.asarray(raw, dtype=np.float32).reshape(-1)
+        if not wav.size or not np.isfinite(wav).all() or np.max(np.abs(wav)) < 0.0001:
+            raise ValueError(T.EMPTY_SPEECH_AUDIO)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        sf.write(str(target), wav, engine.sample_rate, subtype=T.PCM_16)
+        return {T.SECONDS: wav.size / engine.sample_rate, T.SAMPLE_RATE: engine.sample_rate, T.BACKEND: engine.backend}
+    if request[T.COMMAND] == T.BATCH:
+        results = [None] * len(request[T.ITEMS])
+        ready = []
+        for index, item in enumerate(request[T.ITEMS]):
+            try:
+                ready.append((index,) + checked(item))
+            except Exception as error:
+                results[index] = {T.ERROR: str(error)}
+        if ready:
+            batch_delivery = {key: value for key, value in delivery.items() if key != T.SILENCE_P}
+            wavs = engine.infer_batch([text for _, text, _ in ready], voice=request[T.VOICE], max_chars=256, **batch_delivery)
+            for (index, _, target), raw in zip(ready, wavs):
+                try:
+                    results[index] = save(raw, target)
+                except Exception as error:
+                    results[index] = {T.ERROR: str(error)}
+        return results
+    text, target = checked(request)
+    return save(engine.infer(text, voice=request[T.VOICE], max_chars=256, **delivery), target)
 for line in sys.stdin:
     request = {}
     try:

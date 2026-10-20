@@ -1,8 +1,9 @@
 import * as MR from "../constants/motionRuntime.js";
+import { MOTION_GEN_CONFIG } from "../constants/motionGenPrompts.js";
 export const planMotionCoverage = (staging: any, duration: number, beatIndex = 0, storyText: string = MR.MOTION_TEXT_EMPTY, beat: any = {}): any[] => {
   const supplied: any[] = staging?.cameras?.length ? staging.cameras : [staging?.camera || {}];
   const explicit = Array.isArray(staging?.cameras) && staging.cameras.length > 0;
-  const count = explicit ? Math.min(4, supplied.length) : duration >= 7 ? 3 : duration >= 4.5 ? 2 : 1;
+  const count = explicit ? Math.min(MOTION_GEN_CONFIG.CAMERA_MAX, supplied.length) : duration >= 7 ? 3 : duration >= 4.5 ? 2 : 1;
   const actors: any[] = staging?.actors || [];
   const props: any[] = Array.isArray(staging?.props) ? staging.props : [];
   const focus = actors[beatIndex % Math.max(1, actors.length)]?.cast;
@@ -34,6 +35,10 @@ export const planMotionCoverage = (staging: any, duration: number, beatIndex = 0
     if (authored?.focus) camera.focus = authored.focus;
     else if (index > 0 && focus && !source.focusProp) camera.focus = source.focus || focus;
     else delete camera.focus;
+    if (Array.isArray(camera.cast) && camera.focus && !camera.cast.includes(camera.focus)) {
+      if (camera.cast.length) camera.focus = camera.cast[0];
+      else delete camera.focus;
+    }
     if (shot === MR.MOTION_TEXT_INSERT && detailTarget) {
       camera.focusProp = source.focusProp || detailTarget.name || detailTarget.id;
       delete camera.focus;

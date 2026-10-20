@@ -813,7 +813,11 @@
     }
     if (!sightPoints.length || detail) {
       sightPoints.length = 0;
-      sightPoints.push(target.clone());
+      if (bounds) {
+        const top = bounds.max.y;
+        sightPoints.push(new T.Vector3((bounds.min.x + bounds.max.x) / 2, top, (bounds.min.z + bounds.max.z) / 2));
+        for (const x of [bounds.min.x, bounds.max.x]) for (const z of [bounds.min.z, bounds.max.z]) sightPoints.push(new T.Vector3(x, top, z));
+      } else sightPoints.push(target.clone());
     }
     const yaw = Math.atan2(requested.x - target.x, requested.z - target.z);
     const minimum = shot === MT.WIDE ? 2.2 : shot === MT.MEDIUM ? 1.1 : 0.6;
@@ -823,7 +827,7 @@
     for (const distance of distances)
       for (let i = 0; i < 16; i++) {
         const angle = yaw + ((Math.ceil(i / 2) * Math.PI) / 8) * (i % 2 ? 1 : -1);
-        for (const height of [target.y + 0.1, target.y + 0.4]) {
+        for (const height of bounds ? [target.y + 0.4, target.y + distance * MT.DETAIL_CAM_RISE] : [target.y + 0.1, target.y + 0.4]) {
           candidates.push(new T.Vector3(target.x + Math.sin(angle) * distance, Math.max(0.5, height), target.z + Math.cos(angle) * distance));
         }
       }
@@ -1249,6 +1253,7 @@
             if (o.material) o.material.envMapIntensity = 0.25;
           });
         if (a.hold) actor.hold(a.hold.nodes, a.hold.part);
+        for (const w of a.wear || []) actor.wear(w);
         if (a.ghost) ghostify(actor, S);
         scene.add(actor.group);
         S.actors.push({ def: a, actor, motion: S.characterMotion, segs: null, dur: S.dur });

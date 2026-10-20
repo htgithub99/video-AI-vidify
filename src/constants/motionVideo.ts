@@ -1,6 +1,9 @@
 import { MotionAspect, MotionQuality, MotionStoryLength } from "../types/motionVideo.js";
 export const MOTION_STORY_LENGTH_SECONDS: Partial<Record<MotionStoryLength, number>> = {
   [MotionStoryLength.ONE]: 60,
+  [MotionStoryLength.TWO]: 120,
+  [MotionStoryLength.THREE]: 180,
+  [MotionStoryLength.FOUR]: 240,
   [MotionStoryLength.FIVE]: 300,
   [MotionStoryLength.TEN]: 600,
   [MotionStoryLength.FIFTEEN]: 900,
@@ -121,9 +124,6 @@ export const MOTION_STORY_CONFIG = {
   LOOSE_MATCH_MIN: 3,
   PROVIDER_PARALLEL: { "gemini-chat": 3, "chatgpt-ui": 3, "claude-chat": 1 } as Record<string, number>,
   PROVIDER_MIN_GAP_MS: 8000,
-  ROOM_CAPTCHA_PATTERN: /unusual traffic|google\.com\/sorry|not a robot|recaptcha|lưu lượng truy cập bất thường|verify you are human|xác minh bạn là con người/i,
-  ROOM_CAPTCHA_BLOCK_MS: 60 * 60 * 1000,
-  ROOM_CAPTCHA_LOG: (from: string, to: string): string => `${from} đang yêu cầu xác minh "không phải robot" (do gửi quá nhiều yêu cầu liên tục) – tạm dừng ${from} 60 phút và chuyển sang ${to}. Có thể mở Chrome của tool để xác minh thủ công.`,
   ROOM_UNAVAILABLE_BLOCK_MS: 10 * 60 * 1000,
   ROOM_UNAVAILABLE_LOG: (from: string, to: string): string => `Phòng chat ${from} không hiện ô nhập (có thể bị chặn tạm, chưa đăng nhập hoặc hết lượt) – tạm chuyển sang ${to} trong 10 phút`,
   ROOM_LIMIT_PATTERN: /you(?:'|’)?ve (?:reached|hit).{0,40}limit|usage (?:limit|cap)|message limit|out of (?:free )?messages|too many (?:messages|requests)|rate limit|limit (?:resets|will reset)|đã (?:đạt|hết).{0,30}giới hạn|hết lượt/i,

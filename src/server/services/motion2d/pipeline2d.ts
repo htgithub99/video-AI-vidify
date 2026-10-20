@@ -1,6 +1,7 @@
 import _ from "lodash";
 import { createHash } from "crypto";
 import { MOTION_2D as C } from "../../../constants/motion2d.js";
+import { MOTION_SCENE_LIBRARY_MODES } from "../../../constants/motionSceneCatalog.js";
 import { MOTION_BOARD2D as B } from "../../../constants/motionBoard2d.js";
 import { MOTION_SOUND_CONFIG } from "../../../constants/motionSound.js";
 import { MOTION_STYLE_PRESET_KEY, motionStylePreset } from "../../../constants/motionStylePresets.js";
@@ -39,7 +40,7 @@ export const buildScenes2d = async (script: MotionStoryScript, analysis: MotionS
   const out: MotionStoryScript = { ...script, gen };
   const emit = () => o.partial?.({ ...out, gen: _.cloneDeep(gen) });
   const libKey = library2dKey(gen, analysis);
-  const bo: Board2dOptions = { exec: o.exec, mainExec: o.mainExec || o.exec, signal: o.signal, log: o.log, ai: o.ai, allPlaces: true, places: o.onlyLocations?.length ? o.onlyLocations : undefined, redraw: !!o.onlyLocations?.length, library: libKey ? { key: libKey, story: analysis.title || MR.MOTION_TEXT_EMPTY } : null };
+  const bo: Board2dOptions = { exec: o.exec, mainExec: o.mainExec || o.exec, signal: o.signal, log: o.log, ai: o.ai, allPlaces: true, places: o.onlyLocations?.length ? o.onlyLocations : undefined, redraw: !!o.onlyLocations?.length || analysis.libraryMode === MOTION_SCENE_LIBRARY_MODES.OFF, library: libKey ? { key: libKey, story: analysis.title || MR.MOTION_TEXT_EMPTY } : null };
   const styleKey = board2dStyleKey(gen);
   progress(0.03, C.STAGE_CAST);
   const cast = await buildCast2d(analysis, gen, styleKey, bo);

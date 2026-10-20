@@ -10,12 +10,14 @@ import { parseJson } from "../../../lib/jsonStringify.js";
 import type { MotionAiExecution, MotionBoard2d, MotionBoard2dProp, MotionBoard2dSentence, MotionBoard2dSet, MotionBoard2dSpec, MotionGenState, MotionStoryAnalysis, MotionStoryScript } from "../../../types/motionVideo.js";
 import { getMotionRootDirectory } from "../motionLibraryService.js";
 import { writeMotionJsonAtomic } from "../motionFileUtils.js";
-import { mapMotionAiPool, runMotionAi } from "../motionStoryService.js";
+import { mapMotionAiPool, motionAiRoutes, runMotionAi } from "../motionStoryService.js";
+import { MOTION_AI_ROLE } from "../../../constants/motionAiFallback.js";
 import { MOTION_GEN_CONFIG } from "../../../constants/motionGenPrompts.js";
 import { MOTION_STORY_CONFIG } from "../../../constants/motionVideo.js";
 import { type Board2dCastInfo, type Board2dLine, board2dObjKey as objKey, board2dPoint as point, board2dCodeAlias, collectBoard2dLines, normalizeBoard2dSentence, refineBoard2dSentence, applyBoard2dDetails } from "../../../lib/motionBoard2d.js";
 import { motion2dSpecies } from "../../../lib/motion2dSpecies.js";
 import { find2dProp, find2dSet } from "./library2d.js";
+import { balanceSvgTags } from "../../../lib/motionSvgBalance.js";
 import type { MotionPlace } from "../../../types/motionVideo.js";
 
 export interface Board2dOptions {
@@ -49,7 +51,8 @@ export const readBoard2dLib = <T>(styleKey: string, part: string, id: string): T
 };
 export const writeBoard2dLib = (styleKey: string, part: string, id: string, data: unknown): void => writeMotionJsonAtomic(path.join(styleDir(styleKey, part), id + B.JSON_EXT), data);
 
-const repairSvg = (text: string): string => {
+const repairSvg = (raw: string): string => {
+  const text = raw.replace(B.ENT_LT_RE, B.LT).replace(B.ENT_GT_RE, B.GT).replace(B.ENT_QUOT_RE, B.QUOT).replace(B.ENT_AMP_RE, B.AMP);
   if (B.SVG_EXTRACT_RE.test(text)) return text;
   const start = text.search(B.SVG_START_TAG_RE);
   const end = text.lastIndexOf(B.GT);
@@ -58,10 +61,22 @@ const repairSvg = (text: string): string => {
   const open = (body.match(B.G_OPEN_RE) || []).length - (body.match(B.G_CLOSE_RE) || []).length;
   return body + B.G_CLOSE.repeat(Math.max(0, open)) + B.SVG_CLOSE;
 };
+const drawRoutes = (exec: MotionAiExecution): MotionAiExecution[] => motionAiRoutes({ ...exec, role: MOTION_AI_ROLE.DRAW });
+const drawTries = (exec: MotionAiExecution): number => drawRoutes(exec).length * B.TRIES_PER_AI;
+const drawExecAt = (exec: MotionAiExecution, attempt: number, log: (s: string) => void): MotionAiExecution => {
+  const routes = drawRoutes(exec);
+  const index = Math.floor(attempt / B.TRIES_PER_AI) % routes.length;
+  const turn = attempt % B.TRIES_PER_AI;
+  const next = routes[index];
+  if (turn) log(B.LOG_RETRY_DRAW(String(next.provider), turn + 1, B.TRIES_PER_AI));
+  else if (attempt) log(B.LOG_SWITCH_DRAW(String(next.provider)));
+  return next;
+};
 export const board2dLanes = (exec: MotionAiExecution): number => (_.includes(MOTION_GEN_CONFIG.SERIAL_PROVIDERS, exec.provider) ? 1 : Math.min(B.PARALLEL, MOTION_STORY_CONFIG.PROVIDER_PARALLEL[String(exec.provider)] || B.PARALLEL));
 export const validateBoard2dSvg = (raw: unknown, maxBytes: number): string => {
   const found = repairSvg(String(raw || B.EMPTY)).match(B.SVG_EXTRACT_RE);
   let svg = _.trim(found ? found[0] : B.EMPTY).replace(B.SVG_STRIP_RE, B.EMPTY).replace(B.SVG_FILTER_ATTR_RE, B.EMPTY);
+  if (svg) svg = balanceSvgTags(svg);
   if (svg && !B.SVG_XMLNS_RE.test(svg.slice(0, svg.indexOf(B.GT) + 1))) svg = B.SVG_OPEN + B.SVG_XMLNS + svg.slice(B.SVG_OPEN.length);
   const bad = svg.match(B.SVG_FORBIDDEN_RE);
   const reason = !svg ? B.WHY_NO_SVG : !B.VIEWBOX_RE.test(svg) ? B.WHY_NO_VIEWBOX : bad ? bad[0] : !B.SVG_START_RE.test(svg) || !B.SVG_END_RE.test(svg) ? B.WHY_BROKEN : B.EMPTY;
@@ -138,15 +153,17 @@ const runScript = async (lines: Board2dLine[], all: Board2dLine[], script: Motio
   return out;
 };
 
-const drawProps = async (keys: string[], hints: Record<string, string>, analysis: MotionStoryAnalysis, styleKey: string, o: Board2dOptions): Promise<void> => {
+const propReady = (k: string, p: MotionBoard2dProp | null): boolean => !!p && (p.head !== undefined || !B.TOOL_RE.test(k)) && (p.view === B.PROP_VIEW || !B.BOX_RE.test(k));
+const drawProps = async (keys: string[], hints: Record<string, string>, notes: Record<string, string>, analysis: MotionStoryAnalysis, styleKey: string, o: Board2dOptions): Promise<void> => {
   await mapMotionAiPool(_.chunk(keys, B.PROPS_PER_CALL), async (group) => {
     if (o.signal?.aborted) return;
     o.log(B.LOG_PROPS(group));
     let todo = group;
     let why: string = B.EMPTY;
-    for (let attempt = 0; attempt < B.DRAW_TRIES + 1 && todo.length; attempt++) {
+    const tries = drawTries(o.exec);
+    for (let attempt = 0; attempt < tries && todo.length; attempt++) {
       try {
-        const raw = await (o.ai || runMotionAi)(BP.PROPS({ style: styleText(analysis), items: _.map(todo, (k) => [k, _.startCase(k), hints[k] || B.EMPTY].join(B.PIPE)).join(B.NL), why }), B.ARTIFACT_PROPS, o.exec, o.signal, o.log);
+        const raw = await (o.ai || runMotionAi)(BP.PROPS({ style: styleText(analysis), items: _.map(todo, (k) => [k, _.startCase(k), hints[k] || B.EMPTY, notes[k] || B.EMPTY].join(B.PIPE)).join(B.NL), setting: _.truncate([analysis.title, analysis.logline].join(B.SPACE), { length: B.SETTING_MAX }), why }), B.ARTIFACT_PROPS, drawExecAt(o.exec, attempt, o.log), o.signal, o.log);
         const list = _.castArray(raw?.props || []);
         const failed: string[] = [];
         for (const k of todo) {
@@ -155,15 +172,29 @@ const drawProps = async (keys: string[], hints: Record<string, string>, analysis
             if (!it) throw new Error(B.ERR_EMPTY);
             const svg = validateBoard2dSvg(it.svg, B.PROP_MAX_BYTES);
             const weak = propSvgQuality(svg);
-            if (weak && attempt < B.DRAW_TRIES) {
+            if (weak && attempt < tries - 1) {
               why = weak;
               throw new Error(weak);
             }
-            const prop: MotionBoard2dProp = { svg, grip: point(it.grip, [256, 300]), base: point(it.base, [256, 480]), height: _.clamp(Number(it.height) || 0.4, 0.02, 20) };
+            const prop: MotionBoard2dProp = { svg, grip: point(it.grip, [256, 300]), base: point(it.base, [256, 480]), height: _.clamp(Number(it.height) || 0.4, 0.02, 20), head: Array.isArray(it.head) ? point(it.head, [256, 480]) : null, view: B.PROP_VIEW };
             writeBoard2dLib(styleKey, B.PROPS, k, prop);
           } catch (e: any) {
             failed.push(k);
             o.log(B.LOG_DRAW_FAIL(k, String(e?.message || e)));
+          }
+        }
+        const drawn = _.difference(todo, failed);
+        if (drawn.length && attempt < tries - 1) {
+          const items = _.map(drawn, (k) => [k, _.truncate(readBoard2dLib<MotionBoard2dProp>(styleKey, B.PROPS, k)?.svg || B.EMPTY, { length: B.CHECK_SVG_MAX })].join(B.PIPE)).join(B.NL);
+          const checked = await (o.ai || runMotionAi)(BP.PROPS_CHECK({ items }), B.ARTIFACT_PROPS_CHECK, o.exec, o.signal, o.log).catch((e: any) => {
+            if (o.signal?.aborted) throw e;
+            return null;
+          });
+          const bad = _.filter(_.castArray(checked?.checks || []), (c: any) => _.includes(drawn, objKey(c?.key)) && c?.match === false);
+          if (bad.length) {
+            o.log(B.LOG_CHECK(_.map(bad, (c: any) => objKey(c.key) as string)));
+            why = _.map(bad, (c: any) => objKey(c.key) + B.COLON_SP + B.WHY_MISMATCH(_.toString(c.looksLike), _.toString(c.missing))).join(B.NL);
+            failed.push(..._.map(bad, (c: any) => objKey(c.key) as string));
           }
         }
         todo = failed;
@@ -181,15 +212,16 @@ const drawSet = async (place: MotionPlace, setId: string, uses: string, analysis
   const time = place.time || B.DEFAULT_TIME;
   o.log(B.LOG_SET(place.name || placeKey));
   let why: string = B.EMPTY;
-  const tries = o.allPlaces ? C2.SETS_TRIES : B.DRAW_TRIES;
+  const tries = drawTries(o.exec);
   for (let attempt = 0; attempt < tries; attempt++) {
     try {
       const prompt = attempt && o.allPlaces ? P2.SET_STRICT({ style: styleText(analysis), place: desc, time, why }) : BP.SET({ style: styleText(analysis), place: desc, uses, time });
-      const raw = await (o.ai || runMotionAi)(prompt, B.ARTIFACT_SET, o.exec, o.signal, o.log);
+      const raw = await (o.ai || runMotionAi)(prompt, B.ARTIFACT_SET, drawExecAt(o.exec, attempt, o.log), o.signal, o.log);
       const set: MotionBoard2dSet = {
         svg: validateBoard2dSvg(raw?.svg, B.SET_MAX_BYTES),
         time,
-        floorY: _.clamp(Number(raw?.floorY) || 850, 500, 1060),
+        floorY: _.clamp(Number(raw?.floorY) || B.FLOOR_DEFAULT, B.FLOOR_MIN, B.FLOOR_MAX),
+        landmarks: _.take(_.compact(_.map(_.castArray(raw?.landmarks || []), (l: any) => (l && objKey(l.key) && _.every([l.x, l.y, l.w, l.h], (v) => _.isFinite(Number(v))) ? { key: objKey(l.key) as string, x: Number(l.x), y: Number(l.y), w: Math.abs(Number(l.w)), h: Math.abs(Number(l.h)) } : null))), B.MAX_LANDMARKS),
         marks: _.take(_.filter(_.map(_.castArray(raw?.marks || []), (m) => point(m, [-1, -1])), (m) => m[0] >= 0 && m[0] <= B.SET_W), 8),
         lights: _.take(
           _.compact(_.map(_.castArray(raw?.lights || []), (l: any) => (l && _.isFinite(Number(l.x)) && _.isFinite(Number(l.y)) ? { x: Number(l.x), y: Number(l.y), color: _.isString(l.color) && B.HEX_RE.test(l.color) ? l.color : B.LIGHT_COLOR, kind: String(l.kind || B.LIGHT_KIND) } : null))),
@@ -280,7 +312,7 @@ export const buildBoard2d = async (script: MotionStoryScript, analysis: MotionSt
   const objectKeys = _.uniq(_.flatMap(used, (s) => [...(s.mode === B.MODE_PEOPLE ? [] : _.map(s.objects, B.F_KEY)), ..._.map(s.items || [], B.F_KEY), ..._.compact(_.map(s.actors, B.F_HOLD))]));
   const hints: Record<string, string> = {};
   for (const s of used) for (const ob of s.objects) if (ob.color && !hints[ob.key]) hints[ob.key] = ob.color;
-  const needProps = _.filter(objectKeys, (k) => !board2dCodeAlias(k) && !readBoard2dLib(styleKey, B.PROPS, k));
+  const needProps = _.filter(objectKeys, (k) => !_.includes(B.CODE_ONLY as readonly string[], board2dCodeAlias(k)) && (o.redraw || !propReady(k, readBoard2dLib<MotionBoard2dProp>(styleKey, B.PROPS, k))));
   const peoplePlaces = _.uniq(_.compact(_.map(_.filter(lines, (l) => board.sentences[l.key]?.mode === B.MODE_PEOPLE), B.F_PLACE)));
   const extraPlaces = newPlaces(lines, board.sentences, analysis);
   const allKeys = _.uniq([..._.compact(_.map(lines, B.F_PLACE)), ..._.compact(_.map(used, B.F_PLACE))]);
@@ -292,7 +324,7 @@ export const buildBoard2d = async (script: MotionStoryScript, analysis: MotionSt
   await mapMotionAiPool(placeKeys, async (pk) => {
     const place = placeOf(pk);
     if (!place) return;
-    const setId = sha([place.name, place.description, place.interior ? 1 : 0].join(B.BAR));
+    const setId = sha([place.name, place.description, place.interior ? 1 : 0, B.SET_VERSION].join(B.BAR));
     if (!o.redraw && readBoard2dLib(styleKey, B.SETS, setId)) {
       board.sets[pk] = setId;
       delete board.codeSets![pk];
@@ -321,18 +353,26 @@ export const buildBoard2d = async (script: MotionStoryScript, analysis: MotionSt
     o.log(C2.LOG_SET_CODE(place.name || pk));
   }, board2dLanes(o.exec));
   o.progress?.(0.75);
-  const khoProps = o.library ? _.filter(needProps, (k) => {
+  const khoProps = o.library && !o.redraw ? _.filter(needProps, (k) => {
     const hit = find2dProp(k, o.library!.key);
-    if (hit) writeBoard2dLib(styleKey, B.PROPS, k, hit);
-    return !!hit;
+    const ok = propReady(k, hit);
+    if (ok) writeBoard2dLib(styleKey, B.PROPS, k, hit);
+    return ok;
   }) : [];
   if (khoProps.length) {
     fromLib.props.push(...khoProps);
     o.log(C2.LIB.LOG_REUSE_PROPS(khoProps.length));
   }
   const drawPropKeys = _.difference(needProps, khoProps);
-  if (drawPropKeys.length) await drawProps(drawPropKeys, hints, analysis, styleKey, o);
-  o.log(B.LOG_LIBRARY(reusedSets, objectKeys.length - needProps.length));
+  const notes: Record<string, string> = {};
+  for (const k of drawPropKeys) {
+    const hits = _.filter(used, (s) => _.includes([..._.map(s.objects, B.F_KEY), ..._.map(s.items || [], B.F_KEY), ..._.compact(_.map(s.actors, B.F_HOLD)), ..._.compact(_.map(s.actors, (a) => a.wear))], k));
+    const words = _.uniq(_.compact(_.flatMap(hits, (s) => _.map(_.filter(s.details || [], (d) => d.key === k), (d) => d.text))));
+    const lines = _.uniq(_.compact(_.map(hits, (s) => s.text)));
+    notes[k] = _.truncate([words.length ? B.NOTE_WORDS + words.join(B.NOTE_SEP) : B.EMPTY, lines.length ? B.NOTE_LINES + _.take(lines, B.NOTE_LINES_MAX).join(B.NOTE_SEP) : B.EMPTY].filter(Boolean).join(B.SPACE), { length: B.NOTE_MAX });
+  }
+  if (drawPropKeys.length) await drawProps(drawPropKeys, hints, notes, analysis, styleKey, o);
+  o.log(o.redraw ? B.LOG_REDRAW(placeKeys.length, drawPropKeys.length) : B.LOG_LIBRARY(reusedSets, objectKeys.length - needProps.length));
   board.props = _.filter(objectKeys, (k) => !!readBoard2dLib(styleKey, B.PROPS, k));
   gen.board2d = board;
   o.progress?.(1);
@@ -345,12 +385,12 @@ export const board2dSpec = (gen: MotionGenState | undefined): MotionBoard2dSpec 
   const props: Record<string, MotionBoard2dProp> = {};
   for (const k of board.props) {
     const p = readBoard2dLib<MotionBoard2dProp>(board.styleKey, B.PROPS, k);
-    if (p) props[k] = p;
+    if (p) props[k] = { ...p, svg: balanceSvgTags(p.svg) };
   }
   const sets: Record<string, MotionBoard2dSet> = {};
   for (const [pk, id] of Object.entries(board.sets)) {
     const s = readBoard2dLib<MotionBoard2dSet>(board.styleKey, B.SETS, id);
-    if (s) sets[pk] = s;
+    if (s) sets[pk] = { ...s, svg: balanceSvgTags(s.svg) };
   }
   return { sentences: board.sentences, props, sets };
 };
