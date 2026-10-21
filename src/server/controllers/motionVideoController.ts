@@ -1,7 +1,11 @@
+import { puppetSheet } from "../services/puppet/qa.js";
+import { listPuppetKit, puppetKitThumb, removePuppetKit, renamePuppetKit } from "../services/puppet/kitAdmin.js";
+import { seedPuppetKit } from "../services/puppet/kitSeed.js";
+import { PUPPET_KIT_API, PUPPET_STYLE_DEFAULT } from "../../constants/motionPuppet.js";
+import { PUPPET_SEED_DEFAULT } from "../../constants/motionPuppetSeed.js";
+import { buildScenesPuppet } from "../services/puppet/pipelinePuppet.js";
 import { deleteTrainedVoice, listTrainedVoices, trainVieneuVoice } from "../services/motionVoiceTrainService.js";
 import { MOTION_VOICE_TRAIN } from "../../constants/motionVoiceTrain.js";
-import { buildScenes2d } from "../services/motion2d/pipeline2d.js";
-import { board2dSheet } from "../services/motion2d/sheet2d.js";
 import { MOTION_SOUND_CONFIG as SOUND } from "../../constants/motionSound.js";
 import { normalizeSoundCues } from "../../lib/motionSound.js";
 import { buildMotionSoundTrack, mixMotionSoundAudio, motionSoundAudition } from "../services/motionSoundMixService.js";
@@ -14,7 +18,6 @@ import type { Request, Response } from "express";
 import fs from "fs";
 import { motionGenreCreative, motionVideoGenre } from "../../constants/motionGenre.js";
 import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMotionVoiceSources, removeAi33Voice, synthesizeMotionSpeech } from "../services/motionVoiceSourceService.js";
-import { motionStylePreset } from "../../constants/motionStylePresets.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
 import { motionSpeechRate, recordSpeechRate, speechUnits } from "../services/motionSpeechRateService.js";
@@ -76,13 +79,11 @@ import { STORAGE_TEXTS } from "../../constants/storage.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../constants/sunoAutomation.js";
 import { parseJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
-import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionChapter, type MotionSeoOption, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource, type MotionSceneCustomItem } from "../../types/motionVideo.js";
+import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionChapter, type MotionSeoOption, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource } from "../../types/motionVideo.js";
 import { getResolvedLicenseKey } from "../services/apiKeyResolver.js";
 import { LicenseService } from "../services/licenseService.js";
-import { libraryMime } from "../services/motionAssetLibraryService.js";
-import { buildMotionVoiceTrack, fitUploadedVoice, measureMotionVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
+import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "../services/motionAudioService.js";
 import { motionVoiceCast } from "../../lib/motionVoice.js";
-import { MOTION_GEN_VOICE_TIMING } from "../../constants/motionGenPrompts.js";
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY, MOTION_VOICE_PATTERNS } from "../../constants/motionVoice.js";
 import { applyVoiceLibrary, deleteVoiceChannel, readVoiceChannels, removeCustomVoice, saveVoiceChannel, updateVoiceMeta } from "../services/motionVoiceLibraryService.js";
 import { directMotionVoice } from "../services/motionVoiceDirectionService.js";
@@ -90,16 +91,13 @@ import { registerVieneuVoice, vieneuRoot } from "../services/vieneuTtsService.js
 import { createHash } from "crypto";
 import { runMotionAudioProcess } from "../services/motionSoundMixService.js";
 import { compileStorySpec, estimateBeatSeconds } from "../services/motionDirectorService.js";
-import { getMotionDemoSpec, getMotionEngineClientScript, resolveMotionAsset } from "../services/motionEngineService.js";
-import { buildScenes, calibrateSceneStyle, customSceneSeed, emptyGen, importBaseLibrary, renderStylePreview, resolveGenPreview, seedSceneLibrary } from "../services/motionGenService.js";
-import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
-import { MOTION_SCENE_GROUPS, MOTION_SCENE_LIBRARY_MODES, motionSceneType, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
+import { getMotionDemoSpec, getMotionEngineClientScript } from "../services/motionEngineService.js";
+import { emptyGen, resolveGenPreview } from "../services/puppet/genState.js";
 import { MOTION_AI_ROLE } from "../../constants/motionAiFallback.js";
-import { baseLibraryCounts, pendingBaseCounts, clearSceneLibrary, exportSceneLibrary, isSceneStyleKey, listSceneAssets, parseLibraryPack, listSceneStyles, removeSceneAssets, sceneStyleCalibrationPath, removeSceneStyle, renameSceneAsset, renameSceneStyle, sceneAssetThumbPath, sceneStyleImagePath, sceneStyleReferences } from "../services/motionSceneLibraryService.js";
 import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration, startMotionRender } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
-import { analyzeStory, editScript, mapMotionAiPool, parseStorySource, resolveMotionReferenceStyle, writeChapterBeats } from "../services/motionStoryService.js";
+import { analyzeStory, editScript, mapMotionAiPool, parseStorySource, writeChapterBeats } from "../services/motionStoryService.js";
 import { generateMotionSeo } from "../services/motionSeoService.js";
 import { generateMotionThumbnail } from "../services/motionThumbnailService.js";
 import { resolveSourceInput, withFetchInfo } from "../services/motionSourceFetchService.js";
@@ -159,7 +157,8 @@ export const checkMotionVideo = async (req: Request, res: Response): Promise<voi
 };
 export const renderBoard2dSheet = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.json({ success: true, items: await board2dSheet(validateSpec(req.body?.spec)) });
+    const spec = validateSpec(req.body?.spec);
+    res.json({ success: true, items: _.map(await puppetSheet(spec), (it) => _.omit(it, [PUPPET_KIT_API.ABS])) });
   } catch (error) {
     fail(res, 400, error);
   }
@@ -279,11 +278,9 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
         language,
         length,
         styleReferences,
-        libraryMode: motionLibraryMode(req.body?.libraryMode),
         videoGenre: motionVideoGenre(req.body?.videoGenre),
-        stylePreset: motionStylePreset(req.body?.stylePreset)?.id,
+        stylePreset: _.toString(req.body?.stylePreset || PUPPET_STYLE_DEFAULT),
         characterMotion: req.body?.characterMotion === true,
-        drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
         aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9),
         exec,
         signal: ctx.signal,
@@ -311,7 +308,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
       analysis = bindVideoDnaSettings(analysis, {
         language: language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI,
         aspect: _.toString(req.body?.aspect || analysis.videoDna.settings.aspect),
-        drawingMode: req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
+        drawingMode: MR.MOTION_TEXT_2D,
         characterMode: MR.MOTION_TEXT_DRAWN,
       });
     }
@@ -414,7 +411,7 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
 export const scenesMotionStory = (req: Request, res: Response): void => {
   try {
     const raw = req.body?.analysis as MotionStoryAnalysis;
-    const analysis = (raw && req.body?.libraryMode ? { ...raw, libraryMode: motionLibraryMode(req.body.libraryMode) } : raw) as MotionStoryAnalysis;
+    const analysis = (raw ? { ...raw, stylePreset: _.toString(req.body?.stylePreset || raw.stylePreset || PUPPET_STYLE_DEFAULT) } : raw) as MotionStoryAnalysis;
     const script = req.body?.script as MotionStoryScript;
     if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
     const exec = drawExec(req.body?.aiExecution);
@@ -425,46 +422,33 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const note = _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
     if (req.body?.restart) delete script.gen;
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.SCENES, async (ctx) => {
-      ctx.progress(0, req.body?.autoVoice !== false ? MOTION_VOICE.PLANNING : MOTION_STORY_CONFIG.SCENES_PREPARING);
-      const voicePlan = req.body?.autoVoice !== false ? await directMotionVoice(script, analysis, await listMotionVoiceSources(ctx.signal, ctx.log), { exec: mainExec, signal: ctx.signal, log: ctx.log }) : undefined;
-      const voiceTiming = voicePlan
-        ? measureMotionVoice(script, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, signal: ctx.signal, log: ctx.log })
-            .then((timing) => {
-              ctx.log(MOTION_GEN_VOICE_TIMING.LOG(_.size(timing.beats)));
-              return timing;
-            })
-            .catch((error) => {
-              if (ctx.signal.aborted) throw error;
-              ctx.log(MOTION_GEN_VOICE_TIMING.UNAVAILABLE(_.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
-              return undefined;
-            })
-        : undefined;
-      voiceTiming?.catch(_.noop);
-      const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
-      const result = await (drawingMode === MR.MOTION_TEXT_2D ? buildScenes2d : buildScenes)(script, analysis, {
-        voiceTiming,
-        audioDirection: voicePlan?.direction,
+      const autoVoice = req.body?.autoVoice !== false;
+      ctx.progress(0, MOTION_STORY_CONFIG.SCENES_PREPARING);
+      const voiceOpts = { exec: mainExec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
+      const planJob = autoVoice ? listMotionVoiceSources(ctx.signal, ctx.log).then((sources) => directMotionVoice(script, analysis, sources, { exec: mainExec, signal: ctx.signal, log: ctx.log })) : Promise.resolve(undefined);
+      const voiceJob = planJob.then((plan) => (plan ? buildMotionVoiceTrack({ ...script, gen: { ...(script.gen || emptyGen()), voiceCast: motionVoiceCast(script.gen?.voiceCast, plan.roles) } }, analysis, voiceOpts) : undefined));
+      voiceJob.catch(_.noop);
+      const result = await buildScenesPuppet(script, analysis, {
+        audioDirection: planJob.then((plan) => plan?.direction).catch(() => undefined),
         exec,
         mainExec,
         signal: ctx.signal,
         log: ctx.log,
-        progress: (value, stage) => ctx.progress(value * (req.body?.autoVoice !== false ? 0.85 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
+        progress: (value, stage) => ctx.progress(value * (autoVoice ? 0.9 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
         partial: (r) => r && ctx.partial(r),
         aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9),
         onlyBeats,
         onlyLocations,
-        restyle: !!req.body?.restyle,
         styleReferences,
         characterMotion: req.body?.characterMotion === true,
         note: note || undefined,
         review: req.body?.review !== false,
-        skipPreviews: req.body?.previews === false,
-        drawingMode,
       });
-      if (voicePlan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, voicePlan.roles);
-      if (req.body?.autoVoice !== false && !result.gen?.failed?.length) {
-        ctx.progress(0.85, MOTION_VOICE.GENERATING);
-        result.voiceTrack = await buildMotionVoiceTrack(result, analysis, { exec: mainExec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress(0.85 + (0.13 * done) / Math.max(1, total), done === total ? MOTION_VOICE.MIXING : MOTION_VOICE.PROGRESS(done, total)) });
+      const plan = await planJob;
+      if (plan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, plan.roles);
+      if (autoVoice && !result.gen?.failed?.length) {
+        ctx.progress(0.92, MOTION_VOICE.GENERATING);
+        result.voiceTrack = await voiceJob;
         ctx.partial(result);
       }
       return result;
@@ -474,28 +458,10 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     fail(res, 400, error);
   }
 };
-export const serveStylePreview = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const file = await renderStylePreview(_.toString((req.params as Record<string, string>).id));
-    if (!file) return void res.status(404).end();
-    res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
-    res.sendFile(file);
-  } catch (error) {
-    fail(res, 500, error);
-  }
-};
 export const serveGenPreview = (req: Request, res: Response): void => {
   const file = resolveGenPreview(_.toString(req.query.path));
   if (!file) return void res.status(404).end();
   res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_NO_CACHE);
-  res.sendFile(file);
-};
-export const serveMotionAsset = (req: Request, res: Response): void => {
-  const rel = _.toString((req.params as Record<string, string>)[0] || MR.MOTION_TEXT_EMPTY);
-  const file = resolveMotionAsset(rel);
-  if (!file) return void res.status(404).end();
-  res.setHeader(MOTION_TEXT_CACHE_CONTROL, MOTION_TEXT_PRIVATE_MAX_AGE_86400);
-  res.type(libraryMime(file));
   res.sendFile(file);
 };
 export const voiceMotionStory = (req: Request, res: Response): void => {
@@ -728,121 +694,44 @@ export const serveMotionSfx = async (req: Request, res: Response): Promise<void>
     res.status(404).end();
   }
 };
-export const listSceneLibrary = (_req: Request, res: Response): void => {
+export const seedPuppetKitItems = (req: Request, res: Response): void => {
   try {
-    res.json({ success: true, items: listSceneAssets(), styles: listSceneStyles(), base: baseLibraryCounts(), pending: pendingBaseCounts() });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const removeSceneLibraryItem = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, removed: removeSceneAssets(req.body?.ids ?? [req.body?.id]) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const renameSceneLibraryItem = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, item: renameSceneAsset(req.body?.id, req.body?.name) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const serveSceneLibraryThumb = (req: Request, res: Response): void => {
-  const file = req.query.style ? sceneStyleImagePath(_.toString(req.query.style), _.clamp(_.toNumber(req.query.index) || 0, 0, 8)) : sceneAssetThumbPath(_.toString(req.query.id));
-  if (!file) return void res.status(404).end();
-  res.sendFile(file);
-};
-export const getSceneLibraryStyle = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, references: sceneStyleReferences(_.toString(req.query.key)) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const removeSceneLibraryStyle = (req: Request, res: Response): void => {
-  try {
-    removeSceneStyle(req.body?.key);
-    res.json({ success: true });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const renameSceneLibraryStyle = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, style: renameSceneStyle(req.body?.key, req.body?.name) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const calibrateSceneLibraryStyleJob = (req: Request, res: Response): void => {
-  try {
-    const key = _.toString(req.body?.key);
-    if (!isSceneStyleKey(key)) throw new Error(MOTION_SCENE_LIBRARY.ERRORS.NOT_FOUND);
+    const styleId = _.toString(req.body?.styleId || PUPPET_STYLE_DEFAULT);
     const exec = drawExec(req.body?.aiExecution);
-    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, (ctx) => calibrateSceneStyle(key, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress }));
+    const mainExec = req.body?.mainAiExecution ? aiExec(req.body.mainAiExecution) : { ...exec, role: MOTION_AI_ROLE.MAIN };
+    const job = startStoryJob(false, MotionStoryJobKind.LIBRARY, async (ctx) => seedPuppetKit(styleId, _.toString(req.body?.genre || PUPPET_SEED_DEFAULT), { exec, mainExec, signal: ctx.signal, log: ctx.log }, (v) => ctx.progress(v)));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);
   }
 };
-export const serveSceneStyleCalibration = (req: Request, res: Response): void => {
-  const file = sceneStyleCalibrationPath(_.toString(req.query.key));
-  if (!file || !fs.existsSync(file)) return void res.status(404).end();
-  res.sendFile(file);
-};
-const customSeedItems = (value: unknown): MotionSceneCustomItem[] =>
-  _.take(_.castArray(value || []), MOTION_SCENE_LIBRARY.CUSTOM_MAX).flatMap((raw: any) => {
-    const type = motionSceneType(raw?.type);
-    const name = _.truncate(_.toString(raw?.name).trim(), { length: MOTION_SCENE_LIBRARY.NAME_MAX });
-    const description = _.truncate(_.toString(raw?.description).trim(), { length: MOTION_SCENE_LIBRARY.DESCRIPTION_MAX });
-    if (!type || !name || !description || !_.includes(MOTION_SCENE_GROUPS, type.group)) return [];
-    return [{ group: type.group, type: type.id, name, description, time: _.toString(raw?.time || MR.MOTION_TEXT_EMPTY) || undefined, interior: raw?.interior === true, gender: raw?.gender === MR.MOTION_TEXT_FEMALE ? MR.MOTION_TEXT_FEMALE : MR.MOTION_TEXT_MALE }];
-  });
-export const seedSceneLibraryJob = (req: Request, res: Response): void => {
+export const listPuppetKitItems = (req: Request, res: Response): void => {
   try {
-    const seed = customSceneSeed(customSeedItems(req.body?.items));
-    if (!seed.cast.length && !seed.places.length && !seed.showrooms.length) throw new Error(MOTION_SCENE_LIBRARY.ERRORS.SEED_EMPTY);
-    const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
-    const exec = drawExec(req.body?.aiExecution);
-    const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
-    const characterMotion = req.body?.characterMotion === true;
-    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, async (ctx) => {
-      const referenceStyle = styleReferences.length ? await resolveMotionReferenceStyle(styleReferences, { exec, signal: ctx.signal, log: ctx.log }) : undefined;
-      return seedSceneLibrary(seed, referenceStyle, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode, characterMotion });
-    });
-    res.json({ success: true, job });
+    res.json({ success: true, items: listPuppetKit(req.query.type, req.query.styleId) });
   } catch (error) {
     fail(res, 400, error);
   }
 };
-export const motionLibraryMode = (value: unknown): MotionSceneLibraryMode => (_.includes(_.values(MOTION_SCENE_LIBRARY_MODES), value) ? (value as MotionSceneLibraryMode) : MOTION_SCENE_LIBRARY_MODES.AUTO);
-export const importSceneLibraryJob = (req: Request, res: Response): void => {
+export const removePuppetKitItems = (req: Request, res: Response): void => {
   try {
-    const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
-    const drawingMode = req.body?.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D;
-    const pack = req.body?.pack ? parseLibraryPack(req.body.pack) : undefined;
-    const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.LIBRARY, (ctx) => importBaseLibrary({ exec: drawExec(req.body?.aiExecution), signal: ctx.signal, log: ctx.log, progress: ctx.progress, styleReferences, drawingMode }, pack));
-    res.json({ success: true, job });
+    res.json({ success: true, removed: removePuppetKit(req.body?.type, req.body?.ids ?? [req.body?.id]) });
   } catch (error) {
     fail(res, 400, error);
   }
 };
-export const clearSceneLibraryItems = (_req: Request, res: Response): void => {
+export const renamePuppetKitItem = (req: Request, res: Response): void => {
   try {
-    clearSceneLibrary();
-    res.json({ success: true });
+    res.json({ success: renamePuppetKit(req.body?.type, req.body?.id, req.body?.name) });
   } catch (error) {
     fail(res, 400, error);
   }
 };
-export const exportSceneLibraryFile = (req: Request, res: Response): void => {
-  try {
-    const style = _.toString(req.query.style);
-    res.setHeader(MOTION_SCENE_LIBRARY.EXPORT_DISPOSITION, MOTION_SCENE_LIBRARY.EXPORT_ATTACHMENT(MOTION_SCENE_LIBRARY.EXPORT_FILE + (isSceneStyleKey(style) ? MOTION_SCENE_LIBRARY.TEXT.DASH + style : MR.MOTION_TEXT_EMPTY)));
-    res.type(MOTION_SCENE_LIBRARY.EXPORT_TYPE).send(JSON.stringify(exportSceneLibrary(isSceneStyleKey(style) ? style : undefined)));
-  } catch (error) {
-    fail(res, 400, error);
-  }
+export const servePuppetKitThumb = (req: Request, res: Response): void => {
+  const p = req.params as Record<string, string>;
+  const thumb = puppetKitThumb(p.type, p.id);
+  if (!thumb) return void res.status(404).end();
+  res.setHeader(PUPPET_KIT_API.CACHE, PUPPET_KIT_API.NO_CACHE);
+  if (thumb.file) return void res.sendFile(thumb.file);
+  res.setHeader(PUPPET_KIT_API.CSP, PUPPET_KIT_API.CSP_VALUE);
+  res.type(PUPPET_KIT_API.SVG_TYPE).send(thumb.svg);
 };

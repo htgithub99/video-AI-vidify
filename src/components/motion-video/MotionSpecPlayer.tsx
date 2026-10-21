@@ -10,7 +10,7 @@ import { cn } from "../../lib/utils";
 import type { MotionSpec } from "../../types/motionVideo.js";
 import { MotionAspect } from "../../types/motionVideo.js";
 import { Button } from "../ui/Button";
-import { formatSeconds, MOTION_ASSET_BASE, type MotionEngineGlobal } from "./motionApi";
+import { formatSeconds, type MotionEngineGlobal } from "./motionApi";
 import { MotionLoadingIcon } from "./MotionControls.js";
 import { MOTION_VOICE, MOTION_VOICE_STYLES, MOTION_VOICE_TEXT } from "../../constants/motionVoice.js";
 export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | null; videoUrl?: string; audioUrl?: string; audioPending?: boolean; pending?: boolean; className?: string }> = ({ ME, spec, videoUrl, audioUrl, audioPending, pending = false, className }) => {
@@ -63,7 +63,7 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
     let frame = 0;
     const t = setTimeout(async () => {
       try {
-        await ME.GEN?.prepare(spec, MOTION_ASSET_BASE);
+        await ME.PUPPET_PRELOAD?.(spec);
         if (cancelled) return;
         const renderer = ME.createRenderer(canvas, spec, { width: w, height: h, quality: MOTION_PREVIEW_QUALITY, preview: true });
         renderer.drawFrame(0);

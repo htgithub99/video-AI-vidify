@@ -1,8 +1,7 @@
 import * as MR from "../constants/motionRuntime.js";
-import { SOURCE_TEXT_OBJECT } from "../constants/sourceText.js";
 import { trimMotionText } from "./motionUtils.js";
 import { creativeBlueprintErrors, normalizeCreativeBlueprint } from "./motionCreativeBlueprint.js";
-import type { MotionBeat, MotionCharacterDesign, MotionScenePlan, MotionStoryAnalysis, MotionStorySource, MotionStoryScript, MotionVideoDna, MotionVideoDnaSettings } from "../types/motionVideo.js";
+import type { MotionScenePlan, MotionStoryAnalysis, MotionStorySource, MotionVideoDna, MotionVideoDnaSettings } from "../types/motionVideo.js";
 export const VIDEO_DNA_PLANNING_INSTRUCTIONS = MR.MOTION_TEXT_BEFORE_WRITING_SCENES_WORK_SIMULTANEOUSLY_AS_A_CONTENT_RESEARCHER;
 export const MOTION_VIDEO_FORMATS = {
   story: MR.MOTION_TEXT_NARRATED_STORY_WITH_CHARACTERS_AND_SCENES_FICTION_FOLK_TALE_TRUE_,
@@ -13,7 +12,6 @@ export const MOTION_VIDEO_FORMATS = {
   biography: MR.MOTION_TEXT_THE_LIFE_AND_WORK_OF_ONE_REAL_PERSON,
   promo: MR.MOTION_TEXT_PRESENTS_A_PRODUCT_PLACE_OR_SERVICE_HOOK_BENEFITS_PROOF_CALL_TO_A,
 } as const;
-export type MotionVideoFormat = keyof typeof MOTION_VIDEO_FORMATS;
 export const VIDEO_DNA_PROFILE_INSTRUCTIONS = MR.MOTION_TEMPLATE_VIDEO_DNA_PROFILE_DERIVE_IT_FROM_EVIDENCE_EXACTLY_AS_A_MUSIC_PROD(
   Object.keys(MOTION_VIDEO_FORMATS).join(MR.MOTION_TEXT_SYMBOL_28),
   Object.entries(MOTION_VIDEO_FORMATS)
@@ -33,7 +31,6 @@ const contentKey = (input: string): string => {
   return MR.MOTION_TEMPLATE_SYMBOL_80(input.length, (a >>> 0).toString(16), (b >>> 0).toString(16));
 };
 export const videoDnaSourceKey = (source: MotionStorySource): string => contentKey(JSON.stringify([source.kind, source.title, source.url, source.text, source.segments]));
-export const sceneExecutionKey = (beat: MotionBeat): string => contentKey(JSON.stringify([beat.narration, beat.action, beat.scenePlan, beat.place, beat.cast, beat.time, beat.weather, beat.shot, beat.duration]));
 export const videoDnaErrors = (value: any): string[] => {
   const errors = creativeBlueprintErrors(value).map((error) => error.replace(MR.MOTION_TEXT_CREATIVEBLUEPRINT, MR.MOTION_TEXT_VIDEODNA));
   const groups = {
@@ -131,39 +128,4 @@ export const normalizeScenePlan = (value: any): MotionScenePlan | undefined =>
         requiredProps: list(value.requiredProps),
         continuity: list(value.continuity),
         acceptance: list(value.acceptance),
-      };
-export const scenePlanPrompt = (plan?: MotionScenePlan): string => (plan ? MR.MOTION_TEMPLATE_SCENE_EXECUTION_PLAN(JSON.stringify(plan)) : MR.MOTION_TEXT_EMPTY);
-const SCENE_PLAN_FILLER_WORDS = new Set<string>([MR.MOTION_TEXT_PROP, MR.MOTION_TEXT_PROPS, MR.MOTION_TEXT_FX, MR.MOTION_TEXT_VFX, MR.MOTION_TEXT_NODE, MR.MOTION_TEXT_OBJ, MR.MOTION_TEXT_OBJECT, MR.MOTION_TEXT_MODEL, MR.MOTION_TEXT_UNIT, MR.MOTION_TEXT_CORE, MR.MOTION_TEXT_MAIN, MR.MOTION_TEXT_CENTER, MR.MOTION_TEXT_CENTRE, MR.MOTION_TEXT_HERO, MR.MOTION_TEXT_THE, MR.MOTION_TEXT_OF]);
-export const scenePlanStagingErrors = (plan: MotionScenePlan | undefined, staging: any, location: any): string[] => {
-  if (!plan) return [];
-  const names = new Set<string>();
-  const visit = (node: any, depth: number) => {
-    if (!node || depth > 20) return;
-    if (node.name) names.add(node.name);
-    for (const child of node.children || []) visit(child, depth + 1);
-    if ((node.shape === MR.MOTION_TEXT_REF || node.shape === MR.MOTION_TEXT_USE) && location?.defs?.[node.ref]) {
-      names.add(node.ref);
-      for (const child of location.defs[node.ref]) visit(child, depth + 1);
-    }
-  };
-  for (const node of [...(location?.nodes || []), ...(staging?.props || [])]) visit(node, 0);
-  for (const actor of staging?.actors || []) for (const node of actor.hold?.nodes || []) visit(node, 0);
-  const words = (name: string) =>
-    name
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter((w) => w.length > 1 && !SCENE_PLAN_FILLER_WORDS.has(w));
-  const built = [...names].map(words);
-  const present = (name: string) => {
-    if (names.has(name)) return true;
-    const want = words(name);
-    if (!want.length) return false;
-    return built.some((have) => {
-      const shared = want.filter((w) => have.includes(w)).length;
-      return shared >= Math.min(2, want.length) && shared / want.length >= 0.5;
-    });
-  };
-  return plan.requiredProps.filter((name) => !present(name)).map((name) => MR.MOTION_TEMPLATE_SCENEPLAN_REQUIRES_NAMED_PROP_BUT_NO_SUCH_NODE_WAS_STAGED_CREATE_(name));
-};
-export const hasAuthoredCharacter = (design: unknown): design is MotionCharacterDesign => !!design && typeof design === SOURCE_TEXT_OBJECT && Array.isArray((design as MotionCharacterDesign).parts) && (design as MotionCharacterDesign).parts.some((part) => !!part && Array.isArray(part.nodes) && part.nodes.length > 0);
-export const needsAuthoredCharacters = (script: MotionStoryScript | null, castKeys: string[] = []): boolean => !!script && (!script.gen || Object.values(script.gen.cast || {}).some((design) => !hasAuthoredCharacter(design)) || castKeys.some((key) => !hasAuthoredCharacter(script.gen?.cast[key])));
+      };

@@ -1,3 +1,4 @@
+import type { PuppetGen, PuppetKitSpec } from "./motionPuppet.js";
 import type { MotionStyleFinish } from "../constants/motionStyleFinish.js";
 import type { MotionCostume } from "../constants/motionCostume.js";
 import type { MotionTraits } from "../constants/motionSceneTraits.js";
@@ -47,6 +48,7 @@ export interface MotionHudBar { label: string; value: number; color?: string; }
 export interface MotionHud { counter?: string; date?: string; label?: string; bars?: MotionHudBar[]; clear?: boolean; }
 export interface MotionHudSegment { counter?: string; date?: string; label?: string; bars?: MotionHudBar[]; start: number; end: number; }
 export interface MotionSpec {
+  kit?: PuppetKitSpec;
   fxCues?: { t: number; kind: string }[];
   fadeIn?: number;
   fadeOut?: number;
@@ -105,7 +107,6 @@ export interface MotionStoryAnalysis {
   videoGenre?: string;
   stylePreset?: string;
   musicMood?: string;
-  libraryMode?: string;
   genre2?: string;
   factual?: boolean;
   genreReason?: string;
@@ -168,14 +169,6 @@ export interface MotionVideoDna extends MotionCreativeBlueprint {
   influences?: { name: string; role: string; relevance: string }[];
 }
 export interface MotionScenePlan { purpose: string; subject: string; before: string; after: string; composition: string; spatialRelations: string[]; requiredProps: string[]; continuity: string[]; acceptance: string[]; }
-export interface MotionCharacterTransform { pos?: number[]; rot?: number[]; scale?: number[]; }
-export interface MotionCharacterDesign {
-  materials?: Record<string, unknown>;
-  parts: (MotionCharacterTransform & { id: string; parent?: string; nodes: Record<string, unknown>[] })[];
-  anchors?: Record<string, string>;
-  poses?: Record<string, Record<string, MotionCharacterTransform>>;
-  motions?: Record<string, { duration: number; loop?: boolean; events?: MotionSoundEvent[]; tracks: { part: string; keys: (MotionCharacterTransform & { t: number })[] }[] }>;
-}
 export interface MotionFlatCamera { pitch: number; wideFigure?: number; horizon?: number; }
 export interface MotionGenStyle { metrics?: MotionStyleMetrics; outlineColor?: string; outlineWidth?: number; grade?: string; palette?: string[]; notes?: string; outlineSilhouette?: boolean; faceShading?: boolean; framing?: string; flatCamera?: MotionFlatCamera; }
 export interface MotionGenPreview { file?: string; files?: string[]; issues?: string[]; score?: number; note?: string; at?: string; }
@@ -183,16 +176,19 @@ export interface MotionBoard2dObject { key: string; color?: string | null; count
 export interface MotionBoard2dActor { cast: string; pose: string; expression?: string; face?: string; wear?: string | null; hold?: string | null; small?: boolean; grip?: string; effect?: string; depth?: string; }
 export interface MotionBoard2dItem { key: string; x: number; y: number; scale: number; effect?: string; count?: number; }
 export interface MotionBoard2dDetail { text: string; key: string; as: string; who?: string | null; }
-export interface MotionBoard2dSentence { mode: "people" | "vignette" | "cutaway" | "place"; place?: string | null; placeDesc?: string | null; details?: MotionBoard2dDetail[]; fixed?: number; kind?: string | null; subject?: string | null; target?: string | null; objects: MotionBoard2dObject[]; actors: MotionBoard2dActor[]; camera?: string; light?: string | null; items?: MotionBoard2dItem[]; text?: string; redo?: boolean; ambient?: string[]; apparition?: MotionBoard2dApparition | null; }
+export interface MotionBoard2dSentence { mode: "people" | "vignette" | "cutaway" | "place"; place?: string | null; placeDesc?: string | null; details?: MotionBoard2dDetail[]; fixed?: number; kind?: string | null; subject?: string | null; target?: string | null; objects: MotionBoard2dObject[]; actors: MotionBoard2dActor[]; camera?: string; light?: string | null; items?: MotionBoard2dItem[]; text?: string; redo?: boolean; ambient?: string[]; apparition?: MotionBoard2dApparition | null; shot?: string | null; focusObject?: string | null; shot2?: MotionBoard2dShot2 | null; }
+export interface MotionBoard2dShot2 { shot: string; focusObject?: string | null; cast?: string | null; }
 export interface MotionBoard2dApparition { kind: string; x: number; }
 export interface MotionBoard2dProp { svg: string; grip: number[]; base: number[]; height: number; head?: number[] | null; view?: number; }
 export interface MotionBoard2dSet { svg: string; code?: string; time?: string; landmarks?: { key: string; x: number; y: number; w: number; h: number }[]; floorY: number; marks: number[][]; lights: { x: number; y: number; color: string; kind: string }[]; }
 export interface MotionCast2d { skin: string; top: string; bottom?: string | null; shoes?: string | null; hair?: string | null; hairKind?: string | null; beard?: string | null; hat?: string | null; hatKind?: string | null; glasses?: boolean; scarf?: string | null; skirt?: boolean; buttons?: boolean; eye?: string; legs?: boolean; arms?: boolean; animal?: boolean; species?: string | null; brows?: boolean; height: number; template?: boolean; ghost?: boolean; }
 export interface MotionBoard2dSheetItem { t: number; text: string; file: string; }
 export interface MotionBoard2dReport { sentences: number; fallback: number; sets: number; codeSets: string[]; cast: number; }
-export interface MotionBoard2d { version: number; styleKey: string; sentences: Record<string, MotionBoard2dSentence>; props: string[]; sets: Record<string, string>; codeSets?: Record<string, string>; cast?: Record<string, MotionCast2d>; sheet?: MotionBoard2dSheetItem[]; report?: MotionBoard2dReport; }
-export interface MotionBoard2dSpec { sentences: Record<string, MotionBoard2dSentence>; props: Record<string, MotionBoard2dProp>; sets: Record<string, MotionBoard2dSet>; }
+export interface MotionBoard2d { version: number; styleKey: string; sentences: Record<string, MotionBoard2dSentence>; props: string[]; sets: Record<string, string>; codeSets?: Record<string, string>; cast?: Record<string, MotionCast2d>; castArt?: Record<string, string>; sheet?: MotionBoard2dSheetItem[]; report?: MotionBoard2dReport; }
+export interface MotionCastArt { hairBack?: string; hairFront?: string; body?: string; }
+export interface MotionBoard2dSpec { sentences: Record<string, MotionBoard2dSentence>; props: Record<string, MotionBoard2dProp>; sets: Record<string, MotionBoard2dSet>; castArt?: Record<string, MotionCastArt>; }
 export interface MotionGenState {
+  puppet?: PuppetGen;
   board2d?: MotionBoard2d;
   soundDirectionKey?: string;
   soundPlanVersion?: number;
@@ -269,9 +265,3 @@ export enum MotionStoryJobKind {
 export interface MotionLogEntry { id: string; kind: string; lines: string[]; }
 export interface MotionAiExecution { provider?: string; model?: string; mode?: string; chromeHeadless?: boolean; strictProvider?: boolean; role?: string; chained?: boolean; }
 export interface MotionStoryJobState { id: string; kind: MotionStoryJobKind; status: MotionJobStatus; progress: number; stage?: string; log: string[]; error?: string; result?: unknown; startedAt: number; }
-export type MotionSceneAssetKind = "location" | "character" | "prop";
-export interface MotionSceneAsset { id: string; kind: MotionSceneAssetKind; styleKey: string; type?: string; name: string; description: string; tags: string[]; time?: string; interior?: boolean; gender?: string; role?: string; motion?: boolean; size?: number[]; from?: string; story?: string; thumb?: boolean; fingerprint?: string; sourceFingerprint?: string; uses: number; createdAt: number; updatedAt?: number; usedAt?: number; }
-export interface MotionStyleCalibration { at: number; image?: boolean; notes?: string; changes?: string[]; }
-export interface MotionSceneStyleSet { key: string; name: string; drawingMode: MotionDrawingMode; images: string[]; referenceStyle?: MotionReferenceStyle; genStyle?: MotionGenStyle; calibration?: MotionStyleCalibration; createdAt: number; usedAt?: number; }
-export interface MotionSceneLibraryList { items: MotionSceneAsset[]; styles: MotionSceneStyleSet[]; base?: { characters: number; locations: number; props: number }; pending?: Partial<Record<MotionDrawingMode, number>>; }
-export interface MotionSceneCustomItem { group: string; type: string; name: string; description: string; time?: string; interior?: boolean; gender?: "male" | "female"; }

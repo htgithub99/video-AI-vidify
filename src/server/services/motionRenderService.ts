@@ -15,7 +15,6 @@ import _ from "lodash";
 import os from "os";
 import path from "path";
 import { chromium, type Browser, type Page } from "playwright";
-import { API_HEADERS } from "../../constants/apiRoutes.js";
 import {
   MOTION_RENDER_CANVAS_ID,
   MOTION_TEMPLATE_BO_MA_HOA_FPS_CHAT_LUONG,
@@ -30,7 +29,6 @@ import {
   MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG,
   MOTION_TEMPLATE_RENDER_XONG_S_DANG_GHEP_VIDEO,
   MOTION_TEMPLATE_SYMBOL_20,
-  MOTION_TEMPLATE_SYMBOL_56,
   MOTION_TEMPLATE_SYMBOL_7,
   MOTION_TEMPLATE_TRINH_DUYET_RENDER_THOI_LUONG_S,
   MOTION_TEXT_0,
@@ -149,7 +147,6 @@ import {
   MOTION_TEXT_SYMBOL_27,
   MOTION_TEXT_SYMBOL_30,
   MOTION_TEXT_SYMBOL_33,
-  MOTION_TEXT_SYMBOL_34,
   MOTION_TEXT_SYMBOL_38,
   MOTION_TEXT_SYMBOL_39,
   MOTION_TEXT_T,
@@ -168,13 +165,12 @@ import {
   MOTION_TEXT_Y,
   MOTION_TEXT_YUV420P,
 } from "../../constants/motionRuntime.js";
-import { MOTION_ASPECT_BASE, MOTION_GPU_ENCODERS, MOTION_QUALITY_PRESETS, MOTION_RENDER_CACHE, MOTION_VIDEO_CONSTANTS, type MotionQualityPreset } from "../../constants/motionVideo.js";
+import { MOTION_ASPECT_BASE, MOTION_GPU_ENCODERS, MOTION_QUALITY_PRESETS, MOTION_RASTER, MOTION_RENDER_CACHE, MOTION_VIDEO_CONSTANTS, type MotionQualityPreset } from "../../constants/motionVideo.js";
 import { cloneJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
 import { MotionEncoderPreference, MotionJobStatus, MotionQuality, type MotionJobState, type MotionRenderOptions, type MotionResultItem, type MotionSpec } from "../../types/motionVideo.js";
-import { libraryMime } from "./motionAssetLibraryService.js";
 import { buildSfxTrack } from "./motionAudioService.js";
-import { MOTION_ASSET_BASE, buildMotionRenderHtml, resolveMotionAsset } from "./motionEngineService.js";
+import { buildMotionRenderHtml } from "./motionEngineService.js";
 import { addMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory, listMotionResults } from "./motionLibraryService.js";
 import { getFfmpegPath } from "./shortsPreprocessService.js";
 const ABORTED = MOTION_TEXT_MOTION_RENDER_ABORTED;
@@ -286,14 +282,6 @@ const pushLog = (job: MotionJobState, line: string) => {
   job.log = _.takeRight([...job.log, MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), String(line))], MOTION_VIDEO_CONSTANTS.MAX_LOG_LINES);
 };
 interface WorkerSlice { index: number; start: number; end: number; file: string; }
-const attachAssetRoute = async (page: Page) => {
-  await page.route(MOTION_TEMPLATE_SYMBOL_56(String(MOTION_ASSET_BASE)), async (route) => {
-    const rel = new URL(route.request().url()).pathname;
-    const file = resolveMotionAsset(rel);
-    if (!file) return route.fulfill({ status: 404, body: MR.MOTION_TEXT_EMPTY, headers: { [API_HEADERS.ACCESS_CONTROL_ALLOW_ORIGIN]: MOTION_TEXT_SYMBOL_34 } });
-    return route.fulfill({ status: 200, body: fs.readFileSync(file), headers: { [API_HEADERS.CONTENT_TYPE]: libraryMime(file), [API_HEADERS.ACCESS_CONTROL_ALLOW_ORIGIN]: MOTION_TEXT_SYMBOL_34 } });
-  });
-};
 const collectRenderErrors = (page: Page, errors: string[]): void => {
   page.on(MOTION_TEXT_PAGEERROR, (error) => errors.push(error.message));
   page.on(MR.MOTION_TEXT_CONSOLE, (message) => {
@@ -316,7 +304,6 @@ const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: numbe
     page = await browser.newPage({ viewport: { width: 640, height: 360 } });
     const renderErrors: string[] = [];
     collectRenderErrors(page, renderErrors);
-    await attachAssetRoute(page);
     await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
     await page.evaluate(() => (window as any).__fontsReady);
     await page.evaluate(([q, w, h]) => (window as any).__setup(q, w, h), [{ supersample: ctx.preset.supersample, motionBlur: ctx.preset.motionBlur, bloom: ctx.preset.bloom, grain: ctx.preset.grain, layerScale: ctx.preset.layerScale }, ctx.width, ctx.height] as const);
@@ -413,7 +400,6 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     let is3dSoftware = false;
     try {
       const page = await probe.browser.newPage({ viewport: { width: 320, height: 180 } });
-      await attachAssetRoute(page);
       await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
       await page.evaluate(() => (window as any).__fontsReady);
       const probeSpec = cloneJson(await page.evaluate(() => (window as any).__SPEC));
@@ -625,7 +611,6 @@ export const checkMotionSpec = async (spec: MotionSpec): Promise<{ duration: num
   const { browser } = await launchBrowser();
   try {
     const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
-    await attachAssetRoute(page);
     const pageErrors: string[] = [];
     page.on(MOTION_TEXT_PAGEERROR, (e) => pageErrors.push(e.message));
     await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
@@ -642,6 +627,26 @@ export const checkMotionSpec = async (spec: MotionSpec): Promise<{ duration: num
 };
 const STILL_LABEL = { canvasId: MOTION_RENDER_CANVAS_ID, ctx2d: MOTION_TEXT_2D, bg: MOTION_TEXT_STILL_LABEL_BG, fg: MOTION_TEXT_STILL_LABEL_FG, font: MOTION_TEXT_STILL_LABEL_FONT, mime: MOTION_TEXT_IMAGE_JPEG };
 export interface MotionStillSession { render: (spec: MotionSpec, picks: { id: string; t: number }[], dir: string, opts?: { width?: number; height?: number; quality?: "draft" | "high"; label?: boolean }) => Promise<{ id: string; t: number; file: string; issues: string[]; camera?: unknown }[]>; close: () => Promise<void>; }
+export const rasterizeMotionSvgs = async (items: { svg: string; file: string; width: number; height: number; bg?: string }[]): Promise<string[]> => {
+  if (!items.length) return [];
+  const { browser } = await launchBrowser();
+  const done: string[] = [];
+  try {
+    const page = await browser.newPage();
+    for (const it of items) {
+      try {
+        await page.setViewportSize({ width: it.width, height: it.height });
+        await page.setContent(MOTION_RASTER.BG_HTML(it.svg, it.width, it.height, it.bg || MOTION_RASTER.BG), { waitUntil: MOTION_TEXT_LOAD });
+        fs.mkdirSync(path.dirname(it.file), { recursive: true });
+        await page.screenshot({ path: it.file });
+        done.push(it.file);
+      } catch {}
+    }
+  } finally {
+    await browser.close().catch(_.noop);
+  }
+  return done;
+};
 export const openStillSession = async (): Promise<MotionStillSession> => {
   const { browser } = await launchBrowser();
   let page: Page | null = null;
@@ -653,7 +658,6 @@ export const openStillSession = async (): Promise<MotionStillSession> => {
     }
     page = await browser.newPage({ viewport: { width: w, height: h } });
     collectRenderErrors(page, errors);
-    await attachAssetRoute(page);
     await page.setContent(buildMotionRenderHtml({ shots: [] } as MotionSpec), { waitUntil: MOTION_TEXT_LOAD });
     await page.evaluate(() => (window as any).__fontsReady);
     return page;

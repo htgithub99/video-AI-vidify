@@ -1,4 +1,5 @@
 import { API_ROUTES } from "./apiRoutes.js";
+import { PUPPET_KIT_API } from "./motionPuppet.js";
 import { MotionStoryJobKind } from "../types/motionVideo.js";
 export const WORKFLOW_ACTIVITY_CONFIG = {
   MODAL_MAX_WIDTH: "max-w-5xl",
@@ -402,6 +403,7 @@ export const storyActivityRoutes: Record<string, MotionStoryJobKind> = {
   [API_ROUTES.MOTION_STORY_VOICE]: MotionStoryJobKind.VOICE,
   [API_ROUTES.MOTION_STORY_SEO]: MotionStoryJobKind.SEO,
   [API_ROUTES.MOTION_STORY_THUMBNAIL]: MotionStoryJobKind.THUMBNAIL,
+  [PUPPET_KIT_API.URLS.SEED]: MotionStoryJobKind.LIBRARY,
 };
 export const MOTION_ACTIVITY_PREFIX = { audio: "motionAudio", check: "motionCheck", render: "motionRender", delete: "motionDelete", clean: "motionClean", save: "motionSave" } as const;
 export const WORKFLOW_AREAS = Object.values(WORKFLOW_ACTIVITY_CONFIG.AREAS).filter((area) => area !== WORKFLOW_ACTIVITY_CONFIG.AREAS.all);

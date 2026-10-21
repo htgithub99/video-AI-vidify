@@ -5,18 +5,14 @@ import { motionMusicMoodKey as musicMoodOf } from "../../lib/motionMusic.js";
 import { MOTION_PATTERNS as MP } from "../../constants/motionPatterns.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
-import { MOTION_QA_MESSAGES, MOTION_REFERENCE_AI, MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_FALLBACK, MOTION_REFERENCE_PROMPTS } from "../../constants/motionReference.js";
+import { MOTION_QA_MESSAGES, MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../../constants/motionReference.js";
 import { normalizeMotionReferenceStyle } from "../../lib/motionReference.js";
 import { MOTION_STORY_VOICE_PROMPT, MOTION_VOICE } from "../../constants/motionVoice.js";
 import { normalizeMotionSceneMood, normalizeMotionUtterances } from "../../lib/motionVoice.js";
 import { motionAudioContext } from "../../lib/motionAudioDirection.js";
-import { withMotionReferenceFiles } from "./motionReferenceService.js";
-import { withCachedMotionReferenceStyle } from "./motionReferenceCacheService.js";
-import { MOTION_SCENE_LIBRARY } from "../../constants/motionSceneLibrary.js";
 import { MOTION_AI_FALLBACK, MOTION_AI_ROLE } from "../../constants/motionAiFallback.js";
 import { MOTION_CAPTCHA } from "../../constants/motionCaptcha.js";
-import { assignSceneLibrary, cleanSceneTags, isSceneAssetId, motionAssetStyleKey, saveSceneStyle, sceneLibraryCatalog, sceneTypeOf } from "./motionSceneLibraryService.js";
-import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../../constants/motionSceneCatalog.js";
+import { puppetTags } from "../../lib/motionPuppet.js";
 import { cleanCharacterColors } from "../../lib/motionCharacterVariant.js";
 import type { MotionStyleReference } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
@@ -27,7 +23,6 @@ import { MOTION_HISTORY } from "../../constants/motionHistory.js";
 import { normalizeMotionHud } from "../../lib/motionHistory.js";
 import { MOTION_CREATIVE_EDITOR, MOTION_STORY_DOCTOR, motionGenreCreative, motionVideoGenre, motionVideoGenreDirective, type MotionVideoGenre } from "../../constants/motionGenre.js";
 import { findFolkBeliefs, knownFolkBelief } from "../../lib/motionFolkBelief.js";
-import { MOTION_STYLE_PRESET_KEY, motionPresetReferenceStyle, motionStylePreset } from "../../constants/motionStylePresets.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../constants/motionMusic.js";
 import _ from "lodash";
 import path from "path";
@@ -155,7 +150,7 @@ import { productionPreamble } from "../../lib/motionDirection.js";
 import { normalizeCreativeBlueprint } from "../../lib/motionCreativeBlueprint.js";
 import { VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, normalizeScenePlan, normalizeVideoDna, scenePlanErrors, VIDEO_SCENE_PLAN_INSTRUCTIONS, videoDnaErrors, videoDnaInstructions, videoDnaProfileErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
 import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifiedQuotes } from "../../lib/motionSourceClean.js";
-import { getMotionErrorMessage, getMotionErrorSummary, normalizeMotionText } from "../../lib/motionUtils.js";
+import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
 import { parseClaudeChatModel } from "../../constants/claudeChatModels.js";
 import { GEMINI_MODEL_ENCODING, parseGeminiChatModel } from "../../constants/geminiChatModels.js";
@@ -643,7 +638,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     signal?.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     run?.signal.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     let timedOut = false;
-    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
+    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, MOTION_STORY_DOCTOR.ARTIFACT, MOTION_STORY_DOCTOR.DNA_ARTIFACT], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
     const watchdog = setTimeout(() => {
       timedOut = true;
       roomCtrl.abort();
@@ -697,6 +692,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       const roomProbe = await probeRoomPage(_.get(caught, MOTION_TEXT_ROOMPAGE), requestId);
       await writeMotionAiDebug(requestId, { stage: artifactType, provider, error: _.toString(caught?.message), promptChars: fullPrompt.length, ...(diag || {}), room: roomProbe });
       if (diag) log?.(MOTION_TEMPLATE_CHAN_DOAN_PHONG_CHAT_PHAN_HOI_KY_TU(String(diag.candidateChars ?? 0), String(diag.busy ? MOTION_TEXT_CO : MOTION_TEXT_KHONG), String(diag.identityMatch ? MOTION_TEXT_CO : MOTION_TEXT_KHONG), String(Math.round((diag.elapsedMs || 0) / 1000))));
+      if (!refused && MOTION_STORY_CONFIG.CANNED_REFUSAL_RE.test(_.toString(diag?.lastCandidate))) log?.(MOTION_STORY_CONFIG.CANNED_REFUSAL_LOG(provider, artifactType, fullPrompt.length));
       if (!refused && diag?.lastCandidate && diag.lastCandidate.length < 400 && !MP.BRACE.test(diag.lastCandidate)) log?.(MOTION_TEMPLATE_AI_TRA_LOI_KHONG_PHAI_JSON(String(_.truncate(diag.lastCandidate, { length: 160 }))));
       if (refused) {
         log?.(MOTION_STORY_CONFIG.ROOM_REFUSAL_LOG(provider));
@@ -717,10 +713,14 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         captchaRetry = true;
       }
       const noInput = !limited && !captcha && limitText[0] === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
+      const uiStuck = !limited && !captcha && !noInput && !timedOut && attempt < MOTION_STORY_CONFIG.ROOM_UI_RETRIES && MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(limitText[0]);
       if (!captchaRetry && exec.strictProvider && noInput && attempt === 0) {
         retryRoom = true;
         restartBrowser = true;
         log?.(MOTION_STORY_CONFIG.ROOM_RESTART_LOG(provider));
+      } else if (!captchaRetry && uiStuck) {
+        retryRoom = true;
+        log?.(MOTION_STORY_CONFIG.ROOM_UI_RETRY_LOG(provider, attempt + 1, MOTION_STORY_CONFIG.ROOM_UI_RETRIES));
       } else if (!captchaRetry && exec.strictProvider) {
         if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
         restartBrowser = noInput;
@@ -729,7 +729,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         throw error;
       }
       const unavailable = noInput && !!limitTo && !switchTo && attempt > 0;
-      if (!captchaRetry) {
+      if (!captchaRetry && !uiStuck) {
         if (noInput && attempt === 0) {
           retryRoom = true;
           restartBrowser = true;
@@ -843,43 +843,6 @@ export const buildSourceLedger = async (source: MotionStorySource, opts: { exec:
   opts.log?.(MR.MOTION_TEMPLATE_SO_SU_KIEN_PHAN(chunks.length, failedParts ? MR.MOTION_TEMPLATE_PHAN_DUNG_TRICH_DOAN_GOC(failedParts) : MR.MOTION_TEXT_EMPTY));
   return parts.map((p, i) => MR.MOTION_TEMPLATE_PART(i + 1, chunks.length, p)).join(MR.MOTION_TEXT_SYMBOL_27);
 };
-const referenceFallback = (exec: MotionAiExecution): MotionAiExecution => (exec.provider && exec.provider !== MOTION_REFERENCE_AI.provider ? { ...exec, strictProvider: false } : { ...exec, provider: MOTION_REFERENCE_FALLBACK.PROVIDER, model: MOTION_REFERENCE_FALLBACK.MODEL, mode: MOTION_REFERENCE_AI.mode, strictProvider: false });
-const referenceUnavailable = (error: unknown): boolean => MOTION_REFERENCE_FALLBACK.PATTERN.test(getMotionErrorSummary(error));
-const analyzeReferenceStyle = async (images: MotionAiImage[], opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis["referenceStyle"]> => {
-  let exec: MotionAiExecution = { ...opts.exec, ...MOTION_REFERENCE_AI };
-  for (let attempt = 0; attempt < MOTION_REFERENCE_PROMPTS.STYLE_ATTEMPTS; attempt++) {
-    try {
-      const parts = attempt >= 1 ? [MOTION_REFERENCE_PROMPTS.STYLE_SAFE, MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY] : [MOTION_REFERENCE_PROMPTS.ANALYZE, MOTION_REFERENCE_PROMPTS.STYLE_ONLY];
-      const raw = await (opts.ai || runMotionAi)(parts.join(MR.MOTION_TEXT_SYMBOL_27), MOTION_STORY_CONFIG.ARTIFACT_STYLE, exec, opts.signal, opts.log, images);
-      const style = normalizeMotionReferenceStyle(raw?.referenceStyle || raw);
-      if (style?.kit && (style.images?.length || 0) >= images.length && !MOTION_REFERENCE_PROMPTS.STYLE_UNSEEN.test(style.description || MR.MOTION_TEXT_EMPTY)) return style;
-      opts.log?.(MOTION_REFERENCE_PROMPTS.STYLE_REJECTED(!style ? _.truncate(JSON.stringify(raw ?? null), { length: MOTION_REFERENCE_PROMPTS.STYLE_REJECTED_CHARS }) : !style.kit ? MOTION_REFERENCE_PROMPTS.STYLE_NO_KIT : MOTION_REFERENCE_PROMPTS.STYLE_IMAGES(style.images?.length || 0, images.length) + _.truncate(style.description, { length: MOTION_REFERENCE_PROMPTS.STYLE_REJECTED_CHARS })));
-    } catch (error) {
-      if (opts.signal?.aborted) throw error;
-      opts.log?.(MOTION_REFERENCE_PROMPTS.STYLE_REJECTED(getMotionErrorSummary(error)));
-      if (exec.provider === MOTION_REFERENCE_AI.provider && referenceUnavailable(error)) {
-        const next = referenceFallback(opts.exec);
-        opts.log?.(MOTION_REFERENCE_FALLBACK.LOG(_.toString(exec.provider), _.toString(next.provider)));
-        exec = next;
-      }
-    }
-    opts.log?.(MOTION_REFERENCE_PROMPTS.STYLE_RETRY);
-  }
-  throw new Error(MOTION_REFERENCE_PROMPTS.STYLE_FAILED);
-};
-export const analyzeMotionReferenceStyleFresh = (references: MotionStyleReference[], opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void }): Promise<MotionStoryAnalysis["referenceStyle"]> => withMotionReferenceFiles(references, (images) => analyzeReferenceStyle(images, opts));
-export const reviewMotionStyleCalibration = (references: MotionStyleReference[], image: MotionAiImage, prompt: string, artifact: string, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void }): Promise<any> =>
-  withMotionReferenceFiles(references, async (images) => {
-    try {
-      return await runMotionAi(prompt, artifact, { ...opts.exec, ...MOTION_REFERENCE_AI }, opts.signal, opts.log, [...images, image]);
-    } catch (error) {
-      if (opts.signal?.aborted || !referenceUnavailable(error)) throw error;
-      const next = referenceFallback(opts.exec);
-      opts.log?.(MOTION_REFERENCE_FALLBACK.LOG(MOTION_REFERENCE_AI.provider, _.toString(next.provider)));
-      return runMotionAi(prompt, artifact, next, opts.signal, opts.log, [...images, image]);
-    }
-  });
-export const resolveMotionReferenceStyle = (references: MotionStyleReference[], opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis["referenceStyle"]> => withCachedMotionReferenceStyle(references, () => withMotionReferenceFiles(references, (images) => analyzeReferenceStyle(images, opts)), opts);
 const withMusicMood = (analysis: MotionStoryAnalysis, raw: any): MotionStoryAnalysis => {
   const moods = new Map<string, string | undefined>(_.map(_.castArray(raw?.chapters || []), (chapter: any, index: number): [string, string | undefined] => [_.toString(chapter?.id || index), musicMoodOf(chapter?.musicMood)]));
   const chapters = _.map(analysis.chapters, (chapter, index): MotionChapter => {
@@ -890,18 +853,25 @@ const withMusicMood = (analysis: MotionStoryAnalysis, raw: any): MotionStoryAnal
   return { ...analysis, chapters, ...(mood ? { musicMood: mood } : {}) };
 };
 const doctorText = (v: unknown, max: number): string | undefined => (_.trim(_.toString(v ?? MR.MOTION_TEXT_EMPTY)) ? _.truncate(_.trim(_.toString(v)), { length: max }) : undefined);
+const shortenDna = (v: unknown): unknown => {
+  const D = MOTION_STORY_DOCTOR;
+  if (_.isString(v)) return _.truncate(v, { length: D.DNA_PREVIOUS_TEXT_MAX });
+  if (_.isArray(v)) return _.map(_.take(v, D.DNA_PREVIOUS_LIST_MAX), shortenDna);
+  if (_.isPlainObject(v)) return _.mapValues(v as Record<string, unknown>, shortenDna);
+  return v;
+};
 const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | undefined, source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionVideoDna | undefined> => {
   if (!old?.settings) return undefined;
   const D = MOTION_STORY_DOCTOR;
   opts.log?.(D.LOG_DNA);
   const base = {
     instructions: [VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(old.settings)].join(MR.MOTION_TEXT_SYMBOL_27),
-    directive: motionVideoGenreDirective(story.videoGenre),
+    directive: motionVideoGenreDirective(story.videoGenre, false),
     story: JSON.stringify(_.pick(story, MOTION_DOCTOR_FIELDS.STORY)),
     craft: (story.modelCraft || []).join(MR.MOTION_TEXT_SYMBOL_41),
     avoid: (story.modelAvoid || []).join(MR.MOTION_TEXT_SYMBOL_41),
     belief: story.folkBelief ? D.BELIEF(story.folkBelief) : undefined,
-    previous: JSON.stringify(_.pick(old, D.DNA_PREVIOUS_KEYS)),
+    previous: JSON.stringify(shortenDna(_.pick(old, D.DNA_PREVIOUS_KEYS))),
   };
   let errors: string[] = [];
   for (let attempt = 0; attempt < D.DNA_ATTEMPTS; attempt++) {
@@ -920,7 +890,7 @@ const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | und
     }
     if (attempt < D.DNA_ATTEMPTS - 1) opts.log?.(D.LOG_DNA_RETRY(_.truncate(errors.slice(0, 3).join(MR.MOTION_TEXT_SYMBOL_41), { length: 160 })));
   }
-  opts.log?.(D.LOG_DNA_FALLBACK);
+  opts.log?.(D.LOG_DNA_FAIL);
   return undefined;
 };
 export const developCreativeStory = async (analysis: MotionStoryAnalysis, source: MotionStorySource, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis> => {
@@ -993,60 +963,29 @@ export const developCreativeStory = async (analysis: MotionStoryAnalysis, source
     opts.log?.(D.LOG_DONE(touched, cast.length, places.length, doctorText(raw?.notes, D.NOTES_MAX) || MR.MOTION_TEXT_EMPTY));
     const avoid = _.take(_.compact(_.map(_.castArray(raw?.model?.avoid || []), (x) => doctorText(x, D.POINT_MAX))) as string[], D.LIST_MAX);
     const retune = <T extends { mustPreserve: string[]; mustNotCopy: string[]; evidence: unknown[] }>(dna: T | undefined): T | undefined => (dna ? { ...dna, mustPreserve: strengths.length ? strengths : dna.mustPreserve, mustNotCopy: _.uniq([...(dna.mustNotCopy || []), ...avoid]), evidence: strengths.length ? _.map(strengths, (claim) => ({ claim, sourceClue: D.EVIDENCE_CLUE, confidence: D.EVIDENCE_CONFIDENCE })) : dna.evidence } : dna);
-    const video = retune(analysis.videoDna);
-    const opening = chapters[0]?.hook;
-    const cleanVideo = video ? { ...video, ...(video.narrativeDna ? { narrativeDna: { ...video.narrativeDna, imagery: [], callbacks: [] } } : {}), ...(video.opening && opening ? { opening: { ...video.opening, visual: opening } } : {}), influences: [] } : video;
-    const story2 = { ...analysis, title: doctorText(raw?.title, 120) || analysis.title, logline: doctorText(raw?.logline, 400) || analysis.logline, chapters, cast: expandInitialCastNames(cast), places, facts: [], modelCraft: strengths, modelAvoid: avoid, ...(folkBelief ? { folkBelief } : {}), videoDna: cleanVideo, creativeBlueprint: retune(analysis.creativeBlueprint) };
-    return { ...story2, videoDna: (await newStoryDna(story2, analysis.videoDna, source, opts)) || cleanVideo };
+    const story2 = { ...analysis, title: doctorText(raw?.title, 120) || analysis.title, logline: doctorText(raw?.logline, 400) || analysis.logline, chapters, cast: expandInitialCastNames(cast), places, facts: [], modelCraft: strengths, modelAvoid: avoid, ...(folkBelief ? { folkBelief } : {}), videoDna: undefined, creativeBlueprint: retune(analysis.creativeBlueprint) };
+    if (!analysis.videoDna) return story2;
+    const videoDna = await newStoryDna(story2, analysis.videoDna, source, opts);
+    if (!videoDna) throw new Error(D.ERR_DNA);
+    return { ...story2, videoDna };
   } catch (error: any) {
     if (opts.signal?.aborted) throw error;
     opts.log?.(D.LOG_FAIL(_.truncate(_.toString(error?.message || error), { length: 140 })));
-    throw new Error(D.ERR_FAILED);
+    throw new Error(_.toString(error?.message) === D.ERR_DNA ? D.ERR_DNA : D.ERR_FAILED);
   }
 };
 const MOTION_DOCTOR_FIELDS = { STORY: ["title", "logline", "chapters", "cast", "places"], ROLE: "role", GENDER: "gender", AGE: "age", LOOK: "look", DESCRIPTION: "description", INTERIOR: "interior", TIME: "time", CHAPTER: ["id", "title", "summary", "hook", "keyPoints", "handoff", "targetSeconds"], AGES: ["child", "adult", "senior"] };
 export const analyzeStory = async (
   source: MotionStorySource,
-  opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; drawingMode?: "2d" | "3d"; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; assetStyleKey?: string; libraryMode?: MotionSceneLibraryMode; videoGenre?: MotionVideoGenre; stylePreset?: string },
+  opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre; stylePreset?: string },
 ): Promise<MotionStoryAnalysis> => {
-  if (opts.styleReferences?.length) {
-    const referenceStyle = await withCachedMotionReferenceStyle(opts.styleReferences, () => withMotionReferenceFiles(opts.styleReferences, (images) => analyzeReferenceStyle(images, opts)), opts);
-    const assetStyleKey = motionAssetStyleKey(opts.styleReferences, opts.drawingMode);
-    try {
-      saveSceneStyle(assetStyleKey, { references: opts.styleReferences, drawingMode: opts.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D, referenceStyle, name: source.title });
-    } catch (error) {
-      opts.log?.(MOTION_SCENE_LIBRARY.LOGS.SAVE_FAILED(_.toString((error as Error)?.message || error)));
-    }
-    const ai = opts.ai || runMotionAi;
-    const analysis = await analyzeStory(source, {
-      ...opts,
-      assetStyleKey,
-      styleReferences: undefined,
-      ai: referenceStyle ? (prompt, artifact, exec, signal, log, images) => ai([prompt, MOTION_REFERENCE_PROMPTS.PROFILE(referenceStyle)].join(MR.MOTION_TEXT_SYMBOL_27), artifact, exec, signal, log, images) : opts.ai,
-    });
-    return { ...analysis, referenceStyle: referenceStyle || analysis.referenceStyle };
-  }
-  const stylePreset = motionStylePreset(opts.stylePreset);
-  if (stylePreset) {
-    const mode = opts.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
-      referenceStyle = motionPresetReferenceStyle(stylePreset),
-      assetStyleKey = MOTION_STYLE_PRESET_KEY(stylePreset.id, mode);
-    try {
-      saveSceneStyle(assetStyleKey, { drawingMode: mode, referenceStyle, name: stylePreset.label.vi });
-    } catch (error) {
-      opts.log?.(MOTION_SCENE_LIBRARY.LOGS.SAVE_FAILED(_.toString((error as Error)?.message || error)));
-    }
-    const ai = opts.ai || runMotionAi;
-    const analysis = await analyzeStory(source, { ...opts, stylePreset: undefined, assetStyleKey, ai: (prompt, artifact, exec, signal, log, images) => ai([prompt, MOTION_REFERENCE_PROMPTS.PROFILE(referenceStyle)].join(MR.MOTION_TEXT_SYMBOL_27), artifact, exec, signal, log, images) });
-    return { ...analysis, referenceStyle, stylePreset: stylePreset.id, look: stylePreset.look };
-  }
   const target = resolveTargetSeconds(source, opts.length);
   const settings: MotionVideoDnaSettings = {
     length: opts.length,
     targetSeconds: target,
     language: opts.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI,
     aspect: opts.aspect || MR.MOTION_TEXT_16_9,
-    drawingMode: opts.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_2D : MR.MOTION_TEXT_3D,
+    drawingMode: MR.MOTION_TEXT_2D,
     characterMode: MR.MOTION_TEXT_DRAWN,
   };
   const chapterCount = _.clamp(Math.round(target / 150), 1, 24);
@@ -1055,18 +994,13 @@ export const analyzeStory = async (
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
   const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
-  const libraryMode = opts.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO;
-  const assetStyleKey = opts.assetStyleKey || motionAssetStyleKey([], opts.drawingMode);
-  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...assignSceneLibrary(analysis, assetStyleKey, libraryMode, opts.characterMotion), videoGenre: motionVideoGenre(opts.videoGenre), libraryMode, ...(motionGenreCreative(opts.videoGenre) ? { factual: false } : {}) });
-  const catalog = sceneLibraryCatalog(assetStyleKey, _.truncate([source.title, source.text].join(MOTION_SCENE_LIBRARY.TEXT.NEWLINE), { length: MOTION_SCENE_LIBRARY.CONTEXT_MAX }), { characterMotion: opts.characterMotion, items: libraryMode === MOTION_SCENE_LIBRARY_MODES.AI });
-  if (catalog.locations || catalog.characters) opts.log?.(MOTION_SCENE_LIBRARY.LOGS.CATALOG(catalog.locations, catalog.characters));
+  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...analysis, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre), ...(motionGenreCreative(opts.videoGenre) ? { factual: false } : {}) });
   const genreDirective = motionVideoGenreDirective(opts.videoGenre);
   const fullRequest =
     MR.MOTION_TEMPLATE_SYMBOL_304(prompt, VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote) +
     MR.MOTION_TEXT_SYMBOL_27 +
     (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
     MR.MOTION_TEXT_SYMBOL_27 +
-    catalog.prompt +
     (genreDirective ? MR.MOTION_TEXT_SYMBOL_27 + genreDirective : MR.MOTION_TEXT_EMPTY) +
     MR.MOTION_TEXT_SYMBOL_27 +
     MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS));
@@ -1210,9 +1144,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
         gender,
         ...(_.includes(MOTION_AUDIO_DIRECTION.AGES, m.age) ? { age: m.age } : {}),
         ...(m.narrator === true ? { narrator: true } : {}),
-        tags: cleanSceneTags(m.tags),
-        ...(isSceneAssetId(m.reuse) ? { reuse: m.reuse } : {}),
-        ...(sceneTypeOf(m.type) ? { type: sceneTypeOf(m.type) } : {}),
+        tags: puppetTags(m.tags),
         ...(cleanCharacterColors(m.colors) ? { colors: cleanCharacterColors(m.colors) } : {}),
       } as MotionCastMember;
     }),
@@ -1237,9 +1169,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           description: _.truncate(_.toString(obj.description || obj.name || key), { length: 500 }),
           interior: !!obj.interior,
           time: _.includes(TIMES, obj.time) ? obj.time : obj.interior ? MOTION_TEXT_TOON_CAT_INTERIOR : MOTION_TEXT_DAY,
-          tags: cleanSceneTags(obj.tags),
-          ...(isSceneAssetId(obj.reuse) ? { reuse: obj.reuse } : {}),
-          ...(sceneTypeOf(obj.type) ? { type: sceneTypeOf(obj.type) } : {}),
+          tags: puppetTags(obj.tags),
         } as MotionPlace;
       }),
     ),

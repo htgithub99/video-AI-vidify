@@ -1045,6 +1045,74 @@ const waitForSubmissionConfirmation = async (input: Locator, page: Page, respons
   }
   return false;
 };
+const composerGates = new Map<string, Promise<void>>();
+const withComposerGate = async <T,>(key: string, signal: AbortSignal | undefined, fn: () => Promise<T>): Promise<T> => {
+  const previous = composerGates.get(key) || Promise.resolve();
+  let release: () => void = _.noop;
+  const current = new Promise<void>((resolve) => (release = resolve));
+  composerGates.set(key, current);
+  try {
+    await Promise.race([previous, delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_MAX_MS)]);
+    throwIfPlanningCancelled(signal);
+    return await fn();
+  } finally {
+    release();
+    if (composerGates.get(key) === current) composerGates.delete(key);
+  }
+};
+const uiActionCap = (chars: number): number => Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_MAX_MS, CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS + chars * CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_PER_CHAR_MS);
+const waitPageResponsive = async (page: Page, signal?: AbortSignal, deadline: number = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.UI_RESPONSIVE_MAX_MS): Promise<void> => {
+  const startedAt = Date.now();
+  let warned = false;
+  while (Date.now() < Math.min(deadline, startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.UI_RESPONSIVE_MAX_MS)) {
+    throwIfPlanningCancelled(signal);
+    const answered = await Promise.race([
+      page
+        .evaluate(() => true)
+        .then(() => true)
+        .catch(() => true),
+      delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS).then(() => false),
+    ]);
+    if (answered) return;
+    if (!warned) {
+      appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_BUSY_LOG(Date.now() - startedAt));
+      warned = true;
+    }
+  }
+};
+const waitComposerFilled = async (input: Locator, prompt: string, directive: string, requestId: string | undefined, deadline: number, settled: () => boolean, signal?: AbortSignal): Promise<boolean> => {
+  let afterSettle = 0;
+  while (Date.now() < deadline) {
+    throwIfPlanningCancelled(signal);
+    if (assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input)).valid) return true;
+    if (settled() && ++afterSettle > CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_SETTLE_POLLS) return false;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+  }
+  return false;
+};
+const writeComposer = async (page: Page, input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<void> => {
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.UI_COMPOSE_MAX_MS;
+  for (let pass = 0; pass < 2 && Date.now() < deadline; pass++) {
+    await waitPageResponsive(page, signal, deadline);
+    const cap = Math.max(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS, Math.min(uiActionCap(prompt.length), deadline - Date.now()));
+    if (pass) appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_REWRITE_LOG);
+    let settled = false;
+    const write = pass
+      ? input
+          .focus({ timeout: cap })
+          .then(() => page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY))
+          .then(() => page.keyboard.insertText(prompt))
+      : input.fill(prompt, { timeout: cap });
+    void write.catch(_.noop).finally(() => (settled = true));
+    if (await waitComposerFilled(input, prompt, directive, requestId, Date.now() + cap, () => settled, signal)) return;
+  }
+};
+const clickSendButton = async (page: Page, button: Locator, signal?: AbortSignal): Promise<void> => {
+  await waitPageResponsive(page, signal);
+  const clicking = button.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS, noWaitAfter: true }).catch(_.noop);
+  await Promise.race([clicking, delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
+};
+const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input)).valid;
 const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSelector: string, sendSelector: string, responseSelector: string, busySelector: string, expectedSceneIds: string[], attachments: ChatRoomAttachment[] = [], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal): Promise<string> => {
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
   const isDeepSeek = inputSelector === D.INPUT;
@@ -1145,39 +1213,47 @@ const submitPrompt = async (page: Page, roomKey: string, prompt: string, inputSe
         else await waitForClaudeUploads(input, [], CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation);
       }
       await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
-      await input.fill(submittedPrompt);
-      await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-      await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-      const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input));
-      if (!composerAssessment.valid) {
-        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_COMPOSER_MISMATCH, { runId: diagnosticRunId, stage: artifactType, expectedChars: submittedPrompt.length, actualChars: composerAssessment.actualChars, status: composerAssessment.reason });
-        throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
-      }
-      {
-        const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
-        const semanticSendButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN }).filter({ visible: true }).last();
-        const sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
-        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SEND_BUTTON_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: sendButton ? SOURCE_TEXT_READY : SOURCE_TEXT_UNAVAILABLE, attachmentCount: attachments.length });
-        if (sendButton) {
-          await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-          if (isClaude || isDeepSeek || (!_.isEmpty(attachments) && artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING)) {
-            if (isDeepSeek) await waitForDeepSeekUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation, true);
-            else if (isClaude) await waitForClaudeUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_STABLE_MS, true);
-            else await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
-            if (!(await sendButton.isEnabled())) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
-          }
-          markPendingSubmission();
-          await sendButton.click();
-        } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
-        submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
-        if (!submissionConfirmed && !isClaude && !isDeepSeek && (await getComposerText(input)).length > CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS) {
-          appLog(CHAT_UI_AUTOMATION_MESSAGES.SUBMIT_ENTER_FALLBACK);
-          await input.focus().catch(() => undefined);
-          await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
-          submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+      await withComposerGate(inputSelector, signal, async () => {
+        await writeComposer(page, input, submittedPrompt, responseDirective, requestId, signal);
+        await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+        await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
+        const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input));
+        if (!composerAssessment.valid) {
+          await writeMusicDiagnostic(SOURCE_TEXT_CHAT_COMPOSER_MISMATCH, { runId: diagnosticRunId, stage: artifactType, expectedChars: submittedPrompt.length, actualChars: composerAssessment.actualChars, status: composerAssessment.reason });
+          throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
         }
-        await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
-      }
+        {
+          const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
+          const semanticSendButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN }).filter({ visible: true }).last();
+          const sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
+          await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SEND_BUTTON_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: sendButton ? SOURCE_TEXT_READY : SOURCE_TEXT_UNAVAILABLE, attachmentCount: attachments.length });
+          if (sendButton) {
+            await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+            if (isClaude || isDeepSeek || (!_.isEmpty(attachments) && artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING)) {
+              if (isDeepSeek) await waitForDeepSeekUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation, true);
+              else if (isClaude) await waitForClaudeUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_STABLE_MS, true);
+              else await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
+              if (!(await sendButton.isEnabled())) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+            }
+            markPendingSubmission();
+            await clickSendButton(page, sendButton, signal);
+          } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
+          submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+          if (!submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId))) {
+            appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_CLICK_FALLBACK_LOG);
+            await waitPageResponsive(page, signal);
+            await Promise.race([sendButton.evaluate((element: HTMLElement) => element.click()).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
+            submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+          }
+          if (!submissionConfirmed && !isClaude && !isDeepSeek && (await getComposerText(input)).length > CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_EMPTY_MAX_CHARACTERS) {
+            appLog(CHAT_UI_AUTOMATION_MESSAGES.SUBMIT_ENTER_FALLBACK);
+            await input.focus().catch(() => undefined);
+            await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
+            submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
+          }
+          await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
+        }
+      });
     }
     if (!submissionConfirmed) {
       await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_UNCERTAIN_WAITING_RESPONSE, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
@@ -1645,6 +1721,20 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
   [AiPlanningFallbackProvider.ClaudeChat]: generateWithClaudeChat,
   [AiPlanningFallbackProvider.DeepSeekChat]: generateWithDeepSeekChat,
 };
+const usedRooms = new Set<string>();
+const freshRoomWanted = (request: ChatPlanningRequest): boolean => CINEMATIC_CHAT_PLANNING_CONFIG.FRESH_CONVERSATION_RE.test(_.toString(request.artifactType));
+const markRoomUsed = (request: ChatPlanningRequest): void => {
+  if (freshRoomWanted(request)) usedRooms.add(getPlanningRoomKey(request));
+};
+const freshenUsedRoom = async (request: ChatPlanningRequest): Promise<void> => {
+  const roomKey = getPlanningRoomKey(request);
+  const url = getProviderConversationSelectors(request.provider)?.url;
+  const page = getProviderRooms(request.provider)?.get(roomKey);
+  if (!freshRoomWanted(request) || !usedRooms.has(roomKey) || !url || !page || page.isClosed() || pendingRoomResponses.has(roomKey)) return;
+  usedRooms.delete(roomKey);
+  appLog(CINEMATIC_CHAT_PLANNING_CONFIG.FRESH_CONVERSATION_LOG);
+  await page.goto(url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS }).catch(_.noop);
+};
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
   throwIfPlanningCancelled(request.signal);
@@ -1678,7 +1768,9 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTEMPT_STARTED, { ...diagnosticBase, attempt: recoveryAttempt + 1 });
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS);
         throwIfPlanningCancelled(request.signal);
+        await freshenUsedRoom(request);
         const text = await generator(request);
+        markRoomUsed(request);
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: text.length, elapsedMs: Date.now() - mutexStartedAt });
         providerErrorCounts.delete(roomKey);
         responseCompleted = true;

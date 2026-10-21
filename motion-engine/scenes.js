@@ -16,11 +16,10 @@
     }
     g.globalAlpha = 1;
   };
-  const bgApi = (st) => (st && st.svg2d ? ME.SVG2D : ME.GEN);
-  const bgScene = (ctx, bg) => {
-    const flat = ctx.params.bg2d;
-    if (flat && ME.SVG2D && ME.SVG2D.bgInit) return ME.SVG2D.bgInit(ctx, flat);
-    return bg && ME.GEN && ME.GEN.bgInit ? ME.GEN.bgInit(ctx, bg) : null;
+  const bgApi = (st) => (st && st.puppet ? ME.PUPPET2D : null);
+  const bgScene = (ctx) => {
+    const pup = ctx.params.bgPuppet;
+    return pup && ME.PUPPET2D && ME.PUPPET2D.bgInit ? ME.PUPPET2D.bgInit(ctx, pup) : null;
   };
   const drawBg = (g, ctx, st, darken = 0.55) => {
     const api = bgApi(st);
@@ -42,14 +41,14 @@
     g.fillRect(0, 0, ctx.W, ctx.H);
     dust(g, ctx.W, ctx.H, ctx.t, ctx.unit, 0.25);
   };
-  const bgDispose = (st) => { if (st && !st.svg2d && ME.GEN && ME.GEN.disposeShot) ME.GEN.disposeShot(st); };
+  const bgDispose = (st) => void st;
   const accentOf = (ctx) => ctx.params.accent || (ctx.spec && ctx.spec.accent) || MT.FFB070;
   ME.registerTemplate(MT.TITLE, {
     name: MT.TIEU_DE_MO_DAU,
     category: MT.TEXT,
     description: MT.TIEU_DE_LON_CO_HIEU_UNG_CHU_KICKER,
     init: (ctx) => {
-      const bg = bgScene(ctx, ctx.params.bg3d);
+      const bg = bgScene(ctx);
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
@@ -82,7 +81,7 @@
     category: MT.TEXT,
     description: MT.SO_CHUONG_TEN_CHUONG,
     init: (ctx) => {
-      const bg = bgScene(ctx, ctx.params.bg3d);
+      const bg = bgScene(ctx);
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
@@ -113,7 +112,7 @@
     category: MT.TEXT,
     description: MT.CAU_TRICH_DAN_LON_KIEU_SERIF_TU_KHOA,
     init: (ctx) => {
-      const bg = bgScene(ctx, ctx.params.bg3d);
+      const bg = bgScene(ctx);
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
@@ -159,7 +158,7 @@
     category: MT.INFOGRAPHIC,
     description: MT.VALUE_1_4_CON_SO_LON_CHAY_DEM_8,
     init: (ctx) => {
-      const bg = bgScene(ctx, ctx.params.bg3d);
+      const bg = bgScene(ctx);
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
@@ -201,7 +200,7 @@
     category: MT.INFOGRAPHIC,
     description: MT.SO_DEM_LON_KIEU_DONG_HO_DEM_NGAY,
     init: (ctx) => {
-      const bg = bgScene(ctx, ctx.params.bg3d);
+      const bg = bgScene(ctx);
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {
@@ -520,7 +519,7 @@
     category: MT.TEXT,
     description: MT.CAU_KET_CHAM_VA_TOI_DAN,
     init: (ctx) => {
-      const bg = bgScene(ctx, ctx.params.bg3d);
+      const bg = bgScene(ctx);
       return { bg, dispose: () => bgDispose(bg) };
     },
     draw(g, ctx) {

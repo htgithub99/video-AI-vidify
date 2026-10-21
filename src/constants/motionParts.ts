@@ -3,7 +3,7 @@ export const MOTION_PARTS = {
   DEFAULT: 1,
   DEFAULT_CHAPTER_SECONDS: 120,
   MINUTE_SECONDS: 60,
-  CARRY_KEYS: ["style", "cast", "locations", "locationInfo", "assetSources", "assetStyleKey", "creativeSignature", "referenceKey", "characterMode", "drawingMode", "videoDna", "characterMotion", "voiceCast"],
+  CARRY_KEYS: ["puppet", "creativeSignature", "referenceKey", "characterMode", "drawingMode", "videoDna", "characterMotion", "voiceCast"],
   TITLE: { vi: (title: string, index: number, count: number): string => `${title} (Phần ${index}/${count})`, en: (title: string, index: number, count: number): string => `${title} (Part ${index}/${count})` },
   NEXT_JOIN: " – ",
   EN: "en",

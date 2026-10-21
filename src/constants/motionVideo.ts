@@ -31,10 +31,8 @@ export const MOTION_VIDEO_CONSTANTS = {
   TEMPLATE_2D: "gen2d",
   DRAWING_2D: "2d",
   FX_CUE_RE: /^(stinger|thunder|explosion|impact)$/,
-  ENGINE_FILES: ["texts.js", "vendor/three.min.js", "core.js", "three-core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js", "svg2d.js"],
-  ENGINE_3D_FILES: ["vendor/three.min.js", "three-core.js", "gen-core.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
-  TEMPLATE_3D: "gen3d",
-  CLIENT_ONLY_FILES: ["vendor/three.min.js", "three-core.js", "style-finish.js", "gen-build.js", "gen-character.js", "gen-scene.js"],
+  ENGINE_FILES: ["texts.js", "core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "puppet2d.js"],
+  CLIENT_ONLY_FILES: ["style-finish.js"],
   FONTS_DIR: "fonts",
   FONTS_MANIFEST: "fonts.json",
   DEMO_DIR: "demo",
@@ -102,9 +100,14 @@ export const MOTION_STORY_CONFIG = {
   GRAPHIC_TRANSITION_SECONDS: 0.45,
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
   ROOM_LONG_TIMEOUT_MS: 12 * 60 * 1000,
+  CANNED_REFUSAL_RE: /(I can'?t help|I'?m (not able|unable) to help|I can'?t assist|I'?m (just )?a language model|tôi không thể (giúp|hỗ trợ|thực hiện)|mình không thể (giúp|hỗ trợ)|tôi chỉ là một mô hình ngôn ngữ)/i,
+  CANNED_REFUSAL_LOG: (provider: string, artifact: string, chars: number): string => `AI ${provider} trả lời từ chối mẫu cho bước ${artifact} (prompt ${chars} ký tự) – thường do prompt quá dài hoặc bị bộ lọc chặn.`,
   AI_PARALLEL: 5,
   WORKER_IDS: ["motion-primary", "motion-second", "motion-third", "motion-fourth", "motion-fifth"],
   ROOM_PROVIDER_RETRIES: 2,
+  ROOM_UI_RETRIES: 2,
+  ROOM_UI_ERROR_RE: /locator\.(fill|click|press|type|focus)|Timeout \d+ms exceeded|chat_planning_composer_content_mismatch|chat_planning_send_button_not_ready|chat_planning_submission_not_confirmed/,
+  ROOM_UI_RETRY_LOG: (provider: string, n: number, total: number): string => `Phòng chat ${provider} bị kẹt khi gõ hoặc gửi – mở phòng mới và thử lại (lần ${n}/${total}) trước khi đổi AI…`,
   SCENES_PREPARING: "Chuẩn bị dựng cảnh",
   SCENES_COMPLETED: "Đã dựng xong cảnh",
   ROOM_RETRY_LOG: "AI báo lỗi tạm thời – mở phòng chat mới và hỏi lại…",
@@ -145,3 +148,7 @@ export const MOTION_STORY_CONFIG = {
 } as const;
 export const MOTION_PREVIEW_QUALITY = { supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 };
 export const MOTION_PREVIEW_SIZES: Record<string, [number, number]> = { [MotionAspect.LANDSCAPE]: [960, 540], [MotionAspect.PORTRAIT]: [405, 720], [MotionAspect.SQUARE]: [600, 600], [MotionAspect.FOUR_FIVE]: [540, 675] };
+export const MOTION_RASTER = {
+  BG: "#ffffff",
+  BG_HTML: (svg: string, w: number, h: number, bg: string): string => `<!doctype html><html><body style="margin:0;background:${bg}">${svg.replace("<svg", `<svg width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"`)}</body></html>`,
+} as const;

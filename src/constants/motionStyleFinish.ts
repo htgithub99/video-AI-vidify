@@ -114,7 +114,3 @@ export const motionStyleFinish = (id: unknown): MotionStyleFinish | undefined =>
   if (!preset || !recipe) return undefined;
   return { ...recipe, palette: recipe.palette === PALETTE ? preset.palette : recipe.palette || undefined } as MotionStyleFinish;
 };
-export const motionStyleFinishFonts = (finish: MotionStyleFinish | undefined): string[] => {
-  const used = Object.values(finish?.fonts || {}).join(",");
-  return MOTION_STYLE_FONT_FAMILIES.filter((family) => used.includes(`'${family}'`));
-};

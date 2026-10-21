@@ -120,6 +120,7 @@
     SUB_QUOTE_COLOR: "#f1e3c2",
     SUB_QUOTE_OPEN: "“",
     SUB_QUOTE_CLOSE: "”",
+    SUB_QUOTE_STRIP_RE: /^[\s"“”'‘’«»]+|[\s"“”'‘’«»]+$/g,
     LOWERTHIRD: "lowerThird",
     D8D2C8: "#d8d2c8",
     TAG: "tag",

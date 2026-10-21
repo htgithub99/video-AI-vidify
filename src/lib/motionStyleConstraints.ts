@@ -1,7 +1,7 @@
 import { MOTION_STYLE_VALUES as SV } from "../constants/motionStyleConstraints.js";
 import * as MR from "../constants/motionRuntime.js";
 import _ from "lodash";
-import { MOTION_STYLE_AXES, MOTION_STYLE_DEFAULT_WIDTH, MOTION_STYLE_FX, MOTION_STYLE_OUTLINE_WIDTH, MOTION_STYLE_PARTS, MOTION_STYLE_PATTERNS as P, MOTION_STYLE_RULES, MOTION_STYLE_PART_RE, MOTION_STYLE_LOG, MOTION_STYLE_SKIN_MATERIAL, MOTION_STYLE_FRAMING } from "../constants/motionStyleConstraints.js";
+import { MOTION_STYLE_AXES, MOTION_STYLE_DEFAULT_WIDTH, MOTION_STYLE_FX, MOTION_STYLE_OUTLINE_WIDTH, MOTION_STYLE_PARTS, MOTION_STYLE_PATTERNS as P, MOTION_STYLE_FRAMING } from "../constants/motionStyleConstraints.js";
 import type { MotionReferenceStyle } from "../types/motionVideo.js";
 export type MotionStylePart = (typeof MOTION_STYLE_PARTS)[number];
 export type MotionStyleAxis = (typeof MOTION_STYLE_AXES)[number];
@@ -93,44 +93,4 @@ export const motionStyleConstraints = (style: MotionReferenceStyle | undefined |
     },
     _.isUndefined,
   ) as unknown as MotionStyleConstraints;
-};
-export const motionStyleHasPart = (constraints: MotionStyleConstraints, part: MotionStylePart): boolean => !constraints.absent.includes(part);
-export const motionStyleShowsPart = (constraints: MotionStyleConstraints, part: MotionStylePart): boolean => !constraints.absent.includes(part) && !constraints.hidden.includes(part);
-export interface MotionStyleRules { distinguish: string; face: string; arms: string; limits: string; precedence: string; }
-const words = (list: readonly string[], dictionary: Record<string, string>): string => list.map((item) => dictionary[item] || item).join(MR.MOTION_TEXT_SYMBOL_14);
-export const motionStyleRules = (constraints: MotionStyleConstraints): MotionStyleRules => {
-  const R = MOTION_STYLE_RULES;
-  if (!constraints.present) return { distinguish: R.DISTINGUISH_DEFAULT, face: R.FACE_DEFAULT, arms: R.ARMS_DEFAULT, limits: MR.MOTION_TEXT_EMPTY, precedence: MR.MOTION_TEXT_EMPTY };
-  const axes = words(constraints.variation, R.AXIS_WORDS);
-  const varied = _.difference([...MOTION_STYLE_AXES], constraints.variation).length > 0;
-  const distinguish = constraints.sharedFigure ? R.SHARED(axes) : varied ? R.DISTINGUISH_AXES(axes) : R.DISTINGUISH_DEFAULT;
-  const arms = constraints.absent.includes(SV.ARMS) ? R.NO_ARMS : constraints.absent.includes(SV.HANDS) ? R.NO_HANDS : R.ARMS_DEFAULT;
-  const legless = constraints.absent.includes(SV.LEGS) || constraints.hidden.includes(SV.LEGS);
-  const limits = _.compact([constraints.absent.length ? R.ABSENT(words(constraints.absent, R.PART_WORDS)) : MR.MOTION_TEXT_EMPTY, constraints.hidden.length ? R.HIDDEN(words(constraints.hidden, R.PART_WORDS)) : MR.MOTION_TEXT_EMPTY, legless ? R.GLIDE : MR.MOTION_TEXT_EMPTY]).join(MR.MOTION_TEXT_SYMBOL_27);
-  const precedence = _.compact([R.PRECEDENCE, constraints.fx.forbidden.length ? R.FORBIDDEN_FX(words(constraints.fx.forbidden, R.FX_WORDS)) : MR.MOTION_TEXT_EMPTY, constraints.night === SV.TINT ? R.NIGHT_TINT : MR.MOTION_TEXT_EMPTY]).join(MR.MOTION_TEXT_SYMBOL_13);
-  return { distinguish, face: constraints.faceFill ? R.FACE_FILL(constraints.faceFill) : R.FACE_DEFAULT, arms, limits, precedence };
-};
-export const motionEnforceStyle = (design: any, constraints: MotionStyleConstraints): { design: any; changes: string[] } => {
-  if (!constraints.present || !Array.isArray(design?.parts)) return { design, changes: [] };
-  const changes: string[] = [];
-  const named = (id: string, nodes: any[]): string => [id, ..._.map(nodes || [], (node) => (typeof node?.mat === MR.MOTION_TEXT_STRING ? node.mat : node?.name || MR.MOTION_TEXT_EMPTY))].join(MR.MOTION_TEXT_SYMBOL_13);
-  const banned = new Set<string>();
-  for (const part of design.parts) {
-    const hit = _.find(constraints.absent, (absent) => MOTION_STYLE_PART_RE[absent]?.test(part.id) || (absent === SV.HAIR && MOTION_STYLE_PART_RE.hair.test(named(part.id, part.nodes))));
-    if (hit) banned.add(part.id);
-  }
-  const parts = _.map(design.parts, (part) => {
-    if (!banned.has(part.id)) return part;
-    changes.push(MOTION_STYLE_LOG.HIDDEN_PART(part.id));
-    return { ...part, nodes: [], visible: false };
-  });
-  const strip = (entries: Record<string, Record<string, any>> | undefined) => _.mapValues(entries || {}, (entry) => _.omitBy(entry, (_value, id) => banned.has(id)));
-  const materials = { ...(design.materials || {}) };
-  const skin = materials[MOTION_STYLE_SKIN_MATERIAL];
-  if (constraints.faceFill && skin && typeof skin === MR.MOTION_TEXT_OBJECT && _.toUpper(skin.color || MR.MOTION_TEXT_EMPTY) !== constraints.faceFill) {
-    materials[MOTION_STYLE_SKIN_MATERIAL] = { ...skin, color: constraints.faceFill };
-    changes.push(MOTION_STYLE_LOG.FACE_FILL(constraints.faceFill));
-  }
-  if (!changes.length) return { design, changes };
-  return { design: { ...design, parts, materials, expressions: strip(design.expressions), poses: strip(design.poses) }, changes };
 };

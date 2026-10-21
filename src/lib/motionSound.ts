@@ -72,10 +72,6 @@ export const normalizeSoundCues = (raw: unknown, duration: number = C.MAX_DURATI
       },
     ];
   });
-export const formatSoundCueTime = (seconds: number): string => {
-  const value = Math.max(0, Math.round(seconds * 1000));
-  return MR.MOTION_TEMPLATE_EMPTY_2(Math.floor(value / 60000), String(Math.floor(value / 1000) % 60).padStart(2, MR.MOTION_TEXT_0), String(value % 1000).padStart(3, MR.MOTION_TEXT_0));
-};
 export const motionAutoSoundEvents = (parts: unknown[]): MotionSoundEvent[] => {
   const text = soundText(parts.filter(Boolean).join(C.SPACE));
   const kinds = MOTION_SOUND_KINDS.filter((item) => item.pattern.test(text)).slice(0, C.AUTO_MAX_EVENTS);

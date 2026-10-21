@@ -31,7 +31,7 @@ export interface MotionEngineGlobal {
   fontsReady?: Promise<unknown>;
   registry: { templates: Record<string, any> };
   createRenderer: (canvas: HTMLCanvasElement, spec: unknown, opts?: Record<string, unknown>) => { duration: number; drawFrame: (t: number) => void; width: number; height: number };
-  GEN?: { prepare: (spec: unknown, base?: string) => Promise<unknown>; info?: Record<string, unknown> };
+  PUPPET_PRELOAD?: (spec: unknown) => Promise<void>;
 }
 declare global {
   interface Window {
@@ -86,7 +86,6 @@ export const readFileBase64 = (file: File): Promise<string> =>
     r.onerror = () => reject(r.error);
     r.readAsDataURL(file);
   });
-export const MOTION_ASSET_BASE = API_ROUTES.MOTION_VIDEO_ASSET;
 export const motionAudioUrl = (id?: string): string | undefined => (id ? `${MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO}${encodeURIComponent(id)}` : undefined);
 export const motionJobStatusUrl = (prefix: string, id: string): string => `${prefix}${encodeURIComponent(id)}`;
 export const formatMotionProgress = (progress = 0, minimum = 0): string => MOTION_TEMPLATE_SYMBOL_3(String(Math.min(100, Math.max(minimum, Math.round(progress * 100)))));

@@ -50,6 +50,8 @@ export const MOTION_CREATIVE_GENRES: string[] = [MOTION_VIDEO_GENRES.GHOST_TALE]
 export const motionGenreCreative = (value: unknown): boolean => _.includes(MOTION_CREATIVE_GENRES, motionVideoGenre(value));
 export const MOTION_CREATIVE_ADAPTATION =
   "NEW STORY FROM A MODEL (the user wants this for this genre): the source is a MODEL story the user admires, not a script to retell. Write a completely new story on the same theme and folk belief that keeps everything that makes the model great: the close first-person voice of someone who lived it, an unsettling opening, information revealed layer by layer, the heavy atmosphere, strange signs that grow, silences and dialogue woven together, pressure rising to a climax, and a chill that stays after the end. Change everything concrete: a different family with its own secrets and conflicts, a new setting tied closely to the horror, a different cause of the curse with its own rules and origin, a new chain of events that does not repeat the model's sequence, signature events or rituals, and a new twist, climax and ending with clear consequences and a haunting final detail. A listener who knows the model must NOT recognize this story: share no names, nicknames, professions, family set-up, kind of place, cause, key objects, signature images, rituals, events, twist, ending or lines with it; only the theme and the storytelling craft carry over. The planned chapter outline (hook, key points, hand-off) is authoritative: write all of its events in full, as lived scenes, not a summary.";
+export const MOTION_STORY_DOCTOR_COMPACT = "COMPACT OUTPUT: the answer must fit in one chat reply. Keep every string short (one sentence, at most about 25 words), keep lists to the few items that matter (at most 4 unless a rule above asks for more), no repetition between fields, no markdown, no commentary; output only the JSON object.";
+export const MOTION_STORY_DOCTOR_CAST = "CAST AND PLACES ARE COMPLETE: cast lists EVERY person who acts, speaks or is shown in any key point, including the dead (seen in memories, dreams, portraits or the coffin) and people seen in flashbacks, each with a key, gender, age and look; places lists every room and spot where a key point happens (bedroom, kitchen, yard, gate, lane, river bank, field, graveyard, a new house), each with interior and time.";
 export const MOTION_STORY_DOCTOR = {
   ARTIFACT: "motion-story-doctor",
   SAMPLE_FULL: 9000,
@@ -98,6 +100,7 @@ export const MOTION_STORY_DOCTOR = {
       "UNRECOGNIZABLE: someone who knows the model must not recognize the new story. Keep ONLY the theme and folk belief (for example trùng tang stays trùng tang) and the storytelling craft. Share nothing concrete with the model: no names or nicknames, no same professions or family set-up, no same kind of place, no same cause, key objects, signature images, rituals, order of events, twist, ending or lines.",
       "CURRENT PLAN extracted from the WHOLE model (JSON: its full chain of events, cast and places, all belonging to the model): " + p.story,
       "MODEL TEXT SAMPLES (opening, middle, climax and ending passages, to hear how it is told): " + p.source,
+      MOTION_STORY_DOCTOR_CAST,
       'Return JSON {"model":{"theme":"","strengths":["what makes the model gripping"],"avoid":["model elements not reused"]},"belief":{"name":"real name of the folk belief","meaning":"what tradition says it is","signs":["signs people fear"],"taboos":["real taboos"],"remedies":["traditional remedies or rituals"]},"title":"","logline":"","chapters":[{"id":"same chapter id","title":"","summary":"","hook":"","keyPoints":["scene 1","scene 2"],"handoff":""}],"cast":[{"key":"snake_case key","name":"","role":"","gender":"male|female","age":"child|adult|senior","look":"clothes and look"}],"places":[{"key":"snake_case key","name":"","description":"","interior":false,"time":"day|night|dusk|dawn"}],"notes":"one sentence: what is new"}. Keep exactly the same chapter ids and count. cast and places are the COMPLETE lists for the new story.',
     ].join("\n"),
   DNA_ARTIFACT: "motion-story-new-dna",
@@ -114,15 +117,18 @@ export const MOTION_STORY_DOCTOR = {
       "MODEL ELEMENTS NEVER TO USE (put them in mustNotCopy): " + p.avoid,
       "PRODUCTION CHOICES OF THE MODEL'S DNA (reuse audience, format, voice, pacing, visual style where they fit): " + p.previous,
       p.errors ? "YOUR PREVIOUS DNA HAD THESE PROBLEMS, FIX THEM: " + p.errors : "",
+      MOTION_STORY_DOCTOR_COMPACT,
       'Return JSON {"videoDna":{...}} only.',
     ]
       .filter(Boolean)
       .join("\n"),
+  DNA_PREVIOUS_TEXT_MAX: 120,
+  DNA_PREVIOUS_LIST_MAX: 2,
   DNA_PREVIOUS_KEYS: ["intent", "audience", "audienceProfile", "era", "format", "editDna", "narrative", "visualDna", "creativeProfile", "characters", "environment", "cinematography", "audioText"],
   LOG_DNA: "Biên kịch AI: AI lập Video DNA riêng cho truyện mới…",
   LOG_DNA_OK: "Biên kịch AI: Video DNA của truyện mới đã đủ và hợp lệ.",
   LOG_DNA_RETRY: (errors: string): string => `Video DNA truyện mới còn thiếu: ${errors} – AI sửa lại…`,
-  LOG_DNA_FALLBACK: "Video DNA truyện mới chưa hợp lệ, dùng DNA truyện mẫu đã lọc bỏ chi tiết cũ.",
+  LOG_DNA_FAIL: "Biên kịch AI: chưa lập được Video DNA hợp lệ cho truyện mới.",
   ERR_EMPTY: "AI không trả về chương nào",
   LOG_START: "Biên kịch AI: đang học truyện mẫu và viết một câu chuyện mới cùng chủ đề…",
   LOG_MODEL: (theme: string, strengths: string[]): string => `Biên kịch AI: chủ đề "${theme}"; giữ điểm hay của truyện mẫu: ${strengths.join("; ")}.`,
@@ -130,10 +136,11 @@ export const MOTION_STORY_DOCTOR = {
   LOG_FAIL: (err: string): string => `Biên kịch AI không viết được truyện mới: ${err}`,
   LOG_RETRY: (err: string): string => `Biên kịch AI lỗi, thử lại: ${err}`,
   ERR_FAILED: "Biên kịch AI không viết được truyện mới từ truyện mẫu. Bấm Phân tích lại để thử lại.",
+  ERR_DNA: "AI chưa lập được Video DNA cho truyện mới (các AI đều lỗi hoặc trả thiếu). Bấm Phân tích lại để thử lại.",
 };
 export const MOTION_CREATIVE_EDITOR = "This video is a NEW story written from a model story: never flag differences from the source; flag lines that copy the model's sentences, people or events, lines that misstate the real folk belief (folkBelief) or invent rituals against tradition, repetitions, flat summary-like lines, weak suspense, logic holes, rules or objects that never pay off, and broken hand-offs.";
-export const motionVideoGenreDirective = (value: unknown): string => {
+export const motionVideoGenreDirective = (value: unknown, adaptation = true): string => {
   const genre = motionVideoGenre(value);
   if (genre === MOTION_VIDEO_GENRES.AUTO) return "";
-  return motionGenreCreative(genre) ? `VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer): ${DIRECTIVES[genre]}\n${MOTION_CREATIVE_ADAPTATION}` : `VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ${DIRECTIVES[genre]}`;
+  return motionGenreCreative(genre) ? `VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer): ${DIRECTIVES[genre]}${adaptation ? `\n${MOTION_CREATIVE_ADAPTATION}` : ""}` : `VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ${DIRECTIVES[genre]}`;
 };

@@ -1,8 +1,6 @@
-import type { MotionReferenceStyle, MotionStyleKit } from "../types/motionVideo.js";
+import type { MotionStyleKit } from "../types/motionVideo.js";
 export interface MotionStylePreset { id: string; mode: "2d" | "3d"; genre?: string; label: { vi: string; en: string }; look: string; palette: string[]; outlineColor?: string; outlineWidth?: number; description: string; kit: MotionStyleKit; }
-export const MOTION_STYLE_PRESET_NONE = "";
 export const MOTION_GHOST_TALE_PRESET = "ghost_story_2d";
-export const MOTION_STYLE_PRESET_KEY = (id: string, mode: string): string => `${mode}-preset-${id}`;
 const preset = (id: string, mode: "2d" | "3d", vi: string, en: string, look: string, palette: string[], outline: [string, number] | null, description: string, render: Record<string, string>, character: Record<string, string>, background: Record<string, string>, fx: string, camera: string): MotionStylePreset => ({
   id,
   mode,
@@ -393,24 +391,3 @@ export const MOTION_STYLE_PRESETS: MotionStylePreset[] = [
   },
 ];
 export const motionStylePreset = (id: unknown): MotionStylePreset | undefined => MOTION_STYLE_PRESETS.find((item) => item.id === id);
-export const motionPresetReferenceStyle = (item: MotionStylePreset): MotionReferenceStyle => ({ description: item.description, palette: item.palette, outlineColor: item.outlineColor, outlineWidth: item.outlineWidth, kit: item.kit });
-export const MOTION_STYLE_PRESET_TEXT = {
-  vi: {
-    LABEL: "Phong cách",
-    NONE: "Theo ảnh mẫu / tự do",
-    HINT: "Chọn một phong cách dựng sẵn thay cho ảnh mẫu. Chọn phong cách sẽ bỏ ảnh mẫu đang dùng; thêm ảnh mẫu lại thì phong cách dựng sẵn được bỏ qua.",
-    MODE_2D: "2D",
-    MODE_3D: "3D",
-    PREVIEW: "Xem trước phong cách",
-    PREVIEW_HINT: "Ảnh mẫu dựng từ kho có sẵn, đã áp hậu kỳ, font, nhịp và chuyển cảnh của phong cách này. Lần đầu mất vài giây để tạo.",
-  },
-  en: {
-    LABEL: "Style",
-    NONE: "From references / free",
-    HINT: "Pick a preset style instead of reference images. Choosing a preset clears the current references; adding references again overrides the preset.",
-    MODE_2D: "2D",
-    MODE_3D: "3D",
-    PREVIEW: "Style preview",
-    PREVIEW_HINT: "Sample built from the library with this style's finish, fonts, pacing and transitions. The first one takes a few seconds.",
-  },
-} as const;

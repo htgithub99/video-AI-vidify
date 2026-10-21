@@ -55,6 +55,7 @@ export const MOTION_VOICE = {
   BATCH_SEP: "|",
   BATCH_COMMAND: "batch",
   BACKEND_LOG: (backend: string): string => `VieNeu đang chạy bằng: ${backend}`,
+  LOG_PACE: (r: { rate: number; articulation: number; phrase: number; pausesPerMinute: number; pauses: { clause?: number } }): string => `Đo nhịp giọng (chỉ giọng đọc): ${r.rate} âm tiết/giây, tốc độ nói ${r.articulation}, đoạn liền mạch ${r.phrase}s, ${r.pausesPerMinute} chỗ ngừng/phút, ngừng ngắn ${r.pauses.clause ?? 0}s.`,
   ARTIFACT: "motion-voice-direction",
   VOICES_ROUTE: "/voices",
   VOICES_URL: "/api/motion-video/voices",

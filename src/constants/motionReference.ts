@@ -1,21 +1,7 @@
 import { motionStyleConstraints } from "../lib/motionStyleConstraints.js";
 import { motionGroundTilted, motionMetricsText } from "../lib/motionStyleMetrics.js";
 import { MOTION_STYLE_METRIC_DEFAULTS, MOTION_STYLE_METRICS_PROMPT } from "./motionStyleMetrics.js";
-import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../types.js";
-import { encodeClaudeChatModel } from "./claudeChatModels.js";
 import type { MotionReferenceStyle } from "../types/motionVideo.js";
-export const MOTION_REFERENCE_AI = {
-  provider: AiPlanningFallbackProvider.ClaudeChat,
-  model: encodeClaudeChatModel(AiPlanningChatModel.ClaudeSonnet55, "medium"),
-  mode: AiPlanningExecutionMode.RoomOnly,
-  strictProvider: true,
-} as const;
-export const MOTION_REFERENCE_FALLBACK = {
-  PATTERN: /claude_login_required|captcha|unusual traffic|room_unavailable/i,
-  MODEL: AiPlanningChatModel.GeminiFlash,
-  PROVIDER: AiPlanningFallbackProvider.GeminiChat,
-  LOG: (from: string, to: string): string => `Không dùng được ${from} để đọc ảnh mẫu (chưa đăng nhập hoặc bị chặn) – chuyển sang ${to}.`,
-} as const;
 export const MOTION_REFERENCE_CONFIG = {
   EMPTY: "",
   CANVAS: "canvas",

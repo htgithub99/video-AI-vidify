@@ -1,7 +1,7 @@
 import * as MR from "../constants/motionRuntime.js";
-import { MOTION_REFERENCE_CONFIG as C, MOTION_REFERENCE_TEXTS as T, MOTION_QA_MESSAGES } from "../constants/motionReference.js";
+import { MOTION_REFERENCE_CONFIG as C, MOTION_REFERENCE_TEXTS as T } from "../constants/motionReference.js";
 import { normalizeMotionStyleMetrics } from "./motionStyleMetrics.js";
-import type { MotionStyleReference, MotionReferenceStyle, MotionStyleKit, MotionReferenceImageInfo, MotionGenPreview } from "../types/motionVideo.js";
+import type { MotionStyleReference, MotionReferenceStyle, MotionStyleKit, MotionReferenceImageInfo } from "../types/motionVideo.js";
 export const normalizeMotionReferences = (value: unknown): MotionStyleReference[] => {
   if (value == null) return [];
   if (!Array.isArray(value) || value.length > C.MAX_IMAGES) throw new Error(T.vi.limit);
@@ -41,13 +41,6 @@ export const normalizeReferenceImages = (value: any): MotionReferenceImageInfo[]
   });
   return list.length ? list : undefined;
 };
-export const referenceImagesFor = <T extends { name: string }>(images: T[], style: MotionReferenceStyle | undefined, step: "character" | "location"): T[] => {
-  if (!style?.images?.length) return images;
-  const wanted: string[] = step === MR.MOTION_TEXT_CHARACTER ? [C.IMAGE_ROLES[0], C.IMAGE_ROLES[4]] : [C.IMAGE_ROLES[1], C.IMAGE_ROLES[2], C.IMAGE_ROLES[3], C.IMAGE_ROLES[4]];
-  const roles = new Map<string, string>(style.images.map((info) => [info.name, info.role]));
-  const picked = images.filter((image) => wanted.includes(roles.get(image.name.replace(/\.[a-z]+$/, MR.MOTION_TEXT_EMPTY)) || C.IMAGE_ROLES[4]));
-  return picked.length ? picked : images;
-};
 export const normalizeMotionReferenceStyle = (value: any): MotionReferenceStyle | undefined => {
   const kit = normalizeStyleKit(value?.kit);
   const description =
@@ -69,5 +62,3 @@ export const normalizeMotionReferenceStyle = (value: any): MotionReferenceStyle 
     ...(normalizeMotionStyleMetrics(value.metrics ?? value.kit?.metrics) ? { metrics: normalizeMotionStyleMetrics(value.metrics ?? value.kit?.metrics) } : {}),
   };
 };
-export const hasMotionRenderFailure = (issues?: string[]): boolean => !!issues?.some((issue) => MOTION_QA_MESSAGES.RENDER_FAILURE.test(issue));
-export const needsMotionPreview = (preview?: Pick<MotionGenPreview, "file" | "issues">): boolean => !preview?.file || hasMotionRenderFailure(preview.issues);

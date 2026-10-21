@@ -15,6 +15,7 @@ import { transcribeVieneuAudio, vieneuRoot, type VieneuDelivery } from "./vieneu
 import { listMotionVoices, synthesizeMotionSpeech } from "./motionVoiceSourceService.js";
 import { buildMotionSoundTrack, motionWavHeader, runMotionAudioProcess } from "./motionSoundMixService.js";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
+import { measureVoicePaceFile } from "./motionVoicePaceService.js";
 import _ from "lodash";
 import { motionAudioHash as hash, motionWavData } from "./motionAudioUtils.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
@@ -353,6 +354,7 @@ export const buildMotionVoiceTrack = async (script: MotionStoryScript, analysis:
     }
     const track: MotionVoiceTrack = { audioId: id, provider: C.PROVIDER, voiceId: C.MODEL, signature: plan.signature, durations, totalSeconds: timeline.total, plan, clips, subtitles: clips.map((clip) => ({ start: clip.start, end: clip.end, text: clip.text, speaker: clip.speaker })) };
     writeMotionJsonAtomic(metadata, track);
+    await measureVoicePaceFile(file, opts.signal).then((r) => opts.log?.(C.LOG_PACE(r))).catch(_.noop);
     return track;
   })();
   active.set(id, task);

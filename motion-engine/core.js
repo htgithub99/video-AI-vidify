@@ -438,7 +438,6 @@
         const sh = inst.shot;
         if (!sh.overlays || t < sh.start - 0.2 || t > sh.end + 0.6) continue;
         for (const ov of sh.overlays) {
-          if (sh.template === MT.GEN3D && ov.type === MT.TAG) continue;
           ME.drawOverlay(out, ov, t - sh.start, sh, { W, H, unit, aspect, look });
         }
       }
@@ -749,7 +748,7 @@
     const size = (portrait ? MT.SUB_SIZE_PORTRAIT : MT.SUB_SIZE) * unit;
     const quote = !!(sub.dialogue || sub.speaker);
     const font = (quote ? MT.SUB_ITALIC : MT.EMPTY) + ME.font(quote ? 600 : 500, size, MT.BODY);
-    const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + sub.text + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.84 : MT.SUB_WRAP), font).slice(0, 2);
+    const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + String(sub.text || MT.EMPTY).replace(MT.SUB_QUOTE_STRIP_RE, MT.EMPTY) + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.84 : MT.SUB_WRAP), font).slice(0, 2);
     const life = U.clamp((t - sub.start) / 0.2) * U.clamp((sub.end - t) / 0.2);
     const rise = (1 - U.easeOut(U.clamp((t - sub.start) / 0.3))) * size * 0.18;
     const lh = size * 1.36;

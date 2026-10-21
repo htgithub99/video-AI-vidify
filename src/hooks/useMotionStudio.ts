@@ -1,9 +1,8 @@
-import { MOTION_BOARD2D } from "../constants/motionBoard2d.js";
+import { PUPPET, PUPPET_KIT_API, PUPPET_STYLE_DEFAULT } from "../constants/motionPuppet.js";
 import { MOTION_CAPTCHA } from "../constants/motionCaptcha.js";
 import { motionAlertBeep } from "../lib/motionAlertBeep.js";
 import { MOTION_PATTERNS as MP } from "../constants/motionPatterns.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
-import { MOTION_SCENE_LIBRARY_MODES, type MotionSceneLibraryMode } from "../constants/motionSceneCatalog.js";
 import { MOTION_SOUND_CONFIG } from "../constants/motionSound.js";
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../constants/motionVoice.js";
 import { motionVoiceCast, motionVoiceSignature, voiceChannelRef } from "../lib/motionVoice.js";
@@ -12,10 +11,8 @@ import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../serv
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../constants/workflowActivity";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRES, type MotionVideoGenre } from "../constants/motionGenre.js";
-import { MOTION_STYLE_PRESET_NONE } from "../constants/motionStylePresets.js";
 import { MOTION_MUSIC } from "../constants/motionMusic.js";
 import _ from "lodash";
-import { needsAuthoredCharacters, sceneExecutionKey } from "../lib/motionVideoDna.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { loadMotionEngineClient, motionJobStatusUrl, motionRequest, pollMotionJob, type MotionEngineGlobal } from "../components/motion-video/motionApi.js";
@@ -31,7 +28,6 @@ import {
   MOTION_TEXT_CANCELLED,
   MOTION_TEXT_DARK,
   MOTION_TEXT_DA_DUNG_STOPPED,
-  MOTION_TEXT_DA_DUNG_XONG_CAC_CANH_3D,
   MOTION_TEXT_DELETE,
   MOTION_TEXT_ENGINE,
   MOTION_TEXT_MOTION,
@@ -78,7 +74,6 @@ const reportStoryError = (error: unknown): void => {
 interface PersistedState extends MotionSceneAiChoice {
   voiceChannelId?: string;
   styleReferences: MotionStyleReference[];
-  styleSetKey?: string;
   characterMotion: boolean;
   rawText: string;
   source: MotionStorySource | null;
@@ -95,7 +90,6 @@ interface PersistedState extends MotionSceneAiChoice {
   encoder: MotionEncoderPreference;
   look: string;
   sfx: boolean;
-  drawingMode: "2d" | "3d";
   subtitles?: boolean;
   sfxVolume: number;
   soundOverrides: Record<string, MotionSoundOverride>;
@@ -104,7 +98,6 @@ interface PersistedState extends MotionSceneAiChoice {
   aiMode: AiPlanningExecutionMode;
   aiHeadless: boolean;
   aiReview: boolean;
-  libraryMode?: MotionSceneLibraryMode;
   videoGenre?: MotionVideoGenre;
   stylePreset?: string;
   asrCheck?: boolean;
@@ -125,7 +118,6 @@ interface PersistedState extends MotionSceneAiChoice {
 }
 const DEFAULTS: PersistedState = {
   styleReferences: [],
-  styleSetKey: MR.MOTION_TEXT_EMPTY,
   characterMotion: false,
   rawText: MR.MOTION_TEXT_EMPTY,
   source: null,
@@ -141,7 +133,6 @@ const DEFAULTS: PersistedState = {
   encoder: MotionEncoderPreference.AUTO,
   look: MR.MOTION_TEXT_EMPTY,
   sfx: true,
-  drawingMode: MR.MOTION_TEXT_3D,
   subtitles: true,
   sfxVolume: 0.5,
   soundOverrides: {},
@@ -153,9 +144,8 @@ const DEFAULTS: PersistedState = {
   sceneAiModel: MOTION_SCENE_AI.PRIMARY_MODEL,
   sceneAiHeadless: true,
   aiReview: true,
-  libraryMode: MOTION_SCENE_LIBRARY_MODES.AUTO,
   videoGenre: MOTION_VIDEO_GENRES.AUTO,
-  stylePreset: MOTION_STYLE_PRESET_NONE,
+  stylePreset: PUPPET_STYLE_DEFAULT,
   asrCheck: false,
   musicMood: MOTION_MUSIC.AUTO,
   musicVolume: MOTION_MUSIC.DEFAULT_VOLUME,
@@ -234,7 +224,6 @@ export function useMotionStudio() {
   const patch = useCallback((p: Partial<PersistedState>) => {
     const apply = (s: PersistedState): PersistedState => {
       const next = { ...s, ...p };
-      if (p.styleSetKey === undefined && (p.styleReferences !== undefined || (p.drawingMode !== undefined && p.drawingMode !== s.drawingMode))) next.styleSetKey = MR.MOTION_TEXT_EMPTY;
       if (p.rawText !== undefined && p.rawText !== s.rawText) next.source = null;
       const synced = withVoiceChannel(next, channelsRef.current);
       if (synced.script && p.script?.voiceTrack?.provider === MOTION_VOICE.PROVIDER && p.script.voiceTrack.signature === narrationSignature(synced.script, synced.analysis)) synced.voice = { ...p.script.voiceTrack, signature: p.script.voiceTrack.signature };
@@ -439,15 +428,13 @@ export function useMotionStudio() {
           source: now.source,
           language: now.language,
           length: now.length,
-          drawingMode: now.drawingMode,
           styleReferences: now.styleReferences,
           characterMotion: now.characterMotion,
           aspect: now.aspect,
           aiExecution: motionMainAiExecution(now),
           keepBrowser: true,
-          libraryMode: now.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO,
           videoGenre: now.videoGenre || MOTION_VIDEO_GENRES.AUTO,
-          stylePreset: now.styleReferences?.length ? MOTION_STYLE_PRESET_NONE : now.stylePreset || MOTION_STYLE_PRESET_NONE,
+          stylePreset: now.stylePreset || PUPPET_STYLE_DEFAULT,
         })) as MotionStoryAnalysis;
         const started = seriesState(full, stateRef.current.parts, stateRef.current.language, stateRef.current.look);
         const analysis = started.analysis!;
@@ -460,7 +447,7 @@ export function useMotionStudio() {
         reportStoryError(e);
       }
     });
-  }, [inFlow, state.source, state.language, state.length, state.drawingMode, state.styleReferences, state.characterMotion, state.aspect, state.libraryMode, state.videoGenre, state.stylePreset, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
+  }, [inFlow, state.source, state.language, state.length, state.styleReferences, state.characterMotion, state.aspect, state.videoGenre, state.stylePreset, state.autoContinue, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch]);
   const writeScript = useCallback(
     async (chapterIds?: string[], analysisOverride?: MotionStoryAnalysis, resume = false, carryGen?: MotionSeriesState["carryGen"]) => {
       const now = stateRef.current;
@@ -475,7 +462,6 @@ export function useMotionStudio() {
               analysis,
               language: now.language,
               length: now.length,
-              drawingMode: now.drawingMode,
               aiExecution: motionMainAiExecution(now),
               keepBrowser: chainOn(now),
               voiceChannel: selectedChannelRef(now, channelsRef.current),
@@ -507,7 +493,7 @@ export function useMotionStudio() {
         }
       });
     },
-    [inFlow, state.source, state.analysis, state.language, state.length, state.autoContinue, state.drawingMode, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
+    [inFlow, state.source, state.analysis, state.language, state.length, state.autoContinue, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
   );
   writeScriptRef.current = writeScript;
   const seoRef = useRef<((scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis, quiet?: boolean) => Promise<void>) | null>(null);
@@ -530,6 +516,21 @@ export function useMotionStudio() {
     [inFlow, state.script, state.analysis, state.language, state.voice, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch],
   );
   seoRef.current = generateSeo;
+  const seedKit = useCallback(
+    async (styleId: string): Promise<{ sets: number; variants: number; props: number } | null> => {
+      const now = stateRef.current;
+      let report: { sets: number; variants: number; props: number } | null = null;
+      await inFlow(async () => {
+        try {
+          report = await runStoryJob(PUPPET_KIT_API.URLS.SEED, { styleId, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now) });
+        } catch (e: any) {
+          reportStoryError(e);
+        }
+      });
+      return report;
+    },
+    [inFlow, runStoryJob],
+  );
   const generateThumbnail = useCallback(
     async (optionIndex = 0) => {
       if (!state.analysis) return;
@@ -558,21 +559,21 @@ export function useMotionStudio() {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), libraryMode: now.libraryMode || MOTION_SCENE_LIBRARY_MODES.AUTO, asrCheck: now.asrCheck === true, drawingMode: now.drawingMode, styleReferences: now.styleReferences, characterMotion: now.characterMotion, review: now.aiReview !== false, previews: !exportOn(now), ...req },
+            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), stylePreset: now.stylePreset || PUPPET_STYLE_DEFAULT, asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, characterMotion: now.characterMotion, review: now.aiReview !== false, previews: !exportOn(now), ...req },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           patch({ script: result });
           setCompiled(null);
           const failed = result.gen?.failed?.length || 0;
           if (failed) toast.warning(MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP(String(failed)));
-          else toast.success(MOTION_TEXT_DA_DUNG_XONG_CAC_CANH_3D);
+          else toast.success(PUPPET.TOAST_DONE);
           return result;
         } catch (e: any) {
           reportStoryError(e);
         }
       });
     },
-    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.aiReview, state.drawingMode, state.styleReferences, state.characterMotion, runStoryJob, patch],
+    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch],
   );
   scenesRef.current = buildScenes;
   const voicePending = useRef<{ signature: string; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
@@ -646,7 +647,7 @@ export function useMotionStudio() {
         uploadedAudioSeconds: snapshot.voice?.signature !== narrationSignature(script, snapshot.analysis) && snapshot.uploadedAudio ? snapshot.uploadedAudio.durationSeconds : undefined,
       });
       if (compileStateKey(stateRef.current) !== currentKey) return null;
-      const value = { ...r, compilationKey: currentKey, spec: { ...r.spec, gen: r.spec.gen ? { ...r.spec.gen, characterMotion: snapshot.characterMotion } : undefined, fps: snapshot.fps, ...(snapshot.subtitles === false ? { subtitles: [] } : {}) }, sfxCues: r.sfxCues, missing: r.missing || [] };
+      const value = { ...r, compilationKey: currentKey, spec: { ...r.spec, ...(r.spec.kit ? { kit: { ...r.spec.kit, motion: snapshot.characterMotion } } : {}), gen: r.spec.gen ? { ...r.spec.gen, characterMotion: snapshot.characterMotion } : undefined, fps: snapshot.fps, ...(snapshot.subtitles === false ? { subtitles: [] } : {}) }, sfxCues: r.sfxCues, missing: r.missing || [] };
       if (revision === compileRevision.current) setCompiled(value);
       return value;
     },
@@ -744,23 +745,9 @@ export function useMotionStudio() {
         const state = stateRef.current;
         try {
           let c = compiled;
-          const flat = state.drawingMode === MR.MOTION_TEXT_2D;
-          const board = state.script?.gen?.board2d;
-          const stale2d = flat && (state.script?.gen?.drawingMode !== MR.MOTION_TEXT_2D || !board || board.version !== MOTION_BOARD2D.VERSION || !board.cast);
-          const changedScenePlan = !flat && !!state.analysis?.videoDna && state.script?.beats.some((beat) => beat.visual === MR.MOTION_TEXT_SCENE && state.script?.gen?.scenePlanKeys?.[beat.id] !== sceneExecutionKey(beat));
-          if (
-            state.script &&
-            state.analysis &&
-            (flat ? stale2d : changedScenePlan ||
-              (state.sfx && state.script.gen?.soundPlanVersion !== MOTION_SOUND_CONFIG.VERSION) ||
-              state.script.gen?.characterMotion !== state.characterMotion ||
-              needsAuthoredCharacters(
-                state.script,
-                state.analysis.cast.map((member) => member.key),
-              ) ||
-              (state.script.gen?.characterMode || MR.MOTION_TEXT_DRAWN) !== MR.MOTION_TEXT_DRAWN ||
-              (state.script.gen?.drawingMode || MR.MOTION_TEXT_3D) !== state.drawingMode)
-          ) {
+          const puppet = state.script?.gen?.puppet;
+          if (state.script?.gen && puppet && state.script.gen.characterMotion !== state.characterMotion) patch({ script: { ...state.script, gen: { ...state.script.gen, characterMotion: state.characterMotion } } });
+          if (state.script && state.analysis && (!puppet || puppet.version !== PUPPET.VERSION || (state.sfx && state.script.gen?.soundPlanVersion !== MOTION_SOUND_CONFIG.VERSION))) {
             const rebuilt = await buildScenes({});
             if (!rebuilt || rebuilt.gen?.failed?.length) return;
             c = await compile(rebuilt);
@@ -808,7 +795,7 @@ export function useMotionStudio() {
           toast.error(e?.message);
         }
       }),
-    [inFlow, compiled, compile, buildScenes, generateVoice, state.drawingMode, state.characterMotion, state.quality, state.aspect, state.fps, state.encoder, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch],
+    [inFlow, compiled, compile, buildScenes, generateVoice, state.characterMotion, state.quality, state.aspect, state.fps, state.encoder, state.analysis, state.script, state.sfx, state.sfxVolume, audioId, followRender, patch],
   );
   autoRenderRef.current = render;
   const finishAutoRun = useCallback(
@@ -895,7 +882,7 @@ export function useMotionStudio() {
   const voiceAttempt = useRef<{ signature: string; count: number }>({ signature: MR.MOTION_TEXT_EMPTY, count: 0 });
   useEffect(() => {
     if (!hydrated || storyBusy || renderBusy || state.uploadedAudio || voiceValid || !state.script?.beats?.length) return;
-    if (state.script.beats.some((beat) => beat.visual === MR.MOTION_TEXT_SCENE && !state.script?.gen?.staging?.[beat.id])) return;
+    if (!state.script.gen?.puppet) return;
     const signature = narrationSignature(state.script, state.analysis);
     if (state.voiceHold === signature) return;
     if (voiceAttempt.current.signature !== signature) voiceAttempt.current = { signature, count: 0 };
@@ -951,6 +938,7 @@ export function useMotionStudio() {
     cleanJunk,
     saveResult,
     loadDemo,
+    seedKit,
   };
 }
 export type MotionStudio = ReturnType<typeof useMotionStudio>;
