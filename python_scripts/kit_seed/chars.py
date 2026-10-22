@@ -22,6 +22,12 @@ ARCH = {
     'villager_woman_1': dict(name='Dân làng (nữ) 1', gender='female', age='adult', group='villager_woman', hair='bun', hairc='#1b1a1c', face='#f1dcc3', body='#7a6878', sleeve='#7a6878', dress='dress', height=0.95, desc='village woman with a bun in a mauve blouse'),
     'villager_woman_2': dict(name='Dân làng (nữ) 2', gender='female', age='adult', group='villager_woman', hair='long', hairc='#1b1a1c', face='#ecd2b4', body='#3a7a6a', sleeve='#3a7a6a', dress='dress', height=0.94, desc='village woman with long hair in a teal blouse'),
     'villager_woman_3': dict(name='Dân làng (nữ) 3', gender='female', age='adult', group='villager_woman', hair='wrap', hairc='#2f3a5a', face='#f1dcc3', body='#8e5a43', sleeve='#8e5a43', dress='dress', height=0.93, desc='village woman with a dark headscarf in a rust blouse'),
+    'town_man': dict(name='Thanh niên thị trấn', gender='male', age='adult', group='town', hair='short', hairc='#1b1a1c', face='#f1dcc3', body='#3a5e8f', sleeve='#3a5e8f', dress='shirt', height=1.0, desc='young town man in a blue shirt and jeans (modern days)'),
+    'town_woman': dict(name='Cô gái thị trấn', gender='female', age='adult', group='town', hair='long', hairc='#1b1a1c', face='#f1dcc3', body='#c46a7a', sleeve='#c46a7a', dress='dress', height=0.94, desc='young town woman with long hair in a pink blouse (modern days)'),
+    'hmong_woman': dict(name='Phụ nữ vùng cao', gender='female', age='adult', group='villager_woman', hair='bun', hairc='#141214', face='#ecd2b4', body='#26324f', sleeve='#26324f', dress='dress', sash='#b8343c', height=0.93, desc='highland ethnic woman with a hair bun, indigo clothes and a red sash'),
+    'highland_elder': dict(name='Già bản', gender='male', age='senior', group='villager', hair='wrap', hairc='#2f3a5a', face='#e3c7a6', body='#6b4a32', sleeve='#6b4a32', dress='shirt', beard=True, height=0.92, desc='old highland village man with a dark headscarf, long moustache and a brown shirt'),
+    'nurse': dict(name='Y tá', gender='female', age='adult', group='town', hair='bob', hairc='#1b1a1c', face='#f1dcc3', body='#eef1f2', sleeve='#eef1f2', dress='dress', height=0.94, desc='nurse in a white uniform'),
+    'schoolboy': dict(name='Cậu học trò', gender='male', age='child', group='villager', hair='short', hairc='#1b1a1c', face='#f1dcc3', body='#f1f1ee', sleeve='#f1f1ee', dress='shirt', height=0.74, desc='schoolboy in a white shirt'),
 }
 
 MIN_FACE = '#e9eef1'
@@ -187,7 +193,7 @@ def sprites(t, a, head, body):
     hs, bs = inner(head['side']), inner(body['side'])
     s = 0.42
     g_head = lambda x, y, sc, inn, rot=0: '<g transform="translate(%s %s) rotate(%s) scale(%s)">%s</g>' % (f(x), f(y), f(rot), f(sc), inn)
-    sit = [rect(t, 120, 380, 260, 26, t.c('wood'), True), rect(t, 140, 406, 20, 74, t.c('wood'), True), rect(t, 340, 406, 20, 74, t.c('wood'), True)]
+    sit = []
     sit.append('<g transform="translate(170 250) scale(0.4 0.36)">%s</g>' % bb)
     sit.append('<g transform="translate(150 470) scale(0.5 0.2)">%s</g>' % '<rect x="0" y="0" width="400" height="60" fill="#2b2a33" stroke="%s" stroke-width="10"/>' % t.line)
     sit.append(g_head(162, 96, 0.44, hb))

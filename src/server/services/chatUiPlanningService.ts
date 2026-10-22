@@ -846,7 +846,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     if ((_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) || isRefusal) && !isBusy) {
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
-      if (_.gte(stablePolls, CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
+      if (_.gte(stablePolls, isCompleteJson && belongsToCurrentRequest ? CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS_MATCHED : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_STABLE_POLLS)) {
         if (isRefusal && !_.isEmpty(responseCandidates)) {
           throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR), { diagnostics: { responseCount: count, initialCount, candidateChars: latestText.length, busy: false, identityMatch: false, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
         }

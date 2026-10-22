@@ -35,6 +35,10 @@ def write(kind, asset):
 SIZE = {'coffin': 2.0, 'grave_mound': 2.2, 'tombstone': 0.9, 'rope': 1.2, 'firewood': 0.8, 'bones': 0.6, 'machete': 0.6, 'axe': 0.8, 'red_wedding_dress': 1.4, 'embroidered_scarf': 1.2, 'white_mourning_headband': 0.6, 'walking_stick': 1.1, 'torch': 0.8, 'temple_bell': 1.2, 'paper_effigy': 1.0}
 MOUNT = {'coffin': 'floor', 'grave_mound': 'floor', 'tombstone': 'floor', 'water_jar': 'floor', 'bamboo_basket': 'floor', 'firewood': 'floor', 'paper_effigy': 'floor', 'black_cat': 'floor', 'temple_bell': 'hang', 'cooking_pot': 'floor',
          'walking_stick': 'held', 'torch': 'held', 'axe': 'held', 'machete': 'held', 'ghost_fire': 'air', 'crow': 'floor', 'owl': 'hang', 'rope': 'hang', 'red_wedding_dress': 'hang', 'bones': 'floor', 'conical_hat': 'table'}
+from refprops import REF_PROPS
+for _k, (_fn, _h, _m) in REF_PROPS.items():
+    SIZE[_k] = _h
+    MOUNT[_k] = _m
 count = 0
 VARIANTS = 4
 for style, sid in STYLES.items():

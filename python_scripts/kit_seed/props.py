@@ -302,3 +302,9 @@ def build_prop(key, style):
     t = PT(style, False, seed=sum(map(ord, key)))
     fn, h = PROPS[key]
     return psvg(t, fn(t)), h
+
+
+from refprops import REF_PROPS
+
+for _k, (_fn, _h, _m) in REF_PROPS.items():
+    PROPS[_k] = (_fn, _h)

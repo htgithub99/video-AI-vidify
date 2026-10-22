@@ -31,7 +31,7 @@ const castText = (analysis: MotionStoryAnalysis): string => _.map(analysis.cast,
 const actorOf = (raw: any, cast: string[]): PuppetFrameActor | null => {
   const c = _.toString(raw?.char);
   if (!isCast(cast, c)) return null;
-  return _.omitBy({ char: c, pose: pick(raw?.pose, P.POSES, P.POSE_DEFAULT), expr: pick(raw?.expr, P.EXPRS, P.EXPR_DEFAULT), face: pick(raw?.face, P.FACES, P.FACE_DEFAULT), x: _.isFinite(Number(raw?.x)) ? _.clamp(Number(raw.x), 0.05, 0.95) : undefined, spot: keyOf(raw?.spot) || undefined, depth: pick(raw?.depth, P.DEPTHS, P.DEPTH_MID) }, _.isNil) as PuppetFrameActor;
+  return _.omitBy({ char: c, pose: pick(raw?.pose, P.POSES, P.POSE_DEFAULT), expr: pick(raw?.expr, P.EXPRS, P.EXPR_DEFAULT), face: pick(raw?.face, P.FACES, P.FACE_DEFAULT), x: _.isFinite(Number(raw?.x)) ? _.clamp(Number(raw.x), 0.05, 0.95) : undefined, spot: keyOf(raw?.spot) || undefined, hold: keyOf(raw?.hold) || undefined, wear: _.isArray(raw?.wear) && raw.wear.length ? _.filter(_.compact(_.map(raw.wear, keyOf)), (k) => wearable(k)) : undefined, depth: pick(raw?.depth, P.DEPTHS, P.DEPTH_MID), sil: raw?.sil === true ? true : undefined, trail: raw?.trail === true ? true : undefined }, _.isNil) as PuppetFrameActor;
 };
 
 export const normalizePuppetFrame = (raw: any, line: PuppetLine, cast: string[], nested = false): PuppetFrame => {
@@ -44,6 +44,7 @@ export const normalizePuppetFrame = (raw: any, line: PuppetLine, cast: string[],
   if (_.includes(P.SHOT_NOBODY, shot)) actors = [];
   if (speaker && !_.includes(P.SHOT_NOBODY, shot) && !_.some(actors, { char: speaker }) && shot !== P.SHOT_INSERT) actors = [{ char: speaker, pose: P.POSE_TALK, expr: P.EXPR_DEFAULT, face: P.FACE_DEFAULT, depth: P.DEPTH_MID }, ...actors].slice(0, P.ACTOR_MAX);
   if (speaker) actors = _.map(actors, (a) => (a.char === speaker && a.pose === P.POSE_DEFAULT ? { ...a, pose: P.POSE_TALK } : a));
+  if (shot === P.SHOT_SPLIT && !actors.length) shot = P.SHOT_ESTABLISHING;
   if (shot === P.SHOT_DUO && actors.length < 2) shot = actors.length ? P.SHOT_BUST : P.SHOT_ESTABLISHING;
   if (shot === P.SHOT_OTS) {
     if (actors.length < 2) shot = P.SHOT_DEFAULT;
@@ -56,6 +57,7 @@ export const normalizePuppetFrame = (raw: any, line: PuppetLine, cast: string[],
     const main = speaker && _.some(actors, { char: speaker }) ? _.find(actors, { char: speaker })! : actors[0];
     actors = shot === P.SHOT_SHADOW ? [main, ..._.reject(actors, { char: main.char })].slice(0, 2) : [main];
   }
+  actors = _.map(actors, (a) => (a.sil && (a.char === speaker || !_.includes(P.SIL_SHOTS, shot)) ? (_.omit(a, P.SIL_FIELD) as PuppetFrameActor) : a));
   const place = keyOf(raw?.place);
   const frame: PuppetFrame = {
     shot,
@@ -64,10 +66,15 @@ export const normalizePuppetFrame = (raw: any, line: PuppetLine, cast: string[],
     actors,
     prop: prop || null,
     propAt: keyOf(raw?.propAt) || null,
+    form: pick(raw?.form, P.FORMS, P.EMPTY) || undefined,
+    anchor: keyOf(raw?.anchor) || undefined,
     propX: _.isFinite(Number(raw?.propX)) ? _.clamp(Number(raw.propX), 0.1, 0.9) : undefined,
     overlays: _.take(_.filter(_.castArray(raw?.overlays || []), (x) => _.includes(P.OVERLAYS, x)), 3) as string[],
     camera: { move: pick(raw?.camera?.move, P.MOVES, P.MOVE_DEFAULT) },
     speaker,
+    inset: keyOf(raw?.inset) || undefined,
+    set2: shot === P.SHOT_SPLIT ? keyOf(raw?.set2) || undefined : undefined,
+    light2: shot === P.SHOT_SPLIT ? pick(raw?.light2, P.LIGHTS, P.EMPTY) || undefined : undefined,
   };
   if (!nested && raw?.shot2 && _.isObject(raw.shot2)) frame.shot2 = normalizePuppetFrame({ place, light: raw.light, prop: raw.prop, overlays: raw.overlays, ...raw.shot2 }, line, cast, true);
   return frame;
@@ -75,11 +82,23 @@ export const normalizePuppetFrame = (raw: any, line: PuppetLine, cast: string[],
 
 export interface PuppetReadResult { reads: Record<string, PuppetRead>; newPlaces: Record<string, PuppetPlace>; }
 
+export const wearable = (...names: (string | undefined)[]): boolean => _.some(names, (n) => !!n && P.WEARABLE_RE.test(_.replace(n, /_/g, P.SPACE)));
+
 const objectOf = (raw: any, line: PuppetLine): PuppetObject | null => {
   const word = _.trim(_.toString(raw?.word));
   const key = keyOf(raw?.key);
   if (!word || !key || !wordIn(word, line.text)) return null;
-  return { word, key, size: _.clamp(Number(raw?.size) || P.SIZE_DEFAULT, P.SIZE_MIN, P.SIZE_MAX), mount: pick(raw?.mount, P.MOUNTS, P.MOUNT_FLOOR), note: _.truncate(word + P.DASH + line.text, { length: 160 }) };
+  let type = pick(raw?.type, P.OBJECT_TYPES, P.OBJECT_TYPE_DEFAULT);
+  let mount = P.TYPE_MOUNT[type] || pick(raw?.mount, P.MOUNTS, P.MOUNT_FLOOR);
+  const onBody = P.BODY_PLACE_RE.test(line.text) || mount === P.MOUNT_BODY;
+  if (onBody && !_.includes(P.FEATURE_OBJECT_TYPES, type)) {
+    type = P.OBJECT_TYPE_SMALL;
+    mount = P.MOUNT_BODY;
+  } else if (mount === P.MOUNT_WEAR && !wearable(key, word)) {
+    type = P.OBJECT_TYPE_SMALL;
+    mount = P.MOUNT_HELD_KEY;
+  }
+  return { word, key, size: _.clamp(Number(raw?.size) || P.SIZE_DEFAULT, P.SIZE_MIN, P.SIZE_MAX), type, mount, note: _.truncate(word + P.DASH + line.text, { length: 160 }) };
 };
 
 const readOf = (raw: any, line: PuppetLine, cast: string[], places: Record<string, PuppetPlace>, fresh: Record<string, PuppetPlace>): { read: PuppetRead; bad: boolean } => {
@@ -172,6 +191,7 @@ const composeOf = (raw: any, r: PuppetRead, line: PuppetLine, cast: string[], sp
       prop: r.object?.key || null,
       overlays: r.overlays,
       propAt: keys.has(_.toString(x?.propAt)) ? x.propAt : null,
+      anchor: keys.has(_.toString(x?.anchor)) ? x.anchor : undefined,
       actors: _.map([...actors, ...missing], (a: any) => {
         const spot = _.find(spots, { key: _.toString(a?.spot) });
         const pose = _.includes(P.POSES, a?.pose) ? a.pose : a.char === r.focus ? poseOf(r) : P.POSE_DEFAULT;
@@ -181,13 +201,64 @@ const composeOf = (raw: any, r: PuppetRead, line: PuppetLine, cast: string[], sp
     };
   };
   const frame = normalizePuppetFrame({ ...fill(raw), shot2: raw?.shot2 && _.isObject(raw.shot2) ? fill(raw.shot2) : null }, line, cast);
-  return fitObject(frame, r);
+  return fitObject(frame, r, spots);
 };
 
-const fitObject = (f: PuppetFrame, r: PuppetRead): PuppetFrame => {
-  const out = { ...f };
-  if (r.object && out.shot === P.SHOT_OBJECT && r.object.size < P.SIZE_SMALL) out.shot = P.SHOT_INSERT;
-  if (out.shot2) out.shot2 = fitObject(out.shot2, r);
+const fitHands = (f: PuppetFrame, r: PuppetRead): PuppetFrame => {
+  const key = r.object?.key;
+  const shoulder = r.object?.mount === P.MOUNT_SHOULDER;
+  let actors = _.map(f.actors, (a) => ({ ...a, hold: key && a.hold === key ? key : undefined }));
+  const uses = !!key && (r.object!.mount === P.MOUNT_HELD_KEY || shoulder || _.includes(P.HOLD_POSES, P.ACTIONS[r.action]));
+  if (uses && !actors.length && _.includes(r.who, r.focus)) actors = [{ char: r.focus, pose: poseOf(r), expr: exprOf(r), face: P.FACE_DEFAULT, depth: P.DEPTH_MID, hold: undefined }];
+  const holder = _.find(actors, { char: r.focus }) || (actors.length === 1 ? actors[0] : null);
+  if (uses && holder && !_.some(actors, (a) => !!a.hold) && actors.length) actors = _.map(actors, (a) => (a === holder ? { ...a, hold: key } : a));
+  actors = _.map(actors, (a) => {
+    if (!a.hold) return a;
+    if (shoulder) return { ...a, pose: P.POSE_SHOULDER };
+    return _.includes(P.HOLD_POSES, a.pose) ? a : { ...a, pose: _.includes(P.HOLD_POSES, P.ACTIONS[r.action]) ? P.ACTIONS[r.action] : P.POSE_HOLD };
+  });
+  const held = _.some(actors, (a) => !!a.hold);
+  return { ...f, actors, shot: held && _.includes(P.HOLD_SHOTS, f.shot) ? P.SHOT_DEFAULT : f.shot };
+};
+
+const tokens = (s: string): string[] => _.compact(_.toString(s).toLowerCase().split(P.TOKEN_SPLIT));
+export const puppetFeatureSpot = (spots: PuppetSpot[], key: string, kind?: string): PuppetSpot | null => {
+  const want = tokens(key);
+  const scored = _.map(spots, (sp) => ({ sp, n: _.intersection(want, [...tokens(sp.key), ...tokens(sp.label)]).length + (kind && sp.kind === kind ? 0.5 : 0) }));
+  const best = _.maxBy(_.filter(scored, (x) => x.n >= 1), (x) => x.n);
+  return best ? best.sp : null;
+};
+
+const fitFeature = (f: PuppetFrame, r: PuppetRead, spots: PuppetSpot[]): PuppetFrame => {
+  const key = r.object!.key;
+  const actors = _.map(f.actors, (a) => {
+    if (a.char !== r.focus && f.actors.length > 1) return a;
+    const own = _.find(spots, { key: a.spot });
+    const sp = puppetFeatureSpot(spots, key, P.POSE_KIND[a.pose]);
+    if (!sp || (own && _.intersection(tokens(key), tokens(own.key)).length)) return a;
+    return { ...a, spot: sp.key, pose: P.POSE_KIND[sp.kind] && !_.includes(P.LOW_POSES, a.pose) ? sp.kind : a.pose };
+  });
+  const shot = _.includes(P.SHOT_PROP, f.shot) ? (actors.length ? P.SHOT_DEFAULT : P.SHOT_ESTABLISHING) : f.shot;
+  return { ...f, actors, shot, prop: null, propAt: null };
+};
+
+const fitWear = (f: PuppetFrame, r: PuppetRead): PuppetFrame => {
+  const key = r.object!.key;
+  const actors = _.map(f.actors, (a) => (_.includes(r.who, a.char) ? { ...a, wear: _.uniq([...(a.wear || []), key]) } : a));
+  return { ...f, actors, prop: f.shot === P.SHOT_INSERT ? f.prop : null };
+};
+
+const fitObject = (f: PuppetFrame, r: PuppetRead, spots: PuppetSpot[] = []): PuppetFrame => {
+  let out = { ...f };
+  const ob = r.object;
+  if (ob && _.includes(P.FEATURE_OBJECT_TYPES, ob.type)) out = fitFeature(out, r, spots);
+  else if (ob && ob.mount === P.MOUNT_WEAR) out = fitWear(out, r);
+  else if (ob && ob.mount === P.MOUNT_BODY) out = { ...out, shot: _.includes(P.CLOSE_SHOTS, out.shot) ? out.shot : P.SHOT_INSERT, prop: ob.key, actors: _.map(out.actors, (a) => (a.hold === ob.key ? _.omit(a, P.HOLD_FIELD) : a)) as PuppetFrame["actors"] };
+  else {
+    if (ob && out.shot === P.SHOT_OBJECT && ob.size < P.SIZE_SMALL && !_.some(out.actors, (a) => a.hold)) out.shot = P.SHOT_INSERT;
+    if (out.shot !== P.SHOT_INSERT || ob?.mount === P.MOUNT_HELD_KEY || ob?.mount === P.MOUNT_SHOULDER) out = fitHands(out, r);
+  }
+  if (out.shot2) out.shot2 = fitObject(out.shot2, r, spots);
   return out;
 };
 

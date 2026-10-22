@@ -5,7 +5,7 @@ IB = 720
 
 
 def S(**k):
-    base = dict(sky=[], back=[], mid=[], floor=[], fg=[], floorY=900, lights=[])
+    base = dict(sky=[], back=[], mid=[], floor=[], fg=[], floorY=900, lights=[], occ=[])
     base.update(k)
     return base
 
@@ -118,10 +118,9 @@ def funeral_room(t):
     for x in (300, 1620):
         back.append(rect(t, x - 50, 260, 100, 400, t.c('cloth'), True))
         back.append(rect(t, x - 50, 260, 100, 30, t.c('dark'), True))
-    flo += coffin(t, 680, IB + 230, 560)
     for x in (360, 1580):
         flo += incense(t, x, IB + 200, 3)
-    return S(back=back, floor=flo, floorY=990, lights=[lamp_light(820, IB - 240, 'candle'), lamp_light(1120, IB - 240, 'candle')])
+    return S(back=back, floor=flo, occ=[(IB + 230, coffin(t, 680, IB + 230, 560))], floorY=990, lights=[lamp_light(820, IB - 240, 'candle'), lamp_light(1120, IB - 240, 'candle')])
 
 
 def temple_hall(t):
@@ -174,17 +173,16 @@ def roadside_inn(t):
     mid.append(rect(t, 300, HB - 380, 26, 380, t.c('post'), True))
     mid.append(rect(t, 1600, HB - 380, 26, 380, t.c('post'), True))
     mid += thatch_roof(t, 220, HB - 560, 1480, 220, t.c('thatch'), t.c('thatch2'), horns=False)
-    mid.append(rect(t, 1100, HB - 150, 420, 30, t.c('wood'), True))
-    mid.append(rect(t, 1120, HB - 120, 380, 120, t.c('wood2'), True))
+    counter = [rect(t, 1100, HB - 150, 420, 30, t.c('wood'), True), rect(t, 1120, HB - 120, 380, 120, t.c('wood2'), True)]
     for k in range(3):
-        mid += jar(t, 1180 + k * 120, HB - 150, 0.35, t.c('cloth'))
+        counter += jar(t, 1180 + k * 120, HB - 150, 0.35, t.c('cloth'))
     mid.append(line(t, 700, HB - 340, 700, HB - 280, t.c('dark'), 3))
     mid.append(rect(t, 680, HB - 280, 40, 50, t.c('glow') if t.night else t.c('cloth'), True))
     if t.night:
         mid += lantern_glow(t, 700, HB - 255, 220)
     flo = gr + bench(t, 360, HB + 160, 360, 90) + tea_table(t, 860, HB + 190)
     flo += stove(t, 1500, HB + 170, True)
-    return S(sky=sky_, back=back, mid=mid, floor=flo, floorY=960, lights=[lamp_light(700, HB - 255)])
+    return S(sky=sky_, back=back, mid=mid, floor=flo, occ=[(HB, counter)], floorY=960, lights=[lamp_light(700, HB - 255)])
 
 
 def front_yard(t):
@@ -252,11 +250,15 @@ def graveyard(t):
     sky_, back, gr = ext_base(t, HB - 40, 'hills', 'grass' if t.detail else 'earth')
     mid = []
     mid += round_tree(t, 1640, HB - 60, 1.0) if t.detail else bonsai_tree(t, 1680, HB - 40, 1.2)
+    occ = []
     for i, (x, b, s) in enumerate([(300, HB - 30, 0.7), (620, HB - 40, 0.6), (980, HB - 35, 0.65), (1300, HB - 30, 0.7), (420, HB + 70, 1.4), (1450, HB + 90, 1.5), (900, HB + 40, 1.1)]):
-        mid += grave(t, x, b, s, stone=i % 2 == 0)
+        if s >= 1.0:
+            occ.append((b, grave(t, x, b, s, stone=i % 2 == 0)))
+        else:
+            mid += grave(t, x, b, s, stone=i % 2 == 0)
     flo = gr
     fg = tombstone(t, 120, H - 20, 1.2) + reeds(t, 1820, H, 1.0, 8)
-    return S(sky=sky_, back=back, mid=mid, floor=flo, fg=fg, floorY=980)
+    return S(sky=sky_, back=back, mid=mid, floor=flo, fg=fg, occ=occ, floorY=980)
 
 
 def lonely_grave(t):
@@ -265,8 +267,8 @@ def lonely_grave(t):
     for k in range(7):
         y = HB - 40 + k * 50
         flo.append(line(t, 0, y, W, y + 20, t.c('field2'), 3))
-    mid = grave(t, 1180, HB + 170, 2.6) + reeds(t, 1560, HB + 160, 1.3, 7)
-    return S(sky=sky_, back=back, mid=[], floor=flo + mid, floorY=980)
+    flo += reeds(t, 1560, HB + 160, 1.3, 7)
+    return S(sky=sky_, back=back, mid=[], floor=flo, occ=[(HB + 170, grave(t, 1180, HB + 170, 2.6))], floorY=980)
 
 
 def village_well(t):
@@ -276,17 +278,17 @@ def village_well(t):
         mid += bamboo(t, 100 + k * 190, HB, 0.8, 4)
     flo = gr
     x, b = 1250, HB + 180
-    flo.append(rect(t, x - 160, b - 140, 320, 140, t.c('stone'), True))
+    well = [rect(t, x - 160, b - 140, 320, 140, t.c('stone'), True)]
     for k in range(3):
-        flo.append(line(t, x - 160, b - 140 + k * 46, x + 160, b - 140 + k * 46, t.c('stone2'), 3))
-    flo.append(ell(t, x, b - 140, 160, 26, t.c('dark'), True))
-    flo.append(rect(t, x - 150, b - 330, 14, 190, t.c('wood'), True))
-    flo.append(rect(t, x + 136, b - 330, 14, 190, t.c('wood'), True))
-    flo.append(rect(t, x - 170, b - 340, 340, 18, t.c('wood'), True))
-    flo.append(line(t, x, b - 322, x, b - 230, t.line, 2))
-    flo.append(rect(t, x - 26, b - 230, 52, 44, t.c('wood2'), True))
+        well.append(line(t, x - 160, b - 140 + k * 46, x + 160, b - 140 + k * 46, t.c('stone2'), 3))
+    well.append(ell(t, x, b - 140, 160, 26, t.c('dark'), True))
+    well.append(rect(t, x - 150, b - 330, 14, 190, t.c('wood'), True))
+    well.append(rect(t, x + 136, b - 330, 14, 190, t.c('wood'), True))
+    well.append(rect(t, x - 170, b - 340, 340, 18, t.c('wood'), True))
+    well.append(line(t, x, b - 322, x, b - 230, t.line, 2))
+    well.append(rect(t, x - 26, b - 230, 52, 44, t.c('wood2'), True))
     flo.append(rect(t, 520, b - 30, 240, 40, t.c('stone2'), True))
-    return S(sky=sky_, back=back, mid=mid, floor=flo, floorY=960)
+    return S(sky=sky_, back=back, mid=mid, floor=flo, occ=[(b, well)], floorY=960)
 
 
 def river_bank(t):
@@ -472,16 +474,17 @@ def pagoda_gate(t):
 def market(t):
     sky_, back, gr = ext_base(t, HB, 'trees', 'earth')
     mid = []
+    occ = []
     for x in (120, 760, 1400):
         mid.append(rect(t, x, HB - 260, 20, 260, t.c('post'), True))
         mid.append(rect(t, x + 400, HB - 260, 20, 260, t.c('post'), True))
         mid += thatch_roof(t, x - 20, HB - 380, 460, 140, t.c('thatch'), t.c('thatch2'), horns=False)
-        mid.append(rect(t, x + 20, HB - 110, 380, 26, t.c('wood'), True))
+        occ.append((HB, [rect(t, x + 20, HB - 110, 380, 26, t.c('wood'), True), rect(t, x + 30, HB - 84, 360, 84, t.c('wood2'), True)]))
     flo = gr
     for x, c in [(300, 'grass'), (520, 'red'), (980, 'gold'), (1200, 'leaf'), (1600, 'water')]:
         flo.append(ell(t, x, HB + 90, 80, 30, t.c('woven'), True))
         flo.append(ell(t, x, HB + 76, 60, 18, t.c(c), True, sw=t.lw * 0.6))
-    return S(sky=sky_, back=back, mid=mid, floor=flo, floorY=980)
+    return S(sky=sky_, back=back, mid=mid, floor=flo, occ=occ, floorY=980)
 
 
 def abandoned_house(t):
@@ -554,8 +557,10 @@ def build(key, style, night=False, v=0):
     if v and key in DECOR:
         sc['floor'] += decor(t, *DECOR[key])
     lights = sc['lights']
-    if v in (1, 3):
+    flip = v in (1, 3)
+    if flip:
         for k in ('back', 'mid', 'floor', 'fg'):
             sc[k] = mirror(sc[k])
         lights = [dict(l, x=W - l['x']) for l in lights]
-    return svg(t, sc['sky'], sc['back'], sc['mid'], sc['floor'], sc['fg']), sc['floorY'], lights
+    occ = ''.join('<g data-occ="%d">%s</g>' % (y, ''.join(mirror(items) if flip else items)) for y, items in sc.get('occ', []))
+    return svg(t, sc['sky'], sc['back'], sc['mid'], sc['floor'], sc['fg'], occ=occ), sc['floorY'], lights

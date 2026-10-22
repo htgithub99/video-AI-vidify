@@ -6,7 +6,7 @@ import { balanceSvgTags } from "../../../lib/motionSvgBalance.js";
 import { rasterizeMotionSvgs } from "../motionRenderService.js";
 import type { MotionAiImage } from "../motionStoryService.js";
 import { puppetHash } from "./kitLibrary.js";
-import type { PuppetViews } from "../../../types/motionPuppet.js";
+import type { PuppetCharacter, PuppetStylePack, PuppetViews } from "../../../types/motionPuppet.js";
 
 const repair = (raw: string): string => {
   const text = raw.replace(P.ENT_LT_RE, P.LT).replace(P.ENT_GT_RE, P.GT).replace(P.ENT_QUOT_RE, P.QUOT).replace(P.ENT_AMP_RE, P.AMP);
@@ -53,4 +53,17 @@ export const puppetImages = async (items: { svg: string; w: number; h: number }[
   const jobs = _.map(items, (it) => ({ svg: balanceSvgTags(it.svg), file: path.join(dir, puppetHash(it.svg + it.w) + P.PNG_EXT), width: it.w, height: it.h }));
   const files = await rasterizeMotionSvgs(jobs).catch(() => [] as string[]);
   return files.length === jobs.length ? _.map(files, (f) => ({ name: path.basename(f), mimeType: P.PNG_MIME, path: f })) : [];
+};
+
+export const proceduralViews = (c: Pick<PuppetCharacter, "colors">, style: Pick<PuppetStylePack, "face" | "line">): { head: PuppetViews; body: PuppetViews } => {
+  const F = style.face;
+  const fill = c.colors.face || F.fill || P.PROC_FACE;
+  const line = style.line.color;
+  const eye = (fx: number): string => P.PROC_DOT(400 * fx, 400 * F.eyeY, 200 * F.eyeW, 200 * F.eyeH * (F.eyes === P.EYES[1] ? 0.4 : 1), F.eyeColor);
+  const mouth = (fx: number): string => (F.mouthRest === P.MOUTH_RESTS[1] ? P.PROC_DOT(400 * fx, 400 * F.mouthY, 200 * F.mouthW, 200 * F.mouthH, F.eyeColor) : P.EMPTY);
+  const front = eye(0.5 - F.eyeGap / 2) + eye(0.5 + F.eyeGap / 2) + mouth(0.5);
+  const side = eye(0.5 + P.PROC_SIDE_X) + mouth(0.5 + P.PROC_SIDE_X);
+  const head = (face: string): string => P.PROC_HEAD(fill, line, P.PROC_SW, face);
+  const body = P.PROC_BODY(c.colors.body || line, line, P.PROC_SW);
+  return { head: { front: head(front), side: head(side), back: head(P.EMPTY) }, body: { front: body, side: body, back: body } };
 };

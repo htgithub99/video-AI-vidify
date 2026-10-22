@@ -168,9 +168,9 @@ def g(id_, items):
     return '<g id="%s">%s</g>' % (id_, ''.join(items))
 
 
-def svg(t, sky, back, mid, floor, fg, vb='0 0 1920 1080'):
+def svg(t, sky, back, mid, floor, fg, vb='0 0 1920 1080', occ=''):
     defs = '<defs>%s</defs>' % ''.join(t.defs) if t.defs else ''
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%s">%s%s%s%s%s%s</svg>' % (vb, defs, g('sky', sky), g('back', back), g('mid', mid), g('floor', floor), g('fg', fg))
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%s">%s%s%s%s%s%s%s</svg>' % (vb, defs, g('sky', sky), g('back', back), g('mid', mid), g('floor', floor), occ, g('fg', fg))
 
 
 def psvg(t, items):

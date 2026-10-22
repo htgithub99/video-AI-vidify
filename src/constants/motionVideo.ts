@@ -67,6 +67,7 @@ export const MOTION_RENDER_CACHE = {
   CHUNK_FILE: (index: number): string => `chunk-${String(index).padStart(4, "0")}.mp4`,
   TEMP_SUFFIX: ".part.mp4",
   RESUMED: (done: number, total: number): string => `Tiếp tục render: dùng lại ${done}/${total} đoạn đã render trước đó`,
+  REUSED: (n: number, total: number): string => `Dùng lại ${n}/${total} khung đứng yên (không mã hóa lại)`,
   CHUNKS: (total: number, workers: number): string => `Render theo ${total} đoạn (${workers} luồng) – nếu bị dừng giữa chừng, lần sau sẽ chạy tiếp từ đoạn dở`,
 };
 export const MOTION_STORY_CONFIG = {
@@ -100,6 +101,12 @@ export const MOTION_STORY_CONFIG = {
   GRAPHIC_TRANSITION_SECONDS: 0.45,
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
   ROOM_LONG_TIMEOUT_MS: 12 * 60 * 1000,
+  ROOM_SHORT_TIMEOUT_MS: 3 * 60 * 1000,
+  ROOM_SHORT_ARTIFACTS: ["motion-puppet-lib-match", "motion-puppet-cast-match", "motion-puppet-prop-match", "motion-puppet-set-plan", "motion-audio-casting", "motion-puppet-set-check", "motion-puppet-props-check", "motion-puppet-character-check", "motion-story-seo"] as string[],
+  ROOM_STUCK_BLOCK_MS: 5 * 60 * 1000,
+  ROOM_CLOSED_RE: /Target page, context or browser has been closed|frame was detached|ERR_ABORTED/,
+  ROOM_SKIP_LOG: (provider: string, minutes: number): string => `Phòng chat ${provider} đang lỗi – bỏ qua ${provider} trong ${minutes} phút cho các yêu cầu tiếp theo, chuyển ngay sang AI dự phòng.`,
+  ROOM_SKIPPED_LOG: (provider: string): string => `Bỏ qua ${provider} (đang tạm khóa vì lỗi) – dùng AI dự phòng kế tiếp.`,
   CANNED_REFUSAL_RE: /(I can'?t help|I'?m (not able|unable) to help|I can'?t assist|I'?m (just )?a language model|tôi không thể (giúp|hỗ trợ|thực hiện)|mình không thể (giúp|hỗ trợ)|tôi chỉ là một mô hình ngôn ngữ)/i,
   CANNED_REFUSAL_LOG: (provider: string, artifact: string, chars: number): string => `AI ${provider} trả lời từ chối mẫu cho bước ${artifact} (prompt ${chars} ký tự) – thường do prompt quá dài hoặc bị bộ lọc chặn.`,
   AI_PARALLEL: 5,

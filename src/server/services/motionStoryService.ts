@@ -588,6 +588,10 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const routes = motionAiRoutes(exec);
   let first: unknown = null;
   for (let i = 0; i < routes.length; i++) {
+    if (i < routes.length - 1 && motionRoomBlockedMs(String(routes[i].provider)) > 0) {
+      log?.(MOTION_STORY_CONFIG.ROOM_SKIPPED_LOG(String(routes[i].provider)));
+      continue;
+    }
     log?.(MOTION_AI_FALLBACK.LOG_TRY(i + 1, routes.length, String(routes[i].provider)));
     const step = { artifact: artifactType, step: i + 1, total: routes.length, provider: String(routes[i].provider), model: String(routes[i].model || MR.MOTION_TEXT_EMPTY) };
     try {
@@ -638,7 +642,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     signal?.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     run?.signal.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     let timedOut = false;
-    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, MOTION_STORY_DOCTOR.ARTIFACT, MOTION_STORY_DOCTOR.DNA_ARTIFACT], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
+    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, MOTION_STORY_DOCTOR.ARTIFACT, MOTION_STORY_DOCTOR.DNA_ARTIFACT], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : _.includes(MOTION_STORY_CONFIG.ROOM_SHORT_ARTIFACTS, artifactType) ? MOTION_STORY_CONFIG.ROOM_SHORT_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
     const watchdog = setTimeout(() => {
       timedOut = true;
       roomCtrl.abort();
@@ -684,9 +688,12 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       return extractJson(r.text);
     } catch (caught: any) {
       if (signal?.aborted && !timedOut) throw caught;
-      if (_.toString(caught?.message).includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE)) throw caught;
-      if (!switchTo && _.toString(caught?.message).includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) throw caught;
-      if (_.toString(caught?.message).includes(XRT.DEEPSEEK_MODEL_UNAVAILABLE_CODE)) throw caught;
+      const unusable = _.toString(caught?.message).includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE) || (!switchTo && _.toString(caught?.message).includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) || _.toString(caught?.message).includes(XRT.DEEPSEEK_MODEL_UNAVAILABLE_CODE);
+      if (unusable) {
+        blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_UNAVAILABLE_BLOCK_MS);
+        log?.(MOTION_STORY_CONFIG.ROOM_SKIP_LOG(provider, Math.round(MOTION_STORY_CONFIG.ROOM_UNAVAILABLE_BLOCK_MS / 60000)));
+        throw caught;
+      }
       const diag = _.get(caught, MOTION_TEXT_DIAGNOSTICS) as { lastCandidate?: string; candidateChars?: number; busy?: boolean; identityMatch?: boolean; elapsedMs?: number; responseCount?: number; initialCount?: number } | undefined;
       const refused = _.toString(caught?.message) === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR;
       const roomProbe = await probeRoomPage(_.get(caught, MOTION_TEXT_ROOMPAGE), requestId);
@@ -723,6 +730,11 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         log?.(MOTION_STORY_CONFIG.ROOM_UI_RETRY_LOG(provider, attempt + 1, MOTION_STORY_CONFIG.ROOM_UI_RETRIES));
       } else if (!captchaRetry && exec.strictProvider) {
         if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
+        else if (noInput || timedOut || MOTION_STORY_CONFIG.ROOM_CLOSED_RE.test(limitText[0])) {
+          const ms = noInput ? MOTION_STORY_CONFIG.ROOM_UNAVAILABLE_BLOCK_MS : MOTION_STORY_CONFIG.ROOM_STUCK_BLOCK_MS;
+          blockedRoomProviders.set(provider, Date.now() + ms);
+          log?.(MOTION_STORY_CONFIG.ROOM_SKIP_LOG(provider, Math.round(ms / 60000)));
+        }
         restartBrowser = noInput;
         const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
         log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(String(_.truncate(_.toString(error?.message), { length: 140 }))));

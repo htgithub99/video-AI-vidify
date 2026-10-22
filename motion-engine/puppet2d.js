@@ -19,6 +19,9 @@
     SVG_NS: "http://www.w3.org/2000/svg",
     XMLNS: "xmlns",
     FG_SEL: "#fg",
+    DEFS_SEL: "defs",
+    OCC_SEL: "[data-occ]",
+    OCC_ATTR: "data-occ",
     FILTER: "filter",
     FILTER_NONE: "none",
     BLUR: (px) => "blur(" + Math.round(px) + "px)",
@@ -38,6 +41,7 @@
     NECK_OVERLAP: 0.12,
     FADE: 0.28,
     BLACK: "#000000",
+    TRANSPARENT: "rgba(0,0,0,0)",
     WHITE: "#ffffff",
     LINE: "#161314",
     DEFAULT_BODY: "#6f6f74",
@@ -69,7 +73,13 @@
       raise_both: { l: [150, 10], r: [150, 10] },
       cover_face: { l: [20, 150], r: [20, 150], head: 8 },
       chest: { l: [12, 110], r: [12, 110] },
-      hold: { l: [4, 0], r: [18, 80] },
+      hold: { l: [4, 0], r: [32, -70], len: 0.55 },
+      strike: { l: [4, 0], r: [155, 10], swing: [155, 55, 1.3], grip: 1, len: 0.8 },
+      knock: { l: [4, 0], r: [80, -15], swing: [65, 105, 2.2], grip: 1, len: 0.7 },
+      show: { l: [4, 0], r: [140, 0], len: 0.75 },
+      drink: { l: [4, 0], r: [35, 150], len: 0.6 },
+      carry: { l: [40, -50], r: [40, -50], len: 0.55 },
+      shoulder: { l: [4, 0], r: [165, 75], len: 0.6, shoulder: 1, walk: 1 },
       give: { l: [4, 0], r: [70, 10] },
       bow: { l: [4, 0], r: [4, 0], lean: 18, head: 10 },
       fear: { l: [25, 140], r: [25, 140], shake: 1, head: 6 },
@@ -117,7 +127,32 @@
     OBJECT_FRAME: { size: 0.45, min: 0.55, fill: 0.9, base: 0.84 },
     PROP_LEGACY_H: 0.22,
     EYE_TILT: 0.16,
-    SHADOW: { h: 0.82, x: 0.62, skew: -0.18, alpha: 0.55, figH: 0.42, figX: 0.3 },
+    HOLD_SIZE: 0.4,
+    SHOULDER_DROP: 0.69,
+    NECK: 0.5,
+    TRAIL: { poses: ["run"], n: 3, step: 0.2, alpha: [0.32, 0.2, 0.1] },
+    SPLIT: { line: 0.004, color: "#0b0b0d" },
+    INSET: { x: 0.74, y: 0.36, r: 0.25, ring: 0.022, handle: 0.2, zoom: 1.0, metal: "#9aa0a5", rim: "#3a3d40" },
+    SMOKE_Z: [0.6, 2],
+    WEAR_W: 1.15,
+    WEAR_DROP: 0.42,
+    HOLD_SCALE: 1.4,
+    HOLD_DROP: 0.15,
+    PERSON_M: 1.65,
+    PROP_FILL: 0.8,
+    SWING_EASE: 1.6,
+    CLOSE_KEEP: ["cover_face", "hold", "show", "drink", "strike", "knock", "carry", "shoulder"],
+    SHADOW: { h: 0.86, x: 0.64, base: 0.94, wallFill: 0.95, sink: 0.04, alpha: 0.8, figH: 0.42, figX: 0.3, grow: 0.05, flick: 0.1, flickHz: [9.1, 3.7] },
+    SIL: { color: "#0b0b10", soft: 0.006, actor: 0.96 },
+    FLASHBACK: { step: 0.035, width: 0.006, color: "rgba(255,248,230,0.10)", tint: "rgba(120,100,70,0.16)", edge: 0.4 },
+    LURK: { x: 0.86, y: 0.8, r: 0.26, eye: "#ebf0ff", glow: "#c8dcff", gap: 0.16, blinkEvery: 4.5 },
+    GHOST_FX: { pad: [0.9, 1.25, 0.25], maxPx: 2400, aura: "#04060b", auraBlur: 0.05, auraA: 0.85, auraGrow: 1.05, look: "saturate(30%) brightness(112%) contrast(108%)", cold: "rgba(150,185,220,0.24)", fade: 0.5, alpha: 0.93, lift: 0.04, bob: 0.018, bobHz: 0.35, flicker: 0.12, flickHz: [7.3, 2.1] },
+    GHOST_PEEK: { x: 0.92, h: 0.52, base: 0.95, eye: "rgba(225,235,255,0.9)", hair: 0.75 },
+    CTX2D: "2d",
+    CANVAS: "canvas",
+    SOURCE_IN: "source-in",
+    SOURCE_ATOP: "source-atop",
+    DEST_OUT: "destination-out",
     OBJECT: { h: 0.42, base: 0.9 },
     LID_OPEN: 0.55,
     BREATH: 0.012,
@@ -149,7 +184,6 @@
       COLON: ":",
       BACK: "back",
       CLOSE: "close",
-      COVER_FACE: "cover_face",
       DAY: "day",
       DOT: "dot",
       DRIFT: "drift",
@@ -161,6 +195,10 @@
       FRONT: "front",
       FROWN: "frown",
       GHOST: "ghost",
+      LURK: "lurk",
+      SPLIT: "split",
+      DAY: "day",
+      FLASHBACK: "flashback",
       IDLE: "idle",
       INSERT: "insert",
       KNEEL: "kneel",
@@ -222,13 +260,19 @@
       const doc = new DOMParser().parseFromString(svg, K.SVG_MIME);
       const rootEl = doc.documentElement;
       if (!rootEl.getAttribute(K.XMLNS)) rootEl.setAttribute(K.XMLNS, K.SVG_NS);
+      const defs = rootEl.querySelector(K.DEFS_SEL);
+      const alone = (el) => {
+        const shell = rootEl.cloneNode(false);
+        if (defs) shell.appendChild(defs.cloneNode(true));
+        shell.appendChild(el.cloneNode(true));
+        return new XMLSerializer().serializeToString(shell);
+      };
+      const occ = Array.from(rootEl.querySelectorAll(K.OCC_SEL)).map((el) => ({ y: Number(el.getAttribute(K.OCC_ATTR)) || 0, svg: alone(el) })).sort((a, b) => a.y - b.y);
       const fg = rootEl.querySelector(K.FG_SEL);
-      if (!fg) return { main: svg, fg: null };
-      const shell = rootEl.cloneNode(false);
-      shell.appendChild(fg.cloneNode(true));
-      const fgSvg = new XMLSerializer().serializeToString(shell);
+      if (!fg) return { main: svg, fg: null, occ };
+      const fgSvg = alone(fg);
       fg.parentNode.removeChild(fg);
-      return { main: new XMLSerializer().serializeToString(rootEl), fg: fgSvg };
+      return { main: new XMLSerializer().serializeToString(rootEl), fg: fgSvg, occ };
     } catch (e) {
       return { main: svg, fg: null };
     }
@@ -254,6 +298,7 @@
       const p = setParts(s);
       add(p.main);
       add(p.fg);
+      for (const o of p.occ || []) add(o.svg);
     }
     for (const p of Object.values(kit.props || {})) add(p && p.svg);
     await Promise.all(jobs);
@@ -477,10 +522,11 @@
     let l = P.l ? P.l.slice() : [4, 0], r = P.r ? P.r.slice() : [4, 0];
     if (P.gest && A.talk > 0) r = [r[0] + Math.sin(t * 2.4 + seed) * K.TALK_SWING * 0.5, r[1]];
     if (P.wave) r = [r[0] + Math.sin(t * 9) * 18, r[1]];
+    if (P.swing && motion) r = [lerp(P.swing[0], P.swing[1], Math.pow((Math.sin(t * P.swing[2] * Math.PI * 2) + 1) / 2, K.SWING_EASE)), r[1]];
     const shake = P.shake ? Math.sin(t * 22) * 0.004 : 0;
     const head = (P.head || 0) + (motion ? Math.sin(t * 0.7 + seed * 4) * 2.2 : 0);
     const walk = P.walk ? Math.abs(Math.sin(t * (P.walk > 1 ? 11 : 7))) * 0.02 : 0;
-    return { l, r, lean: P.lean || 0, head, breath, shake, walk, sprite: P.sprite || null };
+    return { l, r, lean: P.lean || 0, head, breath, shake, walk, sprite: P.sprite || null, grip: P.grip || 0, len: P.len || 1, shoulder: P.shoulder || 0 };
   }
 
   function blinkAt(t, seed) {
@@ -488,7 +534,99 @@
     return p < 0.12 ? 1 - Math.abs(p - 0.06) / 0.06 : 0;
   }
 
+  function scratch(S, i, w, h) {
+    S.scr = S.scr || [];
+    let c = S.scr[i];
+    if (!c) c = S.scr[i] = typeof OffscreenCanvas !== K.UNDEF ? new OffscreenCanvas(w, h) : document.createElement(K.CANVAS);
+    if (c.width !== w || c.height !== h) {
+      c.width = w;
+      c.height = h;
+    } else c.getContext(K.CTX2D).clearRect(0, 0, w, h);
+    return c;
+  }
+
+  function offPuppet(g, S, A, t, opt, idx) {
+    const L = charLayout(S, charOf(S, A.char));
+    const m = g.getTransform();
+    const P = K.GHOST_FX.pad;
+    const x0 = -P[0] * L.total, y0 = -P[1] * L.total, bw = 2 * P[0] * L.total, bh = (P[1] + P[2]) * L.total;
+    const r = Math.min(Math.max(0.05, Math.hypot(m.a, m.b)), K.GHOST_FX.maxPx / bw, K.GHOST_FX.maxPx / bh);
+    const w = Math.max(2, Math.ceil(bw * r)), h = Math.max(2, Math.ceil(bh * r));
+    const c = scratch(S, idx, w, h);
+    const o = c.getContext(K.CTX2D);
+    o.save();
+    o.setTransform(r, 0, 0, r, -x0 * r, -y0 * r);
+    drawPuppetRaw(o, S, A, t, opt);
+    o.restore();
+    return { c, o, x0, y0, bw, bh, L, w, h, r, s: Math.hypot(m.a, m.b) };
+  }
+
+  function silhouetteOf(S, src, idx, color) {
+    const c = scratch(S, idx, src.width, src.height);
+    const o = c.getContext(K.CTX2D);
+    o.save();
+    o.drawImage(src, 0, 0);
+    o.globalCompositeOperation = K.SOURCE_IN;
+    o.fillStyle = color;
+    o.fillRect(0, 0, c.width, c.height);
+    o.restore();
+    return c;
+  }
+
+  function drawSilhouette(g, S, A, t, opt, color, alpha, soft) {
+    const f = offPuppet(g, S, A, t, opt, 0);
+    const sil = silhouetteOf(S, f.c, 1, color);
+    g.save();
+    if (soft && K.FILTER in g) g.filter = K.BLUR(soft);
+    g.globalAlpha *= alpha;
+    g.drawImage(sil, f.x0, f.y0, f.bw, f.bh);
+    g.restore();
+    return f.L;
+  }
+
+  function drawGhost(g, S, A, t, opt) {
+    const G = K.GHOST_FX;
+    const f = offPuppet(g, S, A, t, opt, 0);
+    const { o, w, h, L } = f;
+    o.save();
+    o.globalCompositeOperation = K.SOURCE_ATOP;
+    o.fillStyle = G.cold;
+    o.fillRect(0, 0, w, h);
+    if (A.pose !== K.S.LIE) {
+      const y1 = (-f.y0 / f.bh) * h, y0 = y1 - G.fade * L.total * f.r;
+      const gr = o.createLinearGradient(0, y0, 0, y1);
+      gr.addColorStop(0, K.TRANSPARENT);
+      gr.addColorStop(1, K.BLACK);
+      o.globalCompositeOperation = K.DEST_OUT;
+      o.fillStyle = gr;
+      o.fillRect(0, y0, w, h - y0);
+    }
+    o.restore();
+    const aura = silhouetteOf(S, f.c, 1, G.aura);
+    const fl = S.motion ? 1 - G.flicker * (0.5 + 0.5 * Math.sin(t * G.flickHz[0]) * Math.sin(t * G.flickHz[1])) : 1;
+    const dy = -L.total * (G.lift + (S.motion ? G.bob * Math.sin(t * G.bobHz * Math.PI * 2) : 0));
+    const can = K.FILTER in g;
+    g.save();
+    g.translate(0, dy);
+    const base = g.globalAlpha;
+    if (can) g.filter = K.BLUR(G.auraBlur * L.total * f.s);
+    g.globalAlpha = base * G.auraA * fl;
+    const ag = G.auraGrow;
+    g.drawImage(aura, f.x0 * ag, f.y0 * ag, f.bw * ag, f.bh * ag);
+    if (can) g.filter = G.look;
+    g.globalAlpha = base * G.alpha * fl;
+    g.drawImage(f.c, f.x0, f.y0, f.bw, f.bh);
+    g.restore();
+    return L;
+  }
+
   function drawPuppet(g, S, A, t, opt) {
+    if (A.sil && !opt.raw) return drawSilhouette(g, S, Object.assign({}, A, { sil: false, talk: 0 }), t, { tint: 1 }, K.SIL.color, K.SIL.actor, 0);
+    if (charOf(S, A.char).ghost && !opt.raw && A.pose !== K.S.LIE) return drawGhost(g, S, A, t, opt);
+    return drawPuppetRaw(g, S, A, t, opt);
+  }
+
+  function drawPuppetRaw(g, S, A, t, opt) {
     const c = charOf(S, A.char);
     const L = charLayout(S, c);
     const ps = poseState(S, A, t);
@@ -498,7 +636,7 @@
     const seed = hash((A.char || K.S.EMPTY).length * 3.1);
     g.save();
     if (ps.sprite) {
-      const sp = c.sprites && c.sprites[ps.sprite];
+      const sp = ps.sprite !== K.S.LIE && c.sprites && c.sprites[ps.sprite];
       const img = sp && imgOf(sp.svg);
       if (img) {
         const w = (sp.w || 1) * L.total, h = (sp.h || 1) * L.total;
@@ -521,19 +659,50 @@
     const armsBehind = view === K.S.BACK;
     const nubs = S.style.body.idleArms === K.S.NUB;
     const isNub = (a) => nubs && a[0] < K.NUB.max;
-    const arm = (side, a) => (isNub(a) ? drawArm(g, S, c, L, side, K.NUB.angle, 0, tint, K.NUB.len, true) : drawArm(g, S, c, L, side, a[0], a[1], tint));
+    let hand = null;
+    const arm = (side, a) => {
+      const h = isNub(a) ? drawArm(g, S, c, L, side, K.NUB.angle, 0, tint, K.NUB.len, true) : drawArm(g, S, c, L, side, a[0], a[1], tint, ps.len);
+      if (side > 0 && !isNub(a)) hand = { x: h[0], y: h[1], dir: a[0] - a[1] };
+      return h;
+    };
     const sides = view === K.S.SIDE ? [[1, ps.r]] : [[-1, ps.l], [1, ps.r]];
     for (const [side, a] of sides) if (armsBehind || isNub(a)) arm(side, a);
     drawBody(g, S, c, L, view, tint);
     if (!armsBehind) for (const [side, a] of sides) if (!isNub(a)) arm(side, a);
+    if (hand && A.hold && armsBehind && !ps.shoulder) drawHeld(g, S, A.hold, L, hand, ps.grip);
     g.save();
     g.translate(0, L.headCy + L.headH * 0.45);
     g.rotate(ps.head * DEG * (dir || 1));
     g.translate(0, -(L.headCy + L.headH * 0.45));
     drawHead(g, S, c, L, view, dir ? 1 : 0, A.expr || K.S.NEUTRAL, { level: A.talk || 0, t }, blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
     g.restore();
+    if (A.wear) for (const w of A.wear) drawWorn(g, S, w, L, view);
+    if (A.hold && ps.shoulder) drawShouldered(g, S, A.hold, L);
+    else if (hand && A.hold && !armsBehind) drawHeld(g, S, A.hold, L, hand, ps.grip);
     g.restore();
     return L;
+  }
+
+  function drawShouldered(g, S, id, L) {
+    const p = (S.kit.props || {})[id];
+    if (!p) return;
+    const h = ((p.size || K.HOLD_SIZE) / K.PERSON_M / K.PROP_FILL) * L.total;
+    const sy = Math.max(-L.bodyH + (K.SHOULDERS[1][1] / K.BODY_BOX[1]) * L.bodyH, L.headCy + L.headH * K.NECK);
+    drawProp(g, S, id, 0, sy + h * K.SHOULDER_DROP, h, 0);
+  }
+
+  function drawWorn(g, S, id, L, view) {
+    const p = (S.kit.props || {})[id];
+    if (!p) return;
+    const h = L.headW * K.WEAR_W;
+    drawProp(g, S, id, 0, L.headCy - L.headH / 2 + L.headH * K.WEAR_DROP, h, 0);
+  }
+
+  function drawHeld(g, S, id, L, hand, grip) {
+    const p = (S.kit.props || {})[id];
+    if (!p) return;
+    const h = ((p.size || K.HOLD_SIZE) / K.PERSON_M / K.PROP_FILL) * L.total * K.HOLD_SCALE;
+    drawProp(g, S, id, hand.x, hand.y + (grip ? 0 : h * K.HOLD_DROP), h, grip ? 180 - hand.dir : 0);
   }
 
   function drawProp(g, S, id, x, base, h, rot) {
@@ -681,9 +850,11 @@
     const cam = camera(box, F, k);
     const sc = H / cam.h;
     g.save();
+    const OX = ctx.ox || 0;
     g.fillStyle = K.BLACK;
-    g.fillRect(0, 0, W, H);
-    g.setTransform(sc, 0, 0, sc, W / 2 - cam.cx * sc, H / 2 - cam.cy * sc);
+    g.fillRect(OX, 0, W, H);
+    g.setTransform(sc, 0, 0, sc, OX + W / 2 - cam.cx * sc, H / 2 - cam.cy * sc);
+    S.view = { sc, ox: OX + W / 2 - cam.cx * sc, oy: H / 2 - cam.cy * sc };
     if (set) drawSetLayer(g, S, set, K.S.MAIN, 0, 0, K.SET_W, K.SET_H, null);
     else {
       g.fillStyle = K.NIGHT_TINT;
@@ -705,25 +876,46 @@
       propDone = true;
       drawProp(g, S, F.prop, K.SET_W * F.propX, F.propY, F.propH, big ? Math.sin(t * 0.8) * 0.8 : 0);
     };
+    const occ = set ? (setParts(set).occ || []).slice() : [];
+    const occNow = (y) => {
+      while (occ.length && occ[0].y <= y) {
+        const img = imgOf(occ.shift().svg);
+        if (img) g.drawImage(img, 0, 0, K.SET_W, K.SET_H);
+      }
+    };
     for (const a of order) {
+      occNow(a.y);
       if (!propDone && F.propY <= a.y) propNow();
       g.save();
       g.translate(a.x, a.y);
       g.scale(a.k, a.k);
       if (a.blur && K.FILTER in g) g.filter = K.BLUR(a.blur);
-      g.beginPath();
-      g.ellipse(0, 0, a.L.bodyW * 0.55, a.L.bodyW * 0.1, 0, 0, Math.PI * 2);
-      g.fillStyle = K.S.FOOT_SHADOW;
-      g.fill();
+      if (!charOf(S, a.A.char).ghost || a.A.pose === K.S.LIE) {
+        g.beginPath();
+        g.ellipse(0, 0, a.L.bodyW * 0.55, a.L.bodyW * 0.1, 0, 0, Math.PI * 2);
+        g.fillStyle = K.S.FOOT_SHADOW;
+        g.fill();
+      }
       const A = Object.assign({}, a.A, { talk: a.talk });
       if (S.motion && (A.pose === K.S.WALK || A.pose === K.S.RUN)) g.translate((k - 0.5) * K.SET_W * K.WALK_SPEED * (A.face === K.S.LEFT ? -1 : 1) * (A.pose === K.S.RUN ? 2 : 1), 0);
+      if (A.trail || K.TRAIL.poses.indexOf(A.pose) >= 0) {
+        const back = A.face === K.S.LEFT ? 1 : -1;
+        for (let i = K.TRAIL.n; i >= 1; i--) {
+          g.save();
+          g.globalAlpha *= K.TRAIL.alpha[i - 1];
+          g.translate(back * i * K.TRAIL.step * a.L.bodyW * 2, 0);
+          drawPuppet(g, S, A, t, { tint: a.tint });
+          g.restore();
+        }
+      }
       drawPuppet(g, S, A, t, { tint: a.tint });
       g.restore();
     }
+    occNow(Infinity);
     if (!propDone) propNow();
     if (F.prop && !placed && !big && F.propX != null) drawProp(g, S, F.prop, K.SET_W * F.propX, (set && set.floorY) || K.FLOOR, K.SET_H * K.PROP_LEGACY_H, 0);
     if (set) drawSetLayer(g, S, set, K.S.FG, 0, 0, K.SET_W, K.SET_H, null);
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.setTransform(1, 0, 0, 1, OX, 0);
     for (const a of acts.filter((x) => x.fore)) {
       g.save();
       const L = a.L;
@@ -752,7 +944,8 @@
     if (!set) return;
     const sc = Math.max(W / K.SET_W, H / K.SET_H) * zoom;
     const w = K.SET_W * sc, h = K.SET_H * sc;
-    drawSetLayer(g, S, set, K.S.MAIN, (W - w) / 2, (H - h) * 0.6, w, h, { blur });
+    const ox = (W - w) / 2, oy = (H - h) * 0.6;
+    drawSetLayer(g, S, set, K.S.MAIN, ox, oy, w, h, { blur });
     if (darkWanted(F, set)) {
       g.globalCompositeOperation = K.MULTIPLY;
       g.fillStyle = K.S.DUSK;
@@ -763,6 +956,7 @@
       g.fillStyle = dim;
       g.fillRect(0, 0, W, H);
     }
+    return { sc, ox, oy, wall: set.wallY ? oy + set.wallY * sc : null };
   }
 
   function glow(g, x, y, r, color, a) {
@@ -800,6 +994,7 @@
       g.restore();
     }
     const x = W * I.x, base = H * I.base, h = H * I.h;
+    S.view = { insert: { x, y: base - h * K.PROP_FILL } };
     glow(g, x, base - h / 2, h * 0.9, K.NIGHT_RE.test(F.light || K.EMPTY) ? K.COLD : K.GLOW, 0.3);
     drawProp(g, S, F.prop, x, base, h, Math.sin(t * 0.8) * 1.2);
     g.restore();
@@ -846,23 +1041,162 @@
     g.save();
     g.translate(x, y);
     g.scale(kk, kk);
-    drawPuppet(g, S, Object.assign({}, A, { pose: A.pose === K.S.COVER_FACE ? A.pose : K.S.IDLE, face: A.face === K.S.BACK ? K.S.FRONT : A.face, talk: speechLevel(F, A, t) }), t, { tint: 1 });
+    drawPuppet(g, S, Object.assign({}, A, { pose: K.CLOSE_KEEP.indexOf(A.pose) >= 0 ? A.pose : K.S.IDLE, face: A.face === K.S.BACK ? K.S.FRONT : A.face, talk: speechLevel(F, A, t) }), t, { tint: 1 });
     g.restore();
   }
 
   function drawShadow(g, ctx, S, F, t) {
     const W = ctx.W, H = ctx.H, D = K.SHADOW;
-    blurredSet(g, ctx, S, F, 1.08, 0, null);
+    const V = blurredSet(g, ctx, S, F, 1.08, 0, null);
     const A = (F.actors || [])[0];
     if (!A) return;
+    const L = charLayout(S, charOf(S, A.char));
+    const wall = V && V.wall && V.wall < H ? V.wall : null;
+    const grow = S.motion ? 1 + D.grow * clamp((t - F.start) / Math.max(0.3, F.end - F.start), 0, 1) : 1;
+    const fl = S.motion ? 1 - D.flick * (0.5 + 0.5 * Math.sin(t * D.flickHz[0]) * Math.sin(t * D.flickHz[1])) : 1;
+    const kk = ((wall ? wall * D.wallFill : H * D.h) * grow) / L.total;
     g.save();
-    g.globalAlpha = D.alpha * (0.85 + 0.15 * Math.sin(t * 1.7));
-    g.translate(W * D.x, H * 0.92);
-    g.transform(1, 0, D.skew, 1, 0, 0);
-    g.translate(-W * D.x, -H * 0.92);
-    puppetAt(g, S, Object.assign({}, A, { expr: K.S.NEUTRAL }), F, t, W * D.x, H * 0.92, H * D.h, 0.04);
+    if (wall) {
+      g.beginPath();
+      g.rect(0, 0, W, wall);
+      g.clip();
+    }
+    g.translate(W * D.x, wall ? wall + L.total * kk * D.sink : H * D.base);
+    g.scale(kk, kk);
+    drawSilhouette(g, S, Object.assign({}, A, { expr: K.S.NEUTRAL, talk: 0 }), t, { tint: 1 }, K.SIL.color, D.alpha * fl, K.SIL.soft * H);
     g.restore();
     if ((F.actors || [])[1]) puppetAt(g, S, F.actors[1], F, t, W * D.figX, H * 0.95, H * D.figH, 1);
+  }
+
+  function drawSplit(g, ctx, S, F, t, k) {
+    const W = ctx.W, H = ctx.H, P = K.SPLIT;
+    const acts = F.actors || [];
+    const other = F.light2 || (K.NIGHT_RE.test(String(F.light || K.EMPTY)) ? K.S.DAY : K.S.NIGHT);
+    const halves = [Object.assign({}, F, { shot: K.S.PEOPLE, actors: [Object.assign({}, acts[0], { x: 0.5 })] }), Object.assign({}, F, { shot: K.S.PEOPLE, set: F.set2 || F.set, light: other, actors: [Object.assign({}, acts[1] || acts[0], { x: 0.5 })] })];
+    halves.forEach((h, i) => {
+      g.save();
+      g.beginPath();
+      g.rect(i * W / 2, 0, W / 2, H);
+      g.clip();
+      drawStage(g, Object.assign({}, ctx, { W: W / 2, H, ox: i * W / 2 }), S, h, t, k);
+      g.restore();
+    });
+    g.fillStyle = P.color;
+    g.fillRect(W / 2 - (H * P.line) / 2, 0, H * P.line, H);
+  }
+
+  function drawInset(g, ctx, S, F, t) {
+    const W = ctx.W, H = ctx.H, P = K.INSET;
+    const set = setFor(S, { set: F.inset, light: F.insetLight || F.light });
+    if (!set) return;
+    const x = W * P.x, y = H * P.y, r = H * P.r;
+    g.save();
+    g.lineCap = K.ROUND;
+    g.strokeStyle = P.rim;
+    g.lineWidth = H * P.ring * 0.9;
+    g.beginPath();
+    g.moveTo(x + r * 0.7, y + r * 0.7);
+    g.lineTo(x + r * 0.7 + H * P.handle, y + r * 0.7 + H * P.handle);
+    g.stroke();
+    g.beginPath();
+    g.arc(x, y, r, 0, Math.PI * 2);
+    g.save();
+    g.clip();
+    const sc = ((r * 2) / K.SET_H) * P.zoom;
+    drawSetLayer(g, S, set, K.S.MAIN, x - (K.SET_W * sc) / 2, y - (K.SET_H * sc) / 2, K.SET_W * sc, K.SET_H * sc, null);
+    if (darkWanted({ light: F.insetLight || F.light }, set)) {
+      g.globalCompositeOperation = K.MULTIPLY;
+      g.fillStyle = K.S.DUSK;
+      g.fillRect(x - r, y - r, r * 2, r * 2);
+      g.globalCompositeOperation = K.SOURCE_OVER;
+    }
+    g.restore();
+    g.strokeStyle = P.metal;
+    g.lineWidth = H * P.ring;
+    g.stroke();
+    g.restore();
+  }
+
+  function drawFlashback(g, ctx) {
+    const W = ctx.W, H = ctx.H, B = K.FLASHBACK;
+    g.save();
+    g.fillStyle = B.tint;
+    g.globalCompositeOperation = K.MULTIPLY;
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = K.SOURCE_OVER;
+    g.strokeStyle = B.color;
+    g.lineWidth = H * B.width;
+    const step = H * B.step;
+    g.beginPath();
+    for (let x = -H; x < W + H; x += step) {
+      g.moveTo(x, H);
+      g.lineTo(x + H, 0);
+    }
+    g.stroke();
+    g.restore();
+  }
+
+  function drawLurk(g, ctx, S, F, t) {
+    const W = ctx.W, H = ctx.H, P = K.LURK;
+    const x = W * (F.overlayX != null ? F.overlayX : P.x), y = H * P.y, r = H * P.r;
+    g.save();
+    const gr = g.createRadialGradient(x, y, r * 0.2, x, y, r);
+    gr.addColorStop(0, rgba(K.BLACK, 0.97));
+    gr.addColorStop(0.7, rgba(K.BLACK, 0.9));
+    gr.addColorStop(1, rgba(K.BLACK, 0));
+    g.fillStyle = gr;
+    g.fillRect(x - r, y - r, r * 2, r * 2);
+    const ph = S.motion ? (t % P.blinkEvery) / P.blinkEvery : 0.5;
+    const open = S.motion && ph > 0.96 ? 0.15 : 1;
+    const er = r * 0.07;
+    for (const s of [-1, 1]) {
+      glow(g, x + s * r * P.gap, y, er * 4, P.glow, 0.6);
+      g.fillStyle = P.eye;
+      g.beginPath();
+      g.ellipse(x + s * r * P.gap, y, er, er * 0.6 * open, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.restore();
+  }
+
+  function drawGhostPeek(g, ctx, S, F, t) {
+    if ((F.actors || []).some((a) => charOf(S, a.char).ghost)) return;
+    const W = ctx.W, H = ctx.H, P = K.GHOST_PEEK;
+    const chars = S.kit.characters || {};
+    const key = Object.keys(chars).find((k) => chars[k].ghost);
+    const x = W * (F.overlayX != null ? Math.max(F.overlayX, P.x) : P.x), y = H * P.base, h = H * P.h;
+    g.save();
+    if (key) {
+      const L = charLayout(S, charOf(S, key));
+      g.translate(x, y);
+      g.scale(h / L.total, h / L.total);
+      drawGhost(g, S, { char: key, pose: K.S.IDLE, expr: K.S.NEUTRAL, face: K.S.FRONT }, t, { tint: 1 });
+      g.restore();
+      return;
+    }
+    const fl = S.motion ? 1 - 0.1 * (0.5 + 0.5 * Math.sin(t * 7.3) * Math.sin(t * 2.1)) : 1;
+    const hr = h * 0.075, hy = y - h + hr * 1.3;
+    if (K.FILTER in g) g.filter = K.BLUR(h * 0.008);
+    g.globalAlpha = 0.88 * fl;
+    g.fillStyle = K.SIL.color;
+    g.beginPath();
+    g.ellipse(x, hy, hr, hr * 1.2, 0, 0, Math.PI * 2);
+    g.moveTo(x - hr * 1.05, hy);
+    g.quadraticCurveTo(x - hr * 1.6, y - h * P.hair, x - hr * 1.7, y - h * 0.32);
+    g.quadraticCurveTo(x - h * 0.17, y - h * 0.08, x - h * 0.2, y);
+    g.lineTo(x + h * 0.2, y);
+    g.quadraticCurveTo(x + h * 0.17, y - h * 0.08, x + hr * 1.7, y - h * 0.32);
+    g.quadraticCurveTo(x + hr * 1.6, y - h * P.hair, x + hr * 1.05, hy);
+    g.closePath();
+    g.fill();
+    g.filter = K.FILTER_NONE;
+    g.fillStyle = P.eye;
+    for (const s of [-1, 1]) {
+      g.beginPath();
+      g.ellipse(x + s * hr * 0.38, hy + hr * 0.1, hr * 0.11, hr * 0.06, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.restore();
   }
 
   function drawOverlays(g, ctx, S, F, t) {
@@ -888,32 +1222,35 @@
           g.fill();
         }
       } else if (o === K.S.STEAM || o === K.S.SMOKE) {
-        const x0 = W * (F.overlayX || 0.5), y0 = H * (F.overlayY || 0.6);
+        const V = S.view;
+        let x0, y0, z = 1;
+        if (F.smokeX != null && V && V.sc) {
+          x0 = V.ox + F.smokeX * V.sc;
+          y0 = V.oy + F.smokeY * V.sc;
+          z = clamp((V.sc * K.SET_H) / H, K.SMOKE_Z[0], K.SMOKE_Z[1]);
+        } else if (V && V.insert) {
+          x0 = V.insert.x;
+          y0 = V.insert.y;
+          z = K.SMOKE_Z[1];
+        } else if (F.overlayX != null) {
+          x0 = W * F.overlayX;
+          y0 = H * (F.overlayY || 0.6);
+        } else continue;
         g.strokeStyle = rgba(o === K.S.STEAM ? K.STEAM : K.S.SMOKE_COLOR, 0.5);
-        g.lineWidth = 3 * u;
+        g.lineWidth = 3 * u * z;
         for (let j = 0; j < 3; j++) {
           g.beginPath();
           for (let i = 0; i <= 10; i++) {
-            const yy = y0 - i * H * 0.018 - ((t * 30 * u) % (H * 0.04));
-            const xx = x0 + (j - 1) * W * 0.03 + Math.sin(i * 0.8 + t * 2 + j) * W * 0.008;
+            const yy = y0 - i * H * 0.018 * z - ((t * 30 * u * z) % (H * 0.04 * z));
+            const xx = x0 + (j - 1) * W * 0.012 * z + Math.sin(i * 0.8 + t * 2 + j) * W * 0.006 * z;
             if (i) g.lineTo(xx, yy);
             else g.moveTo(xx, yy);
           }
           g.stroke();
         }
-      } else if (o === K.S.GHOST) {
-        g.save();
-        g.globalAlpha = 0.5 + 0.1 * Math.sin(t * 2.3);
-        g.fillStyle = K.GHOST;
-        const x = W * (F.overlayX || 0.82), y = H * 0.9, h = H * 0.6;
-        g.beginPath();
-        g.ellipse(x, y - h * 0.82, h * 0.12, h * 0.15, 0, 0, Math.PI * 2);
-        g.moveTo(x - h * 0.16, y);
-        g.quadraticCurveTo(x - h * 0.2, y - h * 0.6, x, y - h * 0.68);
-        g.quadraticCurveTo(x + h * 0.2, y - h * 0.6, x + h * 0.16, y);
-        g.fill();
-        g.restore();
-      }
+      } else if (o === K.S.GHOST) drawGhostPeek(g, ctx, S, F, t);
+      else if (o === K.S.LURK) drawLurk(g, ctx, S, F, t);
+      else if (o === K.S.FLASHBACK) drawFlashback(g, ctx);
     }
     const vr = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);
     vr.addColorStop(0, rgba(K.BLACK, 0));
@@ -943,12 +1280,15 @@
   function drawFrame(g, ctx, S, F, t) {
     const k = clamp((t - F.start) / Math.max(0.3, F.end - F.start), 0, 1);
     S.extend = 0;
+    S.view = null;
     g.save();
     if (F.shot === K.S.INSERT && F.prop) drawInsert(g, ctx, S, F, t, k);
     else if (F.shot === K.S.SYMBOL && F.prop) drawSymbol(g, ctx, S, F, t);
     else if (F.shot === K.S.CLOSE && (F.actors || []).length) drawClose(g, ctx, S, F, t, k);
     else if (F.shot === K.S.SHADOW && (F.actors || []).length) drawShadow(g, ctx, S, F, t);
+    else if (F.shot === K.S.SPLIT && (F.actors || []).length) drawSplit(g, ctx, S, F, t, k);
     else drawStage(g, ctx, S, F, t, k);
+    if (F.inset) drawInset(g, ctx, S, F, t);
     drawOverlays(g, ctx, S, F, t);
     if (F.shot === K.SHOT_BLINK) blink(g, ctx, F, t);
     g.restore();

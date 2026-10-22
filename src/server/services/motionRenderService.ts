@@ -288,7 +288,7 @@ const collectRenderErrors = (page: Page, errors: string[]): void => {
     if (MP.RENDER_ERROR.test(message.text())) errors.push(message.text());
   });
 };
-const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: number; height: number; fps: number; preset: MotionQualityPreset; encoder: string; signal: AbortSignal; onFrames: (n: number) => void }): Promise<string> => {
+const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: number; height: number; fps: number; preset: MotionQualityPreset; encoder: string; signal: AbortSignal; onFrames: (n: number) => void; onReused?: (n: number) => void }): Promise<string> => {
   if (ctx.signal.aborted) throw new Error(ABORTED);
   const { browser } = await launchBrowser();
   let page: Page | null = null;
@@ -341,6 +341,7 @@ const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: numbe
     };
     const B = MOTION_VIDEO_CONSTANTS.BATCH_FRAMES;
     let pending: Promise<void> = Promise.resolve();
+    let last: Buffer | null = null;
     for (let i = slice.start; i < slice.end; i += B) {
       if (ctx.signal.aborted) throw new Error(ABORTED);
       const j = Math.min(slice.end, i + B);
@@ -348,7 +349,11 @@ const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: numbe
       if (renderErrors.length) throw new Error(renderErrors.join(MR.MOTION_TEXT_SYMBOL_41));
       await pending;
       pending = (async () => {
-        for (const f of frames) await write(Buffer.from(f, MOTION_TEXT_BASE64));
+        for (const f of frames) {
+          if (f || !last) last = Buffer.from(f, MOTION_TEXT_BASE64);
+          else ctx.onReused?.(1);
+          await write(last);
+        }
       })();
       ctx.onFrames(j - i);
     }
@@ -459,17 +464,20 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       job.etaSeconds = job.fpsRender ? (totalFrames - job.framesDone) / job.fpsRender : undefined;
       job.progress = Math.min(0.94, (job.framesDone / totalFrames) * 0.94);
     };
+    let reused = 0;
+    const onReused = (n: number) => (reused += n);
     const queue = [...todo];
     const worker = async (): Promise<void> => {
       for (let s = queue.shift(); s; s = queue.shift()) {
         const temp = s.file + MOTION_RENDER_CACHE.TEMP_SUFFIX;
-        await renderSlice({ ...s, file: temp }, html, { width, height, fps, preset, encoder, signal, onFrames });
+        await renderSlice({ ...s, file: temp }, html, { width, height, fps, preset, encoder, signal, onFrames, onReused });
         fs.renameSync(temp, s.file);
       }
     };
     await Promise.all(_.times(Math.min(workers, Math.max(1, todo.length)), worker));
     job.status = MotionJobStatus.ENCODING;
     job.stage = MOTION_TEXT_MUX;
+    if (reused) pushLog(job, MOTION_RENDER_CACHE.REUSED(reused, totalFrames - skipped));
     pushLog(job, MOTION_TEMPLATE_RENDER_XONG_S_DANG_GHEP_VIDEO(String(((Date.now() - t0) / 1000) | 0)));
     const list = path.join(work, MOTION_TEXT_PARTS_TXT);
     fs.writeFileSync(list, _.map(slices, (s) => MOTION_TEMPLATE_FILE(String(s.file.replace(MP.BACKSLASH, MOTION_TEXT_SYMBOL_16).replace(MP.SINGLE_QUOTE, MOTION_TEXT_SYMBOL_38)))).join(MOTION_TEXT_SYMBOL_27));

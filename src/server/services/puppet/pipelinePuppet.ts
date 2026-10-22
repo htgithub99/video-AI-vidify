@@ -10,9 +10,11 @@ import type { PuppetCharacter, PuppetFrame, PuppetGen, PuppetObject, PuppetPlace
 import { compileStorySpec } from "../motionDirectorService.js";
 import { prepareMotionGen, withBeatPlaces, type GenOptions } from "./genState.js";
 import { mapMotionAiPool, releaseMotionAiSession } from "../motionStoryService.js";
-import { composePuppetLines, readPuppetLines } from "./director.js";
+import { composePuppetLines, puppetFeatureSpot, readPuppetLines } from "./director.js";
 import { puppetSpots, puppetSpotsText } from "./layout.js";
-import { drawPuppetCharacters, drawPuppetProps, drawPuppetSets, drawPuppetSprites, ensureSetVariant, matchArchetypes, matchLibraryProps, matchLibrarySets, puppetLanes, stockExtras, type PuppetSetJob } from "./kitDraw.js";
+import { buildPuppetSets, puppetBases } from "./setComposer.js";
+import { PUPPET_SET as Q } from "../../../constants/motionPuppetSets.js";
+import { drawPuppetCharacters, drawPuppetProps, drawPuppetSets, drawPuppetSprites, ensureSetVariant, matchArchetypes, matchLibraryProps, matchLibrarySets, puppetCastIsGhost, puppetLanes, stockExtras, type PuppetSetJob } from "./kitDraw.js";
 import { newPuppetId, readPuppet, writePuppet } from "./kitLibrary.js";
 import { puppetSheet, qaPuppet } from "./qa.js";
 import { directPuppetSound } from "./sound.js";
@@ -42,6 +44,15 @@ const repairFrame = (f: PuppetFrame, pg: PuppetGen, line?: PuppetLine): PuppetFr
 export const buildScenesPuppet = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, o: GenOptions): Promise<MotionStoryScript> => {
   const progress = o.progress || _.noop;
   o.log(P.LOG_START);
+  const started = Date.now();
+  const timed = async <X>(name: string, fn: () => Promise<X>): Promise<X> => {
+    const t = Date.now();
+    try {
+      return await fn();
+    } finally {
+      o.log(P.LOG_STEP_TIME(name, (Date.now() - t) / 1000));
+    }
+  };
   const mode = puppetLibraryMode(analysis, o.styleReferences?.length || 0);
   o.log(P.LOG_MODE(mode));
   const fresh = mode === LM.FRESH && !o.onlyLocations?.length && !o.onlyBeats?.length;
@@ -58,7 +69,7 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
   const emit = () => o.partial?.({ ...out, gen: _.cloneDeep(gen) });
 
   progress(0.02, P.STAGE_STYLE);
-  const style = await resolvePuppetStyle(o.styleReferences || [], analysis.stylePreset, ro, { key: seriesName(analysis.title || script.title), story: _.compact([analysis.title, analysis.logline]).join(P.DASH), setting: _.compact([analysis.era, analysis.look]).join(P.DASH), genre: _.toString(analysis.videoGenre) });
+  const style = await timed(P.STEP_STYLE, () => resolvePuppetStyle(o.styleReferences || [], analysis.stylePreset, ro, { key: seriesName(analysis.title || script.title), story: _.compact([analysis.title, analysis.logline]).join(P.DASH), setting: _.compact([analysis.era, analysis.look]).join(P.DASH), genre: _.toString(analysis.videoGenre) }));
   o.log(P.LOG_STYLE(style.name, style.source));
   const prev = gen.puppet && gen.puppet.styleId === style.id && !fresh ? gen.puppet : null;
   const seriesId = newPuppetId(PUPPET_TYPES.SERIES, style.id + P.VARIANT_SEP + seriesName(analysis.title || script.title));
@@ -74,6 +85,7 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
     reads: { ...(prev?.reads || {}) },
     seriesId,
   };
+  pg.ghosts = _.map(_.filter(analysis.cast, (c) => puppetCastIsGhost(c)), (c) => c.key);
   gen.puppet = pg;
   const lines = collectPuppetLines(out, MR.MOTION_TEXT_SCENE);
   const redoBeats = new Set(o.onlyBeats || []);
@@ -120,6 +132,12 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
   };
 
   const placeLinesOf = () => _.groupBy(lines, (l) => pg.reads?.[l.key]?.place || pg.frames[l.key]?.set || l.place);
+  const hasBases = puppetBases(style.id).length > 0;
+  const featuresOf = (): Record<string, string[]> => {
+    const out: Record<string, string[]> = {};
+    for (const r of _.values(pg.reads || {})) if (r.place && r.object && _.includes(P.FEATURE_OBJECT_TYPES, r.object.type)) out[r.place] = _.uniq([...(out[r.place] || []), r.object.key]);
+    return out;
+  };
   const drawSets = async (keys: string[]): Promise<void> => {
     const placeLines = placeLinesOf();
     const open: PuppetPlace[] = [];
@@ -141,12 +159,26 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
       }
       open.push(place);
     }
+    const must = featuresOf();
     const matched = mode === LM.FRESH ? {} : await matchLibrarySets(style, open, ro, seriesName(analysis.title || script.title));
     for (const [k, set] of _.toPairs(matched)) {
+      const lack = _.filter(must[k] || [], (f) => !puppetFeatureSpot(set.spots || [], f));
+      if (lack.length && hasBases) {
+        o.log(Q.LOG_FEATURE_REDO(pg.places[k].name, lack.join(P.COMMA)));
+        delete matched[k];
+        continue;
+      }
       pg.sets[k] = set.id;
       o.log(P.LOG_SET_REUSE(pg.places[k].name, set.name));
     }
-    const jobs: PuppetSetJob[] = _.map([...forcedKeys, ..._.map(_.reject(open, (pl) => !!matched[pl.key]), (pl) => pl.key)], (k) => ({ key: k, place: pg.places[k], uses: _.map(_.take(placeLines[k] || [], 6), (l) => l.text).join(P.SPACE) }));
+    let jobs: PuppetSetJob[] = _.map([...forcedKeys, ..._.map(_.reject(open, (pl) => !!matched[pl.key]), (pl) => pl.key)], (k) => ({ key: k, place: pg.places[k], uses: _.map(_.take(placeLines[k] || [], 6), (l) => l.text).join(P.SPACE) }));
+    if (!jobs.length) return;
+    if (hasBases) {
+      const built = await buildPuppetSets(style, _.map(jobs, (j) => ({ place: j.place, must: must[j.key] || [], uses: j.uses })), ro, seriesName(analysis.title || script.title));
+      for (const [k, set] of _.toPairs(built)) pg.sets[k] = set.id;
+      jobs = _.filter(jobs, (j) => !built[j.key]);
+      emit();
+    }
     if (!jobs.length) return;
     const drawn = await drawPuppetSets(style, jobs, ro);
     for (const [k, set] of _.toPairs(drawn)) pg.sets[k] = set.id;
@@ -171,7 +203,7 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
   };
   progress(0.08, P.STAGE_READ);
   const todoLines = _.filter(lines, (l) => !pg.frames[l.key]);
-  await Promise.all([readLines(todoLines, why), castJob(), drawSetsOnce(_.compact(_.map(lines, (l) => l.place)))]);
+  await timed(P.STEP_READ, () => Promise.all([readLines(todoLines, why), castJob()]));
   emit();
 
   const drawVariants = async (): Promise<void> => {
@@ -239,17 +271,28 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
     for (const [k, c] of _.toPairs(stock)) pg.characters[k] = c.id;
     if (_.size(stock)) o.log(P.LOG_EXTRAS(_.size(stock)));
   };
+  const carryWear = (): void => {
+    for (const chapter of _.values(_.groupBy(lines, (l) => l.chapterId))) {
+      const worn: Record<string, string[]> = {};
+      const apply = (f: PuppetFrame): PuppetFrame => {
+        for (const a of f.actors) if (a.wear?.length) worn[a.char] = _.uniq([...(worn[a.char] || []), ...a.wear]);
+        return { ...f, actors: _.map(f.actors, (a) => (worn[a.char] ? { ...a, wear: worn[a.char] } : a)), shot2: f.shot2 ? apply(f.shot2) : f.shot2 };
+      };
+      for (const l of chapter) if (pg.frames[l.key]) pg.frames[l.key] = apply(pg.frames[l.key]);
+    }
+  };
   const directLines = async (todo: PuppetLine[], notes: Record<string, string>, base: number): Promise<void> => {
     if (!todo.length) return;
     const todoReads = readsOf(todo);
     progress(base, P.STAGE_ASSETS);
     castExtras(todoReads);
-    await Promise.all([drawSetsOnce(_.compact(_.map(todoReads, (r) => r.place))), drawProps(todoReads)]);
+    await Promise.all([timed(P.STEP_SETS, () => drawSetsOnce(_.compact([..._.map(todoReads, (r) => r.place), ..._.map(todo, (l) => l.place)]))), timed(P.STEP_PROPS, () => drawProps(_.reject(todoReads, (r) => !!r.object && _.includes(P.FEATURE_OBJECT_TYPES, r.object.type))))]);
     progress(base + 0.1, P.STAGE_COMPOSE);
-    Object.assign(pg.frames, await composePuppetLines(todo, lines, analysis, pg.reads || {}, notes, composeCtx, ro));
+    Object.assign(pg.frames, await timed(P.STEP_COMPOSE, () => composePuppetLines(todo, lines, analysis, pg.reads || {}, notes, composeCtx, ro)));
+    carryWear();
     emit();
     progress(base + 0.15, P.STAGE_ASSETS);
-    await Promise.all([drawVariants(), drawSprites()]);
+    await timed(P.STEP_VARIANTS, () => Promise.all([drawVariants(), drawSprites()]));
     const byKey = _.keyBy(lines, (l) => l.key);
     pg.frames = _.mapValues(pg.frames, (f, k) => repairFrame(f, pg, byKey[k]));
     emit();
@@ -274,9 +317,9 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
     }
   };
   progress(0.6, P.STAGE_QA);
-  let sheet = await sheetOf();
+  let sheet = await timed(P.STEP_SHEET, sheetOf);
   if (o.review !== false && sheet.length && !o.signal?.aborted) {
-    const bad = await qaPuppet(sheet, analysis, ro).catch((e: any) => {
+    const bad = await timed(P.STEP_QA, () => qaPuppet(sheet, analysis, ro)).catch((e: any) => {
       if (o.signal?.aborted) throw e;
       o.log(P.LOG_QA_FAIL(String(e?.message || e)));
       return {} as Record<string, string>;
@@ -292,7 +335,7 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
   emit();
 
   progress(0.8, P.STAGE_SOUND);
-  await soundJob;
+  await timed(P.STEP_SOUND, () => soundJob);
   await releaseMotionAiSession(o.log).catch(_.noop);
 
   const old = has<PuppetSeries>(PUPPET_TYPES.SERIES, seriesId);
@@ -300,6 +343,7 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
   const missing = _.filter(lines, (l) => !pg.frames[l.key]).length;
   pg.report = { frames: _.size(pg.frames), characters: _.size(pg.characters), sets: _.size(pg.sets), props: _.size(pg.props), missing };
   o.log(P.LOG_DONE(pg.report.frames, pg.report.characters, pg.report.sets, pg.report.props));
+  o.log(P.LOG_STEP_TIME(P.STEP_TOTAL, (Date.now() - started) / 1000));
   gen.failed = [];
   gen.soundPlanVersion = MOTION_SOUND_CONFIG.VERSION;
   gen.updatedAt = new Date().toISOString();

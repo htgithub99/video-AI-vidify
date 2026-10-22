@@ -5,7 +5,7 @@ import { motionAutoSoundEvents } from "../../../lib/motionSound.js";
 import type { MotionBeat, MotionShot, MotionVoiceClip } from "../../../types/motionVideo.js";
 import type { PuppetCharacter, PuppetFrame, PuppetGen, PuppetKitSpec, PuppetProp, PuppetSet, PuppetStylePack } from "../../../types/motionPuppet.js";
 import { readPuppet } from "./kitLibrary.js";
-import { layoutPuppetFrame } from "./layout.js";
+import { layoutPuppetFrame, puppetHorizon } from "./layout.js";
 
 export interface PuppetTimedFrame extends Omit<PuppetFrame, "shot2" | "why"> { start: number; end: number; line?: string; cut?: boolean; }
 
@@ -49,7 +49,7 @@ const lineStarts = (keys: string[], start: number, end: number, clips: MotionVoi
 };
 
 const frameFields = (f: PuppetFrame, beat: MotionBeat): Omit<PuppetTimedFrame, "start" | "end"> =>
-  _.omitBy({ shot: f.shot, set: f.set || beat.place, light: f.light || undefined, actors: f.actors, prop: f.prop || undefined, propAt: f.propAt || undefined, propX: f.propX, overlays: f.overlays?.length ? f.overlays : undefined, camera: f.camera, speaker: f.speaker || undefined }, _.isNil) as Omit<PuppetTimedFrame, "start" | "end">;
+  _.omitBy({ shot: f.shot, set: f.set || beat.place, light: f.light || undefined, actors: f.actors, prop: f.prop || undefined, propAt: f.propAt || undefined, form: f.form, anchor: f.anchor, propX: f.propX, smokeX: f.smokeX, smokeY: f.smokeY, inset: f.inset, set2: f.set2, light2: f.light2, overlays: f.overlays?.length ? f.overlays : undefined, camera: f.camera, speaker: f.speaker || undefined }, _.isNil) as Omit<PuppetTimedFrame, "start" | "end">;
 
 export const puppetBeatFrames = (beat: MotionBeat, gen: PuppetGen, start: number, end: number, clips: MotionVoiceClip[]): PuppetTimedFrame[] => {
   const lines = _.filter(puppetBeatLines(beat), (l) => !!gen.frames[l.key]);
@@ -109,7 +109,9 @@ export const puppetSceneShot = (beat: MotionBeat, gen: PuppetGen, start: number,
   return { id: beat.id, start: +start.toFixed(3), end: +end.toFixed(3), template: P.TEMPLATE, params };
 };
 
-const setSpec = (s: PuppetSet) => ({ svg: s.svg, floorY: s.floorY, lights: s.lights, time: s.time });
+const setSpec = (s: PuppetSet) => ({ svg: s.svg, floorY: s.floorY, wallY: puppetHorizon(s), lights: s.lights, time: s.time });
+
+export const puppetIsGhost = (c: PuppetCharacter): boolean => c.group === P.GHOST_GROUP || _.some([c.name, c.role, c.archetype], (v) => !!v && P.GHOST_NAME_RE.test(v));
 
 export const puppetKitSpec = (gen: PuppetGen, motion: boolean): PuppetKitSpec | null => {
   const style = readPuppet<PuppetStylePack>(PUPPET_TYPES.STYLE, gen.styleId);
@@ -117,7 +119,7 @@ export const puppetKitSpec = (gen: PuppetGen, motion: boolean): PuppetKitSpec | 
   const characters: PuppetKitSpec["characters"] = {};
   for (const [key, id] of _.toPairs(gen.characters)) {
     const c = readPuppet<PuppetCharacter>(PUPPET_TYPES.CHARACTER, id);
-    if (c) characters[key] = { height: c.height, colors: c.colors, head: c.head, body: c.body, sprites: c.sprites };
+    if (c) characters[key] = { height: c.height, colors: c.colors, head: c.head, body: c.body, sprites: c.sprites, ...((gen.ghosts ? _.includes(gen.ghosts, key) : puppetIsGhost(c)) ? { ghost: true } : {}) };
   }
   const sets: PuppetKitSpec["sets"] = {};
   for (const [place, id] of _.toPairs(gen.sets)) {
@@ -136,7 +138,7 @@ export const puppetKitSpec = (gen: PuppetGen, motion: boolean): PuppetKitSpec | 
   const props: PuppetKitSpec["props"] = {};
   for (const [key, id] of _.toPairs(gen.props)) {
     const p = readPuppet<PuppetProp>(PUPPET_TYPES.PROP, id);
-    if (p) props[key] = { svg: p.svg, base: p.base };
+    if (p) props[key] = { svg: p.svg, base: p.base, size: p.size || p.height };
   }
   return { style: { body: style.body, face: style.face, line: style.line, vignette: style.vignette }, characters, sets, props, motion };
 };

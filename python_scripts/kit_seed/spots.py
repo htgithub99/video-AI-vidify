@@ -84,6 +84,8 @@ def funeral_room(t, fy):
         sp('coffin', 'surface', 960, IB + 10, 'on the coffin'),
         sp('coffin_left', 'stand', 560, IB + 250, 'left of the coffin'),
         sp('coffin_right', 'stand', 1360, IB + 250, 'right of the coffin'),
+        sp('behind_coffin', 'stand', 960, IB + 100, 'behind the coffin'),
+        sp('behind_coffin_left', 'stand', 780, IB + 100, 'behind the coffin, left'),
         sp('coffin_kneel', 'stand', 960, fy - 10, 'kneeling in front of the coffin'),
         sp('altar_top', 'surface', 970, IB - 160, 'on the altar behind the coffin'),
         sp('mourner_left', 'stand', 300, IB + 230, 'among the mourners on the left'),
@@ -127,6 +129,7 @@ def roadside_inn(t, fy):
         sp('bench', 'sit', 540, HB + 175, 'on the bench of the inn'),
         sp('tea_table', 'surface', 970, HB + 80, 'on the tea table'),
         sp('counter', 'stand', 1300, HB + 40, 'at the counter with jars'),
+        sp('behind_counter', 'stand', 1310, HB - 20, 'behind the counter (inn keeper)'),
         sp('stove', 'stand', 1660, HB + 180, 'by the cooking stove'),
         sp('lamp', 'hang', 700, HB - 280, 'hanging lamp'),
         sp('open_floor', 'open', 960, fy - 30, 'open ground in front of the inn'),
@@ -190,6 +193,7 @@ def graveyard(t, fy):
         sp('grave_front', 'stand', 900, HB + 150, 'in front of a grave'),
         sp('grave_left', 'stand', 560, HB + 120, 'between the graves, left'),
         sp('grave_right', 'stand', 1300, HB + 130, 'between the graves, right'),
+        sp('behind_grave', 'stand', 1450, HB + 60, 'behind the big grave'),
         sp('tree', 'stand', 1660, HB + 10, 'under the tree'),
         sp('open_floor', 'open', 1100, fy - 40, 'open ground among the graves'),
     ] + front(fy, (480, 1000, 1560))
@@ -199,6 +203,7 @@ def lonely_grave(t, fy):
     return [
         sp('grave_front', 'stand', 1180, HB + 210, 'in front of the lonely grave'),
         sp('grave_side', 'stand', 860, HB + 180, 'beside the grave'),
+        sp('behind_grave', 'stand', 1180, HB + 10, 'behind the grave'),
         sp('field', 'stand', 500, HB + 100, 'in the empty field'),
         sp('open_floor', 'open', 700, fy - 40, 'open field'),
     ] + front(fy, (420, 960, 1520))
@@ -208,6 +213,7 @@ def village_well(t, fy):
     return [
         sp('well', 'stand', 1000, HB + 200, 'beside the stone well'),
         sp('well_top', 'surface', 1250, HB + 40, 'on the rim of the well'),
+        sp('behind_well', 'stand', 1150, HB + 130, 'behind the well, looking over it'),
         sp('stone_slab', 'sit', 640, HB + 170, 'on the stone slab'),
         sp('bamboo', 'stand', 300, HB + 60, 'by the bamboo hedge'),
         sp('open_floor', 'open', 760, fy - 40, 'open ground'),
@@ -346,6 +352,9 @@ def market(t, fy):
         sp('stall_mid', 'stand', 970, HB + 40, 'at the middle market stall'),
         sp('stall_right', 'stand', 1610, HB + 40, 'at the market stall, right'),
         sp('stall_top', 'surface', 970, HB - 110, 'on the stall table'),
+        sp('behind_stall_left', 'stand', 330, HB - 20, 'behind the left stall (seller)'),
+        sp('behind_stall', 'stand', 970, HB - 20, 'behind the middle stall (seller)'),
+        sp('behind_stall_right', 'stand', 1610, HB - 20, 'behind the right stall (seller)'),
         sp('baskets', 'stand', 760, HB + 160, 'among the baskets of goods'),
         sp('open_floor', 'open', 960, fy - 40, 'open market ground'),
     ] + front(fy, (420, 960, 1520))

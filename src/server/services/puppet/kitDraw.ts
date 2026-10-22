@@ -216,6 +216,12 @@ export const matchLibrarySets = async (style: PuppetStylePack, places: PuppetPla
 
 export const puppetStockCast = (styleId: string): PuppetCharacter[] => listPuppets<PuppetCharacter>(PUPPET_TYPES.CHARACTER, (c) => c.styleId === styleId && !!c.archetype);
 
+export const puppetCastIsGhost = (c: Pick<MotionCastMember, "name" | "role" | "look" | "description">): boolean => {
+  const named = _.compact([c.name, c.role]);
+  if (_.some(named, (v) => P.HUMAN_ROLE_RE.test(v))) return false;
+  return _.some(named, (v) => P.GHOST_NAME_RE.test(v)) || P.GHOST_LOOK_RE.test(_.compact([c.role, c.look, c.description]).join(P.SPACE));
+};
+
 export const matchArchetypes = async (style: PuppetStylePack, cast: MotionCastMember[], o: PuppetRunOptions): Promise<Record<string, PuppetCharacter>> => {
   const stock = puppetStockCast(style.id);
   if (!cast.length || !stock.length) return {};
@@ -231,7 +237,7 @@ export const matchArchetypes = async (style: PuppetStylePack, cast: MotionCastMe
     const want = byArch[_.toString(m?.archetype)];
     if (!c || !want || out[c.key]) continue;
     const pick = used.has(want.id) ? _.find(stock, (s) => !!want.group && s.group === want.group && !used.has(s.id)) : want;
-    if (!pick) continue;
+    if (!pick || (pick.group === P.GHOST_GROUP) !== puppetCastIsGhost(c)) continue;
     used.add(pick.id);
     out[c.key] = usePuppet(pick);
   }

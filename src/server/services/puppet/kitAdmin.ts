@@ -4,7 +4,7 @@ import _ from "lodash";
 import { PUPPET as P, PUPPET_KIT_API as A, PUPPET_TYPES, type PuppetType } from "../../../constants/motionPuppet.js";
 import type { PuppetAsset, PuppetCharacter, PuppetProp, PuppetSeries, PuppetSet, PuppetStylePack } from "../../../types/motionPuppet.js";
 import { deletePuppet, listPuppets, puppetLibDir, puppetRefsDir, readPuppet, writePuppet } from "./kitLibrary.js";
-import { characterSheetSvg } from "./svg.js";
+import { characterSheetSvg, proceduralViews } from "./svg.js";
 import { ensurePuppetPresets } from "./stylePack.js";
 
 export interface PuppetKitItem { id: string; type: string; name: string; desc: string; styleId?: string; uses?: number; updatedAt: string; source?: string; preset?: string; counts?: Record<string, number>; variants?: string[]; }
@@ -62,7 +62,8 @@ export const puppetKitThumb = (type: unknown, id: unknown): { svg?: string; file
   if (a.type === PUPPET_TYPES.PROP) return { svg: (a as PuppetProp).svg };
   if (a.type === PUPPET_TYPES.CHARACTER) {
     const c = a as PuppetCharacter;
-    return { svg: characterSheetSvg(c, 0.4) };
+    const style = c.head?.front ? null : readPuppet<PuppetStylePack>(PUPPET_TYPES.STYLE, c.styleId);
+    return { svg: characterSheetSvg(style ? proceduralViews(c, style) : c, 0.4) };
   }
   if (a.type === PUPPET_TYPES.STYLE) {
     const s = a as PuppetStylePack;
