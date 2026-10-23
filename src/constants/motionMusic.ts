@@ -1,4 +1,18 @@
-export interface MotionMusicMood { scale: number[]; root: number; progression: number[]; bpm: number; brightness: number; pad: number; bass: number; arp: number; arpStep: number; pulse: number; pulseEvery: number; drone: number; pings: number; }
+export interface MotionMusicMood {
+  scale: number[];
+  root: number;
+  progression: number[];
+  bpm: number;
+  brightness: number;
+  pad: number;
+  bass: number;
+  arp: number;
+  arpStep: number;
+  pulse: number;
+  pulseEvery: number;
+  drone: number;
+  pings: number;
+}
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const MINOR = [0, 2, 3, 5, 7, 8, 10];
 const WHOLE = [0, 2, 4, 6, 8, 10];
@@ -11,7 +25,20 @@ export const MOTION_MUSIC_MOODS: Record<string, MotionMusicMood> = {
   playful: { scale: MAJOR, root: 53, progression: [0, 3, 4, 0], bpm: 112, brightness: 3600, pad: 0.3, bass: 0.35, arp: 0.3, arpStep: 0.25, pulse: 0.2, pulseEvery: 1, drone: 0, pings: 0 },
   neutral: { scale: MAJOR, root: 50, progression: [0, 3, 5, 4], bpm: 88, brightness: 2400, pad: 0.4, bass: 0.3, arp: 0.15, arpStep: 0.5, pulse: 0.12, pulseEvery: 2, drone: 0, pings: 0 },
 };
-export interface MotionMusicInstrument { pad: "warm" | "square" | "saw" | "sine" | "none"; padGain: number; lead: "pluck" | "chip" | "bell" | "piano" | "flute"; leadOctave: number; minArp: number; arpStep?: number; pentatonic?: boolean; bpmScale: number; swing: number; detuneCents?: number; brightness: number; bass: number; }
+export interface MotionMusicInstrument {
+  pad: "warm" | "square" | "saw" | "sine" | "none";
+  padGain: number;
+  lead: "pluck" | "chip" | "bell" | "piano" | "flute";
+  leadOctave: number;
+  minArp: number;
+  arpStep?: number;
+  pentatonic?: boolean;
+  bpmScale: number;
+  swing: number;
+  detuneCents?: number;
+  brightness: number;
+  bass: number;
+}
 export const MOTION_MUSIC_INSTRUMENTS: Record<string, MotionMusicInstrument> = {
   default: { pad: "warm", padGain: 1, lead: "pluck", leadOctave: 12, minArp: 0, bpmScale: 1, swing: 0, brightness: 1, bass: 1 },
   chiptune: { pad: "square", padGain: 0.45, lead: "chip", leadOctave: 12, minArp: 0.3, arpStep: 0.25, bpmScale: 1.15, swing: 0, brightness: 2.2, bass: 0.8 },
@@ -31,10 +58,10 @@ export const MOTION_MUSIC_INSTRUMENTS: Record<string, MotionMusicInstrument> = {
 export const MOTION_MUSIC_AMBIENCE: Record<string, { gain: number }> = { projector: { gain: 0.1 }, vinyl: { gain: 0.09 }, paper: { gain: 0.08 }, chalk: { gain: 0.08 }, night: { gain: 0.1 } };
 export const MOTION_MUSIC_VOICES = { NONE: "none", PLUCK: "pluck", CHIP: "chip", BELL: "bell", PIANO: "piano", PROJECTOR: "projector", VINYL: "vinyl", NIGHT: "night", CHALK: "chalk" } as const;
 export const MOTION_MUSIC_SCALES = { MAJOR_PENTATONIC: [0, 2, 4, 7, 9], MINOR_PENTATONIC: [0, 3, 5, 7, 10], MINOR_THIRD: 3 };
-const MOTION_MUSIC_LOUDNESS = { LUFS: -36, MIN: -48, MAX: -27, TRUE_PEAK: -12, RANGE: 12 } as const;
+const MOTION_MUSIC_LOUDNESS = { LUFS: -36, MIN: -48, MAX: -27, TRUE_PEAK: -9, RANGE: 12 } as const;
 const MOTION_MUSIC_DEFAULT_VOLUME = 0.35;
 export const MOTION_MUSIC = {
-  VERSION: 6,
+  VERSION: 7,
   AUTO: "auto",
   DEFAULT_MOOD: "neutral",
   DEFAULT_VOLUME: MOTION_MUSIC_DEFAULT_VOLUME,

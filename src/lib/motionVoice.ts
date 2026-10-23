@@ -3,6 +3,8 @@ import * as MR from "../constants/motionRuntime.js";
 import { MOTION_VOICE as C, MOTION_VOICE_RANK as RANK, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_GROUP as G, MOTION_VOICE_LIBRARY, MOTION_VOICE_FILTER as F, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_FX as FX } from "../constants/motionVoice.js";
 import { soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
+import { MOTION_SPEECH } from "../constants/motionSpeech.js";
+import { motionQuotedSpeech } from "./motionSpeech.js";
 import type { MotionSceneMood, MotionVoiceDelivery, MotionStoryScript, MotionUtterance, MotionVoicePreset, MotionVoicePlan, MotionStoryAnalysis, MotionAudioDirection, MotionVoiceChannel, MotionVoiceGroup, MotionCastMember } from "../types/motionVideo.js";
 export const motionVoiceSignature = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null = null): string =>
   JSON.stringify([C.VERSION, script?.language, script?.beats.map((beat) => [beat.id, beat.chapterId, beat.visual, beat.narration, beat.utterances, beat.sceneMood]), script?.voiceSettings, analysis?.cast, motionAudioDirection(script, analysis), script?.voiceChannel || MR.MOTION_TEXT_EMPTY]);
@@ -71,7 +73,7 @@ export const normalizeMotionUtterances = (raw: unknown, beatId: string, speakers
       {
         id,
         speaker,
-        role: speaker === C.NARRATOR ? MR.MOTION_TEXT_NARRATION : ([MR.MOTION_TEXT_DIALOGUE, MR.MOTION_TEXT_THOUGHT, MR.MOTION_TEXT_OFFSCREEN] as readonly string[]).includes(item.role) ? item.role : MR.MOTION_TEXT_DIALOGUE,
+        role: speaker === C.NARRATOR ? MR.MOTION_TEXT_NARRATION : (MOTION_SPEECH.ROLES as readonly string[]).includes(item.role) ? item.role : MR.MOTION_TEXT_DIALOGUE,
         text: item.text.trim().replace(C.TAGS, MR.MOTION_TEXT_EMPTY),
         emotion: C.EMOTIONS.includes(item.emotion) ? item.emotion : MR.MOTION_TEXT_NEUTRAL,
         ...(item.intensity != null ? { intensity: motionFiniteNumber(item.intensity, 1, 0, 1) } : {}),
@@ -98,7 +100,9 @@ export const motionVoiceRegion = (voice?: Pick<MotionVoicePreset, "name" | "desc
     text = soundText(raw);
   const named = Object.entries(P.REGIONS).find(([, re]) => re.test(text))?.[0];
   if (named) return named;
-  const parts = String(voice.description || MR.MOTION_TEXT_EMPTY).split(P.PART_SEPARATOR).map((part) => soundText(part).trim());
+  const parts = String(voice.description || MR.MOTION_TEXT_EMPTY)
+    .split(P.PART_SEPARATOR)
+    .map((part) => soundText(part).trim());
   return parts.length >= 3 && P.GENDER_PART.test(parts[0]) ? P.REGION_SHORT[parts[1]] : undefined;
 };
 const voiceRank = (voice: MotionVoicePreset, region?: string): number => {
@@ -112,7 +116,7 @@ export const motionNarratorCastKey = (analysis: MotionStoryAnalysis | null | und
   if (flagged) return flagged.key;
   return cast.find((member) => [member.key, member.name, member.alias].some((v) => P.NARRATOR_SELF.test(soundText(v).replace(P.NON_WORD, MR.MOTION_TEXT_SYMBOL_13).trim())) || P.NARRATOR_ROLE.test(soundText(member.role)))?.key;
 };
-export const motionNarratorLines = (lines: MotionUtterance[], narratorKey?: string): MotionUtterance[] => (narratorKey ? lines.map((line) => (line.speaker === narratorKey && line.role !== MR.MOTION_TEXT_DIALOGUE ? { ...line, speaker: C.NARRATOR, role: MR.MOTION_TEXT_NARRATION } : line)) : lines);
+export const motionNarratorLines = (lines: MotionUtterance[], narratorKey?: string, narration?: string): MotionUtterance[] => (narratorKey ? lines.map((line) => (line.speaker === narratorKey && (line.role !== MR.MOTION_TEXT_DIALOGUE || (narration != null && !motionQuotedSpeech(narration, line.text))) ? { ...line, speaker: C.NARRATOR, role: MR.MOTION_TEXT_NARRATION } : line)) : lines);
 export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], requested: Record<string, string> = {}, direction?: MotionAudioDirection, inferred: Record<string, { gender?: "male" | "female"; age?: string }> = {}, channel?: MotionVoiceChannel | null, fixed: Record<string, string> = {}): MotionVoicePlan["roles"] => {
   const existing = (name: string) => voices.find((voice) => voice.id === name || voice.name === name);
   const region = motionVoiceRegion(channel ? existing(channel.narratorVoiceId) : undefined) || Object.entries(P.REGIONS).find(([, re]) => re.test(soundText(direction?.dialect)))?.[0];

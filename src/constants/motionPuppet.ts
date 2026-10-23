@@ -1,15 +1,5 @@
-export const PUPPET_TYPES = {
-  STYLE: "style_pack",
-  GENRE: "genre_pack",
-  CHARACTER: "character_kit",
-  CREATURE: "creature_kit",
-  SET: "set",
-  ESTABLISHING: "establishing",
-  PROP: "prop",
-  SERIES: "series",
-  PIECE: "set_piece",
-  BASE: "set_base",
-} as const;
+import { PA } from "./motionPuppetAssets.js";
+export const PUPPET_TYPES = { STYLE: "style_pack", GENRE: "genre_pack", CHARACTER: "character_kit", CREATURE: "creature_kit", SET: "set", ESTABLISHING: "establishing", PROP: "prop", SERIES: "series", PIECE: "set_piece", BASE: "set_base" } as const;
 export type PuppetType = (typeof PUPPET_TYPES)[keyof typeof PUPPET_TYPES];
 export const PUPPET_LIB = {
   DIR: "kit-library",
@@ -25,7 +15,7 @@ export const PUPPET_LIB = {
   DESC: "desc" as const,
 } as const;
 export const PUPPET = {
-  VERSION: 1,
+  VERSION: PA.VERSION,
   LIMBS: ["tube", "noodle"],
   BODY_SHAPES: ["dome", "tube", "robe"],
   EYES: ["oval", "dot", "round"],
@@ -111,7 +101,11 @@ export const PUPPET = {
   SPOTS_MAX: 12,
   SPOT_STAND_MIN: 2,
   SPOT_LABEL_MAX: 60,
-  SPOT_FRONT: [["front_left", 0.25, "front left"], ["front_center", 0.5, "front middle"], ["front_right", 0.75, "front right"]] as [string, number, string][],
+  SPOT_FRONT: [
+    ["front_left", 0.25, "front left"],
+    ["front_center", 0.5, "front middle"],
+    ["front_right", 0.75, "front right"],
+  ] as [string, number, string][],
   SPOT_OPEN_KEY: "open_floor",
   SPOT_OPEN_LABEL: "open floor in the middle",
   SPOT_FLOOR_KEY: "floor_center",
@@ -135,7 +129,7 @@ export const PUPPET = {
   HOLD_FIELD: "hold",
   SIL_FIELD: "sil",
   SIL_SHOTS: ["people", "wide", "group", "two", "back", "object", "establishing"],
-  OBJECT_TYPES: ["furniture", "fixture", "wall", "tool", "load", "wearable", "small", "container", "creature", "source", "other"],
+  OBJECT_TYPES: ["furniture", "fixture", "wall", "tool", "load", "wearable", "small", "container", "creature", "source", "other", "scenery"],
   OBJECT_TYPE_DEFAULT: "other",
   TYPE_MOUNT: { tool: "held", small: "held", load: "shoulder", wearable: "wear" } as Record<string, string>,
   MOUNT_SHOULDER: "shoulder",
@@ -151,6 +145,8 @@ export const PUPPET = {
   POSE_HOLD: "hold",
   POSE_SHOULDER: "shoulder",
   FEATURE_OBJECT_TYPES: ["furniture", "fixture", "wall"],
+  ANCHORED_FEATURE_TYPES: ["furniture", "fixture"],
+  WALL_TYPE: "wall",
   SIZE_DEFAULT: 0.5,
   SIZE_SMALL: 0.3,
   SIZE_MIN: 0.02,
@@ -161,8 +157,57 @@ export const PUPPET = {
   OBJECT_H: 0.42,
   FOCUS_OBJECT: "object",
   FOCUS_PLACE: "place",
-  ACTIONS: { stand: "idle", walk: "walk", run: "run", sit: "sit", lie: "lie", dead: "lie", sleep: "lie", kneel: "kneel", pray: "pray", bow: "bow", talk: "talk", shout: "shout", point: "point", raise: "raise", hold: "hold", give: "give", fear: "fear", cover_face: "cover_face", think: "think", strike: "strike", knock: "knock", show: "show", drink: "drink", carry: "carry", shoulder: "shoulder" } as Record<string, string>,
+  ACTIONS: {
+    stand: "idle",
+    walk: "walk",
+    run: "run",
+    sit: "sit",
+    lie: "lie",
+    dead: "lie",
+    sleep: "lie",
+    kneel: "kneel",
+    pray: "pray",
+    bow: "bow",
+    talk: "talk",
+    shout: "shout",
+    point: "point",
+    raise: "raise",
+    hold: "hold",
+    give: "give",
+    fear: "fear",
+    cover_face: "cover_face",
+    think: "think",
+    strike: "strike",
+    knock: "knock",
+    show: "show",
+    drink: "drink",
+    carry: "carry",
+    shoulder: "shoulder",
+  } as Record<string, string>,
   ACTION_DEFAULT: "stand",
+  OBJECTS_MAX: 6,
+  REST_TOOL_ROTATION: 90,
+  OBJECT_TYPE_TOOL: "tool",
+  FEATURE_RELATIONS: ["before", "behind", "beside", "left", "right", "front", "back", "side", "head", "foot", "edge", "inside", "outside", "in", "on", "at", "top"],
+  GESTURES: ["hold", "give", "read", "row", "feed", "cradle", "pray"],
+  BLOCKING_SHOTS: ["people", "two", "group", "wide", "ots"],
+  SUPPORT_MISSING: (char: string, support: string, pose: string): string => `Chưa có điểm đặt phù hợp cho ${char}: tư thế ${pose}, chỗ tựa ${support}. Cần bổ sung bối cảnh trước khi xuất.`,
+  SEATED_SUPPORT_RE: /(^|_)(chair|bench|stool|seat|desk|boat)(_|$)/,
+  SEATED_ACTIONS: ["talk", "shout", "point", "raise", "hold", "give", "show", "drink", "think", "fear"],
+  POSTURES: ["idle", "sit", "lie", "kneel", "crouch"],
+  TRAVEL_ACTIONS: ["walk", "run"],
+  POSTURE_ACTIONS: { stand: "idle", sit: "sit", lie: "lie", dead: "lie", sleep: "lie", kneel: "kneel", crouch: "crouch" } as Record<string, string>,
+  SUPPORT_TOKEN_ALIASES: { daybed: "bed", cot: "bed" } as Record<string, string>,
+  FLASHBACK: "flashback",
+  READ_POSTURE_PROMPT:
+    "Separate action from body posture: states.posture is idle (standing), sit, lie, kneel or crouch. Speaking, holding, pointing or showing an object never makes a seated or lying person stand up. Preserve each actor's last posture and furniture support until the story explicitly changes them. A bedridden grandmother speaking remains posture lie with support bed. Use English furniture keys for support, never a story place key; chõng tre means bamboo_daybed. Keep spoken dialogue in action talk while recording posture separately.",
+  SET_BLOCKING_USES: (uses: string, states: string): string => `${uses}\nRequired simultaneous actor states per sentence: ${states}. Include enough distinct named spots of the right posture kind. Draw every chair, bed, mat or other support at its actual spot. Chair sit spots need seatY and groundY. Keep the illustration simple, like the style references.`,
+  SET_FEATURE_USES: (uses: string, features: string[]): string => `${uses}\nRequired named furniture/fixture anchors: ${features.join(", ")}. Draw each feature and return a matching named spot at its actual position. Walls and scenery are background geometry, not furniture contact points.`,
+  WHY_SET_REQUIREMENTS: (missing: string[]): string => `Missing background placement requirements: ${missing.join("; ")}. Keep the drawing and its spot coordinates consistent.`,
+  READ_STATES_PROMPT:
+    "states: one entry for EVERY visible person {char, action, gesture, support, target}. Keep each person's own simultaneous action: A stands beside B lying on a bed => A stand, B lie with support bed; never turn A into kneeling. support is the concrete furniture noun key (bed, cradle, boat, chair, table) or null for the ground, target is the other cast key they face or act toward. Use only actions supported by ACTION. gesture optionally adds hand activity without changing posture: hold, give, read, row, feed, cradle, pray. Example: seated rower = action sit, gesture row, support boat; seated reader = action sit, gesture read, support chair. A baby lying in a cradle uses its own baby cast key; never draw an adult in the cradle. objects: up to six concrete objects needed together, each with the object fields and owner = the cast key actually holding or wearing it, or null when unowned. rotation is optional degrees from upright (0 upright, 90 horizontal); choose it from the described placement. Keep object as the primary object for legacy framing; also include it in objects. Negated possession (no money, empty hands) never creates a held object. Things mentioned figuratively, sounds, time and body parts are not objects.",
+  COMPOSE_STATES_PROMPT:
+    "The final columns contain STATES and OBJECTS JSON. Preserve every state's individual action and support. Do not replace a multi-person action with a single face close-up that removes a required participant. A standing observer stays standing beside a lying person. Match support to a spot of the required pose kind; bed lie, chair sit, boat sit, behind table sit. Keep target as the cast key to face. Keep each state gesture alongside its posture. Each object belongs only to its owner; do not put a scarf, hat, shirt or tool on all people. items = [{prop,propAt}] for additional unowned objects, using available surface/open/hang spots. removeWear lists only previously worn items explicitly taken off in the sentence. A supported sit/lie pose must remain supported while holding an object.",
   SLEEP_ACTIONS: ["dead", "sleep"],
   EXPR_SLEEP: "sleep",
   POSE_KIND: { sit: "sit", lie: "lie" } as Record<string, string>,
@@ -205,10 +250,22 @@ export const PUPPET = {
   FORM_APART: "apart",
   FORM_GAP: { row: 1.15, pair: 0.95, talk: 2.4, apart: 2.6, cluster: 0.62, whisper: 0.75, search: 1.6 },
   LIE_LEN: 1.05,
-  ATTEND_SLOTS: [[1, 10], [-1, 10], [0, -55]] as [number, number][],
+  SIT_SEAT_OFFSET: 0.164,
+  ATTEND_SLOTS: [
+    [1, 10],
+    [-1, 10],
+    [0, -55],
+  ] as [number, number][],
   ATTEND_MARGIN: 0.35,
   ATTEND_BEHIND_X: 0.15,
-  AROUND_SLOTS: [[-1, 0], [1, 0], [-1.75, -40], [1.75, -40], [-0.5, 70], [0.5, 70]] as [number, number][],
+  AROUND_SLOTS: [
+    [-1, 0],
+    [1, 0],
+    [-1.75, -40],
+    [1.75, -40],
+    [-0.5, 70],
+    [0.5, 70],
+  ] as [number, number][],
   AROUND_MARGIN: 0.55,
   CROWD_D: 0.3,
   CROWD_X: [0.18, 0.82],
@@ -291,9 +348,6 @@ export const PUPPET = {
   STYLE_MATCH_MIN: 7,
   TAGS_MAX: 8,
   SPEAK_ROLES: ["dialogue", "offscreen"],
-  QUOTE_HEAD: 12,
-  QUOTE_LOOKBACK: 4,
-  QUOTE_BEFORE_RE: /["“”«»'‘’:—–-]\s*$/,
   PREVIEW_FOLDER: "gen-preview",
   PATH_SEP: "/",
   NFD: "NFD",
@@ -402,10 +456,8 @@ export const PUPPET = {
   INSIDE: "inside",
   OUTSIDE: "outside",
   ARTIFACT_PROPS: "motion-puppet-props",
-  ARTIFACT_PROPS_CHECK: "motion-puppet-props-check",
   ARTIFACT_READ: "motion-puppet-read",
   ARTIFACT_COMPOSE: "motion-puppet-compose",
-  ARTIFACT_PROP_MATCH: "motion-puppet-prop-match",
   ARTIFACT_QA: "motion-puppet-qa",
   ARTIFACT_MATCH: "motion-puppet-match",
   PROPS_PER_CALL: 4,
@@ -431,7 +483,6 @@ export const PUPPET = {
   LOG_SET_FAIL: (name: string, why: string): string => `Chưa vẽ được bối cảnh ${name}: ${why}`,
   LOG_PROPS: (keys: string[]): string => `AI vẽ đồ vật: ${keys.join(", ")}`,
   LOG_PROP_FAIL: (key: string, why: string): string => `Chưa vẽ được đồ vật ${key}: ${why}`,
-  LOG_PROP_CHECK: (keys: string[]): string => `Kiểm đồ vật: vẽ lại ${keys.join(", ")}.`,
   LOG_READ: (n: number, calls: number): string => `Đọc câu thành hình: ${n} câu, ${calls} lượt AI.`,
   LOG_READ_FAIL: (why: string): string => `Đọc câu lỗi: ${why}`,
   LOG_READ_RETRY: (n: number): string => `${n} câu đọc chưa đúng (đồ vật không có trong câu hoặc thiếu người) – đọc lại.`,
@@ -475,11 +526,27 @@ export const PUPPET_KIT_API = {
   TYPES_SHOWN: ["style_pack", "character_kit", "set", "prop", "series"],
 } as const;
 export const PUPPET_LIBRARY_MODES = { SERIES: "series", AUTO: "auto", FRESH: "off" } as const;
-export interface PuppetPresetDef { name: string; description: string; body: Record<string, unknown>; face: Record<string, unknown>; line: Record<string, unknown>; vignette: number; palette: string[]; sets: string; characters: string; framing: string; detail: string; gradients: boolean; procedural: boolean; bodyColors: string[]; }
+export interface PuppetPresetDef {
+  name: string;
+  description: string;
+  body: Record<string, unknown>;
+  face: Record<string, unknown>;
+  line: Record<string, unknown>;
+  vignette: number;
+  palette: string[];
+  sets: string;
+  characters: string;
+  framing: string;
+  detail: string;
+  gradients: boolean;
+  procedural: boolean;
+  bodyColors: string[];
+}
 export const PUPPET_STYLE_PRESETS: Record<string, PuppetPresetDef> = {
   chibi_folk: {
     name: "Chibi dân gian (theo mẫu Khăn Piêu)",
-    description: "Flat 2D chibi cartoon. Head about half of the body height, round and slightly wide at the jaw, cream skin, small round ears on the sides, thick black hair shapes (spiky boy hair, bob, high bun with a hairpin, head wraps), small black oval eyes, short thick black brows, tiny mouth. Short jacket with buttons, collar bands and woven pattern bands of ethnic mountain costumes, dark trousers, short legs, small dark feet, round skin-colored hands. Dark brown outline of medium width. Warm soft lighting with glows from fire and lamps, dark vignette corners.",
+    description:
+      "Flat 2D chibi cartoon. Head about half of the body height, round and slightly wide at the jaw, cream skin, small round ears on the sides, thick black hair shapes (spiky boy hair, bob, high bun with a hairpin, head wraps), small black oval eyes, short thick black brows, tiny mouth. Short jacket with buttons, collar bands and woven pattern bands of ethnic mountain costumes, dark trousers, short legs, small dark feet, round skin-colored hands. Dark brown outline of medium width. Warm soft lighting with glows from fire and lamps, dark vignette corners.",
     body: { head: 0.48, headW: 1.06, bodyW: 0.82, legs: 1, overlap: 0.06, limb: "tube", limbW: 0.13, armLen: 0.34, hand: 0.11, shape: "robe", idleArms: "down" },
     face: { fill: "#f1dcc3", eyes: "dot", eyeW: 0.075, eyeH: 0.12, eyeGap: 0.36, eyeY: 0.57, eyeColor: "#1a1616", mouth: "line", mouthW: 0.08, mouthH: 0.05, mouthY: 0.75, brows: true, mouthRest: "rest" },
     line: { width: 0.011, color: "#2a2220" },
@@ -495,7 +562,8 @@ export const PUPPET_STYLE_PRESETS: Record<string, PuppetPresetDef> = {
   },
   minimal_mask: {
     name: "Tối giản mặt nạ (theo mẫu Thần trùng)",
-    description: "Very minimal flat 2D horror cartoon. Head is a perfect white circle with a thick black outline, two big black vertical oval eyes close together and a black oval open mouth below them, no brows, no nose, no hair. Body is a tall arch (rounded top, straight vertical sides) in one flat muted color (brown, grey, olive, mauve) with a thick black outline, no neck, no legs, the body continues down out of the frame. Arms are thick tubes of the body color without hands: resting arms are only short nubs at the shoulders, a raised arm is a long curved tube. Children are smaller copies. Everything flat, no shading, thick black outlines.",
+    description:
+      "Very minimal flat 2D horror cartoon. Head is a perfect white circle with a thick black outline, two big black vertical oval eyes close together and a black oval open mouth below them, no brows, no nose, no hair. Body is a tall arch (rounded top, straight vertical sides) in one flat muted color (brown, grey, olive, mauve) with a thick black outline, no neck, no legs, the body continues down out of the frame. Arms are thick tubes of the body color without hands: resting arms are only short nubs at the shoulders, a raised arm is a long curved tube. Children are smaller copies. Everything flat, no shading, thick black outlines.",
     body: { head: 0.36, headW: 1.0, bodyW: 1.22, legs: 0, overlap: 0.08, limb: "noodle", limbW: 0.16, armLen: 0.62, hand: 0, shape: "dome", idleArms: "nub", limbOutline: false },
     face: { fill: "#e9eef1", eyes: "oval", eyeW: 0.22, eyeH: 0.36, eyeGap: 0.3, eyeY: 0.41, eyeColor: "#0b0b0d", mouth: "oval", mouthW: 0.14, mouthH: 0.17, mouthY: 0.74, brows: false, mouthRest: "open" },
     line: { width: 0.02, color: "#0b0b0d" },
@@ -513,7 +581,7 @@ export const PUPPET_STYLE_PRESETS: Record<string, PuppetPresetDef> = {
 export const PUPPET_STYLE_DEFAULT = "minimal_mask";
 export const PUPPET_STYLE_NONE = "none";
 export const PUPPET_STYLE_DESIGN_SOURCE = "design";
-export const PUPPET_GENRES: Record<string, { name: string; shots: string; pacing: string; light: string; opening: string; }> = {
+export const PUPPET_GENRES: Record<string, { name: string; shots: string; pacing: string; light: string; opening: string }> = {
   ghost_tale: {
     name: "Kỳ truyện ma dân gian",
     shots: "object about 20% (the thing the sentence is about drawn big in the middle of the place, people small at the side), insert 15%, close 15% for fear and grief, people/two 25%, ots 10% for dialogue, establishing/wide 10%, symbol and shadow for omens and presences, bust for a strong spoken warning",
@@ -521,33 +589,20 @@ export const PUPPET_GENRES: Record<string, { name: string; shots: string; pacing
     light: "night scenes in deep blue with one warm lamp or fire; day scenes muted",
     opening: "the first picture may show the village or the house alone only when the first sentence is about the place or the time; otherwise start with the people of the sentence",
   },
-  story: {
-    name: "Kể chuyện",
-    shots: "people/two 35%, insert 15%, close 15%, ots 15%, wide/establishing 15%, object 5%",
-    pacing: "steady; one picture per sentence",
-    light: "natural day and night",
-    opening: "an establishing picture only for a sentence about the place or the time",
-  },
-  kids: {
-    name: "Thiếu nhi",
-    shots: "people/two 40%, wide 20%, insert 20%, close 10%, object 10%",
-    pacing: "lively",
-    light: "bright and colorful",
-    opening: "an establishing picture only for a sentence about the place or the time",
-  },
+  story: { name: "Kể chuyện", shots: "people/two 35%, insert 15%, close 15%, ots 15%, wide/establishing 15%, object 5%", pacing: "steady; one picture per sentence", light: "natural day and night", opening: "an establishing picture only for a sentence about the place or the time" },
+  kids: { name: "Thiếu nhi", shots: "people/two 40%, wide 20%, insert 20%, close 10%, object 10%", pacing: "lively", light: "bright and colorful", opening: "an establishing picture only for a sentence about the place or the time" },
 };
 export const PUPPET_GENRE_ALIAS: Record<string, string> = { horror: "ghost_tale" };
 export const PUPPET_GENRE_DEFAULT = "story";
-const REF_RULE = "The attached reference pictures are frames of the target video style. Your drawing must look like it was cut out of the same video: same perspective and camera height, same proportions, same outline color and thickness, same colors and saturation, same amount of detail, the same kind of buildings, furniture, materials and costumes. Ignore subtitles, logos, watermarks and any text in the pictures and never draw text.";
-const SVG_RULE = "Only <svg>, <g>, <path>, <rect>, <circle>, <ellipse>, <polygon>, <polyline>, <line> elements with inline fill and stroke attributes, plus <defs> with <linearGradient>/<radialGradient>/<stop> only when the STYLE allows gradients. No text, no images, no filters, no style tags. Every opened element is closed. IMPORTANT for the chat window: inside every svg string write each < as &lt; and each > as &gt;, so the chat does not render or strip the tags.";
+const REF_RULE =
+  "The attached reference pictures are frames of the target video style. Your drawing must look like it was cut out of the same video: same perspective and camera height, same proportions, same outline color and thickness, same colors and saturation, same amount of detail, the same kind of buildings, furniture, materials and costumes. Ignore subtitles, logos, watermarks and any text in the pictures and never draw text.";
+const SVG_RULE =
+  "Only <svg>, <g>, <path>, <rect>, <circle>, <ellipse>, <polygon>, <polyline>, <line> elements with inline fill and stroke attributes, plus <defs> with <linearGradient>/<radialGradient>/<stop> only when the STYLE allows gradients. No text, no images, no filters, no style tags. Every opened element is closed. IMPORTANT for the chat window: inside every svg string write each < as &lt; and each > as &gt;, so the chat does not render or strip the tags.";
 const STYLE_JSON =
   'Return JSON {"name":"short Vietnamese name of the style","description":"2-4 sentences: character proportions, face, outline, colors, shading, backgrounds","body":{"head":0.3-0.55 head height / total height,"headW":0.7-1.1 head width / head height,"bodyW":0.6-1.4 body width / head width,"legs":0 or 1 visible legs,"overlap":0.05-0.2,"limb":"tube|noodle","limbW":0.08-0.18,"armLen":0.3-0.6,"hand":0 or 0.06-0.15 round hand size,"shape":"dome|tube|robe"},"face":{"fill":"#rrggbb face color","eyes":"oval|dot|round","eyeW":0.06-0.2,"eyeH":0.08-0.28,"eyeGap":0.25-0.45,"eyeY":0.35-0.65,"eyeColor":"#rrggbb","mouth":"oval|line","mouthW":0.06-0.16,"mouthH":0.04-0.16,"mouthY":0.6-0.82,"brows":true},"line":{"width":0.006-0.02,"color":"#rrggbb"},"palette":["#rrggbb"],"sets":"2-3 sentences: how the backgrounds are drawn (kind of buildings and rooms, materials, sky, ground, outlines)","characters":"one sentence about how characters differ from each other","framing":"one sentence about how big people usually are in the frame","detail":"low|medium|high","gradients":true or false,"idleArms":"down|nub"} where face sizes are fractions of the head box and eyeY/mouthY are measured from the top of the head.';
 export const PUPPET_PROMPTS = {
   STYLE: (p: { names: string }): string =>
-    [
-      "You are the art director of a narrated 2D cartoon story channel. The attached pictures are the user's style reference images (" + p.names + "). Describe their drawing style precisely so a vector engine can draw ORIGINAL characters and places in the same style (never copy the characters of the pictures). Ignore subtitles, logos and watermarks.",
-      STYLE_JSON,
-    ].join("\n"),
+    ["You are the art director of a narrated 2D cartoon story channel. The attached pictures are the user's style reference images (" + p.names + "). Describe their drawing style precisely so a vector engine can draw ORIGINAL characters and places in the same style (never copy the characters of the pictures). Ignore subtitles, logos and watermarks.", STYLE_JSON].join("\n"),
   DESIGN: (p: { story: string; setting: string; genre: string }): string =>
     [
       "You are the art director of a narrated 2D cartoon story channel. There are no reference pictures: invent ONE original, simple and consistent vector drawing style that suits the story below, its era, place and mood, so a vector engine can draw all characters and places in it. Prefer flat colors, clean outlines and readable silhouettes that animate well.",
@@ -590,11 +645,16 @@ export const PUPPET_PROMPTS = {
       "WHAT HAPPENS THERE: " + p.uses,
       "TIME: " + p.time,
       p.why ? "YOUR PREVIOUS DRAWING WAS REJECTED: " + p.why + ". Paint this exact place." : "",
-      'SVG: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"> with groups in order <g id="sky">, <g id="back"> (walls, facade, doors, hills), <g id="mid"> (furniture, altar, bed, gate against the back), <g id="floor"> (ground as flat bands and simple lines), <g id="fg"> (optional low foreground at the very bottom corners).',
-      "COMPOSITION: copy the camera of the reference pictures for this kind of place: the floor top edge (where the ground meets walls or far land) is at y=560..780; the lower part is floor where people stand. Keep the center x 600..1320 above the floor free of tall objects. " + p.lo + " to " + p.hi + " shapes with the materials of the place in the way the references draw them. The floor stays EMPTY: no loose objects on it. Do not draw people.",
+      'SVG: <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"> with groups in order <g id="sky">, <g id="back"> (walls, facade, doors, hills), <g id="floor"> (ground as flat bands and simple lines), <g id="mid"> (furniture, altar, bed, gate against the back), <g id="fg"> (optional low foreground at the very bottom corners). Draw the floor BEFORE furniture so it cannot cover chair seats, bed surfaces or furniture legs.',
+      "COMPOSITION: copy the camera of the reference pictures for this kind of place: the floor top edge (where the ground meets walls or far land) is at y=560..780; the lower part is floor where people stand. Keep the center x 600..1320 above the floor free of tall objects. " +
+        p.lo +
+        " to " +
+        p.hi +
+        " shapes with the materials of the place in the way the references draw them. The floor stays EMPTY: no loose objects on it. Do not draw people.",
       REF_RULE,
       SVG_RULE,
       "SPOTS: list 6 to 10 points of the picture where the story's people stand, sit or lie and where objects go, each at its floor contact point in pixels: stand (free floor where a person stands, never in front of a tall object), sit (a bench, bed edge, step or rock: the front of the seat at floor level), lie (a bed, mat or floor area to lie on), surface (the top of a table, altar or shelf for small objects), hang (a beam or branch to hang things from), door (a doorway or gate where someone stands), open (the biggest free floor area for a big object). Always include three stand spots near the bottom at the left, the middle and the right. Spot keys are short snake_case names of what is there (beside_altar, bench, bed, door, hearth).",
+      "CONTACT COORDINATES: a lie spot has x at the body's center and y at the TOP of the mattress or mat touching the person's body, never the floor below the bed. Include groundY at the bed's floor contact for perspective and face right for a head on the left (left for a head on the right). A sit spot includes seatY at the actual seat surface and groundY at the feet on the floor. Keep adjacent observers on separate seats clear of the lying person's body.",
       'Return JSON {"svg":"<svg ...>...</svg>","floorY":700,"lights":[{"x":0,"y":0,"color":"#ffcc88","kind":"lamp|candle|window|moon|fire"}],"spots":[{"key":"bench","kind":"sit","x":400,"y":930,"label":"on the wooden bench"}]}.',
     ]
       .filter(Boolean)
@@ -638,13 +698,6 @@ export const PUPPET_PROMPTS = {
     ]
       .filter(Boolean)
       .join("\n"),
-  PROPS_CHECK: (p: { items: string }): string =>
-    [
-      "You review drawings of objects for a 2D cartoon; the attached pictures are the drawings in the same order as the list. Decide what each picture depicts, whether it matches the key, and list missing important parts.",
-      "DRAWINGS (key, in picture order):\n" + p.items,
-      "The pictures after the drawings are reference frames of the target style: also score from 1 to 10 how well each drawing matches that style.",
-      'Return JSON {"checks":[{"key":"same key","looksLike":"2-4 words","match":true,"missing":"missing parts or empty","styleScore":8,"styleDiff":"what differs from the references"}]}.',
-    ].join("\n"),
   CAST_MATCH: (p: { cast: string; library: string }): string =>
     [
       "You cast a 2D cartoon ghost story from a library of ready-made stock characters. For each STORY CHARACTER decide whether one STOCK CHARACTER can play it: ghosts, spirits, demons, walking corpses, monks, shamans, mediums, temple keepers, village elders, children and minor villagers usually can, when gender, age and look fit. Never cast the main characters of the story or anyone whose description needs a distinctive look of their own (a special costume, uniform, ethnic dress, a named heroine or hero); use null for them. Each stock character plays at most one role.",
@@ -655,7 +708,8 @@ export const PUPPET_PROMPTS = {
   LIB_MATCH: (p: { places: string; library: string }): string =>
     [
       "You pick reusable backgrounds for a 2D cartoon story video. For each STORY PLACE choose the LIBRARY BACKGROUND that can be shown as that place: the same kind of place, inside or outside must match, small differences in furniture or plants are fine. Use null when nothing fits well.",
-      "STORY PLACES (key | name | description | inside/outside):\n" + p.places,
+      "STORY PLACES (key | name | description | inside/outside | eligible background IDs):\n" + p.places,
+      "Choose only an eligible ID for each place. Required supports and enough distinct seats/beds for simultaneous actors have already been checked. Match the setting and era, and keep the chosen furniture layout throughout the scene.",
       "LIBRARY BACKGROUNDS (id | name | description | inside/outside):\n" + p.library,
       'Return JSON {"matches":[{"key":"story place key","id":"library id or null"}]}.',
     ].join("\n"),
@@ -663,18 +717,21 @@ export const PUPPET_PROMPTS = {
     [
       "You read a narrated story sentence by sentence and decide what ONE picture must show for each sentence of a 2D cartoon video. The picture illustrates the sentence literally: its people, its place and the concrete thing it names.",
       "STORY: " + p.story,
-      "CAST (key | name | look; extra_1..extra_12 are unnamed villagers): " + p.cast,
+      "CAST (key | name | role | gender | age | physical description; extra_1..extra_12 are unnamed villagers): " + p.cast,
       "PLACES (key | description): " + p.places,
       p.previous ? "PREVIOUS SENTENCES (context): " + p.previous : "",
       "SENTENCES (index | dialogue speaker | text):\n" + p.lines,
       "For each sentence:",
-      "focus: what the sentence is mainly about: a cast key, \"object\" (a thing), or \"place\" (the place, the weather, the time).",
+      PUPPET.READ_STATES_PROMPT,
+      PUPPET.READ_POSTURE_PROMPT,
+      PA.READ,
+      'focus: what the sentence is mainly about: a cast key, "object" (a thing), or "place" (the place, the weather, the time).',
       "who: cast keys of the people visible in that moment. A crowd (villagers, neighbours, mourners, people of the village) adds extra_1, extra_2, extra_3... (3 to 5 of them). A memory, a past event or a story someone tells is drawn as that moment, with its people at its place. A person only named in passing, not doing anything, is not visible. The dialogue speaker is visible.",
       "place: the place where the shown moment happens: a key from PLACES, or a new snake_case key with placeDesc (short English description, inside or outside) when it happens somewhere else (another room, the yard, the road, the mountain, the graveyard...).",
       "object: the one concrete thing the sentence names that the picture must show, or null. word = the exact Vietnamese words copied from the sentence; key = an English snake_case noun with the exact meaning (nhẫn = ring, đục = chisel, then cửa = door_bar, chõng tre = bamboo_daybed, vò sành = clay_jar_with_lid); size = its largest dimension in meters; type = furniture (bed, daybed, table, bench, altar, hearth, coffin), fixture (door, window, gate, well, roof), wall (painting, talisman stuck on a wall, calendar), tool (hammer, knife, axe, chisel, stick, torch), load (carrying pole with baskets, bundle, sack carried on the shoulder), wearable (only clothes and headwear a person puts on and keeps wearing: mourning headband, hat, conical hat, cap, shirt, scarf), small (ring, comb, letter, coin; a thing put in the mouth, on the eyes or on a dead body, like a coin in the mouth, is small with mount body), container (incense bowl, pot, jar, cup, bowl), creature (animal, bird), source (lamp, candle, fire) or other; mount = floor, table, hang, held (in the hand), shoulder, wear (worn clothes or headwear only), body (placed in the mouth, on the eyes or on a body: shown as a close-up) or air. Never a feeling, a sound or a body part.",
       "action: the one visible action of the focus person: stand, walk, run, sit, lie, dead, sleep, kneel, pray, bow, talk, shout, point, raise, hold, give, fear, cover_face, think, strike (hammer, chop, chisel, hit with a tool or a stick), knock (on a door or wood), show (hold something up to look at or show), drink (or eat), carry (carry something in both arms), shoulder (carry a pole with baskets or a load on the shoulder). When the person uses or holds the object, its mount is held.",
-      "emotion: neutral, sad, cry, scared, angry, happy or surprised. light: day, night, lamp or dawn. overlays: any of rain, fog, dust, steam (a hot bowl, pot or cup), smoke (incense, fire, cigarette), ghost (an unseen ghost is near), lurk (something watches from a dark corner or hole), flashback (the sentence recalls a memory or a past event).",
-      'Return JSON {"lines":[{"i":0,"focus":"cast key|object|place","who":["cast key"],"place":"place key","placeDesc":"","object":{"word":"exact words","key":"english_key","size":0.5,"type":"other","mount":"floor"},"action":"stand","emotion":"neutral","light":"day","overlays":[]}]}.',
+      "emotion: neutral, sad, cry, scared, angry, happy or surprised. light: day, night, lamp or dawn. overlays: any of rain, fog, dust, steam (a hot bowl, pot or cup), smoke (incense, fire, cigarette), ghost (ONLY an apparition explicitly visible in the sentence), lurk (ONLY a visible watcher explicitly described in a dark corner or hole), flashback (the sentence recalls a memory or a past event). An unseen presence, a smell, a sound, fear or a ghost-story genre never adds a visible ghost. Keep the current place for a present reaction that merely mentions a past action; show a flashback only when the sentence primarily depicts that past moment.",
+      'Return JSON {"lines":[{"i":0,"focus":"cast key|object|place","who":["cast key"],"place":"place key","placeDesc":"","object":{"word":"exact words","key":"english_key","size":0.5,"type":"other","mount":"floor","owner":null},"objects":[],"states":[{"char":"cast key","action":"stand","gesture":null,"support":null,"target":null}],"action":"stand","emotion":"neutral","light":"day","overlays":[]}]}.',
     ]
       .filter(Boolean)
       .join("\n"),
@@ -683,10 +740,11 @@ export const PUPPET_PROMPTS = {
       "You frame the pictures of a narrated 2D cartoon story video drawn as cut-out puppets, like the reference videos of the style. Each sentence already says what its picture shows (who, where, which object, which action); you only choose the frame and where everyone stands. Do not add other people or objects.",
       "GENRE: " + p.genre,
       p.framing ? "STYLE FRAMING: " + p.framing : "",
-      "CAST (key | name): " + p.cast,
+      "CAST (key | name | role | gender | age | physical description): " + p.cast,
       "PLACES AND THEIR SPOTS (spot key: kind, what it is):\n" + p.places,
       p.previous ? "PREVIOUS FRAMES: " + p.previous : "",
-      "SENTENCES (index | text | focus | who | place | object key, size m, mount | action | emotion | speaker):\n" + p.lines,
+      "SENTENCES (index | text | focus | who | place | object key, size m, mount | action | emotion | speaker | states JSON | objects JSON | correction):\n" + p.lines,
+      PUPPET.COMPOSE_STATES_PROMPT,
       "FRAMES: establishing = the place alone (only for a sentence about the place, the weather or the time); wide = small people in the whole place (travel, distance, arriving); people = one or two people doing the action at their spots; two = two people side by side, whole bodies; duo = two people from the waist up (dialogue, reaction); group = three or more people; back = someone seen from behind looking or leaving; bust = one person big from the chest up (speech, a strong reaction); ots = two people talking, the listener's back big in front; close = one face big (fear, grief, shock, tears); insert = the object big in front of the blurred place; object = a big object in the middle of the place with the people small at its side spots; symbol = an object alone in the dark with a halo (omen, curse, fate); shadow = a shadow on the wall (a presence, a ghost; the first actor casts it); blink = eyes opening or closing; split = the picture cut in two halves side by side (day and night, before and after, the living and the dead, two places at once): the first actor on the left in this place, the second actor (or the same) on the right in set2 (a place key, or the same place) with light2. inset = a place key shown inside a magnifying glass in the corner (what someone remembers, sees far away or imagines). trail = true on an actor who moves very fast (rushing, fleeing, a ghost dashing): faded copies follow him.",
       "RULES: the object of a sentence must be clearly seen: a small object (under 0.3 m: ring, comb, coin, talisman, letter, chisel) uses insert or symbol; a big object the sentence is about uses object. A sentence whose focus is a person shows that person (people, bust, close, duo, ots); a dialogue line shows its speaker. Hard actions (hugging, falling, fighting, dying, convulsing, running in panic) become close, insert, shadow or the result (someone lying). Never more than two sentences in a row with the same frame unless it is a dialogue exchange; mix frames like a film.",
       "SPOTS: put each person on a spot of the picture's place whose kind fits the action: sit on a sit spot, lie or dead on a lie spot, pray or kneel at a spot in front of an altar, shrine or grave, waiting or looking out at a door spot, otherwise a stand spot. Two people never share a spot; people talking together use spots next to each other. propAt: a surface spot for a table object, a hang spot for a hanging one, an open spot for a big floor object, or null to put it beside the person.",
@@ -698,13 +756,6 @@ export const PUPPET_PROMPTS = {
     ]
       .filter(Boolean)
       .join("\n"),
-  PROP_MATCH: (p: { objects: string; library: string }): string =>
-    [
-      "You pick ready-made object drawings for a 2D cartoon story. For each STORY OBJECT choose the LIBRARY OBJECT that IS the same thing (the same kind of object with the same use and shape; a ring is not a bracelet, a jar is not a bowl, a chisel is not a knife). Use null when no library object is the same thing; it will be drawn new.",
-      "STORY OBJECTS (key | Vietnamese words | note):\n" + p.objects,
-      "LIBRARY OBJECTS (key | name | description):\n" + p.library,
-      'Return JSON {"matches":[{"key":"story object key","library":"library key or null"}]}.',
-    ].join("\n"),
   SOUND: (p: { genre: string; horror: boolean; beats: string }): string =>
     [
       "This is a 2D narrated story video: every sentence is illustrated on screen, so actions and sounds described by the narration ARE visible or audible in that picture.",
@@ -723,6 +774,7 @@ export const PUPPET_PROMPTS = {
       "CHARACTERS (key | name | look): " + p.cast,
       "FRAMES (index | sentence):\n" + p.frames,
       "For each frame decide: does the picture show the content of the sentence (the right people doing the right thing, the right object, the right place, day or night)? Is it readable? Do the characters look the same as in the other frames? Only reject frames that are clearly wrong or unreadable.",
+      "Reject a person lying below or floating above a visible mattress, a seated person with no visible seat, furniture hidden by the floor, or an extra visible ghost when the narration describes only a sound or smell. Body contact with the illustrated support and separate space for adjacent people matter more than decorative detail.",
       'Return JSON {"checks":[{"i":index,"ok":true,"problem":"short reason when not ok","fix":"what the picture should show instead"}]}.',
     ].join("\n"),
 } as const;

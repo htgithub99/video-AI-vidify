@@ -1,0 +1,18 @@
+export const SRV = {
+  CONTROLLER: "src/server/controllers/motionVideoController.ts",
+  IMPORTS: /import\s*\{([^}]+)\}\s*from\s*["'](\.\.\/services\/[^"']+)["']/g,
+  SERVICES: /^\.\.\/services\//,
+  ALIAS: /\s+as\s+/,
+  COMMA: ",",
+  PLUGIN: "motion-scene-controller-offline",
+  NAMESPACE: "motion-scene-controller-stubs",
+  ENTRY: 'export { scenesMotionStory, voiceMotionStory, seedPuppetKitItems } from "./src/server/controllers/motionVideoController.ts";',
+  EXPORT: (name: string): string => `export const ${name} = (...args) => globalThis.__motionSceneRouting.invoke(${JSON.stringify(name)}, args);`,
+  BUNDLE: (pid: number): string => `node_modules/.cache/motion-scene-routing-${pid}.mjs`,
+  STYLE: "minimal_mask",
+  TITLE: "Scene routing fixture",
+  SIGNAL: "signal",
+  JOB: "routing-job",
+  UNEXPECTED: (name: string): string => `Unexpected service call: ${name}`,
+  PASSED: "PASS: scenes, automatic voice casting/audio, partial scene rebuilds, library creation and standalone voice all use the selected production AI; legacy content AI cannot override it.\n",
+} as const;

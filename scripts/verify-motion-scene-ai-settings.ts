@@ -20,14 +20,7 @@ assert.equal(motionSceneAiExecution(choice).model, selectedModel);
 assert.deepEqual(motionMainAiExecution(choice), motionMainAiExecution(original));
 const script = { title: RT.SCENE_SETTINGS, language: RT.VI, beats: [{ id: RT.B1, visual: RT.SCENE, place: RT.YARD, narration: RT.TEST_SCENE }], gen: { cast: {}, locations: {}, staging: {}, previews: {}, failed: [] } };
 const initial = { ...original, rawText: RT.TEST_STORY_SOURCE, autoExport: true, autoContinue: false, analysis: { title: script.title, logline: RT.TEST_2, cast: [], places: [], chapters: [], facts: [] }, script };
-const bundle = await build({
-  stdin: { loader: RT.TSX, resolveDir: process.cwd(), contents: RF.SCENE_SETTINGS_ENTRY(JSON.stringify(initial)) },
-  bundle: true,
-  platform: RT.BROWSER,
-  format: RT.IIFE,
-  write: false,
-  define: { "import.meta": RT.EMPTY_2 },
-});
+const bundle = await build({ stdin: { loader: RT.TSX, resolveDir: process.cwd(), contents: RF.SCENE_SETTINGS_ENTRY(JSON.stringify(initial)) }, bundle: true, platform: RT.BROWSER, format: RT.IIFE, write: false, define: { "import.meta": RT.EMPTY_2 } });
 const cssName = fs.readdirSync(RT.DIST_ASSETS).find((name) => RT.PATTERN_INDEX_CSS.test(name));
 const css = cssName ? fs.readFileSync(path.join(RT.DIST_ASSETS, cssName), RT.UTF8) : RT.EMPTY;
 const browser = await chromium.launch({ channel: RT.CHROME, headless: true });
@@ -86,7 +79,7 @@ try {
   await drawingResponse;
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].aiExecution, motionSceneAiExecution(choice));
-  assert.deepEqual(requests[0].mainAiExecution, motionMainAiExecution(original));
+  assert.equal(requests[0].mainAiExecution, undefined);
   await page.getByRole(RT.BUTTON, { name: RT.TEST_DRAWING_REQUEST }).waitFor();
   fs.mkdirSync(path.resolve(RT.SCRATCH), { recursive: true });
   await page.getByTestId(RT.SETTINGS).screenshot({ path: path.resolve(RT.SCRATCH_MOTION_SCENE_AI_SETTINGS_PNG) });

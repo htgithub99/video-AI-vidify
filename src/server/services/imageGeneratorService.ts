@@ -300,7 +300,13 @@ import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
-interface BrowserSession { context: BrowserContext; page: Page; account: GoogleAccount; ownsContext?: boolean; preserveExternalPages?: boolean; }
+interface BrowserSession {
+  context: BrowserContext;
+  page: Page;
+  account: GoogleAccount;
+  ownsContext?: boolean;
+  preserveExternalPages?: boolean;
+}
 type GeminiVisualConfig = Partial<VisualConfig>;
 const FLOW_PROMPT_SELECTORS = [SOURCE_TEXT_CONTENTEDITABLE_TRUE_ROLE_TEXTBOX, SOURCE_TEXT_TEXTAREA_PLACEHOLDER_PROMPT_I, SOURCE_TEXT_TEXTAREA_PLACEHOLDER_MO_TA_I, SOURCE_TEXT_TEXTAREA, SOURCE_TEXT_CONTENTEDITABLE_TRUE];
 const flowReferenceSignatureMap = new WeakMap<Page, string>();
@@ -806,7 +812,11 @@ const parseConfiguredVideoDuration = (duration?: string): number => {
   const parsed = _.toNumber(_.replace(_.defaultTo(duration, FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION), /[^0-9.]/g, XRT.EMPTY));
   return _.gt(parsed, 0) ? parsed : _.toNumber(_.replace(FLOW_DIRECT_VIDEO_CONFIG.DEFAULT_DURATION, /[^0-9.]/g, XRT.EMPTY));
 };
-interface FlowDownloadedVideo { buffer: Buffer; mimeType: string; mediaUrl: string; }
+interface FlowDownloadedVideo {
+  buffer: Buffer;
+  mimeType: string;
+  mediaUrl: string;
+}
 export const normalizeFlowMediaId = (value: string): string => _.defaultTo(_.toString(value).match(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN)?.[0], _.trim(value));
 export const createFlowMediaRedirectUrl = (mediaId: string): string => new URL(_.replace(FLOW_VIDEO_MEDIA_CONFIG.MEDIA_REDIRECT_PATH, FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_TOKEN, encodeURIComponent(normalizeFlowMediaId(mediaId))), EXTERNAL_URLS.GOOGLE_LABS).href;
 export const extractFlowMediaIdFromUrl = (mediaUrl: string): string => {
@@ -879,12 +889,7 @@ const waitForFlowMediaCardReady = async (page: Page, mediaId: string, timeoutMs 
             };
           },
           {
-            payload: {
-              nestedSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_NESTED_SOURCE_SELECTOR,
-              readyStateMinimum: FLOW_VIDEO_MEDIA_CONFIG.VIDEO_READY_STATE_MINIMUM,
-              sourceAttribute: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_ATTRIBUTE,
-              videoSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR,
-            },
+            payload: { nestedSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_NESTED_SOURCE_SELECTOR, readyStateMinimum: FLOW_VIDEO_MEDIA_CONFIG.VIDEO_READY_STATE_MINIMUM, sourceAttribute: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_ATTRIBUTE, videoSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_VIDEO_SELECTOR },
             texts: { SOURCE_BROWSER_TEXT_ARIA_BUSY, SOURCE_TEXT_TRUE, SOURCE_BROWSER_TEXT_DATA_STATE, SOURCE_BROWSER_TEXT_LOADING, SOURCE_BROWSER_TEXT_ROLE_PROGRESSBAR_PROGRESS_ARIA_VALUENOW, SOURCE_TEXT_IMG },
             studioTexts: { XRT: { EMPTY: XRT.EMPTY } },
           },
@@ -938,8 +943,19 @@ const getFlowVideoEditIds = async (page: Page): Promise<string[]> =>
     },
     { payload: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_ID_PATTERN.source, texts: { SOURCE_BROWSER_TEXT_A_HREF_EDIT, SOURCE_TEXT_HREF, SOURCE_BROWSER_TEXT_EDIT, SOURCE_BROWSER_TEXT_SYMBOL_2, SOURCE_TEXT_I_2 }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } },
   );
-interface FlowGeneratedMediaCandidate { editId?: string | null; videoSrc?: string | null; thumbnailSrc?: string | null; promptText?: string | null; evidence?: "dom" | "network"; discoveryOrder?: number; }
-interface FlowGeneratedMediaBatch { media: FlowGeneratedMediaCandidate[]; rejected: boolean; timedOut: boolean; }
+interface FlowGeneratedMediaCandidate {
+  editId?: string | null;
+  videoSrc?: string | null;
+  thumbnailSrc?: string | null;
+  promptText?: string | null;
+  evidence?: "dom" | "network";
+  discoveryOrder?: number;
+}
+interface FlowGeneratedMediaBatch {
+  media: FlowGeneratedMediaCandidate[];
+  rejected: boolean;
+  timedOut: boolean;
+}
 const collectNewFlowGeneratedMedia = async (page: Page, oldEditIds: string[], oldVideoSources: string[], oldVideoThumbnailSources: string[], responseUrls: string[]): Promise<FlowGeneratedMediaCandidate[]> => {
   await page.evaluate(SOURCE_TEXT_GLOBALTHIS_NAME_GLOBALTHIS_NAME_TARGET_TARGET).catch(() => undefined);
   const domCandidates = await page.evaluate(
@@ -1070,13 +1086,7 @@ const collectNewFlowGeneratedMedia = async (page: Page, oldEditIds: string[], ol
     const mediaId = normalizeFlowMediaId(extractFlowMediaIdFromUrl(responseUrl));
     if (_.isEmpty(mediaId) || _.isEqual(mediaId, currentProjectId) || _.includes(oldEditIds, mediaId)) return;
     const existingCandidate = candidatesByMediaId.get(mediaId);
-    candidatesByMediaId.set(mediaId, {
-      ...existingCandidate,
-      editId: mediaId,
-      videoSrc: /flow-content\.google\/video\//i.test(responseUrl) ? responseUrl : existingCandidate?.videoSrc,
-      evidence: existingCandidate?.evidence || SOURCE_TEXT_NETWORK,
-      discoveryOrder: _.defaultTo(existingCandidate?.discoveryOrder, candidatesByMediaId.size),
-    });
+    candidatesByMediaId.set(mediaId, { ...existingCandidate, editId: mediaId, videoSrc: /flow-content\.google\/video\//i.test(responseUrl) ? responseUrl : existingCandidate?.videoSrc, evidence: existingCandidate?.evidence || SOURCE_TEXT_NETWORK, discoveryOrder: _.defaultTo(existingCandidate?.discoveryOrder, candidatesByMediaId.size) });
   });
   return _.orderBy(Array.from(candidatesByMediaId.values()), [(candidate) => !_.isEqual(candidate.evidence, SOURCE_TEXT_DOM), SOURCE_TEXT_DISCOVERYORDER], [SOURCE_TEXT_ASC, SOURCE_TEXT_ASC]);
 };
@@ -1122,13 +1132,7 @@ const resolveFlowGeneratedMediaDetails = async (page: Page, media: FlowGenerated
         const { selector, targetSource } = browserPayload.payload;
         return Array.from(document.querySelectorAll(selector)).findIndex((card) => Array.from(card.querySelectorAll(SOURCE_BROWSER_TEXT_VIDEO_IMG_SOURCE)).some((element) => (element as HTMLVideoElement).currentSrc === targetSource || element.getAttribute(SOURCE_BROWSER_TEXT_SRC) === targetSource));
       },
-      {
-        payload: {
-          selector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_SELECTOR,
-          targetSource: source,
-        },
-        texts: { SOURCE_BROWSER_TEXT_VIDEO_IMG_SOURCE, SOURCE_BROWSER_TEXT_SRC },
-      },
+      { payload: { selector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_CARD_SELECTOR, targetSource: source }, texts: { SOURCE_BROWSER_TEXT_VIDEO_IMG_SOURCE, SOURCE_BROWSER_TEXT_SRC } },
     );
     if (cardIndex < 0) {
       resolved.push(candidate);
@@ -1176,7 +1180,14 @@ const resolveFlowGeneratedMediaDetails = async (page: Page, media: FlowGenerated
   }
   return resolved;
 };
-export interface FlowVideoRecoveryOptions { flowProjectId: string; mediaId: string; sourceUrl?: string; expectedDuration?: string; chromeHeadless?: boolean; retainBrowserSession?: boolean; }
+export interface FlowVideoRecoveryOptions {
+  flowProjectId: string;
+  mediaId: string;
+  sourceUrl?: string;
+  expectedDuration?: string;
+  chromeHeadless?: boolean;
+  retainBrowserSession?: boolean;
+}
 export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions): Promise<ImageGeneratorResult> => {
   const flowProjectId = normalizeFlowProjectId(options.flowProjectId);
   const mediaId = normalizeFlowMediaId(options.mediaId);
@@ -1248,12 +1259,7 @@ const collectFlowVideoUrls = async (page: Page, mediaId?: string | null, directV
       return [...elementUrls, ...resourceUrls].filter((url) => downloadableUrlPattern.test(url) && (!targetMediaId || url.includes(targetMediaId)));
     },
     {
-      payload: {
-        downloadableUrlPatternSource: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOADABLE_URL_PATTERN.source,
-        mediaApiPathMarker: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_API_PATH_MARKER,
-        mediaSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_SELECTOR,
-        targetMediaId: mediaId || null,
-      },
+      payload: { downloadableUrlPatternSource: FLOW_VIDEO_MEDIA_CONFIG.DOWNLOADABLE_URL_PATTERN.source, mediaApiPathMarker: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_API_PATH_MARKER, mediaSourceSelector: FLOW_VIDEO_MEDIA_CONFIG.MEDIA_SOURCE_SELECTOR, targetMediaId: mediaId || null },
       texts: { SOURCE_BROWSER_TEXT_BLOB, SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_HREF, SOURCE_BROWSER_TEXT_DATA_SRC, SOURCE_BROWSER_TEXT_DATA_URL, SOURCE_BROWSER_TEXT_RESOURCE, SOURCE_TEXT_I_2 },
       studioTexts: { XRT: { EMPTY: XRT.EMPTY } },
     },
@@ -1656,10 +1662,36 @@ export interface ImageGeneratorOptions {
   };
   sandboxConfig?: { localProjectId?: string; flowProjectId?: string; projectId?: string; knownVideoMediaIds?: string[] };
 }
-export interface ImageGeneratorResult { success: boolean; base64: string | null; base64s?: string[]; fallbackUrl: string; fallbackUrls?: string[]; warning?: string; newProjectId?: string; remoteMediaId?: string; remoteMediaIds?: string[]; remoteVideoSourceUrl?: string; remoteMediaCreated?: boolean; }
-export interface FlowVideoPromptBatchItem { sceneId: string; prompt: string; referenceImages?: string[]; referenceImageNames?: string[]; referenceCharacterNames?: string[]; requireReferenceReady?: boolean; }
-export interface FlowVideoPromptBatchOptions { items: FlowVideoPromptBatchItem[]; visualConfig?: ImageGeneratorOptions["visualConfig"]; sandboxConfig?: ImageGeneratorOptions["sandboxConfig"]; retainBrowserSession?: boolean; }
-export interface FlowVideoPromptBatchResult extends ImageGeneratorResult { sceneId: string; }
+export interface ImageGeneratorResult {
+  success: boolean;
+  base64: string | null;
+  base64s?: string[];
+  fallbackUrl: string;
+  fallbackUrls?: string[];
+  warning?: string;
+  newProjectId?: string;
+  remoteMediaId?: string;
+  remoteMediaIds?: string[];
+  remoteVideoSourceUrl?: string;
+  remoteMediaCreated?: boolean;
+}
+export interface FlowVideoPromptBatchItem {
+  sceneId: string;
+  prompt: string;
+  referenceImages?: string[];
+  referenceImageNames?: string[];
+  referenceCharacterNames?: string[];
+  requireReferenceReady?: boolean;
+}
+export interface FlowVideoPromptBatchOptions {
+  items: FlowVideoPromptBatchItem[];
+  visualConfig?: ImageGeneratorOptions["visualConfig"];
+  sandboxConfig?: ImageGeneratorOptions["sandboxConfig"];
+  retainBrowserSession?: boolean;
+}
+export interface FlowVideoPromptBatchResult extends ImageGeneratorResult {
+  sceneId: string;
+}
 let lastUsedEmail: string | undefined = undefined;
 const connectToSharedChromeBrowser = async (logConnectionError: boolean = true): Promise<BrowserSession | null> => {
   try {
@@ -1724,18 +1756,9 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
     const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
     try {
       try {
-        context = await chromium.launchPersistentContext(profilePath, {
-          headless: chromeHeadless !== false,
-          channel: SOURCE_TEXT_CHROME,
-          ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION],
-          args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED],
-        });
+        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, channel: SOURCE_TEXT_CHROME, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
       } catch (chromeErr) {
-        context = await chromium.launchPersistentContext(profilePath, {
-          headless: chromeHeadless !== false,
-          ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION],
-          args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED],
-        });
+        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
       }
       page = context.pages()[0] || (await context.newPage());
       try {
@@ -1777,11 +1800,16 @@ let activeBrowserTimeout: NodeJS.Timeout | null = null;
 let activeBrowserHeadless: boolean | undefined = undefined;
 let activeBrowserLaunchPromise: Promise<BrowserSession> | null = null;
 let activeFlowVideoGenerationCount = SecurityConstants.ZERO;
+const browserRetainers = new Set<symbol>();
+export const retainGlobalBrowser = (): (() => void) => {
+  const owner = Symbol();
+  browserRetainers.add(owner);
+  cancelGlobalBrowserCleanup();
+  return () => browserRetainers.delete(owner);
+};
 const isSharedChromeRunning = async (): Promise<boolean> => {
   try {
-    const response = await fetch(SOURCE_TEMPLATE_JSON_VERSION(`${EXTERNAL_URLS.LOCALHOST}`, `${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}`), {
-      signal: AbortSignal.timeout(1500),
-    });
+    const response = await fetch(SOURCE_TEMPLATE_JSON_VERSION(`${EXTERNAL_URLS.LOCALHOST}`, `${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}`), { signal: AbortSignal.timeout(1500) });
     return response.ok;
   } catch {
     return false;
@@ -1832,6 +1860,7 @@ export async function closeActiveBrowser() {
   activeBrowserHeadless = undefined;
 }
 export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = false): Promise<boolean> {
+  if (browserRetainers.size) return false;
   if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise.catch(() => undefined);
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) {
     scheduleGlobalBrowserCleanup();
@@ -1887,6 +1916,7 @@ export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = fa
   return true;
 }
 export async function closeIdleSharedChrome(): Promise<boolean> {
+  if (browserRetainers.size) return false;
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) return false;
   if (!(await isSharedChromeRunning())) return true;
   const isIdlePage = (page: Page): boolean => isDisposableChatBrowserUrl(page.url());
@@ -1924,7 +1954,10 @@ export function cancelGlobalBrowserCleanup() {
 }
 export function scheduleGlobalBrowserCleanup() {
   if (activeBrowserTimeout) clearTimeout(activeBrowserTimeout);
+  activeBrowserTimeout = null;
+  if (browserRetainers.size) return;
   activeBrowserTimeout = setTimeout(async () => {
+    if (browserRetainers.size) return;
     if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO)) {
       scheduleGlobalBrowserCleanup();
       return;
@@ -1986,10 +2019,33 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
     activeBrowserLaunchPromise = null;
   }
 }
-export interface FlowCharacterInput { id: string; name: string; prompt: string; info?: string; }
-export interface FlowCharacterCreationResult { id: string; name: string; success: boolean; warning?: string; imageUrl?: string; }
-export interface EnsureFlowCharactersOptions { characters: FlowCharacterInput[]; projectId?: string; flowProjectId?: string; chromeHeadless?: boolean; language?: ProjectLanguage; retainBrowserSession?: boolean; }
-export interface EnsureFlowCharactersResult { success: boolean; newProjectId: string; characters: FlowCharacterCreationResult[]; warning?: string; }
+export interface FlowCharacterInput {
+  id: string;
+  name: string;
+  prompt: string;
+  info?: string;
+}
+export interface FlowCharacterCreationResult {
+  id: string;
+  name: string;
+  success: boolean;
+  warning?: string;
+  imageUrl?: string;
+}
+export interface EnsureFlowCharactersOptions {
+  characters: FlowCharacterInput[];
+  projectId?: string;
+  flowProjectId?: string;
+  chromeHeadless?: boolean;
+  language?: ProjectLanguage;
+  retainBrowserSession?: boolean;
+}
+export interface EnsureFlowCharactersResult {
+  success: boolean;
+  newProjectId: string;
+  characters: FlowCharacterCreationResult[];
+  warning?: string;
+}
 const getFlowCharacterPageUrl = (projectId: string): string => SOURCE_TEMPLATE_SYMBOL_33(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}`, `${projectId}`, `${FLOW_CHARACTER_CONFIG.PAGE_PATH}`);
 const getFlowProjectUrl = (projectId: string): string => SOURCE_TEMPLATE_SYMBOL(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}`, `${projectId}`);
 const isFlowCharacterAvailable = async (page: Page, projectId: string, characterName: string): Promise<boolean> => {
@@ -2264,7 +2320,11 @@ let grokPage: Page | null = null;
 let grokBrowser: Browser | null = null;
 let grokBrowserLaunchPromise: Promise<{ context: BrowserContext; page: Page }> | null = null;
 let activeGrokLocalProjectId: string | null = null;
-interface GrokCdpTarget { type?: string; title?: string; url?: string; }
+interface GrokCdpTarget {
+  type?: string;
+  title?: string;
+  url?: string;
+}
 const getGrokCdpTargets = async (): Promise<GrokCdpTarget[]> => {
   try {
     const response = await fetch(`${REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT}${REFACTOR_CONSTANTS.GROK_CDP_TARGETS_PATH}`);
@@ -2365,6 +2425,7 @@ const isGrokChromeRunning = async (): Promise<boolean> => {
   }
 };
 export async function closeOwnedGrokBrowserIfIdle(allowImaginePage: boolean = false): Promise<boolean> {
+  if (browserRetainers.size) return false;
   if (activeFlowVideoGenerationCount > 0) return false;
   if (!grokBrowser?.isConnected()) {
     if (!(await isGrokChromeRunning())) return true;
@@ -2563,9 +2624,9 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           try {
             await activePage.evaluate(
               (browserPayload) => {
-                const { SOURCE_TEXT_NAME, SOURCE_BROWSER_TEXT_RETURN } = browserPayload.texts;
+                const { SOURCE_TEXT_NAME, SOURCE_BROWSER_TEXT_RETURN, SOURCE_TEXT_UNDEFINED } = browserPayload.texts;
                 const { getImgIdStr } = browserPayload.payload;
-                if (typeof window !== "undefined") {
+                if (typeof window !== SOURCE_TEXT_UNDEFINED) {
                   if (!(window as any).__name) {
                     (window as any).__name = (target: any, value: any) => {
                       try {
@@ -2579,7 +2640,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
                   }
                 }
               },
-              { payload: { getImgIdStr: browserGetImgIdSafeStr }, texts: { SOURCE_TEXT_NAME, SOURCE_BROWSER_TEXT_RETURN } },
+              { payload: { getImgIdStr: browserGetImgIdSafeStr }, texts: { SOURCE_TEXT_NAME, SOURCE_BROWSER_TEXT_RETURN, SOURCE_TEXT_UNDEFINED: SRT.SOURCE_TEXT_UNDEFINED } },
             );
           } catch (err) {
             appError(ImageGenMessages.INJECT_HELPERS_ERR, err);
@@ -2602,10 +2663,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
           } else {
             const targetUrl = SOURCE_TEMPLATE_SYMBOL(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}`, `${currentProjectId}`);
             appLog(SOURCE_TEMPLATE_ATTEMPT(`${BACKEND_MESSAGES.PLAYWRIGHT_REDIRECT_LOG}`, `${currentProjectId}`, `${attempts}`));
-            await activePage.goto(targetUrl, {
-              waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
-              timeout: 60000,
-            });
+            await activePage.goto(targetUrl, { waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, timeout: 60000 });
           }
         }
         if (currentProjectId && (await isFlowProjectUnavailable(activePage))) {
@@ -2616,12 +2674,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         let inputEl = await locateFlowPromptInput(activePage);
         if (!inputEl) {
           await captureGeminiDomState(activePage, SOURCE_TEXT_FLOW_PROMPT_INPUT_MISSING);
-          await activePage
-            .screenshot({
-              path: path.join(getDataDirectory(), SOURCE_TEXT_FLOW_PROMPT_INPUT_MISSING_PNG),
-              fullPage: true,
-            })
-            .catch(() => {});
+          await activePage.screenshot({ path: path.join(getDataDirectory(), SOURCE_TEXT_FLOW_PROMPT_INPUT_MISSING_PNG), fullPage: true }).catch(() => {});
           const currentRoomUrl = currentProjectId ? SOURCE_TEMPLATE_SYMBOL(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}`, `${currentProjectId}`) : activePage.url();
           await activePage.goto(currentRoomUrl, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: 60000 }).catch(() => undefined);
           await dismissFlowOnboarding(activePage);
@@ -2769,21 +2822,21 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
         }
         const oldIds = await activePage.evaluate(
           (browserPayload) => {
-            const { SOURCE_BROWSER_TEXT_RETURN, SOURCE_TEXT_IMG, SOURCE_BROWSER_TEXT_GETMEDIAURLREDIRECT } = browserPayload.texts;
+            const { SOURCE_BROWSER_TEXT_RETURN, SOURCE_TEXT_IMG, SOURCE_BROWSER_TEXT_GETMEDIAURLREDIRECT, functionType } = browserPayload.texts;
             const getImgIdStr = browserPayload.payload;
             const getImgId = new Function(SOURCE_BROWSER_TEXT_RETURN + getImgIdStr)();
             const imgs = Array.from(document.querySelectorAll(SOURCE_TEXT_IMG));
             return imgs
               .filter((img) => img.src && img.src.includes(SOURCE_BROWSER_TEXT_GETMEDIAURLREDIRECT))
               .map((img) => {
-                if (typeof (window as any).__getImgId === "function") {
+                if (typeof (window as any).__getImgId === functionType) {
                   return (window as any).__getImgId(img.src);
                 }
                 return getImgId(img.src);
               })
               .filter(Boolean);
           },
-          { payload: browserGetImgIdSafeStr, texts: { SOURCE_BROWSER_TEXT_RETURN, SOURCE_TEXT_IMG, SOURCE_BROWSER_TEXT_GETMEDIAURLREDIRECT } },
+          { payload: browserGetImgIdSafeStr, texts: { SOURCE_BROWSER_TEXT_RETURN, SOURCE_TEXT_IMG, SOURCE_BROWSER_TEXT_GETMEDIAURLREDIRECT, functionType: SRT.SOURCE_TEXT_FUNCTION } },
         );
         const oldVideoSources = await activePage.evaluate(
           (browserPayload) => {
@@ -2897,10 +2950,7 @@ export async function generateImageWithPlaywright(options: ImageGeneratorOptions
               });
               if (newImg) {
                 try {
-                  newImg.scrollIntoView({
-                    behavior: SOURCE_BROWSER_TEXT_INSTANT,
-                    block: SOURCE_TEXT_CENTER,
-                  });
+                  newImg.scrollIntoView({ behavior: SOURCE_BROWSER_TEXT_INSTANT, block: SOURCE_TEXT_CENTER });
                 } catch (e) {}
                 if (!newImg.complete || newImg.naturalWidth === 0) return null;
                 const canvas = document.createElement(SOURCE_TEXT_CANVAS);
@@ -3112,10 +3162,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
     if (!isFlowProjectPageUrl(activePage.url(), currentProjectId)) {
       if (_.isEmpty(currentProjectId)) currentProjectId = await createFlowProject(activePage);
       else {
-        await activePage.goto(SOURCE_TEMPLATE_SYMBOL(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}`, `${currentProjectId}`), {
-          waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE,
-          timeout: 60000,
-        });
+        await activePage.goto(SOURCE_TEMPLATE_SYMBOL(`${EXTERNAL_URLS.GOOGLE_LABS_FLOW}`, `${currentProjectId}`), { waitUntil: FLOW_DIRECT_VIDEO_CONFIG.PAGE_READY_LOAD_STATE, timeout: 60000 });
       }
     }
     await throwIfSharedChromeFlowLoginRequired(browserInstance, currentProjectId);
@@ -3279,10 +3326,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         }
         if (needNewRoom) {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_START_ROOM.replace(SOURCE_TEXT_0_2, roomAttempts.toString()).replace(SOURCE_TEXT_1_3, maxRoomAttempts.toString()));
-          await activePage.goto(getGeminiWorkspaceUrl(visualConfig?.generateType), {
-            waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
-            timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
-          });
+          await activePage.goto(getGeminiWorkspaceUrl(visualConfig?.generateType), { waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL, timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS });
           await randomDelay(GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS, GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS);
           roomReferenceSignatureMap.delete(activePage);
           geminiAspectControlUnavailablePages.delete(activePage);
@@ -3307,10 +3351,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace(SOURCE_TEXT_0_2, _.toString(_.subtract(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT))));
           try {
-            await activePage!.reload({
-              waitUntil: GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_WAIT_UNTIL,
-              timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
-            });
+            await activePage!.reload({ waitUntil: GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_WAIT_UNTIL, timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS });
             await randomDelay(GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MIN_MS, GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MAX_MS);
           } catch (reloadError) {
             consecutiveGeminiErrors++;
@@ -3387,16 +3428,26 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     release();
   }
   if (success && base64Result) {
-    return {
-      success: true,
-      base64: base64Result,
-      fallbackUrl: `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${base64Result}`,
-    };
+    return { success: true, base64: base64Result, fallbackUrl: `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${base64Result}` };
   }
   return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: terminalWarning };
 }
-export interface BatchImageItem { sceneId: string; prompt: string; generateType?: GenerateType; referenceImages?: string[]; referenceImageNames?: string[]; continuityKey?: string; }
-export interface BatchImageResult { sceneId: string; success: boolean; base64: string | null; fallbackUrl: string; warning?: string; assetType: GenerateType.Image | GenerateType.Video; }
+export interface BatchImageItem {
+  sceneId: string;
+  prompt: string;
+  generateType?: GenerateType;
+  referenceImages?: string[];
+  referenceImageNames?: string[];
+  continuityKey?: string;
+}
+export interface BatchImageResult {
+  sceneId: string;
+  success: boolean;
+  base64: string | null;
+  fallbackUrl: string;
+  warning?: string;
+  assetType: GenerateType.Image | GenerateType.Video;
+}
 const resolveBatchAssetType = (item: BatchImageItem): GenerateType.Image | GenerateType.Video => (_.isEqual(item.generateType, GenerateType.Video) ? GenerateType.Video : GenerateType.Image);
 const getBatchItemVisualConfig = (item: BatchImageItem, visualConfig: GeminiVisualConfig): GeminiVisualConfig & { generateType: GenerateType.Image | GenerateType.Video } => {
   const isThumbnail = _.some([SOURCE_TEXT_TH, SOURCE_TEXT_THUMB, SOURCE_TEXT_THUMBNAIL_2], (prefix) => _.startsWith(_.toString(item.sceneId), prefix));
@@ -3489,10 +3540,7 @@ const prepareGeminiBatchPage = async (page: Page, index: number, generateType: G
   const tabNumber = _.add(index, SecurityConstants.DEFAULT_AMOUNT);
   try {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_PREPARE_NEW_ROOM.replace(SecurityConstants.PLACEHOLDER_0, _.toString(tabNumber)));
-    await page.goto(getGeminiWorkspaceUrl(generateType), {
-      waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
-      timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
-    });
+    await page.goto(getGeminiWorkspaceUrl(generateType), { waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL, timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS });
     await randomDelay(GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS, GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS);
     roomReferenceSignatureMap.delete(page);
     geminiAspectControlUnavailablePages.delete(page);
@@ -3593,10 +3641,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
                 .replace(SOURCE_TEXT_2_2, maxRoomAttempts.toString()),
             );
             try {
-              await page.goto(getGeminiWorkspaceUrl(itemVisualConfig.generateType), {
-                waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL,
-                timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
-              });
+              await page.goto(getGeminiWorkspaceUrl(itemVisualConfig.generateType), { waitUntil: GEMINI_BATCH_SETUP_CONFIG.WAIT_UNTIL, timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS });
               await randomDelay(GEMINI_BATCH_SETUP_CONFIG.DELAY_MIN_MS, GEMINI_BATCH_SETUP_CONFIG.DELAY_MAX_MS);
               roomReferenceSignatureMap.delete(page);
               geminiAspectControlUnavailablePages.delete(page);
@@ -3616,10 +3661,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
             if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
               appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_RELOAD_ATTEMPT.replace(SOURCE_TEXT_0_2, _.toString(_.add(tabIndex, SecurityConstants.DEFAULT_AMOUNT))).replace(SOURCE_TEXT_1_3, _.toString(_.subtract(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT))));
               try {
-                await page.reload({
-                  waitUntil: GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_WAIT_UNTIL,
-                  timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS,
-                });
+                await page.reload({ waitUntil: GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_WAIT_UNTIL, timeout: GEMINI_BATCH_SETUP_CONFIG.NAVIGATION_TIMEOUT_MS });
                 await randomDelay(GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MIN_MS, GEMINI_CHAT_RECOVERY_CONFIG.RELOAD_DELAY_MAX_MS);
               } catch (reloadError) {
                 batchPagesErrors.set(page, _.add(batchPagesErrors.get(page) || SecurityConstants.ZERO, SecurityConstants.DEFAULT_AMOUNT));
@@ -3694,13 +3736,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       }
       if (success && base64Result) {
         appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_SUCCESS.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()).replace(SOURCE_TEXT_1_3, item.sceneId));
-        return {
-          sceneId: item.sceneId,
-          success: true,
-          base64: base64Result,
-          fallbackUrl: `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${base64Result}`,
-          assetType: itemVisualConfig.generateType,
-        };
+        return { sceneId: item.sceneId, success: true, base64: base64Result, fallbackUrl: `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${base64Result}`, assetType: itemVisualConfig.generateType };
       }
       return { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: terminalWarning, assetType: itemVisualConfig.generateType };
     };
@@ -4241,12 +4277,7 @@ const waitForGeminiPageIdle = async (page: Page, visualConfig: GeminiVisualConfi
         const latestResponse = responses.item(responses.length - lastResponseOffset);
         return !document.querySelector(globalBusySelector) && !latestResponse?.querySelector(responseBusySelector);
       },
-      {
-        responseSelector: GeminiChatSelector.Response,
-        globalBusySelector: GeminiChatSelector.GenerationBusy,
-        responseBusySelector: GeminiChatSelector.ResponseGenerationBusy,
-        lastResponseOffset: SecurityConstants.DEFAULT_AMOUNT,
-      },
+      { responseSelector: GeminiChatSelector.Response, globalBusySelector: GeminiChatSelector.GenerationBusy, responseBusySelector: GeminiChatSelector.ResponseGenerationBusy, lastResponseOffset: SecurityConstants.DEFAULT_AMOUNT },
       { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.PAGE_IDLE_TIMEOUT_MS },
     )
     .catch(() => {
@@ -4295,14 +4326,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   await captureGeminiDomState(page, SOURCE_TEXT_WAITING_FOR_RESPONSE);
   if (!_.isUndefined(initialResponseCount)) {
     try {
-      await page.waitForFunction(
-        ({ expectedResponseCount, responseSelector }) => document.querySelectorAll(responseSelector).length >= expectedResponseCount,
-        {
-          expectedResponseCount: _.add(initialResponseCount, SecurityConstants.DEFAULT_AMOUNT),
-          responseSelector: GeminiChatSelector.Response,
-        },
-        { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.NEW_RESPONSE_TIMEOUT_MS },
-      );
+      await page.waitForFunction(({ expectedResponseCount, responseSelector }) => document.querySelectorAll(responseSelector).length >= expectedResponseCount, { expectedResponseCount: _.add(initialResponseCount, SecurityConstants.DEFAULT_AMOUNT), responseSelector: GeminiChatSelector.Response }, { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.NEW_RESPONSE_TIMEOUT_MS });
     } catch (e) {
       appError(BACKEND_MESSAGES.GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT);
       throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_NO_NEW_RESPONSE);
@@ -4322,10 +4346,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   if (isVideoGeneration && !(await mediaContainer.isVisible().catch(() => false))) {
     const processingIndicator = latestResponse.locator(GEMINI_CHAT_VIDEO_SELECTORS.PROCESSING).first();
     try {
-      await processingIndicator.waitFor({
-        state: SOURCE_TEXT_ATTACHED,
-        timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.PROCESSING_APPEAR_TIMEOUT_MS,
-      });
+      await processingIndicator.waitFor({ state: SOURCE_TEXT_ATTACHED, timeout: GEMINI_CHAT_VIDEO_INPUT_CONFIG.PROCESSING_APPEAR_TIMEOUT_MS });
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_WAIT);
     } catch (error) {
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_THINKING_DETACHED);
@@ -4445,15 +4466,7 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
               return extractionConfig.errorPrefix + getErrorMessage(fetchError);
             }
           },
-          {
-            payload: {
-              errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX,
-              emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE,
-              dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR,
-              dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX,
-            },
-            texts: { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG },
-          },
+          { payload: { errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX, emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE, dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR, dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX }, texts: { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG } },
         )
         .catch(() => null);
       if (base64Data && !_.startsWith(base64Data, GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX) && _.gt(base64Data.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH)) {
@@ -4500,13 +4513,7 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
               return null;
             }
           },
-          {
-            payload: {
-              dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR,
-              dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX,
-            },
-            texts: { SOURCE_BROWSER_TEXT_SRC },
-          },
+          { payload: { dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR, dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX }, texts: { SOURCE_BROWSER_TEXT_SRC } },
         )
         .catch(() => null);
       if (base64Data) {

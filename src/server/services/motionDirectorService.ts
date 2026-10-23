@@ -9,7 +9,8 @@ import * as MR from "../../constants/motionRuntime.js";
 import { MOTION_HISTORY } from "../../constants/motionHistory.js";
 import { buildMotionHudTrack, motionHudStates, motionGeomapParams, motionIconsParams, motionScoreboardParams, motionVerdictParams } from "../../lib/motionHistory.js";
 import { normalizeSoundCues } from "../../lib/motionSound.js";
-import { MOTION_VOICE } from "../../constants/motionVoice.js";
+import { MOTION_VOICE, MOTION_VOICE_PACING } from "../../constants/motionVoice.js";
+import { motionNarratorCastKey, motionNarratorLines } from "../../lib/motionVoice.js";
 import { motionMusicCues, motionMusicMood, motionMusicSegments } from "./motionMusicService.js";
 import _ from "lodash";
 import {
@@ -48,17 +49,17 @@ export const estimateBeatSeconds = (beat: MotionBeat, language: string): number 
   const pauses = (beat.narration.match(P.PUNCTUATION) || []).length * 0.18;
   return Math.max(1.2, countUnits(beat.narration) / rate + pauses);
 };
-export const computeBeatTimeline = (beats: MotionBeat[], durations: number[]): { starts: number[]; ends: number[]; total: number } => {
+export const computeBeatTimeline = (beats: MotionBeat[], durations: number[], continuous = false): { starts: number[]; ends: number[]; total: number } => {
   const starts: number[] = [];
   const ends: number[] = [];
-  let cursor = beats[0]?.visual === MOTION_TEXT_TITLE ? 0.9 : 0.5;
+  let cursor = continuous ? MOTION_VOICE_PACING.VOICE_LEAD : beats[0]?.visual === MOTION_TEXT_TITLE ? 0.9 : 0.5;
   beats.forEach((b, i) => {
     starts.push(cursor);
     const d = Math.max(0.6, durations[i] || 1);
     ends.push(cursor + d);
     const next = beats[i + 1];
-    const gap = !next ? 0 : next.chapterId !== b.chapterId || next.visual === MOTION_TEXT_CHAPTER ? MOTION_STORY_CONFIG.CHAPTER_GAP_SECONDS : MOTION_STORY_CONFIG.BEAT_GAP_SECONDS;
-    const hold = _.includes(GRAPHIC_HOLD, b.visual) ? 0.45 : 0;
+    const gap = continuous || !next ? 0 : next.chapterId !== b.chapterId || next.visual === MOTION_TEXT_CHAPTER ? MOTION_STORY_CONFIG.CHAPTER_GAP_SECONDS : MOTION_STORY_CONFIG.BEAT_GAP_SECONDS;
+    const hold = !continuous && _.includes(GRAPHIC_HOLD, b.visual) ? 0.45 : 0;
     cursor += d + gap + hold;
   });
   const tail = MOTION_STORY_CONFIG.TAIL_SECONDS + (_.last(beats)?.visual === MOTION_TEXT_ENDING ? 1.6 : 0);
@@ -221,33 +222,37 @@ const graphicParams = (beat: MotionBeat, analysis: MotionStoryAnalysis | null, b
       return { template: MOTION_TEXT_QUOTE, params: { text: beat.narration, ...bg } };
   }
 };
-export interface CompiledStory { spec: MotionSpec; starts: number[]; ends: number[]; sfxCues: MotionSoundCue[]; missing: string[]; }
+export interface CompiledStory {
+  spec: MotionSpec;
+  starts: number[];
+  ends: number[];
+  sfxCues: MotionSoundCue[];
+  missing: string[];
+}
 const speechRanges = (clip: MotionVoiceClip, origin: number): number[][] => {
   const words = clip.words?.length ? clip.words : [[0, clip.end - clip.start] as [number, number]];
   const out: number[][] = [];
   for (const [s, e] of words) {
-    const from = +(clip.start + s - origin).toFixed(3),
-      to = +(clip.start + e - origin).toFixed(3),
+    const from = +(Math.max(clip.start, clip.start + s) - origin).toFixed(3),
+      to = +(Math.min(clip.end, clip.start + e) - origin).toFixed(3),
       last = out[out.length - 1];
+    if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) continue;
     if (last && from - last[1] < MOTION_VOICE.ASR.MERGE_GAP) last[1] = to;
     else out.push([from, to]);
   }
   return out;
 };
-const quotedIn = (narration: string, text: string): boolean => {
-  const head = _.trim(text).slice(0, PUPPET_C.QUOTE_HEAD);
-  const at = head ? narration.indexOf(head) : -1;
-  return at >= 0 && PUPPET_C.QUOTE_BEFORE_RE.test(narration.slice(Math.max(0, at - PUPPET_C.QUOTE_LOOKBACK), at));
-};
-const spokenClip = (beat: MotionBeat, clip: MotionVoiceClip, roles: readonly string[] = PUPPET_C.SPEAK_ROLES): boolean => _.some(beat.utterances || [], (u) => u.speaker === clip.speaker && _.includes(roles, u.role) && (u.id === clip.id || _.includes(clip.text, _.trim(u.text).slice(0, 12))) && quotedIn(beat.narration, u.text));
-export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect: string; durations?: number[]; look?: string; accent?: string; voiceTrack?: MotionVoiceTrack }): CompiledStory => {
-  const beats = script.beats;
+const spokenClip = (beat: MotionBeat, clip: MotionVoiceClip, roles: readonly string[] = PUPPET_C.SPEAK_ROLES): boolean => clip.speaker !== MOTION_VOICE.NARRATOR && _.some(beat.utterances || [], (u) => u.speaker === clip.speaker && _.includes(roles, u.role) && (u.id === clip.id || _.includes(clip.text, _.trim(u.text).slice(0, 12))));
+export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect: string; durations?: number[]; look?: string; accent?: string; voiceTrack?: MotionVoiceTrack; continuousVoice?: boolean }): CompiledStory => {
+  const narratorKey = motionNarratorCastKey(analysis);
+  const beats = script.beats.map((beat) => ({ ...beat, utterances: beat.utterances ? motionNarratorLines(beat.utterances, narratorKey, beat.narration) : undefined }));
   if (_.isEmpty(beats)) throw new Error(MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO_2);
   const gen = script.gen;
   const durations = _.map(beats, (b, i) => opts.durations?.[i] || b.duration || estimateBeatSeconds(b, script.language));
-  const { starts, ends, total } = computeBeatTimeline(beats, durations);
+  const continuous = opts.continuousVoice ?? opts.voiceTrack?.continuous;
+  const { starts, ends, total } = computeBeatTimeline(beats, durations, continuous);
   const lead = MOTION_STORY_CONFIG.LEAD_SECONDS;
-  const shotStarts = _.map(starts, (s, i) => (i === 0 ? 0 : Math.max(0, s - lead, ends[i - 1] + MOTION_STORY_CONFIG.SPEECH_HOLD_SECONDS)));
+  const shotStarts = _.map(starts, (s, i) => (i === 0 ? 0 : continuous ? s : Math.max(0, s - lead, ends[i - 1] + MOTION_STORY_CONFIG.SPEECH_HOLD_SECONDS)));
   const shots: MotionShot[] = [];
   const subtitles: { start: number; end: number; text: string; dialogue?: boolean }[] = [];
   const missing: string[] = [];
@@ -260,7 +265,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     const clips = _.filter(opts.voiceTrack?.clips, (clip) => clip.beatId === beat.id);
     const speech = _.mapValues(
       _.groupBy(
-        _.filter(clips, (clip) => !!clip.speaker && spokenClip(beat, clip)),
+        _.filter(clips, (clip) => !!clip.speaker && spokenClip(beat, clip, [PUPPET_C.DIALOGUE])),
         (clip) => clip.speaker,
       ),
       (list) => _.flatMap(list, (clip) => speechRanges(clip, start)),

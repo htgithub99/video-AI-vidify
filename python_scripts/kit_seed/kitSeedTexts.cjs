@@ -1,0 +1,1 @@
+module.exports = { UTF8: "utf8", DATA: "data", END: "end", CHROME: "chrome", EMPTY: "", PIECE: "#piece", SVG: (defs, inner) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">${defs}<g id="piece">${inner}</g></svg>` };

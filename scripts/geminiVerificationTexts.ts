@@ -24,6 +24,12 @@ export const GEMINI_VERIFICATION_TEXTS = {
   IGNORE_LEVEL: "ignore-level",
   IGNORE_MODEL: "ignore-model",
   PATTERN_GEMINI_THINKING_UNAVAILABLE: /gemini_thinking_unavailable/,
+  PATTERN_GEMINI_UI_NOT_READY: /gemini_model_ui_not_ready/,
+  DELAYED_PAGE: "delayed-page",
+  DELAYED_LEVEL: "delayed-level",
+  LATE_PAGE: "late-page",
+  TRANSIENT_MENU: "transient-menu",
+  NOT_READY: "not-ready",
   CLOSE_THE_PICKER_AFTER_FAILURE: "Close the picker after failure",
   PATTERN_CHAT_PLANNING_CANCELLED: /chat_planning_cancelled/,
   UI_ENTRY:
@@ -60,23 +66,28 @@ export const GEMINI_VERIFICATION_TEXTS = {
   EXTERNAL: "external",
   ISOLATED_GEMINI_ROOM: "isolated-gemini-room",
   PATTERN_CHATUIPLANNINGSERVICE_JS: /chatUiPlanningService\.js$/,
+  API_IMPORT: /geminiService\.js$/,
+  API_FILE: "gemini-api",
+  API_STUB: "export const generateContentWithRetry = async () => { globalThis.__geminiRoomTest.apiCalls++; throw new Error('unexpected-live-api-call'); };",
+  STORAGE: (pid: number) => `scratch/gemini-thinking-${pid}`,
   ROOM: "room",
   GEMINI_TEST: "gemini-test",
   PATTERN_EMPTY: /.*/,
   JS: "js",
   ROOM_STUB:
-    "\n        export const beginChatPlanningRun = () => ({signal: new AbortController().signal, complete() {}, cancel() {}});\n        export const closeChatBrowserIfIdle = async () => true;\n        export const closeChatPlanningRoom = async () => {};\n        export const prepareChatPlanningRoom = async request => globalThis.__geminiRoomTest.calls.push({stage: 'prepare', model: request.model});\n        export const generatePlanningWithChatUi = async request => {\n          globalThis.__geminiRoomTest.calls.push({stage: 'send', model: request.model});\n          if (globalThis.__geminiRoomTest.fail) throw new Error('gemini_thinking_unavailable');\n          return {text: '{\"ok\":true}', provider: request.provider};\n        };\n      ",
+    "\n        export const beginChatPlanningRun = () => ({signal: new AbortController().signal, complete() {}, cancel() {}});\n        export const closeChatBrowserIfIdle = async () => true;\n        export const closeChatPlanningRoom = async () => {};\n        export const closeChatPlanningRoomsForProject = async () => {};\n        export const resumeChatPlanningResponse = async () => { throw new Error('unexpected-response-resume'); };\n        export const prepareChatPlanningRoom = async request => globalThis.__geminiRoomTest.calls.push({stage: 'prepare', model: request.model});\n        export const generatePlanningWithChatUi = async request => {\n          globalThis.__geminiRoomTest.calls.push({stage: 'send', model: request.model});\n          if (globalThis.__geminiRoomTest.fail) throw new Error('gemini_thinking_unavailable');\n          return {text: '{\"ok\":true}', provider: request.provider};\n        };\n      ",
   SCRATCH: "scratch",
   GEMINI_THINKING_TEST: "gemini-thinking-test",
   TEST: "test",
   PREPARE: "prepare",
   SEND: "send",
   MOTION_PRESERVES_THE_SELECTED_LEVEL_THROUGH_PREPARE_AND_SEND: "Motion preserves the selected level through prepare and send",
-  AN_UNAVAILABLE_EXPLICIT_LEVEL_MUST_NOT_FALL_BACK_TO_ANOTHER_MODEL_OR_API: "An unavailable explicit level must not fall back to another model or API",
+  AN_UNAVAILABLE_EXPLICIT_LEVEL_MUST_NOT_FALL_BACK_TO_ANOTHER_MODEL_OR_API: "Strict provider requests preserve the explicit level and never fall back to another model or API",
   PASSED: "Gemini thinking passed: low/medium/high UI, persistence, routing, legacy compatibility, verified browser selection in Vietnamese/English and unavailable-level failures.\n",
 } as const;
 export const GEMINI_VERIFICATION_FORMATS = {
   PICKER_HTML: (mode: unknown, models: unknown, choices: unknown, materialMenu: unknown, thinkingLabel: unknown, selectedLabel: unknown): string => `
+    <textarea aria-label="Hỏi Gemini"></textarea>
     <button data-test-id="bard-mode-menu-button" aria-expanded="false" onclick="toggleMenu()">4 Argon</button>
     <div role="menu" id="menu" hidden></div>
     <div role="menu" id="levels" hidden></div>
@@ -86,10 +97,19 @@ export const GEMINI_VERIFICATION_FORMATS = {
       const models = ${models};
       const choices = ${choices};
       const button = document.querySelector('button');
+      const composer = document.querySelector('textarea');
+      window.prematureOpens = 0; window.menuAttempts = 0;
+      if (mode === 'delayed-page' || mode === 'late-page' || mode === 'not-ready') {
+        composer.disabled = true;
+        if (mode !== 'not-ready') setTimeout(() => { composer.disabled = false; }, mode === 'late-page' ? 900 : 200);
+      }
       const menu = document.getElementById('menu'), levels = document.getElementById('levels');
       const materialMenu = ${materialMenu};
       function hide() { menu.hidden = true; levels.hidden = true; button.setAttribute('aria-expanded', 'false'); }
       function toggleMenu() {
+        window.menuAttempts++;
+        if (composer.disabled) window.prematureOpens++;
+        if (mode === 'transient-menu' && window.menuAttempts === 1) return;
         const open = menu.hidden; hide(); if (!open) return;
         menu.hidden = false; button.setAttribute('aria-expanded', 'true');
         menu.innerHTML = models.map(model => '<div role="menuitemradio" tabindex="0" data-model="' + model.value + '">' + model.label + '</div>').join('')
@@ -102,6 +122,10 @@ export const GEMINI_VERIFICATION_FORMATS = {
         if (trigger) { trigger.onmouseenter = showLevels; trigger.onclick = showLevels; }
       }
       function showLevels() {
+        if (mode === 'delayed-level' && !window.levelReady) {
+          setTimeout(() => { window.levelReady = true; showLevels(); }, 150);
+          return;
+        }
         levels.hidden = false;
         levels.innerHTML = choices.map(choice => {
           const selected = window.level === choice.value;

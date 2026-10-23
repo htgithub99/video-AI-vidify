@@ -1,0 +1,9 @@
+{
+  "expected": 22,
+  "completed": 22,
+  "decoded_videos": 20,
+  "storyboard_fallback_videos": 2,
+  "total_images": 14050,
+  "failures": [],
+  "image_validation_errors": 0
+}

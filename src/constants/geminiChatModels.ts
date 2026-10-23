@@ -1,6 +1,9 @@
 import { AiPlanningChatModel } from "../types.js";
 export const GEMINI_MODEL_UI = {
   POLL_MS: 100,
+  READY_POLLS: 3,
+  SELECTION_ATTEMPTS: 2,
+  PHASE: { READY: "page_ready", BASE: "base_model", BASE_VERIFY: "base_model_verify", LEVEL: "thinking_level", LEVEL_VERIFY: "thinking_level_verify" },
   ESCAPE: "Escape",
   MENU: "menu",
   HIDDEN: "hidden",
@@ -29,6 +32,9 @@ export const GEMINI_MODEL_ENCODING = {
   SEPARATOR: "::",
   UNAVAILABLE_CODE: "gemini_thinking_unavailable",
   UNAVAILABLE: (model: string) => `gemini_thinking_unavailable: Không thể áp dụng mô hình và cấp độ tư duy Gemini đã chọn (${model}).`,
+  UI_NOT_READY_CODE: "gemini_model_ui_not_ready",
+  UI_NOT_READY: (phase: string) => `gemini_model_ui_not_ready: Giao diện Gemini chưa sẵn sàng hoặc chưa xác nhận được lựa chọn (${phase}).`,
+  DIAGNOSTICS: "geminiSelection",
 } as const;
 export const GEMINI_CHAT_BASE_MODEL_OPTIONS = [
   { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },

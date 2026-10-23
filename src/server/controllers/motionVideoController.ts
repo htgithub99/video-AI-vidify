@@ -21,8 +21,7 @@ import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMot
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
 import { motionSpeechRate, recordSpeechRate, speechUnits } from "../services/motionSpeechRateService.js";
-import { clearVoiceSpeedReference, measureVoiceSpeedReference,
-  measureVoiceSpeedAudio, readVoiceSpeedSettings, recordVoiceSpeedFeedback, voicesUseAutoSpeed } from "../services/motionVoiceSpeedService.js";
+import { clearVoiceSpeedReference, measureVoiceSpeedReference, measureVoiceSpeedAudio, readVoiceSpeedSettings, recordVoiceSpeedFeedback, voicesUseAutoSpeed } from "../services/motionVoiceSpeedService.js";
 import path from "path";
 import {
   MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM,
@@ -179,13 +178,7 @@ export const startMotionVideoRender = (req: Request, res: Response): void => {
       sfxId: MOTION_VOICE_PATTERNS.SFX_TRACK.test(o.sfxId) ? o.sfxId : undefined,
       sfxVolume: _.toNumber(o.sfxVolume ?? 0.5),
       music: o.music && o.music.mood !== MOTION_MUSIC.OFF ? { mood: _.toString(o.music.mood || MOTION_MUSIC.AUTO), volume: _.clamp(_.toNumber(o.music.volume ?? MOTION_MUSIC.DEFAULT_VOLUME) || 0, 0, 1) } : undefined,
-      sfx:
-        o.sfx && _.isArray(o.sfx.cues)
-          ? {
-              cues: normalizeSoundCues(o.sfx.cues, spec.duration),
-              mood: _.toString(o.sfx.mood || MOTION_TEXT_DARK),
-            }
-          : undefined,
+      sfx: o.sfx && _.isArray(o.sfx.cues) ? { cues: normalizeSoundCues(o.sfx.cues, spec.duration), mood: _.toString(o.sfx.mood || MOTION_TEXT_DARK) } : undefined,
     });
     res.json({ success: true, job });
   } catch (error) {
@@ -274,18 +267,7 @@ export const analyzeMotionStory = async (req: Request, res: Response): Promise<v
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.ANALYZE, async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(String(source.words), String(Math.round(source.sourceSeconds / 60))));
-      const analysis = await analyzeStory(source, {
-        language,
-        length,
-        styleReferences,
-        videoGenre: motionVideoGenre(req.body?.videoGenre),
-        stylePreset: _.toString(req.body?.stylePreset || PUPPET_STYLE_DEFAULT),
-        characterMotion: req.body?.characterMotion === true,
-        aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9),
-        exec,
-        signal: ctx.signal,
-        log: ctx.log,
-      });
+      const analysis = await analyzeStory(source, { language, length, styleReferences, videoGenre: motionVideoGenre(req.body?.videoGenre), stylePreset: _.toString(req.body?.stylePreset || PUPPET_STYLE_DEFAULT), characterMotion: req.body?.characterMotion === true, aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), exec, signal: ctx.signal, log: ctx.log });
       ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(String(analysis.chapters.length), String(analysis.cast.length), String(analysis.places.length), String(analysis.facts.length)));
       return analysis;
     });
@@ -305,12 +287,7 @@ export const scriptMotionStory = (req: Request, res: Response): void => {
       if (errors.length) throw new Error(MR.MOTION_TEMPLATE_INVALID_VIDEO_DNA(errors.slice(0, 5).join(MR.MOTION_TEXT_SYMBOL_41)));
       if (analysis.videoDna.sourceKey !== videoDnaSourceKey(source)) throw new Error(MR.MOTION_TEXT_INPUT_CHANGED_ANALYZE_VIDEO_DNA_AGAIN_BEFORE_WRITING_SCENES);
       if (req.body?.length && analysis.videoDna.settings.length !== storyLength(req.body.length)) throw new Error(MR.MOTION_TEXT_VIDEO_LENGTH_CHANGED_ANALYZE_VIDEO_DNA_AGAIN);
-      analysis = bindVideoDnaSettings(analysis, {
-        language: language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI,
-        aspect: _.toString(req.body?.aspect || analysis.videoDna.settings.aspect),
-        drawingMode: MR.MOTION_TEXT_2D,
-        characterMode: MR.MOTION_TEXT_DRAWN,
-      });
+      analysis = bindVideoDnaSettings(analysis, { language: language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, aspect: _.toString(req.body?.aspect || analysis.videoDna.settings.aspect), drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN });
     }
     const exec = aiExec(req.body?.aiExecution);
     const only: string[] = _.map(_.castArray(req.body?.chapterIds || []), _.toString);
@@ -415,7 +392,6 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const script = req.body?.script as MotionStoryScript;
     if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
     const exec = drawExec(req.body?.aiExecution);
-    const mainExec = req.body?.mainAiExecution ? aiExec(req.body.mainAiExecution) : { ...exec, role: MOTION_AI_ROLE.MAIN };
     const styleReferences = normalizeMotionReferences(req.body?.styleReferences);
     const onlyBeats: string[] = _.map(_.castArray(req.body?.beats || []), _.toString);
     const onlyLocations: string[] = _.map(_.castArray(req.body?.locations || []), _.toString);
@@ -424,14 +400,13 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.SCENES, async (ctx) => {
       const autoVoice = req.body?.autoVoice !== false;
       ctx.progress(0, MOTION_STORY_CONFIG.SCENES_PREPARING);
-      const voiceOpts = { exec: mainExec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
-      const planJob = autoVoice ? listMotionVoiceSources(ctx.signal, ctx.log).then((sources) => directMotionVoice(script, analysis, sources, { exec: mainExec, signal: ctx.signal, log: ctx.log })) : Promise.resolve(undefined);
+      const voiceOpts = { exec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
+      const planJob = autoVoice ? listMotionVoiceSources(ctx.signal, ctx.log).then((sources) => directMotionVoice(script, analysis, sources, { exec, signal: ctx.signal, log: ctx.log })) : Promise.resolve(undefined);
       const voiceJob = planJob.then((plan) => (plan ? buildMotionVoiceTrack({ ...script, gen: { ...(script.gen || emptyGen()), voiceCast: motionVoiceCast(script.gen?.voiceCast, plan.roles) } }, analysis, voiceOpts) : undefined));
       voiceJob.catch(_.noop);
       const result = await buildScenesPuppet(script, analysis, {
         audioDirection: planJob.then((plan) => plan?.direction).catch(() => undefined),
         exec,
-        mainExec,
         signal: ctx.signal,
         log: ctx.log,
         progress: (value, stage) => ctx.progress(value * (autoVoice ? 0.9 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
@@ -443,7 +418,7 @@ export const scenesMotionStory = (req: Request, res: Response): void => {
         characterMotion: req.body?.characterMotion === true,
         note: note || undefined,
         review: req.body?.review !== false,
-      });
+      }).finally(() => voiceJob.then(_.noop, _.noop));
       const plan = await planJob;
       if (plan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, plan.roles);
       if (autoVoice && !result.gen?.failed?.length) {
@@ -469,13 +444,17 @@ export const voiceMotionStory = (req: Request, res: Response): void => {
     const script = req.body?.script as MotionStoryScript;
     if (!script?.beats?.length) throw new Error(MOTION_VOICE.EMPTY);
     const analysis = (req.body?.analysis as MotionStoryAnalysis) || null;
-    const exec = aiExec(req.body?.aiExecution);
+    const exec = drawExec(req.body?.aiExecution);
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.VOICE, async (ctx) => {
       const track = await buildMotionVoiceTrack(script, analysis, { exec, asr: req.body?.asrCheck === true, aspect: _.toString(req.body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress((0.98 * done) / Math.max(1, total), done === total ? MOTION_VOICE.MIXING : MOTION_VOICE.PROGRESS(done, total)) });
       ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(String(Math.round(track.totalSeconds))));
       const measured = recordSpeechRate(script, track.totalSeconds);
       if (measured) ctx.log(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
-      const feedback = recordVoiceSpeedFeedback(_.sumBy(track.clips || [], (clip) => speechUnits(clip.text)), track.totalSeconds, voicesUseAutoSpeed(_.uniq(_.map(track.clips || [], (clip) => clip.voiceId))));
+      const feedback = recordVoiceSpeedFeedback(
+        _.sumBy(track.clips || [], (clip) => speechUnits(clip.text)),
+        track.totalSeconds,
+        voicesUseAutoSpeed(_.uniq(_.map(track.clips || [], (clip) => clip.voiceId))),
+      );
       if (feedback) ctx.log(feedback);
       return track;
     });
@@ -633,7 +612,8 @@ export const compileMotionStory = async (req: Request, res: Response): Promise<v
     const aspect = _.includes([MOTION_TEXT_16_9, MOTION_TEXT_9_16, MOTION_TEXT_1_1, MOTION_TEXT_4_5], req.body?.aspect) ? req.body.aspect : MOTION_TEXT_16_9;
     const requestedVoice = req.body?.voiceTrack || script.voiceTrack;
     const voiceTrack = readMotionVoiceTrack(requestedVoice?.audioId, script, analysis);
-    let durations: number[] | undefined = voiceTrack?.durations || (_.isArray(req.body?.durations) ? _.map(req.body.durations, _.toNumber) : undefined);
+    const voiceStale = !!requestedVoice?.audioId && !voiceTrack && (!req.body?.audioId || req.body.audioId === requestedVoice.audioId);
+    let durations: number[] | undefined = voiceTrack?.durations || (!voiceStale && _.isArray(req.body?.durations) ? _.map(req.body.durations, _.toNumber) : undefined);
     const uploadedSeconds = _.toNumber(req.body?.uploadedAudioSeconds);
     if (!durations && uploadedSeconds > 0)
       durations = fitUploadedVoice(
@@ -644,7 +624,7 @@ export const compileMotionStory = async (req: Request, res: Response): Promise<v
     const directedScript = typeof req.body?.characterMotion === MR.MOTION_TEXT_BOOLEAN && script.gen ? { ...script, gen: { ...script.gen, characterMotion: req.body.characterMotion } } : script;
     const compiled = compileStorySpec(directedScript, analysis, { aspect, durations, look: req.body?.look, accent: req.body?.accent, voiceTrack });
     const duration = compiled.spec.duration || 1,
-      voiceId = voiceTrack?.audioId || (req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);
+      voiceId = voiceTrack?.audioId || (!voiceStale && req.body?.audioId ? path.basename(String(req.body.audioId)) : undefined);
     let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] },
       audioPreviewId: string | undefined;
     if (req.body?.sfx === true)
@@ -659,7 +639,7 @@ export const compileMotionStory = async (req: Request, res: Response): Promise<v
       logger.warn(SOUND.SKIPPED);
       audioPreviewId = voiceId;
     }
-    res.json({ success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, missing: compiled.missing, sfxId: sound.sfxId, audioPreviewId, soundSelections: sound.selections });
+    res.json({ success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, missing: compiled.missing, sfxId: sound.sfxId, audioPreviewId, soundSelections: sound.selections, voiceStale });
   } catch (error) {
     fail(res, 400, error);
   }
@@ -698,8 +678,7 @@ export const seedPuppetKitItems = (req: Request, res: Response): void => {
   try {
     const styleId = _.toString(req.body?.styleId || PUPPET_STYLE_DEFAULT);
     const exec = drawExec(req.body?.aiExecution);
-    const mainExec = req.body?.mainAiExecution ? aiExec(req.body.mainAiExecution) : { ...exec, role: MOTION_AI_ROLE.MAIN };
-    const job = startStoryJob(false, MotionStoryJobKind.LIBRARY, async (ctx) => seedPuppetKit(styleId, _.toString(req.body?.genre || PUPPET_SEED_DEFAULT), { exec, mainExec, signal: ctx.signal, log: ctx.log }, (v) => ctx.progress(v)));
+    const job = startStoryJob(false, MotionStoryJobKind.LIBRARY, async (ctx) => seedPuppetKit(styleId, _.toString(req.body?.genre || PUPPET_SEED_DEFAULT), { exec, signal: ctx.signal, log: ctx.log }, (v) => ctx.progress(v)));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);

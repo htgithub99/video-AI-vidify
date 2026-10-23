@@ -6,9 +6,13 @@ import type { MotionBeat, MotionShot, MotionVoiceClip } from "../../../types/mot
 import type { PuppetCharacter, PuppetFrame, PuppetGen, PuppetKitSpec, PuppetProp, PuppetSet, PuppetStylePack } from "../../../types/motionPuppet.js";
 import { readPuppet } from "./kitLibrary.js";
 import { layoutPuppetFrame, puppetHorizon } from "./layout.js";
-
-export interface PuppetTimedFrame extends Omit<PuppetFrame, "shot2" | "why"> { start: number; end: number; line?: string; cut?: boolean; }
-
+export interface PuppetTimedFrame extends Omit<PuppetFrame, "shot2" | "why"> {
+  start: number;
+  end: number;
+  line?: string;
+  cut?: boolean;
+  speech?: number[][];
+}
 const clipTimer = (clips: MotionVoiceClip[]) => {
   const segs: { off: number; len: number; clip: MotionVoiceClip }[] = [];
   let text: string = P.EMPTY;
@@ -28,7 +32,6 @@ const clipTimer = (clips: MotionVoiceClip[]) => {
   };
   return { text, timeAt, ok: segs.length > 0 };
 };
-
 const lineStarts = (keys: string[], start: number, end: number, clips: MotionVoiceClip[]): number[] => {
   const total = _.sumBy(keys, (k) => Math.max(1, k.length));
   let acc = 0;
@@ -47,27 +50,54 @@ const lineStarts = (keys: string[], start: number, end: number, clips: MotionVoi
     return timer.timeAt(at);
   });
 };
-
-const frameFields = (f: PuppetFrame, beat: MotionBeat): Omit<PuppetTimedFrame, "start" | "end"> =>
-  _.omitBy({ shot: f.shot, set: f.set || beat.place, light: f.light || undefined, actors: f.actors, prop: f.prop || undefined, propAt: f.propAt || undefined, form: f.form, anchor: f.anchor, propX: f.propX, smokeX: f.smokeX, smokeY: f.smokeY, inset: f.inset, set2: f.set2, light2: f.light2, overlays: f.overlays?.length ? f.overlays : undefined, camera: f.camera, speaker: f.speaker || undefined }, _.isNil) as Omit<PuppetTimedFrame, "start" | "end">;
-
+const frameFields = (f: PuppetFrame, beat: MotionBeat, speaker?: string): Omit<PuppetTimedFrame, "start" | "end"> =>
+  _.omitBy(
+    {
+      shot: f.shot,
+      set: f.set || beat.place,
+      light: f.light || undefined,
+      actors: f.actors,
+      items: f.items,
+      prop: f.prop || undefined,
+      propMount: f.propMount,
+      propAt: f.propAt || undefined,
+      form: f.form,
+      anchor: f.anchor,
+      propX: f.propX,
+      propRot: f.propRot,
+      smokeX: f.smokeX,
+      smokeY: f.smokeY,
+      inset: f.inset,
+      set2: f.set2,
+      light2: f.light2,
+      overlays: f.overlays?.length ? f.overlays : undefined,
+      camera: f.camera,
+      speaker: speaker || undefined,
+    },
+    _.isNil,
+  ) as Omit<PuppetTimedFrame, "start" | "end">;
 export const puppetBeatFrames = (beat: MotionBeat, gen: PuppetGen, start: number, end: number, clips: MotionVoiceClip[]): PuppetTimedFrame[] => {
   const lines = _.filter(puppetBeatLines(beat), (l) => !!gen.frames[l.key]);
   if (!lines.length) return [];
-  const at = lineStarts(_.map(lines, (l) => l.key), start, end, clips);
+  const at = lineStarts(
+    _.map(lines, (l) => l.key),
+    start,
+    end,
+    clips,
+  );
   const raw: PuppetTimedFrame[] = [];
   let prev = start;
   lines.forEach((l, i) => {
     const s = i === 0 ? start : _.clamp(at[i] - P.LEAD, prev, end);
-    raw.push({ ...frameFields(gen.frames[l.key], beat), start: s, end, line: l.key });
+    raw.push({ ...frameFields(gen.frames[l.key], beat, l.speaker), start: s, end, line: l.key });
     prev = s;
   });
   for (let i = 0; i < raw.length - 1; i++) raw[i].end = raw[i + 1].start;
   const merged: PuppetTimedFrame[] = [];
   for (const f of raw) {
     const last = _.last(merged);
-    if (last && f.end - f.start < P.MIN_FRAME) last.end = f.end;
-    else if (last && last.end - last.start < P.MIN_FRAME) merged[merged.length - 1] = { ...f, start: last.start };
+    if (last && last.speaker === f.speaker && f.end - f.start < P.MIN_FRAME) last.end = f.end;
+    else if (last && last.speaker === f.speaker && last.end - last.start < P.MIN_FRAME) merged[merged.length - 1] = { ...f, start: last.start };
     else merged.push(f);
   }
   const out: PuppetTimedFrame[] = [];
@@ -75,24 +105,22 @@ export const puppetBeatFrames = (beat: MotionBeat, gen: PuppetGen, start: number
     const second = f.line ? gen.frames[f.line]?.shot2 : null;
     if (second && f.end - f.start > P.SHOT2_MIN) {
       const mid = +((f.start + f.end) / 2).toFixed(3);
-      out.push({ ...f, end: mid }, { ...frameFields(second, beat), start: mid, end: f.end, line: f.line });
+      out.push({ ...f, end: mid }, { ...frameFields(second, beat, f.speaker || undefined), start: mid, end: f.end, line: f.line });
     } else out.push(f);
   }
   return _.map(out, (f) => ({ ...f, start: +f.start.toFixed(3), end: +f.end.toFixed(3) }));
 };
-
 export const puppetLayoutFrames = (frames: PuppetTimedFrame[], gen: PuppetGen): PuppetTimedFrame[] => {
   const style = readPuppet<PuppetStylePack>(PUPPET_TYPES.STYLE, gen.styleId);
   if (!style) return frames;
   const heights = _.mapValues(gen.characters, (id) => readPuppet<PuppetCharacter>(PUPPET_TYPES.CHARACTER, id)?.height || 1);
-  return _.map(frames, (f) => layoutPuppetFrame(f, { set: f.set && gen.sets[f.set] ? readPuppet<PuppetSet>(PUPPET_TYPES.SET, gen.sets[f.set]) : null, prop: f.prop && gen.props[f.prop] ? readPuppet<PuppetProp>(PUPPET_TYPES.PROP, gen.props[f.prop]) : null, body: style.body, heights }));
+  return _.map(frames, (f) => layoutPuppetFrame(f, { props: _.mapValues(gen.props, (id) => readPuppet<PuppetProp>(PUPPET_TYPES.PROP, id)), set: f.set && gen.sets[f.set] ? readPuppet<PuppetSet>(PUPPET_TYPES.SET, gen.sets[f.set]) : null, prop: f.prop && gen.props[f.prop] ? readPuppet<PuppetProp>(PUPPET_TYPES.PROP, gen.props[f.prop]) : null, body: style.body, heights }));
 };
-
 export const puppetSceneShot = (beat: MotionBeat, gen: PuppetGen, start: number, end: number, clips: MotionVoiceClip[], speech?: Record<string, number[][]>, soundFlag = false): MotionShot | null => {
-  const frames = puppetLayoutFrames(puppetBeatFrames(beat, gen, start, end, clips), gen);
+  const frames = puppetLayoutFrames(puppetBeatFrames(beat, gen, start, end, clips), gen).map((frame) => ({ ...frame, speech: (frame.speaker ? speech?.[frame.speaker] || [] : []).map(([from, to]) => [Math.max(frame.start, start + from), Math.min(frame.end, start + to)]).filter(([from, to]) => Number.isFinite(from) && Number.isFinite(to) && to > from) }));
   if (!frames.length) return null;
   const chars = _.uniq(_.flatMap(frames, (f) => _.map(f.actors, (a) => a.char)));
-  const props = _.uniq(_.compact(_.map(frames, (f) => f.prop)));
+  const props = _.uniq(_.compact(_.flatMap(frames, (f) => [f.prop, ...(f.items || []).map((it) => it.prop), ...f.actors.flatMap((a) => [a.hold, ...(a.wear || [])])])));
   const params = {
     frames,
     location: beat.place,
@@ -108,11 +136,8 @@ export const puppetSceneShot = (beat: MotionBeat, gen: PuppetGen, start: number,
   };
   return { id: beat.id, start: +start.toFixed(3), end: +end.toFixed(3), template: P.TEMPLATE, params };
 };
-
 const setSpec = (s: PuppetSet) => ({ svg: s.svg, floorY: s.floorY, wallY: puppetHorizon(s), lights: s.lights, time: s.time });
-
 export const puppetIsGhost = (c: PuppetCharacter): boolean => c.group === P.GHOST_GROUP || _.some([c.name, c.role, c.archetype], (v) => !!v && P.GHOST_NAME_RE.test(v));
-
 export const puppetKitSpec = (gen: PuppetGen, motion: boolean): PuppetKitSpec | null => {
   const style = readPuppet<PuppetStylePack>(PUPPET_TYPES.STYLE, gen.styleId);
   if (!style) return null;

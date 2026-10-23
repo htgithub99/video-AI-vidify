@@ -1,3 +1,4 @@
+import { PA } from "./motionPuppetAssets.js";
 import { MotionAspect, MotionQuality, MotionStoryLength } from "../types/motionVideo.js";
 export const MOTION_STORY_LENGTH_SECONDS: Partial<Record<MotionStoryLength, number>> = {
   [MotionStoryLength.ONE]: 60,
@@ -18,7 +19,22 @@ export const MOTION_STORY_LENGTH_SECONDS: Partial<Record<MotionStoryLength, numb
   [MotionStoryLength.SHORT]: 75,
 };
 export const MOTION_DIRECTOR_PATTERNS = { WORDS: /\s+/, PUNCTUATION: /[,.;:!?…]/g, SENTENCES: /[^.!?…]+[.!?…]*["”»)]*/g, CLAUSES: /(?<=[,;:–—])\s+/, SENTENCE_END: /[,.;:!?…]$/, BITMAP: /[^01#.* ]/g } as const;
-export interface MotionQualityPreset { id: MotionQuality; scale: number; fps: number; supersample: number; motionBlur: number; layerScale: number; bloom: boolean; grain: boolean; jpegQuality: number; crf: number; x264Preset: string; gpuCq: number; audioBitrate: string; maxBpp: number; }
+export interface MotionQualityPreset {
+  id: MotionQuality;
+  scale: number;
+  fps: number;
+  supersample: number;
+  motionBlur: number;
+  layerScale: number;
+  bloom: boolean;
+  grain: boolean;
+  jpegQuality: number;
+  crf: number;
+  x264Preset: string;
+  gpuCq: number;
+  audioBitrate: string;
+  maxBpp: number;
+}
 export const MOTION_QUALITY_PRESETS: Record<MotionQuality, MotionQualityPreset> = {
   [MotionQuality.DRAFT]: { id: MotionQuality.DRAFT, scale: 2 / 3, fps: 24, supersample: 1, motionBlur: 1, layerScale: 0.75, bloom: false, grain: true, jpegQuality: 0.85, crf: 24, x264Preset: "veryfast", gpuCq: 26, audioBitrate: "160k", maxBpp: 0.12 },
   [MotionQuality.STANDARD]: { id: MotionQuality.STANDARD, scale: 1, fps: 30, supersample: 1, motionBlur: 1, layerScale: 1, bloom: true, grain: true, jpegQuality: 0.9, crf: 19, x264Preset: "fast", gpuCq: 21, audioBitrate: "192k", maxBpp: 0.2 },
@@ -30,7 +46,7 @@ export const MOTION_VIDEO_CONSTANTS = {
   ENGINE_DIR: "motion-engine",
   TEMPLATE_2D: "gen2d",
   DRAWING_2D: "2d",
-  FX_CUE_RE: /^(stinger|thunder|explosion|impact)$/,
+  FX_CUE_RE: /^(thunder|explosion)$/,
   ENGINE_FILES: ["texts.js", "core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "puppet2d.js"],
   CLIENT_ONLY_FILES: ["style-finish.js"],
   FONTS_DIR: "fonts",
@@ -75,7 +91,8 @@ export const MOTION_STORY_CONFIG = {
   ARTIFACT_ANALYSIS: "motion-story-analysis",
   ARTIFACT_STYLE: "motion-style-kit",
   ARTIFACT_CHAPTER: "motion-story-chapter",
-  CHAPTER_RETRY_NOTE: (problems: string, spoken: number, target: number): string => `PREVIOUS ATTEMPT WAS REJECTED: ${problems} Your previous narration had ${spoken} units in total; the whole chapter must total about ${target} units (count every spoken syllable/word across all beats). ${spoken > target ? "Cut descriptive filler and merge beats; keep only the events that move the story." : "Add concrete events and sensory detail from the source."}`,
+  CHAPTER_RETRY_NOTE: (problems: string, spoken: number, target: number): string =>
+    `PREVIOUS ATTEMPT WAS REJECTED: ${problems} Your previous narration had ${spoken} units in total; the whole chapter must total about ${target} units (count every spoken syllable/word across all beats). ${spoken > target ? "Cut descriptive filler and merge beats; keep only the events that move the story." : "Add concrete events and sensory detail from the source."}`,
   VI_SYLLABLES_PER_SECOND: 3.4,
   EN_WORDS_PER_SECOND: 2.4,
   TARGET_BEAT_SECONDS: 7,
@@ -102,7 +119,7 @@ export const MOTION_STORY_CONFIG = {
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
   ROOM_LONG_TIMEOUT_MS: 12 * 60 * 1000,
   ROOM_SHORT_TIMEOUT_MS: 3 * 60 * 1000,
-  ROOM_SHORT_ARTIFACTS: ["motion-puppet-lib-match", "motion-puppet-cast-match", "motion-puppet-prop-match", "motion-puppet-set-plan", "motion-audio-casting", "motion-puppet-set-check", "motion-puppet-props-check", "motion-puppet-character-check", "motion-story-seo"] as string[],
+  ROOM_SHORT_ARTIFACTS: ["motion-puppet-lib-match", "motion-puppet-cast-match", PA.ARTIFACT, "motion-puppet-set-plan", "motion-audio-casting", "motion-puppet-set-check", "motion-puppet-character-check", "motion-story-seo"] as string[],
   ROOM_STUCK_BLOCK_MS: 5 * 60 * 1000,
   ROOM_CLOSED_RE: /Target page, context or browser has been closed|frame was detached|ERR_ABORTED/,
   ROOM_SKIP_LOG: (provider: string, minutes: number): string => `Phòng chat ${provider} đang lỗi – bỏ qua ${provider} trong ${minutes} phút cho các yêu cầu tiếp theo, chuyển ngay sang AI dự phòng.`,
@@ -130,7 +147,7 @@ export const MOTION_STORY_CONFIG = {
   EDIT_RATIO_MIN: 0.3,
   EDIT_RATIO_MAX: 1.5,
   LIMIT_SWITCH: { "gemini-chat": { provider: "chatgpt-ui", model: "chatgpt-auto" }, "chatgpt-ui": { provider: "gemini-chat", model: "gemini-flash" }, "deepseek-chat": { provider: "gemini-chat", model: "gemini-flash" }, "grok-chat": { provider: "gemini-chat", model: "gemini-flash" } } as Record<string, { provider: string; model: string }>,
-  ROOM_RESTART_LOG: (provider: string): string => `Phòng chat ${provider} không hiện ô nhập – mở lại trình duyệt và thử lại một lần`,
+  ROOM_RESTART_LOG: (provider: string): string => `Phòng chat ${provider} không hiện ô nhập – mở phòng chat mới và thử lại một lần`,
   LOOSE_MATCH_MIN: 3,
   PROVIDER_PARALLEL: { "gemini-chat": 3, "chatgpt-ui": 3, "claude-chat": 1 } as Record<string, number>,
   PROVIDER_MIN_GAP_MS: 8000,
@@ -146,7 +163,6 @@ export const MOTION_STORY_CONFIG = {
   ROOM_LIMIT_BLOCK_MS: 5 * 60 * 60 * 1000,
   ROOM_LIMIT_LOG: (from: string, to: string): string => `${from} đã hết lượt – các yêu cầu còn lại trong phiên chuyển thẳng sang ${to}`,
   API_PROVIDER: "api",
-  BROWSER_RELEASED: "Đã xong toàn bộ phần trao đổi với AI – đóng Chrome trước khi dựng ảnh xem trước",
   REQUEST_COUNT_LOG: (counts: Record<string, number>): string =>
     `Số request đã gửi: ${Object.entries(counts)
       .map(([provider, count]) => `${provider} ${count}`)
@@ -155,7 +171,4 @@ export const MOTION_STORY_CONFIG = {
 } as const;
 export const MOTION_PREVIEW_QUALITY = { supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 };
 export const MOTION_PREVIEW_SIZES: Record<string, [number, number]> = { [MotionAspect.LANDSCAPE]: [960, 540], [MotionAspect.PORTRAIT]: [405, 720], [MotionAspect.SQUARE]: [600, 600], [MotionAspect.FOUR_FIVE]: [540, 675] };
-export const MOTION_RASTER = {
-  BG: "#ffffff",
-  BG_HTML: (svg: string, w: number, h: number, bg: string): string => `<!doctype html><html><body style="margin:0;background:${bg}">${svg.replace("<svg", `<svg width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"`)}</body></html>`,
-} as const;
+export const MOTION_RASTER = { BG: "#ffffff", BG_HTML: (svg: string, w: number, h: number, bg: string): string => `<!doctype html><html><body style="margin:0;background:${bg}">${svg.replace("<svg", `<svg width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"`)}</body></html>` } as const;

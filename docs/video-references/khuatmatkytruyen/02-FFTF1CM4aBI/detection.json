@@ -1,0 +1,8611 @@
+{
+  "method": "2 fps layout-change candidates plus 20s coverage checkpoints",
+  "sample_fps": 2,
+  "samples_decoded": 5155,
+  "last_sample_time": 2577.0,
+  "candidates": [
+    {
+      "sample": 0,
+      "time": 0.0,
+      "mean": 255,
+      "changed_fraction": 1,
+      "max_tile": 255
+    },
+    {
+      "sample": 2,
+      "time": 1.0,
+      "mean": 16.948,
+      "changed_fraction": 0.1553,
+      "max_tile": 110.31
+    },
+    {
+      "sample": 5,
+      "time": 2.5,
+      "mean": 3.499,
+      "changed_fraction": 0.0491,
+      "max_tile": 31.146
+    },
+    {
+      "sample": 13,
+      "time": 6.5,
+      "mean": 57.185,
+      "changed_fraction": 0.4953,
+      "max_tile": 188.951
+    },
+    {
+      "sample": 15,
+      "time": 7.5,
+      "mean": 15.256,
+      "changed_fraction": 0.2301,
+      "max_tile": 52.632
+    },
+    {
+      "sample": 27,
+      "time": 13.5,
+      "mean": 1.769,
+      "changed_fraction": 0.0323,
+      "max_tile": 19.405
+    },
+    {
+      "sample": 32,
+      "time": 16.0,
+      "mean": 2.922,
+      "changed_fraction": 0.0543,
+      "max_tile": 24.794
+    },
+    {
+      "sample": 38,
+      "time": 19.0,
+      "mean": 4.296,
+      "changed_fraction": 0.0819,
+      "max_tile": 27.403
+    },
+    {
+      "sample": 48,
+      "time": 24.0,
+      "mean": 32.277,
+      "changed_fraction": 0.6731,
+      "max_tile": 83.461
+    },
+    {
+      "sample": 54,
+      "time": 27.0,
+      "mean": 2.754,
+      "changed_fraction": 0.0155,
+      "max_tile": 33.049
+    },
+    {
+      "sample": 63,
+      "time": 31.5,
+      "mean": 3.929,
+      "changed_fraction": 0.0427,
+      "max_tile": 17.563
+    },
+    {
+      "sample": 65,
+      "time": 32.5,
+      "mean": 4.074,
+      "changed_fraction": 0.0431,
+      "max_tile": 31.926
+    },
+    {
+      "sample": 68,
+      "time": 34.0,
+      "mean": 1.823,
+      "changed_fraction": 0.0085,
+      "max_tile": 28.192
+    },
+    {
+      "sample": 74,
+      "time": 37.0,
+      "mean": 1.258,
+      "changed_fraction": 0.0093,
+      "max_tile": 33.576
+    },
+    {
+      "sample": 76,
+      "time": 38.0,
+      "mean": 3.98,
+      "changed_fraction": 0.0426,
+      "max_tile": 33.213
+    },
+    {
+      "sample": 78,
+      "time": 39.0,
+      "mean": 13.874,
+      "changed_fraction": 0.1795,
+      "max_tile": 76.417
+    },
+    {
+      "sample": 86,
+      "time": 43.0,
+      "mean": 3.473,
+      "changed_fraction": 0.0339,
+      "max_tile": 22.771
+    },
+    {
+      "sample": 91,
+      "time": 45.5,
+      "mean": 3.913,
+      "changed_fraction": 0.0287,
+      "max_tile": 16.729
+    },
+    {
+      "sample": 105,
+      "time": 52.5,
+      "mean": 4.787,
+      "changed_fraction": 0.0496,
+      "max_tile": 17.623
+    },
+    {
+      "sample": 107,
+      "time": 53.5,
+      "mean": 13.804,
+      "changed_fraction": 0.1831,
+      "max_tile": 83.086
+    },
+    {
+      "sample": 118,
+      "time": 59.0,
+      "mean": 4.898,
+      "changed_fraction": 0.0505,
+      "max_tile": 20.63
+    },
+    {
+      "sample": 122,
+      "time": 61.0,
+      "mean": 3.497,
+      "changed_fraction": 0.0312,
+      "max_tile": 17.486
+    },
+    {
+      "sample": 131,
+      "time": 65.5,
+      "mean": 8.476,
+      "changed_fraction": 0.096,
+      "max_tile": 115.66
+    },
+    {
+      "sample": 133,
+      "time": 66.5,
+      "mean": 3.743,
+      "changed_fraction": 0.0504,
+      "max_tile": 41.877
+    },
+    {
+      "sample": 135,
+      "time": 67.5,
+      "mean": 1.74,
+      "changed_fraction": 0.018,
+      "max_tile": 33.775
+    },
+    {
+      "sample": 137,
+      "time": 68.5,
+      "mean": 1.452,
+      "changed_fraction": 0.0137,
+      "max_tile": 33.644
+    },
+    {
+      "sample": 141,
+      "time": 70.5,
+      "mean": 2.898,
+      "changed_fraction": 0.0228,
+      "max_tile": 43.69
+    },
+    {
+      "sample": 143,
+      "time": 71.5,
+      "mean": 3.743,
+      "changed_fraction": 0.0523,
+      "max_tile": 52.271
+    },
+    {
+      "sample": 145,
+      "time": 72.5,
+      "mean": 4.043,
+      "changed_fraction": 0.0493,
+      "max_tile": 52.718
+    },
+    {
+      "sample": 155,
+      "time": 77.5,
+      "mean": 3.537,
+      "changed_fraction": 0.0381,
+      "max_tile": 21.421
+    },
+    {
+      "sample": 157,
+      "time": 78.5,
+      "mean": 9.473,
+      "changed_fraction": 0.1354,
+      "max_tile": 65.972
+    },
+    {
+      "sample": 169,
+      "time": 84.5,
+      "mean": 2.568,
+      "changed_fraction": 0.017,
+      "max_tile": 28.428
+    },
+    {
+      "sample": 172,
+      "time": 86.0,
+      "mean": 3.696,
+      "changed_fraction": 0.0379,
+      "max_tile": 23.819
+    },
+    {
+      "sample": 181,
+      "time": 90.5,
+      "mean": 4.29,
+      "changed_fraction": 0.0437,
+      "max_tile": 32.85
+    },
+    {
+      "sample": 183,
+      "time": 91.5,
+      "mean": 10.125,
+      "changed_fraction": 0.1133,
+      "max_tile": 105.458
+    },
+    {
+      "sample": 192,
+      "time": 96.0,
+      "mean": 3.261,
+      "changed_fraction": 0.0372,
+      "max_tile": 24.491
+    },
+    {
+      "sample": 194,
+      "time": 97.0,
+      "mean": 9.591,
+      "changed_fraction": 0.1241,
+      "max_tile": 89.512
+    },
+    {
+      "sample": 203,
+      "time": 101.5,
+      "mean": 3.762,
+      "changed_fraction": 0.0478,
+      "max_tile": 24.185
+    },
+    {
+      "sample": 205,
+      "time": 102.5,
+      "mean": 18.409,
+      "changed_fraction": 0.1976,
+      "max_tile": 72.505
+    },
+    {
+      "sample": 215,
+      "time": 107.5,
+      "mean": 3.316,
+      "changed_fraction": 0.0375,
+      "max_tile": 15.308
+    },
+    {
+      "sample": 217,
+      "time": 108.5,
+      "mean": 3.604,
+      "changed_fraction": 0.0297,
+      "max_tile": 16.845
+    },
+    {
+      "sample": 227,
+      "time": 113.5,
+      "mean": 3.545,
+      "changed_fraction": 0.0365,
+      "max_tile": 24.486
+    },
+    {
+      "sample": 229,
+      "time": 114.5,
+      "mean": 25.354,
+      "changed_fraction": 0.4914,
+      "max_tile": 91.979
+    },
+    {
+      "sample": 242,
+      "time": 121.0,
+      "mean": 3.947,
+      "changed_fraction": 0.0576,
+      "max_tile": 29.731
+    },
+    {
+      "sample": 244,
+      "time": 122.0,
+      "mean": 2.643,
+      "changed_fraction": 0.038,
+      "max_tile": 21.796
+    },
+    {
+      "sample": 255,
+      "time": 127.5,
+      "mean": 2.917,
+      "changed_fraction": 0.0397,
+      "max_tile": 21.796
+    },
+    {
+      "sample": 257,
+      "time": 128.5,
+      "mean": 77.25,
+      "changed_fraction": 0.9785,
+      "max_tile": 203.5
+    },
+    {
+      "sample": 265,
+      "time": 132.5,
+      "mean": 3.393,
+      "changed_fraction": 0.035,
+      "max_tile": 25.523
+    },
+    {
+      "sample": 273,
+      "time": 136.5,
+      "mean": 3.628,
+      "changed_fraction": 0.0359,
+      "max_tile": 24.458
+    },
+    {
+      "sample": 290,
+      "time": 145.0,
+      "mean": 3.225,
+      "changed_fraction": 0.0309,
+      "max_tile": 17.766
+    },
+    {
+      "sample": 292,
+      "time": 146.0,
+      "mean": 37.735,
+      "changed_fraction": 0.5816,
+      "max_tile": 147.134
+    },
+    {
+      "sample": 299,
+      "time": 149.5,
+      "mean": 2.848,
+      "changed_fraction": 0.0232,
+      "max_tile": 31.843
+    },
+    {
+      "sample": 305,
+      "time": 152.5,
+      "mean": 3.854,
+      "changed_fraction": 0.0402,
+      "max_tile": 24.421
+    },
+    {
+      "sample": 307,
+      "time": 153.5,
+      "mean": 80.842,
+      "changed_fraction": 0.9381,
+      "max_tile": 133.005
+    },
+    {
+      "sample": 310,
+      "time": 155.0,
+      "mean": 3.864,
+      "changed_fraction": 0.0396,
+      "max_tile": 18.884
+    },
+    {
+      "sample": 313,
+      "time": 156.5,
+      "mean": 3.87,
+      "changed_fraction": 0.0416,
+      "max_tile": 20.727
+    },
+    {
+      "sample": 316,
+      "time": 158.0,
+      "mean": 3.759,
+      "changed_fraction": 0.0408,
+      "max_tile": 18.345
+    },
+    {
+      "sample": 319,
+      "time": 159.5,
+      "mean": 3.776,
+      "changed_fraction": 0.0388,
+      "max_tile": 20.521
+    },
+    {
+      "sample": 322,
+      "time": 161.0,
+      "mean": 4.256,
+      "changed_fraction": 0.0436,
+      "max_tile": 19.093
+    },
+    {
+      "sample": 325,
+      "time": 162.5,
+      "mean": 66.638,
+      "changed_fraction": 0.9394,
+      "max_tile": 124.912
+    },
+    {
+      "sample": 327,
+      "time": 163.5,
+      "mean": 20.481,
+      "changed_fraction": 0.3309,
+      "max_tile": 44.641
+    },
+    {
+      "sample": 331,
+      "time": 165.5,
+      "mean": 1.492,
+      "changed_fraction": 0.0141,
+      "max_tile": 28.481
+    },
+    {
+      "sample": 335,
+      "time": 167.5,
+      "mean": 1.465,
+      "changed_fraction": 0.0137,
+      "max_tile": 28.854
+    },
+    {
+      "sample": 338,
+      "time": 169.0,
+      "mean": 84.533,
+      "changed_fraction": 0.8839,
+      "max_tile": 185.472
+    },
+    {
+      "sample": 342,
+      "time": 171.0,
+      "mean": 4.34,
+      "changed_fraction": 0.0468,
+      "max_tile": 21.479
+    },
+    {
+      "sample": 346,
+      "time": 173.0,
+      "mean": 4.126,
+      "changed_fraction": 0.0406,
+      "max_tile": 25.301
+    },
+    {
+      "sample": 349,
+      "time": 174.5,
+      "mean": 3.543,
+      "changed_fraction": 0.0286,
+      "max_tile": 20.153
+    },
+    {
+      "sample": 351,
+      "time": 175.5,
+      "mean": 45.727,
+      "changed_fraction": 0.6721,
+      "max_tile": 93.028
+    },
+    {
+      "sample": 353,
+      "time": 176.5,
+      "mean": 14.193,
+      "changed_fraction": 0.0202,
+      "max_tile": 19.567
+    },
+    {
+      "sample": 367,
+      "time": 183.5,
+      "mean": 4.185,
+      "changed_fraction": 0.0462,
+      "max_tile": 21.22
+    },
+    {
+      "sample": 369,
+      "time": 184.5,
+      "mean": 59.027,
+      "changed_fraction": 0.9869,
+      "max_tile": 94.815
+    },
+    {
+      "sample": 371,
+      "time": 185.5,
+      "mean": 6.296,
+      "changed_fraction": 0.1108,
+      "max_tile": 28.178
+    },
+    {
+      "sample": 373,
+      "time": 186.5,
+      "mean": 5.861,
+      "changed_fraction": 0.1022,
+      "max_tile": 28.333
+    },
+    {
+      "sample": 375,
+      "time": 187.5,
+      "mean": 5.78,
+      "changed_fraction": 0.1009,
+      "max_tile": 29.088
+    },
+    {
+      "sample": 377,
+      "time": 188.5,
+      "mean": 6.602,
+      "changed_fraction": 0.1124,
+      "max_tile": 32.789
+    },
+    {
+      "sample": 379,
+      "time": 189.5,
+      "mean": 61.17,
+      "changed_fraction": 0.8938,
+      "max_tile": 128.16
+    },
+    {
+      "sample": 383,
+      "time": 191.5,
+      "mean": 4.077,
+      "changed_fraction": 0.0398,
+      "max_tile": 15.282
+    },
+    {
+      "sample": 387,
+      "time": 193.5,
+      "mean": 4.103,
+      "changed_fraction": 0.0385,
+      "max_tile": 15.259
+    },
+    {
+      "sample": 390,
+      "time": 195.0,
+      "mean": 62.644,
+      "changed_fraction": 0.6604,
+      "max_tile": 172.22
+    },
+    {
+      "sample": 393,
+      "time": 196.5,
+      "mean": 3.095,
+      "changed_fraction": 0.0235,
+      "max_tile": 37.435
+    },
+    {
+      "sample": 395,
+      "time": 197.5,
+      "mean": 2.63,
+      "changed_fraction": 0.0207,
+      "max_tile": 48.375
+    },
+    {
+      "sample": 398,
+      "time": 199.0,
+      "mean": 2.938,
+      "changed_fraction": 0.0249,
+      "max_tile": 39.731
+    },
+    {
+      "sample": 400,
+      "time": 200.0,
+      "mean": 2.653,
+      "changed_fraction": 0.0204,
+      "max_tile": 48.685
+    },
+    {
+      "sample": 403,
+      "time": 201.5,
+      "mean": 3.393,
+      "changed_fraction": 0.0246,
+      "max_tile": 38.794
+    },
+    {
+      "sample": 405,
+      "time": 202.5,
+      "mean": 3.001,
+      "changed_fraction": 0.0199,
+      "max_tile": 47.875
+    },
+    {
+      "sample": 408,
+      "time": 204.0,
+      "mean": 2.94,
+      "changed_fraction": 0.0251,
+      "max_tile": 39.935
+    },
+    {
+      "sample": 410,
+      "time": 205.0,
+      "mean": 2.967,
+      "changed_fraction": 0.0206,
+      "max_tile": 49.211
+    },
+    {
+      "sample": 413,
+      "time": 206.5,
+      "mean": 1.585,
+      "changed_fraction": 0.0183,
+      "max_tile": 48.5
+    },
+    {
+      "sample": 415,
+      "time": 207.5,
+      "mean": 1.457,
+      "changed_fraction": 0.0173,
+      "max_tile": 45.512
+    },
+    {
+      "sample": 418,
+      "time": 209.0,
+      "mean": 2.492,
+      "changed_fraction": 0.0177,
+      "max_tile": 47.743
+    },
+    {
+      "sample": 420,
+      "time": 210.0,
+      "mean": 14.037,
+      "changed_fraction": 0.1943,
+      "max_tile": 99.852
+    },
+    {
+      "sample": 426,
+      "time": 213.0,
+      "mean": 3.174,
+      "changed_fraction": 0.0329,
+      "max_tile": 17.637
+    },
+    {
+      "sample": 431,
+      "time": 215.5,
+      "mean": 53.395,
+      "changed_fraction": 0.7043,
+      "max_tile": 141.266
+    },
+    {
+      "sample": 433,
+      "time": 216.5,
+      "mean": 2.832,
+      "changed_fraction": 0.0163,
+      "max_tile": 50.831
+    },
+    {
+      "sample": 435,
+      "time": 217.5,
+      "mean": 2.709,
+      "changed_fraction": 0.0154,
+      "max_tile": 43.859
+    },
+    {
+      "sample": 437,
+      "time": 218.5,
+      "mean": 2.607,
+      "changed_fraction": 0.0162,
+      "max_tile": 39.185
+    },
+    {
+      "sample": 439,
+      "time": 219.5,
+      "mean": 2.432,
+      "changed_fraction": 0.0149,
+      "max_tile": 36.877
+    },
+    {
+      "sample": 441,
+      "time": 220.5,
+      "mean": 1.454,
+      "changed_fraction": 0.0149,
+      "max_tile": 42.956
+    },
+    {
+      "sample": 443,
+      "time": 221.5,
+      "mean": 1.216,
+      "changed_fraction": 0.0138,
+      "max_tile": 43.025
+    },
+    {
+      "sample": 452,
+      "time": 226.0,
+      "mean": 51.638,
+      "changed_fraction": 0.8362,
+      "max_tile": 110.778
+    },
+    {
+      "sample": 456,
+      "time": 228.0,
+      "mean": 3.936,
+      "changed_fraction": 0.0459,
+      "max_tile": 20.609
+    },
+    {
+      "sample": 460,
+      "time": 230.0,
+      "mean": 3.409,
+      "changed_fraction": 0.0383,
+      "max_tile": 25.523
+    },
+    {
+      "sample": 463,
+      "time": 231.5,
+      "mean": 3.7,
+      "changed_fraction": 0.0362,
+      "max_tile": 19.382
+    },
+    {
+      "sample": 465,
+      "time": 232.5,
+      "mean": 109.594,
+      "changed_fraction": 0.9854,
+      "max_tile": 192.505
+    },
+    {
+      "sample": 478,
+      "time": 239.0,
+      "mean": 2.979,
+      "changed_fraction": 0.0382,
+      "max_tile": 17.382
+    },
+    {
+      "sample": 480,
+      "time": 240.0,
+      "mean": 137.602,
+      "changed_fraction": 0.9908,
+      "max_tile": 198.47
+    },
+    {
+      "sample": 486,
+      "time": 243.0,
+      "mean": 3.588,
+      "changed_fraction": 0.0336,
+      "max_tile": 25.141
+    },
+    {
+      "sample": 489,
+      "time": 244.5,
+      "mean": 38.169,
+      "changed_fraction": 0.5849,
+      "max_tile": 118.299
+    },
+    {
+      "sample": 493,
+      "time": 246.5,
+      "mean": 4.104,
+      "changed_fraction": 0.0393,
+      "max_tile": 25.301
+    },
+    {
+      "sample": 497,
+      "time": 248.5,
+      "mean": 3.62,
+      "changed_fraction": 0.0339,
+      "max_tile": 31.252
+    },
+    {
+      "sample": 501,
+      "time": 250.5,
+      "mean": 4.847,
+      "changed_fraction": 0.0546,
+      "max_tile": 29.66
+    },
+    {
+      "sample": 503,
+      "time": 251.5,
+      "mean": 3.551,
+      "changed_fraction": 0.0238,
+      "max_tile": 17.688
+    },
+    {
+      "sample": 507,
+      "time": 253.5,
+      "mean": 3.882,
+      "changed_fraction": 0.039,
+      "max_tile": 29.894
+    },
+    {
+      "sample": 511,
+      "time": 255.5,
+      "mean": 3.131,
+      "changed_fraction": 0.0242,
+      "max_tile": 30.373
+    },
+    {
+      "sample": 515,
+      "time": 257.5,
+      "mean": 2.222,
+      "changed_fraction": 0.0326,
+      "max_tile": 22.764
+    },
+    {
+      "sample": 518,
+      "time": 259.0,
+      "mean": 42.339,
+      "changed_fraction": 0.7258,
+      "max_tile": 98.586
+    },
+    {
+      "sample": 521,
+      "time": 260.5,
+      "mean": 3.712,
+      "changed_fraction": 0.0379,
+      "max_tile": 18.032
+    },
+    {
+      "sample": 524,
+      "time": 262.0,
+      "mean": 4.197,
+      "changed_fraction": 0.0448,
+      "max_tile": 18.067
+    },
+    {
+      "sample": 527,
+      "time": 263.5,
+      "mean": 3.644,
+      "changed_fraction": 0.0356,
+      "max_tile": 16.769
+    },
+    {
+      "sample": 530,
+      "time": 265.0,
+      "mean": 3.984,
+      "changed_fraction": 0.0385,
+      "max_tile": 19.296
+    },
+    {
+      "sample": 532,
+      "time": 266.0,
+      "mean": 4.162,
+      "changed_fraction": 0.013,
+      "max_tile": 23.47
+    },
+    {
+      "sample": 534,
+      "time": 267.0,
+      "mean": 5.978,
+      "changed_fraction": 0.042,
+      "max_tile": 60.968
+    },
+    {
+      "sample": 536,
+      "time": 268.0,
+      "mean": 6.731,
+      "changed_fraction": 0.0646,
+      "max_tile": 81.433
+    },
+    {
+      "sample": 538,
+      "time": 269.0,
+      "mean": 6.469,
+      "changed_fraction": 0.0612,
+      "max_tile": 89.454
+    },
+    {
+      "sample": 540,
+      "time": 270.0,
+      "mean": 5.593,
+      "changed_fraction": 0.0567,
+      "max_tile": 88.681
+    },
+    {
+      "sample": 542,
+      "time": 271.0,
+      "mean": 5.553,
+      "changed_fraction": 0.0606,
+      "max_tile": 81.412
+    },
+    {
+      "sample": 544,
+      "time": 272.0,
+      "mean": 6.32,
+      "changed_fraction": 0.0622,
+      "max_tile": 79.463
+    },
+    {
+      "sample": 546,
+      "time": 273.0,
+      "mean": 5.796,
+      "changed_fraction": 0.0623,
+      "max_tile": 68.278
+    },
+    {
+      "sample": 548,
+      "time": 274.0,
+      "mean": 3.646,
+      "changed_fraction": 0.0339,
+      "max_tile": 66.914
+    },
+    {
+      "sample": 552,
+      "time": 276.0,
+      "mean": 49.969,
+      "changed_fraction": 0.7657,
+      "max_tile": 111.956
+    },
+    {
+      "sample": 555,
+      "time": 277.5,
+      "mean": 2.56,
+      "changed_fraction": 0.0191,
+      "max_tile": 31.688
+    },
+    {
+      "sample": 558,
+      "time": 279.0,
+      "mean": 2.478,
+      "changed_fraction": 0.0194,
+      "max_tile": 40.333
+    },
+    {
+      "sample": 561,
+      "time": 280.5,
+      "mean": 2.456,
+      "changed_fraction": 0.0175,
+      "max_tile": 29.736
+    },
+    {
+      "sample": 565,
+      "time": 282.5,
+      "mean": 3.582,
+      "changed_fraction": 0.0333,
+      "max_tile": 27.757
+    },
+    {
+      "sample": 568,
+      "time": 284.0,
+      "mean": 3.434,
+      "changed_fraction": 0.0253,
+      "max_tile": 37.301
+    },
+    {
+      "sample": 571,
+      "time": 285.5,
+      "mean": 2.514,
+      "changed_fraction": 0.018,
+      "max_tile": 33.595
+    },
+    {
+      "sample": 574,
+      "time": 287.0,
+      "mean": 57.558,
+      "changed_fraction": 0.7697,
+      "max_tile": 106.752
+    },
+    {
+      "sample": 583,
+      "time": 291.5,
+      "mean": 3.08,
+      "changed_fraction": 0.0269,
+      "max_tile": 29.725
+    },
+    {
+      "sample": 591,
+      "time": 295.5,
+      "mean": 2.875,
+      "changed_fraction": 0.0193,
+      "max_tile": 29.035
+    },
+    {
+      "sample": 603,
+      "time": 301.5,
+      "mean": 62.012,
+      "changed_fraction": 0.8739,
+      "max_tile": 121.914
+    },
+    {
+      "sample": 608,
+      "time": 304.0,
+      "mean": 2.894,
+      "changed_fraction": 0.0183,
+      "max_tile": 35.803
+    },
+    {
+      "sample": 613,
+      "time": 306.5,
+      "mean": 3.17,
+      "changed_fraction": 0.0221,
+      "max_tile": 30.847
+    },
+    {
+      "sample": 620,
+      "time": 310.0,
+      "mean": 3.973,
+      "changed_fraction": 0.034,
+      "max_tile": 35.551
+    },
+    {
+      "sample": 636,
+      "time": 318.0,
+      "mean": 3.971,
+      "changed_fraction": 0.0331,
+      "max_tile": 15.396
+    },
+    {
+      "sample": 638,
+      "time": 319.0,
+      "mean": 115.134,
+      "changed_fraction": 0.9803,
+      "max_tile": 201.412
+    },
+    {
+      "sample": 648,
+      "time": 324.0,
+      "mean": 3.041,
+      "changed_fraction": 0.0363,
+      "max_tile": 21.637
+    },
+    {
+      "sample": 650,
+      "time": 325.0,
+      "mean": 112.1,
+      "changed_fraction": 0.9757,
+      "max_tile": 193.838
+    },
+    {
+      "sample": 653,
+      "time": 326.5,
+      "mean": 3.176,
+      "changed_fraction": 0.0322,
+      "max_tile": 12.317
+    },
+    {
+      "sample": 657,
+      "time": 328.5,
+      "mean": 3.523,
+      "changed_fraction": 0.033,
+      "max_tile": 11.602
+    },
+    {
+      "sample": 662,
+      "time": 331.0,
+      "mean": 89.376,
+      "changed_fraction": 0.8962,
+      "max_tile": 185.34
+    },
+    {
+      "sample": 669,
+      "time": 334.5,
+      "mean": 3.581,
+      "changed_fraction": 0.022,
+      "max_tile": 14.859
+    },
+    {
+      "sample": 676,
+      "time": 338.0,
+      "mean": 5.316,
+      "changed_fraction": 0.0493,
+      "max_tile": 18.049
+    },
+    {
+      "sample": 678,
+      "time": 339.0,
+      "mean": 3.753,
+      "changed_fraction": 0.0445,
+      "max_tile": 18.637
+    },
+    {
+      "sample": 692,
+      "time": 346.0,
+      "mean": 4.45,
+      "changed_fraction": 0.0413,
+      "max_tile": 18.792
+    },
+    {
+      "sample": 694,
+      "time": 347.0,
+      "mean": 17.486,
+      "changed_fraction": 0.2434,
+      "max_tile": 74.593
+    },
+    {
+      "sample": 700,
+      "time": 350.0,
+      "mean": 3.317,
+      "changed_fraction": 0.0386,
+      "max_tile": 14.803
+    },
+    {
+      "sample": 706,
+      "time": 353.0,
+      "mean": 3.459,
+      "changed_fraction": 0.0325,
+      "max_tile": 14.333
+    },
+    {
+      "sample": 712,
+      "time": 356.0,
+      "mean": 11.559,
+      "changed_fraction": 0.1429,
+      "max_tile": 38.366
+    },
+    {
+      "sample": 714,
+      "time": 357.0,
+      "mean": 15.005,
+      "changed_fraction": 0.1831,
+      "max_tile": 55.324
+    },
+    {
+      "sample": 723,
+      "time": 361.5,
+      "mean": 68.08,
+      "changed_fraction": 0.5773,
+      "max_tile": 156.775
+    },
+    {
+      "sample": 729,
+      "time": 364.5,
+      "mean": 3.624,
+      "changed_fraction": 0.037,
+      "max_tile": 12.829
+    },
+    {
+      "sample": 736,
+      "time": 368.0,
+      "mean": 4.5,
+      "changed_fraction": 0.0542,
+      "max_tile": 15.725
+    },
+    {
+      "sample": 738,
+      "time": 369.0,
+      "mean": 74.089,
+      "changed_fraction": 0.926,
+      "max_tile": 151.662
+    },
+    {
+      "sample": 741,
+      "time": 370.5,
+      "mean": 4.146,
+      "changed_fraction": 0.0255,
+      "max_tile": 21.22
+    },
+    {
+      "sample": 744,
+      "time": 372.0,
+      "mean": 4.214,
+      "changed_fraction": 0.0318,
+      "max_tile": 23.431
+    },
+    {
+      "sample": 747,
+      "time": 373.5,
+      "mean": 4.731,
+      "changed_fraction": 0.0419,
+      "max_tile": 23.998
+    },
+    {
+      "sample": 749,
+      "time": 374.5,
+      "mean": 3.637,
+      "changed_fraction": 0.0162,
+      "max_tile": 17.229
+    },
+    {
+      "sample": 752,
+      "time": 376.0,
+      "mean": 4.376,
+      "changed_fraction": 0.0281,
+      "max_tile": 23.914
+    },
+    {
+      "sample": 755,
+      "time": 377.5,
+      "mean": 4.117,
+      "changed_fraction": 0.0327,
+      "max_tile": 21.269
+    },
+    {
+      "sample": 759,
+      "time": 379.5,
+      "mean": 4.015,
+      "changed_fraction": 0.022,
+      "max_tile": 19.725
+    },
+    {
+      "sample": 761,
+      "time": 380.5,
+      "mean": 60.966,
+      "changed_fraction": 0.7395,
+      "max_tile": 121.581
+    },
+    {
+      "sample": 768,
+      "time": 384.0,
+      "mean": 2.373,
+      "changed_fraction": 0.0169,
+      "max_tile": 29.183
+    },
+    {
+      "sample": 773,
+      "time": 386.5,
+      "mean": 46.708,
+      "changed_fraction": 0.6471,
+      "max_tile": 94.16
+    },
+    {
+      "sample": 779,
+      "time": 389.5,
+      "mean": 4.181,
+      "changed_fraction": 0.04,
+      "max_tile": 19.053
+    },
+    {
+      "sample": 789,
+      "time": 394.5,
+      "mean": 54.133,
+      "changed_fraction": 0.8419,
+      "max_tile": 113.326
+    },
+    {
+      "sample": 802,
+      "time": 401.0,
+      "mean": 43.322,
+      "changed_fraction": 0.7829,
+      "max_tile": 79.278
+    },
+    {
+      "sample": 807,
+      "time": 403.5,
+      "mean": 3.614,
+      "changed_fraction": 0.0152,
+      "max_tile": 24.94
+    },
+    {
+      "sample": 809,
+      "time": 404.5,
+      "mean": 3.339,
+      "changed_fraction": 0.0136,
+      "max_tile": 66.477
+    },
+    {
+      "sample": 811,
+      "time": 405.5,
+      "mean": 3.576,
+      "changed_fraction": 0.0156,
+      "max_tile": 67.664
+    },
+    {
+      "sample": 813,
+      "time": 406.5,
+      "mean": 1.626,
+      "changed_fraction": 0.0116,
+      "max_tile": 74.854
+    },
+    {
+      "sample": 818,
+      "time": 409.0,
+      "mean": 75.768,
+      "changed_fraction": 0.9337,
+      "max_tile": 138.907
+    },
+    {
+      "sample": 822,
+      "time": 411.0,
+      "mean": 4.043,
+      "changed_fraction": 0.024,
+      "max_tile": 12.579
+    },
+    {
+      "sample": 827,
+      "time": 413.5,
+      "mean": 3.951,
+      "changed_fraction": 0.0329,
+      "max_tile": 15.562
+    },
+    {
+      "sample": 831,
+      "time": 415.5,
+      "mean": 3.553,
+      "changed_fraction": 0.0133,
+      "max_tile": 13.248
+    },
+    {
+      "sample": 835,
+      "time": 417.5,
+      "mean": 4.23,
+      "changed_fraction": 0.0297,
+      "max_tile": 12.111
+    },
+    {
+      "sample": 837,
+      "time": 418.5,
+      "mean": 32.838,
+      "changed_fraction": 0.5015,
+      "max_tile": 92.063
+    },
+    {
+      "sample": 839,
+      "time": 419.5,
+      "mean": 2.725,
+      "changed_fraction": 0.0191,
+      "max_tile": 63.986
+    },
+    {
+      "sample": 841,
+      "time": 420.5,
+      "mean": 1.387,
+      "changed_fraction": 0.0146,
+      "max_tile": 46.512
+    },
+    {
+      "sample": 843,
+      "time": 421.5,
+      "mean": 2.494,
+      "changed_fraction": 0.0244,
+      "max_tile": 78.259
+    },
+    {
+      "sample": 845,
+      "time": 422.5,
+      "mean": 2.738,
+      "changed_fraction": 0.0308,
+      "max_tile": 67.896
+    },
+    {
+      "sample": 847,
+      "time": 423.5,
+      "mean": 59.004,
+      "changed_fraction": 0.9171,
+      "max_tile": 135.479
+    },
+    {
+      "sample": 849,
+      "time": 424.5,
+      "mean": 4.354,
+      "changed_fraction": 0.0694,
+      "max_tile": 62.264
+    },
+    {
+      "sample": 851,
+      "time": 425.5,
+      "mean": 3.563,
+      "changed_fraction": 0.0607,
+      "max_tile": 29.715
+    },
+    {
+      "sample": 853,
+      "time": 426.5,
+      "mean": 4.425,
+      "changed_fraction": 0.0655,
+      "max_tile": 69.479
+    },
+    {
+      "sample": 855,
+      "time": 427.5,
+      "mean": 4.371,
+      "changed_fraction": 0.0525,
+      "max_tile": 65.898
+    },
+    {
+      "sample": 857,
+      "time": 428.5,
+      "mean": 3.819,
+      "changed_fraction": 0.0503,
+      "max_tile": 27.884
+    },
+    {
+      "sample": 859,
+      "time": 429.5,
+      "mean": 4.779,
+      "changed_fraction": 0.0524,
+      "max_tile": 72.007
+    },
+    {
+      "sample": 861,
+      "time": 430.5,
+      "mean": 4.471,
+      "changed_fraction": 0.0526,
+      "max_tile": 68.535
+    },
+    {
+      "sample": 863,
+      "time": 431.5,
+      "mean": 3.47,
+      "changed_fraction": 0.0436,
+      "max_tile": 27.644
+    },
+    {
+      "sample": 865,
+      "time": 432.5,
+      "mean": 54.855,
+      "changed_fraction": 0.9157,
+      "max_tile": 87.495
+    },
+    {
+      "sample": 867,
+      "time": 433.5,
+      "mean": 16.055,
+      "changed_fraction": 0.1883,
+      "max_tile": 29.558
+    },
+    {
+      "sample": 870,
+      "time": 435.0,
+      "mean": 2.655,
+      "changed_fraction": 0.0402,
+      "max_tile": 42.796
+    },
+    {
+      "sample": 872,
+      "time": 436.0,
+      "mean": 2.033,
+      "changed_fraction": 0.0261,
+      "max_tile": 69.016
+    },
+    {
+      "sample": 878,
+      "time": 439.0,
+      "mean": 83.561,
+      "changed_fraction": 0.9279,
+      "max_tile": 127.951
+    },
+    {
+      "sample": 884,
+      "time": 442.0,
+      "mean": 2.989,
+      "changed_fraction": 0.0295,
+      "max_tile": 29.648
+    },
+    {
+      "sample": 888,
+      "time": 444.0,
+      "mean": 3.553,
+      "changed_fraction": 0.0388,
+      "max_tile": 20.245
+    },
+    {
+      "sample": 890,
+      "time": 445.0,
+      "mean": 110.75,
+      "changed_fraction": 0.7727,
+      "max_tile": 179.912
+    },
+    {
+      "sample": 893,
+      "time": 446.5,
+      "mean": 2.268,
+      "changed_fraction": 0.0204,
+      "max_tile": 52.0
+    },
+    {
+      "sample": 896,
+      "time": 448.0,
+      "mean": 2.298,
+      "changed_fraction": 0.0216,
+      "max_tile": 52.322
+    },
+    {
+      "sample": 899,
+      "time": 449.5,
+      "mean": 1.572,
+      "changed_fraction": 0.0123,
+      "max_tile": 34.542
+    },
+    {
+      "sample": 905,
+      "time": 452.5,
+      "mean": 3.177,
+      "changed_fraction": 0.0429,
+      "max_tile": 33.363
+    },
+    {
+      "sample": 907,
+      "time": 453.5,
+      "mean": 8.639,
+      "changed_fraction": 0.1199,
+      "max_tile": 63.873
+    },
+    {
+      "sample": 911,
+      "time": 455.5,
+      "mean": 2.733,
+      "changed_fraction": 0.0362,
+      "max_tile": 22.187
+    },
+    {
+      "sample": 913,
+      "time": 456.5,
+      "mean": 2.688,
+      "changed_fraction": 0.0383,
+      "max_tile": 23.646
+    },
+    {
+      "sample": 915,
+      "time": 457.5,
+      "mean": 5.44,
+      "changed_fraction": 0.0635,
+      "max_tile": 49.47
+    },
+    {
+      "sample": 926,
+      "time": 463.0,
+      "mean": 2.678,
+      "changed_fraction": 0.0279,
+      "max_tile": 29.808
+    },
+    {
+      "sample": 928,
+      "time": 464.0,
+      "mean": 133.871,
+      "changed_fraction": 0.9646,
+      "max_tile": 199.632
+    },
+    {
+      "sample": 930,
+      "time": 465.0,
+      "mean": 10.222,
+      "changed_fraction": 0.1561,
+      "max_tile": 41.155
+    },
+    {
+      "sample": 932,
+      "time": 466.0,
+      "mean": 9.498,
+      "changed_fraction": 0.1446,
+      "max_tile": 42.162
+    },
+    {
+      "sample": 934,
+      "time": 467.0,
+      "mean": 10.681,
+      "changed_fraction": 0.1628,
+      "max_tile": 47.19
+    },
+    {
+      "sample": 936,
+      "time": 468.0,
+      "mean": 10.032,
+      "changed_fraction": 0.1523,
+      "max_tile": 44.252
+    },
+    {
+      "sample": 938,
+      "time": 469.0,
+      "mean": 10.328,
+      "changed_fraction": 0.1559,
+      "max_tile": 45.12
+    },
+    {
+      "sample": 940,
+      "time": 470.0,
+      "mean": 9.136,
+      "changed_fraction": 0.1363,
+      "max_tile": 44.551
+    },
+    {
+      "sample": 942,
+      "time": 471.0,
+      "mean": 10.418,
+      "changed_fraction": 0.1561,
+      "max_tile": 50.63
+    },
+    {
+      "sample": 944,
+      "time": 472.0,
+      "mean": 39.972,
+      "changed_fraction": 0.6055,
+      "max_tile": 116.676
+    },
+    {
+      "sample": 946,
+      "time": 473.0,
+      "mean": 2.533,
+      "changed_fraction": 0.0337,
+      "max_tile": 32.72
+    },
+    {
+      "sample": 949,
+      "time": 474.5,
+      "mean": 3.303,
+      "changed_fraction": 0.0472,
+      "max_tile": 27.549
+    },
+    {
+      "sample": 951,
+      "time": 475.5,
+      "mean": 3.595,
+      "changed_fraction": 0.0462,
+      "max_tile": 59.495
+    },
+    {
+      "sample": 953,
+      "time": 476.5,
+      "mean": 2.396,
+      "changed_fraction": 0.0134,
+      "max_tile": 28.236
+    },
+    {
+      "sample": 955,
+      "time": 477.5,
+      "mean": 126.27,
+      "changed_fraction": 0.9918,
+      "max_tile": 166.171
+    },
+    {
+      "sample": 957,
+      "time": 478.5,
+      "mean": 24.681,
+      "changed_fraction": 0.5871,
+      "max_tile": 35.743
+    },
+    {
+      "sample": 967,
+      "time": 483.5,
+      "mean": 3.645,
+      "changed_fraction": 0.0424,
+      "max_tile": 23.037
+    },
+    {
+      "sample": 969,
+      "time": 484.5,
+      "mean": 155.736,
+      "changed_fraction": 0.9929,
+      "max_tile": 199.947
+    },
+    {
+      "sample": 971,
+      "time": 485.5,
+      "mean": 2.22,
+      "changed_fraction": 0.0209,
+      "max_tile": 60.935
+    },
+    {
+      "sample": 973,
+      "time": 486.5,
+      "mean": 2.141,
+      "changed_fraction": 0.0199,
+      "max_tile": 52.859
+    },
+    {
+      "sample": 975,
+      "time": 487.5,
+      "mean": 2.362,
+      "changed_fraction": 0.0222,
+      "max_tile": 58.347
+    },
+    {
+      "sample": 977,
+      "time": 488.5,
+      "mean": 2.1,
+      "changed_fraction": 0.0206,
+      "max_tile": 57.072
+    },
+    {
+      "sample": 979,
+      "time": 489.5,
+      "mean": 2.484,
+      "changed_fraction": 0.025,
+      "max_tile": 53.801
+    },
+    {
+      "sample": 981,
+      "time": 490.5,
+      "mean": 2.16,
+      "changed_fraction": 0.0205,
+      "max_tile": 61.176
+    },
+    {
+      "sample": 983,
+      "time": 491.5,
+      "mean": 2.639,
+      "changed_fraction": 0.0241,
+      "max_tile": 55.475
+    },
+    {
+      "sample": 985,
+      "time": 492.5,
+      "mean": 2.181,
+      "changed_fraction": 0.0204,
+      "max_tile": 56.701
+    },
+    {
+      "sample": 987,
+      "time": 493.5,
+      "mean": 3.485,
+      "changed_fraction": 0.0546,
+      "max_tile": 32.31
+    },
+    {
+      "sample": 989,
+      "time": 494.5,
+      "mean": 161.216,
+      "changed_fraction": 0.9912,
+      "max_tile": 199.856
+    },
+    {
+      "sample": 1002,
+      "time": 501.0,
+      "mean": 2.814,
+      "changed_fraction": 0.0391,
+      "max_tile": 19.762
+    },
+    {
+      "sample": 1004,
+      "time": 502.0,
+      "mean": 158.249,
+      "changed_fraction": 0.9929,
+      "max_tile": 205.66
+    },
+    {
+      "sample": 1012,
+      "time": 506.0,
+      "mean": 3.515,
+      "changed_fraction": 0.0343,
+      "max_tile": 24.236
+    },
+    {
+      "sample": 1018,
+      "time": 509.0,
+      "mean": 4.1,
+      "changed_fraction": 0.0307,
+      "max_tile": 19.498
+    },
+    {
+      "sample": 1034,
+      "time": 517.0,
+      "mean": 88.629,
+      "changed_fraction": 0.9644,
+      "max_tile": 142.852
+    },
+    {
+      "sample": 1038,
+      "time": 519.0,
+      "mean": 2.343,
+      "changed_fraction": 0.0134,
+      "max_tile": 28.87
+    },
+    {
+      "sample": 1042,
+      "time": 521.0,
+      "mean": 2.365,
+      "changed_fraction": 0.0134,
+      "max_tile": 28.34
+    },
+    {
+      "sample": 1047,
+      "time": 523.5,
+      "mean": 3.065,
+      "changed_fraction": 0.0197,
+      "max_tile": 34.444
+    },
+    {
+      "sample": 1051,
+      "time": 525.5,
+      "mean": 2.68,
+      "changed_fraction": 0.0141,
+      "max_tile": 29.986
+    },
+    {
+      "sample": 1056,
+      "time": 528.0,
+      "mean": 50.193,
+      "changed_fraction": 0.8637,
+      "max_tile": 111.384
+    },
+    {
+      "sample": 1058,
+      "time": 529.0,
+      "mean": 3.729,
+      "changed_fraction": 0.0282,
+      "max_tile": 64.727
+    },
+    {
+      "sample": 1062,
+      "time": 531.0,
+      "mean": 3.481,
+      "changed_fraction": 0.0335,
+      "max_tile": 14.861
+    },
+    {
+      "sample": 1067,
+      "time": 533.5,
+      "mean": 4.263,
+      "changed_fraction": 0.0426,
+      "max_tile": 17.259
+    },
+    {
+      "sample": 1071,
+      "time": 535.5,
+      "mean": 3.97,
+      "changed_fraction": 0.033,
+      "max_tile": 13.949
+    },
+    {
+      "sample": 1074,
+      "time": 537.0,
+      "mean": 7.954,
+      "changed_fraction": 0.0976,
+      "max_tile": 71.859
+    },
+    {
+      "sample": 1076,
+      "time": 538.0,
+      "mean": 4.424,
+      "changed_fraction": 0.033,
+      "max_tile": 62.669
+    },
+    {
+      "sample": 1078,
+      "time": 539.0,
+      "mean": 2.813,
+      "changed_fraction": 0.0337,
+      "max_tile": 63.229
+    },
+    {
+      "sample": 1080,
+      "time": 540.0,
+      "mean": 2.797,
+      "changed_fraction": 0.0318,
+      "max_tile": 68.85
+    },
+    {
+      "sample": 1082,
+      "time": 541.0,
+      "mean": 2.942,
+      "changed_fraction": 0.0333,
+      "max_tile": 68.903
+    },
+    {
+      "sample": 1084,
+      "time": 542.0,
+      "mean": 2.849,
+      "changed_fraction": 0.0326,
+      "max_tile": 64.044
+    },
+    {
+      "sample": 1086,
+      "time": 543.0,
+      "mean": 3.044,
+      "changed_fraction": 0.034,
+      "max_tile": 59.148
+    },
+    {
+      "sample": 1088,
+      "time": 544.0,
+      "mean": 4.389,
+      "changed_fraction": 0.0575,
+      "max_tile": 70.975
+    },
+    {
+      "sample": 1090,
+      "time": 545.0,
+      "mean": 64.881,
+      "changed_fraction": 0.9603,
+      "max_tile": 120.192
+    },
+    {
+      "sample": 1094,
+      "time": 547.0,
+      "mean": 2.648,
+      "changed_fraction": 0.0279,
+      "max_tile": 29.778
+    },
+    {
+      "sample": 1098,
+      "time": 549.0,
+      "mean": 2.669,
+      "changed_fraction": 0.03,
+      "max_tile": 28.704
+    },
+    {
+      "sample": 1101,
+      "time": 550.5,
+      "mean": 3.156,
+      "changed_fraction": 0.0393,
+      "max_tile": 25.062
+    },
+    {
+      "sample": 1103,
+      "time": 551.5,
+      "mean": 3.48,
+      "changed_fraction": 0.0383,
+      "max_tile": 25.238
+    },
+    {
+      "sample": 1106,
+      "time": 553.0,
+      "mean": 2.037,
+      "changed_fraction": 0.0176,
+      "max_tile": 30.597
+    },
+    {
+      "sample": 1108,
+      "time": 554.0,
+      "mean": 1.85,
+      "changed_fraction": 0.0176,
+      "max_tile": 30.368
+    },
+    {
+      "sample": 1110,
+      "time": 555.0,
+      "mean": 1.805,
+      "changed_fraction": 0.0176,
+      "max_tile": 29.074
+    },
+    {
+      "sample": 1113,
+      "time": 556.5,
+      "mean": 1.964,
+      "changed_fraction": 0.0251,
+      "max_tile": 34.213
+    },
+    {
+      "sample": 1115,
+      "time": 557.5,
+      "mean": 31.903,
+      "changed_fraction": 0.6054,
+      "max_tile": 86.572
+    },
+    {
+      "sample": 1123,
+      "time": 561.5,
+      "mean": 2.568,
+      "changed_fraction": 0.0153,
+      "max_tile": 28.933
+    },
+    {
+      "sample": 1131,
+      "time": 565.5,
+      "mean": 2.79,
+      "changed_fraction": 0.0158,
+      "max_tile": 29.593
+    },
+    {
+      "sample": 1147,
+      "time": 573.5,
+      "mean": 55.769,
+      "changed_fraction": 0.7392,
+      "max_tile": 120.803
+    },
+    {
+      "sample": 1151,
+      "time": 575.5,
+      "mean": 3.708,
+      "changed_fraction": 0.0267,
+      "max_tile": 15.824
+    },
+    {
+      "sample": 1155,
+      "time": 577.5,
+      "mean": 3.672,
+      "changed_fraction": 0.0258,
+      "max_tile": 15.708
+    },
+    {
+      "sample": 1159,
+      "time": 579.5,
+      "mean": 4.085,
+      "changed_fraction": 0.0245,
+      "max_tile": 16.729
+    },
+    {
+      "sample": 1163,
+      "time": 581.5,
+      "mean": 3.878,
+      "changed_fraction": 0.0236,
+      "max_tile": 16.701
+    },
+    {
+      "sample": 1171,
+      "time": 585.5,
+      "mean": 4.108,
+      "changed_fraction": 0.025,
+      "max_tile": 14.773
+    },
+    {
+      "sample": 1173,
+      "time": 586.5,
+      "mean": 49.451,
+      "changed_fraction": 0.6503,
+      "max_tile": 176.405
+    },
+    {
+      "sample": 1175,
+      "time": 587.5,
+      "mean": 2.632,
+      "changed_fraction": 0.0204,
+      "max_tile": 42.537
+    },
+    {
+      "sample": 1177,
+      "time": 588.5,
+      "mean": 2.561,
+      "changed_fraction": 0.0192,
+      "max_tile": 35.021
+    },
+    {
+      "sample": 1179,
+      "time": 589.5,
+      "mean": 2.6,
+      "changed_fraction": 0.0174,
+      "max_tile": 34.329
+    },
+    {
+      "sample": 1181,
+      "time": 590.5,
+      "mean": 2.537,
+      "changed_fraction": 0.0167,
+      "max_tile": 43.481
+    },
+    {
+      "sample": 1183,
+      "time": 591.5,
+      "mean": 2.912,
+      "changed_fraction": 0.0178,
+      "max_tile": 42.579
+    },
+    {
+      "sample": 1185,
+      "time": 592.5,
+      "mean": 2.579,
+      "changed_fraction": 0.0163,
+      "max_tile": 33.743
+    },
+    {
+      "sample": 1187,
+      "time": 593.5,
+      "mean": 2.931,
+      "changed_fraction": 0.0162,
+      "max_tile": 37.588
+    },
+    {
+      "sample": 1189,
+      "time": 594.5,
+      "mean": 2.358,
+      "changed_fraction": 0.0156,
+      "max_tile": 44.468
+    },
+    {
+      "sample": 1191,
+      "time": 595.5,
+      "mean": 2.454,
+      "changed_fraction": 0.0152,
+      "max_tile": 43.181
+    },
+    {
+      "sample": 1193,
+      "time": 596.5,
+      "mean": 47.871,
+      "changed_fraction": 0.7239,
+      "max_tile": 117.169
+    },
+    {
+      "sample": 1197,
+      "time": 598.5,
+      "mean": 3.168,
+      "changed_fraction": 0.0318,
+      "max_tile": 21.637
+    },
+    {
+      "sample": 1202,
+      "time": 601.0,
+      "mean": 5.127,
+      "changed_fraction": 0.0581,
+      "max_tile": 36.25
+    },
+    {
+      "sample": 1204,
+      "time": 602.0,
+      "mean": 2.852,
+      "changed_fraction": 0.0338,
+      "max_tile": 16.505
+    },
+    {
+      "sample": 1211,
+      "time": 605.5,
+      "mean": 3.065,
+      "changed_fraction": 0.0295,
+      "max_tile": 30.542
+    },
+    {
+      "sample": 1214,
+      "time": 607.0,
+      "mean": 3.558,
+      "changed_fraction": 0.0353,
+      "max_tile": 21.954
+    },
+    {
+      "sample": 1216,
+      "time": 608.0,
+      "mean": 31.703,
+      "changed_fraction": 0.3053,
+      "max_tile": 157.942
+    },
+    {
+      "sample": 1226,
+      "time": 613.0,
+      "mean": 3.382,
+      "changed_fraction": 0.0408,
+      "max_tile": 23.493
+    },
+    {
+      "sample": 1228,
+      "time": 614.0,
+      "mean": 5.38,
+      "changed_fraction": 0.0657,
+      "max_tile": 50.178
+    },
+    {
+      "sample": 1242,
+      "time": 621.0,
+      "mean": 6.283,
+      "changed_fraction": 0.0755,
+      "max_tile": 50.785
+    },
+    {
+      "sample": 1244,
+      "time": 622.0,
+      "mean": 23.626,
+      "changed_fraction": 0.1529,
+      "max_tile": 174.551
+    },
+    {
+      "sample": 1251,
+      "time": 625.5,
+      "mean": 3.093,
+      "changed_fraction": 0.0392,
+      "max_tile": 18.757
+    },
+    {
+      "sample": 1253,
+      "time": 626.5,
+      "mean": 2.22,
+      "changed_fraction": 0.0301,
+      "max_tile": 19.655
+    },
+    {
+      "sample": 1263,
+      "time": 631.5,
+      "mean": 3.561,
+      "changed_fraction": 0.0502,
+      "max_tile": 21.734
+    },
+    {
+      "sample": 1265,
+      "time": 632.5,
+      "mean": 12.835,
+      "changed_fraction": 0.154,
+      "max_tile": 84.329
+    },
+    {
+      "sample": 1278,
+      "time": 639.0,
+      "mean": 6.896,
+      "changed_fraction": 0.0753,
+      "max_tile": 52.306
+    },
+    {
+      "sample": 1284,
+      "time": 642.0,
+      "mean": 2.621,
+      "changed_fraction": 0.0307,
+      "max_tile": 20.414
+    },
+    {
+      "sample": 1292,
+      "time": 646.0,
+      "mean": 13.51,
+      "changed_fraction": 0.0892,
+      "max_tile": 73.824
+    },
+    {
+      "sample": 1298,
+      "time": 649.0,
+      "mean": 3.061,
+      "changed_fraction": 0.0428,
+      "max_tile": 20.312
+    },
+    {
+      "sample": 1309,
+      "time": 654.5,
+      "mean": 3.611,
+      "changed_fraction": 0.0528,
+      "max_tile": 23.843
+    },
+    {
+      "sample": 1311,
+      "time": 655.5,
+      "mean": 5.689,
+      "changed_fraction": 0.0774,
+      "max_tile": 27.738
+    },
+    {
+      "sample": 1324,
+      "time": 662.0,
+      "mean": 2.911,
+      "changed_fraction": 0.0365,
+      "max_tile": 20.639
+    },
+    {
+      "sample": 1326,
+      "time": 663.0,
+      "mean": 3.614,
+      "changed_fraction": 0.0367,
+      "max_tile": 41.711
+    },
+    {
+      "sample": 1332,
+      "time": 666.0,
+      "mean": 3.592,
+      "changed_fraction": 0.0366,
+      "max_tile": 41.653
+    },
+    {
+      "sample": 1334,
+      "time": 667.0,
+      "mean": 9.329,
+      "changed_fraction": 0.102,
+      "max_tile": 28.315
+    },
+    {
+      "sample": 1348,
+      "time": 674.0,
+      "mean": 4.185,
+      "changed_fraction": 0.0489,
+      "max_tile": 20.544
+    },
+    {
+      "sample": 1350,
+      "time": 675.0,
+      "mean": 2.313,
+      "changed_fraction": 0.0312,
+      "max_tile": 20.53
+    },
+    {
+      "sample": 1359,
+      "time": 679.5,
+      "mean": 2.726,
+      "changed_fraction": 0.0362,
+      "max_tile": 20.396
+    },
+    {
+      "sample": 1361,
+      "time": 680.5,
+      "mean": 8.977,
+      "changed_fraction": 0.1017,
+      "max_tile": 35.032
+    },
+    {
+      "sample": 1363,
+      "time": 681.5,
+      "mean": 1.102,
+      "changed_fraction": 0.012,
+      "max_tile": 33.995
+    },
+    {
+      "sample": 1365,
+      "time": 682.5,
+      "mean": 0.878,
+      "changed_fraction": 0.0085,
+      "max_tile": 30.569
+    },
+    {
+      "sample": 1369,
+      "time": 684.5,
+      "mean": 1.39,
+      "changed_fraction": 0.0149,
+      "max_tile": 38.836
+    },
+    {
+      "sample": 1372,
+      "time": 686.0,
+      "mean": 3.063,
+      "changed_fraction": 0.0414,
+      "max_tile": 38.35
+    },
+    {
+      "sample": 1374,
+      "time": 687.0,
+      "mean": 10.931,
+      "changed_fraction": 0.1168,
+      "max_tile": 50.053
+    },
+    {
+      "sample": 1377,
+      "time": 688.5,
+      "mean": 1.967,
+      "changed_fraction": 0.0213,
+      "max_tile": 33.433
+    },
+    {
+      "sample": 1381,
+      "time": 690.5,
+      "mean": 2.115,
+      "changed_fraction": 0.0234,
+      "max_tile": 29.234
+    },
+    {
+      "sample": 1385,
+      "time": 692.5,
+      "mean": 2.393,
+      "changed_fraction": 0.0231,
+      "max_tile": 31.347
+    },
+    {
+      "sample": 1388,
+      "time": 694.0,
+      "mean": 1.665,
+      "changed_fraction": 0.0207,
+      "max_tile": 33.752
+    },
+    {
+      "sample": 1390,
+      "time": 695.0,
+      "mean": 3.441,
+      "changed_fraction": 0.0527,
+      "max_tile": 25.993
+    },
+    {
+      "sample": 1392,
+      "time": 696.0,
+      "mean": 11.305,
+      "changed_fraction": 0.1563,
+      "max_tile": 67.981
+    },
+    {
+      "sample": 1399,
+      "time": 699.5,
+      "mean": 1.726,
+      "changed_fraction": 0.0112,
+      "max_tile": 30.729
+    },
+    {
+      "sample": 1403,
+      "time": 701.5,
+      "mean": 2.84,
+      "changed_fraction": 0.0377,
+      "max_tile": 19.303
+    },
+    {
+      "sample": 1405,
+      "time": 702.5,
+      "mean": 3.242,
+      "changed_fraction": 0.0407,
+      "max_tile": 19.801
+    },
+    {
+      "sample": 1408,
+      "time": 704.0,
+      "mean": 1.215,
+      "changed_fraction": 0.0119,
+      "max_tile": 34.595
+    },
+    {
+      "sample": 1410,
+      "time": 705.0,
+      "mean": 1.874,
+      "changed_fraction": 0.0178,
+      "max_tile": 66.299
+    },
+    {
+      "sample": 1423,
+      "time": 711.5,
+      "mean": 2.937,
+      "changed_fraction": 0.0409,
+      "max_tile": 20.106
+    },
+    {
+      "sample": 1425,
+      "time": 712.5,
+      "mean": 17.449,
+      "changed_fraction": 0.155,
+      "max_tile": 74.701
+    },
+    {
+      "sample": 1445,
+      "time": 722.5,
+      "mean": 3.608,
+      "changed_fraction": 0.028,
+      "max_tile": 19.0
+    },
+    {
+      "sample": 1447,
+      "time": 723.5,
+      "mean": 86.926,
+      "changed_fraction": 0.9894,
+      "max_tile": 170.995
+    },
+    {
+      "sample": 1453,
+      "time": 726.5,
+      "mean": 2.788,
+      "changed_fraction": 0.0354,
+      "max_tile": 22.435
+    },
+    {
+      "sample": 1459,
+      "time": 729.5,
+      "mean": 3.668,
+      "changed_fraction": 0.0364,
+      "max_tile": 22.023
+    },
+    {
+      "sample": 1464,
+      "time": 732.0,
+      "mean": 3.544,
+      "changed_fraction": 0.0302,
+      "max_tile": 18.463
+    },
+    {
+      "sample": 1474,
+      "time": 737.0,
+      "mean": 80.247,
+      "changed_fraction": 0.9379,
+      "max_tile": 162.553
+    },
+    {
+      "sample": 1485,
+      "time": 742.5,
+      "mean": 3.633,
+      "changed_fraction": 0.0285,
+      "max_tile": 17.227
+    },
+    {
+      "sample": 1491,
+      "time": 745.5,
+      "mean": 4.515,
+      "changed_fraction": 0.0404,
+      "max_tile": 15.606
+    },
+    {
+      "sample": 1503,
+      "time": 751.5,
+      "mean": 42.472,
+      "changed_fraction": 0.7188,
+      "max_tile": 170.708
+    },
+    {
+      "sample": 1507,
+      "time": 753.5,
+      "mean": 2.374,
+      "changed_fraction": 0.0328,
+      "max_tile": 15.875
+    },
+    {
+      "sample": 1511,
+      "time": 755.5,
+      "mean": 2.372,
+      "changed_fraction": 0.0326,
+      "max_tile": 14.556
+    },
+    {
+      "sample": 1515,
+      "time": 757.5,
+      "mean": 2.253,
+      "changed_fraction": 0.0321,
+      "max_tile": 13.65
+    },
+    {
+      "sample": 1521,
+      "time": 760.5,
+      "mean": 2.92,
+      "changed_fraction": 0.0424,
+      "max_tile": 22.956
+    },
+    {
+      "sample": 1523,
+      "time": 761.5,
+      "mean": 58.927,
+      "changed_fraction": 0.9369,
+      "max_tile": 193.507
+    },
+    {
+      "sample": 1533,
+      "time": 766.5,
+      "mean": 3.956,
+      "changed_fraction": 0.0329,
+      "max_tile": 36.16
+    },
+    {
+      "sample": 1535,
+      "time": 767.5,
+      "mean": 2.291,
+      "changed_fraction": 0.0305,
+      "max_tile": 20.289
+    },
+    {
+      "sample": 1544,
+      "time": 772.0,
+      "mean": 2.858,
+      "changed_fraction": 0.0309,
+      "max_tile": 20.62
+    },
+    {
+      "sample": 1546,
+      "time": 773.0,
+      "mean": 117.478,
+      "changed_fraction": 0.9361,
+      "max_tile": 197.692
+    },
+    {
+      "sample": 1548,
+      "time": 774.0,
+      "mean": 3.852,
+      "changed_fraction": 0.0238,
+      "max_tile": 69.498
+    },
+    {
+      "sample": 1550,
+      "time": 775.0,
+      "mean": 3.353,
+      "changed_fraction": 0.0182,
+      "max_tile": 57.801
+    },
+    {
+      "sample": 1552,
+      "time": 776.0,
+      "mean": 3.434,
+      "changed_fraction": 0.0207,
+      "max_tile": 58.546
+    },
+    {
+      "sample": 1554,
+      "time": 777.0,
+      "mean": 4.167,
+      "changed_fraction": 0.0233,
+      "max_tile": 71.287
+    },
+    {
+      "sample": 1556,
+      "time": 778.0,
+      "mean": 4.498,
+      "changed_fraction": 0.0287,
+      "max_tile": 69.329
+    },
+    {
+      "sample": 1558,
+      "time": 779.0,
+      "mean": 3.951,
+      "changed_fraction": 0.0289,
+      "max_tile": 49.06
+    },
+    {
+      "sample": 1560,
+      "time": 780.0,
+      "mean": 63.56,
+      "changed_fraction": 0.844,
+      "max_tile": 118.678
+    },
+    {
+      "sample": 1566,
+      "time": 783.0,
+      "mean": 3.037,
+      "changed_fraction": 0.0316,
+      "max_tile": 23.87
+    },
+    {
+      "sample": 1572,
+      "time": 786.0,
+      "mean": 3.124,
+      "changed_fraction": 0.0357,
+      "max_tile": 21.579
+    },
+    {
+      "sample": 1578,
+      "time": 789.0,
+      "mean": 3.612,
+      "changed_fraction": 0.0277,
+      "max_tile": 23.019
+    },
+    {
+      "sample": 1584,
+      "time": 792.0,
+      "mean": 1.708,
+      "changed_fraction": 0.0123,
+      "max_tile": 28.812
+    },
+    {
+      "sample": 1587,
+      "time": 793.5,
+      "mean": 32.684,
+      "changed_fraction": 0.504,
+      "max_tile": 108.426
+    },
+    {
+      "sample": 1589,
+      "time": 794.5,
+      "mean": 3.622,
+      "changed_fraction": 0.0413,
+      "max_tile": 49.255
+    },
+    {
+      "sample": 1591,
+      "time": 795.5,
+      "mean": 2.917,
+      "changed_fraction": 0.0298,
+      "max_tile": 38.757
+    },
+    {
+      "sample": 1593,
+      "time": 796.5,
+      "mean": 2.984,
+      "changed_fraction": 0.0289,
+      "max_tile": 42.35
+    },
+    {
+      "sample": 1595,
+      "time": 797.5,
+      "mean": 2.975,
+      "changed_fraction": 0.0284,
+      "max_tile": 49.153
+    },
+    {
+      "sample": 1597,
+      "time": 798.5,
+      "mean": 3.176,
+      "changed_fraction": 0.0307,
+      "max_tile": 52.391
+    },
+    {
+      "sample": 1604,
+      "time": 802.0,
+      "mean": 3.543,
+      "changed_fraction": 0.0257,
+      "max_tile": 16.817
+    },
+    {
+      "sample": 1613,
+      "time": 806.5,
+      "mean": 20.645,
+      "changed_fraction": 0.2593,
+      "max_tile": 125.188
+    },
+    {
+      "sample": 1620,
+      "time": 810.0,
+      "mean": 3.967,
+      "changed_fraction": 0.0355,
+      "max_tile": 21.634
+    },
+    {
+      "sample": 1626,
+      "time": 813.0,
+      "mean": 4.041,
+      "changed_fraction": 0.0334,
+      "max_tile": 16.824
+    },
+    {
+      "sample": 1632,
+      "time": 816.0,
+      "mean": 3.606,
+      "changed_fraction": 0.0272,
+      "max_tile": 17.104
+    },
+    {
+      "sample": 1638,
+      "time": 819.0,
+      "mean": 24.761,
+      "changed_fraction": 0.331,
+      "max_tile": 126.639
+    },
+    {
+      "sample": 1643,
+      "time": 821.5,
+      "mean": 3.852,
+      "changed_fraction": 0.0248,
+      "max_tile": 17.65
+    },
+    {
+      "sample": 1650,
+      "time": 825.0,
+      "mean": 3.783,
+      "changed_fraction": 0.0272,
+      "max_tile": 23.225
+    },
+    {
+      "sample": 1656,
+      "time": 828.0,
+      "mean": 3.61,
+      "changed_fraction": 0.0189,
+      "max_tile": 18.884
+    },
+    {
+      "sample": 1671,
+      "time": 835.5,
+      "mean": 63.384,
+      "changed_fraction": 0.9187,
+      "max_tile": 124.25
+    },
+    {
+      "sample": 1681,
+      "time": 840.5,
+      "mean": 2.051,
+      "changed_fraction": 0.0128,
+      "max_tile": 30.569
+    },
+    {
+      "sample": 1683,
+      "time": 841.5,
+      "mean": 7.244,
+      "changed_fraction": 0.0849,
+      "max_tile": 51.715
+    },
+    {
+      "sample": 1694,
+      "time": 847.0,
+      "mean": 3.748,
+      "changed_fraction": 0.0402,
+      "max_tile": 16.317
+    },
+    {
+      "sample": 1696,
+      "time": 848.0,
+      "mean": 21.06,
+      "changed_fraction": 0.2233,
+      "max_tile": 78.951
+    },
+    {
+      "sample": 1703,
+      "time": 851.5,
+      "mean": 2.114,
+      "changed_fraction": 0.0211,
+      "max_tile": 31.542
+    },
+    {
+      "sample": 1710,
+      "time": 855.0,
+      "mean": 2.335,
+      "changed_fraction": 0.0203,
+      "max_tile": 31.176
+    },
+    {
+      "sample": 1713,
+      "time": 856.5,
+      "mean": 3.734,
+      "changed_fraction": 0.0534,
+      "max_tile": 33.039
+    },
+    {
+      "sample": 1727,
+      "time": 863.5,
+      "mean": 32.217,
+      "changed_fraction": 0.654,
+      "max_tile": 132.245
+    },
+    {
+      "sample": 1729,
+      "time": 864.5,
+      "mean": 2.721,
+      "changed_fraction": 0.028,
+      "max_tile": 47.243
+    },
+    {
+      "sample": 1731,
+      "time": 865.5,
+      "mean": 2.474,
+      "changed_fraction": 0.0201,
+      "max_tile": 78.986
+    },
+    {
+      "sample": 1734,
+      "time": 867.0,
+      "mean": 1.999,
+      "changed_fraction": 0.0132,
+      "max_tile": 41.38
+    },
+    {
+      "sample": 1736,
+      "time": 868.0,
+      "mean": 1.605,
+      "changed_fraction": 0.0098,
+      "max_tile": 47.412
+    },
+    {
+      "sample": 1738,
+      "time": 869.0,
+      "mean": 4.043,
+      "changed_fraction": 0.0485,
+      "max_tile": 80.604
+    },
+    {
+      "sample": 1741,
+      "time": 870.5,
+      "mean": 3.138,
+      "changed_fraction": 0.035,
+      "max_tile": 42.669
+    },
+    {
+      "sample": 1743,
+      "time": 871.5,
+      "mean": 1.751,
+      "changed_fraction": 0.0102,
+      "max_tile": 46.884
+    },
+    {
+      "sample": 1745,
+      "time": 872.5,
+      "mean": 2.314,
+      "changed_fraction": 0.0176,
+      "max_tile": 82.796
+    },
+    {
+      "sample": 1748,
+      "time": 874.0,
+      "mean": 30.384,
+      "changed_fraction": 0.3372,
+      "max_tile": 127.269
+    },
+    {
+      "sample": 1750,
+      "time": 875.0,
+      "mean": 4.692,
+      "changed_fraction": 0.0391,
+      "max_tile": 103.604
+    },
+    {
+      "sample": 1752,
+      "time": 876.0,
+      "mean": 4.12,
+      "changed_fraction": 0.0344,
+      "max_tile": 92.447
+    },
+    {
+      "sample": 1754,
+      "time": 877.0,
+      "mean": 2.725,
+      "changed_fraction": 0.0228,
+      "max_tile": 58.139
+    },
+    {
+      "sample": 1756,
+      "time": 878.0,
+      "mean": 4.575,
+      "changed_fraction": 0.0398,
+      "max_tile": 98.595
+    },
+    {
+      "sample": 1758,
+      "time": 879.0,
+      "mean": 4.174,
+      "changed_fraction": 0.0346,
+      "max_tile": 86.113
+    },
+    {
+      "sample": 1760,
+      "time": 880.0,
+      "mean": 2.974,
+      "changed_fraction": 0.0245,
+      "max_tile": 63.667
+    },
+    {
+      "sample": 1762,
+      "time": 881.0,
+      "mean": 4.983,
+      "changed_fraction": 0.04,
+      "max_tile": 108.667
+    },
+    {
+      "sample": 1764,
+      "time": 882.0,
+      "mean": 7.305,
+      "changed_fraction": 0.0761,
+      "max_tile": 89.859
+    },
+    {
+      "sample": 1766,
+      "time": 883.0,
+      "mean": 3.767,
+      "changed_fraction": 0.0377,
+      "max_tile": 68.324
+    },
+    {
+      "sample": 1768,
+      "time": 884.0,
+      "mean": 4.758,
+      "changed_fraction": 0.0415,
+      "max_tile": 108.317
+    },
+    {
+      "sample": 1770,
+      "time": 885.0,
+      "mean": 3.22,
+      "changed_fraction": 0.0277,
+      "max_tile": 78.419
+    },
+    {
+      "sample": 1772,
+      "time": 886.0,
+      "mean": 36.585,
+      "changed_fraction": 0.5486,
+      "max_tile": 117.699
+    },
+    {
+      "sample": 1778,
+      "time": 889.0,
+      "mean": 3.02,
+      "changed_fraction": 0.0307,
+      "max_tile": 29.588
+    },
+    {
+      "sample": 1783,
+      "time": 891.5,
+      "mean": 3.648,
+      "changed_fraction": 0.0328,
+      "max_tile": 25.516
+    },
+    {
+      "sample": 1788,
+      "time": 894.0,
+      "mean": 4.08,
+      "changed_fraction": 0.0319,
+      "max_tile": 24.625
+    },
+    {
+      "sample": 1792,
+      "time": 896.0,
+      "mean": 5.858,
+      "changed_fraction": 0.0532,
+      "max_tile": 90.831
+    },
+    {
+      "sample": 1794,
+      "time": 897.0,
+      "mean": 5.522,
+      "changed_fraction": 0.0587,
+      "max_tile": 94.986
+    },
+    {
+      "sample": 1796,
+      "time": 898.0,
+      "mean": 34.586,
+      "changed_fraction": 0.4781,
+      "max_tile": 119.757
+    },
+    {
+      "sample": 1806,
+      "time": 903.0,
+      "mean": 1.897,
+      "changed_fraction": 0.0153,
+      "max_tile": 28.225
+    },
+    {
+      "sample": 1813,
+      "time": 906.5,
+      "mean": 6.916,
+      "changed_fraction": 0.0821,
+      "max_tile": 54.688
+    },
+    {
+      "sample": 1815,
+      "time": 907.5,
+      "mean": 2.753,
+      "changed_fraction": 0.0427,
+      "max_tile": 19.755
+    },
+    {
+      "sample": 1826,
+      "time": 913.0,
+      "mean": 1.996,
+      "changed_fraction": 0.0322,
+      "max_tile": 19.755
+    },
+    {
+      "sample": 1828,
+      "time": 914.0,
+      "mean": 18.097,
+      "changed_fraction": 0.1617,
+      "max_tile": 101.312
+    },
+    {
+      "sample": 1835,
+      "time": 917.5,
+      "mean": 1.702,
+      "changed_fraction": 0.0146,
+      "max_tile": 28.731
+    },
+    {
+      "sample": 1839,
+      "time": 919.5,
+      "mean": 2.636,
+      "changed_fraction": 0.0327,
+      "max_tile": 16.486
+    },
+    {
+      "sample": 1843,
+      "time": 921.5,
+      "mean": 2.573,
+      "changed_fraction": 0.0322,
+      "max_tile": 17.94
+    },
+    {
+      "sample": 1852,
+      "time": 926.0,
+      "mean": 2.587,
+      "changed_fraction": 0.0306,
+      "max_tile": 17.94
+    },
+    {
+      "sample": 1854,
+      "time": 927.0,
+      "mean": 20.34,
+      "changed_fraction": 0.1691,
+      "max_tile": 107.595
+    },
+    {
+      "sample": 1866,
+      "time": 933.0,
+      "mean": 3.143,
+      "changed_fraction": 0.0422,
+      "max_tile": 27.044
+    },
+    {
+      "sample": 1868,
+      "time": 934.0,
+      "mean": 2.784,
+      "changed_fraction": 0.0394,
+      "max_tile": 21.093
+    },
+    {
+      "sample": 1880,
+      "time": 940.0,
+      "mean": 2.956,
+      "changed_fraction": 0.0404,
+      "max_tile": 21.086
+    },
+    {
+      "sample": 1882,
+      "time": 941.0,
+      "mean": 15.706,
+      "changed_fraction": 0.1823,
+      "max_tile": 100.211
+    },
+    {
+      "sample": 1893,
+      "time": 946.5,
+      "mean": 3.756,
+      "changed_fraction": 0.0427,
+      "max_tile": 24.259
+    },
+    {
+      "sample": 1895,
+      "time": 947.5,
+      "mean": 2.936,
+      "changed_fraction": 0.0276,
+      "max_tile": 32.516
+    },
+    {
+      "sample": 1902,
+      "time": 951.0,
+      "mean": 2.993,
+      "changed_fraction": 0.0293,
+      "max_tile": 29.25
+    },
+    {
+      "sample": 1904,
+      "time": 952.0,
+      "mean": 24.762,
+      "changed_fraction": 0.2796,
+      "max_tile": 121.025
+    },
+    {
+      "sample": 1911,
+      "time": 955.5,
+      "mean": 2.654,
+      "changed_fraction": 0.0301,
+      "max_tile": 30.111
+    },
+    {
+      "sample": 1913,
+      "time": 956.5,
+      "mean": 80.667,
+      "changed_fraction": 0.923,
+      "max_tile": 164.007
+    },
+    {
+      "sample": 1920,
+      "time": 960.0,
+      "mean": 3.522,
+      "changed_fraction": 0.0293,
+      "max_tile": 30.896
+    },
+    {
+      "sample": 1925,
+      "time": 962.5,
+      "mean": 16.498,
+      "changed_fraction": 0.2107,
+      "max_tile": 78.831
+    },
+    {
+      "sample": 1930,
+      "time": 965.0,
+      "mean": 2.938,
+      "changed_fraction": 0.0222,
+      "max_tile": 28.178
+    },
+    {
+      "sample": 1935,
+      "time": 967.5,
+      "mean": 3.85,
+      "changed_fraction": 0.0339,
+      "max_tile": 28.044
+    },
+    {
+      "sample": 1940,
+      "time": 970.0,
+      "mean": 3.328,
+      "changed_fraction": 0.0317,
+      "max_tile": 27.338
+    },
+    {
+      "sample": 1944,
+      "time": 972.0,
+      "mean": 83.802,
+      "changed_fraction": 0.9571,
+      "max_tile": 118.512
+    },
+    {
+      "sample": 1956,
+      "time": 978.0,
+      "mean": 3.371,
+      "changed_fraction": 0.0261,
+      "max_tile": 28.884
+    },
+    {
+      "sample": 1961,
+      "time": 980.5,
+      "mean": 5.049,
+      "changed_fraction": 0.053,
+      "max_tile": 22.373
+    },
+    {
+      "sample": 1963,
+      "time": 981.5,
+      "mean": 132.455,
+      "changed_fraction": 0.9657,
+      "max_tile": 206.516
+    },
+    {
+      "sample": 1965,
+      "time": 982.5,
+      "mean": 2.927,
+      "changed_fraction": 0.033,
+      "max_tile": 24.734
+    },
+    {
+      "sample": 1967,
+      "time": 983.5,
+      "mean": 3.533,
+      "changed_fraction": 0.0404,
+      "max_tile": 26.514
+    },
+    {
+      "sample": 1969,
+      "time": 984.5,
+      "mean": 4.1,
+      "changed_fraction": 0.0501,
+      "max_tile": 41.444
+    },
+    {
+      "sample": 1971,
+      "time": 985.5,
+      "mean": 3.802,
+      "changed_fraction": 0.0389,
+      "max_tile": 32.6
+    },
+    {
+      "sample": 1973,
+      "time": 986.5,
+      "mean": 3.712,
+      "changed_fraction": 0.0197,
+      "max_tile": 16.495
+    },
+    {
+      "sample": 1975,
+      "time": 987.5,
+      "mean": 4.25,
+      "changed_fraction": 0.0286,
+      "max_tile": 34.016
+    },
+    {
+      "sample": 1977,
+      "time": 988.5,
+      "mean": 4.586,
+      "changed_fraction": 0.0388,
+      "max_tile": 32.211
+    },
+    {
+      "sample": 1980,
+      "time": 990.0,
+      "mean": 4.185,
+      "changed_fraction": 0.0502,
+      "max_tile": 22.125
+    },
+    {
+      "sample": 1982,
+      "time": 991.0,
+      "mean": 3.531,
+      "changed_fraction": 0.0277,
+      "max_tile": 29.78
+    },
+    {
+      "sample": 1984,
+      "time": 992.0,
+      "mean": 2.91,
+      "changed_fraction": 0.0324,
+      "max_tile": 34.977
+    },
+    {
+      "sample": 1986,
+      "time": 993.0,
+      "mean": 78.443,
+      "changed_fraction": 0.8883,
+      "max_tile": 149.951
+    },
+    {
+      "sample": 1992,
+      "time": 996.0,
+      "mean": 2.442,
+      "changed_fraction": 0.0137,
+      "max_tile": 32.095
+    },
+    {
+      "sample": 1997,
+      "time": 998.5,
+      "mean": 3.043,
+      "changed_fraction": 0.0329,
+      "max_tile": 27.201
+    },
+    {
+      "sample": 2000,
+      "time": 1000.0,
+      "mean": 2.908,
+      "changed_fraction": 0.0304,
+      "max_tile": 17.447
+    },
+    {
+      "sample": 2006,
+      "time": 1003.0,
+      "mean": 2.149,
+      "changed_fraction": 0.015,
+      "max_tile": 29.634
+    },
+    {
+      "sample": 2010,
+      "time": 1005.0,
+      "mean": 28.945,
+      "changed_fraction": 0.2653,
+      "max_tile": 156.986
+    },
+    {
+      "sample": 2012,
+      "time": 1006.0,
+      "mean": 6.666,
+      "changed_fraction": 0.0698,
+      "max_tile": 84.317
+    },
+    {
+      "sample": 2014,
+      "time": 1007.0,
+      "mean": 2.876,
+      "changed_fraction": 0.0285,
+      "max_tile": 42.671
+    },
+    {
+      "sample": 2020,
+      "time": 1010.0,
+      "mean": 3.43,
+      "changed_fraction": 0.0323,
+      "max_tile": 29.137
+    },
+    {
+      "sample": 2025,
+      "time": 1012.5,
+      "mean": 4.832,
+      "changed_fraction": 0.0568,
+      "max_tile": 22.794
+    },
+    {
+      "sample": 2028,
+      "time": 1014.0,
+      "mean": 3.193,
+      "changed_fraction": 0.0325,
+      "max_tile": 15.688
+    },
+    {
+      "sample": 2039,
+      "time": 1019.5,
+      "mean": 42.749,
+      "changed_fraction": 0.4859,
+      "max_tile": 177.625
+    },
+    {
+      "sample": 2043,
+      "time": 1021.5,
+      "mean": 4.447,
+      "changed_fraction": 0.0222,
+      "max_tile": 17.757
+    },
+    {
+      "sample": 2046,
+      "time": 1023.0,
+      "mean": 3.856,
+      "changed_fraction": 0.0051,
+      "max_tile": 12.319
+    },
+    {
+      "sample": 2048,
+      "time": 1024.0,
+      "mean": 4.702,
+      "changed_fraction": 0.024,
+      "max_tile": 17.356
+    },
+    {
+      "sample": 2050,
+      "time": 1025.0,
+      "mean": 3.905,
+      "changed_fraction": 0.037,
+      "max_tile": 19.697
+    },
+    {
+      "sample": 2053,
+      "time": 1026.5,
+      "mean": 4.385,
+      "changed_fraction": 0.0157,
+      "max_tile": 29.574
+    },
+    {
+      "sample": 2058,
+      "time": 1029.0,
+      "mean": 3.359,
+      "changed_fraction": 0.0397,
+      "max_tile": 21.139
+    },
+    {
+      "sample": 2060,
+      "time": 1030.0,
+      "mean": 75.012,
+      "changed_fraction": 0.9698,
+      "max_tile": 164.769
+    },
+    {
+      "sample": 2063,
+      "time": 1031.5,
+      "mean": 2.279,
+      "changed_fraction": 0.0324,
+      "max_tile": 15.801
+    },
+    {
+      "sample": 2066,
+      "time": 1033.0,
+      "mean": 2.429,
+      "changed_fraction": 0.0317,
+      "max_tile": 14.773
+    },
+    {
+      "sample": 2070,
+      "time": 1035.0,
+      "mean": 2.758,
+      "changed_fraction": 0.0361,
+      "max_tile": 16.525
+    },
+    {
+      "sample": 2075,
+      "time": 1037.5,
+      "mean": 3.287,
+      "changed_fraction": 0.0437,
+      "max_tile": 13.544
+    },
+    {
+      "sample": 2078,
+      "time": 1039.0,
+      "mean": 105.294,
+      "changed_fraction": 0.9334,
+      "max_tile": 192.949
+    },
+    {
+      "sample": 2084,
+      "time": 1042.0,
+      "mean": 2.927,
+      "changed_fraction": 0.0307,
+      "max_tile": 27.94
+    },
+    {
+      "sample": 2087,
+      "time": 1043.5,
+      "mean": 2.842,
+      "changed_fraction": 0.0306,
+      "max_tile": 27.34
+    },
+    {
+      "sample": 2096,
+      "time": 1048.0,
+      "mean": 3.028,
+      "changed_fraction": 0.0287,
+      "max_tile": 28.801
+    },
+    {
+      "sample": 2101,
+      "time": 1050.5,
+      "mean": 108.827,
+      "changed_fraction": 0.9647,
+      "max_tile": 191.549
+    },
+    {
+      "sample": 2108,
+      "time": 1054.0,
+      "mean": 4.029,
+      "changed_fraction": 0.038,
+      "max_tile": 17.032
+    },
+    {
+      "sample": 2112,
+      "time": 1056.0,
+      "mean": 3.936,
+      "changed_fraction": 0.0301,
+      "max_tile": 15.164
+    },
+    {
+      "sample": 2115,
+      "time": 1057.5,
+      "mean": 3.532,
+      "changed_fraction": 0.0244,
+      "max_tile": 14.706
+    },
+    {
+      "sample": 2124,
+      "time": 1062.0,
+      "mean": 4.512,
+      "changed_fraction": 0.0429,
+      "max_tile": 14.669
+    },
+    {
+      "sample": 2126,
+      "time": 1063.0,
+      "mean": 61.291,
+      "changed_fraction": 0.8016,
+      "max_tile": 127.275
+    },
+    {
+      "sample": 2129,
+      "time": 1064.5,
+      "mean": 4.525,
+      "changed_fraction": 0.0386,
+      "max_tile": 40.241
+    },
+    {
+      "sample": 2131,
+      "time": 1065.5,
+      "mean": 3.479,
+      "changed_fraction": 0.0237,
+      "max_tile": 40.377
+    },
+    {
+      "sample": 2135,
+      "time": 1067.5,
+      "mean": 5.663,
+      "changed_fraction": 0.0581,
+      "max_tile": 47.044
+    },
+    {
+      "sample": 2137,
+      "time": 1068.5,
+      "mean": 4.208,
+      "changed_fraction": 0.0271,
+      "max_tile": 43.213
+    },
+    {
+      "sample": 2139,
+      "time": 1069.5,
+      "mean": 5.456,
+      "changed_fraction": 0.0373,
+      "max_tile": 65.924
+    },
+    {
+      "sample": 2143,
+      "time": 1071.5,
+      "mean": 4.414,
+      "changed_fraction": 0.0404,
+      "max_tile": 24.15
+    },
+    {
+      "sample": 2145,
+      "time": 1072.5,
+      "mean": 4.515,
+      "changed_fraction": 0.0339,
+      "max_tile": 68.595
+    },
+    {
+      "sample": 2148,
+      "time": 1074.0,
+      "mean": 3.414,
+      "changed_fraction": 0.0345,
+      "max_tile": 64.13
+    },
+    {
+      "sample": 2150,
+      "time": 1075.0,
+      "mean": 33.43,
+      "changed_fraction": 0.4749,
+      "max_tile": 100.951
+    },
+    {
+      "sample": 2153,
+      "time": 1076.5,
+      "mean": 5.031,
+      "changed_fraction": 0.0249,
+      "max_tile": 13.433
+    },
+    {
+      "sample": 2155,
+      "time": 1077.5,
+      "mean": 4.29,
+      "changed_fraction": 0.0309,
+      "max_tile": 24.968
+    },
+    {
+      "sample": 2158,
+      "time": 1079.0,
+      "mean": 4.993,
+      "changed_fraction": 0.0309,
+      "max_tile": 13.715
+    },
+    {
+      "sample": 2160,
+      "time": 1080.0,
+      "mean": 4.44,
+      "changed_fraction": 0.0076,
+      "max_tile": 12.782
+    },
+    {
+      "sample": 2162,
+      "time": 1081.0,
+      "mean": 4.915,
+      "changed_fraction": 0.0284,
+      "max_tile": 28.637
+    },
+    {
+      "sample": 2165,
+      "time": 1082.5,
+      "mean": 4.878,
+      "changed_fraction": 0.0297,
+      "max_tile": 13.972
+    },
+    {
+      "sample": 2167,
+      "time": 1083.5,
+      "mean": 4.118,
+      "changed_fraction": 0.0157,
+      "max_tile": 22.363
+    },
+    {
+      "sample": 2170,
+      "time": 1085.0,
+      "mean": 3.908,
+      "changed_fraction": 0.0031,
+      "max_tile": 10.792
+    },
+    {
+      "sample": 2173,
+      "time": 1086.5,
+      "mean": 4.179,
+      "changed_fraction": 0.018,
+      "max_tile": 15.037
+    },
+    {
+      "sample": 2175,
+      "time": 1087.5,
+      "mean": 60.982,
+      "changed_fraction": 0.6852,
+      "max_tile": 150.16
+    },
+    {
+      "sample": 2178,
+      "time": 1089.0,
+      "mean": 2.593,
+      "changed_fraction": 0.0116,
+      "max_tile": 37.113
+    },
+    {
+      "sample": 2180,
+      "time": 1090.0,
+      "mean": 2.216,
+      "changed_fraction": 0.014,
+      "max_tile": 45.424
+    },
+    {
+      "sample": 2185,
+      "time": 1092.5,
+      "mean": 3.499,
+      "changed_fraction": 0.0276,
+      "max_tile": 44.12
+    },
+    {
+      "sample": 2187,
+      "time": 1093.5,
+      "mean": 2.967,
+      "changed_fraction": 0.014,
+      "max_tile": 45.581
+    },
+    {
+      "sample": 2192,
+      "time": 1096.0,
+      "mean": 4.107,
+      "changed_fraction": 0.0319,
+      "max_tile": 44.632
+    },
+    {
+      "sample": 2194,
+      "time": 1097.0,
+      "mean": 2.121,
+      "changed_fraction": 0.0136,
+      "max_tile": 47.083
+    },
+    {
+      "sample": 2198,
+      "time": 1099.0,
+      "mean": 1.315,
+      "changed_fraction": 0.0088,
+      "max_tile": 29.803
+    },
+    {
+      "sample": 2200,
+      "time": 1100.0,
+      "mean": 55.119,
+      "changed_fraction": 0.7321,
+      "max_tile": 155.347
+    },
+    {
+      "sample": 2206,
+      "time": 1103.0,
+      "mean": 3.705,
+      "changed_fraction": 0.0215,
+      "max_tile": 30.736
+    },
+    {
+      "sample": 2210,
+      "time": 1105.0,
+      "mean": 3.775,
+      "changed_fraction": 0.0286,
+      "max_tile": 19.188
+    },
+    {
+      "sample": 2213,
+      "time": 1106.5,
+      "mean": 4.105,
+      "changed_fraction": 0.0348,
+      "max_tile": 15.382
+    },
+    {
+      "sample": 2217,
+      "time": 1108.5,
+      "mean": 3.793,
+      "changed_fraction": 0.031,
+      "max_tile": 29.757
+    },
+    {
+      "sample": 2220,
+      "time": 1110.0,
+      "mean": 3.144,
+      "changed_fraction": 0.0254,
+      "max_tile": 39.042
+    },
+    {
+      "sample": 2223,
+      "time": 1111.5,
+      "mean": 1.833,
+      "changed_fraction": 0.0201,
+      "max_tile": 28.838
+    },
+    {
+      "sample": 2226,
+      "time": 1113.0,
+      "mean": 1.684,
+      "changed_fraction": 0.0202,
+      "max_tile": 30.306
+    },
+    {
+      "sample": 2228,
+      "time": 1114.0,
+      "mean": 3.389,
+      "changed_fraction": 0.043,
+      "max_tile": 28.287
+    },
+    {
+      "sample": 2230,
+      "time": 1115.0,
+      "mean": 47.043,
+      "changed_fraction": 0.8622,
+      "max_tile": 158.361
+    },
+    {
+      "sample": 2236,
+      "time": 1118.0,
+      "mean": 3.842,
+      "changed_fraction": 0.0353,
+      "max_tile": 22.382
+    },
+    {
+      "sample": 2241,
+      "time": 1120.5,
+      "mean": 3.717,
+      "changed_fraction": 0.0231,
+      "max_tile": 19.669
+    },
+    {
+      "sample": 2246,
+      "time": 1123.0,
+      "mean": 5.241,
+      "changed_fraction": 0.0498,
+      "max_tile": 20.299
+    },
+    {
+      "sample": 2248,
+      "time": 1124.0,
+      "mean": 3.599,
+      "changed_fraction": 0.035,
+      "max_tile": 20.715
+    },
+    {
+      "sample": 2262,
+      "time": 1131.0,
+      "mean": 2.703,
+      "changed_fraction": 0.0151,
+      "max_tile": 30.824
+    },
+    {
+      "sample": 2268,
+      "time": 1134.0,
+      "mean": 2.982,
+      "changed_fraction": 0.0407,
+      "max_tile": 20.843
+    },
+    {
+      "sample": 2270,
+      "time": 1135.0,
+      "mean": 35.148,
+      "changed_fraction": 0.4959,
+      "max_tile": 100.271
+    },
+    {
+      "sample": 2273,
+      "time": 1136.5,
+      "mean": 3.5,
+      "changed_fraction": 0.0258,
+      "max_tile": 15.241
+    },
+    {
+      "sample": 2276,
+      "time": 1138.0,
+      "mean": 5.099,
+      "changed_fraction": 0.0516,
+      "max_tile": 24.488
+    },
+    {
+      "sample": 2280,
+      "time": 1140.0,
+      "mean": 4.306,
+      "changed_fraction": 0.0505,
+      "max_tile": 20.236
+    },
+    {
+      "sample": 2283,
+      "time": 1141.5,
+      "mean": 3.777,
+      "changed_fraction": 0.024,
+      "max_tile": 21.4
+    },
+    {
+      "sample": 2286,
+      "time": 1143.0,
+      "mean": 3.908,
+      "changed_fraction": 0.0225,
+      "max_tile": 14.338
+    },
+    {
+      "sample": 2288,
+      "time": 1144.0,
+      "mean": 69.442,
+      "changed_fraction": 0.921,
+      "max_tile": 157.565
+    },
+    {
+      "sample": 2296,
+      "time": 1148.0,
+      "mean": 4.345,
+      "changed_fraction": 0.0474,
+      "max_tile": 29.762
+    },
+    {
+      "sample": 2298,
+      "time": 1149.0,
+      "mean": 6.673,
+      "changed_fraction": 0.0744,
+      "max_tile": 43.181
+    },
+    {
+      "sample": 2310,
+      "time": 1155.0,
+      "mean": 3.437,
+      "changed_fraction": 0.027,
+      "max_tile": 30.241
+    },
+    {
+      "sample": 2316,
+      "time": 1158.0,
+      "mean": 7.451,
+      "changed_fraction": 0.0871,
+      "max_tile": 44.794
+    },
+    {
+      "sample": 2318,
+      "time": 1159.0,
+      "mean": 32.706,
+      "changed_fraction": 0.4938,
+      "max_tile": 134.648
+    },
+    {
+      "sample": 2326,
+      "time": 1163.0,
+      "mean": 3.735,
+      "changed_fraction": 0.0275,
+      "max_tile": 26.338
+    },
+    {
+      "sample": 2333,
+      "time": 1166.5,
+      "mean": 3.897,
+      "changed_fraction": 0.0217,
+      "max_tile": 22.975
+    },
+    {
+      "sample": 2340,
+      "time": 1170.0,
+      "mean": 42.741,
+      "changed_fraction": 0.7202,
+      "max_tile": 133.222
+    },
+    {
+      "sample": 2343,
+      "time": 1171.5,
+      "mean": 3.091,
+      "changed_fraction": 0.0357,
+      "max_tile": 22.271
+    },
+    {
+      "sample": 2346,
+      "time": 1173.0,
+      "mean": 2.7,
+      "changed_fraction": 0.0301,
+      "max_tile": 23.155
+    },
+    {
+      "sample": 2349,
+      "time": 1174.5,
+      "mean": 3.014,
+      "changed_fraction": 0.0347,
+      "max_tile": 22.025
+    },
+    {
+      "sample": 2352,
+      "time": 1176.0,
+      "mean": 5.319,
+      "changed_fraction": 0.0682,
+      "max_tile": 46.588
+    },
+    {
+      "sample": 2354,
+      "time": 1177.0,
+      "mean": 3.878,
+      "changed_fraction": 0.0402,
+      "max_tile": 14.991
+    },
+    {
+      "sample": 2357,
+      "time": 1178.5,
+      "mean": 3.276,
+      "changed_fraction": 0.0389,
+      "max_tile": 24.785
+    },
+    {
+      "sample": 2360,
+      "time": 1180.0,
+      "mean": 3.329,
+      "changed_fraction": 0.0315,
+      "max_tile": 21.287
+    },
+    {
+      "sample": 2371,
+      "time": 1185.5,
+      "mean": 36.653,
+      "changed_fraction": 0.4042,
+      "max_tile": 178.975
+    },
+    {
+      "sample": 2377,
+      "time": 1188.5,
+      "mean": 3.485,
+      "changed_fraction": 0.0343,
+      "max_tile": 15.225
+    },
+    {
+      "sample": 2381,
+      "time": 1190.5,
+      "mean": 4.655,
+      "changed_fraction": 0.0539,
+      "max_tile": 32.931
+    },
+    {
+      "sample": 2383,
+      "time": 1191.5,
+      "mean": 3.716,
+      "changed_fraction": 0.0444,
+      "max_tile": 22.569
+    },
+    {
+      "sample": 2387,
+      "time": 1193.5,
+      "mean": 3.797,
+      "changed_fraction": 0.0355,
+      "max_tile": 21.583
+    },
+    {
+      "sample": 2391,
+      "time": 1195.5,
+      "mean": 3.316,
+      "changed_fraction": 0.0374,
+      "max_tile": 21.613
+    },
+    {
+      "sample": 2393,
+      "time": 1196.5,
+      "mean": 2.501,
+      "changed_fraction": 0.0377,
+      "max_tile": 22.766
+    },
+    {
+      "sample": 2396,
+      "time": 1198.0,
+      "mean": 49.582,
+      "changed_fraction": 0.8597,
+      "max_tile": 146.359
+    },
+    {
+      "sample": 2398,
+      "time": 1199.0,
+      "mean": 1.878,
+      "changed_fraction": 0.0103,
+      "max_tile": 33.968
+    },
+    {
+      "sample": 2404,
+      "time": 1202.0,
+      "mean": 4.72,
+      "changed_fraction": 0.0554,
+      "max_tile": 30.41
+    },
+    {
+      "sample": 2413,
+      "time": 1206.5,
+      "mean": 3.531,
+      "changed_fraction": 0.0288,
+      "max_tile": 30.345
+    },
+    {
+      "sample": 2420,
+      "time": 1210.0,
+      "mean": 3.527,
+      "changed_fraction": 0.0324,
+      "max_tile": 33.868
+    },
+    {
+      "sample": 2422,
+      "time": 1211.0,
+      "mean": 20.772,
+      "changed_fraction": 0.2941,
+      "max_tile": 91.676
+    },
+    {
+      "sample": 2428,
+      "time": 1214.0,
+      "mean": 4.241,
+      "changed_fraction": 0.0387,
+      "max_tile": 35.806
+    },
+    {
+      "sample": 2436,
+      "time": 1218.0,
+      "mean": 4.639,
+      "changed_fraction": 0.0439,
+      "max_tile": 35.806
+    },
+    {
+      "sample": 2438,
+      "time": 1219.0,
+      "mean": 22.359,
+      "changed_fraction": 0.3058,
+      "max_tile": 119.903
+    },
+    {
+      "sample": 2445,
+      "time": 1222.5,
+      "mean": 3.269,
+      "changed_fraction": 0.0303,
+      "max_tile": 22.785
+    },
+    {
+      "sample": 2450,
+      "time": 1225.0,
+      "mean": 3.696,
+      "changed_fraction": 0.0312,
+      "max_tile": 17.403
+    },
+    {
+      "sample": 2457,
+      "time": 1228.5,
+      "mean": 3.563,
+      "changed_fraction": 0.027,
+      "max_tile": 24.676
+    },
+    {
+      "sample": 2459,
+      "time": 1229.5,
+      "mean": 15.726,
+      "changed_fraction": 0.2444,
+      "max_tile": 65.021
+    },
+    {
+      "sample": 2465,
+      "time": 1232.5,
+      "mean": 3.767,
+      "changed_fraction": 0.0331,
+      "max_tile": 29.743
+    },
+    {
+      "sample": 2470,
+      "time": 1235.0,
+      "mean": 3.882,
+      "changed_fraction": 0.0209,
+      "max_tile": 13.375
+    },
+    {
+      "sample": 2476,
+      "time": 1238.0,
+      "mean": 3.599,
+      "changed_fraction": 0.0193,
+      "max_tile": 15.984
+    },
+    {
+      "sample": 2479,
+      "time": 1239.5,
+      "mean": 16.859,
+      "changed_fraction": 0.2659,
+      "max_tile": 76.938
+    },
+    {
+      "sample": 2481,
+      "time": 1240.5,
+      "mean": 2.019,
+      "changed_fraction": 0.0129,
+      "max_tile": 30.889
+    },
+    {
+      "sample": 2483,
+      "time": 1241.5,
+      "mean": 2.834,
+      "changed_fraction": 0.0281,
+      "max_tile": 35.838
+    },
+    {
+      "sample": 2486,
+      "time": 1243.0,
+      "mean": 3.707,
+      "changed_fraction": 0.037,
+      "max_tile": 45.09
+    },
+    {
+      "sample": 2488,
+      "time": 1244.0,
+      "mean": 2.835,
+      "changed_fraction": 0.0249,
+      "max_tile": 38.935
+    },
+    {
+      "sample": 2494,
+      "time": 1247.0,
+      "mean": 3.773,
+      "changed_fraction": 0.0323,
+      "max_tile": 23.859
+    },
+    {
+      "sample": 2505,
+      "time": 1252.5,
+      "mean": 21.995,
+      "changed_fraction": 0.2762,
+      "max_tile": 87.019
+    },
+    {
+      "sample": 2509,
+      "time": 1254.5,
+      "mean": 4.36,
+      "changed_fraction": 0.0027,
+      "max_tile": 8.706
+    },
+    {
+      "sample": 2513,
+      "time": 1256.5,
+      "mean": 4.405,
+      "changed_fraction": 0.0056,
+      "max_tile": 14.84
+    },
+    {
+      "sample": 2516,
+      "time": 1258.0,
+      "mean": 4.369,
+      "changed_fraction": 0.0204,
+      "max_tile": 19.347
+    },
+    {
+      "sample": 2519,
+      "time": 1259.5,
+      "mean": 4.409,
+      "changed_fraction": 0.0221,
+      "max_tile": 19.056
+    },
+    {
+      "sample": 2523,
+      "time": 1261.5,
+      "mean": 3.698,
+      "changed_fraction": 0.001,
+      "max_tile": 7.718
+    },
+    {
+      "sample": 2526,
+      "time": 1263.0,
+      "mean": 3.949,
+      "changed_fraction": 0.0021,
+      "max_tile": 9.382
+    },
+    {
+      "sample": 2529,
+      "time": 1264.5,
+      "mean": 3.682,
+      "changed_fraction": 0.0252,
+      "max_tile": 18.359
+    },
+    {
+      "sample": 2531,
+      "time": 1265.5,
+      "mean": 30.163,
+      "changed_fraction": 0.7717,
+      "max_tile": 70.824
+    },
+    {
+      "sample": 2534,
+      "time": 1267.0,
+      "mean": 8.428,
+      "changed_fraction": 0.0672,
+      "max_tile": 51.359
+    },
+    {
+      "sample": 2542,
+      "time": 1271.0,
+      "mean": 3.877,
+      "changed_fraction": 0.0422,
+      "max_tile": 19.866
+    },
+    {
+      "sample": 2546,
+      "time": 1273.0,
+      "mean": 2.899,
+      "changed_fraction": 0.0311,
+      "max_tile": 18.806
+    },
+    {
+      "sample": 2553,
+      "time": 1276.5,
+      "mean": 2.926,
+      "changed_fraction": 0.0325,
+      "max_tile": 19.014
+    },
+    {
+      "sample": 2555,
+      "time": 1277.5,
+      "mean": 10.986,
+      "changed_fraction": 0.1141,
+      "max_tile": 51.458
+    },
+    {
+      "sample": 2565,
+      "time": 1282.5,
+      "mean": 3.014,
+      "changed_fraction": 0.0309,
+      "max_tile": 20.991
+    },
+    {
+      "sample": 2567,
+      "time": 1283.5,
+      "mean": 3.193,
+      "changed_fraction": 0.0334,
+      "max_tile": 34.157
+    },
+    {
+      "sample": 2573,
+      "time": 1286.5,
+      "mean": 3.367,
+      "changed_fraction": 0.0318,
+      "max_tile": 34.199
+    },
+    {
+      "sample": 2575,
+      "time": 1287.5,
+      "mean": 14.211,
+      "changed_fraction": 0.145,
+      "max_tile": 97.738
+    },
+    {
+      "sample": 2584,
+      "time": 1292.0,
+      "mean": 3.459,
+      "changed_fraction": 0.0413,
+      "max_tile": 21.4
+    },
+    {
+      "sample": 2600,
+      "time": 1300.0,
+      "mean": 3.711,
+      "changed_fraction": 0.0485,
+      "max_tile": 21.85
+    },
+    {
+      "sample": 2602,
+      "time": 1301.0,
+      "mean": 18.569,
+      "changed_fraction": 0.1298,
+      "max_tile": 106.604
+    },
+    {
+      "sample": 2610,
+      "time": 1305.0,
+      "mean": 3.876,
+      "changed_fraction": 0.023,
+      "max_tile": 40.792
+    },
+    {
+      "sample": 2613,
+      "time": 1306.5,
+      "mean": 1.911,
+      "changed_fraction": 0.01,
+      "max_tile": 38.5
+    },
+    {
+      "sample": 2615,
+      "time": 1307.5,
+      "mean": 2.236,
+      "changed_fraction": 0.0178,
+      "max_tile": 70.713
+    },
+    {
+      "sample": 2617,
+      "time": 1308.5,
+      "mean": 3.635,
+      "changed_fraction": 0.0378,
+      "max_tile": 60.303
+    },
+    {
+      "sample": 2619,
+      "time": 1309.5,
+      "mean": 22.969,
+      "changed_fraction": 0.1861,
+      "max_tile": 104.069
+    },
+    {
+      "sample": 2628,
+      "time": 1314.0,
+      "mean": 4.702,
+      "changed_fraction": 0.0585,
+      "max_tile": 21.535
+    },
+    {
+      "sample": 2634,
+      "time": 1317.0,
+      "mean": 3.777,
+      "changed_fraction": 0.0394,
+      "max_tile": 19.801
+    },
+    {
+      "sample": 2640,
+      "time": 1320.0,
+      "mean": 16.857,
+      "changed_fraction": 0.2229,
+      "max_tile": 93.391
+    },
+    {
+      "sample": 2652,
+      "time": 1326.0,
+      "mean": 3.133,
+      "changed_fraction": 0.0138,
+      "max_tile": 29.41
+    },
+    {
+      "sample": 2654,
+      "time": 1327.0,
+      "mean": 3.718,
+      "changed_fraction": 0.0356,
+      "max_tile": 29.222
+    },
+    {
+      "sample": 2660,
+      "time": 1330.0,
+      "mean": 3.538,
+      "changed_fraction": 0.0297,
+      "max_tile": 29.727
+    },
+    {
+      "sample": 2662,
+      "time": 1331.0,
+      "mean": 22.277,
+      "changed_fraction": 0.1994,
+      "max_tile": 94.456
+    },
+    {
+      "sample": 2668,
+      "time": 1334.0,
+      "mean": 1.854,
+      "changed_fraction": 0.0195,
+      "max_tile": 28.384
+    },
+    {
+      "sample": 2672,
+      "time": 1336.0,
+      "mean": 5.448,
+      "changed_fraction": 0.0605,
+      "max_tile": 33.079
+    },
+    {
+      "sample": 2676,
+      "time": 1338.0,
+      "mean": 2.703,
+      "changed_fraction": 0.0326,
+      "max_tile": 18.109
+    },
+    {
+      "sample": 2682,
+      "time": 1341.0,
+      "mean": 2.623,
+      "changed_fraction": 0.0333,
+      "max_tile": 17.926
+    },
+    {
+      "sample": 2684,
+      "time": 1342.0,
+      "mean": 18.174,
+      "changed_fraction": 0.1784,
+      "max_tile": 89.722
+    },
+    {
+      "sample": 2688,
+      "time": 1344.0,
+      "mean": 3.662,
+      "changed_fraction": 0.0372,
+      "max_tile": 33.498
+    },
+    {
+      "sample": 2700,
+      "time": 1350.0,
+      "mean": 6.057,
+      "changed_fraction": 0.0574,
+      "max_tile": 35.074
+    },
+    {
+      "sample": 2702,
+      "time": 1351.0,
+      "mean": 18.321,
+      "changed_fraction": 0.1921,
+      "max_tile": 61.326
+    },
+    {
+      "sample": 2712,
+      "time": 1356.0,
+      "mean": 4.006,
+      "changed_fraction": 0.0211,
+      "max_tile": 26.609
+    },
+    {
+      "sample": 2714,
+      "time": 1357.0,
+      "mean": 19.786,
+      "changed_fraction": 0.2317,
+      "max_tile": 64.243
+    },
+    {
+      "sample": 2728,
+      "time": 1364.0,
+      "mean": 3.515,
+      "changed_fraction": 0.0299,
+      "max_tile": 19.067
+    },
+    {
+      "sample": 2730,
+      "time": 1365.0,
+      "mean": 21.248,
+      "changed_fraction": 0.2215,
+      "max_tile": 138.623
+    },
+    {
+      "sample": 2734,
+      "time": 1367.0,
+      "mean": 3.922,
+      "changed_fraction": 0.0321,
+      "max_tile": 21.079
+    },
+    {
+      "sample": 2736,
+      "time": 1368.0,
+      "mean": 2.785,
+      "changed_fraction": 0.0349,
+      "max_tile": 19.523
+    },
+    {
+      "sample": 2745,
+      "time": 1372.5,
+      "mean": 7.056,
+      "changed_fraction": 0.0731,
+      "max_tile": 42.829
+    },
+    {
+      "sample": 2747,
+      "time": 1373.5,
+      "mean": 25.091,
+      "changed_fraction": 0.248,
+      "max_tile": 130.28
+    },
+    {
+      "sample": 2760,
+      "time": 1380.0,
+      "mean": 3.386,
+      "changed_fraction": 0.0243,
+      "max_tile": 32.259
+    },
+    {
+      "sample": 2762,
+      "time": 1381.0,
+      "mean": 3.13,
+      "changed_fraction": 0.0413,
+      "max_tile": 18.977
+    },
+    {
+      "sample": 2764,
+      "time": 1382.0,
+      "mean": 2.607,
+      "changed_fraction": 0.0337,
+      "max_tile": 17.657
+    },
+    {
+      "sample": 2776,
+      "time": 1388.0,
+      "mean": 3.148,
+      "changed_fraction": 0.0354,
+      "max_tile": 18.947
+    },
+    {
+      "sample": 2778,
+      "time": 1389.0,
+      "mean": 16.977,
+      "changed_fraction": 0.2103,
+      "max_tile": 67.387
+    },
+    {
+      "sample": 2788,
+      "time": 1394.0,
+      "mean": 3.236,
+      "changed_fraction": 0.0291,
+      "max_tile": 29.028
+    },
+    {
+      "sample": 2794,
+      "time": 1397.0,
+      "mean": 3.306,
+      "changed_fraction": 0.0305,
+      "max_tile": 24.544
+    },
+    {
+      "sample": 2797,
+      "time": 1398.5,
+      "mean": 7.135,
+      "changed_fraction": 0.0725,
+      "max_tile": 55.743
+    },
+    {
+      "sample": 2799,
+      "time": 1399.5,
+      "mean": 6.072,
+      "changed_fraction": 0.0678,
+      "max_tile": 44.312
+    },
+    {
+      "sample": 2808,
+      "time": 1404.0,
+      "mean": 3.281,
+      "changed_fraction": 0.038,
+      "max_tile": 37.729
+    },
+    {
+      "sample": 2810,
+      "time": 1405.0,
+      "mean": 17.633,
+      "changed_fraction": 0.2169,
+      "max_tile": 55.171
+    },
+    {
+      "sample": 2813,
+      "time": 1406.5,
+      "mean": 2.04,
+      "changed_fraction": 0.0139,
+      "max_tile": 42.002
+    },
+    {
+      "sample": 2815,
+      "time": 1407.5,
+      "mean": 0.981,
+      "changed_fraction": 0.0061,
+      "max_tile": 31.771
+    },
+    {
+      "sample": 2817,
+      "time": 1408.5,
+      "mean": 1.495,
+      "changed_fraction": 0.0103,
+      "max_tile": 37.831
+    },
+    {
+      "sample": 2821,
+      "time": 1410.5,
+      "mean": 4.197,
+      "changed_fraction": 0.0455,
+      "max_tile": 33.025
+    },
+    {
+      "sample": 2823,
+      "time": 1411.5,
+      "mean": 3.426,
+      "changed_fraction": 0.0383,
+      "max_tile": 37.713
+    },
+    {
+      "sample": 2825,
+      "time": 1412.5,
+      "mean": 1.204,
+      "changed_fraction": 0.0084,
+      "max_tile": 36.16
+    },
+    {
+      "sample": 2827,
+      "time": 1413.5,
+      "mean": 1.226,
+      "changed_fraction": 0.0095,
+      "max_tile": 28.641
+    },
+    {
+      "sample": 2829,
+      "time": 1414.5,
+      "mean": 1.69,
+      "changed_fraction": 0.0097,
+      "max_tile": 30.255
+    },
+    {
+      "sample": 2831,
+      "time": 1415.5,
+      "mean": 1.011,
+      "changed_fraction": 0.0084,
+      "max_tile": 35.75
+    },
+    {
+      "sample": 2833,
+      "time": 1416.5,
+      "mean": 0.95,
+      "changed_fraction": 0.0074,
+      "max_tile": 38.271
+    },
+    {
+      "sample": 2835,
+      "time": 1417.5,
+      "mean": 1.422,
+      "changed_fraction": 0.0114,
+      "max_tile": 36.102
+    },
+    {
+      "sample": 2838,
+      "time": 1419.0,
+      "mean": 2.34,
+      "changed_fraction": 0.0307,
+      "max_tile": 17.789
+    },
+    {
+      "sample": 2840,
+      "time": 1420.0,
+      "mean": 19.36,
+      "changed_fraction": 0.1867,
+      "max_tile": 98.484
+    },
+    {
+      "sample": 2842,
+      "time": 1421.0,
+      "mean": 2.546,
+      "changed_fraction": 0.0249,
+      "max_tile": 32.525
+    },
+    {
+      "sample": 2849,
+      "time": 1424.5,
+      "mean": 4.594,
+      "changed_fraction": 0.0494,
+      "max_tile": 32.525
+    },
+    {
+      "sample": 2851,
+      "time": 1425.5,
+      "mean": 31.962,
+      "changed_fraction": 0.3381,
+      "max_tile": 129.611
+    },
+    {
+      "sample": 2853,
+      "time": 1426.5,
+      "mean": 3.872,
+      "changed_fraction": 0.0477,
+      "max_tile": 41.567
+    },
+    {
+      "sample": 2855,
+      "time": 1427.5,
+      "mean": 2.704,
+      "changed_fraction": 0.034,
+      "max_tile": 25.447
+    },
+    {
+      "sample": 2857,
+      "time": 1428.5,
+      "mean": 3.968,
+      "changed_fraction": 0.0433,
+      "max_tile": 36.907
+    },
+    {
+      "sample": 2859,
+      "time": 1429.5,
+      "mean": 4.013,
+      "changed_fraction": 0.0473,
+      "max_tile": 20.273
+    },
+    {
+      "sample": 2861,
+      "time": 1430.5,
+      "mean": 6.138,
+      "changed_fraction": 0.0786,
+      "max_tile": 35.356
+    },
+    {
+      "sample": 2866,
+      "time": 1433.0,
+      "mean": 4.024,
+      "changed_fraction": 0.0431,
+      "max_tile": 34.208
+    },
+    {
+      "sample": 2868,
+      "time": 1434.0,
+      "mean": 4.277,
+      "changed_fraction": 0.0517,
+      "max_tile": 51.245
+    },
+    {
+      "sample": 2870,
+      "time": 1435.0,
+      "mean": 3.826,
+      "changed_fraction": 0.0423,
+      "max_tile": 37.109
+    },
+    {
+      "sample": 2872,
+      "time": 1436.0,
+      "mean": 4.601,
+      "changed_fraction": 0.0469,
+      "max_tile": 43.243
+    },
+    {
+      "sample": 2874,
+      "time": 1437.0,
+      "mean": 3.333,
+      "changed_fraction": 0.0395,
+      "max_tile": 38.632
+    },
+    {
+      "sample": 2876,
+      "time": 1438.0,
+      "mean": 3.309,
+      "changed_fraction": 0.0424,
+      "max_tile": 38.66
+    },
+    {
+      "sample": 2878,
+      "time": 1439.0,
+      "mean": 5.317,
+      "changed_fraction": 0.0714,
+      "max_tile": 30.194
+    },
+    {
+      "sample": 2880,
+      "time": 1440.0,
+      "mean": 25.137,
+      "changed_fraction": 0.2316,
+      "max_tile": 148.736
+    },
+    {
+      "sample": 2887,
+      "time": 1443.5,
+      "mean": 3.394,
+      "changed_fraction": 0.0364,
+      "max_tile": 28.25
+    },
+    {
+      "sample": 2889,
+      "time": 1444.5,
+      "mean": 3.256,
+      "changed_fraction": 0.0313,
+      "max_tile": 34.887
+    },
+    {
+      "sample": 2897,
+      "time": 1448.5,
+      "mean": 3.957,
+      "changed_fraction": 0.0409,
+      "max_tile": 34.931
+    },
+    {
+      "sample": 2899,
+      "time": 1449.5,
+      "mean": 17.461,
+      "changed_fraction": 0.2014,
+      "max_tile": 63.13
+    },
+    {
+      "sample": 2911,
+      "time": 1455.5,
+      "mean": 4.832,
+      "changed_fraction": 0.0434,
+      "max_tile": 19.148
+    },
+    {
+      "sample": 2913,
+      "time": 1456.5,
+      "mean": 18.517,
+      "changed_fraction": 0.2205,
+      "max_tile": 62.873
+    },
+    {
+      "sample": 2926,
+      "time": 1463.0,
+      "mean": 38.912,
+      "changed_fraction": 0.7528,
+      "max_tile": 72.998
+    },
+    {
+      "sample": 2928,
+      "time": 1464.0,
+      "mean": 58.731,
+      "changed_fraction": 0.9619,
+      "max_tile": 93.972
+    },
+    {
+      "sample": 2945,
+      "time": 1472.5,
+      "mean": 99.701,
+      "changed_fraction": 0.9734,
+      "max_tile": 163.581
+    },
+    {
+      "sample": 2947,
+      "time": 1473.5,
+      "mean": 3.764,
+      "changed_fraction": 0.0426,
+      "max_tile": 26.891
+    },
+    {
+      "sample": 2958,
+      "time": 1479.0,
+      "mean": 6.069,
+      "changed_fraction": 0.0625,
+      "max_tile": 40.572
+    },
+    {
+      "sample": 2960,
+      "time": 1480.0,
+      "mean": 5.236,
+      "changed_fraction": 0.0574,
+      "max_tile": 41.819
+    },
+    {
+      "sample": 2968,
+      "time": 1484.0,
+      "mean": 2.492,
+      "changed_fraction": 0.0365,
+      "max_tile": 35.644
+    },
+    {
+      "sample": 2971,
+      "time": 1485.5,
+      "mean": 1.963,
+      "changed_fraction": 0.0325,
+      "max_tile": 34.912
+    },
+    {
+      "sample": 2974,
+      "time": 1487.0,
+      "mean": 1.731,
+      "changed_fraction": 0.0253,
+      "max_tile": 31.06
+    },
+    {
+      "sample": 2976,
+      "time": 1488.0,
+      "mean": 4.26,
+      "changed_fraction": 0.0531,
+      "max_tile": 34.87
+    },
+    {
+      "sample": 2978,
+      "time": 1489.0,
+      "mean": 27.096,
+      "changed_fraction": 0.2609,
+      "max_tile": 148.639
+    },
+    {
+      "sample": 2992,
+      "time": 1496.0,
+      "mean": 3.983,
+      "changed_fraction": 0.0272,
+      "max_tile": 27.014
+    },
+    {
+      "sample": 2997,
+      "time": 1498.5,
+      "mean": 2.844,
+      "changed_fraction": 0.0151,
+      "max_tile": 29.303
+    },
+    {
+      "sample": 2999,
+      "time": 1499.5,
+      "mean": 47.799,
+      "changed_fraction": 0.8718,
+      "max_tile": 82.218
+    },
+    {
+      "sample": 3001,
+      "time": 1500.5,
+      "mean": 42.314,
+      "changed_fraction": 0.8646,
+      "max_tile": 70.264
+    },
+    {
+      "sample": 3010,
+      "time": 1505.0,
+      "mean": 61.513,
+      "changed_fraction": 0.8155,
+      "max_tile": 129.16
+    },
+    {
+      "sample": 3013,
+      "time": 1506.5,
+      "mean": 3.917,
+      "changed_fraction": 0.0345,
+      "max_tile": 22.343
+    },
+    {
+      "sample": 3015,
+      "time": 1507.5,
+      "mean": 3.376,
+      "changed_fraction": 0.0301,
+      "max_tile": 24.391
+    },
+    {
+      "sample": 3017,
+      "time": 1508.5,
+      "mean": 3.4,
+      "changed_fraction": 0.0309,
+      "max_tile": 30.472
+    },
+    {
+      "sample": 3020,
+      "time": 1510.0,
+      "mean": 3.864,
+      "changed_fraction": 0.0345,
+      "max_tile": 28.914
+    },
+    {
+      "sample": 3023,
+      "time": 1511.5,
+      "mean": 3.817,
+      "changed_fraction": 0.0329,
+      "max_tile": 26.634
+    },
+    {
+      "sample": 3025,
+      "time": 1512.5,
+      "mean": 5.755,
+      "changed_fraction": 0.0608,
+      "max_tile": 28.394
+    },
+    {
+      "sample": 3027,
+      "time": 1513.5,
+      "mean": 4.966,
+      "changed_fraction": 0.0581,
+      "max_tile": 29.567
+    },
+    {
+      "sample": 3030,
+      "time": 1515.0,
+      "mean": 3.891,
+      "changed_fraction": 0.0314,
+      "max_tile": 24.201
+    },
+    {
+      "sample": 3033,
+      "time": 1516.5,
+      "mean": 2.909,
+      "changed_fraction": 0.0323,
+      "max_tile": 27.139
+    },
+    {
+      "sample": 3035,
+      "time": 1517.5,
+      "mean": 2.528,
+      "changed_fraction": 0.0267,
+      "max_tile": 29.597
+    },
+    {
+      "sample": 3039,
+      "time": 1519.5,
+      "mean": 3.117,
+      "changed_fraction": 0.0359,
+      "max_tile": 30.794
+    },
+    {
+      "sample": 3042,
+      "time": 1521.0,
+      "mean": 4.846,
+      "changed_fraction": 0.0637,
+      "max_tile": 27.685
+    },
+    {
+      "sample": 3044,
+      "time": 1522.0,
+      "mean": 37.437,
+      "changed_fraction": 0.7473,
+      "max_tile": 66.47
+    },
+    {
+      "sample": 3053,
+      "time": 1526.5,
+      "mean": 2.6,
+      "changed_fraction": 0.0201,
+      "max_tile": 30.248
+    },
+    {
+      "sample": 3060,
+      "time": 1530.0,
+      "mean": 6.49,
+      "changed_fraction": 0.0684,
+      "max_tile": 38.662
+    },
+    {
+      "sample": 3062,
+      "time": 1531.0,
+      "mean": 6.047,
+      "changed_fraction": 0.0666,
+      "max_tile": 54.544
+    },
+    {
+      "sample": 3079,
+      "time": 1539.5,
+      "mean": 6.336,
+      "changed_fraction": 0.0732,
+      "max_tile": 54.451
+    },
+    {
+      "sample": 3081,
+      "time": 1540.5,
+      "mean": 43.067,
+      "changed_fraction": 0.8221,
+      "max_tile": 92.581
+    },
+    {
+      "sample": 3093,
+      "time": 1546.5,
+      "mean": 3.664,
+      "changed_fraction": 0.0191,
+      "max_tile": 23.963
+    },
+    {
+      "sample": 3101,
+      "time": 1550.5,
+      "mean": 5.614,
+      "changed_fraction": 0.0588,
+      "max_tile": 29.044
+    },
+    {
+      "sample": 3103,
+      "time": 1551.5,
+      "mean": 3.013,
+      "changed_fraction": 0.0419,
+      "max_tile": 23.273
+    },
+    {
+      "sample": 3119,
+      "time": 1559.5,
+      "mean": 3.536,
+      "changed_fraction": 0.0419,
+      "max_tile": 23.444
+    },
+    {
+      "sample": 3121,
+      "time": 1560.5,
+      "mean": 23.852,
+      "changed_fraction": 0.3911,
+      "max_tile": 47.273
+    },
+    {
+      "sample": 3133,
+      "time": 1566.5,
+      "mean": 6.363,
+      "changed_fraction": 0.0658,
+      "max_tile": 27.014
+    },
+    {
+      "sample": 3135,
+      "time": 1567.5,
+      "mean": 4.784,
+      "changed_fraction": 0.0525,
+      "max_tile": 39.264
+    },
+    {
+      "sample": 3152,
+      "time": 1576.0,
+      "mean": 5.357,
+      "changed_fraction": 0.0591,
+      "max_tile": 40.153
+    },
+    {
+      "sample": 3154,
+      "time": 1577.0,
+      "mean": 27.282,
+      "changed_fraction": 0.3689,
+      "max_tile": 78.812
+    },
+    {
+      "sample": 3157,
+      "time": 1578.5,
+      "mean": 2.699,
+      "changed_fraction": 0.0105,
+      "max_tile": 38.266
+    },
+    {
+      "sample": 3159,
+      "time": 1579.5,
+      "mean": 1.348,
+      "changed_fraction": 0.0085,
+      "max_tile": 28.113
+    },
+    {
+      "sample": 3161,
+      "time": 1580.5,
+      "mean": 1.706,
+      "changed_fraction": 0.0081,
+      "max_tile": 33.278
+    },
+    {
+      "sample": 3166,
+      "time": 1583.0,
+      "mean": 2.971,
+      "changed_fraction": 0.0128,
+      "max_tile": 33.581
+    },
+    {
+      "sample": 3168,
+      "time": 1584.0,
+      "mean": 7.931,
+      "changed_fraction": 0.0715,
+      "max_tile": 36.352
+    },
+    {
+      "sample": 3170,
+      "time": 1585.0,
+      "mean": 18.639,
+      "changed_fraction": 0.1929,
+      "max_tile": 94.951
+    },
+    {
+      "sample": 3188,
+      "time": 1594.0,
+      "mean": 4.157,
+      "changed_fraction": 0.0461,
+      "max_tile": 36.449
+    },
+    {
+      "sample": 3190,
+      "time": 1595.0,
+      "mean": 20.472,
+      "changed_fraction": 0.1451,
+      "max_tile": 121.394
+    },
+    {
+      "sample": 3200,
+      "time": 1600.0,
+      "mean": 3.513,
+      "changed_fraction": 0.0172,
+      "max_tile": 16.562
+    },
+    {
+      "sample": 3202,
+      "time": 1601.0,
+      "mean": 3.451,
+      "changed_fraction": 0.0338,
+      "max_tile": 24.384
+    },
+    {
+      "sample": 3210,
+      "time": 1605.0,
+      "mean": 3.697,
+      "changed_fraction": 0.0151,
+      "max_tile": 14.845
+    },
+    {
+      "sample": 3215,
+      "time": 1607.5,
+      "mean": 7.63,
+      "changed_fraction": 0.0657,
+      "max_tile": 42.095
+    },
+    {
+      "sample": 3217,
+      "time": 1608.5,
+      "mean": 11.453,
+      "changed_fraction": 0.139,
+      "max_tile": 55.356
+    },
+    {
+      "sample": 3229,
+      "time": 1614.5,
+      "mean": 6.911,
+      "changed_fraction": 0.0628,
+      "max_tile": 42.685
+    },
+    {
+      "sample": 3231,
+      "time": 1615.5,
+      "mean": 8.736,
+      "changed_fraction": 0.0802,
+      "max_tile": 62.407
+    },
+    {
+      "sample": 3250,
+      "time": 1625.0,
+      "mean": 9.551,
+      "changed_fraction": 0.0823,
+      "max_tile": 62.407
+    },
+    {
+      "sample": 3252,
+      "time": 1626.0,
+      "mean": 16.917,
+      "changed_fraction": 0.2053,
+      "max_tile": 73.801
+    },
+    {
+      "sample": 3266,
+      "time": 1633.0,
+      "mean": 3.909,
+      "changed_fraction": 0.03,
+      "max_tile": 28.4
+    },
+    {
+      "sample": 3270,
+      "time": 1635.0,
+      "mean": 8.685,
+      "changed_fraction": 0.0832,
+      "max_tile": 63.106
+    },
+    {
+      "sample": 3272,
+      "time": 1636.0,
+      "mean": 6.505,
+      "changed_fraction": 0.0659,
+      "max_tile": 46.009
+    },
+    {
+      "sample": 3291,
+      "time": 1645.5,
+      "mean": 7.223,
+      "changed_fraction": 0.0658,
+      "max_tile": 46.058
+    },
+    {
+      "sample": 3293,
+      "time": 1646.5,
+      "mean": 15.308,
+      "changed_fraction": 0.1445,
+      "max_tile": 71.206
+    },
+    {
+      "sample": 3311,
+      "time": 1655.5,
+      "mean": 10.956,
+      "changed_fraction": 0.1004,
+      "max_tile": 54.748
+    },
+    {
+      "sample": 3313,
+      "time": 1656.5,
+      "mean": 12.234,
+      "changed_fraction": 0.0824,
+      "max_tile": 34.326
+    },
+    {
+      "sample": 3324,
+      "time": 1662.0,
+      "mean": 18.561,
+      "changed_fraction": 0.2324,
+      "max_tile": 71.442
+    },
+    {
+      "sample": 3338,
+      "time": 1669.0,
+      "mean": 2.647,
+      "changed_fraction": 0.0181,
+      "max_tile": 28.741
+    },
+    {
+      "sample": 3343,
+      "time": 1671.5,
+      "mean": 8.519,
+      "changed_fraction": 0.0737,
+      "max_tile": 59.722
+    },
+    {
+      "sample": 3345,
+      "time": 1672.5,
+      "mean": 16.337,
+      "changed_fraction": 0.1967,
+      "max_tile": 63.935
+    },
+    {
+      "sample": 3359,
+      "time": 1679.5,
+      "mean": 6.569,
+      "changed_fraction": 0.0681,
+      "max_tile": 43.655
+    },
+    {
+      "sample": 3361,
+      "time": 1680.5,
+      "mean": 14.438,
+      "changed_fraction": 0.175,
+      "max_tile": 77.412
+    },
+    {
+      "sample": 3370,
+      "time": 1685.0,
+      "mean": 3.375,
+      "changed_fraction": 0.0216,
+      "max_tile": 35.801
+    },
+    {
+      "sample": 3372,
+      "time": 1686.0,
+      "mean": 3.413,
+      "changed_fraction": 0.0352,
+      "max_tile": 60.086
+    },
+    {
+      "sample": 3374,
+      "time": 1687.0,
+      "mean": 7.71,
+      "changed_fraction": 0.0875,
+      "max_tile": 42.488
+    },
+    {
+      "sample": 3382,
+      "time": 1691.0,
+      "mean": 3.03,
+      "changed_fraction": 0.0211,
+      "max_tile": 41.646
+    },
+    {
+      "sample": 3384,
+      "time": 1692.0,
+      "mean": 4.139,
+      "changed_fraction": 0.0411,
+      "max_tile": 53.343
+    },
+    {
+      "sample": 3386,
+      "time": 1693.0,
+      "mean": 2.543,
+      "changed_fraction": 0.0173,
+      "max_tile": 37.917
+    },
+    {
+      "sample": 3392,
+      "time": 1696.0,
+      "mean": 7.71,
+      "changed_fraction": 0.0677,
+      "max_tile": 58.736
+    },
+    {
+      "sample": 3394,
+      "time": 1697.0,
+      "mean": 13.748,
+      "changed_fraction": 0.1075,
+      "max_tile": 75.019
+    },
+    {
+      "sample": 3404,
+      "time": 1702.0,
+      "mean": 2.138,
+      "changed_fraction": 0.0074,
+      "max_tile": 28.394
+    },
+    {
+      "sample": 3406,
+      "time": 1703.0,
+      "mean": 3.435,
+      "changed_fraction": 0.0365,
+      "max_tile": 32.058
+    },
+    {
+      "sample": 3418,
+      "time": 1709.0,
+      "mean": 6.522,
+      "changed_fraction": 0.0646,
+      "max_tile": 38.481
+    },
+    {
+      "sample": 3420,
+      "time": 1710.0,
+      "mean": 10.443,
+      "changed_fraction": 0.0999,
+      "max_tile": 74.796
+    },
+    {
+      "sample": 3425,
+      "time": 1712.5,
+      "mean": 3.217,
+      "changed_fraction": 0.0298,
+      "max_tile": 28.502
+    },
+    {
+      "sample": 3430,
+      "time": 1715.0,
+      "mean": 4.328,
+      "changed_fraction": 0.0471,
+      "max_tile": 28.282
+    },
+    {
+      "sample": 3432,
+      "time": 1716.0,
+      "mean": 4.114,
+      "changed_fraction": 0.0439,
+      "max_tile": 30.986
+    },
+    {
+      "sample": 3447,
+      "time": 1723.5,
+      "mean": 7.217,
+      "changed_fraction": 0.0729,
+      "max_tile": 38.521
+    },
+    {
+      "sample": 3449,
+      "time": 1724.5,
+      "mean": 15.366,
+      "changed_fraction": 0.1616,
+      "max_tile": 59.116
+    },
+    {
+      "sample": 3468,
+      "time": 1734.0,
+      "mean": 15.979,
+      "changed_fraction": 0.1363,
+      "max_tile": 77.289
+    },
+    {
+      "sample": 3470,
+      "time": 1735.0,
+      "mean": 9.971,
+      "changed_fraction": 0.0994,
+      "max_tile": 36.389
+    },
+    {
+      "sample": 3484,
+      "time": 1742.0,
+      "mean": 17.735,
+      "changed_fraction": 0.1643,
+      "max_tile": 78.329
+    },
+    {
+      "sample": 3486,
+      "time": 1743.0,
+      "mean": 1.731,
+      "changed_fraction": 0.0154,
+      "max_tile": 38.31
+    },
+    {
+      "sample": 3488,
+      "time": 1744.0,
+      "mean": 1.841,
+      "changed_fraction": 0.0204,
+      "max_tile": 32.539
+    },
+    {
+      "sample": 3490,
+      "time": 1745.0,
+      "mean": 1.9,
+      "changed_fraction": 0.0219,
+      "max_tile": 38.637
+    },
+    {
+      "sample": 3492,
+      "time": 1746.0,
+      "mean": 2.134,
+      "changed_fraction": 0.0227,
+      "max_tile": 35.19
+    },
+    {
+      "sample": 3494,
+      "time": 1747.0,
+      "mean": 3.677,
+      "changed_fraction": 0.0501,
+      "max_tile": 38.697
+    },
+    {
+      "sample": 3496,
+      "time": 1748.0,
+      "mean": 4.66,
+      "changed_fraction": 0.0542,
+      "max_tile": 35.838
+    },
+    {
+      "sample": 3498,
+      "time": 1749.0,
+      "mean": 2.615,
+      "changed_fraction": 0.0229,
+      "max_tile": 40.988
+    },
+    {
+      "sample": 3500,
+      "time": 1750.0,
+      "mean": 2.03,
+      "changed_fraction": 0.0231,
+      "max_tile": 36.368
+    },
+    {
+      "sample": 3502,
+      "time": 1751.0,
+      "mean": 22.087,
+      "changed_fraction": 0.2163,
+      "max_tile": 93.611
+    },
+    {
+      "sample": 3505,
+      "time": 1752.5,
+      "mean": 2.92,
+      "changed_fraction": 0.0312,
+      "max_tile": 17.074
+    },
+    {
+      "sample": 3514,
+      "time": 1757.0,
+      "mean": 3.616,
+      "changed_fraction": 0.0393,
+      "max_tile": 38.431
+    },
+    {
+      "sample": 3516,
+      "time": 1758.0,
+      "mean": 2.808,
+      "changed_fraction": 0.0324,
+      "max_tile": 23.741
+    },
+    {
+      "sample": 3525,
+      "time": 1762.5,
+      "mean": 4.233,
+      "changed_fraction": 0.0403,
+      "max_tile": 34.873
+    },
+    {
+      "sample": 3527,
+      "time": 1763.5,
+      "mean": 25.416,
+      "changed_fraction": 0.2416,
+      "max_tile": 110.338
+    },
+    {
+      "sample": 3543,
+      "time": 1771.5,
+      "mean": 7.573,
+      "changed_fraction": 0.0634,
+      "max_tile": 42.681
+    },
+    {
+      "sample": 3545,
+      "time": 1772.5,
+      "mean": 3.376,
+      "changed_fraction": 0.0322,
+      "max_tile": 40.329
+    },
+    {
+      "sample": 3553,
+      "time": 1776.5,
+      "mean": 61.954,
+      "changed_fraction": 0.962,
+      "max_tile": 97.123
+    },
+    {
+      "sample": 3555,
+      "time": 1777.5,
+      "mean": 2.68,
+      "changed_fraction": 0.035,
+      "max_tile": 24.565
+    },
+    {
+      "sample": 3570,
+      "time": 1785.0,
+      "mean": 6.388,
+      "changed_fraction": 0.0518,
+      "max_tile": 25.178
+    },
+    {
+      "sample": 3572,
+      "time": 1786.0,
+      "mean": 54.812,
+      "changed_fraction": 0.9438,
+      "max_tile": 83.039
+    },
+    {
+      "sample": 3588,
+      "time": 1794.0,
+      "mean": 6.216,
+      "changed_fraction": 0.0712,
+      "max_tile": 40.488
+    },
+    {
+      "sample": 3590,
+      "time": 1795.0,
+      "mean": 77.554,
+      "changed_fraction": 0.9254,
+      "max_tile": 125.389
+    },
+    {
+      "sample": 3603,
+      "time": 1801.5,
+      "mean": 3.579,
+      "changed_fraction": 0.0087,
+      "max_tile": 15.171
+    },
+    {
+      "sample": 3607,
+      "time": 1803.5,
+      "mean": 3.506,
+      "changed_fraction": 0.0417,
+      "max_tile": 24.479
+    },
+    {
+      "sample": 3609,
+      "time": 1804.5,
+      "mean": 67.084,
+      "changed_fraction": 0.8037,
+      "max_tile": 120.995
+    },
+    {
+      "sample": 3617,
+      "time": 1808.5,
+      "mean": 75.931,
+      "changed_fraction": 0.9294,
+      "max_tile": 134.926
+    },
+    {
+      "sample": 3619,
+      "time": 1809.5,
+      "mean": 3.928,
+      "changed_fraction": 0.0305,
+      "max_tile": 39.102
+    },
+    {
+      "sample": 3621,
+      "time": 1810.5,
+      "mean": 4.057,
+      "changed_fraction": 0.031,
+      "max_tile": 40.458
+    },
+    {
+      "sample": 3623,
+      "time": 1811.5,
+      "mean": 4.105,
+      "changed_fraction": 0.0322,
+      "max_tile": 39.741
+    },
+    {
+      "sample": 3625,
+      "time": 1812.5,
+      "mean": 4.047,
+      "changed_fraction": 0.0327,
+      "max_tile": 41.579
+    },
+    {
+      "sample": 3627,
+      "time": 1813.5,
+      "mean": 4.145,
+      "changed_fraction": 0.0334,
+      "max_tile": 44.843
+    },
+    {
+      "sample": 3629,
+      "time": 1814.5,
+      "mean": 4.252,
+      "changed_fraction": 0.0345,
+      "max_tile": 43.627
+    },
+    {
+      "sample": 3631,
+      "time": 1815.5,
+      "mean": 4.592,
+      "changed_fraction": 0.0339,
+      "max_tile": 43.454
+    },
+    {
+      "sample": 3633,
+      "time": 1816.5,
+      "mean": 5.242,
+      "changed_fraction": 0.0523,
+      "max_tile": 40.975
+    },
+    {
+      "sample": 3635,
+      "time": 1817.5,
+      "mean": 6.199,
+      "changed_fraction": 0.0668,
+      "max_tile": 42.495
+    },
+    {
+      "sample": 3637,
+      "time": 1818.5,
+      "mean": 4.762,
+      "changed_fraction": 0.0379,
+      "max_tile": 42.074
+    },
+    {
+      "sample": 3639,
+      "time": 1819.5,
+      "mean": 4.221,
+      "changed_fraction": 0.0367,
+      "max_tile": 42.197
+    },
+    {
+      "sample": 3641,
+      "time": 1820.5,
+      "mean": 5.194,
+      "changed_fraction": 0.0516,
+      "max_tile": 66.234
+    },
+    {
+      "sample": 3643,
+      "time": 1821.5,
+      "mean": 3.978,
+      "changed_fraction": 0.0332,
+      "max_tile": 39.211
+    },
+    {
+      "sample": 3645,
+      "time": 1822.5,
+      "mean": 4.125,
+      "changed_fraction": 0.0366,
+      "max_tile": 42.211
+    },
+    {
+      "sample": 3647,
+      "time": 1823.5,
+      "mean": 5.89,
+      "changed_fraction": 0.0637,
+      "max_tile": 42.803
+    },
+    {
+      "sample": 3649,
+      "time": 1824.5,
+      "mean": 72.035,
+      "changed_fraction": 0.9387,
+      "max_tile": 140.377
+    },
+    {
+      "sample": 3655,
+      "time": 1827.5,
+      "mean": 3.524,
+      "changed_fraction": 0.0311,
+      "max_tile": 16.174
+    },
+    {
+      "sample": 3661,
+      "time": 1830.5,
+      "mean": 3.461,
+      "changed_fraction": 0.0312,
+      "max_tile": 14.771
+    },
+    {
+      "sample": 3664,
+      "time": 1832.0,
+      "mean": 6.733,
+      "changed_fraction": 0.0573,
+      "max_tile": 37.403
+    },
+    {
+      "sample": 3666,
+      "time": 1833.0,
+      "mean": 6.525,
+      "changed_fraction": 0.0652,
+      "max_tile": 51.444
+    },
+    {
+      "sample": 3685,
+      "time": 1842.5,
+      "mean": 6.65,
+      "changed_fraction": 0.0641,
+      "max_tile": 51.595
+    },
+    {
+      "sample": 3687,
+      "time": 1843.5,
+      "mean": 25.491,
+      "changed_fraction": 0.2919,
+      "max_tile": 81.118
+    },
+    {
+      "sample": 3691,
+      "time": 1845.5,
+      "mean": 3.82,
+      "changed_fraction": 0.0084,
+      "max_tile": 18.977
+    },
+    {
+      "sample": 3694,
+      "time": 1847.0,
+      "mean": 6.112,
+      "changed_fraction": 0.0412,
+      "max_tile": 39.31
+    },
+    {
+      "sample": 3696,
+      "time": 1848.0,
+      "mean": 4.426,
+      "changed_fraction": 0.0435,
+      "max_tile": 23.722
+    },
+    {
+      "sample": 3699,
+      "time": 1849.5,
+      "mean": 3.604,
+      "changed_fraction": 0.0105,
+      "max_tile": 24.461
+    },
+    {
+      "sample": 3707,
+      "time": 1853.5,
+      "mean": 4.858,
+      "changed_fraction": 0.0361,
+      "max_tile": 20.569
+    },
+    {
+      "sample": 3709,
+      "time": 1854.5,
+      "mean": 20.269,
+      "changed_fraction": 0.1763,
+      "max_tile": 91.664
+    },
+    {
+      "sample": 3724,
+      "time": 1862.0,
+      "mean": 2.971,
+      "changed_fraction": 0.0233,
+      "max_tile": 28.674
+    },
+    {
+      "sample": 3726,
+      "time": 1863.0,
+      "mean": 6.126,
+      "changed_fraction": 0.0776,
+      "max_tile": 47.956
+    },
+    {
+      "sample": 3728,
+      "time": 1864.0,
+      "mean": 2.276,
+      "changed_fraction": 0.03,
+      "max_tile": 46.757
+    },
+    {
+      "sample": 3730,
+      "time": 1865.0,
+      "mean": 2.102,
+      "changed_fraction": 0.0312,
+      "max_tile": 47.162
+    },
+    {
+      "sample": 3732,
+      "time": 1866.0,
+      "mean": 1.564,
+      "changed_fraction": 0.0195,
+      "max_tile": 32.183
+    },
+    {
+      "sample": 3734,
+      "time": 1867.0,
+      "mean": 19.664,
+      "changed_fraction": 0.1782,
+      "max_tile": 88.192
+    },
+    {
+      "sample": 3736,
+      "time": 1868.0,
+      "mean": 5.043,
+      "changed_fraction": 0.0633,
+      "max_tile": 46.681
+    },
+    {
+      "sample": 3743,
+      "time": 1871.5,
+      "mean": 2.117,
+      "changed_fraction": 0.0236,
+      "max_tile": 31.435
+    },
+    {
+      "sample": 3750,
+      "time": 1875.0,
+      "mean": 2.232,
+      "changed_fraction": 0.0232,
+      "max_tile": 31.199
+    },
+    {
+      "sample": 3754,
+      "time": 1877.0,
+      "mean": 6.451,
+      "changed_fraction": 0.0863,
+      "max_tile": 48.132
+    },
+    {
+      "sample": 3757,
+      "time": 1878.5,
+      "mean": 1.953,
+      "changed_fraction": 0.0302,
+      "max_tile": 21.537
+    },
+    {
+      "sample": 3759,
+      "time": 1879.5,
+      "mean": 2.964,
+      "changed_fraction": 0.0352,
+      "max_tile": 98.831
+    },
+    {
+      "sample": 3761,
+      "time": 1880.5,
+      "mean": 1.634,
+      "changed_fraction": 0.0156,
+      "max_tile": 62.329
+    },
+    {
+      "sample": 3768,
+      "time": 1884.0,
+      "mean": 22.223,
+      "changed_fraction": 0.2179,
+      "max_tile": 115.308
+    },
+    {
+      "sample": 3773,
+      "time": 1886.5,
+      "mean": 1.793,
+      "changed_fraction": 0.0083,
+      "max_tile": 34.025
+    },
+    {
+      "sample": 3775,
+      "time": 1887.5,
+      "mean": 1.207,
+      "changed_fraction": 0.0084,
+      "max_tile": 42.671
+    },
+    {
+      "sample": 3777,
+      "time": 1888.5,
+      "mean": 1.185,
+      "changed_fraction": 0.0097,
+      "max_tile": 33.472
+    },
+    {
+      "sample": 3779,
+      "time": 1889.5,
+      "mean": 4.975,
+      "changed_fraction": 0.0588,
+      "max_tile": 49.618
+    },
+    {
+      "sample": 3781,
+      "time": 1890.5,
+      "mean": 3.346,
+      "changed_fraction": 0.0476,
+      "max_tile": 25.706
+    },
+    {
+      "sample": 3783,
+      "time": 1891.5,
+      "mean": 1.609,
+      "changed_fraction": 0.0082,
+      "max_tile": 41.975
+    },
+    {
+      "sample": 3786,
+      "time": 1893.0,
+      "mean": 1.262,
+      "changed_fraction": 0.0072,
+      "max_tile": 30.748
+    },
+    {
+      "sample": 3794,
+      "time": 1897.0,
+      "mean": 2.985,
+      "changed_fraction": 0.0433,
+      "max_tile": 24.632
+    },
+    {
+      "sample": 3796,
+      "time": 1898.0,
+      "mean": 13.228,
+      "changed_fraction": 0.1779,
+      "max_tile": 90.037
+    },
+    {
+      "sample": 3798,
+      "time": 1899.0,
+      "mean": 2.934,
+      "changed_fraction": 0.0362,
+      "max_tile": 36.854
+    },
+    {
+      "sample": 3800,
+      "time": 1900.0,
+      "mean": 3.032,
+      "changed_fraction": 0.0368,
+      "max_tile": 39.16
+    },
+    {
+      "sample": 3802,
+      "time": 1901.0,
+      "mean": 2.955,
+      "changed_fraction": 0.0364,
+      "max_tile": 36.998
+    },
+    {
+      "sample": 3804,
+      "time": 1902.0,
+      "mean": 2.948,
+      "changed_fraction": 0.037,
+      "max_tile": 30.47
+    },
+    {
+      "sample": 3806,
+      "time": 1903.0,
+      "mean": 4.744,
+      "changed_fraction": 0.068,
+      "max_tile": 35.435
+    },
+    {
+      "sample": 3808,
+      "time": 1904.0,
+      "mean": 4.675,
+      "changed_fraction": 0.0649,
+      "max_tile": 38.067
+    },
+    {
+      "sample": 3810,
+      "time": 1905.0,
+      "mean": 3.431,
+      "changed_fraction": 0.0389,
+      "max_tile": 36.206
+    },
+    {
+      "sample": 3812,
+      "time": 1906.0,
+      "mean": 3.029,
+      "changed_fraction": 0.0372,
+      "max_tile": 35.491
+    },
+    {
+      "sample": 3814,
+      "time": 1907.0,
+      "mean": 3.078,
+      "changed_fraction": 0.0391,
+      "max_tile": 32.009
+    },
+    {
+      "sample": 3816,
+      "time": 1908.0,
+      "mean": 2.82,
+      "changed_fraction": 0.036,
+      "max_tile": 35.002
+    },
+    {
+      "sample": 3818,
+      "time": 1909.0,
+      "mean": 13.378,
+      "changed_fraction": 0.1645,
+      "max_tile": 74.421
+    },
+    {
+      "sample": 3820,
+      "time": 1910.0,
+      "mean": 2.443,
+      "changed_fraction": 0.0298,
+      "max_tile": 31.919
+    },
+    {
+      "sample": 3822,
+      "time": 1911.0,
+      "mean": 2.424,
+      "changed_fraction": 0.0299,
+      "max_tile": 35.565
+    },
+    {
+      "sample": 3824,
+      "time": 1912.0,
+      "mean": 2.373,
+      "changed_fraction": 0.028,
+      "max_tile": 34.741
+    },
+    {
+      "sample": 3826,
+      "time": 1913.0,
+      "mean": 3.777,
+      "changed_fraction": 0.0507,
+      "max_tile": 38.565
+    },
+    {
+      "sample": 3828,
+      "time": 1914.0,
+      "mean": 4.24,
+      "changed_fraction": 0.0607,
+      "max_tile": 32.609
+    },
+    {
+      "sample": 3830,
+      "time": 1915.0,
+      "mean": 2.611,
+      "changed_fraction": 0.0315,
+      "max_tile": 32.516
+    },
+    {
+      "sample": 3832,
+      "time": 1916.0,
+      "mean": 3.052,
+      "changed_fraction": 0.0313,
+      "max_tile": 39.926
+    },
+    {
+      "sample": 3834,
+      "time": 1917.0,
+      "mean": 2.558,
+      "changed_fraction": 0.03,
+      "max_tile": 44.278
+    },
+    {
+      "sample": 3836,
+      "time": 1918.0,
+      "mean": 2.491,
+      "changed_fraction": 0.0292,
+      "max_tile": 37.278
+    },
+    {
+      "sample": 3838,
+      "time": 1919.0,
+      "mean": 2.53,
+      "changed_fraction": 0.0312,
+      "max_tile": 34.669
+    },
+    {
+      "sample": 3840,
+      "time": 1920.0,
+      "mean": 2.238,
+      "changed_fraction": 0.0299,
+      "max_tile": 32.65
+    },
+    {
+      "sample": 3842,
+      "time": 1921.0,
+      "mean": 14.626,
+      "changed_fraction": 0.1861,
+      "max_tile": 98.255
+    },
+    {
+      "sample": 3849,
+      "time": 1924.5,
+      "mean": 3.523,
+      "changed_fraction": 0.041,
+      "max_tile": 19.625
+    },
+    {
+      "sample": 3860,
+      "time": 1930.0,
+      "mean": 4.452,
+      "changed_fraction": 0.055,
+      "max_tile": 25.551
+    },
+    {
+      "sample": 3862,
+      "time": 1931.0,
+      "mean": 27.886,
+      "changed_fraction": 0.5001,
+      "max_tile": 91.977
+    },
+    {
+      "sample": 3872,
+      "time": 1936.0,
+      "mean": 4.727,
+      "changed_fraction": 0.0261,
+      "max_tile": 14.273
+    },
+    {
+      "sample": 3878,
+      "time": 1939.0,
+      "mean": 3.517,
+      "changed_fraction": 0.0103,
+      "max_tile": 9.528
+    },
+    {
+      "sample": 3883,
+      "time": 1941.5,
+      "mean": 25.91,
+      "changed_fraction": 0.5005,
+      "max_tile": 67.757
+    },
+    {
+      "sample": 3888,
+      "time": 1944.0,
+      "mean": 4.256,
+      "changed_fraction": 0.0699,
+      "max_tile": 36.15
+    },
+    {
+      "sample": 3891,
+      "time": 1945.5,
+      "mean": 4.679,
+      "changed_fraction": 0.0117,
+      "max_tile": 19.262
+    },
+    {
+      "sample": 3894,
+      "time": 1947.0,
+      "mean": 3.922,
+      "changed_fraction": 0.0067,
+      "max_tile": 19.141
+    },
+    {
+      "sample": 3897,
+      "time": 1948.5,
+      "mean": 3.069,
+      "changed_fraction": 0.0075,
+      "max_tile": 30.431
+    },
+    {
+      "sample": 3900,
+      "time": 1950.0,
+      "mean": 3.534,
+      "changed_fraction": 0.0418,
+      "max_tile": 29.755
+    },
+    {
+      "sample": 3902,
+      "time": 1951.0,
+      "mean": 13.684,
+      "changed_fraction": 0.1712,
+      "max_tile": 69.507
+    },
+    {
+      "sample": 3904,
+      "time": 1952.0,
+      "mean": 1.113,
+      "changed_fraction": 0.0081,
+      "max_tile": 30.06
+    },
+    {
+      "sample": 3908,
+      "time": 1954.0,
+      "mean": 1.885,
+      "changed_fraction": 0.0122,
+      "max_tile": 33.956
+    },
+    {
+      "sample": 3915,
+      "time": 1957.5,
+      "mean": 3.433,
+      "changed_fraction": 0.0367,
+      "max_tile": 21.731
+    },
+    {
+      "sample": 3917,
+      "time": 1958.5,
+      "mean": 2.985,
+      "changed_fraction": 0.0266,
+      "max_tile": 28.262
+    },
+    {
+      "sample": 3919,
+      "time": 1959.5,
+      "mean": 1.652,
+      "changed_fraction": 0.0134,
+      "max_tile": 45.398
+    },
+    {
+      "sample": 3921,
+      "time": 1960.5,
+      "mean": 1.508,
+      "changed_fraction": 0.011,
+      "max_tile": 44.266
+    },
+    {
+      "sample": 3923,
+      "time": 1961.5,
+      "mean": 24.242,
+      "changed_fraction": 0.2738,
+      "max_tile": 82.512
+    },
+    {
+      "sample": 3926,
+      "time": 1963.0,
+      "mean": 3.773,
+      "changed_fraction": 0.0351,
+      "max_tile": 63.998
+    },
+    {
+      "sample": 3929,
+      "time": 1964.5,
+      "mean": 2.381,
+      "changed_fraction": 0.0258,
+      "max_tile": 58.319
+    },
+    {
+      "sample": 3933,
+      "time": 1966.5,
+      "mean": 2.014,
+      "changed_fraction": 0.0192,
+      "max_tile": 40.847
+    },
+    {
+      "sample": 3936,
+      "time": 1968.0,
+      "mean": 2.508,
+      "changed_fraction": 0.0224,
+      "max_tile": 55.713
+    },
+    {
+      "sample": 3939,
+      "time": 1969.5,
+      "mean": 4.122,
+      "changed_fraction": 0.0459,
+      "max_tile": 63.572
+    },
+    {
+      "sample": 3942,
+      "time": 1971.0,
+      "mean": 4.094,
+      "changed_fraction": 0.0388,
+      "max_tile": 79.0
+    },
+    {
+      "sample": 3945,
+      "time": 1972.5,
+      "mean": 4.338,
+      "changed_fraction": 0.0398,
+      "max_tile": 79.535
+    },
+    {
+      "sample": 3948,
+      "time": 1974.0,
+      "mean": 3.779,
+      "changed_fraction": 0.0357,
+      "max_tile": 76.993
+    },
+    {
+      "sample": 3950,
+      "time": 1975.0,
+      "mean": 28.325,
+      "changed_fraction": 0.5168,
+      "max_tile": 82.829
+    },
+    {
+      "sample": 3958,
+      "time": 1979.0,
+      "mean": 4.054,
+      "changed_fraction": 0.034,
+      "max_tile": 12.292
+    },
+    {
+      "sample": 3961,
+      "time": 1980.5,
+      "mean": 4.14,
+      "changed_fraction": 0.0166,
+      "max_tile": 13.769
+    },
+    {
+      "sample": 3964,
+      "time": 1982.0,
+      "mean": 4.655,
+      "changed_fraction": 0.0172,
+      "max_tile": 14.199
+    },
+    {
+      "sample": 3967,
+      "time": 1983.5,
+      "mean": 4.141,
+      "changed_fraction": 0.04,
+      "max_tile": 27.394
+    },
+    {
+      "sample": 3973,
+      "time": 1986.5,
+      "mean": 3.586,
+      "changed_fraction": 0.0213,
+      "max_tile": 25.697
+    },
+    {
+      "sample": 3975,
+      "time": 1987.5,
+      "mean": 23.322,
+      "changed_fraction": 0.3004,
+      "max_tile": 62.072
+    },
+    {
+      "sample": 3977,
+      "time": 1988.5,
+      "mean": 3.011,
+      "changed_fraction": 0.0221,
+      "max_tile": 39.148
+    },
+    {
+      "sample": 3979,
+      "time": 1989.5,
+      "mean": 2.498,
+      "changed_fraction": 0.0296,
+      "max_tile": 41.632
+    },
+    {
+      "sample": 3981,
+      "time": 1990.5,
+      "mean": 2.389,
+      "changed_fraction": 0.0284,
+      "max_tile": 42.778
+    },
+    {
+      "sample": 3983,
+      "time": 1991.5,
+      "mean": 2.735,
+      "changed_fraction": 0.0329,
+      "max_tile": 54.014
+    },
+    {
+      "sample": 3985,
+      "time": 1992.5,
+      "mean": 2.695,
+      "changed_fraction": 0.0325,
+      "max_tile": 53.477
+    },
+    {
+      "sample": 3987,
+      "time": 1993.5,
+      "mean": 2.909,
+      "changed_fraction": 0.0348,
+      "max_tile": 65.84
+    },
+    {
+      "sample": 3989,
+      "time": 1994.5,
+      "mean": 3.401,
+      "changed_fraction": 0.034,
+      "max_tile": 65.734
+    },
+    {
+      "sample": 3991,
+      "time": 1995.5,
+      "mean": 3.089,
+      "changed_fraction": 0.0347,
+      "max_tile": 68.618
+    },
+    {
+      "sample": 3993,
+      "time": 1996.5,
+      "mean": 2.919,
+      "changed_fraction": 0.0338,
+      "max_tile": 67.894
+    },
+    {
+      "sample": 3995,
+      "time": 1997.5,
+      "mean": 2.84,
+      "changed_fraction": 0.0337,
+      "max_tile": 60.792
+    },
+    {
+      "sample": 3997,
+      "time": 1998.5,
+      "mean": 5.138,
+      "changed_fraction": 0.0704,
+      "max_tile": 60.086
+    },
+    {
+      "sample": 3999,
+      "time": 1999.5,
+      "mean": 2.287,
+      "changed_fraction": 0.0304,
+      "max_tile": 43.815
+    },
+    {
+      "sample": 4001,
+      "time": 2000.5,
+      "mean": 2.304,
+      "changed_fraction": 0.0305,
+      "max_tile": 43.861
+    },
+    {
+      "sample": 4003,
+      "time": 2001.5,
+      "mean": 1.993,
+      "changed_fraction": 0.024,
+      "max_tile": 42.109
+    },
+    {
+      "sample": 4005,
+      "time": 2002.5,
+      "mean": 1.873,
+      "changed_fraction": 0.0241,
+      "max_tile": 42.262
+    },
+    {
+      "sample": 4007,
+      "time": 2003.5,
+      "mean": 1.364,
+      "changed_fraction": 0.013,
+      "max_tile": 43.968
+    },
+    {
+      "sample": 4009,
+      "time": 2004.5,
+      "mean": 2.744,
+      "changed_fraction": 0.0396,
+      "max_tile": 44.088
+    },
+    {
+      "sample": 4011,
+      "time": 2005.5,
+      "mean": 58.185,
+      "changed_fraction": 0.9309,
+      "max_tile": 99.174
+    },
+    {
+      "sample": 4014,
+      "time": 2007.0,
+      "mean": 1.89,
+      "changed_fraction": 0.0094,
+      "max_tile": 30.09
+    },
+    {
+      "sample": 4023,
+      "time": 2011.5,
+      "mean": 4.411,
+      "changed_fraction": 0.0406,
+      "max_tile": 25.025
+    },
+    {
+      "sample": 4026,
+      "time": 2013.0,
+      "mean": 3.642,
+      "changed_fraction": 0.0279,
+      "max_tile": 36.949
+    },
+    {
+      "sample": 4029,
+      "time": 2014.5,
+      "mean": 1.814,
+      "changed_fraction": 0.0086,
+      "max_tile": 35.169
+    },
+    {
+      "sample": 4032,
+      "time": 2016.0,
+      "mean": 1.542,
+      "changed_fraction": 0.0092,
+      "max_tile": 38.796
+    },
+    {
+      "sample": 4035,
+      "time": 2017.5,
+      "mean": 1.533,
+      "changed_fraction": 0.0092,
+      "max_tile": 38.218
+    },
+    {
+      "sample": 4038,
+      "time": 2019.0,
+      "mean": 26.798,
+      "changed_fraction": 0.3702,
+      "max_tile": 58.269
+    },
+    {
+      "sample": 4046,
+      "time": 2023.0,
+      "mean": 4.707,
+      "changed_fraction": 0.0027,
+      "max_tile": 9.801
+    },
+    {
+      "sample": 4048,
+      "time": 2024.0,
+      "mean": 6.691,
+      "changed_fraction": 0.0,
+      "max_tile": 7.613
+    },
+    {
+      "sample": 4050,
+      "time": 2025.0,
+      "mean": 6.094,
+      "changed_fraction": 0.0003,
+      "max_tile": 7.086
+    },
+    {
+      "sample": 4052,
+      "time": 2026.0,
+      "mean": 3.847,
+      "changed_fraction": 0.0007,
+      "max_tile": 9.007
+    },
+    {
+      "sample": 4055,
+      "time": 2027.5,
+      "mean": 3.548,
+      "changed_fraction": 0.0034,
+      "max_tile": 12.502
+    },
+    {
+      "sample": 4057,
+      "time": 2028.5,
+      "mean": 6.297,
+      "changed_fraction": 0.0005,
+      "max_tile": 8.551
+    },
+    {
+      "sample": 4062,
+      "time": 2031.0,
+      "mean": 6.798,
+      "changed_fraction": 0.0001,
+      "max_tile": 10.708
+    },
+    {
+      "sample": 4064,
+      "time": 2032.0,
+      "mean": 66.202,
+      "changed_fraction": 0.9308,
+      "max_tile": 80.896
+    },
+    {
+      "sample": 4073,
+      "time": 2036.5,
+      "mean": 3.725,
+      "changed_fraction": 0.0384,
+      "max_tile": 26.463
+    },
+    {
+      "sample": 4075,
+      "time": 2037.5,
+      "mean": 5.866,
+      "changed_fraction": 0.0697,
+      "max_tile": 78.243
+    },
+    {
+      "sample": 4077,
+      "time": 2038.5,
+      "mean": 5.34,
+      "changed_fraction": 0.051,
+      "max_tile": 94.519
+    },
+    {
+      "sample": 4079,
+      "time": 2039.5,
+      "mean": 5.274,
+      "changed_fraction": 0.0501,
+      "max_tile": 91.632
+    },
+    {
+      "sample": 4082,
+      "time": 2041.0,
+      "mean": 4.42,
+      "changed_fraction": 0.03,
+      "max_tile": 23.199
+    },
+    {
+      "sample": 4084,
+      "time": 2042.0,
+      "mean": 23.063,
+      "changed_fraction": 0.2342,
+      "max_tile": 124.296
+    },
+    {
+      "sample": 4087,
+      "time": 2043.5,
+      "mean": 22.985,
+      "changed_fraction": 0.2227,
+      "max_tile": 115.713
+    },
+    {
+      "sample": 4093,
+      "time": 2046.5,
+      "mean": 2.724,
+      "changed_fraction": 0.0293,
+      "max_tile": 30.65
+    },
+    {
+      "sample": 4099,
+      "time": 2049.5,
+      "mean": 3.836,
+      "changed_fraction": 0.0297,
+      "max_tile": 30.102
+    },
+    {
+      "sample": 4106,
+      "time": 2053.0,
+      "mean": 4.769,
+      "changed_fraction": 0.0661,
+      "max_tile": 32.947
+    },
+    {
+      "sample": 4108,
+      "time": 2054.0,
+      "mean": 31.262,
+      "changed_fraction": 0.2619,
+      "max_tile": 157.37
+    },
+    {
+      "sample": 4111,
+      "time": 2055.5,
+      "mean": 4.59,
+      "changed_fraction": 0.0046,
+      "max_tile": 13.66
+    },
+    {
+      "sample": 4115,
+      "time": 2057.5,
+      "mean": 3.771,
+      "changed_fraction": 0.007,
+      "max_tile": 14.87
+    },
+    {
+      "sample": 4118,
+      "time": 2059.0,
+      "mean": 30.627,
+      "changed_fraction": 0.2627,
+      "max_tile": 130.118
+    },
+    {
+      "sample": 4127,
+      "time": 2063.5,
+      "mean": 3.479,
+      "changed_fraction": 0.0399,
+      "max_tile": 29.243
+    },
+    {
+      "sample": 4129,
+      "time": 2064.5,
+      "mean": 22.174,
+      "changed_fraction": 0.2387,
+      "max_tile": 125.134
+    },
+    {
+      "sample": 4131,
+      "time": 2065.5,
+      "mean": 2.779,
+      "changed_fraction": 0.0152,
+      "max_tile": 80.104
+    },
+    {
+      "sample": 4140,
+      "time": 2070.0,
+      "mean": 3.573,
+      "changed_fraction": 0.0364,
+      "max_tile": 19.565
+    },
+    {
+      "sample": 4144,
+      "time": 2072.0,
+      "mean": 4.502,
+      "changed_fraction": 0.065,
+      "max_tile": 24.463
+    },
+    {
+      "sample": 4146,
+      "time": 2073.0,
+      "mean": 106.022,
+      "changed_fraction": 0.939,
+      "max_tile": 186.958
+    },
+    {
+      "sample": 4149,
+      "time": 2074.5,
+      "mean": 3.506,
+      "changed_fraction": 0.0261,
+      "max_tile": 13.979
+    },
+    {
+      "sample": 4151,
+      "time": 2075.5,
+      "mean": 2.837,
+      "changed_fraction": 0.0243,
+      "max_tile": 36.986
+    },
+    {
+      "sample": 4153,
+      "time": 2076.5,
+      "mean": 2.48,
+      "changed_fraction": 0.0228,
+      "max_tile": 32.924
+    },
+    {
+      "sample": 4155,
+      "time": 2077.5,
+      "mean": 2.996,
+      "changed_fraction": 0.0226,
+      "max_tile": 36.947
+    },
+    {
+      "sample": 4157,
+      "time": 2078.5,
+      "mean": 4.025,
+      "changed_fraction": 0.0328,
+      "max_tile": 31.338
+    },
+    {
+      "sample": 4159,
+      "time": 2079.5,
+      "mean": 2.455,
+      "changed_fraction": 0.0095,
+      "max_tile": 35.963
+    },
+    {
+      "sample": 4161,
+      "time": 2080.5,
+      "mean": 3.17,
+      "changed_fraction": 0.0104,
+      "max_tile": 30.252
+    },
+    {
+      "sample": 4163,
+      "time": 2081.5,
+      "mean": 2.392,
+      "changed_fraction": 0.008,
+      "max_tile": 33.891
+    },
+    {
+      "sample": 4166,
+      "time": 2083.0,
+      "mean": 3.083,
+      "changed_fraction": 0.026,
+      "max_tile": 28.785
+    },
+    {
+      "sample": 4168,
+      "time": 2084.0,
+      "mean": 0.864,
+      "changed_fraction": 0.0079,
+      "max_tile": 37.632
+    },
+    {
+      "sample": 4170,
+      "time": 2085.0,
+      "mean": 1.527,
+      "changed_fraction": 0.0114,
+      "max_tile": 38.991
+    },
+    {
+      "sample": 4172,
+      "time": 2086.0,
+      "mean": 114.862,
+      "changed_fraction": 0.9413,
+      "max_tile": 201.38
+    },
+    {
+      "sample": 4180,
+      "time": 2090.0,
+      "mean": 3.16,
+      "changed_fraction": 0.033,
+      "max_tile": 25.731
+    },
+    {
+      "sample": 4182,
+      "time": 2091.0,
+      "mean": 6.483,
+      "changed_fraction": 0.0679,
+      "max_tile": 53.421
+    },
+    {
+      "sample": 4202,
+      "time": 2101.0,
+      "mean": 3.224,
+      "changed_fraction": 0.0384,
+      "max_tile": 23.278
+    },
+    {
+      "sample": 4204,
+      "time": 2102.0,
+      "mean": 96.371,
+      "changed_fraction": 0.9536,
+      "max_tile": 157.333
+    },
+    {
+      "sample": 4212,
+      "time": 2106.0,
+      "mean": 3.557,
+      "changed_fraction": 0.0193,
+      "max_tile": 27.211
+    },
+    {
+      "sample": 4220,
+      "time": 2110.0,
+      "mean": 3.83,
+      "changed_fraction": 0.0211,
+      "max_tile": 21.782
+    },
+    {
+      "sample": 4223,
+      "time": 2111.5,
+      "mean": 3.521,
+      "changed_fraction": 0.0348,
+      "max_tile": 38.917
+    },
+    {
+      "sample": 4227,
+      "time": 2113.5,
+      "mean": 2.6,
+      "changed_fraction": 0.032,
+      "max_tile": 17.894
+    },
+    {
+      "sample": 4238,
+      "time": 2119.0,
+      "mean": 3.571,
+      "changed_fraction": 0.0423,
+      "max_tile": 26.671
+    },
+    {
+      "sample": 4240,
+      "time": 2120.0,
+      "mean": 44.817,
+      "changed_fraction": 0.6799,
+      "max_tile": 91.718
+    },
+    {
+      "sample": 4248,
+      "time": 2124.0,
+      "mean": 2.027,
+      "changed_fraction": 0.0105,
+      "max_tile": 28.694
+    },
+    {
+      "sample": 4255,
+      "time": 2127.5,
+      "mean": 2.3,
+      "changed_fraction": 0.0093,
+      "max_tile": 29.775
+    },
+    {
+      "sample": 4260,
+      "time": 2130.0,
+      "mean": 3.67,
+      "changed_fraction": 0.0409,
+      "max_tile": 24.005
+    },
+    {
+      "sample": 4262,
+      "time": 2131.0,
+      "mean": 2.41,
+      "changed_fraction": 0.0351,
+      "max_tile": 22.326
+    },
+    {
+      "sample": 4282,
+      "time": 2141.0,
+      "mean": 3.021,
+      "changed_fraction": 0.0376,
+      "max_tile": 22.359
+    },
+    {
+      "sample": 4284,
+      "time": 2142.0,
+      "mean": 68.56,
+      "changed_fraction": 0.8612,
+      "max_tile": 161.465
+    },
+    {
+      "sample": 4288,
+      "time": 2144.0,
+      "mean": 3.849,
+      "changed_fraction": 0.039,
+      "max_tile": 16.648
+    },
+    {
+      "sample": 4292,
+      "time": 2146.0,
+      "mean": 3.82,
+      "changed_fraction": 0.0338,
+      "max_tile": 17.514
+    },
+    {
+      "sample": 4294,
+      "time": 2147.0,
+      "mean": 4.239,
+      "changed_fraction": 0.0379,
+      "max_tile": 22.442
+    },
+    {
+      "sample": 4296,
+      "time": 2148.0,
+      "mean": 3.393,
+      "changed_fraction": 0.0221,
+      "max_tile": 37.829
+    },
+    {
+      "sample": 4298,
+      "time": 2149.0,
+      "mean": 3.915,
+      "changed_fraction": 0.0195,
+      "max_tile": 39.887
+    },
+    {
+      "sample": 4300,
+      "time": 2150.0,
+      "mean": 2.923,
+      "changed_fraction": 0.0136,
+      "max_tile": 36.574
+    },
+    {
+      "sample": 4309,
+      "time": 2154.5,
+      "mean": 4.94,
+      "changed_fraction": 0.0451,
+      "max_tile": 28.111
+    },
+    {
+      "sample": 4311,
+      "time": 2155.5,
+      "mean": 105.17,
+      "changed_fraction": 0.941,
+      "max_tile": 190.079
+    },
+    {
+      "sample": 4319,
+      "time": 2159.5,
+      "mean": 2.407,
+      "changed_fraction": 0.0314,
+      "max_tile": 23.752
+    },
+    {
+      "sample": 4321,
+      "time": 2160.5,
+      "mean": 2.774,
+      "changed_fraction": 0.0343,
+      "max_tile": 19.35
+    },
+    {
+      "sample": 4323,
+      "time": 2161.5,
+      "mean": 2.656,
+      "changed_fraction": 0.0332,
+      "max_tile": 19.292
+    },
+    {
+      "sample": 4333,
+      "time": 2166.5,
+      "mean": 3.799,
+      "changed_fraction": 0.0412,
+      "max_tile": 20.576
+    },
+    {
+      "sample": 4335,
+      "time": 2167.5,
+      "mean": 16.766,
+      "changed_fraction": 0.2534,
+      "max_tile": 63.662
+    },
+    {
+      "sample": 4344,
+      "time": 2172.0,
+      "mean": 4.001,
+      "changed_fraction": 0.0522,
+      "max_tile": 23.481
+    },
+    {
+      "sample": 4346,
+      "time": 2173.0,
+      "mean": 2.548,
+      "changed_fraction": 0.0307,
+      "max_tile": 26.769
+    },
+    {
+      "sample": 4354,
+      "time": 2177.0,
+      "mean": 2.625,
+      "changed_fraction": 0.0343,
+      "max_tile": 17.741
+    },
+    {
+      "sample": 4356,
+      "time": 2178.0,
+      "mean": 13.82,
+      "changed_fraction": 0.1721,
+      "max_tile": 62.072
+    },
+    {
+      "sample": 4370,
+      "time": 2185.0,
+      "mean": 4.556,
+      "changed_fraction": 0.0142,
+      "max_tile": 18.012
+    },
+    {
+      "sample": 4372,
+      "time": 2186.0,
+      "mean": 10.021,
+      "changed_fraction": 0.0565,
+      "max_tile": 34.81
+    },
+    {
+      "sample": 4374,
+      "time": 2187.0,
+      "mean": 8.196,
+      "changed_fraction": 0.0429,
+      "max_tile": 21.306
+    },
+    {
+      "sample": 4376,
+      "time": 2188.0,
+      "mean": 8.222,
+      "changed_fraction": 0.0361,
+      "max_tile": 21.6
+    },
+    {
+      "sample": 4378,
+      "time": 2189.0,
+      "mean": 7.173,
+      "changed_fraction": 0.0225,
+      "max_tile": 21.039
+    },
+    {
+      "sample": 4380,
+      "time": 2190.0,
+      "mean": 8.522,
+      "changed_fraction": 0.062,
+      "max_tile": 24.458
+    },
+    {
+      "sample": 4382,
+      "time": 2191.0,
+      "mean": 8.48,
+      "changed_fraction": 0.0724,
+      "max_tile": 26.627
+    },
+    {
+      "sample": 4384,
+      "time": 2192.0,
+      "mean": 9.722,
+      "changed_fraction": 0.0806,
+      "max_tile": 29.146
+    },
+    {
+      "sample": 4386,
+      "time": 2193.0,
+      "mean": 3.741,
+      "changed_fraction": 0.0,
+      "max_tile": 12.574
+    },
+    {
+      "sample": 4392,
+      "time": 2196.0,
+      "mean": 42.814,
+      "changed_fraction": 0.6968,
+      "max_tile": 135.028
+    },
+    {
+      "sample": 4398,
+      "time": 2199.0,
+      "mean": 3.646,
+      "changed_fraction": 0.0394,
+      "max_tile": 18.743
+    },
+    {
+      "sample": 4402,
+      "time": 2201.0,
+      "mean": 3.713,
+      "changed_fraction": 0.0124,
+      "max_tile": 12.576
+    },
+    {
+      "sample": 4404,
+      "time": 2202.0,
+      "mean": 75.366,
+      "changed_fraction": 0.8244,
+      "max_tile": 147.644
+    },
+    {
+      "sample": 4406,
+      "time": 2203.0,
+      "mean": 3.834,
+      "changed_fraction": 0.048,
+      "max_tile": 29.662
+    },
+    {
+      "sample": 4408,
+      "time": 2204.0,
+      "mean": 2.036,
+      "changed_fraction": 0.0177,
+      "max_tile": 29.954
+    },
+    {
+      "sample": 4413,
+      "time": 2206.5,
+      "mean": 3.293,
+      "changed_fraction": 0.0326,
+      "max_tile": 31.218
+    },
+    {
+      "sample": 4416,
+      "time": 2208.0,
+      "mean": 4.174,
+      "changed_fraction": 0.0514,
+      "max_tile": 28.382
+    },
+    {
+      "sample": 4418,
+      "time": 2209.0,
+      "mean": 4.776,
+      "changed_fraction": 0.0631,
+      "max_tile": 25.662
+    },
+    {
+      "sample": 4421,
+      "time": 2210.5,
+      "mean": 2.411,
+      "changed_fraction": 0.0209,
+      "max_tile": 33.88
+    },
+    {
+      "sample": 4424,
+      "time": 2212.0,
+      "mean": 3.208,
+      "changed_fraction": 0.0258,
+      "max_tile": 30.225
+    },
+    {
+      "sample": 4427,
+      "time": 2213.5,
+      "mean": 1.448,
+      "changed_fraction": 0.0206,
+      "max_tile": 31.019
+    },
+    {
+      "sample": 4429,
+      "time": 2214.5,
+      "mean": 0.834,
+      "changed_fraction": 0.0144,
+      "max_tile": 29.914
+    },
+    {
+      "sample": 4431,
+      "time": 2215.5,
+      "mean": 0.841,
+      "changed_fraction": 0.0148,
+      "max_tile": 29.382
+    },
+    {
+      "sample": 4433,
+      "time": 2216.5,
+      "mean": 0.823,
+      "changed_fraction": 0.0142,
+      "max_tile": 33.271
+    },
+    {
+      "sample": 4436,
+      "time": 2218.0,
+      "mean": 3.719,
+      "changed_fraction": 0.0655,
+      "max_tile": 23.66
+    },
+    {
+      "sample": 4438,
+      "time": 2219.0,
+      "mean": 76.162,
+      "changed_fraction": 0.907,
+      "max_tile": 164.88
+    },
+    {
+      "sample": 4449,
+      "time": 2224.5,
+      "mean": 3.741,
+      "changed_fraction": 0.0308,
+      "max_tile": 28.535
+    },
+    {
+      "sample": 4453,
+      "time": 2226.5,
+      "mean": 2.829,
+      "changed_fraction": 0.0194,
+      "max_tile": 46.183
+    },
+    {
+      "sample": 4455,
+      "time": 2227.5,
+      "mean": 2.234,
+      "changed_fraction": 0.0195,
+      "max_tile": 59.586
+    },
+    {
+      "sample": 4457,
+      "time": 2228.5,
+      "mean": 2.417,
+      "changed_fraction": 0.0198,
+      "max_tile": 59.218
+    },
+    {
+      "sample": 4459,
+      "time": 2229.5,
+      "mean": 1.511,
+      "changed_fraction": 0.0193,
+      "max_tile": 44.995
+    },
+    {
+      "sample": 4461,
+      "time": 2230.5,
+      "mean": 1.571,
+      "changed_fraction": 0.0204,
+      "max_tile": 41.623
+    },
+    {
+      "sample": 4463,
+      "time": 2231.5,
+      "mean": 1.51,
+      "changed_fraction": 0.0193,
+      "max_tile": 45.475
+    },
+    {
+      "sample": 4465,
+      "time": 2232.5,
+      "mean": 1.54,
+      "changed_fraction": 0.0202,
+      "max_tile": 59.144
+    },
+    {
+      "sample": 4467,
+      "time": 2233.5,
+      "mean": 1.514,
+      "changed_fraction": 0.0197,
+      "max_tile": 54.47
+    },
+    {
+      "sample": 4469,
+      "time": 2234.5,
+      "mean": 2.342,
+      "changed_fraction": 0.0186,
+      "max_tile": 45.729
+    },
+    {
+      "sample": 4471,
+      "time": 2235.5,
+      "mean": 70.533,
+      "changed_fraction": 0.7427,
+      "max_tile": 157.639
+    },
+    {
+      "sample": 4473,
+      "time": 2236.5,
+      "mean": 3.109,
+      "changed_fraction": 0.0297,
+      "max_tile": 37.958
+    },
+    {
+      "sample": 4475,
+      "time": 2237.5,
+      "mean": 3.113,
+      "changed_fraction": 0.0295,
+      "max_tile": 33.847
+    },
+    {
+      "sample": 4477,
+      "time": 2238.5,
+      "mean": 3.091,
+      "changed_fraction": 0.0281,
+      "max_tile": 33.063
+    },
+    {
+      "sample": 4479,
+      "time": 2239.5,
+      "mean": 3.462,
+      "changed_fraction": 0.0299,
+      "max_tile": 36.116
+    },
+    {
+      "sample": 4481,
+      "time": 2240.5,
+      "mean": 3.833,
+      "changed_fraction": 0.0299,
+      "max_tile": 41.951
+    },
+    {
+      "sample": 4483,
+      "time": 2241.5,
+      "mean": 3.21,
+      "changed_fraction": 0.0303,
+      "max_tile": 45.03
+    },
+    {
+      "sample": 4485,
+      "time": 2242.5,
+      "mean": 3.648,
+      "changed_fraction": 0.0307,
+      "max_tile": 45.486
+    },
+    {
+      "sample": 4487,
+      "time": 2243.5,
+      "mean": 3.227,
+      "changed_fraction": 0.0298,
+      "max_tile": 41.426
+    },
+    {
+      "sample": 4489,
+      "time": 2244.5,
+      "mean": 3.226,
+      "changed_fraction": 0.031,
+      "max_tile": 38.021
+    },
+    {
+      "sample": 4491,
+      "time": 2245.5,
+      "mean": 2.507,
+      "changed_fraction": 0.0283,
+      "max_tile": 34.046
+    },
+    {
+      "sample": 4493,
+      "time": 2246.5,
+      "mean": 2.076,
+      "changed_fraction": 0.0274,
+      "max_tile": 32.072
+    },
+    {
+      "sample": 4495,
+      "time": 2247.5,
+      "mean": 3.312,
+      "changed_fraction": 0.0382,
+      "max_tile": 33.345
+    },
+    {
+      "sample": 4497,
+      "time": 2248.5,
+      "mean": 131.912,
+      "changed_fraction": 0.9912,
+      "max_tile": 193.606
+    },
+    {
+      "sample": 4514,
+      "time": 2257.0,
+      "mean": 4.953,
+      "changed_fraction": 0.0544,
+      "max_tile": 28.213
+    },
+    {
+      "sample": 4516,
+      "time": 2258.0,
+      "mean": 3.272,
+      "changed_fraction": 0.0438,
+      "max_tile": 18.697
+    },
+    {
+      "sample": 4539,
+      "time": 2269.5,
+      "mean": 3.24,
+      "changed_fraction": 0.0438,
+      "max_tile": 18.697
+    },
+    {
+      "sample": 4541,
+      "time": 2270.5,
+      "mean": 136.156,
+      "changed_fraction": 0.9826,
+      "max_tile": 194.447
+    },
+    {
+      "sample": 4543,
+      "time": 2271.5,
+      "mean": 4.064,
+      "changed_fraction": 0.049,
+      "max_tile": 31.069
+    },
+    {
+      "sample": 4545,
+      "time": 2272.5,
+      "mean": 4.154,
+      "changed_fraction": 0.0503,
+      "max_tile": 30.882
+    },
+    {
+      "sample": 4547,
+      "time": 2273.5,
+      "mean": 4.243,
+      "changed_fraction": 0.0508,
+      "max_tile": 28.361
+    },
+    {
+      "sample": 4549,
+      "time": 2274.5,
+      "mean": 4.244,
+      "changed_fraction": 0.0498,
+      "max_tile": 27.271
+    },
+    {
+      "sample": 4551,
+      "time": 2275.5,
+      "mean": 4.305,
+      "changed_fraction": 0.0516,
+      "max_tile": 28.465
+    },
+    {
+      "sample": 4553,
+      "time": 2276.5,
+      "mean": 5.309,
+      "changed_fraction": 0.0635,
+      "max_tile": 30.854
+    },
+    {
+      "sample": 4555,
+      "time": 2277.5,
+      "mean": 5.863,
+      "changed_fraction": 0.0741,
+      "max_tile": 28.764
+    },
+    {
+      "sample": 4557,
+      "time": 2278.5,
+      "mean": 4.289,
+      "changed_fraction": 0.0508,
+      "max_tile": 29.72
+    },
+    {
+      "sample": 4559,
+      "time": 2279.5,
+      "mean": 4.292,
+      "changed_fraction": 0.0516,
+      "max_tile": 31.38
+    },
+    {
+      "sample": 4561,
+      "time": 2280.5,
+      "mean": 3.714,
+      "changed_fraction": 0.0454,
+      "max_tile": 26.162
+    },
+    {
+      "sample": 4563,
+      "time": 2281.5,
+      "mean": 3.573,
+      "changed_fraction": 0.0433,
+      "max_tile": 25.042
+    },
+    {
+      "sample": 4565,
+      "time": 2282.5,
+      "mean": 3.784,
+      "changed_fraction": 0.0439,
+      "max_tile": 24.806
+    },
+    {
+      "sample": 4567,
+      "time": 2283.5,
+      "mean": 3.612,
+      "changed_fraction": 0.0441,
+      "max_tile": 23.484
+    },
+    {
+      "sample": 4569,
+      "time": 2284.5,
+      "mean": 3.594,
+      "changed_fraction": 0.044,
+      "max_tile": 24.789
+    },
+    {
+      "sample": 4571,
+      "time": 2285.5,
+      "mean": 3.576,
+      "changed_fraction": 0.0438,
+      "max_tile": 24.725
+    },
+    {
+      "sample": 4573,
+      "time": 2286.5,
+      "mean": 3.593,
+      "changed_fraction": 0.0442,
+      "max_tile": 24.938
+    },
+    {
+      "sample": 4575,
+      "time": 2287.5,
+      "mean": 34.042,
+      "changed_fraction": 0.4016,
+      "max_tile": 145.491
+    },
+    {
+      "sample": 4581,
+      "time": 2290.5,
+      "mean": 3.802,
+      "changed_fraction": 0.0375,
+      "max_tile": 18.074
+    },
+    {
+      "sample": 4585,
+      "time": 2292.5,
+      "mean": 3.556,
+      "changed_fraction": 0.0244,
+      "max_tile": 17.185
+    },
+    {
+      "sample": 4589,
+      "time": 2294.5,
+      "mean": 4.454,
+      "changed_fraction": 0.0339,
+      "max_tile": 36.708
+    },
+    {
+      "sample": 4595,
+      "time": 2297.5,
+      "mean": 3.583,
+      "changed_fraction": 0.0299,
+      "max_tile": 18.532
+    },
+    {
+      "sample": 4597,
+      "time": 2298.5,
+      "mean": 43.423,
+      "changed_fraction": 0.6592,
+      "max_tile": 95.417
+    },
+    {
+      "sample": 4601,
+      "time": 2300.5,
+      "mean": 3.003,
+      "changed_fraction": 0.0229,
+      "max_tile": 59.808
+    },
+    {
+      "sample": 4603,
+      "time": 2301.5,
+      "mean": 1.895,
+      "changed_fraction": 0.0112,
+      "max_tile": 51.456
+    },
+    {
+      "sample": 4605,
+      "time": 2302.5,
+      "mean": 2.221,
+      "changed_fraction": 0.0161,
+      "max_tile": 67.6
+    },
+    {
+      "sample": 4607,
+      "time": 2303.5,
+      "mean": 1.837,
+      "changed_fraction": 0.0113,
+      "max_tile": 40.407
+    },
+    {
+      "sample": 4609,
+      "time": 2304.5,
+      "mean": 2.34,
+      "changed_fraction": 0.0166,
+      "max_tile": 62.41
+    },
+    {
+      "sample": 4611,
+      "time": 2305.5,
+      "mean": 2.745,
+      "changed_fraction": 0.0158,
+      "max_tile": 64.759
+    },
+    {
+      "sample": 4613,
+      "time": 2306.5,
+      "mean": 2.17,
+      "changed_fraction": 0.0141,
+      "max_tile": 63.444
+    },
+    {
+      "sample": 4615,
+      "time": 2307.5,
+      "mean": 3.567,
+      "changed_fraction": 0.0292,
+      "max_tile": 61.889
+    },
+    {
+      "sample": 4617,
+      "time": 2308.5,
+      "mean": 2.358,
+      "changed_fraction": 0.0144,
+      "max_tile": 59.894
+    },
+    {
+      "sample": 4619,
+      "time": 2309.5,
+      "mean": 2.386,
+      "changed_fraction": 0.0168,
+      "max_tile": 66.856
+    },
+    {
+      "sample": 4621,
+      "time": 2310.5,
+      "mean": 1.154,
+      "changed_fraction": 0.012,
+      "max_tile": 49.187
+    },
+    {
+      "sample": 4623,
+      "time": 2311.5,
+      "mean": 1.701,
+      "changed_fraction": 0.0179,
+      "max_tile": 68.755
+    },
+    {
+      "sample": 4625,
+      "time": 2312.5,
+      "mean": 0.936,
+      "changed_fraction": 0.0104,
+      "max_tile": 40.806
+    },
+    {
+      "sample": 4627,
+      "time": 2313.5,
+      "mean": 1.672,
+      "changed_fraction": 0.0184,
+      "max_tile": 69.905
+    },
+    {
+      "sample": 4630,
+      "time": 2315.0,
+      "mean": 2.643,
+      "changed_fraction": 0.0231,
+      "max_tile": 65.637
+    },
+    {
+      "sample": 4632,
+      "time": 2316.0,
+      "mean": 20.371,
+      "changed_fraction": 0.2916,
+      "max_tile": 102.657
+    },
+    {
+      "sample": 4637,
+      "time": 2318.5,
+      "mean": 4.106,
+      "changed_fraction": 0.0465,
+      "max_tile": 18.188
+    },
+    {
+      "sample": 4641,
+      "time": 2320.5,
+      "mean": 3.429,
+      "changed_fraction": 0.04,
+      "max_tile": 13.84
+    },
+    {
+      "sample": 4645,
+      "time": 2322.5,
+      "mean": 3.817,
+      "changed_fraction": 0.0316,
+      "max_tile": 14.069
+    },
+    {
+      "sample": 4649,
+      "time": 2324.5,
+      "mean": 3.273,
+      "changed_fraction": 0.0394,
+      "max_tile": 14.113
+    },
+    {
+      "sample": 4657,
+      "time": 2328.5,
+      "mean": 121.932,
+      "changed_fraction": 0.9535,
+      "max_tile": 202.674
+    },
+    {
+      "sample": 4674,
+      "time": 2337.0,
+      "mean": 3.549,
+      "changed_fraction": 0.0511,
+      "max_tile": 20.877
+    },
+    {
+      "sample": 4676,
+      "time": 2338.0,
+      "mean": 2.924,
+      "changed_fraction": 0.0443,
+      "max_tile": 18.924
+    },
+    {
+      "sample": 4692,
+      "time": 2346.0,
+      "mean": 2.956,
+      "changed_fraction": 0.0444,
+      "max_tile": 18.928
+    },
+    {
+      "sample": 4694,
+      "time": 2347.0,
+      "mean": 31.139,
+      "changed_fraction": 0.5253,
+      "max_tile": 88.093
+    },
+    {
+      "sample": 4708,
+      "time": 2354.0,
+      "mean": 4.104,
+      "changed_fraction": 0.0413,
+      "max_tile": 18.792
+    },
+    {
+      "sample": 4710,
+      "time": 2355.0,
+      "mean": 92.165,
+      "changed_fraction": 0.955,
+      "max_tile": 171.088
+    },
+    {
+      "sample": 4712,
+      "time": 2356.0,
+      "mean": 2.642,
+      "changed_fraction": 0.0109,
+      "max_tile": 28.852
+    },
+    {
+      "sample": 4715,
+      "time": 2357.5,
+      "mean": 3.663,
+      "changed_fraction": 0.0262,
+      "max_tile": 41.669
+    },
+    {
+      "sample": 4717,
+      "time": 2358.5,
+      "mean": 2.721,
+      "changed_fraction": 0.0131,
+      "max_tile": 35.118
+    },
+    {
+      "sample": 4719,
+      "time": 2359.5,
+      "mean": 2.707,
+      "changed_fraction": 0.0133,
+      "max_tile": 28.887
+    },
+    {
+      "sample": 4721,
+      "time": 2360.5,
+      "mean": 2.861,
+      "changed_fraction": 0.0139,
+      "max_tile": 35.53
+    },
+    {
+      "sample": 4723,
+      "time": 2361.5,
+      "mean": 3.199,
+      "changed_fraction": 0.0162,
+      "max_tile": 39.264
+    },
+    {
+      "sample": 4725,
+      "time": 2362.5,
+      "mean": 3.248,
+      "changed_fraction": 0.0141,
+      "max_tile": 30.426
+    },
+    {
+      "sample": 4727,
+      "time": 2363.5,
+      "mean": 2.897,
+      "changed_fraction": 0.0144,
+      "max_tile": 30.85
+    },
+    {
+      "sample": 4729,
+      "time": 2364.5,
+      "mean": 2.68,
+      "changed_fraction": 0.0142,
+      "max_tile": 33.968
+    },
+    {
+      "sample": 4732,
+      "time": 2366.0,
+      "mean": 2.455,
+      "changed_fraction": 0.0157,
+      "max_tile": 36.903
+    },
+    {
+      "sample": 4734,
+      "time": 2367.0,
+      "mean": 1.098,
+      "changed_fraction": 0.012,
+      "max_tile": 36.373
+    },
+    {
+      "sample": 4736,
+      "time": 2368.0,
+      "mean": 1.036,
+      "changed_fraction": 0.011,
+      "max_tile": 31.0
+    },
+    {
+      "sample": 4738,
+      "time": 2369.0,
+      "mean": 2.417,
+      "changed_fraction": 0.0248,
+      "max_tile": 48.363
+    },
+    {
+      "sample": 4740,
+      "time": 2370.0,
+      "mean": 103.751,
+      "changed_fraction": 0.9647,
+      "max_tile": 185.435
+    },
+    {
+      "sample": 4742,
+      "time": 2371.0,
+      "mean": 2.025,
+      "changed_fraction": 0.0107,
+      "max_tile": 47.234
+    },
+    {
+      "sample": 4744,
+      "time": 2372.0,
+      "mean": 3.245,
+      "changed_fraction": 0.0197,
+      "max_tile": 55.116
+    },
+    {
+      "sample": 4747,
+      "time": 2373.5,
+      "mean": 5.052,
+      "changed_fraction": 0.0171,
+      "max_tile": 41.85
+    },
+    {
+      "sample": 4749,
+      "time": 2374.5,
+      "mean": 4.623,
+      "changed_fraction": 0.0092,
+      "max_tile": 33.819
+    },
+    {
+      "sample": 4751,
+      "time": 2375.5,
+      "mean": 4.807,
+      "changed_fraction": 0.0134,
+      "max_tile": 38.958
+    },
+    {
+      "sample": 4753,
+      "time": 2376.5,
+      "mean": 4.706,
+      "changed_fraction": 0.0066,
+      "max_tile": 20.766
+    },
+    {
+      "sample": 4755,
+      "time": 2377.5,
+      "mean": 3.893,
+      "changed_fraction": 0.0061,
+      "max_tile": 19.025
+    },
+    {
+      "sample": 4757,
+      "time": 2378.5,
+      "mean": 6.909,
+      "changed_fraction": 0.0484,
+      "max_tile": 27.602
+    },
+    {
+      "sample": 4759,
+      "time": 2379.5,
+      "mean": 4.174,
+      "changed_fraction": 0.0077,
+      "max_tile": 22.868
+    },
+    {
+      "sample": 4776,
+      "time": 2388.0,
+      "mean": 1.787,
+      "changed_fraction": 0.0312,
+      "max_tile": 18.046
+    },
+    {
+      "sample": 4778,
+      "time": 2389.0,
+      "mean": 2.634,
+      "changed_fraction": 0.0466,
+      "max_tile": 19.81
+    },
+    {
+      "sample": 4783,
+      "time": 2391.5,
+      "mean": 3.388,
+      "changed_fraction": 0.0649,
+      "max_tile": 27.306
+    },
+    {
+      "sample": 4788,
+      "time": 2394.0,
+      "mean": 4.012,
+      "changed_fraction": 0.0733,
+      "max_tile": 22.847
+    },
+    {
+      "sample": 4794,
+      "time": 2397.0,
+      "mean": 5.23,
+      "changed_fraction": 0.0995,
+      "max_tile": 23.521
+    },
+    {
+      "sample": 4806,
+      "time": 2403.0,
+      "mean": 3.317,
+      "changed_fraction": 0.059,
+      "max_tile": 19.382
+    },
+    {
+      "sample": 4808,
+      "time": 2404.0,
+      "mean": 23.677,
+      "changed_fraction": 0.3387,
+      "max_tile": 94.44
+    },
+    {
+      "sample": 4810,
+      "time": 2405.0,
+      "mean": 6.067,
+      "changed_fraction": 0.0705,
+      "max_tile": 63.377
+    },
+    {
+      "sample": 4812,
+      "time": 2406.0,
+      "mean": 6.121,
+      "changed_fraction": 0.0793,
+      "max_tile": 51.162
+    },
+    {
+      "sample": 4814,
+      "time": 2407.0,
+      "mean": 5.757,
+      "changed_fraction": 0.0726,
+      "max_tile": 85.984
+    },
+    {
+      "sample": 4821,
+      "time": 2410.5,
+      "mean": 3.611,
+      "changed_fraction": 0.0201,
+      "max_tile": 15.81
+    },
+    {
+      "sample": 4824,
+      "time": 2412.0,
+      "mean": 10.937,
+      "changed_fraction": 0.1152,
+      "max_tile": 45.338
+    },
+    {
+      "sample": 4826,
+      "time": 2413.0,
+      "mean": 45.042,
+      "changed_fraction": 0.5614,
+      "max_tile": 177.241
+    },
+    {
+      "sample": 4828,
+      "time": 2414.0,
+      "mean": 23.926,
+      "changed_fraction": 0.2175,
+      "max_tile": 161.389
+    },
+    {
+      "sample": 4830,
+      "time": 2415.0,
+      "mean": 3.591,
+      "changed_fraction": 0.0158,
+      "max_tile": 18.213
+    },
+    {
+      "sample": 4835,
+      "time": 2417.5,
+      "mean": 3.672,
+      "changed_fraction": 0.0235,
+      "max_tile": 14.245
+    },
+    {
+      "sample": 4840,
+      "time": 2420.0,
+      "mean": 3.992,
+      "changed_fraction": 0.0234,
+      "max_tile": 14.988
+    },
+    {
+      "sample": 4842,
+      "time": 2421.0,
+      "mean": 59.267,
+      "changed_fraction": 0.6186,
+      "max_tile": 154.106
+    },
+    {
+      "sample": 4844,
+      "time": 2422.0,
+      "mean": 21.526,
+      "changed_fraction": 0.2352,
+      "max_tile": 105.549
+    },
+    {
+      "sample": 4846,
+      "time": 2423.0,
+      "mean": 19.109,
+      "changed_fraction": 0.2371,
+      "max_tile": 111.991
+    },
+    {
+      "sample": 4853,
+      "time": 2426.5,
+      "mean": 3.593,
+      "changed_fraction": 0.0233,
+      "max_tile": 16.044
+    },
+    {
+      "sample": 4859,
+      "time": 2429.5,
+      "mean": 17.921,
+      "changed_fraction": 0.3246,
+      "max_tile": 46.903
+    },
+    {
+      "sample": 4861,
+      "time": 2430.5,
+      "mean": 42.485,
+      "changed_fraction": 0.5905,
+      "max_tile": 107.528
+    },
+    {
+      "sample": 4863,
+      "time": 2431.5,
+      "mean": 7.655,
+      "changed_fraction": 0.081,
+      "max_tile": 103.794
+    },
+    {
+      "sample": 4865,
+      "time": 2432.5,
+      "mean": 7.501,
+      "changed_fraction": 0.0921,
+      "max_tile": 58.373
+    },
+    {
+      "sample": 4867,
+      "time": 2433.5,
+      "mean": 4.93,
+      "changed_fraction": 0.0581,
+      "max_tile": 44.873
+    },
+    {
+      "sample": 4875,
+      "time": 2437.5,
+      "mean": 3.463,
+      "changed_fraction": 0.0326,
+      "max_tile": 16.873
+    },
+    {
+      "sample": 4877,
+      "time": 2438.5,
+      "mean": 27.894,
+      "changed_fraction": 0.3809,
+      "max_tile": 95.231
+    },
+    {
+      "sample": 4879,
+      "time": 2439.5,
+      "mean": 31.871,
+      "changed_fraction": 0.2649,
+      "max_tile": 143.313
+    },
+    {
+      "sample": 4881,
+      "time": 2440.5,
+      "mean": 22.55,
+      "changed_fraction": 0.2284,
+      "max_tile": 164.495
+    },
+    {
+      "sample": 4886,
+      "time": 2443.0,
+      "mean": 4.14,
+      "changed_fraction": 0.0254,
+      "max_tile": 17.132
+    },
+    {
+      "sample": 4890,
+      "time": 2445.0,
+      "mean": 3.717,
+      "changed_fraction": 0.0138,
+      "max_tile": 14.725
+    },
+    {
+      "sample": 4894,
+      "time": 2447.0,
+      "mean": 13.095,
+      "changed_fraction": 0.1931,
+      "max_tile": 36.97
+    },
+    {
+      "sample": 4896,
+      "time": 2448.0,
+      "mean": 43.268,
+      "changed_fraction": 0.5336,
+      "max_tile": 154.456
+    },
+    {
+      "sample": 4898,
+      "time": 2449.0,
+      "mean": 11.336,
+      "changed_fraction": 0.1648,
+      "max_tile": 103.854
+    },
+    {
+      "sample": 4900,
+      "time": 2450.0,
+      "mean": 10.557,
+      "changed_fraction": 0.1598,
+      "max_tile": 70.289
+    },
+    {
+      "sample": 4902,
+      "time": 2451.0,
+      "mean": 7.288,
+      "changed_fraction": 0.1335,
+      "max_tile": 56.519
+    },
+    {
+      "sample": 4908,
+      "time": 2454.0,
+      "mean": 3.687,
+      "changed_fraction": 0.0172,
+      "max_tile": 13.727
+    },
+    {
+      "sample": 4912,
+      "time": 2456.0,
+      "mean": 34.155,
+      "changed_fraction": 0.5129,
+      "max_tile": 90.171
+    },
+    {
+      "sample": 4914,
+      "time": 2457.0,
+      "mean": 31.344,
+      "changed_fraction": 0.2733,
+      "max_tile": 172.0
+    },
+    {
+      "sample": 4916,
+      "time": 2458.0,
+      "mean": 24.331,
+      "changed_fraction": 0.228,
+      "max_tile": 165.481
+    },
+    {
+      "sample": 4922,
+      "time": 2461.0,
+      "mean": 3.61,
+      "changed_fraction": 0.0256,
+      "max_tile": 18.481
+    },
+    {
+      "sample": 4928,
+      "time": 2464.0,
+      "mean": 4.007,
+      "changed_fraction": 0.0265,
+      "max_tile": 19.856
+    },
+    {
+      "sample": 4930,
+      "time": 2465.0,
+      "mean": 70.547,
+      "changed_fraction": 0.7227,
+      "max_tile": 212.775
+    },
+    {
+      "sample": 4932,
+      "time": 2466.0,
+      "mean": 6.317,
+      "changed_fraction": 0.067,
+      "max_tile": 59.352
+    },
+    {
+      "sample": 4934,
+      "time": 2467.0,
+      "mean": 6.846,
+      "changed_fraction": 0.0845,
+      "max_tile": 120.208
+    },
+    {
+      "sample": 4936,
+      "time": 2468.0,
+      "mean": 6.972,
+      "changed_fraction": 0.0887,
+      "max_tile": 82.412
+    },
+    {
+      "sample": 4945,
+      "time": 2472.5,
+      "mean": 3.8,
+      "changed_fraction": 0.0285,
+      "max_tile": 17.259
+    },
+    {
+      "sample": 4947,
+      "time": 2473.5,
+      "mean": 19.748,
+      "changed_fraction": 0.2438,
+      "max_tile": 99.275
+    },
+    {
+      "sample": 4949,
+      "time": 2474.5,
+      "mean": 10.45,
+      "changed_fraction": 0.1101,
+      "max_tile": 61.014
+    },
+    {
+      "sample": 4951,
+      "time": 2475.5,
+      "mean": 5.644,
+      "changed_fraction": 0.0819,
+      "max_tile": 88.762
+    },
+    {
+      "sample": 4953,
+      "time": 2476.5,
+      "mean": 4.126,
+      "changed_fraction": 0.0518,
+      "max_tile": 64.398
+    },
+    {
+      "sample": 4965,
+      "time": 2482.5,
+      "mean": 16.26,
+      "changed_fraction": 0.1766,
+      "max_tile": 81.704
+    },
+    {
+      "sample": 4967,
+      "time": 2483.5,
+      "mean": 7.346,
+      "changed_fraction": 0.0779,
+      "max_tile": 64.38
+    },
+    {
+      "sample": 4969,
+      "time": 2484.5,
+      "mean": 7.772,
+      "changed_fraction": 0.0996,
+      "max_tile": 71.914
+    },
+    {
+      "sample": 4977,
+      "time": 2488.5,
+      "mean": 3.725,
+      "changed_fraction": 0.0298,
+      "max_tile": 28.113
+    },
+    {
+      "sample": 4982,
+      "time": 2491.0,
+      "mean": 13.053,
+      "changed_fraction": 0.1628,
+      "max_tile": 52.569
+    },
+    {
+      "sample": 4984,
+      "time": 2492.0,
+      "mean": 8.319,
+      "changed_fraction": 0.0879,
+      "max_tile": 35.606
+    },
+    {
+      "sample": 4986,
+      "time": 2493.0,
+      "mean": 4.628,
+      "changed_fraction": 0.0489,
+      "max_tile": 43.639
+    },
+    {
+      "sample": 4999,
+      "time": 2499.5,
+      "mean": 3.086,
+      "changed_fraction": 0.0317,
+      "max_tile": 18.85
+    },
+    {
+      "sample": 5001,
+      "time": 2500.5,
+      "mean": 17.702,
+      "changed_fraction": 0.2008,
+      "max_tile": 91.998
+    },
+    {
+      "sample": 5003,
+      "time": 2501.5,
+      "mean": 5.755,
+      "changed_fraction": 0.0793,
+      "max_tile": 55.479
+    },
+    {
+      "sample": 5005,
+      "time": 2502.5,
+      "mean": 3.115,
+      "changed_fraction": 0.0311,
+      "max_tile": 27.991
+    },
+    {
+      "sample": 5014,
+      "time": 2507.0,
+      "mean": 3.737,
+      "changed_fraction": 0.0335,
+      "max_tile": 24.194
+    },
+    {
+      "sample": 5017,
+      "time": 2508.5,
+      "mean": 10.296,
+      "changed_fraction": 0.1373,
+      "max_tile": 61.988
+    },
+    {
+      "sample": 5019,
+      "time": 2509.5,
+      "mean": 15.661,
+      "changed_fraction": 0.1765,
+      "max_tile": 98.722
+    },
+    {
+      "sample": 5021,
+      "time": 2510.5,
+      "mean": 12.353,
+      "changed_fraction": 0.1327,
+      "max_tile": 146.322
+    },
+    {
+      "sample": 5029,
+      "time": 2514.5,
+      "mean": 3.739,
+      "changed_fraction": 0.0288,
+      "max_tile": 19.951
+    },
+    {
+      "sample": 5035,
+      "time": 2517.5,
+      "mean": 25.855,
+      "changed_fraction": 0.2897,
+      "max_tile": 130.06
+    },
+    {
+      "sample": 5037,
+      "time": 2518.5,
+      "mean": 8.817,
+      "changed_fraction": 0.0826,
+      "max_tile": 75.859
+    },
+    {
+      "sample": 5039,
+      "time": 2519.5,
+      "mean": 7.907,
+      "changed_fraction": 0.0924,
+      "max_tile": 120.308
+    },
+    {
+      "sample": 5047,
+      "time": 2523.5,
+      "mean": 3.614,
+      "changed_fraction": 0.0217,
+      "max_tile": 19.787
+    },
+    {
+      "sample": 5052,
+      "time": 2526.0,
+      "mean": 9.207,
+      "changed_fraction": 0.107,
+      "max_tile": 64.0
+    },
+    {
+      "sample": 5054,
+      "time": 2527.0,
+      "mean": 14.109,
+      "changed_fraction": 0.168,
+      "max_tile": 63.646
+    },
+    {
+      "sample": 5056,
+      "time": 2528.0,
+      "mean": 11.695,
+      "changed_fraction": 0.1627,
+      "max_tile": 120.241
+    },
+    {
+      "sample": 5066,
+      "time": 2533.0,
+      "mean": 3.589,
+      "changed_fraction": 0.0199,
+      "max_tile": 14.968
+    },
+    {
+      "sample": 5070,
+      "time": 2535.0,
+      "mean": 21.943,
+      "changed_fraction": 0.3844,
+      "max_tile": 81.85
+    },
+    {
+      "sample": 5072,
+      "time": 2536.0,
+      "mean": 34.814,
+      "changed_fraction": 0.2527,
+      "max_tile": 156.06
+    },
+    {
+      "sample": 5074,
+      "time": 2537.0,
+      "mean": 12.383,
+      "changed_fraction": 0.2006,
+      "max_tile": 67.458
+    },
+    {
+      "sample": 5081,
+      "time": 2540.5,
+      "mean": 3.646,
+      "changed_fraction": 0.0296,
+      "max_tile": 19.058
+    },
+    {
+      "sample": 5087,
+      "time": 2543.5,
+      "mean": 21.996,
+      "changed_fraction": 0.2889,
+      "max_tile": 75.41
+    },
+    {
+      "sample": 5089,
+      "time": 2544.5,
+      "mean": 25.537,
+      "changed_fraction": 0.3417,
+      "max_tile": 87.674
+    },
+    {
+      "sample": 5091,
+      "time": 2545.5,
+      "mean": 18.623,
+      "changed_fraction": 0.2241,
+      "max_tile": 144.715
+    },
+    {
+      "sample": 5096,
+      "time": 2548.0,
+      "mean": 3.662,
+      "changed_fraction": 0.0111,
+      "max_tile": 17.521
+    },
+    {
+      "sample": 5104,
+      "time": 2552.0,
+      "mean": 3.76,
+      "changed_fraction": 0.0221,
+      "max_tile": 14.127
+    },
+    {
+      "sample": 5106,
+      "time": 2553.0,
+      "mean": 39.258,
+      "changed_fraction": 0.459,
+      "max_tile": 169.894
+    },
+    {
+      "sample": 5108,
+      "time": 2554.0,
+      "mean": 8.793,
+      "changed_fraction": 0.1056,
+      "max_tile": 87.669
+    },
+    {
+      "sample": 5110,
+      "time": 2555.0,
+      "mean": 6.365,
+      "changed_fraction": 0.0735,
+      "max_tile": 71.81
+    },
+    {
+      "sample": 5120,
+      "time": 2560.0,
+      "mean": 3.815,
+      "changed_fraction": 0.0312,
+      "max_tile": 29.398
+    },
+    {
+      "sample": 5122,
+      "time": 2561.0,
+      "mean": 9.706,
+      "changed_fraction": 0.1127,
+      "max_tile": 48.037
+    },
+    {
+      "sample": 5124,
+      "time": 2562.0,
+      "mean": 20.746,
+      "changed_fraction": 0.2466,
+      "max_tile": 100.356
+    },
+    {
+      "sample": 5126,
+      "time": 2563.0,
+      "mean": 12.859,
+      "changed_fraction": 0.1897,
+      "max_tile": 133.778
+    },
+    {
+      "sample": 5131,
+      "time": 2565.5,
+      "mean": 3.702,
+      "changed_fraction": 0.0274,
+      "max_tile": 23.414
+    },
+    {
+      "sample": 5139,
+      "time": 2569.5,
+      "mean": 3.762,
+      "changed_fraction": 0.0261,
+      "max_tile": 22.579
+    },
+    {
+      "sample": 5141,
+      "time": 2570.5,
+      "mean": 52.213,
+      "changed_fraction": 0.4798,
+      "max_tile": 160.921
+    },
+    {
+      "sample": 5143,
+      "time": 2571.5,
+      "mean": 15.574,
+      "changed_fraction": 0.1497,
+      "max_tile": 113.377
+    },
+    {
+      "sample": 5146,
+      "time": 2573.0,
+      "mean": 5.435,
+      "changed_fraction": 0.0754,
+      "max_tile": 30.472
+    },
+    {
+      "sample": 5154,
+      "time": 2577.0,
+      "mean": 29.536,
+      "changed_fraction": 0.3543,
+      "max_tile": 94.331
+    }
+  ]
+}

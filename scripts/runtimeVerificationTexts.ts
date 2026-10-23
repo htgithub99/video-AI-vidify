@@ -292,7 +292,9 @@ export const RUNTIME_VERIFICATION_FORMATS = {
       export const beginChatPlanningRun = () => ({signal: new AbortController().signal, complete() {}, cancel() {}});
       export const closeChatBrowserIfIdle = async () => true;
       export const closeChatPlanningRoom = async () => { f.events.push('close'); };
+      export const closeChatPlanningRoomsForProject = async () => {};
       export const prepareChatPlanningRoom = async () => { f.events.push('prepare'); };
+      export const resumeChatPlanningResponse = async () => { throw new Error('unexpected-response-resume'); };
       export const generatePlanningWithChatUi = async request => {
         f.events.push('send'); f.requests.push(request);
         if (f.refuse) throw Object.assign(new Error('${refusalError}'), {diagnostics: {lastCandidate: "Tôi chỉ là một công nghệ trí tuệ nhân tạo dựa trên văn bản, nên không thể trợ giúp về điều đó."}});

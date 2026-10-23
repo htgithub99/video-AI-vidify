@@ -1,0 +1,3043 @@
+{
+  "id": "5tEEkZaXW3U",
+  "title": "Én ơi, anh về rồi - Ma vọng phu kỳ truyện",
+  "duration": 2054,
+  "upload_date": "20260917",
+  "channel": "Khuất mặt Kỳ Truyện",
+  "channel_url": "https://www.youtube.com/channel/UCYLno7MAM5OMNULbCcoyNjw",
+  "url": "https://www.youtube.com/watch?v=5tEEkZaXW3U",
+  "status": "storyboard_fallback",
+  "capture_method": "YouTube storyboard thumbnails; periodic samples, not scene detection",
+  "width": 320,
+  "height": 180,
+  "sample_interval_ms": 10000,
+  "sample_fps": 0.1,
+  "visual_review": "pending",
+  "frames": [
+    {
+      "number": 1,
+      "time": 0.0,
+      "timestamp": "00:00:00",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000001.jpg"
+    },
+    {
+      "number": 2,
+      "time": 10.0,
+      "timestamp": "00:00:10",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000002.jpg"
+    },
+    {
+      "number": 3,
+      "time": 20.0,
+      "timestamp": "00:00:20",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000003.jpg"
+    },
+    {
+      "number": 4,
+      "time": 30.0,
+      "timestamp": "00:00:30",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000004.jpg"
+    },
+    {
+      "number": 5,
+      "time": 40.0,
+      "timestamp": "00:00:40",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000005.jpg"
+    },
+    {
+      "number": 6,
+      "time": 50.0,
+      "timestamp": "00:00:50",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000006.jpg"
+    },
+    {
+      "number": 7,
+      "time": 60.0,
+      "timestamp": "00:01:00",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000007.jpg"
+    },
+    {
+      "number": 8,
+      "time": 70.0,
+      "timestamp": "00:01:10",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000008.jpg"
+    },
+    {
+      "number": 9,
+      "time": 80.0,
+      "timestamp": "00:01:20",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000009.jpg"
+    },
+    {
+      "number": 10,
+      "time": 90.0,
+      "timestamp": "00:01:30",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000010.jpg"
+    },
+    {
+      "number": 11,
+      "time": 100.0,
+      "timestamp": "00:01:40",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000011.jpg"
+    },
+    {
+      "number": 12,
+      "time": 110.0,
+      "timestamp": "00:01:50",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000012.jpg"
+    },
+    {
+      "number": 13,
+      "time": 120.0,
+      "timestamp": "00:02:00",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000013.jpg"
+    },
+    {
+      "number": 14,
+      "time": 130.0,
+      "timestamp": "00:02:10",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000014.jpg"
+    },
+    {
+      "number": 15,
+      "time": 140.0,
+      "timestamp": "00:02:20",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000015.jpg"
+    },
+    {
+      "number": 16,
+      "time": 150.0,
+      "timestamp": "00:02:30",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000016.jpg"
+    },
+    {
+      "number": 17,
+      "time": 160.0,
+      "timestamp": "00:02:40",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000017.jpg"
+    },
+    {
+      "number": 18,
+      "time": 170.0,
+      "timestamp": "00:02:50",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000018.jpg"
+    },
+    {
+      "number": 19,
+      "time": 180.0,
+      "timestamp": "00:03:00",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000019.jpg"
+    },
+    {
+      "number": 20,
+      "time": 190.0,
+      "timestamp": "00:03:10",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000020.jpg"
+    },
+    {
+      "number": 21,
+      "time": 200.0,
+      "timestamp": "00:03:20",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000021.jpg"
+    },
+    {
+      "number": 22,
+      "time": 210.0,
+      "timestamp": "00:03:30",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000022.jpg"
+    },
+    {
+      "number": 23,
+      "time": 220.0,
+      "timestamp": "00:03:40",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000023.jpg"
+    },
+    {
+      "number": 24,
+      "time": 230.0,
+      "timestamp": "00:03:50",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000024.jpg"
+    },
+    {
+      "number": 25,
+      "time": 240.0,
+      "timestamp": "00:04:00",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000025.jpg"
+    },
+    {
+      "number": 26,
+      "time": 250.0,
+      "timestamp": "00:04:10",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000026.jpg"
+    },
+    {
+      "number": 27,
+      "time": 260.0,
+      "timestamp": "00:04:20",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000027.jpg"
+    },
+    {
+      "number": 28,
+      "time": 270.0,
+      "timestamp": "00:04:30",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000028.jpg"
+    },
+    {
+      "number": 29,
+      "time": 280.0,
+      "timestamp": "00:04:40",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000029.jpg"
+    },
+    {
+      "number": 30,
+      "time": 290.0,
+      "timestamp": "00:04:50",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000030.jpg"
+    },
+    {
+      "number": 31,
+      "time": 300.0,
+      "timestamp": "00:05:00",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000031.jpg"
+    },
+    {
+      "number": 32,
+      "time": 310.0,
+      "timestamp": "00:05:10",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000032.jpg"
+    },
+    {
+      "number": 33,
+      "time": 320.0,
+      "timestamp": "00:05:20",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000033.jpg"
+    },
+    {
+      "number": 34,
+      "time": 330.0,
+      "timestamp": "00:05:30",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000034.jpg"
+    },
+    {
+      "number": 35,
+      "time": 340.0,
+      "timestamp": "00:05:40",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000035.jpg"
+    },
+    {
+      "number": 36,
+      "time": 350.0,
+      "timestamp": "00:05:50",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000036.jpg"
+    },
+    {
+      "number": 37,
+      "time": 360.0,
+      "timestamp": "00:06:00",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000037.jpg"
+    },
+    {
+      "number": 38,
+      "time": 370.0,
+      "timestamp": "00:06:10",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000038.jpg"
+    },
+    {
+      "number": 39,
+      "time": 380.0,
+      "timestamp": "00:06:20",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000039.jpg"
+    },
+    {
+      "number": 40,
+      "time": 390.0,
+      "timestamp": "00:06:30",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000040.jpg"
+    },
+    {
+      "number": 41,
+      "time": 400.0,
+      "timestamp": "00:06:40",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000041.jpg"
+    },
+    {
+      "number": 42,
+      "time": 410.0,
+      "timestamp": "00:06:50",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000042.jpg"
+    },
+    {
+      "number": 43,
+      "time": 420.0,
+      "timestamp": "00:07:00",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000043.jpg"
+    },
+    {
+      "number": 44,
+      "time": 430.0,
+      "timestamp": "00:07:10",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000044.jpg"
+    },
+    {
+      "number": 45,
+      "time": 440.0,
+      "timestamp": "00:07:20",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000045.jpg"
+    },
+    {
+      "number": 46,
+      "time": 450.0,
+      "timestamp": "00:07:30",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000046.jpg"
+    },
+    {
+      "number": 47,
+      "time": 460.0,
+      "timestamp": "00:07:40",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000047.jpg"
+    },
+    {
+      "number": 48,
+      "time": 470.0,
+      "timestamp": "00:07:50",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000048.jpg"
+    },
+    {
+      "number": 49,
+      "time": 480.0,
+      "timestamp": "00:08:00",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000049.jpg"
+    },
+    {
+      "number": 50,
+      "time": 490.0,
+      "timestamp": "00:08:10",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000050.jpg"
+    },
+    {
+      "number": 51,
+      "time": 500.0,
+      "timestamp": "00:08:20",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000051.jpg"
+    },
+    {
+      "number": 52,
+      "time": 510.0,
+      "timestamp": "00:08:30",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000052.jpg"
+    },
+    {
+      "number": 53,
+      "time": 520.0,
+      "timestamp": "00:08:40",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000053.jpg"
+    },
+    {
+      "number": 54,
+      "time": 530.0,
+      "timestamp": "00:08:50",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000054.jpg"
+    },
+    {
+      "number": 55,
+      "time": 540.0,
+      "timestamp": "00:09:00",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000055.jpg"
+    },
+    {
+      "number": 56,
+      "time": 550.0,
+      "timestamp": "00:09:10",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000056.jpg"
+    },
+    {
+      "number": 57,
+      "time": 560.0,
+      "timestamp": "00:09:20",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000057.jpg"
+    },
+    {
+      "number": 58,
+      "time": 570.0,
+      "timestamp": "00:09:30",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000058.jpg"
+    },
+    {
+      "number": 59,
+      "time": 580.0,
+      "timestamp": "00:09:40",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000059.jpg"
+    },
+    {
+      "number": 60,
+      "time": 590.0,
+      "timestamp": "00:09:50",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000060.jpg"
+    },
+    {
+      "number": 61,
+      "time": 600.0,
+      "timestamp": "00:10:00",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000061.jpg"
+    },
+    {
+      "number": 62,
+      "time": 610.0,
+      "timestamp": "00:10:10",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000062.jpg"
+    },
+    {
+      "number": 63,
+      "time": 620.0,
+      "timestamp": "00:10:20",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000063.jpg"
+    },
+    {
+      "number": 64,
+      "time": 630.0,
+      "timestamp": "00:10:30",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000064.jpg"
+    },
+    {
+      "number": 65,
+      "time": 640.0,
+      "timestamp": "00:10:40",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000065.jpg"
+    },
+    {
+      "number": 66,
+      "time": 650.0,
+      "timestamp": "00:10:50",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000066.jpg"
+    },
+    {
+      "number": 67,
+      "time": 660.0,
+      "timestamp": "00:11:00",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000067.jpg"
+    },
+    {
+      "number": 68,
+      "time": 670.0,
+      "timestamp": "00:11:10",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000068.jpg"
+    },
+    {
+      "number": 69,
+      "time": 680.0,
+      "timestamp": "00:11:20",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000069.jpg"
+    },
+    {
+      "number": 70,
+      "time": 690.0,
+      "timestamp": "00:11:30",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000070.jpg"
+    },
+    {
+      "number": 71,
+      "time": 700.0,
+      "timestamp": "00:11:40",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000071.jpg"
+    },
+    {
+      "number": 72,
+      "time": 710.0,
+      "timestamp": "00:11:50",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000072.jpg"
+    },
+    {
+      "number": 73,
+      "time": 720.0,
+      "timestamp": "00:12:00",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000073.jpg"
+    },
+    {
+      "number": 74,
+      "time": 730.0,
+      "timestamp": "00:12:10",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000074.jpg"
+    },
+    {
+      "number": 75,
+      "time": 740.0,
+      "timestamp": "00:12:20",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000075.jpg"
+    },
+    {
+      "number": 76,
+      "time": 750.0,
+      "timestamp": "00:12:30",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000076.jpg"
+    },
+    {
+      "number": 77,
+      "time": 760.0,
+      "timestamp": "00:12:40",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000077.jpg"
+    },
+    {
+      "number": 78,
+      "time": 770.0,
+      "timestamp": "00:12:50",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000078.jpg"
+    },
+    {
+      "number": 79,
+      "time": 780.0,
+      "timestamp": "00:13:00",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000079.jpg"
+    },
+    {
+      "number": 80,
+      "time": 790.0,
+      "timestamp": "00:13:10",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000080.jpg"
+    },
+    {
+      "number": 81,
+      "time": 800.0,
+      "timestamp": "00:13:20",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000081.jpg"
+    },
+    {
+      "number": 82,
+      "time": 810.0,
+      "timestamp": "00:13:30",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000082.jpg"
+    },
+    {
+      "number": 83,
+      "time": 820.0,
+      "timestamp": "00:13:40",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000083.jpg"
+    },
+    {
+      "number": 84,
+      "time": 830.0,
+      "timestamp": "00:13:50",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000084.jpg"
+    },
+    {
+      "number": 85,
+      "time": 840.0,
+      "timestamp": "00:14:00",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000085.jpg"
+    },
+    {
+      "number": 86,
+      "time": 850.0,
+      "timestamp": "00:14:10",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000086.jpg"
+    },
+    {
+      "number": 87,
+      "time": 860.0,
+      "timestamp": "00:14:20",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000087.jpg"
+    },
+    {
+      "number": 88,
+      "time": 870.0,
+      "timestamp": "00:14:30",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000088.jpg"
+    },
+    {
+      "number": 89,
+      "time": 880.0,
+      "timestamp": "00:14:40",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000089.jpg"
+    },
+    {
+      "number": 90,
+      "time": 890.0,
+      "timestamp": "00:14:50",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000090.jpg"
+    },
+    {
+      "number": 91,
+      "time": 900.0,
+      "timestamp": "00:15:00",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000091.jpg"
+    },
+    {
+      "number": 92,
+      "time": 910.0,
+      "timestamp": "00:15:10",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000092.jpg"
+    },
+    {
+      "number": 93,
+      "time": 920.0,
+      "timestamp": "00:15:20",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000093.jpg"
+    },
+    {
+      "number": 94,
+      "time": 930.0,
+      "timestamp": "00:15:30",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000094.jpg"
+    },
+    {
+      "number": 95,
+      "time": 940.0,
+      "timestamp": "00:15:40",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000095.jpg"
+    },
+    {
+      "number": 96,
+      "time": 950.0,
+      "timestamp": "00:15:50",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000096.jpg"
+    },
+    {
+      "number": 97,
+      "time": 960.0,
+      "timestamp": "00:16:00",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000097.jpg"
+    },
+    {
+      "number": 98,
+      "time": 970.0,
+      "timestamp": "00:16:10",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000098.jpg"
+    },
+    {
+      "number": 99,
+      "time": 980.0,
+      "timestamp": "00:16:20",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000099.jpg"
+    },
+    {
+      "number": 100,
+      "time": 990.0,
+      "timestamp": "00:16:30",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000100.jpg"
+    },
+    {
+      "number": 101,
+      "time": 1000.0,
+      "timestamp": "00:16:40",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000101.jpg"
+    },
+    {
+      "number": 102,
+      "time": 1010.0,
+      "timestamp": "00:16:50",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000102.jpg"
+    },
+    {
+      "number": 103,
+      "time": 1020.0,
+      "timestamp": "00:17:00",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000103.jpg"
+    },
+    {
+      "number": 104,
+      "time": 1030.0,
+      "timestamp": "00:17:10",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000104.jpg"
+    },
+    {
+      "number": 105,
+      "time": 1040.0,
+      "timestamp": "00:17:20",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000105.jpg"
+    },
+    {
+      "number": 106,
+      "time": 1050.0,
+      "timestamp": "00:17:30",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000106.jpg"
+    },
+    {
+      "number": 107,
+      "time": 1060.0,
+      "timestamp": "00:17:40",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000107.jpg"
+    },
+    {
+      "number": 108,
+      "time": 1070.0,
+      "timestamp": "00:17:50",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000108.jpg"
+    },
+    {
+      "number": 109,
+      "time": 1080.0,
+      "timestamp": "00:18:00",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000109.jpg"
+    },
+    {
+      "number": 110,
+      "time": 1090.0,
+      "timestamp": "00:18:10",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000110.jpg"
+    },
+    {
+      "number": 111,
+      "time": 1100.0,
+      "timestamp": "00:18:20",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000111.jpg"
+    },
+    {
+      "number": 112,
+      "time": 1110.0,
+      "timestamp": "00:18:30",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000112.jpg"
+    },
+    {
+      "number": 113,
+      "time": 1120.0,
+      "timestamp": "00:18:40",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000113.jpg"
+    },
+    {
+      "number": 114,
+      "time": 1130.0,
+      "timestamp": "00:18:50",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000114.jpg"
+    },
+    {
+      "number": 115,
+      "time": 1140.0,
+      "timestamp": "00:19:00",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000115.jpg"
+    },
+    {
+      "number": 116,
+      "time": 1150.0,
+      "timestamp": "00:19:10",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000116.jpg"
+    },
+    {
+      "number": 117,
+      "time": 1160.0,
+      "timestamp": "00:19:20",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000117.jpg"
+    },
+    {
+      "number": 118,
+      "time": 1170.0,
+      "timestamp": "00:19:30",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000118.jpg"
+    },
+    {
+      "number": 119,
+      "time": 1180.0,
+      "timestamp": "00:19:40",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000119.jpg"
+    },
+    {
+      "number": 120,
+      "time": 1190.0,
+      "timestamp": "00:19:50",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000120.jpg"
+    },
+    {
+      "number": 121,
+      "time": 1200.0,
+      "timestamp": "00:20:00",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000121.jpg"
+    },
+    {
+      "number": 122,
+      "time": 1210.0,
+      "timestamp": "00:20:10",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000122.jpg"
+    },
+    {
+      "number": 123,
+      "time": 1220.0,
+      "timestamp": "00:20:20",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000123.jpg"
+    },
+    {
+      "number": 124,
+      "time": 1230.0,
+      "timestamp": "00:20:30",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000124.jpg"
+    },
+    {
+      "number": 125,
+      "time": 1240.0,
+      "timestamp": "00:20:40",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000125.jpg"
+    },
+    {
+      "number": 126,
+      "time": 1250.0,
+      "timestamp": "00:20:50",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000126.jpg"
+    },
+    {
+      "number": 127,
+      "time": 1260.0,
+      "timestamp": "00:21:00",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000127.jpg"
+    },
+    {
+      "number": 128,
+      "time": 1270.0,
+      "timestamp": "00:21:10",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000128.jpg"
+    },
+    {
+      "number": 129,
+      "time": 1280.0,
+      "timestamp": "00:21:20",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000129.jpg"
+    },
+    {
+      "number": 130,
+      "time": 1290.0,
+      "timestamp": "00:21:30",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000130.jpg"
+    },
+    {
+      "number": 131,
+      "time": 1300.0,
+      "timestamp": "00:21:40",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000131.jpg"
+    },
+    {
+      "number": 132,
+      "time": 1310.0,
+      "timestamp": "00:21:50",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000132.jpg"
+    },
+    {
+      "number": 133,
+      "time": 1320.0,
+      "timestamp": "00:22:00",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000133.jpg"
+    },
+    {
+      "number": 134,
+      "time": 1330.0,
+      "timestamp": "00:22:10",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000134.jpg"
+    },
+    {
+      "number": 135,
+      "time": 1340.0,
+      "timestamp": "00:22:20",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000135.jpg"
+    },
+    {
+      "number": 136,
+      "time": 1350.0,
+      "timestamp": "00:22:30",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000136.jpg"
+    },
+    {
+      "number": 137,
+      "time": 1360.0,
+      "timestamp": "00:22:40",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000137.jpg"
+    },
+    {
+      "number": 138,
+      "time": 1370.0,
+      "timestamp": "00:22:50",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000138.jpg"
+    },
+    {
+      "number": 139,
+      "time": 1380.0,
+      "timestamp": "00:23:00",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000139.jpg"
+    },
+    {
+      "number": 140,
+      "time": 1390.0,
+      "timestamp": "00:23:10",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000140.jpg"
+    },
+    {
+      "number": 141,
+      "time": 1400.0,
+      "timestamp": "00:23:20",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000141.jpg"
+    },
+    {
+      "number": 142,
+      "time": 1410.0,
+      "timestamp": "00:23:30",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000142.jpg"
+    },
+    {
+      "number": 143,
+      "time": 1420.0,
+      "timestamp": "00:23:40",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000143.jpg"
+    },
+    {
+      "number": 144,
+      "time": 1430.0,
+      "timestamp": "00:23:50",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000144.jpg"
+    },
+    {
+      "number": 145,
+      "time": 1440.0,
+      "timestamp": "00:24:00",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000145.jpg"
+    },
+    {
+      "number": 146,
+      "time": 1450.0,
+      "timestamp": "00:24:10",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000146.jpg"
+    },
+    {
+      "number": 147,
+      "time": 1460.0,
+      "timestamp": "00:24:20",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000147.jpg"
+    },
+    {
+      "number": 148,
+      "time": 1470.0,
+      "timestamp": "00:24:30",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000148.jpg"
+    },
+    {
+      "number": 149,
+      "time": 1480.0,
+      "timestamp": "00:24:40",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000149.jpg"
+    },
+    {
+      "number": 150,
+      "time": 1490.0,
+      "timestamp": "00:24:50",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000150.jpg"
+    },
+    {
+      "number": 151,
+      "time": 1500.0,
+      "timestamp": "00:25:00",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000151.jpg"
+    },
+    {
+      "number": 152,
+      "time": 1510.0,
+      "timestamp": "00:25:10",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000152.jpg"
+    },
+    {
+      "number": 153,
+      "time": 1520.0,
+      "timestamp": "00:25:20",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000153.jpg"
+    },
+    {
+      "number": 154,
+      "time": 1530.0,
+      "timestamp": "00:25:30",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000154.jpg"
+    },
+    {
+      "number": 155,
+      "time": 1540.0,
+      "timestamp": "00:25:40",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000155.jpg"
+    },
+    {
+      "number": 156,
+      "time": 1550.0,
+      "timestamp": "00:25:50",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000156.jpg"
+    },
+    {
+      "number": 157,
+      "time": 1560.0,
+      "timestamp": "00:26:00",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000157.jpg"
+    },
+    {
+      "number": 158,
+      "time": 1570.0,
+      "timestamp": "00:26:10",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000158.jpg"
+    },
+    {
+      "number": 159,
+      "time": 1580.0,
+      "timestamp": "00:26:20",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000159.jpg"
+    },
+    {
+      "number": 160,
+      "time": 1590.0,
+      "timestamp": "00:26:30",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000160.jpg"
+    },
+    {
+      "number": 161,
+      "time": 1600.0,
+      "timestamp": "00:26:40",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000161.jpg"
+    },
+    {
+      "number": 162,
+      "time": 1610.0,
+      "timestamp": "00:26:50",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000162.jpg"
+    },
+    {
+      "number": 163,
+      "time": 1620.0,
+      "timestamp": "00:27:00",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000163.jpg"
+    },
+    {
+      "number": 164,
+      "time": 1630.0,
+      "timestamp": "00:27:10",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000164.jpg"
+    },
+    {
+      "number": 165,
+      "time": 1640.0,
+      "timestamp": "00:27:20",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000165.jpg"
+    },
+    {
+      "number": 166,
+      "time": 1650.0,
+      "timestamp": "00:27:30",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000166.jpg"
+    },
+    {
+      "number": 167,
+      "time": 1660.0,
+      "timestamp": "00:27:40",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000167.jpg"
+    },
+    {
+      "number": 168,
+      "time": 1670.0,
+      "timestamp": "00:27:50",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000168.jpg"
+    },
+    {
+      "number": 169,
+      "time": 1680.0,
+      "timestamp": "00:28:00",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000169.jpg"
+    },
+    {
+      "number": 170,
+      "time": 1690.0,
+      "timestamp": "00:28:10",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000170.jpg"
+    },
+    {
+      "number": 171,
+      "time": 1700.0,
+      "timestamp": "00:28:20",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000171.jpg"
+    },
+    {
+      "number": 172,
+      "time": 1710.0,
+      "timestamp": "00:28:30",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000172.jpg"
+    },
+    {
+      "number": 173,
+      "time": 1720.0,
+      "timestamp": "00:28:40",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000173.jpg"
+    },
+    {
+      "number": 174,
+      "time": 1730.0,
+      "timestamp": "00:28:50",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000174.jpg"
+    },
+    {
+      "number": 175,
+      "time": 1740.0,
+      "timestamp": "00:29:00",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000175.jpg"
+    },
+    {
+      "number": 176,
+      "time": 1750.0,
+      "timestamp": "00:29:10",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000176.jpg"
+    },
+    {
+      "number": 177,
+      "time": 1760.0,
+      "timestamp": "00:29:20",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000177.jpg"
+    },
+    {
+      "number": 178,
+      "time": 1770.0,
+      "timestamp": "00:29:30",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000178.jpg"
+    },
+    {
+      "number": 179,
+      "time": 1780.0,
+      "timestamp": "00:29:40",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000179.jpg"
+    },
+    {
+      "number": 180,
+      "time": 1790.0,
+      "timestamp": "00:29:50",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000180.jpg"
+    },
+    {
+      "number": 181,
+      "time": 1800.0,
+      "timestamp": "00:30:00",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000181.jpg"
+    },
+    {
+      "number": 182,
+      "time": 1810.0,
+      "timestamp": "00:30:10",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000182.jpg"
+    },
+    {
+      "number": 183,
+      "time": 1820.0,
+      "timestamp": "00:30:20",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000183.jpg"
+    },
+    {
+      "number": 184,
+      "time": 1830.0,
+      "timestamp": "00:30:30",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000184.jpg"
+    },
+    {
+      "number": 185,
+      "time": 1840.0,
+      "timestamp": "00:30:40",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000185.jpg"
+    },
+    {
+      "number": 186,
+      "time": 1850.0,
+      "timestamp": "00:30:50",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000186.jpg"
+    },
+    {
+      "number": 187,
+      "time": 1860.0,
+      "timestamp": "00:31:00",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000187.jpg"
+    },
+    {
+      "number": 188,
+      "time": 1870.0,
+      "timestamp": "00:31:10",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000188.jpg"
+    },
+    {
+      "number": 189,
+      "time": 1880.0,
+      "timestamp": "00:31:20",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000189.jpg"
+    },
+    {
+      "number": 190,
+      "time": 1890.0,
+      "timestamp": "00:31:30",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000190.jpg"
+    },
+    {
+      "number": 191,
+      "time": 1900.0,
+      "timestamp": "00:31:40",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000191.jpg"
+    },
+    {
+      "number": 192,
+      "time": 1910.0,
+      "timestamp": "00:31:50",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000192.jpg"
+    },
+    {
+      "number": 193,
+      "time": 1920.0,
+      "timestamp": "00:32:00",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000193.jpg"
+    },
+    {
+      "number": 194,
+      "time": 1930.0,
+      "timestamp": "00:32:10",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000194.jpg"
+    },
+    {
+      "number": 195,
+      "time": 1940.0,
+      "timestamp": "00:32:20",
+      "board": "boards/013.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000195.jpg"
+    },
+    {
+      "number": 196,
+      "time": 1950.0,
+      "timestamp": "00:32:30",
+      "board": "boards/013.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000196.jpg"
+    },
+    {
+      "number": 197,
+      "time": 1960.0,
+      "timestamp": "00:32:40",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000197.jpg"
+    },
+    {
+      "number": 198,
+      "time": 1970.0,
+      "timestamp": "00:32:50",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000198.jpg"
+    },
+    {
+      "number": 199,
+      "time": 1980.0,
+      "timestamp": "00:33:00",
+      "board": "boards/013.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000199.jpg"
+    },
+    {
+      "number": 200,
+      "time": 1990.0,
+      "timestamp": "00:33:10",
+      "board": "boards/013.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000200.jpg"
+    },
+    {
+      "number": 201,
+      "time": 2000.0,
+      "timestamp": "00:33:20",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000201.jpg"
+    },
+    {
+      "number": 202,
+      "time": 2010.0,
+      "timestamp": "00:33:30",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000202.jpg"
+    },
+    {
+      "number": 203,
+      "time": 2020.0,
+      "timestamp": "00:33:40",
+      "board": "boards/013.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000203.jpg"
+    },
+    {
+      "number": 204,
+      "time": 2030.0,
+      "timestamp": "00:33:50",
+      "board": "boards/013.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000204.jpg"
+    },
+    {
+      "number": 205,
+      "time": 2040.0,
+      "timestamp": "00:34:00",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000205.jpg"
+    },
+    {
+      "number": 206,
+      "time": 2050.0,
+      "timestamp": "00:34:10",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "09-5tEEkZaXW3U/frames/000206.jpg"
+    }
+  ],
+  "contacts": [
+    "boards/001.jpg",
+    "boards/002.jpg",
+    "boards/003.jpg",
+    "boards/004.jpg",
+    "boards/005.jpg",
+    "boards/006.jpg",
+    "boards/007.jpg",
+    "boards/008.jpg",
+    "boards/009.jpg",
+    "boards/010.jpg",
+    "boards/011.jpg",
+    "boards/012.jpg",
+    "boards/013.jpg"
+  ],
+  "overview_review": {
+    "status": "reviewed",
+    "scope": "36 time-distributed images in overview.jpg; not every archived image",
+    "date": "2026-10-22"
+  },
+  "storage_format": "contact_boards_4x4",
+  "boards": [
+    {
+      "file": "boards/001.jpg",
+      "first": 1,
+      "last": 16,
+      "start": "00:00:00",
+      "end": "00:02:30",
+      "frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "file": "boards/002.jpg",
+      "first": 17,
+      "last": 32,
+      "start": "00:02:40",
+      "end": "00:05:10",
+      "frames": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ]
+    },
+    {
+      "file": "boards/003.jpg",
+      "first": 33,
+      "last": 48,
+      "start": "00:05:20",
+      "end": "00:07:50",
+      "frames": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48
+      ]
+    },
+    {
+      "file": "boards/004.jpg",
+      "first": 49,
+      "last": 64,
+      "start": "00:08:00",
+      "end": "00:10:30",
+      "frames": [
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64
+      ]
+    },
+    {
+      "file": "boards/005.jpg",
+      "first": 65,
+      "last": 80,
+      "start": "00:10:40",
+      "end": "00:13:10",
+      "frames": [
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ]
+    },
+    {
+      "file": "boards/006.jpg",
+      "first": 81,
+      "last": 96,
+      "start": "00:13:20",
+      "end": "00:15:50",
+      "frames": [
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96
+      ]
+    },
+    {
+      "file": "boards/007.jpg",
+      "first": 97,
+      "last": 112,
+      "start": "00:16:00",
+      "end": "00:18:30",
+      "frames": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112
+      ]
+    },
+    {
+      "file": "boards/008.jpg",
+      "first": 113,
+      "last": 128,
+      "start": "00:18:40",
+      "end": "00:21:10",
+      "frames": [
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128
+      ]
+    },
+    {
+      "file": "boards/009.jpg",
+      "first": 129,
+      "last": 144,
+      "start": "00:21:20",
+      "end": "00:23:50",
+      "frames": [
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144
+      ]
+    },
+    {
+      "file": "boards/010.jpg",
+      "first": 145,
+      "last": 160,
+      "start": "00:24:00",
+      "end": "00:26:30",
+      "frames": [
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160
+      ]
+    },
+    {
+      "file": "boards/011.jpg",
+      "first": 161,
+      "last": 176,
+      "start": "00:26:40",
+      "end": "00:29:10",
+      "frames": [
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176
+      ]
+    },
+    {
+      "file": "boards/012.jpg",
+      "first": 177,
+      "last": 192,
+      "start": "00:29:20",
+      "end": "00:31:50",
+      "frames": [
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192
+      ]
+    },
+    {
+      "file": "boards/013.jpg",
+      "first": 193,
+      "last": 206,
+      "start": "00:32:00",
+      "end": "00:34:10",
+      "frames": [
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206
+      ]
+    }
+  ],
+  "source_archive": "D:\\video-AI-vidify\\scratch\\rollback-talk-chair-20261022\\reference-originals.zip"
+}

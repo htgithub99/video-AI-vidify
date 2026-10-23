@@ -98,3 +98,9 @@ package-lock.json
 *.wav
 *.mp3
 *.zip
+
+# Generated reference galleries; keep local media outside source changes
+/docs/video-references/**/*.jpg
+/docs/video-references/**/*.jpeg
+/docs/video-references/**/*.png
+/docs/video-references/**/*.webp

@@ -1,4 +1,7 @@
+import { puppetTimestamp as now } from "../../../lib/motionPuppetValues.js";
 import _ from "lodash";
+import { PA } from "../../../constants/motionPuppetAssets.js";
+import { preferredPuppetProps, puppetAssetName, puppetObjectClass, puppetPropAllowed, puppetPropFits } from "../../../lib/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_PROMPTS as PR, PUPPET_TYPES } from "../../../constants/motionPuppet.js";
 import { MOTION_GEN_CONFIG } from "../../../constants/motionGenPrompts.js";
 import { PUPPET_SEED_GROUP, PUPPET_SEED_TAG } from "../../../constants/motionPuppetSeed.js";
@@ -10,9 +13,7 @@ import { listPuppets, newPuppetId, puppetHash, readPuppet, writePuppet } from ".
 import { characterSheetSvg, cleanPuppetSvg, puppetImages, svgShapes } from "./svg.js";
 import { cleanPuppetSpots } from "./layout.js";
 import { puppetStyleImages, puppetStyleText, type PuppetRunOptions } from "./stylePack.js";
-
 export const puppetLanes = (exec: MotionAiExecution): number => (_.includes(MOTION_GEN_CONFIG.SERIAL_PROVIDERS, exec.provider) ? 1 : Math.min(P.LANES, MOTION_STORY_CONFIG.PROVIDER_PARALLEL[String(exec.provider)] || P.LANES));
-const now = (): string => new Date().toISOString();
 const hex = (v: unknown): string | undefined => (_.isString(v) && P.HEX_RE.test(v) ? v.toLowerCase() : undefined);
 const ask = (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> => (o.ai || runMotionAi)(prompt, artifact, o.exec, o.signal, o.log, images && images.length ? images : undefined);
 const quiet = (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> =>
@@ -20,18 +21,14 @@ const quiet = (o: PuppetRunOptions, prompt: string, artifact: string, images?: M
     if (o.signal?.aborted) throw e;
     return null;
   });
-const lightsOf = (raw: unknown): PuppetLight[] =>
-  _.take(_.compact(_.map(_.castArray(raw || []), (l: any) => (l && _.isFinite(Number(l.x)) && _.isFinite(Number(l.y)) ? { x: Number(l.x), y: Number(l.y), color: hex(l.color) || P.LIGHT_COLOR, kind: _.toString(l.kind || P.LIGHT_KIND) } : null))), P.LIGHTS_MAX);
-
+const lightsOf = (raw: unknown): PuppetLight[] => _.take(_.compact(_.map(_.castArray(raw || []), (l: any) => (l && _.isFinite(Number(l.x)) && _.isFinite(Number(l.y)) ? { x: Number(l.x), y: Number(l.y), color: hex(l.color) || P.LIGHT_COLOR, kind: _.toString(l.kind || P.LIGHT_KIND) } : null))), P.LIGHTS_MAX);
 export const castProfile = (c: MotionCastMember): string => _.compact([c.name, c.role, c.gender, c.age, c.look || c.description]).join(P.SEP);
-
 const views = (raw: any, max: number): PuppetViews => {
   const out: PuppetViews = {};
   for (const v of P.VIEWS) if (raw?.[v]) out[v as keyof PuppetViews] = cleanPuppetSvg(raw[v], max);
   if (!out.front) throw new Error(P.ERR_EMPTY);
   return out;
 };
-
 const drawChecked = async <T>(keys: string[], draft: (key: string, why: string, last: boolean) => Promise<T>, review: (items: { key: string; item: T }[]) => Promise<Record<string, string>>, fail: (key: string, why: string) => void, redoLog: (key: string, why: string) => void, o: PuppetRunOptions): Promise<Record<string, T>> => {
   const out: Record<string, T> = {};
   const tries: Record<string, number> = {};
@@ -61,14 +58,12 @@ const drawChecked = async <T>(keys: string[], draft: (key: string, why: string, 
   await mapMotionAiPool(redo, (k) => run(k, true), puppetLanes(o.exec));
   return out;
 };
-
 const reviewInChunks = async <T>(items: { key: string; item: T }[], size: number, kind: string, call: (chunk: { key: string; item: T }[]) => Promise<Record<string, string>>, o: PuppetRunOptions): Promise<Record<string, string>> => {
   const chunks = _.chunk(items, size);
   o.log(P.LOG_CHECK_BATCH(kind, items.length, chunks.length));
   const parts = await mapMotionAiPool(chunks, call, puppetLanes(o.exec));
   return Object.assign({}, ...parts);
 };
-
 export const drawPuppetCharacters = async (style: PuppetStylePack, cast: MotionCastMember[], story: string, others: string, o: PuppetRunOptions): Promise<Record<string, PuppetCharacter>> => {
   const refs = puppetStyleImages(style, P.CHAR_REF_KINDS);
   const byKey = _.keyBy(cast, (c) => c.key);
@@ -83,21 +78,33 @@ export const drawPuppetCharacters = async (style: PuppetStylePack, cast: MotionC
   };
   const checkRefs = _.take(refs, P.CHECK_REFS);
   const review = (items: { key: string; item: PuppetCharacter }[]) =>
-    reviewInChunks(items, P.CHARS_PER_CHECK, P.KIND_CHARACTERS, async (chunk) => {
-      const sheets = await puppetImages(_.map(chunk, (it) => ({ svg: characterSheetSvg(it.item, style.body.head), w: P.SHEET_PNG[0], h: P.SHEET_PNG[1] })));
-      if (!sheets.length) return {};
-      const raw = await quiet(o, PR.CHARS_CHECK({ characters: _.map(chunk, (it, i) => [i, castProfile(byKey[it.key])].join(P.SEP)).join(P.NL), others }), P.ARTIFACT_CHAR_CHECK, [...sheets, ...checkRefs]);
-      const bad: Record<string, string> = {};
-      for (const c of _.castArray(raw?.checks || [])) {
-        const it = chunk[Number(c?.i)];
-        if (it && (c?.ok === false || (checkRefs.length > 0 && Number(c?.styleScore) < P.STYLE_MATCH_MIN))) bad[it.key] = _.truncate(_.compact([_.toString(c.problems), _.toString(c.styleDiff)]).join(P.SEP), { length: 400 }) || P.WHY_STYLE;
-      }
-      return bad;
-    }, o);
-  const made = await drawChecked(_.map(cast, (c) => c.key), draft, review, (k, why) => o.log(P.LOG_CHAR_FAIL(byKey[k].name || k, why)), (k, why) => o.log(P.LOG_CHAR_CHECK(byKey[k].name || k, why)), o);
+    reviewInChunks(
+      items,
+      P.CHARS_PER_CHECK,
+      P.KIND_CHARACTERS,
+      async (chunk) => {
+        const sheets = await puppetImages(_.map(chunk, (it) => ({ svg: characterSheetSvg(it.item, style.body.head), w: P.SHEET_PNG[0], h: P.SHEET_PNG[1] })));
+        if (!sheets.length) return {};
+        const raw = await quiet(o, PR.CHARS_CHECK({ characters: _.map(chunk, (it, i) => [i, castProfile(byKey[it.key])].join(P.SEP)).join(P.NL), others }), P.ARTIFACT_CHAR_CHECK, [...sheets, ...checkRefs]);
+        const bad: Record<string, string> = {};
+        for (const c of _.castArray(raw?.checks || [])) {
+          const it = chunk[Number(c?.i)];
+          if (it && (c?.ok === false || (checkRefs.length > 0 && Number(c?.styleScore) < P.STYLE_MATCH_MIN))) bad[it.key] = _.truncate(_.compact([_.toString(c.problems), _.toString(c.styleDiff)]).join(P.SEP), { length: 400 }) || P.WHY_STYLE;
+        }
+        return bad;
+      },
+      o,
+    );
+  const made = await drawChecked(
+    _.map(cast, (c) => c.key),
+    draft,
+    review,
+    (k, why) => o.log(P.LOG_CHAR_FAIL(byKey[k].name || k, why)),
+    (k, why) => o.log(P.LOG_CHAR_CHECK(byKey[k].name || k, why)),
+    o,
+  );
   return _.mapValues(made, (c) => writePuppet(c));
 };
-
 export const drawPuppetSprites = async (style: PuppetStylePack, c: PuppetCharacter, o: PuppetRunOptions): Promise<PuppetCharacter> => {
   const sheet = await puppetImages([{ svg: characterSheetSvg(c, style.body.head), w: P.SHEET_PNG[0], h: P.SHEET_PNG[1] }]);
   const raw = await quiet(o, PR.SPRITES({ style: puppetStyleText(style), character: c.desc, colors: JSON.stringify(c.colors) }), P.ARTIFACT_SPRITES, [...sheet, ...puppetStyleImages(style, P.CHAR_REF_KINDS, 3)]);
@@ -114,10 +121,13 @@ export const drawPuppetSprites = async (style: PuppetStylePack, c: PuppetCharact
   }
   return writePuppet<PuppetCharacter>({ ...c, sprites: { ...(c.sprites || {}), ...sprites }, updatedAt: now() });
 };
-
 const setRefKinds = (p: PuppetPlace): string[] => _.compact([p.time === P.NIGHT ? P.REF_NIGHT : null, ...(p.interior ? (P.KITCHEN_RE.test(p.key + P.SPACE + p.name + P.SPACE + p.desc) ? [P.REF_KITCHEN, P.REF_INTERIOR] : [P.REF_INTERIOR, P.REF_KITCHEN]) : [P.REF_EXTERIOR, P.REF_LANDSCAPE])]);
-
-export interface PuppetSetJob { key: string; place: PuppetPlace; uses: string; }
+export interface PuppetSetJob {
+  key: string;
+  place: PuppetPlace;
+  uses: string;
+  validate?: (set: PuppetSet) => string[];
+}
 export const drawPuppetSets = async (style: PuppetStylePack, jobs: PuppetSetJob[], o: PuppetRunOptions): Promise<Record<string, PuppetSet>> => {
   const shapes = P.DETAIL_SHAPES[style.detail] || P.DETAIL_SHAPES[P.DETAIL_DEFAULT];
   const byKey = _.keyBy(jobs, (j) => j.key);
@@ -129,25 +139,55 @@ export const drawPuppetSets = async (style: PuppetStylePack, jobs: PuppetSetJob[
     const svg = cleanPuppetSvg(raw?.svg, P.SVG_SET_BYTES);
     const n = svgShapes(svg);
     if (n < shapes[0] && !last) throw new Error(P.WHY_SIMPLE(n, shapes[0]));
-    return { id: newPuppetId(PUPPET_TYPES.SET), type: PUPPET_TYPES.SET, styleId: style.id, name: place.name || place.key, desc: place.desc, tags: [place.key, place.interior ? P.INTERIOR_TAG : P.EXTERIOR_TAG], interior: place.interior, time: place.time, svg, floorY: _.clamp(Number(raw?.floorY) || P.FLOOR_DEFAULT, P.FLOOR_MIN, P.FLOOR_MAX), spots: cleanPuppetSpots(raw?.spots), lights: lightsOf(raw?.lights), uses: 0, updatedAt: now() };
+    const set: PuppetSet = {
+      id: newPuppetId(PUPPET_TYPES.SET),
+      type: PUPPET_TYPES.SET,
+      styleId: style.id,
+      name: place.name || place.key,
+      desc: place.desc,
+      tags: [place.key, place.interior ? P.INTERIOR_TAG : P.EXTERIOR_TAG],
+      interior: place.interior,
+      time: place.time,
+      svg,
+      floorY: _.clamp(Number(raw?.floorY) || P.FLOOR_DEFAULT, P.FLOOR_MIN, P.FLOOR_MAX),
+      spots: cleanPuppetSpots(raw?.spots),
+      lights: lightsOf(raw?.lights),
+      uses: 0,
+      updatedAt: now(),
+    };
+    const missing = byKey[k].validate?.(set) || [];
+    if (missing.length) throw new Error(P.WHY_SET_REQUIREMENTS(missing));
+    return set;
   };
   const review = (items: { key: string; item: PuppetSet }[]) =>
-    reviewInChunks(items, P.SETS_PER_CHECK, P.KIND_SETS, async (chunk) => {
-      const imgs = await puppetImages(_.map(chunk, (it) => ({ svg: it.item.svg, w: P.SET_PNG[0], h: P.SET_PNG[1] })));
-      if (!imgs.length) return {};
-      const refs = puppetStyleImages(style, _.uniq(_.flatMap(chunk, (it) => setRefKinds(byKey[it.key].place))), P.CHECK_REFS);
-      const raw = await quiet(o, PR.SETS_CHECK({ places: _.map(chunk, (it, i) => [i, descOf(byKey[it.key].place)].join(P.SEP)).join(P.NL) }), P.ARTIFACT_SET_CHECK, [...imgs, ...refs]);
-      const bad: Record<string, string> = {};
-      for (const c of _.castArray(raw?.checks || [])) {
-        const it = chunk[Number(c?.i)];
-        if (it && (c?.match === false || (refs.length > 0 && Number(c?.styleScore) < P.STYLE_MATCH_MIN))) bad[it.key] = _.compact([P.WHY_MISMATCH(_.toString(c.looksLike), _.toString(c.missing)), _.toString(c.styleDiff)]).join(P.SEP) || P.WHY_STYLE;
-      }
-      return bad;
-    }, o);
-  const made = await drawChecked(_.map(jobs, (j) => j.key), draft, review, (k, why) => o.log(P.LOG_SET_FAIL(byKey[k].place.name || k, why)), (k, why) => o.log(P.LOG_SET_CHECK(byKey[k].place.name || k, why)), o);
+    reviewInChunks(
+      items,
+      P.SETS_PER_CHECK,
+      P.KIND_SETS,
+      async (chunk) => {
+        const imgs = await puppetImages(_.map(chunk, (it) => ({ svg: it.item.svg, w: P.SET_PNG[0], h: P.SET_PNG[1] })));
+        if (!imgs.length) return {};
+        const refs = puppetStyleImages(style, _.uniq(_.flatMap(chunk, (it) => setRefKinds(byKey[it.key].place))), P.CHECK_REFS);
+        const raw = await quiet(o, PR.SETS_CHECK({ places: _.map(chunk, (it, i) => [i, descOf(byKey[it.key].place)].join(P.SEP)).join(P.NL) }), P.ARTIFACT_SET_CHECK, [...imgs, ...refs]);
+        const bad: Record<string, string> = {};
+        for (const c of _.castArray(raw?.checks || [])) {
+          const it = chunk[Number(c?.i)];
+          if (it && (c?.match === false || (refs.length > 0 && Number(c?.styleScore) < P.STYLE_MATCH_MIN))) bad[it.key] = _.compact([P.WHY_MISMATCH(_.toString(c.looksLike), _.toString(c.missing)), _.toString(c.styleDiff)]).join(P.SEP) || P.WHY_STYLE;
+        }
+        return bad;
+      },
+      o,
+    );
+  const made = await drawChecked(
+    _.map(jobs, (j) => j.key),
+    draft,
+    review,
+    (k, why) => o.log(P.LOG_SET_FAIL(byKey[k].place.name || k, why)),
+    (k, why) => o.log(P.LOG_SET_CHECK(byKey[k].place.name || k, why)),
+    o,
+  );
   return _.mapValues(made, (set) => writePuppet(set));
 };
-
 export const ensureSetVariant = async (set: PuppetSet, want: string, o: PuppetRunOptions, style?: PuppetStylePack): Promise<PuppetSet | null> => {
   const have = set.variants?.[want] && readPuppet<PuppetSet>(PUPPET_TYPES.SET, set.variants[want]);
   if (have && !o.fresh) return have;
@@ -164,23 +204,12 @@ export const ensureSetVariant = async (set: PuppetSet, want: string, o: PuppetRu
     return null;
   }
 };
-
 export const matchLibraryProps = async (style: PuppetStylePack, objects: PuppetObject[], o: PuppetRunOptions): Promise<Record<string, PuppetProp>> => {
-  const list = listPuppets<PuppetProp>(PUPPET_TYPES.PROP, (p) => p.styleId === style.id);
-  const byKey = _.keyBy(list, (p) => p.key);
+  const list = preferredPuppetProps(listPuppets<PuppetProp>(PUPPET_TYPES.PROP, (p) => p.styleId === style.id && puppetPropAllowed(p)));
   const out: Record<string, PuppetProp> = {};
-  const rest = _.filter(objects, (ob) => {
-    if (!byKey[ob.key]) return true;
-    out[ob.key] = byKey[ob.key];
-    return false;
-  });
-  if (rest.length && list.length) {
-    const raw = await quiet(o, PR.PROP_MATCH({ objects: _.map(rest, (ob) => [ob.key, ob.word, _.truncate(ob.note, { length: 120 })].join(P.SEP)).join(P.NL), library: _.map(_.uniqBy(list, (p) => p.key), (p) => [p.key, p.name, _.truncate(p.desc, { length: 80 })].join(P.SEP)).join(P.NL) }), P.ARTIFACT_PROP_MATCH);
-    for (const m of _.castArray(raw?.matches || [])) {
-      const ob = _.find(rest, { key: _.toString(m?.key) });
-      const hit = byKey[_.toString(m?.library)];
-      if (ob && hit) out[ob.key] = hit;
-    }
+  for (const ob of objects) {
+    const hit = list.find((p) => puppetPropFits(ob, p));
+    if (hit) out[ob.key] = hit;
   }
   o.log(P.LOG_PROP_MATCH(_.size(out), objects.length));
   return out;
@@ -188,47 +217,69 @@ export const matchLibraryProps = async (style: PuppetStylePack, objects: PuppetO
 const setGroup = (s: PuppetSet): string => s.group || (_.includes(s.tags, PUPPET_SEED_TAG) ? PUPPET_SEED_GROUP(s.tags[0]) : s.id);
 const pickOf = (seed: string, list: { id: string; uses: number }[]) => _.first(_.sortBy(list, [(a) => a.uses || 0, (a) => puppetHash(seed + a.id)]));
 const usePuppet = <T extends PuppetSet | PuppetCharacter>(a: T): T => writePuppet<T>({ ...a, uses: (a.uses || 0) + 1 });
-
-export const matchLibrarySets = async (style: PuppetStylePack, places: PuppetPlace[], o: PuppetRunOptions, seed: string): Promise<Record<string, PuppetSet>> => {
+export const matchLibrarySets = async (style: PuppetStylePack, places: PuppetPlace[], o: PuppetRunOptions, seed: string, fits: (key: string, set: PuppetSet) => boolean = () => true): Promise<Record<string, PuppetSet>> => {
   const all = listPuppets<PuppetSet>(PUPPET_TYPES.SET, (s) => s.styleId === style.id && !s.name.includes(P.VARIANT_SEP));
   const groups = _.groupBy(all, setGroup);
-  const library = _.take(_.map(_.values(groups), (g) => _.sortBy(g, (s) => s.id)[0]), P.LIB_MATCH_MAX);
+  const library = _.take(
+    _.map(_.values(groups), (g) => _.sortBy(g, (s) => s.id)[0]),
+    P.LIB_MATCH_MAX,
+  );
   if (!places.length || !library.length) return {};
   const out: Record<string, PuppetSet> = {};
   const rest: PuppetPlace[] = [];
   for (const pl of places) {
-    const exact = _.find(library, (s) => (s.tags[0] === pl.key || s.name === pl.name) && s.interior === pl.interior);
+    const exact = _.find(library, (s) => (s.tags[0] === pl.key || s.name === pl.name) && s.interior === pl.interior && fits(pl.key, s));
     if (exact) out[pl.key] = exact;
     else rest.push(pl);
   }
   if (!rest.length) return out;
   const side = (inside: boolean): string => (inside ? P.INSIDE : P.OUTSIDE);
-  const raw = await quiet(o, PR.LIB_MATCH({ places: _.map(rest, (pl) => [pl.key, pl.name, _.truncate(pl.desc, { length: 160 }), side(pl.interior)].join(P.SEP)).join(P.NL), library: _.map(library, (s) => [s.id, s.name, _.truncate(s.desc, { length: 120 }), side(s.interior)].join(P.SEP)).join(P.NL) }), P.ARTIFACT_LIB_MATCH);
+  const candidates = library.filter((s) => rest.some((pl) => s.interior === pl.interior && fits(pl.key, s)));
+  const raw = await quiet(
+    o,
+    PR.LIB_MATCH({
+      places: _.map(rest, (pl) =>
+        [
+          pl.key,
+          pl.name,
+          pl.desc,
+          side(pl.interior),
+          candidates
+            .filter((s) => s.interior === pl.interior && fits(pl.key, s))
+            .map((s) => s.id)
+            .join(P.COMMA),
+        ].join(P.SEP),
+      ).join(P.NL),
+      library: _.map(candidates, (s) => [s.id, s.name, s.desc, side(s.interior)].join(P.SEP)).join(P.NL),
+    }),
+    P.ARTIFACT_LIB_MATCH,
+  );
   const byId = _.keyBy(library, (s) => s.id);
   for (const m of _.castArray(raw?.matches || [])) {
     const pl = _.find(rest, { key: _.toString(m?.key) });
     const set = byId[_.toString(m?.id)];
-    if (pl && set && set.interior === pl.interior) out[pl.key] = set;
+    if (pl && set && set.interior === pl.interior && fits(pl.key, set)) out[pl.key] = set;
   }
   o.log(P.LOG_LIB_MATCH(_.size(out)));
-  return _.mapValues(out, (rep, key) => usePuppet(pickOf(seed + key, groups[setGroup(rep)] || [rep]) as PuppetSet));
+  return _.mapValues(out, (rep, key) =>
+    usePuppet(
+      pickOf(
+        seed + key,
+        (groups[setGroup(rep)] || [rep]).filter((s) => fits(key, s)),
+      ) as PuppetSet,
+    ),
+  );
 };
-
 export const puppetStockCast = (styleId: string): PuppetCharacter[] => listPuppets<PuppetCharacter>(PUPPET_TYPES.CHARACTER, (c) => c.styleId === styleId && !!c.archetype);
-
 export const puppetCastIsGhost = (c: Pick<MotionCastMember, "name" | "role" | "look" | "description">): boolean => {
   const named = _.compact([c.name, c.role]);
   if (_.some(named, (v) => P.HUMAN_ROLE_RE.test(v))) return false;
   return _.some(named, (v) => P.GHOST_NAME_RE.test(v)) || P.GHOST_LOOK_RE.test(_.compact([c.role, c.look, c.description]).join(P.SPACE));
 };
-
 export const matchArchetypes = async (style: PuppetStylePack, cast: MotionCastMember[], o: PuppetRunOptions): Promise<Record<string, PuppetCharacter>> => {
   const stock = puppetStockCast(style.id);
   if (!cast.length || !stock.length) return {};
-  const raw = await quiet(o, PR.CAST_MATCH({
-    cast: _.map(cast, (c) => [c.key, c.name, c.role || P.EMPTY, c.gender || P.EMPTY, c.age || P.EMPTY, _.truncate(c.look || c.description || P.EMPTY, { length: 140 })].join(P.SEP)).join(P.NL),
-    library: _.map(stock, (s) => [s.archetype, s.name, _.compact([s.gender, s.age]).join(P.SPACE), s.desc].join(P.SEP)).join(P.NL),
-  }), P.ARTIFACT_CAST_MATCH);
+  const raw = await quiet(o, PR.CAST_MATCH({ cast: _.map(cast, (c) => [c.key, c.name, c.role || P.EMPTY, c.gender || P.EMPTY, c.age || P.EMPTY, c.look || c.description || P.EMPTY].join(P.SEP)).join(P.NL), library: _.map(stock, (s) => [s.archetype, s.name, _.compact([s.gender, s.age]).join(P.SPACE), s.desc].join(P.SEP)).join(P.NL) }), P.ARTIFACT_CAST_MATCH);
   const byArch = _.keyBy(stock, (s) => s.archetype!);
   const used = new Set<string>();
   const out: Record<string, PuppetCharacter> = {};
@@ -237,28 +288,29 @@ export const matchArchetypes = async (style: PuppetStylePack, cast: MotionCastMe
     const want = byArch[_.toString(m?.archetype)];
     if (!c || !want || out[c.key]) continue;
     const pick = used.has(want.id) ? _.find(stock, (s) => !!want.group && s.group === want.group && !used.has(s.id)) : want;
-    if (!pick || (pick.group === P.GHOST_GROUP) !== puppetCastIsGhost(c)) continue;
+    if (!pick || (pick.group === P.GHOST_GROUP) !== puppetCastIsGhost(c) || (c.gender && pick.gender && c.gender !== pick.gender) || (c.age && pick.age && c.age !== pick.age)) continue;
     used.add(pick.id);
     out[c.key] = usePuppet(pick);
   }
   if (_.size(out)) o.log(P.LOG_CAST_MATCH(_.map(_.keys(out), (k) => _.find(cast, { key: k })?.name || k)));
   return out;
 };
-
 export const stockExtras = (styleId: string, keys: string[], taken: string[], seed: string): Record<string, PuppetCharacter> => {
-  const pool = _.sortBy(_.filter(puppetStockCast(styleId), (s) => _.includes(P.EXTRA_GROUPS, s.group) && !_.includes(taken, s.id)), (s) => puppetHash(seed + s.id));
+  const pool = _.sortBy(
+    _.filter(puppetStockCast(styleId), (s) => _.includes(P.EXTRA_GROUPS, s.group) && !_.includes(taken, s.id)),
+    (s) => puppetHash(seed + s.id),
+  );
   return pool.length ? _.fromPairs(_.map(keys, (k, i) => [k, pool[i % pool.length]])) : {};
 };
-
 export const drawPuppetProps = async (style: PuppetStylePack, keys: string[], notes: Record<string, string>, setting: string, o: PuppetRunOptions, objects: Record<string, PuppetObject> = {}): Promise<Record<string, PuppetProp>> => {
   const out: Record<string, PuppetProp> = {};
   const refs = puppetStyleImages(style, [P.REF_PROP], 4);
-  let todo = keys;
+  let todo = keys.filter((key) => puppetObjectClass(objects[key] || { key, type: P.OBJECT_TYPE_DEFAULT }) === PA.PROP);
   let why: string = P.EMPTY;
   for (let attempt = 0; attempt < P.DRAW_TRIES && todo.length && !o.signal?.aborted; attempt++) {
     try {
       o.log(P.LOG_PROPS(todo));
-      const raw = await ask(o, PR.PROPS({ style: puppetStyleText(style, P.PART_PROP), items: _.map(todo, (k) => [k, _.startCase(k), notes[k] || P.EMPTY].join(P.SEP)).join(P.NL), setting, why }), P.ARTIFACT_PROPS, refs);
+      const raw = await ask(o, PR.PROPS({ style: puppetStyleText(style, P.PART_PROP), items: _.map(todo, (k) => [k, _.startCase(k), objects[k]?.description || puppetAssetName(k), PA.TRAIT + (objects[k]?.requirements || []).join(P.COMMA)].join(P.SEP)).join(P.NL), setting, why }), P.ARTIFACT_PROPS, refs);
       const failed: string[] = [];
       const drawn: PuppetProp[] = [];
       for (const k of todo) {
@@ -267,26 +319,33 @@ export const drawPuppetProps = async (style: PuppetStylePack, keys: string[], no
           if (!it) throw new Error(P.ERR_EMPTY);
           const svg = cleanPuppetSvg(it.svg, P.SVG_PROP_BYTES);
           const n = svgShapes(svg);
-          if (n < P.PROP_MIN_SHAPES && attempt < P.DRAW_TRIES - 1) throw new Error(P.WHY_SIMPLE(n, P.PROP_MIN_SHAPES));
-          const base = Array.isArray(it.base) && it.base.length >= 2 ? [Number(it.base[0]) || P.PROP_BOX / 2, Number(it.base[1]) || P.PROP_BASE_Y] : [P.PROP_BOX / 2, P.PROP_BASE_Y];
-          drawn.push({ id: newPuppetId(PUPPET_TYPES.PROP), type: PUPPET_TYPES.PROP, styleId: style.id, key: k, name: _.startCase(k), desc: notes[k] || P.EMPTY, tags: [k], svg, base, height: _.clamp(Number(it.height) || 0.4, 0.02, 20), size: _.clamp(objects[k]?.size || Number(it.size) || Number(it.height) || P.SIZE_DEFAULT, P.SIZE_MIN, P.SIZE_MAX), mount: objects[k]?.mount || (_.includes(P.MOUNTS, it.mount) ? it.mount : P.MOUNT_FLOOR), uses: 0, updatedAt: now() });
+          if (!n || (n < P.PROP_MIN_SHAPES && attempt < P.DRAW_TRIES - 1)) throw new Error(P.WHY_SIMPLE(n, P.PROP_MIN_SHAPES));
+          const base = [P.PROP_BOX / 2, P.PROP_BASE_Y].map((fallback, i) => (Array.isArray(it.base) && Number.isFinite(Number(it.base[i])) ? _.clamp(Number(it.base[i]), 0, P.PROP_BOX) : fallback));
+          drawn.push({
+            id: newPuppetId(PUPPET_TYPES.PROP),
+            type: PUPPET_TYPES.PROP,
+            styleId: style.id,
+            key: k,
+            name: _.startCase(k),
+            desc: objects[k]?.description || puppetAssetName(k),
+            originalDesc: notes[k],
+            catalogVersion: PA.VERSION,
+            category: PA.PROP,
+            objectType: objects[k]?.type,
+            requirements: objects[k]?.requirements,
+            tags: [k],
+            svg,
+            base,
+            height: _.clamp(Number(it.height) || 0.4, 0.02, 20),
+            size: _.clamp(objects[k]?.size || Number(it.size) || Number(it.height) || P.SIZE_DEFAULT, P.SIZE_MIN, P.SIZE_MAX),
+            mount: objects[k]?.mount || (_.includes(P.MOUNTS, it.mount) ? it.mount : P.MOUNT_FLOOR),
+            uses: 0,
+            updatedAt: now(),
+          });
         } catch (e: any) {
           failed.push(k);
           why = String(e?.message || e);
           o.log(P.LOG_PROP_FAIL(k, why));
-        }
-      }
-      if (drawn.length && attempt < P.DRAW_TRIES - 1) {
-        const imgs = await puppetImages(_.map(drawn, (d) => ({ svg: d.svg, w: P.PROP_PNG, h: P.PROP_PNG })));
-        const check = imgs.length ? await quiet(o, PR.PROPS_CHECK({ items: _.map(drawn, (d) => d.key).join(P.NL) }), P.ARTIFACT_PROPS_CHECK, [...imgs, ...refs]) : null;
-        const bad = _.filter(_.castArray(check?.checks || []), (c: any) => c?.match === false || (refs.length > 0 && Number(c?.styleScore) < P.STYLE_MATCH_MIN));
-        if (bad.length) {
-          const badKeys = _.map(bad, (b: any) => _.snakeCase(_.toString(b.key)));
-          o.log(P.LOG_PROP_CHECK(badKeys));
-          why = _.map(bad, (b: any) => _.snakeCase(_.toString(b.key)) + P.DASH + _.compact([P.WHY_MISMATCH(_.toString(b.looksLike), _.toString(b.missing)), _.toString(b.styleDiff)]).join(P.SEP)).join(P.NL);
-          for (const d of drawn) if (!_.includes(badKeys, d.key)) out[d.key] = writePuppet(d);
-          todo = [...failed, ..._.filter(badKeys, (k) => _.includes(todo, k))];
-          continue;
         }
       }
       for (const d of drawn) out[d.key] = writePuppet(d);
@@ -297,5 +356,6 @@ export const drawPuppetProps = async (style: PuppetStylePack, keys: string[], no
       o.log(P.LOG_PROP_FAIL(todo.join(P.COMMA), why));
     }
   }
+  if (todo.length) throw new Error(PA.DRAW_ERROR(todo));
   return out;
 };

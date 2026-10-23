@@ -1,7 +1,7 @@
 import { MOTION_PATTERNS as MP } from "../../constants/motionPatterns.js";
 import { mixMotionSoundAudio } from "./motionSoundMixService.js";
-import { closeMotionAiBrowserBeforeRender } from "./motionStoryService.js";
-import { MOTION_BROWSER_FINISHED_LOG, MOTION_BROWSER_NOT_RELEASED_ERROR, MOTION_BROWSER_RELEASED_LOG } from "../../constants/browserLifecycle.js";
+import { acquireMotionRenderBrowser } from "./motionStoryService.js";
+import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_RELEASED_LOG } from "../../constants/browserLifecycle.js";
 import { MOTION_SOUND_CONFIG } from "../../constants/motionSound.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { execFile, spawn } from "child_process";
@@ -281,7 +281,12 @@ const slugify = (s: string): string => _.trim(_.toString(s).replace(MP.VIETNAMES
 const pushLog = (job: MotionJobState, line: string) => {
   job.log = _.takeRight([...job.log, MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), String(line))], MOTION_VIDEO_CONSTANTS.MAX_LOG_LINES);
 };
-interface WorkerSlice { index: number; start: number; end: number; file: string; }
+interface WorkerSlice {
+  index: number;
+  start: number;
+  end: number;
+  file: string;
+}
 const collectRenderErrors = (page: Page, errors: string[]): void => {
   page.on(MOTION_TEXT_PAGEERROR, (error) => errors.push(error.message));
   page.on(MR.MOTION_TEXT_CONSOLE, (message) => {
@@ -387,11 +392,13 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     height = even(base.h * preset.scale);
   const fps = _.toNumber(options.fps) || spec.fps || preset.fps;
   const work = getMotionWorkDirectory(job.id);
+  let releaseBrowser: (() => void) | undefined;
   try {
     job.status = MotionJobStatus.PREPARING;
-    job.stage = MOTION_TEXT_PREPARE;
-    if (!(await closeMotionAiBrowserBeforeRender())) throw new Error(MOTION_BROWSER_NOT_RELEASED_ERROR);
+    job.stage = MOTION_BROWSER_HANDOFF.PREPARING;
+    releaseBrowser = await acquireMotionRenderBrowser(signal, (line) => pushLog(job, line));
     pushLog(job, MOTION_BROWSER_RELEASED_LOG);
+    job.stage = MOTION_TEXT_PREPARE;
     if (signal.aborted) throw new Error(ABORTED);
     const renderSpec: MotionSpec = _.assign({}, spec, { aspect, fps });
     const html = buildMotionRenderHtml(renderSpec);
@@ -562,8 +569,6 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       encoder,
       createdAt: new Date().toISOString(),
     };
-    const browserClosed = await closeMotionAiBrowserBeforeRender();
-    pushLog(job, browserClosed ? MOTION_BROWSER_FINISHED_LOG : MOTION_BROWSER_NOT_RELEASED_ERROR);
     fs.rmSync(cacheDir, { recursive: true, force: true });
     addMotionResult(result);
     job.result = result;
@@ -578,6 +583,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     pushLog(job, aborted ? MOTION_TEXT_DA_HUY : MOTION_TEMPLATE_LOI(String(job.error)));
     if (!aborted) logger.error(MOTION_TEXT_MOTION_VIDEO_RENDER_FAILED, error);
   } finally {
+    releaseBrowser?.();
     fs.promises.rm(work, { recursive: true, force: true }).catch(_.noop);
     setTimeout(() => jobs.delete(job.id), MOTION_VIDEO_CONSTANTS.JOB_TTL_MS).unref();
   }
@@ -634,7 +640,10 @@ export const checkMotionSpec = async (spec: MotionSpec): Promise<{ duration: num
   }
 };
 const STILL_LABEL = { canvasId: MOTION_RENDER_CANVAS_ID, ctx2d: MOTION_TEXT_2D, bg: MOTION_TEXT_STILL_LABEL_BG, fg: MOTION_TEXT_STILL_LABEL_FG, font: MOTION_TEXT_STILL_LABEL_FONT, mime: MOTION_TEXT_IMAGE_JPEG };
-export interface MotionStillSession { render: (spec: MotionSpec, picks: { id: string; t: number }[], dir: string, opts?: { width?: number; height?: number; quality?: "draft" | "high"; label?: boolean }) => Promise<{ id: string; t: number; file: string; issues: string[]; camera?: unknown }[]>; close: () => Promise<void>; }
+export interface MotionStillSession {
+  render: (spec: MotionSpec, picks: { id: string; t: number }[], dir: string, opts?: { width?: number; height?: number; quality?: "draft" | "high"; label?: boolean }) => Promise<{ id: string; t: number; file: string; issues: string[]; camera?: unknown }[]>;
+  close: () => Promise<void>;
+}
 export const rasterizeMotionSvgs = async (items: { svg: string; file: string; width: number; height: number; bg?: string }[]): Promise<string[]> => {
   if (!items.length) return [];
   const { browser } = await launchBrowser();

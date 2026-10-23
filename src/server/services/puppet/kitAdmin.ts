@@ -1,16 +1,26 @@
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
+import { puppetPropAllowed } from "../../../lib/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_KIT_API as A, PUPPET_TYPES, type PuppetType } from "../../../constants/motionPuppet.js";
 import type { PuppetAsset, PuppetCharacter, PuppetProp, PuppetSeries, PuppetSet, PuppetStylePack } from "../../../types/motionPuppet.js";
 import { deletePuppet, listPuppets, puppetLibDir, puppetRefsDir, readPuppet, writePuppet } from "./kitLibrary.js";
 import { characterSheetSvg, proceduralViews } from "./svg.js";
 import { ensurePuppetPresets } from "./stylePack.js";
-
-export interface PuppetKitItem { id: string; type: string; name: string; desc: string; styleId?: string; uses?: number; updatedAt: string; source?: string; preset?: string; counts?: Record<string, number>; variants?: string[]; }
-
+export interface PuppetKitItem {
+  id: string;
+  type: string;
+  name: string;
+  desc: string;
+  styleId?: string;
+  uses?: number;
+  updatedAt: string;
+  source?: string;
+  preset?: string;
+  counts?: Record<string, number>;
+  variants?: string[];
+}
 const typeOf = (v: unknown): PuppetType | null => (_.includes(_.values(PUPPET_TYPES), v) ? (v as PuppetType) : null);
-
 const summary = (a: PuppetAsset): PuppetKitItem => {
   const any = a as any;
   const base: PuppetKitItem = { id: a.id, type: a.type, name: any.name || a.id, desc: _.truncate(any.desc || any.description || P.EMPTY, { length: 200 }), styleId: any.styleId, uses: any.uses, updatedAt: any.updatedAt || P.EMPTY };
@@ -22,15 +32,16 @@ const summary = (a: PuppetAsset): PuppetKitItem => {
   if (a.type === PUPPET_TYPES.SET) return { ...base, variants: _.keys((a as PuppetSet).variants || {}) };
   return base;
 };
-
 export const listPuppetKit = (type: unknown, styleId?: unknown): PuppetKitItem[] => {
   const t = typeOf(type);
   if (!t) return [];
   if (t === PUPPET_TYPES.STYLE) ensurePuppetPresets();
   const sid = _.toString(styleId || P.EMPTY);
-  return _.map(listPuppets<PuppetAsset>(t, (a: any) => (!sid || t === PUPPET_TYPES.STYLE || a.styleId === sid) && !(t === PUPPET_TYPES.SET && _.includes(a.name, P.VARIANT_SEP))), summary);
+  return _.map(
+    listPuppets<PuppetAsset>(t, (a: any) => (!sid || t === PUPPET_TYPES.STYLE || a.styleId === sid) && !(t === PUPPET_TYPES.SET && _.includes(a.name, P.VARIANT_SEP)) && (t !== PUPPET_TYPES.PROP || puppetPropAllowed(a))),
+    summary,
+  );
 };
-
 export const renamePuppetKit = (type: unknown, id: unknown, name: unknown): boolean => {
   const t = typeOf(type);
   const a = t ? readPuppet<PuppetAsset>(t, _.toString(id)) : null;
@@ -39,7 +50,6 @@ export const renamePuppetKit = (type: unknown, id: unknown, name: unknown): bool
   writePuppet({ ...(a as any), name: n, updatedAt: new Date().toISOString() });
   return true;
 };
-
 export const removePuppetKit = (type: unknown, ids: unknown): number => {
   const t = typeOf(type);
   if (!t) return 0;
@@ -53,7 +63,6 @@ export const removePuppetKit = (type: unknown, ids: unknown): number => {
   }
   return n;
 };
-
 export const puppetKitThumb = (type: unknown, id: unknown): { svg?: string; file?: string } | null => {
   const t = typeOf(type);
   const a = t ? readPuppet<PuppetAsset>(t, _.toString(id)) : null;

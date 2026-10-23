@@ -13,7 +13,15 @@ import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { mapMotionAiPool, resetMotionAiRoom, runMotionAi } from "./motionStoryService.js";
 import _ from "lodash";
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
-export interface MotionVoiceOptions { exec: MotionAiExecution; aspect?: string; signal?: AbortSignal; log?: (value: string) => void; onProgress?: (done: number, total: number) => void; ai?: typeof runMotionAi; asr?: boolean; }
+export interface MotionVoiceOptions {
+  exec: MotionAiExecution;
+  aspect?: string;
+  signal?: AbortSignal;
+  log?: (value: string) => void;
+  onProgress?: (done: number, total: number) => void;
+  ai?: typeof runMotionAi;
+  asr?: boolean;
+}
 const typeAge = (type?: string): string | undefined => (motionSceneType(type)?.senior ? MR.MOTION_TEXT_SENIOR : _.findKey(C.TYPE_AGE, (ids) => _.includes(ids, type)));
 const knownTraits = (analysis: MotionStoryAnalysis | null): Record<string, { gender?: "male" | "female"; age?: string }> =>
   _.fromPairs(
@@ -55,7 +63,10 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
   try {
     saved = JSON.parse(fs.readFileSync(planFile, MR.MOTION_TEXT_UTF8));
   } catch {}
-  if (saved?.signature === signature && saved.version === C.PLAN_VERSION && saved.roles.every((role) => voices.some((voice) => voice.id === role.voiceId && (!role.gender || voice.gender === role.gender))) && (!channel || saved.roles.some((role) => role.speaker === C.NARRATOR && role.voiceId === channel.narratorVoiceId))) return saved;
+  if (saved?.signature === signature && saved.version === C.PLAN_VERSION && saved.roles.every((role) => voices.some((voice) => voice.id === role.voiceId && (!role.gender || voice.gender === role.gender))) && (!channel || saved.roles.some((role) => role.speaker === C.NARRATOR && role.voiceId === channel.narratorVoiceId))) {
+    const narratorKey = motionNarratorCastKey(analysis);
+    return { ...saved, beats: saved.beats.map((beat) => ({ ...beat, utterances: motionNarratorLines(beat.utterances, narratorKey, script.beats.find((b) => b.id === beat.id)?.narration) })) };
+  }
   opts.log?.(C.PLANNING);
   let casting: any;
   const settled = castingSettled(analysis, voices, motionAudioDirection(script, analysis), channel, fixed);
@@ -133,7 +144,16 @@ export const directMotionVoice = async (script: MotionStoryScript, analysis: Mot
     for (const beat of group) if (!planned.has(beat.id)) planned.set(beat.id, fallbackBeat(beat));
   });
   const narratorKey = motionNarratorCastKey(analysis);
-  const plan = { version: C.PLAN_VERSION, signature, direction, roles, beats: script.beats.map((beat) => { const b = planned.get(beat.id)!; return { ...b, utterances: motionNarratorLines(b.utterances, narratorKey) }; }) };
+  const plan = {
+    version: C.PLAN_VERSION,
+    signature,
+    direction,
+    roles,
+    beats: script.beats.map((beat) => {
+      const b = planned.get(beat.id)!;
+      return { ...b, utterances: motionNarratorLines(b.utterances, narratorKey, beat.narration) };
+    }),
+  };
   fs.mkdirSync(path.dirname(planFile), { recursive: true });
   writeMotionJsonAtomic(planFile, plan);
   return plan;

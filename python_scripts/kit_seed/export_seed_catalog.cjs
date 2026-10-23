@@ -1,0 +1,10 @@
+const fs = require("node:fs");
+const vm = require("node:vm");
+const ts = require("typescript");
+const C = require("./kitSeedTexts.cjs");
+const source = fs.readFileSync(process.argv[2], C.UTF8);
+const { outputText } = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } });
+const context = { exports: {} };
+vm.runInNewContext(outputText, context);
+const packs = Object.values(context.exports.PUPPET_SEED_PACKS);
+process.stdout.write(JSON.stringify({ places: packs.flatMap((pack) => pack.places), props: packs.flatMap((pack) => pack.props) }));

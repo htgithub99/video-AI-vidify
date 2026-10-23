@@ -1,402 +1,239 @@
+from seed_texts import SeedText as KST
 from scenes import HB, IB
-
 W = 1920
-
-
-def sp(key, kind, x, y, label):
-    return dict(key=key, kind=kind, x=int(x), y=int(y), label=label)
-
-
-def front(fy, xs=(480, 960, 1440), names=('front_left', 'front_center', 'front_right')):
-    return [sp(n, 'stand', x, fy - 10, n.replace('_', ' ')) for n, x in zip(names, xs)]
-
-
+def sp(key, kind, x, y, label, seatY=None, groundY=None):
+    return dict(key=key, kind=kind, x=int(x), y=int(y), label=label, **dict(face=KST.RIGHT) if kind == KST.LIE else {}, **dict(seatY=int(seatY)) if seatY is not None else {}, **dict(groundY=int(groundY)) if groundY is not None else {})
+def front(fy, xs=(480, 960, 1440), names=(KST.FRONT_LEFT, KST.FRONT_CENTER, KST.FRONT_RIGHT)):
+    return [sp(n, KST.STAND, x, fy - 10, n.replace(KST.UNDERSCORE, KST.SPACE)) for n, x in zip(names, xs)]
 def main_room(t, fy):
-    ax, aw, ab = 760, 420, IB + 60
+    ax, aw, ab = (760, 420, IB + 60)
     tx = 1420 if t.detail else 1100
     out = [
-        sp('altar_front', 'stand', ax + aw / 2, ab + 70, 'right in front of the altar (pray, kneel, offer incense)'),
-        sp('beside_altar_left', 'stand', ax - 70, ab + 40, 'beside the altar, left'),
-        sp('beside_altar_right', 'stand', ax + aw + 70, ab + 40, 'beside the altar, right'),
-        sp('altar_top', 'surface', ax + aw / 2, ab - 200, 'on top of the altar'),
-        sp('bench', 'sit', 410, IB + 215, 'on the long wooden bench'),
-        sp('tea_table', 'surface', tx + 110, IB + 120, 'on the low tea table'),
-        sp('beside_table', 'stand', tx + 300 if tx + 300 < 1860 else tx - 80, IB + 250, 'beside the tea table'),
-        sp('floor_center', 'lie', 960, fy - 20, 'lying on the floor in the middle'),
-        sp('open_floor', 'open', 960, fy - 40, 'open floor in the middle'),
+        sp(KST.ALTAR_FRONT, KST.STAND, ax + aw / 2, ab + 70, KST.RIGHT_IN_FRONT_OF_THE_ALTAR_PRAY_KNEEL_OFFER_INCENSE),
+        sp(KST.BESIDE_ALTAR_LEFT, KST.STAND, ax - 70, ab + 40, KST.BESIDE_THE_ALTAR_LEFT),
+        sp(KST.BESIDE_ALTAR_RIGHT, KST.STAND, ax + aw + 70, ab + 40, KST.BESIDE_THE_ALTAR_RIGHT),
+        sp(KST.ALTAR_TOP, KST.SURFACE, ax + aw / 2, ab - 200, KST.ON_TOP_OF_THE_ALTAR),
+        sp(KST.BENCH, KST.SIT, 410, IB + 215, KST.ON_THE_LONG_WOODEN_BENCH),
+        sp(KST.TEA_TABLE, KST.SURFACE, tx + 110, IB + 120, KST.ON_THE_LOW_TEA_TABLE),
+        sp(KST.BESIDE_TABLE, KST.STAND, tx + 300 if tx + 300 < 1860 else tx - 80, IB + 250, KST.BESIDE_THE_TEA_TABLE),
+        sp(KST.FLOOR_CENTER, KST.LIE, 960, fy - 20, KST.LYING_ON_THE_FLOOR_IN_THE_MIDDLE),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_FLOOR_IN_THE_MIDDLE),
     ]
     if t.detail:
-        out.append(sp('window', 'stand', 1620, IB + 60, 'by the window'))
+        out.append(sp(KST.WINDOW, KST.STAND, 1620, IB + 60, KST.BY_THE_WINDOW))
     else:
-        out.append(sp('door', 'door', 1565, IB + 50, 'at the tall wooden doors'))
+        out.append(sp(KST.DOOR, KST.DOOR, 1565, IB + 50, KST.AT_THE_TALL_WOODEN_DOORS))
     return out + front(fy, (300, 960, 1640))
-
-
 def kitchen(t, fy):
     return [
-        sp('hearth', 'stand', 560, IB + 230, 'at the cooking hearth'),
-        sp('hearth_sit', 'sit', 760, IB + 240, 'sitting by the hearth fire'),
-        sp('hearth_top', 'surface', 560, IB + 40, 'on the hearth fire'),
-        sp('water_jar', 'stand', 1360, IB + 200, 'beside the big water jar'),
-        sp('stool', 'sit', 1160, IB + 240, 'on the small stool'),
-        sp('woodpile', 'stand', 260, IB + 120, 'by the stack of firewood'),
-        sp('open_floor', 'open', 960, fy - 30, 'open floor'),
+        sp(KST.HEARTH, KST.STAND, 560, IB + 230, KST.AT_THE_COOKING_HEARTH),
+        sp(KST.HEARTH_SIT, KST.SIT, 760, IB + 240, KST.SITTING_BY_THE_HEARTH_FIRE),
+        sp(KST.HEARTH_TOP, KST.SURFACE, 560, IB + 40, KST.ON_THE_HEARTH_FIRE),
+        sp(KST.WATER_JAR, KST.STAND, 1360, IB + 200, KST.BESIDE_THE_BIG_WATER_JAR),
+        sp(KST.STOOL, KST.SIT, 1160, IB + 240, KST.ON_THE_SMALL_STOOL),
+        sp(KST.WOODPILE, KST.STAND, 260, IB + 120, KST.BY_THE_STACK_OF_FIREWOOD),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 30, KST.OPEN_FLOOR_LABEL),
     ] + front(fy, (360, 960, 1600))
-
-
 def bedroom(t, fy):
     return [
-        sp('bed', 'lie', 470, IB + 70, 'lying on the bed'),
-        sp('bed_edge', 'sit', 560, IB + 200, 'sitting on the edge of the bed'),
-        sp('beside_bed', 'stand', 860, IB + 210, 'standing beside the bed'),
-        sp('window', 'stand', 1555, IB + 80, 'by the window'),
-        sp('chest_top', 'surface', 1490, IB + 60, 'on the wooden chest'),
-        sp('lamp_stool', 'surface', 1740, IB + 110, 'on the stool with the oil lamp'),
-        sp('open_floor', 'open', 1100, fy - 30, 'open floor'),
+        sp(KST.BED, KST.LIE, 470, IB + 70, KST.LYING_ON_THE_BED),
+        sp(KST.BED_EDGE, KST.SIT, 560, IB + 200, KST.SITTING_ON_THE_EDGE_OF_THE_BED),
+        sp(KST.BESIDE_BED, KST.STAND, 860, IB + 210, KST.STANDING_BESIDE_THE_BED),
+        sp(KST.WINDOW, KST.STAND, 1555, IB + 80, KST.BY_THE_WINDOW),
+        sp(KST.CHEST_TOP, KST.SURFACE, 1490, IB + 60, KST.ON_THE_WOODEN_CHEST),
+        sp(KST.LAMP_STOOL, KST.SURFACE, 1740, IB + 110, KST.ON_THE_STOOL_WITH_THE_OIL_LAMP),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 1100, fy - 30, KST.OPEN_FLOOR_LABEL),
     ] + front(fy, (420, 1060, 1500))
-
-
 def stilt_house_inside(t, fy):
     return [
-        sp('hearth', 'stand', 960, IB + 260, 'at the square fire hearth'),
-        sp('hearth_left', 'sit', 640, IB + 220, 'sitting left of the hearth fire'),
-        sp('hearth_right', 'sit', 1280, IB + 220, 'sitting right of the hearth fire'),
-        sp('hearth_top', 'surface', 960, IB + 90, 'on the hearth fire'),
-        sp('mat', 'lie', 440, fy - 30, 'lying on a mat on the plank floor'),
-        sp('window', 'stand', 1560, IB + 70, 'by the window'),
-        sp('beam', 'hang', 1160, 320, 'hanging from the roof beam'),
-        sp('open_floor', 'open', 960, fy - 20, 'open floor'),
+        sp(KST.HEARTH, KST.STAND, 960, IB + 260, KST.AT_THE_SQUARE_FIRE_HEARTH),
+        sp(KST.HEARTH_LEFT, KST.SIT, 640, IB + 220, KST.SITTING_LEFT_OF_THE_HEARTH_FIRE),
+        sp(KST.HEARTH_RIGHT, KST.SIT, 1280, IB + 220, KST.SITTING_RIGHT_OF_THE_HEARTH_FIRE),
+        sp(KST.HEARTH_TOP, KST.SURFACE, 960, IB + 90, KST.ON_THE_HEARTH_FIRE),
+        sp(KST.MAT, KST.LIE, 440, fy - 30, KST.LYING_ON_A_MAT_ON_THE_PLANK_FLOOR),
+        sp(KST.WINDOW, KST.STAND, 1560, IB + 70, KST.BY_THE_WINDOW),
+        sp(KST.BEAM, KST.HANG, 1160, 320, KST.HANGING_FROM_THE_ROOF_BEAM),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 20, KST.OPEN_FLOOR_LABEL),
     ] + front(fy, (360, 960, 1560))
-
-
 def storeroom(t, fy):
-    return [
-        sp('jars', 'stand', 640, IB + 200, 'beside the old jars'),
-        sp('sacks', 'stand', 1250, IB + 210, 'beside the rice sacks'),
-        sp('light_beam', 'stand', 1040, IB + 140, 'in the beam of light from the roof'),
-        sp('floor', 'lie', 960, fy - 20, 'lying on the floor'),
-        sp('open_floor', 'open', 960, fy - 30, 'open floor'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.JARS, KST.STAND, 640, IB + 200, KST.BESIDE_THE_OLD_JARS), sp(KST.SACKS, KST.STAND, 1250, IB + 210, KST.BESIDE_THE_RICE_SACKS), sp(KST.LIGHT_BEAM, KST.STAND, 1040, IB + 140, KST.IN_THE_BEAM_OF_LIGHT_FROM_THE_ROOF), sp(KST.FLOOR, KST.LIE, 960, fy - 20, KST.LYING_ON_THE_FLOOR), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 30, KST.OPEN_FLOOR_LABEL)] + front(fy, (420, 960, 1520))
 def funeral_room(t, fy):
     return [
-        sp('coffin', 'surface', 960, IB + 10, 'on the coffin'),
-        sp('coffin_left', 'stand', 560, IB + 250, 'left of the coffin'),
-        sp('coffin_right', 'stand', 1360, IB + 250, 'right of the coffin'),
-        sp('behind_coffin', 'stand', 960, IB + 100, 'behind the coffin'),
-        sp('behind_coffin_left', 'stand', 780, IB + 100, 'behind the coffin, left'),
-        sp('coffin_kneel', 'stand', 960, fy - 10, 'kneeling in front of the coffin'),
-        sp('altar_top', 'surface', 970, IB - 160, 'on the altar behind the coffin'),
-        sp('mourner_left', 'stand', 300, IB + 230, 'among the mourners on the left'),
-        sp('mourner_right', 'stand', 1620, IB + 230, 'among the mourners on the right'),
+        sp(KST.COFFIN, KST.SURFACE, 960, IB + 10, KST.ON_THE_COFFIN),
+        sp(KST.COFFIN_LEFT, KST.STAND, 560, IB + 250, KST.LEFT_OF_THE_COFFIN),
+        sp(KST.COFFIN_RIGHT, KST.STAND, 1360, IB + 250, KST.RIGHT_OF_THE_COFFIN),
+        sp(KST.BEHIND_COFFIN, KST.STAND, 960, IB + 100, KST.BEHIND_THE_COFFIN),
+        sp(KST.BEHIND_COFFIN_LEFT, KST.STAND, 780, IB + 100, KST.BEHIND_THE_COFFIN_LEFT),
+        sp(KST.COFFIN_KNEEL, KST.STAND, 960, fy - 10, KST.KNEELING_IN_FRONT_OF_THE_COFFIN),
+        sp(KST.ALTAR_TOP, KST.SURFACE, 970, IB - 160, KST.ON_THE_ALTAR_BEHIND_THE_COFFIN),
+        sp(KST.MOURNER_LEFT, KST.STAND, 300, IB + 230, KST.AMONG_THE_MOURNERS_ON_THE_LEFT),
+        sp(KST.MOURNER_RIGHT, KST.STAND, 1620, IB + 230, KST.AMONG_THE_MOURNERS_ON_THE_RIGHT),
     ] + front(fy, (360, 960, 1560))
-
-
 def temple_hall(t, fy):
     return [
-        sp('buddha_front', 'stand', 960, IB + 180, 'in front of the statue (pray, kneel)'),
-        sp('incense', 'surface', 960, IB + 100, 'at the incense bowl'),
-        sp('bell', 'stand', 330, IB + 160, 'beside the bell'),
-        sp('drum', 'stand', 1600, IB + 200, 'beside the wooden drum'),
-        sp('pillar_left', 'stand', 640, IB + 150, 'by the red pillar'),
-        sp('open_floor', 'open', 960, fy - 30, 'open floor'),
+        sp(KST.BUDDHA_FRONT, KST.STAND, 960, IB + 180, KST.IN_FRONT_OF_THE_STATUE_PRAY_KNEEL),
+        sp(KST.INCENSE, KST.SURFACE, 960, IB + 100, KST.AT_THE_INCENSE_BOWL),
+        sp(KST.BELL, KST.STAND, 330, IB + 160, KST.BESIDE_THE_BELL),
+        sp(KST.DRUM, KST.STAND, 1600, IB + 200, KST.BESIDE_THE_WOODEN_DRUM),
+        sp(KST.PILLAR_LEFT, KST.STAND, 640, IB + 150, KST.BY_THE_RED_PILLAR),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 30, KST.OPEN_FLOOR_LABEL),
     ] + front(fy, (400, 960, 1520))
-
-
 def shrine_inside(t, fy):
-    return [
-        sp('shrine_front', 'stand', 960, IB + 150, 'in front of the shrine (pray, kneel)'),
-        sp('shrine_top', 'surface', 960, IB - 300, 'on the shrine'),
-        sp('wall_left', 'stand', 520, IB + 120, 'by the old wall'),
-        sp('floor', 'lie', 960, fy - 20, 'lying on the floor'),
-        sp('open_floor', 'open', 960, fy - 30, 'open floor'),
-    ] + front(fy, (420, 960, 1500))
-
-
+    return [sp(KST.SHRINE_FRONT, KST.STAND, 960, IB + 150, KST.IN_FRONT_OF_THE_SHRINE_PRAY_KNEEL), sp(KST.SHRINE_TOP, KST.SURFACE, 960, IB - 300, KST.ON_THE_SHRINE), sp(KST.WALL_LEFT, KST.STAND, 520, IB + 120, KST.BY_THE_OLD_WALL), sp(KST.FLOOR, KST.LIE, 960, fy - 20, KST.LYING_ON_THE_FLOOR), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 30, KST.OPEN_FLOOR_LABEL)] + front(fy, (420, 960, 1500))
 def abandoned_house_inside(t, fy):
-    return [
-        sp('broken_chair', 'stand', 520, IB + 230, 'beside the broken chair'),
-        sp('curtain', 'stand', 1600, IB + 140, 'by the torn curtain'),
-        sp('hole_light', 'stand', 960, IB + 160, 'under the hole in the roof'),
-        sp('floor', 'lie', 960, fy - 20, 'lying on the floor'),
-        sp('open_floor', 'open', 960, fy - 30, 'open floor'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.BROKEN_CHAIR, KST.STAND, 520, IB + 230, KST.BESIDE_THE_BROKEN_CHAIR), sp(KST.CURTAIN, KST.STAND, 1600, IB + 140, KST.BY_THE_TORN_CURTAIN), sp(KST.HOLE_LIGHT, KST.STAND, 960, IB + 160, KST.UNDER_THE_HOLE_IN_THE_ROOF), sp(KST.FLOOR, KST.LIE, 960, fy - 20, KST.LYING_ON_THE_FLOOR), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 30, KST.OPEN_FLOOR_LABEL)] + front(fy, (420, 960, 1520))
 def roadside_inn(t, fy):
     return [
-        sp('bench', 'sit', 540, HB + 175, 'on the bench of the inn'),
-        sp('tea_table', 'surface', 970, HB + 80, 'on the tea table'),
-        sp('counter', 'stand', 1300, HB + 40, 'at the counter with jars'),
-        sp('behind_counter', 'stand', 1310, HB - 20, 'behind the counter (inn keeper)'),
-        sp('stove', 'stand', 1660, HB + 180, 'by the cooking stove'),
-        sp('lamp', 'hang', 700, HB - 280, 'hanging lamp'),
-        sp('open_floor', 'open', 960, fy - 30, 'open ground in front of the inn'),
+        sp(KST.BENCH, KST.SIT, 540, HB + 175, KST.ON_THE_BENCH_OF_THE_INN),
+        sp(KST.TEA_TABLE, KST.SURFACE, 970, HB + 80, KST.ON_THE_TEA_TABLE),
+        sp(KST.COUNTER, KST.STAND, 1300, HB + 40, KST.AT_THE_COUNTER_WITH_JARS),
+        sp(KST.BEHIND_COUNTER, KST.STAND, 1310, HB - 20, KST.BEHIND_THE_COUNTER_INN_KEEPER),
+        sp(KST.STOVE, KST.STAND, 1660, HB + 180, KST.BY_THE_COOKING_STOVE),
+        sp(KST.LAMP, KST.HANG, 700, HB - 280, KST.HANGING_LAMP),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 30, KST.OPEN_GROUND_IN_FRONT_OF_THE_INN),
     ] + front(fy, (420, 960, 1520))
-
-
 def front_yard(t, fy):
     return [
-        sp('house_door', 'door', 960, HB + 20, 'at the door of the house'),
-        sp('yard_center', 'stand', 960, HB + 120, 'in the middle of the yard'),
-        sp('yard_left', 'stand', 520, HB + 100, 'left side of the yard'),
-        sp('yard_right', 'stand', 1400, HB + 100, 'right side of the yard, by the jar'),
-        sp('open_floor', 'open', 960, fy - 40, 'open yard'),
-        sp('ground', 'lie', 960, fy - 20, 'lying on the ground'),
+        sp(KST.HOUSE_DOOR, KST.DOOR, 960, HB + 20, KST.AT_THE_DOOR_OF_THE_HOUSE),
+        sp(KST.YARD_CENTER, KST.STAND, 960, HB + 120, KST.IN_THE_MIDDLE_OF_THE_YARD),
+        sp(KST.YARD_LEFT, KST.STAND, 520, HB + 100, KST.LEFT_SIDE_OF_THE_YARD),
+        sp(KST.YARD_RIGHT, KST.STAND, 1400, HB + 100, KST.RIGHT_SIDE_OF_THE_YARD_BY_THE_JAR),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_YARD),
+        sp(KST.GROUND, KST.LIE, 960, fy - 20, KST.LYING_ON_THE_GROUND),
     ] + front(fy, (420, 960, 1520))
-
-
 def village_gate(t, fy):
-    return [
-        sp('gate', 'door', 960, HB + 10, 'in the gateway'),
-        sp('gate_left', 'stand', 640, HB + 60, 'left of the gate'),
-        sp('gate_right', 'stand', 1300, HB + 60, 'right of the gate'),
-        sp('path', 'stand', 960, HB + 180, 'on the dirt path to the gate'),
-        sp('open_floor', 'open', 960, fy - 40, 'open ground'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.GATE, KST.DOOR, 960, HB + 10, KST.IN_THE_GATEWAY), sp(KST.GATE_LEFT, KST.STAND, 640, HB + 60, KST.LEFT_OF_THE_GATE), sp(KST.GATE_RIGHT, KST.STAND, 1300, HB + 60, KST.RIGHT_OF_THE_GATE), sp(KST.PATH, KST.STAND, 960, HB + 180, KST.ON_THE_DIRT_PATH_TO_THE_GATE), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_GROUND)] + front(fy, (420, 960, 1520))
 def village_lane(t, fy):
     return [
-        sp('lane_far', 'stand', 960, HB + 40, 'far down the lane'),
-        sp('lane_mid', 'stand', 960, HB + 170, 'in the middle of the lane'),
-        sp('house_left', 'door', 300, HB + 20, 'at the house on the left'),
-        sp('house_right', 'door', 1660, HB + 20, 'at the house on the right'),
-        sp('wall', 'stand', 1300, HB + 60, 'by the low stone wall'),
-        sp('open_floor', 'open', 960, fy - 40, 'open lane'),
+        sp(KST.LANE_FAR, KST.STAND, 960, HB + 40, KST.FAR_DOWN_THE_LANE),
+        sp(KST.LANE_MID, KST.STAND, 960, HB + 170, KST.IN_THE_MIDDLE_OF_THE_LANE),
+        sp(KST.HOUSE_LEFT, KST.DOOR, 300, HB + 20, KST.AT_THE_HOUSE_ON_THE_LEFT),
+        sp(KST.HOUSE_RIGHT, KST.DOOR, 1660, HB + 20, KST.AT_THE_HOUSE_ON_THE_RIGHT),
+        sp(KST.WALL, KST.STAND, 1300, HB + 60, KST.BY_THE_LOW_STONE_WALL),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_LANE),
     ] + front(fy, (420, 960, 1520))
-
-
 def banyan_tree(t, fy):
-    return [
-        sp('tree_root', 'stand', 1180, HB + 80, 'under the old banyan tree'),
-        sp('stone_altar', 'surface', 1060, HB + 10, 'on the stone with incense'),
-        sp('reeds', 'stand', 420, HB + 90, 'by the reeds'),
-        sp('tree_branch', 'hang', 1400, HB - 360, 'hanging from a banyan branch'),
-        sp('open_floor', 'open', 760, fy - 40, 'open ground'),
-    ] + front(fy, (420, 900, 1500))
-
-
+    return [sp(KST.TREE_ROOT, KST.STAND, 1180, HB + 80, KST.UNDER_THE_OLD_BANYAN_TREE), sp(KST.STONE_ALTAR, KST.SURFACE, 1060, HB + 10, KST.ON_THE_STONE_WITH_INCENSE), sp(KST.REEDS, KST.STAND, 420, HB + 90, KST.BY_THE_REEDS), sp(KST.TREE_BRANCH, KST.HANG, 1400, HB - 360, KST.HANGING_FROM_A_BANYAN_BRANCH), sp(KST.OPEN_FLOOR, KST.OPEN, 760, fy - 40, KST.OPEN_GROUND)] + front(fy, (420, 900, 1500))
 def abandoned_shrine(t, fy):
-    return [
-        sp('shrine_door', 'door', 960, HB + 20, 'at the dark door of the shrine'),
-        sp('shrine_step', 'surface', 960, HB - 60, 'on the stone step of the shrine'),
-        sp('bush_left', 'stand', 560, HB + 60, 'by the bushes, left'),
-        sp('bush_right', 'stand', 1400, HB + 60, 'by the bushes, right'),
-        sp('open_floor', 'open', 960, fy - 40, 'open ground'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.SHRINE_DOOR, KST.DOOR, 960, HB + 20, KST.AT_THE_DARK_DOOR_OF_THE_SHRINE), sp(KST.SHRINE_STEP, KST.SURFACE, 960, HB - 60, KST.ON_THE_STONE_STEP_OF_THE_SHRINE), sp(KST.BUSH_LEFT, KST.STAND, 560, HB + 60, KST.BY_THE_BUSHES_LEFT), sp(KST.BUSH_RIGHT, KST.STAND, 1400, HB + 60, KST.BY_THE_BUSHES_RIGHT), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_GROUND)] + front(
+        fy, (420, 960, 1520)
+    )
 def graveyard(t, fy):
     return [
-        sp('grave_front', 'stand', 900, HB + 150, 'in front of a grave'),
-        sp('grave_left', 'stand', 560, HB + 120, 'between the graves, left'),
-        sp('grave_right', 'stand', 1300, HB + 130, 'between the graves, right'),
-        sp('behind_grave', 'stand', 1450, HB + 60, 'behind the big grave'),
-        sp('tree', 'stand', 1660, HB + 10, 'under the tree'),
-        sp('open_floor', 'open', 1100, fy - 40, 'open ground among the graves'),
+        sp(KST.GRAVE_FRONT, KST.STAND, 900, HB + 150, KST.IN_FRONT_OF_A_GRAVE),
+        sp(KST.GRAVE_LEFT, KST.STAND, 560, HB + 120, KST.BETWEEN_THE_GRAVES_LEFT),
+        sp(KST.GRAVE_RIGHT, KST.STAND, 1300, HB + 130, KST.BETWEEN_THE_GRAVES_RIGHT),
+        sp(KST.BEHIND_GRAVE, KST.STAND, 1450, HB + 60, KST.BEHIND_THE_BIG_GRAVE),
+        sp(KST.TREE, KST.STAND, 1660, HB + 10, KST.UNDER_THE_TREE),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 1100, fy - 40, KST.OPEN_GROUND_AMONG_THE_GRAVES),
     ] + front(fy, (480, 1000, 1560))
-
-
 def lonely_grave(t, fy):
-    return [
-        sp('grave_front', 'stand', 1180, HB + 210, 'in front of the lonely grave'),
-        sp('grave_side', 'stand', 860, HB + 180, 'beside the grave'),
-        sp('behind_grave', 'stand', 1180, HB + 10, 'behind the grave'),
-        sp('field', 'stand', 500, HB + 100, 'in the empty field'),
-        sp('open_floor', 'open', 700, fy - 40, 'open field'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.GRAVE_FRONT, KST.STAND, 1180, HB + 210, KST.IN_FRONT_OF_THE_LONELY_GRAVE), sp(KST.GRAVE_SIDE, KST.STAND, 860, HB + 180, KST.BESIDE_THE_GRAVE), sp(KST.BEHIND_GRAVE, KST.STAND, 1180, HB + 10, KST.BEHIND_THE_GRAVE), sp(KST.FIELD, KST.STAND, 500, HB + 100, KST.IN_THE_EMPTY_FIELD), sp(KST.OPEN_FLOOR, KST.OPEN, 700, fy - 40, KST.OPEN_FIELD)] + front(fy, (420, 960, 1520))
 def village_well(t, fy):
     return [
-        sp('well', 'stand', 1000, HB + 200, 'beside the stone well'),
-        sp('well_top', 'surface', 1250, HB + 40, 'on the rim of the well'),
-        sp('behind_well', 'stand', 1150, HB + 130, 'behind the well, looking over it'),
-        sp('stone_slab', 'sit', 640, HB + 170, 'on the stone slab'),
-        sp('bamboo', 'stand', 300, HB + 60, 'by the bamboo hedge'),
-        sp('open_floor', 'open', 760, fy - 40, 'open ground'),
+        sp(KST.WELL, KST.STAND, 1000, HB + 200, KST.BESIDE_THE_STONE_WELL),
+        sp(KST.WELL_TOP, KST.SURFACE, 1250, HB + 40, KST.ON_THE_RIM_OF_THE_WELL),
+        sp(KST.BEHIND_WELL, KST.STAND, 1150, HB + 130, KST.BEHIND_THE_WELL_LOOKING_OVER_IT),
+        sp(KST.STONE_SLAB, KST.SIT, 640, HB + 170, KST.ON_THE_STONE_SLAB),
+        sp(KST.BAMBOO, KST.STAND, 300, HB + 60, KST.BY_THE_BAMBOO_HEDGE),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 760, fy - 40, KST.OPEN_GROUND),
     ] + front(fy, (420, 860, 1560))
-
-
 def river_bank(t, fy):
-    return [
-        sp('shore', 'stand', 760, 830, 'on the river bank'),
-        sp('boat', 'stand', 1250, 720, 'in the small boat'),
-        sp('reeds', 'stand', 300, 840, 'among the reeds'),
-        sp('water_edge', 'stand', 1000, 800, 'at the edge of the water'),
-        sp('open_floor', 'open', 960, fy - 40, 'open bank'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.SHORE, KST.STAND, 760, 830, KST.ON_THE_RIVER_BANK), sp(KST.BOAT, KST.STAND, 1250, 720, KST.IN_THE_SMALL_BOAT), sp(KST.REEDS, KST.STAND, 300, 840, KST.AMONG_THE_REEDS), sp(KST.WATER_EDGE, KST.STAND, 1000, 800, KST.AT_THE_EDGE_OF_THE_WATER), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_BANK)] + front(fy, (420, 960, 1520))
 def ferry_landing(t, fy):
-    return [
-        sp('jetty', 'stand', 1080, 710, 'on the wooden jetty'),
-        sp('boat', 'stand', 1650, 710, 'in the ferry boat'),
-        sp('hut', 'door', 300, 810, 'at the ferryman hut'),
-        sp('shore', 'stand', 760, 860, 'on the shore'),
-        sp('open_floor', 'open', 960, fy - 40, 'open shore'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.JETTY, KST.STAND, 1080, 710, KST.ON_THE_WOODEN_JETTY), sp(KST.BOAT, KST.STAND, 1650, 710, KST.IN_THE_FERRY_BOAT), sp(KST.HUT, KST.DOOR, 300, 810, KST.AT_THE_FERRYMAN_HUT), sp(KST.SHORE, KST.STAND, 760, 860, KST.ON_THE_SHORE), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_SHORE)] + front(fy, (420, 960, 1520))
 def bamboo_bridge(t, fy):
-    return [
-        sp('bridge_left', 'stand', 600, 762, 'on the bamboo bridge, left'),
-        sp('bridge_mid', 'stand', 960, 762, 'in the middle of the bamboo bridge'),
-        sp('bridge_right', 'stand', 1320, 762, 'on the bamboo bridge, right'),
-        sp('bank_left', 'stand', 160, 980, 'on the bank'),
-    ]
-
-
+    return [sp(KST.BRIDGE_LEFT, KST.STAND, 600, 762, KST.ON_THE_BAMBOO_BRIDGE_LEFT), sp(KST.BRIDGE_MID, KST.STAND, 960, 762, KST.IN_THE_MIDDLE_OF_THE_BAMBOO_BRIDGE), sp(KST.BRIDGE_RIGHT, KST.STAND, 1320, 762, KST.ON_THE_BAMBOO_BRIDGE_RIGHT), sp(KST.BANK_LEFT, KST.STAND, 160, 980, KST.ON_THE_BANK)]
 def pond(t, fy):
-    return [
-        sp('pond_edge', 'stand', 1180, 760, 'at the edge of the pond'),
-        sp('jetty', 'stand', 1500, 800, 'on the little wooden jetty'),
-        sp('bank_left', 'stand', 300, 800, 'on the bank'),
-        sp('water', 'open', 820, 900, 'in the pond water'),
-    ] + front(fy, (200, 1720), ('front_left', 'front_right'))
-
-
+    return [sp(KST.POND_EDGE, KST.STAND, 1180, 760, KST.AT_THE_EDGE_OF_THE_POND), sp(KST.JETTY, KST.STAND, 1500, 800, KST.ON_THE_LITTLE_WOODEN_JETTY), sp(KST.BANK_LEFT, KST.STAND, 300, 800, KST.ON_THE_BANK), sp(KST.WATER, KST.OPEN, 820, 900, KST.IN_THE_POND_WATER)] + front(fy, (200, 1720), (KST.FRONT_LEFT, KST.FRONT_RIGHT))
 def rice_field(t, fy):
-    return [
-        sp('field_mid', 'stand', 960, 760, 'in the middle of the rice field'),
-        sp('scarecrow', 'stand', 520, 790, 'beside the scarecrow'),
-        sp('hut', 'door', 1620, 650, 'at the field hut'),
-        sp('field_far', 'stand', 1200, 660, 'far across the field'),
-        sp('open_floor', 'open', 960, fy - 60, 'open field'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.FIELD_MID, KST.STAND, 960, 760, KST.IN_THE_MIDDLE_OF_THE_RICE_FIELD), sp(KST.SCARECROW, KST.STAND, 520, 790, KST.BESIDE_THE_SCARECROW), sp(KST.HUT, KST.DOOR, 1620, 650, KST.AT_THE_FIELD_HUT), sp(KST.FIELD_FAR, KST.STAND, 1200, 660, KST.FAR_ACROSS_THE_FIELD), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 60, KST.OPEN_FIELD)] + front(fy, (420, 960, 1520))
 def bamboo_grove(t, fy):
-    return [
-        sp('path_far', 'stand', 960, HB + 30, 'far down the path in the bamboo'),
-        sp('path_mid', 'stand', 960, HB + 170, 'on the path through the bamboo'),
-        sp('bamboo_left', 'stand', 520, HB + 120, 'between the bamboo, left'),
-        sp('bamboo_right', 'stand', 1400, HB + 120, 'between the bamboo, right'),
-        sp('open_floor', 'open', 960, fy - 40, 'open path'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.PATH_FAR, KST.STAND, 960, HB + 30, KST.FAR_DOWN_THE_PATH_IN_THE_BAMBOO), sp(KST.PATH_MID, KST.STAND, 960, HB + 170, KST.ON_THE_PATH_THROUGH_THE_BAMBOO), sp(KST.BAMBOO_LEFT, KST.STAND, 520, HB + 120, KST.BETWEEN_THE_BAMBOO_LEFT), sp(KST.BAMBOO_RIGHT, KST.STAND, 1400, HB + 120, KST.BETWEEN_THE_BAMBOO_RIGHT), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_PATH)] + front(
+        fy, (420, 960, 1520)
+    )
 def old_forest(t, fy):
-    return [
-        sp('path_far', 'stand', 960, HB + 20, 'far down the forest path'),
-        sp('path_mid', 'stand', 960, HB + 170, 'on the forest path'),
-        sp('trunk_left', 'stand', 360, HB + 90, 'by a big tree trunk'),
-        sp('trunk_right', 'stand', 1680, HB + 90, 'by a big tree trunk, right'),
-        sp('open_floor', 'open', 960, fy - 40, 'open forest floor'),
-    ] + front(fy, (480, 960, 1440))
-
-
+    return [sp(KST.PATH_FAR, KST.STAND, 960, HB + 20, KST.FAR_DOWN_THE_FOREST_PATH), sp(KST.PATH_MID, KST.STAND, 960, HB + 170, KST.ON_THE_FOREST_PATH), sp(KST.TRUNK_LEFT, KST.STAND, 360, HB + 90, KST.BY_A_BIG_TREE_TRUNK), sp(KST.TRUNK_RIGHT, KST.STAND, 1680, HB + 90, KST.BY_A_BIG_TREE_TRUNK_RIGHT), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_FOREST_FLOOR)] + front(fy, (480, 960, 1440))
 def mountain_village(t, fy):
-    return [
-        sp('slope', 'stand', 900, 820, 'on the slope above the village'),
-        sp('house_left', 'door', 300, 700, 'by the stilt house, left'),
-        sp('house_right', 'door', 1500, 690, 'by the stilt house, right'),
-        sp('open_floor', 'open', 960, fy - 50, 'open slope'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.SLOPE, KST.STAND, 900, 820, KST.ON_THE_SLOPE_ABOVE_THE_VILLAGE), sp(KST.HOUSE_LEFT, KST.DOOR, 300, 700, KST.BY_THE_STILT_HOUSE_LEFT), sp(KST.HOUSE_RIGHT, KST.DOOR, 1500, 690, KST.BY_THE_STILT_HOUSE_RIGHT), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 50, KST.OPEN_SLOPE)] + front(fy, (420, 960, 1520))
 def stream(t, fy):
-    return [
-        sp('stones', 'stand', 980, 980, 'on the stones in the stream'),
-        sp('bank_left', 'stand', 400, 900, 'on the left bank'),
-        sp('bank_right', 'stand', 1520, 900, 'on the right bank'),
-        sp('stream_far', 'stand', 960, HB - 20, 'far up the stream'),
-    ] + front(fy, (300, 1640), ('front_left', 'front_right'))
-
-
+    return [sp(KST.STONES, KST.STAND, 980, 980, KST.ON_THE_STONES_IN_THE_STREAM), sp(KST.BANK_LEFT, KST.STAND, 400, 900, KST.ON_THE_LEFT_BANK), sp(KST.BANK_RIGHT, KST.STAND, 1520, 900, KST.ON_THE_RIGHT_BANK), sp(KST.STREAM_FAR, KST.STAND, 960, HB - 20, KST.FAR_UP_THE_STREAM)] + front(fy, (300, 1640), (KST.FRONT_LEFT, KST.FRONT_RIGHT))
 def forest_path(t, fy):
-    return [
-        sp('path_far', 'stand', 1000, HB + 30, 'far down the path'),
-        sp('path_mid', 'stand', 1000, HB + 180, 'on the forest path'),
-        sp('tree_left', 'stand', 520, HB + 90, 'by the trees, left'),
-        sp('tree_right', 'stand', 1420, HB + 90, 'by the trees, right'),
-        sp('open_floor', 'open', 1000, fy - 40, 'open path'),
-    ] + front(fy, (480, 1000, 1500))
-
-
+    return [sp(KST.PATH_FAR, KST.STAND, 1000, HB + 30, KST.FAR_DOWN_THE_PATH), sp(KST.PATH_MID, KST.STAND, 1000, HB + 180, KST.ON_THE_FOREST_PATH), sp(KST.TREE_LEFT, KST.STAND, 520, HB + 90, KST.BY_THE_TREES_LEFT), sp(KST.TREE_RIGHT, KST.STAND, 1420, HB + 90, KST.BY_THE_TREES_RIGHT), sp(KST.OPEN_FLOOR, KST.OPEN, 1000, fy - 40, KST.OPEN_PATH)] + front(fy, (480, 1000, 1500))
 def cave(t, fy):
-    return [
-        sp('mouth', 'door', 960, HB + 30, 'at the dark mouth of the cave'),
-        sp('cave_left', 'stand', 600, HB + 120, 'inside the cave, left'),
-        sp('cave_right', 'stand', 1320, HB + 120, 'inside the cave, right'),
-        sp('rock', 'sit', 520, fy - 20, 'sitting on a rock'),
-        sp('open_floor', 'open', 960, fy - 40, 'open cave floor'),
-    ] + front(fy, (480, 960, 1440))
-
-
+    return [sp(KST.MOUTH, KST.DOOR, 960, HB + 30, KST.AT_THE_DARK_MOUTH_OF_THE_CAVE), sp(KST.CAVE_LEFT, KST.STAND, 600, HB + 120, KST.INSIDE_THE_CAVE_LEFT), sp(KST.CAVE_RIGHT, KST.STAND, 1320, HB + 120, KST.INSIDE_THE_CAVE_RIGHT), sp(KST.ROCK, KST.SIT, 520, fy - 20, KST.SITTING_ON_A_ROCK), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_CAVE_FLOOR)] + front(fy, (480, 960, 1440))
 def village_temple(t, fy):
-    return [
-        sp('temple_door', 'door', 960, HB + 10, 'at the temple doors'),
-        sp('step', 'stand', 960, HB + 90, 'on the stone step of the temple'),
-        sp('banyan', 'stand', 300, HB + 60, 'under the banyan tree'),
-        sp('yard_right', 'stand', 1560, HB + 80, 'in the temple yard, right'),
-        sp('open_floor', 'open', 960, fy - 40, 'open temple yard'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.TEMPLE_DOOR, KST.DOOR, 960, HB + 10, KST.AT_THE_TEMPLE_DOORS), sp(KST.STEP, KST.STAND, 960, HB + 90, KST.ON_THE_STONE_STEP_OF_THE_TEMPLE), sp(KST.BANYAN, KST.STAND, 300, HB + 60, KST.UNDER_THE_BANYAN_TREE), sp(KST.YARD_RIGHT, KST.STAND, 1560, HB + 80, KST.IN_THE_TEMPLE_YARD_RIGHT), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_TEMPLE_YARD)] + front(fy, (420, 960, 1520))
 def pagoda_gate(t, fy):
-    return [
-        sp('gate', 'door', 960, HB + 10, 'in the middle gateway of the pagoda'),
-        sp('steps', 'stand', 960, HB + 100, 'on the stone steps'),
-        sp('tree', 'stand', 330, HB + 40, 'under the tree'),
-        sp('gate_right', 'stand', 1360, HB + 60, 'by the side gate'),
-        sp('open_floor', 'open', 960, fy - 40, 'open ground'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.GATE, KST.DOOR, 960, HB + 10, KST.IN_THE_MIDDLE_GATEWAY_OF_THE_PAGODA), sp(KST.STEPS, KST.STAND, 960, HB + 100, KST.ON_THE_STONE_STEPS), sp(KST.TREE, KST.STAND, 330, HB + 40, KST.UNDER_THE_TREE), sp(KST.GATE_RIGHT, KST.STAND, 1360, HB + 60, KST.BY_THE_SIDE_GATE), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_GROUND)] + front(fy, (420, 960, 1520))
 def market(t, fy):
     return [
-        sp('stall_left', 'stand', 330, HB + 40, 'at the market stall, left'),
-        sp('stall_mid', 'stand', 970, HB + 40, 'at the middle market stall'),
-        sp('stall_right', 'stand', 1610, HB + 40, 'at the market stall, right'),
-        sp('stall_top', 'surface', 970, HB - 110, 'on the stall table'),
-        sp('behind_stall_left', 'stand', 330, HB - 20, 'behind the left stall (seller)'),
-        sp('behind_stall', 'stand', 970, HB - 20, 'behind the middle stall (seller)'),
-        sp('behind_stall_right', 'stand', 1610, HB - 20, 'behind the right stall (seller)'),
-        sp('baskets', 'stand', 760, HB + 160, 'among the baskets of goods'),
-        sp('open_floor', 'open', 960, fy - 40, 'open market ground'),
+        sp(KST.STALL_LEFT, KST.STAND, 330, HB + 40, KST.AT_THE_MARKET_STALL_LEFT),
+        sp(KST.STALL_MID, KST.STAND, 970, HB + 40, KST.AT_THE_MIDDLE_MARKET_STALL),
+        sp(KST.STALL_RIGHT, KST.STAND, 1610, HB + 40, KST.AT_THE_MARKET_STALL_RIGHT),
+        sp(KST.STALL_TOP, KST.SURFACE, 970, HB - 110, KST.ON_THE_STALL_TABLE),
+        sp(KST.BEHIND_STALL_LEFT, KST.STAND, 330, HB - 20, KST.BEHIND_THE_LEFT_STALL_SELLER),
+        sp(KST.BEHIND_STALL, KST.STAND, 970, HB - 20, KST.BEHIND_THE_MIDDLE_STALL_SELLER),
+        sp(KST.BEHIND_STALL_RIGHT, KST.STAND, 1610, HB - 20, KST.BEHIND_THE_RIGHT_STALL_SELLER),
+        sp(KST.BASKETS, KST.STAND, 760, HB + 160, KST.AMONG_THE_BASKETS_OF_GOODS),
+        sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_MARKET_GROUND),
     ] + front(fy, (420, 960, 1520))
-
-
 def abandoned_house(t, fy):
-    return [
-        sp('door', 'door', 705, HB + 10, 'at the broken door of the house'),
-        sp('window', 'stand', 1120, HB + 30, 'below the broken window'),
-        sp('dead_tree', 'stand', 1560, HB + 40, 'by the dead tree'),
-        sp('yard', 'stand', 960, HB + 140, 'in the overgrown yard'),
-        sp('open_floor', 'open', 960, fy - 40, 'open yard'),
-    ] + front(fy, (420, 960, 1520))
-
-
+    return [sp(KST.DOOR, KST.DOOR, 705, HB + 10, KST.AT_THE_BROKEN_DOOR_OF_THE_HOUSE), sp(KST.WINDOW, KST.STAND, 1120, HB + 30, KST.BELOW_THE_BROKEN_WINDOW), sp(KST.DEAD_TREE, KST.STAND, 1560, HB + 40, KST.BY_THE_DEAD_TREE), sp(KST.YARD, KST.STAND, 960, HB + 140, KST.IN_THE_OVERGROWN_YARD), sp(KST.OPEN_FLOOR, KST.OPEN, 960, fy - 40, KST.OPEN_YARD)] + front(fy, (420, 960, 1520))
 def hill_road(t, fy):
-    return [
-        sp('road_left', 'stand', 420, 900, 'on the mountain road, left'),
-        sp('road_mid', 'stand', 960, 830, 'on the mountain road'),
-        sp('road_right', 'stand', 1480, 760, 'further up the road'),
-        sp('cliff', 'stand', 300, 990, 'at the edge of the road'),
-    ]
-
-
-SPOTS = {k: v for k, v in globals().items() if k in (
-    'main_room', 'kitchen', 'bedroom', 'stilt_house_inside', 'storeroom', 'funeral_room', 'temple_hall', 'shrine_inside', 'abandoned_house_inside',
-    'roadside_inn', 'front_yard', 'village_gate', 'village_lane', 'banyan_tree', 'abandoned_shrine', 'graveyard', 'lonely_grave', 'village_well',
-    'river_bank', 'ferry_landing', 'bamboo_bridge', 'pond', 'rice_field', 'bamboo_grove', 'old_forest', 'mountain_village', 'stream', 'forest_path',
-    'cave', 'village_temple', 'pagoda_gate', 'market', 'abandoned_house', 'hill_road')}
-
-
+    return [sp(KST.ROAD_LEFT, KST.STAND, 420, 900, KST.ON_THE_MOUNTAIN_ROAD_LEFT), sp(KST.ROAD_MID, KST.STAND, 960, 830, KST.ON_THE_MOUNTAIN_ROAD), sp(KST.ROAD_RIGHT, KST.STAND, 1480, 760, KST.FURTHER_UP_THE_ROAD), sp(KST.CLIFF, KST.STAND, 300, 990, KST.AT_THE_EDGE_OF_THE_ROAD)]
+SPOTS = {
+    k: v
+    for k, v in globals().items()
+    if k
+    in (
+        KST.MAIN_ROOM,
+        KST.KITCHEN,
+        KST.BEDROOM,
+        KST.STILT_HOUSE_INSIDE,
+        KST.STOREROOM,
+        KST.FUNERAL_ROOM,
+        KST.TEMPLE_HALL,
+        KST.SHRINE_INSIDE,
+        KST.ABANDONED_HOUSE_INSIDE,
+        KST.ROADSIDE_INN,
+        KST.FRONT_YARD,
+        KST.VILLAGE_GATE,
+        KST.VILLAGE_LANE,
+        KST.BANYAN_TREE,
+        KST.ABANDONED_SHRINE,
+        KST.GRAVEYARD,
+        KST.LONELY_GRAVE,
+        KST.VILLAGE_WELL,
+        KST.RIVER_BANK,
+        KST.FERRY_LANDING,
+        KST.BAMBOO_BRIDGE,
+        KST.POND,
+        KST.RICE_FIELD,
+        KST.BAMBOO_GROVE,
+        KST.OLD_FOREST,
+        KST.MOUNTAIN_VILLAGE,
+        KST.STREAM,
+        KST.FOREST_PATH,
+        KST.CAVE,
+        KST.VILLAGE_TEMPLE,
+        KST.PAGODA_GATE,
+        KST.MARKET,
+        KST.ABANDONED_HOUSE,
+        KST.HILL_ROAD,
+    )
+}
 import re
-
-SWAP = {'left': 'right', 'right': 'left'}
-
-
+SWAP = {KST.LEFT: KST.RIGHT, KST.RIGHT: KST.LEFT}
 def mirror_word(t):
-    return re.sub(r'(?<![a-z])(left|right)(?![a-z])', lambda m: SWAP[m.group(1)], t)
-
-
+    return re.sub(KST.A_Z_LEFT_RIGHT_A_Z, lambda m: SWAP[m.group(1)], t)
 def spots_for(key, t, fy, v):
     out = SPOTS[key](t, fy)
     if v in (1, 3):
-        out = [dict(s, x=W - s['x'], label=mirror_word(s['label']), key=mirror_word(s['key'].replace('_', ' ')).replace(' ', '_')) for s in out]
+        out = [dict(s, x=W - s[KST.X], label=mirror_word(s[KST.LABEL]), key=mirror_word(s[KST.KEY].replace(KST.UNDERSCORE, KST.SPACE)).replace(KST.SPACE, KST.UNDERSCORE), **dict(face=SWAP[s[KST.FACE]]) if s.get(KST.FACE) in SWAP else {}) for s in out]
     return out
+from reference_expansion import SCENE_SPOTS
+from fixed_compositions import SPOTS as FIXED_SPOTS
+SCENE_SPOTS = dict(SCENE_SPOTS, **FIXED_SPOTS)
+for _key, _spots in SCENE_SPOTS.items():
+    SPOTS[_key] = lambda t, fy, points=_spots: [sp(*point) for point in points]

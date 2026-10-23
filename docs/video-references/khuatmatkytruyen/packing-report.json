@@ -1,0 +1,165 @@
+{
+  "videos": 22,
+  "frames": 14050,
+  "boards": 887,
+  "board_bytes": 169647310,
+  "archive": "D:\\video-AI-vidify\\scratch\\rollback-talk-chair-20261022\\reference-originals.zip",
+  "source_backup_crc_verified": true,
+  "all_frames_mapped": true,
+  "items": [
+    {
+      "number": 1,
+      "id": "ZrgIi8a8dyA",
+      "frames": 1313,
+      "boards": 83,
+      "board_bytes": 20195273
+    },
+    {
+      "number": 2,
+      "id": "FFTF1CM4aBI",
+      "frames": 1229,
+      "boards": 77,
+      "board_bytes": 18397556
+    },
+    {
+      "number": 3,
+      "id": "m9WhpDtE9xE",
+      "frames": 755,
+      "boards": 48,
+      "board_bytes": 10098481
+    },
+    {
+      "number": 4,
+      "id": "P0xXIU5Lyr8",
+      "frames": 450,
+      "boards": 29,
+      "board_bytes": 5730762
+    },
+    {
+      "number": 5,
+      "id": "nk48rQqJmc0",
+      "frames": 624,
+      "boards": 39,
+      "board_bytes": 7837640
+    },
+    {
+      "number": 6,
+      "id": "xS4lEGgdVCQ",
+      "frames": 862,
+      "boards": 54,
+      "board_bytes": 12211348
+    },
+    {
+      "number": 7,
+      "id": "1MBYdq1F-hE",
+      "frames": 939,
+      "boards": 59,
+      "board_bytes": 11669703
+    },
+    {
+      "number": 8,
+      "id": "U_2hRTsJ3So",
+      "frames": 783,
+      "boards": 49,
+      "board_bytes": 8940504
+    },
+    {
+      "number": 9,
+      "id": "5tEEkZaXW3U",
+      "frames": 206,
+      "boards": 13,
+      "board_bytes": 2272229
+    },
+    {
+      "number": 10,
+      "id": "tUWV2SqMrpg",
+      "frames": 691,
+      "boards": 44,
+      "board_bytes": 8087868
+    },
+    {
+      "number": 11,
+      "id": "XYjyI0EQ7tk",
+      "frames": 684,
+      "boards": 43,
+      "board_bytes": 7603118
+    },
+    {
+      "number": 12,
+      "id": "2ygTaMHUri0",
+      "frames": 652,
+      "boards": 41,
+      "board_bytes": 7389157
+    },
+    {
+      "number": 13,
+      "id": "-Hb-Tn7OaHo",
+      "frames": 633,
+      "boards": 40,
+      "board_bytes": 6947328
+    },
+    {
+      "number": 14,
+      "id": "vy7G-ATxNnM",
+      "frames": 608,
+      "boards": 38,
+      "board_bytes": 6597475
+    },
+    {
+      "number": 15,
+      "id": "HSUbahCf3nU",
+      "frames": 507,
+      "boards": 32,
+      "board_bytes": 5114156
+    },
+    {
+      "number": 16,
+      "id": "Y_6PRdEk4Rk",
+      "frames": 146,
+      "boards": 10,
+      "board_bytes": 1369361
+    },
+    {
+      "number": 17,
+      "id": "brNfRbyVX0M",
+      "frames": 684,
+      "boards": 43,
+      "board_bytes": 7115267
+    },
+    {
+      "number": 18,
+      "id": "P3SOdALyYnA",
+      "frames": 540,
+      "boards": 34,
+      "board_bytes": 5955560
+    },
+    {
+      "number": 19,
+      "id": "Cyak0swNZEo",
+      "frames": 445,
+      "boards": 28,
+      "board_bytes": 4050451
+    },
+    {
+      "number": 20,
+      "id": "wtR75Nr2Whc",
+      "frames": 478,
+      "boards": 30,
+      "board_bytes": 4461940
+    },
+    {
+      "number": 21,
+      "id": "mmg9idL64rQ",
+      "frames": 449,
+      "boards": 29,
+      "board_bytes": 4029578
+    },
+    {
+      "number": 22,
+      "id": "y9UmyNlC_g0",
+      "frames": 372,
+      "boards": 24,
+      "board_bytes": 3572555
+    }
+  ]
+}

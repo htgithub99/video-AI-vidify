@@ -1,4 +1,10 @@
-export interface PuppetSlotDef { x: number; d?: number; wall?: number; layer: string; maxW?: number; }
+export interface PuppetSlotDef {
+  x: number;
+  d?: number;
+  wall?: number;
+  layer: string;
+  maxW?: number;
+}
 export const PUPPET_SLOTS: Record<string, Record<string, PuppetSlotDef>> = {
   interior: {
     wall_left: { x: 0.12, wall: 0.5, layer: "back" },
@@ -81,7 +87,7 @@ export const PUPPET_SET = {
   LOG_NEW_PIECES: (keys: string[]): string => `AI vẽ món bối cảnh còn thiếu: ${keys.join(", ")}`,
   LOG_PLAN_FAIL: (names: string): string => `Chưa ghép được bối cảnh (dùng cách vẽ cũ): ${names}`,
   LOG_FEATURE_REDO: (name: string, feats: string): string => `Bối cảnh ${name} thiếu ${feats} theo lời kể – ghép lại cảnh có các món này.`,
-  PIECE_LIST: (p: { key: string; kind: string; slots: string[]; desc: string }): string => `${p.key} | ${p.kind} | ${p.slots.join(",")} | ${p.desc}`,
+  PIECE_LIST: (p: { key: string; kind: string; slots: string[]; environment?: string; desc: string }): string => `${p.key} | ${p.kind} | ${p.slots.join(",")} | ${p.environment || "any"} | ${p.desc}`,
   BASE_LIST: (b: { key: string; family: string; desc: string }): string => `${b.key} | ${b.family} | ${b.desc}`,
   PLACE_LIST: (p: { key: string; name: string; desc: string; side: string; must: string; uses: string }): string => `${p.key} | ${p.name} | ${p.desc} | ${p.side} | must have: ${p.must || "-"} | ${p.uses}`,
 } as const;
@@ -90,10 +96,10 @@ export const PUPPET_SET_PROMPTS = {
     [
       "You build the backgrounds of a 2D cartoon story video from ready-made parts, like a stage designer. For each PLACE choose one BASE (the empty room or landscape) and put PIECES into the SLOTS of that base, the way such a place really looks. Keep the middle of the floor free for the people.",
       "BASES (key | family | description):\n" + p.bases,
-      "PIECES (key | kind | allowed slots | description):\n" + p.pieces,
+      "PIECES (key | kind | allowed slots | interior/exterior | description):\n" + p.pieces,
       "SLOTS: " + p.slots,
       "PLACES (key | name | description | inside/outside | must have | what happens there):\n" + p.places,
-      "Rules: the base family must match inside (interior) or outside (exterior). Use 2 to 6 pieces, each slot at most once, only in its allowed slots. Every thing listed in must have appears: use a piece that is that thing, or when no piece is that thing add it to new with a short English description, its kind (building, furniture, fixture, wall or scenery) and one of the slots of that kind. new is only for things that no piece is; at most 2 per place.",
+      "Rules: each piece environment must also match the place. A boat belongs on outdoor water, not inside a bedroom. Keep the support requested by an action: bed/cradle for lie, chair/boat seat for sit, table surface for a bowl. The base family must match inside (interior) or outside (exterior). Use 2 to 6 pieces, each slot at most once, only in its allowed slots. Every thing listed in must have appears: use a piece that is that thing, or when no piece is that thing add it to new with a short English description, its kind (building, furniture, fixture, wall or scenery) and one of the slots of that kind. new is only for things that no piece is; at most 2 per place.",
       'Return JSON {"sets":[{"key":"place key","base":"base key","pieces":[{"slot":"slot key","piece":"piece key"}],"new":[{"key":"snake_case_name","desc":"short description","kind":"scenery","slot":"slot key"}]}]}.',
     ].join("\n"),
   PIECES: (p: { style: string; items: string; why?: string }): string =>

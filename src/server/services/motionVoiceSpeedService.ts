@@ -13,7 +13,7 @@ import { measureVoicePaceFile } from "./motionVoicePaceService.js";
 const round = (value: number, step = V.STEP): number => Math.round(value / step) * step;
 export const readVoiceSpeedSettings = (): MotionVoiceSpeedSettings => {
   const data = readMotionVoiceLibraryJson<Partial<MotionVoiceSpeedSettings>>(V.FILE, {});
-  return { ...(data.target ? { target: data.target } : {}), correction: _.clamp(Number(data.correction) || 1, V.CORRECTION_RANGE[0], V.CORRECTION_RANGE[1]), rates: data.rates && typeof data.rates === "object" ? data.rates : {} };
+  return { ...(data.target ? { target: data.target } : {}), correction: _.clamp(Number(data.correction) || 1, V.CORRECTION_RANGE[0], V.CORRECTION_RANGE[1]), rates: data.rates && _.isObjectLike(data.rates) ? data.rates : {} };
 };
 const writeVoiceSpeedSettings = (settings: MotionVoiceSpeedSettings): MotionVoiceSpeedSettings => {
   writeMotionJsonAtomic(motionVoiceLibraryFile(V.FILE), settings);
@@ -44,13 +44,21 @@ const quantile = (list: number[], q: number): number => {
   return sorted[Math.min(sorted.length - 1, Math.max(0, Math.round(q * (sorted.length - 1))))];
 };
 const measurePauses = (segments: { t: number; units: number }[]): MotionVoiceSpeedTarget["pauses"] | undefined => {
-  const steps = _.compact(_.map(_.initial(segments), (s, i) => {
-    const dt = segments[i + 1].t - s.t;
-    return dt > 0 && dt <= V.PAUSE_MAX_STEP && s.units >= V.MIN_UNITS ? { dt, units: s.units } : null;
-  }));
+  const steps = _.compact(
+    _.map(_.initial(segments), (s, i) => {
+      const dt = segments[i + 1].t - s.t;
+      return dt > 0 && dt <= V.PAUSE_MAX_STEP && s.units >= V.MIN_UNITS ? { dt, units: s.units } : null;
+    }),
+  );
   if (steps.length < V.PAUSE_MIN_STEPS) return undefined;
-  const articulation = quantile(_.map(steps, (x) => x.units / x.dt), V.PAUSE_ARTICULATION_Q);
-  const gaps = _.filter(_.map(steps, (x) => x.dt - x.units / articulation), (g) => g >= V.PAUSE_MIN);
+  const articulation = quantile(
+    _.map(steps, (x) => x.units / x.dt),
+    V.PAUSE_ARTICULATION_Q,
+  );
+  const gaps = _.filter(
+    _.map(steps, (x) => x.dt - x.units / articulation),
+    (g) => g >= V.PAUSE_MIN,
+  );
   if (gaps.length < V.PAUSE_MIN_STEPS / 2) return undefined;
   const at = (q: number) => _.round(_.clamp(quantile(gaps, q), V.PAUSE_RANGE[0], V.PAUSE_RANGE[1]), 2);
   return { sentence: at(V.PAUSE_Q[0]), suspense: at(V.PAUSE_Q[1]), beat: at(V.PAUSE_Q[2]), articulation: _.round(articulation, 2) };
@@ -78,12 +86,12 @@ export const measureVoiceSpeedAudio = async (name: string, base64: string, signa
     await fs.promises.rm(file, { force: true }).catch(_.noop);
   }
 };
-export const clearVoiceSpeedReference = (): MotionVoiceSpeedSettings => writeVoiceSpeedSettings(_.omit({ ...readVoiceSpeedSettings(), correction: 1 }, "target") as MotionVoiceSpeedSettings);
+export const clearVoiceSpeedReference = (): MotionVoiceSpeedSettings => writeVoiceSpeedSettings(_.omit({ ...readVoiceSpeedSettings(), correction: 1 }, V.TARGET_FIELD) as MotionVoiceSpeedSettings);
 export const voiceSpeedKey = (voiceId: string): string => {
   const manual = cleanVoiceSpeed(readVoiceLibrary()[voiceId]?.speed);
   if (manual) return String(manual);
   const settings = readVoiceSpeedSettings();
-  return settings.target ? [V.AUTO, settings.target.rate, settings.correction.toFixed(3)].join("|") : String(1);
+  return settings.target ? [V.AUTO, settings.target.rate, settings.correction.toFixed(3)].join(V.KEY_SEPARATOR) : String(1);
 };
 export const knownVoiceTempoFactor = (voiceId: string): number | null => {
   const manual = cleanVoiceSpeed(readVoiceLibrary()[voiceId]?.speed);
@@ -112,10 +120,7 @@ export const recordVoiceSpeedFeedback = (units: number, totalSeconds: number, us
   const settings = readVoiceSpeedSettings();
   if (!settings.target || !usedAuto || !(units > 0) || !(totalSeconds > V.MIN_SPAN_SECONDS / 2)) return undefined;
   const actual = units / totalSeconds;
-  const step = _.clamp(settings.target.rate / actual, V.CORRECTION_STEP[0], V.CORRECTION_STEP[1]);
-  const correction = _.clamp(_.round(settings.correction * (1 + (step - 1) * V.CORRECTION_WEIGHT), 3), V.CORRECTION_RANGE[0], V.CORRECTION_RANGE[1]);
-  writeVoiceSpeedSettings({ ...settings, correction });
-  return V.LOG.FEEDBACK(settings.target.rate, actual, correction);
+  return V.LOG.FEEDBACK(settings.target.rate, actual, settings.correction);
 };
 export const voicesUseAutoSpeed = (voiceIds: string[]): boolean => {
   const library = readVoiceLibrary();

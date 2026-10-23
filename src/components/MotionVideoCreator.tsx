@@ -1,4 +1,4 @@
-import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea, StudioInput, StudioSelect } from "./ui/Studio.js";
+import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea, StudioInput } from "./ui/Studio.js";
 import { MotionToggle } from "./motion-video/MotionToggle.js";
 import { MotionPartsCard } from "./motion-video/MotionPartsCard.js";
 import { MOTION_PARTS, MOTION_PARTS_TEXT } from "../constants/motionParts.js";
@@ -12,6 +12,7 @@ import { PUPPET_STYLE_DEFAULT, PUPPET_STYLE_DESIGN_SOURCE, PUPPET_STYLE_NONE, PU
 import { puppetBeatLines } from "../lib/motionPuppet.js";
 import { MOTION_REFERENCE_TEXTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
+import { MOTION_AI_RECOVERY as AIR } from "../constants/motionAiRecovery.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } from "../constants/motionGenre.js";
 import { MOTION_MUSIC } from "../constants/motionMusic.js";
 import _ from "lodash";
@@ -182,7 +183,17 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
   );
 };
 export default MotionVideoCreator;
-interface MotionPreviewModalData { type: "location" | "beat"; id: string; title: string; imageUrl: string; score?: number; issues?: string[]; note?: string; narration?: string; action?: string; }
+interface MotionPreviewModalData {
+  type: "location" | "beat";
+  id: string;
+  title: string;
+  imageUrl: string;
+  score?: number;
+  issues?: string[];
+  note?: string;
+  narration?: string;
+  action?: string;
+}
 const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; currentLang: Lang }> = ({ studio, text, currentLang }) => {
   const partsText = currentLang === MR.MOTION_TEXT_EN ? MOTION_PARTS_TEXT.en : MOTION_PARTS_TEXT.vi;
   const { state, patch } = studio;
@@ -232,16 +243,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const displayedProgress = studio.storyBusy ? job?.progress : rj ? rj.progress : job?.progress;
   const storyStage = job?.stage ? MOTION_STORY_CONFIG.STAGE_LABELS[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][job.stage] || job.stage : text.WAITING_AI;
   const stepLabel = (kind: string): string =>
-    ({
-      [MotionStoryJobKind.ANALYZE]: text.STEP_ANALYSIS,
-      [MotionStoryJobKind.SCRIPT]: text.STEP_SCRIPT,
-      [MotionStoryJobKind.SCENES]: text.STEP_SCENES,
-      [MotionStoryJobKind.VOICE]: text.STEP_VOICE,
-      [MotionStoryJobKind.SEO]: text.STEP_SEO,
-      [MotionStoryJobKind.THUMBNAIL]: text.STEP_THUMBNAIL,
-      [MotionStoryJobKind.LIBRARY]: text.STEP_LIBRARY,
-      [MOTION_STORY_CONFIG.RENDER_LOG_KIND]: text.STEP_RENDER,
-    })[kind] || kind;
+    ({ [MotionStoryJobKind.ANALYZE]: text.STEP_ANALYSIS, [MotionStoryJobKind.SCRIPT]: text.STEP_SCRIPT, [MotionStoryJobKind.SCENES]: text.STEP_SCENES, [MotionStoryJobKind.VOICE]: text.STEP_VOICE, [MotionStoryJobKind.SEO]: text.STEP_SEO, [MotionStoryJobKind.THUMBNAIL]: text.STEP_THUMBNAIL, [MotionStoryJobKind.LIBRARY]: text.STEP_LIBRARY, [MOTION_STORY_CONFIG.RENDER_LOG_KIND]: text.STEP_RENDER })[
+      kind
+    ] || kind;
   const currentStep = useMemo(() => {
     if (rj || rj?.result) return 4;
     if (state.script?.beats?.length) return 3;
@@ -426,11 +430,14 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       {item.name}
                     </option>
                   ))}
-                  {_.map(_.filter(kitStyles, (k) => !k.preset && (k.source !== PUPPET_STYLE_DESIGN_SOURCE || k.id === state.stylePreset)), (k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.name}
-                    </option>
-                  ))}
+                  {_.map(
+                    _.filter(kitStyles, (k) => !k.preset && (k.source !== PUPPET_STYLE_DESIGN_SOURCE || k.id === state.stylePreset)),
+                    (k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.name}
+                      </option>
+                    ),
+                  )}
                 </MotionSelectField>
               </div>
               <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />
@@ -832,25 +839,19 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </div>
               </div>
               <div className={MOTION_STYLES.GRID_GRID_COLS_2_GAP_2}>
-                <label className={MOTION_STYLES.SPACE_Y_1}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.FPS}</span>
-                  <StudioSelect value={state.fps} onChange={(e) => patch({ fps: _.toNumber(e.target.value) })} className={inputCls} disabled={studio.renderBusy}>
-                    {_.map([24, 25, 30, 60], (f) => (
-                      <option key={f} value={f}>
-                        {f}
-                        {MOTION_TEXT_FPS}
-                      </option>
-                    ))}
-                  </StudioSelect>
-                </label>
-                <label className={MOTION_STYLES.SPACE_Y_1}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.ENCODER}</span>
-                  <StudioSelect value={state.encoder} onChange={(e) => patch({ encoder: e.target.value as MotionEncoderPreference })} className={inputCls} disabled={studio.renderBusy}>
-                    <option value={MotionEncoderPreference.AUTO}>{text.ENCODER_AUTO}</option>
-                    <option value={MotionEncoderPreference.GPU}>{text.ENCODER_GPU}</option>
-                    <option value={MotionEncoderPreference.CPU}>{text.ENCODER_CPU}</option>
-                  </StudioSelect>
-                </label>
+                <MotionSelectField label={text.FPS} wrapperClassName={MOTION_STYLES.SPACE_Y_1} value={state.fps} onChange={(e) => patch({ fps: _.toNumber(e.target.value) })} className={inputCls} disabled={studio.renderBusy}>
+                  {_.map([24, 25, 30, 60], (f) => (
+                    <option key={f} value={f}>
+                      {f}
+                      {MOTION_TEXT_FPS}
+                    </option>
+                  ))}
+                </MotionSelectField>
+                <MotionSelectField label={text.ENCODER} wrapperClassName={MOTION_STYLES.SPACE_Y_1} value={state.encoder} onChange={(e) => patch({ encoder: e.target.value as MotionEncoderPreference })} className={inputCls} disabled={studio.renderBusy}>
+                  <option value={MotionEncoderPreference.AUTO}>{text.ENCODER_AUTO}</option>
+                  <option value={MotionEncoderPreference.GPU}>{text.ENCODER_GPU}</option>
+                  <option value={MotionEncoderPreference.CPU}>{text.ENCODER_CPU}</option>
+                </MotionSelectField>
               </div>
               <div className={MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
                 <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_5_ROUNDED_XL_TEXT_XS}>
@@ -874,6 +875,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{MOTION_TEMPLATE_SYMBOL_3(String(Math.round((displayedProgress || 0) * 100)))}</span>
               </div>
               {studio.storyBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={storyStage} suffix={text.ELAPSED} />}
+              {studio.storyBusy &&
+                _.map(job?.activeAi || {}, (ai) => (
+                  <p key={ai.workerId} className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
+                    {AIR.DISPLAY(ai.provider, ai.model, AIR.PHASE_LABEL[ai.phase as keyof typeof AIR.PHASE_LABEL])}
+                  </p>
+                ))}
               <MotionProgressBar progress={displayedProgress} minimum={8} className={MOTION_STYLES.H_2} animated={false} />
               <MotionFlowLog entries={studio.logHistory} label={stepLabel} className={MOTION_STYLES.FLOW_LOG_BOX} />
               {rj?.result && (

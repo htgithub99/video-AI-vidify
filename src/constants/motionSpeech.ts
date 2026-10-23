@@ -1,0 +1,1 @@
+export const MOTION_SPEECH = { ROLES: ["narration", "dialogue", "thought", "offscreen"], QUOTE_HEAD: 12, QUOTE_LOOKBACK: 4, QUOTE_BEFORE: /["“«'‘:：—–-]\s*$/, QUOTE_EDGES: /^["“«'‘—–\s]+|["”»'’\s]+$/g, WHITESPACE: /\s+/g, SPACE: " ", EMPTY: "" } as const;

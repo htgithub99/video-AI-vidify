@@ -1,12 +1,12 @@
 export const MOTION_VOICE_RANK = { REGION: 4, REGION_MISS: -3, STORY: 1, NEWS: -2 } as const;
 export const MOTION_VOICE = {
-  VERSION: 4,
-  PLAN_VERSION: 6,
+  VERSION: 5,
+  PLAN_VERSION: 7,
   DIRECT_SPEECH_RE: /[:：]\s*["“«‘']?\s*\p{Lu}|["“«][^"”»]{2,}["”»]/u,
-  CLIP_VERSION: 4,
-  TRACK_VERSION: 4,
+  CLIP_VERSION: 5,
+  TRACK_VERSION: 5,
   PAUSE: { FIRST: 0.15, SAME_SPEAKER: 0.1, SPEAKER_CHANGE: 0.22, BEAT_END: 0.22 },
-  TEMPO: { MIN: 0.97, MAX: 1.03, SPEED_MIN: 1, SPEED_MAX: 1 },
+  TEMPO: { MIN: 0.85, MAX: 1.15, SPEED_MIN: 0.85, SPEED_MAX: 1.15 },
   PROVIDER: "vieneu",
   ASR: {
     PACKAGE: "faster-whisper==1.1.1",
@@ -97,10 +97,7 @@ export const MOTION_VOICE = {
 export const MOTION_VOICE_PROMPT = `Direct speech ONLY for the provided existing story. Split each beat.narration into ordered utterances, preserve its exact spoken words in order, no additions or omissions. Narration belongs to narrator; only direct speech with a clear source belongs to a cast key. Do not turn descriptions into invented dialogue. Distinguish narration, dialogue, thought, offscreen. Keep one voice per character. Return JSON {beats:[{id,utterances:[{id,speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text:"unchanged source words",emotion:"neutral|warm|serious|tense|surprised|sad|excited|scared|angry",intensity:0..1,speed:0.85..1.15,pauseBefore:seconds,pauseAfter:seconds,emphasis:["words in this text"]}]}]}. Speech must flow like one continuous telling: pauses normally 0.05..0.3 seconds, up to 0.6 only for a motivated dramatic beat; do not split a sentence into separate utterances unless the speaker changes. emphasis only marks words to stress, it never adds a pause. Describe expression without adding bracket tags to text. Each input beat may give its sceneMood; set each line's emotion and intensity from that beat's situation and the speaker's state, keep neutral when unclear, and keep the narrator restrained. Unknown speaker remains narrator. Do not assume every video needs dialogue. Factual quotations must keep their actual attribution. No QA score or redraw request.`;
 export const MOTION_VOICE_MOOD_RULE = `Each beat may also carry "sceneMood":{"mood":"neutral|warm|serious|tense|surprised|sad|excited|scared|angry","intensity":0..1} – the mood of what is happening in that beat (not of the whole place or video; the same room can be calm, then tense, then relieved). Take it from the source events, the user's directions and the speaker's situation; use the Video DNA only as background. A speaker's own utterance emotion may differ from the scene mood. When the source does not show a clear feeling use neutral or a low intensity – never invent fear because a scene is dark or excitement because the music is cheerful. A character's direct speech, however, must carry that character's feeling in this exact moment, judged from the words and the situation: a cry or plea in danger is scared (0.7-1), scolding or shouting at someone is angry, mourning or regret is sad, a joyful call or reunion is excited, a hushed warning is tense; never leave a clearly emotional line neutral. The narrator keeps a restrained storytelling delivery that suits the genre and does not act out the characters. Never add bracket tags, sound words or extra words to spoken text to show emotion.`;
 export const MOTION_STORY_VOICE_PROMPT = `Include optional utterances for each beat: [{speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text,emotion:"neutral|warm|serious|tense|surprised|sad|excited|scared|angry",intensity:0..1,speed:0.85..1.15,pauseBefore:0..0.3,pauseAfter:0..0.6,emphasis:["words in text"]}]. ${MOTION_VOICE_MOOD_RULE} The ordered utterance texts must contain exactly the spoken words of beat.narration, including narration and attribution, with no extra words or missing words. For films keep camera, stage instructions and speaker labels in action/scenePlan, never in spoken narration. For any narrative told as a story (folk tales, horror, drama, children's stories, memoirs, recollections and true stories told as stories – not lectures, news or explainers), the characters must speak in their own voices like an animated story: in at least a third of the beats where a speaking character is present, include one or two short lines of direct speech (a call, a question, a reaction, a promise) inside beat.narration, assign each line to the speaker's exact cast key with role dialogue, and keep the narrator for the rest. For true stories and memoirs, take these lines from what the source reports the characters saying (a transcript often has no quotation marks) and do not invent new facts; for fiction you may write new short lines. Whenever beat.narration contains direct speech, that speech must be its own utterance with the speaker's cast key, never left inside a narrator utterance. Animals speak only if the story treats them as speaking; otherwise their sounds are sound effects. The added lines count toward the beat length, so trim narration to keep the timing. Lectures, news, explainers and documentaries must preserve attribution and may only use dialogue supported by source quotations; never invent dialogue. Do not add acting tags inside spoken text. Narrator is a separate role, not a character visible in every shot. Expression is advisory and must not trigger repeated QA.`;
-export const MOTION_VOICE_TEXT = {
-  vi: { preparing: "Đang tự phân vai, tạo lời thoại và phối âm thanh theo kịch bản", previewError: "Không phát được âm thanh xem trước" },
-  en: { preparing: "Automatically casting voices and mixing sound for the script", previewError: "Preview audio could not be played" },
-} as const;
+export const MOTION_VOICE_TEXT = { vi: { preparing: "Đang tự phân vai, tạo lời thoại và phối âm thanh theo kịch bản", previewError: "Không phát được âm thanh xem trước" }, en: { preparing: "Automatically casting voices and mixing sound for the script", previewError: "Preview audio could not be played" } } as const;
 export const MOTION_VOICE_STYLES = { VIDEO: "w-full max-h-[420px] rounded-xl bg-black" } as const;
 export const MOTION_VOICE_GROUP = { MALE_ADULT: "male_adult", FEMALE_ADULT: "female_adult", CHILD: "child", SENIOR_MALE: "senior_male", SENIOR_FEMALE: "senior_female" } as const;
 export const MOTION_VOICE_FILTER = { ALL: "all", PRESET: "preset", CUSTOM: "custom", AI33: "ai33", MALE: "male", FEMALE: "female" } as const;
@@ -521,6 +518,8 @@ export const MOTION_VOICE_DELIVERY = {
     } (VieNeu: temperature, khoảng lặng câu, nhịp, nghỉ, âm lượng${ai33 ? `; ${ai33} câu AI33 chỉ đổi nhịp, nghỉ, âm lượng` : ""})`,
 } as const;
 export const MOTION_VOICE_SPEED = {
+  TARGET_FIELD: "target",
+  KEY_SEPARATOR: "|",
   FILE: "voice-speed.json",
   AUTO: "auto",
   OPTIONS: [0.8, 0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3],
@@ -586,17 +585,44 @@ export const MOTION_VOICE_SPEED = {
   MEASURE_URL: "/api/motion-video/voices/speed/measure",
   DEFAULT_REFERENCE: "https://www.youtube.com/watch?v=-Hb-Tn7OaHo&t=874s",
   ERRORS: { NO_TRANSCRIPT: "Video này không lấy được phụ đề có mốc thời gian để đo tốc độ đọc.", TOO_SHORT: "Phụ đề quá ngắn để đo tốc độ đọc.", AUDIO_SHORT: "File giọng mẫu quá ngắn hoặc gần như im lặng (cần ít nhất khoảng 1 phút giọng đọc).", AUDIO_FORMAT: "Định dạng file giọng mẫu không hỗ trợ.", AUDIO_EMPTY: "File giọng mẫu trống." },
-  LOG: {
-    FEEDBACK: (target: number, actual: number, correction: number): string => `Tốc độ đọc: mục tiêu ${target.toFixed(2)} âm tiết/giây, thực tế ${actual.toFixed(2)} – hệ số bù ${correction.toFixed(3)}`,
-  },
+  LOG: { FEEDBACK: (target: number, actual: number, correction: number): string => `Tốc độ đọc: mục tiêu ${target.toFixed(2)} âm tiết/giây, cả khoảng nghỉ ${actual.toFixed(2)}; giữ hệ số bù ${correction.toFixed(3)} ổn định.` },
   TEXT: {
-    vi: { TITLE: "Tốc độ đọc chuẩn", HINT: "Dán link video có giọng đọc mẫu – tool đo số âm tiết mỗi giây từ phụ đề. Giọng để 'Theo video mẫu' sẽ tự chỉnh tốc độ từng câu cho khớp.", MEASURE: "Đo tốc độ", MEASURED: (rate: string, title: string): string => `${rate} âm tiết/giây · ${title}`, PAUSES: (a: number, b: number, c: number, d: number): string => `Nhịp ngắt đo được: sau dấu phẩy ${a}s · hết câu ${b}s · trước chi tiết căng ${c}s · hết đoạn ${d}s (áp dụng cho mọi truyện).`, AUDIO: "Tải file giọng mẫu", AUDIO_BUSY: "Đang phân tích…", AUDIO_HINT: "mp3/wav/m4a, nên dài từ 3 phút. Chỉ đo nhịp và tốc độ, không lưu file, không sao chép giọng.", AUDIO_STATS: (rate: number, phrase: number, ratio: number): string => `Khi đang nói ${rate} âm tiết/giây · mỗi cụm ${phrase}s · ${ratio}% thời gian có tiếng.`, NONE: "Chưa đặt video mẫu – giọng đọc giữ tốc độ gốc.", AUTO: "Theo video mẫu", SPEED: "Tốc độ", PLACEHOLDER: "https://www.youtube.com/watch?v=…", SAVED: "Đã lưu tốc độ" },
-    en: { TITLE: "Reference speaking rate", HINT: "Paste a video with the narration pace you want – the tool measures syllables per second from its captions. Voices set to 'Match reference' adjust every line to match.", MEASURE: "Measure", MEASURED: (rate: string, title: string): string => `${rate} syllables/s · ${title}`, PAUSES: (a: number, b: number, c: number, d: number): string => `Measured pauses: after commas ${a}s · sentence end ${b}s · before tense details ${c}s · end of passage ${d}s (applied to every story).`, AUDIO: "Upload sample voice file", AUDIO_BUSY: "Analysing…", AUDIO_HINT: "mp3/wav/m4a, ideally 3+ minutes. Only pace and timing are measured; the file is not kept and the voice is not copied.", AUDIO_STATS: (rate: number, phrase: number, ratio: number): string => `While speaking ${rate} syllables/s · phrase ${phrase}s · ${ratio}% of time voiced.`, NONE: "No reference video – voices keep their own pace.", AUTO: "Match reference", SPEED: "Speed", PLACEHOLDER: "https://www.youtube.com/watch?v=…", SAVED: "Speed saved" },
+    vi: {
+      TITLE: "Tốc độ đọc chuẩn",
+      HINT: "Dán link video có giọng đọc mẫu – tool đo số âm tiết mỗi giây từ phụ đề. Giọng để 'Theo video mẫu' dùng hệ số tốc độ ổn định cho mỗi giọng trong một lượt đọc.",
+      MEASURE: "Đo tốc độ",
+      MEASURED: (rate: string, title: string): string => `${rate} âm tiết/giây · ${title}`,
+      PAUSES: (a: number, b: number, c: number, d: number): string => `Nhịp ngắt đo được: sau dấu phẩy ${a}s · hết câu ${b}s · trước chi tiết căng ${c}s · hết đoạn ${d}s (áp dụng cho mọi truyện).`,
+      AUDIO: "Tải file giọng mẫu",
+      AUDIO_BUSY: "Đang phân tích…",
+      AUDIO_HINT: "mp3/wav/m4a, nên dài từ 3 phút. Chỉ đo nhịp và tốc độ, không lưu file, không sao chép giọng.",
+      AUDIO_STATS: (rate: number, phrase: number, ratio: number): string => `Khi đang nói ${rate} âm tiết/giây · mỗi cụm ${phrase}s · ${ratio}% thời gian có tiếng.`,
+      NONE: "Chưa đặt video mẫu – giọng đọc giữ tốc độ gốc.",
+      AUTO: "Theo video mẫu",
+      SPEED: "Tốc độ",
+      PLACEHOLDER: "https://www.youtube.com/watch?v=…",
+      SAVED: "Đã lưu tốc độ",
+    },
+    en: {
+      TITLE: "Reference speaking rate",
+      HINT: "Paste a video with the narration pace you want – the tool measures syllables per second from its captions. Voices set to 'Match reference' use a stable speed factor per voice during a reading.",
+      MEASURE: "Measure",
+      MEASURED: (rate: string, title: string): string => `${rate} syllables/s · ${title}`,
+      PAUSES: (a: number, b: number, c: number, d: number): string => `Measured pauses: after commas ${a}s · sentence end ${b}s · before tense details ${c}s · end of passage ${d}s (applied to every story).`,
+      AUDIO: "Upload sample voice file",
+      AUDIO_BUSY: "Analysing…",
+      AUDIO_HINT: "mp3/wav/m4a, ideally 3+ minutes. Only pace and timing are measured; the file is not kept and the voice is not copied.",
+      AUDIO_STATS: (rate: number, phrase: number, ratio: number): string => `While speaking ${rate} syllables/s · phrase ${phrase}s · ${ratio}% of time voiced.`,
+      NONE: "No reference video – voices keep their own pace.",
+      AUTO: "Match reference",
+      SPEED: "Speed",
+      PLACEHOLDER: "https://www.youtube.com/watch?v=…",
+      SAVED: "Speed saved",
+    },
   },
 } as const;
-
 export const MOTION_VOICE_PACING = {
-  VERSION: 2,
+  VERSION: 3,
   HORROR_RE: /(horror|ghost|kinh dị|truyện ma|tâm linh|ma quỷ|rùng rợn)/iu,
   SENTENCE_RE: /[^.!?…]+(?:\.\.\.|[.!?…])+["”']?|[^.!?…]+$/g,
   WORD_RE: /\s+/,
@@ -612,22 +638,23 @@ export const MOTION_VOICE_PACING = {
   PHRASE_MAX_WORDS: 13,
   PHRASE_MIN_WORDS: 4,
   CONJ: ["thì", "mà", "rồi", "nhưng", "và", "khi", "lúc", "để", "nên", "vì", "bỗng", "chợt", "liền", "cho đến", "and", "but", "when", "then", "while", "because", "until", "so"] as string[],
-  NARRATION_SILENCE: 0.06,
-  HORROR: {
-    key: "horror",
-    narrationTempo: 1,
-    dialogueTempo: 0.98,
-    clauseGap: 0.45,
-    sentenceGap: 0.58,
-    suspenseGap: 0.8,
-    revealGap: 0.7,
-    revealWords: 6,
-    gaps: { FIRST: [0.2, 0.4], SAME_SPEAKER: [0.5, 0.65], SPEAKER_CHANGE: [0.5, 0.75], BEAT_END: [0.65, 0.85] },
-  },
-  LOG: (key: string, split: number): string => `Nhịp đọc "${key}": tách ${split} lời kể thành từng vế ngắn, ngắt nghỉ 0,45–0,8 giây như giọng kể truyện ma.`,
+  NARRATION_SILENCE: 0.15,
+  NARRATION_TEMPERATURE: 0.76,
+  NARRATION_STRENGTH: 0.2,
+  VOICE_LEAD: 0.25,
+  CHAPTER_PAUSE: 0.85,
+  SENTENCE_END_RE: /[.!?…]["”\')]*\s*$/,
+  HORROR: { key: "horror", narrationTempo: 0.94, dialogueTempo: 0.98, clauseGap: 0.16, sentenceGap: 0.4, suspenseGap: 0.65, revealGap: 0.45, revealWords: 6, gaps: { FIRST: [0.12, 0.25], SAME_SPEAKER: [0.3, 0.5], SPEAKER_CHANGE: [0.22, 0.4], BEAT_END: [0.25, 0.45] } },
+  LOG: (key: string, split: number): string => `Nhịp đọc "${key}": giữ câu kể liền mạch, tốc độ người kể ổn định; khoảng nghỉ theo câu và đổi người nói (${split} lượt cần chia).`,
 } as const;
-
-export interface MotionVoiceFx { pitch: number; vibrato: number; vibratoHz: number; treble: number; presence: number; lowpass: number; }
+export interface MotionVoiceFx {
+  pitch: number;
+  vibrato: number;
+  vibratoHz: number;
+  treble: number;
+  presence: number;
+  lowpass: number;
+}
 export const MOTION_VOICE_FX = {
   VERSION: 3,
   NONE: { pitch: 0, vibrato: 0, vibratoHz: 6, treble: 0, presence: 0, lowpass: 0 } as MotionVoiceFx,

@@ -29,7 +29,9 @@ const browser = await chromium.launch({ channel: T.CHROME, headless: true });
 const page = await browser.newPage();
 const waitForOutput = (value: string) => page.waitForFunction(({ selector, value }) => document.querySelector(selector)?.textContent === value, { selector: T.OUTPUT, value });
 const originalTimeout = CONFIG.MODEL_PICKER_TIMEOUT_MS;
+const originalReadyTimeout = CONFIG.PAGE_READY_TIMEOUT_MS;
 (CONFIG as unknown as { MODEL_PICKER_TIMEOUT_MS: number }).MODEL_PICKER_TIMEOUT_MS = 350;
+(CONFIG as unknown as { PAGE_READY_TIMEOUT_MS: number }).PAGE_READY_TIMEOUT_MS = 600;
 const resetPicker = async (mode: string = T.READY, english = false, materialMenu = false) => {
   await page.setContent(F.PICKER_HTML(JSON.stringify(mode), JSON.stringify(GEMINI_CHAT_BASE_MODEL_OPTIONS.slice(0, 4)), JSON.stringify(GEMINI_THINKING_LEVEL_OPTIONS.map((option) => ({ ...option, label: english ? option.labelEn : option.label }))), JSON.stringify(materialMenu), english ? T.THINKING_LEVEL : T.THINKING_LABEL, english ? T.SELECTED : T.DA_CHON));
 };
@@ -67,25 +69,22 @@ try {
   for (const mode of [T.MISSING, T.DISABLED, T.IGNORE_LEVEL, T.IGNORE_MODEL]) {
     await resetPicker(mode);
     const base = mode === T.IGNORE_MODEL ? AiPlanningChatModel.GeminiPro : AiPlanningChatModel.GeminiArgon;
-    await assert.rejects(selectGeminiThinkingModel(page, encodeGeminiChatModel(base, T.HIGH)), T.PATTERN_GEMINI_THINKING_UNAVAILABLE, mode);
+    await assert.rejects(selectGeminiThinkingModel(page, encodeGeminiChatModel(base, T.HIGH)), mode === T.DISABLED ? T.PATTERN_GEMINI_THINKING_UNAVAILABLE : T.PATTERN_GEMINI_UI_NOT_READY, mode);
     assert.equal(await page.getByRole(T.MENU).count(), 0, T.CLOSE_THE_PICKER_AFTER_FAILURE);
   }
+  for (const mode of [T.DELAYED_PAGE, T.LATE_PAGE, T.DELAYED_LEVEL, T.TRANSIENT_MENU]) {
+    await resetPicker(mode);
+    await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiFlash, T.HIGH));
+    assert.deepEqual(await page.evaluate(() => ({ model: (window as any).current, level: (window as any).level, premature: (window as any).prematureOpens })), { model: AiPlanningChatModel.GeminiFlash, level: T.HIGH, premature: 0 });
+    assert.equal(await page.getByRole(T.MENU).count(), 0);
+  }
+  await resetPicker(T.NOT_READY);
+  await assert.rejects(selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiFlash, T.HIGH)), T.PATTERN_GEMINI_UI_NOT_READY);
+  assert.equal(await page.evaluate(() => (window as any).menuAttempts), 0);
   const abort = new AbortController();
   abort.abort();
   await assert.rejects(selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.HIGH), abort.signal), T.PATTERN_CHAT_PLANNING_CANCELLED);
-  const ui = await build({
-    stdin: {
-      contents: T.UI_ENTRY,
-      loader: T.TSX,
-      resolveDir: process.cwd(),
-    },
-    bundle: true,
-    write: false,
-    platform: T.BROWSER,
-    format: T.IIFE,
-    jsx: T.AUTOMATIC,
-    define: { "import.meta": T.EMPTY },
-  });
+  const ui = await build({ stdin: { contents: T.UI_ENTRY, loader: T.TSX, resolveDir: process.cwd() }, bundle: true, write: false, platform: T.BROWSER, format: T.IIFE, jsx: T.AUTOMATIC, define: { "import.meta": T.EMPTY } });
   await page.route(T.SETTINGS_ROUTE, (route) => route.fulfill({ contentType: T.TEXT_HTML, body: T.ROOT_HTML }));
   const mount = async () => {
     await page.goto(T.SETTINGS_URL);
@@ -126,15 +125,18 @@ try {
         name: T.ISOLATED_GEMINI_ROOM,
         setup(builder) {
           builder.onResolve({ filter: T.PATTERN_CHATUIPLANNINGSERVICE_JS }, () => ({ path: T.ROOM, namespace: T.GEMINI_TEST }));
-          builder.onLoad({ filter: T.PATTERN_EMPTY, namespace: T.GEMINI_TEST }, () => ({ loader: T.JS, contents: T.ROOM_STUB }));
+          builder.onResolve({ filter: T.API_IMPORT }, () => ({ path: T.API_FILE, namespace: T.GEMINI_TEST }));
+          builder.onLoad({ filter: T.PATTERN_EMPTY, namespace: T.GEMINI_TEST }, (args) => ({ loader: T.JS, contents: args.path === T.API_FILE ? T.API_STUB : T.ROOM_STUB }));
         },
       },
     ],
   });
   fs.mkdirSync(T.SCRATCH, { recursive: true });
   const bundlePath = path.resolve(F.MOTION_BUNDLE_PATH(process.pid));
-  const room = { calls: [] as { stage: string; model: string }[], fail: false };
+  const room = { calls: [] as { stage: string; model: string }[], fail: false, apiCalls: 0 };
   (globalThis as any).__geminiRoomTest = room;
+  const previousStorage = process.env.VIDIFY_STORAGE_DIR;
+  process.env.VIDIFY_STORAGE_DIR = path.resolve(T.STORAGE(process.pid));
   try {
     fs.writeFileSync(bundlePath, motionBundle.outputFiles[0].text);
     const motion = await import(pathToFileURL(bundlePath).href);
@@ -151,14 +153,19 @@ try {
     );
     room.fail = true;
     room.calls = [];
-    await assert.rejects(motion.runMotionAi(T.TEST, T.TEST, { ...execution, mode: AiPlanningExecutionMode.Hybrid }), T.PATTERN_GEMINI_THINKING_UNAVAILABLE);
-    assert.equal(room.calls.length, 1, T.AN_UNAVAILABLE_EXPLICIT_LEVEL_MUST_NOT_FALL_BACK_TO_ANOTHER_MODEL_OR_API);
+    await assert.rejects(motion.runMotionAi(T.TEST, T.TEST, { ...execution, strictProvider: true, mode: AiPlanningExecutionMode.Hybrid }), T.PATTERN_GEMINI_THINKING_UNAVAILABLE);
+    assert.equal(room.calls.length, 2, T.AN_UNAVAILABLE_EXPLICIT_LEVEL_MUST_NOT_FALL_BACK_TO_ANOTHER_MODEL_OR_API);
+    assert.ok(room.calls.every((call) => call.model === model));
+    assert.equal(room.apiCalls, 0);
   } finally {
+    if (previousStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
+    else process.env.VIDIFY_STORAGE_DIR = previousStorage;
     delete (globalThis as any).__geminiRoomTest;
     fs.rmSync(bundlePath, { force: true });
   }
   process.stdout.write(T.PASSED);
 } finally {
   (CONFIG as unknown as { MODEL_PICKER_TIMEOUT_MS: number }).MODEL_PICKER_TIMEOUT_MS = originalTimeout;
+  (CONFIG as unknown as { PAGE_READY_TIMEOUT_MS: number }).PAGE_READY_TIMEOUT_MS = originalReadyTimeout;
   await browser.close();
 }

@@ -1,0 +1,6539 @@
+{
+  "id": "Cyak0swNZEo",
+  "title": "Đêm không ngủ - Quỷ nhập tràng kỳ truyện",
+  "duration": 911.866667,
+  "width": 854,
+  "height": 480,
+  "fps": 30,
+  "upload_date": "20260907",
+  "channel": "Khuất mặt Kỳ Truyện",
+  "channel_url": "https://www.youtube.com/channel/UCYLno7MAM5OMNULbCcoyNjw",
+  "url": "https://www.youtube.com/watch?v=Cyak0swNZEo",
+  "status": "extracted",
+  "scanned_seconds": 912.0,
+  "sample_fps": 2,
+  "visual_review": "pending",
+  "frames": [
+    {
+      "number": 1,
+      "time": 0.0,
+      "timestamp": "00:00:00",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000001.jpg"
+    },
+    {
+      "number": 2,
+      "time": 7.0,
+      "timestamp": "00:00:07",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000002.jpg"
+    },
+    {
+      "number": 3,
+      "time": 9.5,
+      "timestamp": "00:00:09",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000003.jpg"
+    },
+    {
+      "number": 4,
+      "time": 12.0,
+      "timestamp": "00:00:12",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000004.jpg"
+    },
+    {
+      "number": 5,
+      "time": 14.5,
+      "timestamp": "00:00:14",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000005.jpg"
+    },
+    {
+      "number": 6,
+      "time": 15.5,
+      "timestamp": "00:00:15",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000006.jpg"
+    },
+    {
+      "number": 7,
+      "time": 17.5,
+      "timestamp": "00:00:17",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000007.jpg"
+    },
+    {
+      "number": 8,
+      "time": 18.5,
+      "timestamp": "00:00:18",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000008.jpg"
+    },
+    {
+      "number": 9,
+      "time": 21.0,
+      "timestamp": "00:00:21",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000009.jpg"
+    },
+    {
+      "number": 10,
+      "time": 22.0,
+      "timestamp": "00:00:22",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000010.jpg"
+    },
+    {
+      "number": 11,
+      "time": 29.0,
+      "timestamp": "00:00:29",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000011.jpg"
+    },
+    {
+      "number": 12,
+      "time": 30.0,
+      "timestamp": "00:00:30",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000012.jpg"
+    },
+    {
+      "number": 13,
+      "time": 34.5,
+      "timestamp": "00:00:34",
+      "board": "boards/001.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000013.jpg"
+    },
+    {
+      "number": 14,
+      "time": 35.5,
+      "timestamp": "00:00:35",
+      "board": "boards/001.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000014.jpg"
+    },
+    {
+      "number": 15,
+      "time": 39.0,
+      "timestamp": "00:00:39",
+      "board": "boards/001.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000015.jpg"
+    },
+    {
+      "number": 16,
+      "time": 40.0,
+      "timestamp": "00:00:40",
+      "board": "boards/001.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000016.jpg"
+    },
+    {
+      "number": 17,
+      "time": 42.5,
+      "timestamp": "00:00:42",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000017.jpg"
+    },
+    {
+      "number": 18,
+      "time": 43.5,
+      "timestamp": "00:00:43",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000018.jpg"
+    },
+    {
+      "number": 19,
+      "time": 45.0,
+      "timestamp": "00:00:45",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000019.jpg"
+    },
+    {
+      "number": 20,
+      "time": 46.0,
+      "timestamp": "00:00:46",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000020.jpg"
+    },
+    {
+      "number": 21,
+      "time": 48.5,
+      "timestamp": "00:00:48",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000021.jpg"
+    },
+    {
+      "number": 22,
+      "time": 49.5,
+      "timestamp": "00:00:49",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000022.jpg"
+    },
+    {
+      "number": 23,
+      "time": 51.5,
+      "timestamp": "00:00:51",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000023.jpg"
+    },
+    {
+      "number": 24,
+      "time": 52.5,
+      "timestamp": "00:00:52",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000024.jpg"
+    },
+    {
+      "number": 25,
+      "time": 55.5,
+      "timestamp": "00:00:55",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000025.jpg"
+    },
+    {
+      "number": 26,
+      "time": 56.5,
+      "timestamp": "00:00:56",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000026.jpg"
+    },
+    {
+      "number": 27,
+      "time": 59.0,
+      "timestamp": "00:00:59",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000027.jpg"
+    },
+    {
+      "number": 28,
+      "time": 60.0,
+      "timestamp": "00:01:00",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000028.jpg"
+    },
+    {
+      "number": 29,
+      "time": 62.5,
+      "timestamp": "00:01:02",
+      "board": "boards/002.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000029.jpg"
+    },
+    {
+      "number": 30,
+      "time": 66.5,
+      "timestamp": "00:01:06",
+      "board": "boards/002.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000030.jpg"
+    },
+    {
+      "number": 31,
+      "time": 67.5,
+      "timestamp": "00:01:07",
+      "board": "boards/002.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000031.jpg"
+    },
+    {
+      "number": 32,
+      "time": 71.0,
+      "timestamp": "00:01:11",
+      "board": "boards/002.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000032.jpg"
+    },
+    {
+      "number": 33,
+      "time": 74.0,
+      "timestamp": "00:01:14",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000033.jpg"
+    },
+    {
+      "number": 34,
+      "time": 75.5,
+      "timestamp": "00:01:15",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000034.jpg"
+    },
+    {
+      "number": 35,
+      "time": 78.5,
+      "timestamp": "00:01:18",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000035.jpg"
+    },
+    {
+      "number": 36,
+      "time": 79.5,
+      "timestamp": "00:01:19",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000036.jpg"
+    },
+    {
+      "number": 37,
+      "time": 80.5,
+      "timestamp": "00:01:20",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000037.jpg"
+    },
+    {
+      "number": 38,
+      "time": 83.0,
+      "timestamp": "00:01:23",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000038.jpg"
+    },
+    {
+      "number": 39,
+      "time": 86.0,
+      "timestamp": "00:01:26",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000039.jpg"
+    },
+    {
+      "number": 40,
+      "time": 87.0,
+      "timestamp": "00:01:27",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000040.jpg"
+    },
+    {
+      "number": 41,
+      "time": 94.0,
+      "timestamp": "00:01:34",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000041.jpg"
+    },
+    {
+      "number": 42,
+      "time": 95.0,
+      "timestamp": "00:01:35",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000042.jpg"
+    },
+    {
+      "number": 43,
+      "time": 97.5,
+      "timestamp": "00:01:37",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000043.jpg"
+    },
+    {
+      "number": 44,
+      "time": 98.5,
+      "timestamp": "00:01:38",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000044.jpg"
+    },
+    {
+      "number": 45,
+      "time": 100.5,
+      "timestamp": "00:01:40",
+      "board": "boards/003.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000045.jpg"
+    },
+    {
+      "number": 46,
+      "time": 101.5,
+      "timestamp": "00:01:41",
+      "board": "boards/003.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000046.jpg"
+    },
+    {
+      "number": 47,
+      "time": 104.0,
+      "timestamp": "00:01:44",
+      "board": "boards/003.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000047.jpg"
+    },
+    {
+      "number": 48,
+      "time": 105.0,
+      "timestamp": "00:01:45",
+      "board": "boards/003.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000048.jpg"
+    },
+    {
+      "number": 49,
+      "time": 107.0,
+      "timestamp": "00:01:47",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000049.jpg"
+    },
+    {
+      "number": 50,
+      "time": 109.5,
+      "timestamp": "00:01:49",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000050.jpg"
+    },
+    {
+      "number": 51,
+      "time": 110.5,
+      "timestamp": "00:01:50",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000051.jpg"
+    },
+    {
+      "number": 52,
+      "time": 113.0,
+      "timestamp": "00:01:53",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000052.jpg"
+    },
+    {
+      "number": 53,
+      "time": 114.0,
+      "timestamp": "00:01:54",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000053.jpg"
+    },
+    {
+      "number": 54,
+      "time": 115.0,
+      "timestamp": "00:01:55",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000054.jpg"
+    },
+    {
+      "number": 55,
+      "time": 116.0,
+      "timestamp": "00:01:56",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000055.jpg"
+    },
+    {
+      "number": 56,
+      "time": 118.5,
+      "timestamp": "00:01:58",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000056.jpg"
+    },
+    {
+      "number": 57,
+      "time": 119.5,
+      "timestamp": "00:01:59",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000057.jpg"
+    },
+    {
+      "number": 58,
+      "time": 122.0,
+      "timestamp": "00:02:02",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000058.jpg"
+    },
+    {
+      "number": 59,
+      "time": 123.0,
+      "timestamp": "00:02:03",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000059.jpg"
+    },
+    {
+      "number": 60,
+      "time": 124.0,
+      "timestamp": "00:02:04",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000060.jpg"
+    },
+    {
+      "number": 61,
+      "time": 125.0,
+      "timestamp": "00:02:05",
+      "board": "boards/004.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000061.jpg"
+    },
+    {
+      "number": 62,
+      "time": 127.5,
+      "timestamp": "00:02:07",
+      "board": "boards/004.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000062.jpg"
+    },
+    {
+      "number": 63,
+      "time": 128.5,
+      "timestamp": "00:02:08",
+      "board": "boards/004.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000063.jpg"
+    },
+    {
+      "number": 64,
+      "time": 131.5,
+      "timestamp": "00:02:11",
+      "board": "boards/004.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000064.jpg"
+    },
+    {
+      "number": 65,
+      "time": 132.5,
+      "timestamp": "00:02:12",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000065.jpg"
+    },
+    {
+      "number": 66,
+      "time": 137.5,
+      "timestamp": "00:02:17",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000066.jpg"
+    },
+    {
+      "number": 67,
+      "time": 138.5,
+      "timestamp": "00:02:18",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000067.jpg"
+    },
+    {
+      "number": 68,
+      "time": 141.0,
+      "timestamp": "00:02:21",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000068.jpg"
+    },
+    {
+      "number": 69,
+      "time": 142.0,
+      "timestamp": "00:02:22",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000069.jpg"
+    },
+    {
+      "number": 70,
+      "time": 143.5,
+      "timestamp": "00:02:23",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000070.jpg"
+    },
+    {
+      "number": 71,
+      "time": 147.5,
+      "timestamp": "00:02:27",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000071.jpg"
+    },
+    {
+      "number": 72,
+      "time": 151.0,
+      "timestamp": "00:02:31",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000072.jpg"
+    },
+    {
+      "number": 73,
+      "time": 155.5,
+      "timestamp": "00:02:35",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000073.jpg"
+    },
+    {
+      "number": 74,
+      "time": 156.5,
+      "timestamp": "00:02:36",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000074.jpg"
+    },
+    {
+      "number": 75,
+      "time": 159.5,
+      "timestamp": "00:02:39",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000075.jpg"
+    },
+    {
+      "number": 76,
+      "time": 163.5,
+      "timestamp": "00:02:43",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000076.jpg"
+    },
+    {
+      "number": 77,
+      "time": 166.0,
+      "timestamp": "00:02:46",
+      "board": "boards/005.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000077.jpg"
+    },
+    {
+      "number": 78,
+      "time": 167.0,
+      "timestamp": "00:02:47",
+      "board": "boards/005.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000078.jpg"
+    },
+    {
+      "number": 79,
+      "time": 171.5,
+      "timestamp": "00:02:51",
+      "board": "boards/005.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000079.jpg"
+    },
+    {
+      "number": 80,
+      "time": 173.0,
+      "timestamp": "00:02:53",
+      "board": "boards/005.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000080.jpg"
+    },
+    {
+      "number": 81,
+      "time": 174.5,
+      "timestamp": "00:02:54",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000081.jpg"
+    },
+    {
+      "number": 82,
+      "time": 175.5,
+      "timestamp": "00:02:55",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000082.jpg"
+    },
+    {
+      "number": 83,
+      "time": 177.0,
+      "timestamp": "00:02:57",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000083.jpg"
+    },
+    {
+      "number": 84,
+      "time": 178.0,
+      "timestamp": "00:02:58",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000084.jpg"
+    },
+    {
+      "number": 85,
+      "time": 181.0,
+      "timestamp": "00:03:01",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000085.jpg"
+    },
+    {
+      "number": 86,
+      "time": 182.0,
+      "timestamp": "00:03:02",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000086.jpg"
+    },
+    {
+      "number": 87,
+      "time": 184.0,
+      "timestamp": "00:03:04",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000087.jpg"
+    },
+    {
+      "number": 88,
+      "time": 185.0,
+      "timestamp": "00:03:05",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000088.jpg"
+    },
+    {
+      "number": 89,
+      "time": 187.5,
+      "timestamp": "00:03:07",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000089.jpg"
+    },
+    {
+      "number": 90,
+      "time": 188.5,
+      "timestamp": "00:03:08",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000090.jpg"
+    },
+    {
+      "number": 91,
+      "time": 191.0,
+      "timestamp": "00:03:11",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000091.jpg"
+    },
+    {
+      "number": 92,
+      "time": 193.5,
+      "timestamp": "00:03:13",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000092.jpg"
+    },
+    {
+      "number": 93,
+      "time": 194.5,
+      "timestamp": "00:03:14",
+      "board": "boards/006.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000093.jpg"
+    },
+    {
+      "number": 94,
+      "time": 195.5,
+      "timestamp": "00:03:15",
+      "board": "boards/006.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000094.jpg"
+    },
+    {
+      "number": 95,
+      "time": 198.5,
+      "timestamp": "00:03:18",
+      "board": "boards/006.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000095.jpg"
+    },
+    {
+      "number": 96,
+      "time": 199.5,
+      "timestamp": "00:03:19",
+      "board": "boards/006.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000096.jpg"
+    },
+    {
+      "number": 97,
+      "time": 203.0,
+      "timestamp": "00:03:23",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000097.jpg"
+    },
+    {
+      "number": 98,
+      "time": 204.5,
+      "timestamp": "00:03:24",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000098.jpg"
+    },
+    {
+      "number": 99,
+      "time": 207.0,
+      "timestamp": "00:03:27",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000099.jpg"
+    },
+    {
+      "number": 100,
+      "time": 208.0,
+      "timestamp": "00:03:28",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000100.jpg"
+    },
+    {
+      "number": 101,
+      "time": 209.0,
+      "timestamp": "00:03:29",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000101.jpg"
+    },
+    {
+      "number": 102,
+      "time": 211.0,
+      "timestamp": "00:03:31",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000102.jpg"
+    },
+    {
+      "number": 103,
+      "time": 212.0,
+      "timestamp": "00:03:32",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000103.jpg"
+    },
+    {
+      "number": 104,
+      "time": 215.0,
+      "timestamp": "00:03:35",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000104.jpg"
+    },
+    {
+      "number": 105,
+      "time": 216.0,
+      "timestamp": "00:03:36",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000105.jpg"
+    },
+    {
+      "number": 106,
+      "time": 219.5,
+      "timestamp": "00:03:39",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000106.jpg"
+    },
+    {
+      "number": 107,
+      "time": 220.5,
+      "timestamp": "00:03:40",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000107.jpg"
+    },
+    {
+      "number": 108,
+      "time": 222.0,
+      "timestamp": "00:03:42",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000108.jpg"
+    },
+    {
+      "number": 109,
+      "time": 224.5,
+      "timestamp": "00:03:44",
+      "board": "boards/007.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000109.jpg"
+    },
+    {
+      "number": 110,
+      "time": 225.5,
+      "timestamp": "00:03:45",
+      "board": "boards/007.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000110.jpg"
+    },
+    {
+      "number": 111,
+      "time": 226.5,
+      "timestamp": "00:03:46",
+      "board": "boards/007.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000111.jpg"
+    },
+    {
+      "number": 112,
+      "time": 228.5,
+      "timestamp": "00:03:48",
+      "board": "boards/007.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000112.jpg"
+    },
+    {
+      "number": 113,
+      "time": 229.5,
+      "timestamp": "00:03:49",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000113.jpg"
+    },
+    {
+      "number": 114,
+      "time": 232.0,
+      "timestamp": "00:03:52",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000114.jpg"
+    },
+    {
+      "number": 115,
+      "time": 233.0,
+      "timestamp": "00:03:53",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000115.jpg"
+    },
+    {
+      "number": 116,
+      "time": 235.5,
+      "timestamp": "00:03:55",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000116.jpg"
+    },
+    {
+      "number": 117,
+      "time": 238.5,
+      "timestamp": "00:03:58",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000117.jpg"
+    },
+    {
+      "number": 118,
+      "time": 242.0,
+      "timestamp": "00:04:02",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000118.jpg"
+    },
+    {
+      "number": 119,
+      "time": 245.0,
+      "timestamp": "00:04:05",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000119.jpg"
+    },
+    {
+      "number": 120,
+      "time": 250.5,
+      "timestamp": "00:04:10",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000120.jpg"
+    },
+    {
+      "number": 121,
+      "time": 254.5,
+      "timestamp": "00:04:14",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000121.jpg"
+    },
+    {
+      "number": 122,
+      "time": 255.5,
+      "timestamp": "00:04:15",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000122.jpg"
+    },
+    {
+      "number": 123,
+      "time": 258.0,
+      "timestamp": "00:04:18",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000123.jpg"
+    },
+    {
+      "number": 124,
+      "time": 259.0,
+      "timestamp": "00:04:19",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000124.jpg"
+    },
+    {
+      "number": 125,
+      "time": 261.5,
+      "timestamp": "00:04:21",
+      "board": "boards/008.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000125.jpg"
+    },
+    {
+      "number": 126,
+      "time": 262.5,
+      "timestamp": "00:04:22",
+      "board": "boards/008.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000126.jpg"
+    },
+    {
+      "number": 127,
+      "time": 264.0,
+      "timestamp": "00:04:24",
+      "board": "boards/008.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000127.jpg"
+    },
+    {
+      "number": 128,
+      "time": 265.0,
+      "timestamp": "00:04:25",
+      "board": "boards/008.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000128.jpg"
+    },
+    {
+      "number": 129,
+      "time": 267.0,
+      "timestamp": "00:04:27",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000129.jpg"
+    },
+    {
+      "number": 130,
+      "time": 268.0,
+      "timestamp": "00:04:28",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000130.jpg"
+    },
+    {
+      "number": 131,
+      "time": 271.0,
+      "timestamp": "00:04:31",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000131.jpg"
+    },
+    {
+      "number": 132,
+      "time": 272.0,
+      "timestamp": "00:04:32",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000132.jpg"
+    },
+    {
+      "number": 133,
+      "time": 274.0,
+      "timestamp": "00:04:34",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000133.jpg"
+    },
+    {
+      "number": 134,
+      "time": 278.0,
+      "timestamp": "00:04:38",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000134.jpg"
+    },
+    {
+      "number": 135,
+      "time": 281.0,
+      "timestamp": "00:04:41",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000135.jpg"
+    },
+    {
+      "number": 136,
+      "time": 282.0,
+      "timestamp": "00:04:42",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000136.jpg"
+    },
+    {
+      "number": 137,
+      "time": 283.0,
+      "timestamp": "00:04:43",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000137.jpg"
+    },
+    {
+      "number": 138,
+      "time": 284.0,
+      "timestamp": "00:04:44",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000138.jpg"
+    },
+    {
+      "number": 139,
+      "time": 286.0,
+      "timestamp": "00:04:46",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000139.jpg"
+    },
+    {
+      "number": 140,
+      "time": 287.0,
+      "timestamp": "00:04:47",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000140.jpg"
+    },
+    {
+      "number": 141,
+      "time": 290.5,
+      "timestamp": "00:04:50",
+      "board": "boards/009.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000141.jpg"
+    },
+    {
+      "number": 142,
+      "time": 291.5,
+      "timestamp": "00:04:51",
+      "board": "boards/009.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000142.jpg"
+    },
+    {
+      "number": 143,
+      "time": 293.5,
+      "timestamp": "00:04:53",
+      "board": "boards/009.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000143.jpg"
+    },
+    {
+      "number": 144,
+      "time": 294.5,
+      "timestamp": "00:04:54",
+      "board": "boards/009.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000144.jpg"
+    },
+    {
+      "number": 145,
+      "time": 298.5,
+      "timestamp": "00:04:58",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000145.jpg"
+    },
+    {
+      "number": 146,
+      "time": 300.5,
+      "timestamp": "00:05:00",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000146.jpg"
+    },
+    {
+      "number": 147,
+      "time": 301.5,
+      "timestamp": "00:05:01",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000147.jpg"
+    },
+    {
+      "number": 148,
+      "time": 302.5,
+      "timestamp": "00:05:02",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000148.jpg"
+    },
+    {
+      "number": 149,
+      "time": 303.5,
+      "timestamp": "00:05:03",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000149.jpg"
+    },
+    {
+      "number": 150,
+      "time": 306.5,
+      "timestamp": "00:05:06",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000150.jpg"
+    },
+    {
+      "number": 151,
+      "time": 307.5,
+      "timestamp": "00:05:07",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000151.jpg"
+    },
+    {
+      "number": 152,
+      "time": 308.5,
+      "timestamp": "00:05:08",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000152.jpg"
+    },
+    {
+      "number": 153,
+      "time": 316.5,
+      "timestamp": "00:05:16",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000153.jpg"
+    },
+    {
+      "number": 154,
+      "time": 318.5,
+      "timestamp": "00:05:18",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000154.jpg"
+    },
+    {
+      "number": 155,
+      "time": 319.5,
+      "timestamp": "00:05:19",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000155.jpg"
+    },
+    {
+      "number": 156,
+      "time": 324.0,
+      "timestamp": "00:05:24",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000156.jpg"
+    },
+    {
+      "number": 157,
+      "time": 327.0,
+      "timestamp": "00:05:27",
+      "board": "boards/010.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000157.jpg"
+    },
+    {
+      "number": 158,
+      "time": 328.0,
+      "timestamp": "00:05:28",
+      "board": "boards/010.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000158.jpg"
+    },
+    {
+      "number": 159,
+      "time": 331.0,
+      "timestamp": "00:05:31",
+      "board": "boards/010.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000159.jpg"
+    },
+    {
+      "number": 160,
+      "time": 333.5,
+      "timestamp": "00:05:33",
+      "board": "boards/010.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000160.jpg"
+    },
+    {
+      "number": 161,
+      "time": 334.5,
+      "timestamp": "00:05:34",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000161.jpg"
+    },
+    {
+      "number": 162,
+      "time": 336.5,
+      "timestamp": "00:05:36",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000162.jpg"
+    },
+    {
+      "number": 163,
+      "time": 337.5,
+      "timestamp": "00:05:37",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000163.jpg"
+    },
+    {
+      "number": 164,
+      "time": 341.0,
+      "timestamp": "00:05:41",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000164.jpg"
+    },
+    {
+      "number": 165,
+      "time": 342.0,
+      "timestamp": "00:05:42",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000165.jpg"
+    },
+    {
+      "number": 166,
+      "time": 346.5,
+      "timestamp": "00:05:46",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000166.jpg"
+    },
+    {
+      "number": 167,
+      "time": 349.5,
+      "timestamp": "00:05:49",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000167.jpg"
+    },
+    {
+      "number": 168,
+      "time": 352.5,
+      "timestamp": "00:05:52",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000168.jpg"
+    },
+    {
+      "number": 169,
+      "time": 355.0,
+      "timestamp": "00:05:55",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000169.jpg"
+    },
+    {
+      "number": 170,
+      "time": 356.0,
+      "timestamp": "00:05:56",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000170.jpg"
+    },
+    {
+      "number": 171,
+      "time": 357.5,
+      "timestamp": "00:05:57",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000171.jpg"
+    },
+    {
+      "number": 172,
+      "time": 362.0,
+      "timestamp": "00:06:02",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000172.jpg"
+    },
+    {
+      "number": 173,
+      "time": 363.0,
+      "timestamp": "00:06:03",
+      "board": "boards/011.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000173.jpg"
+    },
+    {
+      "number": 174,
+      "time": 366.5,
+      "timestamp": "00:06:06",
+      "board": "boards/011.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000174.jpg"
+    },
+    {
+      "number": 175,
+      "time": 370.0,
+      "timestamp": "00:06:10",
+      "board": "boards/011.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000175.jpg"
+    },
+    {
+      "number": 176,
+      "time": 371.0,
+      "timestamp": "00:06:11",
+      "board": "boards/011.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000176.jpg"
+    },
+    {
+      "number": 177,
+      "time": 373.5,
+      "timestamp": "00:06:13",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000177.jpg"
+    },
+    {
+      "number": 178,
+      "time": 374.5,
+      "timestamp": "00:06:14",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000178.jpg"
+    },
+    {
+      "number": 179,
+      "time": 378.0,
+      "timestamp": "00:06:18",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000179.jpg"
+    },
+    {
+      "number": 180,
+      "time": 379.0,
+      "timestamp": "00:06:19",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000180.jpg"
+    },
+    {
+      "number": 181,
+      "time": 381.0,
+      "timestamp": "00:06:21",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000181.jpg"
+    },
+    {
+      "number": 182,
+      "time": 382.0,
+      "timestamp": "00:06:22",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000182.jpg"
+    },
+    {
+      "number": 183,
+      "time": 385.0,
+      "timestamp": "00:06:25",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000183.jpg"
+    },
+    {
+      "number": 184,
+      "time": 386.0,
+      "timestamp": "00:06:26",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000184.jpg"
+    },
+    {
+      "number": 185,
+      "time": 389.0,
+      "timestamp": "00:06:29",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000185.jpg"
+    },
+    {
+      "number": 186,
+      "time": 390.0,
+      "timestamp": "00:06:30",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000186.jpg"
+    },
+    {
+      "number": 187,
+      "time": 392.0,
+      "timestamp": "00:06:32",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000187.jpg"
+    },
+    {
+      "number": 188,
+      "time": 393.0,
+      "timestamp": "00:06:33",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000188.jpg"
+    },
+    {
+      "number": 189,
+      "time": 396.0,
+      "timestamp": "00:06:36",
+      "board": "boards/012.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000189.jpg"
+    },
+    {
+      "number": 190,
+      "time": 397.0,
+      "timestamp": "00:06:37",
+      "board": "boards/012.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000190.jpg"
+    },
+    {
+      "number": 191,
+      "time": 400.5,
+      "timestamp": "00:06:40",
+      "board": "boards/012.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000191.jpg"
+    },
+    {
+      "number": 192,
+      "time": 402.0,
+      "timestamp": "00:06:42",
+      "board": "boards/012.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000192.jpg"
+    },
+    {
+      "number": 193,
+      "time": 405.5,
+      "timestamp": "00:06:45",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000193.jpg"
+    },
+    {
+      "number": 194,
+      "time": 406.5,
+      "timestamp": "00:06:46",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000194.jpg"
+    },
+    {
+      "number": 195,
+      "time": 408.0,
+      "timestamp": "00:06:48",
+      "board": "boards/013.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000195.jpg"
+    },
+    {
+      "number": 196,
+      "time": 409.0,
+      "timestamp": "00:06:49",
+      "board": "boards/013.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000196.jpg"
+    },
+    {
+      "number": 197,
+      "time": 411.5,
+      "timestamp": "00:06:51",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000197.jpg"
+    },
+    {
+      "number": 198,
+      "time": 412.5,
+      "timestamp": "00:06:52",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000198.jpg"
+    },
+    {
+      "number": 199,
+      "time": 414.0,
+      "timestamp": "00:06:54",
+      "board": "boards/013.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000199.jpg"
+    },
+    {
+      "number": 200,
+      "time": 415.0,
+      "timestamp": "00:06:55",
+      "board": "boards/013.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000200.jpg"
+    },
+    {
+      "number": 201,
+      "time": 416.5,
+      "timestamp": "00:06:56",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000201.jpg"
+    },
+    {
+      "number": 202,
+      "time": 419.5,
+      "timestamp": "00:06:59",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000202.jpg"
+    },
+    {
+      "number": 203,
+      "time": 423.0,
+      "timestamp": "00:07:03",
+      "board": "boards/013.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000203.jpg"
+    },
+    {
+      "number": 204,
+      "time": 424.0,
+      "timestamp": "00:07:04",
+      "board": "boards/013.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000204.jpg"
+    },
+    {
+      "number": 205,
+      "time": 431.0,
+      "timestamp": "00:07:11",
+      "board": "boards/013.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000205.jpg"
+    },
+    {
+      "number": 206,
+      "time": 435.0,
+      "timestamp": "00:07:15",
+      "board": "boards/013.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000206.jpg"
+    },
+    {
+      "number": 207,
+      "time": 436.0,
+      "timestamp": "00:07:16",
+      "board": "boards/013.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000207.jpg"
+    },
+    {
+      "number": 208,
+      "time": 437.5,
+      "timestamp": "00:07:17",
+      "board": "boards/013.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000208.jpg"
+    },
+    {
+      "number": 209,
+      "time": 438.5,
+      "timestamp": "00:07:18",
+      "board": "boards/014.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000209.jpg"
+    },
+    {
+      "number": 210,
+      "time": 440.5,
+      "timestamp": "00:07:20",
+      "board": "boards/014.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000210.jpg"
+    },
+    {
+      "number": 211,
+      "time": 441.5,
+      "timestamp": "00:07:21",
+      "board": "boards/014.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000211.jpg"
+    },
+    {
+      "number": 212,
+      "time": 444.5,
+      "timestamp": "00:07:24",
+      "board": "boards/014.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000212.jpg"
+    },
+    {
+      "number": 213,
+      "time": 445.5,
+      "timestamp": "00:07:25",
+      "board": "boards/014.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000213.jpg"
+    },
+    {
+      "number": 214,
+      "time": 448.0,
+      "timestamp": "00:07:28",
+      "board": "boards/014.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000214.jpg"
+    },
+    {
+      "number": 215,
+      "time": 449.0,
+      "timestamp": "00:07:29",
+      "board": "boards/014.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000215.jpg"
+    },
+    {
+      "number": 216,
+      "time": 453.0,
+      "timestamp": "00:07:33",
+      "board": "boards/014.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000216.jpg"
+    },
+    {
+      "number": 217,
+      "time": 454.0,
+      "timestamp": "00:07:34",
+      "board": "boards/014.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000217.jpg"
+    },
+    {
+      "number": 218,
+      "time": 456.0,
+      "timestamp": "00:07:36",
+      "board": "boards/014.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000218.jpg"
+    },
+    {
+      "number": 219,
+      "time": 457.0,
+      "timestamp": "00:07:37",
+      "board": "boards/014.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000219.jpg"
+    },
+    {
+      "number": 220,
+      "time": 459.0,
+      "timestamp": "00:07:39",
+      "board": "boards/014.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000220.jpg"
+    },
+    {
+      "number": 221,
+      "time": 460.0,
+      "timestamp": "00:07:40",
+      "board": "boards/014.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000221.jpg"
+    },
+    {
+      "number": 222,
+      "time": 461.0,
+      "timestamp": "00:07:41",
+      "board": "boards/014.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000222.jpg"
+    },
+    {
+      "number": 223,
+      "time": 462.0,
+      "timestamp": "00:07:42",
+      "board": "boards/014.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000223.jpg"
+    },
+    {
+      "number": 224,
+      "time": 464.0,
+      "timestamp": "00:07:44",
+      "board": "boards/014.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000224.jpg"
+    },
+    {
+      "number": 225,
+      "time": 465.0,
+      "timestamp": "00:07:45",
+      "board": "boards/015.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000225.jpg"
+    },
+    {
+      "number": 226,
+      "time": 468.0,
+      "timestamp": "00:07:48",
+      "board": "boards/015.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000226.jpg"
+    },
+    {
+      "number": 227,
+      "time": 469.0,
+      "timestamp": "00:07:49",
+      "board": "boards/015.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000227.jpg"
+    },
+    {
+      "number": 228,
+      "time": 470.5,
+      "timestamp": "00:07:50",
+      "board": "boards/015.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000228.jpg"
+    },
+    {
+      "number": 229,
+      "time": 471.5,
+      "timestamp": "00:07:51",
+      "board": "boards/015.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000229.jpg"
+    },
+    {
+      "number": 230,
+      "time": 473.5,
+      "timestamp": "00:07:53",
+      "board": "boards/015.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000230.jpg"
+    },
+    {
+      "number": 231,
+      "time": 474.5,
+      "timestamp": "00:07:54",
+      "board": "boards/015.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000231.jpg"
+    },
+    {
+      "number": 232,
+      "time": 476.5,
+      "timestamp": "00:07:56",
+      "board": "boards/015.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000232.jpg"
+    },
+    {
+      "number": 233,
+      "time": 477.5,
+      "timestamp": "00:07:57",
+      "board": "boards/015.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000233.jpg"
+    },
+    {
+      "number": 234,
+      "time": 479.0,
+      "timestamp": "00:07:59",
+      "board": "boards/015.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000234.jpg"
+    },
+    {
+      "number": 235,
+      "time": 480.0,
+      "timestamp": "00:08:00",
+      "board": "boards/015.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000235.jpg"
+    },
+    {
+      "number": 236,
+      "time": 482.5,
+      "timestamp": "00:08:02",
+      "board": "boards/015.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000236.jpg"
+    },
+    {
+      "number": 237,
+      "time": 483.5,
+      "timestamp": "00:08:03",
+      "board": "boards/015.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000237.jpg"
+    },
+    {
+      "number": 238,
+      "time": 484.5,
+      "timestamp": "00:08:04",
+      "board": "boards/015.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000238.jpg"
+    },
+    {
+      "number": 239,
+      "time": 487.5,
+      "timestamp": "00:08:07",
+      "board": "boards/015.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000239.jpg"
+    },
+    {
+      "number": 240,
+      "time": 488.5,
+      "timestamp": "00:08:08",
+      "board": "boards/015.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000240.jpg"
+    },
+    {
+      "number": 241,
+      "time": 490.0,
+      "timestamp": "00:08:10",
+      "board": "boards/016.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000241.jpg"
+    },
+    {
+      "number": 242,
+      "time": 491.0,
+      "timestamp": "00:08:11",
+      "board": "boards/016.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000242.jpg"
+    },
+    {
+      "number": 243,
+      "time": 497.5,
+      "timestamp": "00:08:17",
+      "board": "boards/016.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000243.jpg"
+    },
+    {
+      "number": 244,
+      "time": 498.5,
+      "timestamp": "00:08:18",
+      "board": "boards/016.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000244.jpg"
+    },
+    {
+      "number": 245,
+      "time": 501.5,
+      "timestamp": "00:08:21",
+      "board": "boards/016.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000245.jpg"
+    },
+    {
+      "number": 246,
+      "time": 502.5,
+      "timestamp": "00:08:22",
+      "board": "boards/016.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000246.jpg"
+    },
+    {
+      "number": 247,
+      "time": 504.5,
+      "timestamp": "00:08:24",
+      "board": "boards/016.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000247.jpg"
+    },
+    {
+      "number": 248,
+      "time": 505.5,
+      "timestamp": "00:08:25",
+      "board": "boards/016.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000248.jpg"
+    },
+    {
+      "number": 249,
+      "time": 506.5,
+      "timestamp": "00:08:26",
+      "board": "boards/016.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000249.jpg"
+    },
+    {
+      "number": 250,
+      "time": 507.5,
+      "timestamp": "00:08:27",
+      "board": "boards/016.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000250.jpg"
+    },
+    {
+      "number": 251,
+      "time": 509.5,
+      "timestamp": "00:08:29",
+      "board": "boards/016.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000251.jpg"
+    },
+    {
+      "number": 252,
+      "time": 510.5,
+      "timestamp": "00:08:30",
+      "board": "boards/016.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000252.jpg"
+    },
+    {
+      "number": 253,
+      "time": 514.5,
+      "timestamp": "00:08:34",
+      "board": "boards/016.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000253.jpg"
+    },
+    {
+      "number": 254,
+      "time": 515.5,
+      "timestamp": "00:08:35",
+      "board": "boards/016.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000254.jpg"
+    },
+    {
+      "number": 255,
+      "time": 517.5,
+      "timestamp": "00:08:37",
+      "board": "boards/016.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000255.jpg"
+    },
+    {
+      "number": 256,
+      "time": 519.0,
+      "timestamp": "00:08:39",
+      "board": "boards/016.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000256.jpg"
+    },
+    {
+      "number": 257,
+      "time": 520.0,
+      "timestamp": "00:08:40",
+      "board": "boards/017.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000257.jpg"
+    },
+    {
+      "number": 258,
+      "time": 523.5,
+      "timestamp": "00:08:43",
+      "board": "boards/017.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000258.jpg"
+    },
+    {
+      "number": 259,
+      "time": 524.5,
+      "timestamp": "00:08:44",
+      "board": "boards/017.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000259.jpg"
+    },
+    {
+      "number": 260,
+      "time": 528.0,
+      "timestamp": "00:08:48",
+      "board": "boards/017.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000260.jpg"
+    },
+    {
+      "number": 261,
+      "time": 529.0,
+      "timestamp": "00:08:49",
+      "board": "boards/017.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000261.jpg"
+    },
+    {
+      "number": 262,
+      "time": 531.5,
+      "timestamp": "00:08:51",
+      "board": "boards/017.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000262.jpg"
+    },
+    {
+      "number": 263,
+      "time": 532.5,
+      "timestamp": "00:08:52",
+      "board": "boards/017.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000263.jpg"
+    },
+    {
+      "number": 264,
+      "time": 534.0,
+      "timestamp": "00:08:54",
+      "board": "boards/017.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000264.jpg"
+    },
+    {
+      "number": 265,
+      "time": 535.0,
+      "timestamp": "00:08:55",
+      "board": "boards/017.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000265.jpg"
+    },
+    {
+      "number": 266,
+      "time": 537.0,
+      "timestamp": "00:08:57",
+      "board": "boards/017.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000266.jpg"
+    },
+    {
+      "number": 267,
+      "time": 538.5,
+      "timestamp": "00:08:58",
+      "board": "boards/017.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000267.jpg"
+    },
+    {
+      "number": 268,
+      "time": 539.5,
+      "timestamp": "00:08:59",
+      "board": "boards/017.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000268.jpg"
+    },
+    {
+      "number": 269,
+      "time": 541.5,
+      "timestamp": "00:09:01",
+      "board": "boards/017.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000269.jpg"
+    },
+    {
+      "number": 270,
+      "time": 542.5,
+      "timestamp": "00:09:02",
+      "board": "boards/017.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000270.jpg"
+    },
+    {
+      "number": 271,
+      "time": 543.5,
+      "timestamp": "00:09:03",
+      "board": "boards/017.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000271.jpg"
+    },
+    {
+      "number": 272,
+      "time": 545.5,
+      "timestamp": "00:09:05",
+      "board": "boards/017.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000272.jpg"
+    },
+    {
+      "number": 273,
+      "time": 546.5,
+      "timestamp": "00:09:06",
+      "board": "boards/018.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000273.jpg"
+    },
+    {
+      "number": 274,
+      "time": 550.0,
+      "timestamp": "00:09:10",
+      "board": "boards/018.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000274.jpg"
+    },
+    {
+      "number": 275,
+      "time": 551.0,
+      "timestamp": "00:09:11",
+      "board": "boards/018.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000275.jpg"
+    },
+    {
+      "number": 276,
+      "time": 554.0,
+      "timestamp": "00:09:14",
+      "board": "boards/018.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000276.jpg"
+    },
+    {
+      "number": 277,
+      "time": 558.5,
+      "timestamp": "00:09:18",
+      "board": "boards/018.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000277.jpg"
+    },
+    {
+      "number": 278,
+      "time": 563.0,
+      "timestamp": "00:09:23",
+      "board": "boards/018.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000278.jpg"
+    },
+    {
+      "number": 279,
+      "time": 567.0,
+      "timestamp": "00:09:27",
+      "board": "boards/018.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000279.jpg"
+    },
+    {
+      "number": 280,
+      "time": 571.5,
+      "timestamp": "00:09:31",
+      "board": "boards/018.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000280.jpg"
+    },
+    {
+      "number": 281,
+      "time": 574.5,
+      "timestamp": "00:09:34",
+      "board": "boards/018.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000281.jpg"
+    },
+    {
+      "number": 282,
+      "time": 577.5,
+      "timestamp": "00:09:37",
+      "board": "boards/018.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000282.jpg"
+    },
+    {
+      "number": 283,
+      "time": 578.5,
+      "timestamp": "00:09:38",
+      "board": "boards/018.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000283.jpg"
+    },
+    {
+      "number": 284,
+      "time": 582.0,
+      "timestamp": "00:09:42",
+      "board": "boards/018.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000284.jpg"
+    },
+    {
+      "number": 285,
+      "time": 584.0,
+      "timestamp": "00:09:44",
+      "board": "boards/018.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000285.jpg"
+    },
+    {
+      "number": 286,
+      "time": 585.5,
+      "timestamp": "00:09:45",
+      "board": "boards/018.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000286.jpg"
+    },
+    {
+      "number": 287,
+      "time": 586.5,
+      "timestamp": "00:09:46",
+      "board": "boards/018.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000287.jpg"
+    },
+    {
+      "number": 288,
+      "time": 589.0,
+      "timestamp": "00:09:49",
+      "board": "boards/018.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000288.jpg"
+    },
+    {
+      "number": 289,
+      "time": 590.0,
+      "timestamp": "00:09:50",
+      "board": "boards/019.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000289.jpg"
+    },
+    {
+      "number": 290,
+      "time": 593.5,
+      "timestamp": "00:09:53",
+      "board": "boards/019.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000290.jpg"
+    },
+    {
+      "number": 291,
+      "time": 594.5,
+      "timestamp": "00:09:54",
+      "board": "boards/019.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000291.jpg"
+    },
+    {
+      "number": 292,
+      "time": 597.0,
+      "timestamp": "00:09:57",
+      "board": "boards/019.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000292.jpg"
+    },
+    {
+      "number": 293,
+      "time": 598.0,
+      "timestamp": "00:09:58",
+      "board": "boards/019.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000293.jpg"
+    },
+    {
+      "number": 294,
+      "time": 600.0,
+      "timestamp": "00:10:00",
+      "board": "boards/019.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000294.jpg"
+    },
+    {
+      "number": 295,
+      "time": 602.0,
+      "timestamp": "00:10:02",
+      "board": "boards/019.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000295.jpg"
+    },
+    {
+      "number": 296,
+      "time": 603.0,
+      "timestamp": "00:10:03",
+      "board": "boards/019.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000296.jpg"
+    },
+    {
+      "number": 297,
+      "time": 604.0,
+      "timestamp": "00:10:04",
+      "board": "boards/019.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000297.jpg"
+    },
+    {
+      "number": 298,
+      "time": 606.5,
+      "timestamp": "00:10:06",
+      "board": "boards/019.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000298.jpg"
+    },
+    {
+      "number": 299,
+      "time": 607.5,
+      "timestamp": "00:10:07",
+      "board": "boards/019.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000299.jpg"
+    },
+    {
+      "number": 300,
+      "time": 608.5,
+      "timestamp": "00:10:08",
+      "board": "boards/019.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000300.jpg"
+    },
+    {
+      "number": 301,
+      "time": 609.5,
+      "timestamp": "00:10:09",
+      "board": "boards/019.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000301.jpg"
+    },
+    {
+      "number": 302,
+      "time": 613.0,
+      "timestamp": "00:10:13",
+      "board": "boards/019.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000302.jpg"
+    },
+    {
+      "number": 303,
+      "time": 615.0,
+      "timestamp": "00:10:15",
+      "board": "boards/019.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000303.jpg"
+    },
+    {
+      "number": 304,
+      "time": 616.0,
+      "timestamp": "00:10:16",
+      "board": "boards/019.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000304.jpg"
+    },
+    {
+      "number": 305,
+      "time": 617.0,
+      "timestamp": "00:10:17",
+      "board": "boards/020.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000305.jpg"
+    },
+    {
+      "number": 306,
+      "time": 619.0,
+      "timestamp": "00:10:19",
+      "board": "boards/020.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000306.jpg"
+    },
+    {
+      "number": 307,
+      "time": 621.0,
+      "timestamp": "00:10:21",
+      "board": "boards/020.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000307.jpg"
+    },
+    {
+      "number": 308,
+      "time": 622.5,
+      "timestamp": "00:10:22",
+      "board": "boards/020.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000308.jpg"
+    },
+    {
+      "number": 309,
+      "time": 623.5,
+      "timestamp": "00:10:23",
+      "board": "boards/020.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000309.jpg"
+    },
+    {
+      "number": 310,
+      "time": 628.0,
+      "timestamp": "00:10:28",
+      "board": "boards/020.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000310.jpg"
+    },
+    {
+      "number": 311,
+      "time": 629.0,
+      "timestamp": "00:10:29",
+      "board": "boards/020.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000311.jpg"
+    },
+    {
+      "number": 312,
+      "time": 630.0,
+      "timestamp": "00:10:30",
+      "board": "boards/020.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000312.jpg"
+    },
+    {
+      "number": 313,
+      "time": 631.0,
+      "timestamp": "00:10:31",
+      "board": "boards/020.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000313.jpg"
+    },
+    {
+      "number": 314,
+      "time": 632.0,
+      "timestamp": "00:10:32",
+      "board": "boards/020.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000314.jpg"
+    },
+    {
+      "number": 315,
+      "time": 633.0,
+      "timestamp": "00:10:33",
+      "board": "boards/020.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000315.jpg"
+    },
+    {
+      "number": 316,
+      "time": 634.0,
+      "timestamp": "00:10:34",
+      "board": "boards/020.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000316.jpg"
+    },
+    {
+      "number": 317,
+      "time": 638.5,
+      "timestamp": "00:10:38",
+      "board": "boards/020.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000317.jpg"
+    },
+    {
+      "number": 318,
+      "time": 641.0,
+      "timestamp": "00:10:41",
+      "board": "boards/020.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000318.jpg"
+    },
+    {
+      "number": 319,
+      "time": 642.0,
+      "timestamp": "00:10:42",
+      "board": "boards/020.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000319.jpg"
+    },
+    {
+      "number": 320,
+      "time": 644.5,
+      "timestamp": "00:10:44",
+      "board": "boards/020.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000320.jpg"
+    },
+    {
+      "number": 321,
+      "time": 645.5,
+      "timestamp": "00:10:45",
+      "board": "boards/021.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000321.jpg"
+    },
+    {
+      "number": 322,
+      "time": 648.5,
+      "timestamp": "00:10:48",
+      "board": "boards/021.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000322.jpg"
+    },
+    {
+      "number": 323,
+      "time": 649.5,
+      "timestamp": "00:10:49",
+      "board": "boards/021.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000323.jpg"
+    },
+    {
+      "number": 324,
+      "time": 652.0,
+      "timestamp": "00:10:52",
+      "board": "boards/021.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000324.jpg"
+    },
+    {
+      "number": 325,
+      "time": 654.0,
+      "timestamp": "00:10:54",
+      "board": "boards/021.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000325.jpg"
+    },
+    {
+      "number": 326,
+      "time": 656.0,
+      "timestamp": "00:10:56",
+      "board": "boards/021.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000326.jpg"
+    },
+    {
+      "number": 327,
+      "time": 657.0,
+      "timestamp": "00:10:57",
+      "board": "boards/021.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000327.jpg"
+    },
+    {
+      "number": 328,
+      "time": 660.0,
+      "timestamp": "00:11:00",
+      "board": "boards/021.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000328.jpg"
+    },
+    {
+      "number": 329,
+      "time": 661.5,
+      "timestamp": "00:11:01",
+      "board": "boards/021.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000329.jpg"
+    },
+    {
+      "number": 330,
+      "time": 663.0,
+      "timestamp": "00:11:03",
+      "board": "boards/021.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000330.jpg"
+    },
+    {
+      "number": 331,
+      "time": 665.5,
+      "timestamp": "00:11:05",
+      "board": "boards/021.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000331.jpg"
+    },
+    {
+      "number": 332,
+      "time": 667.5,
+      "timestamp": "00:11:07",
+      "board": "boards/021.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000332.jpg"
+    },
+    {
+      "number": 333,
+      "time": 668.5,
+      "timestamp": "00:11:08",
+      "board": "boards/021.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000333.jpg"
+    },
+    {
+      "number": 334,
+      "time": 671.0,
+      "timestamp": "00:11:11",
+      "board": "boards/021.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000334.jpg"
+    },
+    {
+      "number": 335,
+      "time": 672.0,
+      "timestamp": "00:11:12",
+      "board": "boards/021.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000335.jpg"
+    },
+    {
+      "number": 336,
+      "time": 673.0,
+      "timestamp": "00:11:13",
+      "board": "boards/021.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000336.jpg"
+    },
+    {
+      "number": 337,
+      "time": 674.5,
+      "timestamp": "00:11:14",
+      "board": "boards/022.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000337.jpg"
+    },
+    {
+      "number": 338,
+      "time": 675.5,
+      "timestamp": "00:11:15",
+      "board": "boards/022.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000338.jpg"
+    },
+    {
+      "number": 339,
+      "time": 677.0,
+      "timestamp": "00:11:17",
+      "board": "boards/022.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000339.jpg"
+    },
+    {
+      "number": 340,
+      "time": 679.0,
+      "timestamp": "00:11:19",
+      "board": "boards/022.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000340.jpg"
+    },
+    {
+      "number": 341,
+      "time": 682.0,
+      "timestamp": "00:11:22",
+      "board": "boards/022.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000341.jpg"
+    },
+    {
+      "number": 342,
+      "time": 683.0,
+      "timestamp": "00:11:23",
+      "board": "boards/022.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000342.jpg"
+    },
+    {
+      "number": 343,
+      "time": 687.0,
+      "timestamp": "00:11:27",
+      "board": "boards/022.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000343.jpg"
+    },
+    {
+      "number": 344,
+      "time": 688.5,
+      "timestamp": "00:11:28",
+      "board": "boards/022.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000344.jpg"
+    },
+    {
+      "number": 345,
+      "time": 689.5,
+      "timestamp": "00:11:29",
+      "board": "boards/022.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000345.jpg"
+    },
+    {
+      "number": 346,
+      "time": 692.0,
+      "timestamp": "00:11:32",
+      "board": "boards/022.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000346.jpg"
+    },
+    {
+      "number": 347,
+      "time": 693.0,
+      "timestamp": "00:11:33",
+      "board": "boards/022.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000347.jpg"
+    },
+    {
+      "number": 348,
+      "time": 694.5,
+      "timestamp": "00:11:34",
+      "board": "boards/022.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000348.jpg"
+    },
+    {
+      "number": 349,
+      "time": 695.5,
+      "timestamp": "00:11:35",
+      "board": "boards/022.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000349.jpg"
+    },
+    {
+      "number": 350,
+      "time": 699.0,
+      "timestamp": "00:11:39",
+      "board": "boards/022.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000350.jpg"
+    },
+    {
+      "number": 351,
+      "time": 702.0,
+      "timestamp": "00:11:42",
+      "board": "boards/022.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000351.jpg"
+    },
+    {
+      "number": 352,
+      "time": 704.0,
+      "timestamp": "00:11:44",
+      "board": "boards/022.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000352.jpg"
+    },
+    {
+      "number": 353,
+      "time": 705.0,
+      "timestamp": "00:11:45",
+      "board": "boards/023.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000353.jpg"
+    },
+    {
+      "number": 354,
+      "time": 708.0,
+      "timestamp": "00:11:48",
+      "board": "boards/023.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000354.jpg"
+    },
+    {
+      "number": 355,
+      "time": 709.0,
+      "timestamp": "00:11:49",
+      "board": "boards/023.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000355.jpg"
+    },
+    {
+      "number": 356,
+      "time": 710.5,
+      "timestamp": "00:11:50",
+      "board": "boards/023.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000356.jpg"
+    },
+    {
+      "number": 357,
+      "time": 711.5,
+      "timestamp": "00:11:51",
+      "board": "boards/023.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000357.jpg"
+    },
+    {
+      "number": 358,
+      "time": 713.5,
+      "timestamp": "00:11:53",
+      "board": "boards/023.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000358.jpg"
+    },
+    {
+      "number": 359,
+      "time": 714.5,
+      "timestamp": "00:11:54",
+      "board": "boards/023.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000359.jpg"
+    },
+    {
+      "number": 360,
+      "time": 717.0,
+      "timestamp": "00:11:57",
+      "board": "boards/023.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000360.jpg"
+    },
+    {
+      "number": 361,
+      "time": 718.5,
+      "timestamp": "00:11:58",
+      "board": "boards/023.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000361.jpg"
+    },
+    {
+      "number": 362,
+      "time": 721.0,
+      "timestamp": "00:12:01",
+      "board": "boards/023.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000362.jpg"
+    },
+    {
+      "number": 363,
+      "time": 723.0,
+      "timestamp": "00:12:03",
+      "board": "boards/023.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000363.jpg"
+    },
+    {
+      "number": 364,
+      "time": 724.5,
+      "timestamp": "00:12:04",
+      "board": "boards/023.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000364.jpg"
+    },
+    {
+      "number": 365,
+      "time": 725.5,
+      "timestamp": "00:12:05",
+      "board": "boards/023.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000365.jpg"
+    },
+    {
+      "number": 366,
+      "time": 727.5,
+      "timestamp": "00:12:07",
+      "board": "boards/023.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000366.jpg"
+    },
+    {
+      "number": 367,
+      "time": 728.5,
+      "timestamp": "00:12:08",
+      "board": "boards/023.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000367.jpg"
+    },
+    {
+      "number": 368,
+      "time": 731.5,
+      "timestamp": "00:12:11",
+      "board": "boards/023.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000368.jpg"
+    },
+    {
+      "number": 369,
+      "time": 732.5,
+      "timestamp": "00:12:12",
+      "board": "boards/024.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000369.jpg"
+    },
+    {
+      "number": 370,
+      "time": 736.0,
+      "timestamp": "00:12:16",
+      "board": "boards/024.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000370.jpg"
+    },
+    {
+      "number": 371,
+      "time": 737.0,
+      "timestamp": "00:12:17",
+      "board": "boards/024.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000371.jpg"
+    },
+    {
+      "number": 372,
+      "time": 738.0,
+      "timestamp": "00:12:18",
+      "board": "boards/024.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000372.jpg"
+    },
+    {
+      "number": 373,
+      "time": 745.0,
+      "timestamp": "00:12:25",
+      "board": "boards/024.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000373.jpg"
+    },
+    {
+      "number": 374,
+      "time": 748.0,
+      "timestamp": "00:12:28",
+      "board": "boards/024.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000374.jpg"
+    },
+    {
+      "number": 375,
+      "time": 749.0,
+      "timestamp": "00:12:29",
+      "board": "boards/024.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000375.jpg"
+    },
+    {
+      "number": 376,
+      "time": 752.0,
+      "timestamp": "00:12:32",
+      "board": "boards/024.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000376.jpg"
+    },
+    {
+      "number": 377,
+      "time": 753.0,
+      "timestamp": "00:12:33",
+      "board": "boards/024.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000377.jpg"
+    },
+    {
+      "number": 378,
+      "time": 755.0,
+      "timestamp": "00:12:35",
+      "board": "boards/024.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000378.jpg"
+    },
+    {
+      "number": 379,
+      "time": 756.0,
+      "timestamp": "00:12:36",
+      "board": "boards/024.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000379.jpg"
+    },
+    {
+      "number": 380,
+      "time": 760.0,
+      "timestamp": "00:12:40",
+      "board": "boards/024.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000380.jpg"
+    },
+    {
+      "number": 381,
+      "time": 761.0,
+      "timestamp": "00:12:41",
+      "board": "boards/024.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000381.jpg"
+    },
+    {
+      "number": 382,
+      "time": 766.0,
+      "timestamp": "00:12:46",
+      "board": "boards/024.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000382.jpg"
+    },
+    {
+      "number": 383,
+      "time": 772.5,
+      "timestamp": "00:12:52",
+      "board": "boards/024.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000383.jpg"
+    },
+    {
+      "number": 384,
+      "time": 774.0,
+      "timestamp": "00:12:54",
+      "board": "boards/024.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000384.jpg"
+    },
+    {
+      "number": 385,
+      "time": 775.0,
+      "timestamp": "00:12:55",
+      "board": "boards/025.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000385.jpg"
+    },
+    {
+      "number": 386,
+      "time": 776.0,
+      "timestamp": "00:12:56",
+      "board": "boards/025.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000386.jpg"
+    },
+    {
+      "number": 387,
+      "time": 779.0,
+      "timestamp": "00:12:59",
+      "board": "boards/025.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000387.jpg"
+    },
+    {
+      "number": 388,
+      "time": 780.0,
+      "timestamp": "00:13:00",
+      "board": "boards/025.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000388.jpg"
+    },
+    {
+      "number": 389,
+      "time": 781.5,
+      "timestamp": "00:13:01",
+      "board": "boards/025.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000389.jpg"
+    },
+    {
+      "number": 390,
+      "time": 784.0,
+      "timestamp": "00:13:04",
+      "board": "boards/025.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000390.jpg"
+    },
+    {
+      "number": 391,
+      "time": 785.0,
+      "timestamp": "00:13:05",
+      "board": "boards/025.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000391.jpg"
+    },
+    {
+      "number": 392,
+      "time": 786.5,
+      "timestamp": "00:13:06",
+      "board": "boards/025.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000392.jpg"
+    },
+    {
+      "number": 393,
+      "time": 788.0,
+      "timestamp": "00:13:08",
+      "board": "boards/025.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000393.jpg"
+    },
+    {
+      "number": 394,
+      "time": 792.0,
+      "timestamp": "00:13:12",
+      "board": "boards/025.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000394.jpg"
+    },
+    {
+      "number": 395,
+      "time": 795.5,
+      "timestamp": "00:13:15",
+      "board": "boards/025.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000395.jpg"
+    },
+    {
+      "number": 396,
+      "time": 796.5,
+      "timestamp": "00:13:16",
+      "board": "boards/025.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000396.jpg"
+    },
+    {
+      "number": 397,
+      "time": 803.0,
+      "timestamp": "00:13:23",
+      "board": "boards/025.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000397.jpg"
+    },
+    {
+      "number": 398,
+      "time": 806.0,
+      "timestamp": "00:13:26",
+      "board": "boards/025.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000398.jpg"
+    },
+    {
+      "number": 399,
+      "time": 807.5,
+      "timestamp": "00:13:27",
+      "board": "boards/025.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000399.jpg"
+    },
+    {
+      "number": 400,
+      "time": 811.0,
+      "timestamp": "00:13:31",
+      "board": "boards/025.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000400.jpg"
+    },
+    {
+      "number": 401,
+      "time": 815.5,
+      "timestamp": "00:13:35",
+      "board": "boards/026.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000401.jpg"
+    },
+    {
+      "number": 402,
+      "time": 816.5,
+      "timestamp": "00:13:36",
+      "board": "boards/026.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000402.jpg"
+    },
+    {
+      "number": 403,
+      "time": 819.5,
+      "timestamp": "00:13:39",
+      "board": "boards/026.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000403.jpg"
+    },
+    {
+      "number": 404,
+      "time": 820.5,
+      "timestamp": "00:13:40",
+      "board": "boards/026.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000404.jpg"
+    },
+    {
+      "number": 405,
+      "time": 822.5,
+      "timestamp": "00:13:42",
+      "board": "boards/026.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000405.jpg"
+    },
+    {
+      "number": 406,
+      "time": 823.5,
+      "timestamp": "00:13:43",
+      "board": "boards/026.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000406.jpg"
+    },
+    {
+      "number": 407,
+      "time": 826.5,
+      "timestamp": "00:13:46",
+      "board": "boards/026.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000407.jpg"
+    },
+    {
+      "number": 408,
+      "time": 827.5,
+      "timestamp": "00:13:47",
+      "board": "boards/026.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000408.jpg"
+    },
+    {
+      "number": 409,
+      "time": 831.0,
+      "timestamp": "00:13:51",
+      "board": "boards/026.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000409.jpg"
+    },
+    {
+      "number": 410,
+      "time": 834.0,
+      "timestamp": "00:13:54",
+      "board": "boards/026.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000410.jpg"
+    },
+    {
+      "number": 411,
+      "time": 837.0,
+      "timestamp": "00:13:57",
+      "board": "boards/026.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000411.jpg"
+    },
+    {
+      "number": 412,
+      "time": 838.0,
+      "timestamp": "00:13:58",
+      "board": "boards/026.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000412.jpg"
+    },
+    {
+      "number": 413,
+      "time": 840.5,
+      "timestamp": "00:14:00",
+      "board": "boards/026.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000413.jpg"
+    },
+    {
+      "number": 414,
+      "time": 841.5,
+      "timestamp": "00:14:01",
+      "board": "boards/026.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000414.jpg"
+    },
+    {
+      "number": 415,
+      "time": 843.5,
+      "timestamp": "00:14:03",
+      "board": "boards/026.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000415.jpg"
+    },
+    {
+      "number": 416,
+      "time": 844.5,
+      "timestamp": "00:14:04",
+      "board": "boards/026.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000416.jpg"
+    },
+    {
+      "number": 417,
+      "time": 846.5,
+      "timestamp": "00:14:06",
+      "board": "boards/027.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000417.jpg"
+    },
+    {
+      "number": 418,
+      "time": 847.5,
+      "timestamp": "00:14:07",
+      "board": "boards/027.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000418.jpg"
+    },
+    {
+      "number": 419,
+      "time": 850.0,
+      "timestamp": "00:14:10",
+      "board": "boards/027.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000419.jpg"
+    },
+    {
+      "number": 420,
+      "time": 851.0,
+      "timestamp": "00:14:11",
+      "board": "boards/027.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000420.jpg"
+    },
+    {
+      "number": 421,
+      "time": 852.0,
+      "timestamp": "00:14:12",
+      "board": "boards/027.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000421.jpg"
+    },
+    {
+      "number": 422,
+      "time": 854.5,
+      "timestamp": "00:14:14",
+      "board": "boards/027.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000422.jpg"
+    },
+    {
+      "number": 423,
+      "time": 855.5,
+      "timestamp": "00:14:15",
+      "board": "boards/027.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000423.jpg"
+    },
+    {
+      "number": 424,
+      "time": 856.5,
+      "timestamp": "00:14:16",
+      "board": "boards/027.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000424.jpg"
+    },
+    {
+      "number": 425,
+      "time": 857.5,
+      "timestamp": "00:14:17",
+      "board": "boards/027.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000425.jpg"
+    },
+    {
+      "number": 426,
+      "time": 860.5,
+      "timestamp": "00:14:20",
+      "board": "boards/027.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000426.jpg"
+    },
+    {
+      "number": 427,
+      "time": 861.5,
+      "timestamp": "00:14:21",
+      "board": "boards/027.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000427.jpg"
+    },
+    {
+      "number": 428,
+      "time": 865.0,
+      "timestamp": "00:14:25",
+      "board": "boards/027.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000428.jpg"
+    },
+    {
+      "number": 429,
+      "time": 866.0,
+      "timestamp": "00:14:26",
+      "board": "boards/027.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000429.jpg"
+    },
+    {
+      "number": 430,
+      "time": 868.0,
+      "timestamp": "00:14:28",
+      "board": "boards/027.jpg",
+      "tile": [
+        400,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000430.jpg"
+    },
+    {
+      "number": 431,
+      "time": 869.0,
+      "timestamp": "00:14:29",
+      "board": "boards/027.jpg",
+      "tile": [
+        800,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000431.jpg"
+    },
+    {
+      "number": 432,
+      "time": 872.5,
+      "timestamp": "00:14:32",
+      "board": "boards/027.jpg",
+      "tile": [
+        1200,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000432.jpg"
+    },
+    {
+      "number": 433,
+      "time": 875.5,
+      "timestamp": "00:14:35",
+      "board": "boards/028.jpg",
+      "tile": [
+        0,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000433.jpg"
+    },
+    {
+      "number": 434,
+      "time": 879.0,
+      "timestamp": "00:14:39",
+      "board": "boards/028.jpg",
+      "tile": [
+        400,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000434.jpg"
+    },
+    {
+      "number": 435,
+      "time": 880.0,
+      "timestamp": "00:14:40",
+      "board": "boards/028.jpg",
+      "tile": [
+        800,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000435.jpg"
+    },
+    {
+      "number": 436,
+      "time": 882.5,
+      "timestamp": "00:14:42",
+      "board": "boards/028.jpg",
+      "tile": [
+        1200,
+        48,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000436.jpg"
+    },
+    {
+      "number": 437,
+      "time": 883.5,
+      "timestamp": "00:14:43",
+      "board": "boards/028.jpg",
+      "tile": [
+        0,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000437.jpg"
+    },
+    {
+      "number": 438,
+      "time": 891.0,
+      "timestamp": "00:14:51",
+      "board": "boards/028.jpg",
+      "tile": [
+        400,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000438.jpg"
+    },
+    {
+      "number": 439,
+      "time": 893.5,
+      "timestamp": "00:14:53",
+      "board": "boards/028.jpg",
+      "tile": [
+        800,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000439.jpg"
+    },
+    {
+      "number": 440,
+      "time": 894.5,
+      "timestamp": "00:14:54",
+      "board": "boards/028.jpg",
+      "tile": [
+        1200,
+        305,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000440.jpg"
+    },
+    {
+      "number": 441,
+      "time": 898.0,
+      "timestamp": "00:14:58",
+      "board": "boards/028.jpg",
+      "tile": [
+        0,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000441.jpg"
+    },
+    {
+      "number": 442,
+      "time": 899.0,
+      "timestamp": "00:14:59",
+      "board": "boards/028.jpg",
+      "tile": [
+        400,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000442.jpg"
+    },
+    {
+      "number": 443,
+      "time": 902.0,
+      "timestamp": "00:15:02",
+      "board": "boards/028.jpg",
+      "tile": [
+        800,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000443.jpg"
+    },
+    {
+      "number": 444,
+      "time": 903.0,
+      "timestamp": "00:15:03",
+      "board": "boards/028.jpg",
+      "tile": [
+        1200,
+        562,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000444.jpg"
+    },
+    {
+      "number": 445,
+      "time": 904.5,
+      "timestamp": "00:15:04",
+      "board": "boards/028.jpg",
+      "tile": [
+        0,
+        819,
+        400,
+        225
+      ],
+      "source_archive_entry": "19-Cyak0swNZEo/frames/000445.jpg"
+    }
+  ],
+  "contacts": [
+    "boards/001.jpg",
+    "boards/002.jpg",
+    "boards/003.jpg",
+    "boards/004.jpg",
+    "boards/005.jpg",
+    "boards/006.jpg",
+    "boards/007.jpg",
+    "boards/008.jpg",
+    "boards/009.jpg",
+    "boards/010.jpg",
+    "boards/011.jpg",
+    "boards/012.jpg",
+    "boards/013.jpg",
+    "boards/014.jpg",
+    "boards/015.jpg",
+    "boards/016.jpg",
+    "boards/017.jpg",
+    "boards/018.jpg",
+    "boards/019.jpg",
+    "boards/020.jpg",
+    "boards/021.jpg",
+    "boards/022.jpg",
+    "boards/023.jpg",
+    "boards/024.jpg",
+    "boards/025.jpg",
+    "boards/026.jpg",
+    "boards/027.jpg",
+    "boards/028.jpg"
+  ],
+  "overview_review": {
+    "status": "reviewed",
+    "scope": "36 time-distributed images in overview.jpg; not every archived image",
+    "date": "2026-10-22"
+  },
+  "storage_format": "contact_boards_4x4",
+  "boards": [
+    {
+      "file": "boards/001.jpg",
+      "first": 1,
+      "last": 16,
+      "start": "00:00:00",
+      "end": "00:00:40",
+      "frames": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "file": "boards/002.jpg",
+      "first": 17,
+      "last": 32,
+      "start": "00:00:42",
+      "end": "00:01:11",
+      "frames": [
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ]
+    },
+    {
+      "file": "boards/003.jpg",
+      "first": 33,
+      "last": 48,
+      "start": "00:01:14",
+      "end": "00:01:45",
+      "frames": [
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48
+      ]
+    },
+    {
+      "file": "boards/004.jpg",
+      "first": 49,
+      "last": 64,
+      "start": "00:01:47",
+      "end": "00:02:11",
+      "frames": [
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64
+      ]
+    },
+    {
+      "file": "boards/005.jpg",
+      "first": 65,
+      "last": 80,
+      "start": "00:02:12",
+      "end": "00:02:53",
+      "frames": [
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ]
+    },
+    {
+      "file": "boards/006.jpg",
+      "first": 81,
+      "last": 96,
+      "start": "00:02:54",
+      "end": "00:03:19",
+      "frames": [
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96
+      ]
+    },
+    {
+      "file": "boards/007.jpg",
+      "first": 97,
+      "last": 112,
+      "start": "00:03:23",
+      "end": "00:03:48",
+      "frames": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112
+      ]
+    },
+    {
+      "file": "boards/008.jpg",
+      "first": 113,
+      "last": 128,
+      "start": "00:03:49",
+      "end": "00:04:25",
+      "frames": [
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128
+      ]
+    },
+    {
+      "file": "boards/009.jpg",
+      "first": 129,
+      "last": 144,
+      "start": "00:04:27",
+      "end": "00:04:54",
+      "frames": [
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144
+      ]
+    },
+    {
+      "file": "boards/010.jpg",
+      "first": 145,
+      "last": 160,
+      "start": "00:04:58",
+      "end": "00:05:33",
+      "frames": [
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160
+      ]
+    },
+    {
+      "file": "boards/011.jpg",
+      "first": 161,
+      "last": 176,
+      "start": "00:05:34",
+      "end": "00:06:11",
+      "frames": [
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176
+      ]
+    },
+    {
+      "file": "boards/012.jpg",
+      "first": 177,
+      "last": 192,
+      "start": "00:06:13",
+      "end": "00:06:42",
+      "frames": [
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192
+      ]
+    },
+    {
+      "file": "boards/013.jpg",
+      "first": 193,
+      "last": 208,
+      "start": "00:06:45",
+      "end": "00:07:17",
+      "frames": [
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208
+      ]
+    },
+    {
+      "file": "boards/014.jpg",
+      "first": 209,
+      "last": 224,
+      "start": "00:07:18",
+      "end": "00:07:44",
+      "frames": [
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224
+      ]
+    },
+    {
+      "file": "boards/015.jpg",
+      "first": 225,
+      "last": 240,
+      "start": "00:07:45",
+      "end": "00:08:08",
+      "frames": [
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240
+      ]
+    },
+    {
+      "file": "boards/016.jpg",
+      "first": 241,
+      "last": 256,
+      "start": "00:08:10",
+      "end": "00:08:39",
+      "frames": [
+        241,
+        242,
+        243,
+        244,
+        245,
+        246,
+        247,
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255,
+        256
+      ]
+    },
+    {
+      "file": "boards/017.jpg",
+      "first": 257,
+      "last": 272,
+      "start": "00:08:40",
+      "end": "00:09:05",
+      "frames": [
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263,
+        264,
+        265,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        272
+      ]
+    },
+    {
+      "file": "boards/018.jpg",
+      "first": 273,
+      "last": 288,
+      "start": "00:09:06",
+      "end": "00:09:49",
+      "frames": [
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        288
+      ]
+    },
+    {
+      "file": "boards/019.jpg",
+      "first": 289,
+      "last": 304,
+      "start": "00:09:50",
+      "end": "00:10:16",
+      "frames": [
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302,
+        303,
+        304
+      ]
+    },
+    {
+      "file": "boards/020.jpg",
+      "first": 305,
+      "last": 320,
+      "start": "00:10:17",
+      "end": "00:10:44",
+      "frames": [
+        305,
+        306,
+        307,
+        308,
+        309,
+        310,
+        311,
+        312,
+        313,
+        314,
+        315,
+        316,
+        317,
+        318,
+        319,
+        320
+      ]
+    },
+    {
+      "file": "boards/021.jpg",
+      "first": 321,
+      "last": 336,
+      "start": "00:10:45",
+      "end": "00:11:13",
+      "frames": [
+        321,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328,
+        329,
+        330,
+        331,
+        332,
+        333,
+        334,
+        335,
+        336
+      ]
+    },
+    {
+      "file": "boards/022.jpg",
+      "first": 337,
+      "last": 352,
+      "start": "00:11:14",
+      "end": "00:11:44",
+      "frames": [
+        337,
+        338,
+        339,
+        340,
+        341,
+        342,
+        343,
+        344,
+        345,
+        346,
+        347,
+        348,
+        349,
+        350,
+        351,
+        352
+      ]
+    },
+    {
+      "file": "boards/023.jpg",
+      "first": 353,
+      "last": 368,
+      "start": "00:11:45",
+      "end": "00:12:11",
+      "frames": [
+        353,
+        354,
+        355,
+        356,
+        357,
+        358,
+        359,
+        360,
+        361,
+        362,
+        363,
+        364,
+        365,
+        366,
+        367,
+        368
+      ]
+    },
+    {
+      "file": "boards/024.jpg",
+      "first": 369,
+      "last": 384,
+      "start": "00:12:12",
+      "end": "00:12:54",
+      "frames": [
+        369,
+        370,
+        371,
+        372,
+        373,
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383,
+        384
+      ]
+    },
+    {
+      "file": "boards/025.jpg",
+      "first": 385,
+      "last": 400,
+      "start": "00:12:55",
+      "end": "00:13:31",
+      "frames": [
+        385,
+        386,
+        387,
+        388,
+        389,
+        390,
+        391,
+        392,
+        393,
+        394,
+        395,
+        396,
+        397,
+        398,
+        399,
+        400
+      ]
+    },
+    {
+      "file": "boards/026.jpg",
+      "first": 401,
+      "last": 416,
+      "start": "00:13:35",
+      "end": "00:14:04",
+      "frames": [
+        401,
+        402,
+        403,
+        404,
+        405,
+        406,
+        407,
+        408,
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416
+      ]
+    },
+    {
+      "file": "boards/027.jpg",
+      "first": 417,
+      "last": 432,
+      "start": "00:14:06",
+      "end": "00:14:32",
+      "frames": [
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432
+      ]
+    },
+    {
+      "file": "boards/028.jpg",
+      "first": 433,
+      "last": 445,
+      "start": "00:14:35",
+      "end": "00:15:04",
+      "frames": [
+        433,
+        434,
+        435,
+        436,
+        437,
+        438,
+        439,
+        440,
+        441,
+        442,
+        443,
+        444,
+        445
+      ]
+    }
+  ],
+  "source_archive": "D:\\video-AI-vidify\\scratch\\rollback-talk-chair-20261022\\reference-originals.zip"
+}

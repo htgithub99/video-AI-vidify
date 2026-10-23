@@ -166,7 +166,13 @@ const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, langu
 };
 const chainOn = (s: PersistedState): boolean => s.autoContinue !== false || s.autoRun === true;
 const exportOn = (s: PersistedState): boolean => s.autoExport === true || s.autoRun === true;
-export interface MotionScenesRequest { beats?: string[]; locations?: string[]; restart?: boolean; restyle?: boolean; note?: string; }
+export interface MotionScenesRequest {
+  beats?: string[];
+  locations?: string[];
+  restart?: boolean;
+  restyle?: boolean;
+  note?: string;
+}
 const compileStateKey = (state: PersistedState): string => JSON.stringify([state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.subtitles !== false, state.sfx, state.sfxVolume, state.soundOverrides]);
 export const narrationSignature = motionVoiceSignature;
 const selectedChannelRef = (next: PersistedState, data: MotionVoiceChannels): string => voiceChannelRef(data.channels.find((item) => item.id === (next.voiceChannelId === undefined ? data.defaultId : next.voiceChannelId)));
@@ -522,7 +528,7 @@ export function useMotionStudio() {
       let report: { sets: number; variants: number; props: number } | null = null;
       await inFlow(async () => {
         try {
-          report = await runStoryJob(PUPPET_KIT_API.URLS.SEED, { styleId, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now) });
+          report = await runStoryJob(PUPPET_KIT_API.URLS.SEED, { styleId, aiExecution: motionSceneAiExecution(now) });
         } catch (e: any) {
           reportStoryError(e);
         }
@@ -559,7 +565,7 @@ export function useMotionStudio() {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), stylePreset: now.stylePreset || PUPPET_STYLE_DEFAULT, asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, characterMotion: now.characterMotion, review: now.aiReview !== false, previews: !exportOn(now), ...req },
+            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), stylePreset: now.stylePreset || PUPPET_STYLE_DEFAULT, asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, characterMotion: now.characterMotion, review: now.aiReview !== false, previews: !exportOn(now), ...req },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           patch({ script: result });
@@ -588,7 +594,7 @@ export function useMotionStudio() {
         try {
           setVoiceError(MR.MOTION_TEXT_EMPTY);
           if (stateRef.current.voiceHold) patch({ voiceHold: MR.MOTION_TEXT_EMPTY });
-          const track = (await runStoryJob(API_ROUTES.MOTION_STORY_VOICE, { script, analysis: snapshot.analysis, aspect: snapshot.aspect, asrCheck: snapshot.asrCheck === true, aiExecution: { provider: snapshot.aiProvider, model: snapshot.aiModel, mode: snapshot.aiMode, chromeHeadless: snapshot.aiHeadless } })) as MotionVoiceTrack;
+          const track = (await runStoryJob(API_ROUTES.MOTION_STORY_VOICE, { script, analysis: snapshot.analysis, aspect: snapshot.aspect, asrCheck: snapshot.asrCheck === true, aiExecution: motionSceneAiExecution(snapshot) })) as MotionVoiceTrack;
           if (narrationSignature(stateRef.current.script, stateRef.current.analysis) !== signature || track.signature !== signature) return;
           const current = stateRef.current;
           const voiceCast = track.plan?.roles && current.script?.gen ? motionVoiceCast(current.script.gen.voiceCast, track.plan.roles) : undefined;
@@ -759,7 +765,7 @@ export function useMotionStudio() {
             c = await compile();
           }
           if (!c) return;
-          if (!stateRef.current.uploadedAudio && (!stateRef.current.voice || stateRef.current.voice.provider !== MOTION_VOICE.PROVIDER || stateRef.current.voice.signature !== narrationSignature(stateRef.current.script, stateRef.current.analysis))) {
+          if (!stateRef.current.uploadedAudio && (c.voiceStale || !stateRef.current.voice || stateRef.current.voice.provider !== MOTION_VOICE.PROVIDER || stateRef.current.voice.signature !== narrationSignature(stateRef.current.script, stateRef.current.analysis))) {
             if (!(await generateVoice())) return;
             c = await compile();
             if (!c?.audioPreviewId) return;
@@ -918,7 +924,7 @@ export function useMotionStudio() {
     audioPreparing: !!state.script?.beats.length && ((!state.uploadedAudio && !voiceValid) || compiled?.compilationKey !== compileStateKey(state) || !compiled?.audioPreviewId) && !voiceError && !compileError,
     previewVideoUrl: renderJob?.status === MotionJobStatus.COMPLETED && compiled?.compilationKey === compileStateKey(state) && state.renderSignature === compiled.compilationKey ? renderJob.result?.videoUrl : undefined,
     audioId,
-    previewAudioId: compiled?.compilationKey === compileStateKey(state) ? compiled.audioPreviewId || audioId : audioId,
+    previewAudioId: compiled?.compilationKey === compileStateKey(state) ? (compiled.voiceStale ? undefined : compiled.audioPreviewId || audioId) : audioId,
     parseSource,
     analyze,
     writeScript,

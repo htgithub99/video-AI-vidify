@@ -3,241 +3,14 @@
   const ME = root.MotionEngine;
   if (!ME || !ME.registerTemplate) return;
   const U = ME.util;
-  const clamp = U.clamp, lerp = U.lerp, ease = U.ease, hash = U.hash;
+  const clamp = U.clamp,
+    lerp = U.lerp,
+    ease = U.ease,
+    hash = U.hash;
   const DEG = Math.PI / 180;
-  const K = {
-    TEMPLATE: "puppet",
-    NAME: "Puppet 2D story",
-    CATEGORY: "scene",
-    DESCRIPTION: "Cut-out 2D story frames composed from a style pack and an asset kit",
-    UNDEF: "undefined",
-    FUNCTION: "function",
-    STRING: "string",
-    EMPTY: "",
-    SVG_URL: "data:image/svg+xml;charset=utf-8,",
-    SVG_MIME: "image/svg+xml",
-    SVG_NS: "http://www.w3.org/2000/svg",
-    XMLNS: "xmlns",
-    FG_SEL: "#fg",
-    DEFS_SEL: "defs",
-    OCC_SEL: "[data-occ]",
-    OCC_ATTR: "data-occ",
-    FILTER: "filter",
-    FILTER_NONE: "none",
-    BLUR: (px) => "blur(" + Math.round(px) + "px)",
-    BRIGHT: (k) => "brightness(" + Math.round(k * 100) + "%)",
-    MULTIPLY: "multiply",
-    SOURCE_OVER: "source-over",
-    LIGHTER: "lighter",
-    EVENODD: "evenodd",
-    ROUND: "round",
-    SET_W: 1920,
-    SET_H: 1080,
-    FLOOR: 820,
-    PERSON_H: 0.34,
-    HEAD_BOX: [400, 400],
-    BODY_BOX: [400, 600],
-    SHOULDERS: [[86, 70], [314, 70]],
-    NECK_OVERLAP: 0.12,
-    FADE: 0.28,
-    BLACK: "#000000",
-    TRANSPARENT: "rgba(0,0,0,0)",
-    WHITE: "#ffffff",
-    LINE: "#161314",
-    DEFAULT_BODY: "#6f6f74",
-    DEFAULT_FACE: "#f4f2ee",
-    DEFAULT_SKIN: "#f1d9c2",
-    TEAR: "#7fb4e6",
-    GLOW: "#ffd9a0",
-    COLD: "#a9c4e8",
-    NIGHT_TINT: "#1b2238",
-    STEAM: "#e9eef2",
-    RAIN: "#c9d4e2",
-    FOG: "#c8ccd4",
-    GHOST: "#05060a",
-    STYLE_DEFAULT: {
-      body: { head: 0.42, headW: 1.0, bodyW: 0.86, legs: 0, overlap: 0.12, limb: "tube", limbW: 0.11, armLen: 0.5, hand: 0.075, shape: "dome" },
-      face: { fill: null, eyes: "oval", eyeW: 0.1, eyeH: 0.17, eyeGap: 0.34, eyeY: 0.47, eyeColor: "#121115", mouth: "oval", mouthW: 0.1, mouthH: 0.08, mouthY: 0.7, brows: true },
-      line: { width: 0.012, color: "#161314" },
-    },
-    SHAPES: {
-      dome: [[0.5, 1], [0.5, 0.35], [0.44, 0.12], [0.3, 0.02], [0, 0]],
-      tube: [[0.5, 1], [0.5, 0.2], [0.42, 0.04], [0.25, 0], [0, 0]],
-      robe: [[0.56, 1], [0.48, 0.4], [0.42, 0.1], [0.28, 0.01], [0, 0]],
-    },
-    POSES: {
-      idle: { l: [4, 0], r: [4, 0] },
-      talk: { l: [4, 0], r: [14, 40], gest: 1 },
-      point: { l: [4, 0], r: [80, 0] },
-      raise: { l: [4, 0], r: [150, 10] },
-      raise_both: { l: [150, 10], r: [150, 10] },
-      cover_face: { l: [20, 150], r: [20, 150], head: 8 },
-      chest: { l: [12, 110], r: [12, 110] },
-      hold: { l: [4, 0], r: [32, -70], len: 0.55 },
-      strike: { l: [4, 0], r: [155, 10], swing: [155, 55, 1.3], grip: 1, len: 0.8 },
-      knock: { l: [4, 0], r: [80, -15], swing: [65, 105, 2.2], grip: 1, len: 0.7 },
-      show: { l: [4, 0], r: [140, 0], len: 0.75 },
-      drink: { l: [4, 0], r: [35, 150], len: 0.6 },
-      carry: { l: [40, -50], r: [40, -50], len: 0.55 },
-      shoulder: { l: [4, 0], r: [165, 75], len: 0.6, shoulder: 1, walk: 1 },
-      give: { l: [4, 0], r: [70, 10] },
-      bow: { l: [4, 0], r: [4, 0], lean: 18, head: 10 },
-      fear: { l: [25, 140], r: [25, 140], shake: 1, head: 6 },
-      wave: { l: [4, 0], r: [140, 20], wave: 1 },
-      walk: { l: [4, 0], r: [4, 0], walk: 1 },
-      run: { l: [30, 60], r: [30, 60], walk: 2 },
-      shout: { l: [40, 20], r: [40, 20] },
-      think: { l: [4, 0], r: [20, 140] },
-      pray: { l: [16, 120], r: [16, 120], head: 6 },
-      sit: { sprite: "sit", l: [8, 40], r: [8, 40] },
-      lie: { sprite: "lie" },
-      kneel: { sprite: "kneel", l: [8, 30], r: [8, 30] },
-      crouch: { sprite: "crouch", l: [10, 40], r: [10, 40] },
-    },
-    EXPR: {
-      neutral: { eye: 1, mouth: "rest" },
-      sad: { eye: 0.85, brow: -1, mouth: "frown" },
-      cry: { eye: 0.55, brow: -1, mouth: "frown", tears: 1 },
-      scared: { eye: 1.25, brow: 1, mouth: "open" },
-      angry: { eye: 0.8, brow: 2, mouth: "frown" },
-      happy: { eye: 0.9, mouth: "smile" },
-      surprised: { eye: 1.3, brow: 1, mouth: "open" },
-      sleep: { eye: 0.08, mouth: "rest" },
-    },
-    SHOT: {
-      wide: { body: 0.2, feet: 0.84 },
-      people: { body: 0.42, feet: 0.86 },
-      two: { body: 0.42, feet: 0.86 },
-      group: { body: 0.36, feet: 0.86 },
-      back: { body: 0.42, feet: 0.86 },
-      ots: { body: 0.44, feet: 0.84 },
-      bust: { head: 0.31, top: 0.2 },
-      duo: { head: 0.26, top: 0.2 },
-      object: { body: 0.22, feet: 0.84 },
-    },
-    FULL_SHOTS: ["establishing", "wide", "object"],
-    FORE: { scale: 1.75, y: 1.18, x: 0.2, tint: 0.18, blur: 2 },
-    BACKD: { scale: 0.68, lift: 0.05, blur: 1.5 },
-    MOVE: { push: [1, 0.95], pull: [0.95, 1], none: [1, 1], pan_left: [1, 1, 0.025, -0.025], pan_right: [1, 1, -0.025, 0.025], drift: [1, 0.97] },
-    INSERT: { zoom: 1.6, blur: 7, dim: "rgba(10,10,14,0.28)", h: 0.52, x: 0.56, base: 0.88, push: 0.05, figH: 1.3, figX: 0.24 },
-    SYMBOL: { bg: "#07080b", h: 0.32, y: 0.64, halo: 0.42, haloA: 0.22, dust: 34, wind: 5 },
-    CLOSE: { zoom: 1.35, blur: 6, dim: "rgba(10,10,14,0.2)", headK: 0.85, headMin: 0.26, headMax: 0.45, y: 0.42, x: 0.5, push: 0.04 },
-    PROP_FRAME_SHOTS: ["people", "two", "group", "back", "ots"],
-    PROP_HALF: 0.4,
-    OBJECT_FRAME: { size: 0.45, min: 0.55, fill: 0.9, base: 0.84 },
-    PROP_LEGACY_H: 0.22,
-    EYE_TILT: 0.16,
-    HOLD_SIZE: 0.4,
-    SHOULDER_DROP: 0.69,
-    NECK: 0.5,
-    TRAIL: { poses: ["run"], n: 3, step: 0.2, alpha: [0.32, 0.2, 0.1] },
-    SPLIT: { line: 0.004, color: "#0b0b0d" },
-    INSET: { x: 0.74, y: 0.36, r: 0.25, ring: 0.022, handle: 0.2, zoom: 1.0, metal: "#9aa0a5", rim: "#3a3d40" },
-    SMOKE_Z: [0.6, 2],
-    WEAR_W: 1.15,
-    WEAR_DROP: 0.42,
-    HOLD_SCALE: 1.4,
-    HOLD_DROP: 0.15,
-    PERSON_M: 1.65,
-    PROP_FILL: 0.8,
-    SWING_EASE: 1.6,
-    CLOSE_KEEP: ["cover_face", "hold", "show", "drink", "strike", "knock", "carry", "shoulder"],
-    SHADOW: { h: 0.86, x: 0.64, base: 0.94, wallFill: 0.95, sink: 0.04, alpha: 0.8, figH: 0.42, figX: 0.3, grow: 0.05, flick: 0.1, flickHz: [9.1, 3.7] },
-    SIL: { color: "#0b0b10", soft: 0.006, actor: 0.96 },
-    FLASHBACK: { step: 0.035, width: 0.006, color: "rgba(255,248,230,0.10)", tint: "rgba(120,100,70,0.16)", edge: 0.4 },
-    LURK: { x: 0.86, y: 0.8, r: 0.26, eye: "#ebf0ff", glow: "#c8dcff", gap: 0.16, blinkEvery: 4.5 },
-    GHOST_FX: { pad: [0.9, 1.25, 0.25], maxPx: 2400, aura: "#04060b", auraBlur: 0.05, auraA: 0.85, auraGrow: 1.05, look: "saturate(30%) brightness(112%) contrast(108%)", cold: "rgba(150,185,220,0.24)", fade: 0.5, alpha: 0.93, lift: 0.04, bob: 0.018, bobHz: 0.35, flicker: 0.12, flickHz: [7.3, 2.1] },
-    GHOST_PEEK: { x: 0.92, h: 0.52, base: 0.95, eye: "rgba(225,235,255,0.9)", hair: 0.75 },
-    CTX2D: "2d",
-    CANVAS: "canvas",
-    SOURCE_IN: "source-in",
-    SOURCE_ATOP: "source-atop",
-    DEST_OUT: "destination-out",
-    OBJECT: { h: 0.42, base: 0.9 },
-    LID_OPEN: 0.55,
-    BREATH: 0.012,
-    BLINK_EVERY: 3.6,
-    TALK_SWING: 18,
-    WALK_SPEED: 0.05,
-    DUST_ALPHA: 0.35,
-    WIND_COLOR: "#d8dde6",
-    VIGNETTE: 0.38,
-    BG: { zoom: 1.12, blur: 5 },
-    NUB: { max: 30, angle: 70, len: 0.17, width: 1.45 },
-    BOTTOM_SHADE: { h: 0.3, a: 0.62 },
-    EXTEND: 1.6,
-    EXTEND_SHOTS: ["duo", "bust"],
-    SHOT_BLINK: "blink",
-    SIDE_FACE: [0.12, 0.09],
-    FX: { thunder: { flash: 0.75, dur: 0.5 }, stinger: { shake: 0.006, dur: 0.45 }, explosion: { flash: 0.5, shake: 0.012, dur: 0.6 }, impact: { shake: 0.008, dur: 0.3 } },
-    NIGHT_RE: /night|lamp/,
-    DAY_RE: /day|dawn/,
-    DARK_RE: /night|dark|midnight/,
-    S: {
-      EMPTY: "",
-      HASH: "#",
-      DUSK: "#7d88ad",
-      SMOKE_COLOR: "#8d8f96",
-      PAREN: ")",
-      COMMA: ",",
-      ZERO: "0",
-      COLON: ":",
-      BACK: "back",
-      CLOSE: "close",
-      DAY: "day",
-      DOT: "dot",
-      DRIFT: "drift",
-      DUST: "dust",
-      FG: "fg",
-      NUB: "nub",
-      FOG: "fog",
-      FORE: "fore",
-      FRONT: "front",
-      FROWN: "frown",
-      GHOST: "ghost",
-      LURK: "lurk",
-      SPLIT: "split",
-      DAY: "day",
-      FLASHBACK: "flashback",
-      IDLE: "idle",
-      INSERT: "insert",
-      KNEEL: "kneel",
-      LEFT: "left",
-      LIE: "lie",
-      LINE: "line",
-      MAIN: "main",
-      NEUTRAL: "neutral",
-      NIGHT: "night",
-      NOODLE: "noodle",
-      OBJECT: "object",
-      OPEN: "open",
-      PEOPLE: "people",
-      RAIN: "rain",
-      REST: "rest",
-      RGBA: "rgba(",
-      FOOT_SHADOW: "rgba(0,0,0,0.22)",
-      RIGHT: "right",
-      ROUND: "round",
-      RUN: "run",
-      SHADOW: "shadow",
-      SIDE: "side",
-      SIT: "sit",
-      SLEEP: "sleep",
-      SMILE: "smile",
-      SMOKE: "smoke",
-      STEAM: "steam",
-      SYMBOL: "symbol",
-      TALK: "talk",
-      WALK: "walk",
-    },
-  };
-
+  const K = root.MotionEngineText.PUPPET;
   const ASSETS = { imgs: new Map() };
-  const svgKey = (svg) => {
-    let h = 0;
-    for (let i = 0; i < svg.length; i += 7) h = (h * 31 + svg.charCodeAt(i)) | 0;
-    return svg.length + K.S.COLON + h;
-  };
+  const svgKey = (svg) => svg;
   async function loadSvg(svg) {
     if (!svg || typeof Image === K.UNDEF) return null;
     const key = svgKey(svg);
@@ -259,6 +32,10 @@
     try {
       const doc = new DOMParser().parseFromString(svg, K.SVG_MIME);
       const rootEl = doc.documentElement;
+      const layers = Array.from(rootEl.children);
+      const middle = layers.find((el) => el.id === K.SET_MID_ID);
+      const floor = layers.find((el) => el.id === K.SET_FLOOR_ID);
+      if (middle && floor && layers.indexOf(floor) > layers.indexOf(middle)) rootEl.insertBefore(floor, middle);
       if (!rootEl.getAttribute(K.XMLNS)) rootEl.setAttribute(K.XMLNS, K.SVG_NS);
       const defs = rootEl.querySelector(K.DEFS_SEL);
       const alone = (el) => {
@@ -267,9 +44,11 @@
         shell.appendChild(el.cloneNode(true));
         return new XMLSerializer().serializeToString(shell);
       };
-      const occ = Array.from(rootEl.querySelectorAll(K.OCC_SEL)).map((el) => ({ y: Number(el.getAttribute(K.OCC_ATTR)) || 0, svg: alone(el) })).sort((a, b) => a.y - b.y);
+      const occEls = Array.from(rootEl.querySelectorAll(K.OCC_SEL));
+      const occ = occEls.map((el) => ({ y: Number(el.getAttribute(K.OCC_ATTR)) || 0, svg: alone(el) })).sort((a, b) => a.y - b.y);
+      for (const el of occEls) el.parentNode.removeChild(el);
       const fg = rootEl.querySelector(K.FG_SEL);
-      if (!fg) return { main: svg, fg: null, occ };
+      if (!fg) return { main: new XMLSerializer().serializeToString(rootEl), fg: null, occ };
       const fgSvg = alone(fg);
       fg.parentNode.removeChild(fg);
       return { main: new XMLSerializer().serializeToString(rootEl), fg: fgSvg, occ };
@@ -304,10 +83,18 @@
     await Promise.all(jobs);
   }
   ME.PUPPET_PRELOAD = preload;
-
   const rgba = (hex, a) => {
     const h = String(hex || K.BLACK).replace(K.S.HASH, K.S.EMPTY);
-    const n = parseInt(h.length === 3 ? h.split(K.S.EMPTY).map((c) => c + c).join(K.S.EMPTY) : h.slice(0, 6), 16) || 0;
+    const n =
+      parseInt(
+        h.length === 3
+          ? h
+              .split(K.S.EMPTY)
+              .map((c) => c + c)
+              .join(K.S.EMPTY)
+          : h.slice(0, 6),
+        16,
+      ) || 0;
     return K.S.RGBA + ((n >> 16) & 255) + K.S.COMMA + ((n >> 8) & 255) + K.S.COMMA + (n & 255) + K.S.COMMA + a + K.S.PAREN;
   };
   const merge = (a, b) => {
@@ -316,28 +103,26 @@
     return out;
   };
   const styleOf = (spec) => merge(K.STYLE_DEFAULT, (spec.kit && spec.kit.style) || {});
-
   function init(ctx) {
     const P = ctx.params || {};
     const frames = (Array.isArray(P.frames) ? P.frames : []).slice().sort((a, b) => a.start - b.start);
     return { frames, style: styleOf(ctx.spec), kit: (ctx.spec && ctx.spec.kit) || {}, motion: !!(ctx.spec && ctx.spec.kit && ctx.spec.kit.motion) };
   }
-
   function frameAt(S, t) {
     const fs = S.frames;
-    let cur = null, idx = -1;
-    for (let i = 0; i < fs.length; i++) if (t >= fs[i].start) {
-      cur = fs[i];
-      idx = i;
-    }
+    let cur = null,
+      idx = -1;
+    for (let i = 0; i < fs.length; i++)
+      if (t >= fs[i].start) {
+        cur = fs[i];
+        idx = i;
+      }
     return { cur: cur || fs[0] || null, prev: idx > 0 ? fs[idx - 1] : null, idx: Math.max(0, idx) };
   }
-
   function charOf(S, id) {
     const c = (S.kit.characters || {})[id];
     return c || { id, height: 1, colors: {} };
   }
-
   function charLayout(S, c) {
     const B = S.style.body;
     const total = K.PERSON_H * K.SET_H * (c.height || 1);
@@ -347,11 +132,9 @@
     const bodyW = headW * B.bodyW;
     return { total, headH, headW, bodyH, bodyW, headCy: -bodyH - headH / 2 + headH * B.overlap };
   }
-
   function lineW(S, L) {
     return Math.max(1, S.style.line.width * L.headH * 2.2);
   }
-
   function drawBody(g, S, c, L, view, tint) {
     const art = c.body && imgOf(c.body[view === K.S.BACK ? K.S.BACK : view === K.S.SIDE ? K.S.SIDE : K.S.FRONT]);
     if (art) {
@@ -361,7 +144,8 @@
     const shape = K.SHAPES[S.style.body.shape] || K.SHAPES.dome;
     g.beginPath();
     shape.forEach(([x, y], i) => {
-      const px = x * L.bodyW, py = y >= 1 ? L.bodyH * (S.extend || 0) : -L.bodyH * (1 - y);
+      const px = x * L.bodyW,
+        py = y >= 1 ? L.bodyH * (S.extend || 0) : -L.bodyH * (1 - y);
       if (i) g.lineTo(px, py);
       else g.moveTo(px, py);
     });
@@ -373,15 +157,16 @@
     g.lineWidth = lineW(S, L);
     g.stroke();
   }
-
   function tintHex(hex, k) {
     if (k >= 0.999) return hex;
     const h = String(hex).replace(K.S.HASH, K.S.EMPTY);
     const n = parseInt(h.slice(0, 6), 16) || 0;
-    const f = (v) => Math.round(v * k).toString(16).padStart(2, K.S.ZERO);
+    const f = (v) =>
+      Math.round(v * k)
+        .toString(16)
+        .padStart(2, K.S.ZERO);
     return K.S.HASH + f((n >> 16) & 255) + f((n >> 8) & 255) + f(n & 255);
   }
-
   function drawImg(g, img, x, y, w, h, tint) {
     const f = tint < 0.999 && K.FILTER in g;
     const prev = f ? g.filter : null;
@@ -389,10 +174,10 @@
     g.drawImage(img, x, y, w, h);
     if (f) g.filter = prev || K.FILTER_NONE;
   }
-
   function drawHead(g, S, c, L, view, face, expr, mouth, blink, tint) {
     const art = c.head && imgOf(c.head[view === K.S.BACK ? K.S.BACK : view === K.S.SIDE ? K.S.SIDE : K.S.FRONT]);
-    const x = -L.headW / 2, y = L.headCy - L.headH / 2;
+    const x = -L.headW / 2,
+      y = L.headCy - L.headH / 2;
     if (art) drawImg(g, art, x, y, L.headW, L.headH, tint);
     else {
       g.beginPath();
@@ -406,7 +191,6 @@
     if (view === K.S.BACK) return;
     drawFace(g, S, L, view === K.S.SIDE ? face : 0, expr, mouth, blink, tint);
   }
-
   function drawFace(g, S, L, dir, expr, mouth, blink, tint) {
     const F = S.style.face;
     const E = K.EXPR[expr] || K.EXPR.neutral;
@@ -417,7 +201,8 @@
     const open = Math.max(0.06, E.eye * (1 - blink));
     const eyes = dir ? [0.5 + K.SIDE_FACE[1] * dir] : [0.5 - F.eyeGap / 2, 0.5 + F.eyeGap / 2];
     for (const ex of eyes) {
-      const w = F.eyeW * L.headW * (F.eyes === K.S.DOT ? 0.55 : 1), h = F.eyeH * L.headH * (F.eyes === K.S.DOT ? 0.4 : 1) * open;
+      const w = F.eyeW * L.headW * (F.eyes === K.S.DOT ? 0.55 : 1),
+        h = F.eyeH * L.headH * (F.eyes === K.S.DOT ? 0.4 : 1) * open;
       g.beginPath();
       if (F.eyes === K.S.ROUND) {
         g.ellipse(cx(ex), cy(F.eyeY), w * 0.6, Math.max(1, h * 0.6), 0, 0, Math.PI * 2);
@@ -452,8 +237,10 @@
         g.globalAlpha = 1;
       }
     }
-    const mx = cx(0.5 + 0.16 * dir), my = cy(F.mouthY);
-    const mw = F.mouthW * L.headW, mh = F.mouthH * L.headH;
+    const mx = cx(0.5 + 0.16 * dir),
+      my = cy(F.mouthY);
+    const mw = F.mouthW * L.headW,
+      mh = F.mouthH * L.headH;
     const talk = mouth.level;
     const kind = talk > 0.05 ? K.S.TALK : E.mouth !== K.S.REST ? E.mouth : F.mouthRest === K.S.OPEN ? K.S.OPEN : E.mouth;
     g.beginPath();
@@ -472,18 +259,20 @@
     g.fillStyle = eyeCol;
     g.fill();
   }
-
   function drawArm(g, S, c, L, side, ang, bend, tint, lenK, nub) {
     const B = S.style.body;
     const sh = K.SHOULDERS[side < 0 ? 0 : 1];
-    const sx = (sh[0] / K.BODY_BOX[0] - 0.5) * L.bodyW, sy = -L.bodyH + (sh[1] / K.BODY_BOX[1]) * L.bodyH;
+    const sx = (sh[0] / K.BODY_BOX[0] - 0.5) * L.bodyW,
+      sy = -L.bodyH + (sh[1] / K.BODY_BOX[1]) * L.bodyH;
     const len = B.armLen * L.total * (lenK || 1);
     const w = Math.max(2, B.limbW * L.headW * (nub ? K.NUB.width : 1));
     const a = ang * DEG * -side;
     const up = len * 0.5;
-    const ex = sx - Math.sin(a) * up, ey = sy + Math.cos(a) * up;
+    const ex = sx - Math.sin(a) * up,
+      ey = sy + Math.cos(a) * up;
     const b = a + bend * DEG * side;
-    const hx = ex - Math.sin(b) * (len - up), hy = ey + Math.cos(b) * (len - up);
+    const hx = ex - Math.sin(b) * (len - up),
+      hy = ey + Math.cos(b) * (len - up);
     const col = tintHex((c.colors && (c.colors.sleeve || c.colors.body)) || K.DEFAULT_BODY, tint);
     g.lineCap = K.ROUND;
     g.lineJoin = K.ROUND;
@@ -513,13 +302,14 @@
     }
     return [hx, hy];
   }
-
   function poseState(S, A, t) {
-    const P = K.POSES[A.pose] || K.POSES.idle;
+    const base = K.POSES[A.pose] || K.POSES.idle;
+    const P = Object.assign({}, base, K.GESTURES[A.gesture] || (A.hold && base.sprite ? K.GESTURES.hold : {}));
     const seed = hash((A.char || K.S.EMPTY).length * 7.3 + (A.char || K.S.EMPTY).charCodeAt(0));
     const motion = S.motion;
     const breath = motion ? Math.sin(t * 2 + seed * 6) * K.BREATH : 0;
-    let l = P.l ? P.l.slice() : [4, 0], r = P.r ? P.r.slice() : [4, 0];
+    let l = P.l ? P.l.slice() : [4, 0],
+      r = P.r ? P.r.slice() : [4, 0];
     if (P.gest && A.talk > 0) r = [r[0] + Math.sin(t * 2.4 + seed) * K.TALK_SWING * 0.5, r[1]];
     if (P.wave) r = [r[0] + Math.sin(t * 9) * 18, r[1]];
     if (P.swing && motion) r = [lerp(P.swing[0], P.swing[1], Math.pow((Math.sin(t * P.swing[2] * Math.PI * 2) + 1) / 2, K.SWING_EASE)), r[1]];
@@ -528,12 +318,10 @@
     const walk = P.walk ? Math.abs(Math.sin(t * (P.walk > 1 ? 11 : 7))) * 0.02 : 0;
     return { l, r, lean: P.lean || 0, head, breath, shake, walk, sprite: P.sprite || null, grip: P.grip || 0, len: P.len || 1, shoulder: P.shoulder || 0 };
   }
-
   function blinkAt(t, seed) {
     const p = (t + seed * 5) % K.BLINK_EVERY;
     return p < 0.12 ? 1 - Math.abs(p - 0.06) / 0.06 : 0;
   }
-
   function scratch(S, i, w, h) {
     S.scr = S.scr || [];
     let c = S.scr[i];
@@ -544,14 +332,17 @@
     } else c.getContext(K.CTX2D).clearRect(0, 0, w, h);
     return c;
   }
-
   function offPuppet(g, S, A, t, opt, idx) {
     const L = charLayout(S, charOf(S, A.char));
     const m = g.getTransform();
     const P = K.GHOST_FX.pad;
-    const x0 = -P[0] * L.total, y0 = -P[1] * L.total, bw = 2 * P[0] * L.total, bh = (P[1] + P[2]) * L.total;
+    const x0 = -P[0] * L.total,
+      y0 = -P[1] * L.total,
+      bw = 2 * P[0] * L.total,
+      bh = (P[1] + P[2]) * L.total;
     const r = Math.min(Math.max(0.05, Math.hypot(m.a, m.b)), K.GHOST_FX.maxPx / bw, K.GHOST_FX.maxPx / bh);
-    const w = Math.max(2, Math.ceil(bw * r)), h = Math.max(2, Math.ceil(bh * r));
+    const w = Math.max(2, Math.ceil(bw * r)),
+      h = Math.max(2, Math.ceil(bh * r));
     const c = scratch(S, idx, w, h);
     const o = c.getContext(K.CTX2D);
     o.save();
@@ -560,7 +351,6 @@
     o.restore();
     return { c, o, x0, y0, bw, bh, L, w, h, r, s: Math.hypot(m.a, m.b) };
   }
-
   function silhouetteOf(S, src, idx, color) {
     const c = scratch(S, idx, src.width, src.height);
     const o = c.getContext(K.CTX2D);
@@ -572,7 +362,6 @@
     o.restore();
     return c;
   }
-
   function drawSilhouette(g, S, A, t, opt, color, alpha, soft) {
     const f = offPuppet(g, S, A, t, opt, 0);
     const sil = silhouetteOf(S, f.c, 1, color);
@@ -583,7 +372,6 @@
     g.restore();
     return f.L;
   }
-
   function drawGhost(g, S, A, t, opt) {
     const G = K.GHOST_FX;
     const f = offPuppet(g, S, A, t, opt, 0);
@@ -593,7 +381,8 @@
     o.fillStyle = G.cold;
     o.fillRect(0, 0, w, h);
     if (A.pose !== K.S.LIE) {
-      const y1 = (-f.y0 / f.bh) * h, y0 = y1 - G.fade * L.total * f.r;
+      const y1 = (-f.y0 / f.bh) * h,
+        y0 = y1 - G.fade * L.total * f.r;
       const gr = o.createLinearGradient(0, y0, 0, y1);
       gr.addColorStop(0, K.TRANSPARENT);
       gr.addColorStop(1, K.BLACK);
@@ -619,13 +408,11 @@
     g.restore();
     return L;
   }
-
   function drawPuppet(g, S, A, t, opt) {
     if (A.sil && !opt.raw) return drawSilhouette(g, S, Object.assign({}, A, { sil: false, talk: 0 }), t, { tint: 1 }, K.SIL.color, K.SIL.actor, 0);
     if (charOf(S, A.char).ghost && !opt.raw && A.pose !== K.S.LIE) return drawGhost(g, S, A, t, opt);
     return drawPuppetRaw(g, S, A, t, opt);
   }
-
   function drawPuppetRaw(g, S, A, t, opt) {
     const c = charOf(S, A.char);
     const L = charLayout(S, c);
@@ -639,10 +426,25 @@
       const sp = ps.sprite !== K.S.LIE && c.sprites && c.sprites[ps.sprite];
       const img = sp && imgOf(sp.svg);
       if (img) {
-        const w = (sp.w || 1) * L.total, h = (sp.h || 1) * L.total;
-        const ax = sp.anchor ? sp.anchor[0] : 0.5, ay = sp.anchor ? sp.anchor[1] : 1;
+        const w = (sp.w || 1) * L.total,
+          h = (sp.h || 1) * L.total;
+        const ax = sp.anchor ? sp.anchor[0] : 0.5,
+          ay = sp.anchor ? sp.anchor[1] : 1;
         if (dir < 0) g.scale(-1, 1);
         drawImg(g, img, -ax * w, -ay * h, w, h, tint);
+        if (!sp.rig) {
+          g.restore();
+          return L;
+        }
+        const SL = Object.assign({}, L);
+        for (const key of Object.keys(sp.rig)) SL[key] = sp.rig[key] * L.total;
+        drawHead(g, S, c, SL, view, dir ? 1 : 0, A.expr || K.S.NEUTRAL, { level: A.talk || 0, t }, blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
+        if (A.hold || A.gesture) {
+          if (view !== K.S.SIDE) drawArm(g, S, c, SL, -1, ps.l[0], ps.l[1], tint, ps.len);
+          const hand = drawArm(g, S, c, SL, 1, ps.r[0], ps.r[1], tint, ps.len);
+          if (A.hold) drawHeld(g, S, A.hold, SL, { x: hand[0], y: hand[1], dir: ps.r[0] - ps.r[1] }, ps.grip);
+        }
+        if (A.wear) for (const id of A.wear) drawWorn(g, S, id, SL, view);
         g.restore();
         return L;
       }
@@ -665,7 +467,13 @@
       if (side > 0 && !isNub(a)) hand = { x: h[0], y: h[1], dir: a[0] - a[1] };
       return h;
     };
-    const sides = view === K.S.SIDE ? [[1, ps.r]] : [[-1, ps.l], [1, ps.r]];
+    const sides =
+      view === K.S.SIDE
+        ? [[1, ps.r]]
+        : [
+            [-1, ps.l],
+            [1, ps.r],
+          ];
     for (const [side, a] of sides) if (armsBehind || isNub(a)) arm(side, a);
     drawBody(g, S, c, L, view, tint);
     if (!armsBehind) for (const [side, a] of sides) if (!isNub(a)) arm(side, a);
@@ -682,7 +490,6 @@
     g.restore();
     return L;
   }
-
   function drawShouldered(g, S, id, L) {
     const p = (S.kit.props || {})[id];
     if (!p) return;
@@ -690,27 +497,27 @@
     const sy = Math.max(-L.bodyH + (K.SHOULDERS[1][1] / K.BODY_BOX[1]) * L.bodyH, L.headCy + L.headH * K.NECK);
     drawProp(g, S, id, 0, sy + h * K.SHOULDER_DROP, h, 0);
   }
-
   function drawWorn(g, S, id, L, view) {
     const p = (S.kit.props || {})[id];
     if (!p) return;
+    if (K.WEAR_BODY_RE.test(id)) return drawProp(g, S, id, 0, 0, L.bodyH * K.WEAR_BODY_SCALE, 0);
+    if (K.WEAR_NECK_RE.test(id)) return drawProp(g, S, id, 0, L.headCy + L.headH, L.headW * K.WEAR_NECK_SCALE, 0);
     const h = L.headW * K.WEAR_W;
     drawProp(g, S, id, 0, L.headCy - L.headH / 2 + L.headH * K.WEAR_DROP, h, 0);
   }
-
   function drawHeld(g, S, id, L, hand, grip) {
     const p = (S.kit.props || {})[id];
     if (!p) return;
     const h = ((p.size || K.HOLD_SIZE) / K.PERSON_M / K.PROP_FILL) * L.total * K.HOLD_SCALE;
     drawProp(g, S, id, hand.x, hand.y + (grip ? 0 : h * K.HOLD_DROP), h, grip ? 180 - hand.dir : 0);
   }
-
   function drawProp(g, S, id, x, base, h, rot) {
     const p = (S.kit.props || {})[id];
     const img = p && imgOf(p.svg);
     if (!img) return false;
     const box = p.box || 512;
-    const bx = p.base ? p.base[0] : box / 2, by = p.base ? p.base[1] : box;
+    const bx = p.base ? p.base[0] : box / 2,
+      by = p.base ? p.base[1] : box;
     const s = h / box;
     g.save();
     g.translate(x, base);
@@ -719,7 +526,6 @@
     g.restore();
     return true;
   }
-
   function setFor(S, F) {
     const sets = S.kit.sets || {};
     const base = sets[F.set];
@@ -732,7 +538,6 @@
     }
     return base;
   }
-
   function drawSetLayer(g, S, set, part, x, y, w, h, opt) {
     const parts = setParts(set);
     const img = imgOf(parts[part]);
@@ -742,18 +547,18 @@
     g.drawImage(img, x, y, w, h);
     if (f) g.filter = K.FILTER_NONE;
   }
-
   function darkWanted(F, set) {
     if (!F.light || !set) return false;
     return K.NIGHT_RE.test(F.light) && !K.DARK_RE.test(String(set.time || K.EMPTY));
   }
-
   function drawLights(g, set, sx, sy, sc) {
     if (!set || !set.lights) return;
     g.save();
     g.globalCompositeOperation = K.LIGHTER;
     for (const l of set.lights) {
-      const x = sx + l.x * sc, y = sy + l.y * sc, r = 260 * sc;
+      const x = sx + l.x * sc,
+        y = sy + l.y * sc,
+        r = 260 * sc;
       const gr = g.createRadialGradient(x, y, 0, x, y, r);
       gr.addColorStop(0, rgba(l.color || K.GLOW, 0.32));
       gr.addColorStop(1, rgba(l.color || K.GLOW, 0));
@@ -762,11 +567,13 @@
     }
     g.restore();
   }
-
   function actorPlace(S, set, A, i, n) {
     const floor = (set && set.floorY) || K.FLOOR;
     const x = A.x != null ? A.x * K.SET_W : K.SET_W * (n > 1 ? 0.35 + (0.3 * i) / Math.max(1, n - 1) : 0.5);
-    let y = A.y != null ? A.y : floor, k = A.k || 1, blur = 0, tint = 1;
+    let y = A.y != null ? A.y : floor,
+      k = A.k || 1,
+      blur = 0,
+      tint = 1;
     if (A.depth === K.S.BACK && A.y == null) {
       k = K.BACKD.scale;
       y = floor - K.BACKD.lift * K.SET_H;
@@ -774,7 +581,6 @@
     }
     return { x, y, k, blur, tint };
   }
-
   function frameBox(S, F, set, actors) {
     const kind = F.shot || K.S.PEOPLE;
     if (kind === K.S.OBJECT && F.prop && F.propH) return objectBox(S, F, actors);
@@ -782,21 +588,48 @@
     const spec = K.SHOT[kind] || K.SHOT.people;
     const main = actors.filter((a) => !a.fore && !a.back);
     const list = main.length ? main : actors;
-    let x0 = Math.min.apply(null, list.map((a) => a.x - a.L.headW * a.k)), x1 = Math.max.apply(null, list.map((a) => a.x + a.L.headW * a.k));
+    const halfWidth = (a) => (a.A.pose === K.S.LIE ? a.L.total * 0.55 : a.L.headW) * a.k;
+    let x0 = Math.min.apply(
+        null,
+        list.map((a) => a.x - halfWidth(a)),
+      ),
+      x1 = Math.max.apply(
+        null,
+        list.map((a) => a.x + halfWidth(a)),
+      );
+    for (const item of F.items || [])
+      if (item.propH && item.propX != null) {
+        x0 = Math.min(x0, item.propX * K.SET_W - item.propH * K.PROP_HALF);
+        x1 = Math.max(x1, item.propX * K.SET_W + item.propH * K.PROP_HALF);
+      }
     if (F.prop && F.propH && K.PROP_FRAME_SHOTS.indexOf(kind) >= 0) {
-      const px = F.propX * K.SET_W, pw = F.propH * K.PROP_HALF;
+      const px = F.propX * K.SET_W,
+        pw = F.propH * K.PROP_HALF;
       x0 = Math.min(x0, px - pw);
       x1 = Math.max(x1, px + pw);
     }
-    const top = Math.min.apply(null, list.map((a) => a.y - a.L.total * a.k)), bottom = Math.max.apply(null, list.map((a) => a.y));
-    const tall = Math.max.apply(null, list.map((a) => a.L.total * a.k));
+    const top = Math.min.apply(
+        null,
+        list.map((a) => a.y - a.L.total * a.k),
+      ),
+      bottom = Math.max.apply(
+        null,
+        list.map((a) => a.y),
+      );
+    const tall = Math.max.apply(
+      null,
+      list.map((a) => a.L.total * a.k),
+    );
     let h, cy;
-    const headH = Math.max.apply(null, list.map((a) => a.L.headH * a.k));
+    const headH = Math.max.apply(
+      null,
+      list.map((a) => a.L.headH * a.k),
+    );
     if (spec.head != null) {
       h = headH / spec.head;
       cy = top - spec.top * h + h / 2;
     } else if (spec.top != null) {
-      h = tall * (1 - S.style.body.head * 0.2) / spec.body * 1.0;
+      h = ((tall * (1 - S.style.body.head * 0.2)) / spec.body) * 1.0;
       h = Math.max(h, (top < 0 ? 0 : 0) + tall * 0.75);
       cy = top - spec.top * h + h / 2;
     } else {
@@ -812,11 +645,12 @@
     cy = clamp(cy, h / 2, K.SET_H - h / 2);
     return { cx, cy, h };
   }
-
   function objectBox(S, F, actors) {
-    const O = K.OBJECT_FRAME, A = S.VW / S.VH;
+    const O = K.OBJECT_FRAME,
+      A = S.VW / S.VH;
     const px = F.propX * K.SET_W;
-    let x0 = px - F.propH * K.PROP_HALF, x1 = px + F.propH * K.PROP_HALF;
+    let x0 = px - F.propH * K.PROP_HALF,
+      x1 = px + F.propH * K.PROP_HALF;
     for (const a of actors.filter((a) => !a.fore)) {
       x0 = Math.min(x0, a.x - a.L.headW * a.k);
       x1 = Math.max(x1, a.x + a.L.headW * a.k);
@@ -826,16 +660,15 @@
     const w = h * A;
     return { cx: clamp((x0 + x1) / 2, w / 2, K.SET_W - w / 2), cy: clamp(F.propY - h * O.base + h / 2, h / 2, K.SET_H - h / 2), h };
   }
-
   function camera(box, F, k) {
     const m = K.MOVE[(F.camera && F.camera.move) || K.S.DRIFT] || K.MOVE.drift;
     const z = lerp(m[0], m[1], ease(k));
     const dx = m.length > 2 ? lerp(m[2], m[3], ease(k)) * box.h : 0;
     return { cx: box.cx + dx, cy: box.cy, h: box.h * z };
   }
-
   function drawStage(g, ctx, S, F, t, k) {
-    const W = ctx.W, H = ctx.H;
+    const W = ctx.W,
+      H = ctx.H;
     S.VW = W;
     S.VH = H;
     S.extend = !S.style.body.legs && K.EXTEND_SHOTS.indexOf(F.shot) >= 0 ? K.EXTEND : 0;
@@ -874,18 +707,30 @@
     let propDone = !placed;
     const propNow = () => {
       propDone = true;
-      drawProp(g, S, F.prop, K.SET_W * F.propX, F.propY, F.propH, big ? Math.sin(t * 0.8) * 0.8 : 0);
+      drawProp(g, S, F.prop, K.SET_W * F.propX, F.propY, F.propH, (F.propRot || 0) + (big ? Math.sin(t * 0.8) * 0.8 : 0));
     };
     const occ = set ? (setParts(set).occ || []).slice() : [];
-    const occNow = (y) => {
-      while (occ.length && occ[0].y <= y) {
-        const img = imgOf(occ.shift().svg);
-        if (img) g.drawImage(img, 0, 0, K.SET_W, K.SET_H);
+    const extraProps = (F.items || [])
+      .filter((it) => it.prop !== F.prop && Number.isFinite(it.propX) && Number.isFinite(it.propY) && it.propH > 0)
+      .slice()
+      .sort((a, b) => a.propY - b.propY);
+    const layersNow = (y) => {
+      while (occ.length || extraProps.length || !propDone) {
+        const od = occ.length ? occ[0].y : Infinity;
+        const ed = extraProps.length ? extraProps[0].propY : Infinity;
+        const pd = !propDone && Number.isFinite(F.propY) ? F.propY : Infinity;
+        if (Math.min(od, ed, pd) > y) break;
+        if (occ.length && od <= ed && od <= pd) {
+          const img = imgOf(occ.shift().svg);
+          if (img) g.drawImage(img, 0, 0, K.SET_W, K.SET_H);
+        } else if (extraProps.length && ed <= pd) {
+          const it = extraProps.shift();
+          drawProp(g, S, it.prop, K.SET_W * it.propX, it.propY, it.propH, it.propRot || 0);
+        } else propNow();
       }
     };
     for (const a of order) {
-      occNow(a.y);
-      if (!propDone && F.propY <= a.y) propNow();
+      layersNow(a.y);
       g.save();
       g.translate(a.x, a.y);
       g.scale(a.k, a.k);
@@ -911,8 +756,7 @@
       drawPuppet(g, S, A, t, { tint: a.tint });
       g.restore();
     }
-    occNow(Infinity);
-    if (!propDone) propNow();
+    layersNow(Infinity);
     if (F.prop && !placed && !big && F.propX != null) drawProp(g, S, F.prop, K.SET_W * F.propX, (set && set.floorY) || K.FLOOR, K.SET_H * K.PROP_LEGACY_H, 0);
     if (set) drawSetLayer(g, S, set, K.S.FG, 0, 0, K.SET_W, K.SET_H, null);
     g.setTransform(1, 0, 0, 1, OX, 0);
@@ -928,23 +772,27 @@
     }
     g.restore();
   }
-
   function speechLevel(F, A, t) {
-    if (!F.speaker || F.speaker !== A.char) return 0;
-    const lt = t - F.start;
-    const syll = Math.max(0, Math.sin(lt * 6.4 * Math.PI)) * (0.55 + 0.45 * hash(Math.floor(lt * 6.4) + 3));
-    return syll * clamp((F.end - t) / 0.2, 0, 1);
+    if (!F.speaker || F.speaker !== A.char || t < F.start || t >= F.end || !Array.isArray(F.speech)) return 0;
+    const range = F.speech.find((r) => Array.isArray(r) && Number.isFinite(r[0]) && Number.isFinite(r[1]) && t >= r[0] && t < r[1]);
+    if (!range) return 0;
+    const lt = t - range[0],
+      C = K.SPEECH;
+    const syll = Math.max(0, Math.sin(lt * C.rate * Math.PI)) * (C.base + C.variation * hash(Math.floor(lt * C.rate) + C.seed));
+    return syll * clamp((Math.min(F.end, range[1]) - t) / C.fade, 0, 1);
   }
-
   function blurredSet(g, ctx, S, F, zoom, blur, dim) {
-    const W = ctx.W, H = ctx.H;
+    const W = ctx.W,
+      H = ctx.H;
     const set = setFor(S, F);
     g.fillStyle = K.BLACK;
     g.fillRect(0, 0, W, H);
     if (!set) return;
     const sc = Math.max(W / K.SET_W, H / K.SET_H) * zoom;
-    const w = K.SET_W * sc, h = K.SET_H * sc;
-    const ox = (W - w) / 2, oy = (H - h) * 0.6;
+    const w = K.SET_W * sc,
+      h = K.SET_H * sc;
+    const ox = (W - w) / 2,
+      oy = (H - h) * 0.6;
     drawSetLayer(g, S, set, K.S.MAIN, ox, oy, w, h, { blur });
     if (darkWanted(F, set)) {
       g.globalCompositeOperation = K.MULTIPLY;
@@ -958,7 +806,6 @@
     }
     return { sc, ox, oy, wall: set.wallY ? oy + set.wallY * sc : null };
   }
-
   function glow(g, x, y, r, color, a) {
     const gr = g.createRadialGradient(x, y, 0, x, y, r);
     gr.addColorStop(0, rgba(color, a));
@@ -966,7 +813,6 @@
     g.fillStyle = gr;
     g.fillRect(x - r, y - r, r * 2, r * 2);
   }
-
   function puppetAt(g, S, A, F, t, x, y, h, tint) {
     const c = charOf(S, A.char);
     const L = charLayout(S, c);
@@ -978,9 +824,10 @@
     g.restore();
     return { L, k };
   }
-
   function drawInsert(g, ctx, S, F, t, k) {
-    const W = ctx.W, H = ctx.H, I = K.INSERT;
+    const W = ctx.W,
+      H = ctx.H,
+      I = K.INSERT;
     g.save();
     g.translate(W / 2, H / 2);
     g.scale(1 + I.push * k, 1 + I.push * k);
@@ -993,22 +840,29 @@
       puppetAt(g, S, A, F, t, W * I.figX, H * I.figH, H * I.figH, 0.75);
       g.restore();
     }
-    const x = W * I.x, base = H * I.base, h = H * I.h;
+    const x = W * I.x,
+      base = H * I.base,
+      h = H * I.h;
     S.view = { insert: { x, y: base - h * K.PROP_FILL } };
     glow(g, x, base - h / 2, h * 0.9, K.NIGHT_RE.test(F.light || K.EMPTY) ? K.COLD : K.GLOW, 0.3);
     drawProp(g, S, F.prop, x, base, h, Math.sin(t * 0.8) * 1.2);
     g.restore();
   }
-
   function drawSymbol(g, ctx, S, F, t) {
-    const W = ctx.W, H = ctx.H, Y = K.SYMBOL, u = H / 720;
+    const W = ctx.W,
+      H = ctx.H,
+      Y = K.SYMBOL,
+      u = H / 720;
     g.fillStyle = Y.bg;
     g.fillRect(0, 0, W, H);
-    const x = W / 2, h = H * Y.h, base = H * Y.y + h / 2;
+    const x = W / 2,
+      h = H * Y.h,
+      base = H * Y.y + h / 2;
     glow(g, x, base - h / 2, H * Y.halo * (1 + 0.04 * Math.sin(t * 1.3)), K.NIGHT_RE.test(F.light || K.EMPTY) ? K.COLD : K.GLOW, Y.haloA);
     drawProp(g, S, F.prop, x, base, h, Math.sin(t * 0.9) * 4);
     for (let i = 0; i < Y.dust; i++) {
-      const px = ((hash(i * 3.3) + t * 0.01 * (0.5 + hash(i))) % 1) * W, py = ((hash(i * 7.1) + t * 0.006) % 1) * H;
+      const px = ((hash(i * 3.3) + t * 0.01 * (0.5 + hash(i))) % 1) * W,
+        py = ((hash(i * 7.1) + t * 0.006) % 1) * H;
       g.fillStyle = rgba(K.WHITE, K.DUST_ALPHA * (0.3 + 0.7 * hash(i * 1.9)));
       g.beginPath();
       g.arc(px, py, (0.8 + hash(i * 5.7) * 1.6) * u, 0, Math.PI * 2);
@@ -1017,19 +871,22 @@
     g.strokeStyle = rgba(K.WIND_COLOR, 0.35);
     g.lineWidth = 1.6 * u;
     for (let i = 0; i < Y.wind; i++) {
-      const y = H * (0.25 + 0.5 * hash(i * 4.1)), x0 = (((hash(i * 2.3) + t * 0.05) % 1) * 1.4 - 0.2) * W;
+      const y = H * (0.25 + 0.5 * hash(i * 4.1)),
+        x0 = (((hash(i * 2.3) + t * 0.05) % 1) * 1.4 - 0.2) * W;
       g.beginPath();
       for (let j = 0; j <= 12; j++) {
-        const xx = x0 + j * W * 0.012, yy = y + Math.sin(j * 0.9 + t * 2 + i) * H * 0.006;
+        const xx = x0 + j * W * 0.012,
+          yy = y + Math.sin(j * 0.9 + t * 2 + i) * H * 0.006;
         if (j) g.lineTo(xx, yy);
         else g.moveTo(xx, yy);
       }
       g.stroke();
     }
   }
-
   function drawClose(g, ctx, S, F, t, k) {
-    const W = ctx.W, H = ctx.H, C = K.CLOSE;
+    const W = ctx.W,
+      H = ctx.H,
+      C = K.CLOSE;
     S.extend = S.style.body.legs ? 0 : K.EXTEND;
     blurredSet(g, ctx, S, F, C.zoom, C.blur, C.dim);
     const A = (F.actors || [])[0];
@@ -1037,16 +894,18 @@
     const c = charOf(S, A.char);
     const L = charLayout(S, c);
     const kk = ((H * clamp(S.style.body.head * C.headK, C.headMin, C.headMax)) / L.headH) * (1 + C.push * k);
-    const x = W * C.x, y = H * C.y - L.headCy * kk;
+    const x = W * C.x,
+      y = H * C.y - L.headCy * kk;
     g.save();
     g.translate(x, y);
     g.scale(kk, kk);
     drawPuppet(g, S, Object.assign({}, A, { pose: K.CLOSE_KEEP.indexOf(A.pose) >= 0 ? A.pose : K.S.IDLE, face: A.face === K.S.BACK ? K.S.FRONT : A.face, talk: speechLevel(F, A, t) }), t, { tint: 1 });
     g.restore();
   }
-
   function drawShadow(g, ctx, S, F, t) {
-    const W = ctx.W, H = ctx.H, D = K.SHADOW;
+    const W = ctx.W,
+      H = ctx.H,
+      D = K.SHADOW;
     const V = blurredSet(g, ctx, S, F, 1.08, 0, null);
     const A = (F.actors || [])[0];
     if (!A) return;
@@ -1067,29 +926,33 @@
     g.restore();
     if ((F.actors || [])[1]) puppetAt(g, S, F.actors[1], F, t, W * D.figX, H * 0.95, H * D.figH, 1);
   }
-
   function drawSplit(g, ctx, S, F, t, k) {
-    const W = ctx.W, H = ctx.H, P = K.SPLIT;
+    const W = ctx.W,
+      H = ctx.H,
+      P = K.SPLIT;
     const acts = F.actors || [];
     const other = F.light2 || (K.NIGHT_RE.test(String(F.light || K.EMPTY)) ? K.S.DAY : K.S.NIGHT);
     const halves = [Object.assign({}, F, { shot: K.S.PEOPLE, actors: [Object.assign({}, acts[0], { x: 0.5 })] }), Object.assign({}, F, { shot: K.S.PEOPLE, set: F.set2 || F.set, light: other, actors: [Object.assign({}, acts[1] || acts[0], { x: 0.5 })] })];
     halves.forEach((h, i) => {
       g.save();
       g.beginPath();
-      g.rect(i * W / 2, 0, W / 2, H);
+      g.rect((i * W) / 2, 0, W / 2, H);
       g.clip();
-      drawStage(g, Object.assign({}, ctx, { W: W / 2, H, ox: i * W / 2 }), S, h, t, k);
+      drawStage(g, Object.assign({}, ctx, { W: W / 2, H, ox: (i * W) / 2 }), S, h, t, k);
       g.restore();
     });
     g.fillStyle = P.color;
     g.fillRect(W / 2 - (H * P.line) / 2, 0, H * P.line, H);
   }
-
   function drawInset(g, ctx, S, F, t) {
-    const W = ctx.W, H = ctx.H, P = K.INSET;
+    const W = ctx.W,
+      H = ctx.H,
+      P = K.INSET;
     const set = setFor(S, { set: F.inset, light: F.insetLight || F.light });
     if (!set) return;
-    const x = W * P.x, y = H * P.y, r = H * P.r;
+    const x = W * P.x,
+      y = H * P.y,
+      r = H * P.r;
     g.save();
     g.lineCap = K.ROUND;
     g.strokeStyle = P.rim;
@@ -1116,9 +979,10 @@
     g.stroke();
     g.restore();
   }
-
   function drawFlashback(g, ctx) {
-    const W = ctx.W, H = ctx.H, B = K.FLASHBACK;
+    const W = ctx.W,
+      H = ctx.H,
+      B = K.FLASHBACK;
     g.save();
     g.fillStyle = B.tint;
     g.globalCompositeOperation = K.MULTIPLY;
@@ -1135,10 +999,13 @@
     g.stroke();
     g.restore();
   }
-
   function drawLurk(g, ctx, S, F, t) {
-    const W = ctx.W, H = ctx.H, P = K.LURK;
-    const x = W * (F.overlayX != null ? F.overlayX : P.x), y = H * P.y, r = H * P.r;
+    const W = ctx.W,
+      H = ctx.H,
+      P = K.LURK;
+    const x = W * (F.overlayX != null ? F.overlayX : P.x),
+      y = H * P.y,
+      r = H * P.r;
     g.save();
     const gr = g.createRadialGradient(x, y, r * 0.2, x, y, r);
     gr.addColorStop(0, rgba(K.BLACK, 0.97));
@@ -1158,13 +1025,16 @@
     }
     g.restore();
   }
-
   function drawGhostPeek(g, ctx, S, F, t) {
     if ((F.actors || []).some((a) => charOf(S, a.char).ghost)) return;
-    const W = ctx.W, H = ctx.H, P = K.GHOST_PEEK;
+    const W = ctx.W,
+      H = ctx.H,
+      P = K.GHOST_PEEK;
     const chars = S.kit.characters || {};
     const key = Object.keys(chars).find((k) => chars[k].ghost);
-    const x = W * (F.overlayX != null ? Math.max(F.overlayX, P.x) : P.x), y = H * P.base, h = H * P.h;
+    const x = W * (F.overlayX != null ? Math.max(F.overlayX, P.x) : P.x),
+      y = H * P.base,
+      h = H * P.h;
     g.save();
     if (key) {
       const L = charLayout(S, charOf(S, key));
@@ -1175,7 +1045,8 @@
       return;
     }
     const fl = S.motion ? 1 - 0.1 * (0.5 + 0.5 * Math.sin(t * 7.3) * Math.sin(t * 2.1)) : 1;
-    const hr = h * 0.075, hy = y - h + hr * 1.3;
+    const hr = h * 0.075,
+      hy = y - h + hr * 1.3;
     if (K.FILTER in g) g.filter = K.BLUR(h * 0.008);
     g.globalAlpha = 0.88 * fl;
     g.fillStyle = K.SIL.color;
@@ -1198,15 +1069,17 @@
     }
     g.restore();
   }
-
   function drawOverlays(g, ctx, S, F, t) {
-    const W = ctx.W, H = ctx.H, u = H / 720;
+    const W = ctx.W,
+      H = ctx.H,
+      u = H / 720;
     for (const o of F.overlays || []) {
       if (o === K.S.RAIN) {
         g.strokeStyle = rgba(K.RAIN, 0.35);
         g.lineWidth = 1.2 * u;
         for (let i = 0; i < 120; i++) {
-          const x = ((hash(i * 1.7) + t * 0.08) % 1) * W, y = ((hash(i * 3.9) + t * 1.4) % 1) * H;
+          const x = ((hash(i * 1.7) + t * 0.08) % 1) * W,
+            y = ((hash(i * 3.9) + t * 1.4) % 1) * H;
           g.beginPath();
           g.moveTo(x, y);
           g.lineTo(x - 4 * u, y + 18 * u);
@@ -1223,7 +1096,9 @@
         }
       } else if (o === K.S.STEAM || o === K.S.SMOKE) {
         const V = S.view;
-        let x0, y0, z = 1;
+        let x0,
+          y0,
+          z = 1;
         if (F.smokeX != null && V && V.sc) {
           x0 = V.ox + F.smokeX * V.sc;
           y0 = V.oy + F.smokeY * V.sc;
@@ -1263,11 +1138,11 @@
     g.fillStyle = bs;
     g.fillRect(0, H * (1 - K.BOTTOM_SHADE.h), W, H * K.BOTTOM_SHADE.h);
   }
-
   function blink(g, ctx, F, t) {
     const k = clamp((t - F.start) / Math.max(0.3, F.end - F.start), 0, 1);
     const open = K.LID_OPEN * ease(clamp(k * 2.2, 0, 1)) * (k < 0.3 ? 0.6 + 0.4 * Math.abs(Math.sin(k * 20)) : 1);
-    const W = ctx.W, H = ctx.H;
+    const W = ctx.W,
+      H = ctx.H;
     g.save();
     g.fillStyle = K.BLACK;
     g.beginPath();
@@ -1276,7 +1151,6 @@
     g.fill(K.EVENODD);
     g.restore();
   }
-
   function drawFrame(g, ctx, S, F, t) {
     const k = clamp((t - F.start) / Math.max(0.3, F.end - F.start), 0, 1);
     S.extend = 0;
@@ -1293,7 +1167,6 @@
     if (F.shot === K.SHOT_BLINK) blink(g, ctx, F, t);
     g.restore();
   }
-
   function draw(g, ctx) {
     const S = ctx.state;
     if (!S || !S.frames.length) {
@@ -1305,10 +1178,6 @@
     const at = frameAt(S, t);
     if (!at.cur) return;
     const fx = fxAt(ctx, t);
-    if (fx && fx.shake) {
-      g.save();
-      g.translate(Math.sin(t * 90) * fx.shake * ctx.H, Math.cos(t * 77) * fx.shake * ctx.H);
-    }
     drawFrame(g, ctx, S, at.cur, t);
     const since = t - at.cur.start;
     if (at.prev && since < K.FADE && at.cur.cut !== true) {
@@ -1317,7 +1186,6 @@
       drawFrame(g, ctx, S, at.prev, t);
       g.restore();
     }
-    if (fx && fx.shake) g.restore();
     if (fx && fx.flash) {
       g.save();
       g.globalAlpha = fx.flash;
@@ -1326,7 +1194,6 @@
       g.restore();
     }
   }
-
   function fxAt(ctx, t) {
     const cues = (ctx.spec && ctx.spec.fxCues) || [];
     let out = null;
@@ -1337,22 +1204,18 @@
       const k = 1 - d / e.dur;
       out = out || {};
       if (e.flash) out.flash = Math.max(out.flash || 0, e.flash * k * (d < e.dur * 0.3 || d > e.dur * 0.5 ? 1 : 0.3));
-      if (e.shake) out.shake = Math.max(out.shake || 0, e.shake * k);
     }
     return out;
   }
-
   function bgInit(ctx, bg) {
     const kit = ctx.spec && ctx.spec.kit;
     if (!kit || !bg) return null;
     return { puppet: true, S: { frames: [], style: styleOf(ctx.spec), kit, motion: !!kit.motion }, F: { set: bg.set, light: bg.light || null } };
   }
-
   function bgDraw(g, ctx, st) {
     if (!st || !st.S) return;
     blurredSet(g, ctx, st.S, st.F, K.BG.zoom, K.BG.blur, null);
   }
-
   ME.PUPPET2D = { init, draw, preload, bgInit, bgDraw, K };
   ME.registerTemplate(K.TEMPLATE, {
     name: K.NAME,

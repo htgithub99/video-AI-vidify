@@ -1,5 +1,7 @@
 # Hướng dẫn làm kho tài nguyên 2D và cố định vị trí theo video mẫu
 
+Cập nhật 22/10/2026: [bộ 34 mẫu bổ sung và cách cố định theo câu kể](docs/motion-fixed-library-2026-10-22.md), [bảng ảnh kiểm tra cả hai phong cách](docs/video-references/fixed-library-20261022/index.html). Nguồn mới nằm ở `python_scripts/kit_seed/fixed_compositions.py`; dùng installer chọn lọc được mô tả trong báo cáo, không chép toàn bộ staging vào kho chính.
+
 Tài liệu này dành cho một AI khác (hoặc người) muốn tiếp tục làm phần 2D puppet của **video-AI-vidify** giống cách đã làm từ c97y đến c98c. Đọc hết trước khi sửa code.
 
 ---

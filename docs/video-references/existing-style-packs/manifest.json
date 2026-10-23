@@ -1,0 +1,134 @@
+[
+  {
+    "pack": "chibi_folk",
+    "sheet": "chibi_folk-01.jpg",
+    "files": [
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_06.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_07.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_08.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\character_09.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\closeup_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\closeup_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\closeup_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\closeup_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\exterior_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\exterior_01.jpg"
+    ]
+  },
+  {
+    "pack": "chibi_folk",
+    "sheet": "chibi_folk-02.jpg",
+    "files": [
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\exterior_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\exterior_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\exterior_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\exterior_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\exterior_06.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\interior_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\interior_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\interior_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\interior_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\interior_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\interior_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\kitchen_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\kitchen_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\kitchen_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\kitchen_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\kitchen_04.jpg"
+    ]
+  },
+  {
+    "pack": "chibi_folk",
+    "sheet": "chibi_folk-03.jpg",
+    "files": [
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\kitchen_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\landscape_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\landscape_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\landscape_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\landscape_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\landscape_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\landscape_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\night_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\night_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\night_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\night_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\night_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\night_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\prop_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\prop_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\prop_02.jpg"
+    ]
+  },
+  {
+    "pack": "chibi_folk",
+    "sheet": "chibi_folk-04.jpg",
+    "files": [
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\prop_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\chibi_folk\\prop_04.jpg"
+    ]
+  },
+  {
+    "pack": "minimal_mask",
+    "sheet": "minimal_mask-01.jpg",
+    "files": [
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_06.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_07.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_08.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\character_09.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_05.jpg"
+    ]
+  },
+  {
+    "pack": "minimal_mask",
+    "sheet": "minimal_mask-02.jpg",
+    "files": [
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_06.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\exterior_07.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\interior_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\interior_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\interior_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\interior_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\interior_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\landscape_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\landscape_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\landscape_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\landscape_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\night_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\night_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\night_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\night_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\night_04.jpg"
+    ]
+  },
+  {
+    "pack": "minimal_mask",
+    "sheet": "minimal_mask-03.jpg",
+    "files": [
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\night_05.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\night_06.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\prop_00.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\prop_01.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\prop_02.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\prop_03.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\prop_04.jpg",
+      "D:\\video-AI-vidify\\motion-engine\\style-refs\\minimal_mask\\prop_05.jpg"
+    ]
+  }
+]

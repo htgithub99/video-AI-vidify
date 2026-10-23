@@ -1,247 +1,396 @@
+from seed_texts import SeedText as KST
 from interior import *
 from scenes import HB, IB, ext_base
-
 INT = dict(hz=IB, fy=950)
 EXT = dict(hz=HB, fy=930)
-
-
 def P(key, kind, slots, desc, build, ax, ay, native, spots=(), lights=(), name=None, size=1.0, front=False):
-    return dict(key=key, kind=kind, slots=list(slots), desc=desc, build=build, ax=ax, ay=ay, native=native, spots=list(spots), lights=list(lights), name=name or key.replace('_', ' '), size=size, front=front)
-
-
-def S(key, kind, x, y, label):
-    return dict(key=key, kind=kind, x=x, y=y, label=label)
-
-
+    return dict(key=key, kind=kind, environment=KST.INTERIOR if native == INT else KST.EXTERIOR, slots=list(slots), desc=desc, build=build, ax=ax, ay=ay, native=native, spots=list(spots), lights=list(lights), name=name or key.replace(KST.UNDERSCORE, KST.SPACE), size=size, front=front)
+def S(key, kind, x, y, label, seatY=None, groundY=None):
+    return dict(key=key, kind=kind, x=x, y=y, label=label, **dict(face=KST.RIGHT) if kind == KST.LIE else {}, **dict(seatY=seatY) if seatY is not None else {}, **dict(groundY=groundY) if groundY is not None else {})
 def well(t):
-    x, b = 1250, HB + 180
-    out = [rect(t, x - 160, b - 140, 320, 140, t.c('stone'), True)]
+    x, b = (1250, HB + 180)
+    out = [rect(t, x - 160, b - 140, 320, 140, t.c(KST.STONE), True)]
     for k in range(3):
-        out.append(line(t, x - 160, b - 140 + k * 46, x + 160, b - 140 + k * 46, t.c('stone2'), 3))
-    out += [ell(t, x, b - 140, 160, 26, t.c('dark'), True), rect(t, x - 150, b - 330, 14, 190, t.c('wood'), True), rect(t, x + 136, b - 330, 14, 190, t.c('wood'), True), rect(t, x - 170, b - 340, 340, 18, t.c('wood'), True), line(t, x, b - 322, x, b - 230, t.line, 2), rect(t, x - 26, b - 230, 52, 44, t.c('wood2'), True)]
+        out.append(line(t, x - 160, b - 140 + k * 46, x + 160, b - 140 + k * 46, t.c(KST.STONE2), 3))
+    out += [ell(t, x, b - 140, 160, 26, t.c(KST.DARK), True), rect(t, x - 150, b - 330, 14, 190, t.c(KST.WOOD), True), rect(t, x + 136, b - 330, 14, 190, t.c(KST.WOOD), True), rect(t, x - 170, b - 340, 340, 18, t.c(KST.WOOD), True), line(t, x, b - 322, x, b - 230, t.line, 2), rect(t, x - 26, b - 230, 52, 44, t.c(KST.WOOD2), True)]
     return out
-
-
 def shrine_small(t):
-    out = [rect(t, 780, HB - 330, 360, 330, mix(t.c('stone'), t.c('wall'), 0.4), True), rect(t, 870, HB - 240, 180, 170, t.c('dark'), True)]
-    out += roof_tiles(t, 740, HB - 440, 440, 120, mix(t.c('roof'), t.c('grass2'), 0.35), 30, curve=True)
-    out += [rect(t, 760, HB - 60, 400, 60, t.c('stone2'), True)] + incense(t, 960, HB - 60, 2)
+    out = [rect(t, 780, HB - 330, 360, 330, mix(t.c(KST.STONE), t.c(KST.WALL), 0.4), True), rect(t, 870, HB - 240, 180, 170, t.c(KST.DARK), True)]
+    out += roof_tiles(t, 740, HB - 440, 440, 120, mix(t.c(KST.ROOF), t.c(KST.GRASS2), 0.35), 30, curve=True)
+    out += [rect(t, 760, HB - 60, 400, 60, t.c(KST.STONE2), True)] + incense(t, 960, HB - 60, 2)
     return out
-
-
 def gate(t):
-    out = [rect(t, 640, HB - 420, 640, 420, t.c('wall'), True), path(t, 'M760 %s L760 %s Q960 %s 1160 %s L1160 %s Z' % (HB, HB - 230, HB - 370, HB - 230, HB), t.c('dark') if not t.night else '#06090f', True)]
-    out += roof_tiles(t, 600, HB - 560, 720, 150, t.c('roof'), 40, curve=True)
+    out = [rect(t, 640, HB - 420, 640, 420, t.c(KST.WALL), True), path(t, KST.M760_S_L760_S_Q960_S_1160_S_L1160_S_Z % (HB, HB - 230, HB - 370, HB - 230, HB), t.c(KST.DARK) if not t.night else KST.VALUE_06090F, True)]
+    out += roof_tiles(t, 600, HB - 560, 720, 150, t.c(KST.ROOF), 40, curve=True)
     return out
-
-
 def temple_front(t):
-    out = [rect(t, 520, HB - 300, 880, 300, mix(t.c('wood'), t.c('red'), 0.2), True)]
+    out = [rect(t, 520, HB - 300, 880, 300, mix(t.c(KST.WOOD), t.c(KST.RED), 0.2), True)]
     for k in range(7):
-        out.append(rect(t, 540 + k * 136, HB - 300, 30, 300, t.c('post'), True))
+        out.append(rect(t, 540 + k * 136, HB - 300, 30, 300, t.c(KST.POST), True))
     for k in range(3):
         out += lit(t, 650 + k * 260, HB - 230, 120, 220)
-    out += roof_tiles(t, 440, HB - 560, 1040, 270, t.c('roof'), 80, curve=True)
-    out.append(rect(t, 480, HB - 20, 960, 30, t.c('stone2'), True))
+    out += roof_tiles(t, 440, HB - 560, 1040, 270, t.c(KST.ROOF), 80, curve=True)
+    out.append(rect(t, 480, HB - 20, 960, 30, t.c(KST.STONE2), True))
     return out
-
-
 def stall(t):
     x = 760
-    out = [rect(t, x, HB - 260, 20, 260, t.c('post'), True), rect(t, x + 400, HB - 260, 20, 260, t.c('post'), True)]
-    out += thatch_roof(t, x - 20, HB - 380, 460, 140, t.c('thatch'), t.c('thatch2'), horns=False)
-    out.append(rect(t, x + 20, HB - 110, 380, 26, t.c('wood'), True))
+    out = [rect(t, x, HB - 260, 20, 260, t.c(KST.POST), True), rect(t, x + 400, HB - 260, 20, 260, t.c(KST.POST), True)]
+    out += thatch_roof(t, x - 20, HB - 380, 460, 140, t.c(KST.THATCH), t.c(KST.THATCH2), horns=False)
+    out.append(rect(t, x + 20, HB - 110, 380, 26, t.c(KST.WOOD), True))
     return out
-
-
 def ruin_house(t):
-    x, b, w, h = 520, HB, 880, 250
-    out = [poly(t, [(x, b - h), (x + w, b - h + 20), (x + w + 8, b), (x - 8, b)], mix(t.c('wall'), t.c('stone2'), 0.4), True)]
-    out.append(poly(t, [(x - 40, b - h), (x + w * 0.3, b - h - 120), (x + w * 0.5, b - h - 60), (x + w * 0.62, b - h - 130), (x + w + 40, b - h + 20)], shade(t.c('roof'), 0.2), True))
-    out.append(rect(t, x + 120, b - 200, 130, 190, '#0b0c0f', True))
-    out.append(poly(t, [(x + 250, b - 200), (x + 300, b - 180), (x + 300, b - 20), (x + 250, b - 10)], t.c('wood'), True))
-    out.append(rect(t, x + 520, b - 190, 160, 100, '#0b0c0f', True))
-    out.append(line(t, x + 520, b - 190, x + 680, b - 90, t.c('wood'), 6))
+    x, b, w, h = (520, HB, 880, 250)
+    out = [poly(t, [(x, b - h), (x + w, b - h + 20), (x + w + 8, b), (x - 8, b)], mix(t.c(KST.WALL), t.c(KST.STONE2), 0.4), True)]
+    out.append(poly(t, [(x - 40, b - h), (x + w * 0.3, b - h - 120), (x + w * 0.5, b - h - 60), (x + w * 0.62, b - h - 130), (x + w + 40, b - h + 20)], shade(t.c(KST.ROOF), 0.2), True))
+    out.append(rect(t, x + 120, b - 200, 130, 190, KST.VALUE_0B0C0F, True))
+    out.append(poly(t, [(x + 250, b - 200), (x + 300, b - 180), (x + 300, b - 20), (x + 250, b - 10)], t.c(KST.WOOD), True))
+    out.append(rect(t, x + 520, b - 190, 160, 100, KST.VALUE_0B0C0F, True))
+    out.append(line(t, x + 520, b - 190, x + 680, b - 90, t.c(KST.WOOD), 6))
     return out
-
-
 def dead_tree(t):
     b = HB
-    return [pline(t, [(1560, b), (1580, b - 200), (1520, b - 330)], t.c('trunk'), 16), pline(t, [(1575, b - 220), (1660, b - 330)], t.c('trunk'), 10), pline(t, [(1540, b - 290), (1470, b - 360)], t.c('trunk'), 8)]
-
-
+    return [pline(t, [(1560, b), (1580, b - 200), (1520, b - 330)], t.c(KST.TRUNK), 16), pline(t, [(1575, b - 220), (1660, b - 330)], t.c(KST.TRUNK), 10), pline(t, [(1540, b - 290), (1470, b - 360)], t.c(KST.TRUNK), 8)]
 def hearth_pit(t):
-    return [rect(t, 700, IB + 120, 520, 110, t.c('dirt'), True)] + stove(t, 960, IB + 200)
-
-
+    return [rect(t, 700, IB + 120, 520, 110, t.c(KST.DIRT), True)] + stove(t, 960, IB + 200)
 def bed_frame(t):
     return bed(t, 160, IB + 190, 600)
-
-
-WALL = ['wall_left', 'wall_right']
-BACK = ['back_center', 'back_left', 'back_right']
-MIDI = ['mid_left', 'mid_right', 'mid_center']
-EDGE = ['edge_left', 'edge_right']
-FAR = ['far_center', 'far_left', 'far_right']
-CORNER = ['corner_left', 'corner_right']
-MIDE = ['mid_left', 'mid_right', 'mid_center']
-
+WALL = [KST.WALL_LEFT, KST.WALL_RIGHT]
+BACK = [KST.BACK_CENTER, KST.BACK_LEFT, KST.BACK_RIGHT]
+MIDI = [KST.MID_LEFT, KST.MID_RIGHT, KST.MID_CENTER]
+EDGE = [KST.EDGE_LEFT, KST.EDGE_RIGHT]
+FAR = [KST.FAR_CENTER, KST.FAR_LEFT, KST.FAR_RIGHT]
+CORNER = [KST.CORNER_LEFT, KST.CORNER_RIGHT]
+MIDE = [KST.MID_LEFT, KST.MID_RIGHT, KST.MID_CENTER]
 PIECES = [
-    P('altar', 'furniture', BACK, 'ancestor altar table with a portrait, candles and an incense bowl', lambda t: altar(t, 760, IB + 60, 420), 970, IB + 60, INT,
-      [S('altar_front', 'stand', 970, IB + 130, 'in front of the altar (pray, kneel, offer incense)'), S('beside_altar_left', 'stand', 690, IB + 100, 'beside the altar, left'), S('beside_altar_right', 'stand', 1250, IB + 100, 'beside the altar, right'), S('altar_top', 'surface', 970, IB - 140, 'on the altar'), S('incense_source', 'smoke', 970, IB - 160, 'incense on the altar')],
-      [dict(x=820, y=IB - 220, kind='candle'), dict(x=1120, y=IB - 220, kind='candle')]),
-    P('door_panels', 'fixture', ['door_right', 'door_left'], 'tall wooden door panels in the back wall', lambda t: door_panels(t, 1360, IB), 1566, IB, INT, [S('door', 'door', 1566, IB + 50, 'at the doors')]),
-    P('window', 'wall', WALL, 'small window with wooden bars in the wall', lambda t: window(t, 1560, 260), 1620, 370, INT, [S('window', 'stand', 1620, IB + 70, 'by the window')]),
-    P('red_textile', 'wall', WALL, 'red woven cloth hanging on the wall', lambda t: textile(t, 120, 260), 155, 470, INT),
-    P('shelf', 'wall', WALL, 'wooden shelf with jars on the wall', lambda t: shelf(t, 1250, 330, 380, 5), 1440, 346, INT),
-    P('bench', 'furniture', MIDI + BACK, 'long low wooden bench', lambda t: bench(t, 220, IB + 200, 380), 410, IB + 200, INT, [S('bench', 'sit', 410, IB + 215, 'on the bench')]),
-    P('tea_table', 'furniture', MIDI, 'low tea table with a teapot', lambda t: tea_table(t, 1100, IB + 230), 1210, IB + 230, INT, [S('tea_table', 'surface', 1210, IB + 120, 'on the tea table'), S('beside_table', 'stand', 1400, IB + 250, 'beside the tea table')]),
-    P('bed', 'furniture', MIDI + BACK, 'wooden bed with a mosquito net', bed_frame, 460, IB + 190, INT, [S('bed', 'lie', 470, IB + 70, 'lying on the bed'), S('bed_edge', 'sit', 560, IB + 200, 'on the edge of the bed'), S('beside_bed', 'stand', 860, IB + 210, 'beside the bed')]),
-    P('daybed', 'furniture', MIDI + BACK, 'wide plank daybed (phan go)', lambda t: bench(t, 600, IB + 220, 720, 120), 960, IB + 220, INT, [S('daybed', 'lie', 960, IB + 100, 'lying on the plank daybed'), S('daybed_edge', 'sit', 960, IB + 235, 'on the edge of the daybed')]),
-    P('hearth', 'furniture', MIDI, 'cooking hearth with three stones, fire and a pot', lambda t: stove(t, 560, IB + 170), 560, IB + 170, INT, [S('hearth', 'stand', 560, IB + 230, 'at the hearth'), S('hearth_sit', 'sit', 760, IB + 240, 'sitting by the fire'), S('hearth_top', 'surface', 560, IB + 40, 'on the fire'), S('hearth_smoke', 'smoke', 560, IB + 60, 'smoke of the fire')], [dict(x=560, y=IB + 90, kind='fire')]),
-    P('hearth_pit', 'furniture', ['mid_center'], 'square fire pit in the plank floor of a stilt house', hearth_pit, 960, IB + 230, INT, [S('hearth', 'stand', 960, IB + 260, 'at the fire pit'), S('hearth_left', 'sit', 640, IB + 220, 'sitting left of the fire'), S('hearth_right', 'sit', 1280, IB + 220, 'sitting right of the fire'), S('hearth_top', 'surface', 960, IB + 90, 'on the fire'), S('hearth_smoke', 'smoke', 960, IB + 100, 'smoke of the fire')], [dict(x=960, y=IB + 120, kind='fire')]),
-    P('coffin', 'furniture', ['mid_center', 'back_center'], 'dark wooden coffin on two trestles', lambda t: coffin(t, 680, IB + 230, 560), 960, IB + 230, INT, [S('coffin', 'surface', 960, IB + 10, 'on the coffin'), S('coffin_left', 'stand', 560, IB + 250, 'left of the coffin'), S('coffin_right', 'stand', 1360, IB + 250, 'right of the coffin'), S('behind_coffin', 'stand', 960, IB + 205, 'behind the coffin')], front=True),
-    P('buddha', 'furniture', ['back_center'], 'golden statue on a red altar', lambda t: buddha(t, 960, IB - 20, 1.0), 960, IB - 20, INT, [S('statue_front', 'stand', 960, IB + 180, 'in front of the statue (pray, kneel)')]),
-    P('bell', 'wall', WALL, 'temple bell hanging from a frame', lambda t: bell(t, 330, 300, 1.2), 330, 420, INT),
-    P('curtain', 'wall', WALL, 'torn curtain', lambda t: curtain(t, 1500, 200, 200, 380), 1600, 600, INT),
-    P('broken_chair', 'furniture', MIDI, 'broken wooden chair', lambda t: broken_chair(t, 260, IB + 200), 350, IB + 200, INT),
-    P('jar', 'scenery', MIDI + EDGE + MIDE, 'big clay jar', lambda t: jar(t, 400, IB + 160, 1.0), 400, IB + 160, INT),
-    P('incense_bowl', 'scenery', MIDI, 'incense bowl with burning sticks', lambda t: incense(t, 400, IB + 160, 3), 400, IB + 160, INT, [S('incense_smoke', 'smoke', 400, IB + 60, 'incense smoke')]),
-    P('house_tile', 'building', FAR, 'long one-storey village house with a tiled roof and three doors', lambda t: house_tile(t, 520, HB, 880, 250), 960, HB, EXT, [S('house_door', 'door', 960, HB + 20, 'at the door of the house')], size=1.0),
-    P('stilt_house', 'building', FAR, 'stilt house with a thatched roof, crossed gable horns and a ladder', lambda t: stilt_house(t, 600, HB, 720), 960, HB, EXT, [S('ladder', 'stand', 1180, HB + 30, 'at the foot of the ladder')]),
-    P('hut', 'building', FAR, 'small woven hut with a thatched roof', lambda t: hut(t, 40, HB - 20, 380, 170), 230, HB - 20, EXT, [S('hut_door', 'door', 230, HB, 'at the hut')]),
-    P('shrine', 'building', FAR, 'small old stone shrine with a curved roof', shrine_small, 960, HB, EXT, [S('shrine_door', 'door', 960, HB + 20, 'at the shrine'), S('shrine_step', 'surface', 960, HB - 60, 'on the shrine step')]),
-    P('village_gate', 'building', ['far_center'], 'village gate with an arch and a tiled roof', gate, 960, HB, EXT, [S('gate', 'door', 960, HB + 10, 'in the gateway')]),
-    P('temple', 'building', ['far_center'], 'village temple front with red posts and a big curved roof', temple_front, 960, HB, EXT, [S('temple_door', 'door', 960, HB + 10, 'at the temple doors')]),
-    P('market_stall', 'building', FAR, 'market stall with a thatched roof and a counter', stall, 970, HB, EXT, [S('stall', 'stand', 970, HB + 40, 'at the stall'), S('stall_top', 'surface', 970, HB - 110, 'on the counter')]),
-    P('ruined_house', 'building', FAR, 'abandoned ruined house with a broken roof', ruin_house, 960, HB, EXT, [S('ruin_door', 'door', 705, HB + 10, 'at the broken door')]),
-    P('well', 'scenery', MIDE, 'stone village well with a wooden frame', well, 1250, HB + 180, EXT, [S('well', 'stand', 1000, HB + 200, 'beside the well'), S('well_top', 'surface', 1250, HB + 40, 'on the rim of the well')]),
-    P('poly_tree', 'scenery', CORNER + ['far_left', 'far_right'], 'simple dark green tree', lambda t: poly_tree(t, 960, HB, 1.0), 960, HB, EXT),
-    P('round_tree', 'scenery', CORNER + ['far_left', 'far_right'], 'round leafy tree', lambda t: round_tree(t, 960, HB, 1.0), 960, HB, EXT),
-    P('bonsai_tree', 'scenery', CORNER + ['far_left', 'far_right', 'mid_left', 'mid_right'], 'twisted pine-like garden tree', lambda t: bonsai_tree(t, 960, HB, 1.0), 960, HB, EXT),
-    P('banyan', 'scenery', ['far_center', 'far_left', 'far_right'], 'huge old banyan tree with hanging roots', lambda t: banyan(t, 960, HB, 0.9), 960, HB, EXT, [S('tree_root', 'stand', 960, HB + 80, 'under the banyan tree')]),
-    P('palm', 'scenery', CORNER + ['far_left', 'far_right'], 'palm tree', lambda t: palm(t, 960, HB, 1.0), 960, HB, EXT),
-    P('bamboo', 'scenery', CORNER + ['far_left', 'far_right', 'edge_left', 'edge_right'], 'clump of bamboo', lambda t: bamboo(t, 960, HB, 1.0, 7), 960, HB, EXT),
-    P('banana', 'scenery', CORNER + ['far_left', 'far_right', 'mid_left', 'mid_right'], 'banana plant', lambda t: banana(t, 960, HB, 1.0), 960, HB, EXT),
-    P('pine', 'scenery', CORNER + ['far_left', 'far_right'], 'tall pine tree', lambda t: pine(t, 960, HB, 1.2), 960, HB, EXT),
-    P('dead_tree', 'scenery', CORNER + ['far_left', 'far_right'], 'bare dead tree', dead_tree, 1560, HB, EXT),
-    P('bush', 'scenery', MIDE + EDGE + ['far_left', 'far_right'], 'round bush', lambda t: bush(t, 960, HB + 100, 1.5), 960, HB + 100, EXT),
-    P('reeds', 'scenery', EDGE + MIDE, 'tall reeds', lambda t: reeds(t, 960, HB + 100, 1.0, 9), 960, HB + 100, EXT),
-    P('rock', 'scenery', MIDE + EDGE, 'big rock', lambda t: rock(t, 960, HB + 100, 1.0), 960, HB + 100, EXT, [S('rock', 'sit', 960, HB + 110, 'sitting on the rock')]),
-    P('grave', 'scenery', MIDE + ['far_left', 'far_right', 'far_center'], 'earth grave mound with a small stone and incense', lambda t: grave(t, 960, HB + 150, 1.4), 960, HB + 150, EXT, [S('grave_front', 'stand', 900, HB + 200, 'in front of the grave'), S('grave_smoke', 'smoke', 1030, HB + 90, 'incense at the grave')]),
-    P('tombstone', 'scenery', MIDE + EDGE, 'stone tombstone', lambda t: tombstone(t, 960, HB + 150, 1.2), 960, HB + 150, EXT),
-    P('low_wall', 'scenery', ['far_center'], 'low stone wall', lambda t: low_wall(t, 440, 1480, HB - 10, 70), 960, HB - 10, EXT),
-    P('fence', 'scenery', ['far_center'], 'bamboo fence', lambda t: fence(t, 300, 1620, HB - 5, 90), 960, HB - 5, EXT),
-    P('jar_yard', 'scenery', MIDE + EDGE, 'clay jar in the yard', lambda t: jar(t, 960, HB + 120, 0.6), 960, HB + 120, EXT),
+    P(
+        KST.ALTAR,
+        KST.FURNITURE,
+        BACK,
+        KST.ANCESTOR_ALTAR_TABLE_WITH_A_PORTRAIT_CANDLES_AND_AN_INCENSE_BOWL,
+        lambda t: altar(t, 760, IB + 60, 420),
+        970,
+        IB + 60,
+        INT,
+        [
+            S(KST.ALTAR_FRONT, KST.STAND, 970, IB + 130, KST.IN_FRONT_OF_THE_ALTAR_PRAY_KNEEL_OFFER_INCENSE),
+            S(KST.BESIDE_ALTAR_LEFT, KST.STAND, 690, IB + 100, KST.BESIDE_THE_ALTAR_LEFT),
+            S(KST.BESIDE_ALTAR_RIGHT, KST.STAND, 1250, IB + 100, KST.BESIDE_THE_ALTAR_RIGHT),
+            S(KST.ALTAR_TOP, KST.SURFACE, 970, IB - 140, KST.ON_THE_ALTAR),
+            S(KST.INCENSE_SOURCE, KST.SMOKE, 970, IB - 160, KST.INCENSE_ON_THE_ALTAR),
+        ],
+        [dict(x=820, y=IB - 220, kind=KST.CANDLE), dict(x=1120, y=IB - 220, kind=KST.CANDLE)],
+    ),
+    P(KST.DOOR_PANELS, KST.FIXTURE, [KST.DOOR_RIGHT, KST.DOOR_LEFT], KST.TALL_WOODEN_DOOR_PANELS_IN_THE_BACK_WALL, lambda t: door_panels(t, 1360, IB), 1566, IB, INT, [S(KST.DOOR, KST.DOOR, 1566, IB + 50, KST.AT_THE_DOORS)]),
+    P(KST.WINDOW, KST.WALL, WALL, KST.SMALL_WINDOW_WITH_WOODEN_BARS_IN_THE_WALL, lambda t: window(t, 1560, 260), 1620, 370, INT, [S(KST.WINDOW, KST.STAND, 1620, IB + 70, KST.BY_THE_WINDOW)]),
+    P(KST.RED_TEXTILE, KST.WALL, WALL, KST.RED_WOVEN_CLOTH_HANGING_ON_THE_WALL, lambda t: textile(t, 120, 260), 155, 470, INT),
+    P(KST.SHELF, KST.WALL, WALL, KST.WOODEN_SHELF_WITH_JARS_ON_THE_WALL, lambda t: shelf(t, 1250, 330, 380, 5), 1440, 346, INT),
+    P(KST.BENCH, KST.FURNITURE, MIDI + BACK, KST.LONG_LOW_WOODEN_BENCH, lambda t: bench(t, 220, IB + 200, 380), 410, IB + 200, INT, [S(KST.BENCH, KST.SIT, 410, IB + 215, KST.ON_THE_BENCH)]),
+    P(KST.TEA_TABLE, KST.FURNITURE, MIDI, KST.LOW_TEA_TABLE_WITH_A_TEAPOT, lambda t: tea_table(t, 1100, IB + 230), 1210, IB + 230, INT, [S(KST.TEA_TABLE, KST.SURFACE, 1210, IB + 120, KST.ON_THE_TEA_TABLE), S(KST.BESIDE_TABLE, KST.STAND, 1400, IB + 250, KST.BESIDE_THE_TEA_TABLE)]),
+    P(KST.BED, KST.FURNITURE, MIDI + BACK, KST.WOODEN_BED_WITH_A_MOSQUITO_NET, bed_frame, 460, IB + 190, INT, [S(KST.BED, KST.LIE, 470, IB + 70, KST.LYING_ON_THE_BED), S(KST.BED_EDGE, KST.SIT, 560, IB + 200, KST.ON_THE_EDGE_OF_THE_BED), S(KST.BESIDE_BED, KST.STAND, 860, IB + 210, KST.BESIDE_THE_BED)]),
+    P(KST.DAYBED, KST.FURNITURE, MIDI + BACK, KST.WIDE_PLANK_DAYBED_PHAN_GO, lambda t: bench(t, 600, IB + 220, 720, 120), 960, IB + 220, INT, [S(KST.DAYBED, KST.LIE, 960, IB + 100, KST.LYING_ON_THE_PLANK_DAYBED), S(KST.DAYBED_EDGE, KST.SIT, 960, IB + 235, KST.ON_THE_EDGE_OF_THE_DAYBED)]),
+    P(
+        KST.HEARTH,
+        KST.FURNITURE,
+        MIDI,
+        KST.COOKING_HEARTH_WITH_THREE_STONES_FIRE_AND_A_POT,
+        lambda t: stove(t, 560, IB + 170),
+        560,
+        IB + 170,
+        INT,
+        [S(KST.HEARTH, KST.STAND, 560, IB + 230, KST.AT_THE_HEARTH), S(KST.HEARTH_SIT, KST.SIT, 760, IB + 240, KST.SITTING_BY_THE_FIRE), S(KST.HEARTH_TOP, KST.SURFACE, 560, IB + 40, KST.ON_THE_FIRE), S(KST.HEARTH_SMOKE, KST.SMOKE, 560, IB + 60, KST.SMOKE_OF_THE_FIRE)],
+        [dict(x=560, y=IB + 90, kind=KST.FIRE)],
+    ),
+    P(
+        KST.HEARTH_PIT,
+        KST.FURNITURE,
+        [KST.MID_CENTER],
+        KST.SQUARE_FIRE_PIT_IN_THE_PLANK_FLOOR_OF_A_STILT_HOUSE,
+        hearth_pit,
+        960,
+        IB + 230,
+        INT,
+        [S(KST.HEARTH, KST.STAND, 960, IB + 260, KST.AT_THE_FIRE_PIT), S(KST.HEARTH_LEFT, KST.SIT, 640, IB + 220, KST.SITTING_LEFT_OF_THE_FIRE), S(KST.HEARTH_RIGHT, KST.SIT, 1280, IB + 220, KST.SITTING_RIGHT_OF_THE_FIRE), S(KST.HEARTH_TOP, KST.SURFACE, 960, IB + 90, KST.ON_THE_FIRE), S(KST.HEARTH_SMOKE, KST.SMOKE, 960, IB + 100, KST.SMOKE_OF_THE_FIRE)],
+        [dict(x=960, y=IB + 120, kind=KST.FIRE)],
+    ),
+    P(
+        KST.COFFIN,
+        KST.FURNITURE,
+        [KST.MID_CENTER, KST.BACK_CENTER],
+        KST.DARK_WOODEN_COFFIN_ON_TWO_TRESTLES,
+        lambda t: coffin(t, 680, IB + 230, 560),
+        960,
+        IB + 230,
+        INT,
+        [S(KST.COFFIN, KST.SURFACE, 960, IB + 10, KST.ON_THE_COFFIN), S(KST.COFFIN_LEFT, KST.STAND, 560, IB + 250, KST.LEFT_OF_THE_COFFIN), S(KST.COFFIN_RIGHT, KST.STAND, 1360, IB + 250, KST.RIGHT_OF_THE_COFFIN), S(KST.BEHIND_COFFIN, KST.STAND, 960, IB + 205, KST.BEHIND_THE_COFFIN)],
+        front=True,
+    ),
+    P(KST.BUDDHA, KST.FURNITURE, [KST.BACK_CENTER], KST.GOLDEN_STATUE_ON_A_RED_ALTAR, lambda t: buddha(t, 960, IB - 20, 1.0), 960, IB - 20, INT, [S(KST.STATUE_FRONT, KST.STAND, 960, IB + 180, KST.IN_FRONT_OF_THE_STATUE_PRAY_KNEEL)]),
+    P(KST.BELL, KST.WALL, WALL, KST.TEMPLE_BELL_HANGING_FROM_A_FRAME, lambda t: bell(t, 330, 300, 1.2), 330, 420, INT),
+    P(KST.CURTAIN, KST.WALL, WALL, KST.TORN_CURTAIN, lambda t: curtain(t, 1500, 200, 200, 380), 1600, 600, INT),
+    P(KST.BROKEN_CHAIR, KST.FURNITURE, MIDI, KST.BROKEN_WOODEN_CHAIR, lambda t: broken_chair(t, 260, IB + 200), 350, IB + 200, INT),
+    P(KST.JAR, KST.SCENERY, MIDI + EDGE + MIDE, KST.BIG_CLAY_JAR, lambda t: jar(t, 400, IB + 160, 1.0), 400, IB + 160, INT),
+    P(KST.INCENSE_BOWL, KST.SCENERY, MIDI, KST.INCENSE_BOWL_WITH_BURNING_STICKS, lambda t: incense(t, 400, IB + 160, 3), 400, IB + 160, INT, [S(KST.INCENSE_SMOKE, KST.SMOKE, 400, IB + 60, KST.INCENSE_SMOKE_LABEL)]),
+    P(KST.HOUSE_TILE, KST.BUILDING, FAR, KST.LONG_ONE_STOREY_VILLAGE_HOUSE_WITH_A_TILED_ROOF_AND_THREE_DOORS, lambda t: house_tile(t, 520, HB, 880, 250), 960, HB, EXT, [S(KST.HOUSE_DOOR, KST.DOOR, 960, HB + 20, KST.AT_THE_DOOR_OF_THE_HOUSE)], size=1.0),
+    P(KST.STILT_HOUSE, KST.BUILDING, FAR, KST.STILT_HOUSE_WITH_A_THATCHED_ROOF_CROSSED_GABLE_HORNS_AND_A_LADDER, lambda t: stilt_house(t, 600, HB, 720), 960, HB, EXT, [S(KST.LADDER, KST.STAND, 1180, HB + 30, KST.AT_THE_FOOT_OF_THE_LADDER)]),
+    P(KST.HUT, KST.BUILDING, FAR, KST.SMALL_WOVEN_HUT_WITH_A_THATCHED_ROOF, lambda t: hut(t, 40, HB - 20, 380, 170), 230, HB - 20, EXT, [S(KST.HUT_DOOR, KST.DOOR, 230, HB, KST.AT_THE_HUT)]),
+    P(KST.SHRINE, KST.BUILDING, FAR, KST.SMALL_OLD_STONE_SHRINE_WITH_A_CURVED_ROOF, shrine_small, 960, HB, EXT, [S(KST.SHRINE_DOOR, KST.DOOR, 960, HB + 20, KST.AT_THE_SHRINE), S(KST.SHRINE_STEP, KST.SURFACE, 960, HB - 60, KST.ON_THE_SHRINE_STEP)]),
+    P(KST.VILLAGE_GATE, KST.BUILDING, [KST.FAR_CENTER], KST.VILLAGE_GATE_WITH_AN_ARCH_AND_A_TILED_ROOF, gate, 960, HB, EXT, [S(KST.GATE, KST.DOOR, 960, HB + 10, KST.IN_THE_GATEWAY)]),
+    P(KST.TEMPLE, KST.BUILDING, [KST.FAR_CENTER], KST.VILLAGE_TEMPLE_FRONT_WITH_RED_POSTS_AND_A_BIG_CURVED_ROOF, temple_front, 960, HB, EXT, [S(KST.TEMPLE_DOOR, KST.DOOR, 960, HB + 10, KST.AT_THE_TEMPLE_DOORS)]),
+    P(KST.MARKET_STALL, KST.BUILDING, FAR, KST.MARKET_STALL_WITH_A_THATCHED_ROOF_AND_A_COUNTER, stall, 970, HB, EXT, [S(KST.STALL, KST.STAND, 970, HB + 40, KST.AT_THE_STALL), S(KST.STALL_TOP, KST.SURFACE, 970, HB - 110, KST.ON_THE_COUNTER)]),
+    P(KST.RUINED_HOUSE, KST.BUILDING, FAR, KST.ABANDONED_RUINED_HOUSE_WITH_A_BROKEN_ROOF, ruin_house, 960, HB, EXT, [S(KST.RUIN_DOOR, KST.DOOR, 705, HB + 10, KST.AT_THE_BROKEN_DOOR)]),
+    P(KST.WELL, KST.SCENERY, MIDE, KST.STONE_VILLAGE_WELL_WITH_A_WOODEN_FRAME, well, 1250, HB + 180, EXT, [S(KST.WELL, KST.STAND, 1000, HB + 200, KST.BESIDE_THE_WELL), S(KST.WELL_TOP, KST.SURFACE, 1250, HB + 40, KST.ON_THE_RIM_OF_THE_WELL)]),
+    P(KST.POLY_TREE, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.SIMPLE_DARK_GREEN_TREE, lambda t: poly_tree(t, 960, HB, 1.0), 960, HB, EXT),
+    P(KST.ROUND_TREE, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.ROUND_LEAFY_TREE, lambda t: round_tree(t, 960, HB, 1.0), 960, HB, EXT),
+    P(KST.BONSAI_TREE, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT, KST.MID_LEFT, KST.MID_RIGHT], KST.TWISTED_PINE_LIKE_GARDEN_TREE, lambda t: bonsai_tree(t, 960, HB, 1.0), 960, HB, EXT),
+    P(KST.BANYAN, KST.SCENERY, [KST.FAR_CENTER, KST.FAR_LEFT, KST.FAR_RIGHT], KST.HUGE_OLD_BANYAN_TREE_WITH_HANGING_ROOTS, lambda t: banyan(t, 960, HB, 0.9), 960, HB, EXT, [S(KST.TREE_ROOT, KST.STAND, 960, HB + 80, KST.UNDER_THE_BANYAN_TREE)]),
+    P(KST.PALM, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.PALM_TREE, lambda t: palm(t, 960, HB, 1.0), 960, HB, EXT),
+    P(KST.BAMBOO, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT, KST.EDGE_LEFT, KST.EDGE_RIGHT], KST.CLUMP_OF_BAMBOO, lambda t: bamboo(t, 960, HB, 1.0, 7), 960, HB, EXT),
+    P(KST.BANANA, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT, KST.MID_LEFT, KST.MID_RIGHT], KST.BANANA_PLANT, lambda t: banana(t, 960, HB, 1.0), 960, HB, EXT),
+    P(KST.PINE, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.TALL_PINE_TREE, lambda t: pine(t, 960, HB, 1.2), 960, HB, EXT),
+    P(KST.DEAD_TREE, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.BARE_DEAD_TREE, dead_tree, 1560, HB, EXT),
+    P(KST.BUSH, KST.SCENERY, MIDE + EDGE + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.ROUND_BUSH, lambda t: bush(t, 960, HB + 100, 1.5), 960, HB + 100, EXT),
+    P(KST.REEDS, KST.SCENERY, EDGE + MIDE, KST.TALL_REEDS, lambda t: reeds(t, 960, HB + 100, 1.0, 9), 960, HB + 100, EXT),
+    P(KST.ROCK, KST.SCENERY, MIDE + EDGE, KST.BIG_ROCK, lambda t: rock(t, 960, HB + 100, 1.0), 960, HB + 100, EXT, [S(KST.ROCK, KST.SIT, 960, HB + 110, KST.SITTING_ON_THE_ROCK)]),
+    P(KST.GRAVE, KST.SCENERY, MIDE + [KST.FAR_LEFT, KST.FAR_RIGHT, KST.FAR_CENTER], KST.EARTH_GRAVE_MOUND_WITH_A_SMALL_STONE_AND_INCENSE, lambda t: grave(t, 960, HB + 150, 1.4), 960, HB + 150, EXT, [S(KST.GRAVE_FRONT, KST.STAND, 900, HB + 200, KST.IN_FRONT_OF_THE_GRAVE), S(KST.GRAVE_SMOKE, KST.SMOKE, 1030, HB + 90, KST.INCENSE_AT_THE_GRAVE)]),
+    P(KST.TOMBSTONE, KST.SCENERY, MIDE + EDGE, KST.STONE_TOMBSTONE, lambda t: tombstone(t, 960, HB + 150, 1.2), 960, HB + 150, EXT),
+    P(KST.LOW_WALL, KST.SCENERY, [KST.FAR_CENTER], KST.LOW_STONE_WALL, lambda t: low_wall(t, 440, 1480, HB - 10, 70), 960, HB - 10, EXT),
+    P(KST.FENCE, KST.SCENERY, [KST.FAR_CENTER], KST.BAMBOO_FENCE, lambda t: fence(t, 300, 1620, HB - 5, 90), 960, HB - 5, EXT),
+    P(KST.JAR_YARD, KST.SCENERY, MIDE + EDGE, KST.CLAY_JAR_IN_THE_YARD, lambda t: jar(t, 960, HB + 120, 0.6), 960, HB + 120, EXT),
 ]
-
-
 def base_room(t, kind):
-    if kind == 'woven':
+    if kind == KST.WOVEN:
         back, flo = room(t, IB, woven_wall=True)
-    elif kind == 'red':
-        back, flo = room(t, IB, wall=mix(t.c('wood'), t.c('red'), 0.25), woven_wall=False)
-    elif kind == 'stone':
-        back, flo = room(t, IB, wall=mix(t.c('interior_wall'), t.c('stone'), 0.5), woven_wall=False)
+    elif kind == KST.RED:
+        back, flo = room(t, IB, wall=mix(t.c(KST.WOOD), t.c(KST.RED), 0.25), woven_wall=False)
+    elif kind == KST.STONE:
+        back, flo = room(t, IB, wall=mix(t.c(KST.INTERIOR_WALL), t.c(KST.STONE), 0.5), woven_wall=False)
     else:
         back, flo = room(t, IB, woven_wall=False)
     return dict(sky=[], back=back, floor=flo, horizonY=IB, floorY=950, interior=True)
-
-
 def base_ext(t, far, ground_kind, hb=HB):
     sky_, back, gr = ext_base(t, hb, far, ground_kind)
     return dict(sky=sky_, back=back, floor=gr, horizonY=hb, floorY=930, interior=False)
-
-
 def base_river(t):
-    sky_, back, _ = ext_base(t, 620, 'mountains' if t.detail else 'trees')
-    back += [rect(t, -10, 560, W + 20, 70, t.c('tree2'), True)]
-    flo = water_band(t, 620, 790, 14) + ground(t, 780, 'earth', 3)
+    sky_, back, _ = ext_base(t, 620, KST.MOUNTAINS if t.detail else KST.TREES)
+    back += [rect(t, -10, 560, W + 20, 70, t.c(KST.TREE2), True)]
+    flo = water_band(t, 620, 790, 14) + ground(t, 780, KST.EARTH, 3)
     return dict(sky=sky_, back=back, floor=flo, horizonY=790, floorY=980, interior=False)
-
-
 def base_field(t):
-    sky_, back, _ = ext_base(t, 620, 'mountains' if t.detail else 'hills')
-    flo = [rect(t, -10, 600, W + 20, H - 590, t.c('field'), True)]
+    sky_, back, _ = ext_base(t, 620, KST.MOUNTAINS if t.detail else KST.HILLS)
+    flo = [rect(t, -10, 600, W + 20, H - 590, t.c(KST.FIELD), True)]
     for k in range(9):
         y = 600 + (H - 600) * (k / 9) ** 1.4
-        flo.append(line(t, 0, y, W, y, t.c('field2'), 4))
+        flo.append(line(t, 0, y, W, y, t.c(KST.FIELD2), 4))
     return dict(sky=sky_, back=back, floor=flo, horizonY=620, floorY=980, interior=False)
-
-
 def base_forest(t):
     sky_ = sky(t, HB)
-    back = [rect(t, -10, 0, W + 20, HB, t.c('tree2'), False)]
+    back = [rect(t, -10, 0, W + 20, HB, t.c(KST.TREE2), False)]
     for k in range(9):
         x = 60 + k * 230
-        back.append(rect(t, x, 0, 70 + (k % 3) * 20, HB, shade(t.c('trunk'), 0.15), True))
-    flo = ground(t, HB - 10, 'earth', 4) + [path(t, 'M860 %s L1060 %s L1300 %s L620 %s Z' % (HB - 8, HB - 8, H, H), t.c('dirt'), True, sw=t.lw * 0.6)]
+        back.append(rect(t, x, 0, 70 + k % 3 * 20, HB, shade(t.c(KST.TRUNK), 0.15), True))
+    flo = ground(t, HB - 10, KST.EARTH, 4) + [path(t, KST.M860_S_L1060_S_L1300_S_L620_S_Z % (HB - 8, HB - 8, H, H), t.c(KST.DIRT), True, sw=t.lw * 0.6)]
     return dict(sky=sky_, back=back, floor=flo, horizonY=HB, floorY=950, interior=False)
-
-
 def base_path(t):
-    sky_, back, gr = ext_base(t, HB, 'trees', 'earth')
-    gr = gr + [path(t, 'M820 %s L1100 %s L1500 %s L420 %s Z' % (HB - 8, HB - 8, H, H), t.c('dirt'), True, sw=t.lw * 0.6)]
+    sky_, back, gr = ext_base(t, HB, KST.TREES, KST.EARTH)
+    gr = gr + [path(t, KST.M820_S_L1100_S_L1500_S_L420_S_Z % (HB - 8, HB - 8, H, H), t.c(KST.DIRT), True, sw=t.lw * 0.6)]
     return dict(sky=sky_, back=back, floor=gr, horizonY=HB, floorY=930, interior=False)
-
-
 BASES = [
-    ('room_plain', 'interior', 'plain room: beige wall with a dark beam on top and a plank floor', lambda t: base_room(t, 'plain')),
-    ('room_woven', 'interior', 'stilt house room: woven bamboo walls, wooden posts and beams, plank floor', lambda t: base_room(t, 'woven')),
-    ('room_temple', 'interior', 'temple hall: dark red wooden wall and floor', lambda t: base_room(t, 'red')),
-    ('room_stone', 'interior', 'old stone room or shrine inside', lambda t: base_room(t, 'stone')),
-    ('yard_brick', 'exterior', 'yard of brick tiles under the sky with trees far away', lambda t: base_ext(t, 'trees', 'brick')),
-    ('yard_earth', 'exterior', 'dirt yard or ground under the sky with trees far away', lambda t: base_ext(t, 'trees', 'earth')),
-    ('mountain_ground', 'exterior', 'earth ground in front of layered mountains', lambda t: base_ext(t, 'mountains', 'earth')),
-    ('hill_grass', 'exterior', 'grass in front of rolling hills', lambda t: base_ext(t, 'hills', 'grass')),
-    ('stone_yard', 'exterior', 'stone paved yard (temple, pagoda)', lambda t: base_ext(t, 'trees', 'stone')),
-    ('riverside', 'exterior', 'river bank: water across the middle, earth bank in front', base_river),
-    ('rice_field', 'exterior', 'open rice field to the horizon', base_field),
-    ('forest', 'exterior', 'dark forest with tree trunks and a path', base_forest),
-    ('village_path', 'exterior', 'dirt path going away between trees', base_path),
+    (KST.ROOM_PLAIN, KST.INTERIOR, KST.PLAIN_ROOM_BEIGE_WALL_WITH_A_DARK_BEAM_ON_TOP_AND_A_PLANK_FLOOR, lambda t: base_room(t, KST.PLAIN)),
+    (KST.ROOM_WOVEN, KST.INTERIOR, KST.STILT_HOUSE_ROOM_WOVEN_BAMBOO_WALLS_WOODEN_POSTS_AND_BEAMS_PLANK_FLOOR, lambda t: base_room(t, KST.WOVEN)),
+    (KST.ROOM_TEMPLE, KST.INTERIOR, KST.TEMPLE_HALL_DARK_RED_WOODEN_WALL_AND_FLOOR, lambda t: base_room(t, KST.RED)),
+    (KST.ROOM_STONE, KST.INTERIOR, KST.OLD_STONE_ROOM_OR_SHRINE_INSIDE, lambda t: base_room(t, KST.STONE)),
+    (KST.YARD_BRICK, KST.EXTERIOR, KST.YARD_OF_BRICK_TILES_UNDER_THE_SKY_WITH_TREES_FAR_AWAY, lambda t: base_ext(t, KST.TREES, KST.BRICK)),
+    (KST.YARD_EARTH, KST.EXTERIOR, KST.DIRT_YARD_OR_GROUND_UNDER_THE_SKY_WITH_TREES_FAR_AWAY, lambda t: base_ext(t, KST.TREES, KST.EARTH)),
+    (KST.MOUNTAIN_GROUND, KST.EXTERIOR, KST.EARTH_GROUND_IN_FRONT_OF_LAYERED_MOUNTAINS, lambda t: base_ext(t, KST.MOUNTAINS, KST.EARTH)),
+    (KST.HILL_GRASS, KST.EXTERIOR, KST.GRASS_IN_FRONT_OF_ROLLING_HILLS, lambda t: base_ext(t, KST.HILLS, KST.GRASS)),
+    (KST.STONE_YARD, KST.EXTERIOR, KST.STONE_PAVED_YARD_TEMPLE_PAGODA, lambda t: base_ext(t, KST.TREES, KST.STONE)),
+    (KST.RIVERSIDE, KST.EXTERIOR, KST.RIVER_BANK_WATER_ACROSS_THE_MIDDLE_EARTH_BANK_IN_FRONT, base_river),
+    (KST.RICE_FIELD, KST.EXTERIOR, KST.OPEN_RICE_FIELD_TO_THE_HORIZON, base_field),
+    (KST.FOREST, KST.EXTERIOR, KST.DARK_FOREST_WITH_TREE_TRUNKS_AND_A_PATH, base_forest),
+    (KST.VILLAGE_PATH, KST.EXTERIOR, KST.DIRT_PATH_GOING_AWAY_BETWEEN_TREES, base_path),
 ]
-
-
 from refkit import *
-
 PIECES += [
-    P('goods_shelves', 'furniture', BACK, 'grocery shop shelves full of colourful goods', lambda t: goods_shelves(t, 120, 250, 700, 3), 470, 490, INT),
-    P('shop_counter', 'furniture', MIDI + BACK, 'shop counter with a cash box and goods on top', lambda t: shop_counter(t, 560, IB + 230, 800), 960, IB + 230, INT, [S('behind_counter', 'stand', 960, IB + 190, 'behind the shop counter'), S('behind_counter_left', 'stand', 720, IB + 190, 'behind the counter, left'), S('counter_top', 'surface', 760, IB + 60, 'on the counter'), S('before_counter', 'stand', 1300, IB + 260, 'in front of the counter (customer)'), S('before_counter_left', 'stand', 660, IB + 270, 'in front of the counter, left (customer)')], front=True),
-    P('wall_altar_shelf', 'wall', WALL, 'small ancestor altar shelf high on the wall with a portrait, candles and incense', lambda t: wall_altar_shelf(t, 1500, 360), 1500, 400, INT, [S('wall_altar', 'surface', 1500, 360, 'on the wall altar shelf'), S('wall_altar_smoke', 'smoke', 1544, 270, 'incense on the wall altar')], [dict(x=1420, y=312, kind='candle'), dict(x=1580, y=312, kind='candle')]),
-    P('ceiling_lamp', 'wall', WALL, 'electric lamp hanging from the ceiling', lambda t: ceiling_lamp(t, 960, 0), 960, 240, INT, [S('under_lamp', 'stand', 960, IB + 90, 'under the hanging lamp')], [dict(x=960, y=230, kind='lamp')]),
-    P('modern_window', 'wall', WALL, 'glass window with a white frame (town house, rented room, office)', lambda t: modern_window(t, 1480, 200), 1610, 452, INT, [S('window', 'stand', 1610, IB + 70, 'by the window, looking out'), S('window_side', 'stand', 1380, IB + 90, 'beside the window')]),
-    P('modern_door', 'fixture', ['door_right', 'door_left'], 'plain wooden room door with a knob', lambda t: modern_door(t, 1560, IB), 1645, IB, INT, [S('door', 'door', 1645, IB + 50, 'in the doorway'), S('beside_door', 'stand', 1440, IB + 80, 'beside the door, listening or waiting')]),
-    P('rolling_shutter', 'fixture', ['door_right', 'door_left'], 'metal rolling shutter of a shop front', lambda t: rolling_shutter(t, 1360, IB), 1540, IB, INT, [S('shutter', 'door', 1540, IB + 50, 'at the shutter')]),
-    P('low_bed', 'furniture', MIDI + BACK, 'modern low bed with a pillow and a blanket', lambda t: low_bed(t, 760, IB + 210, 640), 1080, IB + 210, INT, [S('bed', 'lie', 1080, IB + 90, 'lying on the bed'), S('bed_edge', 'sit', 1200, IB + 215, 'on the edge of the bed'), S('beside_bed', 'stand', 640, IB + 230, 'beside the bed, at its head'), S('bed_foot', 'stand', 1480, IB + 240, 'at the foot of the bed')]),
-    P('hospital_bed', 'furniture', MIDI + BACK, 'hospital bed with metal rails and a drip stand', hospital_bed, 1010, IB + 220, INT, [S('bed', 'lie', 1010, IB + 75, 'lying in the hospital bed'), S('beside_bed', 'stand', 560, IB + 240, 'beside the hospital bed')]),
-    P('wardrobe', 'furniture', BACK + WALL, 'tall wooden wardrobe with two doors', lambda t: wardrobe(t, 180, IB), 300, IB, INT, [S('wardrobe', 'stand', 300, IB + 60, 'at the wardrobe (opening it)'), S('beside_wardrobe', 'stand', 520, IB + 80, 'beside the wardrobe')]),
-    P('desk', 'furniture', MIDI + BACK, 'desk with a lamp and a chair', lambda t: desk(t, 1100, IB + 220), 1400, IB + 220, INT, [S('desk_chair', 'sit', 1640, IB + 230, 'on the chair at the desk (studying, writing)'), S('behind_desk', 'sit', 1300, IB + 200, 'sitting behind the desk'), S('beside_desk', 'stand', 980, IB + 250, 'standing beside the desk'), S('desk_top', 'surface', 1200, IB + 70, 'on the desk')], front=True),
-    P('chalkboard', 'wall', WALL, 'green school chalkboard', lambda t: chalkboard(t, 1100, 200), 1320, 470, INT, [S('board', 'stand', 1320, IB + 70, 'at the chalkboard (teacher writing)'), S('before_board', 'stand', 1120, IB + 160, 'in front of the board (teacher talking to the class)'), S('board_side', 'stand', 1600, IB + 110, 'beside the board')]),
-    P('school_benches', 'furniture', ['mid_left', 'mid_right', 'back_left', 'back_right'], 'long wooden school desk (pupils sit behind it)', lambda t: school_benches(t, 780, IB + 230, 1), 940, IB + 230, INT, [S('school_desk_left', 'sit', 840, IB + 205, 'sitting behind the school desk, left'), S('school_desk', 'sit', 940, IB + 205, 'sitting behind the school desk, middle'), S('school_desk_right', 'sit', 1040, IB + 205, 'sitting behind the school desk, right'), S('desk_aisle', 'stand', 1180, IB + 250, 'in the aisle beside the desk')], front=True),
-    P('eye_chart', 'wall', WALL, 'eye test chart on the wall (clinic)', lambda t: eye_chart(t, 400, 220), 510, 500, INT),
-    P('hammock', 'furniture', MIDI, 'hammock hung between two wooden posts', lambda t: hammock(t, 560, IB + 230, 760), 940, IB + 230, INT, [S('hammock', 'sit', 940, IB + 140, 'in the hammock'), S('beside_hammock', 'stand', 1420, IB + 250, 'beside the hammock')]),
-    P('plank_stack', 'scenery', MIDI + EDGE, 'stack of sawn wooden planks (carpentry)', lambda t: plank_stack(t, 200, IB + 200, 420), 420, IB + 200, INT),
-    P('saw_bench', 'furniture', MIDI, 'carpenter workbench with a circular saw', lambda t: saw_bench(t, 760, IB + 220, 420), 970, IB + 220, INT, [S('saw', 'stand', 1280, IB + 240, 'at the saw bench'), S('bench_top', 'surface', 900, IB + 60, 'on the workbench')]),
-    P('hanging_basket', 'wall', WALL, 'basket of cakes hanging from a beam', lambda t: hanging_basket(t, 420, 140), 420, 330, INT),
-    P('wall_calendar', 'wall', WALL, 'tear-off wall calendar', lambda t: wall_calendar(t, 1300, 230), 1345, 350, INT, [S('calendar', 'stand', 1345, IB + 80, 'at the wall calendar (tearing a page)')]),
-    P('stairs', 'fixture', ['door_right', 'door_left'], 'wooden staircase going up', lambda t: stairs(t, 1360, IB), 1600, IB, INT, [S('stairs_foot', 'stand', 1380, IB + 60, 'at the foot of the stairs'), S('stairs_sit', 'sit', 1460, IB - 20, 'sitting on the stairs')]),
-    P('meeting_table', 'furniture', ['back_center', 'mid_center'], 'long meeting table with papers', lambda t: meeting_table(t, 420, IB + 220, 1080), 960, IB + 220, INT, [S('behind_table_left', 'stand', 640, IB + 195, 'behind the meeting table, left'), S('behind_table', 'stand', 960, IB + 195, 'behind the meeting table, middle'), S('behind_table_right', 'stand', 1280, IB + 195, 'behind the meeting table, right'), S('table_top', 'surface', 960, IB + 20, 'on the meeting table'), S('before_table', 'stand', 960, IB + 280, 'in front of the meeting table')], front=True),
-    P('shophouse', 'building', FAR, 'town shop house with a sign, a rolling shutter and a window', shophouse, 960, HB, EXT, [S('shop_door', 'door', 960, HB + 30, 'in front of the shop')]),
-    P('street_lamp', 'scenery', CORNER + EDGE + ['far_left', 'far_right'], 'street lamp post', lambda t: street_lamp(t, 1700, HB + 60), 1700, HB + 60, EXT, [S('under_lamp', 'stand', 1600, HB + 90, 'under the street lamp')], [dict(x=1590, y=HB - 480, kind='lamp')]),
-    P('thatch_house', 'building', FAR, 'southern countryside house with woven walls and a thatched roof', thatch_house, 510, HB, EXT, [S('house_door', 'door', 560, HB + 30, 'at the door of the thatched house')]),
-    P('pig_pen', 'scenery', MIDE + ['far_left', 'far_right'], 'wooden pig pen with a thatched roof', pig_pen, 1410, HB + 120, EXT, [S('pen_front', 'stand', 1300, HB + 160, 'in front of the pig pen')]),
-    P('casuarina', 'scenery', CORNER + ['far_left', 'far_right'], 'tall casuarina tree of the coast', lambda t: casuarina(t, 960, HB, 1.0), 966, HB, EXT),
-    P('fishing_boat', 'scenery', MIDE, 'wooden fishing boat pulled up on the sand', lambda t: fishing_boat(t, 960, HB + 160, 640), 960, HB + 160, EXT, [S('boat_side', 'stand', 1320, HB + 190, 'beside the boat'), S('boat_in', 'sit', 960, HB + 40, 'sitting in the boat')]),
-    P('field_fence', 'scenery', ['far_center', 'mid_center'], 'wooden post fence across the field path', lambda t: field_fence(t, 400, 1500, HB + 120), 950, HB + 120, EXT),
-    P('bamboo_hollow', 'scenery', ['far_center', 'far_right', 'far_left'], 'dense bamboo clump with a dark hollow inside', lambda t: bamboo_hollow(t, 1400, HB + 40), 1400, HB + 40, EXT, [S('hollow', 'stand', 1180, HB + 80, 'at the bamboo clump'), S('hollow_mouth', 'stand', 1400, HB + 70, 'right in front of the dark hollow'), S('in_hollow', 'stand', 1400, HB - 20, 'inside the dark hollow (hidden, peeking out)'), S('clump_left', 'stand', 1080, HB + 120, 'left of the bamboo clump'), S('clump_right', 'stand', 1720, HB + 120, 'right of the bamboo clump')]),
+    P(KST.GOODS_SHELVES, KST.FURNITURE, BACK, KST.GROCERY_SHOP_SHELVES_FULL_OF_COLOURFUL_GOODS, lambda t: goods_shelves(t, 120, 250, 700, 3), 470, 490, INT),
+    P(
+        KST.SHOP_COUNTER,
+        KST.FURNITURE,
+        MIDI + BACK,
+        KST.SHOP_COUNTER_WITH_A_CASH_BOX_AND_GOODS_ON_TOP,
+        lambda t: shop_counter(t, 560, IB + 230, 800),
+        960,
+        IB + 230,
+        INT,
+        [
+            S(KST.BEHIND_COUNTER, KST.STAND, 960, IB + 190, KST.BEHIND_THE_SHOP_COUNTER),
+            S(KST.BEHIND_COUNTER_LEFT, KST.STAND, 720, IB + 190, KST.BEHIND_THE_COUNTER_LEFT),
+            S(KST.COUNTER_TOP, KST.SURFACE, 760, IB + 60, KST.ON_THE_COUNTER),
+            S(KST.BEFORE_COUNTER, KST.STAND, 1300, IB + 260, KST.IN_FRONT_OF_THE_COUNTER_CUSTOMER),
+            S(KST.BEFORE_COUNTER_LEFT, KST.STAND, 660, IB + 270, KST.IN_FRONT_OF_THE_COUNTER_LEFT_CUSTOMER),
+        ],
+        front=True,
+    ),
+    P(
+        KST.WALL_ALTAR_SHELF,
+        KST.WALL,
+        WALL,
+        KST.SMALL_ANCESTOR_ALTAR_SHELF_HIGH_ON_THE_WALL_WITH_A_PORTRAIT_CANDLES_AND_INCE,
+        lambda t: wall_altar_shelf(t, 1500, 360),
+        1500,
+        400,
+        INT,
+        [S(KST.WALL_ALTAR, KST.SURFACE, 1500, 360, KST.ON_THE_WALL_ALTAR_SHELF), S(KST.WALL_ALTAR_SMOKE, KST.SMOKE, 1544, 270, KST.INCENSE_ON_THE_WALL_ALTAR)],
+        [dict(x=1420, y=312, kind=KST.CANDLE), dict(x=1580, y=312, kind=KST.CANDLE)],
+    ),
+    P(KST.CEILING_LAMP, KST.WALL, WALL, KST.ELECTRIC_LAMP_HANGING_FROM_THE_CEILING, lambda t: ceiling_lamp(t, 960, 0), 960, 240, INT, [S(KST.UNDER_LAMP, KST.STAND, 960, IB + 90, KST.UNDER_THE_HANGING_LAMP)], [dict(x=960, y=230, kind=KST.LAMP)]),
+    P(KST.MODERN_WINDOW, KST.WALL, WALL, KST.GLASS_WINDOW_WITH_A_WHITE_FRAME_TOWN_HOUSE_RENTED_ROOM_OFFICE, lambda t: modern_window(t, 1480, 200), 1610, 452, INT, [S(KST.WINDOW, KST.STAND, 1610, IB + 70, KST.BY_THE_WINDOW_LOOKING_OUT), S(KST.WINDOW_SIDE, KST.STAND, 1380, IB + 90, KST.BESIDE_THE_WINDOW)]),
+    P(KST.MODERN_DOOR, KST.FIXTURE, [KST.DOOR_RIGHT, KST.DOOR_LEFT], KST.PLAIN_WOODEN_ROOM_DOOR_WITH_A_KNOB, lambda t: modern_door(t, 1560, IB), 1645, IB, INT, [S(KST.DOOR, KST.DOOR, 1645, IB + 50, KST.IN_THE_DOORWAY), S(KST.BESIDE_DOOR, KST.STAND, 1440, IB + 80, KST.BESIDE_THE_DOOR_LISTENING_OR_WAITING)]),
+    P(KST.ROLLING_SHUTTER, KST.FIXTURE, [KST.DOOR_RIGHT, KST.DOOR_LEFT], KST.METAL_ROLLING_SHUTTER_OF_A_SHOP_FRONT, lambda t: rolling_shutter(t, 1360, IB), 1540, IB, INT, [S(KST.SHUTTER, KST.DOOR, 1540, IB + 50, KST.AT_THE_SHUTTER)]),
+    P(
+        KST.LOW_BED,
+        KST.FURNITURE,
+        MIDI + BACK,
+        KST.MODERN_LOW_BED_WITH_A_PILLOW_AND_A_BLANKET,
+        lambda t: low_bed(t, 760, IB + 210, 640),
+        1080,
+        IB + 210,
+        INT,
+        [S(KST.BED, KST.LIE, 1080, IB + 90, KST.LYING_ON_THE_BED), S(KST.BED_EDGE, KST.SIT, 1200, IB + 215, KST.ON_THE_EDGE_OF_THE_BED, seatY=IB + 86), S(KST.BESIDE_BED, KST.STAND, 640, IB + 230, KST.BESIDE_THE_BED_AT_ITS_HEAD), S(KST.BED_FOOT, KST.STAND, 1480, IB + 240, KST.AT_THE_FOOT_OF_THE_BED)],
+    ),
+    P(KST.HOSPITAL_BED, KST.FURNITURE, MIDI + BACK, KST.HOSPITAL_BED_WITH_METAL_RAILS_AND_A_DRIP_STAND, hospital_bed, 1010, IB + 220, INT, [S(KST.BED, KST.LIE, 1010, IB + 75, KST.LYING_IN_THE_HOSPITAL_BED), S(KST.BESIDE_BED, KST.STAND, 560, IB + 240, KST.BESIDE_THE_HOSPITAL_BED)]),
+    P(KST.WARDROBE, KST.FURNITURE, BACK + WALL, KST.TALL_WOODEN_WARDROBE_WITH_TWO_DOORS, lambda t: wardrobe(t, 180, IB), 300, IB, INT, [S(KST.WARDROBE, KST.STAND, 300, IB + 60, KST.AT_THE_WARDROBE_OPENING_IT), S(KST.BESIDE_WARDROBE, KST.STAND, 520, IB + 80, KST.BESIDE_THE_WARDROBE)]),
+    P(
+        KST.DESK,
+        KST.FURNITURE,
+        MIDI + BACK,
+        KST.DESK_WITH_A_LAMP_AND_A_CHAIR,
+        lambda t: desk(t, 1100, IB + 220),
+        1400,
+        IB + 220,
+        INT,
+        [S(KST.DESK_CHAIR, KST.SIT, 1640, IB + 230, KST.ON_THE_CHAIR_AT_THE_DESK_STUDYING_WRITING), S(KST.BEHIND_DESK, KST.SIT, 1300, IB + 200, KST.SITTING_BEHIND_THE_DESK), S(KST.BESIDE_DESK, KST.STAND, 980, IB + 250, KST.STANDING_BESIDE_THE_DESK), S(KST.DESK_TOP, KST.SURFACE, 1200, IB + 70, KST.ON_THE_DESK)],
+        front=True,
+    ),
+    P(KST.CHALKBOARD, KST.WALL, WALL, KST.GREEN_SCHOOL_CHALKBOARD, lambda t: chalkboard(t, 1100, 200), 1320, 470, INT, [S(KST.BOARD, KST.STAND, 1320, IB + 70, KST.AT_THE_CHALKBOARD_TEACHER_WRITING), S(KST.BEFORE_BOARD, KST.STAND, 1120, IB + 160, KST.IN_FRONT_OF_THE_BOARD_TEACHER_TALKING_TO_THE_CLASS), S(KST.BOARD_SIDE, KST.STAND, 1600, IB + 110, KST.BESIDE_THE_BOARD)]),
+    P(
+        KST.SCHOOL_BENCHES,
+        KST.FURNITURE,
+        [KST.MID_LEFT, KST.MID_RIGHT, KST.BACK_LEFT, KST.BACK_RIGHT],
+        KST.LONG_WOODEN_SCHOOL_DESK_PUPILS_SIT_BEHIND_IT,
+        lambda t: school_benches(t, 780, IB + 230, 1),
+        940,
+        IB + 230,
+        INT,
+        [S(KST.SCHOOL_DESK_LEFT, KST.SIT, 840, IB + 205, KST.SITTING_BEHIND_THE_SCHOOL_DESK_LEFT), S(KST.SCHOOL_DESK, KST.SIT, 940, IB + 205, KST.SITTING_BEHIND_THE_SCHOOL_DESK_MIDDLE), S(KST.SCHOOL_DESK_RIGHT, KST.SIT, 1040, IB + 205, KST.SITTING_BEHIND_THE_SCHOOL_DESK_RIGHT), S(KST.DESK_AISLE, KST.STAND, 1180, IB + 250, KST.IN_THE_AISLE_BESIDE_THE_DESK)],
+        front=True,
+    ),
+    P(KST.EYE_CHART, KST.WALL, WALL, KST.EYE_TEST_CHART_ON_THE_WALL_CLINIC, lambda t: eye_chart(t, 400, 220), 510, 500, INT),
+    P(KST.HAMMOCK, KST.FURNITURE, MIDI, KST.HAMMOCK_HUNG_BETWEEN_TWO_WOODEN_POSTS, lambda t: hammock(t, 560, IB + 230, 760), 940, IB + 230, INT, [S(KST.HAMMOCK, KST.SIT, 940, IB + 140, KST.IN_THE_HAMMOCK), S(KST.BESIDE_HAMMOCK, KST.STAND, 1420, IB + 250, KST.BESIDE_THE_HAMMOCK)]),
+    P(KST.PLANK_STACK, KST.SCENERY, MIDI + EDGE, KST.STACK_OF_SAWN_WOODEN_PLANKS_CARPENTRY, lambda t: plank_stack(t, 200, IB + 200, 420), 420, IB + 200, INT),
+    P(KST.SAW_BENCH, KST.FURNITURE, MIDI, KST.CARPENTER_WORKBENCH_WITH_A_CIRCULAR_SAW, lambda t: saw_bench(t, 760, IB + 220, 420), 970, IB + 220, INT, [S(KST.SAW, KST.STAND, 1280, IB + 240, KST.AT_THE_SAW_BENCH), S(KST.BENCH_TOP, KST.SURFACE, 900, IB + 60, KST.ON_THE_WORKBENCH)]),
+    P(KST.HANGING_BASKET, KST.WALL, WALL, KST.BASKET_OF_CAKES_HANGING_FROM_A_BEAM, lambda t: hanging_basket(t, 420, 140), 420, 330, INT),
+    P(KST.WALL_CALENDAR, KST.WALL, WALL, KST.TEAR_OFF_WALL_CALENDAR, lambda t: wall_calendar(t, 1300, 230), 1345, 350, INT, [S(KST.CALENDAR, KST.STAND, 1345, IB + 80, KST.AT_THE_WALL_CALENDAR_TEARING_A_PAGE)]),
+    P(KST.STAIRS, KST.FIXTURE, [KST.DOOR_RIGHT, KST.DOOR_LEFT], KST.WOODEN_STAIRCASE_GOING_UP, lambda t: stairs(t, 1360, IB), 1600, IB, INT, [S(KST.STAIRS_FOOT, KST.STAND, 1380, IB + 60, KST.AT_THE_FOOT_OF_THE_STAIRS), S(KST.STAIRS_SIT, KST.SIT, 1460, IB - 20, KST.SITTING_ON_THE_STAIRS)]),
+    P(
+        KST.MEETING_TABLE,
+        KST.FURNITURE,
+        [KST.BACK_CENTER, KST.MID_CENTER],
+        KST.LONG_MEETING_TABLE_WITH_PAPERS,
+        lambda t: meeting_table(t, 420, IB + 220, 1080),
+        960,
+        IB + 220,
+        INT,
+        [
+            S(KST.BEHIND_TABLE_LEFT, KST.STAND, 640, IB + 195, KST.BEHIND_THE_MEETING_TABLE_LEFT),
+            S(KST.BEHIND_TABLE, KST.STAND, 960, IB + 195, KST.BEHIND_THE_MEETING_TABLE_MIDDLE),
+            S(KST.BEHIND_TABLE_RIGHT, KST.STAND, 1280, IB + 195, KST.BEHIND_THE_MEETING_TABLE_RIGHT),
+            S(KST.TABLE_TOP, KST.SURFACE, 960, IB + 20, KST.ON_THE_MEETING_TABLE),
+            S(KST.BEFORE_TABLE, KST.STAND, 960, IB + 280, KST.IN_FRONT_OF_THE_MEETING_TABLE),
+        ],
+        front=True,
+    ),
+    P(KST.SHOPHOUSE, KST.BUILDING, FAR, KST.TOWN_SHOP_HOUSE_WITH_A_SIGN_A_ROLLING_SHUTTER_AND_A_WINDOW, shophouse, 960, HB, EXT, [S(KST.SHOP_DOOR, KST.DOOR, 960, HB + 30, KST.IN_FRONT_OF_THE_SHOP)]),
+    P(KST.STREET_LAMP, KST.SCENERY, CORNER + EDGE + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.STREET_LAMP_POST, lambda t: street_lamp(t, 1700, HB + 60), 1700, HB + 60, EXT, [S(KST.UNDER_LAMP, KST.STAND, 1600, HB + 90, KST.UNDER_THE_STREET_LAMP)], [dict(x=1590, y=HB - 480, kind=KST.LAMP)]),
+    P(KST.THATCH_HOUSE, KST.BUILDING, FAR, KST.SOUTHERN_COUNTRYSIDE_HOUSE_WITH_WOVEN_WALLS_AND_A_THATCHED_ROOF, thatch_house, 510, HB, EXT, [S(KST.HOUSE_DOOR, KST.DOOR, 560, HB + 30, KST.AT_THE_DOOR_OF_THE_THATCHED_HOUSE)]),
+    P(KST.PIG_PEN, KST.SCENERY, MIDE + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.WOODEN_PIG_PEN_WITH_A_THATCHED_ROOF, pig_pen, 1410, HB + 120, EXT, [S(KST.PEN_FRONT, KST.STAND, 1300, HB + 160, KST.IN_FRONT_OF_THE_PIG_PEN)]),
+    P(KST.CASUARINA, KST.SCENERY, CORNER + [KST.FAR_LEFT, KST.FAR_RIGHT], KST.TALL_CASUARINA_TREE_OF_THE_COAST, lambda t: casuarina(t, 960, HB, 1.0), 966, HB, EXT),
+    P(KST.FISHING_BOAT, KST.SCENERY, MIDE, KST.WOODEN_FISHING_BOAT_PULLED_UP_ON_THE_SAND, lambda t: fishing_boat(t, 960, HB + 160, 640), 960, HB + 160, EXT, [S(KST.BOAT_SIDE, KST.STAND, 1320, HB + 190, KST.BESIDE_THE_BOAT), S(KST.BOAT_IN, KST.SIT, 960, HB + 40, KST.SITTING_IN_THE_BOAT)]),
+    P(KST.FIELD_FENCE, KST.SCENERY, [KST.FAR_CENTER, KST.MID_CENTER], KST.WOODEN_POST_FENCE_ACROSS_THE_FIELD_PATH, lambda t: field_fence(t, 400, 1500, HB + 120), 950, HB + 120, EXT),
+    P(
+        KST.BAMBOO_HOLLOW,
+        KST.SCENERY,
+        [KST.FAR_CENTER, KST.FAR_RIGHT, KST.FAR_LEFT],
+        KST.DENSE_BAMBOO_CLUMP_WITH_A_DARK_HOLLOW_INSIDE,
+        lambda t: bamboo_hollow(t, 1400, HB + 40),
+        1400,
+        HB + 40,
+        EXT,
+        [
+            S(KST.HOLLOW, KST.STAND, 1180, HB + 80, KST.AT_THE_BAMBOO_CLUMP),
+            S(KST.HOLLOW_MOUTH, KST.STAND, 1400, HB + 70, KST.RIGHT_IN_FRONT_OF_THE_DARK_HOLLOW),
+            S(KST.IN_HOLLOW, KST.STAND, 1400, HB - 20, KST.INSIDE_THE_DARK_HOLLOW_HIDDEN_PEEKING_OUT),
+            S(KST.CLUMP_LEFT, KST.STAND, 1080, HB + 120, KST.LEFT_OF_THE_BAMBOO_CLUMP),
+            S(KST.CLUMP_RIGHT, KST.STAND, 1720, HB + 120, KST.RIGHT_OF_THE_BAMBOO_CLUMP),
+        ],
+    ),
 ]
-
 BASES += [
-    ('room_modern', 'interior', 'modern room: pale painted wall and a tiled floor (town house, rented room, hospital, office, school)', lambda t: base_room2(t, 'modern')),
-    ('room_shop', 'interior', 'shop or town house inside: warm painted wall and tiled floor', lambda t: base_room2(t, 'shop')),
-    ('room_plank', 'interior', 'dark wooden plank house inside (mountain village, poor hut)', lambda t: base_room2(t, 'plank')),
-    ('street', 'exterior', 'town street: pavement and an asphalt road', base_street),
-    ('beach', 'exterior', 'sandy beach with the sea behind', base_beach),
-    ('terraces', 'exterior', 'terraced rice fields on mountain slopes', base_terraces),
-    ('mountain_road', 'exterior', 'road winding between mountains', base_mountain_road),
+    (KST.ROOM_MODERN, KST.INTERIOR, KST.MODERN_ROOM_PALE_PAINTED_WALL_AND_A_TILED_FLOOR_TOWN_HOUSE_RENTED_ROOM_HOSPI, lambda t: base_room2(t, KST.MODERN)),
+    (KST.ROOM_SHOP, KST.INTERIOR, KST.SHOP_OR_TOWN_HOUSE_INSIDE_WARM_PAINTED_WALL_AND_TILED_FLOOR, lambda t: base_room2(t, KST.SHOP)),
+    (KST.ROOM_PLANK, KST.INTERIOR, KST.DARK_WOODEN_PLANK_HOUSE_INSIDE_MOUNTAIN_VILLAGE_POOR_HUT, lambda t: base_room2(t, KST.PLANK)),
+    (KST.STREET, KST.EXTERIOR, KST.TOWN_STREET_PAVEMENT_AND_AN_ASPHALT_ROAD, base_street),
+    (KST.BEACH, KST.EXTERIOR, KST.SANDY_BEACH_WITH_THE_SEA_BEHIND, base_beach),
+    (KST.TERRACES, KST.EXTERIOR, KST.TERRACED_RICE_FIELDS_ON_MOUNTAIN_SLOPES, base_terraces),
+    (KST.MOUNTAIN_ROAD, KST.EXTERIOR, KST.ROAD_WINDING_BETWEEN_MOUNTAINS, base_mountain_road),
+]
+from reference_expansion import cradle, open_chest, attic_ladder, rowboat, feeding_trough, privacy_bush
+from fixed_compositions import chair, conversation_furniture, mats, offering_furniture, CONVERSATION_SPOTS
+PIECES += [
+    P(KST.BABY_CRADLE, KST.FURNITURE, MIDI, KST.SEPARATE_BABY_CRADLE_WITH_A_MATTRESS_AND_A_WOODEN_FRONT_RAIL, cradle, 960, 920, INT, [S(KST.CRADLE_BABY, KST.LIE, 960, 780, KST.BABY_LYING_ON_THE_CRADLE_MATTRESS), S(KST.CRADLE_SIDE, KST.STAND, 1280, 950, KST.ADULT_STANDING_BESIDE_THE_CRADLE), S(KST.CRADLE_PILLOW, KST.SURFACE, 820, 780, KST.PILLOW_ON_THE_CRADLE_MATTRESS)], front=True),
+    P(KST.OPEN_CHEST, KST.FURNITURE, MIDI + BACK, KST.OPEN_WOODEN_STORAGE_CHEST_WITH_VISIBLE_DARK_INTERIOR_AND_RAISED_LID, open_chest, 960, 920, INT, [S(KST.CHEST_INSIDE, KST.SURFACE, 960, 775, KST.INSIDE_THE_OPEN_CHEST_FOR_A_BOOK_OR_LETTER), S(KST.CHEST_SIDE, KST.STAND, 650, 960, KST.STANDING_NEXT_TO_THE_CHEST)]),
+    P(KST.ATTIC_LADDER, KST.FIXTURE, [KST.DOOR_RIGHT, KST.DOOR_LEFT], KST.WOODEN_LADDER_LEADING_UP_TO_A_DARK_ATTIC_HATCH, attic_ladder, 1460, 920, INT, [S(KST.LADDER_FOOT, KST.STAND, 1200, 960, KST.AT_THE_FOOT_OF_THE_LADDER), S(KST.LADDER_SIDE, KST.STAND, 1770, 950, KST.BESIDE_THE_LADDER)]),
+    P(KST.ROWBOAT, KST.SCENERY, MIDE, KST.WOODEN_ROWBOAT_ON_WATER_WITH_ROWER_AND_PASSENGER_SITTING_BEHIND_ITS_FRONT_RI, rowboat, 960, 960, EXT, [S(KST.BOAT_ROWER, KST.SIT, 850, 850, KST.ROWER_SITTING_IN_THE_BOAT, seatY=800), S(KST.BOAT_PASSENGER, KST.SIT, 1120, 850, KST.PASSENGER_SITTING_IN_THE_BOAT, seatY=800), S(KST.BOAT_FLOOR, KST.SURFACE, 960, 880, KST.INSIDE_THE_BOAT)], front=True),
+    P(KST.FEEDING_TROUGH, KST.SCENERY, MIDE, KST.WOODEN_PIG_FEEDING_TROUGH_WITH_VISIBLE_FEED, feeding_trough, 930, 930, EXT, [S(KST.TROUGH_SIDE, KST.STAND, 1400, 960, KST.STANDING_BESIDE_THE_FEEDING_TROUGH), S(KST.TROUGH_FOOD, KST.SURFACE, 930, 815, KST.FEED_INSIDE_THE_TROUGH)]),
+    P(KST.PRIVACY_BUSH, KST.SCENERY, MIDE + EDGE, KST.DENSE_FOREGROUND_BUSH_WITH_A_HIDING_SPOT_BEHIND_ITS_LEAVES, privacy_bush, 960, 940, EXT, [S(KST.BEHIND_BUSH, KST.STAND, 960, 920, KST.HIDING_BEHIND_THE_BUSH), S(KST.BUSH_SIDE, KST.STAND, 1300, 960, KST.STANDING_BESIDE_THE_BUSH)], front=True),
+    P(
+        KST.WOODEN_CHAIR,
+        KST.FURNITURE,
+        MIDI + BACK,
+        KST.SINGLE_WOODEN_CHAIR_WITH_A_BACKREST_AND_AN_EXACT_SEAT_CONTACT_POINT,
+        lambda t: chair(t, 960),
+        960,
+        940,
+        INT,
+        [S(KST.CHAIR, KST.SIT, 960, 940, KST.SITTING_ON_THE_WOODEN_CHAIR, seatY=825, groundY=940), S(KST.BESIDE_CHAIR_LEFT, KST.STAND, 680, 980, KST.STANDING_BESIDE_THE_CHAIR_AT_LEFT), S(KST.BESIDE_CHAIR_RIGHT, KST.STAND, 1240, 980, KST.STANDING_BESIDE_THE_CHAIR_AT_RIGHT)],
+    ),
+    P(KST.CONVERSATION_FURNITURE, KST.FURNITURE, [KST.MID_CENTER], KST.TWO_SEPARATE_WOODEN_CHAIRS_WITH_A_LOW_TEA_TABLE_BETWEEN_THEM_COMPLETE_FIXED, conversation_furniture, 960, 960, INT, [S(*point) for point in CONVERSATION_SPOTS[:-1]]),
+    P(
+        KST.SLEEPING_MAT_PAIR,
+        KST.FURNITURE,
+        [KST.MID_CENTER],
+        KST.TWO_SEPARATE_BAMBOO_SLEEPING_MATS_WITH_PILLOWS_EACH_WITH_ITS_OWN_LYING_POSIT,
+        mats,
+        960,
+        995,
+        INT,
+        [S(KST.MAT_LEFT, KST.LIE, 400, 930, KST.LYING_ON_THE_LEFT_SLEEPING_MAT, groundY=980), S(KST.MAT_RIGHT, KST.LIE, 1220, 930, KST.LYING_ON_THE_RIGHT_SLEEPING_MAT, groundY=980), S(KST.BETWEEN_MATS, KST.STAND, 960, 1000, KST.STANDING_BETWEEN_THE_SLEEPING_MATS)],
+    ),
+    P(
+        KST.OFFERING_TABLE,
+        KST.FURNITURE,
+        MIDI,
+        KST.RED_RITUAL_OFFERING_TABLE_WITH_THREE_SEPARATE_OBJECT_SURFACES_AND_A_RITUAL_M,
+        offering_furniture,
+        960,
+        960,
+        INT,
+        [
+            S(KST.BEHIND_TABLE, KST.STAND, 960, 880, KST.RITUAL_MASTER_STANDING_BEHIND_THE_OFFERING_TABLE),
+            S(KST.TABLE_TOP_LEFT, KST.SURFACE, 760, 760, KST.LEFT_OFFERING_TABLE_SURFACE),
+            S(KST.TABLE_TOP_CENTER, KST.SURFACE, 960, 760, KST.MIDDLE_OFFERING_TABLE_SURFACE),
+            S(KST.TABLE_TOP_RIGHT, KST.SURFACE, 1160, 760, KST.RIGHT_OFFERING_TABLE_SURFACE),
+            S(KST.TABLE_SIDE, KST.STAND, 1460, 1000, KST.VISITOR_BESIDE_THE_OFFERING_TABLE),
+        ],
+        front=True,
+    ),
 ]

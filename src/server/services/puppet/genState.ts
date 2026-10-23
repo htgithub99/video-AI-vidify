@@ -7,13 +7,11 @@ import * as MR from "../../../constants/motionRuntime.js";
 import type { MotionAiExecution, MotionAudioDirection, MotionBeat, MotionGenState, MotionPlace, MotionStoryAnalysis, MotionStyleReference } from "../../../types/motionVideo.js";
 import { getMotionRootDirectory } from "../motionLibraryService.js";
 import type { runMotionAi } from "../motionStoryService.js";
-
 export interface GenOptions {
   audioDirection?: MotionAudioDirection | Promise<MotionAudioDirection | undefined>;
   styleReferences?: MotionStyleReference[];
   characterMotion?: boolean;
   exec: MotionAiExecution;
-  mainExec?: MotionAiExecution;
   signal?: AbortSignal;
   log: (s: string) => void;
   progress?: (p: number, stage?: string) => void;
@@ -25,9 +23,7 @@ export interface GenOptions {
   review?: boolean;
   ai?: typeof runMotionAi;
 }
-
 export const emptyGen = (): MotionGenState => ({ style: {}, cast: {}, locations: {}, locationInfo: {}, staging: {}, previews: {}, failed: [] });
-
 export const prepareMotionGen = (previous: MotionGenState | undefined, analysis: MotionStoryAnalysis, referenceKey: string): MotionGenState => {
   const signature = createHash(P.SHA)
     .update(JSON.stringify({ version: P.GEN_VERSION, referenceKey, cast: analysis.cast, places: analysis.places, era: analysis.era, look: analysis.look }))
@@ -35,7 +31,6 @@ export const prepareMotionGen = (previous: MotionGenState | undefined, analysis:
   const compatible = previous?.creativeSignature === signature;
   return { ...emptyGen(), ...(compatible ? _.cloneDeep(previous || {}) : {}), ...(previous?.voiceCast ? { voiceCast: { ...previous.voiceCast } } : {}), creativeSignature: signature, referenceKey, characterMode: MR.MOTION_TEXT_DRAWN, drawingMode: MR.MOTION_TEXT_2D, videoDna: analysis.videoDna };
 };
-
 const previewRoot = (): string => {
   const dir = path.join(getMotionRootDirectory(), P.PREVIEW_FOLDER);
   fs.mkdirSync(dir, { recursive: true });
@@ -49,7 +44,6 @@ export const resolveGenPreview = (rel: string): string | null => {
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file)) return null;
   return file;
 };
-
 const placeTokens = (text: string): string[] =>
   _.uniq(
     _.toLower(_.toString(text))
@@ -71,7 +65,6 @@ const matchPlace = (candidate: { key: string; name?: string }, places: { key: st
     nameTokens = placeTokens(candidate.name || P.EMPTY);
   return _.find(places, (place) => place.key !== candidate.key && (similar(keyTokens, placeTokens(place.key)) || (!!nameTokens.length && similar(nameTokens, placeTokens(place.name || P.EMPTY)))))?.key;
 };
-
 export const withBeatPlaces = (analysis: MotionStoryAnalysis, beats: MotionBeat[], o: GenOptions): MotionStoryAnalysis => {
   const merged: string[] = [];
   const pool: { key: string; name?: string }[] = [...analysis.places];

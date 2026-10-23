@@ -17,8 +17,9 @@
     "test:claude": "tsx scripts/verify-claude-models.ts && tsx scripts/verify-claude-chat.ts",
     "test:gemini-thinking": "tsx scripts/verify-gemini-thinking.ts",
     "test:motion-recovery": "tsx scripts/verify-motion-scene-contract.ts && tsx scripts/verify-motion-recovery.ts && tsx scripts/verify-chat-response-snapshots.ts",
+    "test:motion-ai-recovery": "tsx scripts/verify-motion-ai-recovery.ts && tsx scripts/verify-chat-submission-recovery.ts",
     "test:motion-preview": "tsx scripts/verify-motion-preview-loading.ts && tsx scripts/verify-motion-preview-recovery.ts",
-    "test:motion-scene-ai": "tsx scripts/verify-motion-draw-routing.ts && tsx scripts/verify-motion-scene-ai-settings.ts",
+    "test:motion-scene-ai": "tsx scripts/verify-motion-scene-routing.ts && tsx scripts/verify-motion-scene-ai-settings.ts",
     "test:deepseek": "tsx scripts/verify-deepseek-chat.ts",
     "test:motion-controls": "tsx scripts/verify-motion-references.ts && node scripts/verify-motion-static-cast.mjs && tsx scripts/verify-motion-advisory-qa.ts && tsx scripts/verify-motion-characters.ts && tsx scripts/verify-motion-render-controls.ts && tsx scripts/verify-motion-reference-ui.ts",
     "test:suno-evaluation": "tsx scripts/verify-suno-track-evaluation.ts",
@@ -34,7 +35,11 @@
     "motion:import-sfx": "tsx scripts/import-motion-sfx.ts",
     "test:motion-sound": "tsx scripts/verify-motion-sound.ts && tsx scripts/verify-motion-sound-flow.ts",
     "test:motion-voice": "tsx scripts/verify-motion-voice.ts && tsx scripts/verify-motion-voice-flow.ts && tsx scripts/verify-motion-voice-ui.ts",
+    "test:motion-speech": "tsx scripts/verify-motion-speech.ts",
     "test:motion-voice-continuity": "tsx scripts/verify-motion-voice-continuity.ts && tsx scripts/verify-motion-voice-mood.ts && tsx scripts/verify-motion-voice-timeline.ts",
+    "test:motion-voice-pacing": "tsx scripts/verify-motion-voice-pacing.ts",
+    "test:motion-asset-catalog": "tsx scripts/verify-motion-asset-catalog.ts",
+    "motion:migrate-asset-catalog": "tsx scripts/migrate-motion-asset-catalog.ts",
     "test:motion-voice-runtime": "tsx scripts/verify-motion-voice-runtime.ts"
   },
   "dependencies": {

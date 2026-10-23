@@ -10,11 +10,15 @@ import { mapMotionAiPool, runMotionAi } from "../motionStoryService.js";
 import { puppetLanes } from "./kitDraw.js";
 import type { PuppetRunOptions } from "./stylePack.js";
 import type { PuppetTimedFrame } from "./compilePuppet.js";
-
-export interface PuppetSheetItem { t: number; text: string; line: string; lines: string[]; file: string; abs: string; }
-
-const frameLook = (f: PuppetTimedFrame): string => JSON.stringify([f.shot, f.set, f.light, f.prop, _.map(f.actors, (a) => [a.char, a.pose, a.expr, a.face])]);
-
+export interface PuppetSheetItem {
+  t: number;
+  text: string;
+  line: string;
+  lines: string[];
+  file: string;
+  abs: string;
+}
+const frameLook = (f: PuppetTimedFrame): string => JSON.stringify([f.shot, f.set, f.light, f.prop, f.propMount, f.propAt, f.propRot, f.items, _.map(f.actors, (a) => [a.char, a.pose, a.expr, a.face, a.spot, a.x, a.y, a.gesture, a.hold, a.wear])]);
 export const puppetSheet = async (spec: MotionSpec, lines: PuppetLine[] = [], merge = false): Promise<PuppetSheetItem[]> => {
   const text = _.fromPairs(_.map(lines, (l) => [l.key, l.text]));
   const seen = new Set<string>();
@@ -40,20 +44,30 @@ export const puppetSheet = async (spec: MotionSpec, lines: PuppetLine[] = [], me
     }
   }
   if (!picks.length) return [];
-  const key = createHash(P.SHA).update(JSON.stringify([picks, _.map(spec.shots, (s) => s.params), _.keys(spec.kit?.sets || {}), _.keys(spec.kit?.characters || {})])).digest(P.HEX).slice(0, 16);
+  const key = createHash(P.SHA)
+    .update(JSON.stringify([picks, _.map(spec.shots, (s) => s.params), _.keys(spec.kit?.sets || {}), _.keys(spec.kit?.characters || {})]))
+    .digest(P.HEX)
+    .slice(0, 16);
   const dir = genPreviewDir(P.QA_DIR, key);
   const session = await openStillSession();
   try {
-    const out = await session.render(spec, _.map(picks, (p, i) => ({ id: P.SHEET_ID(i), t: p.t })), dir, { width: P.QA_W, height: P.QA_H });
+    const out = await session.render(
+      spec,
+      _.map(picks, (p, i) => ({ id: P.SHEET_ID(i), t: p.t })),
+      dir,
+      { width: P.QA_W, height: P.QA_H },
+    );
     return _.map(out, (o, i) => ({ t: o.t, text: picks[i].text, line: picks[i].line, lines: picks[i].lines, file: genPreviewRel(o.file), abs: o.file }));
   } finally {
     await session.close();
   }
 };
-
 export const qaPuppet = async (sheet: PuppetSheetItem[], analysis: MotionStoryAnalysis, o: PuppetRunOptions): Promise<Record<string, string>> => {
   if (!sheet.length) return {};
-  const groups = _.chunk(_.map(sheet, (f, i) => ({ ...f, i })), P.QA_PER_CALL);
+  const groups = _.chunk(
+    _.map(sheet, (f, i) => ({ ...f, i })),
+    P.QA_PER_CALL,
+  );
   o.log(P.LOG_QA(sheet.length, groups.length));
   const cast = _.map(analysis.cast, (c) => [c.key, c.name, _.truncate(c.look || c.description || P.EMPTY, { length: 80 })].join(P.SEP)).join(P.NL);
   const story = analysis.title + P.DASH + analysis.logline;

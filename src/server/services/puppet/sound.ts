@@ -12,7 +12,6 @@ import { motionSoundCatalogPrompt } from "../motionSfxLibraryService.js";
 import { mapMotionAiPool, runMotionAi } from "../motionStoryService.js";
 import { puppetLanes } from "./kitDraw.js";
 import type { PuppetRunOptions } from "./stylePack.js";
-
 const beatContext = (beat: MotionBeat, gen: PuppetGen) => ({
   id: beat.id,
   place: beat.place,
@@ -27,7 +26,6 @@ const beatContext = (beat: MotionBeat, gen: PuppetGen) => ({
     }),
   ),
 });
-
 export const directPuppetSound = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, gen: PuppetGen, o: PuppetRunOptions & { direction?: MotionAudioDirection }): Promise<void> => {
   const direction = o.direction || motionAudioDirection(script, analysis);
   const beats = _.filter(script.beats, (b) => b.visual === MR.MOTION_TEXT_SCENE && b.data?.[P.SOUND_FLAG] !== P.SOUND_VERSION);
@@ -41,7 +39,7 @@ export const directPuppetSound = async (script: MotionStoryScript, analysis: Mot
       const context = JSON.stringify(_.map(group, (b) => beatContext(b, gen)));
       try {
         const prompt = [MOTION_SOUND_PROMPT, MOTION_AUDIO_DIRECTION.CONTEXT + JSON.stringify(direction), await motionSoundCatalogPrompt(context), PR.SOUND({ genre, horror: P.HORROR_RE.test(genre), beats: context })].join(MR.MOTION_TEXT_SYMBOL_27);
-        const raw = await (o.ai || runMotionAi)(prompt, MOTION_SOUND_CONFIG.ARTIFACT, o.mainExec || o.exec, o.signal, o.log);
+        const raw = await (o.ai || runMotionAi)(prompt, MOTION_SOUND_CONFIG.ARTIFACT, o.exec, o.signal, o.log);
         for (const item of _.castArray(raw?.beats || [])) {
           const beat = _.find(group, { id: item?.id });
           if (!beat) continue;
@@ -53,6 +51,6 @@ export const directPuppetSound = async (script: MotionStoryScript, analysis: Mot
       }
       for (const b of group) b.data = { ...(b.data || {}), [P.SOUND_FLAG]: P.SOUND_VERSION };
     },
-    puppetLanes(o.mainExec || o.exec),
+    puppetLanes(o.exec),
   );
 };
