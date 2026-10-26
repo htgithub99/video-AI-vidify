@@ -2,6 +2,7 @@ import { AiPlanningChatModel } from "../types.js";
 export const GEMINI_MODEL_UI = {
   POLL_MS: 100,
   READY_POLLS: 3,
+  COLLAPSED_INPUT_SELECTOR: 'rich-textarea.simplified-input [role="textbox"][contenteditable="true"]',
   SELECTION_ATTEMPTS: 2,
   PHASE: { READY: "page_ready", BASE: "base_model", BASE_VERIFY: "base_model_verify", LEVEL: "thinking_level", LEVEL_VERIFY: "thinking_level_verify" },
   ESCAPE: "Escape",

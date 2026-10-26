@@ -11,6 +11,8 @@ import { MOTION_VOICE_SPEED } from "../../constants/motionVoice.js";
 import { MOTION_VIDEO_API_PATHS } from "../../constants/apiRoutes.js";
 import { FeatureType } from "../../constants/security.js";
 import {
+  createMotionProduction,
+  continueMotionProduction,
   analyzeMotionStory,
   cancelMotionStory,
   cancelMotionVideo,
@@ -23,6 +25,7 @@ import {
   getMotionDemo,
   getMotionEngineScript,
   getMotionStoryStatus,
+  getMotionStoryLogs,
   getMotionVideoStatus,
   getStorageJunk,
   listMotionVideoResults,
@@ -80,6 +83,8 @@ router.delete(MOTION_VIDEO_API_PATHS.RESULTS, clearMotionVideoResults);
 router.delete(MOTION_VIDEO_API_PATHS.RESULTS_ID, deleteMotionVideoResult);
 router.post(MOTION_VIDEO_API_PATHS.SELECT_SAVE_DESTINATION, selectMotionSaveDestination);
 router.post(MOTION_VIDEO_API_PATHS.SAVE_VIDEO, saveMotionVideo);
+router.post(MOTION_VIDEO_API_PATHS.PRODUCTION, createMotionProduction);
+router.post(MOTION_VIDEO_API_PATHS.PRODUCTION_RESUME, continueMotionProduction);
 router.post(MOTION_VIDEO_API_PATHS.STORY_PARSE, parseMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_ANALYZE, analyzeMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_SCRIPT, scriptMotionStory);
@@ -89,5 +94,6 @@ router.post(MOTION_VIDEO_API_PATHS.STORY_THUMBNAIL, requireLicense(FeatureType.I
 router.post(MOTION_VIDEO_API_PATHS.STORY_VOICE, voiceMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_COMPILE, compileMotionStory);
 router.get(MOTION_VIDEO_API_PATHS.STORY_STATUS, getMotionStoryStatus);
+router.get(MOTION_VIDEO_API_PATHS.STORY_LOGS, getMotionStoryLogs);
 router.post(MOTION_VIDEO_API_PATHS.STORY_CANCEL, cancelMotionStory);
 export default router;

@@ -1,14 +1,38 @@
 import { StudioSelect } from "../ui/Studio.js";
 import * as MR from "../../constants/motionRuntime.js";
-import { Film, Sparkles, Square } from "lucide-react";
-import { FC, useEffect, useId, useRef, useState, type SelectHTMLAttributes } from "react";
-import type { MotionLogEntry } from "../../types/motionVideo.js";
+import { ChevronDown, ChevronRight, Film, Sparkles, Square } from "lucide-react";
+import { FC, useEffect, useId, useLayoutEffect, useRef, useState, type SelectHTMLAttributes } from "react";
+import type { MotionLogEntry, MotionAiActivity, MotionStoryJobState, MotionJobState } from "../../types/motionVideo.js";
+import { MOTION_AI_RECOVERY as AIR } from "../../constants/motionAiRecovery.js";
+import { MOTION_EDITORIAL } from "../../constants/motionEditorial.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
 import { MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA, MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_2, MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT_2, MOTION_TEXT_BG_SLATE_100_HOVER_BG_SLATE_200_TEXT, MOTION_TEXT_PRIMARY, MOTION_TEXT_SYMBOL, MOTION_TEXT_SYMBOL_6, MOTION_TEXT_SYMBOL_7 } from "../../constants/motionRuntime.js";
 import { MOTION_STYLES } from "../../constants/motionStyles.js";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/Button";
 import { formatMotionProgress, formatSeconds } from "./motionApi.js";
+import { motionLogSections, type MotionLogSection } from "../../lib/motionLogSections.js";
+import { MOTION_LOG_SECTIONS as LOG } from "../../constants/motionLogSections.js";
+export const MotionAiStatusLine: FC<{ activities?: Record<string, MotionAiActivity> }> = ({ activities }) => {
+  const groups = new Map<string, { provider: string; model: string; phases: Map<string, number> }>();
+  const details: string[] = [];
+  for (const ai of Object.values(activities || {})) {
+    if (ai.phase === AIR.PHASE.DONE) continue;
+    const key = AIR.MODEL_KEY(ai.provider, ai.model);
+    const group = groups.get(key) || { provider: ai.provider, model: ai.model, phases: new Map<string, number>() };
+    const phase = MOTION_EDITORIAL.PHASE_LABEL[ai.phase as keyof typeof MOTION_EDITORIAL.PHASE_LABEL] || ai.phase;
+    group.phases.set(phase, (group.phases.get(phase) || 0) + 1);
+    groups.set(key, group);
+    details.push(AIR.DISPLAY(ai.provider, ai.model, AIR.PHASE_LABEL[ai.phase as keyof typeof AIR.PHASE_LABEL]) + MR.MOTION_TEXT_SYMBOL + ai.workerId + MR.MOTION_TEXT_SYMBOL + MOTION_EDITORIAL.ACTIVITY_DETAIL(ai.artifact, ai.roomGeneration, ai.phaseStartedAt, ai.targetIds));
+  }
+  if (!groups.size) return null;
+  const label = [...groups.values()].map((group) => MOTION_EDITORIAL.GROUP(group.provider, group.model, [...group.phases].map(([phase, count]) => MOTION_EDITORIAL.COUNT(phase, count)).join(MOTION_EDITORIAL.STATUS_SEPARATOR))).join(MOTION_EDITORIAL.STATUS_SEPARATOR);
+  return (
+    <p className={MOTION_EDITORIAL.STATUS_CLASS} title={details.join(MOTION_EDITORIAL.DETAIL_SEPARATOR)}>
+      {label}
+    </p>
+  );
+};
 export const StepHeader: FC<{ n: string; icon: typeof Film; title: string; badge?: string; right?: React.ReactNode }> = ({ n, icon: Icon, title, badge, right }) => (
   <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_3_FLEX_WRAP}>
     <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0}>
@@ -50,23 +74,71 @@ export const StopBtn: FC<{ onClick: () => void; label: string; stopping?: boolea
     <span>{label}</span>
   </Button>
 );
-export const MotionFlowLog: FC<{ entries: MotionLogEntry[]; label: (kind: string) => string; className?: string }> = ({ entries, label, className }) => {
+const MotionLogSectionCard: FC<{ section: MotionLogSection; lang: "vi" | "en"; index: number; defaultOpen: boolean }> = ({ section, lang, index, defaultOpen }) => {
+  const [expanded, setExpanded] = useState<boolean | null>(null);
+  const open = expanded ?? defaultOpen;
+  const bodyId = useId();
   const box = useRef<HTMLDivElement>(null);
-  const count = entries.reduce((sum, entry) => sum + entry.lines.length + 1, 0);
-  useEffect(() => {
-    if (box.current) box.current.scrollTop = box.current.scrollHeight;
-  }, [count]);
+  const following = useRef(true);
+  const text = LOG.TEXT[lang];
+  const rows = section.rows.filter((row) => row.visible);
+  useLayoutEffect(() => {
+    if (open && following.current && box.current) box.current.scrollTop = box.current.scrollHeight;
+  }, [rows.length, open]);
+  const Icon = open ? ChevronDown : ChevronRight;
   return (
-    <div ref={box} className={className}>
-      {entries.map((entry) => (
-        <div key={entry.id}>
-          <div className={MOTION_STYLES.FONT_BOLD}>{MOTION_STORY_CONFIG.LOG_STEP_HEADER(label(entry.kind))}</div>
-          {entry.lines.map((line, index) => (
-            <div key={index} className={MOTION_STYLES.BREAK_WORDS}>
-              {line}
-            </div>
-          ))}
+    <section className={LOG.UI.SECTION} data-motion-log-section={section.key} data-state={section.state}>
+      <button type="button" className={LOG.UI.HEADER} aria-expanded={open} aria-controls={bodyId} onClick={() => setExpanded(!open)}>
+        <span className={LOG.UI.NUMBER}>{index + 1}</span>
+        <span className={LOG.UI.TITLE}>{LOG.LABELS[lang][section.key as keyof typeof LOG.LABELS.vi]}</span>
+        <span className={cn(LOG.UI.BADGE, LOG.UI.STATES[section.state])}>{text[section.state as "waiting" | "active" | "done" | "error" | "cancelled" | "recorded"]}</span>
+        <Icon className={LOG.UI.CHEVRON} aria-hidden={true} />
+      </button>
+      <p className={LOG.UI.SUMMARY} data-motion-log-summary>
+        {section.summary}
+      </p>
+      <div id={bodyId} hidden={!open}>
+        <div
+          ref={box}
+          className={LOG.UI.BODY}
+          data-motion-log-rows
+          onScroll={() => {
+            if (box.current) following.current = box.current.scrollHeight - box.current.scrollTop - box.current.clientHeight < LOG.FOLLOW_DISTANCE;
+          }}>
+          {rows.length
+            ? rows.map((row) => (
+                <div key={row.key} className={LOG.UI.ROW}>
+                  <time className={LOG.UI.TIME}>{row.time}</time>
+                  <span className={LOG.UI.MESSAGE}>{row.message}</span>
+                </div>
+              ))
+            : text.empty}
         </div>
+        {!!section.rows.length && (
+          <details className={LOG.UI.DETAIL}>
+            <summary className={LOG.UI.DETAIL_TITLE}>
+              {text.technical} ({text.count(section.rows.length)})
+            </summary>
+            <div className={LOG.UI.TECHNICAL}>
+              {section.rows.map((row) => (
+                <div key={row.key}>{row.raw}</div>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    </section>
+  );
+};
+export const MotionFlowLog: FC<{ entries: MotionLogEntry[]; label?: (kind: string) => string; className?: string; lang?: string; job?: MotionStoryJobState | null; renderJob?: MotionJobState | null }> = ({ entries, className, lang = "vi", job, renderJob }) => {
+  const language = lang === "en" ? "en" : "vi";
+  const sections = motionLogSections(entries, language, job, renderJob);
+  const latest = sections.reduce<MotionLogSection | undefined>((last, section) => (!last || section.lastOrder > last.lastOrder ? section : last), undefined);
+  const active = sections.some((section) => section.state === "active" || section.state === "error");
+  return (
+    <div className={cn(LOG.UI.WRAP, className)}>
+      {sections.map((section, index) => (
+        <MotionLogSectionCard key={entries[0]?.id + ":" + section.key} section={section} lang={language} index={index} defaultOpen={section.state === "active" || section.state === "error" || (!active && latest?.key === section.key && !!section.rows.length)} />
       ))}
     </div>
   );

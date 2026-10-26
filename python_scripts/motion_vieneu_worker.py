@@ -1,4 +1,5 @@
 import motion_vieneu_texts as T
+from motion_vieneu_speech import synthesize_texts
 import contextlib
 import io
 import json
@@ -40,7 +41,7 @@ def execute(request):
         name = str(request.get(T.MODEL) or T.ASR_DEFAULT_MODEL)
         if name not in recognizers:
             recognizers[name] = WhisperModel(name, device=T.ASR_DEVICE, compute_type=T.ASR_COMPUTE, download_root=str(root / T.MODELS))
-        segments, _ = recognizers[name].transcribe(str(source), language=request.get(T.LANGUAGE) or None, word_timestamps=True, beam_size=1, vad_filter=False)
+        segments, _ = recognizers[name].transcribe(str(source), language=request.get(T.LANGUAGE) or None, word_timestamps=True, beam_size=T.ASR_BEAM, vad_filter=False, condition_on_previous_text=False)
         words: list[TranscriptWord] = []
         for segment in segments:
             for word in segment.words or []:
@@ -66,7 +67,7 @@ def execute(request):
         source = Path(request[T.FILE]).resolve()
         if not source.is_relative_to(root):
             raise ValueError(T.INVALID_REFERENCE_SOURCE)
-        engine.add_voice(request[T.VOICE], str(source), denoise=True, description=request.get(T.NAME, T.EMPTY_2), gender=request.get(T.GENDER, T.EMPTY_2))
+        engine.add_voice(request[T.VOICE], str(source), denoise=request.get(T.DENOISE, True) is not False, description=request.get(T.NAME, T.EMPTY_2), gender=request.get(T.GENDER, T.EMPTY_2))
         temporary = root / T.VOICES_V3_TURBO_JSON_TMP
         engine.save_voices(str(temporary))
         temporary.replace(root / T.VOICES_V3_TURBO_JSON)
@@ -100,8 +101,7 @@ def execute(request):
             except Exception as error:
                 results[index] = {T.ERROR: str(error)}
         if ready:
-            batch_delivery = {key: value for key, value in delivery.items() if key != T.SILENCE_P}
-            wavs = engine.infer_batch([text for _, text, _ in ready], voice=request[T.VOICE], max_chars=256, **batch_delivery)
+            wavs = synthesize_texts(engine, [text for _, text, _ in ready], request[T.VOICE], delivery, request.get(T.PAUSES))
             for (index, _, target), raw in zip(ready, wavs):
                 try:
                     results[index] = save(raw, target)
@@ -109,7 +109,7 @@ def execute(request):
                     results[index] = {T.ERROR: str(error)}
         return results
     text, target = checked(request)
-    return save(engine.infer(text, voice=request[T.VOICE], max_chars=256, **delivery), target)
+    return save(synthesize_texts(engine, [text], request[T.VOICE], delivery, request.get(T.PAUSES))[0], target)
 for line in sys.stdin:
     request = {}
     try:

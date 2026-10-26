@@ -1,3 +1,30 @@
+import { MOTION_STORY_CRAFT as CRAFT } from "../../constants/motionStoryCraft.js";
+import { MOTION_FOLK_STORY as FOLK } from "../../constants/motionFolkStory.js";
+import { motionFolkContractGuide, motionFolkTopicValid, motionFolkTopicContract, motionKnownFolkContract, motionFolkStoryErrors, motionFolkChapterContext, motionFolkCopied, scopeMotionFolkStoryRepair, motionFolkTextDrifts } from "../../lib/motionFolkStory.js";
+import type { MotionFolkStoryContract } from "../../types/motionVideo.js";
+import { repairMotionIllustrationNeeds } from "./motionIllustrationRepairService.js";
+import { normalizeMotionIllustrationNeeds, acceptMotionIllustrationAudit } from "../../lib/motionIllustrationNeeds.js";
+import { closeMotionJsonContainers } from "../../lib/motionJsonRecovery.js";
+import { MOTION_PRODUCTION } from "../../constants/motionProduction.js";
+import { MOTION_QA as QA } from "../../constants/motionQa.js";
+import { MOTION_CHAPTER_REPAIR as CHAPTER_REPAIR } from "../../constants/motionChapterRepair.js";
+import { mergeMotionChapterDraft, motionChapterPending, motionChapterRepairPrompt, motionChapterResponseIssues } from "../../lib/motionChapterRepair.js";
+import { MOTION_PROMPT as PROMPT } from "../../constants/motionPrompt.js";
+import { closedPuppetPackId } from "./puppet/packPolicy.js";
+import { motionPromptGroups, motionPromptMeasurement, motionPromptBudget } from "../../lib/motionPrompt.js";
+import { motionChapterParts } from "../../lib/motionChapterParts.js";
+import { motionTaskCheckpoint } from "./motionTaskCheckpoint.js";
+import { motionInputKey } from "./motionFileUtils.js";
+import type { MotionChapterDraft } from "../../types/motionVideo.js";
+import { motionSourceChunks } from "../../lib/motionSourceChunks.js";
+import { compactMotionSourceLedger, parseMotionSourceLedgerPart, type MotionSourceLedgerDraft, type MotionSourceLedgerNode } from "../../lib/motionSourceLedger.js";
+import { MOTION_EDITORIAL } from "../../constants/motionEditorial.js";
+import { motionStoryLanguageGuide } from "../../constants/motionStoryLanguage.js";
+import { motionStoryContract, motionStoryContractErrors } from "../../lib/motionStoryCraft.js";
+import { motionStoryDraft, motionStoryIssueLabels, motionStoryRepairFields } from "../../lib/motionStoryRepair.js";
+import { motionDnaRepairDraft, motionDnaRepairPrompt } from "../../lib/motionDnaRepair.js";
+import { MotionProviderRecovery } from "./motionProviderRecovery.js";
+import { requestMotionAiContract, type MotionAiResponseContract } from "./motionAiContractService.js";
 import { MOTION_CAPTCHA_PROBE, MOTION_DOCTOR_FIELDS } from "../../constants/motionStoryFields.js";
 import { expandInitialCastNames, fullCastNames } from "../../lib/motionCastNames.js";
 import { MOTION_CAST_NAMES } from "../../constants/motionCastNames.js";
@@ -8,33 +35,38 @@ import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
 import { MOTION_QA_MESSAGES, MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../../constants/motionReference.js";
 import { normalizeMotionReferenceStyle } from "../../lib/motionReference.js";
-import { MOTION_STORY_VOICE_PROMPT, MOTION_VOICE } from "../../constants/motionVoice.js";
+import { MOTION_VOICE } from "../../constants/motionVoice.js";
 import { normalizeMotionSceneMood, normalizeMotionUtterances, motionNarratorCastKey, motionNarratorLines } from "../../lib/motionVoice.js";
 import { motionAudioContext } from "../../lib/motionAudioDirection.js";
 import { MOTION_AI_FALLBACK, MOTION_AI_ROLE } from "../../constants/motionAiFallback.js";
 import { MOTION_CAPTCHA } from "../../constants/motionCaptcha.js";
+import { SOURCE_TEXT_DOMCONTENTLOADED } from "../../constants/sourceText.js";
 import { puppetTags } from "../../lib/motionPuppet.js";
+
 import { cleanCharacterColors } from "../../lib/motionCharacterVariant.js";
 import type { MotionStyleReference } from "../../types/motionVideo.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
-import { MOTION_HISTORY } from "../../constants/motionHistory.js";
 import { normalizeMotionHud } from "../../lib/motionHistory.js";
 import { MOTION_CREATIVE_EDITOR, MOTION_STORY_DOCTOR, motionGenreCreative, motionVideoGenre, motionVideoGenreDirective, type MotionVideoGenre } from "../../constants/motionGenre.js";
 import { findFolkBeliefs, knownFolkBelief } from "../../lib/motionFolkBelief.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../constants/motionMusic.js";
 import _ from "lodash";
+import { MOTION_ILLUSTRATION_NEEDS as NEEDS } from "../../constants/motionIllustrationNeeds.js";
+import { puppetPackPlanningCapabilities, puppetPackChapterCapabilities } from "./puppet/packCatalog.js";
 import path from "path";
 import { CINEMATIC_CHAT_MODEL_OPTIONS, CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
 import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_PROMPT, MOTION_GEN_LOOKS, MOTION_GEN_PREAMBLE, MOTION_GEN_STORYBOARD_RULES, MOTION_SERIES_PROMPT } from "../../constants/motionGenPrompts.js";
-import { normalizeMotionAnalysisResponse } from "../../lib/motionAnalysisResponse.js";
+import { motionAnalysisResponseErrors, motionAnalysisRepairDraft, motionAnalysisRepairPrompt, normalizeMotionAnalysisResponse } from "../../lib/motionAnalysisResponse.js";
+import { withMotionResponsePrompt } from "../../lib/motionResponseContract.js";
+import { MOTION_RESPONSE_SCHEMAS, MOTION_RESPONSE_TEXT, MOTION_RESPONSE_VALUES } from "../../constants/motionResponseContract.js";
+import { requestMotionEditorResponse } from "../../lib/motionEditorResponse.js";
 import {
   MOTION_TEMPLATE_2_2,
   MOTION_TEMPLATE_AI_TRA_LOI_KHONG_PHAI_JSON,
   MOTION_TEMPLATE_ARTIFACTTYPE_REQUESTID,
-  MOTION_TEMPLATE_B,
   MOTION_TEMPLATE_C_2,
   MOTION_TEMPLATE_CHAN_DOAN_PHONG_CHAT_PHAN_HOI_KY_TU,
   MOTION_TEMPLATE_CHUONG,
@@ -57,7 +89,6 @@ import {
   MOTION_TEXT_1_2,
   MOTION_TEXT_ABORT,
   MOTION_TEXT_ACTION,
-  MOTION_TEXT_AERIAL,
   MOTION_TEXT_AI_DEBUG,
   MOTION_TEXT_AI_KHONG_TRA_VE_JSON_HOP_LE,
   MOTION_TEXT_APPLICATION_JSON,
@@ -68,60 +99,40 @@ import {
   MOTION_TEXT_BUTTON_ARIA_LABEL_STOP_I,
   MOTION_TEXT_C1,
   MOTION_TEXT_CAU_CHUYEN,
-  MOTION_TEXT_CHAPTER,
   MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO_2,
-  MOTION_TEXT_CLOSE,
   MOTION_TEXT_CO,
   MOTION_TEXT_CONTENTEDITABLE_TRUE,
-  MOTION_TEXT_COUNTER,
   MOTION_TEXT_D,
   MOTION_TEXT_D_2,
-  MOTION_TEXT_DAWN,
   MOTION_TEXT_DAY,
   MOTION_TEXT_DIAGNOSTICS,
-  MOTION_TEXT_DUSK,
   MOTION_TEXT_EN,
-  MOTION_TEXT_ENDING,
   MOTION_TEXT_ENGLISH,
   MOTION_TEXT_FEMALE,
   MOTION_TEXT_FFB070,
-  MOTION_TEXT_FOG,
   MOTION_TEXT_FUNCTION,
   MOTION_TEXT_GOI_AI_QUA_API,
-  MOTION_TEXT_HEADLINE,
-  MOTION_TEXT_HIGH,
   MOTION_TEXT_ID_MODEL_RESPONSE_MESSAGE_CONTENT,
-  MOTION_TEXT_INSERT,
-  MOTION_TEXT_INTERIOR_DARK,
   MOTION_TEXT_KEY,
   MOTION_TEXT_KHONG,
   MOTION_TEXT_KHONG_TIM_THAY_NOI_DUNG_TRANSCRIPT_HOP_LE,
-  MOTION_TEXT_LOW,
   MOTION_TEXT_MAIN_PLACE,
   MOTION_TEXT_MALE,
-  MOTION_TEXT_MAP,
   MOTION_TEXT_MARKDOWN,
   MOTION_TEXT_MEDIUM,
   MOTION_TEXT_MESSAGE_CONTENT,
   MOTION_TEXT_MODEL_RESPONSE,
   MOTION_TEXT_MODEL_RESPONSE_TEXT,
-  MOTION_TEXT_NIGHT,
   MOTION_TEXT_NOI_DUNG_CAU_CHUYEN_QUA_NGAN,
   MOTION_TEXT_NONE,
   MOTION_TEXT_NONE_2,
   MOTION_TEXT_NV,
   MOTION_TEXT_OK,
-  MOTION_TEXT_OVER_SHOULDER,
-  MOTION_TEXT_OVERCAST,
   MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG,
-  MOTION_TEXT_QUOTE,
-  MOTION_TEXT_RAIN,
   MOTION_TEXT_RICH_TEXTAREA,
   MOTION_TEXT_ROLE_ALERT,
   MOTION_TEXT_ROOMPAGE,
   MOTION_TEXT_SCENE,
-  MOTION_TEXT_SNOW,
-  MOTION_TEXT_STATS,
   MOTION_TEXT_SYMBOL_13,
   MOTION_TEXT_SYMBOL_27,
   MOTION_TEXT_SYMBOL_30,
@@ -132,8 +143,6 @@ import {
   MOTION_TEXT_SYMBOL_50,
   MOTION_TEXT_SYMBOL_51,
   MOTION_TEXT_TEXT,
-  MOTION_TEXT_TIMELINE,
-  MOTION_TEXT_TITLE,
   MOTION_TEXT_TOON_CAT_INTERIOR,
   MOTION_TEXT_UNCERTAIN,
   MOTION_TEXT_USER,
@@ -141,7 +150,6 @@ import {
   MOTION_TEXT_UTF8,
   MOTION_TEXT_VIETNAMESE,
   MOTION_TEXT_VIETNAMESE_SYLLABLES_WORDS,
-  MOTION_TEXT_WIDE,
   MOTION_TEXT_WORDS,
   MOTION_TEXT_WRONG,
 } from "../../constants/motionRuntime.js";
@@ -149,7 +157,7 @@ import { MOTION_STORY_CONFIG, MOTION_STORY_LENGTH_SECONDS } from "../../constant
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { productionPreamble } from "../../lib/motionDirection.js";
 import { normalizeCreativeBlueprint } from "../../lib/motionCreativeBlueprint.js";
-import { VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, normalizeScenePlan, normalizeVideoDna, scenePlanErrors, VIDEO_SCENE_PLAN_INSTRUCTIONS, videoDnaErrors, videoDnaInstructions, videoDnaProfileErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
+import { VIDEO_DNA_PROFILE_INSTRUCTIONS, normalizeMotionDnaResponse, normalizeScenePlan, normalizeVideoDna, scenePlanErrors, VIDEO_SCENE_PLAN_INSTRUCTIONS, videoDnaErrors, videoDnaProfileErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
 import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifiedQuotes } from "../../lib/motionSourceClean.js";
 import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
@@ -158,12 +166,13 @@ import { GEMINI_MODEL_ENCODING, parseGeminiChatModel } from "../../constants/gem
 import { DEEPSEEK_CHAT_CONFIG, DEEPSEEK_CHAT_MODES } from "../../constants/deepseekChat.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionFolkBelief, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDna, type MotionVideoDnaSettings } from "../../types/motionVideo.js";
-import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, prepareChatPlanningRoom, resumeChatPlanningResponse } from "./chatUiPlanningService.js";
-import { isFinalChatResponseError, uncertainChatSubmission, type ChatPlanningSubmission } from "./chatSubmissionRecovery.js";
+import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, getChatPlanningRoom, prepareChatPlanningRoom, reloadChatPlanningRoom, resumeChatPlanningResponse } from "./chatUiPlanningService.js";
+import { exhaustedMotionRoom, isChatAttachmentError, isFinalChatResponseError, isMotionContentResponseError, isTerminalMotionAiError, uncertainChatSubmission, type ChatPlanningSubmission } from "./chatSubmissionRecovery.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../constants/motionAiRecovery.js";
 import type { MotionAiLog } from "../../types/motionVideo.js";
 import { generateContentWithRetry } from "./geminiService.js";
-import { cancelGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
+import { cancelGlobalBrowserCleanup, retainGlobalBrowser } from "./imageGeneratorService.js";
+import { MotionAiWorkerPool } from "./motionAiWorkerPool.js";
 import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_NOT_RELEASED_ERROR } from "../../constants/browserLifecycle.js";
 import { MotionBrowserLifecycle, waitForMotionBrowser } from "../../lib/motionBrowserLifecycle.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
@@ -222,6 +231,7 @@ export const resolveTargetSeconds = (source: MotionStorySource, length: MotionSt
 };
 const formatTs = (s: number) => MOTION_TEMPLATE_SYMBOL_11(String(Math.floor(s / 60)), String(String(Math.floor(s % 60)).padStart(2, MOTION_TEXT_0)));
 const sourceSlice = (source: MotionStorySource, from?: number, to?: number): string => {
+  if (!source.segments?.length) return source.text || MR.MOTION_TEXT_EMPTY;
   const a = from ?? 0,
     b = to ?? Infinity;
   const picked = _.filter(source.segments, (s) => s.t >= a - 0.5 && s.t < b);
@@ -278,7 +288,7 @@ const closeJson = (raw: string): string | null => {
   return raw.replace(MP.JSON_TRAILING_SEPARATOR, MR.MOTION_TEXT_EMPTY) + stack.reverse().join(MR.MOTION_TEXT_EMPTY);
 };
 const pickEnum = <T extends string>(values: T[], v: unknown, fallback: T): T => (_.includes(values, v) ? (v as T) : fallback);
-const writeMotionAiDebug = async (requestId: string, data: Record<string, unknown>): Promise<void> => {
+export const writeMotionAiDebug = async (requestId: string, data: Record<string, unknown>): Promise<void> => {
   try {
     const dir = path.join(getMotionRootDirectory(), MOTION_TEXT_AI_DEBUG);
     await fs.promises.mkdir(dir, { recursive: true });
@@ -372,21 +382,29 @@ export const escapeStrayQuotes = (text: string): string => {
   }
   return out;
 };
-const salvageRoomJson = (text: string | undefined, artifactType: string): any => {
+const salvageRoomJson = (text: string | undefined, artifactType: string, requestId: string): any => {
   if (!text || text.length < 40) return undefined;
-  const parsed = salvageOnce(text, artifactType);
-  return parsed ?? salvageOnce(escapeStrayQuotes(text), artifactType);
+  const parsed = salvageOnce(text, artifactType, requestId);
+  const closed = closeMotionJsonContainers(text);
+  return parsed ?? (closed && salvageOnce(closed, artifactType, requestId)) ?? salvageOnce(escapeStrayQuotes(text), artifactType, requestId);
 };
-const salvageOnce = (text: string, artifactType: string): any => {
+const salvageOnce = (text: string, artifactType: string, requestId: string): any => {
   try {
     const parsed = extractJson(text);
     if (!_.isPlainObject(parsed)) return undefined;
     const kind = _.toString(parsed.artifactType);
-    if (kind && kind !== artifactType) return undefined;
+    if (kind !== artifactType || parsed.requestId !== requestId) return undefined;
     const keys = _.keys(parsed);
     return keys.length >= 3 ? parsed : undefined;
   } catch {
     return undefined;
+  }
+};
+const extractMotionRoomJson = (text: string): any => {
+  try {
+    return extractJson(text);
+  } catch (cause) {
+    throw Object.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, { cause }), { diagnostics: { lastCandidate: text, candidateChars: text.length } });
   }
 };
 export interface MotionAiImage {
@@ -397,20 +415,75 @@ export interface MotionAiImage {
 interface MotionAiRun {
   projectId: string;
   workerId: string;
+  lastWorkerId?: string;
   signal: AbortSignal;
   rooms: Map<string, AiPlanningFallbackProvider>;
-  roomQueue: Promise<void>;
   pending: Set<Promise<unknown>>;
   counts: Record<string, number>;
-  queues: Map<string, SimpleMutex>;
+  workers: Map<string, MotionAiWorkerPool>;
+  roomRecoveries: Map<string, number>;
+  roomRefreshes: Set<string>;
+  roomGenerations: Map<string, number>;
   halt: { error?: Error };
+  editorial?: { context: string; route?: MotionAiExecution };
+  ledgers?: Map<string, Promise<string>>;
+  workerMode?: boolean;
 }
+export interface MotionEditorialSession {
+  id: string;
+  revision: string;
+  context: string;
+  worker?: boolean;
+}
+interface RetainedEditorialSession {
+  revision: string;
+  projectId: string;
+  controller: AbortController;
+  gate: MotionAiWorkerPool;
+  run?: MotionAiRun;
+  timer?: ReturnType<typeof setTimeout>;
+  active: Set<Promise<void>>;
+}
+const editorialSessions = new Map<string, RetainedEditorialSession>();
+const closeMotionAiRun = async (run: MotionAiRun): Promise<void> => {
+  await Promise.allSettled(_.map(_.values(AiPlanningFallbackProvider), (provider) => closeChatPlanningRoomsForProject({ provider, projectId: run.projectId }, false)));
+  run.rooms.clear();
+};
+export const releaseMotionEditorialSession = async (id: string): Promise<void> => {
+  const session = editorialSessions.get(id);
+  if (!session) return;
+  editorialSessions.delete(id);
+  clearTimeout(session.timer);
+  session.controller.abort(new Error(MR.MOTION_TEXT_CANCELLED));
+  await Promise.allSettled([...session.active]);
+  const slot = await session.gate.acquire();
+  try {
+    if (session.run) await closeMotionAiRun(session.run);
+  } finally {
+    slot.release();
+  }
+};
 const motionAiRunStore = new AsyncLocalStorage<MotionAiRun>();
+export const runInMotionAiWorkerSession = <T>(runId: string, fn: () => Promise<T>, log?: MotionAiLog, signal?: AbortSignal, editorial?: MotionEditorialSession): Promise<T> => {
+  const parent = motionAiRunStore.getStore();
+  return parent ? motionAiRunStore.run({ ...parent, workerMode: true }, fn) : runInMotionAiSession(runId, fn, log, true, signal, editorial ? { ...editorial, worker: true } : undefined);
+};
 const motionBrowserLifecycle = new MotionBrowserLifecycle();
 let releaseMotionBrowser: (() => void) | undefined;
-export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (line: string) => void): Promise<() => void> => {
+export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (line: string) => void, owner?: string): Promise<(() => void) & { shared?: boolean }> => {
+  if (owner) await releaseMotionEditorialSession(owner);
+  if (editorialSessions.size) {
+    log?.(MOTION_BROWSER_HANDOFF.SHARED_OWNER);
+    signal?.throwIfAborted();
+    return Object.assign(() => {}, { shared: true });
+  }
   const release = await motionBrowserLifecycle.acquireRender(signal, (count) => log?.(MOTION_BROWSER_HANDOFF.WAITING(count)));
   try {
+    if (editorialSessions.size) {
+      release();
+      log?.(MOTION_BROWSER_HANDOFF.SHARED_OWNER);
+      return Object.assign(() => {}, { shared: true });
+    }
     releaseMotionBrowser?.();
     releaseMotionBrowser = undefined;
     cancelGlobalBrowserCleanup();
@@ -436,13 +509,44 @@ const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<vo
   const provider = run.rooms.get(workerId);
   if (!provider) return;
   run.rooms.delete(workerId);
+  run.roomRefreshes.delete(workerId);
+  run.roomRecoveries.delete(workerId);
   await closeChatPlanningRoom({ provider, projectId: run.projectId, workerId }).catch(_.noop);
 };
-export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T>, log?: MotionAiLog, _keepBrowser = false, signal?: AbortSignal): Promise<T> => {
-  const release = await motionBrowserLifecycle.acquireSession(signal);
-  const projectId = MR.MOTION_TEMPLATE_SYMBOL_287(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, runId);
-  const planningRun = beginChatPlanningRun(projectId, Date.now(), MOTION_STORY_CONFIG.WORKER_IDS[0]);
-  const run: MotionAiRun = { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: planningRun.signal, rooms: new Map(), roomQueue: Promise.resolve(), pending: new Set(), counts: {}, queues: new Map(), halt: {} };
+export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T>, log?: MotionAiLog, _keepBrowser = false, signal?: AbortSignal, editorial?: MotionEditorialSession): Promise<T> => {
+  const release = _.noop;
+  let retained: RetainedEditorialSession | undefined;
+  let unlock: (() => void) | undefined;
+  try {
+    if (editorial) {
+      while (editorialSessions.has(editorial.id) && editorialSessions.get(editorial.id)!.revision !== editorial.revision) await releaseMotionEditorialSession(editorial.id);
+      retained = editorialSessions.get(editorial.id);
+      if (!retained) {
+        retained = { revision: editorial.revision, projectId: MOTION_EDITORIAL.ID_PREFIX + editorial.id + MR.MOTION_TEXT_SYMBOL_30 + randomUUID(), controller: new AbortController(), gate: new MotionAiWorkerPool([MOTION_STORY_CONFIG.WORKER_IDS[0]]), active: new Set() };
+        editorialSessions.set(editorial.id, retained);
+      }
+      clearTimeout(retained.timer);
+      if (!editorial.worker) unlock = (await retained.gate.acquire(AbortSignal.any(_.compact([signal, retained.controller.signal])))).release;
+      retained.controller.signal.throwIfAborted();
+      signal?.throwIfAborted();
+    }
+  } catch (error) {
+    unlock?.();
+    release();
+    throw error;
+  }
+  const projectId = retained?.projectId || MR.MOTION_TEMPLATE_SYMBOL_287(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, runId);
+  const planningRun = beginChatPlanningRun(projectId, Date.now(), runId);
+  const shared: MotionAiRun = retained?.run || { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: retained?.controller.signal || planningRun.signal, rooms: new Map(), pending: new Set(), counts: {}, workers: new Map(), roomRecoveries: new Map(), roomRefreshes: new Set(), roomGenerations: new Map(), halt: {} };
+  if (editorial && retained) {
+    shared.editorial ||= { context: editorial.context };
+    if (!editorial.worker) shared.editorial.context = editorial.context;
+    retained.run = shared;
+  }
+  const run: MotionAiRun = { ...shared, signal: AbortSignal.any(_.compact([planningRun.signal, signal, retained?.controller.signal])), pending: new Set(), workerMode: editorial?.worker };
+  let finish!: () => void;
+  const done = new Promise<void>((resolve) => (finish = resolve));
+  retained?.active.add(done);
   let result: T;
   let failed = false;
   let failure: unknown;
@@ -456,15 +560,22 @@ export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T
     while (run.pending.size) await Promise.allSettled([...run.pending]);
     planningRun.complete();
     if (!_.isEmpty(run.counts)) log?.(MOTION_STORY_CONFIG.REQUEST_COUNT_LOG(run.counts));
-    await run.roomQueue.catch(_.noop);
-    await Promise.allSettled(_.map(_.values(AiPlanningFallbackProvider), (provider) => closeChatPlanningRoomsForProject({ provider, projectId }, false)));
-    run.rooms.clear();
+    if (!retained) {
+      await closeMotionAiRun(run);
+    }
     cancelGlobalBrowserCleanup();
   } catch (error) {
     failed = true;
     failure = error;
   } finally {
+    retained?.active.delete(done);
+    finish();
+    unlock?.();
     release();
+    if (editorial && retained && editorialSessions.get(editorial.id) === retained && !retained.active.size) {
+      retained.timer = setTimeout(() => void releaseMotionEditorialSession(editorial.id), run.halt.error || retained.controller.signal.aborted ? 0 : MOTION_EDITORIAL.IDLE_MS);
+      retained.timer.unref();
+    }
   }
   if (run.halt.error) throw run.halt.error;
   if (failed) throw failure;
@@ -485,33 +596,29 @@ export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index:
       }
     }
   };
-  const lanes = Math.max(1, Math.min(limit, items.length, MOTION_STORY_CONFIG.WORKER_IDS.length));
-  await Promise.all(_.times(lanes, (laneIndex) => (parent ? motionAiRunStore.run({ ...parent, workerId: MOTION_STORY_CONFIG.WORKER_IDS[laneIndex] }, lane) : lane())));
+  const lanes = Math.max(1, Math.min(limit, items.length, parent?.editorial ? MOTION_STORY_CONFIG.WORKER_IDS.length - 1 : MOTION_STORY_CONFIG.WORKER_IDS.length));
+  await Promise.all(_.times(lanes, (laneIndex) => (parent ? motionAiRunStore.run({ ...parent, workerMode: !!parent.editorial || parent.workerMode, workerId: MOTION_STORY_CONFIG.WORKER_IDS[laneIndex] }, lane) : lane())));
   if (failure !== undefined) throw failure;
   return results;
 };
 const blockedRoomProviders = new Map<string, number>();
 const blockedRoomModels = new Map<string, number>();
-const providerGates = new Map<string, { active: number; queue: (() => void)[]; last: number }>();
-const acquireProviderGate = async (provider: string): Promise<() => void> => {
+const providerRecoveries = new MotionProviderRecovery();
+const providerGates = new Map<string, MotionAiWorkerPool>();
+const acquireProviderGate = async (provider: string, signal?: AbortSignal): Promise<() => void> => {
   const limit = MOTION_STORY_CONFIG.PROVIDER_PARALLEL[provider];
   if (!limit) return _.noop;
-  const gate = providerGates.get(provider) || { active: 0, queue: [], last: 0 };
+  const gate = providerGates.get(provider) || new MotionAiWorkerPool(MOTION_STORY_CONFIG.WORKER_IDS.slice(0, limit));
   providerGates.set(provider, gate);
-  while (gate.active >= limit) await new Promise<void>((resolve) => gate.queue.push(resolve));
-  gate.active++;
-  const wait = gate.last + MOTION_STORY_CONFIG.PROVIDER_MIN_GAP_MS - Date.now();
-  gate.last = Math.max(Date.now(), gate.last + MOTION_STORY_CONFIG.PROVIDER_MIN_GAP_MS);
-  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-  return _.once(() => {
-    gate.active--;
-    gate.queue.shift()?.();
-  });
+  return (await gate.acquire(signal)).release;
 };
 export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
 export const resetMotionAiRoom = async (): Promise<void> => {
   const run = motionAiRunStore.getStore();
-  if (run?.workerId) await closeMotionAiRoom(run, AIR.WORKER(run.workerId, MOTION_AI_ROLE.MAIN));
+  if (!run) return;
+  if (run.editorial) return;
+  const workerId = run.lastWorkerId || AIR.WORKER(run.workerId, MOTION_AI_ROLE.MAIN);
+  if (run.rooms.has(workerId)) run.roomRefreshes.add(workerId);
 };
 const countMotionRequest = (provider: string, log?: MotionAiLog): void => {
   const run = motionAiRunStore.getStore();
@@ -519,11 +626,11 @@ const countMotionRequest = (provider: string, log?: MotionAiLog): void => {
   run.counts[provider] = (run.counts[provider] || 0) + 1;
   log?.(MOTION_STORY_CONFIG.REQUEST_COUNT_LOG(run.counts));
 };
-let captchaHold: Promise<void> | null = null;
-let captchaEpoch = 0;
+const captchaHolds = new Map<string, Promise<void>>();
+const captchaEpochs = new Map<string, number>();
 export const motionCaptchaError = (error: unknown): boolean => !!_.get(error, MOTION_CAPTCHA.FLAG);
 const markCaptcha = (error: Error): Error => Object.assign(error, { [MOTION_CAPTCHA.FLAG]: true });
-const captchaSleep = (ms: number, signal?: AbortSignal): Promise<void> =>
+const motionServiceDelay = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(signal.reason instanceof Error ? signal.reason : new Error(MOTION_TEXT_ABORT));
     const timer = setTimeout(() => {
@@ -545,6 +652,7 @@ const captchaPageText = async (page: any): Promise<string> => {
     .catch(() => MR.MOTION_TEXT_EMPTY);
   return [page.url(), title, body].join(MR.MOTION_TEXT_SYMBOL_27);
 };
+export const motionCaptchaPageReady = (provider: string, url: string, text: string, hasInput: boolean): boolean => !!text.trim() && !MOTION_CAPTCHA.PATTERN.test(url + MR.MOTION_TEXT_SYMBOL_27 + text) && (hasInput || (provider === "gemini-chat" && MOTION_CAPTCHA.VERIFIED_GEMINI_LANDING.test(url)));
 const solveMotionCaptcha = async (provider: string, model: string, page: any, headless: boolean, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
   const C = MOTION_CAPTCHA;
   const projectId = C.PROJECT(provider);
@@ -552,30 +660,39 @@ const solveMotionCaptcha = async (provider: string, model: string, page: any, he
   let reminded = started;
   let stable = 0;
   let openFails = 0;
+  const sourceUrl = page && !page.isClosed?.() ? page.url() : undefined;
   let view = headless ? undefined : page;
+  const recoveryRoom = { provider: provider as AiPlanningFallbackProvider, projectId };
   log?.(C.LOG_WAIT(provider));
   try {
     for (;;) {
       if (Date.now() - started > C.WAIT_MS) throw markCaptcha(new Error(C.ERR_TIMEOUT(provider, Math.round(C.WAIT_MS / 60000))));
       if (!view || view.isClosed?.()) {
         try {
-          await prepareChatPlanningRoom({ provider: provider as AiPlanningFallbackProvider, model: model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId, chromeHeadless: false, signal, allowDefaultGeminiModel: true });
-          break;
+          await prepareChatPlanningRoom({ ...recoveryRoom, model: model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, chromeHeadless: false, signal, allowDefaultGeminiModel: true });
+          view = getChatPlanningRoom(recoveryRoom);
+          if (view && sourceUrl && view.url() !== sourceUrl) await view.goto(sourceUrl, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
         } catch (error) {
           if (signal?.aborted) throw error;
           view = _.get(error, MOTION_TEXT_ROOMPAGE);
-          if (!view && ++openFails >= C.OPEN_FAILS_MAX) break;
+          if (!view && ++openFails >= C.OPEN_FAILS_MAX) throw markCaptcha(error instanceof Error ? error : new Error(String(error)));
         }
       } else {
         await view.bringToFront().catch(_.noop);
-        if (C.PATTERN.test(await captchaPageText(view))) stable = 0;
+        const text = await captchaPageText(view);
+        const hasInput = !!(await view
+          .locator(C.READY_SELECTOR)
+          .filter({ visible: true })
+          .count()
+          .catch(() => 0));
+        if (!motionCaptchaPageReady(provider, view.url(), text, hasInput)) stable = 0;
         else if (++stable >= C.STABLE_POLLS) break;
       }
       if (Date.now() - reminded >= C.REMIND_MS) {
         reminded = Date.now();
         log?.(C.LOG_REMIND(provider, Math.round((reminded - started) / 60000)));
       }
-      await captchaSleep(C.POLL_MS, signal);
+      await motionServiceDelay(C.POLL_MS, signal);
     }
   } finally {
     await closeChatPlanningRoom({ provider: provider as AiPlanningFallbackProvider, projectId }).catch(_.noop);
@@ -583,18 +700,20 @@ const solveMotionCaptcha = async (provider: string, model: string, page: any, he
   log?.(C.LOG_SOLVED(provider));
 };
 const waitMotionCaptcha = (provider: string, model: string, page: any, headless: boolean, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
+  const captchaHold = captchaHolds.get(provider);
   if (captchaHold) {
     log?.(MOTION_CAPTCHA.LOG_HOLD);
     return captchaHold;
   }
-  captchaEpoch++;
+  captchaEpochs.set(provider, (captchaEpochs.get(provider) || 0) + 1);
   const hold = solveMotionCaptcha(provider, model, page, headless, signal, log).finally(() => {
-    if (captchaHold === hold) captchaHold = null;
+    if (captchaHolds.get(provider) === hold) captchaHolds.delete(provider);
   });
-  captchaHold = hold;
+  captchaHolds.set(provider, hold);
   return hold;
 };
-const holdForCaptcha = async (log?: MotionAiLog): Promise<void> => {
+const holdForCaptcha = async (provider: string, log?: MotionAiLog): Promise<void> => {
+  const captchaHold = captchaHolds.get(provider);
   if (!captchaHold) return;
   log?.(MOTION_CAPTCHA.LOG_HOLD);
   await captchaHold.catch(_.noop);
@@ -608,6 +727,7 @@ export const logMotionAiChain = (entry: { artifact: string; step: number; total:
 };
 export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => {
   const primary = { ...exec, strictProvider: true, chained: true };
+  if (exec.strictProvider) return [primary];
   const list = exec.role === MOTION_AI_ROLE.DRAW ? MOTION_AI_FALLBACK.DRAW : MOTION_AI_FALLBACK.MAIN;
   const rest = _.map(
     _.filter(list, (r) => r.provider !== exec.provider),
@@ -615,27 +735,54 @@ export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => 
   );
   return [primary, ...rest];
 };
-export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0): Promise<any> => {
+export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0, contract?: MotionAiResponseContract): Promise<any> => {
   const run = motionAiRunStore.getStore();
-  if (!run) return runInMotionAiSession(randomUUID(), () => runMotionAi(prompt, artifactType, exec, signal, log, images, attempt), log, true, signal);
-  const workerId = AIR.WORKER(run.workerId, exec.role || MOTION_AI_ROLE.MAIN);
-  const queue = run.queues.get(workerId) || new SimpleMutex();
-  run.queues.set(workerId, queue);
+  if (!run) return runInMotionAiSession(randomUUID(), () => runMotionAi(prompt, artifactType, exec, signal, log, images, attempt, contract), log, true, signal);
+  const poolKey = run.editorial ? (run.workerMode ? MOTION_EDITORIAL.HELPERS : MOTION_EDITORIAL.MAIN) : MOTION_EDITORIAL.SHARED;
+  const workerIds = run.editorial ? (run.workerMode ? MOTION_STORY_CONFIG.WORKER_IDS.slice(1) : MOTION_STORY_CONFIG.WORKER_IDS.slice(0, 1)) : MOTION_STORY_CONFIG.WORKER_IDS;
+  const workers = run.workers.get(poolKey) || new MotionAiWorkerPool(workerIds);
+  run.workers.set(poolKey, workers);
   const pending = (async () => {
-    const release = await queue.acquire();
+    const linked = AbortSignal.any(_.compact([signal, run.signal]));
+    const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
+    let slot: Awaited<ReturnType<MotionAiWorkerPool["acquire"]>>;
+    const queueId = poolKey + randomUUID();
+    try {
+      log?.(MR.MOTION_TEXT_EMPTY, { workerId: queueId, provider: String(exec.provider), model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.QUEUED });
+      slot = await workers.acquire(linked);
+    } catch (error) {
+      releaseSession();
+      throw error;
+    } finally {
+      log?.(MR.MOTION_TEXT_EMPTY, { workerId: queueId, provider: String(exec.provider), model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.DONE });
+    }
+    const workerId = slot.workerId;
+    const requestId = randomUUID();
+    let phaseKey: string = MR.MOTION_TEXT_EMPTY,
+      phaseStartedAt = Date.now();
+    const activityLog: MotionAiLog = (line, activity) => {
+      const next = activity && JSON.stringify([activity.provider, activity.phase]);
+      if (next && next !== phaseKey) {
+        phaseKey = next;
+        phaseStartedAt = Date.now();
+      }
+      log?.(line, activity ? { ...activity, owner: run.projectId, requestId, phaseStartedAt, roomGeneration: run.roomGenerations.get(workerId), targetIds: contract?.targetIds } : undefined);
+    };
     try {
       signal?.throwIfAborted();
       run.signal.throwIfAborted();
       if (run.halt.error) throw run.halt.error;
-      return await motionAiRunStore.run({ ...run, workerId }, () => runMotionAiTask(prompt, artifactType, exec, signal, log, images, attempt));
+      return await motionAiRunStore.run({ ...run, workerId }, () => runMotionAiTask(prompt, artifactType, exec, signal, activityLog, images, attempt, contract));
     } catch (error) {
       if (_.get(error, AIR.UNCERTAIN_FLAG)) run.halt.error = error as Error;
       throw error;
     } finally {
+      run.lastWorkerId = workerId;
       try {
         log?.(MR.MOTION_TEXT_EMPTY, { workerId, provider: String(exec.provider), model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.DONE });
       } finally {
-        release();
+        slot.release();
+        releaseSession();
       }
     }
   })();
@@ -646,16 +793,40 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
     run.pending.delete(pending);
   }
 };
-const runMotionAiTask = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0): Promise<any> => {
+const runMotionAiTask = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0, contract?: MotionAiResponseContract): Promise<any> => {
+  if (contract) contract.schema ||= MOTION_RESPONSE_SCHEMAS[artifactType];
+  const editorial = motionAiRunStore.getStore()?.workerMode ? undefined : motionAiRunStore.getStore()?.editorial;
   const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
+  if (contract && !contract.budget) contract.budget = Math.max(1, contract.attempts);
+  const request = async (route: MotionAiExecution, retry = 0) => {
+    const run = motionAiRunStore.getStore();
+    const linked = AbortSignal.any(_.compact([signal, run?.signal]));
+    const blocked = motionRoomBlockedMs(String(route.provider), route.model);
+    if (blocked && mode !== AiPlanningExecutionMode.ApiOnly) {
+      log?.(AIR.WAIT(String(route.provider), blocked), { workerId: run!.workerId, provider: String(route.provider), model: String(route.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
+      await motionServiceDelay(blocked, linked);
+    }
+    try {
+      return await requestMotionAiContract(prompt, route, (question) => runMotionAiOnce(question, artifactType, route, signal, log, images, retry, undefined, !!contract), contract, linked);
+    } catch (error: any) {
+      if (!linked.aborted && (isChatAttachmentError(error) || (AIR.REPLAYABLE_ARTIFACT.test(artifactType) && error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR))) {
+        if (!motionRoomBlockedMs(String(route.provider), route.model)) {
+          blockedRoomModels.set(AIR.MODEL_KEY(String(route.provider), route.model), Date.now() + AIR.PROVIDER_ERROR_COOLDOWN_MS);
+          log?.(isChatAttachmentError(error) ? AIR.ATTACHMENT_COOLDOWN(String(route.provider)) : AIR.PROVIDER_COOLDOWN(String(route.provider)));
+        }
+      }
+      throw error;
+    }
+  };
   if (exec.strictProvider || exec.chained || attempt || mode === AiPlanningExecutionMode.ApiOnly || exec.provider === AiPlanningFallbackProvider.Disabled) {
     const workerId = motionAiRunStore.getStore()!.workerId;
     const provider = mode === AiPlanningExecutionMode.ApiOnly || exec.provider === AiPlanningFallbackProvider.Disabled ? MOTION_STORY_CONFIG.API_PROVIDER : String(exec.provider);
     log?.(AIR.ACTIVE(provider, String(exec.model || MR.MOTION_TEXT_EMPTY), artifactType), { workerId, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PRIMARY });
-    return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, attempt);
+    return request(exec, attempt);
   }
-  const routes = motionAiRoutes(exec);
-  let first: unknown = null;
+  const configured = motionAiRoutes(exec);
+  const routes = editorial?.route ? [editorial.route, ...configured.filter((route) => route.provider !== editorial.route!.provider || route.model !== editorial.route!.model)] : configured;
+  let failure: unknown = null;
   for (let i = 0; i < routes.length; i++) {
     signal?.throwIfAborted();
     motionAiRunStore.getStore()?.signal.throwIfAborted();
@@ -666,39 +837,55 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     }
     log?.(MOTION_AI_FALLBACK.LOG_TRY(i + 1, routes.length, String(routes[i].provider)));
     const workerId = motionAiRunStore.getStore()!.workerId;
-    log?.(AIR.ACTIVE(String(routes[i].provider), String(routes[i].model || MR.MOTION_TEXT_EMPTY), artifactType), { workerId, provider: String(routes[i].provider), model: String(routes[i].model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: i ? AIR.PHASE.FALLBACK : AIR.PHASE.PRIMARY });
+    log?.(AIR.ACTIVE(String(routes[i].provider), String(routes[i].model || MR.MOTION_TEXT_EMPTY), artifactType), { workerId, provider: String(routes[i].provider), model: String(routes[i].model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: routes[i].provider === exec.provider && routes[i].model === exec.model ? AIR.PHASE.PRIMARY : AIR.PHASE.FALLBACK });
     const step = { artifact: artifactType, step: i + 1, total: routes.length, provider: String(routes[i].provider), model: String(routes[i].model || MR.MOTION_TEXT_EMPTY) };
     try {
-      const out = await runMotionAiOnce(prompt, artifactType, routes[i], signal, log, images, 0);
+      const out = await request(routes[i]);
+      if (editorial) editorial.route = routes[i];
       logMotionAiChain({ ...step, result: MOTION_AI_FALLBACK.RESULT_OK });
       return out;
     } catch (error: any) {
       logMotionAiChain({ ...step, result: motionCaptchaError(error) ? MOTION_AI_FALLBACK.RESULT_CAPTCHA : MOTION_AI_FALLBACK.RESULT_FAIL, reason: _.toString(error?.message) });
-      if (signal?.aborted || motionAiRunStore.getStore()?.signal.aborted || motionCaptchaError(error) || _.get(error, AIR.UNCERTAIN_FLAG) || error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR || error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR) throw error;
-      first = first || error;
+      if (signal?.aborted || motionAiRunStore.getStore()?.signal.aborted || motionCaptchaError(error) || _.get(error, AIR.UNCERTAIN_FLAG) || _.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED) || error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR || (error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !AIR.VECTOR_ARTIFACT.test(artifactType) && !contract))
+        throw error;
+      if (!failure || !_.get(error, MOTION_PRODUCTION.CONTRACT_ROUTE_EXHAUSTED)) failure = error;
       const next = routes[i + 1];
       if (next) log?.(MOTION_AI_FALLBACK.LOG_SWITCH(String(routes[i].provider), String(next.provider), _.truncate(_.toString(error?.message), { length: MOTION_AI_FALLBACK.REASON_MAX })));
     }
   }
+  if (!failure && routes.length) return request([...routes].sort((a, b) => motionRoomBlockedMs(String(a.provider), a.model) - motionRoomBlockedMs(String(b.provider), b.model))[0]);
   log?.(MOTION_AI_FALLBACK.LOG_ALL_FAILED(_.map(routes, (r) => String(r.provider)).join(MOTION_AI_FALLBACK.LIST_SEP)));
-  if (mode === AiPlanningExecutionMode.Hybrid) return runMotionAiOnce(prompt, artifactType, { ...exec, mode: AiPlanningExecutionMode.ApiOnly }, signal, log, images, 0);
-  throw first;
+  if (mode === AiPlanningExecutionMode.Hybrid) return request({ ...exec, mode: AiPlanningExecutionMode.ApiOnly });
+  if (AIR.REPLAYABLE_ARTIFACT.test(artifactType)) throw Object.assign(failure instanceof Error ? failure : exhaustedMotionRoom(String(exec.provider)), { [AIR.EXHAUSTED_FLAG]: true });
+  throw failure;
 };
-const runMotionAiOnce = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0, recovery?: { requestId: string; submission: ChatPlanningSubmission }): Promise<any> => {
+const runMotionAiOnce = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0, recovery?: { requestId: string; submission: ChatPlanningSubmission }, contentRepair = false): Promise<any> => {
   const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
   const provider = pickEnum(_.values(AiPlanningFallbackProvider), exec.provider, AiPlanningFallbackProvider.GeminiChat);
   const useRoom = mode !== AiPlanningExecutionMode.ApiOnly && provider !== AiPlanningFallbackProvider.Disabled;
   const state = recovery || { requestId: MOTION_TEMPLATE_SYMBOL_5(String(artifactType), String(randomUUID().slice(0, 8))), submission: { attempted: false, completed: false } };
   const { requestId, submission } = state;
   const identity = MOTION_TEMPLATE_ARTIFACTTYPE_REQUESTID(String(artifactType), String(requestId));
-  const fullPrompt = MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(String(prompt), String(identity));
-  const runGeminiFallback = () => runMotionAiOnce(prompt, artifactType, { ...exec, provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash }, signal, log, images, 0);
+  const currentRun = motionAiRunStore.getStore();
+  const restoreContext = currentRun?.editorial && (currentRun.rooms.get(currentRun.workerId) !== provider || currentRun.roomRefreshes.has(currentRun.workerId) || attempt > 0);
+  const basePrompt = restoreContext ? MOTION_EDITORIAL.CONTEXT(currentRun.editorial!.context) + prompt : prompt;
+  const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
+  const fullPrompt = MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity));
+  log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
+  const measurement = motionPromptMeasurement(prompt, fullPrompt, restoreContext ? MOTION_EDITORIAL.CONTEXT(currentRun!.editorial!.context).length : 0, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")));
+  if (measurement.overflow) log?.(PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
+  try {
+    fs.appendFileSync(path.join(getLogsDirectory(), PROMPT.DIAGNOSTIC_FILE), JSON.stringify({ at: new Date().toISOString(), artifact: artifactType, provider: exec.provider, model: exec.model, ...measurement }) + PROMPT.SEPARATOR);
+  } catch {
+    _.noop();
+  }
+  const runGeminiFallback = () => runMotionAiOnce(prompt, artifactType, { ...exec, provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash }, signal, log, images, 0, undefined, contentRepair);
   const switchTo = MOTION_STORY_CONFIG.ROOM_SWITCH[provider];
   const limitTo = switchTo || MOTION_STORY_CONFIG.LIMIT_SWITCH[provider];
   const isBlocked = (name: string): boolean => (blockedRoomProviders.get(name) || 0) > Date.now();
   const runSwitched = (target = switchTo) => {
     log?.(MOTION_STORY_CONFIG.ROOM_SWITCH_LOG(provider, target.provider));
-    return runMotionAiOnce(prompt, artifactType, { ...exec, provider: target.provider as AiPlanningFallbackProvider, model: target.model as AiPlanningChatModel }, signal, log, images, 0);
+    return runMotionAiOnce(prompt, artifactType, { ...exec, provider: target.provider as AiPlanningFallbackProvider, model: target.model as AiPlanningChatModel }, signal, log, images, 0, undefined, contentRepair);
   };
   if (useRoom && isBlocked(provider) && !exec.strictProvider) {
     if (limitTo && !isBlocked(limitTo.provider)) return runSwitched(limitTo);
@@ -718,18 +905,35 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     run?.signal.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     let timedOut = false;
     const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, MOTION_STORY_DOCTOR.ARTIFACT, MOTION_STORY_DOCTOR.DNA_ARTIFACT], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : _.includes(MOTION_STORY_CONFIG.ROOM_SHORT_ARTIFACTS, artifactType) ? MOTION_STORY_CONFIG.ROOM_SHORT_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
-    const watchdog = setTimeout(() => {
-      timedOut = true;
-      roomCtrl.abort(AIR.TIMEOUT_REASON);
-    }, roomTimeout);
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
     let retryRoom = false;
+    let replaceRoom = false;
     let roomOk = false;
     let releaseGate: () => void = _.noop;
     let captchaRetry = false;
-    await holdForCaptcha(log);
-    const epoch = captchaEpoch;
+    let epoch = captchaEpochs.get(provider) || 0;
+    const recoveryKey = AIR.MODEL_KEY(provider, exec.model);
+    let terminalError: unknown;
     try {
-      releaseGate = await acquireProviderGate(provider);
+      log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: captchaHolds.has(provider) ? AIR.PHASE.CAPTCHA : AIR.PHASE.PROVIDER });
+      await waitForMotionBrowser(holdForCaptcha(provider, log), roomCtrl.signal);
+      if (providerRecoveries.waiting(recoveryKey, requestId)) log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
+      await providerRecoveries.wait(recoveryKey, requestId, roomCtrl.signal);
+      epoch = captchaEpochs.get(provider) || 0;
+      releaseGate = await acquireProviderGate(provider, roomCtrl.signal);
+      log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.READY });
+      watchdog = setTimeout(() => {
+        timedOut = true;
+        roomCtrl.abort(AIR.READINESS_TIMEOUT_REASON);
+      }, AIR.READINESS_TIMEOUT_MS);
+      submission.onAttempt = () => {
+        clearTimeout(watchdog);
+        log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RESPONSE });
+        watchdog = setTimeout(() => {
+          timedOut = true;
+          roomCtrl.abort(AIR.TIMEOUT_REASON);
+        }, roomTimeout);
+      };
       signal?.throwIfAborted();
       run?.signal.throwIfAborted();
       log?.(MOTION_TEMPLATE_GUI_YEU_CAU_TOI_PHONG_CHAT_AI_CAU(String(provider)));
@@ -752,17 +956,28 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
                 ? (_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: exec.model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined)
                 : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
       if (run && run.rooms.has(workerId!) && run.rooms.get(workerId!) !== provider) await closeMotionAiRoom(run, workerId!);
-      if (run && !run.rooms.has(workerId!)) {
-        const prepared = run.roomQueue.then(() => prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true }));
-        run.roomQueue = prepared.catch(_.noop);
+      if (run?.roomRefreshes.delete(workerId!)) {
+        const repairs = run.roomRecoveries.get(workerId!) || 0;
+        if (repairs < AIR.ROOM_RELOADS) {
+          run.roomRecoveries.set(workerId!, repairs + 1);
+          await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
+        } else {
+          run.roomRecoveries.delete(workerId!);
+          await closeMotionAiRoom(run, workerId!);
+        }
+      }
+      if (run && (!run.rooms.has(workerId!) || attempt > 0)) {
+        if (!run.rooms.has(workerId!)) run.roomGenerations.set(workerId!, (run.roomGenerations.get(workerId!) || 0) + 1);
+        log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.READY });
         run.rooms.set(workerId!, provider);
-        await prepared;
+        await prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true });
       }
       countMotionRequest(provider, log);
       const r = await generatePlanningWithChatUi({
         provider,
         model,
         prompt: fullPrompt,
+        promptMessageLimit: measurement.budget,
         projectId,
         workerId,
         chromeHeadless: exec.chromeHeadless !== false,
@@ -774,9 +989,13 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         submission,
         attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
       });
+      const result = extractMotionRoomJson(r.text);
+      run?.roomRecoveries.delete(workerId!);
       roomOk = true;
-      return extractJson(r.text);
-    } catch (caught: any) {
+      return result;
+    } catch (error: any) {
+      let caught = error;
+      terminalError = error;
       if (signal?.aborted || run?.signal.aborted) throw caught;
       const geminiSelection = _.get(caught, GEMINI_MODEL_ENCODING.DIAGNOSTICS);
       const unusable = _.toString(caught?.message).includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE) || (!switchTo && _.toString(caught?.message).includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) || _.toString(caught?.message).includes(XRT.DEEPSEEK_MODEL_UNAVAILABLE_CODE);
@@ -797,51 +1016,85 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         log?.(MOTION_STORY_CONFIG.ROOM_REFUSAL_LOG(provider));
         throw caught;
       }
-      const salvaged = salvageRoomJson(diag?.lastCandidate, artifactType);
+      const salvaged = salvageRoomJson(diag?.lastCandidate, artifactType, requestId);
       if (salvaged) {
         log?.(MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG);
+        roomOk = true;
         return salvaged;
       }
       const limitText = [_.toString(caught?.message), _.toString(diag?.lastCandidate), JSON.stringify(roomProbe || {})];
-      const limited = !!limitTo && (_.includes([CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RATE_LIMIT_ERROR, DEEPSEEK_CHAT_CONFIG.RATE_LIMIT_ERROR], limitText[0]) || _.some(limitText, (text) => CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_PATTERN.test(text) || MOTION_STORY_CONFIG.ROOM_LIMIT_PATTERN.test(text)));
+      const limited =
+        !!limitTo &&
+        (_.includes([CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RATE_LIMIT_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RATE_LIMIT_ERROR, DEEPSEEK_CHAT_CONFIG.RATE_LIMIT_ERROR], limitText[0]) || _.some(limitText, (text) => CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_PATTERN.test(text) || MOTION_STORY_CONFIG.ROOM_LIMIT_PATTERN.test(text)));
       const captcha = _.some([limitText[0], JSON.stringify(_.pick(roomProbe || {}, [MOTION_CAPTCHA_PROBE.URL, MOTION_CAPTCHA_PROBE.TITLE, MOTION_CAPTCHA_PROBE.HEAD]))], (text) => MOTION_CAPTCHA.PATTERN.test(text));
-      if (captcha || captchaHold || epoch !== captchaEpoch) {
+      if (captcha || captchaHolds.has(provider) || epoch !== (captchaEpochs.get(provider) || 0)) {
         clearTimeout(watchdog);
+        log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CAPTCHA });
         if (captcha) await waitMotionCaptcha(provider, _.toString(exec.model), _.get(caught, MOTION_TEXT_ROOMPAGE), exec.chromeHeadless !== false, AbortSignal.any(_.compact([signal, run?.signal])), log);
-        else await holdForCaptcha(log);
+        else await holdForCaptcha(provider, log);
         captchaRetry = true;
       }
-      if (submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
+      if (!captchaRetry && contentRepair && isMotionContentResponseError(caught)) {
+        roomOk = true;
+        throw caught;
+      }
+      if (!captchaRetry && submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
         clearTimeout(watchdog);
         log?.(AIR.RESUME(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
-        try {
-          const resumeSignal = AbortSignal.any(_.compact([signal, run?.signal, AbortSignal.timeout(AIR.RESUME_MS)]));
-          const result = await resumeChatPlanningResponse({ provider, model: exec.model as AiPlanningChatModel, prompt: fullPrompt, projectId, workerId, artifactType, requestId, signal: resumeSignal, chromeHeadless: exec.chromeHeadless !== false, submission });
-          roomOk = true;
-          return extractJson(result.text);
-        } catch (resumeError) {
-          if (signal?.aborted || run?.signal.aborted || isFinalChatResponseError(resumeError)) throw resumeError;
-          throw uncertainChatSubmission(provider);
+        const replayable = !!run?.editorial || AIR.REPLAYABLE_ARTIFACT.test(artifactType);
+        for (let check = 0; check <= (replayable ? AIR.ROOM_RELOADS : 0); check++) {
+          try {
+            if (check) log?.(AIR.RESUME_RELOAD(provider, check, AIR.ROOM_RELOADS), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+            const resumeSignal = AbortSignal.any(_.compact([signal, run?.signal, AbortSignal.timeout(AIR.RESUME_MS)]));
+            const result = await resumeChatPlanningResponse({ provider, model: exec.model as AiPlanningChatModel, prompt: fullPrompt, projectId, workerId, artifactType, requestId, signal: resumeSignal, chromeHeadless: exec.chromeHeadless !== false, submission, reloadPendingResponse: check > 0 });
+            const parsed = extractMotionRoomJson(result.text);
+            roomOk = true;
+            return parsed;
+          } catch (resumeError) {
+            if (signal?.aborted || run?.signal.aborted) throw resumeError;
+            if (isFinalChatResponseError(resumeError)) {
+              submission.completed = true;
+              if (resumeError instanceof Error && resumeError.message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR) throw resumeError;
+              caught = resumeError;
+              break;
+            }
+            if (check < (replayable ? AIR.ROOM_RELOADS : 0)) continue;
+            if (!replayable) throw uncertainChatSubmission(provider);
+            submission.abandoned = true;
+            caught = exhaustedMotionRoom(provider);
+            if (attempt < AIR.ROOM_RETRIES) {
+              retryRoom = true;
+              replaceRoom = true;
+              log?.(AIR.RESTART(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+            }
+          }
         }
       }
-      const noInput = !limited && !captcha && limitText[0] === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
-      const transport = timedOut || AIR.TRANSPORT.test(limitText[0]) || noInput || limitText[0].includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(limitText[0]);
-      if (!captchaRetry && !limited && !submission.attempted && transport && attempt < AIR.ROOM_RETRIES) {
+      const currentError = _.toString(caught?.message);
+      terminalError = caught;
+      if (!captchaRetry && currentError === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR && !providerRecoveries.claim(recoveryKey, requestId)) {
+        clearTimeout(watchdog);
+        releaseGate();
+        releaseGate = _.noop;
+        log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
+        await providerRecoveries.wait(recoveryKey, requestId, AbortSignal.any(_.compact([signal, run?.signal])));
+      }
+      const noInput = !limited && !captcha && currentError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
+      const transport = (timedOut && !submission.completed && !submission.abandoned) || AIR.TRANSPORT.test(currentError) || currentError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || noInput || currentError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(currentError);
+      const retryableResponse = isChatAttachmentError(caught) || _.includes([CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR], _.toString(caught?.message));
+      if (!retryRoom && !captchaRetry && !limited && (!submission.attempted || submission.completed) && (transport || retryableResponse) && attempt < AIR.ROOM_RETRIES) {
         retryRoom = true;
-        log?.(AIR.RECOVER(provider, attempt + 1, AIR.ROOM_RETRIES), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+        log?.(attempt < AIR.ROOM_RELOADS ? AIR.RECOVER(provider, attempt + 1, AIR.ROOM_RELOADS) : AIR.REPLACE(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
       }
       if (!retryRoom && !captchaRetry && exec.strictProvider) {
         if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
-        const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
+        const error = timedOut && !submission.completed && !submission.abandoned ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
         log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(String(_.truncate(_.toString(error?.message), { length: 140 }))));
         throw error;
       }
       const unavailable = noInput && !!limitTo && !switchTo && attempt > 0;
       if (!retryRoom && !captchaRetry) {
-        if (noInput && attempt === 0) {
-          retryRoom = true;
-          log?.(MOTION_STORY_CONFIG.ROOM_RESTART_LOG(provider));
-        } else if (unavailable) {
+        if (unavailable) {
           log?.(MOTION_STORY_CONFIG.ROOM_UNAVAILABLE_LOG(provider, limitTo.provider));
           fallbackToLimit = !isBlocked(limitTo.provider);
           if (!fallbackToLimit && mode === AiPlanningExecutionMode.RoomOnly) throw caught;
@@ -850,9 +1103,6 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           log?.(MOTION_STORY_CONFIG.ROOM_LIMIT_LOG(provider, limitTo.provider));
           fallbackToLimit = !isBlocked(limitTo.provider);
           if (!fallbackToLimit && mode === AiPlanningExecutionMode.RoomOnly) throw caught;
-        } else if (!switchTo && !timedOut && _.toString(caught?.message) === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR && attempt < MOTION_STORY_CONFIG.ROOM_PROVIDER_RETRIES) {
-          retryRoom = true;
-          log?.(MOTION_STORY_CONFIG.ROOM_RETRY_LOG);
         } else {
           const error = timedOut ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
           log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(String(_.truncate(_.toString(error?.message), { length: 140 }))));
@@ -867,17 +1117,28 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     } finally {
       releaseGate();
       clearTimeout(watchdog);
+      submission.onAttempt = undefined;
       signal?.removeEventListener(MOTION_TEXT_ABORT, relay);
       run?.signal.removeEventListener(MOTION_TEXT_ABORT, relay);
+      if (!retryRoom && !captchaRetry) providerRecoveries.finish(recoveryKey, requestId, roomOk || signal?.aborted || run?.signal.aborted ? undefined : terminalError);
       if (run) {
-        if (!roomOk) await closeMotionAiRoom(run, workerId!);
+        if (!roomOk && !retryRoom && !captchaRetry) await closeMotionAiRoom(run, workerId!);
       } else {
         await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
       }
       cancelGlobalBrowserCleanup();
     }
-    if (captchaRetry) return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, attempt, state);
-    if (retryRoom) return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, attempt + 1, state);
+    if (captchaRetry) return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, attempt, state, contentRepair);
+    if (retryRoom) {
+      if (!replaceRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
+      else if (run) await closeMotionAiRoom(run, workerId!);
+      else await closeChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
+      submission.attempted = false;
+      submission.completed = false;
+      submission.abandoned = false;
+      submission.pending = undefined;
+      return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, replaceRoom ? AIR.ROOM_RETRIES : attempt + 1, state, contentRepair);
+    }
     if (fallbackToLimit) return runSwitched(limitTo);
     if (fallbackToSwitch) return runSwitched();
     if (fallbackToGemini) return runGeminiFallback();
@@ -890,10 +1151,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   return extractJson(text);
 };
 const slugKey = (s: string): string => _.trim(_.deburr(_.toString(s).replace(MP.VIETNAMESE_D_LOWER, MOTION_TEXT_D).replace(MP.VIETNAMESE_D_UPPER, MOTION_TEXT_D_2)).toLowerCase().replace(MP.SLUG_LOWER_INVALID, MOTION_TEXT_SYMBOL_30), MOTION_TEXT_SYMBOL_30).slice(0, 24) || MOTION_TEXT_NV;
-const TIMES = [MOTION_TEXT_DAY, MOTION_TEXT_DUSK, MOTION_TEXT_NIGHT, MOTION_TEXT_DAWN, MOTION_TEXT_OVERCAST, MOTION_TEXT_TOON_CAT_INTERIOR, MOTION_TEXT_INTERIOR_DARK];
-const WEATHERS = [MOTION_TEXT_NONE, MOTION_TEXT_RAIN, MOTION_TEXT_SNOW, MOTION_TEXT_FOG];
-const SHOTS = [MOTION_TEXT_WIDE, MOTION_TEXT_MEDIUM, MOTION_TEXT_CLOSE, MOTION_TEXT_OVER_SHOULDER, MOTION_TEXT_LOW, MOTION_TEXT_HIGH, MOTION_TEXT_AERIAL, MOTION_TEXT_INSERT];
-const VISUALS = [MOTION_TEXT_SCENE, MOTION_TEXT_TITLE, MOTION_TEXT_CHAPTER, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_TEXT_ENDING, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
+const { TIMES, WEATHERS, SHOTS, VISUALS } = MOTION_RESPONSE_VALUES;
 const MOTION_ANALYSIS_ATTEMPTS = MOTION_REFERENCE_CONFIG.ANALYSIS_ATTEMPTS;
 const sourceDirections = (source: MotionStorySource): string => {
   const parts: string[] = [MR.MOTION_TEXT_SOURCE_BOX_IT_MAY_MIX_THE_USER_S_DIRECTIONS_WANTED_VIDEO_FORMAT_T];
@@ -902,46 +1160,87 @@ const sourceDirections = (source: MotionStorySource): string => {
   if (source.kind === MR.MOTION_TEXT_ARTICLE) parts.push(MR.MOTION_TEXT_THE_INPUT_IS_AN_ARTICLE_BUILD_THE_VIDEO_FROM_ITS_FACTS_AND_STRUCT);
   return parts.join(MR.MOTION_TEXT_SYMBOL_27);
 };
-const LEDGER_MIN_CHARS = 100000;
-const LEDGER_CHUNK_CHARS = 35000;
-export const buildSourceLedger = async (source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi }): Promise<string> => {
-  if (source.kind === MR.MOTION_TEXT_BRIEF || source.text.length < LEDGER_MIN_CHARS) return MR.MOTION_TEXT_EMPTY;
-  const chunks: { from: number; to: number }[] = [];
-  let size = 0,
-    start = source.segments[0]?.t ?? 0;
-  source.segments.forEach((s, i) => {
-    size += s.text.length;
-    const next = source.segments[i + 1];
-    if (size >= LEDGER_CHUNK_CHARS || !next) {
-      chunks.push({ from: start, to: next ? next.t : Infinity });
-      size = 0;
-      start = next?.t ?? start;
-    }
-  });
+const LEDGER_MIN_CHARS = MOTION_PRODUCTION.LEDGER_MIN_CHARS;
+const readSourceLedger = async (source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<string> => {
+  if (source.text.length < LEDGER_MIN_CHARS) return MR.MOTION_TEXT_EMPTY;
+  const chunks = motionSourceChunks(source);
   opts.log?.(MR.MOTION_TEMPLATE_NGUON_DAI_K_KY_TU_DOC_THEO_PHAN_ROI_MOI_LAP_DAN_Y(Math.round(source.text.length / 1000), chunks.length));
   let failedParts = 0;
   const parts = await mapMotionAiPool(chunks, async (c, i) => {
-    const prompt = MR.MOTION_TEMPLATE_ACT_AS_A_CAREFUL_CONTENT_RESEARCHER_READ_PART_OF_A_LONG_TIMESTAMP(i + 1, chunks.length, source.title, sourceSlice(source, c.from, c.to));
+    const text = sourceSlice({ ...source, segments: c });
+    const key = motionInputKey([PROMPT.LEDGER_VERSION, source.title, c]);
+    const segments = c.map((segment, index) => ({ ...segment, id: key + ":" + index }));
+    const saved = opts.draft ? ((opts.draft.ledgerReadParts ||= {})[key] ||= { state: { rejected: 0, errors: [] } }) : { raw: undefined, state: { rejected: 0, errors: [] as string[] } };
+    const accepted = parseMotionSourceLedgerPart(saved.raw, segments, key);
+    if (accepted) return accepted;
+    const prompt = PROMPT.LEDGER_READ(source.title, i + 1, chunks.length, segments);
+    let part: MotionSourceLedgerNode | undefined;
     try {
-      const raw = await (opts.ai || runMotionAi)(prompt, MR.MOTION_TEXT_MOTION_STORY_LEDGER, opts.exec, opts.signal, opts.log);
-      const lines = _.compact(
-        _.map(_.castArray(raw?.events || []), (e: any) => {
-          const point = _.trim(_.toString(e?.point));
-          if (!point) return null;
-          const who = _.trim(_.toString(e?.who)),
-            quote = _.trim(_.toString(e?.quote));
-          return MR.MOTION_TEMPLATE_SYMBOL_303(_.toString(e?.t || MR.MOTION_TEXT_EMPTY), point, who ? MR.MOTION_TEMPLATE_SYMBOL_339(who) : MR.MOTION_TEXT_EMPTY, quote ? MR.MOTION_TEMPLATE_SYMBOL_340(quote) : MR.MOTION_TEXT_EMPTY).trim();
-        }),
-      );
-      if (lines.length) return lines.join(MR.MOTION_TEXT_SYMBOL_27);
+      const contract: MotionAiResponseContract = {
+        targetIds: segments.map((segment) => segment.id),
+        attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+        routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+        budget: MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS,
+        state: saved.state,
+        checkpoint: () => {
+          if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+        },
+        assess: (raw) => {
+          const value = parseMotionSourceLedgerPart(raw, segments, key);
+          if (value) saved.raw = raw;
+          return { value, errors: value ? [] : [PROMPT.LEDGER_INVALID] };
+        },
+        repair: (question, _value, errors) => PROMPT.LEDGER_REPAIR(question, errors),
+        failure: () => new Error(PROMPT.LEDGER_INVALID),
+      };
+      part = opts.ai ? await requestMotionAiContract(prompt, opts.exec, (question) => opts.ai!(question, MR.MOTION_TEXT_MOTION_STORY_LEDGER, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(prompt, MR.MOTION_TEXT_MOTION_STORY_LEDGER, opts.exec, opts.signal, opts.log, undefined, 0, contract);
     } catch (error) {
-      if (opts.signal?.aborted) throw error;
+      if ((isTerminalMotionAiError(error, opts.signal) && !_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED) && !_.get(error, MOTION_PRODUCTION.CONTRACT_ROUTE_EXHAUSTED)) || MOTION_PRODUCTION.SERVICE_ERROR_RE.test(String((error as Error)?.message))) throw error;
+    }
+    if (part) {
+      opts.signal?.throwIfAborted();
+      if (opts.draft) {
+        opts.onDraft?.(structuredClone(opts.draft));
+      }
+      return part;
     }
     failedParts++;
-    return _.truncate(sourceSlice(source, c.from, c.to), { length: 12000 });
+    return text;
   });
   opts.log?.(MR.MOTION_TEMPLATE_SO_SU_KIEN_PHAN(chunks.length, failedParts ? MR.MOTION_TEMPLATE_PHAN_DUNG_TRICH_DOAN_GOC(failedParts) : MR.MOTION_TEXT_EMPTY));
-  return parts.map((p, i) => MR.MOTION_TEMPLATE_PART(i + 1, chunks.length, p)).join(MR.MOTION_TEXT_SYMBOL_27);
+  const reductions = opts.draft ? (opts.draft.ledgerReductions ||= {}) : {};
+  return compactMotionSourceLedger(parts, {
+    map: mapMotionAiPool,
+    draft: reductions,
+    key: motionInputKey,
+    signal: opts.signal,
+    checkpoint: () => {
+      if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+    },
+    fallback: () => opts.log?.(PROMPT.LEDGER_COMPACT_FALLBACK),
+    request: async (prompt) => {
+      try {
+        return await (opts.ai || runMotionAi)(prompt, MR.MOTION_TEXT_MOTION_STORY_LEDGER, opts.exec, opts.signal, opts.log);
+      } catch (error) {
+        if (!isMotionContentResponseError(error)) throw error;
+        return undefined;
+      }
+    },
+  });
+};
+export const buildSourceLedger = (source: MotionStorySource, opts: Parameters<typeof readSourceLedger>[1]): Promise<string> => {
+  const run = motionAiRunStore.getStore();
+  if (!run) return readSourceLedger(source, opts);
+  const ledgers = (run.ledgers ||= new Map());
+  const key = videoDnaSourceKey(source);
+  const saved = ledgers.get(key);
+  if (saved) return saved;
+  const task = readSourceLedger(source, opts).catch((error) => {
+    ledgers.delete(key);
+    throw error;
+  });
+  ledgers.set(key, task);
+  return task;
 };
 const withMusicMood = (analysis: MotionStoryAnalysis, raw: any): MotionStoryAnalysis => {
   const moods = new Map<string, string | undefined>(_.map(_.castArray(raw?.chapters || []), (chapter: any, index: number): [string, string | undefined] => [_.toString(chapter?.id || index), musicMoodOf(chapter?.musicMood)]));
@@ -960,43 +1259,189 @@ const shortenDna = (v: unknown): unknown => {
   if (_.isPlainObject(v)) return _.mapValues(v as Record<string, unknown>, shortenDna);
   return v;
 };
-const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | undefined, source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi }): Promise<MotionVideoDna | undefined> => {
+export interface MotionAnalysisDraft {
+  folkTopic?: { contract?: MotionFolkStoryContract; raw?: any; state: import("./motionAiContractService.js").MotionAiContractState };
+  core?: { state: import("./motionAiContractService.js").MotionAiContractState; budget: number };
+  ledgerReadParts?: Record<string, { raw?: unknown; state: import("./motionAiContractService.js").MotionAiContractState }>;
+  ledgerReductions?: MotionSourceLedgerDraft;
+  ledgerParts?: Record<string, string>;
+  inputKey: string;
+  raw?: any;
+  rejected: number;
+  base?: MotionStoryAnalysis;
+  completed?: MotionStoryAnalysis;
+  creative?: { raw: any; state: import("./motionAiContractService.js").MotionAiContractState; needs?: Record<string, import("./motionAiContractService.js").MotionAiContractState>; repairRevision?: number; writingRevision?: number; budget?: number };
+  retune?: { inputKey?: string; raw?: any; rejected: number; errors: string[]; contract?: import("./motionAiContractService.js").MotionAiContractState; budget?: number };
+  profiles?: Record<string, { raw?: any; state: import("./motionAiContractService.js").MotionAiContractState }>;
+}
+const resolveMotionFolkContract = async (analysis: MotionStoryAnalysis, source: MotionStorySource, modelText: string, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<MotionFolkStoryContract> => {
+  const sourceKey = videoDnaSourceKey(source);
+  const original = (source.title || "") + "\n" + (source.text || "");
+  const valid = (value?: MotionFolkStoryContract) => value?.version === FOLK.VERSION && value.profileId === FOLK.PROFILE_ID && value.sourceKey === sourceKey && motionFolkTopicValid(value.topic, original);
+  if (valid(opts.draft?.folkTopic?.contract)) return opts.draft!.folkTopic!.contract!;
+  if (valid(analysis.folkStoryContract)) return analysis.folkStoryContract!;
+  const known = motionKnownFolkContract(source.title || "", source.text || "", sourceKey);
+  if (known) {
+    if (opts.draft) {
+      opts.draft.folkTopic = { contract: known, state: { rejected: 0, errors: [] } };
+      opts.onDraft?.(structuredClone(opts.draft));
+    }
+    return known;
+  }
+  const saved = opts.draft ? (opts.draft.folkTopic ||= { state: { rejected: 0, errors: [] } }) : { state: { rejected: 0, errors: [] }, raw: undefined as any, contract: undefined as MotionFolkStoryContract | undefined };
+  const input = (source.title || "") + "\n" + modelText;
+  const question = () => FOLK.TOPIC_PROMPT(input, saved.state.errors);
+  const contract: MotionAiResponseContract = {
+    attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    budget: MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS,
+    state: saved.state,
+    checkpoint: () => {
+      if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+    },
+    assess: (raw) => {
+      saved.raw = raw;
+      return { value: raw, errors: motionFolkTopicValid(raw, input) && original.includes(raw.evidence) ? [] : [FOLK.TOPIC_ERROR] };
+    },
+    repair: question,
+    failure: () => new Error(FOLK.TOPIC_FAILED),
+  };
+  const raw =
+    saved.raw && motionFolkTopicValid(saved.raw, input) && original.includes(saved.raw.evidence) ? saved.raw : opts.ai ? await requestMotionAiContract(question(), opts.exec, (prompt) => opts.ai!(prompt, FOLK.TOPIC_ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(question(), FOLK.TOPIC_ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
+  saved.contract = motionFolkTopicContract(raw, sourceKey);
+  if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+  return saved.contract;
+};
+interface MotionAnalysisRecovery {
+  draft?: MotionAnalysisDraft;
+  onDraft?: (draft: MotionAnalysisDraft) => void;
+}
+const enrichMotionDnaProfile = async (raw: any, settings: MotionVideoDnaSettings, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<any> => {
+  raw = { ...raw, videoDna: normalizeMotionDnaResponse(raw?.videoDna) };
+  if (!videoDnaProfileErrors(raw?.videoDna).length) return raw;
+  const context = { settings, title: raw.title, logline: raw.logline, chapters: raw.chapters?.map((chapter: any) => _.pick(chapter, ["id", "title", "summary"])), cast: raw.cast?.map((member: any) => _.pick(member, ["key", "name", "role", "age", "gender"])), core: _.pick(raw.videoDna, ["intent", "audience", "narrative", "evidence"]) };
+  const key = motionInputKey(context);
+  const saved = opts.draft ? ((opts.draft.profiles ||= {})[key] ||= { state: { rejected: 0, errors: [] } }) : { raw: undefined, state: { rejected: 0, errors: [] as string[] } };
+  const merge = (value: any) => ({ ...raw, videoDna: { ...raw.videoDna, ..._.pick(value, ["audienceProfile", "era", "format", "editDna", "narrativeDna", "influences"]), creativeProfile: { ...raw.videoDna?.creativeProfile, ...(Array.isArray(value?.creativeProfile?.strengths) ? { strengths: value.creativeProfile.strengths } : {}) } } });
+  if (saved.raw && !videoDnaProfileErrors(merge(saved.raw).videoDna).length) return merge(saved.raw);
+  if (saved.state.rejected >= MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS) return raw;
+  opts.log?.(PROMPT.DNA_PROFILE_LOG);
+  const prompt = () => (saved.raw ? motionDnaRepairPrompt(merge(saved.raw), videoDnaProfileErrors(merge(saved.raw).videoDna)) : PROMPT.DNA_PROFILE_PROMPT(VIDEO_DNA_PROFILE_INSTRUCTIONS, context, saved.state.errors));
+  const contract: MotionAiResponseContract = {
+    attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    budget: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    state: saved.state,
+    checkpoint: () => {
+      if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+    },
+    assess: (response) => {
+      const value = normalizeMotionDnaResponse(response?.videoDna || response);
+      const before = merge(saved.raw);
+      const merged = motionDnaRepairDraft(before, { videoDna: value }, videoDnaProfileErrors(before.videoDna));
+      const errors = videoDnaProfileErrors(merged.videoDna);
+      saved.raw = merged.videoDna;
+      if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+      return { value: merged, errors };
+    },
+    repair: prompt,
+    failure: () => new Error(PROMPT.DNA_PROFILE_PENDING),
+  };
+  try {
+    return opts.ai ? await requestMotionAiContract(prompt(), opts.exec, (question) => opts.ai!(question, PROMPT.DNA_PROFILE_ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(prompt(), PROMPT.DNA_PROFILE_ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
+  } catch (error) {
+    if (isTerminalMotionAiError(error, opts.signal) && !_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED)) throw error;
+    opts.log?.(PROMPT.DNA_PROFILE_PENDING);
+    return raw;
+  }
+};
+const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | undefined, source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<MotionVideoDna | undefined> => {
   if (!old?.settings) return undefined;
   const D = MOTION_STORY_DOCTOR;
   opts.log?.(D.LOG_DNA);
   const base = {
-    instructions: [VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(old.settings)].join(MR.MOTION_TEXT_SYMBOL_27),
-    directive: motionVideoGenreDirective(story.videoGenre, false),
-    story: JSON.stringify(_.pick(story, MOTION_DOCTOR_FIELDS.STORY)),
+    instructions: [PROMPT.DNA_CORE + JSON.stringify(old.settings), motionStoryLanguageGuide(old.settings.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+    directive: [motionVideoGenreDirective(story.videoGenre, false), story.folkStoryContract ? FOLK.CONTRACT_LABEL + JSON.stringify(story.folkStoryContract) : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+    story: JSON.stringify({ ..._.pick(story, MOTION_DOCTOR_FIELDS.STORY), sourceCore: story.sourceCore, storySpine: story.storySpine }),
     craft: (story.modelCraft || []).join(MR.MOTION_TEXT_SYMBOL_41),
     avoid: (story.modelAvoid || []).join(MR.MOTION_TEXT_SYMBOL_41),
     belief: story.folkBelief ? D.BELIEF(story.folkBelief) : undefined,
     previous: JSON.stringify(shortenDna(_.pick(old, D.DNA_PREVIOUS_KEYS))),
   };
-  let errors: string[] = [];
-  for (let attempt = 0; attempt < D.DNA_ATTEMPTS; attempt++) {
-    const raw = await (opts.ai || runMotionAi)(D.DNA_PROMPT({ ...base, errors: errors.length ? errors.slice(0, 8).join(MR.MOTION_TEXT_SYMBOL_41) : undefined }), D.DNA_ARTIFACT, opts.exec, opts.signal, opts.log).catch((error: any) => {
-      if (opts.signal?.aborted) throw error;
-      return null;
-    });
-    const dna = raw?.videoDna || raw;
-    errors = dna ? [...videoDnaErrors(dna), ...videoDnaProfileErrors(dna)] : [MR.MOTION_TEXT_NO_JSON_OBJECT_RETURNED];
-    if (!errors.length || (dna && !videoDnaErrors(dna).length && attempt === D.DNA_ATTEMPTS - 1)) {
-      const normalized = normalizeVideoDna(dna, old.settings, videoDnaSourceKey(source));
-      if (normalized) {
-        opts.log?.(D.LOG_DNA_OK);
-        return normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: old.settings.language } } : normalized;
-      }
-    }
-    if (attempt < D.DNA_ATTEMPTS - 1) opts.log?.(D.LOG_DNA_RETRY(_.truncate(errors.slice(0, 3).join(MR.MOTION_TEXT_SYMBOL_41), { length: 160 })));
+  const inputKey = motionInputKey(base);
+  const legacy = !!opts.draft?.retune && opts.draft.retune.inputKey === inputKey && !opts.draft.retune.contract;
+  if (opts.draft && opts.draft.retune?.inputKey !== inputKey) opts.draft.retune = { inputKey, rejected: 0, errors: [] };
+  const state = opts.draft ? (opts.draft.retune ||= { rejected: 0, errors: [] }) : { rejected: 0, errors: [] as string[], raw: undefined as any, contract: undefined as import("./motionAiContractService.js").MotionAiContractState | undefined, budget: undefined as number | undefined };
+  const contractState = (state.contract ||= { rejected: state.rejected, errors: state.errors });
+  if (state.raw) state.raw = normalizeMotionDnaResponse(state.raw);
+  state.budget ||= legacy ? D.DNA_ATTEMPTS : MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS;
+  const checkpoint = () => {
+    state.rejected = contractState.rejected;
+    state.errors = contractState.errors;
+    if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+  };
+  const question = () => (state.raw ? motionDnaRepairPrompt({ videoDna: state.raw }, videoDnaErrors(state.raw)) : withMotionResponsePrompt(D.DNA_ARTIFACT, D.DNA_PROMPT(base)));
+  const contract: MotionAiResponseContract = {
+    attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    budget: state.budget,
+    state: contractState,
+    checkpoint,
+    start: question,
+    assess: (response) => {
+      const raw = normalizeMotionDnaResponse(response?.videoDna || response);
+      state.raw = state.raw ? motionDnaRepairDraft({ videoDna: state.raw }, { videoDna: raw }, videoDnaErrors(state.raw)).videoDna : raw;
+      return { value: state.raw, errors: videoDnaErrors(state.raw) };
+    },
+    repair: question,
+    failure: () => new Error(D.ERR_DNA),
+  };
+  let dna: any;
+  try {
+    dna = state.raw && !videoDnaErrors(state.raw).length ? state.raw : opts.ai ? await requestMotionAiContract(question(), opts.exec, (prompt) => opts.ai!(prompt, D.DNA_ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(question(), D.DNA_ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
+  } catch (error) {
+    if ((isTerminalMotionAiError(error, opts.signal) && !_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED)) || MOTION_PRODUCTION.SERVICE_ERROR_RE.test(String((error as Error)?.message))) throw error;
+    opts.log?.(D.LOG_DNA_FAIL);
+    return undefined;
+  }
+  checkpoint();
+  const profiled = await enrichMotionDnaProfile({ ...story, videoDna: dna }, old.settings, opts);
+  const normalized = normalizeVideoDna(profiled.videoDna, old.settings, videoDnaSourceKey(source));
+  if (normalized) {
+    opts.log?.(D.LOG_DNA_OK);
+    return normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: old.settings.language } } : normalized;
   }
   opts.log?.(D.LOG_DNA_FAIL);
   return undefined;
 };
-export const developCreativeStory = async (analysis: MotionStoryAnalysis, source: MotionStorySource, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi }): Promise<MotionStoryAnalysis> => {
+export const developCreativeStory = async (analysis: MotionStoryAnalysis, source: MotionStorySource, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<MotionStoryAnalysis> => {
   if (!motionGenreCreative(analysis.videoGenre)) return analysis;
   const D = MOTION_STORY_DOCTOR;
   opts.log?.(D.LOG_START);
+  const saved: NonNullable<MotionAnalysisDraft["creative"]> = opts.draft ? (opts.draft.creative ||= { raw: {}, state: { rejected: 0, errors: [] } }) : { raw: {}, state: { rejected: 0, errors: [] as string[] } };
+  if (saved.writingRevision !== FOLK.VERSION) {
+    if (Object.keys(saved.raw || {}).length && saved.repairRevision === NEEDS.REVISION) {
+      saved.budget = Math.max(saved.budget || 0, saved.state.rejected) + MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS;
+      saved.state.routes = {};
+    }
+    saved.writingRevision = FOLK.VERSION;
+  }
+  if (saved.repairRevision !== NEEDS.REVISION) {
+    const legacy = Object.keys(saved.raw || {}).length > 0 && saved.state.errors.includes(CRAFT.ERR_ILLUSTRATION);
+    saved.budget = Math.max(saved.budget || 0, saved.state.rejected) + MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS;
+    saved.repairRevision = NEEDS.REVISION;
+    if (legacy) opts.log?.(NEEDS.MIGRATION(saved.state.rejected));
+    if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+  }
+  let draft: any = saved.raw;
+  let folkContract: MotionFolkStoryContract | undefined;
+  const storyErrors = (value: any) => [
+    ...motionStoryContractErrors(
+      value,
+      analysis.chapters.map((chapter) => chapter.id),
+    ).filter((error) => error !== CRAFT.ERR_ILLUSTRATION),
+    ...(folkContract ? motionFolkStoryErrors(value, folkContract, source.text || "") : []),
+  ];
+  let contractErrors: string[] = storyErrors(draft);
   try {
     const story = JSON.stringify({
       title: analysis.title,
@@ -1007,20 +1452,66 @@ export const developCreativeStory = async (analysis: MotionStoryAnalysis, source
     });
     const seconds = Math.round(_.sumBy(analysis.chapters, (c) => c.targetSeconds || 0)) || analysis.chapters.length * 150;
     const text = source.text || MR.MOTION_TEXT_EMPTY;
-    const step = Math.max(0, text.length - D.SAMPLE_WINDOW) / Math.max(1, D.SAMPLE_WINDOWS - 1);
-    const modelText = text.length <= D.SAMPLE_FULL ? text : _.map(_.range(D.SAMPLE_WINDOWS), (i) => text.slice(Math.round(i * step), Math.round(i * step) + D.SAMPLE_WINDOW)).join(D.MODEL_GAP);
+    const modelText = text.length <= CRAFT.SOURCE_LIMIT ? text : (await buildSourceLedger(source, opts)) || text;
+    folkContract = await resolveMotionFolkContract(analysis, source, modelText, opts);
+    opts.log?.(FOLK.TOPIC_LOG(folkContract.topic.name));
+    contractErrors = storyErrors(draft);
     const known = findFolkBeliefs([analysis.title, analysis.logline, text].join(MR.MOTION_TEXT_SYMBOL_27));
-    const promptInput = { directive: motionVideoGenreDirective(analysis.videoGenre), language: opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE, story, source: modelText, seconds, events: Math.max(3, Math.round(seconds / D.SECONDS_PER_EVENT)), ...(known.length ? { known: D.KNOWN_BELIEF(_.map(known, D.BELIEF)) } : {}) };
-    const usable = (r: any) => !!r?.chapters?.length && _.some(_.castArray(r?.cast || []), (c: any) => !!doctorText(c?.name, 60));
-    let raw: any = null;
-    for (let attempt = 0; attempt < D.ATTEMPTS && !usable(raw); attempt++) {
-      raw = await (opts.ai || runMotionAi)(D.PROMPT(promptInput), D.ARTIFACT, opts.exec, opts.signal, opts.log).catch((error: any) => {
-        if (opts.signal?.aborted) throw error;
-        opts.log?.(D.LOG_RETRY(_.truncate(_.toString(error?.message || error), { length: 140 })));
-        return null;
-      });
-    }
-    if (!usable(raw)) throw new Error(D.ERR_EMPTY);
+    const promptInput = {
+      directive: [motionFolkContractGuide(folkContract), FOLK.ALIGNMENT_RULE, puppetPackPlanningCapabilities(analysis.stylePreset)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      language: opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE,
+      story,
+      source: modelText,
+      seconds,
+      events: Math.max(3, Math.round(seconds / D.SECONDS_PER_EVENT)),
+      ...(known.length ? { known: D.KNOWN_BELIEF(_.map(known, D.BELIEF)) } : {}),
+    };
+    const ids = analysis.chapters.map((c) => c.id);
+    const repair = (_prompt: string, value: any, errors: string[]) => {
+      const pending = errors.length ? errors : storyErrors(value);
+      return [PROMPT.STORY_REPAIR(ids, motionStoryRepairFields(pending), value, pending, pending.includes(CRAFT.ERR_CORE) ? modelText : undefined), motionFolkContractGuide(folkContract), FOLK.ALIGNMENT_RULE, CRAFT.SCHEMA, motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
+    };
+    const contract: MotionAiResponseContract = {
+      attempts: D.ATTEMPTS,
+      routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+      budget: saved.budget,
+      state: saved.state,
+      checkpoint: (state) => {
+        saved.state = state;
+        if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+      },
+      start: (prompt) => (Object.keys(draft).length ? repair(prompt, draft, contractErrors) : prompt),
+      assess: (raw) => {
+        const errors = Object.keys(draft).length ? storyErrors(draft) : [];
+        draft = motionStoryDraft(scopeMotionFolkStoryRepair(raw, errors), draft, ids, Object.keys(draft).length ? motionStoryRepairFields(errors) : undefined);
+        contractErrors = storyErrors(draft);
+        saved.raw = draft;
+        if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+        return { value: draft, errors: contractErrors };
+      },
+      repair,
+      failure: (errors) => new Error(CRAFT.CONTRACT_ERROR(motionStoryIssueLabels(errors))),
+      rejected: async (raw, value, errors, route, attempt) => {
+        opts.log?.(CRAFT.LOG_REPAIR(attempt, motionStoryIssueLabels(errors)));
+        await writeMotionAiDebug(MOTION_TEMPLATE_SYMBOL_5(D.ARTIFACT, randomUUID().slice(0, 8)), { stage: CRAFT.CONTRACT_STAGE, artifact: D.ARTIFACT, provider: route.provider, model: route.model, attempt, errors, expectedChapterIds: ids, response: raw, draft: value });
+      },
+    };
+    const prompt = [D.PROMPT(promptInput), CRAFT.IDS + JSON.stringify(ids), PROMPT.ILLUSTRATION_AUDIT].join(MR.MOTION_TEXT_SYMBOL_27);
+    let raw = Object.keys(draft).length && !storyErrors(draft).length ? draft : opts.ai ? await requestMotionAiContract(prompt, opts.exec, (question) => opts.ai!(question, D.ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(prompt, D.ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
+    raw = await repairMotionIllustrationNeeds(raw, (saved.needs ||= {}), {
+      signal: opts.signal,
+      log: opts.log,
+      inventory: () => puppetPackPlanningCapabilities(analysis.stylePreset),
+      save: (value) => {
+        draft = value;
+        saved.raw = value;
+        if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
+      },
+      request: (question, part) => (opts.ai ? requestMotionAiContract(question, opts.exec, (message) => opts.ai!(message, NEEDS.ARTIFACT, opts.exec, opts.signal, opts.log), part, opts.signal) : runMotionAi(question, NEEDS.ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, part)),
+    });
+    if (closedPuppetPackId(analysis.stylePreset)) raw = normalizeMotionIllustrationNeeds(raw);
+    saved.raw = raw;
+    if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
     const byId = new Map<string, any>(_.map(_.castArray(raw?.chapters || []), (c: any) => [_.toString(c?.id), c] as [string, any]));
     let touched = 0;
     const chapters = _.map(analysis.chapters, (c) => {
@@ -1030,7 +1521,7 @@ export const developCreativeStory = async (analysis: MotionStoryAnalysis, source
       touched++;
       return _.omitBy({ ...c, title: doctorText(d.title, 80) || c.title, summary: doctorText(d.summary, 400) || c.summary, hook: doctorText(d.hook, D.TEXT_MAX) || c.hook, handoff: doctorText(d.handoff, D.TEXT_MAX) || c.handoff, keyPoints: keyPoints.length ? keyPoints : c.keyPoints }, _.isUndefined) as MotionChapter;
     });
-    if (!touched) throw new Error(D.ERR_EMPTY);
+    if (!touched) throw new Error(CRAFT.CONTRACT_ERROR(motionStoryIssueLabels([CRAFT.ERR_CHAPTERS])));
     const newCast = _.uniqBy(
       _.compact(
         _.map(_.castArray(raw?.cast || []), (c: any) => {
@@ -1038,7 +1529,10 @@ export const developCreativeStory = async (analysis: MotionStoryAnalysis, source
           if (!name) return null;
           const key = slugKey(_.toString(c?.key || c?.name));
           const role = doctorText(c?.role, 80);
-          return _.omitBy({ key, name, description: role, role, look: doctorText(c?.look, 300), gender: pickEnum([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE], c?.gender, undefined as any), age: pickEnum(MOTION_DOCTOR_FIELDS.AGES, c?.age, undefined as any), ...(key === D.NARRATOR_KEY ? { narrator: true } : {}) }, _.isNil) as unknown as MotionCastMember;
+          return _.omitBy(
+            { key, name, appearanceOf: c?.appearanceOf ? slugKey(c.appearanceOf) : undefined, description: role, role, look: doctorText(c?.look, 300), gender: pickEnum([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE], c?.gender, undefined as any), age: pickEnum(MOTION_DOCTOR_FIELDS.AGES, c?.age, undefined as any), ...(key === D.NARRATOR_KEY ? { narrator: true } : {}) },
+            _.isNil,
+          ) as unknown as MotionCastMember;
         }),
       ),
       MR.MOTION_TEXT_KEY,
@@ -1057,122 +1551,204 @@ export const developCreativeStory = async (analysis: MotionStoryAnalysis, source
     const strengths = _.take(_.compact(_.map(_.castArray(raw?.model?.strengths || []), (x) => doctorText(x, D.POINT_MAX))) as string[], D.LIST_MAX);
     const beliefList = (v: unknown) => _.take(_.compact(_.map(_.castArray(v || []), (x) => doctorText(x, D.POINT_MAX))) as string[], D.LIST_MAX);
     const beliefName = doctorText(raw?.belief?.name, 80);
-    const reference = (beliefName && knownFolkBelief(beliefName)) || (!beliefName ? known[0] : undefined);
+    const reference = knownFolkBelief(folkContract.topic.name);
     const folkBelief: MotionFolkBelief | undefined = reference ? reference : beliefName ? { name: beliefName, meaning: doctorText(raw?.belief?.meaning, D.NOTES_MAX) || MR.MOTION_TEXT_EMPTY, signs: beliefList(raw?.belief?.signs), taboos: beliefList(raw?.belief?.taboos), remedies: beliefList(raw?.belief?.remedies) } : undefined;
     if (strengths.length) opts.log?.(D.LOG_MODEL(doctorText(raw?.model?.theme, D.TEXT_MAX) || MR.MOTION_TEXT_EMPTY, strengths));
     opts.log?.(D.LOG_DONE(touched, cast.length, places.length, doctorText(raw?.notes, D.NOTES_MAX) || MR.MOTION_TEXT_EMPTY));
     const avoid = _.take(_.compact(_.map(_.castArray(raw?.model?.avoid || []), (x) => doctorText(x, D.POINT_MAX))) as string[], D.LIST_MAX);
     const retune = <T extends { mustPreserve: string[]; mustNotCopy: string[]; evidence: unknown[] }>(dna: T | undefined): T | undefined =>
       dna ? { ...dna, mustPreserve: strengths.length ? strengths : dna.mustPreserve, mustNotCopy: _.uniq([...(dna.mustNotCopy || []), ...avoid]), evidence: strengths.length ? _.map(strengths, (claim) => ({ claim, sourceClue: D.EVIDENCE_CLUE, confidence: D.EVIDENCE_CONFIDENCE })) : dna.evidence } : dna;
-    const story2 = { ...analysis, title: doctorText(raw?.title, 120) || analysis.title, logline: doctorText(raw?.logline, 400) || analysis.logline, chapters, cast: expandInitialCastNames(cast), places, facts: [], modelCraft: strengths, modelAvoid: avoid, ...(folkBelief ? { folkBelief } : {}), videoDna: undefined, creativeBlueprint: retune(analysis.creativeBlueprint) };
+    const story2 = acceptMotionIllustrationAudit(
+      {
+        ...analysis,
+        folkStoryContract: folkContract,
+        topicId: raw.topicId,
+        topicEvidence: structuredClone(raw.topicEvidence),
+        illustrationNeeds: Array.isArray(raw?.illustrationNeeds) ? structuredClone(raw.illustrationNeeds) : undefined,
+        title: doctorText(raw?.title, 120) || analysis.title,
+        logline: doctorText(raw?.logline, 400) || analysis.logline,
+        chapters,
+        cast: expandInitialCastNames(cast),
+        places,
+        facts: [],
+        ...motionStoryContract(raw),
+        modelCraft: strengths,
+        modelAvoid: avoid,
+        ...(folkBelief ? { folkBelief } : {}),
+        videoDna: undefined,
+        creativeBlueprint: retune(analysis.creativeBlueprint),
+      },
+      raw.illustrationAudit,
+    );
     if (!analysis.videoDna) return story2;
     const videoDna = await newStoryDna(story2, analysis.videoDna, source, opts);
     if (!videoDna) throw new Error(D.ERR_DNA);
     return { ...story2, videoDna };
   } catch (error: any) {
-    if (opts.signal?.aborted) throw error;
+    if (_.toString(error?.message).includes(NEEDS.PART_INVALID) || MOTION_PRODUCTION.SERVICE_ERROR_RE.test(_.toString(error?.message))) throw error;
+    if (isTerminalMotionAiError(error, opts.signal) && !_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED)) throw error;
     opts.log?.(D.LOG_FAIL(_.truncate(_.toString(error?.message || error), { length: 140 })));
-    throw new Error(_.toString(error?.message) === D.ERR_DNA ? D.ERR_DNA : D.ERR_FAILED);
+    throw Object.assign(new Error(_.toString(error?.message) === D.ERR_DNA ? D.ERR_DNA : contractErrors.length ? CRAFT.CONTRACT_FAILED(motionStoryIssueLabels(contractErrors)) : D.ERR_FAILED, { cause: error }), { [MOTION_PRODUCTION.CONTRACT_EXHAUSTED]: !!_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED) });
   }
 };
-export const analyzeStory = async (source: MotionStorySource, opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre; stylePreset?: string }): Promise<MotionStoryAnalysis> => {
+export const analyzeStory = async (
+  source: MotionStorySource,
+  opts: { styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre; stylePreset?: string } & MotionAnalysisRecovery,
+): Promise<MotionStoryAnalysis> => {
+  const inputKey = motionInputKey([source, opts.language, opts.length, opts.aspect, opts.exec, opts.styleReferences, opts.videoGenre, opts.stylePreset, opts.characterMotion]);
+  const draft: MotionAnalysisDraft = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft) : { inputKey, rejected: 0 };
+  const checkpoint = () => {
+    opts.signal?.throwIfAborted();
+    opts.onDraft?.(structuredClone(draft));
+  };
+  const develop = async (analysis: MotionStoryAnalysis) => {
+    draft.base = analysis;
+    checkpoint();
+    draft.completed = await developCreativeStory(analysis, source, { ...opts, draft });
+    checkpoint();
+    return draft.completed;
+  };
+  if (draft.completed && (!motionGenreCreative(opts.videoGenre) || draft.completed.folkStoryContract?.version === FOLK.VERSION)) return draft.completed;
+  if (draft.base) return develop(draft.base);
   const target = resolveTargetSeconds(source, opts.length);
   const settings: MotionVideoDnaSettings = { length: opts.length, targetSeconds: target, language: opts.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, aspect: opts.aspect || MR.MOTION_TEXT_16_9, drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN };
   const chapterCount = _.clamp(Math.round(target / 150), 1, 24);
   const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;
-  const ledger = await buildSourceLedger(source, opts);
+  const ledger = await buildSourceLedger(source, { ...opts, draft });
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
   const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
   const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...analysis, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre), ...(motionGenreCreative(opts.videoGenre) ? { factual: false } : {}) });
-  const genreDirective = motionVideoGenreDirective(opts.videoGenre);
-  const fullRequest =
-    MR.MOTION_TEMPLATE_SYMBOL_304(prompt, VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS, videoDnaInstructions(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote) +
-    MR.MOTION_TEXT_SYMBOL_27 +
-    (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
-    MR.MOTION_TEXT_SYMBOL_27 +
-    (genreDirective ? MR.MOTION_TEXT_SYMBOL_27 + genreDirective : MR.MOTION_TEXT_EMPTY) +
-    MR.MOTION_TEXT_SYMBOL_27 +
-    MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS));
-  let errors: string[] = [];
-  let lastRaw: any = null;
-  for (let attempt = 0; attempt < MOTION_ANALYSIS_ATTEMPTS; attempt++) {
-    if (attempt) await resetMotionAiRoom().catch(_.noop);
-    let raw: any;
-    try {
-      raw = normalizeMotionAnalysisResponse(await (opts.ai || runMotionAi)(fullRequest, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log));
-    } catch (error) {
-      if (opts.signal?.aborted || attempt === MOTION_ANALYSIS_ATTEMPTS - 1) throw error;
-      errors = [MR.MOTION_TEMPLATE_NO_VALID_JSON_RETURNED(_.truncate(_.toString((error as Error)?.message || error), { length: 160 }))];
-      opts.log?.(MR.MOTION_TEMPLATE_PHAN_TICH_LAN_LOI_THU_LAI(attempt + 1, errors[0]));
-      continue;
-    }
-    if (raw?.chapters) lastRaw = raw;
-    const baseErrors = raw ? videoDnaErrors(raw.videoDna) : [MR.MOTION_TEXT_NO_JSON_OBJECT_RETURNED];
-    errors = raw ? [...baseErrors, ...videoDnaProfileErrors(raw.videoDna)] : baseErrors;
-    if (errors.length && !baseErrors.length && attempt >= MOTION_ANALYSIS_ATTEMPTS - 2) {
-      opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA_CON_THIEU_MUC_HO_SO_DUNG_PHAN_DNA_DA_CO_DE_CHAY_TIEP(errors.length));
-      errors = [];
-    }
-    if (!errors.length) {
-      const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
-      const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
-      opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
-      return developCreativeStory(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target), raw)), source, opts);
-    }
-    opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA_THIEU_MUC_NHO_AI_SUA_TRONG_CUNG_PHONG_CHAT(errors.length, _.truncate(errors.slice(0, 3).join(MR.MOTION_TEXT_SYMBOL_41), { length: 160 })));
-  }
-  if (lastRaw?.chapters?.length) {
-    opts.log?.(MR.MOTION_TEXT_VIDEO_DNA_CHUA_HOAN_CHINH_SAU_NHIEU_LAN_SUA_CHAY_TIEP_THEO_CACH_C);
-    return developCreativeStory(finish(withMusicMood(normalizeAnalysis({ ..._.omit(lastRaw, [MR.MOTION_TEXT_VIDEODNA]), characterMotion: opts.characterMotion === true }, source, target), lastRaw)), source, opts);
-  }
-  throw new Error(MR.MOTION_TEMPLATE_INVALID_SOURCE_DERIVED_VIDEO_DNA(errors.join(MR.MOTION_TEXT_SYMBOL_41)));
+  const genreDirective = [motionVideoGenreDirective(opts.videoGenre, false), motionGenreCreative(opts.videoGenre) ? FOLK.SOURCE_ANALYSIS : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
+  const fullRequest = withMotionResponsePrompt(
+    MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
+    [prompt, PROMPT.DNA_CORE + JSON.stringify(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
+      MR.MOTION_TEXT_SYMBOL_27 +
+      (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
+      MR.MOTION_TEXT_SYMBOL_27 +
+      (genreDirective ? MR.MOTION_TEXT_SYMBOL_27 + genreDirective : MR.MOTION_TEXT_EMPTY) +
+      MR.MOTION_TEXT_SYMBOL_27 +
+      [MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)), motionStoryLanguageGuide(opts.language), puppetPackPlanningCapabilities(opts.stylePreset)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+  );
+  const legacy = !draft.core && draft.rejected > 0;
+  const core = (draft.core ||= { state: { rejected: draft.rejected, errors: draft.raw ? motionAnalysisResponseErrors(draft.raw) : [] }, budget: legacy ? MOTION_ANALYSIS_ATTEMPTS : MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS });
+  let lastRaw: any = draft.raw ? (draft.raw = normalizeMotionAnalysisResponse(draft.raw)) : undefined;
+  const question = () => (lastRaw ? motionAnalysisRepairPrompt(lastRaw, motionAnalysisResponseErrors(lastRaw), transcript) : fullRequest);
+  const contract: MotionAiResponseContract = {
+    attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
+    budget: core.budget,
+    state: core.state,
+    checkpoint: () => {
+      draft.rejected = core.state.rejected;
+      checkpoint();
+    },
+    start: question,
+    assess: (response) => {
+      const normalized = normalizeMotionAnalysisResponse(response);
+      const value = lastRaw ? motionAnalysisRepairDraft(lastRaw, normalized, motionAnalysisResponseErrors(lastRaw)) : normalized;
+      if (_.isPlainObject(value)) lastRaw = draft.raw = value;
+      const errors = value ? motionAnalysisResponseErrors(value) : [MR.MOTION_TEXT_NO_JSON_OBJECT_RETURNED];
+      return { value, errors };
+    },
+    repair: question,
+    failure: (errors) => new Error(MOTION_RESPONSE_TEXT.ANALYSIS_FAILED(errors)),
+  };
+  let raw =
+    lastRaw && !motionAnalysisResponseErrors(lastRaw).length ? lastRaw : opts.ai ? await requestMotionAiContract(fullRequest, opts.exec, (prompt) => opts.ai!(prompt, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(fullRequest, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log, undefined, 0, contract);
+  checkpoint();
+  raw = await enrichMotionDnaProfile(raw, settings, { ...opts, draft });
+  const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
+  const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
+  opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
+  return develop(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target), raw)));
 };
-export const editScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi }): Promise<{ beats: MotionBeat[]; edit: { reviewed: number; rewritten: number; notes: string[] } }> => {
+export const editScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; scope?: string }): Promise<{ beats: MotionBeat[]; edit: { reviewed: number; rewritten: number; notes: string[] } }> => {
   const dna = analysis.videoDna;
-  const groups: MotionChapter[][] = [];
-  let current: MotionChapter[] = [];
-  let chars = 0;
-  for (const chapter of analysis.chapters) {
-    const size = sourceSlice(source, chapter.from, chapter.to).length;
-    if (current.length && (current.length >= 4 || chars + size > 60000)) {
-      groups.push(current);
-      current = [];
-      chars = 0;
-    }
-    current.push(chapter);
-    chars += size;
-  }
-  if (current.length) groups.push(current);
-  const brief = JSON.stringify({ audience: dna?.audienceProfile, narrativeVoice: dna?.narrativeDna?.narrativeVoice || dna?.narrative.voice, callbacks: dna?.narrativeDna?.callbacks, mustPreserve: dna?.mustPreserve, mustNotCopy: dna?.mustNotCopy, ...(motionGenreCreative(analysis.videoGenre) ? { adaptation: MOTION_CREATIVE_EDITOR, folkBelief: analysis.folkBelief } : {}) });
+  const brief = JSON.stringify({
+    audience: dna?.audienceProfile,
+    narrativeVoice: dna?.narrativeDna?.narrativeVoice || dna?.narrative.voice,
+    callbacks: dna?.narrativeDna?.callbacks,
+    mustPreserve: dna?.mustPreserve,
+    mustNotCopy: dna?.mustNotCopy,
+    ...(motionGenreCreative(analysis.videoGenre) ? { adaptation: MOTION_CREATIVE_EDITOR, sourceCore: analysis.sourceCore, storySpine: analysis.storySpine, folkBelief: analysis.folkBelief } : {}),
+    ...(motionGenreCreative(analysis.videoGenre) ? { folkStoryContract: analysis.folkStoryContract } : {}),
+  });
   const byId = new Map(beats.map((b) => [b.id, b]));
   const notes: string[] = [];
   let rewritten = 0;
+  const editorPrompt = (lines: MotionBeat[]): string => {
+    const chapterIds = new Set(lines.map((line) => line.chapterId));
+    const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
+    const previous = JSON.stringify(beats.slice(Math.max(0, beats.indexOf(lines[0]) - 2), beats.indexOf(lines[0])).map((beat) => beat.narration));
+    const model = motionGenreCreative(analysis.videoGenre) ? chapters.map((chapter) => modelPart(analysis, chapter, source).slice(0, FOLK.REFERENCE_CHARS)).join(MR.MOTION_TEXT_SYMBOL_27) : chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceSlice(source, chapter.from, chapter.to))).join(MR.MOTION_TEXT_SYMBOL_27);
+    const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;
+    const review = JSON.stringify(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, ["speaker", "role", "text"])) } : {}) })));
+    const limit = Math.max(2, Math.ceil(lines.length * 0.15));
+    return withMotionResponsePrompt(
+      MOTION_STORY_EDIT_ARTIFACT,
+      motionGenreCreative(analysis.videoGenre) ? MOTION_STORY_DOCTOR.EDITOR_PROMPT({ brief, language, previous, lines: review, model, limit }) : [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+    );
+  };
+  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, FOLK.VERSION]);
+  const saved = recovery.read() || {};
+  const keys = new Map(beats.map((beat) => [beat.id, motionInputKey([editorPrompt([beat]), beat.utterances])]));
+  const apply = (beat: MotionBeat, narration: string, reason?: string, utterances?: MotionBeat["utterances"]): void => {
+    byId.set(beat.id, { ..._.omit(beat, MR.MOTION_TEXT_UTTERANCES), narration, ...(utterances?.length ? { utterances } : {}) });
+    rewritten++;
+    if (reason) notes.push(MR.MOTION_TEMPLATE_SYMBOL_306(beat.id, _.truncate(reason, { length: 140 })));
+  };
+  for (const beat of beats) if (saved[beat.id]?.inputKey === keys.get(beat.id) && saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances);
+  const groups = motionPromptGroups(
+    beats.filter((beat) => saved[beat.id]?.inputKey !== keys.get(beat.id)),
+    editorPrompt,
+    PROMPT.EDITOR_ITEMS,
+    undefined,
+    (before, next) => before.chapterId !== next.chapterId,
+  );
   await mapMotionAiPool(groups, async (group, gi) => {
     try {
-      const ids = new Set(group.map((c) => c.id));
-      const lines = beats.filter((b) => ids.has(b.chapterId));
-      if (!lines.length) return;
-      const before = beats.filter((b) => b.chapterId === analysis.chapters[_.findIndex(analysis.chapters, { id: group[0].id }) - 1]?.id).slice(-2);
-      const limit = Math.max(2, Math.ceil(lines.length * 0.15));
-      const transcript = group.map((c) => MR.MOTION_TEMPLATE_SOURCE(c.id, sourceSlice(source, c.from, c.to))).join(MR.MOTION_TEXT_SYMBOL_27);
-      const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE,
-        previous = JSON.stringify(before.map((b) => b.narration)),
-        review = JSON.stringify(lines.map((b) => ({ id: b.id, chapter: b.chapterId, visual: b.visual, narration: b.narration })));
-      const prompt = motionGenreCreative(analysis.videoGenre) ? MOTION_STORY_DOCTOR.EDITOR_PROMPT({ brief, language, previous, lines: review, model: transcript, limit }) : MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, transcript, limit);
-      const raw = await (opts.ai || runMotionAi)(prompt, MOTION_STORY_EDIT_ARTIFACT, opts.exec, opts.signal, opts.log);
+      const ids = new Set(group.map((beat) => beat.id));
+      const limit = Math.max(2, Math.ceil(group.length * 0.15));
+      const raw = await requestMotionEditorResponse(
+        editorPrompt(group),
+        group,
+        [MOTION_VOICE.NARRATOR, ...analysis.cast.map((member) => member.key)],
+        motionGenreCreative(analysis.videoGenre),
+        (question) => (opts.ai || runMotionAi)(question, MOTION_STORY_EDIT_ARTIFACT, opts.exec, opts.signal, opts.log),
+        opts.signal,
+        [motionStoryLanguageGuide(opts.language, true, true), ...(motionGenreCreative(analysis.videoGenre) ? [FOLK.PROFILE] : []), brief].join(MR.MOTION_TEXT_SYMBOL_27),
+      );
+      if (!Array.isArray(raw?.edits)) return;
+      const duplicates = new Set(raw.edits.filter((entry: any, index: number, all: any[]) => all.some((other, at) => at !== index && other?.id === entry?.id)).map((entry: any) => entry?.id));
       for (const e of _.take(_.castArray(raw?.edits || []), limit)) {
         const beat = byId.get(_.toString(e?.id));
         const narration = _.trim(_.toString(e?.narration));
-        if (!beat || !ids.has(beat.chapterId) || !narration || _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role))) continue;
+        if (!beat || duplicates.has(beat.id) || !ids.has(beat.id) || !narration || (motionGenreCreative(analysis.videoGenre) && motionFolkCopied(narration, source.text || ""))) continue;
+        if (motionGenreCreative(analysis.videoGenre) && motionFolkTextDrifts(narration, analysis.folkStoryContract, JSON.stringify([beat.narration, analysis.chapters.find((chapter) => chapter.id === beat.chapterId), motionFolkChapterContext(analysis, beat.chapterId)]))) continue;
+        const protectedSpeech = _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role));
+        let utterances: MotionBeat["utterances"];
+        if (protectedSpeech) {
+          if (!motionGenreCreative(analysis.videoGenre) || !Array.isArray(e.utterances) || e.utterances.length !== beat.utterances!.length || !e.utterances.every((line: any, index: number) => line?.speaker === beat.utterances![index].speaker && line?.role === beat.utterances![index].role && typeof line.text === "string" && !!line.text.trim())) continue;
+          utterances = normalizeMotionUtterances(
+            beat.utterances!.map((line, index) => ({ ...line, text: e.utterances[index].text })),
+            beat.id,
+            [MOTION_VOICE.NARRATOR, ...analysis.cast.map((member) => member.key)],
+            narration,
+          );
+          if (utterances.length !== beat.utterances!.length) continue;
+        }
         const ratio = narration.split(MP.WHITESPACE).length / Math.max(1, beat.narration.split(MP.WHITESPACE).length);
         if (ratio < MOTION_STORY_CONFIG.EDIT_RATIO_MIN || ratio > MOTION_STORY_CONFIG.EDIT_RATIO_MAX) continue;
-        byId.set(beat.id, { ..._.omit(beat, MR.MOTION_TEXT_UTTERANCES), narration: _.truncate(narration, { length: 600 }) });
-        rewritten++;
-        if (e?.reason) notes.push(MR.MOTION_TEMPLATE_SYMBOL_306(beat.id, _.truncate(_.toString(e.reason), { length: 140 })));
+        apply(beat, narration, e?.reason ? _.toString(e.reason) : undefined, utterances);
       }
+      for (const beat of group) {
+        const changed = byId.get(beat.id)!;
+        saved[beat.id] = { inputKey: keys.get(beat.id)!, ...(changed.narration !== beat.narration ? { narration: changed.narration, utterances: changed.utterances } : {}) };
+      }
+      recovery.save(saved);
     } catch (error) {
-      if (opts.signal?.aborted) throw error;
+      if (isTerminalMotionAiError(error, opts.signal)) throw error;
       opts.log?.(MR.MOTION_TEMPLATE_BIEN_TAP_NHOM_CHUONG_BO_QUA(gi + 1, getMotionErrorMessage(error, 100)));
     }
   });
@@ -1197,19 +1773,22 @@ const foldAdultChapters = (chapters: MotionChapter[]): MotionChapter[] => {
 };
 const OPENING_STYLES = [MR.MOTION_TEXT_A_CONCRETE_MOMENT_OR_IMAGE, MR.MOTION_TEXT_A_SURPRISING_FACT_OR_NUMBER, MR.MOTION_TEXT_A_CONTRAST_OR_A_TURN, MR.MOTION_TEXT_THE_REPORTED_WORDS_OR_ACTION_OF_A_PERSON_FROM_THE_SOURCE, MR.MOTION_TEXT_A_CALM_STATEMENT_THAT_CONTINUES_THE_PREVIOUS_THOUGHT, MR.MOTION_TEXT_A_QUESTION_ONLY_IF_IT_SOUNDS_NATURAL];
 export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number): MotionStoryAnalysis => {
+  const declaredNeeds = Array.isArray(raw?.illustrationNeeds) ? raw.illustrationNeeds : undefined;
+  const rawChapters = _.castArray(raw?.chapters || []);
+  const chapterIds = new Map<string, string>(rawChapters.map((chapter: any, index: number) => [_.toString(chapter?.id || MOTION_TEMPLATE_C_2(String(index + 1))), MOTION_TEMPLATE_C_2(String(index + 1))]));
   let chapters: MotionChapter[] = _.map(_.castArray(raw?.chapters || []), (c: any, i: number) => ({
     id: MOTION_TEMPLATE_C_2(String(i + 1)),
     title: _.truncate(_.toString(c?.title || MOTION_TEMPLATE_CHUONG(String(i + 1))), { length: 80 }),
-    summary: _.truncate(_.toString(c?.summary || MR.MOTION_TEXT_EMPTY), { length: 400 }),
+    summary: declaredNeeds?.length ? _.toString(c?.summary || MR.MOTION_TEXT_EMPTY) : _.truncate(_.toString(c?.summary || MR.MOTION_TEXT_EMPTY), { length: 400 }),
     from: _.isFinite(_.toNumber(c?.from)) ? _.toNumber(c.from) : undefined,
     to: _.isFinite(_.toNumber(c?.to)) ? _.toNumber(c.to) : undefined,
     ...(_.inRange(_.toNumber(c?.weight), 1, 5.01) ? { weight: Math.round(_.toNumber(c.weight)) } : {}),
     ...(c?.mustKeep === true ? { mustKeep: true } : {}),
     ...(_.trim(_.toString(c?.hook)) ? { hook: _.truncate(_.toString(c.hook), { length: 240 }) } : {}),
-    ...(_.isArray(c?.keyPoints) && c.keyPoints.length ? { keyPoints: _.take(_.compact(_.map(c.keyPoints, (k: unknown) => _.truncate(_.toString(k), { length: 200 }))), 8) } : {}),
+    ...(_.isArray(c?.keyPoints) && c.keyPoints.length ? { keyPoints: declaredNeeds?.length ? _.compact(_.map(c.keyPoints, (k: unknown) => _.toString(k))) : _.take(_.compact(_.map(c.keyPoints, (k: unknown) => _.truncate(_.toString(k), { length: 200 }))), 8) } : {}),
     ...(_.trim(_.toString(c?.handoff)) ? { handoff: _.truncate(_.toString(c.handoff), { length: 240 }) } : {}),
   }));
-  chapters = foldAdultChapters(chapters);
+  if (!declaredNeeds?.length) chapters = foldAdultChapters(chapters);
   if (_.isEmpty(chapters)) chapters = [{ id: MOTION_TEXT_C1, title: source.title, summary: MR.MOTION_TEXT_EMPTY, from: 0, to: source.sourceSeconds }];
   const spans = _.map(chapters, (c, i) => Math.max(10, (c.to ?? chapters[i + 1]?.from ?? source.sourceSeconds) - (c.from ?? 0)));
   const meanSpan = _.mean(spans) || 1;
@@ -1229,6 +1808,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
         return {
           key,
           name: _.truncate(_.toString(m.name), { length: 60 }),
+          ...(m.appearanceOf ? { appearanceOf: slugKey(m.appearanceOf) } : {}),
           role: _.truncate(_.toString(m.role || MR.MOTION_TEXT_EMPTY), { length: 60 }),
           description: _.truncate(_.toString(m.description || MR.MOTION_TEXT_EMPTY), { length: 200 }),
           look: _.truncate(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY), { length: 240 }),
@@ -1264,6 +1844,17 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
   const genre = normalizeMotionText(raw?.genre || MR.MOTION_TEXT_EMPTY, 80) || undefined;
   const genre2 = raw?.genre2 !== genre ? normalizeMotionText(raw?.genre2 || MR.MOTION_TEXT_EMPTY, 80) || undefined : undefined;
   return {
+    ...(declaredNeeds
+      ? {
+          illustrationNeeds: declaredNeeds.map((need: any) => ({
+            ...structuredClone(need),
+            chapterId: chapterIds.get(need?.chapterId) || need?.chapterId,
+            place: typeof need?.place === "string" ? slugKey(need.place) : need?.place,
+            states: Array.isArray(need?.states) ? need.states.map((state: any) => ({ ...state, char: typeof state?.char === "string" ? slugKey(state.char) : state?.char })) : need?.states,
+            objects: Array.isArray(need?.objects) ? need.objects.map((object: any) => ({ ...object, ...(typeof object?.owner === "string" ? { owner: slugKey(object.owner) } : {}) })) : need?.objects,
+          })),
+        }
+      : {}),
     title: _.truncate(_.toString(raw?.title || source.title), { length: 120 }),
     logline: _.truncate(_.toString(raw?.logline || MR.MOTION_TEXT_EMPTY), { length: 300 }),
     genre,
@@ -1310,7 +1901,7 @@ const chapterOutline = (analysis: MotionStoryAnalysis, chapter: MotionChapter): 
   const next = analysis.chapters[idx + 1];
   const series = analysis.series;
   const openingStyles: readonly string[] = motionGenreCreative(analysis.videoGenre) ? MOTION_STORY_DOCTOR.OPENING_STYLES : OPENING_STYLES;
-  const others = _.compact(_.map(analysis.chapters, (c, i) => (i === idx ? null : MR.MOTION_TEMPLATE_SYMBOL_312(c.id, c.title, (c.keyPoints || []).join(MR.MOTION_TEXT_SYMBOL_56) || c.summary)))).join(MR.MOTION_TEXT_SYMBOL_27);
+  const others = _.compact(_.map(analysis.chapters, (c, i) => (i === idx ? null : MR.MOTION_TEMPLATE_SYMBOL_312(c.id, c.title, c.hook || c.handoff || c.summary)))).join(MR.MOTION_TEXT_SYMBOL_27);
   return [
     MR.MOTION_TEXT_WHOLE_VIDEO_OUTLINE_PLANNED_ONCE_FOLLOW_IT_SO_THE_CHAPTERS_READ_A,
     MR.MOTION_TEMPLATE_THIS_CHAPTER_HOOK_MUST_COVER_ENDS_BY_HANDING_OVER(idx + 1, analysis.chapters.length, chapter.hook || MR.MOTION_TEXT_SYMBOL_19, (chapter.keyPoints || []).join(MR.MOTION_TEXT_SYMBOL_56) || chapter.summary, chapter.handoff || (next ? MR.MOTION_TEMPLATE_TOWARD(next.title) : MR.MOTION_TEXT_THE_ENDING)),
@@ -1330,14 +1921,63 @@ const modelPart = (analysis: MotionStoryAnalysis, chapter: MotionChapter, source
   const idx = Math.max(0, _.findIndex(analysis.chapters, { id: chapter.id }));
   return text.slice(Math.floor((text.length * idx) / n), Math.floor((text.length * (idx + 1)) / n));
 };
-const modelGuide = (analysis: MotionStoryAnalysis, chapter: MotionChapter, source: MotionStorySource): string => {
+const modelGuide = (analysis: MotionStoryAnalysis, chapter: MotionChapter): string => {
   const D = MOTION_STORY_DOCTOR;
-  const part = modelPart(analysis, chapter, source),
-    half = Math.floor(D.MODEL_EXCERPT / 2);
-  const excerpt = part.length <= D.MODEL_EXCERPT ? part : part.slice(0, half) + D.MODEL_GAP + part.slice(part.length - half);
-  return _.compact([analysis.folkBelief ? D.BELIEF(analysis.folkBelief) : null, analysis.modelCraft?.length ? D.MODEL_CRAFT(analysis.modelCraft) : null, analysis.modelAvoid?.length ? D.MODEL_AVOID(analysis.modelAvoid) : null, D.MODEL_NOTE + excerpt]).join(MR.MOTION_TEXT_SYMBOL_27);
+  return _.compact([CRAFT.WRITE, CRAFT.GUIDE + JSON.stringify(motionFolkChapterContext(analysis, chapter.id)), analysis.folkBelief ? D.BELIEF(analysis.folkBelief) : null, analysis.modelCraft?.length ? D.MODEL_CRAFT(analysis.modelCraft) : null, analysis.modelAvoid?.length ? D.MODEL_AVOID(analysis.modelAvoid) : null]).join(MR.MOTION_TEXT_SYMBOL_27);
 };
-export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; previous?: MotionBeat[]; previousSummary?: string; isFirst: boolean; isLast: boolean; ai?: typeof runMotionAi; speechRate?: number }): Promise<MotionBeat[]> => {
+interface MotionChapterWriteOptions {
+  repairState?: { rejected: number; errors: string[] };
+  language: string;
+  exec: MotionAiExecution;
+  signal?: AbortSignal;
+  log?: MotionAiLog;
+  previous?: MotionBeat[];
+  previousSummary?: string;
+  isFirst: boolean;
+  isLast: boolean;
+  ai?: typeof runMotionAi;
+  speechRate?: number;
+  draft?: MotionChapterDraft;
+  onDraft?: (draft: MotionChapterDraft) => void;
+  durationRepair?: boolean;
+  existing?: MotionBeat[];
+  section?: string;
+}
+export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
+  opts.signal?.throwIfAborted();
+  const creative = motionGenreCreative(analysis.videoGenre);
+  const expectedUnits = (chapter.targetSeconds || 120) * (opts.speechRate || (opts.language !== MOTION_TEXT_EN ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
+  const sourceText = creative ? modelPart(analysis, chapter, source) : sourceSlice(source, chapter.from, chapter.to);
+  const parts = motionChapterParts(chapter, analysis, sourceText, creative, expectedUnits);
+  if (!parts.length || opts.durationRepair || (opts.draft && !opts.draft.parts)) return writeChapterBeatsPart(source, analysis, chapter, opts);
+  const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.previousSummary, opts.isFirst, opts.isLast]);
+  const drafts = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft.parts || {}) : {};
+  const save = () => opts.onDraft?.({ inputKey, rows: [], pending: parts.flatMap((_part, index) => (drafts[String(index)]?.pending.length ? drafts[String(index)].pending.map((row) => ({ ...row, id: String(index) + ":" + row.id })) : drafts[String(index)]?.rows.length ? [] : [{ id: String(index), fields: [...CHAPTER_REPAIR.FIELDS] }])), parts: structuredClone(drafts) });
+  save();
+  opts.log?.(PROMPT.CHAPTER_PART_LOG(chapter.id, parts.length));
+  const completed: MotionBeat[] = [];
+  for (const [index, part] of parts.entries()) {
+    opts.signal?.throwIfAborted();
+    const section = PROMPT.CHAPTER_PART(index, parts.length, part.points, parts[index - 1]?.points.at(-1), parts[index + 1]?.points[0]);
+    const partChapter = { ...chapter, targetSeconds: part.seconds, ...(creative ? { summary: part.points.join(MR.MOTION_TEXT_SYMBOL_27), keyPoints: part.points } : {}) };
+    const partSource = creative ? source : { ...source, text: part.source, segments: [{ t: chapter.from || 0, text: part.source }] };
+    const result = await writeChapterBeatsPart(partSource, analysis, partChapter, {
+      ...opts,
+      section,
+      isFirst: opts.isFirst && index === 0,
+      isLast: opts.isLast && index === parts.length - 1,
+      previous: completed.length ? completed : opts.previous,
+      draft: drafts[String(index)],
+      onDraft: (draft) => {
+        drafts[String(index)] = draft;
+        save();
+      },
+    });
+    completed.push(...result);
+  }
+  return normalizeBeats(completed, chapter.id, analysis);
+};
+const writeChapterBeatsPart = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
   const isVi = opts.language !== MOTION_TEXT_EN;
   const seconds = chapter.targetSeconds || 120;
   const units = Math.round(seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND)) * MOTION_STORY_CONFIG.LENGTH_SAFETY);
@@ -1348,14 +1988,14 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
   const prompt = MOTION_GEN_CHAPTER_PROMPT({
     preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY), SOURCE_READING_RULES),
     role: chapterRole(analysis),
-    outline: chapterOutline(analysis, chapter),
+    outline: opts.section || chapterOutline(analysis, chapter),
     genre: MR.MOTION_TEXT_EMPTY,
     title: analysis.title,
     logline: analysis.logline,
     chapterId: chapter.id,
     chapterTitle: chapter.title,
     chapterSummary: chapter.summary,
-    languageNote: MR.MOTION_TEMPLATE_WRITE_NATURAL((analysis.videoDna || analysis.creativeBlueprint)?.narrative.voice || MR.MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT, language),
+    languageNote: [MR.MOTION_TEMPLATE_WRITE_NATURAL((analysis.videoDna || analysis.creativeBlueprint)?.narrative.voice || MR.MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT, language), motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     language,
     units,
     unitName,
@@ -1365,64 +2005,119 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
     firstNote: opts.isFirst ? (analysis.series?.previous ? MOTION_SERIES_PROMPT.FIRST(analysis.series.index + 1, analysis.series.count, analysis.series.previous) : MR.MOTION_TEXT_OPEN_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY) : MR.MOTION_TEXT_EMPTY,
     lastNote: opts.isLast ? (analysis.series?.next ? MOTION_SERIES_PROMPT.LAST(analysis.series.index + 1, analysis.series.count, analysis.series.next) : MR.MOTION_TEXT_END_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY_) : MR.MOTION_TEXT_EMPTY,
     previous: prev ? MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED_2(String(prev)) : MR.MOTION_TEXT_EMPTY,
-    rules: _.compact([MOTION_GEN_STORYBOARD_RULES(language), MOTION_CAST_NAMES.RULE, MOTION_STORY_VOICE_PROMPT, motionAudioContext(null, analysis), motionVideoGenreDirective(analysis.videoGenre)]).join(MR.MOTION_TEXT_SYMBOL_27),
+    rules: _.compact([
+      closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_SCENES : MOTION_GEN_STORYBOARD_RULES(language),
+      MOTION_CAST_NAMES.RULE,
+      PROMPT.CHAPTER_VOICE,
+      motionAudioContext(null, analysis),
+      analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + JSON.stringify(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id)) : null,
+      closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_GENRE + JSON.stringify({ videoGenre: analysis.videoGenre, genre: analysis.genre, factual: analysis.factual }) : motionVideoGenreDirective(analysis.videoGenre),
+      motionGenreCreative(analysis.videoGenre) ? motionFolkContractGuide(analysis.folkStoryContract) : null,
+      puppetPackChapterCapabilities(analysis.stylePreset),
+    ]).join(MR.MOTION_TEXT_SYMBOL_27),
     cast: _.map(analysis.cast, (c) => MOTION_TEMPLATE_SYMBOL_54(String(c.key), String(c.name) + (c.alias ? MOTION_CAST_NAMES.ALIAS(c.alias) : MR.MOTION_TEXT_EMPTY), String(c.role || MR.MOTION_TEXT_EMPTY), String(c.look || c.description || MR.MOTION_TEXT_EMPTY))).join(MOTION_TEXT_SYMBOL_27) || MOTION_TEXT_NONE_2,
     places: _.map(analysis.places, (p) => MOTION_TEMPLATE_SYMBOL_55(String(p.key), String(p.name), String(p.description))).join(MOTION_TEXT_SYMBOL_27),
-    transcript: motionGenreCreative(analysis.videoGenre) ? modelGuide(analysis, chapter, source) : sourceSlice(source, chapter.from, chapter.to),
+    transcript: motionGenreCreative(analysis.videoGenre) ? modelGuide(analysis, chapter) : sourceSlice(source, chapter.from, chapter.to),
     ...(motionGenreCreative(analysis.videoGenre) ? { transcriptLabel: MOTION_STORY_DOCTOR.GUIDE_LABEL } : {}),
   });
-  let lastError: unknown;
-  let best: MotionBeat[] | null = null;
   const factual = !motionGenreCreative(analysis.videoGenre) && (analysis.videoDna?.format?.factual ?? analysis.factual) !== false && source.kind !== MR.MOTION_TEXT_BRIEF;
   const quotesIndex = factual ? transcriptIndex(source.text) : null;
   const request = MR.MOTION_TEMPLATE_SYMBOL_325(prompt, analysis.videoDna ? VIDEO_SCENE_PLAN_INSTRUCTIONS : MR.MOTION_TEXT_EMPTY, MR.MOTION_TEXT_EMPTY);
   const expectedUnits = seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
   const spokenOf = (list: MotionBeat[]) => list.reduce((sum, beat) => sum + beat.narration.split(MP.WHITESPACE).filter(Boolean).length, 0);
-  let feedback: string = MR.MOTION_TEXT_EMPTY,
-    bestGap = Infinity;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      if (attempt) await resetMotionAiRoom().catch(_.noop);
-      const raw = await (opts.ai || runMotionAi)(feedback ? MR.MOTION_TEMPLATE_SYMBOL_315(request, feedback) : request, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log);
-      const rawBeats = _.castArray(raw?.beats || []);
-      const normalized = normalizeBeats(rawBeats, chapter.id, analysis);
-      if (normalized.length < 1) throw new Error(MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO_2);
-      const fixed = quotesIndex && quoteErrors(rawBeats, quotesIndex).length ? unattributeUnverifiedQuotes(normalized, quotesIndex) : { beats: normalized, changed: 0 };
-      if (fixed.changed) opts.log?.(MR.MOTION_TEMPLATE_BO_GHI_TEN_CAU_TRICH_KHONG_CO_TRONG_NGUON(fixed.changed));
-      const beats = fixed.beats;
-      const spokenUnits = spokenOf(beats),
-        gap = Math.abs(spokenUnits - expectedUnits);
-      if (gap < bestGap) {
-        best = beats;
-        bestGap = gap;
-      }
-      const advisory = analysis.videoDna ? rawBeats.flatMap((beat: any, i: number) => (!beat.visual || beat.visual === MR.MOTION_TEXT_SCENE ? scenePlanErrors(beat.scenePlan).map((error) => MR.MOTION_TEMPLATE_BEAT_2(i + 1, error)) : [])).slice(0, 6) : [];
-      if (advisory.length) opts.log?.(MOTION_QA_MESSAGES.ADVISORY(advisory));
-      const problems: string[] = [];
-      if (analysis.videoDna && (spokenUnits < expectedUnits * 0.65 || spokenUnits > expectedUnits * 1.35)) problems.push(MR.MOTION_TEMPLATE_NARRATION_LENGTH_DOES_NOT_RESPECT_THE_SELECTED_VIDEO_DURATION_WOR(spokenUnits, seconds, units));
-      if (problems.length) {
-        feedback = MOTION_STORY_CONFIG.CHAPTER_RETRY_NOTE(problems.join(MR.MOTION_TEXT_SYMBOL_41), spokenUnits, units);
-        throw new Error(problems.join(MR.MOTION_TEXT_SYMBOL_41));
-      }
-      return beats;
-    } catch (error) {
-      if (opts.signal?.aborted) throw error;
-      lastError = error;
-      opts.log?.(MOTION_TEMPLATE_CHUONG_LOI_THU_LAI(String(chapter.id), String(getMotionErrorMessage(error, 120))));
+  const inputKey = motionInputKey([request, expectedUnits]);
+  const perBeat = Math.max(8, Math.round(units / beatsWanted));
+  const legacyRequest = request.replace(QA.CHAPTER_LENGTH_RULE(units, unitName, seconds, beatsWanted, perBeat), QA.LEGACY_CHAPTER_LENGTH_RULE(units, unitName, seconds, beatsWanted, perBeat));
+  let draft = opts.draft && [inputKey, motionInputKey([legacyRequest, expectedUnits])].includes(opts.draft.inputKey) ? { ...structuredClone(opts.draft), inputKey } : undefined;
+  if (!draft && opts.durationRepair && opts.existing?.length) {
+    const rows = mergeMotionChapterDraft({ beats: opts.existing }, chapter.id);
+    draft = { inputKey, rows, pending: motionChapterPending(rows, expectedUnits, MOTION_PRODUCTION.DURATION_TEXT_TOLERANCE), ...(opts.repairState ? { repairState: structuredClone(opts.repairState) } : {}) };
+  }
+  const assess = (raw: any) => {
+    const rawBeats = mergeMotionChapterDraft(raw, chapter.id, draft);
+    const pending = motionChapterPending(rawBeats, opts.durationRepair ? expectedUnits : undefined, opts.durationRepair ? MOTION_PRODUCTION.DURATION_TEXT_TOLERANCE : undefined);
+    const responseIssues = motionChapterResponseIssues(
+      rawBeats,
+      analysis.cast.map((member) => member.key),
+      analysis.places.map((place) => place.key),
+      !!closedPuppetPackId(analysis.stylePreset),
+    );
+    for (const item of responseIssues) {
+      const fields = [...new Set(item.issues.map((issue) => issue.path.split(/[.\[]/)[0]))];
+      const existing = pending.find((row) => row.id === item.id);
+      if (existing) existing.fields = [...new Set([...existing.fields, ...fields])];
+      else pending.push({ id: item.id, fields });
     }
+    const copied = motionGenreCreative(analysis.videoGenre) ? rawBeats.filter((beat) => motionFolkCopied(beat.narration, source.text || "")) : [];
+    const drifted = motionGenreCreative(analysis.videoGenre) ? rawBeats.filter((beat) => motionFolkTextDrifts(beat.narration, analysis.folkStoryContract, JSON.stringify([chapter, motionFolkChapterContext(analysis, chapter.id)]))) : [];
+    for (const beat of [...copied, ...drifted]) {
+      const row = pending.find((item) => item.id === beat.id);
+      if (row) row.fields = [...new Set([...row.fields, "narration", "utterances"])];
+      else pending.push({ id: beat.id, fields: ["narration", "utterances"] });
+    }
+    draft = { inputKey, rows: rawBeats, pending, ...(draft?.repairState ? { repairState: draft.repairState } : {}) };
+    opts.onDraft?.(structuredClone(draft));
+    const normalized = normalizeBeats(rawBeats, chapter.id, analysis);
+    if (normalized.length < 1) return { value: undefined, errors: [MOTION_TEXT_CHUONG_KHONG_CO_BEAT_NAO_2] };
+    const fixed = quotesIndex && quoteErrors(rawBeats, quotesIndex).length ? unattributeUnverifiedQuotes(normalized, quotesIndex) : { beats: normalized, changed: 0 };
+    if (fixed.changed) opts.log?.(MR.MOTION_TEMPLATE_BO_GHI_TEN_CAU_TRICH_KHONG_CO_TRONG_NGUON(fixed.changed));
+    const beats = fixed.beats;
+    const spokenUnits = spokenOf(beats);
+    if (!opts.durationRepair && expectedUnits > 0 && (spokenUnits < expectedUnits * QA.CHAPTER_MIN_RATIO || spokenUnits > expectedUnits * QA.CHAPTER_MAX_RATIO)) opts.log?.(QA.CHAPTER_LENGTH_WARNING(chapter.id, spokenUnits, expectedUnits));
+    const advisory = analysis.videoDna ? rawBeats.flatMap((beat: any, i: number) => (!beat.visual || beat.visual === MR.MOTION_TEXT_SCENE ? scenePlanErrors(beat.scenePlan).map((error) => MR.MOTION_TEMPLATE_BEAT_2(i + 1, error)) : [])).slice(0, 6) : [];
+    if (advisory.length) opts.log?.(MOTION_QA_MESSAGES.ADVISORY(advisory));
+    const problems: string[] = [];
+    for (const item of responseIssues) problems.push(...item.issues.map((issue) => MOTION_RESPONSE_TEXT.EXPECTED(item.id + "." + issue.path, issue.expected, issue.actual)));
+    if (copied.length) problems.push(...copied.map((beat) => FOLK.COPY_ERROR(beat.id)));
+    if (drifted.length) problems.push(...drifted.map((beat) => FOLK.DRIFT_ERROR(beat.id)));
+    if (pending.some((item) => !rawBeats.find((beat) => beat.id === item.id)?.narration?.trim())) problems.push(QA.NARRATION_MISSING);
+    if (pending.some((item) => item.fields.length === 1 && item.fields[0] === "utterances" && !responseIssues.some((beat) => beat.id === item.id))) problems.push(QA.SPEECH_MISMATCH);
+    if (opts.durationRepair && pending.some((item) => item.targetUnits !== undefined)) problems.push(QA.DURATION_REPAIR_REQUIRED(spokenUnits, seconds, expectedUnits));
+    return { value: beats, errors: problems };
+  };
+  const repairPrompt = () =>
+    draft?.rows.length
+      ? motionChapterRepairPrompt(draft.rows, draft.pending, {
+          title: analysis.title,
+          logline: analysis.logline,
+          language: opts.language,
+          chapter,
+          previous: prev,
+          next: analysis.chapters[analysis.chapters.findIndex((item) => item.id === chapter.id) + 1],
+          cast: analysis.cast.map((item) => _.pick(item, ["key", "name", "role", "gender", "age"])),
+          places: analysis.places.map((item) => _.pick(item, ["key", "name", "description"])),
+          responseIssues: motionChapterResponseIssues(
+            draft.rows,
+            analysis.cast.map((member) => member.key),
+            analysis.places.map((place) => place.key),
+            !!closedPuppetPackId(analysis.stylePreset),
+          ),
+          ...motionFolkChapterContext(analysis, chapter.id),
+          ...(motionGenreCreative(analysis.videoGenre) ? { writingProfile: FOLK.PROFILE, originality: FOLK.COPY_ERROR(chapter.id) } : {}),
+          ...(factual && draft.pending.some((item) => !draft!.rows.find((row) => row.id === item.id)?.narration?.trim()) ? { source: sourceSlice(source, chapter.from, chapter.to) } : {}),
+        })
+      : request;
+  if (draft?.rows.length) {
+    const restored = assess({ beats: [] });
+    if (!restored.errors.length && restored.value) return restored.value;
   }
-  if (best) {
-    opts.log?.(MR.MOTION_TEMPLATE_CHUONG_DUNG_BAN_TOT_NHAT_SAU_3_LAN_SUA(chapter.id, MR.MOTION_TEXT_EMPTY));
-    return best;
-  }
-  const lines = _.compact([chapter.hook, ...(chapter.keyPoints || []).map((k) => k.replace(MP.TRANSCRIPT_TIME_PREFIX, MR.MOTION_TEXT_EMPTY)), chapter.summary, chapter.handoff]).slice(0, Math.max(2, beatsWanted));
-  if (!lines.length) throw lastError;
-  opts.log?.(MR.MOTION_TEMPLATE_CHUONG_AI_KHONG_TRA_DUOC_KICH_BAN_TAO_CHUONG_DON_GIAN_TU_DAN_Y_DE(chapter.id));
-  return normalizeBeats(
-    _.map(lines, (narration) => ({ narration, visual: MR.MOTION_TEXT_SCENE, shot: MR.MOTION_TEXT_WIDE, action: chapter.title })),
-    chapter.id,
-    analysis,
-  );
+  const contract: MotionAiResponseContract = {
+    attempts: CHAPTER_REPAIR.ATTEMPTS,
+    targetIds: [chapter.id],
+    state: draft?.repairState,
+    checkpoint: (state) => {
+      if (draft) {
+        draft.repairState = state;
+        opts.onDraft?.(structuredClone(draft));
+      }
+    },
+    start: repairPrompt,
+    assess,
+    repair: repairPrompt,
+    failure: (errors) => new Error(errors.join(MR.MOTION_TEXT_SYMBOL_41)),
+    rejected: (_raw, _value, errors) => opts.log?.(MOTION_TEMPLATE_CHUONG_LOI_THU_LAI(String(chapter.id), errors.join(MR.MOTION_TEXT_SYMBOL_41))),
+  };
+  return opts.ai ? requestMotionAiContract(request, opts.exec, (question) => opts.ai!(question, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log), contract, opts.signal) : runMotionAi(request, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log, undefined, 0, contract);
 };
 export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: MotionStoryAnalysis): MotionBeat[] => {
   const castKeys = _.map(analysis.cast, MOTION_TEXT_KEY);
@@ -1438,14 +2133,20 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
   const castOf = (k: string) => matchOf(analysis.cast, k)?.key;
   const placeOf = (k: string) => matchOf(analysis.places, k)?.key;
   const out: MotionBeat[] = [];
+  const usedIds = new Set<string>();
   _.forEach(rawBeats, (b: any) => {
     const narration = fullCastNames(_.trim(_.toString(b?.narration || MR.MOTION_TEXT_EMPTY)), analysis.cast);
     if (!narration) return;
-    const id = MOTION_TEMPLATE_B(String(chapterId), String(out.length + 1));
+    const supplied = typeof b?.id === "string" && PROMPT.ID.VALID.test(b.id) ? b.id : undefined;
+    const baseId = supplied || [chapterId, PROMPT.ID.PREFIX + motionInputKey([chapterId, narration, b?.sourceRange, b?.scenePlan?.purpose]).slice(0, PROMPT.ID.HASH_CHARS)].join(PROMPT.ID.SEPARATOR);
+    let id = baseId,
+      occurrence = 1;
+    while (usedIds.has(id)) id = baseId + PROMPT.ID.SEPARATOR + ++occurrence;
+    usedIds.add(id);
     const shots = _.filter(_.castArray(b?.shots || []), (sh) => _.isPlainObject(sh));
     const v = shots.length ? { ...shots[0], ...b, visual: b.visual || shots[0].visual } : b;
     const visual = pickEnum(VISUALS, v?.visual, MOTION_TEXT_SCENE);
-    const beat: MotionBeat = { id, chapterId, narration: _.truncate(narration, { length: 600 }), visual };
+    const beat: MotionBeat = { id, chapterId, narration, visual };
     const utterances = motionNarratorLines(normalizeMotionUtterances(b?.utterances, id, [MOTION_VOICE.NARRATOR, ...castKeys], beat.narration), motionNarratorCastKey(analysis), beat.narration);
     if (utterances.length) beat.utterances = _.map(utterances, (u) => ({ ...u, text: fullCastNames(u.text, analysis.cast) }));
     const sceneMood = normalizeMotionSceneMood(b?.sceneMood);

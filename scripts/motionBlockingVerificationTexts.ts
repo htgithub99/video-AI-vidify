@@ -126,7 +126,7 @@ export const B = {
     {
       id: "mirrored-bed",
       text: "A đứng cuối giường, B nằm trên giường đã lật hướng.",
-      scene: "mirrored-reader",
+      scene: "mirrored_reader",
       focus: "b",
       states: [
         { char: "a", action: "stand", support: "bed_foot", target: "b" },
@@ -154,7 +154,7 @@ export const B = {
   BABY: "baby",
   HIDDEN: "hidden",
   READER: "reader",
-  MIRROR: "mirrored-reader",
+  MIRROR: "mirrored_reader",
   BAD_SHOT: "close",
   REST_TOOL: "wooden_chisel",
   BOAT: "boat",

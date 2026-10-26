@@ -4,13 +4,20 @@ import { useEffect, useMemo, useState, type FC } from "react";
 import * as MR from "../../constants/motionRuntime.js";
 import { API_ROUTES } from "../../constants/apiRoutes";
 import { PUPPET as P, PUPPET_KIT_API, PUPPET_TEXTS, PUPPET_TYPES, PUPPET_UI as UI } from "../../constants/motionPuppet.js";
-import { collectPuppetLines } from "../../lib/motionPuppet.js";
+import { collectPuppetVisualLines } from "../../lib/motionStoryboard.js";
 import type { MotionSpec, MotionStoryAnalysis, MotionStoryScript } from "../../types/motionVideo";
-import type { PuppetFrame, PuppetFrameActor } from "../../types/motionPuppet";
+import type { PuppetFrame, PuppetFrameActor, PuppetAssetPreview } from "../../types/motionPuppet";
+import { useMotionAssetPreviews } from "../../hooks/useMotionAssetPreviews.js";
+import { MotionAssetImage } from "./MotionAssetImage.js";
+import { MOTION_ASSET_PREVIEW as PREVIEW } from "../../constants/motionAssetPreview.js";
 import { Button } from "../ui/Button";
 import { genPreviewUrl, motionRequest } from "./motionApi";
-
-interface SheetItem { t: number; text: string; file: string; }
+interface SheetItem {
+  lines?: string[];
+  t: number;
+  text: string;
+  file: string;
+}
 interface Props {
   lang: string;
   script: MotionStoryScript;
@@ -20,16 +27,17 @@ interface Props {
   onFrames: (frames: Record<string, PuppetFrame>) => void;
   onRedoBeats: (beats: string[]) => void;
   onRedoPlace: (place: string) => void;
-  onOpen: (url: string, title: string, text: string) => void;
+  onOpen: (preview: PuppetAssetPreview) => void;
+  projectId?: string;
   onCompile?: () => Promise<MotionSpec | undefined>;
 }
-
 const Asset: FC<{ url: string; name: string; onOpen: () => void; onRedo?: () => void; redoTitle?: string; busy?: boolean }> = ({ url, name, onOpen, onRedo, redoTitle, busy }) => (
   <div className={UI.ASSET} onClick={onOpen} title={name}>
-    <img src={url} alt={name} className={UI.ASSET_IMG} loading={MR.MOTION_TEXT_LAZY} />
+    <MotionAssetImage src={url} title={name} className={UI.ASSET_IMG} />
     <div className={UI.ASSET_NAME}>{name}</div>
     {onRedo && (
-      <button
+      <Button
+        variant={MR.MOTION_TEXT_UNSTYLED}
         type={MR.MOTION_TEXT_BUTTON}
         className={UI.ASSET_BTN}
         title={redoTitle}
@@ -40,11 +48,10 @@ const Asset: FC<{ url: string; name: string; onOpen: () => void; onRedo?: () => 
           onRedo();
         }}>
         <RotateCcw className={UI.ICON} />
-      </button>
+      </Button>
     )}
   </div>
 );
-
 const Pick: FC<{ value: string; list: readonly string[]; labels?: Record<string, string>; title: string; busy: boolean; empty?: string; onChange: (v: string) => void }> = ({ value, list, labels, title, busy, empty, onChange }) => (
   <select className={UI.SELECT} value={value} title={title} disabled={busy} onChange={(e) => onChange(e.target.value)}>
     {empty !== undefined && <option value={P.EMPTY}>{empty}</option>}
@@ -55,11 +62,12 @@ const Pick: FC<{ value: string; list: readonly string[]; labels?: Record<string,
     ))}
   </select>
 );
-
-export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, busy, onFrames, onRedoBeats, onRedoPlace, onOpen, onCompile }) => {
+export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, busy, onFrames, onRedoBeats, onRedoPlace, onOpen, onCompile, projectId }) => {
   const t = lang === MR.MOTION_TEXT_EN ? PUPPET_TEXTS.en : PUPPET_TEXTS.vi;
   const pg = script.gen?.puppet;
-  const lines = useMemo(() => collectPuppetLines(script, MR.MOTION_TEXT_SCENE), [script]);
+  const previews = useMotionAssetPreviews(pg?.pack);
+  const assetUrl = (type: string, id: string) => previews[id] || PUPPET_KIT_API.URLS.THUMB(type, id, projectId);
+  const lines = useMemo(() => collectPuppetVisualLines(script, MR.MOTION_TEXT_SCENE), [script]);
   const names = useMemo(() => _.fromPairs(_.map(analysis?.cast || [], (c) => [c.key, c.name])), [analysis]);
   const [sheet, setSheet] = useState<SheetItem[]>(pg?.sheet || []);
   useEffect(() => setSheet(pg?.sheet || []), [pg?.sheet]);
@@ -86,7 +94,12 @@ export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, bus
       setSheetBusy(false);
     }
   };
-  const markedBeats = _.uniq(_.map(_.filter(lines, (l) => marked[l.key]), (l) => l.beatId));
+  const markedBeats = _.uniq(
+    _.flatMap(
+      _.filter(lines, (l) => marked[l.key]),
+      (l) => l.sourcePlans?.map((source) => source.beatId) || [l.beatId],
+    ),
+  );
   const placeName = (k: string) => pg?.places?.[k]?.name || _.find(analysis?.places || [], { key: k })?.name || k;
   return (
     <div className={UI.WRAP}>
@@ -100,8 +113,8 @@ export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, bus
           <div className={UI.TITLE}>{t.CHARACTERS}</div>
           <div className={UI.STRIP}>
             {_.map(pg.characters, (id, key) => {
-              const url = PUPPET_KIT_API.URLS.THUMB(PUPPET_TYPES.CHARACTER, id);
-              return <Asset key={key} url={url} name={names[key] || key} onOpen={() => onOpen(url, names[key] || key, P.EMPTY)} />;
+              const url = assetUrl(PUPPET_TYPES.CHARACTER, id);
+              return <Asset key={key} url={url} name={names[key] || key} onOpen={() => onOpen({ type: "character", id: key, title: names[key] || key, imageUrl: url, extension: PREVIEW.EXT.SVG })} />;
             })}
           </div>
         </div>
@@ -111,8 +124,8 @@ export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, bus
           <div className={UI.TITLE}>{t.SETS}</div>
           <div className={UI.STRIP}>
             {_.map(pg.sets, (id, key) => {
-              const url = PUPPET_KIT_API.URLS.THUMB(PUPPET_TYPES.SET, id);
-              return <Asset key={key} url={url} name={placeName(key)} busy={busy} redoTitle={t.SET_REDO} onRedo={() => onRedoPlace(key)} onOpen={() => onOpen(url, placeName(key), pg.places?.[key]?.desc || P.EMPTY)} />;
+              const url = assetUrl(PUPPET_TYPES.SET, id);
+              return <Asset key={key} url={url} name={placeName(key)} busy={busy} redoTitle={t.SET_REDO} onRedo={() => onRedoPlace(key)} onOpen={() => onOpen({ type: "location", id: key, title: placeName(key), imageUrl: url, description: pg.places?.[key]?.desc, extension: PREVIEW.EXT.SVG })} />;
             })}
           </div>
         </div>
@@ -122,8 +135,8 @@ export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, bus
           <div className={UI.TITLE}>{t.PROPS}</div>
           <div className={UI.STRIP}>
             {_.map(pg.props, (id, key) => {
-              const url = PUPPET_KIT_API.URLS.THUMB(PUPPET_TYPES.PROP, id);
-              return <Asset key={key} url={url} name={key} onOpen={() => onOpen(url, key, P.EMPTY)} />;
+              const url = assetUrl(PUPPET_TYPES.PROP, id);
+              return <Asset key={key} url={url} name={key} onOpen={() => onOpen({ type: "prop", id: key, title: key, imageUrl: url, extension: PREVIEW.EXT.SVG })} />;
             })}
           </div>
         </div>
@@ -153,8 +166,8 @@ export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, bus
       {!!sheet.length && (
         <div className={UI.SHEET}>
           {_.map(sheet, (it, i) => (
-            <div key={it.file} className={UI.SHEET_CARD} onClick={() => onOpen(genPreviewUrl(it.file), String(i + 1), it.text)}>
-              <img src={genPreviewUrl(it.file)} alt={it.text} className={UI.SHEET_IMG} loading={MR.MOTION_TEXT_LAZY} />
+            <div key={it.file} className={UI.SHEET_CARD} onClick={() => onOpen({ type: "beat", id: it.file, title: String(i + 1), imageUrl: genPreviewUrl(it.file), narration: it.text, beats: _.uniq(lines.filter((line) => it.lines?.includes(line.key)).flatMap((line) => line.sourcePlans?.map((source) => source.beatId) || [line.beatId])) })}>
+              <MotionAssetImage src={genPreviewUrl(it.file)} title={it.text} className={UI.SHEET_IMG} lang={lang} />
               <div className={UI.SHEET_TEXT}>{it.text}</div>
             </div>
           ))}
@@ -171,9 +184,9 @@ export const MotionPuppetPanel: FC<Props> = ({ lang, script, analysis, spec, bus
                   <span className={UI.TEXT} title={l.text}>
                     {l.text}
                   </span>
-                  <button type={MR.MOTION_TEXT_BUTTON} className={UI.ICON_BTN} title={t.REDO} aria-label={t.REDO} disabled={busy} onClick={() => setMarked({ ...marked, [l.key]: !marked[l.key] })}>
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} className={UI.ICON_BTN} title={t.REDO} aria-label={t.REDO} disabled={busy} onClick={() => setMarked({ ...marked, [l.key]: !marked[l.key] })}>
                     <RotateCcw className={UI.ICON} />
-                  </button>
+                  </Button>
                 </div>
                 {f?.why && <div className={UI.WHY}>{f.why}</div>}
                 {f ? (

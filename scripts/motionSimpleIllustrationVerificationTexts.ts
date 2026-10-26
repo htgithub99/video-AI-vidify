@@ -1,0 +1,20 @@
+export const SIMPLE_QA = {
+  REAL_DRAFT: "storage/output/motion-video/ai-debug/motion-story-doctor-7af443fe.json",
+  FRAME_AUDIT: "scratch/motion-live-2m-root-20261025/frame-audit.json",
+  ACTOR: "toi",
+  CAST: [
+    { key: "toi", name: "Tôi" },
+    { key: "ong_cu", name: "Bố" },
+  ],
+  BED: "bed",
+  DOOR: "door",
+  SOURCE: "Tôi đứng cạnh cửa.",
+  TOPIC_ALIAS: "bến sông",
+  OTHER_HOLDS: "Bố cầm thanh then.",
+  SELF_HOLDS: "Tôi cầm thanh then.",
+  HOLD_REQUEST: "Bố bảo tôi hãy cầm thanh then.",
+  LATCH: "thanh then",
+  NETWORK: "offline simulated connection interruption",
+  FORBIDDEN: "Do not call a completed or exhausted task",
+  OUTPUT: "Simple illustration: optional poses, real malformed draft, partial resume, provider budgets, source positions and anchored props passed.",
+} as const;

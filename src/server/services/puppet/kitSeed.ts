@@ -6,10 +6,19 @@ import { drawPuppetProps, drawPuppetSets, ensureSetVariant, puppetLanes } from "
 import { mapMotionAiPool } from "../motionStoryService.js";
 import { listPuppets, readPuppet, writePuppet } from "./kitLibrary.js";
 import { presetStyle, type PuppetRunOptions } from "./stylePack.js";
+import { closedPuppetPackId } from "./packPolicy.js";
+import { MOTION_LIBRARY_RELEASE as RELEASE } from "../../../constants/motionLibraryRelease.js";
 
-export interface PuppetSeedReport { style: string; sets: number; props: number; variants: number; skipped: number; }
+export interface PuppetSeedReport {
+  style: string;
+  sets: number;
+  props: number;
+  variants: number;
+  skipped: number;
+}
 
 export const seedPuppetKit = async (styleId: string, genre: string, o: PuppetRunOptions, progress: (v: number) => void): Promise<PuppetSeedReport> => {
+  if (closedPuppetPackId(styleId)) throw new Error(RELEASE.CLOSED_SEED);
   const style = readPuppet<PuppetStylePack>(PUPPET_TYPES.STYLE, styleId) || presetStyle(styleId);
   const pack = PUPPET_SEED_PACKS[genre] || PUPPET_SEED_PACKS[PUPPET_SEED_DEFAULT];
   const report: PuppetSeedReport = { style: style.name, sets: 0, props: 0, variants: 0, skipped: 0 };
@@ -27,7 +36,11 @@ export const seedPuppetKit = async (styleId: string, genre: string, o: PuppetRun
 
   for (const round of _.chunk(places, PUPPET_SEED_SETS_PER_ROUND)) {
     if (o.signal?.aborted) break;
-    const drawn = await drawPuppetSets(style, _.map(round, (pl) => ({ key: pl.key, place: { key: pl.key, name: pl.name, desc: pl.desc, interior: pl.interior, time: P.DAY }, uses: PUPPET_SEED_USES })), o);
+    const drawn = await drawPuppetSets(
+      style,
+      _.map(round, (pl) => ({ key: pl.key, place: { key: pl.key, name: pl.name, desc: pl.desc, interior: pl.interior, time: P.DAY }, uses: PUPPET_SEED_USES })),
+      o,
+    );
     const nightJobs: PuppetSet[] = [];
     for (const pl of round) {
       const set = drawn[pl.key];
@@ -47,7 +60,10 @@ export const seedPuppetKit = async (styleId: string, genre: string, o: PuppetRun
   for (const round of _.chunk(props, PUPPET_SEED_PROPS_PER_ROUND)) {
     if (o.signal?.aborted) break;
     const notes = _.fromPairs(_.map(round, (pr) => [pr.key, pr.name + P.DASH + pr.note]));
-    const groups = _.chunk(_.map(round, (pr) => pr.key), P.PROPS_PER_CALL);
+    const groups = _.chunk(
+      _.map(round, (pr) => pr.key),
+      P.PROPS_PER_CALL,
+    );
     const made = Object.assign({}, ...(await mapMotionAiPool(groups, (g) => drawPuppetProps(style, g, notes, PUPPET_SEED_SETTING, o), puppetLanes(o.exec)))) as Record<string, PuppetProp>;
     for (const pr of round) {
       const p = made[pr.key];

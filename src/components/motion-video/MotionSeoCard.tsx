@@ -195,6 +195,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
                       <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_5_PY_0_5_ROUNDED_LG_}>
                         {t.option} {i + 1}
                       </span>
+                      {opt.sourceTitleBased && <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PX_2_5_PY_0_5_ROUNDED_LG_}>{t.sourceTitle}</span>}
                       <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_PX_2_5_PY_0_5_ROUNDED_LG_BG_EMERAL}>
                         <Sparkles className={MR.MOTION_TEXT_W_3_H_3_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400} />
                         <span>

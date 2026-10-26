@@ -1,0 +1,23 @@
+export const UPLOAD_QA = {
+  HTML: '<form><div id="prompt-textarea" contenteditable="true">Inspect image</div><div data-testid="attachment-preview"><img alt="candidate.png" src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%222%22 height=%222%22/%3E"><button aria-label="Remove image">x</button></div><button data-testid="send-button">Send</button></form>',
+  INPUT: "#prompt-textarea",
+  BUSY: '<div role="progressbar"></div>',
+  FORM: "form",
+  REMOVE: '[aria-label="Remove image"]',
+  NAME: "candidate.png",
+  MIME: "image/png",
+  LOCKED: '<input type="file" disabled>',
+  AVAILABLE: '<input type="file">',
+  GEMINI_HTML:
+    '<style>input-area-v2,uploader-file-preview-container,uploader-file-preview{display:block}</style><div class="history"><div class="gem-attachment-loading-error">Old failed upload</div></div><input-area-v2><uploader-file-preview-container><uploader-file-preview><span>prop_00</span><button aria-label="close prop_00" onclick="this.parentElement.remove()">x</button></uploader-file-preview><uploader-file-preview><span>prop_01</span><button aria-label="close prop_01" onclick="this.parentElement.remove()">x</button></uploader-file-preview></uploader-file-preview-container><rich-textarea><div class="ql-editor" contenteditable="true">Inspect references</div></rich-textarea><button aria-label="Send message">Send</button></input-area-v2>',
+  GEMINI_INPUT: ".ql-editor",
+  GEMINI_NAMES: ["prop_00.jpg", "prop_01.jpg"],
+  GEMINI_WRONG_NAME: "prop_001.jpg",
+  GEMINI_MIME: "image/jpeg",
+  GEMINI_ERROR_CLASS: "gem-attachment-loading-error",
+  GEMINI_NETWORK: "https://content-push.googleapis.com/upload/fixture?token=private",
+  GEMINI_NETWORK_SAFE: "https://content-push.googleapis.com/upload/fixture",
+  GEMINI_NETWORK_RESUMABLE: "https://content-push.googleapis.com/upload/resumable-fixture",
+  GEMINI_PASSED: "PASS: Gemini scoped reference names/counts, failed tiles, disabled send, pending/failed network, redacted network diagnostics and cleanup.\n",
+  PASSED: "PASS: ChatGPT image previews, pending/failed uploads, disabled send and scoped attachment cleanup.\n",
+} as const;

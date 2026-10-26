@@ -1,0 +1,89 @@
+# Video 20 phút và giọng mẫu Thần trùng — 25/10/2026
+
+## Mục tiêu
+
+Giữ cách minh họa đơn giản: đúng nhân vật, nơi chốn, đồ vật và quan hệ vị trí; dùng tài nguyên có sẵn trong gói. Không bắt buộc diễn hoạt mọi cử chỉ. Giọng người kể và nhân vật đều phải giữ phụ âm, nhịp đọc ổn định và khoảng nghỉ có nghĩa. Mẫu đối chiếu là `C:/Users/Admin/Downloads/Thần trùng - Trùng tang kỳ truyện.mp3`.
+
+## Nguyên nhân và sửa chung
+
+- Phép đo cũ trộn tốc độ ước lượng bằng đỉnh âm học với số đơn vị chữ của câu TTS. Hồ sơ mới lưu loại phép đo; hiệu chỉnh chỉ so các đại lượng cùng đơn vị. Bỏ hệ số bù 1,12 làm tiếng bị nhanh. Cố định hồ sơ giọng cho từng lượt chạy và đưa giới hạn tốc độ vào khóa cache.
+- Mẫu người kể dài 11,2 giây nhưng bộ tạo giọng chỉ đọc tám giây đầu, có thể cắt ngang câu. Mẫu mới lấy đoạn hoàn chỉnh 128,30–135,25 giây của file gốc. Đường đăng ký giọng chung chọn cửa sổ 3–8 giây theo ranh giới câu từ phần đầu tối đa 60 giây; nếu nhận dạng không khả dụng thì dùng cửa sổ đầu tối đa tám giây, không bảo đảm trọn câu trong trường hợp đó.
+- Bỏ lọc nhiễu mạnh trước khi đăng ký mẫu để tránh xử lý khử nhiễu hai lần. Mẫu mẹ đã sạch được đăng ký với khử nhiễu của engine tắt; các mẫu tải lên thông thường vẫn dùng một lượt khử nhiễu mặc định của engine. Giữ cùng danh tính giọng và sao lưu cấu hình cũ.
+- Cả người kể và nhân vật dùng xử lý bảo toàn âm nhỏ, nén nhẹ, giới hạn nhịp theo mẫu. Kiểm nhận dạng chặt hơn; thử lại đúng câu tối đa hai lần và giữ ứng viên tốt nhất. Câu chưa đạt vẫn có trạng thái cần nghe lại, không đổi thành đạt vì đã hết lượt thử.
+- Kịch bản dài phải đủ các chương đã lập kế hoạch trước khi SEO, dựng cảnh, tạo giọng và render. Lưu từng chương đạt để có thể viết tiếp phần thiếu. Job và log có điểm phục hồi trên đĩa; backend khởi động lại sẽ giữ dữ liệu và đánh dấu tác vụ bị ngắt, không tự chạy lại.
+- Nguồn dài được đọc theo các phần có giới hạn, giữ nguyên nội dung và mốc thời gian. Ngữ cảnh phòng biên tập chỉ mang thông tin đã chấp nhận và phần liên tục cần thiết. Danh mục cho bước biên kịch chuyển sang danh mục ngữ nghĩa gọn; bộ giải tọa độ vẫn dùng kho đầy đủ và kiểm ràng buộc chính xác.
+- Yêu cầu chat dài hơn 24.000 ký tự được gửi thành các phần tối đa 18.000 ký tự trong cùng phòng, kiểm biên nhận từng phần rồi mới yêu cầu thực hiện toàn bộ. Phát hiện sớm thông báo yêu cầu quá dài trên giao diện; giới hạn thời gian đọc ô chat và câu trả lời để phát hiện trang bị treo.
+- Lượt thật phát hiện lỗi hết thời gian đọc giao diện chưa đi qua nhánh phục hồi phòng. Đã đưa lỗi này vào quy trình tải lại hai lần rồi mới thay phòng; kiểm hồi quy xác nhận thứ tự, giữ model và tệp tham chiếu. Backend đã được nạp lại sau khi hủy lượt thử có cấu hình sai bên dưới.
+- Kiểm DOM đúng phòng Gemini đang chạy phát hiện `ql-clipboard` có `contenteditable=true` và kích thước khác không dù nằm ngoài màn hình. Bộ chọn rộng lấy phần tử cuối nên có thể chọn ô dán phụ thay cho `.ql-editor`. Đã loại `ql-clipboard` khỏi các nhánh bộ chọn Gemini. Kiểm hồi quy dùng ô phụ ngoài màn hình, gửi hai yêu cầu liên tiếp trong cùng trang, xác nhận nội dung vào editor thật và clipboard rỗng; vẫn kiểm upload lỗi/đạt và không gửi trùng sau lỗi xác nhận. TypeScript đạt. Đã giữ 62 beat của ba chương, hủy phần đang dang dở và nạp backend v8 để viết tiếp từ chương 4; không ghi đè ba chương đã lưu. Cần theo dõi lượt ngoài thực tế để xác nhận hết lỗi xen giữa chương.
+- Lượt v8 vẫn gặp lỗi giữa chương, nên việc loại clipboard chưa giải quyết hết. Bản v9 bổ sung tên thao tác vào lỗi đọc nhưng giữ nguyên mã lỗi cho phục hồi; xác nhận lúc 10:41:48 lỗi là `ChatPlanningUiReadTimeout:composer-content`, không phải đọc câu trả lời hay chờ phòng rảnh. Đổi ba lệnh đọc đồng thời (`inputValue`, `innerText`, `textContent`) thành một lần đánh giá DOM trên cùng phần tử, lấy giá trị native chỉ cho input/textarea và nội dung của editor trong cùng lượt đọc. Giữ giới hạn đọc và kiểm đủ nội dung trước gửi. Kiểm gửi/phục hồi/upload và TypeScript đã đạt; còn cần xác nhận trên phòng ngoài sau khi nạp bản này.
+- Bản đọc gộp v10 vẫn chạm thời gian đọc sau phản hồi dài. Bản v11 loại `innerText` khỏi đường đọc composer, chỉ dùng giá trị native hoặc `textContent`; bộ kiểm nội dung đã chuẩn hóa bỏ khoảng trắng nên không cần tính bố cục để đọc. Sau khi chờ ô hiển thị, giữ locator ứng viên cụ thể thay vì lọc độ hiển thị lại trong từng lượt đọc. Kiểm hồi quy chủ động chặn getter `innerText` của editor, vẫn gửi tiếp yêu cầu thành công; các kiểm gửi/phục hồi/upload vẫn đạt. Chưa coi đây là lỗi ngoài thực tế đã hết cho tới khi lượt v11 đi qua các yêu cầu kế tiếp.
+- Lượt dài phát hiện biên tập chia thành tám nhóm vì mỗi chương sáng tác không có mốc nguồn lại tính cả truyện mẫu vào kích thước nhóm và gửi cả nguồn đó. Đã dùng cùng bộ chọn đoạn mẫu theo chương như bước viết sáng tác, giữ cốt lõi và mạch truyện trong brief chung; nhánh bám tư liệu vẫn dùng lát nguồn theo mốc. Kiểm tám chương xác nhận chỉ hai nhóm bốn chương, mỗi yêu cầu không chứa lại toàn nguồn, các phần mẫu đều có trong ngữ cảnh. Giữ đủ 166 beat của tám chương và nạp v11 để chạy biên tập lại, không viết lại chương đã có.
+- Lượt v11 đã hoàn thành hai nhóm biên tập, sửa 14/166 đoạn; SEO hoàn thành năm phương án và tám chương YouTube. Các yêu cầu đó chưa lặp lại lỗi đọc composer. Bước dựng cảnh có 188 câu nguồn, 52 nhóm liên tục; ba phòng nhận việc đồng thời.
+- Phát hiện cả bước lập nhịp hình và đọc sự kiện vẫn gửi danh mục hình học toàn kho khoảng 148.226 ký tự cho từng nhóm. Hai bước này không chọn tọa độ/ID ảnh nên chuyển sang danh mục ngữ nghĩa khoảng 21.071 ký tự, vẫn đủ nơi chốn/đồ vật/nhân vật/tư thế/mặt đỡ và biến thể có thật; bước đọc còn giữ mô tả đạo cụ tiếng Anh. Bộ giải bố cục và danh sách lựa chọn cảnh vẫn dùng tài nguyên và hình học đầy đủ tại máy. Kiểm chọn kho trên hai gói vẫn đạt; không suy từ rút gọn prompt rằng ảnh đã được AI duyệt.
+- Bổ sung lưu từng nhóm nhịp hình đã kiểm đủ lời nói, phục hồi riêng nhóm thiếu, giữ thứ tự dù ba phòng trả khác thứ tự; sai phiên bản/nguồn hoặc nhóm bị lỗi không được dùng lại. Bản lưu dở không được xuất: compile từ chối storyboard thiếu độ phủ. Kiểm hồi quy xác nhận callback điểm lưu, phục hồi chỉ gọi AI cho nhóm thiếu, sửa nhóm lỗi và cổng compile. Nạp backend v12 để chạy lại phần dựng cảnh bằng dữ liệu kịch bản/SEO đã lưu; lượt v11 chưa lưu kết quả từng nhóm nên không có nhóm nhịp hình để phục hồi từ lượt đó.
+- Máy tạm ngưng mạng trong lượt thử đúng cấu hình: Chrome báo `ERR_NETWORK_IO_SUSPENDED`, sau khi tiếp tục có `ERR_NAME_NOT_RESOLVED`. Đã bổ sung các mã mạng tạm thời vào nhánh phục hồi có giới hạn của cùng phòng; kiểm hồi quy xác nhận hai lượt tải lại rồi mới thay phòng. Lượt thử tiếp tục nhận được dữ liệu khi DNS trở lại. Bản sửa đã được nạp khi phục hồi dàn ý lúc khoảng 10:20.
+- Phát hiện vòng sửa Video DNA gửi lại nguyên yêu cầu mà không đưa lỗi kiểm tra vào câu hỏi. Khi AI thiếu `environment.propRules`, việc gửi lại này tiếp tục trả thiếu và có thể làm trang chat chậm. Đã đổi sang yêu cầu sửa có bản nháp và danh sách lỗi, không gửi lại nguồn/kho; code chỉ chấp nhận thay đổi đúng các trường đang lỗi, giữ nguyên truyện, nhân vật, bối cảnh, chương và DNA hợp lệ. Bộ kiểm `npm run test:motion-dna-repair` xác nhận sửa trường lồng nhau, số độ tin cậy, cấu trúc DNA thiếu, không thay đổi bản nháp gốc và đánh giá lại kết quả sau ghép. Bản sửa đã được nạp vào backend lúc khoảng 10:20.
+- Bộ đọc cốt lõi truyện từ chối một chuỗi nhân quả gộp bằng mũi tên và trường đảo chiều là mảng một phần tử, dù nội dung có đủ. Đã chuẩn hóa riêng các dạng tương đương rõ nghĩa này, không tự bịa thêm liên kết; chuỗi chỉ có hai ý vẫn bị từ chối. Kiểm lại chính phản hồi AI đã lưu từ lượt thật: lỗi trước sửa là `sourceCore`, sau chuẩn hóa không còn lỗi. Bằng chứng: `scratch/thantrung-voice-20261025/live-contract-normalization.json`.
+
+## Bằng chứng giọng thật
+
+File mẫu gốc có SHA256 `c30903fb126f71e71d9638113a2d7196458579e877406a704b3ef6a703337331`.
+
+- Đo nhịp trên đoạn 120–180 giây của mẫu: 3,633 đơn vị chữ/giây. Đoạn thử người kể: 42 đơn vị trong 11,395 giây, tương đương 3,686/giây. Không so trực tiếp với số đỉnh âm học/giây vì khác đơn vị.
+- Bản thử sáu nhóm giọng dài 40,301 giây: người kể 4,76%, nam trưởng thành 0%, nam cao tuổi 7,14%, mẹ 5%, nữ trưởng thành 5%, trẻ em 10,53% độ lệch nhận dạng. Vai mẹ đạt sau hai lượt thử lại. Đây là sai khác ASR, chưa phải kết luận từng chữ bị phát âm sai.
+- Giọng người kể hiện tại: `custom-thantrung-narrator-v2-20261025`; vai mẹ: `custom-thantrung-mother-clean-20261025`. Các vai khác giữ giọng đã phân.
+- File nghe: `storage/output/motion-video/giong-than-trung-v2-ro-chu-20261025.mp3`.
+- File đối chiếu: `storage/output/motion-video/doi-chieu-giong-than-trung-v2-20261025.mp3`, thứ tự mẫu gốc → mẫu cũ ở hai mức nhiệt → mẫu mới ở hai mức nhiệt, có khoảng nghỉ giữa các đoạn.
+
+## Kiểm kỹ thuật
+
+TypeScript và các kiểm chuyên biệt đã đạt: nhịp/độ rõ/kiểm chất lượng giọng, chọn cửa sổ mẫu, bảo toàn cache và ứng viên tốt nhất; khôi phục job/chương/log, chặn kịch bản thiếu; chọn kho ở hai gói; phòng chat, upload, hủy và kết nối lại polling. Kiểm chia yêu cầu chat dùng giao diện cục bộ, xác nhận ghép nguyên văn các phần và chỉ gửi lệnh thực hiện sau đủ biên nhận. Các kiểm này không thay thế lượt thử dịch vụ AI bên ngoài.
+
+## Trạng thái lượt 20 phút
+
+Lượt 20 phút dùng nguồn “Ván bài định mệnh - Thần Trùng P2”, Chibi màu dân gian, chuyển động nhân vật tắt, review ảnh tắt, kiểm giọng bật. Dữ liệu tại `scratch/thantrung-voice-20261025/live-20m`.
+
+Lượt `e27040d8-e78b-480a-bc35-16500742b0a7` đã đọc đủ ba phần nguồn. Lần phân tích đầu nhận ba biên nhận ngữ cảnh rồi Gemini từ chối ở phần cuối bằng một câu chung, không nêu lý do. Lượt này sau đó được hủy do phát hiện cấu hình thử dùng mã thể loại không hợp lệ `folk_horror`, bị chuẩn hóa về `auto` nên không kiểm được nhánh sáng tác truyện ma mới. Đã sửa runner sang hằng `MOTION_VIDEO_GENRES.GHOST_TALE` (`ghost_tale`) và chọn Gemini Flash mức thấp cho lượt thử đúng cấu hình. Không tính lượt hủy này là kiểm thành công nhánh sáng tác.
+
+Lượt đúng cấu hình đã đọc hai phần nguồn bằng Gemini Flash mức thấp; phần cuối bị ngắt khi mạng tạm ngưng, nên dùng nguyên trích đoạn gốc của phần đó theo cơ chế dự phòng, không bỏ nội dung. Sau khi mạng trở lại lúc khoảng 10:03, bước phân tích tiếp tục trong Gemini và các phần ngữ cảnh đã nhận biên nhận hợp lệ.
+
+Sau khi xác nhận phản hồi biên kịch đã có đủ nội dung, đã hủy vòng sửa cũ và nạp backend mới. Dàn ý thực “Khói Trầm Đổi Tên” được phục hồi từ phản hồi AI đã lưu bằng chính hàm phát triển truyện với cơ chế phát lại phản hồi, qua bộ kiểm mới: 8 chương, 5 nhân vật, 4 bối cảnh, tổng mục tiêu 1.200 giây. Không phát sinh phản hồi AI mới trong bước phục hồi này; không tính đây là một lượt phân tích mới từ đầu qua API. Nguồn gốc tại `analysis-recovery.json`. Từ khoảng 10:20, các bước viết chương → SEO → dựng cảnh/giọng → render tiếp tục qua API của tool với backend đã nạp các bản sửa mới.
+
+Chưa có MP4 20 phút hoàn tất tại thời điểm ghi phần này. Lượt cũ 107,727 giây chỉ xác nhận luồng minh họa → giọng → render ngắn, không dùng để kết luận video 20 phút đã chạy đạt. Phiên này kiểm bằng tín hiệu và nhận dạng; không có công cụ nghe trực tiếp để khẳng định âm sắc/cảm xúc đã giống mẫu hoàn toàn.
+
+## Đối ứng tiếp sau xác minh
+
+- Kiểm lại danh mục gọn phát hiện mất tên điểm đặt (`chest_inside`, `chest_side`, `chest_top`) và thiếu danh sách nền/mảnh ghép có sẵn. Đã giữ tên điểm cùng loại/mặt đỡ, bổ sung nền với family/interior/mô tả, mảnh ghép với mô tả/environment/khe ghép/điểm đặt/loại tương tác. Không gửi tọa độ vào bước lập ý tưởng; bộ giải ghép và kiểm tiếp xúc vẫn dùng toàn bộ dữ liệu tại máy. Các khả năng của từng biến thể vẫn riêng, không gộp thành một bối cảnh không tồn tại.
+- Kiểm chọn kho xác nhận từng điểm, từng biến thể, từng nền và từng mảnh đủ trong danh mục trên cả hai gói; giới hạn danh mục gọn dưới 60.000 ký tự và dưới nửa danh mục hình học. Tám ảnh kiểm được render lại, không có lỗi hình học theo bộ kiểm. Đây là kiểm cục bộ, không phải kết quả video dài.
+- Đã giữ 13/52 nhóm nhịp hình, tiếp tục bằng dữ liệu kịch bản/SEO cũ. Bản v13 vẫn kẹt ở gửi phần ngữ cảnh: ô nhập có nội dung phần 2 nhưng lịch sử chỉ có phần 1. Đọc trực tiếp DOM xác nhận chưa gửi trùng mã phần. Thử bấm nút gửi với kiểm actionability của Playwright gửi được đúng phần đang nằm trong ô, AI trả biên nhận và tool đọc được. Đây là bằng chứng lỗi thao tác gửi, chưa phải AI từ chối.
+- Bỏ force-click riêng nút gửi để Playwright đợi nút ổn định và nhận được thao tác. Kiểm hồi quy có lớp phủ tạm thời xác nhận đợi lớp phủ biến mất rồi gửi đúng một lần; các kiểm gửi ngữ cảnh nhiều phần, phục hồi chỉ đọc, không gửi trùng, upload, clipboard ngoài màn hình và đọc editor không dùng innerText vẫn đạt. Nạp backend v14 để xác nhận lại ngoài thực tế; không suy từ fixture rằng mọi room thật đã hết lỗi.
+
+### Phân biệt lỗi bấm và máy chủ Gemini
+
+Theo dõi sự kiện click cho thấy có lượt câu hỏi đã hiện lên sau 100 ms rồi bị gỡ sau 500 ms; bản nháp được khôi phục. Phản hồi StreamGenerate HTTP 200 có khung lỗi `wrb.fr` với trạng thái 8 và BardErrorInfo 1095, không có dữ liệu trả lời. Không suy diễn mã này thành CAPTCHA, sai model hay hết hạn mức khi chưa có bằng chứng giao diện.
+
+Bổ sung bộ quan sát thụ động, chỉ theo dõi yêu cầu phát sinh trong lượt gửi hiện tại. Khung lỗi hoàn chỉnh không có nội dung thành công được đưa vào lỗi nhà cung cấp; dữ liệu không đầy đủ hoặc có phản hồi thành công không bị kết luận là từ chối. Chỉ trường hợp từ chối xác định mới được đánh dấu yêu cầu cũ đã kết thúc để phục hồi; lỗi mạng chưa rõ kết quả vẫn chỉ đọc lại. Kiểm bằng trình duyệt cục bộ xác nhận HTTP 200 kèm lỗi được phát hiện, chỉ bấm một lần, không đợi hết thời gian chờ phản hồi. Backend v15 đã ghi đúng tên lỗi ngoài thực tế và chuyển DeepSeek sau hai reload/một room mới; nhịp hình tiếp tục tăng lên 17/52 nhóm lúc 11:48.
+
+### Tốc độ dùng để viết kịch bản dài
+
+Kho đo thời lượng cũ đang lưu 2,168 đơn vị chữ/giây cho kênh này, khác mẫu giọng mới 3,633. Bản sửa thêm hồ sơ đo theo kênh, giọng/vai và tốc độ thủ công, mẫu tham chiếu/hệ số/nhịp nghỉ và phiên bản xử lý. Mẫu đo theo chữ cung cấp ước lượng ban đầu cùng đơn vị; số đỉnh âm học không được dùng làm số chữ. Số đo thật chỉ dùng lại khi cấu hình khớp; đổi mẫu/giọng không kéo theo số đo của cấu hình cũ. Kết quả của lượt chạy mà cấu hình đã đổi không được ghi đè hồ sơ hiện tại.
+
+Việc ghi số đo được chuyển vào hàm dựng track dùng chung để cả luồng tạo giọng riêng và tạo giọng trong bước dựng cảnh đều cập nhật; kiểm dùng bộ tổng hợp giả không sửa hiệu chuẩn thật. Kiểm hồ sơ, nhịp và chất lượng giọng đã đạt. Backend v16 đã nạp bản sửa lúc khoảng 11:59; chưa viết lại kịch bản đã lưu, cần đo thời lượng video thật trước khi kết luận đạt mục tiêu 20 phút. Hồ sơ cũng phân biệt việc đổi giọng giữa các vai dù tập ID giọng không thay đổi; thay thứ tự trường cấu hình không làm mất số đo hợp lệ.
+
+### Giới hạn DeepSeek nằm dưới tin nhắn
+
+Lúc khoảng 11:56–11:58, ảnh giao diện thật xác nhận dòng `Messages too frequent. Try again later.` nằm dưới tin nhắn người dùng, ngoài vùng `role=alert`. Bộ kiểm cũ chỉ đọc cảnh báo nên chờ hết hạn phản hồi rồi tải lại để đọc. Đã thêm kiểm riêng dòng lỗi thuộc hàng của tin nhắn cuối có nội dung khớp chính xác yêu cầu đang chờ. Không suy từ văn bản ẩn `One more step before you proceed...` rằng có CAPTCHA: ảnh và DOM hiển thị trong lượt này xác nhận giới hạn tin nhắn, không phải trang xác minh.
+
+Kiểm trình duyệt cục bộ xác nhận gửi một lần, nhận đúng lỗi giới hạn và đánh dấu kết thúc yêu cầu đã bị từ chối; câu tương tự nằm trong nội dung người dùng hoặc thuộc yêu cầu khác không báo lỗi nhầm. Các kiểm thử lại cùng tin nhắn, ba phòng, upload và hủy vẫn đạt; TypeScript đạt. Đã giữ 100 nhịp hình của 24/52 nhóm, hủy lượt v15, nạp backend v16 (PID 79596) và tiếp tục chỉ các nhóm thiếu từ 11:59:47. Không khởi chạy lại phân tích, viết chương hay SEO.
+
+### Chuyển lượt dựng về Gemini theo yêu cầu
+
+Người dùng yêu cầu chuyển về Gemini khi Grok cần xác minh. Đã giữ 36/52 nhóm với 140 nhịp hình. Phát hiện API bỏ trường `strictProvider` khi chuẩn hóa cấu hình nên lần chuyển đầu vẫn đi qua chuỗi dự phòng sau lỗi Gemini. Đã sửa API chỉ nhận khóa này khi giá trị đúng kiểu boolean `true`; bộ tạo danh sách tuyến cũng chỉ trả AI đã chọn khi bật khóa. Cấu hình mặc định vẫn giữ chuỗi dự phòng hiện có. Kiểm controller xác nhận cả dựng cảnh, phân vai tự động và tạo giọng nhận đúng khóa; kiểm phục hồi và TypeScript đạt.
+
+Backend v17 (PID 78996) đã nạp bản sửa. Lượt cảnh `11fa29a2-b030-4a33-a6ba-ad6bcca02f28` tiếp tục phần thiếu bằng `gemini-chat · gemini-flash::low`, chỉ Gemini; tắt review ảnh và không tạo thêm một track giọng trong bước cảnh. Lượt giọng riêng `1c3bf696-5c4e-4587-a8a6-d0cd82cba37e` dùng lại kế hoạch phân vai và clip đã lưu, đạt 12/199 câu tại 12:27. Runner chờ track giọng này trước compile/render để tránh tổng hợp trùng.
+
+Gemini vẫn có lỗi dịch vụ xác định ở yêu cầu thật và một lần giao diện chưa sẵn sàng tại `page_ready`; việc đổi nhà cung cấp chưa đồng nghĩa đã dựng thành công. Không tự chuyển Grok để yêu cầu lại CAPTCHA mà người dùng đã từ chối. Tại thời điểm ghi mục này chưa có MP4 20 phút hoàn tất.
+
+### Giao diện ChatGPT mới và thông báo giới hạn
+
+Đã hỗ trợ vùng `data-markdown-text-style="assistant-message"` và mã `data-chatgpt-search-message-ids` của giao diện ChatGPT mới, loại tiêu đề trợ năng “ChatGPT đã nói:” khỏi JSON phản hồi. Thông báo hiển thị trong `aside[role="status"]` về kiểm tra nhanh và thử lại sau được phân loại là giới hạn nhà cung cấp thay vì thiếu nút gửi. Kiểm trình duyệt cục bộ xác nhận nội dung JSON và định danh tin nhắn, phát hiện banner thật theo cấu trúc, không báo nhầm khi câu tương tự nằm trong JSON. Bản sửa đã được nạp cùng v17; lượt cảnh hiện tại khóa Gemini nên chưa xác nhận lại nhánh ChatGPT bằng lượt gửi ngoài thực tế.

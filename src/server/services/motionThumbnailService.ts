@@ -5,6 +5,8 @@ import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine, P
 import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis } from "../../types/motionVideo.js";
 import { generateImageWithPlaywright } from "./imageGeneratorService.js";
 import { runMotionAi } from "./motionStoryService.js";
+import { MOTION_THUMBNAIL_SCHEMA } from "../../constants/motionResponseContract.js";
+import { motionResponseIssues, motionResponsePrompt, motionResponseRepair } from "../../lib/motionResponseContract.js";
 const ARTIFACT = MR.MOTION_TEXT_MOTION_STORY_THUMBNAIL_PROMPT;
 const IMAGE_ATTEMPTS = 3;
 const MIN_IMAGE_CHARS = 10000;
@@ -43,15 +45,18 @@ export const generateMotionThumbnail = async (analysis: MotionStoryAnalysis, seo
     genre: motionVideoGenrePackaging(analysis.videoGenre) || undefined,
     userNote: opts.note || MR.MOTION_TEXT_EMPTY,
   };
-  const ask = MR.MOTION_TEMPLATE_ACT_AS_AN_EXPERIENCED_YOUTUBE_THUMBNAIL_ART_DIRECTOR_FOR_THE_AUDI(brief.language, JSON.stringify(brief), portrait ? MR.MOTION_TEXT_9_16_VERTICAL : MR.MOTION_TEXT_16_9, brief.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_FLAT_2D_ILLUSTRATION : MR.MOTION_TEXT_CINEMATIC_3D);
+  const ask = [MR.MOTION_TEMPLATE_ACT_AS_AN_EXPERIENCED_YOUTUBE_THUMBNAIL_ART_DIRECTOR_FOR_THE_AUDI(brief.language, JSON.stringify(brief), portrait ? MR.MOTION_TEXT_9_16_VERTICAL : MR.MOTION_TEXT_16_9, brief.drawingMode === MR.MOTION_TEXT_2D ? MR.MOTION_TEXT_FLAT_2D_ILLUSTRATION : MR.MOTION_TEXT_CINEMATIC_3D), motionResponsePrompt(ARTIFACT)].join(MR.MOTION_TEXT_SYMBOL_27);
   let prompt: string = MR.MOTION_TEXT_EMPTY;
+  let diagnostics: unknown;
   for (let attempt = 0; attempt < 2 && !prompt; attempt++) {
     try {
-      const raw = await runMotionAi(ask, ARTIFACT, opts.exec, opts.signal, opts.log);
-      const p = _.trim(_.toString(raw?.imagePrompt));
-      if (p.length >= 100) prompt = _.truncate(p, { length: 4000, omission: MR.MOTION_TEXT_EMPTY });
+      const raw = await runMotionAi(diagnostics ? motionResponseRepair(ask, diagnostics) : ask, ARTIFACT, opts.exec, opts.signal, opts.log);
+      const issues = motionResponseIssues(raw, MOTION_THUMBNAIL_SCHEMA);
+      if (!issues.length) prompt = raw.imagePrompt.trim();
+      else diagnostics = issues;
     } catch (error) {
       if (opts.signal?.aborted) throw error;
+      diagnostics = { error: _.truncate(_.toString((error as Error)?.message || error), { length: 240 }), issues: motionResponseIssues(undefined, MOTION_THUMBNAIL_SCHEMA) };
       opts.log?.(MR.MOTION_TEMPLATE_THUMBNAIL_LAP_PROMPT_LAN_LOI(attempt + 1, _.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
     }
   }
@@ -69,17 +74,7 @@ export const generateMotionThumbnail = async (analysis: MotionStoryAnalysis, seo
         style: analysis.look || MR.MOTION_TEXT_EMPTY,
         retainBrowserSession: true,
         forceNewPage: true,
-        visualConfig: {
-          chromeHeadless: opts.chromeHeadless !== false,
-          generateType: GenerateType.Image,
-          aspectRatio: portrait ? AspectRatio.NineSixteen : AspectRatio.SixteenNine,
-          generateCount: 1,
-          imageGeneratorEngine: ImageGeneratorEngine.Imagen,
-          generationMode: ImageGenerationMode.GeminiChat,
-          promptInputMethod: PromptInputMethod.Paste,
-          referenceImages: [],
-          referenceImageNames: [],
-        },
+        visualConfig: { chromeHeadless: opts.chromeHeadless !== false, generateType: GenerateType.Image, aspectRatio: portrait ? AspectRatio.NineSixteen : AspectRatio.SixteenNine, generateCount: 1, imageGeneratorEngine: ImageGeneratorEngine.Imagen, generationMode: ImageGenerationMode.GeminiChat, promptInputMethod: PromptInputMethod.Paste, referenceImages: [], referenceImageNames: [] },
       } as any);
       const base64 = _.toString(result?.base64);
       if (result?.success && base64.length >= MIN_IMAGE_CHARS) {

@@ -1,0 +1,37 @@
+export const MOTION_ILLUSTRATION = {
+  VERSION: 1,
+  MODE: "static_illustration",
+  SIMPLE_KINDS: ["conversation", "group_conversation", "parent_child", "search"],
+  MIN_SEPARATION: 150,
+  MAX_SEPARATION: 1050,
+  MAX_DEPTH: 220,
+  MAX_COMPOSITIONS: 96,
+  ASSEMBLY_PIECES: 24,
+  ASSEMBLY_BASES: 4,
+  ASSEMBLY_PLANS: 160,
+  PREFLIGHT_REPAIRS: 2,
+  ASSEMBLY_START: "Đã đọc cảnh; đang ghép nhân vật, bối cảnh và đạo cụ từ kho.",
+  ASSEMBLY_DONE: "Đã ghép đủ tài nguyên từ kho; chuyển sang dựng bố cục.",
+  PREFLIGHT_ERROR: (reason: string): string => `Kiểm kế hoạch minh họa: ${reason}`,
+  TEMPERATURE_STATES: ["hot", "warm", "cold", "cool", "cooled"],
+  REST_ROTATIONS: { overturned: 180, upside_down: 180, inverted: 180, on_side: 90, sideways: 90, tipped: 90, fallen: 90 } as Record<string, number>,
+  PREFLIGHT_REPAIR:
+    "Recheck this representative picture against the supplied story and existing library. Correct mistaken object translations, invented objects, unsupported blocking labels and unnecessary physical-state requirements. Select a compatible static arrangement or result without changing essential participants, props, supports or story facts. Use null blocking for independent poses; speech, whispering or a table alone does not require contact or dining. Return exact catalog keys and distinct stable identities. Do not erase an essential requirement to pass validation.",
+  PREFLIGHT_REPAIR_LOG: (attempt: number, count: number): string => `Đang sửa kế hoạch minh họa từ kho, lượt ${attempt}: ${count} hình cần đối chiếu lại với lời kể.`,
+  ASSEMBLY_REJECTED: (count: number, reasons: string[]): string => `Đã loại ${count} phương án ghép không hợp lệ: ${reasons.join("; ")}`,
+  ASSEMBLY_MISSING: (names: string): string => `Chưa có phương án ghép hợp lệ từ kho cho: ${names}.`,
+  COMPOSED: "Ghép hình minh họa từ các thành phần có sẵn trong kho.",
+  PREFIX: "illustration_",
+  CATALOG_SCHEMA: "layouts entries are [interaction, variant or null, {role: [posture, support or null]}]. Each illustration references those layouts by zero-based index. Values describe existing capabilities, not movement instructions.",
+  PROMPT:
+    "TEXT-ONLY PLANNING: return the requested JSON. The application renders all images from its local asset library; you are not being asked to generate an image. ILLUSTRATED STORY: prioritize the correct people, place, object identity, ownership and spatial relationships in one simple static picture. Incidental verbs and difficult gestures may remain in narration; do not require a new posture, contact layout or asset for them. Use an existing standing, sitting or lying pose. Show a supported result when it matters: the recipient holding the prop, or the person already on the ground. A scene with a person standing beside someone lying on a bed must preserve those independent postures and positions. Never omit an essential participant, physical support, clue or story-changing result. Reuse the same location layout. Change framing only when useful information or a reaction motivates it. Do not invent contacts or extra ghosts. Speech alone never changes posture. Prefer null blocking for simple independent poses; use a named composition only when the visible spatial relationship requires it. Do not attempt to illustrate every verb or reject a clear representative picture for omitting a hand movement.",
+  QA_PROMPT:
+    "Review this as a simple static story illustration, not an animation. Do not reject a frame for lacking intermediate hand movements, walking, a prop trajectory or every incidental verb. A representative pose or result is sufficient if the essential evidence, participants, support and state are correct. Reusing a background or holding a composition across dialogue is allowed. Reject actual visible contradictions, misplaced people/objects, unreadable essential clues and premature reveals.",
+  OBJECT_PROMPT:
+    "For each physical prop return key as the matching exact library prop key from the supplied catalog without translating or renaming its identifier (including legacy Vietnamese keys), and identity as a stable English snake_case ID for that individual object. Never append temporary pose, holding, temperature or placement to the catalog key. Preserve essential distinctive traits; if no catalog asset fits, report the precise missing object rather than inventing an asset match. Two bowls of the same type have distinct identities. Keep identity unchanged when the object is passed to another person; ownership is a separate field. Reuse identities across scenes and state changes. Return each visible object instance separately in objects; object is null or one of those same instances, never a third generic item for a plural noun. word must name that exact object: a bed is not evidence for a pillow or blanket, a door is not evidence for a separate handheld latch, and clothing is not evidence for a bowl. Furniture already drawn in the set is scene_feature, not an extra portable prop. Temperature uses existing artwork and appropriate steam, not a new drawable asset.",
+  ENGINE_ERROR: (issues: string[]): string => `Lỗi dựng ảnh minh họa: ${issues.join("; ")}`,
+  REVIEW_ON: "AI duyệt ảnh cảnh: bật; dùng AI dựng video để kiểm ảnh minh họa.",
+  REVIEW_OFF: "AI duyệt ảnh cảnh: tắt; vẫn kiểm dữ liệu, vị trí và lỗi dựng hình.",
+  SEPARATOR: "_",
+  PROP_KEYS: (key: string, state?: string): string[] => (state ? [key, `${key}__${state}`, `${key}_${state}`, `${state}_${key}`] : [key]),
+} as const;

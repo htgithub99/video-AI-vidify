@@ -1,0 +1,94 @@
+{
+  "seconds": 68,
+  "units": 134,
+  "draft": {
+    "inputKey": "d71f2f951b6633878e9f60b9ba0c1d881c0f7c77eb7c7e50fc54097fd50247b9",
+    "rows": [
+      {
+        "id": "c1:beat:1",
+        "narration": "Tôi vừa quay lưng toan khép cánh cửa buồng thì thằng cháu nhỏ chạy giỡn ngoài sân tông sầm vô góc bàn con, làm hất nghiêng cái đĩa cúng khiến cả nắm muối gạo văng tung tóe vương vãi ngược vô tận ngạch cửa gỗ trong nhà.",
+        "visual": "scene",
+        "place": "nha_toi",
+        "cast": ["dua_chau"],
+        "time": "dusk",
+        "weather": "none",
+        "shot": "medium",
+        "action": "dua_chau stands near the doorstep looking down at the spilled ritual rice and salt scattered across the entrance.",
+        "scenePlan": {
+          "purpose": "Show the child inadvertently kicking the offering and scattering rice and salt across the threshold",
+          "subject": "dua_chau and muoi_gao_do",
+          "before": "Altar table and rice-salt plate were undisturbed",
+          "after": "The small plate is overturned and grains of rice and salt are scattered up to the wooden doorstep",
+          "composition": "Medium shot capturing dua_chau beside the doorstep with the scattered white grains visible on the dark wood and brick floor",
+          "spatialRelations": ["dua_chau stands at the doorstep looking down at the scattered rice and salt"],
+          "requiredProps": ["ritual_rice_salt_plate"],
+          "continuity": ["Dusk atmosphere, rustic doorstep setting"],
+          "acceptance": ["dua_chau is visible at the doorstep with scattered rice and salt"]
+        },
+        "utterances": [
+          {
+            "id": "u1",
+            "speaker": "narrator",
+            "role": "narration",
+            "text": "Tôi vừa quay lưng toan khép cánh cửa buồng thì thằng cháu nhỏ chạy giỡn ngoài sân tông sầm vô góc bàn con, làm hất nghiêng cái đĩa cúng khiến cả nắm muối gạo văng tung tóe vương vãi ngược vô tận ngạch cửa gỗ trong nhà.",
+            "emotion": "surprised",
+            "intensity": 0.6,
+            "speed": 1,
+            "pauseBefore": 0.1,
+            "pauseAfter": 0.3,
+            "emphasis": ["thằng cháu nhỏ", "tông sầm", "muối gạo văng tung tóe", "ngạch cửa gỗ"]
+          }
+        ]
+      },
+      {
+        "id": "c1:beat:2",
+        "narration": "Tôi đứng chết trân dòm ra sân, thấy mấy tàn nhang đỏ quạch không hề bay thẳng lên trời như mọi bận nhang bàn thờ trên nhà, mà cứ là là bò rạp sát mặt đất y như có bàn tay ai vô hình đang kéo níu. Trông cảnh quái gở lạnh sống lưng nhưng tôi liền tặc lưỡi gạt ngang đi, bụng tự nhủ chắc tại gió quẩn chiều tối thổi bạt hay do mình tay ngang cúng kiếng qua loa chưa đúng phép mà thôi.",
+        "visual": "scene",
+        "place": "nha_toi",
+        "cast": ["toi"],
+        "time": "dusk",
+        "weather": "none",
+        "shot": "close",
+        "action": "toi stands by the open door looking back at the low-drifting incense smoke crawling horizontally across the ground.",
+        "scenePlan": {
+          "purpose": "Plant the supernatural omen of smoke crawling along the ground rather than rising",
+          "subject": "incense smoke and toi",
+          "before": "Incense sticks were burning on the low altar table",
+          "after": "Thick grey smoke curls low along the brick ground towards the house threshold while toi watches dismissively",
+          "composition": "Close-up to medium shot of the smoking incense sticks on the low table with toi visible looking down in the background",
+          "spatialRelations": ["toi stands in the doorway looking back down at the altar table and ground"],
+          "requiredProps": ["incense_sticks", "ritual_rice_salt_plate"],
+          "continuity": ["Dusk settling into dark, creeping smoke effect"],
+          "acceptance": ["incense sticks emitting low smoke along the ground are visible near toi"]
+        },
+        "utterances": [
+          {
+            "id": "u2",
+            "speaker": "narrator",
+            "role": "narration",
+            "text": "Tôi đứng chết trân dòm ra sân, thấy mấy tàn nhang đỏ quạch không hề bay thẳng lên trời như mọi bận nhang bàn thờ trên nhà, mà cứ là là bò rạp sát mặt đất y như có bàn tay ai vô hình đang kéo níu. Trông cảnh quái gở lạnh sống lưng nhưng tôi liền tặc lưỡi gạt ngang đi, bụng tự nhủ chắc tại gió quẩn chiều tối thổi bạt hay do mình tay ngang cúng kiếng qua loa chưa đúng phép mà thôi.",
+            "emotion": "serious",
+            "intensity": 0.7,
+            "speed": 0.95,
+            "pauseBefore": 0.1,
+            "pauseAfter": 0.4,
+            "emphasis": ["bò rạp sát mặt đất", "kéo níu", "tặc lưỡi gạt ngang"]
+          }
+        ]
+      }
+    ],
+    "pending": [{ "id": "c1:beat:1", "fields": ["narration", "utterances"], "targetUnits": 149 }],
+    "repairState": { "rejected": 3, "errors": ["Narration length does not respect the selected video duration: 134 words/syllables for a 68s chapter. Rewrite near 217 units while preserving Video DNA and source facts."] }
+  },
+  "cast": [
+    { "key": "toi", "name": "Tôi", "description": "Người kể chuyện, em của chị Hai, trông coi căn nhà", "role": "Người kể chuyện, em của chị Hai, trông coi căn nhà", "look": "Vietnamese man in his thirties, plain brown shirt, short hair, tired eyes", "gender": "male", "age": "adult", "narrator": true },
+    { "key": "chi_hai", "name": "Chị Hai", "description": "Người lo cúng cô hồn trong nhà, bỏ đi làm ăn xa", "role": "Người lo cúng cô hồn trong nhà, bỏ đi làm ăn xa", "look": "Vietnamese woman in her forties, faded floral blouse, hair tied back, calm face", "gender": "female", "age": "adult" },
+    { "key": "dua_chau", "name": "Đứa cháu", "description": "Cháu nhỏ trong nhà, làm đổ muối gạo", "role": "Cháu nhỏ trong nhà, làm đổ muối gạo", "look": "Vietnamese boy about seven, yellow shirt and blue shorts, barefoot", "gender": "male", "age": "child" },
+    { "key": "co_hon_giong_chi_hai", "name": "Người giống chị Hai", "appearanceOf": "chi_hai", "description": "Cô hồn mang hình dáng chị Hai, vào nhà đêm đó", "role": "Cô hồn mang hình dáng chị Hai, vào nhà đêm đó", "look": "Vietnamese woman in her forties, faded floral blouse, hair tied back, face pale and cold", "gender": "female", "age": "adult" }
+  ],
+  "places": [
+    { "key": "nha_toi", "name": "Nhà tôi", "description": "Small old Vietnamese house with a front yard, a low altar table outside, wooden furniture and a bedroom at the back", "interior": false, "time": "dusk" },
+    { "key": "phong_ngu", "name": "Phòng ngủ", "description": "Dark bedroom with an old wooden bed, folded blanket, a wooden door with a latch, moonlight through the window", "interior": true, "time": "interior_dark" },
+    { "key": "san_truoc", "name": "Sân trước", "description": "Brick courtyard with a low altar table, incense bowl, scattered rice grains and salt at the doorstep", "interior": false, "time": "night" }
+  ]
+}

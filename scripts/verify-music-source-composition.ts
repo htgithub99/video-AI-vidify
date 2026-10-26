@@ -184,7 +184,7 @@ assert.match(component, /useState\(initialState\.showVideoTrackList \?\? true\)/
 assert.match(component, /songs: downloadedMusicTracks/);
 assert.match(constants, /PRIORITY 1 — USER CHANGE NOTE/);
 assert.match(constants, /must be visibly different at first glance/);
-assert.match(constants, /reject any draft that remains substantially similar/);
+assert.match(constants, /specified result must be substantially different from the attachment/);
 assert.match(constants, /buildMusicImageNoteNormalizationPrompt/);
 assert.match(constants, /MUSIC_IMAGE_NOTE_TEXTS\.SHARED_PROMPT_RULES/);
 assert.match(controller, /ROUTER_PATHS\.MUSIC_IMAGE_NOTE_NORMALIZE/);

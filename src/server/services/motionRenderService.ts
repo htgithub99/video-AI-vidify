@@ -1,3 +1,10 @@
+import { validateMotionMedia, assertMotionSpeechAudio } from "./motionMediaValidation.js";
+import { motionStoryLogs } from "./motionLogStore.js";
+import { motionOutputQualityIssues } from "../../lib/motionOutputQuality.js";
+import { publishMotionResult, finishMotionPublication } from "./motionRenderPublication.js";
+import { writeMotionJsonAtomic } from "./motionFileUtils.js";
+import { MOTION_RENDER_VALIDATION as VALIDATION } from "../../constants/motionRenderValidation.js";
+import { MOTION_PRODUCTION as PRODUCTION } from "../../constants/motionProduction.js";
 import { MOTION_PATTERNS as MP } from "../../constants/motionPatterns.js";
 import { mixMotionSoundAudio } from "./motionSoundMixService.js";
 import { acquireMotionRenderBrowser } from "./motionStoryService.js";
@@ -171,7 +178,7 @@ import { logger } from "../../lib/logger.js";
 import { MotionEncoderPreference, MotionJobStatus, MotionQuality, type MotionJobState, type MotionRenderOptions, type MotionResultItem, type MotionSpec } from "../../types/motionVideo.js";
 import { buildSfxTrack } from "./motionAudioService.js";
 import { buildMotionRenderHtml } from "./motionEngineService.js";
-import { addMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory, listMotionResults } from "./motionLibraryService.js";
+import { getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory, listMotionResults } from "./motionLibraryService.js";
 import { getFfmpegPath } from "./shortsPreprocessService.js";
 const ABORTED = MOTION_TEXT_MOTION_RENDER_ABORTED;
 const jobs = new Map<string, MotionJobState & { controller: AbortController }>();
@@ -209,8 +216,11 @@ const measureLoudness = async (file: string, signal?: AbortSignal): Promise<Reco
     return undefined;
   }
 };
-const checkOutput = async (file: string, signal?: AbortSignal): Promise<string[]> => {
-  const { stderr } = await runFfmpegCollect([MOTION_TEXT_I, file, MOTION_TEXT_VF, MOTION_LOUDNESS.BLACK_FILTER, MR.MOTION_TEXT_AF, [MOTION_LOUDNESS.SILENCE_FILTER, MOTION_LOUDNESS.EBUR_FILTER].join(MOTION_LOUDNESS.CHAIN), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal).catch(() => ({ code: 1, stderr: MR.MOTION_TEXT_EMPTY }));
+const checkOutput = async (file: string, spec: MotionSpec, options: MotionRenderOptions, signal?: AbortSignal): Promise<string[]> => {
+  const { code, stderr } = await runFfmpegCollect([VALIDATION.STRICT, MOTION_TEXT_I, file, MOTION_TEXT_VF, MOTION_LOUDNESS.BLACK_FILTER, MR.MOTION_TEXT_AF, [MOTION_LOUDNESS.SILENCE_FILTER, MOTION_LOUDNESS.EBUR_FILTER].join(MOTION_LOUDNESS.CHAIN), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal);
+  if (code !== 0) throw new Error(PRODUCTION.OUTPUT_INVALID);
+  const qualityErrors = motionOutputQualityIssues(stderr, spec, options.speechRanges || (options.requireAudio ? spec.subtitles : undefined));
+  if (qualityErrors.length) throw new Error([PRODUCTION.OUTPUT_INVALID, ...qualityErrors].join(PRODUCTION.SEPARATOR));
   const loud = [...stderr.matchAll(MOTION_LOUDNESS.EBUR_RE)].pop()?.[1],
     black = (stderr.match(MOTION_LOUDNESS.BLACK_RE) || []).length,
     silence = (stderr.match(MOTION_LOUDNESS.SILENCE_RE) || []).length;
@@ -228,13 +238,13 @@ export const probeMediaDuration = async (file: string): Promise<number> => {
 export const detectEncoders = async (): Promise<string[]> => {
   if (encoderCache) return encoderCache;
   const found: string[] = [];
-  for (const enc of MOTION_GPU_ENCODERS) {
+  for (const enc of [...MOTION_GPU_ENCODERS, MOTION_TEXT_LIBX264]) {
     try {
       const r = await runFfmpegCollect([MOTION_TEXT_HIDE_BANNER, MOTION_TEXT_LOGLEVEL, MOTION_TEXT_ERROR, MOTION_TEXT_F, MOTION_TEXT_LAVFI, MOTION_TEXT_I, MOTION_TEXT_COLOR_C_BLACK_S_320X240_D_0_2, MOTION_TEXT_FRAMES_V, MOTION_TEXT_3, MOTION_TEXT_C_V, enc, MOTION_TEXT_F, MOTION_TEXT_NULL, MOTION_TEXT_SYMBOL_33]);
       if (r.code === 0) found.push(enc);
     } catch {}
   }
-  found.push(MOTION_TEXT_LIBX264);
+  if (!found.length) throw new Error(PRODUCTION.PREFLIGHT_FAILED);
   encoderCache = found;
   return found;
 };
@@ -278,8 +288,24 @@ const encoderArgs = (enc: string, p: MotionQualityPreset, width: number, height:
   return [MOTION_TEXT_C_V, MOTION_TEXT_LIBX264, MOTION_TEXT_PRESET, p.x264Preset, MOTION_TEXT_CRF, String(p.crf), ...cap, MOTION_TEXT_PROFILE_V, MOTION_TEXT_HIGH, MOTION_TEXT_TUNE, MOTION_TEXT_ANIMATION, ...gop, MOTION_TEXT_PIX_FMT, MOTION_TEXT_YUV420P];
 };
 const slugify = (s: string): string => _.trim(_.toString(s).replace(MP.VIETNAMESE_D_LOWER, MOTION_TEXT_D).replace(MP.VIETNAMESE_D_UPPER, MOTION_TEXT_D_2).normalize(MOTION_TEXT_NFD).replace(MP.DIACRITICS, MR.MOTION_TEXT_EMPTY).replace(MP.SLUG_INVALID, MOTION_TEXT_SYMBOL_33).toLowerCase().slice(0, 48), MOTION_TEXT_SYMBOL_33) || MOTION_TEXT_MOTION_VIDEO;
+const renderCheckpointTime = new Map<string, number>();
+const renderCheckpointFile = (id: string): string => {
+  if (!PRODUCTION.ID_RE.test(id)) throw new Error(PRODUCTION.INVALID_RUN);
+  const directory = path.join(getMotionRootDirectory(), VALIDATION.CHECKPOINT_FOLDER);
+  fs.mkdirSync(directory, { recursive: true });
+  return path.join(directory, id + PRODUCTION.EXT);
+};
+const persistRenderJob = (job: MotionJobState, force = false): void => {
+  if (!force && Date.now() - (renderCheckpointTime.get(job.id) || 0) < VALIDATION.CHECKPOINT_MS) return;
+  writeMotionJsonAtomic(renderCheckpointFile(job.id), { version: VALIDATION.CHECKPOINT_VERSION, job: _.omit(job, [MOTION_TEXT_CONTROLLER]) });
+  renderCheckpointTime.set(job.id, Date.now());
+};
 const pushLog = (job: MotionJobState, line: string) => {
-  job.log = _.takeRight([...job.log, MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), String(line))], MOTION_VIDEO_CONSTANTS.MAX_LOG_LINES);
+  const entry = MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), String(line));
+  motionStoryLogs().seed(job.id, job.log);
+  motionStoryLogs().append(job.id, entry);
+  job.log = _.takeRight([...job.log, entry], MOTION_VIDEO_CONSTANTS.MAX_LOG_LINES);
+  persistRenderJob(job);
 };
 interface WorkerSlice {
   index: number;
@@ -393,11 +419,12 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
   const fps = _.toNumber(options.fps) || spec.fps || preset.fps;
   const work = getMotionWorkDirectory(job.id);
   let releaseBrowser: (() => void) | undefined;
+  let pendingOutput: string | undefined;
   try {
     job.status = MotionJobStatus.PREPARING;
     job.stage = MOTION_BROWSER_HANDOFF.PREPARING;
-    releaseBrowser = await acquireMotionRenderBrowser(signal, (line) => pushLog(job, line));
-    pushLog(job, MOTION_BROWSER_RELEASED_LOG);
+    releaseBrowser = await acquireMotionRenderBrowser(signal, (line) => pushLog(job, line), options.editorialSessionId);
+    if (!(releaseBrowser as { shared?: boolean }).shared) pushLog(job, MOTION_BROWSER_RELEASED_LOG);
     job.stage = MOTION_TEXT_PREPARE;
     if (signal.aborted) throw new Error(ABORTED);
     const renderSpec: MotionSpec = _.assign({}, spec, { aspect, fps });
@@ -425,12 +452,17 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
         { tpl: MOTION_TEXT_GEN3D, spec: probeSpec, empty: MR.MOTION_TEXT_EMPTY },
       );
       duration = probeInfo.duration;
-      is3dSoftware = !probeInfo.gl || MP.SOFTWARE_RENDERER.test(probeInfo.gl);
+      is3dSoftware = probeInfo.shots3d > 0 && (!probeInfo.gl || MP.SOFTWARE_RENDERER.test(probeInfo.gl));
       pushLog(job, probeInfo.shots3d ? MOTION_TEMPLATE_CANH_3D_AI_VE_SHOT_WEBGL(String(probeInfo.shots3d), String(_.truncate(probeInfo.gl || MOTION_TEXT_SYMBOL_25, { length: 70 })), String(is3dSoftware ? MOTION_TEXT_KHONG_DUNG_DUOC_GPU_RENDER_SE_CHAM : MR.MOTION_TEXT_EMPTY)) : MOTION_TEXT_KHONG_CO_CANH_3D);
     } finally {
       await probe.browser.close().catch(_.noop);
     }
     pushLog(job, MOTION_TEMPLATE_TRINH_DUYET_RENDER_THOI_LUONG_S(String(probe.label), String(duration.toFixed(1))));
+    if (options.requireAudio) {
+      const speech = options.audioId && path.join(getMotionAudioDirectory(), path.basename(options.audioId));
+      if (!speech || !fs.existsSync(speech)) throw new Error(PRODUCTION.AUDIO_REQUIRED);
+      await assertMotionSpeechAudio(speech, duration, signal);
+    }
     if (options.sfx && !options.sfxId && !options.mixedAudioId)
       try {
         options.sfxId = await buildSfxTrack(duration, options.sfx.cues, undefined, signal);
@@ -454,8 +486,17 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     }
     const per = Math.max(1, Math.round(fps * MOTION_RENDER_CACHE.CHUNK_SECONDS));
     const slices: WorkerSlice[] = _.map(_.range(Math.ceil(totalFrames / per)), (i) => ({ index: i, start: i * per, end: Math.min(totalFrames, (i + 1) * per), file: path.join(cacheDir, MOTION_RENDER_CACHE.CHUNK_FILE(i)) }));
-    const ready = (s: WorkerSlice) => fs.existsSync(s.file) && fs.statSync(s.file).size > 0;
-    const todo = _.filter(slices, (s) => !ready(s));
+    const todo: WorkerSlice[] = [];
+    for (const slice of slices) {
+      signal.throwIfAborted();
+      try {
+        await validateMotionMedia(slice.file, { seconds: (slice.end - slice.start) / fps, width, height, fps, frames: slice.end - slice.start }, signal);
+      } catch (error) {
+        signal.throwIfAborted();
+        if (fs.existsSync(slice.file)) fs.unlinkSync(slice.file);
+        todo.push(slice);
+      }
+    }
     job.status = MotionJobStatus.RENDERING;
     job.stage = MOTION_TEXT_RENDER_2;
     pushLog(job, MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG(String(workers), String(totalFrames)));
@@ -470,18 +511,32 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       job.fpsRender = el > 0 ? (job.framesDone - skipped) / el : 0;
       job.etaSeconds = job.fpsRender ? (totalFrames - job.framesDone) / job.fpsRender : undefined;
       job.progress = Math.min(0.94, (job.framesDone / totalFrames) * 0.94);
+      persistRenderJob(job);
     };
     let reused = 0;
     const onReused = (n: number) => (reused += n);
     const queue = [...todo];
+    const siblingAbort = new AbortController();
+    const workerSignal = AbortSignal.any([signal, siblingAbort.signal]);
     const worker = async (): Promise<void> => {
       for (let s = queue.shift(); s; s = queue.shift()) {
         const temp = s.file + MOTION_RENDER_CACHE.TEMP_SUFFIX;
-        await renderSlice({ ...s, file: temp }, html, { width, height, fps, preset, encoder, signal, onFrames, onReused });
+        await renderSlice({ ...s, file: temp }, html, { width, height, fps, preset, encoder, signal: workerSignal, onFrames, onReused });
+        await validateMotionMedia(temp, { seconds: (s.end - s.start) / fps, width, height, fps, frames: s.end - s.start }, workerSignal);
         fs.renameSync(temp, s.file);
       }
     };
-    await Promise.all(_.times(Math.min(workers, Math.max(1, todo.length)), worker));
+    let workerFailure: unknown;
+    const workerResults = await Promise.allSettled(
+      _.times(Math.min(workers, Math.max(1, todo.length)), () =>
+        worker().catch((error) => {
+          workerFailure ||= error;
+          siblingAbort.abort();
+          throw error;
+        }),
+      ),
+    );
+    if (workerResults.some((result) => result.status === "rejected")) throw workerFailure;
     job.status = MotionJobStatus.ENCODING;
     job.stage = MOTION_TEXT_MUX;
     if (reused) pushLog(job, MOTION_RENDER_CACHE.REUSED(reused, totalFrames - skipped));
@@ -491,7 +546,9 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     const silent = path.join(work, MOTION_TEXT_VIDEO_MP4);
     await ffmpegOrThrow([MOTION_TEXT_F, MOTION_TEXT_CONCAT, MOTION_TEXT_SAFE, MOTION_TEXT_0, MOTION_TEXT_I, list, MOTION_TEXT_C, MOTION_TEXT_COPY, silent], signal);
     const fileName = MOTION_TEMPLATE_SYMBOL_20(String(slugify(options.title || spec.title || MOTION_TEXT_MOTION)), String(aspect.replace(MOTION_TEXT_SYMBOL_39, MOTION_TEXT_X)), String(preset.id), String(Date.now()), String(MOTION_VIDEO_CONSTANTS.EXT_MP4));
-    const out = path.join(getMotionRootDirectory(), fileName);
+    const published = path.join(getMotionRootDirectory(), fileName);
+    const out = published + VALIDATION.PART;
+    pendingOutput = out;
     const audioDir = getMotionAudioDirectory();
     let mixedId = options.mixedAudioId;
     if (!mixedId || !fs.existsSync(path.join(audioDir, path.basename(mixedId)))) {
@@ -504,6 +561,12 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       }
     }
     let mixedPath = mixedId ? path.join(audioDir, path.basename(mixedId)) : MR.MOTION_TEXT_EMPTY;
+    if (options.requireAudio) {
+      const speech = options.audioId && path.join(audioDir, path.basename(options.audioId));
+      if (!speech || !fs.existsSync(speech) || !mixedPath || !fs.existsSync(mixedPath)) throw new Error(PRODUCTION.AUDIO_REQUIRED);
+      await assertMotionSpeechAudio(speech, duration, signal);
+      await assertMotionSpeechAudio(mixedPath, duration, signal);
+    }
     if (mixedPath && fs.existsSync(mixedPath) && options.music && options.music.volume > 0) {
       try {
         const forced = options.music.mood !== MOTION_MUSIC.AUTO ? motionMusicMoodKey(options.music.mood) : undefined;
@@ -551,7 +614,9 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       );
       pushLog(job, MOTION_TEXT_DA_GHEP_AM_THANH);
     } else await ffmpegOrThrow([MOTION_TEXT_I, silent, MOTION_TEXT_C, MOTION_TEXT_COPY, MOTION_TEXT_MOVFLAGS, MOTION_TEXT_FASTSTART, out], signal);
-    for (const line of await checkOutput(out, signal)) pushLog(job, line);
+    const actualDuration = await validateMotionMedia(out, { seconds: duration, width, height, fps, frames: totalFrames, audio: options.requireAudio, decode: false }, signal);
+    for (const line of await checkOutput(out, { ...spec, fps, duration }, options, signal)) pushLog(job, line);
+    signal.throwIfAborted();
     const stat = fs.statSync(out);
     const result: MotionResultItem = {
       id: job.id,
@@ -563,19 +628,23 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       width,
       height,
       fps,
-      durationSeconds: duration,
+      durationSeconds: actualDuration,
       sizeBytes: stat.size,
       renderSeconds: Math.round((Date.now() - started) / 1000),
       encoder,
       createdAt: new Date().toISOString(),
     };
-    fs.rmSync(cacheDir, { recursive: true, force: true });
-    addMotionResult(result);
+    signal.throwIfAborted();
+    publishMotionResult(out, result, options.requireAudio);
+    pendingOutput = undefined;
     job.result = result;
     job.progress = 1;
     job.status = MotionJobStatus.COMPLETED;
     job.stage = MOTION_TEXT_DONE;
     pushLog(job, MOTION_TEMPLATE_HOAN_TAT_MB_S(String((stat.size / 1048576).toFixed(1)), String(result.renderSeconds)));
+    persistRenderJob(job, true);
+    finishMotionPublication(job.id);
+    fs.promises.rm(cacheDir, { recursive: true, force: true }).catch(_.noop);
   } catch (error: any) {
     const aborted = signal.aborted || error?.message === ABORTED;
     job.status = aborted ? MotionJobStatus.CANCELLED : MotionJobStatus.ERROR;
@@ -584,6 +653,8 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     if (!aborted) logger.error(MOTION_TEXT_MOTION_VIDEO_RENDER_FAILED, error);
   } finally {
     releaseBrowser?.();
+    persistRenderJob(job, true);
+    if (pendingOutput) fs.promises.rm(pendingOutput, { force: true }).catch(_.noop);
     fs.promises.rm(work, { recursive: true, force: true }).catch(_.noop);
     setTimeout(() => jobs.delete(job.id), MOTION_VIDEO_CONSTANTS.JOB_TTL_MS).unref();
   }
@@ -603,7 +674,21 @@ export const getMotionJob = (id: string): MotionJobState | null => {
   const job = jobs.get(id);
   if (job && job.status !== MotionJobStatus.COMPLETED) return publicJob(job);
   const result = listMotionResults().find((item) => item.id === id);
-  if (!result) return null;
+  if (!result) {
+    try {
+      const saved = JSON.parse(fs.readFileSync(renderCheckpointFile(id), PRODUCTION.ENCODING));
+      if (saved.version !== VALIDATION.CHECKPOINT_VERSION || saved.job.id !== id) return null;
+      const restored = saved.job as MotionJobState;
+      if (![MotionJobStatus.COMPLETED, MotionJobStatus.CANCELLED, MotionJobStatus.ERROR].includes(restored.status)) {
+        restored.status = MotionJobStatus.ERROR;
+        restored.error = VALIDATION.INTERRUPTION;
+        persistRenderJob(restored, true);
+      }
+      return restored;
+    } catch {
+      return null;
+    }
+  }
   if (job) return publicJob(job);
   const frames = Math.round(result.durationSeconds * result.fps);
   return { id, status: MotionJobStatus.COMPLETED, stage: MOTION_TEXT_DONE, progress: 1, framesDone: frames, framesTotal: frames, encoder: result.encoder, result, startedAt: Date.parse(result.createdAt) - result.renderSeconds * 1000, log: [] };
@@ -644,7 +729,7 @@ export interface MotionStillSession {
   render: (spec: MotionSpec, picks: { id: string; t: number }[], dir: string, opts?: { width?: number; height?: number; quality?: "draft" | "high"; label?: boolean }) => Promise<{ id: string; t: number; file: string; issues: string[]; camera?: unknown }[]>;
   close: () => Promise<void>;
 }
-export const rasterizeMotionSvgs = async (items: { svg: string; file: string; width: number; height: number; bg?: string }[]): Promise<string[]> => {
+export const rasterizeMotionSvgs = async (items: { svg: string; file: string; width: number; height: number; bg?: string; label?: string }[]): Promise<string[]> => {
   if (!items.length) return [];
   const { browser } = await launchBrowser();
   const done: string[] = [];
@@ -654,6 +739,16 @@ export const rasterizeMotionSvgs = async (items: { svg: string; file: string; wi
       try {
         await page.setViewportSize({ width: it.width, height: it.height });
         await page.setContent(MOTION_RASTER.BG_HTML(it.svg, it.width, it.height, it.bg || MOTION_RASTER.BG), { waitUntil: MOTION_TEXT_LOAD });
+        if (it.label)
+          await page.evaluate(
+            ({ text, tag, style }) => {
+              const label = document.createElement(tag);
+              label.textContent = text;
+              Object.assign(label.style, style);
+              document.body.appendChild(label);
+            },
+            { text: it.label, tag: MOTION_RASTER.LABEL_TAG, style: MOTION_RASTER.LABEL_STYLE },
+          );
         fs.mkdirSync(path.dirname(it.file), { recursive: true });
         await page.screenshot({ path: it.file });
         done.push(it.file);

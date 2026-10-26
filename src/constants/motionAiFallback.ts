@@ -3,7 +3,10 @@ import { encodeGeminiChatModel } from "./geminiChatModels.js";
 import { encodeClaudeChatModel } from "./claudeChatModels.js";
 import { MOTION_SCENE_AI } from "./motionSceneLibrary.js";
 
-export interface MotionAiRoute { provider: string; model: string; }
+export interface MotionAiRoute {
+  provider: string;
+  model: string;
+}
 
 export const MOTION_AI_ROLE = { MAIN: "main", DRAW: "draw" } as const;
 
@@ -15,8 +18,8 @@ const GROK: MotionAiRoute = { provider: AiPlanningFallbackProvider.GrokChat, mod
 const CLAUDE: MotionAiRoute = { provider: AiPlanningFallbackProvider.ClaudeChat, model: encodeClaudeChatModel(MOTION_SCENE_AI.MODEL, MOTION_SCENE_AI.EFFORT) };
 
 export const MOTION_AI_FALLBACK = {
-  MAIN: [GEMINI, CHATGPT, DEEPSEEK, GROK, CLAUDE],
-  DRAW: [GEMINI, CHATGPT, DEEPSEEK, GROK],
+  MAIN: [GEMINI, DEEPSEEK, CHATGPT, GROK, CLAUDE],
+  DRAW: [GEMINI, DEEPSEEK, CHATGPT, GROK],
   FALLBACK_TURNS: 2,
   LOG_SWITCH: (from: string, to: string, reason: string): string => `AI ${from} lỗi (${reason}) – chuyển sang ${to}.`,
   LOG_TRY: (index: number, total: number, provider: string): string => `AI ${index}/${total}: ${provider}`,

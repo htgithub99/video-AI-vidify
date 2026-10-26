@@ -1,5 +1,7 @@
 from seed_texts import SeedText as KST
 from core import *
+import re
+from illustration_texts import IllustrationText as IT
 from fixed_compositions import CHARACTERS as FIXED_CHARACTERS
 ARCH = {
     KST.GHOST_WOMAN: dict(name=KST.GHOST_WOMAN_LABEL, gender=KST.FEMALE, age=KST.ADULT, group=KST.GHOST, hair=KST.LONG, hairc=KST.VALUE_141214, face=KST.E6EDF0, body=KST.E3E6E8, sleeve=KST.D6DADD, dress=KST.ROBE, height=1.0, desc=KST.FEMALE_GHOST_IN_A_LONG_WHITE_ROBE_LONG_LOOSE_BLACK_HAIR_PALE_FACE),
@@ -140,11 +142,14 @@ def body_views(t, a):
         if a[KST.HAIR] in (KST.LONG, KST.WET) and view == KST.BACK:
             items.append(path(t, KST.M80_0_L_320_0_L_300_260_L_100_260_Z, a[KST.HAIRC], True))
         if a[KST.DRESS] == KST.SHIRT:
-            items.append(rect(t, 200 - 100 * w, 380, 90 * w, 180, KST.VALUE_2B2A33, True))
-            items.append(rect(t, 200 + 10 * w, 380, 90 * w, 180, KST.VALUE_2B2A33, True))
+            items.append(rect(t, 200 - 100 * w, IT.LEG_TOP, 90 * w, IT.LEG_HEIGHT, KST.VALUE_2B2A33, True))
+            items.append(rect(t, 200 + 10 * w, IT.LEG_TOP, 90 * w, IT.LEG_HEIGHT, KST.VALUE_2B2A33, True))
         for fx in (-60, 60) if view != KST.SIDE else (10,):
             items.append(ell(t, 200 + fx * w, 580, 50 * w + 10, 20, KST.VALUE_1F1B1A, True))
-        items.append(path(t, body_shape(a, view), a[KST.BODY], True))
+        shape = body_shape(a, view)
+        if a[KST.DRESS] == KST.SHIRT:
+            shape = re.sub(IT.SHIRT_PATH_OLD, IT.SHIRT_PATH_NEW, shape)
+        items.append(path(t, shape, a[KST.BODY], True))
         if view == KST.FRONT:
             if a[KST.DRESS] in (KST.SHIRT, KST.DRESS):
                 items.append(path(t, KST.M150_8_L_200_70_L_250_8, KST.NONE, True))
@@ -191,18 +196,35 @@ def sprites(t, a, head, body):
     kneel += face_marks(t, 250, 210, 1.0)
     out[KST.KNEEL] = {KST.SVG: KST.SVG_XMLNS_HTTP_WWW_W3_ORG_2000_SVG_VIEWBOX_0_0_500_500_S_SVG % KST.EMPTY.join(kneel), KST.W: 1.0, KST.H: 0.85, KST.ANCHOR: [0.5, 0.97]}
     for key in (KST.SIT, KST.KNEEL):
-        height = out[key][KST.H]
-        out[key][KST.RIG] = dict(headW=0.352, headH=0.352 * height, headCy=-0.602 * height, bodyH=0.4 * height / 0.9, bodyW=0.24)
+        out[key][KST.H] = IT.SPRITE_HEIGHT
+        out[key][KST.RIG] = dict(headW=IT.CHIBI_HEAD * IT.CHIBI_HEAD_WIDTH, headH=IT.CHIBI_HEAD, headCy=IT.SPRITE_HEAD_CENTER, bodyH=IT.SPRITE_BODY_HEIGHT, bodyW=IT.SPRITE_BODY_WIDTH)
+        root = out[key][KST.SVG]
+        old_head = g_head(162, 96, 0.44, hb)
+        scale = IT.CHIBI_HEAD / IT.SPRITE_HEIGHT * 500 / 400
+        x = 250 - scale * 200
+        y = 485 + (IT.SPRITE_HEAD_CENTER - IT.CHIBI_HEAD / 2) / IT.SPRITE_HEIGHT * 500
+        new_head = IT.HEAD_GROUP % (f(x), f(y), f(scale), hb)
+        out[key][KST.SVG] = root.replace(old_head, new_head)
     return out
 def build_char(key, style):
     a = dict(ARCH[key], key=key)
     t = CT(style)
     minimal = style == KST.MINIMAL_MASK
-    head = head_views(t, a, minimal)
+    if not minimal:
+        from chibi_design import PROFILES
+        from chibi_art import heads, bodies, sprites as illustrated_sprites
+        a.update(PROFILES.get(key, {}))
+        head = heads(t, a)
+    else:
+        head = head_views(t, a, minimal)
     colors = {KST.BODY: a[KST.BODY], KST.SLEEVE: a[KST.SLEEVE], KST.SKIN: a[KST.FACE], KST.HAIR: a[KST.HAIRC], KST.FACE: MIN_FACE if minimal and a[KST.GROUP] != KST.GHOST else a[KST.FACE]}
     if minimal:
         return dict(head=head, body={}, sprites={}, colors=colors, height=a[KST.HEIGHT])
-    body = body_views(t, a)
-    return dict(head=head, body=body, sprites=sprites(t, a, head, body), colors=colors, height=a[KST.HEIGHT])
+    body = bodies(t, a)
+    return dict(head=head, body=body, sprites=illustrated_sprites(t, a, body), colors=colors, height=a[KST.HEIGHT])
 from reference_expansion import CHAR_CATALOG
 ARCH.update(CHAR_CATALOG)
+import json
+from pathlib import Path
+for variant_key, variant in json.loads(Path(__file__).with_name("character_variants.json").read_text(encoding="utf-8")).items():
+    ARCH[variant_key] = {**ARCH[variant["base"]], **{key: value for key, value in variant.items() if key != "base"}}

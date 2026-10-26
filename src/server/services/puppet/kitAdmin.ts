@@ -1,12 +1,13 @@
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
-import { puppetPropAllowed } from "../../../lib/motionPuppetAssets.js";
+import { puppetAssetName, puppetPropAllowed } from "../../../lib/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_KIT_API as A, PUPPET_TYPES, type PuppetType } from "../../../constants/motionPuppet.js";
-import type { PuppetAsset, PuppetCharacter, PuppetProp, PuppetSeries, PuppetSet, PuppetStylePack } from "../../../types/motionPuppet.js";
+import type { PuppetAsset, PuppetCharacter, PuppetProp, PuppetSeries, PuppetSet, PuppetStylePack, PuppetPackSnapshot } from "../../../types/motionPuppet.js";
 import { deletePuppet, listPuppets, puppetLibDir, puppetRefsDir, readPuppet, writePuppet } from "./kitLibrary.js";
 import { characterSheetSvg, proceduralViews } from "./svg.js";
 import { ensurePuppetPresets } from "./stylePack.js";
+import { closedPuppetPackId, puppetPackAssetAllowed, withPuppetPackSnapshot } from "./packPolicy.js";
 export interface PuppetKitItem {
   id: string;
   type: string;
@@ -19,17 +20,19 @@ export interface PuppetKitItem {
   preset?: string;
   counts?: Record<string, number>;
   variants?: string[];
+  construction?: string;
 }
 const typeOf = (v: unknown): PuppetType | null => (_.includes(_.values(PUPPET_TYPES), v) ? (v as PuppetType) : null);
 const summary = (a: PuppetAsset): PuppetKitItem => {
   const any = a as any;
-  const base: PuppetKitItem = { id: a.id, type: a.type, name: any.name || a.id, desc: _.truncate(any.desc || any.description || P.EMPTY, { length: 200 }), styleId: any.styleId, uses: any.uses, updatedAt: any.updatedAt || P.EMPTY };
+  const base: PuppetKitItem = { id: a.id, type: a.type, name: any.name || (any.key ? puppetAssetName(any.key) : a.id), desc: _.truncate(any.desc || any.description || P.EMPTY, { length: 200 }), styleId: any.styleId, uses: any.uses, updatedAt: any.updatedAt || P.EMPTY };
   if (a.type === PUPPET_TYPES.STYLE) return { ...base, source: (a as PuppetStylePack).source, preset: (a as PuppetStylePack).preset };
   if (a.type === PUPPET_TYPES.SERIES) {
     const s = a as PuppetSeries;
     return { ...base, counts: { characters: _.size(s.characters), sets: _.size(s.sets), props: _.size(s.props) } };
   }
-  if (a.type === PUPPET_TYPES.SET) return { ...base, variants: _.keys((a as PuppetSet).variants || {}) };
+  if (a.type === PUPPET_TYPES.SET) return { ...base, variants: _.keys((a as PuppetSet).variants || {}), construction: a.recipe ? "recipe" : a.plan ? "composed" : "legacy" };
+  if (a.type === PUPPET_TYPES.BASE && a.recipeOnly) return { ...base, construction: "review" };
   return base;
 };
 export const listPuppetKit = (type: unknown, styleId?: unknown): PuppetKitItem[] => {
@@ -37,8 +40,9 @@ export const listPuppetKit = (type: unknown, styleId?: unknown): PuppetKitItem[]
   if (!t) return [];
   if (t === PUPPET_TYPES.STYLE) ensurePuppetPresets();
   const sid = _.toString(styleId || P.EMPTY);
+  const closed = closedPuppetPackId(sid);
   return _.map(
-    listPuppets<PuppetAsset>(t, (a: any) => (!sid || t === PUPPET_TYPES.STYLE || a.styleId === sid) && !(t === PUPPET_TYPES.SET && _.includes(a.name, P.VARIANT_SEP)) && (t !== PUPPET_TYPES.PROP || puppetPropAllowed(a))),
+    listPuppets<PuppetAsset>(t, (a: any) => (!sid || t === PUPPET_TYPES.STYLE || a.styleId === sid) && (!closed || t === PUPPET_TYPES.SERIES || puppetPackAssetAllowed(a, closed)) && !(t === PUPPET_TYPES.SET && _.includes(a.name, P.VARIANT_SEP)) && (t !== PUPPET_TYPES.PROP || puppetPropAllowed(a))),
     summary,
   );
 };
@@ -63,11 +67,12 @@ export const removePuppetKit = (type: unknown, ids: unknown): number => {
   }
   return n;
 };
-export const puppetKitThumb = (type: unknown, id: unknown): { svg?: string; file?: string } | null => {
+export const puppetKitThumb = (type: unknown, id: unknown, pack?: PuppetPackSnapshot): { svg?: string; file?: string } | null => {
+  if (pack) return withPuppetPackSnapshot(pack, () => puppetKitThumb(type, id));
   const t = typeOf(type);
   const a = t ? readPuppet<PuppetAsset>(t, _.toString(id)) : null;
   if (!a) return null;
-  if (a.type === PUPPET_TYPES.SET) return { svg: (a as PuppetSet).svg };
+  if (a.type === PUPPET_TYPES.SET || a.type === PUPPET_TYPES.BASE || a.type === PUPPET_TYPES.PIECE) return { svg: a.svg };
   if (a.type === PUPPET_TYPES.PROP) return { svg: (a as PuppetProp).svg };
   if (a.type === PUPPET_TYPES.CHARACTER) {
     const c = a as PuppetCharacter;

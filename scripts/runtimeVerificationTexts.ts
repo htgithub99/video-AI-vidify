@@ -1,5 +1,15 @@
 export const RUNTIME_VERIFICATION_TEXTS = {
+  CHATGPT_USAGE_NOTICE: '<aside role="status">Chúng tôi đang kiểm tra nhanh để ChatGPT luôn ổn định. Thử lại sau 12:56.</aside>',
+  CHATGPT_USAGE_QUOTED: '<div data-content-search-unit-key="fallback-turn-1:assistant"><div data-markdown-text-style="assistant-message"></div></div>',
+  CHATGPT_USAGE_TEXT: "Chúng tôi đang kiểm tra nhanh để ChatGPT luôn ổn định. Thử lại sau 12:56.",
+  CHATGPT_CURRENT_RESPONSE: '<div data-content-search-unit-key="fallback-turn-1:assistant" data-chatgpt-search-message-ids="message-1 message-1"><h4 class="sr-only">ChatGPT đã nói:</h4><div data-markdown-text-style="assistant-message"></div><button>Copy response</button></div>',
+  CHATGPT_CONTENT: '[data-markdown-text-style="assistant-message"]',
+  CHATGPT_CURRENT_BOUNDARY: '[data-content-search-unit-key$=":assistant"]',
+  CHATGPT_MESSAGE_ID: "message-1 message-1",
+  CHATGPT_VIRTUAL_KEY: "data-content-search-unit-key",
+  CHATGPT_VIRTUAL_KEY_NEXT: "fallback-turn-9:assistant",
   NEWLINE: "\n",
+  GEMINI_PROGRAMMED_REFUSAL: "Tôi không được lập trình để làm điều đó.",
   MUSIC_IMAGE_PROMPT: "music_image_prompt",
   MUSIC_IMAGE_PROMPT_TEST: "music-image-prompt-test",
   A_FINISHED_16_9_PROFESSIONAL_MUSIC_PLAYLIST_COVER: "A finished 16:9 professional music playlist cover.",
@@ -292,6 +302,8 @@ export const RUNTIME_VERIFICATION_FORMATS = {
       export const beginChatPlanningRun = () => ({signal: new AbortController().signal, complete() {}, cancel() {}});
       export const closeChatBrowserIfIdle = async () => true;
       export const closeChatPlanningRoom = async () => { f.events.push('close'); };
+      export const getChatPlanningRoom = () => undefined;
+      export const reloadChatPlanningRoom = async () => { f.events.push('reload'); };
       export const closeChatPlanningRoomsForProject = async () => {};
       export const prepareChatPlanningRoom = async () => { f.events.push('prepare'); };
       export const resumeChatPlanningResponse = async () => { throw new Error('unexpected-response-resume'); };
@@ -307,12 +319,13 @@ export const RUNTIME_VERIFICATION_FORMATS = {
     import {createRoot} from 'react-dom/client';
     import {useMotionStudio} from './src/hooks/useMotionStudio.ts';
     import {MotionAiSettings} from './src/components/motion-video/MotionAiSettings.tsx';
+    import {MotionReviewToggle} from './src/components/motion-video/MotionReviewToggle.tsx';
     import {jsonUtils} from './src/lib/json.ts';
     import {MOTION_STORY_CONFIG} from './src/constants/motionVideo.ts';
     function Fixture() {
       const studio = useMotionStudio();
       window.sceneSettingsFixture = {state: studio.state, saved: () => jsonUtils.getAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {})};
-      return <><div data-testid="settings"><MotionAiSettings state={studio.state} patch={studio.patch} currentLang="vi" /></div><button disabled={studio.storyBusy} onClick={() => studio.buildScenes()}>Test drawing request</button></>;
+      return <><div data-testid="settings"><MotionAiSettings state={studio.state} patch={studio.patch} currentLang="vi" /><MotionReviewToggle checked={studio.state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview)=>studio.patch({aiReview})} currentLang="vi" /></div><button disabled={studio.storyBusy} onClick={() => studio.buildScenes()}>Test drawing request</button></>;
     }
     (async () => {
       if (!(await jsonUtils.getAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, null))) await jsonUtils.setAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, ${initial});

@@ -4,6 +4,7 @@ export const SRV = {
   SERVICES: /^\.\.\/services\//,
   ALIAS: /\s+as\s+/,
   COMMA: ",",
+  TYPE_IMPORT: /^type\s/,
   PLUGIN: "motion-scene-controller-offline",
   NAMESPACE: "motion-scene-controller-stubs",
   ENTRY: 'export { scenesMotionStory, voiceMotionStory, seedPuppetKitItems } from "./src/server/controllers/motionVideoController.ts";',

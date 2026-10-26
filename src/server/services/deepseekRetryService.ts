@@ -14,11 +14,17 @@ export const createDeepSeekRetryRecovery = (page: Page, prompt: string | undefin
     throwIfPlanningCancelled(signal);
     if (!prompt || page.isClosed()) return false;
     const message = page.locator(D.USER_MESSAGE).last();
-    const retry = message.locator(D.RETRY).filter({ visible: true }).first();
-    if (!(await retry.count())) return false;
+    if (!(await message.count())) return false;
     const content = await message.locator(XRT.DEEPSEEK_USER_CONTENT).innerText();
     if (comparable(content) !== comparable(prompt)) return false;
     const row = message.locator(XRT.RESPONSE_ROW_ANCESTOR);
+    const rateLimited = await row
+      .getByText(D.MESSAGE_RATE_LIMIT)
+      .filter({ visible: true })
+      .evaluateAll((elements, selectors) => elements.some((element) => !element.closest(selectors.user) && !element.closest(selectors.response)), { user: XRT.DEEPSEEK_USER_CONTENT, response: D.RESPONSE });
+    if (rateLimited) throw new Error(D.RATE_LIMIT_ERROR);
+    const retry = message.locator(D.RETRY).filter({ visible: true }).first();
+    if (!(await retry.count())) return false;
     if (!(await row.getByText(D.CONCURRENT_MESSAGE).filter({ visible: true }).count())) return false;
     if (Date.now() < nextAttemptAt) return true;
     const context = page.context();

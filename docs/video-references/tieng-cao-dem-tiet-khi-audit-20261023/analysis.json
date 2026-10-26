@@ -1,0 +1,3305 @@
+{
+  "metadata": {
+    "title": "Tiếng Cào Đêm Tiết Khí",
+    "video": "D:\\video-AI-vidify\\storage\\output\\motion-video\\tieng-cao-dem-tiet-khi-16x9-draft-1792747627405.mp4",
+    "renderRequest": "D:\\video-AI-vidify\\scratch\\current-motion-run\\render-first-request.json",
+    "duration": 1212.946,
+    "fps": 30,
+    "renderShotCount": 168,
+    "puppetBeatCount": 167,
+    "puppetFrameCount": 228,
+    "chapterCards": 1,
+    "sourceBytes": 146915977,
+    "setDurations": {
+      "gian_nha_go": 527.8419999999998,
+      "xuong_go_bia_rung": 326.8400000000001,
+      "bo_rao_doc_deo": 182.443,
+      "gian_bep_mun_cua": 108.59000000000002,
+      "san_nha_cu_tu": 24.789,
+      "nha_ong_cu_tu": 16.349,
+      "con_duong_sang_xom_rung": 8.35,
+      "buong_trong": 8.283,
+      "doc_deo_hiem_tro": 6.958
+    },
+    "shotTypes": {
+      "people": 93,
+      "wide": 27,
+      "group": 24,
+      "two": 18,
+      "establishing": 17,
+      "insert": 11,
+      "ots": 10,
+      "bust": 9,
+      "object": 8,
+      "close": 7,
+      "duo": 2,
+      "symbol": 1,
+      "shadow": 1
+    },
+    "poses": {
+      "idle": 201,
+      "sit": 74,
+      "hold": 36,
+      "fear": 34,
+      "crouch": 33,
+      "lie": 32,
+      "walk": 9,
+      "talk": 7,
+      "run": 5,
+      "cover_face": 4,
+      "strike": 4,
+      "shout": 3,
+      "think": 2,
+      "carry": 2,
+      "show": 2,
+      "kneel": 2,
+      "shoulder": 1,
+      "knock": 1,
+      "give": 1,
+      "raise": 1
+    },
+    "scope": "One midpoint image for every compiled visual interval; captions from the render subtitles and saved script. Temporal motion and sound quality require separate checks."
+  },
+  "reviewScope": {
+    "framesVisuallyInspected": 229,
+    "puppetFramesVisuallyInspected": 228,
+    "chapterCardsVisuallyInspected": 1,
+    "beatsWithManualNotes": 168,
+    "imageSample": "Midpoint of every compiled visual interval in the actual exported video",
+    "dialogueBasis": "Saved render subtitle timeline, frame.line and saved script narration; no new ASR was run",
+    "limits": [
+      "Không phải kiểm từng khung 30 fps; chuyển động giữa các ảnh giữa cảnh chưa được xem toàn bộ.",
+      "Chưa nghe và đánh giá bằng tai toàn bộ giọng đọc, nhạc hoặc SFX trong lượt này.",
+      "Mức đánh giá ở phụ lục là nhận xét thủ công theo nội dung cảnh, không phải tỷ lệ lỗi tự động hoặc điểm chất lượng khách quan.",
+      "Các phát hiện nói về bản MP4 đã nêu; không chứng minh các thay đổi code sau đó đã được áp dụng vào bản xuất này."
+    ]
+  },
+  "chapters": [
+    {
+      "chapter": 1,
+      "title": "Xưởng cưa và lời cảnh báo",
+      "start": 0,
+      "end": 159.377,
+      "beats": 20,
+      "frames": 29,
+      "mainContentIssues": 2
+    },
+    {
+      "chapter": 2,
+      "title": "Mất vốn và mâm lễ thiu",
+      "start": 159.377,
+      "end": 264.272,
+      "beats": 15,
+      "frames": 26,
+      "mainContentIssues": 2
+    },
+    {
+      "chapter": 3,
+      "title": "Cúng ở bờ rào và điềm ngược",
+      "start": 264.272,
+      "end": 382.382,
+      "beats": 18,
+      "frames": 29,
+      "mainContentIssues": 7
+    },
+    {
+      "chapter": 4,
+      "title": "Tiếng cào, cánh cửa và Khiêm bị nhập",
+      "start": 382.382,
+      "end": 536.736,
+      "beats": 21,
+      "frames": 31,
+      "mainContentIssues": 10
+    },
+    {
+      "chapter": 5,
+      "title": "Khiêm cắn người, thím phát bệnh và cầu cứu",
+      "start": 536.736,
+      "end": 738.806,
+      "beats": 27,
+      "frames": 35,
+      "mainContentIssues": 11
+    },
+    {
+      "chapter": 6,
+      "title": "Đêm thứ hai và cả nhà bị nhập",
+      "start": 738.806,
+      "end": 910.229,
+      "beats": 27,
+      "frames": 33,
+      "mainContentIssues": 12
+    },
+    {
+      "chapter": 7,
+      "title": "Người nhà đổi khác sau bình minh",
+      "start": 910.229,
+      "end": 1046.225,
+      "beats": 19,
+      "frames": 23,
+      "mainContentIssues": 7
+    },
+    {
+      "chapter": 8,
+      "title": "Lễ cháo hiện tại, xưởng hoang và lời kết",
+      "start": 1046.225,
+      "end": 1212.946,
+      "beats": 21,
+      "frames": 23,
+      "mainContentIssues": 5
+    }
+  ],
+  "findings": [
+    {
+      "title": "Khói gắn vào sai người",
+      "frames": [
+        110,
+        111,
+        176,
+        177
+      ],
+      "explanation": "Ở c4_b18, Khiêm có x=0,2188 trong khi smokeX=1715 tương ứng x≈0,893 trên hệ rộng 1920, gần chú Vinh x=0,9063. Ảnh xác nhận khói ở phía chú, không ở miệng trẻ. Cần một đích tác động theo nhân vật và bộ phận cơ thể, không chỉ một tọa độ khói rời."
+    },
+    {
+      "title": "Nhầm dưới giường với trên giường",
+      "frames": [
+        27,
+        118,
+        119,
+        120,
+        159,
+        177
+      ],
+      "explanation": "c5_b3 được biên dịch thành pose=lie, spot=wooden_bed_lie, y=800. Ảnh cho thấy trẻ nằm trên phản. Đây là sai quan hệ không gian, không phải thiếu hoạt ảnh bò."
+    },
+    {
+      "title": "Tương tác hai người không có điểm chạm",
+      "frames": [
+        120,
+        121,
+        122,
+        147,
+        219
+      ],
+      "explanation": "Kéo chân và cắn tay đang dùng hai điểm đứng xa; cảnh cụ đặt tay lên vai cũng giữ hai người tách xa. Cảnh trao tro muối c8_b11 thậm chí có actors=[] và hiện phòng trống. Chỉ cần ảnh tĩnh có đúng người, đúng tay, đúng vật và đúng điểm chạm."
+    },
+    {
+      "title": "Then cửa, đèn, rựa và căn nhà không giữ trạng thái",
+      "frames": [
+        100,
+        101,
+        152,
+        153,
+        165,
+        166,
+        210,
+        225
+      ],
+      "explanation": "Cửa chưa đọc được mở/đóng, đèn còn cháy khi lời nói đã tắt, rựa vẫn nguyên khi lời nói gãy, nhà vẫn nguyên khi lời nói sụp. Cần trạng thái tồn tại qua các câu và biến thể hình của đúng tài nguyên cũ."
+    },
+    {
+      "title": "Hình ma chung thay cho dấu hiệu cụ thể",
+      "frames": [
+        88,
+        112,
+        123,
+        130,
+        169,
+        201,
+        202,
+        203
+      ],
+      "explanation": "Bóng người, đầu đen có mắt và ma áo đen xuất hiện ở nhiều ý khác nhau. Bóng cụt đầu của người, hình nhân không đầu và chân lơ lửng là ba hiện tượng khác nhau, cần ba cách minh họa riêng. Không thêm ma độc lập chỉ vì câu có âm thanh hoặc cảm giác sợ."
+    },
+    {
+      "title": "Tỷ lệ và vùng che khuất làm mất nội dung",
+      "frames": [
+        8,
+        91,
+        92,
+        185,
+        186,
+        192
+      ],
+      "explanation": "Chăn thành tấm dựng đứng; cưa khung che gần hết mặt chú đúng lúc cần thấy mắt; gỗ và vật cầm tay phóng quá lớn. Ngoài điểm đặt, cần kiểm vật có che mất mặt, tay hoặc vật quan trọng của câu hay không."
+    },
+    {
+      "title": "Địa điểm được nhắc bị hiểu thành nơi đang đứng",
+      "frames": [
+        74,
+        75,
+        76,
+        142,
+        146,
+        147,
+        219
+      ],
+      "explanation": "Cụ xuất hiện ở bờ đèo rồi bị chuyển tới xưởng sáng; đang nói ở sân cụ lại sang bờ rào; lời dặn rải ở bậu cửa lại biến thành phòng trống. Cần phân biệt nơi hiện tại, nơi đang được nhắc và hồi tưởng."
+    },
+    {
+      "title": "Lặp ý hình dù nhiều bản ghi khung",
+      "frames": [
+        25,
+        26,
+        95,
+        96,
+        97,
+        98,
+        116,
+        117,
+        222,
+        223,
+        224
+      ],
+      "explanation": "Nhiều bản ghi khác nhau ở shot, mặt hoặc camera nhưng vẫn là người đứng/ngồi cùng nền. c8_b14–16 giữ cảnh bờ rào trống 24,149 giây. Đổi nhãn people/two/wide không thay thế được việc thể hiện sự việc mới."
+    }
+  ],
+  "repeatMetrics": {
+    "method": "Exact equality of listed visual fields, excluding camera, time, line and speech. Image candidate metric: mean absolute RGB difference on top 85 percent downsampled to 96x54, below 3/255. Candidate similarity is not a semantic error verdict.",
+    "fields": [
+      "shot",
+      "set",
+      "light",
+      "actors",
+      "items",
+      "prop",
+      "propMount",
+      "propAt",
+      "propRot",
+      "propX",
+      "propY",
+      "propH",
+      "form",
+      "anchor",
+      "overlays",
+      "effectSource",
+      "smokeX",
+      "smokeY",
+      "inset"
+    ],
+    "exactRepeatGroups": [
+      {
+        "indices": [
+          25,
+          26
+        ],
+        "start": 126.59,
+        "end": 133.809,
+        "duration": 7.219
+      }
+    ],
+    "nearImagePairs": [
+      {
+        "from": 34,
+        "to": 35,
+        "difference": 2.844
+      },
+      {
+        "from": 38,
+        "to": 39,
+        "difference": 0.479
+      },
+      {
+        "from": 104,
+        "to": 105,
+        "difference": 1.969
+      },
+      {
+        "from": 110,
+        "to": 111,
+        "difference": 2.233
+      },
+      {
+        "from": 112,
+        "to": 113,
+        "difference": 1.023
+      },
+      {
+        "from": 116,
+        "to": 117,
+        "difference": 0.804
+      },
+      {
+        "from": 121,
+        "to": 122,
+        "difference": 2.072
+      },
+      {
+        "from": 126,
+        "to": 127,
+        "difference": 0.907
+      },
+      {
+        "from": 127,
+        "to": 128,
+        "difference": 1.049
+      },
+      {
+        "from": 133,
+        "to": 134,
+        "difference": 2.183
+      },
+      {
+        "from": 142,
+        "to": 143,
+        "difference": 1.793
+      },
+      {
+        "from": 143,
+        "to": 144,
+        "difference": 1.872
+      },
+      {
+        "from": 146,
+        "to": 147,
+        "difference": 0.896
+      },
+      {
+        "from": 154,
+        "to": 155,
+        "difference": 1.965
+      },
+      {
+        "from": 157,
+        "to": 158,
+        "difference": 1.198
+      },
+      {
+        "from": 160,
+        "to": 161,
+        "difference": 0.923
+      },
+      {
+        "from": 161,
+        "to": 162,
+        "difference": 1.34
+      },
+      {
+        "from": 162,
+        "to": 163,
+        "difference": 0.785
+      },
+      {
+        "from": 172,
+        "to": 173,
+        "difference": 2.107
+      },
+      {
+        "from": 188,
+        "to": 189,
+        "difference": 2.82
+      },
+      {
+        "from": 214,
+        "to": 215,
+        "difference": 1.906
+      },
+      {
+        "from": 216,
+        "to": 217,
+        "difference": 2.213
+      },
+      {
+        "from": 222,
+        "to": 223,
+        "difference": 2.295
+      },
+      {
+        "from": 223,
+        "to": 224,
+        "difference": 1.38
+      }
+    ]
+  },
+  "beats": [
+    {
+      "id": "c1_b1",
+      "chapter": 1,
+      "start": 0,
+      "end": 10.098,
+      "text": "Thấm thoắt thế mà đã ba mươi năm trôi qua, mỗi bận ngửi thấy mùi mùn cưa ẩm mục sau cơn mưa chiều là sống lưng tôi lại buốt lạnh như có tảng băng áp vào.",
+      "frameIndices": [
+        1,
+        2
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Có phản ứng sợ và mưa, nhưng cảnh mở ở trong nhà; khung cận mùn cưa chỉ cho thấy một vật nhỏ rời rạc, chưa gợi rõ mùi mùn cưa ẩm sau mưa.",
+      "expected": "Dùng người kể cùng một góc mùn cưa ướt dễ nhận; nếu đổi sang cận thì cận đúng mùn cưa, không chỉ phóng mặt nhân vật."
+    },
+    {
+      "id": "c1_b2",
+      "chapter": 1,
+      "start": 10.098,
+      "end": 17.524,
+      "text": "Năm ấy tôi vừa tròn mười sáu tuổi, khăn gói theo phụ việc ở xưởng cưa của chú Vinh nằm heo hút ngay dưới chân đèo Mây.",
+      "frameIndices": [
+        3
+      ],
+      "severity": "nhe",
+      "categories": [
+        "vi_tri"
+      ],
+      "observed": "Có người cháu mang bọc và chú Vinh ở sân gỗ, đủ ý đến làm phụ việc; bọc nằm sát thân nên cần xem rõ điểm đeo.",
+      "expected": "Giữ hai người tách nhau và gắn bọc vào vai người cháu; không cần thêm chuyển động cầu kỳ."
+    },
+    {
+      "id": "c1_b3",
+      "chapter": 1,
+      "start": 17.524,
+      "end": 25.426,
+      "text": "Nơi đây ngổn ngang những thân gỗ lim đen trũi kéo từ rừng thẳm về, dăm gỗ rải ngập lối đi bốc lên thứ mùi ngai ngái nồng nặc.",
+      "frameIndices": [
+        4,
+        5
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Có súc gỗ trong sân, nhưng phần nói dăm gỗ và mùi lại đổi sang khung có mặt người bị làm mờ; dăm gỗ không nổi bật.",
+      "expected": "Một góc súc gỗ và lớp mùn cưa ở nền đủ thể hiện cả câu."
+    },
+    {
+      "id": "c1_b4",
+      "chapter": 1,
+      "start": 25.426,
+      "end": 33.083,
+      "text": "Chú Vinh tôi lúc bấy giờ nổi tiếng khắp vùng đèo dốc bởi ngón nghề xẻ gỗ tinh tường và cái tính kiên định hiếm ai bì kịp.",
+      "frameIndices": [
+        6
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri"
+      ],
+      "observed": "Hai người đứng sát đến mức đầu và thân chồng nhau trong khung giới thiệu chú Vinh.",
+      "expected": "Tách hai điểm đứng; ưu tiên chú Vinh trong khung vừa với xưởng phía sau."
+    },
+    {
+      "id": "c1_b5",
+      "chapter": 1,
+      "start": 33.083,
+      "end": 40.612,
+      "text": "Tay chú thoăn thoắt kéo căng sợi thước dây đo thớ gỗ lim, miệng sang sảng giục đám thợ xẻ phải canh cho thật thẳng mực.",
+      "frameIndices": [
+        7
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Có thước và thợ phụ, nhưng chưa thấy sợi thước căng dọc thân gỗ; người chính ở sát mép hình.",
+      "expected": "Đặt thước giữa hai điểm trên súc gỗ, tay chú gần đầu thước; có thể dùng một ảnh tư thế đo."
+    },
+    {
+      "id": "c1_b6",
+      "chapter": 1,
+      "start": 40.612,
+      "end": 48.304,
+      "text": "Chú vỗ mạnh vào súc gỗ cổ thụ, bảo tôi: Chặt cây ngàn năm phải biết ơn sơn thần, đụng vào cây thiêng là rước họa nghe con!",
+      "frameIndices": [
+        8,
+        9
+      ],
+      "severity": "cao",
+      "categories": [
+        "dao_cu",
+        "vi_tri",
+        "hanh_dong"
+      ],
+      "observed": "Súc gỗ được vẽ thành khối hộp có các nan, khác hình khúc gỗ tròn trước đó; hai người chồng sát và tay chưa chạm gỗ.",
+      "expected": "Giữ cùng mẫu gỗ lim; cho tay chú chạm mặt gỗ, người cháu đứng bên cạnh với khoảng trống rõ."
+    },
+    {
+      "id": "c1_b7",
+      "chapter": 1,
+      "start": 48.304,
+      "end": 55.934,
+      "text": "Khi ấy, tôi cứ ngỡ chú tôi là người kính sợ thần linh và thấu triệt lẽ trời đất nơi rừng thiêng nước độc này hơn ai hết.",
+      "frameIndices": [
+        10
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri"
+      ],
+      "observed": "Lời tự sự có thể giữ lại sân gỗ, nhưng hai nhân vật tiếp tục chồng đầu và thân.",
+      "expected": "Giữ không gian cũ và tách hai người; không cần đổi nền cho câu suy nghĩ này."
+    },
+    {
+      "id": "c1_b8",
+      "chapter": 1,
+      "start": 55.934,
+      "end": 62.892,
+      "text": "Xế chiều, sương mù từ hẻm núi lại kéo về trắng xóa, nuốt chửng cả lối mòn dẫn lên dốc đèo hiểm trở.",
+      "frameIndices": [
+        11
+      ],
+      "severity": "nhe",
+      "categories": [
+        "thoi_gian"
+      ],
+      "observed": "Có đường đèo, sương mờ và không có người, phù hợp câu giới thiệu cảnh; màu trời còn khá sáng so với xế chiều.",
+      "expected": "Dùng biến thể chiều tối của cùng đường đèo và tăng sương vừa đủ."
+    },
+    {
+      "id": "c1_b9",
+      "chapter": 1,
+      "start": 62.892,
+      "end": 69.061,
+      "text": "Đúng lúc ấy, cụ Tứ chăn trâu xóm Rừng lọc cọc dắt con trâu mộng đi ngang qua cổng rào xưởng cưa.",
+      "frameIndices": [
+        12
+      ],
+      "severity": "nhe",
+      "categories": [
+        "vi_tri",
+        "hanh_dong"
+      ],
+      "observed": "Có cụ và trâu cạnh nhau, đúng đối tượng; chưa thấy rõ dây dắt hoặc quan hệ tay với trâu.",
+      "expected": "Cụ đứng trước hoặc bên đầu trâu, có dây dắt dễ đọc nếu lời kể nhấn hành động dắt."
+    },
+    {
+      "id": "c1_b10",
+      "chapter": 1,
+      "start": 69.061,
+      "end": 77.176,
+      "text": "Nhìn những đống gỗ lim đồ sộ ngâm mình trong sương ẩm, cụ dừng bước, khẽ chống chiếc roi đót xuống mặt đất đầy mùn cưa.",
+      "frameIndices": [
+        13
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Cụ cầm roi chĩa lên cao thay vì chống xuống đất như câu kể.",
+      "expected": "Đổi góc roi sao cho đầu roi chạm sàn gần tay người cầm."
+    },
+    {
+      "id": "c1_b11",
+      "chapter": 1,
+      "start": 77.176,
+      "end": 86.065,
+      "text": "Cụ nheo mắt nhìn vào xưởng, cất giọng khàn đục: Vinh này, sắp đến rằm tháng Bảy rồi, liệu mà sắm nắm gạo nếp nấu nồi cháo hoa cúng thí nghe chưa!",
+      "frameIndices": [
+        14,
+        15,
+        16
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "vi_tri",
+        "dao_cu"
+      ],
+      "observed": "Cùng một lời dặn bị tách ba khung; khoảng cách hai người thay đổi lớn và xuất hiện bát cháo dù đang dặn việc chuẩn bị.",
+      "expected": "Giữ một bố cục đối thoại ổn định; nếu minh họa bát cháo tương lai phải phân biệt rõ với vật đang có ở sân."
+    },
+    {
+      "id": "c1_b12",
+      "chapter": 1,
+      "start": 86.065,
+      "end": 95.379,
+      "text": "Cụ thở dài dặn thêm, rằng đường đèo hiểm trở có biết bao phu gỗ ngã núi bỏ mạng, vong đói lẩn khuất trong lau lách chờ bát cháo ấm lòng.",
+      "frameIndices": [
+        17,
+        18
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Cụ và chú vẫn ở sân, nhưng bát cháo được đặt nhỏ giữa sân; đây là vật được nhắc trong lời giải thích, chưa phải lễ đã chuẩn bị.",
+      "expected": "Giữ lời giải thích bằng cụ và chú, hoặc dùng ảnh minh họa riêng có ngữ cảnh; tránh cho bát cháo tự xuất hiện trong không gian hiện tại."
+    },
+    {
+      "id": "c1_b13",
+      "chapter": 1,
+      "start": 95.379,
+      "end": 103.1,
+      "text": "Chú Vinh tôi nghe thế chỉ cười xòa cho qua chuyện, vẫy tay đáp rằng xưởng cưa năm nào chẳng lo chu tất lễ vật ngoài bờ rào.",
+      "frameIndices": [
+        19
+      ],
+      "severity": "nhe",
+      "categories": [
+        "hanh_dong"
+      ],
+      "observed": "Đủ ba người và nét mặt đối thoại; cử chỉ vẫy tay của chú chưa thật rõ trong toàn cảnh.",
+      "expected": "Dùng tư thế đáp lời hoặc vẫy tay đơn giản và giữ vị trí người nghe."
+    },
+    {
+      "id": "c1_b14",
+      "chapter": 1,
+      "start": 103.1,
+      "end": 110.956,
+      "text": "Nhưng tôi đứng gần đó, thấy rất rõ ánh mắt chú đảo vội sang hướng khác, lộ rõ vẻ chán chường vì tiếc từng đấu gạo cúng bái.",
+      "frameIndices": [
+        20
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "trong_tam"
+      ],
+      "observed": "Hai người lại chồng sát nhau; đấu gạo nhỏ ở xa không giúp đọc ánh mắt né tránh của chú.",
+      "expected": "Tách nhân vật, ưu tiên mặt hoặc hướng nhìn của chú; không bắt buộc thêm đấu gạo đang chỉ được nghĩ tới."
+    },
+    {
+      "id": "c1_b15",
+      "chapter": 1,
+      "start": 110.956,
+      "end": 118.953,
+      "text": "Vừa lúc đó, thím Nhỡ bưng rổ ngô luộc nghi ngút khói từ gian bếp đất bước ra sân, đon đả mời thợ nghỉ tay xơi lót dạ.",
+      "frameIndices": [
+        21
+      ],
+      "severity": "nhe",
+      "categories": [
+        "hanh_dong"
+      ],
+      "observed": "Thím có rổ ngô, thợ phụ ở hai phía, đủ ý mời ăn; rổ cần được đọc rõ là đang bưng.",
+      "expected": "Giữ bố cục này, đặt rổ sát hai tay và chỉ cho hơi nóng bốc từ rổ."
+    },
+    {
+      "id": "c1_b16",
+      "chapter": 1,
+      "start": 118.953,
+      "end": 126.59,
+      "text": "Thím cười bảo thợ: Các bác ăn nhanh cho nóng kẻo sương xuống lạnh, nhưng mắt thím lại lén nhìn chú Vinh đầy vẻ tính toán.",
+      "frameIndices": [
+        22,
+        23,
+        24
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "lap_canh"
+      ],
+      "observed": "Ba khung cho một câu chuyển từ thợ sang vợ chồng; khung cuối lại để hai người chồng nhau.",
+      "expected": "Dùng một ảnh thím mời thợ, một ảnh liếc chú nếu cần; giữ khoảng cách và hướng nhìn hợp lý."
+    },
+    {
+      "id": "c1_b17",
+      "chapter": 1,
+      "start": 126.59,
+      "end": 133.809,
+      "text": "Hai vợ chồng chú tôi tằn tiện từng đồng bạc lẻ, đến cọng trấu rổ trút cũng đong đếm chẳng để lọt ra ngoài nửa hạt.",
+      "frameIndices": [
+        25,
+        26
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Hai khung cùng bố cục vợ chồng trong phòng gần như không bổ sung thông tin về đếm tiền hay tiết kiệm.",
+      "expected": "Giữ một khung dài vừa đủ hoặc cận tiền và tay đếm nếu chi tiết ấy cần cho tính cách."
+    },
+    {
+      "id": "c1_b18",
+      "chapter": 1,
+      "start": 133.809,
+      "end": 141.811,
+      "text": "Thằng Khiêm con trai chú mới lên chín tuổi, bụng đói meo ngồi co ro dưới gầm phản, chỉ dám nhặt nhạnh mẩu ngô sượng thợ bỏ lại.",
+      "frameIndices": [
+        27
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "tu_the"
+      ],
+      "observed": "Khiêm hiện trước và cao ngang mặt phản, chưa nằm trong khoảng trống dưới gầm dù câu nói ngồi co ro dưới gầm phản.",
+      "expected": "Đặt trẻ trên nền dưới phản, cho mặt phản và chân phản che một phần thân; giữ mẩu ngô ở tay."
+    },
+    {
+      "id": "c1_b19",
+      "chapter": 1,
+      "start": 141.811,
+      "end": 149.697,
+      "text": "Đêm ấy, tiếng cưa gỗ kẽo kẹt tạm ngơi, chỉ còn tiếng gió thốc từng cơn rít qua khe liếp và tiếng dế rền rĩ não nùng bên vách.",
+      "frameIndices": [
+        28
+      ],
+      "severity": "vua",
+      "categories": [
+        "thoi_gian"
+      ],
+      "observed": "Khung nhà trống hợp tiếng gió và dế, nhưng vẫn sáng nâu như nhiều cảnh ban ngày.",
+      "expected": "Giữ nhà cũ, dùng nền đêm và nguồn đèn nhỏ; không cần thêm người hay ma."
+    },
+    {
+      "id": "c1_b20",
+      "chapter": 1,
+      "start": 149.697,
+      "end": 159.377,
+      "text": "Cả xưởng cưa đang độ ăn nên làm ra, không ai ngờ chỉ một quyết định bần tiện của chú tôi vào mùa ngâu năm ấy đã kéo cả nhà xuống vực thẳm.",
+      "frameIndices": [
+        29
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Cảnh gia đình ở xưởng đủ minh họa lời dự báo thảm kịch; ba người đứng tĩnh là chấp nhận được.",
+      "expected": "Có thể giữ, ưu tiên một khung mở rộng kết đoạn thay vì phóng nhiều lần."
+    },
+    {
+      "id": "c2_b1",
+      "chapter": 2,
+      "start": 159.377,
+      "end": 167.504,
+      "text": "Năm đó mưa ròng rã nửa tháng Bảy, ba cây lim cổ thụ chú tôi vay nặng lãi kéo từ rừng sâu về bỗng nứt toác như bị dao chém.",
+      "frameIndices": [
+        30
+      ],
+      "severity": "nhe",
+      "categories": [
+        "dao_cu"
+      ],
+      "observed": "Có ba mảnh gỗ nứt, đúng hướng sự kiện mất vốn; hình còn giống các tấm gỗ nhỏ hơn cây lim cổ thụ.",
+      "expected": "Cho thấy vết nứt trên cùng loại súc gỗ đã giới thiệu, giữ tỷ lệ với người."
+    },
+    {
+      "id": "c2_b2",
+      "chapter": 2,
+      "start": 167.504,
+      "end": 174.407,
+      "text": "Mùi thớ gỗ mục rữa bốc lên chua loét khắp xưởng, bao nhiêu vốn liếng chú dốc cạn coi như trôi theo dòng nước lũ.",
+      "frameIndices": [
+        31
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Lặp lại bố cục hai người với ba khúc gỗ, nhưng chưa làm rõ lớp mục và nguồn mùi.",
+      "expected": "Cận thớ gỗ mục hoặc nhựa, giữ nguồn mùi tại gỗ; tránh chỉ đổi nét mặt."
+    },
+    {
+      "id": "c2_b3",
+      "chapter": 2,
+      "start": 174.407,
+      "end": 179.853,
+      "text": "Ngồi bên bàn gỗ, chú Vinh nốc cạn chén rượu cay rồi đập mạnh xuống phản vỡ tan tành.",
+      "frameIndices": [
+        32
+      ],
+      "severity": "cao",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Chú ngồi trước phản nhưng chưa thấy chén rượu, chén vỡ hoặc tay đập; sự kiện chính của câu bị mất.",
+      "expected": "Dùng một ảnh tay đặt hoặc đập chén, hoặc ảnh mảnh chén trên phản sau hành động."
+    },
+    {
+      "id": "c2_b4",
+      "chapter": 2,
+      "start": 179.853,
+      "end": 186.517,
+      "text": "Mắt đỏ ngầu, chú gầm lên: “Lũ chủ nợ định siết cổ tao, ông trời cũng muốn dồn cả cái nhà này vào chỗ chết!”",
+      "frameIndices": [
+        33,
+        34
+      ],
+      "severity": "nhe",
+      "categories": [
+        "hanh_dong"
+      ],
+      "observed": "Có cận chú và khung chú nói với thím, đủ vai trò đối thoại; không cần tái hiện thêm chủ nợ.",
+      "expected": "Giữ người nói và người nghe, giảm đổi khung nếu không có thông tin mới."
+    },
+    {
+      "id": "c2_b5",
+      "chapter": 2,
+      "start": 186.517,
+      "end": 192.005,
+      "text": "Thím Nhỡ ngồi đếm từng đồng bạc lẻ trong ruột tượng, mặt mày nhăn nhó tiếc của khôn cùng.",
+      "frameIndices": [
+        35
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Có thím cùng đồ nhỏ cạnh tay, nhưng vị trí ngồi và việc đếm đồng bạc chưa đọc rõ.",
+      "expected": "Thím ngồi tại một mặt phản hoặc bàn; tiền và ruột tượng đặt trên mặt tựa, tay ở gần tiền."
+    },
+    {
+      "id": "c2_b6",
+      "chapter": 2,
+      "start": 192.005,
+      "end": 199.543,
+      "text": "Thím cúi người lục lọi dưới gạn chạn ẩm tối, lôi ra nồi cơm nguội đã lên mốc xanh mốc đỏ từ mấy ngày trước.",
+      "frameIndices": [
+        36
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Thím cầm nồi cơm mốc, đúng vật, nhưng không thấy chạn hoặc vị trí lấy nồi từ dưới chạn.",
+      "expected": "Một ảnh kết quả cầm nồi chấp nhận được nếu chạn phía sau và vị trí lấy vật được gợi rõ."
+    },
+    {
+      "id": "c2_b7",
+      "chapter": 2,
+      "start": 199.543,
+      "end": 207.6,
+      "text": "Thím xúi chú tôi: “Tiền gạo còn chẳng đủ nuốt, lấy xôi gà đâu mà thí thực. Cứ nấu lại nồi cơm mốc này đem cúng cho xong chuyện!”",
+      "frameIndices": [
+        37,
+        38,
+        39
+      ],
+      "severity": "vua",
+      "categories": [
+        "lien_tuc",
+        "lap_canh"
+      ],
+      "observed": "Đầu câu ở phòng gỗ rồi thoại chuyển sang bếp, trong cùng một lời xúi; cảnh và người đổi theo mệnh đề.",
+      "expected": "Đặt cả lời dẫn và lời nói trong bếp nơi vừa lấy nồi; chỉ đổi cảnh khi nhân vật thực sự di chuyển."
+    },
+    {
+      "id": "c2_b8",
+      "chapter": 2,
+      "start": 207.6,
+      "end": 214.147,
+      "text": "Chú Vinh tặc lưỡi quẹt ngang miệng: “Phải đấy, ma đói ngoài đèo có cái nhét bụng là may rồi, đòi hỏi gì lắm!”",
+      "frameIndices": [
+        40,
+        41
+      ],
+      "severity": "nhe",
+      "categories": [
+        "hanh_dong"
+      ],
+      "observed": "Chú, thím và người cháu ở bếp, có khung qua vai đúng hướng đối thoại; động tác quẹt miệng chưa nổi bật.",
+      "expected": "Giữ bếp và vị trí người nghe; có thể chỉ dùng tư thế tặc lưỡi hoặc tay ở miệng."
+    },
+    {
+      "id": "c2_b9",
+      "chapter": 2,
+      "start": 214.147,
+      "end": 220.782,
+      "text": "Tôi hoảng hốt chạy lại can: “Chú ơi, người xưa bảo cúng cô hồn kỵ nhất đồ thiu thối tanh tưởi, làm thế quỷ đói phạt chết!”",
+      "frameIndices": [
+        42,
+        43
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "hieu_ung"
+      ],
+      "observed": "Có người cháu chạy lại, nhưng nhiều bản bóng theo sau làm nhân vật bị nhân hình trong đoạn ngắn.",
+      "expected": "Đặt cháu vừa tới cạnh chú; một tư thế chạy hoặc bước tới là đủ cho cách minh họa tĩnh."
+    },
+    {
+      "id": "c2_b10",
+      "chapter": 2,
+      "start": 220.782,
+      "end": 227.814,
+      "text": "Chú Vinh vung cán chổi ném thẳng vào chân tôi, quát tháo: “Mày câm mồm! Đồ ăn bám không lo xẻ gỗ lại dạy khôn tao à?”",
+      "frameIndices": [
+        44,
+        45
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "vi_tri"
+      ],
+      "observed": "Cán chổi xuất hiện giữa cảnh, nhưng chưa rõ đường ném tới chân cháu; có lúc người đứng sát chồng nhau.",
+      "expected": "Minh họa kết quả cán chổi dưới chân cháu và phản ứng né; không bắt buộc hoạt họa cú ném."
+    },
+    {
+      "id": "c2_b11",
+      "chapter": 2,
+      "start": 227.814,
+      "end": 234.353,
+      "text": "Thím Nhỡ chẳng thèm đoái hoài, bẻ vụn thêm mấy mẩu bánh khô mốc meo gom từ xó bếp bỏ vào rổ cúng.",
+      "frameIndices": [
+        46,
+        47
+      ],
+      "severity": "vua",
+      "categories": [
+        "lien_tuc",
+        "dao_cu"
+      ],
+      "observed": "Bánh và rổ được gợi nhỏ, trẻ xuất hiện cạnh thím; đoạn nhấn việc gom bánh chưa thấy rõ vật đi từ tay vào rổ.",
+      "expected": "Cận tay bẻ bánh trên rổ, giữ trẻ ở xa hơn như người nhìn chờ ăn."
+    },
+    {
+      "id": "c2_b12",
+      "chapter": 2,
+      "start": 234.353,
+      "end": 240.838,
+      "text": "Thằng Khiêm đói lả ngồi co ro bên đống mùn cưa mục, dán chặt mắt thèm thuồng vào đĩa cơm thiu bốc mùi chua nồng.",
+      "frameIndices": [
+        48,
+        49
+      ],
+      "severity": "vua",
+      "categories": [
+        "tu_the",
+        "trong_tam"
+      ],
+      "observed": "Có trẻ và đĩa cơm ở khung cận, nhưng khung đầu vẫn đứng, chưa phải ngồi co ro bên mùn cưa.",
+      "expected": "Cho trẻ ngồi thấp cạnh đống mùn cưa, hướng mắt đến đĩa cơm đã đặt đúng mặt sàn."
+    },
+    {
+      "id": "c2_b13",
+      "chapter": 2,
+      "start": 240.838,
+      "end": 247.946,
+      "text": "Nó run rẩy thò bàn tay lấm lem định nhặt mẩu bánh vụn, liền bị thím Nhỡ giáng một cái tát đau điếng vào lưng.",
+      "frameIndices": [
+        50,
+        51
+      ],
+      "severity": "cao",
+      "categories": [
+        "hanh_dong",
+        "vi_tri"
+      ],
+      "observed": "Thím và trẻ đổi khoảng cách giữa hai khung; chưa thấy quan hệ bàn tay chạm lưng hoặc trẻ đang với bánh.",
+      "expected": "Dùng một bố cục thím phía sau trẻ, tay gần lưng; tay trẻ hướng rổ bánh."
+    },
+    {
+      "id": "c2_b14",
+      "chapter": 2,
+      "start": 247.946,
+      "end": 254.729,
+      "text": "Gian bếp sặc mùi nấm mốc và khói bồ hóng, ngoài trời gió núi bắt đầu thổi từng cơn buốt lạnh thấu xương.",
+      "frameIndices": [
+        52,
+        53
+      ],
+      "severity": "phu_hop",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Bếp trống rồi nhóm gia đình với hơi khói ở bếp, phù hợp câu tả không khí; không cần thêm hành động mới.",
+      "expected": "Giữ nguồn khói ở bếp và một khung đủ thời lượng; đây là chỗ có thể dùng lại nền hợp lý."
+    },
+    {
+      "id": "c2_b15",
+      "chapter": 2,
+      "start": 254.729,
+      "end": 264.272,
+      "text": "Mâm lễ bẩn thỉu ấy được bưng ra bờ rào dốc đèo ngay lúc chập tối, gieo rắc một mầm tai họa mà người dương trần không thể nào lường trước.",
+      "frameIndices": [
+        54,
+        55
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "lap_canh"
+      ],
+      "observed": "Có người bưng mâm ra bờ rào, nhưng hai khung đổi vị trí người rất xa rồi gần mà chưa có bước chuyển rõ.",
+      "expected": "Giữ người bưng và vị trí mâm liên tục; đặt mâm xuống đúng điểm sẽ dùng ở chương sau."
+    },
+    {
+      "id": "c3_b1",
+      "chapter": 3,
+      "start": 264.272,
+      "end": 274.406,
+      "text": "Chiều hôm ấy, sương mù từ đỉnh đèo tràn xuống trắng xóa. Nén nhang chú tôi vừa cắm xuống rãnh đất ẩm đã cháy lụn dần, đầu hương trĩu nặng chúi ngược xuống nền đất.",
+      "frameIndices": [
+        56,
+        57,
+        58
+      ],
+      "severity": "cao",
+      "categories": [
+        "dao_cu",
+        "vi_tri"
+      ],
+      "observed": "Nén nhang được phóng riêng như một thanh dày có nhiều vạch và lơ lửng; không thấy đầu hương chúi vào rãnh đất.",
+      "expected": "Dùng nhang mảnh, chân cắm rõ vào rãnh, đầu cong hoặc chúc xuống đất; cận nền đất đủ giải thích điềm lạ."
+    },
+    {
+      "id": "c3_b2",
+      "chapter": 3,
+      "start": 274.406,
+      "end": 281.158,
+      "text": "Chú Vinh đặt huỵch mâm cơm mốc xuống bờ dứa dại, gắt gỏng: “Ăn nhanh rồi cút, đừng quấy rầy việc làm ăn của tao!”",
+      "frameIndices": [
+        59,
+        60
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "vi_tri"
+      ],
+      "observed": "Có mâm xuống thấp, nhưng bố cục vẫn hàng người trước dãy núi; nơi đặt sát bụi dứa và quan hệ tay với mâm chưa rõ.",
+      "expected": "Chọn góc vừa nhìn được mâm trên đất sát bụi dứa, chú đứng cạnh với tay vừa rời mâm."
+    },
+    {
+      "id": "c3_b3",
+      "chapter": 3,
+      "start": 281.158,
+      "end": 287.016,
+      "text": "Thím Nhỡ ném nắm vàng mã vụn xuống đất giục: “Cúng lẹ rồi về cài then cửa, gió núi buốt gáy lắm rồi.”",
+      "frameIndices": [
+        61,
+        62
+      ],
+      "severity": "nhe",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Thím đưa tay và có đồ nhỏ, đủ gợi ném vàng mã; đồ quá nhỏ nên khó nhận ở khung rộng.",
+      "expected": "Cho vàng mã nằm trên nền cạnh mâm, giữ thím ở phía đã đứng."
+    },
+    {
+      "id": "c3_b4",
+      "chapter": 3,
+      "start": 287.016,
+      "end": 293.56,
+      "text": "Mâm cúng trơ trọi bát cơm thiu bốc men chua nồng, mấy mẩu bánh khô mốc và ba chén nước lã đục ngầu.",
+      "frameIndices": [
+        63
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Khung được gọi object nhưng mâm vẫn nhỏ, có người như cầm hoặc che mâm; chưa thấy rõ ba chén nước và bánh mốc.",
+      "expected": "Dùng góc cận mặt mâm trên nền đất, nhìn đủ cơm, bánh và ba chén; không cần cả nhóm người."
+    },
+    {
+      "id": "c3_b5",
+      "chapter": 3,
+      "start": 293.56,
+      "end": 298.735,
+      "text": "Tôi run giọng: “Chú ơi, cúng thế này lỡ ngạ quỷ nổi giận thì khốn đốn cả nhà!”",
+      "frameIndices": [
+        64,
+        65
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "trong_tam"
+      ],
+      "observed": "Đủ ý người cháu can, nhưng khung qua vai che người nói, chưa gắn lời cảnh báo với mâm lễ đã đặt.",
+      "expected": "Cho cháu nhìn chú bên cạnh mâm; giữ mâm hiện ở mép dưới để nối nguyên nhân với lời cảnh báo."
+    },
+    {
+      "id": "c3_b6",
+      "chapter": 3,
+      "start": 298.735,
+      "end": 304.046,
+      "text": "Chú Vinh quát tháo: “Câm mồm! Bọn ma đói có mẩu cơm thừa góc bếp nhét bụng là phúc lớn rồi!”",
+      "frameIndices": [
+        66,
+        67
+      ],
+      "severity": "nhe",
+      "categories": [
+        "lap_canh"
+      ],
+      "observed": "Lời chú đáp có người nói và người nghe, nhưng lại một lần thu về hàng người như các câu trước.",
+      "expected": "Có thể giữ bố cục đối thoại; chỉ đổi sang phản ứng của người cháu khi ý kể đổi."
+    },
+    {
+      "id": "c3_b7",
+      "chapter": 3,
+      "start": 304.046,
+      "end": 310.705,
+      "text": "Lạ lùng thay, khói hương đen kịt chẳng bốc lên mà sà sát đất, quẩn quanh hai chân khẳng khiu của chú.",
+      "frameIndices": [
+        68
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "vi_tri"
+      ],
+      "observed": "Khói được vẽ thành cột dựng cao cạnh người, ngược với lời khói đen sà sát đất quẩn hai chân.",
+      "expected": "Nguồn tại nhang hoặc mâm, dải khói thấp bám mặt đất và quanh đúng chân chú."
+    },
+    {
+      "id": "c3_b8",
+      "chapter": 3,
+      "start": 310.705,
+      "end": 316.55,
+      "text": "Từng sợi khói tựa ngón tay khô gầy níu chặt gấu quần, khiến chú loạng choạng suýt ngã dúi dụi.",
+      "frameIndices": [
+        69
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "hieu_ung"
+      ],
+      "observed": "Khung cận chỉ có mặt chú; không thấy gấu quần hoặc khói níu chân, mất toàn bộ dấu hiệu của câu.",
+      "expected": "Cận chân và mép quần cùng dải khói; tư thế chú hơi chao là đủ."
+    },
+    {
+      "id": "c3_b9",
+      "chapter": 3,
+      "start": 316.55,
+      "end": 322.309,
+      "text": "Thằng Khiêm đi tụt lại sau, đôi mắt hau háu dán chặt vào quả ổi dập úng mép rổ cúng.",
+      "frameIndices": [
+        70
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "dao_cu"
+      ],
+      "observed": "Có Khiêm và rổ ở xa nhau, nhưng chưa rõ quả ổi nằm ở mép rổ và hướng mắt của trẻ.",
+      "expected": "Rổ đặt trong tầm với, trẻ ở phía sau nhóm và nhìn đúng quả ổi."
+    },
+    {
+      "id": "c3_b10",
+      "chapter": 3,
+      "start": 322.309,
+      "end": 328.906,
+      "text": "Đói quá, nó lén chộp quả ổi nhét tọt vào mồm nhai ngấu nghiến, nước chua nhớt chảy ròng ròng xuống cằm.",
+      "frameIndices": [
+        71
+      ],
+      "severity": "vua",
+      "categories": [
+        "dao_cu",
+        "hanh_dong"
+      ],
+      "observed": "Quả ổi được phóng riêng khá lớn, mang dạng lát có nhiều hạt tròn; chưa gắn với tay hoặc miệng trẻ.",
+      "expected": "Giữ một quả ổi cùng hình dáng từ rổ sang tay, đưa sát miệng hoặc minh họa vết cắn sau khi ăn."
+    },
+    {
+      "id": "c3_b11",
+      "chapter": 3,
+      "start": 328.906,
+      "end": 335.285,
+      "text": "Chẳng ai thấy nó ăn vụng, giữa lúc tiếng gió núi rít qua hốc đá nghe như tiếng khóc than dưới vực sâu.",
+      "frameIndices": [
+        72,
+        73
+      ],
+      "severity": "phu_hop",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Từ trẻ nhỏ trong cảnh rộng sang đèo trống, phù hợp câu không ai thấy và tiếng gió; không cần vẽ ma cho âm thanh.",
+      "expected": "Giữ cảnh trống trong thời lượng vừa phải, bảo toàn rổ và trẻ ở khung trước khi chuyển."
+    },
+    {
+      "id": "c3_b12",
+      "chapter": 3,
+      "start": 335.285,
+      "end": 342.363,
+      "text": "Từ dốc đèo, bước chân ai vội vã giẫm sỏi đá rào rạo. Bóng cụ Tứ hiện ra sau màn sương mù dày đặc.",
+      "frameIndices": [
+        74,
+        75
+      ],
+      "severity": "cao",
+      "categories": [
+        "lien_tuc",
+        "boi_canh",
+        "thoi_gian"
+      ],
+      "observed": "Nửa đầu ở bờ rào tối, đến lúc cụ Tứ xuất hiện lại chuyển sang sân gỗ sáng; cùng sự kiện đến nơi bị đổi địa điểm và ánh sáng.",
+      "expected": "Cụ xuất hiện ở lối đèo dẫn vào chính điểm cúng, cùng chiều tối và sương của các khung liền trước."
+    },
+    {
+      "id": "c3_b13",
+      "chapter": 3,
+      "start": 342.363,
+      "end": 348.273,
+      "text": "Trông thấy bát cơm thiu và nén hương cắm chúi ngược đầu vào bùn, mặt cụ Tứ thoắt cái tái mét.",
+      "frameIndices": [
+        76
+      ],
+      "severity": "cao",
+      "categories": [
+        "lien_tuc",
+        "trong_tam"
+      ],
+      "observed": "Cụ ở sân gỗ ban ngày, cận mặt nhưng thiếu mâm và nhang ngược mà cụ đang nhìn.",
+      "expected": "Cụ nhìn xuống mâm tại bờ rào; có thể cận mặt rồi cận nhang nhưng phải giữ địa điểm."
+    },
+    {
+      "id": "c3_b14",
+      "chapter": 3,
+      "start": 348.273,
+      "end": 354.527,
+      "text": "Cụ giơ roi đót run rẩy chỉ vào mâm lễ: “Vinh ơi, mày phạm vào đại kỵ tuyệt lộ rồi con ơi!”",
+      "frameIndices": [
+        77,
+        78
+      ],
+      "severity": "cao",
+      "categories": [
+        "boi_canh",
+        "hanh_dong"
+      ],
+      "observed": "Cuộc cảnh báo diễn ra ở sân gỗ; roi của cụ chủ yếu dựng lên, chưa chỉ đến mâm lễ tại bờ rào.",
+      "expected": "Giữ điểm cúng, quay đầu roi về mâm, chú đứng đối diện."
+    },
+    {
+      "id": "c3_b15",
+      "chapter": 3,
+      "start": 354.527,
+      "end": 360.635,
+      "text": "Chú Vinh cười khẩy gạt đi: “Bác vẽ chuyện, xó rừng người sống còn chưa đủ ăn, hơi đâu cung phụng lũ chết đường!”",
+      "frameIndices": [
+        79,
+        80
+      ],
+      "severity": "vua",
+      "categories": [
+        "boi_canh",
+        "lap_canh"
+      ],
+      "observed": "Khung qua vai thể hiện lời phản bác, nhưng tiếp tục dùng sân gỗ sáng cho cuộc nói chuyện ở lễ cúng.",
+      "expected": "Giữ lại bờ rào chiều tối và sơ đồ vị trí của cụ với chú."
+    },
+    {
+      "id": "c3_b16",
+      "chapter": 3,
+      "start": 360.635,
+      "end": 366.953,
+      "text": "Cụ Tứ nghẹn giọng: “Cúng đồ thiu là khinh nhờn, cắm nhang ngược là rước họa, đêm nay ngạ quỷ không tha xưởng này đâu!”",
+      "frameIndices": [
+        81,
+        82
+      ],
+      "severity": "cao",
+      "categories": [
+        "boi_canh",
+        "dao_cu"
+      ],
+      "observed": "Lời nhắc cắm nhang ngược tiếp tục ở sân gỗ; nhang ngược quá nhỏ và không phải trọng tâm.",
+      "expected": "Dùng cụ cùng mâm hoặc cận nhang trong rãnh; tránh nhắc điềm chính bằng hình đối thoại chung chung."
+    },
+    {
+      "id": "c3_b17",
+      "chapter": 3,
+      "start": 366.953,
+      "end": 373.539,
+      "text": "Cụ Tứ quày quả bỏ đi, mặc chú cháu tôi lục tục dắt nhau trở về gian nhà gỗ cài chặt then cửa.",
+      "frameIndices": [
+        83
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "lien_tuc"
+      ],
+      "observed": "Hai người hiện ở hai cửa của gian nhà, nhưng không thấy cụ rời đi hay người về nhà cài then.",
+      "expected": "Chỉ cần một ảnh chú cháu ở cửa đã đóng, nối rõ từ lễ cúng về nhà; không cần thêm cảnh đi đường dài."
+    },
+    {
+      "id": "c3_b18",
+      "chapter": 3,
+      "start": 373.539,
+      "end": 382.382,
+      "text": "Đêm rằm buông xuống tĩnh mịch đến ghê người, núi rừng bặt tăm tiếng ếch nhái, chỉ còn lại luồng gió tanh nồng rình rập quanh hàng rào.",
+      "frameIndices": [
+        84
+      ],
+      "severity": "nhe",
+      "categories": [
+        "thoi_gian"
+      ],
+      "observed": "Bờ rào trống có không khí tĩnh, phù hợp câu đêm rằm; nền vẫn hơi sáng so với ban đêm.",
+      "expected": "Giữ một góc đêm của điểm cúng để kết đoạn, không thêm hình nhân."
+    },
+    {
+      "id": "c4_b1",
+      "chapter": 4,
+      "start": 382.382,
+      "end": 384.884,
+      "text": "Chương bốn: Tiếng Cào Trên Vách Gỗ.",
+      "frameIndices": [
+        85
+      ],
+      "severity": "nhe",
+      "categories": [
+        "nhip_dung"
+      ],
+      "observed": "Chỉ chương bốn được dựng thành thẻ chương trong bản này, làm nhịp cấu trúc chưa thống nhất với các chương còn lại.",
+      "expected": "Hoặc dùng thẻ chương nhất quán, hoặc bỏ toàn bộ thẻ nếu muốn dòng kể liền."
+    },
+    {
+      "id": "c4_b2",
+      "chapter": 4,
+      "start": 384.884,
+      "end": 392.3,
+      "text": "Giá như đêm rằm ấy tôi gom hết can đảm mà thổi tắt ngọn đèn dầu, có lẽ tai ương đã không tìm được lối vào.",
+      "frameIndices": [
+        86
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Cận người kể nhưng không thấy ngọn đèn vốn là trọng tâm của câu giả định và nguyên nhân tai ương.",
+      "expected": "Một khung người nhìn ngọn đèn còn cháy là đủ; giữ sắc thái hồi tưởng nhẹ."
+    },
+    {
+      "id": "c4_b3",
+      "chapter": 4,
+      "start": 392.3,
+      "end": 401.042,
+      "text": "Canh ba đêm ấy, ngọn đèn dầu lạc trên bàn bỗng đổi sang màu xanh lè, rồi một âm thanh ken két nhức óc vang lên ngay sau bức vách nứa.",
+      "frameIndices": [
+        87,
+        88
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "trong_tam"
+      ],
+      "observed": "Có cận đèn, sau đó xuất hiện một bóng người trên vách dù lời mới chỉ nói âm thanh; chưa thấy rõ lửa đổi xanh.",
+      "expected": "Giữ ngọn lửa xanh và vách trống có dấu hiệu âm thanh; chưa cho ma hiện hình ở thời điểm này."
+    },
+    {
+      "id": "c4_b4",
+      "chapter": 4,
+      "start": 401.042,
+      "end": 408.888,
+      "text": "Tôi nín thở ngồi bật dậy trên phản, dựng tóc gáy nghe tiếng móng tay cào sột soạt kéo dài trên thớ gỗ lim dựng ngoài sân xưởng.",
+      "frameIndices": [
+        89
+      ],
+      "severity": "vua",
+      "categories": [
+        "tu_the",
+        "trong_tam"
+      ],
+      "observed": "Cận mặt người kể đủ phản ứng nhưng không cho thấy đang ngồi bật dậy trên phản hay nhìn về phía tiếng cào.",
+      "expected": "Khung vừa của người trên phản, đầu quay về sân; vẫn có thể chỉ dùng một tư thế kết quả."
+    },
+    {
+      "id": "c4_b5",
+      "chapter": 4,
+      "start": 408.888,
+      "end": 416.237,
+      "text": "Âm thanh rợn người ấy cứ miết từng vệt chậm rãi, cọ sát vào lớp vỏ cây xù xì như muốn bới tung từng thớ gỗ.",
+      "frameIndices": [
+        90
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Góc toàn sân tối, đống gỗ nhỏ ở xa; không thấy vệt cào trên lớp vỏ cây.",
+      "expected": "Cận mặt gỗ có vết xước ở đúng đống gỗ ngoài sân; không cần vẽ bàn tay ma."
+    },
+    {
+      "id": "c4_b6",
+      "chapter": 4,
+      "start": 416.237,
+      "end": 423.482,
+      "text": "Trên phản gỗ, thím Nhỡ kéo tấm chăn rách trùm kín đầu, run giọng thì thào: “Ông Vinh ơi, con gì ngoài sân thế?”",
+      "frameIndices": [
+        91,
+        92
+      ],
+      "severity": "cao",
+      "categories": [
+        "dao_cu",
+        "vi_tri"
+      ],
+      "observed": "Chăn rách thành một tấm lớn dựng đứng ở đầu phản, không nằm phủ lên đầu và thân thím.",
+      "expected": "Chăn là lớp vải ôm thân nằm, che một phần đầu; không vẽ như bảng dựng rời."
+    },
+    {
+      "id": "c4_b7",
+      "chapter": 4,
+      "start": 423.482,
+      "end": 429.777,
+      "text": "Chú Vinh bực dọc ném gối xuống dát giường, quát khẽ: “Khéo chuột cống tha dăm bào chứ quái gì, làm reo mãi!”",
+      "frameIndices": [
+        93,
+        94
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "vi_tri"
+      ],
+      "observed": "Chú gần phản nhưng gối chưa rõ ở tay hoặc trên dát giường; khung sau trở lại nhóm người như thường.",
+      "expected": "Có thể minh họa gối đã rơi trên phản và chú đang gắt, không cần động tác ném liên tục."
+    },
+    {
+      "id": "c4_b8",
+      "chapter": 4,
+      "start": 429.777,
+      "end": 436.865,
+      "text": "Nhưng tiếng cào không dừng lại, nó rời súc gỗ lim rồi bắt đầu lần mò men theo bờ liếp tiến thẳng về phía cửa chính.",
+      "frameIndices": [
+        95,
+        96
+      ],
+      "severity": "cao",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Hai khung gần cùng nhóm người quanh phản, không minh họa tiếng cào di chuyển từ súc gỗ tới vách và cửa.",
+      "expected": "Cho thấy đoạn vách hoặc chân cửa tiếp nhận tiếng cào; vẫn giữ cùng căn nhà và nguồn ngoài khung."
+    },
+    {
+      "id": "c4_b9",
+      "chapter": 4,
+      "start": 436.865,
+      "end": 443.827,
+      "text": "Tiếng móng vuốt miết trên thanh nứa khô nghe giòn tan, buốt lạnh như lưỡi dao cạo từng lớp màng tang của kẻ thức đêm.",
+      "frameIndices": [
+        97,
+        98
+      ],
+      "severity": "cao",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Tiếp tục nhóm người quanh phản; thanh nứa bị cào không trở thành trọng tâm dù lời kể đã nhấn nó.",
+      "expected": "Cận vách nứa có vệt xước hoặc một góc cửa; có thể giữ ảnh này xuyên cả hai câu cào."
+    },
+    {
+      "id": "c4_b10",
+      "chapter": 4,
+      "start": 443.827,
+      "end": 450.984,
+      "text": "Chú Vinh nuốt khan một ngụm nước bọt, với tay cầm lấy cây rựa sáng loáng rồi rón rén bước từng bước tới bậu cửa.",
+      "frameIndices": [
+        99
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Chú có rựa và ở cửa, đúng hướng hành động; nhân vật còn lại giữ nền nhưng rựa cần giữ hình dáng và tỷ lệ ổn định.",
+      "expected": "Dùng tư thế cầm rựa tới cửa, góc máy thấy tay và cửa rõ, không cần tăng zoom."
+    },
+    {
+      "id": "c4_b11",
+      "chapter": 4,
+      "start": 450.984,
+      "end": 457.887,
+      "text": "Bàn tay gân guốc của chú run rẩy nhấc chiếc then cài bằng gỗ lim, tiếng then trượt nghe khô khốc giữa đêm thanh vắng.",
+      "frameIndices": [
+        100
+      ],
+      "severity": "cao",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Vẫn là toàn phòng và chú đứng ở cửa; chưa đọc được bàn tay nhấc then, then vẫn nhìn như gắn cố định.",
+      "expected": "Cận tay và thanh then vừa được nhấc; lưu trạng thái cửa đã bỏ then cho câu tiếp."
+    },
+    {
+      "id": "c4_b12",
+      "chapter": 4,
+      "start": 457.887,
+      "end": 464.755,
+      "text": "Chú ghé sát mắt qua khe cửa liếp hé mở nhìn ra sân mù sương nhưng tuyệt nhiên không một bóng người qua lại.",
+      "frameIndices": [
+        101,
+        102
+      ],
+      "severity": "cao",
+      "categories": [
+        "hanh_dong",
+        "lien_tuc"
+      ],
+      "observed": "Các khung vẫn thấy cánh cửa kín và chú đứng trước, chưa có khe hé hoặc mắt nhìn qua khe.",
+      "expected": "Dùng góc ngang cửa hé, chú cúi mắt gần khe; khung sân trống chỉ xuất hiện như hướng nhìn từ cửa ấy."
+    },
+    {
+      "id": "c4_b13",
+      "chapter": 4,
+      "start": 464.755,
+      "end": 472.151,
+      "text": "Gió núi thốc vào mang theo mùi hôi tanh nồng nặc của bùn rữa, khiến ngọn đèn dầu phía sau lưng chúng tôi chao đảo muốn tắt.",
+      "frameIndices": [
+        103
+      ],
+      "severity": "vua",
+      "categories": [
+        "hieu_ung",
+        "lien_tuc"
+      ],
+      "observed": "Có người và đèn nhưng cánh cửa vẫn kín, không gian khó giải thích gió thốc vào từ đâu.",
+      "expected": "Giữ cửa hé từ cảnh trước, đèn phía sau chao nhẹ; nguồn mùi đến từ phía cửa."
+    },
+    {
+      "id": "c4_b14",
+      "chapter": 4,
+      "start": 472.151,
+      "end": 479.886,
+      "text": "Chú Vinh lẩm bẩm chửi thề một tiếng rồi vội vã sập cửa, cài chặt chốt lại như muốn xua đuổi thứ vô hình vừa lướt qua.",
+      "frameIndices": [
+        104,
+        105
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "lien_tuc"
+      ],
+      "observed": "Hai khung đổi vị trí người trong phòng; trạng thái đóng cửa và cài chốt vẫn không khác rõ các khung trước.",
+      "expected": "Một ảnh cửa đã đóng, tay chú đặt lên chốt là đủ; không đổi vị trí người cháu nếu không di chuyển."
+    },
+    {
+      "id": "c4_b15",
+      "chapter": 4,
+      "start": 479.886,
+      "end": 487.968,
+      "text": "Tôi bưng ngọn đèn dầu soi xuống đất, bàng hoàng phát hiện một vệt mùn cưa ướt nhớt nhầy nhụa kéo từ cổng rào thẳng vào mép chiếu thằng Khiêm.",
+      "frameIndices": [
+        106,
+        107
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "lien_tuc",
+        "dao_cu"
+      ],
+      "observed": "Có đèn cầm tay nhưng đèn trên bàn vẫn cháy; người cháu và chú đổi phía giữa hai khung, chưa thấy vệt mùn cưa nối cửa với chiếu.",
+      "expected": "Theo dõi một chiếc đèn từ bàn sang tay; đặt vệt ướt liên tục trên sàn từ cửa đến chỗ Khiêm."
+    },
+    {
+      "id": "c4_b16",
+      "chapter": 4,
+      "start": 487.968,
+      "end": 494.885,
+      "text": "Chất nhầy bốc lên mùi chua loét của bát cơm thiu ngoài bụi dứa, quyện với mùi tanh tưởi của bùn lầy chân đèo.",
+      "frameIndices": [
+        108
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Chuyển sang hai khuôn mặt, bỏ mất chất nhầy đang được tả và vị trí của nó dưới đất.",
+      "expected": "Giữ cận vệt nhầy trên sàn, khói mùi thấp phát đúng từ vệt; không thay bằng mặt người."
+    },
+    {
+      "id": "c4_b17",
+      "chapter": 4,
+      "start": 494.885,
+      "end": 501.471,
+      "text": "Tôi run rẩy chĩa luồng sáng về góc buồng, nơi thằng em họ chín tuổi của tôi đang nằm quay mặt vào vách.",
+      "frameIndices": [
+        109
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "tu_the"
+      ],
+      "observed": "Có Khiêm nằm và người kể cầm đèn, nhưng Khiêm nằm ngang trên phản, chưa rõ quay mặt vào vách ở góc buồng.",
+      "expected": "Đầu trẻ gần vách, hướng mặt vào vách; đèn ở phía người soi và vùng sáng phủ đúng trẻ."
+    },
+    {
+      "id": "c4_b18",
+      "chapter": 4,
+      "start": 501.471,
+      "end": 510.616,
+      "text": "Thằng Khiêm bỗng bật dậy, miệng há hốc để mặc một luồng khói xám nhờ nhợ từ gầm sàn chui tọt vào cuống họng, hai hàm răng va vào nhau lách cách.",
+      "frameIndices": [
+        110,
+        111
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "vi_tri"
+      ],
+      "observed": "Khói xuất hiện gần đầu chú Vinh bên phải, trong khi Khiêm ngồi phía trái; không có đường từ gầm sàn vào miệng trẻ.",
+      "expected": "Khóa người chịu tác động là Khiêm, nguồn ở gầm và đích tại miệng Khiêm; các người quan sát không phát khói."
+    },
+    {
+      "id": "c4_b19",
+      "chapter": 4,
+      "start": 510.616,
+      "end": 518.689,
+      "text": "Hai mắt nó trắng dã không còn tròng đen, cái bóng in trên vách nứa cụt ngủn không đầu và hai gót chân nhấc bổng khỏi mặt chiếu.",
+      "frameIndices": [
+        112,
+        113
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "vi_tri",
+        "trong_tam"
+      ],
+      "observed": "Một bóng ma có đầu hiện gần chú Vinh; mắt và bóng của Khiêm chưa thể hiện dấu mất tròng, cụt đầu và nhấc gót.",
+      "expected": "Cận Khiêm cùng bóng đổ của chính trẻ trên vách; bóng cụt đầu là hình đổ, không phải thêm một nhân vật ma."
+    },
+    {
+      "id": "c4_b20",
+      "chapter": 4,
+      "start": 518.689,
+      "end": 527.675,
+      "text": "Thím Nhỡ thét lên kinh hãi rồi ngã ngửa ra phản, trong khi chú Vinh đứng chôn chân tại chỗ, bàn tay buông rơi cây rựa xuống sàn kêu rầm một tiếng.",
+      "frameIndices": [
+        114
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Thím nằm trên phản và chú đứng là đúng kết quả, nhưng cây rựa nằm gần trên phản thay vì rơi xuống sàn.",
+      "expected": "Giữ thím trên phản, chú ở cửa, rựa rơi trên sàn dưới tay chú."
+    },
+    {
+      "id": "c4_b21",
+      "chapter": 4,
+      "start": 527.675,
+      "end": 536.736,
+      "text": "Nỗi kinh hoàng bắt đầu bám riết lấy căn nhà gỗ khi hơi lạnh từ gầm sàn bốc lên khiến hàm răng ai nấy đều đánh vào nhau cầm cập.",
+      "frameIndices": [
+        115
+      ],
+      "severity": "nhe",
+      "categories": [
+        "lap_canh"
+      ],
+      "observed": "Nhóm gia đình trong phòng hợp câu không khí; đây có thể là khung nghỉ sau điềm lạ, nhưng đã bị dùng quá nhiều trước đó.",
+      "expected": "Giữ ngắn sau một khung đã thể hiện rõ biến cố, không dùng nó thay cho cảnh hành động quan trọng."
+    },
+    {
+      "id": "c5_b1",
+      "chapter": 5,
+      "start": 536.736,
+      "end": 545.485,
+      "text": "Sáng hôm sau thằng Khiêm nhìn tôi bằng đôi mắt đục ngầu không tròng đen, miệng cười toe toét nhưng giọng nói lại khàn đặc như ông già chết đuối.",
+      "frameIndices": [
+        116
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Có Khiêm và người kể ở hai đầu phòng, nhưng khoảng cách rộng làm dấu mắt trắng, miệng cười không đọc được.",
+      "expected": "Khung vừa hoặc cận Khiêm, giữ người kể ở mép nếu cần phản ứng."
+    },
+    {
+      "id": "c5_b2",
+      "chapter": 5,
+      "start": 545.485,
+      "end": 550.678,
+      "text": "Nó gằn từng tiếng rợn người: Cháu đói lắm anh ơi, bụng cháu cào như có trăm con rết bò!",
+      "frameIndices": [
+        117
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Giữ nguyên bố cục c5_b1 trong cả lời thoại, khó thấy người nói với giọng đe dọa.",
+      "expected": "Có thể giữ cùng góc nhưng ưu tiên mặt Khiêm; không cần đổi nền hoặc cho cả hai cùng mở miệng."
+    },
+    {
+      "id": "c5_b3",
+      "chapter": 5,
+      "start": 550.678,
+      "end": 557.678,
+      "text": "Dứt lời nó liền bò toài xuống gầm giường gục đầu gặm lấy gặm để một khúc gỗ lim mục rữa bám đầy bọ ẩm.",
+      "frameIndices": [
+        118,
+        119
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "tu_the"
+      ],
+      "observed": "Khiêm nằm trên mặt phản cạnh khúc gỗ thay vì bò dưới gầm giường để gặm.",
+      "expected": "Dùng khoảng trống dưới giường, thân thấp sát đất, miệng gần khúc gỗ; mặt giường phải ở phía trên trẻ."
+    },
+    {
+      "id": "c5_b4",
+      "chapter": 5,
+      "start": 557.678,
+      "end": 562.992,
+      "text": "Tôi hốt hoảng cúi rạp người nắm lấy hai cổ chân gầy guộc của thằng bé lôi mạnh ra ngoài.",
+      "frameIndices": [
+        120
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "hanh_dong"
+      ],
+      "observed": "Người kể ở cửa trái, Khiêm nằm trên phản; hai tay không tiếp xúc cổ chân và khoảng cách không cho phép kéo.",
+      "expected": "Bố cục cố định người kéo ở ngoài gầm, hai tay tại cổ chân trẻ; giường và trẻ cùng một hệ tọa độ."
+    },
+    {
+      "id": "c5_b5",
+      "chapter": 5,
+      "start": 562.992,
+      "end": 570.413,
+      "text": "Thằng Khiêm bất thần quay ngoắt lại, mắt vằn tia máu đỏ sẫm rồi nhe hàm răng lởm chởm cắn phập vào mu bàn tay tôi.",
+      "frameIndices": [
+        121
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "hanh_dong"
+      ],
+      "observed": "Hai người ở hai vùng xa nhau trong phòng, không thể hiện được miệng trẻ chạm mu bàn tay người kể.",
+      "expected": "Một ảnh cận tay bị cắn hoặc kết quả vết cắn, bảo toàn vị trí người kéo và đứa trẻ."
+    },
+    {
+      "id": "c5_b6",
+      "chapter": 5,
+      "start": 570.413,
+      "end": 577.953,
+      "text": "Tôi rú lên đau đớn, giật mạnh tay về thì thấy vết rách tứa ra dòng nước vàng khè bốc mùi thối rữa như chuột chết.",
+      "frameIndices": [
+        122
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Vẫn hai người xa nhau; không thấy bàn tay có vết rách và nước vàng, nên hậu quả cú cắn bị mất.",
+      "expected": "Cận mu bàn tay có vết cắn vừa đủ minh họa, không cần chi tiết máu me."
+    },
+    {
+      "id": "c5_b7",
+      "chapter": 5,
+      "start": 577.953,
+      "end": 586.037,
+      "text": "Nó gầm gừ trong cổ họng như một con thú hoang rồi lại thụt sâu vào xó tối, hai hàm răng nghiến ken két từng hồi rợn tóc gáy.",
+      "frameIndices": [
+        123
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "vi_tri"
+      ],
+      "observed": "Thêm một đầu bóng đen có mắt sáng trong góc, trong khi câu chỉ mô tả Khiêm gầm gừ và lùi vào xó.",
+      "expected": "Chỉ Khiêm lùi về gầm hoặc góc tối; không sinh thêm ma độc lập từ cảm xúc và âm thanh."
+    },
+    {
+      "id": "c5_b8",
+      "chapter": 5,
+      "start": 586.037,
+      "end": 594.32,
+      "text": "Chưa kịp hoàn hồn thì từ buồng trong, tiếng thím Nhỡ đập chân giường thình thình kèm theo những tiếng rú the thé rách toang màn sương sớm.",
+      "frameIndices": [
+        124
+      ],
+      "severity": "nhe",
+      "categories": [
+        "boi_canh"
+      ],
+      "observed": "Có phòng trong và thím nằm, phù hợp việc nghe tiếng từ buồng khác; cần duy trì đúng phòng này ở cảnh tiếp.",
+      "expected": "Giữ định danh phòng trong và hướng đi của người kể khi bước tới."
+    },
+    {
+      "id": "c5_b9",
+      "chapter": 5,
+      "start": 594.32,
+      "end": 602.229,
+      "text": "Tôi lảo đảo bước vào thì thấy thím nằm co quắp trên chiếc phản gỗ, người sốt hâm hấp nhưng mồm miệng lại run rẩy rét căm căm.",
+      "frameIndices": [
+        125
+      ],
+      "severity": "vua",
+      "categories": [
+        "lien_tuc",
+        "tu_the"
+      ],
+      "observed": "Lại dùng phản ở gian ngoài ngay sau phòng trong, chưa giải thích đổi phòng; thân thím nằm thẳng thay vì co quắp.",
+      "expected": "Giữ căn buồng vừa giới thiệu và một tư thế nằm co; người kể ở lối bước vào."
+    },
+    {
+      "id": "c5_b10",
+      "chapter": 5,
+      "start": 602.229,
+      "end": 609.649,
+      "text": "Môi thím thâm sì, hai con mắt dại đi trợn ngược lên xà nhà, ngón tay cào cấu liên tục vào mép chiếu cói rách bươm.",
+      "frameIndices": [
+        126
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "hanh_dong"
+      ],
+      "observed": "Toàn phòng với thím nằm, chưa đọc được ngón tay cào mép chiếu, môi tím hay mắt trợn.",
+      "expected": "Một góc gần mặt và bàn tay cạnh chiếu; chọn dấu hiệu chính thay vì cố nhét cả câu vào cảnh rộng."
+    },
+    {
+      "id": "c5_b11",
+      "chapter": 5,
+      "start": 609.649,
+      "end": 616.078,
+      "text": "Thím thều thào kêu la: Lấy cho tao gáo nước dưới rãnh đèo, tao khát cháy cổ họng rồi chúng mày ơi!",
+      "frameIndices": [
+        127,
+        128
+      ],
+      "severity": "vua",
+      "categories": [
+        "dao_cu",
+        "lap_canh"
+      ],
+      "observed": "Có vật nhỏ giống gáo ở phản dù câu đang đòi lấy nước; hai nửa giữ gần như cùng hình.",
+      "expected": "Giữ thím nằm nói, gáo chỉ xuất hiện khi ai đó mang tới; nếu minh họa nhu cầu phải phân biệt với vật đang hiện diện."
+    },
+    {
+      "id": "c5_b12",
+      "chapter": 5,
+      "start": 616.078,
+      "end": 623.348,
+      "text": "Rồi thím bỗng ngồi bật dậy gào thét đòi ăn thịt sống, đòi nuốt tươi nuốt sống bất cứ thứ gì giãy giụa trước mặt.",
+      "frameIndices": [
+        129
+      ],
+      "severity": "nhe",
+      "categories": [
+        "tu_the"
+      ],
+      "observed": "Thím đã ngồi dậy trước phản, đúng thay đổi tư thế; lời đòi thịt không cần sinh thêm con vật sống.",
+      "expected": "Giữ tư thế ngồi dậy và biểu cảm, không thêm đạo cụ chỉ vì được nhắc tới trong lời đòi."
+    },
+    {
+      "id": "c5_b13",
+      "chapter": 5,
+      "start": 623.348,
+      "end": 631.594,
+      "text": "Căn nhà gỗ ba gian bỗng chốc biến thành chốn địa ngục trần gian, tiếng gầm gừ dưới gầm giường hòa cùng tiếng gào khóc điên loạn trên phản.",
+      "frameIndices": [
+        130,
+        131
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "vi_tri"
+      ],
+      "observed": "Khiêm hiện ở phía cửa và lại có đầu ma đen ở góc; câu yêu cầu một người dưới giường, một người trên phản.",
+      "expected": "Dùng một khung toàn xác định đủ hai tầng vị trí, không thêm đầu ma vào góc."
+    },
+    {
+      "id": "c5_b14",
+      "chapter": 5,
+      "start": 631.594,
+      "end": 639.555,
+      "text": "Chú Vinh từ ngoài sân lảo đảo chạy xộc vào, mặt mày cắt không còn giọt máu, hai bàn tay run lẩy bẩy bưng bát gạo muối trắng.",
+      "frameIndices": [
+        132
+      ],
+      "severity": "vua",
+      "categories": [
+        "dao_cu",
+        "hanh_dong"
+      ],
+      "observed": "Có cấu hình cầm bát gạo muối nhưng bát quá nhỏ để thấy rõ trong ảnh; người từ sân vào chỉ biểu hiện bằng bóng kéo theo.",
+      "expected": "Đặt bát đủ đọc trên hai tay và người đứng vừa qua cửa; tư thế đến nơi đủ thay cho nhiều bóng chồng."
+    },
+    {
+      "id": "c5_b15",
+      "chapter": 5,
+      "start": 639.555,
+      "end": 645.261,
+      "text": "Chú quát lên lạc cả giọng: Vong nào quấy phá thì cút ngay ra rừng ra bụi, đừng có hòng làm loạn nhà tao!",
+      "frameIndices": [
+        133
+      ],
+      "severity": "nhe",
+      "categories": [
+        "hanh_dong"
+      ],
+      "observed": "Chú đang quát, người khác nghe, đúng ý thoại; không cần thêm quỷ mới cho câu xua đuổi.",
+      "expected": "Giữ bát gạo muối trong tay chú và vị trí của thím từ khung trước."
+    },
+    {
+      "id": "c5_b16",
+      "chapter": 5,
+      "start": 645.261,
+      "end": 652.642,
+      "text": "Chú vốc từng nắm gạo muối ném tung tóe vào gầm giường, ném lên nóc nhà và vãi tứ tung khắp bốn góc vách nứa.",
+      "frameIndices": [
+        134,
+        135
+      ],
+      "severity": "cao",
+      "categories": [
+        "dao_cu",
+        "hanh_dong"
+      ],
+      "observed": "Tay chú đưa ngang nhưng không thấy các hạt đi tới gầm, nóc hoặc góc nhà; hai khung chủ yếu lặp nhóm người.",
+      "expected": "Minh họa một nắm rải xuống gầm hoặc kết quả hạt vương ở nền; không bắt buộc mô phỏng từng hạt."
+    },
+    {
+      "id": "c5_b17",
+      "chapter": 5,
+      "start": 652.642,
+      "end": 659.416,
+      "text": "Thế nhưng tay chú run lẩy bẩy, miệng chú lắp bắp không thể đọc nổi một câu khấn vái cho trọn vẹn mạch lạc.",
+      "frameIndices": [
+        136
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Lại hai người đứng xa, không ưu tiên bàn tay run hay mặt chú đang lắp bắp.",
+      "expected": "Khung vừa chú cùng bát còn trên tay; duy trì tư thế trước đó."
+    },
+    {
+      "id": "c5_b18",
+      "chapter": 5,
+      "start": 659.416,
+      "end": 666.762,
+      "text": "Từng hạt muối vừa rơi chạm đất liền hóa thành màu đen xỉn như than vụn, bốc lên mùi khét lẹt xộc thẳng vào sống mũi.",
+      "frameIndices": [
+        137,
+        138
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "hieu_ung"
+      ],
+      "observed": "Khung insert gần như trống, chỉ thấy vài nét khói; hạt muối đen cần thấy lại không đọc được.",
+      "expected": "Cận một vùng sàn có hạt trắng chuyển đen hoặc ảnh kết quả hạt đen với khói thấp phát từ chúng."
+    },
+    {
+      "id": "c5_b19",
+      "chapter": 5,
+      "start": 666.762,
+      "end": 674.254,
+      "text": "Chú Vinh khuỵu hai đầu gối xuống bậu cửa, gục đầu ôm mặt thốt lên cay đắng: Trời ơi, tôi hại cả nhà tôi rồi!",
+      "frameIndices": [
+        139,
+        140
+      ],
+      "severity": "cao",
+      "categories": [
+        "tu_the",
+        "vi_tri"
+      ],
+      "observed": "Chú hiện nhỏ cạnh cửa rồi đứng sát người kể; chưa thể hiện khuỵu gối, gục đầu ôm mặt.",
+      "expected": "Đặt chú quỳ ở bậu cửa, tay che mặt; người kể đứng cạnh với khoảng trống riêng."
+    },
+    {
+      "id": "c5_b20",
+      "chapter": 5,
+      "start": 674.254,
+      "end": 681.118,
+      "text": "Biết không thể chậm trễ, tôi cắm đầu chạy thục mạng qua bãi mùn cưa sang tận xóm Rừng tìm cụ Tứ cầu cứu.",
+      "frameIndices": [
+        141
+      ],
+      "severity": "vua",
+      "categories": [
+        "thoi_gian",
+        "hieu_ung"
+      ],
+      "observed": "Người kể chạy ở sân rất tối với nhiều bóng kéo sau, trong chuỗi trước đó được kể là sáng hôm sau.",
+      "expected": "Giữ cùng buổi sáng cho chuyến cầu cứu; một tư thế chạy đủ đọc, không cần nhân nhiều hình."
+    },
+    {
+      "id": "c5_b21",
+      "chapter": 5,
+      "start": 681.118,
+      "end": 689.353,
+      "text": "Gặp tôi hớt hải thở không ra hơi, cụ Tứ đang chuốt lại cành roi dâu gai liền dừng tay, đôi mắt già nua nheo lại đầy nghiêm nghị.",
+      "frameIndices": [
+        142
+      ],
+      "severity": "vua",
+      "categories": [
+        "thoi_gian",
+        "dao_cu",
+        "hanh_dong"
+      ],
+      "observed": "Cụ và người kể ở sân đêm, roi dựng cạnh cụ nhưng thao tác chuốt roi chưa rõ.",
+      "expected": "Giữ buổi sáng ở nhà cụ, cành dâu trên tay hoặc mặt ghế; chỉ cần ảnh cụ dừng tay nhìn người vừa tới."
+    },
+    {
+      "id": "c5_b22",
+      "chapter": 5,
+      "start": 689.353,
+      "end": 697.022,
+      "text": "Nghe tôi kể hết sự tình từ vết cắn của thằng Khiêm đến cơn mê sảng của thím Nhỡ, cụ Tứ buông một tiếng thở dài nặng như chì.",
+      "frameIndices": [
+        143
+      ],
+      "severity": "nhe",
+      "categories": [
+        "lap_canh"
+      ],
+      "observed": "Hai người nói chuyện ở sân cụ là hợp lý; giữ khung này cho lời nghe kể có thể chấp nhận.",
+      "expected": "Duy trì sân, thời gian và khoảng cách, ưu tiên cụ khi thở dài."
+    },
+    {
+      "id": "c5_b23",
+      "chapter": 5,
+      "start": 697.022,
+      "end": 705.907,
+      "text": "Cụ nhìn về phía đỉnh đèo Mây u uẩn bảo: Bát cơm thiu ấy đã dẫn dắt ngạ quỷ đói khát ngàn năm dưới thung sâu mò về rồi cháu ạ!",
+      "frameIndices": [
+        144,
+        145
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "thoi_gian"
+      ],
+      "observed": "Hai góc sân cụ vẫn là đêm trăng, dù lời báo tối nay cho thấy buổi gặp chưa phải đêm.",
+      "expected": "Giữ góc sân ban ngày; khung nhìn về núi chỉ cần là hướng mắt, không đổi địa điểm nhân vật."
+    },
+    {
+      "id": "c5_b24",
+      "chapter": 5,
+      "start": 705.907,
+      "end": 713.997,
+      "text": "Chúng nó ngửi thấy mùi khinh nhờn bủn xỉn nên không chịu nhận lễ tống, trái lại còn xem cả nhà chú mày như vật thế thân bồi thường.",
+      "frameIndices": [
+        146
+      ],
+      "severity": "cao",
+      "categories": [
+        "boi_canh",
+        "lien_tuc"
+      ],
+      "observed": "Đang nói ở sân cụ thì chuyển cả hai ra bờ rào ban ngày chỉ vì lời nhắc thung sâu và mùi lễ.",
+      "expected": "Giữ người ở sân cụ; các nơi được nhắc không tự biến thành nơi đang đứng."
+    },
+    {
+      "id": "c5_b25",
+      "chapter": 5,
+      "start": 713.997,
+      "end": 721.852,
+      "text": "Cụ đặt tay lên vai tôi căn dặn: Hơi lạnh đã vượt qua bậu cửa rồi, tối nay nếu không giữ được ngọn đèn dầu thì mất mạng như chơi!",
+      "frameIndices": [
+        147
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "hanh_dong",
+        "lien_tuc"
+      ],
+      "observed": "Hai người vẫn xa nhau ở bờ rào, cụ cầm roi thay vì đặt tay lên vai cháu.",
+      "expected": "Giữ sân cụ, đặt cụ sát cạnh người kể, một tay chạm vai; lời cảnh báo không làm họ di chuyển."
+    },
+    {
+      "id": "c5_b26",
+      "chapter": 5,
+      "start": 721.852,
+      "end": 730.652,
+      "text": "Tôi quay về xưởng cưa trong nỗi hoang mang tột cùng khi thấy bóng cây rừng ngả dài trên mặt đất u ám như muôn ngàn bàn tay ma quỷ vồ vập.",
+      "frameIndices": [
+        148,
+        149
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "hieu_ung"
+      ],
+      "observed": "Có người về xưởng nhưng chưa thấy bóng cây dài trên đất, phần điềm hình bàn tay chỉ nằm trong lời.",
+      "expected": "Góc sân có bóng cây dài và người đi ngang; tránh biến phép so sánh thành quỷ thật."
+    },
+    {
+      "id": "c5_b27",
+      "chapter": 5,
+      "start": 730.652,
+      "end": 738.806,
+      "text": "Trời sập tối ngày mười sáu âm lịch, sương độc phủ kín chân đèo Mây, báo hiệu thời khắc phán xét tàn khốc nhất đã điểm..",
+      "frameIndices": [
+        150
+      ],
+      "severity": "phu_hop",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Bờ đèo trống trong ánh tối phù hợp báo đêm xuống và sương.",
+      "expected": "Giữ làm khung chuyển thời gian, không cần thêm người hoặc đạo cụ."
+    },
+    {
+      "id": "c6_b1",
+      "chapter": 6,
+      "start": 738.806,
+      "end": 743.435,
+      "text": "Chú Vinh gầm lên một tiếng xé họng: Đóng chặt then gỗ lại mau lên thằng ranh!",
+      "frameIndices": [
+        151
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "lap_canh"
+      ],
+      "observed": "Nhóm gia đình và cửa hiện đủ, nhưng then cửa không phải trọng tâm và người chạy bị nhân bóng.",
+      "expected": "Cho người kể vừa tới cửa, tay gần then; chú quát ở phía sau, giữ một ảnh hành động rõ."
+    },
+    {
+      "id": "c6_b2",
+      "chapter": 6,
+      "start": 743.435,
+      "end": 751.273,
+      "text": "Gió lốc từ hẻm đèo Mây thốc ngược vào nhà làm bung then cài cửa chính, ngọn đèn dầu phụt tắt để lại mùi tanh tưởi đặc quánh.",
+      "frameIndices": [
+        152,
+        153
+      ],
+      "severity": "cao",
+      "categories": [
+        "trang_thai",
+        "lien_tuc",
+        "dao_cu"
+      ],
+      "observed": "Cửa vẫn kín và đèn vẫn cháy trong cả hai khung; người đổi chỗ hàng loạt; đèn phụ còn đổi điểm đặt sang vùng cửa.",
+      "expected": "Lưu trạng thái then bật, cửa mở, ngọn đèn tắt; giữ vị trí người qua thời điểm gió thốc."
+    },
+    {
+      "id": "c6_b3",
+      "chapter": 6,
+      "start": 751.273,
+      "end": 756.65,
+      "text": "Thím Nhỡ trên phản thét lên thất thanh: Ôi bu bu ơi, chân chúng nó lơ lửng không chạm đất kìa!",
+      "frameIndices": [
+        154
+      ],
+      "severity": "cao",
+      "categories": [
+        "tu_the",
+        "trong_tam"
+      ],
+      "observed": "Thím đứng cạnh cửa thay vì trên phản; hình chưa làm rõ ai đang lơ lửng và cách mặt đất.",
+      "expected": "Giữ thím trên phản nhìn về phía hình nhân ngoài nền; tạo khoảng hở chân có bóng đổ để đọc độ cao."
+    },
+    {
+      "id": "c6_b4",
+      "chapter": 6,
+      "start": 756.65,
+      "end": 763.18,
+      "text": "Bóng đen ngập tràn gian nhà ba gian, mùi bùn rữa quyện với mùn cưa chua loét xộc thẳng vào cuống họng tôi.",
+      "frameIndices": [
+        155,
+        156
+      ],
+      "severity": "vua",
+      "categories": [
+        "hieu_ung",
+        "trong_tam"
+      ],
+      "observed": "Có bóng ma có đầu mặc áo đen gần chú, nhưng cảnh ngập bóng và mùi bị biểu hiện bằng một nhân vật lặp.",
+      "expected": "Dùng không gian tối và lớp bóng mềm; chỉ cho hình nhân xuất hiện khi câu kể thật sự tiết lộ hình dáng."
+    },
+    {
+      "id": "c6_b5",
+      "chapter": 6,
+      "start": 763.18,
+      "end": 769.95,
+      "text": "Từ trên nóc nhà ẩm mốc, từng tràng rên rỉ đòi ăn cháo hoa văng vẳng dội xuống, nghe lạnh buốt cả sống lưng.",
+      "frameIndices": [
+        157,
+        158
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "tu_the"
+      ],
+      "observed": "Tiếng từ nóc được minh họa bằng toàn phòng, Khiêm lại nằm trên phản; không xác định được hướng âm thanh từ trên xuống.",
+      "expected": "Góc nhìn phần mái hoặc người ngước lên đủ gợi tiếng; giữ Khiêm tại vị trí dưới gầm đã có."
+    },
+    {
+      "id": "c6_b6",
+      "chapter": 6,
+      "start": 769.95,
+      "end": 776.22,
+      "text": "Thằng Khiêm đang nằm dưới gậm bàn bỗng chồm dậy, đôi mắt nó trợn trừng đờ đẫn không còn chút thần sắc.",
+      "frameIndices": [
+        159
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "tu_the"
+      ],
+      "observed": "Khiêm xuất hiện đứng ở cửa trái, không phải nằm dưới gầm bàn rồi chồm dậy.",
+      "expected": "Cố định điểm dưới gầm bàn, cho trẻ chống tay hoặc ngẩng lên ngay tại đó."
+    },
+    {
+      "id": "c6_b7",
+      "chapter": 6,
+      "start": 776.22,
+      "end": 782.557,
+      "text": "Nó ngửa cổ há hốc mồm đớp từng ngụm không khí, hai hàm răng va vào nhau lập cập từng hồi ghê rợn.",
+      "frameIndices": [
+        160
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Khiêm đứng giữa phòng, mặt còn nhỏ, việc ngửa cổ há miệng không đọc được.",
+      "expected": "Khung gần trẻ ở cùng điểm gầm bàn, cho đầu ngửa và miệng há; không tự cho trẻ đi ra giữa phòng."
+    },
+    {
+      "id": "c6_b8",
+      "chapter": 6,
+      "start": 782.557,
+      "end": 787.412,
+      "text": "Tôi hét lên trong kinh hãi: Chú Vinh ơi, tà ma lại hành thằng bé rồi, mau giữ nó lại!",
+      "frameIndices": [
+        161
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "lap_canh"
+      ],
+      "observed": "Người kể vẫn ở cửa xa, chú cũng xa trẻ; lời gọi giữ nó chưa gắn với hướng nhìn rõ.",
+      "expected": "Người kể hướng tay về trẻ, chú nhìn trẻ; có thể giữ bố cục toàn nhưng phải đọc được ba vai."
+    },
+    {
+      "id": "c6_b9",
+      "chapter": 6,
+      "start": 787.412,
+      "end": 793.593,
+      "text": "Chú Vinh nổi cơn điên cuồng vung cây rựa sáng loáng lên, mắt đỏ ngầu vằn lên những tia máu hung dữ.",
+      "frameIndices": [
+        162
+      ],
+      "severity": "nhe",
+      "categories": [
+        "hanh_dong"
+      ],
+      "observed": "Chú giơ rựa rõ hơn nhiều cảnh khác, đủ tư thế đe dọa; các người còn lại vẫn cần giữ vị trí.",
+      "expected": "Giữ một ảnh giơ rựa ở cửa, không cần zoom hoặc chuyển động mạnh."
+    },
+    {
+      "id": "c6_b10",
+      "chapter": 6,
+      "start": 793.593,
+      "end": 798.694,
+      "text": "Chú gầm lớn vào bóng tối: Chúng mày là quân chết đói chết khát nào, cút ngay khỏi nhà tao!",
+      "frameIndices": [
+        163
+      ],
+      "severity": "nhe",
+      "categories": [
+        "lap_canh"
+      ],
+      "observed": "Cùng tư thế cầm rựa với lời quát là hợp lý; khung này không bắt buộc đổi.",
+      "expected": "Giữ góc với chú là trọng tâm và chưa cho rựa đổi mẫu."
+    },
+    {
+      "id": "c6_b11",
+      "chapter": 6,
+      "start": 798.694,
+      "end": 805.242,
+      "text": "Lưỡi rựa xé gió chém loạn xạ vào khoảng không trước mặt, tạo ra những tiếng rít vun vút buốt nhức màng nhĩ.",
+      "frameIndices": [
+        164
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "hieu_ung"
+      ],
+      "observed": "Có rựa vung và bóng theo tay nhưng cả phòng lặp; chưa có hướng chém hoặc khoảng trống an toàn đọc rõ.",
+      "expected": "Một ảnh tư thế chém vào khoảng không, rựa có hướng nhất quán, đủ minh họa mà không cần lắc camera."
+    },
+    {
+      "id": "c6_b12",
+      "chapter": 6,
+      "start": 805.242,
+      "end": 811.693,
+      "text": "Bỗng một tiếng 'keng' chói tai vang lên, lưỡi thép chạm phải luồng khí buốt giá liền gãy đôi làm hai đoạn.",
+      "frameIndices": [
+        165,
+        166
+      ],
+      "severity": "cao",
+      "categories": [
+        "trang_thai",
+        "dao_cu"
+      ],
+      "observed": "Rựa trong tay vẫn nguyên qua hai khung, chưa thể hiện hai mảnh sau tiếng keng.",
+      "expected": "Giữ cán trong tay và một đoạn lưỡi tách rời đang rơi hoặc đã chạm sàn; dùng chung hình học với rựa nguyên."
+    },
+    {
+      "id": "c6_b13",
+      "chapter": 6,
+      "start": 811.693,
+      "end": 817.476,
+      "text": "Nửa lưỡi rựa rơi cắm phập xuống sàn gỗ, đóng băng thành một vệt sương trắng xóa lạnh ngắt.",
+      "frameIndices": [
+        167
+      ],
+      "severity": "cao",
+      "categories": [
+        "dao_cu",
+        "vi_tri"
+      ],
+      "observed": "Mảnh lưỡi được phóng nhưng lơ lửng trước nền mờ, chưa cắm xuống sàn hoặc có băng trên điểm tiếp xúc.",
+      "expected": "Cận sàn với đầu thép cắm xuống, một vùng sương trắng mỏng tại chân lưỡi."
+    },
+    {
+      "id": "c6_b14",
+      "chapter": 6,
+      "start": 817.476,
+      "end": 823.795,
+      "text": "Chú Vinh sững sờ buông rơi cán gỗ, hai mắt trợn ngược khi nhìn thấy những hình nhân xám ngoét hiện ra.",
+      "frameIndices": [
+        168
+      ],
+      "severity": "cao",
+      "categories": [
+        "dao_cu",
+        "trong_tam"
+      ],
+      "observed": "Cán gỗ thành vật trụ có nhiều hoa văn dựng giữa khung; không đọc như phần cán vừa rời rựa.",
+      "expected": "Cán ngắn cùng màu và tỷ lệ với rựa đã gãy, nằm trên sàn; nhường trọng tâm cho phản ứng trước hình nhân."
+    },
+    {
+      "id": "c6_b15",
+      "chapter": 6,
+      "start": 823.795,
+      "end": 830.861,
+      "text": "Chúng không có mặt mũi rõ ràng, chỉ là những cái bóng cụt đầu lượn lờ với cánh tay khẳng khiu như cành củi khô.",
+      "frameIndices": [
+        169
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "trang_thai"
+      ],
+      "observed": "Ma là hình áo đen có đầu và mắt sáng; trái với lời các bóng cụt đầu không mặt mũi và tay khẳng khiu.",
+      "expected": "Dùng bóng người không đầu, giảm chi tiết và độ đậm; đây là biến thể hình dáng cụ thể, không phải overlay ma chung."
+    },
+    {
+      "id": "c6_b16",
+      "chapter": 6,
+      "start": 830.861,
+      "end": 836.963,
+      "text": "Tôi co rúm người sau bệ thờ tổ tiên, hai tay ôm chặt lấy ngực để kìm nén tiếng tim đập thình thình.",
+      "frameIndices": [
+        170
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "dao_cu"
+      ],
+      "observed": "Người kể ở cửa trái, không có bệ thờ để núp sau; quan hệ sau bệ thờ hoàn toàn mất.",
+      "expected": "Bệ thờ hiện rõ tiền cảnh, người kể khuất một phần phía sau; chỉ cần tư thế co người."
+    },
+    {
+      "id": "c6_b17",
+      "chapter": 6,
+      "start": 836.963,
+      "end": 842.36,
+      "text": "Thím Nhỡ thét gào tuyệt vọng: Ông Tứ ơi cứu cả nhà tôi với, quỷ nó bóp cổ tôi rồi!",
+      "frameIndices": [
+        171
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam",
+        "hieu_ung"
+      ],
+      "observed": "Có cận thím và hình ma ở xa nhưng không có tiếp xúc vùng cổ; chỉ đọc như thím kêu sợ.",
+      "expected": "Tay thím ở cổ hoặc bóng tay sát cổ đủ minh họa, không cần hoạt họa bạo lực."
+    },
+    {
+      "id": "c6_b18",
+      "chapter": 6,
+      "start": 842.36,
+      "end": 849.014,
+      "text": "Một dải khói xám đặc quánh cuộn tròn trên trần nhà, từ từ hạ thấp xuống như một chiếc vòi rồng quái ác.",
+      "frameIndices": [
+        172,
+        173
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "vi_tri"
+      ],
+      "observed": "Khói mảnh phát ở vùng cửa phải, không phải dải khói cuộn trên trần hạ xuống.",
+      "expected": "Nguồn trên trần, dải khói đi xuống trong khoảng trống, không gắn vào người đứng ở cửa."
+    },
+    {
+      "id": "c6_b19",
+      "chapter": 6,
+      "start": 849.014,
+      "end": 854.486,
+      "text": "Luồng khói xám thứ nhất lao thẳng tới, chui tọt vào khuôn miệng đang há to của thím Nhỡ.",
+      "frameIndices": [
+        174
+      ],
+      "severity": "cao",
+      "categories": [
+        "hieu_ung",
+        "vi_tri"
+      ],
+      "observed": "Cận mặt thím nhưng không thấy luồng khói tới miệng; còn bóng ma độc lập phía sau.",
+      "expected": "Đích khói tại miệng thím; một ảnh tiếp xúc hoặc ảnh vừa bị nhập đủ diễn đạt."
+    },
+    {
+      "id": "c6_b20",
+      "chapter": 6,
+      "start": 854.486,
+      "end": 860.693,
+      "text": "Thím giãy giụa đập hai gót chân xuống vạt phản thình thịch, rồi mắt dại đi như kẻ chết trôi.",
+      "frameIndices": [
+        175
+      ],
+      "severity": "vua",
+      "categories": [
+        "tu_the",
+        "hanh_dong"
+      ],
+      "observed": "Thím nằm trên phản đúng chỗ nhưng chân bị gộp trong thân kín, không đọc được việc đập hai gót chân.",
+      "expected": "Giữ tư thế nằm với phần chân minh họa đơn giản hoặc một ảnh phản ứng kết quả; không đòi hoạt họa toàn thân."
+    },
+    {
+      "id": "c6_b21",
+      "chapter": 6,
+      "start": 860.693,
+      "end": 867.367,
+      "text": "Ngay sau đó, một luồng khói xám đặc quánh khác cũng thốc thẳng vào cổ họng chú Vinh đang đứng như trời trồng.",
+      "frameIndices": [
+        176
+      ],
+      "severity": "vua",
+      "categories": [
+        "hieu_ung",
+        "vi_tri"
+      ],
+      "observed": "Có luồng khói gần chú nhưng dạng tấm đứng cạnh mặt, không nối vào cổ họng; thêm cả lớp khói mặc định ở đầu.",
+      "expected": "Dùng một luồng duy nhất hướng vào miệng chú, neo theo vị trí đầu và tư thế hiện tại."
+    },
+    {
+      "id": "c6_b22",
+      "chapter": 6,
+      "start": 867.367,
+      "end": 873.94,
+      "text": "Thằng Khiêm dưới đất giật nảy mình từng cơn, khói xám luồn lách qua lỗ mũi và khóe môi tái ngắt của nó.",
+      "frameIndices": [
+        177
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "hieu_ung"
+      ],
+      "observed": "Khiêm lại nằm trên phản thay vì dưới đất; khói xoắn ở khoảng gần người kể chứ chưa tới mũi hoặc môi trẻ.",
+      "expected": "Trẻ nằm trên sàn, luồng nhỏ kết thúc ở đúng mũi hoặc miệng; người kể đứng ngoài vùng tác động."
+    },
+    {
+      "id": "c6_b23",
+      "chapter": 6,
+      "start": 873.94,
+      "end": 881.576,
+      "text": "Cả ba người nhà chú tôi co giật liên hồi rồi đồng loạt im bặt, ngã sóng soài trên sàn đất ẩm như những khúc gỗ vô hồn.",
+      "frameIndices": [
+        178
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "tu_the"
+      ],
+      "observed": "Ba người được xếp trên cùng vùng phản, đầu và thân chồng nhau, trong khi lời nói họ ngã xuống sàn.",
+      "expected": "Ba điểm nằm tách biệt trên sàn, phản ở phía sau; người kể nhìn từ vị trí đã núp."
+    },
+    {
+      "id": "c6_b24",
+      "chapter": 6,
+      "start": 881.576,
+      "end": 887.618,
+      "text": "Không gian chìm vào câm lặng đến rợn người, chỉ còn tiếng gió rít từng hồi qua khe liếp nứa khô khốc.",
+      "frameIndices": [
+        179
+      ],
+      "severity": "vua",
+      "categories": [
+        "lien_tuc"
+      ],
+      "observed": "Ngay sau cả ba ngã, phòng trở thành trống hoàn toàn; các thân người biến mất khi lời chưa nói họ rời chỗ.",
+      "expected": "Có thể lấy góc khác chỉ thấy cửa hoặc mái; nếu vẫn toàn phòng thì phải giữ ba người nằm."
+    },
+    {
+      "id": "c6_b25",
+      "chapter": 6,
+      "start": 887.618,
+      "end": 895.127,
+      "text": "Tôi ngồi thu lu nín thở suốt nửa đêm, nước mắt trào ra vì thương chú thím mà chân tay tê dại không nhấc nổi.",
+      "frameIndices": [
+        180
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Cận người kể có nước mắt, phù hợp đoạn đau buồn; không cần đổi sang hình nhiều người.",
+      "expected": "Giữ một khung yên, tránh phóng mặt thêm; vị trí ngồi nên nối được với góc núp đã thiết lập."
+    },
+    {
+      "id": "c6_b26",
+      "chapter": 6,
+      "start": 895.127,
+      "end": 901.469,
+      "text": "Mùi khói nhang thiu thối tan dần, nhường chỗ cho cái lạnh buốt xương của sương sớm từ dốc đèo Mây tràn xuống.",
+      "frameIndices": [
+        181
+      ],
+      "severity": "vua",
+      "categories": [
+        "lien_tuc"
+      ],
+      "observed": "Người kể ngồi bên phản nhưng các thân người mất khỏi toàn phòng trước thời điểm họ đứng dậy.",
+      "expected": "Giữ ba người nằm trong góc nhìn rộng hoặc chọn cận người kể không lộ vùng họ đang nằm."
+    },
+    {
+      "id": "c6_b27",
+      "chapter": 6,
+      "start": 901.469,
+      "end": 910.229,
+      "text": "Khi ánh bình minh đầu tiên rọi qua khe liếp, gian nhà gỗ hoàn toàn im ắng, nhưng những người đứng dậy không còn là chú thím của tôi nữa.",
+      "frameIndices": [
+        182,
+        183
+      ],
+      "severity": "vua",
+      "categories": [
+        "lien_tuc",
+        "vi_tri"
+      ],
+      "observed": "Người lớn xuất hiện trở lại ở cửa, đổi chỗ giữa hai khung; Khiêm không rõ trong cảnh cả nhà đứng dậy.",
+      "expected": "Một khung ba người đã đứng ở gần nơi vừa nằm, người kể giữ vị trí quan sát; ánh sáng chuyển sáng sớm."
+    },
+    {
+      "id": "c7_b1",
+      "chapter": 7,
+      "start": 910.229,
+      "end": 920.054,
+      "text": "Trời vừa hửng sáng, tiếng cưa gỗ xé gió đã lại vang lên rộn rã nơi góc xưởng, nhưng không một ai cất tiếng thở hay dừng tay lau mồ hôi như mọi ngày.",
+      "frameIndices": [
+        184
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri",
+        "dao_cu"
+      ],
+      "observed": "Ba người chồng sát nhau cạnh cây cưa dựng thẳng; câu trở lại lao động bị biến thành nhóm đứng với dụng cụ.",
+      "expected": "Chú đứng một bên súc gỗ, thợ hoặc gia đình ở các điểm riêng; cưa nằm đúng hướng cắt."
+    },
+    {
+      "id": "c7_b2",
+      "chapter": 7,
+      "start": 920.054,
+      "end": 926.414,
+      "text": "Tôi bàng hoàng bước ra sân, thấy chú Vinh đang thoăn thoắt đẩy lưỡi cưa sắt qua thân gỗ lim xám xịt.",
+      "frameIndices": [
+        185
+      ],
+      "severity": "cao",
+      "categories": [
+        "dao_cu",
+        "vi_tri",
+        "hanh_dong"
+      ],
+      "observed": "Cưa khung vuông có mảng kín rất lớn che gần hết chú, súc gỗ phóng cao; không đọc được hai tay đẩy lưỡi cưa qua gỗ.",
+      "expected": "Dùng cưa đúng loại và tỷ lệ; neo phần lưỡi vào mặt cắt của súc gỗ, hai tay tại chỗ cầm."
+    },
+    {
+      "id": "c7_b3",
+      "chapter": 7,
+      "start": 926.414,
+      "end": 934.584,
+      "text": "Khuôn mặt chú cứng đờ như tượng sáp, hai con ngươi đục ngầu nhìn trừng trừng vào thớ gỗ mà chẳng hề chớp mắt lấy một lần.",
+      "frameIndices": [
+        186
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Cận mặt chú bị cưa khung che gần hết, làm mất đôi mắt đục và nét cứng đờ là trọng tâm.",
+      "expected": "Giữ cưa dưới hoặc ngoài mép khung, chỉ lấy mặt chú để thấy dấu biến đổi."
+    },
+    {
+      "id": "c7_b4",
+      "chapter": 7,
+      "start": 934.584,
+      "end": 942.74,
+      "text": "Bác lái buôn dưới phố ghé xe ngựa vào hỏi mua ván, chú chỉ lạnh lùng gật đầu chứ tuyệt nhiên không thốt ra nửa lời mặc cả.",
+      "frameIndices": [
+        187
+      ],
+      "severity": "nhe",
+      "categories": [
+        "dao_cu",
+        "vi_tri"
+      ],
+      "observed": "Có xe ngựa và người buôn bên trái, chú bên phải; hình diễn đạt được việc ghé hỏi mua dù thiếu hàng ván rõ.",
+      "expected": "Giữ xe ngoài lối đi và chú gần gỗ, không để xe che quan hệ hai người."
+    },
+    {
+      "id": "c7_b5",
+      "chapter": 7,
+      "start": 942.74,
+      "end": 948.362,
+      "text": "Tôi đánh bạo lại gần cất tiếng: Chú Vinh, chú nghỉ tay uống hớp nước chè cho đỡ mệt đã.",
+      "frameIndices": [
+        188,
+        189
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "dao_cu"
+      ],
+      "observed": "Người kể tới gần nhưng cưa vẫn che mặt chú ở cả hai khung; lời mời uống nước chưa cần cốc xuất hiện.",
+      "expected": "Hạ cưa khỏi mặt, hai người ở cạnh súc gỗ; giữ lời mời bằng đối thoại."
+    },
+    {
+      "id": "c7_b6",
+      "chapter": 7,
+      "start": 948.362,
+      "end": 954.85,
+      "text": "Đáp lại tôi chỉ là sự im lặng ghê rợn, cùng tiếng cưa gỗ ken két miết vào thớ thịt lim buốt óc.",
+      "frameIndices": [
+        190
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "dao_cu"
+      ],
+      "observed": "Cưa và khúc gỗ chồng sát hai đầu nhân vật, đọc như vật đè lên người hơn là dụng cụ đang cắt.",
+      "expected": "Tách mặt khỏi vùng dụng cụ, giữ hướng cưa và mặt cắt như cảnh trước."
+    },
+    {
+      "id": "c7_b7",
+      "chapter": 7,
+      "start": 954.85,
+      "end": 961.336,
+      "text": "Bên chái bếp đất bám đầy bồ hóng, khói trắng cuộn lên mang theo mùi khét lẹt của mùn cưa và trấu ẩm.",
+      "frameIndices": [
+        191
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam",
+        "thoi_gian"
+      ],
+      "observed": "Bếp trống với nồi và khói phù hợp câu đổi sang chái bếp; có thể dùng làm khung định vị.",
+      "expected": "Giữ cùng buổi sáng và duy trì bếp này sang cảnh khuấy cám."
+    },
+    {
+      "id": "c7_b8",
+      "chapter": 7,
+      "start": 961.336,
+      "end": 967.652,
+      "text": "Thím Nhỡ đang cặm cụi khuấy một nồi cám heo to tướng sủi bọt ùng ục giữa tro than đỏ rực.",
+      "frameIndices": [
+        192
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "dao_cu",
+        "hanh_dong"
+      ],
+      "observed": "Khung object cắt mạnh vào thím và một dụng cụ dựng đứng, nồi cám ở bếp không trở thành trọng tâm; thiếu quan hệ tay khuấy trong nồi.",
+      "expected": "Khung vừa thím bên nồi, que khuấy cắm vào lòng nồi, nồi ở trên bếp; hơi nóng phát từ mặt cám."
+    },
+    {
+      "id": "c7_b9",
+      "chapter": 7,
+      "start": 967.652,
+      "end": 974.817,
+      "text": "Thấy thím múc cám ra chiếc chậu gỗ sứt mép, tôi hoảng hốt kêu lên: Thím ơi, sao lại đem cám chưa chín ra ăn thế này?",
+      "frameIndices": [
+        193,
+        194
+      ],
+      "severity": "vua",
+      "categories": [
+        "thoi_gian",
+        "hanh_dong"
+      ],
+      "observed": "Bếp đột ngột tối và có lửa mạnh sau bếp sáng; chậu nằm ở đất còn thao tác múc chưa rõ.",
+      "expected": "Giữ ánh sáng sáng sớm, đặt chậu sát bếp và tay thím hướng từ nồi tới chậu."
+    },
+    {
+      "id": "c7_b10",
+      "chapter": 7,
+      "start": 974.817,
+      "end": 981.245,
+      "text": "Thím không ngoái đầu lại, khóe miệng nhếch lên nụ cười méo xệch: Đói lắm, nuốt cho đầy cái bụng thôi cháu.",
+      "frameIndices": [
+        195,
+        196
+      ],
+      "severity": "nhe",
+      "categories": [
+        "lap_canh"
+      ],
+      "observed": "Giữ thím cạnh bếp nói với người kể là hợp lý, nhưng nét cười méo không rõ ở toàn cảnh.",
+      "expected": "Một khung vừa thím đủ, không cần thêm chuyển động hoặc đổi bối cảnh."
+    },
+    {
+      "id": "c7_b11",
+      "chapter": 7,
+      "start": 981.245,
+      "end": 988.149,
+      "text": "Thằng Khiêm từ góc chạn tối lù lù bò ra, hai bàn tay cáu bẩn bốc từng nắm cám nóng hổi nhét ngấu nghiến vào mồm.",
+      "frameIndices": [
+        197
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "hanh_dong"
+      ],
+      "observed": "Khiêm đứng cạnh mẹ và nồi; chưa phải bò từ góc chạn và bốc cám đưa tới miệng.",
+      "expected": "Có thể chọn ảnh kết quả trẻ ngồi cạnh chậu, một tay ở miệng; không cần diễn cả đường bò."
+    },
+    {
+      "id": "c7_b12",
+      "chapter": 7,
+      "start": 988.149,
+      "end": 995.524,
+      "text": "Cả hai mẹ con ăn ngấu nghiến ngon lành mà không cần nêm nếm mắm muối, tiếng nuốt òng ọc vang lên giữa căn bếp hoang tàn.",
+      "frameIndices": [
+        198
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Hai mẹ con đứng nhỏ, ảnh rộng gần lặp cảnh trước; hành vi ăn cám ghê rợn không đọc được.",
+      "expected": "Đưa chậu cám và hai người vào cùng khung vừa, tay gần miệng; giữ trẻ và mẹ ở đúng hai phía."
+    },
+    {
+      "id": "c7_b13",
+      "chapter": 7,
+      "start": 995.524,
+      "end": 1001.902,
+      "text": "Lòng tôi thắt lại, nỗi sợ hãi tột cùng dâng lên khiến sống lưng lạnh toát như có tảng băng đè nặng.",
+      "frameIndices": [
+        199
+      ],
+      "severity": "vua",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Lời kể phản ứng của tôi nhưng người kể ở xa mép phải, mẹ con lại là trọng tâm ở giữa.",
+      "expected": "Đổi trọng tâm sang phản ứng người kể, giữ bếp làm nền liên tục."
+    },
+    {
+      "id": "c7_b14",
+      "chapter": 7,
+      "start": 1001.902,
+      "end": 1008.078,
+      "text": "Đến giữa trưa, bóng nắng chói chang rọi thẳng xuống khoảnh sân đất ngổn ngang dăm bào và bụi gỗ.",
+      "frameIndices": [
+        200
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Sân nắng với đống vật vụn ở giữa đủ báo giữa trưa, nhưng màu vật tròn chưa gợi rõ dăm bào.",
+      "expected": "Giữ sân và bóng nắng, dùng vài mảnh dăm gỗ đơn giản thay vật tròn khó hiểu."
+    },
+    {
+      "id": "c7_b15",
+      "chapter": 7,
+      "start": 1008.078,
+      "end": 1015.348,
+      "text": "Nhìn ba người họ đứng giữa sân, tôi chết lặng khi thấy bóng của họ in trên nền đất đều cụt ngủn mất phần đầu.",
+      "frameIndices": [
+        201,
+        202
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "hieu_ung"
+      ],
+      "observed": "Đủ ba người và người kể, nhưng không thấy rõ ba bóng đổ cụt đầu trên mặt đất; người còn đổi từ nhóm sát sang hàng rộng.",
+      "expected": "Góc toàn có khoảng sàn phía trước, ba bóng gắn đúng ba người và mất phần đầu; người kể đứng riêng."
+    },
+    {
+      "id": "c7_b16",
+      "chapter": 7,
+      "start": 1015.348,
+      "end": 1022.551,
+      "text": "Kinh hoàng hơn nữa, gót chân của chú thím và thằng Khiêm đều nhón cao, lơ lửng cách mặt đất cả một lóng tay.",
+      "frameIndices": [
+        203
+      ],
+      "severity": "cao",
+      "categories": [
+        "trong_tam",
+        "vi_tri"
+      ],
+      "observed": "Cả bốn nhân vật đứng cùng cao độ mặt đất; không có khoảng hở chân đủ đọc là ba người lơ lửng.",
+      "expected": "Nâng đúng ba người một khoảng nhỏ, giữ bóng trên đất và người kể vẫn chạm nền; không cần rung hoặc bay lên xuống."
+    },
+    {
+      "id": "c7_b17",
+      "chapter": 7,
+      "start": 1022.551,
+      "end": 1029.213,
+      "text": "Họ rõ ràng đang mang thân xác của người nhà tôi, nhưng hơi thở và hồn phách đã hoàn toàn thuộc về cõi u minh.",
+      "frameIndices": [
+        204
+      ],
+      "severity": "nhe",
+      "categories": [
+        "lap_canh"
+      ],
+      "observed": "Cùng nhóm người ở sân phù hợp câu xác nhận họ đã đổi khác; dùng lại có ý nghĩa nếu dấu lạ ở hai câu trước đã rõ.",
+      "expected": "Giữ khung sau khi đã thể hiện bóng cụt đầu và độ cao, không phải thêm góc để che thiếu dấu hiệu."
+    },
+    {
+      "id": "c7_b18",
+      "chapter": 7,
+      "start": 1029.213,
+      "end": 1036.013,
+      "text": "Dưới nắng đèo gay gắt, tôi run rẩy nép sau đống súc gỗ lim mà ngỡ như đang đứng giữa nghĩa địa lạnh lẽo.",
+      "frameIndices": [
+        205
+      ],
+      "severity": "cao",
+      "categories": [
+        "vi_tri"
+      ],
+      "observed": "Người kể ở bên trái đống gỗ, không được đống gỗ che, nên chưa đọc là nép sau.",
+      "expected": "Đặt đống gỗ ở tiền cảnh và che một phần thân người kể; ba người bị quan sát ở phía đối diện."
+    },
+    {
+      "id": "c7_b19",
+      "chapter": 7,
+      "start": 1036.013,
+      "end": 1046.225,
+      "text": "Nỗi tuyệt vọng bóp nghẹt lồng ngực tôi khi hiểu rằng ba khúc gỗ vô hồn kia đã mất sạch nhân tính, và thảm kịch tàn khốc nhất đã giáng xuống mái nhà này.",
+      "frameIndices": [
+        206
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "vi_tri"
+      ],
+      "observed": "Các người lại đổi thứ tự và vị trí trong sân, dù chỉ là suy nghĩ của người kể.",
+      "expected": "Giữ sơ đồ sân, có thể cận người kể sau đống gỗ để kết cao trào."
+    },
+    {
+      "id": "c8_b1",
+      "chapter": 8,
+      "start": 1046.225,
+      "end": 1054.632,
+      "text": "Mỗi năm cứ đến chiều rằm tháng Bảy, tôi lại tự tay nấu mười hai bát cháo hoa trắng tinh, đặt ngay ngắn bên bờ rào dốc đèo năm cũ.",
+      "frameIndices": [
+        207
+      ],
+      "severity": "vua",
+      "categories": [
+        "vi_tri",
+        "dao_cu"
+      ],
+      "observed": "Có cụm bát cháo và hơi nóng, nhưng bát như xếp trên một mặt phẳng treo ở hậu cảnh; địa điểm và mặt đặt chưa đọc rõ.",
+      "expected": "Cùng bờ rào năm trước, bát đặt thành hàng trên nền hoặc mâm có mặt tựa, người kể đứng bên cạnh."
+    },
+    {
+      "id": "c8_b2",
+      "chapter": 8,
+      "start": 1054.632,
+      "end": 1061.143,
+      "text": "Mùi gạo mới thơm lành quyện trong gió lạnh, xua đi cái vị ngai ngái ẩm mốc của mùn cưa ngậm nước năm nào.",
+      "frameIndices": [
+        208
+      ],
+      "severity": "nhe",
+      "categories": [
+        "lap_canh",
+        "trong_tam"
+      ],
+      "observed": "Cận người kể bên đèo có thể diễn đạt hồi tưởng mùi, nhưng bát cháo vừa đặt mất khỏi góc hình.",
+      "expected": "Giữ một phần mâm cháo hoặc làn hơi trong cận cảnh để nối ý đối lập mùi mới và mùi cũ."
+    },
+    {
+      "id": "c8_b3",
+      "chapter": 8,
+      "start": 1061.143,
+      "end": 1069.046,
+      "text": "Nhìn sang khoảnh sân xưởng cưa ngày trước, giờ đây chỉ còn là bãi đất hoang tàn ngập đầy cỏ dại và xác gỗ lim mục ruỗng.",
+      "frameIndices": [
+        209
+      ],
+      "severity": "cao",
+      "categories": [
+        "trang_thai",
+        "boi_canh"
+      ],
+      "observed": "Sân vẫn là sân gỗ cũ với cây và đống gỗ gọn, chưa có trạng thái hoang tàn, cỏ dại và phế gỗ.",
+      "expected": "Dùng biến thể xưởng bỏ hoang, giảm đồ đang sử dụng, thêm cỏ và gỗ mục ở đúng vị trí cũ."
+    },
+    {
+      "id": "c8_b4",
+      "chapter": 8,
+      "start": 1069.046,
+      "end": 1076.351,
+      "text": "Căn nhà ba gian vách nứa đã sụp đổ phân nửa, bậu cửa gỗ năm xưa vương vãi những vụn than đen sì lạnh ngắt.",
+      "frameIndices": [
+        210
+      ],
+      "severity": "cao",
+      "categories": [
+        "trang_thai",
+        "boi_canh"
+      ],
+      "observed": "Căn nhà còn nguyên mái, cửa, phản và đèn cháy; trái trực tiếp với lời nhà sụp phân nửa và than lạnh.",
+      "expected": "Biến thể nhà sụp giữ cùng sơ đồ nhà, mất một phần mái/vách, có than lạnh tại bậu cửa và không còn đèn đang cháy."
+    },
+    {
+      "id": "c8_b5",
+      "chapter": 8,
+      "start": 1076.351,
+      "end": 1083.735,
+      "text": "Tôi đứng bên ranh giới xưởng cưa, tay run rẩy bốc từng vốc gạo muối trắng muốt rải đều ra bốn phía khoảng đất trống.",
+      "frameIndices": [
+        211
+      ],
+      "severity": "vua",
+      "categories": [
+        "hanh_dong",
+        "dao_cu"
+      ],
+      "observed": "Người kể đưa tay nhưng chưa thấy gạo muối ở tay hoặc trên đất quanh nơi rải.",
+      "expected": "Một ảnh nắm gạo muối hoặc kết quả hạt rải quanh nền, người kể giữ vị trí bên ranh xưởng."
+    },
+    {
+      "id": "c8_b6",
+      "chapter": 8,
+      "start": 1083.735,
+      "end": 1090.898,
+      "text": "Từng hạt muối trắng lạo xạo va vào lá thông khô, tựa như những lời khấn nguyện muộn mằn gửi đến cõi u minh sâu thẳm.",
+      "frameIndices": [
+        212
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam",
+        "dao_cu"
+      ],
+      "observed": "Có ảnh cận gạo muối, phù hợp hơn nhiều cảnh vật trước; nền lá thông và điểm hạt chạm đất còn chưa rõ.",
+      "expected": "Thêm vài lá thông ngay dưới hạt để xác định mặt sàn; không cần chuyển động hạt."
+    },
+    {
+      "id": "c8_b7",
+      "chapter": 8,
+      "start": 1090.898,
+      "end": 1098.617,
+      "text": "Miệng tôi lầm rầm niệm câu kinh sám hối, nguyện cầu cho linh hồn chú thím và thằng Khiêm sớm được siêu thoát khỏi kiếp đày đọa.",
+      "frameIndices": [
+        213
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Cận người kể buồn, phù hợp câu sám hối; bối cảnh sân cũ cần nối với xưởng hoang.",
+      "expected": "Giữ biểu cảm và địa điểm hiện tại, không cần minh họa linh hồn thành nhân vật mới."
+    },
+    {
+      "id": "c8_b8",
+      "chapter": 8,
+      "start": 1098.617,
+      "end": 1106.967,
+      "text": "Ký ức buổi trưa định mệnh năm ấy lại nhói lên trong tôi, cái buổi trưa tôi hoảng loạn cắm đầu chạy thục mạng sang xóm Rừng cầu cứu cụ Tứ.",
+      "frameIndices": [
+        214,
+        215
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "hieu_ung"
+      ],
+      "observed": "Hai nửa đều là cùng người chạy cùng con đường, thêm nhiều bóng và vạch hồi tưởng, không bổ sung thông tin.",
+      "expected": "Giữ một khung hồi tưởng chạy tới xóm Rừng, đánh dấu hồi tưởng nhẹ và thống nhất."
+    },
+    {
+      "id": "c8_b9",
+      "chapter": 8,
+      "start": 1106.967,
+      "end": 1114.727,
+      "text": "Cụ Tứ nghe xong chuyện chỉ biết ngửa mặt lên trời thở dài sườn sượt, đôi mắt già nua ứa ra hai giọt lệ đục ngầu.",
+      "frameIndices": [
+        216
+      ],
+      "severity": "vua",
+      "categories": [
+        "boi_canh",
+        "lien_tuc"
+      ],
+      "observed": "Nhà cụ ở hồi tưởng thành nhà dài mái đỏ, khác ngôi nhà sân đã gặp trước; hai người đứng xa làm nét đau buồn không đọc được.",
+      "expected": "Giữ cùng căn nhà cụ và cùng bố cục nhận tin, cận cụ khi thở dài."
+    },
+    {
+      "id": "c8_b10",
+      "chapter": 8,
+      "start": 1114.727,
+      "end": 1123.316,
+      "text": "Cụ bảo tôi: Nghiệp chướng đã thành, ngạ quỷ rừng đèo đã mượn xác dương gian thì sức người chẳng thể nào kéo hồn họ trở lại được nữa.",
+      "frameIndices": [
+        217,
+        218
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Có cụ nói và khung qua vai người nghe, hợp lời giải thích; cần bảo toàn căn nhà và thời gian hồi tưởng.",
+      "expected": "Giữ tại nhà cụ, không chuyển nơi theo những địa danh được nhắc trong lời thoại."
+    },
+    {
+      "id": "c8_b11",
+      "chapter": 8,
+      "start": 1123.316,
+      "end": 1130.981,
+      "text": "Cụ đưa cho tôi nắm tro bếp ấm và nắm muối gạo, dặn phải rải ngang bậu cửa rồi lập tức rời khỏi xưởng cưa mà đi.",
+      "frameIndices": [
+        219
+      ],
+      "severity": "cao",
+      "categories": [
+        "hanh_dong",
+        "vi_tri",
+        "trong_tam"
+      ],
+      "observed": "Khung trống toàn căn nhà, không có cụ, người kể, tro hay gạo muối; câu trao vật bị mất hoàn toàn.",
+      "expected": "Khung vừa cụ trao túi hoặc nắm tro muối cho người kể; bậu cửa chỉ là nơi cụ dặn, chưa phải nơi hai người đang đứng."
+    },
+    {
+      "id": "c8_b12",
+      "chapter": 8,
+      "start": 1130.981,
+      "end": 1138.638,
+      "text": "Chỉ vài tháng sau ngày tôi bỏ đi xứ khác, người ta đồn cả nhà chú Vinh bỗng nhiên biến mất hút vào thung lũng sâu hun hút.",
+      "frameIndices": [
+        220
+      ],
+      "severity": "phu_hop",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Đèo vắng phù hợp lời đồn gia đình biến mất trong thung lũng; không cần vẽ cảnh họ đi mất vì chỉ là lời đồn.",
+      "expected": "Giữ đèo trống và sắc thái bất định, tránh diễn lời đồn như sự kiện đã được chứng kiến."
+    },
+    {
+      "id": "c8_b13",
+      "chapter": 8,
+      "start": 1138.638,
+      "end": 1146.62,
+      "text": "Căn xưởng xẻ bỏ hoang từ đó, dân phu gỗ qua đèo không một ai dám bén mảng ghé chân nghỉ lại dù chỉ nửa bước chân.",
+      "frameIndices": [
+        221
+      ],
+      "severity": "cao",
+      "categories": [
+        "trang_thai",
+        "lap_canh"
+      ],
+      "observed": "Xưởng bỏ hoang lại là nền sân hoạt động cũ, không có cỏ dại hoặc nhà hỏng.",
+      "expected": "Giữ biến thể bỏ hoang đã xuất hiện ở c8_b3, duy trì trạng thái tới hết hiện tại."
+    },
+    {
+      "id": "c8_b14",
+      "chapter": 8,
+      "start": 1146.62,
+      "end": 1154.751,
+      "text": "Trải qua bao thăng trầm dâu bể, bài học cay đắng năm xưa vẫn như một vết dao khắc sâu vào tâm khảm tôi suốt cả cuộc đời.",
+      "frameIndices": [
+        222
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "kich_ban"
+      ],
+      "observed": "Cảnh bờ rào trống bắt đầu chuỗi đúc kết dài, không có vật hay phản ứng mới.",
+      "expected": "Có thể dùng một ảnh người kể bên lễ cháo để mở đoạn kết, đồng thời rút bớt lời đúc kết trùng ý."
+    },
+    {
+      "id": "c8_b15",
+      "chapter": 8,
+      "start": 1154.751,
+      "end": 1162.317,
+      "text": "Cõi âm dẫu vô hình mịt mùng, nhưng lòng thành kính hay sự dối trá của người trần thế họ đều thấu suốt tận đáy lòng.",
+      "frameIndices": [
+        223
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "kich_ban"
+      ],
+      "observed": "Tiếp tục đúng cảnh bờ rào trống cho lời giáo huấn gần ý câu trước; đổi nhãn wide không tạo thêm diễn biến.",
+      "expected": "Gộp với câu trước nếu không có thông tin mới, giữ một hình kết có người và lễ vật."
+    },
+    {
+      "id": "c8_b16",
+      "chapter": 8,
+      "start": 1162.317,
+      "end": 1170.769,
+      "text": "Cúng thí thực là mở rộng lòng từ bi xót thương những mảnh đời bất hạnh, chứ tuyệt đối không phải là dịp xua đuổi của ôi của thiu.",
+      "frameIndices": [
+        224
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "kich_ban"
+      ],
+      "observed": "Cảnh bờ rào trống lặp lần thứ ba; khoảng 24 giây liên tiếp không có sự việc hình mới.",
+      "expected": "Một khung lễ cháo hiện tại đủ minh họa lòng thành; không cần thêm nền chỉ để lấp lời dài."
+    },
+    {
+      "id": "c8_b17",
+      "chapter": 8,
+      "start": 1170.769,
+      "end": 1179.905,
+      "text": "Nhìn làn tro lạnh nơi bậu cửa năm xưa, tôi thấm thía cái giá thảm khốc mà chú thím phải trả khi đem lòng bủn xỉn ra bỡn cợt cõi linh thiêng.",
+      "frameIndices": [
+        225
+      ],
+      "severity": "cao",
+      "categories": [
+        "trang_thai",
+        "trong_tam"
+      ],
+      "observed": "Quay lại căn nhà nguyên vẹn có đèn cháy, nhưng câu nói tro lạnh ở bậu cửa cũ và hậu quả thảm khốc.",
+      "expected": "Cận tro lạnh tại cửa nhà đã sụp, giữ trạng thái hoang tàn ở hiện tại."
+    },
+    {
+      "id": "c8_b18",
+      "chapter": 8,
+      "start": 1179.905,
+      "end": 1187.613,
+      "text": "Một hạt cơm nguội cho đi bằng tâm lành còn nặng tựa thái sơn, hơn mâm cao cỗ đầy mà chất chứa khinh miệt dối trá.",
+      "frameIndices": [
+        226
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "kich_ban"
+      ],
+      "observed": "Lại bờ rào trống cho một câu so sánh đạo lý nữa, kéo dài kết luận đã được nhắc nhiều lần.",
+      "expected": "Giữ hoặc gộp chỉ một câu kết giản dị, hình có bát cháo để gắn với biểu tượng của truyện."
+    },
+    {
+      "id": "c8_b19",
+      "chapter": 8,
+      "start": 1187.613,
+      "end": 1194.569,
+      "text": "Khói hương chiều nay không còn chúi ngược xuống rãnh đất ẩm như năm ấy, mà chầm chậm bay thẳng lên vòm thông xanh biếc.",
+      "frameIndices": [
+        227
+      ],
+      "severity": "vua",
+      "categories": [
+        "boi_canh",
+        "hieu_ung"
+      ],
+      "observed": "Khói thẳng đã có, đúng ý đối lập, nhưng hình chuyển về sân xưởng thay vì điểm cúng bờ rào hiện tại.",
+      "expected": "Cùng nhang, cùng bờ rào và rãnh đất như lần cúng trước; thay trạng thái khói từ chúi thấp sang bay thẳng."
+    },
+    {
+      "id": "c8_b20",
+      "chapter": 8,
+      "start": 1194.569,
+      "end": 1201.906,
+      "text": "Tôi tin rằng nơi góc rừng sâu thẳm, những vong hồn khốn khổ lang bạt rốt cuộc cũng đã nhận được chút ấm áp xoa dịu.",
+      "frameIndices": [
+        228
+      ],
+      "severity": "nhe",
+      "categories": [
+        "trong_tam"
+      ],
+      "observed": "Cận người kể buồn bình tĩnh phù hợp niềm tin cuối truyện; không cần vẽ thêm vong hồn.",
+      "expected": "Giữ người kể bên mâm cháo, cho cảm xúc dịu xuống thay vì thêm hiệu ứng ma."
+    },
+    {
+      "id": "c8_b21",
+      "chapter": 8,
+      "start": 1201.906,
+      "end": 1212.946,
+      "text": "Gió chiều đèo Mây lại thổi qua rặng dứa dại, nhắc tôi nhớ rằng một chén cháo thơm lòng thành đáng giá hơn ngàn lời ngụy biện trên cõi dương trần.",
+      "frameIndices": [
+        229
+      ],
+      "severity": "vua",
+      "categories": [
+        "lap_canh",
+        "kich_ban"
+      ],
+      "observed": "Người kể đứng giữa cảnh đèo, chưa thấy bát cháo trong câu kết; tiếp tục nhắc lại giá trị lòng thành.",
+      "expected": "Kết bằng một ảnh bát cháo và nhang ở bờ rào với người kể nhỏ bên cạnh; lời kết chỉ cần một ý."
+    }
+  ]
+}

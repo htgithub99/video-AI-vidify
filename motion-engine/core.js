@@ -128,12 +128,7 @@
   };
   ME.registry = { templates: {}, transitions: {} };
   ME.registerTemplate = (id, def) => (ME.registry.templates[id] = Object.assign({ id }, def));
-  ME.ASPECTS = {
-    [MT.VALUE_16_9]: { w: 1920, h: 1080, frameH: 1080, ground: 0.76 },
-    [MT.VALUE_9_16]: { w: 1080, h: 1920, frameH: 1500, ground: 0.7 },
-    [MT.VALUE_1_1]: { w: 1080, h: 1080, frameH: 1150, ground: 0.74 },
-    [MT.VALUE_4_5]: { w: 1080, h: 1350, frameH: 1260, ground: 0.73 },
-  };
+  ME.ASPECTS = { [MT.VALUE_16_9]: { w: 1920, h: 1080, frameH: 1080, ground: 0.76 }, [MT.VALUE_9_16]: { w: 1080, h: 1920, frameH: 1500, ground: 0.7 }, [MT.VALUE_1_1]: { w: 1080, h: 1080, frameH: 1150, ground: 0.74 }, [MT.VALUE_4_5]: { w: 1080, h: 1350, frameH: 1260, ground: 0.73 } };
   ME.LOOKS = {
     documentary: { name: MT.TAI_LIEU_TRUNG_TINH, filter: MT.CONTRAST_1_10_SATURATE_0_94, shadows: MT.VALUE_080D14, highlights: MT.FFF0D0, split: 0.045, vignette: 0.3, grain: 0.035, bloom: 0.11 },
     noir: { name: MT.NOIR_DIEU_TRA, filter: MT.CONTRAST_1_18_SATURATE_0_55_BRIGHTNESS_0, shadows: MT.VALUE_0A1622, highlights: MT.FFE2B8, split: 0.2, vignette: 0.6, grain: 0.08, bloom: 0.22 },
@@ -143,12 +138,7 @@
     warm_story: { name: MT.KE_CHUYEN_AM, filter: MT.CONTRAST_1_05_SATURATE_1_08_BRIGHTNESS_1, shadows: MT.VALUE_2B1A12, highlights: MT.FFF0C8, split: 0.16, vignette: 0.35, grain: 0.04, bloom: 0.22 },
     clean: { name: MT.SACH_KHONG_GRADE, filter: MT.NONE, shadows: MT.VALUE_000000, highlights: MT.FFFFFF, split: 0, vignette: 0.15, grain: 0, bloom: 0 },
   };
-  ME.QUALITY = {
-    draft: { supersample: 1, motionBlur: 1, bloom: false, grain: true, layerScale: 0.75 },
-    standard: { supersample: 1, motionBlur: 1, bloom: true, grain: true, layerScale: 1 },
-    high: { supersample: 1.5, motionBlur: 2, bloom: true, grain: true, layerScale: 1.25 },
-    ultra: { supersample: 2, motionBlur: 3, bloom: true, grain: true, layerScale: 1.5 },
-  };
+  ME.QUALITY = { draft: { supersample: 1, motionBlur: 1, bloom: false, grain: true, layerScale: 0.75 }, standard: { supersample: 1, motionBlur: 1, bloom: true, grain: true, layerScale: 1 }, high: { supersample: 1.5, motionBlur: 2, bloom: true, grain: true, layerScale: 1.25 }, ultra: { supersample: 2, motionBlur: 3, bloom: true, grain: true, layerScale: 1.5 } };
   ME.makeCanvas = (w, h) => {
     w = Math.max(1, Math.ceil(w));
     h = Math.max(1, Math.ceil(h));
@@ -158,11 +148,7 @@
     c.height = h;
     return c;
   };
-  ME.FONTS = {
-    body: MT.BE_VIETNAM_PRO_SEGOE_UI_ARIAL_SANS_SERIF,
-    head: MT.OSWALD_BE_VIETNAM_PRO_ARIAL_NARROW_SANS_SERIF,
-    serif: MT.PLAYFAIR_DISPLAY_GEORGIA_SERIF,
-  };
+  ME.FONTS = { body: MT.BE_VIETNAM_PRO_SEGOE_UI_ARIAL_SANS_SERIF, head: MT.OSWALD_BE_VIETNAM_PRO_ARIAL_NARROW_SANS_SERIF, serif: MT.PLAYFAIR_DISPLAY_GEORGIA_SERIF };
   ME.font = (weight, size, fam = MT.BODY, style = MT.NORMAL) => MF.PX(String(style), String(weight), String(Math.round(size * 10) / 10), String(ME.FONTS[fam] || fam));
   ME.measure = (g, str, o = {}) => {
     const size = o.size || 40;
@@ -273,6 +259,11 @@
     });
     s.duration = s.duration || end || 5;
     return s;
+  };
+  ME.puppetTransition = (from, to) => {
+    if (!from || !to || to.cut === true) return null;
+    if (from.visualId && from.visualId === to.visualId) return { type: MT.CUT, duration: 0 };
+    return from.set === to.set && from.light === to.light ? MT.PUPPET.SAME_SCENE_TRANSITION : MT.PUPPET.TRANSITION;
   };
   ME.createRenderer = (canvas, specIn, opts = {}) => {
     const spec = ME.normalizeSpec(JSON.parse(U.stringifyJson(specIn || {})));
@@ -396,8 +387,15 @@
       }
       g.restore();
     };
-    const transitionOf = (sh) => {
+    const transitionOf = (sh, previous) => {
       const tr = Object.assign({ type: MT.FADE, duration: 0.6 }, sh.transition || {});
+      if (spec.kit) {
+        const before = previous && previous.params && previous.params.frames;
+        const after = sh.params && sh.params.frames;
+        const policy = ME.puppetTransition(before && before[before.length - 1], after && after[0]);
+        if (policy && (tr.type !== MT.CUT || policy.type === MT.FADE)) return Object.assign({}, policy);
+      }
+      if (spec.kit && tr.type !== MT.CUT) return Object.assign({}, MT.PUPPET.TRANSITION);
       if (finish && finish.transition && tr.type !== MT.CUT && ME.registry.transitions[finish.transition]) tr.type = finish.transition;
       return tr;
     };
@@ -415,8 +413,8 @@
         sg.fillRect(0, 0, SW, SH);
         return;
       }
-      const tr = transitionOf(B.shot);
       const A = shots[cur - 1];
+      const tr = transitionOf(B.shot, A && A.shot);
       const k = tr.type === MT.CUT || !A ? 1 : U.clamp((t - B.shot.start) / Math.max(0.05, tr.duration));
       if (k >= 1) {
         drawShot(sg, B, t);
@@ -747,10 +745,10 @@
     const portrait = H > W;
     const size = (portrait ? MT.SUB_SIZE_PORTRAIT : MT.SUB_SIZE) * unit;
     const quote = !!(sub.dialogue || sub.speaker);
-    const font = (quote ? MT.SUB_ITALIC : MT.EMPTY) + ME.font(quote ? 600 : 500, size, MT.BODY);
+    const font = ME.font(600, size, MT.BODY);
     const lines = ME.wrap(g, quote ? MT.SUB_QUOTE_OPEN + String(sub.text || MT.EMPTY).replace(MT.SUB_QUOTE_STRIP_RE, MT.EMPTY) + MT.SUB_QUOTE_CLOSE : sub.text, W * (portrait ? 0.84 : MT.SUB_WRAP), font).slice(0, 2);
-    const life = U.clamp((t - sub.start) / 0.2) * U.clamp((sub.end - t) / 0.2);
-    const rise = (1 - U.easeOut(U.clamp((t - sub.start) / 0.3))) * size * 0.18;
+    const life = U.clamp((t - sub.start) / MT.SUB_FADE) * U.clamp((sub.end - t) / MT.SUB_FADE);
+    const rise = 0;
     const lh = size * 1.36;
     let baseY = portrait ? H * 0.84 : H - (o.letterbox ? H * 0.155 : H * 0.09);
     baseY -= (lines.length - 1) * lh;
@@ -759,38 +757,16 @@
     g.font = font;
     g.textAlign = MT.CENTER;
     g.textBaseline = MT.ALPHABETIC;
-    if (o.style === MT.BOXED || o.style === MT.CINEMA) {
-      const maxW = Math.max(...lines.map((l) => g.measureText(l).width));
-      const padX = size * 0.75,
-        padY = size * 0.42;
-      const bx = W / 2 - maxW / 2 - padX,
-        by = baseY - size * 0.98 - padY * 0.5 + rise,
-        bw = maxW + padX * 2,
-        bh = lh * (lines.length - 1) + size * 1.3 + padY;
-      g.shadowColor = MT.SUB_SHADOW;
-      g.shadowBlur = size * 0.6;
-      g.shadowOffsetY = size * 0.08;
-      g.fillStyle = MT.SUB_BOX;
-      ME.roundRect(g, bx, by, bw, bh, Math.min(bh / 2, size * 0.5));
-      g.fill();
-      g.shadowBlur = 0;
-      g.shadowOffsetY = 0;
-      g.lineWidth = Math.max(1, unit);
-      g.strokeStyle = MT.SUB_BORDER;
-      g.stroke();
-      if (quote) {
-        const aw = Math.min(bw * 0.28, size * 3);
-        g.fillStyle = MT.SUB_ACCENT;
-        ME.roundRect(g, W / 2 - aw / 2, by - size * 0.06, aw, Math.max(2, size * 0.09), size * 0.05);
-        g.fill();
-      }
-    }
     lines.forEach((ln, i) => {
       const y = baseY + i * lh + rise;
       g.shadowColor = MT.SUB_SHADOW;
       g.shadowBlur = size * 0.25;
       g.shadowOffsetY = size * 0.03;
-      g.fillStyle = quote ? MT.SUB_QUOTE_COLOR : MT.SUB_TEXT;
+      g.lineJoin = MT.ROUND;
+      g.lineWidth = MT.SUB_STROKE * unit;
+      g.strokeStyle = MT.SUB_OUTLINE;
+      g.strokeText(ln, W / 2, y);
+      g.fillStyle = MT.SUB_TEXT;
       g.fillText(ln, W / 2, y);
       g.shadowBlur = 0;
     });

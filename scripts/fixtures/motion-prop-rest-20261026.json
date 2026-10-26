@@ -1,0 +1,20 @@
+{
+  "word": "mâm cúng",
+  "key": "mam_cung_state_overturned",
+  "essential": true,
+  "placement": { "anchor": "table", "evidence": "mâm cúng đổ tháo tùm lum" },
+  "catalogKey": "offering_tray",
+  "identity": "mam_cung",
+  "transition": false,
+  "size": 0.3,
+  "type": "small",
+  "mount": "floor",
+  "note": "mâm cúng – \"Sao nhà cửa tối om, mâm cúng đổ tháo tùm lum vậy em?\"",
+  "category": "prop",
+  "description": "offering tray with a boiled chicken and wine cups. Visible physical state: overturned.",
+  "requirements": ["overturned"],
+  "baseMount": "floor",
+  "physicalState": "overturned",
+  "baseDescription": "offering tray with a boiled chicken and wine cups",
+  "baseRequirements": ["overturned"]
+}

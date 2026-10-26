@@ -1,4 +1,4 @@
-import type { PuppetGen, PuppetKitSpec } from "./motionPuppet.js";
+import type { PuppetActorState, PuppetGen, PuppetKitSpec, PuppetObject } from "./motionPuppet.js";
 import type { MotionStyleFinish } from "../constants/motionStyleFinish.js";
 import type { MotionCostume } from "../constants/motionCostume.js";
 import type { MotionTraits } from "../constants/motionSceneTraits.js";
@@ -223,6 +223,9 @@ export interface MotionCompiledPreview {
   voiceStale?: boolean;
 }
 export interface MotionRenderOptions {
+  editorialSessionId?: string;
+  speechRanges?: { start: number; end: number }[];
+  requireAudio?: boolean;
   quality: MotionQuality;
   aspect: MotionAspect | string;
   fps?: number;
@@ -286,6 +289,7 @@ export interface MotionStorySource {
   sourceSeconds: number;
 }
 export interface MotionCastMember {
+  appearanceOf?: string;
   key: string;
   name: string;
   alias?: string;
@@ -353,7 +357,32 @@ export interface MotionFolkBelief {
   taboos: string[];
   remedies: string[];
 }
+export interface MotionFolkStoryContract {
+  version: number;
+  profileId: string;
+  sourceKey: string;
+  topic: { id: string; name: string; meaning: string; aliases: string[]; evidence: string };
+}
+export interface MotionSourceCore {
+  premise: string;
+  emotionalStake: string;
+  causalChain: string[];
+  escalation: string[];
+  reversal: string;
+  endingMeaning: string;
+}
+export interface MotionStorySpine {
+  steps: { chapterId: string; cause: string; event: string; consequence: string }[];
+  clues: { detail: string; setupChapterId: string; payoffChapterId: string; payoff: string }[];
+}
 export interface MotionStoryAnalysis {
+  folkStoryContract?: MotionFolkStoryContract;
+  topicId?: string;
+  topicEvidence?: { chapterId: string; quote: string }[];
+  illustrationCoverage?: { version: number; chapterId: string; sourceKey: string; status: "checked_empty" | "checked_needs"; needIds: string[] }[];
+  illustrationNeeds?: { id: string; chapterId: string; place: string; evidence: string; states: PuppetActorState[]; objects: PuppetObject[]; features?: string[] }[];
+  sourceCore?: MotionSourceCore;
+  storySpine?: MotionStorySpine;
   characterMotion?: boolean;
   referenceStyle?: MotionReferenceStyle;
   title: string;
@@ -666,6 +695,8 @@ export interface MotionSeriesState {
   carryGen?: Partial<MotionGenState>;
 }
 export interface MotionStoryScript {
+  durationRepairStates?: Record<string, { rejected: number; errors: string[] }>;
+  chapterDrafts?: Record<string, MotionChapterDraft>;
   voiceTrack?: MotionVoiceTrack;
   voiceSettings?: MotionVoiceSettings;
   voiceChannel?: string;
@@ -675,8 +706,16 @@ export interface MotionStoryScript {
   gen?: MotionGenState;
   edit?: { reviewed: number; rewritten: number; notes: string[] };
 }
+export interface MotionChapterDraft {
+  parts?: Record<string, MotionChapterDraft>;
+  repairState?: { rejected: number; errors: string[] };
+  inputKey: string;
+  rows: Record<string, any>[];
+  pending: { id: string; fields: string[]; targetUnits?: number }[];
+}
 export interface MotionSeoOption {
   title: string;
+  sourceTitleBased?: boolean;
   description: string;
   hashtags: string[];
   tags: string[];
@@ -734,6 +773,8 @@ export interface MotionVoicePreset {
   speed?: number;
 }
 export interface MotionVoiceSpeedTarget {
+  rateBasis?: "text" | "acoustic";
+  fingerprint?: string;
   rate: number;
   url: string;
   title: string;
@@ -748,6 +789,7 @@ export interface MotionVoiceSpeedSettings {
   target?: MotionVoiceSpeedTarget;
   correction: number;
   rates: Record<string, number>;
+  acousticRates?: Record<string, number>;
 }
 export type MotionVoiceGroup = "male_adult" | "female_adult" | "child" | "senior_male" | "senior_female";
 export interface MotionVoiceChannel {
@@ -780,6 +822,7 @@ export interface MotionAudioDirection {
   dialect: string;
 }
 export interface MotionVoiceClip {
+  quality?: MotionVoiceClipQuality;
   id: string;
   beatId: string;
   speaker: string;
@@ -790,6 +833,13 @@ export interface MotionVoiceClip {
   end: number;
   words?: [number, number][];
   delivery?: MotionVoiceDelivery;
+}
+export interface MotionVoiceClipQuality {
+  verifiedAt?: number;
+  status: "passed" | "review" | "unavailable" | "unchecked";
+  error?: number;
+  errorRun?: number;
+  heard?: string;
 }
 export enum MotionStoryLength {
   FULL = "full",
@@ -811,6 +861,7 @@ export enum MotionStoryLength {
   FOUR = "4min",
 }
 export enum MotionStoryJobKind {
+  PRODUCTION = "production",
   ANALYZE = "analyze",
   SCRIPT = "script",
   VOICE = "voice",
@@ -821,6 +872,7 @@ export enum MotionStoryJobKind {
   TRAIN_VOICE = "train_voice",
 }
 export interface MotionLogEntry {
+  startedAt?: number;
   id: string;
   kind: string;
   lines: string[];
@@ -840,9 +892,16 @@ export interface MotionAiActivity {
   model: string;
   artifact: string;
   phase: string;
+  owner?: string;
+  requestId?: string;
+  phaseStartedAt?: number;
+  roomGeneration?: number;
+  targetIds?: string[];
 }
 export type MotionAiLog = (line: string, activity?: MotionAiActivity) => void;
 export interface MotionStoryJobState {
+  productionId?: string;
+  interrupted?: boolean;
   id: string;
   kind: MotionStoryJobKind;
   status: MotionJobStatus;
@@ -853,4 +912,14 @@ export interface MotionStoryJobState {
   error?: string;
   result?: unknown;
   startedAt: number;
+}
+export interface MotionProductionResult {
+  analysis?: MotionStoryAnalysis;
+  script?: MotionStoryScript;
+  voice?: MotionVoiceTrack;
+  compiled?: MotionCompiledPreview;
+  seo?: MotionSeoPack;
+  seoJobId?: string;
+  rendered?: MotionResultItem;
+  series?: MotionSeriesState | null;
 }

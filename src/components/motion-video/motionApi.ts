@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { API_ROUTES } from "../../constants/apiRoutes.js";
+import { MOTION_JOB_POLLING as POLL } from "../../constants/motionJobPolling.js";
 import {
   MOTION_TEMPLATE_GB,
   MOTION_TEMPLATE_MB,
@@ -9,6 +10,7 @@ import {
   MOTION_TEMPLATE_V,
   MOTION_TEXT_0,
   MOTION_TEXT_ABORTED,
+  MOTION_TEXT_ABORT,
   MOTION_TEXT_ABORTERROR,
   MOTION_TEXT_APPLICATION_JSON,
   MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO,
@@ -22,8 +24,11 @@ import { stringifyJson } from "../../lib/jsonStringify.js";
 export const motionRequest = async <T = any>(url: string, body?: unknown, method?: string, signal?: AbortSignal): Promise<T> => {
   const init: RequestInit = body === undefined && !method ? { signal } : { method: method || MOTION_TEXT_POST, headers: { "Content-Type": MOTION_TEXT_APPLICATION_JSON }, body: body === undefined ? undefined : stringifyJson(body), signal };
   const response = await fetch(url, init);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data?.success === false) throw new Error(_.toString(data?.error) || response.statusText || MOTION_TEXT_REQUEST_FAILED);
+  const data = await response.json().catch((error) => {
+    if (response.ok) throw error;
+    return {};
+  });
+  if (!response.ok || data?.success === false) throw Object.assign(new Error(_.toString(data?.error) || response.statusText || MOTION_TEXT_REQUEST_FAILED), { status: response.status });
   return data as T;
 };
 export interface MotionEngineGlobal {
@@ -59,13 +64,41 @@ export const loadMotionEngineClient = (): Promise<MotionEngineGlobal> => {
   });
   return enginePromise;
 };
-export const pollMotionJob = async <T>(statusUrl: string, onUpdate: (job: T) => void, isDone: (job: T) => boolean, signal?: AbortSignal, intervalMs = 1000): Promise<T> => {
+const waitForMotionPoll = (ms: number, signal?: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const stop = () => {
+      clearTimeout(timer);
+      reject(new DOMException(MOTION_TEXT_ABORTED, MOTION_TEXT_ABORTERROR));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener(MOTION_TEXT_ABORT, stop);
+      resolve();
+    }, ms);
+    if (signal?.aborted) stop();
+    else signal?.addEventListener(MOTION_TEXT_ABORT, stop, { once: true });
+  });
+export const pollMotionJob = async <T extends { id: string; status: string }>(statusUrl: string, onUpdate: (job: T) => void, isDone: (job: T) => boolean, signal?: AbortSignal, intervalMs = 1000, onReconnect?: () => void): Promise<T> => {
+  let failures = 0;
   for (;;) {
     if (signal?.aborted) throw new DOMException(MOTION_TEXT_ABORTED, MOTION_TEXT_ABORTERROR);
-    const data = await motionRequest<{ job: T }>(statusUrl, undefined, undefined, signal);
+    let data: { job: T };
+    try {
+      const timeout = AbortSignal.timeout(POLL.REQUEST_TIMEOUT_MS);
+      data = await motionRequest<{ job: T }>(statusUrl, undefined, undefined, signal ? AbortSignal.any([signal, timeout]) : timeout);
+      if (!data?.job || typeof data.job.id !== "string" || typeof data.job.status !== "string") throw new Error(POLL.INVALID_RESPONSE);
+      failures = 0;
+    } catch (error) {
+      if (signal?.aborted) throw new DOMException(MOTION_TEXT_ABORTED, MOTION_TEXT_ABORTERROR);
+      const status = (error as { status?: number })?.status;
+      if (status !== undefined && status < POLL.SERVER_ERROR_STATUS && !POLL.RETRY_HTTP_STATUSES.includes(status)) throw error;
+      if (!failures) onReconnect?.();
+      failures++;
+      await waitForMotionPoll(Math.min(POLL.MAX_RETRY_INTERVAL_MS, POLL.RETRY_INTERVAL_MS * failures), signal);
+      continue;
+    }
     onUpdate(data.job);
     if (isDone(data.job)) return data.job;
-    await new Promise((r) => setTimeout(r, intervalMs));
+    await waitForMotionPoll(intervalMs, signal);
   }
 };
 export const formatSeconds = (s?: number): string => {

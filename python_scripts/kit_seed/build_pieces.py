@@ -1,7 +1,10 @@
+from library_release import assert_legacy_library_target
 import sys, os, json, hashlib, datetime
+from seed_utils import resource_semantics, validate_asset_geometry
 STYLES = {'minimal_mask': 'stl-ba8ca635c716c880', 'chibi_folk': 'stl-e70fac00bbf44662'}
 NOW = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z')
 src, out = sys.argv[1], sys.argv[2]
+assert_legacy_library_target(out)
 def pid(prefix, seed):
     return prefix + hashlib.sha256(seed.encode()).hexdigest()[:16]
 n = 0
@@ -14,6 +17,8 @@ for style, sid in STYLES.items():
             rec.update(id=pid(prefix, 'seedv1:%s:%s' % (style, key)), type=kind, styleId=sid, tags=['seed', key], uses=0, updatedAt=NOW)
             if kind == 'set_piece':
                 rec['source'] = 'seed'
+            resource_semantics(rec)
+            validate_asset_geometry(rec, rec['id'])
             json.dump(rec, open(os.path.join(out, kind, rec['id'] + '.json'), 'w', encoding='utf-8'), ensure_ascii=False)
             n += 1
 print(n)

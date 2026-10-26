@@ -36,6 +36,25 @@ const resetPicker = async (mode: string = T.READY, english = false, materialMenu
   await page.setContent(F.PICKER_HTML(JSON.stringify(mode), JSON.stringify(GEMINI_CHAT_BASE_MODEL_OPTIONS.slice(0, 4)), JSON.stringify(GEMINI_THINKING_LEVEL_OPTIONS.map((option) => ({ ...option, label: english ? option.labelEn : option.label }))), JSON.stringify(materialMenu), english ? T.THINKING_LEVEL : T.THINKING_LABEL, english ? T.SELECTED : T.DA_CHON));
 };
 try {
+  await resetPicker(T.COLLAPSED_PAGE);
+  await page.locator("textarea").evaluate((element, value) => {
+    (element as HTMLTextAreaElement).value = value;
+  }, T.GEMINI_ARGON_HIGH);
+  await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.HIGH));
+  assert.equal(await page.locator("textarea").inputValue(), T.GEMINI_ARGON_HIGH);
+  assert.equal(await page.evaluate(() => (window as any).level), T.HIGH);
+  const rooms = await Promise.all(Array.from({ length: 3 }, () => browser.newPage()));
+  try {
+    await Promise.all(
+      rooms.map(async (room) => {
+        await room.setContent(F.PICKER_HTML(JSON.stringify(T.READY), JSON.stringify(GEMINI_CHAT_BASE_MODEL_OPTIONS.slice(0, 4)), JSON.stringify(GEMINI_THINKING_LEVEL_OPTIONS), JSON.stringify(false), T.THINKING_LABEL, T.DA_CHON));
+        await selectGeminiThinkingModel(room, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.HIGH));
+        assert.equal(await room.evaluate(() => (window as any).level), T.HIGH);
+      }),
+    );
+  } finally {
+    await Promise.all(rooms.map((room) => room.close()));
+  }
   await resetPicker(T.READY, false, true);
   await selectGeminiThinkingModel(page, encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, T.LOW));
   assert.equal(await page.evaluate(() => (window as any).level), T.LOW, T.RECOGNIZE_THE_ALREADY_SELECTED_DA_CHON_THAP_MENU_ITEM);

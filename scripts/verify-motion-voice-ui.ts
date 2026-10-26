@@ -10,10 +10,14 @@ import { MOTION_SOUND_CONFIG } from "../src/constants/motionSound.ts";
 import { getMotionEngineClientScript } from "../src/server/services/motionEngineService.ts";
 import { getMotionAudioDirectory, getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
 import { motionVoiceSignature } from "../src/lib/motionVoice.ts";
+import { PUPPET } from "../src/constants/motionPuppet.ts";
+import { MOTION_CANCELLATION_VERIFICATION as C } from "./motionCancellationVerificationTexts.ts";
+import { MotionStoryJobKind } from "../src/types/motionVideo.ts";
 const creator = fs.readFileSync(VT.SRC_COMPONENTS_MOTIONVIDEOCREATOR_TSX, VT.UTF8);
 assert.ok(!/MotionVoiceControls|MotionSoundControls|studio\.generateVoice|patch\(\{ sfx:/.test(creator), VT.PRODUCTION_UI_CONTAINS_NO_MANUAL_VOICE_SFX_CONTROLS);
 const fixture = JSON.parse(fs.readFileSync(VT.SCRATCH_MOTION_VOICE_FLOW_RESULT_JSON, VT.UTF8));
 fixture.script.gen.soundPlanVersion = MOTION_SOUND_CONFIG.VERSION;
+fixture.script.gen.puppet = { version: PUPPET.VERSION };
 const bundle = await build({
   stdin: {
     contents: VT.IMPORT_REACT_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DOM_CLI,
@@ -80,6 +84,8 @@ try {
       currentTrack = { ...fixture.track, signature: motionVoiceSignature(route.request().postDataJSON().script, route.request().postDataJSON().analysis) };
       return route.fulfill({ json: { job: { id: VT.AUTOMATIC_VOICE, kind: VT.VOICE, status: VT.RENDERING, log: [], progress: 0 } } });
     }
+    if (url.pathname === API_ROUTES.MOTION_STORY_SCENES) return route.fulfill({ json: { job: { id: C.SCENE_ID, kind: MotionStoryJobKind.SCENES, status: VT.RENDERING, log: [], progress: 0 } } });
+    if (url.pathname === API_ROUTES.MOTION_STORY_STATUS + C.SCENE_ID) return route.fulfill({ json: { job: { id: C.SCENE_ID, kind: MotionStoryJobKind.SCENES, status: VT.COMPLETED, result: fixture.script, log: [], progress: 1 } } });
     if (url.pathname.startsWith(API_ROUTES.MOTION_STORY_STATUS)) return route.fulfill({ json: { job: { id: VT.AUTOMATIC_VOICE, kind: VT.VOICE, status: VT.COMPLETED, result: currentTrack, log: [], progress: 1 } } });
     if (url.pathname === API_ROUTES.MOTION_STORY_COMPILE) {
       const input = route.request().postDataJSON();
@@ -99,6 +105,10 @@ try {
   const css = fs.readdirSync(VT.DIST_ASSETS).find((file) => /^index-.*\.css$/.test(file));
   if (css) await page.addStyleTag({ content: fs.readFileSync(`${VT.DIST_ASSETS_2}${css}`, VT.UTF8) });
   await page.addScriptTag({ content: bundle.outputFiles[0].text });
+  await page.waitForFunction(() => !!(window as any).motionStudioFixture?.state.script);
+  await page.waitForTimeout(C.GUARD_DELAY);
+  assert.equal(voiceRequests, 0, C.LEGACY_RELOAD);
+  await page.evaluate(() => (window as any).motionStudioFixture.buildScenes());
   await page.waitForFunction(() => (window as any).motionStudioFixture?.voiceValid && !!(window as any).motionStudioFixture?.previewAudioId, undefined, { timeout: 20000 });
   assert.equal(voiceRequests, 1, VT.VOICE_MUST_BE_GENERATED_AUTOMATICALLY_WITHOUT_CHOOSING_A_VOI);
   const playback = page.getByRole(VT.BUTTON).nth(1);

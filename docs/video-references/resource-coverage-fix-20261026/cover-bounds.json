@@ -1,0 +1,42 @@
+[
+  {
+    "preset": "minimal_mask",
+    "pose": "idle",
+    "left": 907,
+    "top": 567,
+    "right": 1012,
+    "bottom": 809,
+    "width": 105,
+    "height": 242
+  },
+  {
+    "preset": "minimal_mask",
+    "pose": "lie",
+    "left": 907,
+    "top": 704,
+    "right": 1149,
+    "bottom": 810,
+    "width": 242,
+    "height": 106
+  },
+  {
+    "preset": "chibi_folk",
+    "pose": "idle",
+    "left": 890,
+    "top": 612,
+    "right": 1029,
+    "bottom": 807,
+    "width": 139,
+    "height": 195
+  },
+  {
+    "preset": "chibi_folk",
+    "pose": "lie",
+    "left": 956,
+    "top": 678,
+    "right": 1151,
+    "bottom": 818,
+    "width": 195,
+    "height": 140
+  }
+]

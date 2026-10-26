@@ -1,0 +1,21 @@
+{
+  "source": "motion-puppet-read-contract-9f9b30c6-2169-4742-9740-60346779babb",
+  "requested": { "i": 26, "key": "visual::1448::e2f8bb33", "text": "\"Sao nhà cửa tối om, mâm cúng đổ tháo tùm lum vậy em?\"" },
+  "draft": {
+    "focus": "chi_hai",
+    "who": ["chi_hai", "toi"],
+    "place": "san_truoc",
+    "action": "talk",
+    "emotion": "confused",
+    "object": { "key": "mam_cung", "catalogKey": "offering_plate", "identity": "mâm cúng", "word": "mâm cúng", "category": "prop", "type": "small", "size": 0.3, "mount": "floor", "essential": true, "placement": { "anchor": "table", "evidence": "mâm cúng đổ tháo tùm lum" } },
+    "objects": [{ "key": "mam_cung", "catalogKey": "offering_tray", "identity": "mâm cúng", "word": "mâm cúng", "category": "prop", "type": "small", "size": 0.3, "mount": "floor", "essential": true, "placement": { "anchor": "table", "evidence": "mâm cúng đổ tháo tùm lum" } }],
+    "states": [
+      { "char": "chi_hai", "action": "talk", "posture": "idle", "essential": false, "placement": { "relation": "at", "anchor": "courtyard", "evidence": "mâm cúng đổ tháo tùm lum vậy em" } },
+      { "char": "toi", "action": "stand", "posture": "idle", "essential": false, "placement": null }
+    ],
+    "overlays": [],
+    "visual": { "scene": "san_truoc_chi_hai_inquiry", "timeline": "present", "evidence": ["\"Sao nhà cửa tối om, mâm cúng đổ tháo tùm lum vậy em?\""], "fixtures": [] },
+    "i": 26
+  },
+  "correction": { "i": 26, "objects": [{ "key": "mam_cung", "catalogKey": "offering_tray", "identity": "offering_tray_courtyard", "word": "mâm cúng", "category": "prop", "type": "small", "size": 0.3, "mount": "floor", "essential": true, "placement": { "anchor": "table", "evidence": "mâm cúng đổ tháo tùm lum" } }] }
+}

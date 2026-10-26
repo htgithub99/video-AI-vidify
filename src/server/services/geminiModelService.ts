@@ -2,7 +2,7 @@ import type { Locator, Page } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG, GEMINI_CHAT_BASE_MODEL_LABELS } from "../../constants/cinematicConstants.js";
 import { GEMINI_MODEL_ENCODING, GEMINI_MODEL_UI as UI, GEMINI_THINKING_LEVEL_OPTIONS, parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
-import { throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
+import { clickPlanningControl, throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
 import type { AiPlanningChatModel } from "../../types.js";
 import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
 const waitUntil = async (page: Page, test: () => Promise<boolean>, signal?: AbortSignal, timeout: number = CONFIG.MODEL_PICKER_TIMEOUT_MS) => {
@@ -30,9 +30,17 @@ export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal): Pr
   const input = page.locator(CONFIG.GEMINI_INPUT_SELECTOR).filter({ visible: true }).last();
   let stable = 0;
   let previous: string = C.EMPTY;
+  let expanded = false;
   const ready = await waitUntil(
     page,
     async () => {
+      if (!expanded && !(await visible(button))) {
+        const collapsed = page.locator(UI.COLLAPSED_INPUT_SELECTOR).filter({ visible: true }).last();
+        if (await collapsed.isEditable().catch(() => false)) {
+          await clickPlanningControl(collapsed, signal, CONFIG.MODEL_PICKER_TIMEOUT_MS);
+          expanded = true;
+        }
+      }
       const label = (await button.innerText({ timeout: UI.POLL_MS }).catch(() => C.EMPTY)).trim();
       const usable = !!label && (await available(button)) && (await input.isEditable().catch(() => false));
       stable = usable && label === previous ? stable + 1 : usable ? 1 : 0;
@@ -53,15 +61,15 @@ const checked = async (option: Locator): Promise<boolean> => {
     .evaluateAll((nodes, { selector, pattern, empty }) => nodes.some((node) => node.matches(selector) || pattern.test(node.textContent?.trim() || empty)), { selector: UI.CHECK_MARKER_SELECTOR, pattern: UI.CHECK_TEXT_PATTERN, empty: C.EMPTY });
 };
 const openThinkingMenu = async (page: Page, button: Locator, option: Locator, signal?: AbortSignal): Promise<boolean> => {
-  await button.click();
+  await clickPlanningControl(button, signal);
   const trigger = page
     .getByRole(UI.MENU_ITEM, { name: CONFIG.THINKING_LEVEL_NAME_PATTERN })
     .or(page.getByRole(UI.BUTTON, { name: CONFIG.THINKING_LEVEL_NAME_PATTERN }))
     .filter({ visible: true })
     .first();
   if (!(await waitUntil(page, () => visible(trigger), signal))) return false;
-  await trigger.hover();
-  if (!(await visible(option))) await trigger.click();
+  await trigger.hover({ force: true, timeout: CONFIG.MODEL_PICKER_TIMEOUT_MS });
+  if (!(await visible(option))) await clickPlanningControl(trigger, signal);
   return true;
 };
 export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningChatModel, signal?: AbortSignal): Promise<void> => {
@@ -79,13 +87,13 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       await closeMenus(page);
       if (!baseLabel.test((await button.innerText()).trim())) {
         phase = UI.PHASE.BASE;
-        await button.click();
+        await clickPlanningControl(button, signal);
         const option = optionFor(page, baseLabel);
         if (!(await waitUntil(page, () => available(option), signal))) {
           if (await disabled(option)) throw unavailable();
           throw uiError(page, phase, model);
         }
-        await option.click();
+        await clickPlanningControl(option, signal);
         await closeMenus(page);
       }
       phase = UI.PHASE.BASE_VERIFY;
@@ -98,7 +106,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
         throw uiError(page, phase, model);
       }
       if (!(await checked(option))) {
-        await option.click();
+        await clickPlanningControl(option, signal);
         await closeMenus(page);
         phase = UI.PHASE.LEVEL_VERIFY;
         if (!(await openThinkingMenu(page, button, option, signal)) || !(await waitUntil(page, () => checked(option), signal))) throw uiError(page, phase, model);

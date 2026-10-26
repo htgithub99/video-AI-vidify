@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import { motionCaptchaPageReady } from "../src/server/services/motionStoryService.js";
+const gemini = "gemini-chat";
+assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/library", "Your library", false), true);
+assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/library?view=all", "Your library", false), true);
+assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/library", "", false), false);
+assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/library", "Verify you are human", true), false);
+assert.equal(motionCaptchaPageReady(gemini, "https://www.google.com/sorry/index", "Your library", true), false);
+assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com.evil.example/library", "Your library", false), false);
+assert.equal(motionCaptchaPageReady("chatgpt", "https://gemini.google.com/library", "Your library", false), false);
+assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/app/retained", "Ready", true), true);
+assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/app/retained", "Loading", false), false);
+assert.equal(motionCaptchaPageReady(gemini, "https://accounts.google.com/", "Sign in", false), false);
+console.log("CAPTCHA readiness: verified Gemini Library resumes without an editor; blank, challenge, loading, login and unrelated hosts do not.");

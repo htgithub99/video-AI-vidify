@@ -395,8 +395,10 @@ export const WORKFLOW_ACTIVITY_TEXT = {
     },
   },
 } as const;
-export const storyActivityPrefixes: Record<MotionStoryJobKind, string> = { [MotionStoryJobKind.ANALYZE]: "motionAnalyze", [MotionStoryJobKind.SCRIPT]: "motionScript", [MotionStoryJobKind.SCENES]: "motionScenes", [MotionStoryJobKind.VOICE]: "motionVoice", [MotionStoryJobKind.SEO]: "motionSeo", [MotionStoryJobKind.THUMBNAIL]: "motionThumbnail", [MotionStoryJobKind.LIBRARY]: "motionLibrary", [MotionStoryJobKind.TRAIN_VOICE]: "motionLibrary" };
+export const storyActivityPrefixes: Record<MotionStoryJobKind, string> = { [MotionStoryJobKind.PRODUCTION]: "motionRender", [MotionStoryJobKind.ANALYZE]: "motionAnalyze", [MotionStoryJobKind.SCRIPT]: "motionScript", [MotionStoryJobKind.SCENES]: "motionScenes", [MotionStoryJobKind.VOICE]: "motionVoice", [MotionStoryJobKind.SEO]: "motionSeo", [MotionStoryJobKind.THUMBNAIL]: "motionThumbnail", [MotionStoryJobKind.LIBRARY]: "motionLibrary", [MotionStoryJobKind.TRAIN_VOICE]: "motionLibrary" };
 export const storyActivityRoutes: Record<string, MotionStoryJobKind> = {
+  [API_ROUTES.MOTION_PRODUCTION]: MotionStoryJobKind.PRODUCTION,
+  [API_ROUTES.MOTION_PRODUCTION_RESUME]: MotionStoryJobKind.PRODUCTION,
   [API_ROUTES.MOTION_STORY_ANALYZE]: MotionStoryJobKind.ANALYZE,
   [API_ROUTES.MOTION_STORY_SCRIPT]: MotionStoryJobKind.SCRIPT,
   [API_ROUTES.MOTION_STORY_SCENES]: MotionStoryJobKind.SCENES,

@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { AV as V } from "./motionAssetVerificationTexts.js";
+import { visualReadFixture } from "./motionVisualContractVerificationTexts.js";
 import { PA } from "../src/constants/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_TYPES } from "../src/constants/motionPuppet.js";
-import { puppetObjectClass, puppetPropFits, puppetPropReferenceFits, preferredPuppetProps } from "../src/lib/motionPuppetAssets.js";
+import { puppetObjectClass, puppetObjectIsGeometry, puppetObjectNeedsSpot, puppetPropFits, puppetPropReferenceFits, preferredPuppetProps, puppetSceneFeatureFits, puppetObjectRequirements } from "../src/lib/motionPuppetAssets.js";
+import { cleanPuppetSpots, puppetSetMissingRequirements, puppetSetPlacementNeeds } from "../src/server/services/puppet/layout.js";
 import { englishPuppetAnalysis } from "../src/server/services/puppet/assetProfiles.js";
-import { drawPuppetProps, matchLibraryProps, matchArchetypes } from "../src/server/services/puppet/kitDraw.js";
+import { drawPuppetProps, drawPuppetSets, matchLibraryProps, matchArchetypes } from "../src/server/services/puppet/kitDraw.js";
 import { readPuppetLines } from "../src/server/services/puppet/director.js";
 import { newPuppetId, writePuppet, puppetLibDir } from "../src/server/services/puppet/kitLibrary.js";
 import { STORAGE_CONFIG } from "../src/constants/storage.js";
@@ -23,10 +25,63 @@ const style = { ...JSON.parse(fs.readFileSync(path.resolve(V.STYLE), PA.UTF8)), 
 const ob = (key: string, type = VT.OTHER): PuppetObject => ({ key, type, word: key, note: key, description: key, mount: VT.HELD, size: 0.3 });
 const prop = (key: string, extra: Partial<PuppetProp> = {}): PuppetProp => ({ id: newPuppetId(PUPPET_TYPES.PROP), type: PUPPET_TYPES.PROP, styleId: style.id, key, name: key, desc: key, tags: [key], svg: V.SVG, base: [256, 480], height: 0.3, size: 0.3, uses: 0, updatedAt: VT.VALUE_2026_10_21T00_00_00Z, ...extra });
 try {
+  assert.deepEqual(puppetObjectRequirements({ word: "Dải chỉ tang đen", requirements: [] }), ["black"]);
+  assert.deepEqual(puppetObjectRequirements({ word: "đồng tiền", requirements: [] }), []);
+  assert.equal(puppetPropFits({ ...ob("red_binding_thread"), word: "Dải chỉ tang đen" }, prop("red_binding_thread")), false);
+  assert.equal(puppetPropFits({ ...ob("white_mourning_sash"), word: "khăn trắng" }, prop("white_mourning_sash")), true);
+  const contacts = Array.from({ length: V.CONTACT_COUNT }, (_, index) => ({ key: V.CONTACT_PREFIX + index, kind: P.SPOT_SIT, x: 100 + index * 20, y: 900 }));
+  assert.equal(cleanPuppetSpots(contacts).length, contacts.length);
+  const seating = {
+    states: [
+      { char: VT.A, action: P.SPOT_SIT, support: V.BED },
+      { char: VT.B, action: P.SPOT_SIT, support: V.BED },
+    ],
+  } as any;
+  assert.deepEqual(puppetSetPlacementNeeds([seating, seating, { states: [seating.states[0]] } as any]), [{ support: V.BED, kind: P.SPOT_SIT, count: 2 }]);
+  const geometry = V.GEOMETRY.map((key) => ({ ...ob(key, P.OBJECT_TYPE_DEFAULT), type: P.ANCHORED_FEATURE_TYPES[1], category: PA.SCENE_FEATURE }));
+  assert.ok(geometry.every(puppetObjectIsGeometry));
+  assert.ok(geometry.every((item) => !puppetObjectNeedsSpot(item)));
+  assert.ok(puppetObjectNeedsSpot({ key: V.BED, type: P.ANCHORED_FEATURE_TYPES[0], category: PA.SCENE_FEATURE }));
+  assert.ok(puppetSceneFeatureFits(V.GEOMETRY[0], V.GEOMETRY_DESC));
+  assert.equal(puppetSceneFeatureFits(V.GEOMETRY[0], V.WRONG_WALL), false);
+  const set: any = { name: V.ROOM, desc: V.ROOM, tags: [], svg: V.GEOMETRY_SVG, spots: [], floorY: 900 };
+  assert.deepEqual(puppetSetMissingRequirements(set, [{ states: [], objects: geometry } as any]), []);
+  assert.ok(puppetSetMissingRequirements({ ...set, svg: V.EMPTY_SVG }, [{ states: [], objects: geometry } as any]).length);
+  assert.ok(puppetSetMissingRequirements(set, [{ states: [], object: { ...ob(V.BED), type: P.ANCHORED_FEATURE_TYPES[0], category: PA.SCENE_FEATURE } } as any]).includes(V.BED));
+  let setDrafts = 0;
+  const place: any = { key: V.ROOM_KEY, name: V.ROOM, desc: V.ROOM, interior: true, time: P.DAY };
+  const setOptions: any = { exec: {}, log() {}, ai: async (_prompt: string, artifact: string) => (artifact === P.ARTIFACT_SET ? (setDrafts++, { svg: V.SET_SVG }) : V.MINOR_REVIEW) };
+  const illustrative = await drawPuppetSets(style, [{ key: place.key, place, uses: V.ROOM }], setOptions);
+  assert.ok(illustrative[place.key]);
+  assert.equal(setDrafts, 1);
+  setDrafts = 0;
+  setOptions.ai = async (_prompt: string, artifact: string) => (artifact === P.ARTIFACT_SET ? (setDrafts++, { svg: V.SET_SVG }) : V.CRITICAL_REVIEW);
+  await assert.rejects(drawPuppetSets(style, [{ key: place.key, place, uses: V.ROOM }], setOptions));
+  assert.equal(setDrafts, P.DRAW_TRIES);
+  let mentionedCalls = 0;
+  const mentionedLine: any = { key: V.MENTIONED_KEY, text: V.MENTIONED_LINE };
+  const mentionedRead = await readPuppetLines(
+    [mentionedLine],
+    [mentionedLine],
+    V.VI as any,
+    {},
+    {},
+    {
+      exec: {} as any,
+      log() {},
+      ai: async () => {
+        mentionedCalls++;
+        return { lines: [{ i: 0, visual: visualReadFixture(V.MENTIONED_KEY, V.MENTIONED_LINE), focus: P.FOCUS_OBJECT, object: { ...ob(V.MENTIONED_KEY), presence: PA.MENTIONED } }] };
+      },
+    },
+  );
+  assert.equal(mentionedRead.reads[V.MENTIONED_KEY].object, null);
+  assert.equal(mentionedRead.reads[V.MENTIONED_KEY].objects?.length, 0);
+  assert.equal(mentionedCalls, 1);
   for (const test of V.OBJECTS) {
     assert.equal(puppetObjectClass(test), test.expected);
     const line: any = { key: test.key, text: test.word, place: VT.BUONG_NGU };
-    const result = await readPuppetLines([line], [line], V.VI as any, {}, {}, { exec: {} as any, log: () => {}, ai: async () => ({ lines: [{ i: 0, focus: VT.OBJECT, object: { ...test, size: 1, mount: VT.HELD } }] }) });
+    const result = await readPuppetLines([line], [line], V.VI as any, {}, {}, { exec: {} as any, log: () => {}, ai: async () => ({ lines: [{ i: 0, visual: visualReadFixture(VT.BUONG_NGU, test.word), focus: VT.OBJECT, object: { ...test, size: 1, mount: VT.HELD } }] }) });
     const read = result.reads[test.key];
     if (test.expected === PA.EXCLUDED) assert.equal(read.object, null);
     else {

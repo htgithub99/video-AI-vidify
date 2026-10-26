@@ -4,7 +4,13 @@ export const D = {
   TEXTS: "motion-engine/texts.js",
   UTF8: "utf8" as const,
   HOOK: "ME.PUPPET2D = { init,",
-  EXPOSE: "ME.drawStage = drawStage; ME.PUPPET2D = { init,",
+  EXPOSE: "ME.drawStage = drawStage; ME.frameBox = frameBox; ME.PUPPET2D = { init,",
+  CAMERA_SHOT: "people",
+  CAMERA_LEVELS: [
+    [620, 1000],
+    [650, 1010],
+    [700, 1030],
+  ],
   HTML: '<html><body><canvas id="stage" width="1920" height="1080"></canvas></body></html>',
   CANVAS: "stage",
   CONTEXT: "2d",
@@ -22,5 +28,5 @@ export const D = {
   RED_COLOR: "#ff0000",
   GREEN_COLOR: "#00ff00",
   EXPECTED: { red: [255, 0, 0, 255], green: [0, 255, 0, 255], fence: [0, 0, 255, 255] },
-  PASSED: "Depth order: primary/secondary props before and behind occluders, with and without actors, passed canvas pixel checks.\n",
+  PASSED: "Depth order canvas pixels and camera bounds for participants on separate levels passed.\n",
 } as const;

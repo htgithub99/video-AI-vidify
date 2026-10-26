@@ -1,0 +1,131 @@
+[
+  {
+    "id": "new_scaffold",
+    "place": "Vietnamese workshop courtyard",
+    "interior": false,
+    "features": ["scaffold"],
+    "states": [
+      { "char": "actor_0", "action": "stand", "posture": "idle", "essential": true, "support": "on_scaffold" },
+      { "char": "actor_1", "action": "stand", "posture": "idle", "essential": true, "support": "beside_scaffold" }
+    ],
+    "objects": [],
+    "infant": null
+  },
+  { "id": "new_bus", "place": "Vietnamese village road", "interior": false, "features": ["bus"], "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "essential": true, "support": "beside_bus" }], "objects": [], "infant": null },
+  {
+    "id": "new_funeral_canopy",
+    "place": "Vietnamese funeral courtyard",
+    "interior": false,
+    "features": ["funeral_canopy", "coffin"],
+    "states": [
+      { "char": "actor_0", "action": "stand", "posture": "idle", "essential": true },
+      { "char": "actor_1", "action": "stand", "posture": "idle", "essential": true }
+    ],
+    "objects": [],
+    "infant": null
+  },
+  { "id": "new_laptop", "place": "Vietnamese village room", "interior": true, "features": ["table"], "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "essential": true }], "objects": [{ "key": "laptop_0", "catalogKey": "laptop", "mount": "table", "support": "table" }], "infant": null },
+  { "id": "new_clock_0312", "place": "Vietnamese village room", "interior": true, "features": ["table"], "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "essential": true }], "objects": [{ "key": "clock_0", "catalogKey": "digital_clock", "mount": "table", "support": "table" }], "infant": null },
+  {
+    "id": "new_camera_tripod",
+    "place": "Vietnamese village room",
+    "interior": true,
+    "features": [],
+    "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "essential": true }],
+    "objects": [
+      { "key": "camera_0", "catalogKey": "video_camera", "mount": "table", "support": "tripod_0" },
+      { "key": "tripod_0", "catalogKey": "tripod", "mount": "floor" }
+    ],
+    "infant": null,
+    "evidence": "Video camera on Camera tripod."
+  },
+  {
+    "id": "body_shroud",
+    "place": "Vietnamese village bedroom",
+    "interior": true,
+    "features": ["bed"],
+    "states": [
+      { "char": "actor_0", "action": "lie", "posture": "lie", "essential": true, "support": "bed" },
+      { "char": "actor_1", "action": "stand", "posture": "idle", "essential": true, "support": "beside_bed" }
+    ],
+    "objects": [{ "key": "cloth_0", "catalogKey": "white_burial_shroud", "mount": "body", "owner": "actor_0" }],
+    "infant": null
+  },
+  {
+    "id": "red_bowl_plate",
+    "place": "Vietnamese village room",
+    "interior": true,
+    "features": ["table"],
+    "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "essential": true }],
+    "objects": [
+      { "key": "bowl_0", "catalogKey": "red_liquid_bowl", "mount": "table", "support": "table" },
+      { "key": "plate_0", "catalogKey": "red_liquid_plate", "mount": "table", "support": "table" }
+    ],
+    "infant": null
+  },
+  { "id": "covered_mirror", "place": "Vietnamese village room", "interior": true, "features": [], "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "essential": true }], "objects": [{ "key": "mirror_0", "catalogKey": "covered_mirror", "mount": "floor" }], "infant": null },
+  {
+    "id": "baby_hammock_forest",
+    "place": "Vietnamese forest",
+    "interior": false,
+    "features": ["hammock"],
+    "states": [
+      { "char": "actor_0", "action": "lie", "posture": "lie", "essential": true, "support": "hammock" },
+      { "char": "actor_1", "action": "stand", "posture": "idle", "essential": true, "support": "beside_hammock" }
+    ],
+    "objects": [],
+    "infant": 0
+  },
+  {
+    "id": "two_in_one_boat",
+    "place": "Vietnamese riverside",
+    "interior": false,
+    "features": ["rowboat"],
+    "states": [
+      { "char": "actor_0", "action": "sit", "posture": "sit", "essential": true, "support": "boat" },
+      { "char": "actor_1", "action": "sit", "posture": "sit", "essential": true, "support": "boat" }
+    ],
+    "objects": [],
+    "infant": null
+  },
+  { "id": "wardrobe_open", "place": "Vietnamese village bedroom", "interior": true, "features": ["wardrobe"], "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "support": "beside_wardrobe" }], "objects": [], "infant": null, "fixtureStates": { "wardrobe": "open" } },
+  { "id": "wardrobe_ajar", "place": "Vietnamese village bedroom", "interior": true, "features": ["wardrobe"], "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "support": "beside_wardrobe" }], "objects": [], "infant": null, "fixtureStates": { "wardrobe": "ajar" } },
+  { "id": "door_ajar", "place": "Vietnamese village room", "interior": true, "features": ["modular_door"], "states": [{ "char": "actor_0", "action": "stand", "posture": "idle", "support": "door" }], "objects": [], "infant": null, "fixtureStates": { "door": "ajar" } },
+  {
+    "id": "adult_hammock_forest",
+    "place": "Vietnamese forest",
+    "interior": false,
+    "features": ["hammock"],
+    "states": [
+      { "char": "actor_0", "action": "lie", "posture": "lie", "essential": true, "support": "hammock" },
+      { "char": "actor_1", "action": "stand", "posture": "idle", "essential": true, "support": "beside_hammock" }
+    ],
+    "objects": [],
+    "infant": null
+  },
+  {
+    "id": "adult_hammock_sit",
+    "place": "Vietnamese forest",
+    "interior": false,
+    "features": ["hammock"],
+    "states": [
+      { "char": "actor_0", "action": "sit", "posture": "sit", "essential": true, "support": "hammock" },
+      { "char": "actor_1", "action": "stand", "posture": "idle", "essential": true, "support": "beside_hammock" }
+    ],
+    "objects": [],
+    "infant": null
+  },
+  {
+    "id": "mourning",
+    "place": "Vietnamese village bedroom",
+    "interior": true,
+    "features": ["bed"],
+    "states": [
+      { "char": "actor_0", "action": "lie", "posture": "lie", "support": "bed" },
+      { "char": "actor_1", "action": "stand", "posture": "idle" },
+      { "char": "actor_2", "action": "stand", "posture": "idle" }
+    ],
+    "objects": [{ "key": "object_0", "catalogKey": "white_burial_shroud", "mount": "body", "owner": "actor_0" }],
+    "infant": null
+  }
+]

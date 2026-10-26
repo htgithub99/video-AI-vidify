@@ -1,4 +1,4 @@
-import { puppetKitSpec, puppetSceneShot } from "./puppet/compilePuppet.js";
+import { puppetKitSpec, puppetSceneShot, linkPuppetVisualFrames } from "./puppet/compilePuppet.js";
 import { PUPPET as PUPPET_C } from "../../constants/motionPuppet.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { budgetShotText } from "../../lib/motionTextBudget.js";
@@ -11,6 +11,9 @@ import { buildMotionHudTrack, motionHudStates, motionGeomapParams, motionIconsPa
 import { normalizeSoundCues } from "../../lib/motionSound.js";
 import { MOTION_VOICE, MOTION_VOICE_PACING } from "../../constants/motionVoice.js";
 import { motionNarratorCastKey, motionNarratorLines } from "../../lib/motionVoice.js";
+import { collectPuppetLines } from "../../lib/motionPuppet.js";
+import { puppetStoryboardCovers } from "../../lib/motionStoryboard.js";
+import { MOTION_STORYBOARD as SB } from "../../constants/motionStoryboard.js";
 import { motionMusicCues, motionMusicMood, motionMusicSegments } from "./motionMusicService.js";
 import _ from "lodash";
 import {
@@ -245,7 +248,11 @@ const speechRanges = (clip: MotionVoiceClip, origin: number): number[][] => {
 const spokenClip = (beat: MotionBeat, clip: MotionVoiceClip, roles: readonly string[] = PUPPET_C.SPEAK_ROLES): boolean => clip.speaker !== MOTION_VOICE.NARRATOR && _.some(beat.utterances || [], (u) => u.speaker === clip.speaker && _.includes(roles, u.role) && (u.id === clip.id || _.includes(clip.text, _.trim(u.text).slice(0, 12))));
 export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect: string; durations?: number[]; look?: string; accent?: string; voiceTrack?: MotionVoiceTrack; continuousVoice?: boolean }): CompiledStory => {
   const narratorKey = motionNarratorCastKey(analysis);
-  const beats = script.beats.map((beat) => ({ ...beat, utterances: beat.utterances ? motionNarratorLines(beat.utterances, narratorKey, beat.narration) : undefined }));
+  if (script.gen?.puppet?.storyboard && !puppetStoryboardCovers(script.gen.puppet.storyboard, collectPuppetLines(script, MOTION_TEXT_SCENE, narratorKey))) throw new Error(SB.INVALID);
+  const beats = script.beats.map((beat) => {
+    const utterances = opts.voiceTrack?.plan?.beats.find((item) => item.id === beat.id)?.utterances || beat.utterances;
+    return { ...beat, utterances: utterances ? motionNarratorLines(utterances, narratorKey, beat.narration) : undefined };
+  });
   if (_.isEmpty(beats)) throw new Error(MOTION_TEXT_KICH_BAN_CHUA_CO_BEAT_NAO_2);
   const gen = script.gen;
   const durations = _.map(beats, (b, i) => opts.durations?.[i] || b.duration || estimateBeatSeconds(b, script.language));
@@ -260,7 +267,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
   beats.forEach((beat, i) => {
     const start = shotStarts[i];
     let end = i + 1 < beats.length ? shotStarts[i + 1] : total;
-    if (end - start < MOTION_STORY_CONFIG.MIN_SHOT_SECONDS && i + 1 < beats.length) end = start + MOTION_STORY_CONFIG.MIN_SHOT_SECONDS;
+    if (end - start < MOTION_STORY_CONFIG.MIN_SHOT_SECONDS && i + 1 < beats.length && !(beat.visual === MOTION_TEXT_SCENE && gen?.puppet?.storyboard)) end = start + MOTION_STORY_CONFIG.MIN_SHOT_SECONDS;
     const transition = pickTransition(beat, beats[i - 1], i);
     const clips = _.filter(opts.voiceTrack?.clips, (clip) => clip.beatId === beat.id);
     const speech = _.mapValues(
@@ -270,7 +277,8 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
       ),
       (list) => _.flatMap(list, (clip) => speechRanges(clip, start)),
     );
-    const puppetShot = beat.visual === MOTION_TEXT_SCENE && gen?.puppet ? puppetSceneShot(beat, gen.puppet, start, end, clips, speech, !!beat.data?.[PUPPET_C.SOUND_FLAG]) : null;
+    const visualBeat = gen?.puppet?.storyboard ? { ...beat, utterances: script.beats[i].utterances ? motionNarratorLines(script.beats[i].utterances!, narratorKey, beat.narration) : undefined } : beat;
+    const puppetShot = beat.visual === MOTION_TEXT_SCENE && gen?.puppet ? puppetSceneShot(visualBeat, gen.puppet, start, end, clips, speech, !!beat.data?.[PUPPET_C.SOUND_FLAG]) : null;
     if (puppetShot) {
       puppetShot.transition = i === 0 && analysis?.videoDna ? { type: MR.MOTION_TEXT_CUT, duration: 0 } : transition;
       shots.push(puppetShot);
@@ -291,6 +299,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     } else if (!_.includes([MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_ENDING, MOTION_TEXT_HEADLINE], beat.visual)) subtitles.push(...buildSubtitles(beat, starts[i], ends[i]));
   });
   for (let i = 1; i < shots.length; i++) if (shots[i].start < shots[i - 1].end) shots[i - 1].end = shots[i].start;
+  linkPuppetVisualFrames(shots);
   const spec: MotionSpec = {
     title: script.title || analysis?.title,
     aspect: opts.aspect,

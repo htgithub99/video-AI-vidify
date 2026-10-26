@@ -26,6 +26,7 @@ export const GEMINI_VERIFICATION_TEXTS = {
   PATTERN_GEMINI_THINKING_UNAVAILABLE: /gemini_thinking_unavailable/,
   PATTERN_GEMINI_UI_NOT_READY: /gemini_model_ui_not_ready/,
   DELAYED_PAGE: "delayed-page",
+  COLLAPSED_PAGE: "collapsed-page",
   DELAYED_LEVEL: "delayed-level",
   LATE_PAGE: "late-page",
   TRANSIENT_MENU: "transient-menu",
@@ -75,7 +76,8 @@ export const GEMINI_VERIFICATION_TEXTS = {
   PATTERN_EMPTY: /.*/,
   JS: "js",
   ROOM_STUB:
-    "\n        export const beginChatPlanningRun = () => ({signal: new AbortController().signal, complete() {}, cancel() {}});\n        export const closeChatBrowserIfIdle = async () => true;\n        export const closeChatPlanningRoom = async () => {};\n        export const closeChatPlanningRoomsForProject = async () => {};\n        export const resumeChatPlanningResponse = async () => { throw new Error('unexpected-response-resume'); };\n        export const prepareChatPlanningRoom = async request => globalThis.__geminiRoomTest.calls.push({stage: 'prepare', model: request.model});\n        export const generatePlanningWithChatUi = async request => {\n          globalThis.__geminiRoomTest.calls.push({stage: 'send', model: request.model});\n          if (globalThis.__geminiRoomTest.fail) throw new Error('gemini_thinking_unavailable');\n          return {text: '{\"ok\":true}', provider: request.provider};\n        };\n      ",
+    "export const getChatPlanningRoom = () => undefined;\n" +
+    "\n        export const beginChatPlanningRun = () => ({signal: new AbortController().signal, complete() {}, cancel() {}});\n        export const closeChatBrowserIfIdle = async () => true;\n        export const closeChatPlanningRoom = async () => {};\n        export const reloadChatPlanningRoom = async () => {};\n        export const closeChatPlanningRoomsForProject = async () => {};\n        export const resumeChatPlanningResponse = async () => { throw new Error('unexpected-response-resume'); };\n        export const prepareChatPlanningRoom = async request => globalThis.__geminiRoomTest.calls.push({stage: 'prepare', model: request.model});\n        export const generatePlanningWithChatUi = async request => {\n          globalThis.__geminiRoomTest.calls.push({stage: 'send', model: request.model});\n          if (globalThis.__geminiRoomTest.fail) throw new Error('gemini_thinking_unavailable');\n          return {text: '{\"ok\":true}', provider: request.provider};\n        };\n      ",
   SCRATCH: "scratch",
   GEMINI_THINKING_TEST: "gemini-thinking-test",
   TEST: "test",
@@ -87,7 +89,7 @@ export const GEMINI_VERIFICATION_TEXTS = {
 } as const;
 export const GEMINI_VERIFICATION_FORMATS = {
   PICKER_HTML: (mode: unknown, models: unknown, choices: unknown, materialMenu: unknown, thinkingLabel: unknown, selectedLabel: unknown): string => `
-    <textarea aria-label="Hỏi Gemini"></textarea>
+    <rich-textarea><textarea aria-label="Hỏi Gemini"></textarea></rich-textarea>
     <button data-test-id="bard-mode-menu-button" aria-expanded="false" onclick="toggleMenu()">4 Argon</button>
     <div role="menu" id="menu" hidden></div>
     <div role="menu" id="levels" hidden></div>
@@ -98,6 +100,13 @@ export const GEMINI_VERIFICATION_FORMATS = {
       const choices = ${choices};
       const button = document.querySelector('button');
       const composer = document.querySelector('textarea');
+      if (mode === 'collapsed-page') {
+        button.hidden = true;
+        composer.parentElement.classList.add('simplified-input');
+        composer.setAttribute('role', 'textbox');
+        composer.setAttribute('contenteditable', 'true');
+        composer.addEventListener('focus', () => setTimeout(() => { button.hidden = false; composer.parentElement.classList.remove('simplified-input'); }, 100), { once: true });
+      }
       window.prematureOpens = 0; window.menuAttempts = 0;
       if (mode === 'delayed-page' || mode === 'late-page' || mode === 'not-ready') {
         composer.disabled = true;

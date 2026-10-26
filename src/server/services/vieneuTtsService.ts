@@ -8,8 +8,16 @@ import { MOTION_VOICE as C } from "../../constants/motionVoice.js";
 import type { MotionVoicePreset } from "../../types/motionVideo.js";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../utils/paths.js";
 let setup: Promise<string> | undefined;
-interface WorkerSlot { child?: ChildProcessWithoutNullStreams; queue: Promise<unknown>; idle?: ReturnType<typeof setTimeout>; requests: Map<string, { resolve: (value: any) => void; reject: (error: Error) => void }>; }
-export interface VieneuModelTarget { model: string; python: string; }
+interface WorkerSlot {
+  child?: ChildProcessWithoutNullStreams;
+  queue: Promise<unknown>;
+  idle?: ReturnType<typeof setTimeout>;
+  requests: Map<string, { resolve: (value: any) => void; reject: (error: Error) => void }>;
+}
+export interface VieneuModelTarget {
+  model: string;
+  python: string;
+}
 const slots = new Map<string, WorkerSlot>();
 const slotOf = (key: string): WorkerSlot => {
   let slot = slots.get(key);
@@ -162,13 +170,26 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
   });
 };
 export const listVieneuVoices = (signal?: AbortSignal, log?: (value: string) => void): Promise<MotionVoicePreset[]> => request({ command: MR.MOTION_TEXT_VOICES }, signal, log);
-export interface VieneuDelivery { temperature?: number; silence?: number; }
+export interface VieneuDelivery {
+  temperature?: number;
+  silence?: number;
+  pauses?: { clause?: number; sentence?: number; beat?: number };
+}
 type SpeechResult = { seconds: number; sampleRate: number; backend: string };
-interface SpeechEntry { text: string; voice: string; file: string; delivery: VieneuDelivery; signal?: AbortSignal; log?: (value: string) => void; resolve: (value: SpeechResult) => void; reject: (error: Error) => void; }
+interface SpeechEntry {
+  text: string;
+  voice: string;
+  file: string;
+  delivery: VieneuDelivery;
+  signal?: AbortSignal;
+  log?: (value: string) => void;
+  resolve: (value: SpeechResult) => void;
+  reject: (error: Error) => void;
+}
 const speechPending = new Map<string, SpeechEntry[]>();
 const speechDraining = new Set<string>();
 const backendLogged = new Set<string>();
-const speechGroup = (entry: SpeechEntry): string => [entry.voice, entry.delivery.temperature ?? MR.MOTION_TEXT_EMPTY, entry.delivery.silence ?? MR.MOTION_TEXT_EMPTY].join(C.BATCH_SEP);
+const speechGroup = (entry: SpeechEntry): string => [entry.voice, entry.delivery.temperature ?? MR.MOTION_TEXT_EMPTY, entry.delivery.silence ?? MR.MOTION_TEXT_EMPTY, JSON.stringify(entry.delivery.pauses)].join(C.BATCH_SEP);
 const takeSpeech = (key: string): SpeechEntry[] => {
   const list = speechPending.get(key) || [];
   for (const entry of list.filter((item) => item.signal?.aborted)) entry.reject(new Error(C.CANCELLED));
@@ -179,7 +200,10 @@ const takeSpeech = (key: string): SpeechEntry[] => {
   }
   const group = speechGroup(live[0]);
   const taken = live.filter((item) => speechGroup(item) === group).slice(0, C.BATCH_MAX);
-  speechPending.set(key, live.filter((item) => !taken.includes(item)));
+  speechPending.set(
+    key,
+    live.filter((item) => !taken.includes(item)),
+  );
   return taken;
 };
 const drainSpeech = (key: string, target?: VieneuModelTarget): void => {
@@ -226,7 +250,7 @@ export const synthesizeVieneuSpeech = (text: string, voice: string, file: string
     speechPending.set(key, list);
     drainSpeech(key, target);
   });
-export const registerVieneuVoice = (voice: string, name: string, gender: string, file: string, signal?: AbortSignal): Promise<MotionVoicePreset> => request({ command: MR.MOTION_TEXT_REGISTER, voice, name, gender, file }, signal);
+export const registerVieneuVoice = (voice: string, name: string, gender: string, file: string, signal?: AbortSignal, options?: { denoise?: boolean }): Promise<MotionVoicePreset> => request({ command: MR.MOTION_TEXT_REGISTER, voice, name, gender, file, ...(options?.denoise === undefined ? {} : { denoise: options.denoise }) }, signal);
 export const transcribeVieneuAudio = async (file: string, language: string, signal?: AbortSignal, log?: (value: string) => void): Promise<{ text: string; words: { w: string; s: number; e: number }[] }> => {
   await ensureVieneuAsr(signal, log);
   return request({ command: C.ASR.COMMAND, file, language, model: C.ASR.MODEL }, signal, log);

@@ -23,6 +23,7 @@ export const DEEPSEEK_CHAT_CONFIG = {
   USER_MESSAGE: ".ds-message:has(.ds-collapsible-text)",
   RETRY: '[role="button"].ds-button--warning:not(.ds-button--disabled):not([aria-disabled="true"])',
   CONCURRENT_MESSAGE: /^(?:Đang tạo tin nhắn, vui lòng thử lại sau\.?|(?:A )?(?:message|response) is (?:being generated|generating),? (?:please )?try again later\.?|正在生成(?:消息|回复)[，,]?请稍后重试[。.]?)$/i,
+  MESSAGE_RATE_LIMIT: /^(?:Messages too frequent[.!]?\s*Try again later\.?|Tin nhắn quá thường xuyên[.!]?\s*(?:Vui lòng )?thử lại sau\.?|消息过于频繁[，,。]?\s*请稍后重试[。.]?)$/i,
   RETRY_LIMIT: 5,
   RETRY_DELAY_MS: 2000,
   RETRY_MAX_DELAY_MS: 15000,

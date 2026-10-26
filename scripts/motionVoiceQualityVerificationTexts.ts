@@ -1,0 +1,15 @@
+export const VOICE_QUALITY_QA = {
+  ROOT: "scratch/voice-quality-",
+  VOICE: "quality-test",
+  TITLE: "Kiểm rõ chữ và giữ phương án đọc tốt nhất",
+  TEXT: "Út đặt bát cháo xuống bàn rồi quay lại nhìn bà.",
+  BAD: "Một câu hoàn toàn khác với lời đọc được yêu cầu.",
+  WORSE: "Không đúng.",
+  ROLE: "narration",
+  LANG: "vi",
+  EMPTY: "empty",
+  JSON: ".json",
+  CLIPS: "clips",
+  NEWLINE: "\n",
+  PASSED: "Voice quality passed: quiet edges preserved, silence rejected/retried, pause budget, best candidate retained, review cached without untrusted word timing.\n",
+} as const;

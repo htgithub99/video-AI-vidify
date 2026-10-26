@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="vi">
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width" /><title>Đối chiếu kho với 22 video mẫu</title
+  ><style>
+    body {
+      margin: 24px auto;
+      max-width: 1360px;
+      padding: 0 20px;
+      background: #f2f4f5;
+      color: #16202a;
+      font: 16px/1.55 system-ui;
+    }
+    h1,
+    h2 {
+      line-height: 1.2;
+    }
+    article,
+    section {
+      background: white;
+      border-radius: 12px;
+      padding: 22px;
+      margin: 20px 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    td,
+    th {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      vertical-align: top;
+    }
+    code {
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    small {
+      color: #58636e;
+    }
+    .badge {
+      display: inline-block;
+      border-radius: 6px;
+      background: #edf1f5;
+      padding: 2px 8px;
+      font-size: 13px;
+    }
+    .warn {
+      background: #fff0cc;
+    }
+    .source {
+      float: right;
+      width: 400px;
+      height: 225px;
+      margin: 0 0 16px 20px;
+      max-width: 100%;
+      background-repeat: no-repeat;
+    }
+    .clear {
+      clear: both;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    a {
+      color: #1454aa;
+    }
+    @media (max-width: 750px) {
+      .source {
+        float: none;
+        margin: 0 0 12px;
+      }
+      table {
+        font-size: 13px;
+      }
+    }
+  </style>
+  <body>
+    <h1>Kho đã đủ cho 22 video mẫu chưa?</h1>
+    <section>
+      <h2>Chưa thể xác nhận đủ</h2>
+      <p>Mỗi gói có <b>508 mục</b>: 62 nhân vật · 150 đạo cụ · 26 nền · 95 mảnh · 174 tổ hợp · 1 phong cách.</p>
+      <p>Đã xem 792 ô timeline trên 22 overview và lập 85 mốc đối chiếu. Chưa duyệt thủ công toàn bộ 14.050 ảnh/thoại. Video 09, 16 dùng storyboard dự phòng.</p>
+      <p><b>7 loại món chưa có:</b> giàn giáo, laptop, xe khách, rạp tang, đồng hồ điện tử, máy quay, chân máy.</p>
+      <p><b>30/56 phép thử tạo được lựa chọn; 26 bị chặn.</b> Một số ảnh có lựa chọn vẫn cắt người hoặc chồng vật. Đây không phải tỷ lệ bao phủ toàn bộ video.</p>
+      <p><a href="README.md">Báo cáo đầy đủ</a> · <a href="audit.json">Kết quả máy</a> · <a href="observations.json">Sổ quan sát</a></p>
+      <small>Không sửa production/kho, không gọi AI/TTS, không tạo video. Hash inventory trước/sau giống nhau.</small>
+    </section>
+    <h2>Đối chiếu từng video</h2>
+    <article id="video-1">
+      <h2>01. Chiếc khăn Piêu - Bùa Yêu Kỳ Truyện</h2>
+      <a href="../khuatmatkytruyen/01-ZrgIi8a8dyA/boards/042.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/01-ZrgIi8a8dyA/boards/042.jpg&quot;); background-position: -400px -819px"></div></a>
+      <p>Bếp, khăn và nhân vật có sẵn; đã thử hai người nằm sàn và hai người nằm giường, kèm một người chăm + bếp; cả hai tổ hợp bị chặn.</p>
+      <p><a href="../khuatmatkytruyen/01-ZrgIi8a8dyA/overview.jpg">Overview nguồn</a> · 1313 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/01-ZrgIi8a8dyA/boards/042.jpg">00:18:35 · #670</a></td>
+          <td>Bếp lửa trên sàn nhà <span class="badge">set_piece</span></td>
+          <td><code>hearth</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/01-ZrgIi8a8dyA/boards/053.jpg">00:23:55 · #842</a></td>
+          <td>Khăn Piêu và người nằm <span class="badge">prop</span></td>
+          <td><code>embroidered_scarf</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/01-ZrgIi8a8dyA/boards/064.jpg">00:30:16 · #1023</a></td>
+          <td>Hai người nằm và người chăm <span class="badge">character_kit</span></td>
+          <td><code>villager_man_1, villager_woman_1</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-2">
+      <h2>02. Người con anh hùng - Hồi ức ấu thơ</h2>
+      <a href="../khuatmatkytruyen/02-FFTF1CM4aBI/boards/005.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/02-FFTF1CM4aBI/boards/005.jpg&quot;); background-position: -0px -305px"></div></a>
+      <p>Có hải quân, di ảnh và võng; võng thiếu điểm nằm, bị giới hạn trong nhà. Khiêng võng có thể minh họa tĩnh.</p>
+      <p><a href="../khuatmatkytruyen/02-FFTF1CM4aBI/overview.jpg">Overview nguồn</a> · 1229 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/02-FFTF1CM4aBI/boards/005.jpg">00:02:56 · #69</a></td>
+          <td>Quân phục hải quân <span class="badge">character_kit</span></td>
+          <td><code>naval_sailor</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/02-FFTF1CM4aBI/boards/045.jpg">00:25:39 · #713</a></td>
+          <td>Võng mắc giữa cây <span class="badge">set_piece</span></td>
+          <td><code>hammock</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/02-FFTF1CM4aBI/boards/046.jpg">00:26:48 · #736</a></td>
+          <td>Người nằm trên võng và người khiêng <span class="badge">set_piece</span></td>
+          <td><code>hammock</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/02-FFTF1CM4aBI/boards/028.jpg">00:16:07 · #444</a></td>
+          <td>Bàn thờ và di ảnh <span class="badge">prop</span></td>
+          <td><code>ancestor_portrait</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-3">
+      <h2>03. Cuốn sổ nợ - Hình nhân thế mạng kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/03-m9WhpDtE9xE/boards/003.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/03-m9WhpDtE9xE/boards/003.jpg&quot;); background-position: -0px -305px"></div></a>
+      <p>Có sổ nợ, hình nhân, quầy và kệ. Tổ hợp quầy + kệ vẫn bị search_limit, cần kiểm bộ ghép.</p>
+      <p><a href="../khuatmatkytruyen/03-m9WhpDtE9xE/overview.jpg">Overview nguồn</a> · 755 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/03-m9WhpDtE9xE/boards/003.jpg">00:01:36 · #37</a></td>
+          <td>Tiệm hàng với quầy và kệ <span class="badge">set_piece</span></td>
+          <td><code>shop_counter, goods_shelves</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/03-m9WhpDtE9xE/boards/018.jpg">00:14:25 · #280</a></td>
+          <td>Sổ nợ mở <span class="badge">prop</span></td>
+          <td><code>village_debt_ledger, open_book</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/03-m9WhpDtE9xE/boards/027.jpg">00:20:48 · #419</a></td>
+          <td>Hình nhân giấy <span class="badge">prop</span></td>
+          <td><code>paper_effigy</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-4">
+      <h2>04. Ván bài định mệnh - Thần Trùng P2</h2>
+      <a href="../khuatmatkytruyen/04-P0xXIU5Lyr8/boards/011.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/04-P0xXIU5Lyr8/boards/011.jpg&quot;); background-position: -400px -305px"></div></a>
+      <p>Tượng Phật, chuông và chùa có sẵn; phép thử chùa tạo được lựa chọn. Trẻ trong ảnh nằm trên võng, không phải nôi gỗ.</p>
+      <p><a href="../khuatmatkytruyen/04-P0xXIU5Lyr8/overview.jpg">Overview nguồn</a> · 450 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/04-P0xXIU5Lyr8/boards/011.jpg">00:09:36 · #166</a></td>
+          <td>Chùa, tượng Phật <span class="badge">set_piece</span></td>
+          <td><code>temple, buddha</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/04-P0xXIU5Lyr8/boards/012.jpg">00:11:03 · #192</a></td>
+          <td>Chuông chùa <span class="badge">prop</span></td>
+          <td><code>temple_bell</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/04-P0xXIU5Lyr8/boards/026.jpg">00:25:37 · #411</a></td>
+          <td>Em bé nằm trên võng <span class="badge">set_piece</span></td>
+          <td><code>hammock</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-5">
+      <h2>05. Ván bài định mệnh - Thần Trùng Kỳ Truyện P1</h2>
+      <a href="../khuatmatkytruyen/05-nk48rQqJmc0/boards/004.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/05-nk48rQqJmc0/boards/004.jpg&quot;); background-position: -400px -305px"></div></a>
+      <p>Có thuyền cá, bài và mộ. Phép thử hai người trên thuyền tạo hai thuyền riêng: chưa chứng minh hai người cùng một thuyền.</p>
+      <p><a href="../khuatmatkytruyen/05-nk48rQqJmc0/overview.jpg">Overview nguồn</a> · 624 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/05-nk48rQqJmc0/boards/004.jpg">00:02:06 · #54</a></td>
+          <td>Thuyền cá trên sông <span class="badge">set_piece</span></td>
+          <td><code>fishing_boat</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/05-nk48rQqJmc0/boards/014.jpg">00:09:42 · #215</a></td>
+          <td>Bộ bài dùng làm vật chứng <span class="badge">prop</span></td>
+          <td><code>playing_card_spread</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/05-nk48rQqJmc0/boards/033.jpg">00:25:52 · #525</a></td>
+          <td>Mộ và bia <span class="badge">set_piece</span></td>
+          <td><code>grave, tombstone</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-6">
+      <h2>06. Ác Giả Ác Báo - Bùa Lỗ Ban Kỳ Truyện</h2>
+      <a href="../khuatmatkytruyen/06-xS4lEGgdVCQ/boards/015.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/06-xS4lEGgdVCQ/boards/015.jpg&quot;); background-position: -1200px -48px"></div></a>
+      <p>Có nền mái, hình nhân và giường. Chưa có giàn giáo; điểm người trên mái/sàn cao cần xác minh riêng.</p>
+      <p><a href="../khuatmatkytruyen/06-xS4lEGgdVCQ/overview.jpg">Overview nguồn</a> · 862 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/06-xS4lEGgdVCQ/boards/015.jpg">00:09:03 · #228</a></td>
+          <td>Nhân vật trên mái nhà <span class="badge">set_base</span></td>
+          <td><code>modular_roof</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/06-xS4lEGgdVCQ/boards/028.jpg">00:16:38 · #434</a></td>
+          <td>Giàn giáo và người trên/dưới <span class="badge">gap</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/06-xS4lEGgdVCQ/boards/039.jpg">00:24:13 · #610</a></td>
+          <td>Hình nhân gỗ <span class="badge">prop</span></td>
+          <td><code>wooden_effigy</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/06-xS4lEGgdVCQ/boards/045.jpg">00:28:02 · #717</a></td>
+          <td>Người nằm trên giường <span class="badge">set_piece</span></td>
+          <td><code>bed</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-7">
+      <h2>07. Người mới, trọ cũ - Ma ăn hồn kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/07-1MBYdq1F-hE/boards/012.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/07-1MBYdq1F-hE/boards/012.jpg&quot;); background-position: -1200px -819px"></div></a>
+      <p>Thiếu laptop và xe khách. Có gương và giường nhưng chưa chứng minh khả năng phản chiếu đúng giường như mẫu.</p>
+      <p><a href="../khuatmatkytruyen/07-1MBYdq1F-hE/overview.jpg">Overview nguồn</a> · 939 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/07-1MBYdq1F-hE/boards/012.jpg">00:06:44 · #192</a></td>
+          <td>Máy tính xách tay mở <span class="badge">gap</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/07-1MBYdq1F-hE/boards/041.jpg">00:25:25 · #648</a></td>
+          <td>Gương phản chiếu giường <span class="badge">prop</span></td>
+          <td><code>old_mirror</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/07-1MBYdq1F-hE/boards/057.jpg">00:35:44 · #907</a></td>
+          <td>Xe khách <span class="badge">gap</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/07-1MBYdq1F-hE/boards/034.jpg">00:21:15 · #540</a></td>
+          <td>Điện thoại trên tay <span class="badge">prop</span></td>
+          <td><code>smartphone</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-8">
+      <h2>08. Tình mẹ - Ma nữ mất con Kỳ Truyện</h2>
+      <a href="../khuatmatkytruyen/08-U_2hRTsJ3So/boards/001.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/08-U_2hRTsJ3So/boards/001.jpg&quot;); background-position: -1200px -562px"></div></a>
+      <p>Có trẻ sơ sinh, mẹ, cầu và kéo. Có bát nước đất để xét làm vật chứa; chưa chứng minh bố trí trẻ trong vật chứa. Probe nôi bổ sung bị chặn; không xem nôi là bắt buộc trong ảnh nguồn này.</p>
+      <p><a href="../khuatmatkytruyen/08-U_2hRTsJ3So/overview.jpg">Overview nguồn</a> · 783 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/08-U_2hRTsJ3So/boards/001.jpg">00:00:31 · #12</a></td>
+          <td>Vật chứa thấp có trẻ nằm trong <span class="badge">review</span></td>
+          <td><code>earthen_water_bowl, baby</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/08-U_2hRTsJ3So/boards/009.jpg">00:05:45 · #129</a></td>
+          <td>Cầu ván cạnh nước <span class="badge">set_piece</span></td>
+          <td><code>modular_wooden_bridge</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/08-U_2hRTsJ3So/boards/033.jpg">00:24:31 · #519</a></td>
+          <td>Kéo và trẻ sơ sinh <span class="badge">prop</span></td>
+          <td><code>scissors</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/08-U_2hRTsJ3So/boards/035.jpg">00:26:41 · #559</a></td>
+          <td>Người bế trẻ <span class="badge">character_kit</span></td>
+          <td><code>baby, folk_new_mother</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-9">
+      <h2>09. Én ơi, anh về rồi - Ma vọng phu kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/09-5tEEkZaXW3U/boards/002.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/09-5tEEkZaXW3U/boards/002.jpg&quot;); background-position: -800px -562px"></div></a>
+      <p>Có hình nhà sàn và thang, nhưng chưa có điểm đứng trên sàn cao rõ ràng; nguồn dùng storyboard dự phòng.</p>
+      <p><a href="../khuatmatkytruyen/09-5tEEkZaXW3U/overview.jpg">Overview nguồn</a> · 206 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/09-5tEEkZaXW3U/boards/002.jpg">00:04:20 · #27</a></td>
+          <td>Người trên sàn nhà sàn, thang ở dưới <span class="badge">set_piece</span></td>
+          <td><code>stilt_house, stairs</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/09-5tEEkZaXW3U/boards/005.jpg">00:12:50 · #78</a></td>
+          <td>Người bên sông <span class="badge">set_base</span></td>
+          <td><code>riverside</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/09-5tEEkZaXW3U/boards/012.jpg">00:30:50 · #186</a></td>
+          <td>Người nằm trong phòng <span class="badge">set_piece</span></td>
+          <td><code>bed</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-10">
+      <h2>10. Chén cơm đất - Ma giấu người kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/10-tUWV2SqMrpg/boards/005.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/10-tUWV2SqMrpg/boards/005.jpg&quot;); background-position: -0px -819px"></div></a>
+      <p>Có hốc tre, bát cơm đất, thìa và thanh chặn cửa; ghép được lựa chọn nhưng ảnh thử có người chồng nhau.</p>
+      <p><a href="../khuatmatkytruyen/10-tUWV2SqMrpg/overview.jpg">Overview nguồn</a> · 691 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/10-tUWV2SqMrpg/boards/005.jpg">00:02:44 · #77</a></td>
+          <td>Bụi tre có hốc và bát cơm <span class="badge">set_piece</span></td>
+          <td><code>bamboo_hollow</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/10-tUWV2SqMrpg/boards/023.jpg">00:15:13 · #365</a></td>
+          <td>Bát cơm đất <span class="badge">prop</span></td>
+          <td><code>earth_rice_offering_bowl</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/10-tUWV2SqMrpg/boards/025.jpg">00:16:46 · #397</a></td>
+          <td>Thìa trên tay <span class="badge">prop</span></td>
+          <td><code>spoon</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/10-tUWV2SqMrpg/boards/035.jpg">00:23:00 · #548</a></td>
+          <td>Thanh chặn cửa <span class="badge">prop</span></td>
+          <td><code>wooden_door_bar</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-11">
+      <h2>11. Trả nợ -Ma báo oán kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/11-XYjyI0EQ7tk/boards/007.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/11-XYjyI0EQ7tk/boards/007.jpg&quot;); background-position: -800px -305px"></div></a>
+      <p>Có cửa cuốn, bàn lễ, dép; thiếu xe khách. Phép thử bàn lễ + bát nhang chưa tìm được tổ hợp đúng điểm đặt.</p>
+      <p><a href="../khuatmatkytruyen/11-XYjyI0EQ7tk/overview.jpg">Overview nguồn</a> · 684 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/11-XYjyI0EQ7tk/boards/007.jpg">00:03:56 · #103</a></td>
+          <td>Cửa cuốn tiệm <span class="badge">set_piece</span></td>
+          <td><code>rolling_shutter</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/11-XYjyI0EQ7tk/boards/029.jpg">00:16:44 · #451</a></td>
+          <td>Xe khách tại bến <span class="badge">gap</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/11-XYjyI0EQ7tk/boards/030.jpg">00:17:29 · #471</a></td>
+          <td>Đôi dép xanh <span class="badge">prop</span></td>
+          <td><code>blue_sandals</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/11-XYjyI0EQ7tk/boards/023.jpg">00:13:10 · #355</a></td>
+          <td>Bàn lễ và người đứng hai bên <span class="badge">set_piece</span></td>
+          <td><code>offering_table</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-12">
+      <h2>12. Anh Hai ơi, em xin lỗi - Heo 5 móng kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/12-2ygTaMHUri0/boards/006.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/12-2ygTaMHUri0/boards/006.jpg&quot;); background-position: -400px -819px"></div></a>
+      <p>Có chuồng, heo năm móng và thuyền. Tổ hợp chuồng trong sân bị chặn; heo trên thuyền chưa kiểm quan hệ chứa.</p>
+      <p><a href="../khuatmatkytruyen/12-2ygTaMHUri0/overview.jpg">Overview nguồn</a> · 652 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/12-2ygTaMHUri0/boards/006.jpg">00:03:01 · #94</a></td>
+          <td>Chuồng heo và heo <span class="badge">set_piece</span></td>
+          <td><code>pig_pen</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/12-2ygTaMHUri0/boards/008.jpg">00:03:40 · #115</a></td>
+          <td>Heo năm móng <span class="badge">prop</span></td>
+          <td><code>five_toed_pig</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/12-2ygTaMHUri0/boards/024.jpg">00:13:04 · #370</a></td>
+          <td>Heo trên thuyền <span class="badge">set_piece</span></td>
+          <td><code>rowboat</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/12-2ygTaMHUri0/boards/040.jpg">00:23:07 · #631</a></td>
+          <td>Heo trong chuồng ban đêm <span class="badge">prop</span></td>
+          <td><code>pig</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-13">
+      <h2>13. Thần trùng - Trùng tang kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/13--Hb-Tn7OaHo/boards/001.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/13--Hb-Tn7OaHo/boards/001.jpg&quot;); background-position: -400px -562px"></div></a>
+      <p>Có chum đóng kín, cửa, xẻng và mộ; thiếu rạp tang. Trạng thái cửa có khe hở chưa được xác nhận từ tài nguyên cửa chung.</p>
+      <p><a href="../khuatmatkytruyen/13--Hb-Tn7OaHo/overview.jpg">Overview nguồn</a> · 633 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/13--Hb-Tn7OaHo/boards/001.jpg">00:00:18 · #10</a></td>
+          <td>Rạp tang trắng ngoài sân <span class="badge">gap</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/13--Hb-Tn7OaHo/boards/017.jpg">00:09:03 · #272</a></td>
+          <td>Cửa có khe hở nhìn vào phía trong <span class="badge">set_piece</span></td>
+          <td><code>door_panels</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/13--Hb-Tn7OaHo/boards/024.jpg">00:12:31 · #383</a></td>
+          <td>Chum đóng kín <span class="badge">prop</span></td>
+          <td><code>sealed_clay_spirit_jar</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/13--Hb-Tn7OaHo/boards/034.jpg">00:17:46 · #533</a></td>
+          <td>Huyệt mộ và xẻng <span class="badge">prop</span></td>
+          <td><code>village_grave_spade</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-14">
+      <h2>14. Con nhớ nhà lắm - Ma da kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/14-vy7G-ATxNnM/boards/001.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/14-vy7G-ATxNnM/boards/001.jpg&quot;); background-position: -1200px -305px"></div></a>
+      <p>Có cầu, thuyền, nhân vật và gói ma. Cầu tạo được lựa chọn; hình người chìm dưới mặt nước cần cơ chế che đúng lớp.</p>
+      <p><a href="../khuatmatkytruyen/14-vy7G-ATxNnM/overview.jpg">Overview nguồn</a> · 608 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/14-vy7G-ATxNnM/boards/001.jpg">00:00:17 · #8</a></td>
+          <td>Người trên cầu ván <span class="badge">set_piece</span></td>
+          <td><code>modular_wooden_bridge</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/14-vy7G-ATxNnM/boards/002.jpg">00:00:51 · #25</a></td>
+          <td>Thuyền trên nước <span class="badge">set_piece</span></td>
+          <td><code>rowboat</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/14-vy7G-ATxNnM/boards/016.jpg">00:08:19 · #250</a></td>
+          <td>Đầu và thân người chìm dưới nước <span class="badge">review</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/14-vy7G-ATxNnM/boards/005.jpg">00:02:01 · #66</a></td>
+          <td>Bóng ma cạnh người sống <span class="badge">character_kit</span></td>
+          <td><code>water_ghost</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-15">
+      <h2>15. Kẻ dẫn lối không đường về - Ma Trành kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/15-HSUbahCf3nU/boards/005.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/15-HSUbahCf3nU/boards/005.jpg&quot;); background-position: -800px -305px"></div></a>
+      <p>Có hổ và dao. SVG dấu chân có bốn vòng tròn ngón ở một bàn chân, cần metadata rõ. Cưỡi hổ có thể dùng minh họa tượng trưng nếu giữ tình tiết.</p>
+      <p><a href="../khuatmatkytruyen/15-HSUbahCf3nU/overview.jpg">Overview nguồn</a> · 507 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/15-HSUbahCf3nU/boards/005.jpg">00:02:49 · #71</a></td>
+          <td>Dấu chân thiếu ngón út <span class="badge">review</span></td>
+          <td><code>muddy_footprints</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/15-HSUbahCf3nU/boards/020.jpg">00:11:00 · #307</a></td>
+          <td>Người trên lưng hổ <span class="badge">review</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/15-HSUbahCf3nU/boards/025.jpg">00:14:05 · #388</a></td>
+          <td>Hổ và người đứng cạnh <span class="badge">prop</span></td>
+          <td><code>forest_tiger</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/15-HSUbahCf3nU/boards/029.jpg">00:16:38 · #455</a></td>
+          <td>Dao cắm cạnh thân cây <span class="badge">prop</span></td>
+          <td><code>machete</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-16">
+      <h2>16. Đứa con oan nghiệt - Con ranh con lộn kỳ truyện #tamlinh #tamlinhthanbi</h2>
+      <a href="../khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/004.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/004.jpg&quot;); background-position: -800px -305px"></div></a>
+      <p>Có trẻ, mẹ, vải và bát nước đất; chưa kết luận thiếu chậu. Vải gấp chưa chứng minh phủ đúng thân; nguồn storyboard dự phòng và vật sắc còn khó đọc.</p>
+      <p><a href="../khuatmatkytruyen/16-Y_6PRdEk4Rk/overview.jpg">Overview nguồn</a> · 146 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/004.jpg">00:04:30 · #55</a></td>
+          <td>Chậu hoặc vật chứa nước thấp <span class="badge">review</span></td>
+          <td><code>earthen_water_bowl</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/005.jpg">00:06:15 · #76</a></td>
+          <td>Người bế trẻ sơ sinh <span class="badge">character_kit</span></td>
+          <td><code>baby, folk_new_mother</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/005.jpg">00:05:35 · #68</a></td>
+          <td>Trẻ nằm trên phản với vải trắng <span class="badge">prop</span></td>
+          <td><code>white_burial_shroud</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/008.jpg">00:09:55 · #120</a></td>
+          <td>Bàn tay và vật sắc nhỏ <span class="badge">review</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-17">
+      <h2>17. Tình duyên muôn kiếp - Cắt tiền duyên kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/17-brNfRbyVX0M/boards/006.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/17-brNfRbyVX0M/boards/006.jpg&quot;); background-position: -400px -562px"></div></a>
+      <p>Thiếu đồng hồ điện tử, máy quay, chân máy. Giường bệnh đã vẽ cả giá truyền; probe bệnh viện chưa ghép được dù có món.</p>
+      <p><a href="../khuatmatkytruyen/17-brNfRbyVX0M/overview.jpg">Overview nguồn</a> · 684 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/17-brNfRbyVX0M/boards/006.jpg">00:02:32 · #90</a></td>
+          <td>Đồng hồ điện tử chỉ giờ <span class="badge">gap</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/17-brNfRbyVX0M/boards/009.jpg">00:04:15 · #144</a></td>
+          <td>Máy quay trên chân ba chân <span class="badge">gap</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/17-brNfRbyVX0M/boards/027.jpg">00:12:46 · #427</a></td>
+          <td>Giường bệnh với giá truyền <span class="badge">set_piece</span></td>
+          <td><code>hospital_bed</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/17-brNfRbyVX0M/boards/032.jpg">00:15:00 · #506</a></td>
+          <td>Bàn lễ với bát và nhang <span class="badge">prop</span></td>
+          <td><code>incense_bowl, rice_bowl</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-18">
+      <h2>18. Ma cà rồng Tây Bắc - Phí Phông kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/18-P3SOdALyYnA/boards/004.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/18-P3SOdALyYnA/boards/004.jpg&quot;); background-position: -400px -305px"></div></a>
+      <p>Có bảng, bàn ghế, nhà sàn và cửa. Probe lớp học với bàn ghế chuyên dụng và với ghế thường đều bị chặn; cần kiểm bát nhang treo và che khuất sau cửa.</p>
+      <p><a href="../khuatmatkytruyen/18-P3SOdALyYnA/overview.jpg">Overview nguồn</a> · 540 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/18-P3SOdALyYnA/boards/004.jpg">00:01:40 · #54</a></td>
+          <td>Lớp học với bảng và ghế <span class="badge">set_piece</span></td>
+          <td><code>chalkboard, school_benches</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/18-P3SOdALyYnA/boards/006.jpg">00:02:35 · #87</a></td>
+          <td>Vật đựng nhang treo <span class="badge">review</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/18-P3SOdALyYnA/boards/013.jpg">00:06:22 · #196</a></td>
+          <td>Người khuất sau cửa <span class="badge">set_piece</span></td>
+          <td><code>door_panels</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/18-P3SOdALyYnA/boards/023.jpg">00:11:32 · #364</a></td>
+          <td>Người ở thang nhà sàn <span class="badge">set_piece</span></td>
+          <td><code>stilt_house, stairs</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-19">
+      <h2>19. Đêm không ngủ - Quỷ nhập tràng kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/19-Cyak0swNZEo/boards/004.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/19-Cyak0swNZEo/boards/004.jpg&quot;); background-position: -0px -305px"></div></a>
+      <p>Có người tang, mèo, vải, phản/giường. Vải phủ thi thể và phủ gương cần quan hệ ghép, probe vải trên giường bị chặn.</p>
+      <p><a href="../khuatmatkytruyen/19-Cyak0swNZEo/overview.jpg">Overview nguồn</a> · 445 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/19-Cyak0swNZEo/boards/004.jpg">00:01:54 · #53</a></td>
+          <td>Thi thể phủ vải trên phản <span class="badge">prop</span></td>
+          <td><code>white_burial_shroud</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/19-Cyak0swNZEo/boards/005.jpg">00:02:43 · #76</a></td>
+          <td>Gương có vải phủ <span class="badge">review</span></td>
+          <td><code>old_mirror, white_burial_shroud</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/19-Cyak0swNZEo/boards/006.jpg">00:03:11 · #91</a></td>
+          <td>Người thân đứng quanh thi thể <span class="badge">character_kit</span></td>
+          <td><code>mourner_man, mourner_woman</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/19-Cyak0swNZEo/boards/010.jpg">00:05:16 · #153</a></td>
+          <td>Mèo đen ngoài nhà <span class="badge">prop</span></td>
+          <td><code>black_cat</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-20">
+      <h2>20. Bùa chú An Giang - Thư ếm kỳ truyện</h2>
+      <a href="../khuatmatkytruyen/20-wtR75Nr2Whc/boards/013.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/20-wtR75Nr2Whc/boards/013.jpg&quot;); background-position: -1200px -819px"></div></a>
+      <p>Có chum, heo, nồi, thầy pháp và hũ tóc. Nồi trên bếp tạo được lựa chọn; đĩa chung chưa có nội dung đỏ như ảnh.</p>
+      <p><a href="../khuatmatkytruyen/20-wtR75Nr2Whc/overview.jpg">Overview nguồn</a> · 478 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/20-wtR75Nr2Whc/boards/013.jpg">00:06:18 · #208</a></td>
+          <td>Chum và heo <span class="badge">prop</span></td>
+          <td><code>water_jar, pig</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/20-wtR75Nr2Whc/boards/017.jpg">00:07:54 · #264</a></td>
+          <td>Đĩa chứa chất đỏ trong nghi lễ <span class="badge">review</span></td>
+          <td><code>offering_plate</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/20-wtR75Nr2Whc/boards/020.jpg">00:09:34 · #316</a></td>
+          <td>Nồi đặt trên bếp <span class="badge">prop</span></td>
+          <td><code>cooking_pot</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/20-wtR75Nr2Whc/boards/022.jpg">00:10:13 · #339</a></td>
+          <td>Thầy pháp và người làm lễ <span class="badge">character_kit</span></td>
+          <td><code>shaman</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/20-wtR75Nr2Whc/boards/027.jpg">00:13:12 · #432</a></td>
+          <td>Hũ chứa tóc <span class="badge">prop</span></td>
+          <td><code>hair_jar</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-21">
+      <h2>21. Chú thuật phản phệ - Thiên Linh Cái Kỳ Truyện</h2>
+      <a href="../khuatmatkytruyen/21-mmg9idL64rQ/boards/003.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/21-mmg9idL64rQ/boards/003.jpg&quot;); background-position: -800px -819px"></div></a>
+      <p>Có cân, sọ và nhân vật. Cân đặt bàn tạo được lựa chọn; bát chung chưa có nội dung đỏ như ảnh; cảnh nhiều người cần bố cục riêng.</p>
+      <p><a href="../khuatmatkytruyen/21-mmg9idL64rQ/overview.jpg">Overview nguồn</a> · 449 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/21-mmg9idL64rQ/boards/003.jpg">00:01:20 · #47</a></td>
+          <td>Bát có vật đỏ bên trong <span class="badge">review</span></td>
+          <td><code>plain_rice_bowl, earthen_water_bowl</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/21-mmg9idL64rQ/boards/006.jpg">00:02:29 · #85</a></td>
+          <td>Cân hai đĩa <span class="badge">prop</span></td>
+          <td><code>ritual_balance_scale</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/21-mmg9idL64rQ/boards/008.jpg">00:03:36 · #118</a></td>
+          <td>Sọ trên bàn <span class="badge">prop</span></td>
+          <td><code>skull</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/21-mmg9idL64rQ/boards/020.jpg">00:09:46 · #317</a></td>
+          <td>Nhóm người đứng thành hàng <span class="badge">character_kit</span></td>
+          <td><code>villager_man_1</code></td>
+        </tr>
+      </table>
+    </article>
+    <article id="video-22">
+      <h2>22. Chuyến đi làm thuê trên bản - Ma xó Kỳ Truyện</h2>
+      <a href="../khuatmatkytruyen/22-y9UmyNlC_g0/boards/011.jpg"><div class="source" style="background-image: url(&quot;../khuatmatkytruyen/22-y9UmyNlC_g0/boards/011.jpg&quot;); background-position: -400px -305px"></div></a>
+      <p>Có bát, nhà sàn, tủ và chăn. Mười bát tạo được lựa chọn nhưng nhiều chiếc chồng nhau; tủ mở và chăn phủ chưa được xác nhận.</p>
+      <p><a href="../khuatmatkytruyen/22-y9UmyNlC_g0/overview.jpg">Overview nguồn</a> · 372 ảnh lưu</p>
+      <div class="clear"></div>
+      <table>
+        <tr>
+          <th>Mốc ảnh</th>
+          <th>Quan sát</th>
+          <th>Ứng viên trong kho (hai gói)</th>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/22-y9UmyNlC_g0/boards/011.jpg">00:05:32 · #166</a></td>
+          <td>Nhiều bát riêng trên cùng sàn <span class="badge">review</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/22-y9UmyNlC_g0/boards/012.jpg">00:06:14 · #187</a></td>
+          <td>Nhà sàn vùng núi <span class="badge">set_piece</span></td>
+          <td><code>stilt_house</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/22-y9UmyNlC_g0/boards/014.jpg">00:07:14 · #218</a></td>
+          <td>Tủ đứng trong phòng <span class="badge">set_piece</span></td>
+          <td><code>wardrobe</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/22-y9UmyNlC_g0/boards/023.jpg">00:11:34 · #359</a></td>
+          <td>Cánh tủ mở và bóng người gần tủ <span class="badge">review</span></td>
+          <td><code>Chưa có khóa tương ứng; xem kết luận bên dưới</code></td>
+        </tr>
+        <tr>
+          <td><a href="../khuatmatkytruyen/22-y9UmyNlC_g0/boards/016.jpg">00:08:13 · #250</a></td>
+          <td>Người trên giường có chăn phủ <span class="badge">review</span></td>
+          <td><code>folded_cotton_blanket</code></td>
+        </tr>
+      </table>
+    </article>
+    <h2>Kết luận theo nhóm</h2>
+    <section>
+      <h3>A01 · P1 · asset_missing</h3>
+      <p>Không tìm thấy hình rời tương ứng trong hai gói hoạt động; đã so khóa, tên, mô tả, nhãn và danh mục toàn bộ món. Cần bổ sung theo mức quan trọng của truyện, không tự thay bằng món khác.</p>
+      <small>Video 6, 7, 11, 13, 17</small>
+    </section>
+    <section>
+      <h3>M01 · P0 · metadata_layout</h3>
+      <p>Có hình võng, nhưng chỉ có điểm ngồi và đứng bên cạnh; giới hạn interior. Chưa có điểm nằm, liên kết trẻ-người chăm và cấu hình võng ngoài rừng. Không cần mô phỏng động tác khiêng.</p>
+      <small>Video 2, 4</small>
+    </section>
+    <section>
+      <h3>M02 · P0 · metadata_layout</h3>
+      <p>Các món tồn tại và qua kiểm cấu trúc; các phép thử kết hợp vẫn bị search_limit/support. Đây là bằng chứng tổ hợp hiện chưa chạy được, chưa đủ để nói thiếu hình hoặc tăng giới hạn tìm kiếm sẽ sửa được.</p>
+      <small>Video 1, 3, 8, 11, 12, 17, 18, 19</small>
+    </section>
+    <section>
+      <h3>M03 · P0 · metadata_layout</h3>
+      <p>Nhà sàn/thang có hình; điểm đứng trên sàn cao của nhà chưa được biểu diễn rõ. support=daybed có thể chọn cả điểm dưới lẫn trên, nên có lựa chọn không đồng nghĩa giữ quan hệ cao-thấp.</p>
+      <small>Video 6, 9, 18</small>
+    </section>
+    <section>
+      <h3>V01 · P0 · visual_composition</h3>
+      <p>Ảnh tĩnh từ bộ dựng cho thấy cắt người ở mép, chồng người/món, xẻng lớn và nhiều bát chồng nhau; lựa chọn hợp lệ về dữ liệu chưa đủ chứng minh hình đạt. Các ảnh là phép thử tổng hợp, không phải lỗi được quan sát trong mọi dự án thật.</p>
+      <small>Video 1, 7, 8, 15, 16, 21, 22</small>
+    </section>
+    <section>
+      <h3>S01 · P1 · state_relation</h3>
+      <p>Cần kiểm/tạo biến thể trạng thái và quan hệ: cửa/tủ hé, che khuất, vải phủ thân/gương, người dưới mặt nước, bát treo, đồ đỏ bên trong bát/đĩa, gương phản chiếu đúng cảnh. Không lấy khóa chung làm bằng chứng đã có trạng thái.</p>
+      <small>Video 7, 13, 14, 18, 19, 20, 21, 22</small>
+    </section>
+    <section>
+      <h3>R01 · P2 · needs_verification</h3>
+      <p>Bát nước đất đã có, cần kiểm tỷ lệ và điểm chứa trẻ trước khi kết luận thiếu chậu. SVG muddy_footprints có bốn vòng tròn ngón ở một dấu chân: không được báo thiếu dấu bốn ngón chỉ vì thiếu khóa four_toed_footprint. Chi tiết vật sắc ở nguồn 16 cần ảnh rõ hơn.</p>
+      <small>Video 8, 15, 16</small>
+    </section>
+    <section>
+      <h3>O01 · P2 · simplifiable</h3>
+      <p>Động tác khiêng võng, bế/trao trẻ, leo thang, cưỡi hổ hoặc mở tủ có thể dùng hình tĩnh trước/sau hành động khi không đổi tình tiết. Nếu bản thân tư thế/đồ vật là manh mối thì phải giữ đúng hình và quan hệ đó.</p>
+      <small>Video 2, 8, 15, 18, 22</small>
+    </section>
+    <section>
+      <h2>56 phép thử tổng hợp</h2>
+      <p>Đầu vào kiểm khả năng ghép, không phải kịch bản gốc. Chỉ “tạo được lựa chọn” chưa xác nhận vị trí/hình đạt.</p>
+      <table>
+        <tr>
+          <th>Gói / nhóm thử</th>
+          <th>Kết quả</th>
+          <th>Chẩn đoán / duyệt hình</th>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>two_patients</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese village bedroom:
+            [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;bed&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;bed&quot;},{&quot;char&quot;:&quot;actor_2&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}];
+            hearth. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>hammock_lying</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa ghép đủ điểm đặt cho Vietnamese forest: hammock | lie | 1; [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;hammock&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}]; hammock. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai
+            tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>shop_counter</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese shop interior: goods_shelves. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>temple</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Ảnh tĩnh đọc được nhóm chùa; chưa kiểm toàn cảnh/thoại nguồn.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>boat</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Hai người được chia ra hai thuyền; không chứng minh cùng một thuyền.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>bedside</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Người chăm bị cắt ở mép phải trong ảnh thử.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>mirror_room</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có gương nhỏ trên sàn; chưa tái hiện gương phản chiếu giường.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>cradle</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese village bedroom: [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;cradle&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;,&quot;support&quot;:&quot;beside_cradle&quot;}];
+            cradle; beside_cradle. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>stilt_height</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa ghép đủ điểm đặt cho Vietnamese stilt house courtyard: upper_platform | stand | 1; [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;,&quot;support&quot;:&quot;upper_platform&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}]; stilt_house;
+            upper_platform. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>bamboo_hollow</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Gói mặt nạ có hai người chồng nhau trong ảnh thử.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>shop_ritual</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese shop interior: Chưa có điểm đặt đúng cho object_0 trên ritual_table.; rolling_shutter; offering_table; ritual_table. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>pig_pen</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese village courtyard: pig_pen. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>grave</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Xẻng lớn so với người; có che người trong một gói.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>bridge</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có người trên cầu và người trên bờ; chỉ kiểm hình tĩnh.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>tiger_beside</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Người chồng nhau/che hổ trong một số vị trí thử.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>infant_bedside</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Chọn được hình trẻ nhỏ; người chăm bị cắt ở mép trái.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>hospital</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese hospital room. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>school</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese classroom: school_benches. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>mourning</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa ghép đủ điểm đặt cho Vietnamese village bedroom: bed | surface | 1; Chưa có điểm đặt đúng cho object_0 trên bed.. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>hearth_pot</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có nồi trên bếp trong ảnh thử; chưa đối chiếu nhịp kể.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>balance_table</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Cân đặt trên bàn; chưa kiểm bố cục cận cảnh theo nguồn.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>wardrobe</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Điểm đứng cạnh tủ ở cao trên tường; cần kiểm groundY và tỷ lệ phối cảnh.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>ten_bowls_capacity</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có mười ID đồ vật nhưng nhiều bát chồng lên nhau, không đọc rõ số lượng.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>hammock_seated_forest</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Mảnh phù hợp bị giới hạn phạm vi sử dụng cho Vietnamese forest: hammock | stand | 1; actor_0: chưa có vị trí hợp lệ tại hammock;
+            [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;,&quot;placement&quot;:{&quot;relation&quot;:&quot;at&quot;,&quot;anchor&quot;:&quot;hammock&quot;,&quot;evidence&quot;:&quot;hammock_seated_forest: Vietnamese forest.
+            &quot;}},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}]; hammock. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>coffin_watchers</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Đọc được ba người và quan tài; không chứng minh cảnh thi thể trên phản của nguồn 19.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>raised_platform</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có phản cao, nhưng người được chọn ở thấp; support=daybed chưa khóa vai trên/dưới.</td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>two_patients_floor</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa ghép đủ điểm đặt cho Vietnamese stilt house interior: floor | lie | 2;
+            [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;floor&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;floor&quot;},{&quot;char&quot;:&quot;actor_2&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}];
+            hearth. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>minimal_mask<br /><code>school_simple_bench</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese classroom: bench. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>two_patients</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese village bedroom:
+            [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;bed&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;bed&quot;},{&quot;char&quot;:&quot;actor_2&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}];
+            hearth. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>hammock_lying</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa ghép đủ điểm đặt cho Vietnamese forest: hammock | lie | 1; [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;hammock&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}]; hammock. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai
+            tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>shop_counter</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese shop interior: goods_shelves. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>temple</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Ảnh tĩnh đọc được nhóm chùa; chưa kiểm toàn cảnh/thoại nguồn.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>boat</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Hai người được chia ra hai thuyền; không chứng minh cùng một thuyền.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>bedside</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Người chăm bị cắt ở mép phải trong ảnh thử.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>mirror_room</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có gương nhỏ trên sàn; chưa tái hiện gương phản chiếu giường.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>cradle</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese village bedroom: [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;cradle&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;,&quot;support&quot;:&quot;beside_cradle&quot;}];
+            cradle; beside_cradle. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>stilt_height</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa ghép đủ điểm đặt cho Vietnamese stilt house courtyard: upper_platform | stand | 1; [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;,&quot;support&quot;:&quot;upper_platform&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}]; stilt_house;
+            upper_platform. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>bamboo_hollow</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Gói mặt nạ có hai người chồng nhau trong ảnh thử.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>shop_ritual</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese shop interior: Chưa có điểm đặt đúng cho object_0 trên ritual_table.; rolling_shutter; offering_table; ritual_table. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>pig_pen</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese village courtyard: pig_pen. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>grave</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Xẻng lớn so với người; có che người trong một gói.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>bridge</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có người trên cầu và người trên bờ; chỉ kiểm hình tĩnh.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>tiger_beside</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Người chồng nhau/che hổ trong một số vị trí thử.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>infant_bedside</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Chọn được hình trẻ nhỏ; người chăm bị cắt ở mép trái.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>hospital</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese hospital room. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>school</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese classroom: school_benches. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>mourning</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa ghép đủ điểm đặt cho Vietnamese village bedroom: bed | surface | 1; Chưa có điểm đặt đúng cho object_0 trên bed.. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>hearth_pot</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có nồi trên bếp trong ảnh thử; chưa đối chiếu nhịp kể.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>balance_table</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Cân đặt trên bàn; chưa kiểm bố cục cận cảnh theo nguồn.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>wardrobe</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Điểm đứng cạnh tủ ở cao trên tường; cần kiểm groundY và tỷ lệ phối cảnh.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>ten_bowls_capacity</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có mười ID đồ vật nhưng nhiều bát chồng lên nhau, không đọc rõ số lượng.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>hammock_seated_forest</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Mảnh phù hợp bị giới hạn phạm vi sử dụng cho Vietnamese forest: hammock | stand | 1; actor_0: chưa có vị trí hợp lệ tại hammock;
+            [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;,&quot;placement&quot;:{&quot;relation&quot;:&quot;at&quot;,&quot;anchor&quot;:&quot;hammock&quot;,&quot;evidence&quot;:&quot;hammock_seated_forest: Vietnamese forest.
+            &quot;}},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}]; hammock. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>coffin_watchers</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Đọc được ba người và quan tài; không chứng minh cảnh thi thể trên phản của nguồn 19.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>raised_platform</code></td>
+          <td>Tạo được lựa chọn</td>
+          <td>Có phản cao, nhưng người được chọn ở thấp; support=daybed chưa khóa vai trên/dưới.</td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>two_patients_floor</code></td>
+          <td>Bị chặn</td>
+          <td>
+            Chưa ghép đủ điểm đặt cho Vietnamese stilt house interior: floor | lie | 2;
+            [{&quot;char&quot;:&quot;actor_0&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;floor&quot;},{&quot;char&quot;:&quot;actor_1&quot;,&quot;action&quot;:&quot;lie&quot;,&quot;posture&quot;:&quot;lie&quot;,&quot;support&quot;:&quot;floor&quot;},{&quot;char&quot;:&quot;actor_2&quot;,&quot;action&quot;:&quot;stand&quot;,&quot;posture&quot;:&quot;idle&quot;}];
+            hearth. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.
+          </td>
+        </tr>
+        <tr>
+          <td>chibi_folk<br /><code>school_simple_bench</code></td>
+          <td>Bị chặn</td>
+          <td>Chưa tìm được tổ hợp trong giới hạn tìm kiếm cho Vietnamese classroom: bench. Giữ phần đã đạt; không tự vẽ thêm hoặc thay sai tài nguyên.</td>
+        </tr>
+      </table>
+    </section>
+    <h2>Ảnh ghép thử — có cả ảnh chưa đạt</h2>
+    <section>
+      <a href="evidence/geometry-1.jpg"><img loading="lazy" src="evidence/geometry-1.jpg" alt="Bảng ảnh thử tổng hợp" /></a>
+    </section>
+    <section>
+      <a href="evidence/geometry-2.jpg"><img loading="lazy" src="evidence/geometry-2.jpg" alt="Bảng ảnh thử tổng hợp" /></a>
+    </section>
+    <section>
+      <a href="evidence/geometry-3.jpg"><img loading="lazy" src="evidence/geometry-3.jpg" alt="Bảng ảnh thử tổng hợp" /></a>
+    </section>
+    <section>
+      <a href="evidence/geometry-4.jpg"><img loading="lazy" src="evidence/geometry-4.jpg" alt="Bảng ảnh thử tổng hợp" /></a>
+    </section>
+    <h2>85 mốc nguồn đã đối chiếu</h2>
+    <section>
+      <a href="evidence/sources-1.jpg"><img loading="lazy" src="evidence/sources-1.jpg" alt="Mốc nguồn và mô tả ảnh" /></a>
+    </section>
+    <section>
+      <a href="evidence/sources-2.jpg"><img loading="lazy" src="evidence/sources-2.jpg" alt="Mốc nguồn và mô tả ảnh" /></a>
+    </section>
+    <section>
+      <a href="evidence/sources-3.jpg"><img loading="lazy" src="evidence/sources-3.jpg" alt="Mốc nguồn và mô tả ảnh" /></a>
+    </section>
+    <section>
+      <a href="evidence/sources-4.jpg"><img loading="lazy" src="evidence/sources-4.jpg" alt="Mốc nguồn và mô tả ảnh" /></a>
+    </section>
+    <section>
+      <a href="evidence/sources-5.jpg"><img loading="lazy" src="evidence/sources-5.jpg" alt="Mốc nguồn và mô tả ảnh" /></a>
+    </section>
+    <section>
+      <a href="evidence/sources-6.jpg"><img loading="lazy" src="evidence/sources-6.jpg" alt="Mốc nguồn và mô tả ảnh" /></a>
+    </section>
+    <section>
+      <h2>Kiểm hình món thực có</h2>
+      <img loading="lazy" src="evidence/asset-details.jpg" alt="Vải, bát và dấu chân trong hai gói" />
+    </section>
+  </body>
+</html>

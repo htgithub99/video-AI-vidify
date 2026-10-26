@@ -1,5 +1,6 @@
+from library_release import assert_legacy_library_target
 from seed_texts import SeedText as KST
-from seed_utils import validate_asset_geometry
+from seed_utils import validate_asset_geometry, resource_semantics
 import argparse
 import datetime
 import hashlib
@@ -26,6 +27,7 @@ def collect(stage):
                 continue
             if file.stem != record[KST.ID] or record[KST.TYPE] != kind:
                 raise ValueError(str(file))
+            resource_semantics(record)
             validate_asset_geometry(record, file)
             selected.append((kind, file, record))
     expected = 2 * (len(SCENE_CATALOG) * 8 + len(PROP_CATALOG) + len(CHAR_CATALOG) + len(PIECES))
@@ -39,6 +41,8 @@ def main():
     parser.add_argument(KST.REPORT, type=Path)
     parser.add_argument(KST.APPLY, action=KST.STORE_TRUE)
     args = parser.parse_args()
+    if args.apply:
+        assert_legacy_library_target(args.library)
     assets = collect(args.stage)
     planned = list(assets)
     for file in sorted((args.stage / KST.SET_PIECE).glob(KST.JSON_GLOB)):

@@ -32,7 +32,10 @@ send.onclick=()=>{
  const code=wrapper.querySelector('pre');code.textContent='{"requestId":';
  if(mode!=='pending')setTimeout(()=>{code.textContent=mode==='invalid'?'This response does not contain valid JSON.':JSON.stringify({requestId,artifactType:'deepseek_test',scenes:[{id:'scene-1',text:'Complete response'}]});send.innerHTML='<svg><path d="M8 arrow"></path></svg>';send.classList.add('ds-button--disabled');},50);
  };
- if(mode==='retry'||mode==='retry-always'){
+ if(mode==='message-limited'){
+  send.innerHTML='<svg><path d="M8 arrow"></path></svg>';send.classList.add('ds-button--disabled');
+  const error=document.createElement('span');error.textContent='Messages too frequent. Try again later.';user.append(error);
+ }else if(mode==='retry'||mode==='retry-always'){
   send.innerHTML='<svg><path d="M8 arrow"></path></svg>';send.classList.add('ds-button--disabled');
   const warning=document.createElement('div');warning.setAttribute('role','button');warning.className='ds-button ds-button--warning';warning.textContent='retry';user.querySelector('.ds-message').append(warning);
   const error=document.createElement('span');error.textContent='Đang tạo tin nhắn, vui lòng thử lại sau.';user.append(error);
@@ -41,6 +44,9 @@ send.onclick=()=>{
 };
 })();</script></body></html>`,
   LIMITED: "limited",
+  MESSAGE_LIMITED: "message-limited",
+  MESSAGE_LIMIT_TEXT: "Messages too frequent. Try again later.",
+  DS_USER_CONTENT: ".ds-collapsible-text",
   DIV_ROLE_ALERT_SERVER_BUSY_PLEASE_TRY_AGAIN_LATER_DIV: '<div role="alert">Server busy, please try again later.</div>',
   EMPTY: "",
   LOGIN: "login",

@@ -1,0 +1,969 @@
+{
+  "styles": {
+    "minimal_mask": {
+      "counts": {
+        "style_pack": 1,
+        "character_kit": 59,
+        "prop": 151,
+        "set": 584,
+        "set_base": 20,
+        "set_piece": 97
+      },
+      "interactionFamilies": [
+        "assisting",
+        "bedside",
+        "boat",
+        "carrying",
+        "chase",
+        "contact",
+        "conversation",
+        "counter",
+        "cradle",
+        "dining",
+        "doorway",
+        "grooming",
+        "group_conversation",
+        "mourning",
+        "offering",
+        "parent_child",
+        "rafters",
+        "ritual",
+        "river_rescue",
+        "search",
+        "stairs",
+        "teaching",
+        "two_patients",
+        "watching",
+        "window",
+        "work"
+      ],
+      "sceneDesigns": 96
+    },
+    "chibi_folk": {
+      "counts": {
+        "style_pack": 1,
+        "character_kit": 59,
+        "prop": 151,
+        "set": 584,
+        "set_base": 20,
+        "set_piece": 97
+      },
+      "interactionFamilies": [
+        "assisting",
+        "bedside",
+        "boat",
+        "carrying",
+        "chase",
+        "contact",
+        "conversation",
+        "counter",
+        "cradle",
+        "dining",
+        "doorway",
+        "grooming",
+        "group_conversation",
+        "mourning",
+        "offering",
+        "parent_child",
+        "rafters",
+        "ritual",
+        "river_rescue",
+        "search",
+        "stairs",
+        "teaching",
+        "two_patients",
+        "watching",
+        "window",
+        "work"
+      ],
+      "sceneDesigns": 96
+    }
+  },
+  "addedDesigns": {
+    "scenes": 12,
+    "props": 18,
+    "pieces": 6
+  },
+  "verification": {
+    "checks": 854,
+    "stills": 82,
+    "aiCalls": 0
+  },
+  "sources": [
+    {
+      "id": "ZrgIi8a8dyA",
+      "title": "Chiếc khăn Piêu - Bùa Yêu Kỳ Truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\01-ZrgIi8a8dyA",
+      "captureStatus": "extracted",
+      "frames": 1313,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "stilt_hearth_patients",
+          "village_two_patient_room",
+          "porch_seated_hair_grooming",
+          "raised_daybed_and_column"
+        ],
+        "props": [
+          "bamboo_comb"
+        ],
+        "characters": []
+      }
+    },
+    {
+      "id": "FFTF1CM4aBI",
+      "title": "Người con anh hùng - Hồi ức ấu thơ",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\02-FFTF1CM4aBI",
+      "captureStatus": "extracted",
+      "frames": 1229,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "bedroom_standing_caregiver",
+          "funeral_bier_and_watchers",
+          "forest_hammock_companion"
+        ],
+        "props": [],
+        "characters": [
+          "folk_soldier_veteran"
+        ]
+      }
+    },
+    {
+      "id": "m9WhpDtE9xE",
+      "title": "Cuốn sổ nợ - Hình nhân thế mạng kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\03-m9WhpDtE9xE",
+      "captureStatus": "extracted",
+      "frames": 755,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "bedroom_standing_caregiver",
+          "grocery_ledger_counter"
+        ],
+        "props": [
+          "village_debt_ledger"
+        ],
+        "characters": [
+          "folk_shopkeeper"
+        ]
+      }
+    },
+    {
+      "id": "P0xXIU5Lyr8",
+      "title": "Ván bài định mệnh - Thần Trùng P2",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\04-P0xXIU5Lyr8",
+      "captureStatus": "extracted",
+      "frames": 450,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "cradle_and_mother_room",
+          "ritual_altar_visitors",
+          "monk_and_guest_reception",
+          "village_card_table",
+          "temple_bell_landing"
+        ],
+        "props": [],
+        "characters": [
+          "folk_temple_novice"
+        ]
+      }
+    },
+    {
+      "id": "nk48rQqJmc0",
+      "title": "Ván bài định mệnh - Thần Trùng Kỳ Truyện P1",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\05-nk48rQqJmc0",
+      "captureStatus": "extracted",
+      "frames": 624,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "monk_and_guest_reception",
+          "village_card_table",
+          "river_ferry_boat",
+          "grave_watch_clearing"
+        ],
+        "props": [
+          "playing_card_spread"
+        ],
+        "characters": [
+          "folk_ferryman"
+        ]
+      }
+    },
+    {
+      "id": "xS4lEGgdVCQ",
+      "title": "Ác Giả Ác Báo - Bùa Lỗ Ban Kỳ Truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\06-xS4lEGgdVCQ",
+      "captureStatus": "extracted",
+      "frames": 862,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "hospital_bedside_visit",
+          "carpenter_roof_scaffold"
+        ],
+        "props": [
+          "folk_carpenter_chisel"
+        ],
+        "characters": [
+          "folk_carpenter"
+        ]
+      }
+    },
+    {
+      "id": "1MBYdq1F-hE",
+      "title": "Người mới, trọ cũ - Ma ăn hồn kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\07-1MBYdq1F-hE",
+      "captureStatus": "extracted",
+      "frames": 939,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "village_two_patient_room",
+          "boarding_room_doorway"
+        ],
+        "props": [],
+        "characters": []
+      }
+    },
+    {
+      "id": "U_2hRTsJ3So",
+      "title": "Tình mẹ - Ma nữ mất con Kỳ Truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\08-U_2hRTsJ3So",
+      "captureStatus": "extracted",
+      "frames": 783,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "cradle_and_mother_room",
+          "old_village_bridge"
+        ],
+        "props": [],
+        "characters": [
+          "folk_midwife",
+          "folk_new_mother",
+          "folk_infant"
+        ]
+      }
+    },
+    {
+      "id": "5tEEkZaXW3U",
+      "title": "Én ơi, anh về rồi - Ma vọng phu kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\09-5tEEkZaXW3U",
+      "captureStatus": "storyboard_fallback",
+      "frames": 206,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "stilt_hearth_patients",
+          "stilt_house_landing_stairs",
+          "river_landing_rescue"
+        ],
+        "props": [],
+        "characters": []
+      }
+    },
+    {
+      "id": "tUWV2SqMrpg",
+      "title": "Chén cơm đất - Ma giấu người kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\10-tUWV2SqMrpg",
+      "captureStatus": "extracted",
+      "frames": 691,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "bamboo_grove_earth_bowl"
+        ],
+        "props": [
+          "bronze_ritual_gong",
+          "earth_rice_offering_bowl",
+          "wooden_door_bar"
+        ],
+        "characters": []
+      }
+    },
+    {
+      "id": "XYjyI0EQ7tk",
+      "title": "Trả nợ -Ma báo oán kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\11-XYjyI0EQ7tk",
+      "captureStatus": "extracted",
+      "frames": 684,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "repair_shop_roller_door"
+        ],
+        "props": [
+          "ritual_rice_salt_plate"
+        ],
+        "characters": [
+          "folk_repair_mechanic"
+        ]
+      }
+    },
+    {
+      "id": "2ygTaMHUri0",
+      "title": "Anh Hai ơi, em xin lỗi - Heo 5 móng kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\12-2ygTaMHUri0",
+      "captureStatus": "extracted",
+      "frames": 652,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [],
+        "props": [
+          "five_toed_pig"
+        ],
+        "characters": [
+          "folk_rice_farmer"
+        ]
+      }
+    },
+    {
+      "id": "-Hb-Tn7OaHo",
+      "title": "Thần trùng - Trùng tang kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\13--Hb-Tn7OaHo",
+      "captureStatus": "extracted",
+      "frames": 633,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "bedroom_standing_caregiver",
+          "funeral_canopy_courtyard",
+          "grave_watch_clearing"
+        ],
+        "props": [
+          "ancestor_memorial_tablet",
+          "sealed_clay_spirit_jar",
+          "village_grave_spade"
+        ],
+        "characters": [
+          "folk_mourning_son"
+        ]
+      }
+    },
+    {
+      "id": "vy7G-ATxNnM",
+      "title": "Con nhớ nhà lắm - Ma da kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\14-vy7G-ATxNnM",
+      "captureStatus": "extracted",
+      "frames": 608,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "river_landing_rescue",
+          "river_ferry_boat"
+        ],
+        "props": [
+          "spirit_paper_boat"
+        ],
+        "characters": [
+          "folk_ferryman"
+        ]
+      }
+    },
+    {
+      "id": "HSUbahCf3nU",
+      "title": "Kẻ dẫn lối không đường về - Ma Trành kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\15-HSUbahCf3nU",
+      "captureStatus": "extracted",
+      "frames": 507,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "forest_tiger_path",
+          "highland_village_meeting"
+        ],
+        "props": [
+          "forest_tiger"
+        ],
+        "characters": []
+      }
+    },
+    {
+      "id": "Y_6PRdEk4Rk",
+      "title": "Đứa con oan nghiệt - Con ranh con lộn kỳ truyện #tamlinh  #tamlinhthanbi",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\16-Y_6PRdEk4Rk",
+      "captureStatus": "storyboard_fallback",
+      "frames": 146,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "cradle_and_mother_room",
+          "grave_watch_clearing",
+          "bamboo_well_yard"
+        ],
+        "props": [
+          "bamboo_tobacco_pipe",
+          "cloth_wrapped_bundle",
+          "small_oil_lamp_tray"
+        ],
+        "characters": [
+          "folk_new_mother",
+          "folk_infant"
+        ]
+      }
+    },
+    {
+      "id": "brNfRbyVX0M",
+      "title": "Tình duyên muôn kiếp - Cắt tiền duyên kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\17-brNfRbyVX0M",
+      "captureStatus": "extracted",
+      "frames": 684,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "hospital_bedside_visit",
+          "ritual_altar_visitors"
+        ],
+        "props": [
+          "ritual_scissors",
+          "betel_offering_tray"
+        ],
+        "characters": []
+      }
+    },
+    {
+      "id": "P3SOdALyYnA",
+      "title": "Ma cà rồng Tây Bắc - Phí Phông kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\18-P3SOdALyYnA",
+      "captureStatus": "extracted",
+      "frames": 540,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "stilt_house_landing_stairs",
+          "forest_tiger_path",
+          "highland_village_meeting",
+          "village_school_bench"
+        ],
+        "props": [],
+        "characters": [
+          "folk_highland_teacher"
+        ]
+      }
+    },
+    {
+      "id": "Cyak0swNZEo",
+      "title": "Đêm không ngủ - Quỷ nhập tràng kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\19-Cyak0swNZEo",
+      "captureStatus": "extracted",
+      "frames": 445,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "funeral_bier_and_watchers"
+        ],
+        "props": [
+          "mourning_white_cloth",
+          "small_oil_lamp_tray"
+        ],
+        "characters": [
+          "folk_undertaker",
+          "folk_mourning_daughter"
+        ]
+      }
+    },
+    {
+      "id": "wtR75Nr2Whc",
+      "title": "Bùa chú An Giang - Thư ếm kỳ truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\20-wtR75Nr2Whc",
+      "captureStatus": "extracted",
+      "frames": 478,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "ritual_altar_visitors",
+          "abandoned_kitchen_hearth"
+        ],
+        "props": [
+          "red_binding_thread",
+          "sealed_clay_spirit_jar",
+          "village_grave_spade",
+          "clay_charcoal_brazier"
+        ],
+        "characters": [
+          "folk_spirit_master"
+        ]
+      }
+    },
+    {
+      "id": "mmg9idL64rQ",
+      "title": "Chú thuật phản phệ - Thiên Linh Cái Kỳ Truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\21-mmg9idL64rQ",
+      "captureStatus": "extracted",
+      "frames": 449,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "ritual_altar_visitors"
+        ],
+        "props": [
+          "ritual_balance_scale",
+          "earth_rice_offering_bowl"
+        ],
+        "characters": [
+          "folk_spirit_master"
+        ]
+      }
+    },
+    {
+      "id": "y9UmyNlC_g0",
+      "title": "Chuyến đi làm thuê trên bản - Ma xó Kỳ Truyện",
+      "reference": "docs\\video-references\\khuatmatkytruyen\\22-y9UmyNlC_g0",
+      "captureStatus": "extracted",
+      "frames": 372,
+      "reviewScope": "overview_and_selected_frames",
+      "exhaustiveSceneInventory": false,
+      "resources": {
+        "scenes": [
+          "stilt_house_landing_stairs",
+          "highland_village_meeting"
+        ],
+        "props": [
+          "bamboo_tobacco_pipe",
+          "bamboo_rice_basket",
+          "earth_rice_offering_bowl"
+        ],
+        "characters": [
+          "folk_market_woman"
+        ]
+      }
+    }
+  ],
+  "exhaustiveSourceSceneReview": false,
+  "cases": [
+    {
+      "key": "set-4a2f6cc3eeb49c14-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation / Closed Door",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "conversation_left_stand_right_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "conversation_left_stand_chair_right_sit",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "conversation_chair_left_sit_right_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "conversation_chair_left_sit_chair_right_sit",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "group_conversation_chair_left_sit_chair_right_sit_center_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "set-3deb66147c5b6810-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation Night / Closed Door",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "set-6b3cdbf4f44995f0-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation Mirrored / Closed Door",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "set-5c4e67425892555f-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation Mirrored Night / Closed Door",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "bedside_bed_lie_bedside_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "bedside_bed_lie_visitor_chair_sit",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "bedside_bed_edge_sit_bedside_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "bedside_bed_edge_sit_visitor_chair_sit",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "conversation_bed_edge_sit_visitor_chair_sit",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "parent_child_participant_a_participant_b",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Family Room with Parent and Child Hand Contacts"
+    },
+    {
+      "key": "carrying_participant_a_participant_b_hold_child",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Family Room for Holding or Carrying a Child"
+    },
+    {
+      "key": "carrying_participant_a_participant_b_piggyback",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Family Room for Holding or Carrying a Child"
+    },
+    {
+      "key": "assisting_participant_a_participant_b",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room with Supporting Hand on Shoulder"
+    },
+    {
+      "key": "window_window_inside_window_outside",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Window with Separate Inside and Outside Positions"
+    },
+    {
+      "key": "watching_window_inside_window_outside",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Window with Separate Inside and Outside Positions"
+    },
+    {
+      "key": "dining_chair_left_sit_chair_right_sit",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Dining Room with Individual Seats and Bowl Surfaces"
+    },
+    {
+      "key": "offering_chair_left_sit_chair_right_sit",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Dining Room with Individual Seats and Bowl Surfaces"
+    },
+    {
+      "key": "work_left_stand_right_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Courtyard for Sweeping and Household Work"
+    },
+    {
+      "key": "chase_left_stand_right_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Path with Pursuer and Fugitive Positions"
+    },
+    {
+      "key": "search_left_stand_right_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Path with Pursuer and Fugitive Positions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_hold_hands",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_hold_hands",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_touch_shoulder",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_touch_shoulder",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_bite_shoulder",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_bite_shoulder",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_whisper",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_whisper",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "work_cook_stand_right_stand",
+      "styleId": "stl-ba8ca635c716c880",
+      "name": "Village Kitchen with Hearth and Separate Preparation Table"
+    },
+    {
+      "key": "table_bowls",
+      "name": "table_bowls",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "neck_sash_stand",
+      "name": "neck_sash_stand",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "neck_sash_lying",
+      "name": "neck_sash_lying",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "rice_on_ditch",
+      "name": "rice_on_ditch",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "stl-ba8ca635c716c880-props-0",
+      "name": "Props",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "stl-ba8ca635c716c880-props-6",
+      "name": "Props",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "stl-ba8ca635c716c880-props-12",
+      "name": "Props",
+      "styleId": "stl-ba8ca635c716c880"
+    },
+    {
+      "key": "set-a35dd49e986bbc32-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation / Closed Door",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "conversation_left_stand_right_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "conversation_left_stand_chair_right_sit",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "conversation_chair_left_sit_right_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "conversation_chair_left_sit_chair_right_sit",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "group_conversation_chair_left_sit_chair_right_sit_center_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Living Room with Standing and Seated Conversation"
+    },
+    {
+      "key": "set-56f2e4f5960689d1-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation Night / Closed Door",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "set-60b152442301c197-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation Mirrored / Closed Door",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "set-a2cb2af582e799a0-closed-door",
+      "name": "Village Living Room with Standing and Seated Conversation Mirrored Night / Closed Door",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "bedside_bed_lie_bedside_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "bedside_bed_lie_visitor_chair_sit",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "bedside_bed_edge_sit_bedside_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "bedside_bed_edge_sit_visitor_chair_sit",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "conversation_bed_edge_sit_visitor_chair_sit",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Bedroom with Bed Edge Seats and Caregiver Chair"
+    },
+    {
+      "key": "parent_child_participant_a_participant_b",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Family Room with Parent and Child Hand Contacts"
+    },
+    {
+      "key": "carrying_participant_a_participant_b_hold_child",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Family Room for Holding or Carrying a Child"
+    },
+    {
+      "key": "carrying_participant_a_participant_b_piggyback",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Family Room for Holding or Carrying a Child"
+    },
+    {
+      "key": "assisting_participant_a_participant_b",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room with Supporting Hand on Shoulder"
+    },
+    {
+      "key": "window_window_inside_window_outside",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Window with Separate Inside and Outside Positions"
+    },
+    {
+      "key": "watching_window_inside_window_outside",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Window with Separate Inside and Outside Positions"
+    },
+    {
+      "key": "dining_chair_left_sit_chair_right_sit",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Dining Room with Individual Seats and Bowl Surfaces"
+    },
+    {
+      "key": "offering_chair_left_sit_chair_right_sit",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Dining Room with Individual Seats and Bowl Surfaces"
+    },
+    {
+      "key": "work_left_stand_right_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Courtyard for Sweeping and Household Work"
+    },
+    {
+      "key": "chase_left_stand_right_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Path with Pursuer and Fugitive Positions"
+    },
+    {
+      "key": "search_left_stand_right_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Path with Pursuer and Fugitive Positions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_hold_hands",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_hold_hands",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_touch_shoulder",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_touch_shoulder",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_bite_shoulder",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_bite_shoulder",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_participant_b_whisper",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "contact_participant_a_recipient_seat_whisper",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Room for Hand Contact and Close Shoulder Interactions"
+    },
+    {
+      "key": "work_cook_stand_right_stand",
+      "styleId": "stl-e70fac00bbf44662",
+      "name": "Village Kitchen with Hearth and Separate Preparation Table"
+    },
+    {
+      "key": "table_bowls",
+      "name": "table_bowls",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "neck_sash_stand",
+      "name": "neck_sash_stand",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "neck_sash_lying",
+      "name": "neck_sash_lying",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "rice_on_ditch",
+      "name": "rice_on_ditch",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "stl-e70fac00bbf44662-props-0",
+      "name": "Props",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "stl-e70fac00bbf44662-props-6",
+      "name": "Props",
+      "styleId": "stl-e70fac00bbf44662"
+    },
+    {
+      "key": "stl-e70fac00bbf44662-props-12",
+      "name": "Props",
+      "styleId": "stl-e70fac00bbf44662"
+    }
+  ]
+}

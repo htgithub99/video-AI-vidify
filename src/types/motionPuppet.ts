@@ -1,4 +1,11 @@
+import type { MOTION_RESOURCE_SEMANTICS } from "../constants/motionResourceSemantics.js";
+export type MotionLocationFamily = (typeof MOTION_RESOURCE_SEMANTICS.PLACES)[number][1];
 export interface PuppetCatalog {
+  libraryVersion?: number;
+  semanticVersion?: number;
+  locationFamily?: MotionLocationFamily;
+  illustrationVersion?: number;
+  aliasOf?: string;
   originalName?: string;
   originalDesc?: string;
   catalogVersion?: number;
@@ -35,8 +42,10 @@ export interface PuppetStyleFace {
   mouthY: number;
   brows: boolean;
   mouthRest: string;
+  nose?: boolean;
 }
 export interface PuppetStylePack {
+  illustrationVersion?: number;
   id: string;
   type: "style_pack";
   name: string;
@@ -73,8 +82,10 @@ export interface PuppetSprite {
   h: number;
   anchor: number[];
   rig?: { headW: number; headH: number; headCy: number; bodyH: number; bodyW: number };
+  bodyOnly?: boolean;
 }
 export interface PuppetCharacter extends PuppetCatalog {
+  humanGhostVersion?: number;
   id: string;
   type: "character_kit";
   styleId: string;
@@ -102,16 +113,43 @@ export interface PuppetLight {
   kind: string;
 }
 export interface PuppetSpot {
+  scale?: number;
+  areas?: string[];
   key: string;
   kind: string;
   x: number;
   y: number;
   seatY?: number;
   groundY?: number;
+  fixture?: string;
+  relation?: string;
+  bounds?: [number, number, number, number];
   face?: string;
   label: string;
 }
+export interface PuppetBlocking {
+  variant?: string;
+  kind: string;
+  roles: Record<string, string>;
+}
+export interface PuppetComposition extends PuppetBlocking {
+  contacts?: PuppetContact[];
+  key: string;
+}
+export interface PuppetContact {
+  actor: string;
+  target: string;
+  point: string;
+  targetPoint: string;
+  mode: string;
+}
 export interface PuppetSet extends PuppetCatalog {
+  framingBounds?: [number, number, number, number][];
+  features?: string[];
+  recipe?: { version: number; decompositionVersion?: number; baseId: string; pieces: { token: string; assetId: string }[] };
+  fixtures?: PuppetFixture[];
+  fixtureStates?: Record<string, string>;
+  compositions?: PuppetComposition[];
   id: string;
   type: "set" | "establishing";
   styleId: string;
@@ -128,10 +166,22 @@ export interface PuppetSet extends PuppetCatalog {
   plan?: PuppetSetPlan;
   lights: PuppetLight[];
   variants?: Record<string, string>;
+  placementVersion?: number;
+  replaces?: string[];
+  sceneCondition?: string;
   uses: number;
   updatedAt: string;
 }
+export interface PuppetFixture {
+  key: string;
+  layer: string;
+  states: Record<string, string>;
+}
 export interface PuppetProp extends PuppetCatalog {
+  surface?: { bounds: [number, number, number, number]; maxRatio: number };
+  grip?: [number, number];
+  attachment?: string;
+  emitter?: [number, number];
   id: string;
   type: "prop";
   styleId: string;
@@ -163,6 +213,12 @@ export interface PuppetPieceLight {
   kind: string;
 }
 export interface PuppetPiece extends PuppetCatalog {
+  stateKey?: string;
+  states?: Record<string, { svg: string; night?: string }>;
+  placementSurface?: "water";
+  recipeSvg?: string;
+  recipeOnly?: boolean;
+  compositions?: PuppetComposition[];
   id: string;
   type: "set_piece";
   styleId: string;
@@ -171,6 +227,7 @@ export interface PuppetPiece extends PuppetCatalog {
   desc: string;
   kind: string;
   environment?: string;
+  allowedEnvironments?: ("interior" | "exterior")[];
   slots: string[];
   svg: string;
   night?: string;
@@ -187,6 +244,11 @@ export interface PuppetPiece extends PuppetCatalog {
   updatedAt: string;
 }
 export interface PuppetBase extends PuppetCatalog {
+  regions?: Record<string, { bounds: [number, number, number, number] }>;
+  adaptableLocationFamilies?: MotionLocationFamily[];
+  recipeTemplate?: string;
+  recipeOnly?: boolean;
+  decomposition?: string;
   id: string;
   type: "set_base";
   styleId: string;
@@ -203,12 +265,18 @@ export interface PuppetBase extends PuppetCatalog {
   updatedAt: string;
 }
 export interface PuppetSetPlan {
+  version?: number;
+  baseId?: string;
   base: string;
-  pieces: { slot: string; piece: string }[];
+  pieces: { slot: string; piece: string; assetId?: string }[];
   mirror: boolean;
 }
 export type PuppetAsset = PuppetStylePack | PuppetCharacter | PuppetSet | PuppetProp | PuppetSeries | PuppetPiece | PuppetBase;
 export interface PuppetActorState {
+  essential?: boolean;
+  eyes?: { state: "open" | "closed"; evidence: string };
+  placement?: { relation: "at" | "beside" | "behind" | "between"; anchor?: string; targets?: string[]; evidence: string };
+  transition?: boolean;
   char: string;
   action: string;
   posture?: string;
@@ -217,6 +285,9 @@ export interface PuppetActorState {
   target?: string;
 }
 export interface PuppetFrameItem {
+  propDepthY?: number;
+  propParent?: string;
+  propSupport?: string;
   prop: string;
   propAt?: string | null;
   propMount?: string;
@@ -245,6 +316,16 @@ export interface PuppetFrameActor {
   trail?: boolean;
 }
 export interface PuppetFrame {
+  propDepthY?: number;
+  propParent?: string;
+  choiceId?: string;
+  layoutLocked?: boolean;
+  contacts?: PuppetContact[];
+  propSupport?: string;
+  effectTarget?: string;
+  effectMode?: string;
+  blocking?: PuppetBlocking;
+  effectSource?: string;
   shot: string;
   set?: string;
   light?: string | null;
@@ -271,14 +352,33 @@ export interface PuppetFrame {
   why?: string;
 }
 export interface PuppetPlace {
+  locationFamily?: MotionLocationFamily;
+  fixtureStates?: Record<string, string>;
+  visualBase?: string;
   key: string;
   name: string;
   desc: string;
   interior: boolean;
   time: string;
   sceneFeatures?: string[];
+  sceneCondition?: string;
+  basePlace?: string;
 }
 export interface PuppetObject {
+  essential?: boolean;
+  ownershipEvidence?: string;
+  placement?: { anchor: string; evidence: string };
+  catalogKey?: string;
+  support?: string;
+  attachment?: string;
+  transition?: boolean;
+  baseOwner?: string;
+  baseMount?: string;
+  physicalState?: string;
+  baseDescription?: string;
+  baseRequirements?: string[];
+  identity?: string;
+  state?: string;
   word: string;
   key: string;
   size: number;
@@ -292,9 +392,17 @@ export interface PuppetObject {
   requirements?: string[];
 }
 export interface PuppetRead {
+  sceneConditionDeclared?: string | null;
+  fixtureStates?: Record<string, string>;
+  visual?: PuppetVisualContract;
+  effectTarget?: string;
+  effectMode?: string;
+  blocking?: PuppetBlocking;
+  effectSource?: string;
   focus: string;
   who: string[];
   place?: string;
+  sceneCondition?: string;
   object?: PuppetObject | null;
   objects?: PuppetObject[];
   states?: PuppetActorState[];
@@ -304,23 +412,98 @@ export interface PuppetRead {
   overlays: string[];
 }
 export interface PuppetGen {
+  readNormalizationVersion?: number;
+  readDrafts?: Record<string, PuppetReadDraft>;
+  selectionVersion?: number;
+  sceneSelections?: Record<string, PuppetSceneSelection>;
+  illustrationVersion?: number;
+  pack?: PuppetPackSnapshot;
+  storyboard?: PuppetStoryboard;
+  narratorKey?: string;
+  visualInputKey?: string;
+  visualContractVersion?: number;
+  visualIssues?: Record<string, string>;
+  blockingVersion?: number;
+  effectsVersion?: number;
   version: number;
   styleId: string;
   characters: Record<string, string>;
   sets: Record<string, string>;
+  placementKeys?: Record<string, string>;
   props: Record<string, string>;
   places: Record<string, PuppetPlace>;
   frames: Record<string, PuppetFrame>;
   reads?: Record<string, PuppetRead>;
   seriesId?: string;
   ghosts?: string[];
-  sheet?: { t: number; text: string; file: string }[];
+  sheet?: { t: number; text: string; file: string; lines?: string[] }[];
   report?: { frames: number; characters: number; sets: number; props: number; missing: number };
+}
+export interface PuppetAssetPreview {
+  type: "location" | "beat" | "character" | "prop";
+  id: string;
+  title: string;
+  imageUrl: string;
+  description?: string;
+  narration?: string;
+  beats?: string[];
+  extension?: string;
+}
+export interface PuppetReadDraft {
+  rows: { i: number; [key: string]: any }[];
+  state: import("./motionAiContract.js").MotionAiContractState;
+}
+export interface PuppetSceneSelection {
+  version: number;
+  choiceId: string;
+  candidateIds: string[];
+  source: "ai" | "deterministic";
+  inputKey: string;
+  frameKey: string;
+  bindings: { styleId: string; setId: string; characters: Record<string, string>; props: Record<string, string> };
+  evidence: { line: string; text: string };
+  preview?: string;
+}
+export interface PuppetPackSnapshot {
+  version: number;
+  policy: string;
+  styleId: string;
+  fingerprint: string;
+  assets: Record<string, PuppetAsset>;
+  assemblies: Record<string, string[]>;
+}
+export interface PuppetVisualSource {
+  line: string;
+  from: number;
+  to: number;
+}
+export interface PuppetVisualUnit {
+  read?: Record<string, any>;
+  key: string;
+  scene: string;
+  purpose: string;
+  show: string;
+  sources: PuppetVisualSource[];
+}
+export interface PuppetStoryboard {
+  groups?: { key: string; lines: string[]; offset: number }[];
+  repairStates?: Record<string, { rejected: number; errors: string[] }>;
+  profileKey?: string;
+  drafts?: Record<string, { id: string; value: Record<string, any> }[]>;
+  version: number;
+  inputKey: string;
+  units: PuppetVisualUnit[];
+}
+export interface PuppetVisualContract {
+  scene: string;
+  timeline: string;
+  evidence: string[];
+  fixtures: { key: string; state: string }[];
 }
 export interface PuppetKitSpec {
   style: Pick<PuppetStylePack, "body" | "face" | "line" | "vignette">;
   characters: Record<string, Pick<PuppetCharacter, "height" | "colors" | "head" | "body" | "sprites"> & { ghost?: boolean }>;
-  sets: Record<string, Pick<PuppetSet, "svg" | "floorY" | "lights" | "time" | "variants"> & { wallY?: number }>;
-  props: Record<string, Pick<PuppetProp, "svg" | "base" | "size">>;
+  sets: Record<string, Pick<PuppetSet, "svg" | "floorY" | "lights" | "time" | "variants" | "framingBounds"> & { wallY?: number }>;
+  props: Record<string, Pick<PuppetProp, "svg" | "base" | "size" | "emitter" | "grip" | "attachment"> & { restRotation?: number; bodyCover?: boolean }>;
   motion: boolean;
 }

@@ -297,6 +297,7 @@ import { getErrorMessage } from "../utils/errorUtils.js";
 import { readEncodedProjectImage } from "./imageAssetService.js";
 import { resolveBatchTabCount } from "../../services/batchGenerationPolicy.js";
 import { isImageAspectRatioCompatible } from "../utils/imageAspectRatio.js";
+import { getDownloadedImageMimeType } from "../utils/imageMedia.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
@@ -1976,7 +1977,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
     const launchedBrowser = await activeBrowserLaunchPromise;
     if (preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
       await closeActiveBrowser();
-    } else if (activeBrowserHeadless === requestedHeadless) {
+    } else if (activeBrowserHeadless === requestedHeadless || (activeBrowserHeadless === false && requestedHeadless)) {
       return launchedBrowser;
     }
   }
@@ -1984,7 +1985,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
     if (preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
       appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SWITCH_TO_SHARED_CHROME);
       await closeActiveBrowser();
-    } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless !== requestedHeadless) {
+    } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless === true && !requestedHeadless) {
       appLog(ImageGenMessages.CHROME_MODE_CHANGED, activeBrowserHeadless, requestedHeadless);
       await closeActiveBrowser();
     } else {
@@ -4311,6 +4312,7 @@ const tryDownloadViaButton = async (page: Page, container: Locator, requireVideo
                 appLog(GEMINI_MEDIA_ERRORS.VIDEO_REQUEST_RETURNED_IMAGE);
                 continue;
               }
+              if (!requireVideo && !getDownloadedImageMimeType(buffer)) continue;
               appLog(GEMINI_MEDIA_EXTRACTION_CONFIG.BUTTON_DOWNLOAD_LOG);
               return buffer.toString(REFACTOR_CONSTANTS.ENCODING_BASE64);
             }
@@ -4438,12 +4440,14 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
                   const response = await fetch(sourceUrl);
                   if (response.ok) {
                     const blob = await response.blob();
-                    const converted = await new Promise<string>((resolve, reject) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve((reader.result as string).split(SOURCE_TEXT_SYMBOL_4)[1]);
-                      reader.onerror = reject;
-                      reader.readAsDataURL(blob);
-                    });
+                    const converted = blob.type.startsWith("image/")
+                      ? await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => resolve((reader.result as string).split(SOURCE_TEXT_SYMBOL_4)[1]);
+                          reader.onerror = reject;
+                          reader.readAsDataURL(blob);
+                        })
+                      : null;
                     if (converted) return converted;
                   }
                 } catch {}
@@ -4469,7 +4473,7 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
           { payload: { errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX, emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE, dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR, dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX }, texts: { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG } },
         )
         .catch(() => null);
-      if (base64Data && !_.startsWith(base64Data, GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX) && _.gt(base64Data.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH)) {
+      if (base64Data && !_.startsWith(base64Data, GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX) && _.gt(base64Data.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH) && getDownloadedImageMimeType(Buffer.from(base64Data, REFACTOR_CONSTANTS.ENCODING_BASE64))) {
         await captureGeminiDomState(page, GEMINI_MEDIA_EXTRACTION_CONFIG.STATES.IMAGE_SUCCESS);
         return base64Data;
       }
@@ -4573,7 +4577,9 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
             if (!src) return null;
             try {
               const resp = await fetch(src);
+              if (!resp.ok) return null;
               const blob = await resp.blob();
+              if (!blob.type.startsWith("image/")) return null;
               return new Promise<string>((resolve) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
@@ -4589,7 +4595,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
           { payload: GEMINI_MEDIA_EXTRACTION_CONFIG.EXCLUDED_IMAGE_SELECTOR, texts: { SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG, SOURCE_TEXT_SYMBOL_4, SOURCE_BROWSER_TEXT_SRC }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } },
         )
         .catch(() => null);
-  if (secondaryBase64) {
+  if (secondaryBase64 && getDownloadedImageMimeType(Buffer.from(secondaryBase64, REFACTOR_CONSTANTS.ENCODING_BASE64))) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
     return secondaryBase64;
   }

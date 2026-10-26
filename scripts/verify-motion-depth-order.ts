@@ -17,6 +17,18 @@ try {
       const kit = { sets: { [d.SET]: { svg: d.SET_SVG, floorY: 1000 } }, props: { [d.RED]: { svg: d.RED_SVG, base: [256, 512] }, [d.GREEN]: { svg: d.GREEN_SVG, base: [256, 512] } }, characters: {} };
       await me.PUPPET_PRELOAD({ kit });
       const out = [];
+      for (const levels of d.CAMERA_LEVELS) {
+        const actors = levels.map((y: number, i: number) => ({ A: { pose: d.POSE }, x: 700 + i * 500, y, k: 1, L: { total: 360, headH: 150, headW: 100 } }));
+        const box = me.frameBox({ VW: 1920, VH: 1080, style: { body: { head: 0.42 } } }, { shot: d.CAMERA_SHOT }, null, actors);
+        if (box.cy - box.h / 2 > Math.min(...levels) - 360 || box.cy + box.h / 2 < Math.max(...levels)) throw new Error(JSON.stringify({ levels, box }));
+      }
+      for (const secondary of [false, true]) {
+        const prop = { prop: d.RED, propX: 0.5, propY: 1040, propH: 120 };
+        const actors = [{ A: { pose: d.POSE }, x: 900, y: 700, k: 1, L: { total: 240, headH: 100, headW: 60 } }];
+        const frame = { shot: d.CAMERA_SHOT, ...(secondary ? { items: [prop] } : prop) };
+        const box = me.frameBox({ VW: 1920, VH: 1080, style: { body: { head: 0.42 } } }, frame, null, actors);
+        if (box.cy + box.h / 2 < prop.propY || box.cy - box.h / 2 > actors[0].y - actors[0].L.total) throw new Error(JSON.stringify({ secondary, box }));
+      }
       const floorKit = { sets: { [d.SET]: { svg: d.FLOOR_SET_SVG, floorY: 1000 } }, characters: {}, props: {} };
       await me.PUPPET_PRELOAD({ kit: floorKit });
       const floorFrame = { set: d.SET, shot: d.SHOT, camera: { move: d.MOVE }, actors: [] };

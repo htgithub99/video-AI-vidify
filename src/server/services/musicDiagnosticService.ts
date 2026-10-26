@@ -58,6 +58,7 @@ import { ANSI_ESCAPE_SEQUENCE_REGEX } from "../../constants/regexes.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
 const logPath = path.join(getLogsDirectory(), SOURCE_TEXT_MUSIC_WORKFLOW_JSONL);
 const safeKeys = new Set([
+  "promptRevision",
   SOURCE_TEXT_RUNID,
   SOURCE_TEXT_STAGE,
   SOURCE_TEXT_PROVIDER,

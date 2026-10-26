@@ -12,6 +12,7 @@ const imports = new Map<string, Map<string, string>>();
 for (const match of fs.readFileSync(V.CONTROLLER, VT.UTF8).matchAll(V.IMPORTS)) {
   const names = imports.get(match[2]) || new Map<string, string>();
   for (const specifier of match[1].split(V.COMMA)) {
+    if (V.TYPE_IMPORT.test(specifier.trim())) continue;
     const [name, alias = name] = specifier.trim().split(V.ALIAS);
     names.set(name, alias);
   }
@@ -30,7 +31,11 @@ const fixture = {
         task = args[2]({ signal: new AbortController().signal, log() {}, progress() {}, partial() {} });
         return { id: V.JOB };
       case VT.BUILDSCENESPUPPET:
-        return Promise.resolve(structuredClone(script));
+        assert.equal(
+          calls.some((call) => call.name === VT.DIRECTMOTIONVOICE),
+          false,
+        );
+        return args[2].prepareAudio(structuredClone(script)).then(() => structuredClone(script));
       case VT.LISTMOTIONVOICES:
         return Promise.resolve([]);
       case VT.DIRECTMOTIONVOICE:
@@ -74,7 +79,7 @@ try {
   fs.writeFileSync(output, bundled.outputFiles[0].text);
   const controller = await import(pathToFileURL(output).href);
   const aiExecution = { provider: P.GeminiChat, model: encodeGeminiChatModel(M.GeminiFlash, VT.HIGH), mode: E.RoomOnly, chromeHeadless: false };
-  const expected = { ...aiExecution, role: MOTION_AI_ROLE.DRAW };
+  let expected = { ...aiExecution, role: MOTION_AI_ROLE.DRAW };
   const mainAiExecution = { provider: P.DeepSeekChat, model: M.DeepSeekStandard, mode: E.RoomOnly, chromeHeadless: true };
   const invoke = async (handler: any, extra = {}) => {
     calls.length = 0;
@@ -115,6 +120,13 @@ try {
   await invoke(controller.seedPuppetKitItems, { styleId: V.STYLE });
   expectExec(VT.SEEDPUPPETKIT, 2);
   await invoke(controller.voiceMotionStory);
+  expectExec(VT.BUILDMOTIONVOICETRACK, 2);
+  expected = { ...expected, strictProvider: true } as typeof expected;
+  await invoke(controller.scenesMotionStory, { aiExecution: { ...aiExecution, strictProvider: true } });
+  expectExec(VT.BUILDSCENESPUPPET, 2);
+  expectExec(VT.DIRECTMOTIONVOICE, 3);
+  expectExec(VT.BUILDMOTIONVOICETRACK, 2);
+  await invoke(controller.voiceMotionStory, { aiExecution: { ...aiExecution, strictProvider: true } });
   expectExec(VT.BUILDMOTIONVOICETRACK, 2);
   process.stdout.write(V.PASSED);
 } finally {

@@ -1,0 +1,95 @@
+{
+  "title": "Người Đứng Ngoài Sân",
+  "chapters": [
+    {
+      "id": "c1",
+      "title": "Mâm cúng qua loa",
+      "summary": "Chị Hai bỏ đi làm ăn xa, tôi cúng cô hồn sơ sài; đứa cháu làm đổ muối gạo vào trong nhà, khói nhang bò xuống đất.",
+      "hook": "Mâm cúng cô hồn chiều đó chỉ có ba chén nước và một nắm muối gạo, mà khói nhang lại bò xuống đất như có ai kéo.",
+      "keyPoints": [
+        "Mẹ tôi mất, chị Hai lo cúng cô hồn mỗi mùng 2, 16 rồi bỏ đi làm ăn xa, để lại căn nhà cho tôi trông.",
+        "Tôi cúng cô hồn qua loa bằng ba chén nước, một nắm gạo muối, đốt nhang cho xong rồi vào nhà.",
+        "Đứa cháu nhỏ bước qua mâm cúng làm đổ muối gạo vương vào tận bậc cửa trong nhà.",
+        "Tôi thấy khói nhang cúng bò xuống đất, khác hẳn nhang bàn thờ, nhưng gạt đi vì nghĩ mình làm chưa đúng."
+      ],
+      "handoff": "Đêm đó, tiếng gõ cửa phòng vang lên dồn dập, và ngoài sân có bóng người giống chị Hai."
+    },
+    {
+      "id": "c2",
+      "title": "Người đứng ngoài sân",
+      "summary": "Tôi mở cửa đón người giống chị Hai, nhưng nhận ra người ngồi trong nhà mới là thứ lạ; cả nhà đã bị đổi hồn.",
+      "hook": "Tôi mở cửa, thấy chị Hai đứng ngoài sân gọi tôi, mà trong nhà đã có một chị Hai đang ngồi.",
+      "keyPoints": [
+        "Đêm đó tôi nghe tiếng gõ cửa phòng dồn dập, thấy bóng người ngoài sân giống chị Hai nên ra mở cửa.",
+        "Người tôi đón vào nhà ngồi xuống, nhưng mặt lạnh ngắt, không còn giống chị Hai ban ngày.",
+        "Chị Hai thật đứng ngoài sân gọi tôi; tôi quay vào thì thấy người trong nhà đã đổi thành thứ khác.",
+        "Sáng hôm sau ba người trong nhà thành người khác hẳn, còn ba linh hồn thật lẫn trong đám cô hồn ngoài ngõ."
+      ],
+      "handoff": "Từ đó, mỗi mùng 2 và 16, tôi vẫn cúng cô hồn, nhưng không dám nhìn kỹ đám người đứng ngoài sân."
+    }
+  ],
+  "cast": [
+    { "key": "toi", "name": "Tôi", "role": "Người kể chuyện, em của chị Hai, trông coi căn nhà", "appearanceOf": null, "gender": "male", "age": "adult", "look": "Vietnamese man in his thirties, plain brown shirt, short hair, tired eyes" },
+    { "key": "chi_hai", "name": "Chị Hai", "role": "Người lo cúng cô hồn trong nhà, bỏ đi làm ăn xa", "appearanceOf": null, "gender": "female", "age": "adult", "look": "Vietnamese woman in her forties, faded floral blouse, hair tied back, calm face" },
+    { "key": "dua_chau", "name": "Đứa cháu", "role": "Cháu nhỏ trong nhà, làm đổ muối gạo", "appearanceOf": null, "gender": "male", "age": "child", "look": "Vietnamese boy about seven, yellow shirt and blue shorts, barefoot" },
+    { "key": "co_hon_giong_chi_hai", "name": "Người giống chị Hai", "role": "Cô hồn mang hình dáng chị Hai, vào nhà đêm đó", "appearanceOf": "chi_hai", "gender": "female", "age": "adult", "look": "Vietnamese woman in her forties, faded floral blouse, hair tied back, face pale and cold" }
+  ],
+  "places": [
+    { "key": "nha_toi", "name": "Nhà tôi", "description": "Small old Vietnamese house with a front yard, a low altar table outside, wooden furniture and a bedroom at the back", "interior": false, "time": "dusk" },
+    { "key": "phong_ngu", "name": "Phòng ngủ", "description": "Dark bedroom with an old wooden bed, folded blanket, a wooden door with a latch, moonlight through the window", "interior": true, "time": "interior_dark" },
+    { "key": "san_truoc", "name": "Sân trước", "description": "Brick courtyard with a low altar table, incense bowl, scattered rice grains and salt at the doorstep", "interior": false, "time": "night" }
+  ],
+  "illustrationNeeds": [
+    {
+      "id": "n1",
+      "chapterId": "c1",
+      "place": "nha_toi",
+      "evidence": "Tôi cúng cô hồn qua loa bằng ba chén nước, một nắm gạo muối, đốt nhang cho xong rồi vào nhà.",
+      "states": [{ "char": "toi", "action": "stand", "posture": "idle", "essential": false, "placement": { "relation": "beside", "anchor": "altar table", "evidence": "Tôi cúng cô hồn qua loa bằng ba chén nước, một nắm gạo muối" } }],
+      "objects": [
+        { "key": "chen_nuoc", "word": "ba chén nước", "catalogKey": "water_glass", "type": "other", "size": 1, "mount": "table", "owner": "toi", "support": "altar table", "note": "", "requirements": [], "essential": true, "placement": { "anchor": "altar table", "evidence": "Tôi cúng cô hồn qua loa bằng ba chén nước" } },
+        { "key": "muoi_gao", "word": "một nắm gạo muối", "catalogKey": "ritual_rice_salt_plate", "type": "other", "size": 1, "mount": "table", "owner": "toi", "support": "altar table", "note": "", "requirements": [], "essential": true, "placement": { "anchor": "altar table", "evidence": "một nắm gạo muối" } },
+        { "key": "nhang", "word": "nhang", "catalogKey": "incense_sticks", "type": "other", "size": 1, "mount": "table", "owner": "toi", "support": "altar table", "note": "", "requirements": [], "essential": true, "placement": { "anchor": "altar table", "evidence": "đốt nhang cho xong" } }
+      ],
+      "features": []
+    },
+    {
+      "id": "n2",
+      "chapterId": "c1",
+      "place": "nha_toi",
+      "evidence": "Đứa cháu nhỏ bước qua mâm cúng làm đổ muối gạo vương vào tận bậc cửa trong nhà.",
+      "states": [{ "char": "dua_chau", "action": "stand", "posture": "idle", "essential": false, "placement": { "relation": "at", "anchor": "doorstep", "evidence": "vương vào tận bậc cửa trong nhà" } }],
+      "objects": [{ "key": "muoi_gao_do", "word": "muối gạo", "catalogKey": "ritual_rice_salt_plate", "type": "other", "size": 1, "mount": "floor", "owner": "dua_chau", "support": null, "note": "", "requirements": [], "essential": true, "placement": { "anchor": "doorstep", "evidence": "muối gạo vương vào tận bậc cửa trong nhà" } }],
+      "features": []
+    },
+    {
+      "id": "n3",
+      "chapterId": "c2",
+      "place": "phong_ngu",
+      "evidence": "Đêm đó tôi nghe tiếng gõ cửa phòng dồn dập, thấy bóng người ngoài sân giống chị Hai nên ra mở cửa.",
+      "states": [{ "char": "toi", "action": "stand", "posture": "idle", "support": null, "essential": false, "placement": { "relation": "beside", "anchor": "door", "evidence": "ra mở cửa" } }],
+      "objects": [{ "key": "canh_cua", "word": "cửa", "catalogKey": "wooden_door_latch", "type": "other", "size": 1, "mount": "floor", "owner": null, "support": null, "note": "", "requirements": [], "essential": true, "placement": { "anchor": "door", "evidence": "ra mở cửa" } }],
+      "features": []
+    },
+    {
+      "id": "n4",
+      "chapterId": "c2",
+      "place": "san_truoc",
+      "evidence": "Chị Hai thật đứng ngoài sân gọi tôi; tôi quay vào thì thấy người trong nhà đã đổi thành thứ khác.",
+      "states": [
+        { "char": "chi_hai", "action": "stand", "posture": "idle", "support": null, "essential": false, "placement": { "relation": "at", "anchor": "courtyard", "evidence": "Chị Hai thật đứng ngoài sân gọi tôi" } },
+        { "char": "co_hon_giong_chi_hai", "action": "stand", "posture": "idle", "support": null, "essential": false, "placement": { "relation": "beside", "anchor": "door", "evidence": "người trong nhà đã đổi thành thứ khác" } }
+      ],
+      "objects": [],
+      "features": []
+    }
+  ],
+  "repairStates": {
+    "0": { "rejected": 2, "errors": ["illustrationNeeds[0].states: must contain unique existing cast keys and supported action/posture values"], "routes": { "[\"room-only\",\"deepseek-chat\",\"deepseek-standard\"]": 2 } },
+    "1": {
+      "rejected": 10,
+      "errors": ["illustrationNeeds[1].objects[0].support: must be a concrete fixture noun such as bed, chair or table, never the story place key; omit if unsupported"],
+      "routes": { "[\"room-only\",\"gemini-chat\",\"gemini-flash::low\"]": 2, "[\"room-only\",\"deepseek-chat\",\"deepseek-standard\"]": 2, "[\"room-only\",\"chatgpt-ui\",\"chatgpt-auto\"]": 2, "[\"room-only\",\"grok-chat\",\"\"]": 2, "[\"room-only\",\"claude-chat\",\"claude-sonnet-5-5::medium\"]": 2 }
+    }
+  }
+}

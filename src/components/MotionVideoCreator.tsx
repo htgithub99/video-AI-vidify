@@ -1,3 +1,4 @@
+import { MOTION_PRODUCTION } from "../constants/motionProduction.js";
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea, StudioInput } from "./ui/Studio.js";
 import { MotionToggle } from "./motion-video/MotionToggle.js";
 import { MotionPartsCard } from "./motion-video/MotionPartsCard.js";
@@ -6,13 +7,17 @@ import { MOTION_STORY_LENGTH_SECONDS } from "../constants/motionVideo.js";
 import { motionPartMinutes } from "../lib/motionParts.js";
 import { MotionReferenceControls } from "./motion-video/MotionReferenceControls.js";
 import { MotionVoicePanel } from "./motion-video/MotionVoicePanel.js";
+import { MotionVoiceQualityNotice } from "./motion-video/MotionVoiceQualityNotice.js";
 import { MotionKitLibraryPanel } from "./motion-video/MotionKitLibraryPanel.js";
 import { MotionPuppetPanel } from "./motion-video/MotionPuppetPanel.js";
+import { MotionAssetImage } from "./motion-video/MotionAssetImage.js";
+import { MOTION_ASSET_PREVIEW as ASSET_PREVIEW } from "../constants/motionAssetPreview.js";
+import type { PuppetAssetPreview } from "../types/motionPuppet.js";
 import { PUPPET_STYLE_DEFAULT, PUPPET_STYLE_DESIGN_SOURCE, PUPPET_STYLE_NONE, PUPPET_STYLE_PRESETS, PUPPET_TEXTS, PUPPET_KIT_API, PUPPET_TYPES } from "../constants/motionPuppet.js";
-import { puppetBeatLines } from "../lib/motionPuppet.js";
+import { puppetBeatVisualLines } from "../lib/motionStoryboard.js";
+import { motionDisplayedJob } from "../lib/motionDisplayedJob.js";
 import { MOTION_REFERENCE_TEXTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
-import { MOTION_AI_RECOVERY as AIR } from "../constants/motionAiRecovery.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } from "../constants/motionGenre.js";
 import { MOTION_MUSIC } from "../constants/motionMusic.js";
 import _ from "lodash";
@@ -70,7 +75,6 @@ import {
   MOTION_TEXT_PHUT,
   MOTION_TEXT_PLACES,
   MOTION_TEXT_RENDER,
-  MOTION_TEXT_RENDER_VIDEO_MP4,
   MOTION_TEXT_S,
   MOTION_TEXT_SCENE,
   MOTION_TEXT_SCENES,
@@ -108,11 +112,12 @@ import { MOTION_STORY_CONFIG } from "../constants/motionVideo.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../lib/lang.js";
 import { cn } from "../lib/utils";
-import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
+import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../types/motionVideo.js";
 import type { StorageJunkReport } from "../types/storage.js";
 import { MotionAiSettings } from "./motion-video/MotionAiSettings.js";
+import { MotionReviewToggle } from "./motion-video/MotionReviewToggle.js";
 import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl, motionRequest } from "./motion-video/motionApi";
-import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
+import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionAiStatusLine, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./motion-video/MotionControls.js";
 import { MotionSeoCard } from "./motion-video/MotionSeoCard.js";
 import { MotionSpecPlayer } from "./motion-video/MotionSpecPlayer";
 import { MotionVideoDnaCard } from "./motion-video/MotionVideoDnaCard.js";
@@ -183,11 +188,7 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
   );
 };
 export default MotionVideoCreator;
-interface MotionPreviewModalData {
-  type: "location" | "beat";
-  id: string;
-  title: string;
-  imageUrl: string;
+interface MotionPreviewModalData extends PuppetAssetPreview {
   score?: number;
   issues?: string[];
   note?: string;
@@ -210,6 +211,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   }, [state.stylePreset, state.styleReferences?.length]);
   const genreText = MOTION_VIDEO_GENRE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const [previewModal, setPreviewModal] = useState<MotionPreviewModalData | null>(null);
+  const [previewReady, setPreviewReady] = useState(false);
+  const previewText = ASSET_PREVIEW.LABEL[currentLang === "en" ? "en" : "vi"];
+  useEffect(() => setPreviewReady(false), [previewModal?.imageUrl]);
   const [analysisTab, setAnalysisTab] = useState<"cast" | "places" | "chapters" | "facts">(MOTION_TEXT_CAST);
   const [sceneNote, setSceneNote] = useState<string>(MR.MOTION_TEXT_EMPTY);
   const busyKind = studio.storyBusy ? studio.storyJob?.kind : null;
@@ -227,7 +231,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   );
   const gen = state.script?.gen;
   const sceneBeats = useMemo(() => _.filter(state.script?.beats || [], (b) => b.visual === MOTION_TEXT_SCENE), [state.script]);
-  const builtCount = gen?.puppet ? _.size(_.filter(sceneBeats, (b) => _.some(puppetBeatLines(b), (l) => !!gen.puppet?.frames[l.key]))) : 0;
+  const builtCount = gen?.puppet ? _.size(_.filter(sceneBeats, (b) => _.some(puppetBeatVisualLines(b, gen.puppet), (l) => !!gen.puppet?.frames[l.key]))) : 0;
   const estimateTotal = studio.compiled?.spec.duration || 0;
   const previewSpec = useMemo(() => {
     const spec = studio.compiled?.spec;
@@ -240,23 +244,21 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
   const rj = studio.renderJob;
-  const displayedProgress = studio.storyBusy ? job?.progress : rj ? rj.progress : job?.progress;
+  const displayedLog = studio.logHistory.at(-1);
+  const displayedJob = motionDisplayedJob(job, rj, displayedLog?.id);
+  const displayedProgress = displayedJob?.progress;
   const storyStage = job?.stage ? MOTION_STORY_CONFIG.STAGE_LABELS[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][job.stage] || job.stage : text.WAITING_AI;
-  const stepLabel = (kind: string): string =>
-    ({ [MotionStoryJobKind.ANALYZE]: text.STEP_ANALYSIS, [MotionStoryJobKind.SCRIPT]: text.STEP_SCRIPT, [MotionStoryJobKind.SCENES]: text.STEP_SCENES, [MotionStoryJobKind.VOICE]: text.STEP_VOICE, [MotionStoryJobKind.SEO]: text.STEP_SEO, [MotionStoryJobKind.THUMBNAIL]: text.STEP_THUMBNAIL, [MotionStoryJobKind.LIBRARY]: text.STEP_LIBRARY, [MOTION_STORY_CONFIG.RENDER_LOG_KIND]: text.STEP_RENDER })[
-      kind
-    ] || kind;
   const currentStep = useMemo(() => {
-    if (rj || rj?.result) return 4;
+    if (rj && displayedJob === rj) return 4;
     if (state.script?.beats?.length) return 3;
     if (state.analysis) return 2;
     return 1;
-  }, [rj, state.voice, state.uploadedAudio, state.script, state.analysis]);
+  }, [rj, displayedJob, state.script, state.analysis]);
   const stepsList = [
     { num: 1, title: text.STEP_SOURCE || MR.MOTION_TEXT_NGUON_KICH_BAN, done: !!state.source },
     { num: 2, title: text.STEP_ANALYSIS || MR.MOTION_TEXT_PHAN_TICH, done: !!state.analysis },
     { num: 3, title: text.STEP_SCRIPT || MR.MOTION_TEXT_KICH_BAN, done: !!state.script?.beats?.length },
-    { num: 4, title: text.STEP_RENDER || MR.MOTION_TEXT_XUAT_VIDEO, done: !!rj?.result },
+    { num: 4, title: text.STEP_RENDER || MR.MOTION_TEXT_XUAT_VIDEO, done: displayedJob === rj && !!rj?.result },
   ];
   return (
     <div className={MR.MOTION_TEXT_SPACE_Y_6_W_FULL}>
@@ -409,6 +411,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
                   <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
                 </div>
+                <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />
                 <MotionSelectField label={genreText.LABEL} value={state.videoGenre || MOTION_VIDEO_GENRES.AUTO} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
                   {_.map(MOTION_VIDEO_GENRES, (genre) => (
                     <option key={genre} value={genre}>
@@ -441,19 +444,25 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </MotionSelectField>
               </div>
               <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />
-              <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_2_GAP_2_FLEX_WRAP}>
-                <div />
-                {busyKind === MOTION_TEXT_ANALYZE ? (
+              <div className={MOTION_STYLES.FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP}>
+                {busyKind === MOTION_TEXT_ANALYZE || busyKind === MotionStoryJobKind.PRODUCTION ? (
                   <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
                     <ActionBtn busy={true} icon={Sparkles} onClick={() => {}} className={MOTION_STYLES.PX_5_PY_2_5}>
-                      {text.ANALYZING}
+                      {busyKind === MotionStoryJobKind.PRODUCTION ? job?.stage || MOTION_PRODUCTION.RUN_LABEL : text.ANALYZING}
                     </ActionBtn>
                     {stopAi}
                   </div>
                 ) : (
-                  <ActionBtn icon={Sparkles} onClick={() => void studio.analyze()} disabled={!state.source || studio.storyBusy} className={MOTION_STYLES.PX_5_PY_2_5}>
-                    {state.analysis ? text.REANALYZE_BTN : text.ANALYZE_BTN}
-                  </ActionBtn>
+                  <>
+                    {state.productionId && job?.kind === MotionStoryJobKind.PRODUCTION && (job.status === MotionJobStatus.ERROR || job.status === MotionJobStatus.CANCELLED) && (
+                      <ActionBtn icon={Sparkles} onClick={() => void studio.resumeProduction()} disabled={studio.storyBusy}>
+                        {MOTION_PRODUCTION.UI_RESUME}
+                      </ActionBtn>
+                    )}
+                    <ActionBtn icon={Sparkles} onClick={() => void studio.analyze()} disabled={!state.source || studio.storyBusy} className={MOTION_STYLES.PX_5_PY_2_5}>
+                      {state.autoContinue !== false ? text.PRODUCE_BTN : state.analysis ? text.REANALYZE_BTN : text.ANALYZE_BTN}
+                    </ActionBtn>
+                  </>
                 )}
               </div>
             </div>
@@ -493,7 +502,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 }
               />
               <div className={MOTION_STYLES.SPACE_Y_3}>
-                <StudioInput value={state.analysis.title} onChange={(e) => patch({ analysis: { ...state.analysis!, title: e.target.value } })} placeholder={MOTION_TEXT_TIEU_DE_CAU_CHUYEN} className={cn(inputCls, MOTION_STYLES.TEXT_SM_FONT_BOLD)} />
+                <StudioInput disabled={studio.storyBusy} value={state.analysis.title} onChange={(e) => patch({ analysis: { ...state.analysis!, title: e.target.value } })} placeholder={MOTION_TEXT_TIEU_DE_CAU_CHUYEN} className={cn(inputCls, MOTION_STYLES.TEXT_SM_FONT_BOLD)} />
                 {state.analysis.genre && (
                   <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
                     <span className={MOTION_STYLES.TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_3}>{text.GENRE}</span>
@@ -701,7 +710,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                                   {b.time ? MOTION_TEMPLATE_SYMBOL_6(String(b.time)) : MR.MOTION_TEXT_EMPTY}
                                 </span>
                               )}
-                              {b.visual === MOTION_TEXT_SCENE && _.some(puppetBeatLines(b), (l) => !!gen?.puppet?.frames[l.key]) ? <Check className={MOTION_STYLES.W_3_5_H_3_5_TEXT_EMERALD_400} /> : null}
+                              {b.visual === MOTION_TEXT_SCENE && _.some(puppetBeatVisualLines(b, gen?.puppet), (l) => !!gen?.puppet?.frames[l.key]) ? <Check className={MOTION_STYLES.W_3_5_H_3_5_TEXT_EMERALD_400} /> : null}
                             </div>
                             <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => removeBeat(b.id)} className={MOTION_STYLES.P_1_5_ROUNDED_LG_TEXT_SLATE_400_HOVER_TEXT_ROSE_500_HOVER_BG_ROSE_500_10_TRANSITION_ALL_CURSOR_POINTER} title={text.DELETE || MOTION_TEXT_XOA} disabled={studio.storyBusy}>
                               <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />
@@ -724,6 +733,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           <StudioCard className={cardCls}>
             <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
             {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].preparing}</p> : null}
+            {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {state.autoExport ? (
               rj?.result ? (
@@ -792,7 +802,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     onRedoBeats={(beats) => void studio.buildScenes({ beats, note: sceneNote || undefined })}
                     onCompile={async () => (await studio.compile())?.spec}
                     onRedoPlace={(place) => void studio.buildScenes({ locations: [place], note: sceneNote || undefined })}
-                    onOpen={(imageUrl, title, narration) => setPreviewModal({ type: MR.MOTION_TEXT_BEAT, id: title, title, imageUrl, narration })}
+                    projectId={state.productionId || state.activeStoryJobId || undefined}
+                    onOpen={setPreviewModal}
                   />
                 )}
               </div>
@@ -871,19 +882,14 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           {(job || rj || studio.logHistory.length > 0) && (
             <StudioCard className={cardCls}>
               <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_2}>
-                <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{studio.renderBusy || (rj && !studio.storyBusy) ? MOTION_TEXT_RENDER_VIDEO_MP4 : job ? stepLabel(job.kind) : text.STEP_LOG}</span>
-                <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{MOTION_TEMPLATE_SYMBOL_3(String(Math.round((displayedProgress || 0) * 100)))}</span>
+                <span className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO}>{text.STEP_LOG}</span>
+                {displayedJob && <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_EMERALD_600_DARK_TEXT_EMERALD_400_FONT_BOLD}>{MOTION_TEMPLATE_SYMBOL_3(String(Math.round((displayedProgress || 0) * 100)))}</span>}
               </div>
               {studio.storyBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={storyStage} suffix={text.ELAPSED} />}
-              {studio.storyBusy &&
-                _.map(job?.activeAi || {}, (ai) => (
-                  <p key={ai.workerId} className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
-                    {AIR.DISPLAY(ai.provider, ai.model, AIR.PHASE_LABEL[ai.phase as keyof typeof AIR.PHASE_LABEL])}
-                  </p>
-                ))}
-              <MotionProgressBar progress={displayedProgress} minimum={8} className={MOTION_STYLES.H_2} animated={false} />
-              <MotionFlowLog entries={studio.logHistory} label={stepLabel} className={MOTION_STYLES.FLOW_LOG_BOX} />
-              {rj?.result && (
+              {studio.storyBusy && <MotionAiStatusLine activities={job?.activeAi} />}
+              {displayedJob && <MotionProgressBar progress={displayedProgress} minimum={8} className={MOTION_STYLES.H_2} animated={false} />}
+              <MotionFlowLog entries={studio.logHistory} lang={currentLang} job={job} renderJob={rj} className={MOTION_STYLES.FLOW_LOG_BOX} />
+              {displayedJob === rj && rj?.result && (
                 <div className={MR.MOTION_TEXT_PT_2_BORDER_T_BORDER_SLATE_800}>
                   <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_LG_GROUP}>
                     <video src={rj.result.videoUrl} controls className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
@@ -908,7 +914,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           title={
             <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
               {previewModal.type === MR.MOTION_TEXT_LOCATION ? <Layers className={MR.MOTION_TEXT_W_4_H_4_TEXT_PURPLE_400_SHRINK_0} /> : <Clapperboard className={MR.MOTION_TEXT_W_4_H_4_TEXT_PURPLE_400_SHRINK_0} />}
-              <span className={MR.MOTION_TEXT_TRUNCATE}>{previewModal.type === MR.MOTION_TEXT_LOCATION ? MR.MOTION_TEMPLATE_SYMBOL_17(text.LOCATION_LABEL, previewModal.title) : MR.MOTION_TEMPLATE_SYMBOL_17(text.BEAT_LABEL, previewModal.title)}</span>
+              <span className={MR.MOTION_TEXT_TRUNCATE}>{MR.MOTION_TEMPLATE_SYMBOL_17(previewModal.type === "location" ? text.LOCATION_LABEL : previewModal.type === "beat" ? text.BEAT_LABEL : previewText[previewModal.type], previewModal.title)}</span>
               {previewModal.score != null && (
                 <span className={cn(MOTION_STYLES.LOCATION_SCORE_BASE, previewModal.score >= 8 ? MOTION_STYLES.SCORE_EMERALD : previewModal.score >= 6 ? MOTION_STYLES.SCORE_PURPLE : MOTION_STYLES.SCORE_AMBER)}>
                   {previewModal.score}
@@ -919,10 +925,16 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           }>
           <div className={MR.MOTION_TEXT_SPACE_Y_4}>
             <div className={MOTION_STYLES.LIGHTBOX_IMAGE_CONTAINER}>
-              <img src={previewModal.imageUrl} alt={previewModal.title} className={MOTION_STYLES.LIGHTBOX_IMAGE} />
+              <MotionAssetImage key={previewModal.imageUrl} src={previewModal.imageUrl} title={previewModal.title} className={MOTION_STYLES.LIGHTBOX_IMAGE} lang={currentLang} onStatus={setPreviewReady} />
             </div>
-            {(previewModal.narration || previewModal.action || (previewModal.issues && previewModal.issues.length > 0) || previewModal.note) && (
+            {(previewModal.description || previewModal.narration || previewModal.action || (previewModal.issues && previewModal.issues.length > 0) || previewModal.note) && (
               <div className={MOTION_STYLES.LIGHTBOX_INFO_CARD}>
+                {previewModal.description && (
+                  <div className={MR.MOTION_TEXT_TEXT_XS_SPACE_Y_0_5}>
+                    <span className={MR.MOTION_TEXT_TEXT_10PX_FONT_MONO_FONT_BOLD_UPPERCASE_TEXT_SLATE_400_TRACKING_W}>{previewText.description}</span>
+                    <p className={MR.MOTION_TEXT_TEXT_SLATE_200_LEADING_RELAXED_FONT_MEDIUM}>{previewModal.description}</p>
+                  </div>
+                )}
                 {previewModal.narration && (
                   <div className={MR.MOTION_TEXT_TEXT_XS_SPACE_Y_0_5}>
                     <span className={MR.MOTION_TEXT_TEXT_10PX_FONT_MONO_FONT_BOLD_UPPERCASE_TEXT_SLATE_400_TRACKING_W}>{text.NARRATION_LABEL}</span>
@@ -957,27 +969,29 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             )}
             <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_PT_3_BORDER_T_BORDER_SLAT}>
               <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2}>
-                <a href={previewModal.imageUrl} download={MR.MOTION_TEMPLATE_PNG_2(previewModal.title || MR.MOTION_TEXT_MOTION_PREVIEW)} className={MR.MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX}>
+                <a href={previewReady ? previewModal.imageUrl : undefined} aria-disabled={!previewReady} tabIndex={previewReady ? 0 : -1} download={(previewModal.title || MR.MOTION_TEXT_MOTION_PREVIEW) + (previewModal.extension || ASSET_PREVIEW.EXT.PNG)} className={MR.MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX}>
                   <Download className={MR.MOTION_TEXT_W_3_5_H_3_5} />
                   <span>{text.SAVE_AS}</span>
                 </a>
-                <Button
-                  variant={MOTION_TEXT_UNSTYLED}
-                  type={MR.MOTION_TEXT_BUTTON}
-                  onClick={() => {
-                    const m = previewModal;
-                    setPreviewModal(null);
-                    if (m.type === MR.MOTION_TEXT_LOCATION) {
-                      void studio.buildScenes({ locations: [m.id], note: sceneNote || undefined });
-                    } else {
-                      void studio.buildScenes({ beats: [m.id], note: sceneNote || undefined });
-                    }
-                  }}
-                  disabled={studio.storyBusy}
-                  className={MR.MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_2}>
-                  <RotateCcw className={MR.MOTION_TEXT_W_3_5_H_3_5} />
-                  <span>{text.REDO_THIS}</span>
-                </Button>
+                {(previewModal.type === "location" || (previewModal.type === "beat" && !!previewModal.beats?.length)) && (
+                  <Button
+                    variant={MOTION_TEXT_UNSTYLED}
+                    type={MR.MOTION_TEXT_BUTTON}
+                    onClick={() => {
+                      const m = previewModal;
+                      setPreviewModal(null);
+                      if (m.type === MR.MOTION_TEXT_LOCATION) {
+                        void studio.buildScenes({ locations: [m.id], note: sceneNote || undefined });
+                      } else {
+                        void studio.buildScenes({ beats: m.beats, note: sceneNote || undefined });
+                      }
+                    }}
+                    disabled={studio.storyBusy}
+                    className={MR.MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_2}>
+                    <RotateCcw className={MR.MOTION_TEXT_W_3_5_H_3_5} />
+                    <span>{text.REDO_THIS}</span>
+                  </Button>
+                )}
               </div>
               <Button variant={MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} onClick={() => setPreviewModal(null)} className={MR.MOTION_TEXT_H_9_MIN_H_36PX_PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_3}>
                 {text.RESULTS_CANCEL}

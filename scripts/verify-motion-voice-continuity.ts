@@ -1,4 +1,5 @@
 import { RUNTIME_VERIFICATION_TEXTS as RT, RUNTIME_VERIFICATION_FORMATS as RF } from "./runtimeVerificationTexts.ts";
+import { stringifyJson } from "../src/lib/jsonStringify.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,6 +9,7 @@ import { motionWavHeader, runMotionAudioProcess } from "../src/server/services/m
 import { getMotionAudioDirectory } from "../src/server/services/motionLibraryService.ts";
 import { motionWavData } from "../src/server/services/motionAudioUtils.ts";
 import { motionLoudnormFilter } from "../src/constants/motionLoudness.ts";
+import { MOTION_VOICE as C } from "../src/constants/motionVoice.ts";
 delete process.env.APP_DATA_DIR;
 const directory = path.resolve(RT.SCRATCH_MOTION_VOICE_CONTINUITY, randomUUID());
 process.env.VIDIFY_STORAGE_DIR = directory;
@@ -37,9 +39,9 @@ try {
   assert.equal(syntheses, 3);
   assert.equal(track.clips?.length, 3);
   const lengths = track.clips!.map((clip) => clip.end - clip.start);
-  assert.ok(Math.abs(lengths[0] - 2) < 0.03, RT.SHORT_SENTENCES_MUST_NOT_BE_FORCED_UP_TO_1_6X_SPEED);
-  assert.ok(Math.abs(lengths[1] - 2) < 0.03, RT.WORD_COUNT_MUST_NOT_CHANGE_THE_ENGINE_S_RECORDED_PACE);
-  assert.ok(Math.abs(lengths[2] - 2 / 1.05) < 0.04, RT.PRESERVE_EXPLICIT_DELIVERY_SPEED);
+  assert.ok(Math.abs(lengths[0] - 2 / C.TEMPO.NARRATION_SCALE) < 0.03, RT.SHORT_SENTENCES_MUST_NOT_BE_FORCED_UP_TO_1_6X_SPEED);
+  assert.ok(Math.abs(lengths[1] - 2 / C.TEMPO.NARRATION_SCALE) < 0.03, RT.WORD_COUNT_MUST_NOT_CHANGE_THE_ENGINE_S_RECORDED_PACE);
+  assert.ok(Math.abs(lengths[2] - 2 / (1.05 * C.TEMPO.NARRATION_SCALE)) < 0.04, RT.PRESERVE_EXPLICIT_DELIVERY_SPEED);
   const folder = getMotionAudioDirectory();
   const encoded = path.join(directory, RT.VOICE_EXPORT_M4A),
     decoded = path.join(directory, RT.VOICE_EXPORT_WAV);
@@ -62,7 +64,7 @@ try {
   const old = JSON.parse(fs.readFileSync(metadata, RT.UTF8));
   const signature = JSON.parse(old.signature);
   signature[0] = 3;
-  fs.writeFileSync(metadata, JSON.stringify({ ...old, signature: JSON.stringify(signature) }));
+  fs.writeFileSync(metadata, stringifyJson({ ...old, signature: stringifyJson(signature) }));
   assert.equal(readMotionVoiceTrack(track.audioId, script), undefined, RT.TRACKS_CREATED_WITH_THE_OLD_FORCED_TEMPO_PIPELINE_MUST_NOT_BE_REUSED);
   process.stdout.write(RT.VOICE_CONTINUITY_PASSED_NATURAL_PACE_EXPLICIT_SPEED_AUDIBLE_SAMPLES_AF);
 } finally {

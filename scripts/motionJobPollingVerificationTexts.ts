@@ -1,0 +1,15 @@
+export const MOTION_JOB_POLLING_VERIFICATION = {
+  JOB_ID: "voice-job-kept-running",
+  STATUS_URL: "/api/motion-video/story/status/voice-job-kept-running",
+  NETWORK_ERROR: "Temporary connection loss",
+  CALLBACK_ERROR: "Update callback failed",
+  ABORT: "abort",
+  ABORT_ERROR: "AbortError",
+  WAIT_MS: 2000,
+  TIMEOUT: "Polling did not reconnect or cancel",
+  BAD_JSON: "<html>Temporary gateway failure</html>",
+  REQUEST_TIMEOUT_MS: 15,
+  RETRY_INTERVAL_MS: 2,
+  MAX_RETRY_INTERVAL_MS: 4,
+  PASSED: "Motion polling passed: reconnect to the same job after offline/503/429/invalid JSON/hung requests, no AI resubmission, permanent HTTP errors, cancellation and callback error propagation.\n",
+} as const;

@@ -1,5 +1,6 @@
+from library_release import assert_legacy_library_target
 from seed_texts import SeedText as KST
-from seed_utils import SEED_STYLES, validate_asset_geometry
+from seed_utils import SEED_STYLES, validate_asset_geometry, resource_semantics
 import argparse
 import datetime
 import hashlib
@@ -27,6 +28,7 @@ def collect(stage):
             for field in (KST.NAME, KST.DESC):
                 if not data[field].isascii():
                     raise ValueError((file, field))
+            resource_semantics(data)
             validate_asset_geometry(data, file)
             spots = data.get(KST.SPOTS, [])
             if len({s[KST.KEY] for s in spots}) != len(spots):
@@ -55,6 +57,8 @@ def main():
     parser.add_argument(KST.REPORT, type=Path)
     parser.add_argument(KST.APPLY, action=KST.STORE_TRUE)
     args = parser.parse_args()
+    if args.apply:
+        assert_legacy_library_target(args.library)
     rows = collect(args.stage)
     args.report.mkdir(parents=True, exist_ok=True)
     backup = args.report / (KST.BACKUP + datetime.datetime.now(datetime.timezone.utc).strftime(KST.Y_M_DT_H_M_SZ))

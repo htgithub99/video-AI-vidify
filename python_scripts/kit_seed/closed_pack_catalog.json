@@ -1,0 +1,40 @@
+{
+  "pack":"closed_pack_v1",
+  "library":"storage/output/motion-video/kit-library",
+  "staging":"scratch/closed-pack-20261024/library",
+  "report":"scratch/closed-pack-20261024",
+  "scenes":[
+    {"key":"fixed_family_conversation","family":"conversation","name":"Village Living Room with Standing and Seated Conversation","interior":true},
+    {"key":"fixed_bedside_postures","family":"bedside","name":"Village Bedroom with Bed Edge Seats and Caregiver Chair","interior":true},
+    {"key":"fixed_parent_child","family":"parent_child","name":"Village Family Room with Parent and Child Hand Contacts","interior":true},
+    {"key":"fixed_carry_child","family":"carrying","name":"Village Family Room for Holding or Carrying a Child","interior":true},
+    {"key":"fixed_assisting_person","family":"assisting","name":"Village Room with Supporting Hand on Shoulder","interior":true},
+    {"key":"fixed_window_sides","family":"window","name":"Village Window with Separate Inside and Outside Positions","interior":true},
+    {"key":"fixed_dining_table","family":"dining","name":"Village Dining Room with Individual Seats and Bowl Surfaces","interior":true},
+    {"key":"fixed_workyard","family":"work","name":"Village Courtyard for Sweeping and Household Work","interior":false},
+    {"key":"fixed_chase_path","family":"chase","name":"Village Path with Pursuer and Fugitive Positions","interior":false},
+    {"key":"fixed_close_contact","family":"contact","name":"Village Room for Hand Contact and Close Shoulder Interactions","interior":true},
+    {"key":"fixed_ditch_bank","family":"ditch","name":"Village Drainage Ditch with Water Surface and Separate Dry Bank","interior":false},
+    {"key":"fixed_kitchen_surfaces","family":"kitchen","name":"Village Kitchen with Hearth and Separate Preparation Table","interior":true}
+  ],
+  "props":[
+    {"key":"broom","name":"Straw Broom","shape":"broom","size":1.1,"mount":"held","grip":[256,225]},
+    {"key":"rice_porridge_bowl","name":"Earthen Bowl of Rice Porridge","shape":"porridge","size":0.25,"mount":"table","grip":[256,365]},
+    {"key":"white_mourning_sash","name":"White Mourning Sash for the Neck","shape":"sash","size":0.5,"mount":"wear","attachment":"neck","grip":[256,145]},
+    {"key":"soaked_white_mourning_sash","name":"Soaked White Mourning Sash for the Neck","shape":"wet_sash","size":0.5,"mount":"wear","attachment":"neck","grip":[256,145]},
+    {"key":"rice_floating_on_water","name":"Rice Grains Floating on Water","shape":"rice","size":0.45,"mount":"table"},
+    {"key":"chopsticks","name":"Pair of Bamboo Chopsticks","shape":"chopsticks","size":0.3,"mount":"held","grip":[256,330]},
+    {"key":"wooden_door_latch","name":"Wooden Door Latch","shape":"latch","size":0.32,"mount":"held","grip":[256,360]},
+    {"key":"folded_cotton_blanket","name":"Folded Cotton Blanket","shape":"blanket","size":0.5,"mount":"table"},
+    {"key":"rice_sack","name":"Woven Rice Sack","shape":"sack","size":0.65,"mount":"floor","grip":[256,110]},
+    {"key":"bamboo_comb","name":"Bamboo Hair Comb","shape":"comb","size":0.18,"mount":"held","grip":[256,170]},
+    {"key":"wooden_tray","name":"Wooden Serving Tray","shape":"tray","size":0.4,"mount":"table","grip":[256,390]},
+    {"key":"earthen_water_bowl","name":"Earthen Bowl of Water","shape":"water_bowl","size":0.26,"mount":"table","grip":[256,365]},
+    {"key":"wooden_oar","name":"Wooden Boat Oar","shape":"oar","size":1.35,"mount":"held","grip":[256,230]},
+    {"key":"medicine_packet","name":"Folded Herbal Medicine Packet","shape":"packet","size":0.16,"mount":"table","grip":[256,300]},
+    {"key":"white_burial_shroud","name":"White Burial Shroud","shape":"blanket","size":0.9,"mount":"table"},
+    {"key":"water_puddle","name":"Water Puddle on the Ground","shape":"puddle","size":0.45,"mount":"floor"},
+    {"key":"muddy_footprints","name":"Muddy Footprints on the Ground","shape":"footprints","size":0.5,"mount":"floor"},
+    {"key":"bamboo_food_basket","name":"Woven Bamboo Food Basket","shape":"basket","size":0.4,"mount":"held","grip":[256,100]}
+  ]
+}

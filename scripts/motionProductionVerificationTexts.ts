@@ -1,0 +1,21 @@
+export const PRODUCTION_QA = {
+  ROOT: "scratch/motion-production-",
+  CHILD: "--child=",
+  WRITE: "write",
+  READ: "read",
+  CANCEL: "cancel",
+  ID_ENV: "MOTION_CHECKPOINT_TEST_ID",
+  MESSAGE: "Checkpoint test ready",
+  ATOMIC_PASSED: "Motion atomic writes passed: transient Windows sharing errors retried; permanent errors bounded, previous checkpoint and failed temporary payload preserved.\n",
+  CHAPTERS: [
+    { id: "a", title: "Đêm đầu" },
+    { id: "b", title: "Đêm sau" },
+  ],
+  BEAT: { id: "one", chapterId: "a", narration: "Nam đứng cạnh cửa, bà nằm trên giường.", visual: "scene" },
+  LOG: "Đã lưu chương đầu",
+  TITLE: "Kiểm phục hồi video dài",
+  PROMPT_LIMIT: "The message you submitted was too long, please edit it and resubmit.",
+  SOURCE_TEXT: "Nội dung nguồn cần được đọc đủ, giữ nguyên từng chữ. ",
+  DNA_REPAIR_PASSED: "Motion DNA repair passed: targeted retry includes validation errors, preserves accepted story and valid DNA fields, repairs nested evidence, validates merged results and avoids resending the full source/library.\n",
+  PASSED: "Motion production passed: incomplete scripts blocked, partial chapters/logs survived process exit, interrupted work paused, cancellation durable, terminal states retained.\n",
+} as const;

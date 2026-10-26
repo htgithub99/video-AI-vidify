@@ -1,4 +1,7 @@
+import { MOTION_STORY_CRAFT as CRAFT, MOTION_CREATIVE_STORY_SCHEMA } from "./motionStoryCraft.js";
+import { motionStoryLanguageGuide } from "./motionStoryLanguage.js";
 import _ from "lodash";
+import { MOTION_FOLK_STORY as F } from "./motionFolkStory.js";
 export const MOTION_VIDEO_GENRES = { AUTO: "auto", STORY: "story", HORROR: "horror", GHOST_TALE: "ghost_tale", HISTORY_MAP: "history_map", WHAT_IF: "what_if", EXPLAINER: "explainer", DOCUMENTARY: "documentary", KIDS: "kids" } as const;
 export type MotionVideoGenre = (typeof MOTION_VIDEO_GENRES)[keyof typeof MOTION_VIDEO_GENRES];
 export const MOTION_VIDEO_GENRE_TEXT = {
@@ -7,22 +10,12 @@ export const MOTION_VIDEO_GENRE_TEXT = {
     HINT: "Định hướng cách dựng: hình ảnh ưu tiên, nhịp, âm thanh. Tự động = AI tự suy ra từ nội dung.",
     OPTIONS: { auto: "Tự động", story: "Truyện kể", horror: "Truyện ma / kinh dị", ghost_tale: "Kỳ truyện ma dân gian", history_map: "Lịch sử / chiến tranh (bản đồ)", what_if: "Lịch sử giả định (What-if)", explainer: "Giải thích / khoa học", documentary: "Tin tức / tài liệu", kids: "Thiếu nhi" },
   },
-  en: {
-    LABEL: "Genre",
-    HINT: "Steers visuals, pacing and sound. Auto = AI infers it from the content.",
-    OPTIONS: { auto: "Auto", story: "Story", horror: "Ghost / horror", ghost_tale: "Folk ghost tale", history_map: "History / war (map)", what_if: "What-if history", explainer: "Explainer / science", documentary: "News / documentary", kids: "Kids" },
-  },
+  en: { LABEL: "Genre", HINT: "Steers visuals, pacing and sound. Auto = AI infers it from the content.", OPTIONS: { auto: "Auto", story: "Story", horror: "Ghost / horror", ghost_tale: "Folk ghost tale", history_map: "History / war (map)", what_if: "What-if history", explainer: "Explainer / science", documentary: "News / documentary", kids: "Kids" } },
 } as const;
 const DIRECTIVES: Record<Exclude<MotionVideoGenre, "auto">, string> = {
   story: "Narrated story. Scenes carry almost every beat; characters speak their own lines when the source quotes them; graphics only for a title, chapter cards or a rare key number. Pace follows the emotion of each moment.",
   horror: "Ghost / horror story. Build dread slowly: night, dim interiors, fog, long corridors, empty rooms; reveal threats late, small and half hidden; short sentences with pauses before each reveal; low ambient drones, creaks and sharp stingers on reveals; almost no graphics; no gore.",
-  ghost_tale:
-    "Vietnamese folk ghost tale ('kỳ truyện') told by ONE first-person narrator ('tôi'), a family member recalling years later what happened to their own family, like a gifted village storyteller talking to listeners late at night. " +
-    "VOICE: warm, intimate, gripping spoken Vietnamese of the countryside (bố/mẹ or thầy/u, bà, chú, thầy, con ạ, folk sayings and beliefs as people really say them). Vary the rhythm: longer flowing sentences that paint the place, the weather and the people, then short punchy lines when fear strikes. The narrator lets us feel what they felt at that moment (heart pounding, back gone cold, the smell of incense, a sound in the dark), adds hindsight that raises dread ('Giá như hôm ấy…', 'Mãi sau này tôi mới hiểu…') and now and then speaks to the listener ('Các bạn biết không…'). Characters are real people with their own temper and way of talking; they react with fear, anger, grief, stubbornness, tenderness or humour in natural, lively dialogue, and their words show who they are. Small human moments (a family meal, a joke, a quarrel, a worried look, a kind gesture) make us care before the horror arrives. Use concrete specifics (exact hour, month, age, weather, objects, sounds) rather than abstract adjectives. Build suspense by anticipation: a strange sign, a silence, a wrong detail, and the reveal at the end of a line. Never summarise: every event is lived as a small scene with action, reaction and feeling; depth beats coverage. " +
-    "CRAFT TOOLBOX (pick what serves this story and its length, never use it as a checklist; invent new details from this story's own setting, never reuse a known plot): a cold open that hints at the terrible outcome; a taboo or rule given by an elder and later broken; a recurring omen that grows each time; the village whispering and keeping away; a presence coming closer step by step; a skeptic or a reckless foil; a child or an innocent who sees what others cannot; the elder or ritual master explaining the folk belief in slow, kind question-and-answer dialogue; a hidden past wrong behind the curse; a false calm then a mistake made out of love; a ritual with clear visual steps and a price; a present-day ending that leaves a chill. " +
-    "FOLK BELIEF ACCURACY: the plot is fiction, but every folk belief, spirit, omen, taboo and ritual in it must be a REAL Vietnamese folk belief described the way genuine tradition and recognised references describe it (customs books such as Phan Kế Bính's Việt Nam phong tục and Toan Ánh's Nếp cũ, ethnographic and folklore studies, widely known village practice): its real name, real meaning, the signs people really fear, the real taboos and the real remedies or rituals. Never invent a new meaning for an existing belief, never attach the wrong name to it, never make up rituals that contradict tradition; when unsure, keep to the widely accepted core of the belief. " +
-    "SCALE TO THE LENGTH: 1 to 3 minutes = ONE eerie incident (hook, a short warm setup, one or two escalating signs, a turn, a chilling last line); 4 to 8 minutes = hook, setup with a rule or omen, two or three escalations, a climax and an uneasy ending; longer videos may add the elder's backstory, a hidden truth, a ritual and a present-day epilogue. End every chapter on a line that pulls into the next. " +
-    "Rural settings that can be drawn: house with ancestral altar, kitchen, yard, gate and lane, well, bamboo hedge, rice fields, riverbank, pagoda, village edge, graveyard. No gore, no cruelty to children or animals shown on screen. Visuals: scenes for almost every beat; chapter cards only; no maps, charts or statistics.",
+  ghost_tale: F.PROFILE + " Keep the source's central folk subject; invent new people, circumstances, decisions, clues and ending. Folk traditions vary: distinguish source characters' beliefs, local variants and fiction from verified customs. Never present invented rituals as established fact. No gore. Use simple static illustrations from the selected library.",
   history_map:
     'History / war map documentary in the style of animated map channels. geomap is the primary visual: open every chapter with a geomap that sets the context, and use geomap whenever the narration names countries, cities, fronts, invasion routes, supply lines or distances (animate fronts with "to" and movements with arrows; zoom in on the place being discussed). Use icons for quantities and ratios, stats/counter/timeline for figures and dates. Put a persistent hud on the first beat with a part counter and the running date, update the date as time passes and add resource bars when resources, production or casualties matter. Scenes are short illustrative inserts: soldiers, officers, vehicles (tank columns, trucks, aircraft and ships with travel), factories, headquarters, signposts with place names and distances. Brisk, punchy narration with concrete numbers; tense martial music, engines, artillery and radio SFX.',
   what_if:
@@ -48,15 +41,12 @@ export const motionVideoGenrePackaging = (value: unknown): string => {
 export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.includes(_.values(MOTION_VIDEO_GENRES), value) ? (value as MotionVideoGenre) : MOTION_VIDEO_GENRES.AUTO);
 export const MOTION_CREATIVE_GENRES: string[] = [MOTION_VIDEO_GENRES.GHOST_TALE];
 export const motionGenreCreative = (value: unknown): boolean => _.includes(MOTION_CREATIVE_GENRES, motionVideoGenre(value));
-export const MOTION_CREATIVE_ADAPTATION =
-  "NEW STORY FROM A MODEL (the user wants this for this genre): the source is a MODEL story the user admires, not a script to retell. Write a completely new story on the same theme and folk belief that keeps everything that makes the model great: the close first-person voice of someone who lived it, an unsettling opening, information revealed layer by layer, the heavy atmosphere, strange signs that grow, silences and dialogue woven together, pressure rising to a climax, and a chill that stays after the end. Change everything concrete: a different family with its own secrets and conflicts, a new setting tied closely to the horror, a different cause of the curse with its own rules and origin, a new chain of events that does not repeat the model's sequence, signature events or rituals, and a new twist, climax and ending with clear consequences and a haunting final detail. A listener who knows the model must NOT recognize this story: share no names, nicknames, professions, family set-up, kind of place, cause, key objects, signature images, rituals, events, twist, ending or lines with it; only the theme and the storytelling craft carry over. The planned chapter outline (hook, key points, hand-off) is authoritative: write all of its events in full, as lived scenes, not a summary.";
+export const MOTION_CREATIVE_ADAPTATION = CRAFT.ADAPTATION;
 export const MOTION_STORY_DOCTOR_COMPACT = "COMPACT OUTPUT: the answer must fit in one chat reply. Keep every string short (one sentence, at most about 25 words), keep lists to the few items that matter (at most 4 unless a rule above asks for more), no repetition between fields, no markdown, no commentary; output only the JSON object.";
-export const MOTION_STORY_DOCTOR_CAST = "CAST AND PLACES ARE COMPLETE: cast lists EVERY person who acts, speaks or is shown in any key point, including the dead (seen in memories, dreams, portraits or the coffin) and people seen in flashbacks, each with a key, gender, age and look; places lists every room and spot where a key point happens (bedroom, kitchen, yard, gate, lane, river bank, field, graveyard, a new house), each with interior and time.";
+export const MOTION_STORY_DOCTOR_CAST =
+  "CAST AND PLACES ARE COMPLETE: cast lists EVERY person who acts, speaks or is shown in any key point, including the dead (seen in memories, dreams, portraits or the coffin) and people seen in flashbacks, each with a key, gender, age and look. For a ghost of an existing living cast member use appearanceOf with that living cast key to reuse their exact appearance; places lists every room and spot where a key point happens (bedroom, kitchen, yard, gate, lane, river bank, field, graveyard, a new house), each with interior and time.";
 export const MOTION_STORY_DOCTOR = {
   ARTIFACT: "motion-story-doctor",
-  SAMPLE_FULL: 9000,
-  SAMPLE_WINDOWS: 4,
-  SAMPLE_WINDOW: 2000,
   ATTEMPTS: 2,
   KEYPOINTS_MAX: 12,
   TEXT_MAX: 240,
@@ -64,27 +54,32 @@ export const MOTION_STORY_DOCTOR = {
   NOTES_MAX: 300,
   LIST_MAX: 8,
   SECONDS_PER_EVENT: 40,
-  MODEL_EXCERPT: 3000,
-  MODEL_NOTE: "MODEL STORY EXCERPT from the matching part of the model (reference for voice, rhythm, pacing and atmosphere only; this video tells a NEW story, never reuse the model's people, places, events, images or sentences):\n",
-  MODEL_GAP: "\n[…]\n",
   MODEL_CRAFT: (list: string[]): string => "MODEL STRENGTHS TO APPLY IN THIS CHAPTER (the craft that makes the model gripping; apply it with this story's own content): " + list.join("; ") + ".",
   BELIEF: (b: { name: string; meaning: string; signs: string[]; taboos: string[]; remedies: string[] }): string =>
-    "FOLK BELIEF FACTS (real Vietnamese tradition; the plot is fiction but these facts must stay true, never contradict or reinvent them): " + [b.name + ": " + b.meaning, b.signs.length ? "signs: " + b.signs.join("; ") : "", b.taboos.length ? "taboos: " + b.taboos.join("; ") : "", b.remedies.length ? "remedies/rituals: " + b.remedies.join("; ") : ""].filter(Boolean).join(". ") + ".",
-  MODEL_AVOID: (list: string[]): string => "NEVER USE these elements of the model (the listener must not be reminded of it): " + list.join("; ") + ".",
+    "FOLK BELIEF CONTEXT (internal reference, not independently verified; customs vary. Preserve the locked core subject; distinguish local variants and fictional story rules from documented tradition): " +
+    [b.name + ": " + b.meaning, b.signs.length ? "signs: " + b.signs.join("; ") : "", b.taboos.length ? "taboos: " + b.taboos.join("; ") : "", b.remedies.length ? "remedies/rituals: " + b.remedies.join("; ") : ""].filter(Boolean).join(". ") +
+    ".",
+  MODEL_AVOID: (list: string[]): string => "Do not reuse these DISTINCTIVE expressive elements of the model; shared folk subject names, common objects and ordinary kinship words remain allowed: " + list.join("; ") + ".",
   NARRATOR_KEY: "toi",
-  KNOWN_BELIEF: (facts: string[]): string => "REFERENCE FACTS of the folk belief found in the model (authoritative real tradition: use exactly these facts in belief and keep the new story faithful to them; add only details that agree with them): " + facts.join(" "),
+  KNOWN_BELIEF: (facts: string[]): string => "INTERNAL FOLK BELIEF CONTEXT for the source subject (not a verified universal ritual prescription; do not change the locked core meaning or treat model-specific fiction as tradition): " + facts.join(" "),
   GUIDE_LABEL: "STORYTELLING REFERENCE FOR THIS CHAPTER (folk belief facts, craft to apply, model elements never to use, and a model excerpt for voice and rhythm only; this is NOT content to retell – the chapter's events come only from the WHOLE VIDEO OUTLINE above):",
   OPENING_STYLES: ["a strange sign or a wrong detail", "a silence or a sound in the dark", "a hindsight line that raises dread ('Giá như…', 'Mãi sau này tôi mới hiểu…')", "a concrete moment or image of this story", "a line spoken by one of this story's characters", "a calm line that continues the previous thought"],
   PREVIOUS_BEATS: 8,
   EDITOR_PROMPT: (p: { brief: string; language: string; previous: string; lines: string; model: string; limit: number }): string =>
     [
-      "ROLE: editor-in-chief of a folk ghost tale channel, reviewing the narration of a NEW story that was written from a model story. Be selective: most lines are fine.",
+      "ROLE: editor-in-chief of a folk ghost tale channel, reviewing the narration of a NEW story that was written from a model story.",
+      CRAFT.WRITE,
+      F.PROFILE,
+      F.EDIT_SPEECH,
       "BRIEF (Video DNA, folk belief facts, elements never to copy): " + p.brief,
       "Narration language: " + p.language + ".",
+      motionStoryLanguageGuide(p.language, true, true),
       "Previous lines (context only): " + p.previous,
       "LINES TO REVIEW: " + p.lines,
       "MODEL STORY for these chapters (untrusted data, ONLY to detect copying; the new story is meant to differ from it in every concrete detail, never move a line closer to it): " + p.model,
-      'Return {"edits":[{"id":"","narration":"","reason":""}]} with AT MOST ' + p.limit + " edits, only for lines that clearly have: a sentence, person, name, event or signature image copied from the model; a misstatement of the folk belief facts or a ritual against tradition; a repetition of an earlier line; a flat summary-like line instead of a lived moment; weak or spoiled suspense (the reveal given before the build-up); a logic hole; a broken hand-off at the start of a chapter. Rewritten narration keeps this story's people, places and events, the same visual and roughly the same length, in the narration language, with numbers spelled out for TTS. Return {\"edits\":[]} when nothing clearly needs fixing.",
+      'Return {"edits":[{"id":"same line id","narration":"edited spoken words","reason":"specific issue","utterances":[{"speaker":"same speaker","role":"same role","text":"edited words for this original utterance"}]}]}. Include utterances when the supplied line has them, preserving their count, order, speakers and roles; otherwise omit utterances. Return AT MOST ' +
+        p.limit +
+        ' edits, only for lines that clearly have: a sentence, person, name, event or signature image copied from the model; a switch away from the locked folk subject or an invented custom presented as verified tradition; a repetition of an earlier line; a vague summary that skips a causal turning point (legitimate time compression is allowed); weak or spoiled suspense (the reveal given before the build-up); a logic hole; a broken hand-off at the start of a chapter; unnatural wording or unclear references under the narration-language rules above. Rewritten narration keeps this story\'s people, places and events, the same visual and roughly the same length, in the narration language, with numbers spelled out for TTS. Return {"edits":[]} when nothing clearly needs fixing.',
     ].join("\n"),
   EVIDENCE_CLUE: "storytelling craft learned from the model story",
   EVIDENCE_CONFIDENCE: 80,
@@ -93,22 +88,28 @@ export const MOTION_STORY_DOCTOR = {
       "ROLE: head writer of a hit narrated story channel. The SOURCE below is a MODEL story the user admires; the CURRENT PLAN was extracted from it. Your job: create a brand-new story for a video of about " + p.seconds + " seconds that listeners cannot stop listening to.",
       p.directive,
       "Write every text field in " + p.language + ".",
-      "STEP 1, study the model: its theme and folk belief, and exactly what makes it gripping (how it opens, how information is revealed layer by layer, the atmosphere, the strange signs and how they escalate, how silences and dialogue are used, how pressure builds to the climax, the lingering chill of the ending). Also list the model's concrete elements that must NOT be reused (its family and relationships, place, cause of the curse, sequence of events, rituals, twist and ending).",
-      "STEP 1b, the folk belief: identify the real Vietnamese folk belief behind the theme (for example trùng tang, ma xó, ma da, ma lai, bùa ngải, quỷ nhập tràng, vong theo) and write down how genuine tradition and recognised references describe it: its real meaning, the signs people fear, its taboos and its traditional remedies or rituals. The new story must stay faithful to these facts; only the plot is invented.",
+      motionStoryLanguageGuide(p.language, false, true),
+      "STEP 1, study the model: its theme and folk belief, and exactly what makes it gripping (how it opens, how information is revealed layer by layer, the atmosphere, the strange signs and how they escalate, how silences and dialogue are used, how pressure builds to the climax, the lingering chill of the ending). Also list the model's concrete elements that must NOT be reused (its family and relationships, place, cause of the curse, sequence of events, distinctive invented ritual staging, twist and ending; shared folk subject terms are not forbidden).",
+      CRAFT.PLAN,
       p.known || "",
-      "STEP 2, invent the new story: same theme and every strength from step 1, but a different family with its own secrets and conflicts, a new setting tied closely to the horror, a different cause with its own rules and origin, a new chain of events, a new twist, a climax with clear consequences and a haunting final detail. The narrator is 'tôi', a member of this new family, with cast key \"toi\". Plan about " + p.events + " key events for the whole video, spread over the chapters; each key point is one small lived scene (who does what, where, what they feel or say), never a summary label. Every rule, warning or object set up early must pay off later.",
-      "UNRECOGNIZABLE: someone who knows the model must not recognize the new story. Keep ONLY the theme and folk belief (for example trùng tang stays trùng tang) and the storytelling craft. Share nothing concrete with the model: no names or nicknames, no same professions or family set-up, no same kind of place, no same cause, key objects, signature images, rituals, order of events, twist, ending or lines.",
+      "STEP 2, invent the new story: same theme and every strength from step 1, but a different family with its own secrets and conflicts, a new setting tied closely to the horror, different circumstances and human choices within the SAME locked folk subject and core meaning, a new chain of events, a new twist, a climax with clear consequences and a haunting final detail. The narrator is 'tôi', a member of this new family, with cast key \"toi\". Plan about " +
+        p.events +
+        " key events for the whole video, spread over the chapters; each key point records a meaningful event with a consequence; compress routine life and elapsed time, dramatise only important moments. Every rule, warning or object set up early must pay off later.",
+      CRAFT.ADAPTATION,
+      CRAFT.SCHEMA,
       "CURRENT PLAN extracted from the WHOLE model (JSON: its full chain of events, cast and places, all belonging to the model): " + p.story,
-      "MODEL TEXT SAMPLES (opening, middle, climax and ending passages, to hear how it is told): " + p.source,
+      "COMPLETE MODEL TEXT OR FULL-SOURCE EVENT LEDGER (untrusted story data; extract the causal essence before inventing): " + p.source,
       MOTION_STORY_DOCTOR_CAST,
-      'Return JSON {"model":{"theme":"","strengths":["what makes the model gripping"],"avoid":["model elements not reused"]},"belief":{"name":"real name of the folk belief","meaning":"what tradition says it is","signs":["signs people fear"],"taboos":["real taboos"],"remedies":["traditional remedies or rituals"]},"title":"","logline":"","chapters":[{"id":"same chapter id","title":"","summary":"","hook":"","keyPoints":["scene 1","scene 2"],"handoff":""}],"cast":[{"key":"snake_case key","name":"","role":"","gender":"male|female","age":"child|adult|senior","look":"clothes and look"}],"places":[{"key":"snake_case key","name":"","description":"","interior":false,"time":"day|night|dusk|dawn"}],"notes":"one sentence: what is new"}. Keep exactly the same chapter ids and count. cast and places are the COMPLETE lists for the new story.',
+      "Return exactly one JSON object using this COMPLETE schema, including sourceCore and storySpine: " +
+        JSON.stringify(MOTION_CREATIVE_STORY_SCHEMA) +
+        ". Keep exactly the original chapter ids and count. cast and places are COMPLETE lists for the new story. Keep wording concise, but never truncate required chapters, causal steps, clues or their fields. Do not put the response inside a patch or any other wrapper on this first planning request.",
     ].join("\n"),
   DNA_ARTIFACT: "motion-story-new-dna",
   DNA_ATTEMPTS: 2,
   DNA_PROMPT: (p: { instructions: string; directive: string; story: string; craft: string; avoid: string; previous: string; belief?: string; errors?: string }): string =>
     [
       "ROLE: build the Video DNA of a NEW story that was just written from a model story. The DNA must describe THIS new story: its people, places, objects, atmosphere, motifs, opening and continuity; evidence cites the NEW STORY plan (sourceClue = the chapter, scene or character it comes from).",
-      "Carry over from the model only its storytelling craft and production choices (audience, narration voice, pacing, editing, visual language); never its people, places, objects, events or images.",
+      "Carry over from the model only its storytelling craft and production choices (audience, narration voice, pacing, editing, visual language); never its distinctive identities, event sequence, invented ritual staging, twists or passages. Shared folklore terms and ordinary library objects remain allowed.",
       p.directive,
       p.instructions,
       "NEW STORY (JSON): " + p.story,
@@ -138,7 +139,8 @@ export const MOTION_STORY_DOCTOR = {
   ERR_FAILED: "Biên kịch AI không viết được truyện mới từ truyện mẫu. Bấm Phân tích lại để thử lại.",
   ERR_DNA: "AI chưa lập được Video DNA cho truyện mới (các AI đều lỗi hoặc trả thiếu). Bấm Phân tích lại để thử lại.",
 };
-export const MOTION_CREATIVE_EDITOR = "This video is a NEW story written from a model story: never flag differences from the source; flag lines that copy the model's sentences, people or events, lines that misstate the real folk belief (folkBelief) or invent rituals against tradition, repetitions, flat summary-like lines, weak suspense, logic holes, rules or objects that never pay off, and broken hand-offs.";
+export const MOTION_CREATIVE_EDITOR =
+  "This video is a NEW story written from a model story: never flag differences from the source; flag lines that copy the model's sentences, people or events, lines that switch the locked folk subject or present fictional rituals as verified tradition, repetitions, vague summaries that omit meaningful turning points, weak suspense, logic holes, rules or objects that never pay off, and broken hand-offs.";
 export const motionVideoGenreDirective = (value: unknown, adaptation = true): string => {
   const genre = motionVideoGenre(value);
   if (genre === MOTION_VIDEO_GENRES.AUTO) return "";

@@ -34,7 +34,6 @@ const bundlePath = path.resolve(RF.RECOVERY_BUNDLE_PATH(process.pid));
 fs.writeFileSync(bundlePath, bundle.outputFiles[0].text);
 try {
   const motion = await import(pathToFileURL(bundlePath).href);
-  motion.MOTION_STORY_CONFIG.PROVIDER_MIN_GAP_MS = 0;
   const execution = { provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiArgon, mode: AiPlanningExecutionMode.RoomOnly };
   const chapter = { id: RT.C1, title: RT.HOMECOMING, summary: RT.A_PERSON_RETURNS_HOME, targetSeconds: 12 };
   const analysis = { title: RT.HOMECOMING, logline: RT.A_RETURN_HOME, cast: [], places: [], chapters: [chapter] };

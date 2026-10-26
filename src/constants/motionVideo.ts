@@ -98,6 +98,7 @@ export const MOTION_STORY_CONFIG = {
   TARGET_BEAT_SECONDS: 7,
   LENGTH_SAFETY: 0.92,
   SPEECH_RATE_FILE: "speech-rate-v2.json",
+  SPEECH_RATE_PROFILES_MAX: 64,
   SPEECH_RATE_WEIGHT: 0.6,
   SPEECH_RATE_MIN: 1.2,
   SPEECH_RATE_MAX: 6,
@@ -114,6 +115,7 @@ export const MOTION_STORY_CONFIG = {
   TTS_MAX_CHARS: 900,
   SUBTITLE_MAX_CHARS: 64,
   STORY_STORAGE_KEY: "motion_story_state_v1",
+  STORY_STOP_STORAGE_KEY: "motion_story_stopped_v1",
   GRAPHIC_TRANSITION: "push",
   GRAPHIC_TRANSITION_SECONDS: 0.45,
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
@@ -124,17 +126,13 @@ export const MOTION_STORY_CONFIG = {
   ROOM_CLOSED_RE: /Target page, context or browser has been closed|frame was detached|ERR_ABORTED/,
   ROOM_SKIP_LOG: (provider: string, minutes: number): string => `Phòng chat ${provider} đang lỗi – bỏ qua ${provider} trong ${minutes} phút cho các yêu cầu tiếp theo, chuyển ngay sang AI dự phòng.`,
   ROOM_SKIPPED_LOG: (provider: string): string => `Bỏ qua ${provider} (đang tạm khóa vì lỗi) – dùng AI dự phòng kế tiếp.`,
-  CANNED_REFUSAL_RE: /(I can'?t help|I'?m (not able|unable) to help|I can'?t assist|I'?m (just )?a language model|tôi không thể (giúp|hỗ trợ|thực hiện)|mình không thể (giúp|hỗ trợ)|tôi chỉ là một mô hình ngôn ngữ)/i,
+  CANNED_REFUSAL_RE: /(I can'?t help|I'?m (not able|unable) to help|I can'?t assist|I'?m (just )?a language model|tôi không được (?:thiết kế|lập trình) để|tôi không thể (giúp|hỗ trợ|thực hiện)|mình không thể (giúp|hỗ trợ)|tôi chỉ là một mô hình ngôn ngữ)/i,
   CANNED_REFUSAL_LOG: (provider: string, artifact: string, chars: number): string => `AI ${provider} trả lời từ chối mẫu cho bước ${artifact} (prompt ${chars} ký tự) – thường do prompt quá dài hoặc bị bộ lọc chặn.`,
-  AI_PARALLEL: 5,
-  WORKER_IDS: ["motion-primary", "motion-second", "motion-third", "motion-fourth", "motion-fifth"],
-  ROOM_PROVIDER_RETRIES: 2,
-  ROOM_UI_RETRIES: 2,
+  AI_PARALLEL: 3,
+  WORKER_IDS: ["motion-primary", "motion-second", "motion-third"],
   ROOM_UI_ERROR_RE: /locator\.(fill|click|press|type|focus)|Timeout \d+ms exceeded|chat_planning_composer_content_mismatch|chat_planning_send_button_not_ready|chat_planning_submission_not_confirmed/,
-  ROOM_UI_RETRY_LOG: (provider: string, n: number, total: number): string => `Phòng chat ${provider} bị kẹt khi gõ hoặc gửi – mở phòng mới và thử lại (lần ${n}/${total}) trước khi đổi AI…`,
   SCENES_PREPARING: "Chuẩn bị dựng cảnh",
   SCENES_COMPLETED: "Đã dựng xong cảnh",
-  ROOM_RETRY_LOG: "AI báo lỗi tạm thời – mở phòng chat mới và hỏi lại…",
   ROOM_REFUSAL_LOG: (provider: string): string => `${provider} từ chối yêu cầu; phản hồi này không phải kết quả hợp lệ.`,
   STAGE_LABELS: {
     vi: { analyze: "Phân tích kịch bản", bible: "Thiết kế nhân vật", locations: "Thiết kế bối cảnh", staging: "Dàn dựng cảnh", review: "Kiểm tra dữ liệu cảnh và âm thanh", preview: "Dựng ảnh xem trước", done: "Hoàn tất" },
@@ -147,10 +145,8 @@ export const MOTION_STORY_CONFIG = {
   EDIT_RATIO_MIN: 0.3,
   EDIT_RATIO_MAX: 1.5,
   LIMIT_SWITCH: { "gemini-chat": { provider: "chatgpt-ui", model: "chatgpt-auto" }, "chatgpt-ui": { provider: "gemini-chat", model: "gemini-flash" }, "deepseek-chat": { provider: "gemini-chat", model: "gemini-flash" }, "grok-chat": { provider: "gemini-chat", model: "gemini-flash" } } as Record<string, { provider: string; model: string }>,
-  ROOM_RESTART_LOG: (provider: string): string => `Phòng chat ${provider} không hiện ô nhập – mở phòng chat mới và thử lại một lần`,
   LOOSE_MATCH_MIN: 3,
   PROVIDER_PARALLEL: { "gemini-chat": 3, "chatgpt-ui": 3, "claude-chat": 1 } as Record<string, number>,
-  PROVIDER_MIN_GAP_MS: 8000,
   ROOM_UNAVAILABLE_BLOCK_MS: 10 * 60 * 1000,
   ROOM_UNAVAILABLE_LOG: (from: string, to: string): string => `Phòng chat ${from} không hiện ô nhập (có thể bị chặn tạm, chưa đăng nhập hoặc hết lượt) – tạm chuyển sang ${to} trong 10 phút`,
   ROOM_LIMIT_PATTERN: /you(?:'|’)?ve (?:reached|hit).{0,40}limit|usage (?:limit|cap)|message limit|out of (?:free )?messages|too many (?:messages|requests)|rate limit|limit (?:resets|will reset)|đã (?:đạt|hết).{0,30}giới hạn|hết lượt/i,
@@ -171,4 +167,9 @@ export const MOTION_STORY_CONFIG = {
 } as const;
 export const MOTION_PREVIEW_QUALITY = { supersample: 1, motionBlur: 1, bloom: false, grain: false, layerScale: 0.6 };
 export const MOTION_PREVIEW_SIZES: Record<string, [number, number]> = { [MotionAspect.LANDSCAPE]: [960, 540], [MotionAspect.PORTRAIT]: [405, 720], [MotionAspect.SQUARE]: [600, 600], [MotionAspect.FOUR_FIVE]: [540, 675] };
-export const MOTION_RASTER = { BG: "#ffffff", BG_HTML: (svg: string, w: number, h: number, bg: string): string => `<!doctype html><html><body style="margin:0;background:${bg}">${svg.replace("<svg", `<svg width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"`)}</body></html>` } as const;
+export const MOTION_RASTER = {
+  BG: "#ffffff",
+  LABEL_TAG: "div",
+  LABEL_STYLE: { position: "absolute", top: "6px", left: "6px", padding: "5px 9px", color: "#000000", background: "#ffffff", font: "bold 24px Arial", zIndex: "2147483647" },
+  BG_HTML: (svg: string, w: number, h: number, bg: string): string => `<!doctype html><html><body style="margin:0;background:${bg}">${svg.replace("<svg", `<svg width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"`)}</body></html>`,
+} as const;

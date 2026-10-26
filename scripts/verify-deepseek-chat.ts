@@ -17,7 +17,7 @@ for (const mode of DEEPSEEK_CHAT_MODES) {
 }
 assert.equal(resolvePipelineAiExecution({ planningFallbackProvider: provider, planningChatModel: AiPlanningChatModel.ClaudeSonnet55 }, null, true).model, AiPlanningChatModel.DeepSeekAuto);
 assert.equal(resolveFlowVideoPlanningModel(provider, AiPlanningChatModel.GeminiFlash), AiPlanningChatModel.DeepSeekAuto);
-type FixtureMode = "ready" | "login" | "limited" | "pending" | "upload-failed" | "missing-preview" | "wrong-filename" | "invalid" | "stuck-mode" | "retry" | "retry-always";
+type FixtureMode = "ready" | "login" | "limited" | "message-limited" | "pending" | "upload-failed" | "missing-preview" | "wrong-filename" | "invalid" | "stuck-mode" | "retry" | "retry-always";
 let mode: FixtureMode = AUT.READY;
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext();
@@ -151,6 +151,23 @@ try {
   const limitPage = pages.at(-1)!;
   assert.equal(await limitPage.evaluate(() => (window as any).retryClicks), 5);
   assert.equal(await service.createDeepSeekRetryRecovery(limitPage, AUT.SOME_OTHER_PROMPT)(), false, AUT.NEVER_RETRY_A_DIFFERENT_REQUEST_S_FAILED_MESSAGE);
+  mode = AUT.MESSAGE_LIMITED;
+  const limitedSubmission = { attempted: false, completed: false };
+  await assert.rejects(service.generatePlanningWithChatUi({ ...request(AUT.MESSAGE_LIMITED), submission: limitedSubmission }), /deepseek_rate_limited/);
+  const messageLimitedPage = pages.at(-1)!;
+  assert.equal(await messageLimitedPage.evaluate(() => (window as any).sent), 1);
+  assert.equal(limitedSubmission.attempted, true);
+  assert.equal(limitedSubmission.completed, true);
+  assert.equal(await service.createDeepSeekRetryRecovery(messageLimitedPage, AUT.SOME_OTHER_PROMPT)(), false);
+  await messageLimitedPage.getByText(AUT.MESSAGE_LIMIT_TEXT, { exact: true }).evaluate((element) => element.remove());
+  await messageLimitedPage
+    .locator(AUT.DS_USER_CONTENT)
+    .last()
+    .evaluate((element, text) => {
+      element.textContent = text;
+    }, AUT.MESSAGE_LIMIT_TEXT);
+  assert.equal(await service.createDeepSeekRetryRecovery(messageLimitedPage, AUT.MESSAGE_LIMIT_TEXT)(), false);
+  mode = AUT.RETRY;
   await pages[1].locator(AUT.DS_BUTTON_PRIMARY).evaluate(
     (element, browserData) => {
       const { AUT } = browserData.studioTexts;

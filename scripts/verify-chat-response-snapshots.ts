@@ -1,5 +1,6 @@
 import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import assert from "node:assert/strict";
+import { PRODUCTION_QA } from "./motionProductionVerificationTexts.js";
 import { chromium } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.ts";
 import { getChatResponseSnapshots, waitForStableResponse } from "../src/server/services/chatUiPlanningService.ts";
@@ -8,11 +9,23 @@ try {
   const page = await browser.newPage();
   const selector = CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR;
   assert.deepEqual(await getChatResponseSnapshots(page, selector), []);
-  const response = {
-    artifactType: RT.MUSIC_IMAGE_PROMPT,
-    requestId: RT.MUSIC_IMAGE_PROMPT_TEST,
-    imagePrompt: RT.A_FINISHED_16_9_PROFESSIONAL_MUSIC_PLAYLIST_COVER,
-  };
+  await page.setContent(RT.CHATGPT_CURRENT_RESPONSE);
+  const currentResponse = { artifactType: RT.MOTION_STORY_CHAPTER, requestId: RT.CURRENT, beats: [] };
+  await page.locator(RT.CHATGPT_CONTENT).evaluate((element, text) => {
+    element.textContent = text;
+  }, JSON.stringify(currentResponse));
+  const chatGptSnapshots = await getChatResponseSnapshots(page, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR);
+  assert.equal(chatGptSnapshots.length, 1);
+  assert.equal(chatGptSnapshots[0].text, JSON.stringify(currentResponse));
+  assert.equal(chatGptSnapshots[0].identity, RT.CHATGPT_MESSAGE_ID);
+  await page.locator(RT.CHATGPT_CURRENT_BOUNDARY).evaluate(
+    (element, data) => {
+      element.setAttribute(data.attribute, data.value);
+    },
+    { attribute: RT.CHATGPT_VIRTUAL_KEY, value: RT.CHATGPT_VIRTUAL_KEY_NEXT },
+  );
+  assert.equal((await getChatResponseSnapshots(page, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR))[0].identity, RT.CHATGPT_MESSAGE_ID);
+  const response = { artifactType: RT.MUSIC_IMAGE_PROMPT, requestId: RT.MUSIC_IMAGE_PROMPT_TEST, imagePrompt: RT.A_FINISHED_16_9_PROFESSIONAL_MUSIC_PLAYLIST_COVER };
   const responseText = JSON.stringify(response);
   await page.setContent(RT.MODEL_RESPONSE_MESSAGE_CONTENT_DIV_CLASS_MARKDOWN_DIV_MESSAGE_CONTENT_);
   await page.locator(RT.MARKDOWN).evaluate((element, text) => {
@@ -54,6 +67,9 @@ try {
   );
   assert.deepEqual(await getChatResponseSnapshots(page, selector), []);
   const original = { ...CINEMATIC_CHAT_PLANNING_CONFIG };
+  CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS = 20;
+  await assert.rejects(getChatResponseSnapshots({ locator: () => ({ evaluateAll: () => new Promise(() => {}) }) } as any, selector), { message: CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR });
+  CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS = original.UI_READ_TIMEOUT_MS;
   Object.assign(CINEMATIC_CHAT_PLANNING_CONFIG, { RESPONSE_POLL_MS: 5, RESPONSE_STABLE_POLLS: 2, INVALID_RESPONSE_STABLE_POLLS: 4 });
   const refusal = RT.TOI_CHI_LA_MOT_CONG_NGHE_TRI_TUE_NHAN_TAO_DUA_TREN_VAN_BAN_NEN_KHONG_T;
   const setResponse = async (text: string) => {
@@ -63,7 +79,23 @@ try {
     }, text);
   };
   try {
-    for (const text of [refusal, RT.I_CAN_T_HELP_WITH_THAT_REQUEST]) {
+    await page.setContent(RT.CHATGPT_USAGE_NOTICE);
+    await assert.rejects(waitForStableResponse(page, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR, 0, [], []), { message: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RATE_LIMIT_ERROR });
+    await page.setContent(RT.CHATGPT_USAGE_QUOTED);
+    const quotedUsage = { artifactType: RT.MOTION_STORY_CHAPTER, requestId: RT.CURRENT, beats: [{ narration: RT.CHATGPT_USAGE_TEXT }] };
+    await page.locator(RT.CHATGPT_CONTENT).evaluate((element, text) => {
+      element.textContent = text;
+    }, JSON.stringify(quotedUsage));
+    assert.deepEqual(JSON.parse(await waitForStableResponse(page, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR, 0, [], [], undefined, quotedUsage.artifactType, quotedUsage.requestId)), quotedUsage);
+    await page.setContent("<div></div>");
+    await page.locator("div").evaluate((element, text) => {
+      element.textContent = text;
+    }, PRODUCTION_QA.PROMPT_LIMIT);
+    await assert.rejects(waitForStableResponse(page, selector, RT.BUSY, 0, [], []), { message: CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_LIMIT_RESPONSE_ERROR });
+    const quotedLimit = { artifactType: RT.MOTION_STORY_CHAPTER, requestId: RT.CURRENT, beats: [{ narration: PRODUCTION_QA.PROMPT_LIMIT }] };
+    await setResponse(JSON.stringify(quotedLimit));
+    assert.deepEqual(JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, quotedLimit.artifactType, quotedLimit.requestId)), quotedLimit);
+    for (const text of [refusal, RT.I_CAN_T_HELP_WITH_THAT_REQUEST, RT.GEMINI_PROGRAMMED_REFUSAL]) {
       await setResponse(text);
       await assert.rejects(waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, RT.MOTION_STORY_CHAPTER, RT.CURRENT), (error: any) => {
         assert.equal(error.message, CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR);

@@ -1,0 +1,26 @@
+export const MOTION_QA = {
+  LEVEL: { OK: "ok", WARNING: "warning", ERROR: "error" },
+  DURATION_TOLERANCE: 0.25,
+  DURATION_MIN_RATIO: 0.5,
+  DURATION_MAX_RATIO: 1.75,
+  DURATION_REPAIR_ATTEMPTS: 1,
+  DURATION_REPAIR_TEXT_TOLERANCE: 0.3,
+  CHAPTER_MIN_RATIO: 0.65,
+  CHAPTER_MAX_RATIO: 1.35,
+  CHAPTER_LENGTH_WARNING: (chapter: string, actual: number, target: number): string => `Chương ${chapter}: có ${actual} từ/âm tiết so với ước tính ${Math.round(target)}. Giữ lời kể hợp lệ; chốt thời lượng theo giọng thực, không viết lại chỉ để đủ chữ.`,
+  CHAPTER_LENGTH_RULE: (units: number, unitName: string, seconds: number, beats: number, perBeat: number): string =>
+    `- Aim for about ${units} ${unitName} (roughly ${seconds} s of speech), around ${beats} beats and ${perBeat} ${unitName} per beat as planning guidance. Natural pacing and complete planned events take priority over exact counts. Do not pad, repeat, omit a key event or rush speech to meet these estimates.`,
+  LEGACY_CHAPTER_LENGTH_RULE: (units: number, unitName: string, seconds: number, beats: number, perBeat: number): string => `- Total ≈ ${units} ${unitName} (≈${seconds} s of speech). HARD LIMIT: never more than ${units} ${unitName} for all beats together. About ${beats} beats, each 1–3 sentences (≈${perBeat} ${unitName}); vary sentence length like a real storyteller.`,
+  NARRATION_MISSING: "A planned beat has no narration. Restore its actual event without padding other beats.",
+  SPEECH_MISMATCH: "Spoken utterances must preserve the narration exactly, with valid speakers. Repair only the utterances that lost or changed words.",
+  DURATION_REPAIR_REQUIRED: (actual: number, seconds: number, target: number): string => `Actual audio duration was severely different from the selected duration. Adjust this chapter naturally toward ${Math.round(target)} speech units for about ${Math.round(seconds)}s; its current draft has ${actual} units. Preserve planned events and source facts; do not target an exact word count.`,
+  DURATION_WARNING: (actual: number, target: number): string => `Thời lượng giọng thực ${Math.round(actual)} giây so với mục tiêu ${Math.round(target)} giây. Tiếp tục với timeline theo giọng thực; giữ tốc độ đọc tự nhiên và nội dung đã đạt.`,
+  REVIEW_CATEGORIES: ["identity", "place", "spatial", "support", "object", "continuity", "story_state", "critical_clue", "aesthetic", "incidental_pose", "framing", "uncertain"] as const,
+  REVIEW_CRITICAL: ["identity", "place", "spatial", "support", "object", "continuity", "story_state", "critical_clue"] as readonly string[],
+  REVIEW_MINOR: ["aesthetic", "incidental_pose", "framing", "uncertain"] as readonly string[],
+  REVIEW_PROMPT:
+    "Include category: identity|place|spatial|support|object|continuity|story_state|critical_clue for an observable contradiction that would harm the story; aesthetic|incidental_pose|framing for an optional improvement; uncertain when the image does not prove a defect. Return evidence as a short description of the visible defect, not merely what narration mentions. Missing intermediate gestures, decorative differences or preferred framing are advisory, not a reason to rebuild a valid static illustration.",
+  REVIEW_ADVISORY: (index: number, why: string): string => `Góp ý ảnh ${index + 1}: ${why}. Giữ hình minh họa đã qua kiểm dữ liệu và vị trí.`,
+  REVIEW_UNCHECKED: (checked: number, total: number): string => `AI mới xác nhận ${checked}/${total} ảnh. Phần chưa kiểm được giữ trạng thái chưa xác nhận; tiếp tục với kiểm dữ liệu, vị trí và dựng hình tại máy.`,
+  REVIEW_UNAVAILABLE: (reason: string): string => `AI duyệt ảnh chưa khả dụng: ${reason}. Không dừng video vì bước duyệt bổ sung.`,
+} as const;

@@ -22,11 +22,19 @@ export const decodeVoicePcm = async (file: string, signal?: AbortSignal): Promis
     await fs.promises.rm(raw, { force: true }).catch(_.noop);
   }
 };
-export interface MotionVoicePaceReport { rate: number; articulation: number; speechRatio: number; phrase: number; pausesPerMinute: number; seconds: number; pauses: NonNullable<MotionVoiceSpeedTarget["pauses"]>; }
-export const analyzeVoicePace = (pcm: Int16Array): MotionVoicePaceReport => {
+export interface MotionVoicePaceReport {
+  rate: number;
+  articulation: number;
+  speechRatio: number;
+  phrase: number;
+  pausesPerMinute: number;
+  seconds: number;
+  pauses: NonNullable<MotionVoiceSpeedTarget["pauses"]>;
+}
+export const analyzeVoicePace = (pcm: Int16Array, shortClip = false): MotionVoicePaceReport => {
   const hop = Math.round((A.SAMPLE_RATE * A.HOP_MS) / 1000);
   const frames = Math.floor(pcm.length / hop);
-  if (frames * A.HOP_MS < A.MIN_SECONDS * 1000) throw new Error(V.ERRORS.AUDIO_SHORT);
+  if (frames * A.HOP_MS < (shortClip ? A.MIN_CLIP_SECONDS : A.MIN_SECONDS) * 1000) throw new Error(V.ERRORS.AUDIO_SHORT);
   const db = new Float32Array(frames);
   const hi = new Float32Array(frames);
   let prev = 0;
@@ -75,10 +83,20 @@ export const analyzeVoicePace = (pcm: Int16Array): MotionVoicePaceReport => {
       valley = sm[i];
     }
   }
-  const d = _.map(pauses, B => B.d);
-  if (d.length < A.MIN_PAUSES) throw new Error(V.ERRORS.AUDIO_SHORT);
-  const cuts = [0, ..._.map(_.filter(pauses, (p) => p.d >= A.PHRASE_PAUSE), (p) => p.at), seconds];
-  const phrases = _.filter(_.map(_.tail(cuts), (c, i) => c - cuts[i]), (x) => x > 0);
+  const d = _.map(pauses, (B) => B.d);
+  if (!syllables || (!shortClip && d.length < A.MIN_PAUSES)) throw new Error(V.ERRORS.AUDIO_SHORT);
+  const cuts = [
+    0,
+    ..._.map(
+      _.filter(pauses, (p) => p.d >= A.PHRASE_PAUSE),
+      (p) => p.at,
+    ),
+    seconds,
+  ];
+  const phrases = _.filter(
+    _.map(_.tail(cuts), (c, i) => c - cuts[i]),
+    (x) => x > 0,
+  );
   const at = (q: number) => _.round(_.clamp(quantile(d, q), V.PAUSE_RANGE[0], V.PAUSE_RANGE[1]), 2);
   return {
     rate: _.round(syllables / seconds, 3),
@@ -91,6 +109,7 @@ export const analyzeVoicePace = (pcm: Int16Array): MotionVoicePaceReport => {
   };
 };
 export const measureVoicePaceFile = async (file: string, signal?: AbortSignal): Promise<MotionVoicePaceReport> => analyzeVoicePace(await decodeVoicePcm(file, signal));
+export const measureVoiceCadenceFile = async (file: string, signal?: AbortSignal): Promise<MotionVoicePaceReport> => analyzeVoicePace(await decodeVoicePcm(file, signal), true);
 export const voicePauses = (pcm: Int16Array, minPause: number): { seconds: number; pauses: { at: number; d: number }[] } => {
   const hop = Math.round((A.SAMPLE_RATE * A.HOP_MS) / 1000);
   const frames = Math.floor(pcm.length / hop);

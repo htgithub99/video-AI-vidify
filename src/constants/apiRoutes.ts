@@ -106,6 +106,8 @@ export const API_ROUTES = {
   MOTION_STORAGE_CLEAN: "/api/motion-video/storage/clean",
   MOTION_VIDEO_SELECT_SAVE_DESTINATION: "/api/motion-video/select-save-destination",
   MOTION_VIDEO_SAVE_VIDEO: "/api/motion-video/save-video",
+  MOTION_PRODUCTION: "/api/motion-video/production",
+  MOTION_PRODUCTION_RESUME: "/api/motion-video/production/resume",
   MOTION_STORY_PARSE: "/api/motion-video/story/parse",
   MOTION_STORY_ANALYZE: "/api/motion-video/story/analyze",
   MOTION_STORY_SCRIPT: "/api/motion-video/story/script",
@@ -114,6 +116,7 @@ export const API_ROUTES = {
   MOTION_STORY_VOICE: "/api/motion-video/story/voice",
   MOTION_STORY_COMPILE: "/api/motion-video/story/compile",
   MOTION_STORY_STATUS: "/api/motion-video/story/status/",
+  MOTION_STORY_LOGS: "/api/motion-video/story/logs/",
   MOTION_STORY_CANCEL: "/api/motion-video/story/cancel",
   MOTION_STORY_SCENES: "/api/motion-video/story/scenes",
 } as const;
@@ -209,6 +212,8 @@ export const MOTION_VIDEO_API_PATHS = {
   STORAGE_CLEAN: "/storage/clean",
   SELECT_SAVE_DESTINATION: "/select-save-destination",
   SAVE_VIDEO: "/save-video",
+  PRODUCTION: "/production",
+  PRODUCTION_RESUME: "/production/resume",
   STORY_PARSE: "/story/parse",
   STORY_ANALYZE: "/story/analyze",
   STORY_SCRIPT: "/story/script",
@@ -218,6 +223,7 @@ export const MOTION_VIDEO_API_PATHS = {
   STORY_SCENES: "/story/scenes",
   STORY_COMPILE: "/story/compile",
   STORY_STATUS: "/story/status/:jobId",
+  STORY_LOGS: "/story/logs/:jobId",
   STORY_CANCEL: "/story/cancel",
 } as const;
 export const SETTINGS_API_PATHS = { GAS_CONFIG: "/gas-config", API_KEYS: "/api-keys", ACCOUNTS: "/accounts", ACCOUNTS_STATUS: "/accounts/status" } as const;

@@ -1,0 +1,798 @@
+{
+  "scope": "22 overviews, 36 timeline tiles per video plus selected original tiles; visual requirements, not a transcript audit",
+  "videos": [
+    {
+      "number": 1,
+      "id": "ZrgIi8a8dyA",
+      "title": "Chiếc khăn Piêu - Bùa Yêu Kỳ Truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/01-ZrgIi8a8dyA",
+      "archiveFrames": 1313,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Bếp lửa trên sàn nhà", "kind": "set_piece", "keys": ["hearth"], "frame": 670, "time": 1115.5, "timestamp": "00:18:35", "board": "docs/video-references/khuatmatkytruyen/01-ZrgIi8a8dyA/boards/042.jpg", "tile": [400, 819, 400, 225] },
+        { "label": "Khăn Piêu và người nằm", "kind": "prop", "keys": ["embroidered_scarf"], "frame": 842, "time": 1435.0, "timestamp": "00:23:55", "board": "docs/video-references/khuatmatkytruyen/01-ZrgIi8a8dyA/boards/053.jpg", "tile": [400, 562, 400, 225] },
+        { "label": "Hai người nằm và người chăm", "kind": "character_kit", "keys": ["villager_man_1", "villager_woman_1"], "frame": 1023, "time": 1816.5, "timestamp": "00:30:16", "board": "docs/video-references/khuatmatkytruyen/01-ZrgIi8a8dyA/boards/064.jpg", "tile": [800, 819, 400, 225] }
+      ],
+      "probe": "two_patients"
+    },
+    {
+      "number": 2,
+      "id": "FFTF1CM4aBI",
+      "title": "Người con anh hùng - Hồi ức ấu thơ",
+      "folder": "docs/video-references/khuatmatkytruyen/02-FFTF1CM4aBI",
+      "archiveFrames": 1229,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Quân phục hải quân", "kind": "character_kit", "keys": ["naval_sailor"], "frame": 69, "time": 176.5, "timestamp": "00:02:56", "board": "docs/video-references/khuatmatkytruyen/02-FFTF1CM4aBI/boards/005.jpg", "tile": [0, 305, 400, 225] },
+        { "label": "Võng mắc giữa cây", "kind": "set_piece", "keys": ["hammock"], "frame": 713, "time": 1539.5, "timestamp": "00:25:39", "board": "docs/video-references/khuatmatkytruyen/02-FFTF1CM4aBI/boards/045.jpg", "tile": [0, 562, 400, 225] },
+        { "label": "Người nằm trên võng và người khiêng", "kind": "set_piece", "keys": ["hammock"], "frame": 736, "time": 1608.5, "timestamp": "00:26:48", "board": "docs/video-references/khuatmatkytruyen/02-FFTF1CM4aBI/boards/046.jpg", "tile": [1200, 819, 400, 225] },
+        { "label": "Bàn thờ và di ảnh", "kind": "prop", "keys": ["ancestor_portrait"], "frame": 444, "time": 967.5, "timestamp": "00:16:07", "board": "docs/video-references/khuatmatkytruyen/02-FFTF1CM4aBI/boards/028.jpg", "tile": [1200, 562, 400, 225] }
+      ],
+      "probe": "hammock_lying"
+    },
+    {
+      "number": 3,
+      "id": "m9WhpDtE9xE",
+      "title": "Cuốn sổ nợ - Hình nhân thế mạng kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/03-m9WhpDtE9xE",
+      "archiveFrames": 755,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Tiệm hàng với quầy và kệ", "kind": "set_piece", "keys": ["shop_counter", "goods_shelves"], "frame": 37, "time": 96.0, "timestamp": "00:01:36", "board": "docs/video-references/khuatmatkytruyen/03-m9WhpDtE9xE/boards/003.jpg", "tile": [0, 305, 400, 225] },
+        { "label": "Sổ nợ mở", "kind": "prop", "keys": ["village_debt_ledger", "open_book"], "frame": 280, "time": 865.0, "timestamp": "00:14:25", "board": "docs/video-references/khuatmatkytruyen/03-m9WhpDtE9xE/boards/018.jpg", "tile": [1200, 305, 400, 225] },
+        { "label": "Hình nhân giấy", "kind": "prop", "keys": ["paper_effigy"], "frame": 419, "time": 1248.0, "timestamp": "00:20:48", "board": "docs/video-references/khuatmatkytruyen/03-m9WhpDtE9xE/boards/027.jpg", "tile": [800, 48, 400, 225] }
+      ],
+      "probe": "shop_counter"
+    },
+    {
+      "number": 4,
+      "id": "P0xXIU5Lyr8",
+      "title": "Ván bài định mệnh - Thần Trùng P2",
+      "folder": "docs/video-references/khuatmatkytruyen/04-P0xXIU5Lyr8",
+      "archiveFrames": 450,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Chùa, tượng Phật", "kind": "set_piece", "keys": ["temple", "buddha"], "frame": 166, "time": 576.0, "timestamp": "00:09:36", "board": "docs/video-references/khuatmatkytruyen/04-P0xXIU5Lyr8/boards/011.jpg", "tile": [400, 305, 400, 225] },
+        { "label": "Chuông chùa", "kind": "prop", "keys": ["temple_bell"], "frame": 192, "time": 663.5, "timestamp": "00:11:03", "board": "docs/video-references/khuatmatkytruyen/04-P0xXIU5Lyr8/boards/012.jpg", "tile": [1200, 819, 400, 225] },
+        { "label": "Em bé nằm trên võng", "kind": "set_piece", "keys": ["hammock"], "frame": 411, "time": 1537.0, "timestamp": "00:25:37", "board": "docs/video-references/khuatmatkytruyen/04-P0xXIU5Lyr8/boards/026.jpg", "tile": [800, 562, 400, 225] }
+      ],
+      "probe": "temple"
+    },
+    {
+      "number": 5,
+      "id": "nk48rQqJmc0",
+      "title": "Ván bài định mệnh - Thần Trùng Kỳ Truyện P1",
+      "folder": "docs/video-references/khuatmatkytruyen/05-nk48rQqJmc0",
+      "archiveFrames": 624,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Thuyền cá trên sông", "kind": "set_piece", "keys": ["fishing_boat"], "frame": 54, "time": 126.0, "timestamp": "00:02:06", "board": "docs/video-references/khuatmatkytruyen/05-nk48rQqJmc0/boards/004.jpg", "tile": [400, 305, 400, 225] },
+        { "label": "Bộ bài dùng làm vật chứng", "kind": "prop", "keys": ["playing_card_spread"], "frame": 215, "time": 582.0, "timestamp": "00:09:42", "board": "docs/video-references/khuatmatkytruyen/05-nk48rQqJmc0/boards/014.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Mộ và bia", "kind": "set_piece", "keys": ["grave", "tombstone"], "frame": 525, "time": 1552.0, "timestamp": "00:25:52", "board": "docs/video-references/khuatmatkytruyen/05-nk48rQqJmc0/boards/033.jpg", "tile": [0, 819, 400, 225] }
+      ],
+      "probe": "boat"
+    },
+    {
+      "number": 6,
+      "id": "xS4lEGgdVCQ",
+      "title": "Ác Giả Ác Báo - Bùa Lỗ Ban Kỳ Truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/06-xS4lEGgdVCQ",
+      "archiveFrames": 862,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Nhân vật trên mái nhà", "kind": "set_base", "keys": ["modular_roof"], "frame": 228, "time": 543.0, "timestamp": "00:09:03", "board": "docs/video-references/khuatmatkytruyen/06-xS4lEGgdVCQ/boards/015.jpg", "tile": [1200, 48, 400, 225] },
+        { "label": "Giàn giáo và người trên/dưới", "kind": "gap", "keys": ["scaffold"], "frame": 434, "time": 998.0, "timestamp": "00:16:38", "board": "docs/video-references/khuatmatkytruyen/06-xS4lEGgdVCQ/boards/028.jpg", "tile": [400, 48, 400, 225] },
+        { "label": "Hình nhân gỗ", "kind": "prop", "keys": ["wooden_effigy"], "frame": 610, "time": 1453.0, "timestamp": "00:24:13", "board": "docs/video-references/khuatmatkytruyen/06-xS4lEGgdVCQ/boards/039.jpg", "tile": [400, 48, 400, 225] },
+        { "label": "Người nằm trên giường", "kind": "set_piece", "keys": ["bed"], "frame": 717, "time": 1682.5, "timestamp": "00:28:02", "board": "docs/video-references/khuatmatkytruyen/06-xS4lEGgdVCQ/boards/045.jpg", "tile": [0, 819, 400, 225] }
+      ],
+      "probe": "bedside"
+    },
+    {
+      "number": 7,
+      "id": "1MBYdq1F-hE",
+      "title": "Người mới, trọ cũ - Ma ăn hồn kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/07-1MBYdq1F-hE",
+      "archiveFrames": 939,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Máy tính xách tay mở", "kind": "gap", "keys": ["laptop"], "frame": 192, "time": 404.5, "timestamp": "00:06:44", "board": "docs/video-references/khuatmatkytruyen/07-1MBYdq1F-hE/boards/012.jpg", "tile": [1200, 819, 400, 225] },
+        { "label": "Gương phản chiếu giường", "kind": "prop", "keys": ["old_mirror"], "frame": 648, "time": 1525.0, "timestamp": "00:25:25", "board": "docs/video-references/khuatmatkytruyen/07-1MBYdq1F-hE/boards/041.jpg", "tile": [1200, 305, 400, 225] },
+        { "label": "Xe khách", "kind": "gap", "keys": ["bus"], "frame": 907, "time": 2144.0, "timestamp": "00:35:44", "board": "docs/video-references/khuatmatkytruyen/07-1MBYdq1F-hE/boards/057.jpg", "tile": [800, 562, 400, 225] },
+        { "label": "Điện thoại trên tay", "kind": "prop", "keys": ["smartphone"], "frame": 540, "time": 1275.0, "timestamp": "00:21:15", "board": "docs/video-references/khuatmatkytruyen/07-1MBYdq1F-hE/boards/034.jpg", "tile": [1200, 562, 400, 225] }
+      ],
+      "probe": "mirror_room"
+    },
+    {
+      "number": 8,
+      "id": "U_2hRTsJ3So",
+      "title": "Tình mẹ - Ma nữ mất con Kỳ Truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/08-U_2hRTsJ3So",
+      "archiveFrames": 783,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Vật chứa thấp có trẻ nằm trong", "kind": "review", "keys": ["earthen_water_bowl", "baby"], "frame": 12, "time": 31.0, "timestamp": "00:00:31", "board": "docs/video-references/khuatmatkytruyen/08-U_2hRTsJ3So/boards/001.jpg", "tile": [1200, 562, 400, 225] },
+        { "label": "Cầu ván cạnh nước", "kind": "set_piece", "keys": ["modular_wooden_bridge"], "frame": 129, "time": 345.5, "timestamp": "00:05:45", "board": "docs/video-references/khuatmatkytruyen/08-U_2hRTsJ3So/boards/009.jpg", "tile": [0, 48, 400, 225] },
+        { "label": "Kéo và trẻ sơ sinh", "kind": "prop", "keys": ["scissors"], "frame": 519, "time": 1471.0, "timestamp": "00:24:31", "board": "docs/video-references/khuatmatkytruyen/08-U_2hRTsJ3So/boards/033.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Người bế trẻ", "kind": "character_kit", "keys": ["baby", "folk_new_mother"], "frame": 559, "time": 1601.0, "timestamp": "00:26:41", "board": "docs/video-references/khuatmatkytruyen/08-U_2hRTsJ3So/boards/035.jpg", "tile": [800, 819, 400, 225] }
+      ],
+      "probe": "cradle"
+    },
+    {
+      "number": 9,
+      "id": "5tEEkZaXW3U",
+      "title": "Én ơi, anh về rồi - Ma vọng phu kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/09-5tEEkZaXW3U",
+      "archiveFrames": 206,
+      "captureStatus": "storyboard_fallback",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Người trên sàn nhà sàn, thang ở dưới", "kind": "set_piece", "keys": ["stilt_house", "stairs"], "frame": 27, "time": 260.0, "timestamp": "00:04:20", "board": "docs/video-references/khuatmatkytruyen/09-5tEEkZaXW3U/boards/002.jpg", "tile": [800, 562, 400, 225] },
+        { "label": "Người bên sông", "kind": "set_base", "keys": ["riverside"], "frame": 78, "time": 770.0, "timestamp": "00:12:50", "board": "docs/video-references/khuatmatkytruyen/09-5tEEkZaXW3U/boards/005.jpg", "tile": [400, 819, 400, 225] },
+        { "label": "Người nằm trong phòng", "kind": "set_piece", "keys": ["bed"], "frame": 186, "time": 1850.0, "timestamp": "00:30:50", "board": "docs/video-references/khuatmatkytruyen/09-5tEEkZaXW3U/boards/012.jpg", "tile": [400, 562, 400, 225] }
+      ],
+      "probe": "stilt_height"
+    },
+    {
+      "number": 10,
+      "id": "tUWV2SqMrpg",
+      "title": "Chén cơm đất - Ma giấu người kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/10-tUWV2SqMrpg",
+      "archiveFrames": 691,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Bụi tre có hốc và bát cơm", "kind": "set_piece", "keys": ["bamboo_hollow"], "frame": 77, "time": 164.0, "timestamp": "00:02:44", "board": "docs/video-references/khuatmatkytruyen/10-tUWV2SqMrpg/boards/005.jpg", "tile": [0, 819, 400, 225] },
+        { "label": "Bát cơm đất", "kind": "prop", "keys": ["earth_rice_offering_bowl"], "frame": 365, "time": 913.0, "timestamp": "00:15:13", "board": "docs/video-references/khuatmatkytruyen/10-tUWV2SqMrpg/boards/023.jpg", "tile": [0, 819, 400, 225] },
+        { "label": "Thìa trên tay", "kind": "prop", "keys": ["spoon"], "frame": 397, "time": 1006.5, "timestamp": "00:16:46", "board": "docs/video-references/khuatmatkytruyen/10-tUWV2SqMrpg/boards/025.jpg", "tile": [0, 819, 400, 225] },
+        { "label": "Thanh chặn cửa", "kind": "prop", "keys": ["wooden_door_bar"], "frame": 548, "time": 1380.5, "timestamp": "00:23:00", "board": "docs/video-references/khuatmatkytruyen/10-tUWV2SqMrpg/boards/035.jpg", "tile": [1200, 48, 400, 225] }
+      ],
+      "probe": "bamboo_hollow"
+    },
+    {
+      "number": 11,
+      "id": "XYjyI0EQ7tk",
+      "title": "Trả nợ -Ma báo oán kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/11-XYjyI0EQ7tk",
+      "archiveFrames": 684,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Cửa cuốn tiệm", "kind": "set_piece", "keys": ["rolling_shutter"], "frame": 103, "time": 236.5, "timestamp": "00:03:56", "board": "docs/video-references/khuatmatkytruyen/11-XYjyI0EQ7tk/boards/007.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Xe khách tại bến", "kind": "gap", "keys": ["bus"], "frame": 451, "time": 1004.5, "timestamp": "00:16:44", "board": "docs/video-references/khuatmatkytruyen/11-XYjyI0EQ7tk/boards/029.jpg", "tile": [800, 48, 400, 225] },
+        { "label": "Đôi dép xanh", "kind": "prop", "keys": ["blue_sandals"], "frame": 471, "time": 1049.0, "timestamp": "00:17:29", "board": "docs/video-references/khuatmatkytruyen/11-XYjyI0EQ7tk/boards/030.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Bàn lễ và người đứng hai bên", "kind": "set_piece", "keys": ["offering_table"], "frame": 355, "time": 790.5, "timestamp": "00:13:10", "board": "docs/video-references/khuatmatkytruyen/11-XYjyI0EQ7tk/boards/023.jpg", "tile": [800, 48, 400, 225] }
+      ],
+      "probe": "shop_ritual"
+    },
+    {
+      "number": 12,
+      "id": "2ygTaMHUri0",
+      "title": "Anh Hai ơi, em xin lỗi - Heo 5 móng kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/12-2ygTaMHUri0",
+      "archiveFrames": 652,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Chuồng heo và heo", "kind": "set_piece", "keys": ["pig_pen"], "frame": 94, "time": 181.0, "timestamp": "00:03:01", "board": "docs/video-references/khuatmatkytruyen/12-2ygTaMHUri0/boards/006.jpg", "tile": [400, 819, 400, 225] },
+        { "label": "Heo năm móng", "kind": "prop", "keys": ["five_toed_pig"], "frame": 115, "time": 220.5, "timestamp": "00:03:40", "board": "docs/video-references/khuatmatkytruyen/12-2ygTaMHUri0/boards/008.jpg", "tile": [800, 48, 400, 225] },
+        { "label": "Heo trên thuyền", "kind": "set_piece", "keys": ["rowboat"], "frame": 370, "time": 784.5, "timestamp": "00:13:04", "board": "docs/video-references/khuatmatkytruyen/12-2ygTaMHUri0/boards/024.jpg", "tile": [400, 48, 400, 225] },
+        { "label": "Heo trong chuồng ban đêm", "kind": "prop", "keys": ["pig"], "frame": 631, "time": 1387.0, "timestamp": "00:23:07", "board": "docs/video-references/khuatmatkytruyen/12-2ygTaMHUri0/boards/040.jpg", "tile": [800, 305, 400, 225] }
+      ],
+      "probe": "pig_pen"
+    },
+    {
+      "number": 13,
+      "id": "-Hb-Tn7OaHo",
+      "title": "Thần trùng - Trùng tang kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/13--Hb-Tn7OaHo",
+      "archiveFrames": 633,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Rạp tang trắng ngoài sân", "kind": "gap", "keys": ["funeral_canopy"], "frame": 10, "time": 18.0, "timestamp": "00:00:18", "board": "docs/video-references/khuatmatkytruyen/13--Hb-Tn7OaHo/boards/001.jpg", "tile": [400, 562, 400, 225] },
+        { "label": "Cửa có khe hở nhìn vào phía trong", "kind": "set_piece", "keys": ["door_panels"], "frame": 272, "time": 543.5, "timestamp": "00:09:03", "board": "docs/video-references/khuatmatkytruyen/13--Hb-Tn7OaHo/boards/017.jpg", "tile": [1200, 819, 400, 225] },
+        { "label": "Chum đóng kín", "kind": "prop", "keys": ["sealed_clay_spirit_jar"], "frame": 383, "time": 751.0, "timestamp": "00:12:31", "board": "docs/video-references/khuatmatkytruyen/13--Hb-Tn7OaHo/boards/024.jpg", "tile": [800, 819, 400, 225] },
+        { "label": "Huyệt mộ và xẻng", "kind": "prop", "keys": ["village_grave_spade"], "frame": 533, "time": 1066.0, "timestamp": "00:17:46", "board": "docs/video-references/khuatmatkytruyen/13--Hb-Tn7OaHo/boards/034.jpg", "tile": [0, 305, 400, 225] }
+      ],
+      "probe": "grave"
+    },
+    {
+      "number": 14,
+      "id": "vy7G-ATxNnM",
+      "title": "Con nhớ nhà lắm - Ma da kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/14-vy7G-ATxNnM",
+      "archiveFrames": 608,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Người trên cầu ván", "kind": "set_piece", "keys": ["modular_wooden_bridge"], "frame": 8, "time": 17.0, "timestamp": "00:00:17", "board": "docs/video-references/khuatmatkytruyen/14-vy7G-ATxNnM/boards/001.jpg", "tile": [1200, 305, 400, 225] },
+        { "label": "Thuyền trên nước", "kind": "set_piece", "keys": ["rowboat"], "frame": 25, "time": 51.0, "timestamp": "00:00:51", "board": "docs/video-references/khuatmatkytruyen/14-vy7G-ATxNnM/boards/002.jpg", "tile": [0, 562, 400, 225] },
+        { "label": "Đầu và thân người chìm dưới nước", "kind": "review", "keys": ["partial_submersion"], "frame": 250, "time": 499.0, "timestamp": "00:08:19", "board": "docs/video-references/khuatmatkytruyen/14-vy7G-ATxNnM/boards/016.jpg", "tile": [400, 562, 400, 225] },
+        { "label": "Bóng ma cạnh người sống", "kind": "character_kit", "keys": ["water_ghost"], "frame": 66, "time": 121.5, "timestamp": "00:02:01", "board": "docs/video-references/khuatmatkytruyen/14-vy7G-ATxNnM/boards/005.jpg", "tile": [400, 48, 400, 225] }
+      ],
+      "probe": "bridge"
+    },
+    {
+      "number": 15,
+      "id": "HSUbahCf3nU",
+      "title": "Kẻ dẫn lối không đường về - Ma Trành kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/15-HSUbahCf3nU",
+      "archiveFrames": 507,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Dấu chân thiếu ngón út", "kind": "review", "keys": ["muddy_footprints"], "frame": 71, "time": 169.0, "timestamp": "00:02:49", "board": "docs/video-references/khuatmatkytruyen/15-HSUbahCf3nU/boards/005.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Người trên lưng hổ", "kind": "review", "keys": ["tiger_rider"], "frame": 307, "time": 660.0, "timestamp": "00:11:00", "board": "docs/video-references/khuatmatkytruyen/15-HSUbahCf3nU/boards/020.jpg", "tile": [800, 48, 400, 225] },
+        { "label": "Hổ và người đứng cạnh", "kind": "prop", "keys": ["forest_tiger"], "frame": 388, "time": 845.0, "timestamp": "00:14:05", "board": "docs/video-references/khuatmatkytruyen/15-HSUbahCf3nU/boards/025.jpg", "tile": [1200, 48, 400, 225] },
+        { "label": "Dao cắm cạnh thân cây", "kind": "prop", "keys": ["machete"], "frame": 455, "time": 998.0, "timestamp": "00:16:38", "board": "docs/video-references/khuatmatkytruyen/15-HSUbahCf3nU/boards/029.jpg", "tile": [800, 305, 400, 225] }
+      ],
+      "probe": "tiger_beside"
+    },
+    {
+      "number": 16,
+      "id": "Y_6PRdEk4Rk",
+      "title": "Đứa con oan nghiệt - Con ranh con lộn kỳ truyện #tamlinh  #tamlinhthanbi",
+      "folder": "docs/video-references/khuatmatkytruyen/16-Y_6PRdEk4Rk",
+      "archiveFrames": 146,
+      "captureStatus": "storyboard_fallback",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Chậu hoặc vật chứa nước thấp", "kind": "review", "keys": ["earthen_water_bowl"], "frame": 55, "time": 270.0, "timestamp": "00:04:30", "board": "docs/video-references/khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/004.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Người bế trẻ sơ sinh", "kind": "character_kit", "keys": ["baby", "folk_new_mother"], "frame": 76, "time": 375.0, "timestamp": "00:06:15", "board": "docs/video-references/khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/005.jpg", "tile": [1200, 562, 400, 225] },
+        { "label": "Trẻ nằm trên phản với vải trắng", "kind": "prop", "keys": ["white_burial_shroud"], "frame": 68, "time": 335.0, "timestamp": "00:05:35", "board": "docs/video-references/khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/005.jpg", "tile": [1200, 48, 400, 225] },
+        { "label": "Bàn tay và vật sắc nhỏ", "kind": "review", "keys": ["sharp_tool_detail"], "frame": 120, "time": 595.0, "timestamp": "00:09:55", "board": "docs/video-references/khuatmatkytruyen/16-Y_6PRdEk4Rk/boards/008.jpg", "tile": [1200, 305, 400, 225] }
+      ],
+      "probe": "infant_bedside"
+    },
+    {
+      "number": 17,
+      "id": "brNfRbyVX0M",
+      "title": "Tình duyên muôn kiếp - Cắt tiền duyên kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/17-brNfRbyVX0M",
+      "archiveFrames": 684,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Đồng hồ điện tử chỉ giờ", "kind": "gap", "keys": ["digital_clock"], "frame": 90, "time": 152.5, "timestamp": "00:02:32", "board": "docs/video-references/khuatmatkytruyen/17-brNfRbyVX0M/boards/006.jpg", "tile": [400, 562, 400, 225] },
+        { "label": "Máy quay trên chân ba chân", "kind": "gap", "keys": ["video_camera", "tripod"], "frame": 144, "time": 255.5, "timestamp": "00:04:15", "board": "docs/video-references/khuatmatkytruyen/17-brNfRbyVX0M/boards/009.jpg", "tile": [1200, 819, 400, 225] },
+        { "label": "Giường bệnh với giá truyền", "kind": "set_piece", "keys": ["hospital_bed"], "frame": 427, "time": 766.0, "timestamp": "00:12:46", "board": "docs/video-references/khuatmatkytruyen/17-brNfRbyVX0M/boards/027.jpg", "tile": [800, 562, 400, 225] },
+        { "label": "Bàn lễ với bát và nhang", "kind": "prop", "keys": ["incense_bowl", "rice_bowl"], "frame": 506, "time": 900.5, "timestamp": "00:15:00", "board": "docs/video-references/khuatmatkytruyen/17-brNfRbyVX0M/boards/032.jpg", "tile": [400, 562, 400, 225] }
+      ],
+      "probe": "hospital"
+    },
+    {
+      "number": 18,
+      "id": "P3SOdALyYnA",
+      "title": "Ma cà rồng Tây Bắc - Phí Phông kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/18-P3SOdALyYnA",
+      "archiveFrames": 540,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Lớp học với bảng và ghế", "kind": "set_piece", "keys": ["chalkboard", "school_benches"], "frame": 54, "time": 100.0, "timestamp": "00:01:40", "board": "docs/video-references/khuatmatkytruyen/18-P3SOdALyYnA/boards/004.jpg", "tile": [400, 305, 400, 225] },
+        { "label": "Vật đựng nhang treo", "kind": "review", "keys": ["suspended_ritual_bowl"], "frame": 87, "time": 155.0, "timestamp": "00:02:35", "board": "docs/video-references/khuatmatkytruyen/18-P3SOdALyYnA/boards/006.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Người khuất sau cửa", "kind": "set_piece", "keys": ["door_panels"], "frame": 196, "time": 382.5, "timestamp": "00:06:22", "board": "docs/video-references/khuatmatkytruyen/18-P3SOdALyYnA/boards/013.jpg", "tile": [1200, 48, 400, 225] },
+        { "label": "Người ở thang nhà sàn", "kind": "set_piece", "keys": ["stilt_house", "stairs"], "frame": 364, "time": 692.0, "timestamp": "00:11:32", "board": "docs/video-references/khuatmatkytruyen/18-P3SOdALyYnA/boards/023.jpg", "tile": [1200, 562, 400, 225] }
+      ],
+      "probe": "school"
+    },
+    {
+      "number": 19,
+      "id": "Cyak0swNZEo",
+      "title": "Đêm không ngủ - Quỷ nhập tràng kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/19-Cyak0swNZEo",
+      "archiveFrames": 445,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Thi thể phủ vải trên phản", "kind": "prop", "keys": ["white_burial_shroud"], "frame": 53, "time": 114.0, "timestamp": "00:01:54", "board": "docs/video-references/khuatmatkytruyen/19-Cyak0swNZEo/boards/004.jpg", "tile": [0, 305, 400, 225] },
+        { "label": "Gương có vải phủ", "kind": "review", "keys": ["old_mirror", "white_burial_shroud"], "frame": 76, "time": 163.5, "timestamp": "00:02:43", "board": "docs/video-references/khuatmatkytruyen/19-Cyak0swNZEo/boards/005.jpg", "tile": [1200, 562, 400, 225] },
+        { "label": "Người thân đứng quanh thi thể", "kind": "character_kit", "keys": ["mourner_man", "mourner_woman"], "frame": 91, "time": 191.0, "timestamp": "00:03:11", "board": "docs/video-references/khuatmatkytruyen/19-Cyak0swNZEo/boards/006.jpg", "tile": [800, 562, 400, 225] },
+        { "label": "Mèo đen ngoài nhà", "kind": "prop", "keys": ["black_cat"], "frame": 153, "time": 316.5, "timestamp": "00:05:16", "board": "docs/video-references/khuatmatkytruyen/19-Cyak0swNZEo/boards/010.jpg", "tile": [0, 562, 400, 225] }
+      ],
+      "probe": "mourning"
+    },
+    {
+      "number": 20,
+      "id": "wtR75Nr2Whc",
+      "title": "Bùa chú An Giang - Thư ếm kỳ truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/20-wtR75Nr2Whc",
+      "archiveFrames": 478,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Chum và heo", "kind": "prop", "keys": ["water_jar", "pig"], "frame": 208, "time": 378.5, "timestamp": "00:06:18", "board": "docs/video-references/khuatmatkytruyen/20-wtR75Nr2Whc/boards/013.jpg", "tile": [1200, 819, 400, 225] },
+        { "label": "Đĩa chứa chất đỏ trong nghi lễ", "kind": "review", "keys": ["offering_plate"], "frame": 264, "time": 474.5, "timestamp": "00:07:54", "board": "docs/video-references/khuatmatkytruyen/20-wtR75Nr2Whc/boards/017.jpg", "tile": [1200, 305, 400, 225] },
+        { "label": "Nồi đặt trên bếp", "kind": "prop", "keys": ["cooking_pot"], "frame": 316, "time": 574.5, "timestamp": "00:09:34", "board": "docs/video-references/khuatmatkytruyen/20-wtR75Nr2Whc/boards/020.jpg", "tile": [1200, 562, 400, 225] },
+        { "label": "Thầy pháp và người làm lễ", "kind": "character_kit", "keys": ["shaman"], "frame": 339, "time": 613.5, "timestamp": "00:10:13", "board": "docs/video-references/khuatmatkytruyen/20-wtR75Nr2Whc/boards/022.jpg", "tile": [800, 48, 400, 225] },
+        { "label": "Hũ chứa tóc", "kind": "prop", "keys": ["hair_jar"], "frame": 432, "time": 792.5, "timestamp": "00:13:12", "board": "docs/video-references/khuatmatkytruyen/20-wtR75Nr2Whc/boards/027.jpg", "tile": [1200, 819, 400, 225] }
+      ],
+      "probe": "hearth_pot"
+    },
+    {
+      "number": 21,
+      "id": "mmg9idL64rQ",
+      "title": "Chú thuật phản phệ - Thiên Linh Cái Kỳ Truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/21-mmg9idL64rQ",
+      "archiveFrames": 449,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Bát có vật đỏ bên trong", "kind": "review", "keys": ["plain_rice_bowl", "earthen_water_bowl"], "frame": 47, "time": 80.5, "timestamp": "00:01:20", "board": "docs/video-references/khuatmatkytruyen/21-mmg9idL64rQ/boards/003.jpg", "tile": [800, 819, 400, 225] },
+        { "label": "Cân hai đĩa", "kind": "prop", "keys": ["ritual_balance_scale"], "frame": 85, "time": 149.5, "timestamp": "00:02:29", "board": "docs/video-references/khuatmatkytruyen/21-mmg9idL64rQ/boards/006.jpg", "tile": [0, 305, 400, 225] },
+        { "label": "Sọ trên bàn", "kind": "prop", "keys": ["skull"], "frame": 118, "time": 216.5, "timestamp": "00:03:36", "board": "docs/video-references/khuatmatkytruyen/21-mmg9idL64rQ/boards/008.jpg", "tile": [400, 305, 400, 225] },
+        { "label": "Nhóm người đứng thành hàng", "kind": "character_kit", "keys": ["villager_man_1"], "frame": 317, "time": 586.5, "timestamp": "00:09:46", "board": "docs/video-references/khuatmatkytruyen/21-mmg9idL64rQ/boards/020.jpg", "tile": [0, 819, 400, 225] }
+      ],
+      "probe": "balance_table"
+    },
+    {
+      "number": 22,
+      "id": "y9UmyNlC_g0",
+      "title": "Chuyến đi làm thuê trên bản - Ma xó Kỳ Truyện",
+      "folder": "docs/video-references/khuatmatkytruyen/22-y9UmyNlC_g0",
+      "archiveFrames": 372,
+      "captureStatus": "extracted",
+      "reviewedOverviewFrames": 36,
+      "scope": "overview_and_selected_original_tiles",
+      "exhaustive": false,
+      "observations": [
+        { "label": "Nhiều bát riêng trên cùng sàn", "kind": "review", "keys": ["ten_bowls_capacity"], "frame": 166, "time": 332.5, "timestamp": "00:05:32", "board": "docs/video-references/khuatmatkytruyen/22-y9UmyNlC_g0/boards/011.jpg", "tile": [400, 305, 400, 225] },
+        { "label": "Nhà sàn vùng núi", "kind": "set_piece", "keys": ["stilt_house"], "frame": 187, "time": 374.0, "timestamp": "00:06:14", "board": "docs/video-references/khuatmatkytruyen/22-y9UmyNlC_g0/boards/012.jpg", "tile": [800, 562, 400, 225] },
+        { "label": "Tủ đứng trong phòng", "kind": "set_piece", "keys": ["wardrobe"], "frame": 218, "time": 434.0, "timestamp": "00:07:14", "board": "docs/video-references/khuatmatkytruyen/22-y9UmyNlC_g0/boards/014.jpg", "tile": [400, 562, 400, 225] },
+        { "label": "Cánh tủ mở và bóng người gần tủ", "kind": "review", "keys": ["open_wardrobe"], "frame": 359, "time": 694.5, "timestamp": "00:11:34", "board": "docs/video-references/khuatmatkytruyen/22-y9UmyNlC_g0/boards/023.jpg", "tile": [800, 305, 400, 225] },
+        { "label": "Người trên giường có chăn phủ", "kind": "review", "keys": ["folded_cotton_blanket"], "frame": 250, "time": 493.0, "timestamp": "00:08:13", "board": "docs/video-references/khuatmatkytruyen/22-y9UmyNlC_g0/boards/016.jpg", "tile": [400, 562, 400, 225] }
+      ],
+      "probe": "wardrobe"
+    }
+  ],
+  "probes": [
+    {
+      "id": "two_patients",
+      "place": "Vietnamese village bedroom",
+      "interior": true,
+      "features": ["hearth"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "bed" },
+        { "char": "actor_1", "action": "lie", "posture": "lie", "support": "bed" },
+        { "char": "actor_2", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "hammock_lying",
+      "place": "Vietnamese forest",
+      "interior": false,
+      "features": ["hammock"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "hammock" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "shop_counter",
+      "place": "Vietnamese shop interior",
+      "interior": true,
+      "features": ["shop_counter", "goods_shelves"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "village_debt_ledger", "mount": "table", "support": "counter" }],
+      "infant": null
+    },
+    {
+      "id": "temple",
+      "place": "Vietnamese pagoda temple interior",
+      "interior": true,
+      "features": ["buddha"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "prayer_beads", "mount": "held" }],
+      "infant": null
+    },
+    {
+      "id": "boat",
+      "place": "Vietnamese riverbank",
+      "interior": false,
+      "features": ["boat"],
+      "states": [
+        { "char": "actor_0", "action": "sit", "posture": "sit", "support": "boat" },
+        { "char": "actor_1", "action": "sit", "posture": "sit", "support": "boat" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "bedside",
+      "place": "Vietnamese village bedroom",
+      "interior": true,
+      "features": ["bed"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "bed" },
+        { "char": "actor_1", "action": "stand", "posture": "idle", "support": "beside_bed" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "mirror_room",
+      "place": "Vietnamese modern bedroom",
+      "interior": true,
+      "features": ["bed"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "old_mirror", "mount": "floor" }],
+      "infant": null
+    },
+    {
+      "id": "cradle",
+      "place": "Vietnamese village bedroom",
+      "interior": true,
+      "features": ["cradle"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "cradle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle", "support": "beside_cradle" }
+      ],
+      "objects": [],
+      "infant": 0
+    },
+    {
+      "id": "stilt_height",
+      "place": "Vietnamese stilt house courtyard",
+      "interior": false,
+      "features": ["stilt_house"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle", "support": "upper_platform" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "bamboo_hollow",
+      "place": "Vietnamese bamboo forest",
+      "interior": false,
+      "features": ["bamboo_hollow"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [
+        { "key": "object_0", "catalogKey": "earth_rice_offering_bowl", "mount": "floor" },
+        { "key": "object_1", "catalogKey": "spoon", "mount": "held" }
+      ],
+      "infant": null
+    },
+    {
+      "id": "shop_ritual",
+      "place": "Vietnamese shop interior",
+      "interior": true,
+      "features": ["rolling_shutter", "offering_table"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "incense_bowl", "mount": "table", "support": "ritual_table" }],
+      "infant": null
+    },
+    {
+      "id": "pig_pen",
+      "place": "Vietnamese village courtyard",
+      "interior": false,
+      "features": ["pig_pen"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "five_toed_pig", "mount": "floor" }],
+      "infant": null
+    },
+    {
+      "id": "grave",
+      "place": "Vietnamese graveyard hillside",
+      "interior": false,
+      "features": ["grave"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "village_grave_spade", "mount": "held" }],
+      "infant": null
+    },
+    {
+      "id": "bridge",
+      "place": "Vietnamese riverbank",
+      "interior": false,
+      "features": ["bridge"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle", "support": "bridge" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "tiger_beside",
+      "place": "Vietnamese forest",
+      "interior": false,
+      "features": [],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "forest_tiger", "mount": "floor" }],
+      "infant": null
+    },
+    {
+      "id": "infant_bedside",
+      "place": "Vietnamese village bedroom",
+      "interior": true,
+      "features": ["bed"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "bed" },
+        { "char": "actor_1", "action": "stand", "posture": "idle", "support": "beside_bed" }
+      ],
+      "objects": [],
+      "infant": 0
+    },
+    {
+      "id": "hospital",
+      "place": "Vietnamese hospital room",
+      "interior": true,
+      "features": ["hospital_bed"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "bed" },
+        { "char": "actor_1", "action": "stand", "posture": "idle", "support": "beside_bed" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "school",
+      "place": "Vietnamese classroom",
+      "interior": true,
+      "features": ["chalkboard", "school_benches"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "mourning",
+      "place": "Vietnamese village bedroom",
+      "interior": true,
+      "features": ["bed"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "bed" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" },
+        { "char": "actor_2", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "white_burial_shroud", "mount": "table", "support": "bed" }],
+      "infant": null
+    },
+    {
+      "id": "hearth_pot",
+      "place": "Vietnamese kitchen interior",
+      "interior": true,
+      "features": ["hearth"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "cooking_pot", "mount": "table", "support": "hearth" }],
+      "infant": null
+    },
+    {
+      "id": "balance_table",
+      "place": "Vietnamese village living room",
+      "interior": true,
+      "features": ["table"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [{ "key": "object_0", "catalogKey": "ritual_balance_scale", "mount": "table", "support": "table" }],
+      "infant": null
+    },
+    {
+      "id": "wardrobe",
+      "place": "Vietnamese village bedroom",
+      "interior": true,
+      "features": ["wardrobe"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "ten_bowls_capacity",
+      "place": "Vietnamese stilt house interior",
+      "interior": true,
+      "features": [],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [
+        { "key": "object_0", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_1", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_2", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_3", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_4", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_5", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_6", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_7", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_8", "catalogKey": "empty_rice_bowl", "mount": "floor" },
+        { "key": "object_9", "catalogKey": "empty_rice_bowl", "mount": "floor" }
+      ],
+      "infant": null
+    },
+    {
+      "id": "hammock_seated_forest",
+      "place": "Vietnamese forest",
+      "interior": false,
+      "features": ["hammock"],
+      "states": [
+        { "char": "actor_0", "action": "sit", "posture": "sit", "support": "hammock" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "coffin_watchers",
+      "place": "Vietnamese village living room",
+      "interior": true,
+      "features": ["coffin"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" },
+        { "char": "actor_2", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "raised_platform",
+      "place": "Vietnamese stilt house interior",
+      "interior": true,
+      "features": ["daybed"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle", "support": "daybed" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "two_patients_floor",
+      "place": "Vietnamese stilt house interior",
+      "interior": true,
+      "features": ["hearth"],
+      "states": [
+        { "char": "actor_0", "action": "lie", "posture": "lie", "support": "floor" },
+        { "char": "actor_1", "action": "lie", "posture": "lie", "support": "floor" },
+        { "char": "actor_2", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    },
+    {
+      "id": "school_simple_bench",
+      "place": "Vietnamese classroom",
+      "interior": true,
+      "features": ["chalkboard", "bench"],
+      "states": [
+        { "char": "actor_0", "action": "stand", "posture": "idle" },
+        { "char": "actor_1", "action": "stand", "posture": "idle" }
+      ],
+      "objects": [],
+      "infant": null
+    }
+  ],
+  "findings": [
+    { "id": "A01", "category": "asset_missing", "priority": "P1", "videos": [6, 7, 11, 13, 17], "keys": ["scaffold", "laptop", "bus", "funeral_canopy", "digital_clock", "video_camera", "tripod"], "conclusion": "Không tìm thấy hình rời tương ứng trong hai gói hoạt động; đã so khóa, tên, mô tả, nhãn và danh mục toàn bộ món. Cần bổ sung theo mức quan trọng của truyện, không tự thay bằng món khác." },
+    { "id": "M01", "category": "metadata_layout", "priority": "P0", "videos": [2, 4], "keys": ["hammock"], "conclusion": "Có hình võng, nhưng chỉ có điểm ngồi và đứng bên cạnh; giới hạn interior. Chưa có điểm nằm, liên kết trẻ-người chăm và cấu hình võng ngoài rừng. Không cần mô phỏng động tác khiêng." },
+    {
+      "id": "M02",
+      "category": "metadata_layout",
+      "priority": "P0",
+      "videos": [1, 3, 8, 11, 12, 17, 18, 19],
+      "keys": ["goods_shelves", "baby_cradle", "folk_wooden_cradle", "hospital_bed", "school_benches", "pig_pen", "offering_table"],
+      "conclusion": "Các món tồn tại và qua kiểm cấu trúc; các phép thử kết hợp vẫn bị search_limit/support. Đây là bằng chứng tổ hợp hiện chưa chạy được, chưa đủ để nói thiếu hình hoặc tăng giới hạn tìm kiếm sẽ sửa được."
+    },
+    { "id": "M03", "category": "metadata_layout", "priority": "P0", "videos": [6, 9, 18], "keys": ["stilt_house", "stairs", "folk_raised_daybed"], "conclusion": "Nhà sàn/thang có hình; điểm đứng trên sàn cao của nhà chưa được biểu diễn rõ. support=daybed có thể chọn cả điểm dưới lẫn trên, nên có lựa chọn không đồng nghĩa giữ quan hệ cao-thấp." },
+    {
+      "id": "V01",
+      "category": "visual_composition",
+      "priority": "P0",
+      "videos": [1, 7, 8, 15, 16, 21, 22],
+      "keys": ["bed", "old_mirror", "village_grave_spade", "empty_rice_bowl", "wardrobe"],
+      "conclusion": "Ảnh tĩnh từ bộ dựng cho thấy cắt người ở mép, chồng người/món, xẻng lớn và nhiều bát chồng nhau; lựa chọn hợp lệ về dữ liệu chưa đủ chứng minh hình đạt. Các ảnh là phép thử tổng hợp, không phải lỗi được quan sát trong mọi dự án thật."
+    },
+    {
+      "id": "S01",
+      "category": "state_relation",
+      "priority": "P1",
+      "videos": [7, 13, 14, 18, 19, 20, 21, 22],
+      "keys": ["old_mirror", "door_panels", "wardrobe", "white_burial_shroud", "folded_cotton_blanket", "incense_bowl", "offering_plate", "plain_rice_bowl"],
+      "conclusion": "Cần kiểm/tạo biến thể trạng thái và quan hệ: cửa/tủ hé, che khuất, vải phủ thân/gương, người dưới mặt nước, bát treo, đồ đỏ bên trong bát/đĩa, gương phản chiếu đúng cảnh. Không lấy khóa chung làm bằng chứng đã có trạng thái."
+    },
+    {
+      "id": "R01",
+      "category": "needs_verification",
+      "priority": "P2",
+      "videos": [8, 15, 16],
+      "keys": ["earthen_water_bowl", "muddy_footprints"],
+      "conclusion": "Bát nước đất đã có, cần kiểm tỷ lệ và điểm chứa trẻ trước khi kết luận thiếu chậu. SVG muddy_footprints có bốn vòng tròn ngón ở một dấu chân: không được báo thiếu dấu bốn ngón chỉ vì thiếu khóa four_toed_footprint. Chi tiết vật sắc ở nguồn 16 cần ảnh rõ hơn."
+    },
+    { "id": "O01", "category": "simplifiable", "priority": "P2", "videos": [2, 8, 15, 18, 22], "keys": [], "conclusion": "Động tác khiêng võng, bế/trao trẻ, leo thang, cưỡi hổ hoặc mở tủ có thể dùng hình tĩnh trước/sau hành động khi không đổi tình tiết. Nếu bản thân tư thế/đồ vật là manh mối thì phải giữ đúng hình và quan hệ đó." }
+  ],
+  "probeScopeNotes": {
+    "two_patients": "Additional two-bed constraint; source frame 1023 depicts people on the floor, so this failure alone does not prove source layout impossible.",
+    "two_patients_floor": "Closer static alternative for source frame 1023: two lying actors on floor with hearth.",
+    "school": "Requires exact school_benches piece; source can use a simple bench.",
+    "school_simple_bench": "Simplified classroom using chalkboard and existing bench."
+  }
+}

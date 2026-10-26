@@ -29,15 +29,8 @@ export const CHAT_PLANNING_RUNTIME = {
   UPLOAD_BUSY_TEXT_PATTERN: /uploading|processing|đang tải|đang xử lý/i,
   UPLOAD_PATH_PATTERN: /(?:upload|attachment|\/files?(?:\/|$))/i,
   MULTIPART_PATTERN: /multipart\/form-data/i,
+  UPLOAD_PUT: "PUT",
+  GEMINI_UPLOAD_HOST_PATTERN: /(?:^|\.)(?:google\.com|googleapis\.com|googleusercontent\.com)$/i,
+  IMAGE_EXTENSION_PATTERN: /\.(?:jpe?g|png|webp|gif|avif|bmp)$/i,
 } as const;
-export const CHAT_JSON_PATTERNS = {
-  VALUE_AFTER_COMMA: /^[\s]*["{[\-\dtfn]/,
-  AFTER_CONTAINER: /^\s*([,}\]]|$)/,
-  OBJECT_KEY_PREFIX: /[{,]\s*$/,
-  ARRAY_PREFIX: /\[\s*$/,
-  CONTAINER_END: /^\s*([}\]])/,
-  IDENTIFIER_START: /[A-Za-z_$]/,
-  UNQUOTED_KEY: /^([A-Za-z_$][\w$]*)("?)\s*:/,
-  JSON_FENCE: /```(?:json)?/gi,
-  CODE_FENCE: /```/g,
-} as const;
+export const CHAT_JSON_PATTERNS = { VALUE_AFTER_COMMA: /^[\s]*["{[\-\dtfn]/, AFTER_CONTAINER: /^\s*([,}\]]|$)/, OBJECT_KEY_PREFIX: /[{,]\s*$/, ARRAY_PREFIX: /\[\s*$/, CONTAINER_END: /^\s*([}\]])/, IDENTIFIER_START: /[A-Za-z_$]/, UNQUOTED_KEY: /^([A-Za-z_$][\w$]*)("?)\s*:/, JSON_FENCE: /```(?:json)?/gi, CODE_FENCE: /```/g } as const;

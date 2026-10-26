@@ -1,0 +1,15 @@
+export const QA_POLICY_TEST = {
+  TITLE: "Kiểm QA lời kể và ảnh minh họa",
+  SUMMARY: "Đứa cháu làm đổ muối gạo, chị Hai nhận ra điềm lạ ở ngạch cửa.",
+  CHAPTER: "c1",
+  LANGUAGE: "vi",
+  SPEECH_RATE: 3.4,
+  VOICE: "Kể tự nhiên, gần gũi.",
+  TEXT: "Tôi đứng cạnh cửa.",
+  IMAGE: "offline-qa-fixture.jpg",
+  WRONG: "Người trong ảnh bị đổi thành nhân vật khác.",
+  OPTIONAL: "Tay không thực hiện động tác mở cửa.",
+  SERVICE: "Dịch vụ duyệt ảnh chưa phản hồi.",
+  CANCELLED: "Người dùng dừng lượt.",
+  RESULT: { passed: true, realDraftUnits: 134, oldExhaustedDraftRestored: true, exactCountsAdvisory: true, criticalVisualChecksRetained: true, liveAiCalls: 0, videoCreated: false },
+} as const;

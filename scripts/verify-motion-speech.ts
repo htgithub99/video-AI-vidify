@@ -112,7 +112,8 @@ try {
   for (const shot of timing.spec.shots) for (const frame of (shot.params as any).frames) assert.deepEqual(frame.speech, []);
   assert.equal(JSON.stringify(script), original);
   const shortBeat: any = { ...beats[0], utterances: [role(C.NARRATOR, V.NARRATION, VT.NARRATION), dialogue] };
-  const shortFrames = puppetBeatFrames(shortBeat, gen.puppet, 0, 0.8, []);
+  const shortGen = { ...gen.puppet, frames: { ...gen.puppet.frames, [puppetBeatLines(shortBeat)[1].key]: frames[puppetBeatLines(beats[1])[1].key] } };
+  const shortFrames = puppetBeatFrames(shortBeat, shortGen, 0, 0.8, []);
   assert.equal(shortFrames.length, 2);
   assert.ok(!shortFrames[0].speaker);
   assert.equal(shortFrames[1].speaker, V.NARRATOR);

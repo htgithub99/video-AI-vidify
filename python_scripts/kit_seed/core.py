@@ -1,4 +1,5 @@
-import math, random
+import math, random, re
+from illustration_texts import IllustrationText as I
 
 W, H = 1920, 1080
 NAVY = (12, 20, 38)
@@ -124,11 +125,16 @@ def pts(ps):
     return ' '.join('%s,%s' % (f(x), f(y)) for x, y in ps)
 
 
+def svg_attributes(value):
+    last = {attr.group(1): attr.start() for attr in re.finditer(I.SVG_ATTRIBUTE, value)}
+    return re.sub(I.SVG_ATTRIBUTE, lambda attr: attr.group(0) if attr.start() == last[attr.group(1)] else '', value)
+
+
 def st(t, fill, stroke=True, sw=None, extra=''):
     s = 'fill="%s"' % fill
     if stroke:
         s += ' stroke="%s" stroke-width="%s" stroke-linejoin="round"' % (t.line, f(sw if sw is not None else t.lw))
-    return s + extra
+    return svg_attributes(s + extra)
 
 
 def rect(t, x, y, w, h, fill, stroke=True, sw=None, rx=0, extra=''):
@@ -153,11 +159,11 @@ def ell(t, x, y, rx, ry, fill, stroke=True, sw=None, extra=''):
 
 
 def line(t, x1, y1, x2, y2, color=None, sw=None, extra=''):
-    return '<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="%s" stroke-linecap="round"%s/>' % (f(x1), f(y1), f(x2), f(y2), color or t.line, f(sw if sw is not None else t.lw), extra)
+    return svg_attributes('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="%s" stroke-linecap="round"%s/>' % (f(x1), f(y1), f(x2), f(y2), color or t.line, f(sw if sw is not None else t.lw), extra))
 
 
 def pline(t, ps, color=None, sw=None, extra=''):
-    return '<polyline points="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round"%s/>' % (pts(ps), color or t.line, f(sw if sw is not None else t.lw), extra)
+    return svg_attributes('<polyline points="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round"%s/>' % (pts(ps), color or t.line, f(sw if sw is not None else t.lw), extra))
 
 
 def op(a):
@@ -179,4 +185,4 @@ def psvg(t, items):
 
 
 def spath(d, color, sw, extra=''):
-    return '<path d="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round"%s/>' % (d, color, f(sw), extra)
+    return svg_attributes('<path d="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round"%s/>' % (d, color, f(sw), extra))

@@ -1,100 +1,35 @@
+import { isTerminalMotionAiError } from "../chatSubmissionRecovery.js";
+import { setImmediate } from "node:timers/promises";
 import { puppetTimestamp as now, puppetKeyOf as keyOf } from "../../../lib/motionPuppetValues.js";
 import _ from "lodash";
 import { puppetAssetName, puppetEnglish, puppetSceneFeatureFits } from "../../../lib/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_TYPES } from "../../../constants/motionPuppet.js";
 import { PUPPET_SET as Q, PUPPET_SET_PROMPTS as QR, PUPPET_SLOTS } from "../../../constants/motionPuppetSets.js";
-import type { PuppetBase, PuppetLight, PuppetPiece, PuppetPlace, PuppetSet, PuppetSetPlan, PuppetSpot, PuppetStylePack } from "../../../types/motionPuppet.js";
+import type { PuppetBase, PuppetPiece, PuppetPlace, PuppetSet, PuppetSetPlan, PuppetStylePack } from "../../../types/motionPuppet.js";
 import { mapMotionAiPool, runMotionAi } from "../motionStoryService.js";
 import { listPuppets, newPuppetId, puppetHash, writePuppet } from "./kitLibrary.js";
+import { assertPuppetDrawingAllowed, puppetPackActive, registerPuppetAssembly, withPuppetAssemblyTrial } from "./packPolicy.js";
+import { MOTION_PACK as PACK } from "../../../constants/motionPack.js";
+import { MOTION_ILLUSTRATION as I } from "../../../constants/motionIllustration.js";
+import { MOTION_PACK_SELECTION as SELECTION } from "../../../constants/motionPackSelection.js";
+import { puppetPackAssetIssues } from "./packInventory.js";
+import { puppetPackAssemblyBaseFits, puppetPackAssemblyLocationFits } from "./packLocation.js";
+import { puppetFeatureSpot, puppetSpots } from "./layout.js";
+import { puppetSpotGeometryValid } from "../../../lib/motionPlacement.js";
+import { motionPieceEnvironmentFits, motionPieceContactSpots, motionPlaceLocationFamily, motionPieceContextFits } from "../../../lib/motionResourceSemantics.js";
 import { cleanPuppetSvg, svgShapes } from "./svg.js";
 import { puppetStyleImages, puppetStyleText, type PuppetRunOptions } from "./stylePack.js";
+import { composePuppetSet, piecePlacement, pieceSpots, puppetPieceSlots, boxesOverlap } from "./setComposition.js";
+import { MOTION_LIBRARY_RELEASE as RELEASE } from "../../../constants/motionLibraryRelease.js";
+import { MOTION_STAGE_CONSTRAINTS as CONSTRAINTS } from "../../../constants/motionStageConstraints.js";
+export { composePuppetSet, puppetBaseFamily } from "./setComposition.js";
 const W = P.SET_W;
 const H = P.SET_H;
-const persp = (y: number, hz: number, fy: number): number => _.clamp(P.PERSP_MIN + (P.PERSP_SPAN * (y - hz)) / Math.max(1, fy - hz), P.PERSP_MIN, 1);
-const prefixIds = (svg: string, n: string): string => svg.replace(Q.ID_RE, (_m, id) => Q.ID_ATTR(Q.PREFIX(n, id))).replace(Q.URL_RE, (_m, id) => Q.URL_REF(Q.PREFIX(n, id)));
-const splitSvg = (svg: string): { defs: string; inner: string } => {
-  const m = svg.match(Q.INNER_RE);
-  const body = m ? m[1] : P.EMPTY;
-  const d = body.match(Q.DEFS_RE);
-  return { defs: d ? d[1] : P.EMPTY, inner: d ? body.replace(d[0], P.EMPTY) : body };
-};
-const between = (s: string, a: string, b: string): string => {
-  const i = s.indexOf(a);
-  if (i < 0) return P.EMPTY;
-  const from = i + a.length;
-  const j = b ? s.indexOf(b, from) : -1;
-  const body = j < 0 ? s.slice(from) : s.slice(from, j);
-  return body.endsWith(Q.G_CLOSE) ? body.slice(0, -Q.G_CLOSE.length) : body;
-};
-const baseParts = (svg: string) => {
-  const { defs } = splitSvg(svg);
-  return { defs, sky: between(svg, Q.BASE_MARK_SKY, Q.BASE_MARK_BACK), back: between(svg, Q.BASE_MARK_BACK, Q.BASE_MARK_FLOOR), floor: between(svg, Q.BASE_MARK_FLOOR, Q.SVG_END) };
-};
-const swapSides = (s: string): string => s.replace(Q.LEFT_RIGHT_RE, (m) => Q.SWAP[m] || m);
-const swapKey = (k: string): string => swapSides(k.split(Q.KEY_SPLIT).join(Q.KEY_JOIN)).split(Q.KEY_JOIN).join(Q.KEY_SPLIT);
-export const puppetBaseFamily = (b: Pick<PuppetBase, "interior">): string => (b.interior ? Q.FAMILY_INTERIOR : Q.FAMILY_EXTERIOR);
-export const puppetPieces = (styleId: string): PuppetPiece[] => listPuppets<PuppetPiece>(PUPPET_TYPES.PIECE, (p) => p.styleId === styleId);
-export const puppetBases = (styleId: string): PuppetBase[] => listPuppets<PuppetBase>(PUPPET_TYPES.BASE, (b) => b.styleId === styleId);
-export interface PuppetComposed {
-  svg: string;
-  spots: PuppetSpot[];
-  lights: PuppetLight[];
-  floorY: number;
-  horizonY: number;
-}
-export const composePuppetSet = (base: PuppetBase, placed: { slot: string; piece: PuppetPiece }[], night: boolean, mirror: boolean): PuppetComposed => {
-  const slots = PUPPET_SLOTS[puppetBaseFamily(base)];
-  const hz = base.horizonY,
-    fy = base.floorY;
-  const b = _.mapValues(baseParts(night && base.night ? base.night : base.svg), (part) => prefixIds(part, Q.BASE_PREFIX));
-  const layers: Record<string, string[]> = _.fromPairs(_.map(Q.LAYERS, (l) => [l, [] as string[]]));
-  const defs: string[] = [b.defs];
-  const spots: PuppetSpot[] = [];
-  const lights: PuppetLight[] = [];
-  const occ: string[] = [];
-  const items = _.sortBy(
-    _.compact(
-      _.map(placed, ({ slot, piece }) => {
-        const sd = slots[slot];
-        if (!sd) return null;
-        const ty = sd.wall != null ? hz * sd.wall : hz + (sd.d || 0) * (fy - hz);
-        return { slot, piece, sd, tx: sd.x * W, ty };
-      }),
-    ),
-    (it) => it.ty,
-  );
-  items.forEach(({ piece, sd, tx, ty }, i) => {
-    const box = piece.box,
-      a = piece.anchor;
-    let s = piece.native ? persp(ty, hz, fy) / persp(a[1], piece.native.hz, piece.native.fy) : (((piece.size || P.SIZE_DEFAULT) / P.PERSON_M) * P.PERSON_H * H * persp(ty, hz, fy)) / (Math.max(box[2], box[3]) * P.PROP_FILL);
-    if (sd.maxW && box[2] * s > sd.maxW * W) s = (sd.maxW * W) / box[2];
-    const src = splitSvg(prefixIds(night && piece.night ? piece.night : piece.svg, Q.PIECE_PREFIX(i)));
-    defs.push(src.defs);
-    const nested = Q.NESTED(tx - (a[0] - box[0]) * s, ty - (a[1] - box[1]) * s, box[2] * s, box[3] * s, Q.VB(box), src.inner);
-    layers[sd.layer].push(nested);
-    if (piece.front && _.includes(Q.OCC_LAYERS, sd.layer)) occ.push(Q.OCC(ty, mirror ? Q.MIRROR(nested) : nested));
-    for (const sp of piece.spots || []) spots.push({ key: sp.key, kind: sp.kind, ...(sp.face ? { face: sp.face } : {}), x: Math.round(tx + (sp.x - a[0]) * s), y: Math.round(ty + (sp.y - a[1]) * s), ...(sp.groundY != null ? { groundY: Math.round(ty + (sp.groundY - a[1]) * s) } : {}), ...(sp.seatY != null ? { seatY: Math.round(ty + (sp.seatY - a[1]) * s) } : {}), label: sp.label });
-    for (const l of piece.lights || []) lights.push({ x: Math.round(tx + (l.x - a[0]) * s), y: Math.round(ty + (l.y - a[1]) * s), color: Q.LIGHT_COLOR, kind: l.kind });
-  });
-  for (const [key, x, label] of P.SPOT_FRONT) spots.push({ key, kind: P.SPOT_STAND, x: Math.round(x * W), y: fy - P.SPOT_INSET, label });
-  spots.push({ key: P.SPOT_OPEN_KEY, kind: P.SPOT_OPEN, x: W / 2, y: fy - P.SPOT_OPEN_INSET, label: P.SPOT_OPEN_LABEL });
-  spots.push({ key: P.SPOT_FLOOR_KEY, kind: P.SPOT_LIE, x: W / 2, y: fy - P.SPOT_INSET, label: P.SPOT_FLOOR_LABEL });
-  const seen: Record<string, number> = {};
-  let out = _.map(spots, (sp) => {
-    seen[sp.key] = (seen[sp.key] || 0) + 1;
-    return seen[sp.key] > 1 ? { ...sp, key: Q.DUP(sp.key, seen[sp.key]) } : sp;
-  });
-  let outLights = lights;
-  const back = b.back + layers.back.join(P.EMPTY) + b.floor;
-  let groups = [back, layers.mid.join(P.EMPTY), layers.floor.join(P.EMPTY), layers.fg.join(P.EMPTY)];
-  if (mirror) {
-    groups = _.map(groups, (g) => (g ? Q.MIRROR(g) : g));
-    out = _.map(out, (sp) => ({ ...sp, ...(sp.face ? { face: swapSides(sp.face) } : {}), x: W - sp.x, key: swapKey(sp.key), label: swapSides(sp.label) }));
-    outLights = _.map(lights, (l) => ({ ...l, x: W - l.x }));
-  }
-  return { svg: Q.SET_SVG(defs.join(P.EMPTY), b.sky, groups[0], groups[1], groups[2], groups[3], occ.join(P.EMPTY)), spots: _.take(out, P.SPOTS_MAX * 2), lights: _.take(outLights, P.LIGHTS_MAX), floorY: fy, horizonY: hz };
-};
+export const puppetPieces = (styleId: string): PuppetPiece[] => listPuppets<PuppetPiece>(PUPPET_TYPES.PIECE, (p) => p.styleId === styleId && !p.recipeOnly).map((piece) => ({ ...piece, spots: motionPieceContactSpots(piece) }));
+export const puppetBases = (styleId: string): PuppetBase[] => listPuppets<PuppetBase>(PUPPET_TYPES.BASE, (b) => b.styleId === styleId && !b.recipeOnly);
 export interface PuppetSetNeed {
+  validate?: (set: PuppetSet) => string[];
+  placements?: { support: string; kind: string; count: number }[];
   place: PuppetPlace;
   must: string[];
   uses: string;
@@ -124,14 +59,14 @@ export const planPuppetSets = async (style: PuppetStylePack, needs: PuppetSetNee
         (p) => Q.PIECE_LIST(p),
       ).join(P.NL),
       slots: slotText,
-      places: _.map(needs, (n) => Q.PLACE_LIST({ key: n.place.key, name: n.place.name, desc: _.truncate(n.place.desc, { length: 160 }), side: n.place.interior ? P.INSIDE : P.OUTSIDE, must: n.must.join(P.COMMA), uses: _.truncate(n.uses, { length: 220 }) })).join(P.NL),
+      places: (puppetPackActive() ? PACK.PLAN_PROMPT + P.NL : P.EMPTY) + _.map(needs, (n) => Q.PLACE_LIST({ key: n.place.key, name: n.place.name, desc: _.truncate(n.place.desc, { length: 160 }), side: n.place.interior ? P.INSIDE : P.OUTSIDE, must: n.must.join(P.COMMA), uses: _.truncate(n.uses, { length: 220 }) })).join(P.NL),
     }),
     Q.ARTIFACT_PLAN,
     o.exec,
     o.signal,
     o.log,
   ).catch((e: any) => {
-    if (o.signal?.aborted) throw e;
+    if (isTerminalMotionAiError(e, o.signal)) throw e;
     return null;
   });
   const byBase = _.keyBy(bases, (b) => b.key);
@@ -148,7 +83,7 @@ export const planPuppetSets = async (style: PuppetStylePack, needs: PuppetSetNee
     for (const pc of _.castArray(it?.pieces || [])) {
       const piece = byPiece[_.toString(pc?.piece)];
       const slot = piece ? fitSlot(_.toString(pc?.slot), piece, family, taken) : null;
-      if (!piece || !slot || (piece.environment && piece.environment !== family)) continue;
+      if (!piece || !slot || !motionPieceEnvironmentFits(piece, family)) continue;
       taken.add(slot);
       list.push({ slot, key: piece.key });
     }
@@ -161,13 +96,14 @@ export const planPuppetSets = async (style: PuppetStylePack, needs: PuppetSetNee
       taken.add(slot);
       if (byPiece[key] && (!byPiece[key].environment || byPiece[key].environment === family)) list.push({ slot, key });
       else if (byPiece[key]) continue;
-      else fresh.push({ key, desc: puppetEnglish(nw?.desc) ? _.truncate(nw.desc, { length: 160 }) : puppetAssetName(key), kind, slot });
+      else if (!puppetPackActive()) fresh.push({ key, desc: puppetEnglish(nw?.desc) ? _.truncate(nw.desc, { length: 160 }) : puppetAssetName(key), kind, slot });
     }
     out.push({ key: need.place.key, base, pieces: list, fresh });
   }
   return out;
 };
 export const drawPuppetPieces = async (style: PuppetStylePack, wanted: { key: string; desc: string; kind: string }[], o: PuppetRunOptions): Promise<Record<string, PuppetPiece>> => {
+  if (wanted.length) assertPuppetDrawingAllowed();
   const out: Record<string, PuppetPiece> = {};
   if (!wanted.length) return out;
   o.log(Q.LOG_NEW_PIECES(_.map(wanted, (w) => w.key)));
@@ -176,7 +112,7 @@ export const drawPuppetPieces = async (style: PuppetStylePack, wanted: { key: st
     _.chunk(wanted, Q.PIECES_PER_CALL),
     async (group) => {
       const raw = await (o.ai || runMotionAi)(QR.PIECES({ style: puppetStyleText(style, P.PART_SET), items: _.map(group, (g) => [g.key, g.kind, g.desc].join(P.SEP)).join(P.NL) }), Q.ARTIFACT_PIECES, o.exec, o.signal, o.log, refs.length ? refs : undefined).catch((e: any) => {
-        if (o.signal?.aborted) throw e;
+        if (isTerminalMotionAiError(e, o.signal)) throw e;
         return null;
       });
       for (const g of group) {
@@ -214,7 +150,146 @@ export const drawPuppetPieces = async (style: PuppetStylePack, wanted: { key: st
   return out;
 };
 export const buildPuppetSets = async (style: PuppetStylePack, needs: PuppetSetNeed[], o: PuppetRunOptions, seed: string): Promise<Record<string, PuppetSet>> => {
-  const plans = await planPuppetSets(style, needs, o);
+  const plans: PlanRaw[] = puppetPackActive() ? [] : await planPuppetSets(style, needs, o);
+  if (puppetPackActive()) {
+    o.log(Q.LOG_PLAN(needs.length));
+    const tokens = (text: string) =>
+      new Set(
+        text
+          .toLowerCase()
+          .split(PACK.WORDS)
+          .filter((word) => word.length > 2 && !(PACK.STOP_WORDS as readonly string[]).includes(word)),
+      );
+    for (const need of needs) {
+      const wanted = tokens([need.place.key, need.place.name, need.place.desc, ...need.must].join(P.SPACE));
+      const score = (text: string) => [...tokens(text)].filter((word) => wanted.has(word)).length;
+      const bases = puppetBases(style.id)
+        .filter((base) => puppetPackAssemblyBaseFits(need.place, base))
+        .sort((a, b) => score(b.key + P.SPACE + b.desc) - score(a.key + P.SPACE + a.desc) || a.id.localeCompare(b.id))
+        .slice(0, I.ASSEMBLY_BASES);
+      const family = need.place.interior ? Q.FAMILY_INTERIOR : Q.FAMILY_EXTERIOR;
+      const contacts = need.placements || [];
+      const contactCounts = (piece: PuppetPiece) =>
+        contacts.map((contact) => puppetSpots({ spots: piece.spots, floorY: piece.native?.fy || Math.max(...piece.spots.map((spot) => spot.groundY ?? spot.y), piece.anchor[1]) }).filter((spot) => (spot.kind === contact.kind || (contact.kind === P.SPOT_STAND && spot.kind === P.SPOT_DOOR)) && !!puppetFeatureSpot([{ ...spot, kind: contact.kind }], contact.support, contact.kind)).length);
+      const features = (piece: PuppetPiece) => need.must.map((key) => puppetSceneFeatureFits(key, [piece.key, piece.desc, ...piece.spots.map((spot) => [spot.key, spot.fixture].filter(Boolean).join(P.SPACE))].join(P.SPACE)));
+      const ranked = puppetPieces(style.id)
+        .filter((piece) => motionPieceEnvironmentFits(piece, family) && motionPieceContextFits(piece, need.place) && (score(piece.key + P.SPACE + piece.desc) > 0 || contactCounts(piece).some(Boolean) || features(piece).some(Boolean)))
+        .sort((a, b) => score(b.key + P.SPACE + b.desc) - score(a.key + P.SPACE + a.desc) || a.id.localeCompare(b.id));
+      const candidates: PuppetPiece[] = [];
+      const include = (piece?: PuppetPiece) => {
+        if (piece && !candidates.includes(piece)) candidates.push(piece);
+      };
+      for (const [index, contact] of contacts.entries()) include([...ranked].sort((a, b) => Math.min(contact.count, contactCounts(b)[index]) - Math.min(contact.count, contactCounts(a)[index]))[0]);
+      for (const [index, contact] of contacts.entries()) if (contact.count > 1) for (const piece of ranked.filter((piece) => contactCounts(piece)[index] > 0 && Math.ceil(contact.count / contactCounts(piece)[index]) <= piece.slots.length).slice(0, I.ASSEMBLY_PIECES)) include(piece);
+      for (const [index] of need.must.entries()) include(ranked.find((piece) => features(piece)[index]));
+      const groupsByFunction = _.groupBy(ranked, (piece) => JSON.stringify([piece.kind, piece.slots, contactCounts(piece).map((count, i) => Math.min(count, contacts[i].count)), features(piece)]));
+      for (let offset = 0; candidates.length < Math.max(I.ASSEMBLY_PIECES, contacts.length + need.must.length); offset++) {
+        const layer = Object.values(groupsByFunction).flatMap((group) => (group[offset] ? [group[offset]] : []));
+        if (!layer.length) break;
+        for (const piece of layer) {
+          include(piece);
+          if (candidates.length >= Math.max(I.ASSEMBLY_PIECES, contacts.length + need.must.length)) break;
+        }
+      }
+      const coverage = (group: PuppetPiece[]): number => need.must.filter((key) => group.some((piece) => puppetSceneFeatureFits(key, [piece.key, piece.desc, ...piece.spots.map((spot) => [spot.key, spot.fixture].filter(Boolean).join(P.SPACE))].join(P.SPACE)))).length;
+      const capacities = new Map(candidates.map((piece) => [piece.key, contactCounts(piece)]));
+      const capacity = (group: PuppetPiece[]): number =>
+        contacts.reduce(
+          (sum, contact, i) =>
+            sum +
+            Math.min(
+              contact.count,
+              group.reduce((count, piece) => count + (capacities.get(piece.key)?.[i] || 0), 0),
+            ),
+          0,
+        );
+      const placements = new Map(
+        bases.map((base) => [
+          base.id,
+          new Map(
+            candidates.map((piece) => [
+              piece.key,
+              puppetPieceSlots(base, piece).flatMap((slot) => {
+                const placement = piecePlacement(base, slot, piece);
+                return placement && pieceSpots(placement).every((spot) => puppetSpotGeometryValid(spot) && spot.x >= 0 && spot.x <= W && spot.y >= 0 && spot.y <= H) ? [placement] : [];
+              }),
+            ]),
+          ),
+        ]),
+      );
+      const feasible = (group: PuppetPiece[]): boolean =>
+        bases.some((base) => {
+          const options = group.map((piece) => placements.get(base.id)!.get(piece.key)!).sort((a, b) => a.length - b.length);
+          const taken = new Set<string>(),
+            footprints: number[][] = [];
+          const visit = (index: number): boolean => {
+            if (index === options.length) return true;
+            for (const placement of options[index]) {
+              if (taken.has(placement.slot) || (!placement.sd.wall && footprints.some((box) => boxesOverlap(box, placement.box)))) continue;
+              taken.add(placement.slot);
+              if (!placement.sd.wall) footprints.push(placement.box);
+              const found = visit(index + 1);
+              if (!placement.sd.wall) footprints.pop();
+              taken.delete(placement.slot);
+              if (found) return true;
+            }
+            return false;
+          };
+          return visit(0);
+        });
+      const order = (a: PuppetPiece[], b: PuppetPiece[]): number => capacity(b) - capacity(a) || coverage(b) - coverage(a) || a.length - b.length || b.reduce((sum, piece) => sum + score(piece.key + P.SPACE + piece.desc), 0) - a.reduce((sum, piece) => sum + score(piece.key + P.SPACE + piece.desc), 0);
+      let groups: PuppetPiece[][] = [[], ...candidates.map((piece) => [piece])].filter(feasible);
+      let frontier = groups.filter((group) => group.length);
+      for (let size = 2; size <= Math.min(SELECTION.ASSEMBLY_GROUP_SIZE, Math.max(2, need.must.length + contacts.reduce((sum, contact) => sum + contact.count, 0))); size++) {
+        const expanded = frontier
+          .flatMap((group) =>
+            candidates
+              .slice(candidates.indexOf(group[group.length - 1]))
+              .filter((piece) => piece !== group[group.length - 1] || contacts.some((contact, index) => (capacities.get(piece.key)?.[index] || 0) > 0 && group.reduce((sum, part) => sum + (capacities.get(part.key)?.[index] || 0), 0) < contact.count))
+              .map((piece) => [...group, piece]),
+          )
+          .filter(feasible)
+          .sort(order)
+          .slice(0, SELECTION.ASSEMBLY_GROUPS);
+        groups.push(...expanded);
+        frontier = expanded;
+      }
+      groups = groups.sort(order).slice(0, SELECTION.ASSEMBLY_GROUPS);
+      for (const base of bases) {
+        let count = 0;
+        for (const group of groups) {
+          if (count >= Math.floor(SELECTION.ASSEMBLY_PLANS / Math.max(1, bases.length))) break;
+          if (contacts.some((contact, index) => contact.support !== P.SPOT_FLOOR_KEY && !(CONSTRAINTS.AREAS[base.locationFamily || P.EMPTY] || []).includes(contact.support) && group.reduce((sum, piece) => sum + (capacities.get(piece.key)?.[index] || 0), 0) < contact.count)) continue;
+          const taken = new Set<string>();
+          const placed: PlanRaw["pieces"] = [];
+          const footprints: number[][] = [];
+          let variants = 0;
+          const place = (index: number): void => {
+            if (variants >= SELECTION.ASSEMBLY_SLOTS || count >= Math.floor(SELECTION.ASSEMBLY_PLANS / Math.max(1, bases.length))) return;
+            if (index === group.length) {
+              plans.push({ key: need.place.key, base, pieces: [...placed], fresh: [] });
+              count++;
+              variants++;
+              return;
+            }
+            const piece = group[index];
+            for (const placement of placements.get(base.id)!.get(piece.key)!) {
+              const slot = placement.slot;
+              if (taken.has(slot) || (!placement.sd.wall && footprints.some((box) => boxesOverlap(box, placement.box)))) continue;
+              taken.add(slot);
+              placed.push({ slot, key: piece.key });
+              if (!placement.sd.wall) footprints.push(placement.box);
+              place(index + 1);
+              if (!placement.sd.wall) footprints.pop();
+              placed.pop();
+              taken.delete(slot);
+            }
+          };
+          place(0);
+        }
+      }
+    }
+  }
   const pieces = _.keyBy(puppetPieces(style.id), (p) => p.key);
   const fresh = _.uniqBy(
     _.flatMap(plans, (p) => p.fresh),
@@ -229,42 +304,91 @@ export const buildPuppetSets = async (style: PuppetStylePack, needs: PuppetSetNe
     ),
   );
   const out: Record<string, PuppetSet> = {};
+  const rejected = new Map<string, number>();
+  let attempted = 0;
   for (const plan of plans) {
+    o.signal?.throwIfAborted();
+    if (++attempted % SELECTION.ASSEMBLY_YIELD === 0) await setImmediate(undefined, { signal: o.signal });
+    if (out[plan.key]) continue;
     const need = _.find(needs, (n) => n.place.key === plan.key)!;
     const placed = _.compact(_.map([...plan.pieces, ..._.map(plan.fresh, (f) => ({ slot: f.slot, key: f.key }))], (pc) => (pieces[pc.key] ? { slot: pc.slot, piece: pieces[pc.key] } : null)));
-    const evidence = [plan.base.key, plan.base.desc, ...placed.flatMap(({ piece }) => [piece.key, piece.desc])].join(P.SPACE);
+    const evidence = [plan.base.key, plan.base.desc, plan.base.locationFamily || P.EMPTY, ...(CONSTRAINTS.AREAS[plan.base.locationFamily || P.EMPTY] || []), ...placed.flatMap(({ piece }) => [piece.key, piece.desc, ...piece.spots.flatMap((spot) => [spot.key, spot.fixture || P.EMPTY])])].join(P.SPACE);
+    if (
+      puppetPackActive() &&
+      !puppetPackAssemblyLocationFits(
+        need.place,
+        plan.base,
+        placed.map(({ piece }) => piece),
+      )
+    )
+      continue;
     if ((need.place.sceneFeatures || []).some((key) => !puppetSceneFeatureFits(key, evidence))) continue;
     const mirror = puppetHash(seed + plan.key).charCodeAt(0) % 2 === 1;
     const dayTime = need.place.time === P.NIGHT ? P.NIGHT : P.DAY;
     const make = (night: boolean, variant: boolean): PuppetSet => {
       const c = composePuppetSet(plan.base, placed, night, mirror);
-      const planOut: PuppetSetPlan = { base: plan.base.key, pieces: _.map(placed, (p) => ({ slot: p.slot, piece: p.piece.key })), mirror };
+      const planOut: PuppetSetPlan = { ...(plan.base.libraryVersion === RELEASE.VERSION ? { version: RELEASE.PLAN_VERSION, baseId: plan.base.id } : {}), base: plan.base.key, pieces: _.map(placed, (p) => ({ slot: p.slot, piece: p.piece.key, assetId: p.piece.id })), mirror };
       return {
         id: newPuppetId(PUPPET_TYPES.SET),
         type: PUPPET_TYPES.SET,
+        libraryVersion: plan.base.libraryVersion,
         styleId: style.id,
         group: P.COMPOSED_GROUP(seed, plan.key),
         name: need.place.name + (variant ? P.VARIANT_SEP + (night ? P.NIGHT : P.DAY) : P.EMPTY),
         desc: need.place.desc,
         tags: [need.place.key, need.place.interior ? P.INTERIOR_TAG : P.EXTERIOR_TAG, P.COMPOSED_TAG],
         interior: need.place.interior,
+        locationFamily: motionPlaceLocationFamily(need.place),
         time: night ? P.NIGHT : P.DAY,
         svg: c.svg,
         floorY: c.floorY,
         horizonY: c.horizonY,
         spots: c.spots,
+        features: c.features,
+        framingBounds: c.framingBounds,
+        compositions: c.compositions,
+        fixtures: c.fixtures,
         plan: planOut,
         lights: c.lights,
         uses: 0,
         updatedAt: now(),
       };
     };
-    const main = make(dayTime === P.NIGHT, false);
-    const other = writePuppet(make(dayTime !== P.NIGHT, true));
-    out[plan.key] = writePuppet<PuppetSet>({ ...main, variants: { [other.time]: other.id } });
+    let main: PuppetSet, otherSet: PuppetSet;
+    try {
+      main = make(dayTime === P.NIGHT, false);
+      otherSet = make(dayTime !== P.NIGHT, true);
+      main.variants = { [otherSet.time]: otherSet.id };
+      otherSet.variants = { [main.time]: main.id };
+      if (puppetPackActive()) {
+        const issues = _.uniq([...puppetPackAssetIssues(main), ...puppetPackAssetIssues(otherSet)]);
+        if (issues.length) throw new Error(issues.join(P.COMMA));
+      }
+      const missing = withPuppetAssemblyTrial([main, otherSet], [plan.base.id, ...placed.map(({ piece }) => piece.id)], () => need.validate?.(main) || []);
+      if (missing.length) {
+        for (const reason of missing) rejected.set(reason, (rejected.get(reason) || 0) + 1);
+        continue;
+      }
+    } catch (error) {
+      if (!puppetPackActive()) throw error;
+      const reason = String((error as Error).message);
+      rejected.set(reason, (rejected.get(reason) || 0) + 1);
+      continue;
+    }
+    const sources = [plan.base.id, ...placed.map(({ piece }) => piece.id)];
+    const save = (set: PuppetSet): PuppetSet => (puppetPackActive() ? registerPuppetAssembly(set, sources) : writePuppet(set));
+    const other = save(otherSet);
+    out[plan.key] = save({ ...main, variants: { [other.time]: other.id } });
     o.log(Q.LOG_COMPOSED(need.place.name, plan.base.key, _.map(placed, (p) => p.piece.key).join(P.COMMA)));
   }
   const missing = _.filter(needs, (n) => !out[n.place.key]);
-  if (missing.length) o.log(Q.LOG_PLAN_FAIL(_.map(missing, (n) => n.place.name).join(P.COMMA)));
+  if (missing.length && rejected.size)
+    o.log(
+      I.ASSEMBLY_REJECTED(
+        [...rejected.values()].reduce((sum, count) => sum + count, 0),
+        [...rejected.keys()],
+      ),
+    );
+  if (missing.length) o.log((puppetPackActive() ? I.ASSEMBLY_MISSING : Q.LOG_PLAN_FAIL)(_.map(missing, (n) => n.place.name).join(P.COMMA)));
   return out;
 };

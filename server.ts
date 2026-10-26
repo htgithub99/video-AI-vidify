@@ -1,3 +1,5 @@
+import { recoverMotionProductions } from "./src/server/services/motionProductionService.js";
+import { recoverMotionRenderPublications } from "./src/server/services/motionRenderPublication.js";
 import { exec } from "child_process";
 import cors from "cors";
 import "dotenv/config";
@@ -187,6 +189,8 @@ app.use(API_ROUTES.LICENSE, licenseRouter);
 app.use(API_ROUTES.BASE_API, requireLicense(), mainRouter);
 app.use(API_ROUTES.PIPELINE, requireLicense(), pipelineRouter);
 const startServer = async () => {
+  await recoverMotionRenderPublications();
+  recoverMotionProductions();
   await initPlaywright();
   httpServer = createServer(app);
   if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {

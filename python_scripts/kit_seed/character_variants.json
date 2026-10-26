@@ -1,0 +1,5 @@
+{
+  "elder_monk": {"base":"monk","name":"Elder Buddhist Monk","age":"senior","face":"#ecd5b9","body":"#71523c","sleeve":"#71523c","height":0.92,"desc":"Elderly male Buddhist monk, shaved head, subtle age lines, plain brown kasaya robe, calm expression. Same closed-leg illustration proportions as the pack."},
+  "elder_shaman": {"base":"shaman","name":"Elder Ritual Master","age":"senior","face":"#ecd5b9","body":"#363039","sleeve":"#363039","height":0.92,"desc":"Elderly male village shaman and ritual master, red headwrap, dark robe and red sash, subtle age lines. Same closed-leg illustration proportions as the pack."},
+  "elder_medium": {"base":"medium","name":"Elder Spirit Medium","age":"senior","face":"#ecd5b9","body":"#87373a","sleeve":"#87373a","height":0.9,"desc":"Elderly female spirit medium, golden headwrap and muted red traditional robe, subtle age lines. Same closed-leg illustration proportions as the pack."}
+}

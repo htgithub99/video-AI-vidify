@@ -184,7 +184,7 @@ export const MOTION_STYLES = {
   STYLE_PREVIEW_BOX: "flex flex-col gap-1.5 pt-2",
   STYLE_PREVIEW_IMG: "w-full max-w-md aspect-video rounded-xl border border-slate-800 bg-slate-955 object-cover",
   STYLE_PREVIEW_HINT: "text-[11px] leading-relaxed text-slate-400",
-  FLOW_LOG_BOX: "max-h-72 overflow-y-auto custom-scrollbar font-mono text-[10px] text-slate-400 bg-slate-955/90 p-2.5 rounded-xl border border-slate-800 space-y-1",
+  FLOW_LOG_BOX: "font-sans text-xs leading-6 text-slate-300 bg-slate-955/90 p-3 rounded-xl border border-slate-800",
   FONT_MONO_TRUNCATE: "font-mono truncate",
   TEXT_11PX_TEXT_SLATE_500_DARK_TEXT_SLATE_400_LEADING_RELAXED: "text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed",
   FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3: "flex items-center justify-between gap-3",

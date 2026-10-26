@@ -1,0 +1,157 @@
+{
+  "method": "Exact equality of listed visual fields, excluding camera, time, line and speech. Image candidate metric: mean absolute RGB difference on top 85 percent downsampled to 96x54, below 3/255. Candidate similarity is not a semantic error verdict.",
+  "fields": [
+    "shot",
+    "set",
+    "light",
+    "actors",
+    "items",
+    "prop",
+    "propMount",
+    "propAt",
+    "propRot",
+    "propX",
+    "propY",
+    "propH",
+    "form",
+    "anchor",
+    "overlays",
+    "effectSource",
+    "smokeX",
+    "smokeY",
+    "inset"
+  ],
+  "exactRepeatGroups": [
+    {
+      "indices": [
+        25,
+        26
+      ],
+      "start": 126.59,
+      "end": 133.809,
+      "duration": 7.219
+    }
+  ],
+  "nearImagePairs": [
+    {
+      "from": 34,
+      "to": 35,
+      "difference": 2.844
+    },
+    {
+      "from": 38,
+      "to": 39,
+      "difference": 0.479
+    },
+    {
+      "from": 104,
+      "to": 105,
+      "difference": 1.969
+    },
+    {
+      "from": 110,
+      "to": 111,
+      "difference": 2.233
+    },
+    {
+      "from": 112,
+      "to": 113,
+      "difference": 1.023
+    },
+    {
+      "from": 116,
+      "to": 117,
+      "difference": 0.804
+    },
+    {
+      "from": 121,
+      "to": 122,
+      "difference": 2.072
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "difference": 0.907
+    },
+    {
+      "from": 127,
+      "to": 128,
+      "difference": 1.049
+    },
+    {
+      "from": 133,
+      "to": 134,
+      "difference": 2.183
+    },
+    {
+      "from": 142,
+      "to": 143,
+      "difference": 1.793
+    },
+    {
+      "from": 143,
+      "to": 144,
+      "difference": 1.872
+    },
+    {
+      "from": 146,
+      "to": 147,
+      "difference": 0.896
+    },
+    {
+      "from": 154,
+      "to": 155,
+      "difference": 1.965
+    },
+    {
+      "from": 157,
+      "to": 158,
+      "difference": 1.198
+    },
+    {
+      "from": 160,
+      "to": 161,
+      "difference": 0.923
+    },
+    {
+      "from": 161,
+      "to": 162,
+      "difference": 1.34
+    },
+    {
+      "from": 162,
+      "to": 163,
+      "difference": 0.785
+    },
+    {
+      "from": 172,
+      "to": 173,
+      "difference": 2.107
+    },
+    {
+      "from": 188,
+      "to": 189,
+      "difference": 2.82
+    },
+    {
+      "from": 214,
+      "to": 215,
+      "difference": 1.906
+    },
+    {
+      "from": 216,
+      "to": 217,
+      "difference": 2.213
+    },
+    {
+      "from": 222,
+      "to": 223,
+      "difference": 2.295
+    },
+    {
+      "from": 223,
+      "to": 224,
+      "difference": 1.38
+    }
+  ]
+}

@@ -51,6 +51,7 @@ const mount = async (resume = false): Promise<Page> => {
       fixture.request = async (url: string, body: any) => {
         if (url === channels) return { channels: [] };
         if (url === routes.MOTION_VIDEO_RESULTS) return { items: [] };
+        if (url === routes.MOTION_STORY_CANCEL) return { success: true, cancelled: false };
         if (url === routes.MOTION_STORY_PARSE) return { source: { ...C.SOURCE, text: body.text } };
         if (url === routes.MOTION_STORY_COMPILE) return { spec: { shots: [], duration: 5 }, missing: [], sfxCues: [], audioPreviewId: C.VOICE.audioId };
         if (url === routes.MOTION_STORY_ANALYZE) {
@@ -118,6 +119,7 @@ try {
     (window as any).motionDraftFixture.requestError = false;
   });
   assert.deepEqual(await generated(page), before);
+  assert.deepEqual(await page.evaluate(() => (window as any).motionDraftStudio.logHistory), []);
   for (const status of [MotionJobStatus.ERROR, MotionJobStatus.CANCELLED, MotionJobStatus.COMPLETED]) {
     await page.evaluate(() => {
       void (window as any).motionDraftStudio.analyze();

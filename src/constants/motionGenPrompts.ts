@@ -1,5 +1,6 @@
 import { MOTION_HISTORY_STORYBOARD } from "./motionHistory.js";
 import { MOTION_SFX_MOODS } from "./motionAudio.js";
+import { MOTION_QA } from "./motionQa.js";
 export const MOTION_GEN_CONFIG = {
   ARTIFACT_BIBLE: "motion-gen-bible",
   OTHER_CAST: "OTHER CAST – context only, do NOT design them here; make this character clearly distinguishable from them:\n",
@@ -79,7 +80,7 @@ Context:
 - Target video length ≈ ${o.seconds} seconds. Narration language: ${o.language}.
 - Split the story into about ${o.chapters} chapters that follow the plot. "from"/"to" are seconds in the source transcript.
 - Rank chapters like an editor ranking songs: "weight" 1-5 = how important and attractive this part is for THIS video (thesis, turning points, most surprising details score high; minor repetitive items low). Screen time follows weight, not source length. "mustKeep": true for chapters that must survive any cut (the context-setting opening, the main argument/conclusion, the ending). Keep chronological order.
-- Plan the WHOLE video once so chapters written separately still read as one film: per chapter "hook" (how it grabs attention in its first line, in ${o.language}), "keyPoints" (2-6 facts/events it must cover, with source timestamps), "handoff" (the idea or question its last line passes to the next chapter, in ${o.language}). Each fact belongs to exactly one chapter; never plan the same point twice. Vary the hooks: a concrete moment, a surprising number, a contrast, a person's reported words, a plain continuation – at most one hook in four may be a question.
+- Plan the WHOLE video once so chapters written separately still read as one film: per chapter "hook" (how it grabs attention in its first line, in ${o.language}), "keyPoints" (2-4 facts/events it must cover, with source timestamps), "handoff" (the idea or question its last line passes to the next chapter, in ${o.language}). Each fact belongs to exactly one chapter; never plan the same point twice. Vary the hooks: a concrete moment, a surprising number, a contrast, a person's reported words, a plain continuation – at most one hook in four may be a question.
 - "sfxMood": the background sound mood that fits the Video DNA soundBed, one of: ${Object.keys(MOTION_SFX_MOODS).join(", ")}.
 
 Requirements:
@@ -152,7 +153,7 @@ CHAPTER ${o.chapterId}: "${o.chapterTitle}" — ${o.chapterSummary}
 NARRATION:
 - ${o.languageNote}. The "narration" field MUST be written in ${o.language}.
 - Write original narration according to the project's purpose and voice. Preserve established facts in factual work and the supplied premise in fiction; do not invent real-world claims. Do not translate the source sentence by sentence.
-- Total ≈ ${o.units} ${o.unitName} (≈${o.seconds} s of speech). HARD LIMIT: never more than ${o.units} ${o.unitName} for all beats together. About ${o.beats} beats, each 1–3 sentences (≈${o.perBeat} ${o.unitName}); vary sentence length like a real storyteller.
+${MOTION_QA.CHAPTER_LENGTH_RULE(o.units, o.unitName, o.seconds, o.beats, o.perBeat)}
 - Spell out numbers a TTS voice may misread.${o.firstNote}${o.lastNote}
 ${o.previous}
 ${o.outline || ""}
@@ -166,11 +167,9 @@ ${o.cast}
 PLACES (keys):
 ${o.places}
 
-JSON (example shape – a different story):
+JSON shape (replace descriptions with this chapter's actual data; use only supplied keys):
 {"chapterId":"${o.chapterId}","beats":[
- {"narration":"…","visual":"scene","place":"bank_lobby","time":"day","weather":"none","shot":"wide","cast":["courier"],"action":"The courier in a grey suit walks through the marble bank lobby toward the counter, carrying a brown briefcase"},
- {"narration":"…","visual":"scene","place":"bank_vault","time":"interior","shot":"medium","cast":["courier","clerk"],"action":"The clerk opens one small safe-deposit drawer while the courier waits beside him","emphasis":true},
- {"narration":"…","visual":"stats","data":{"title":"…","items":[{"value":3,"suffix":" days","label":"…"}]}}
+ {"narration":"actual chapter speech","visual":"scene","place":"exact supplied place key","time":"day","weather":"none","shot":"wide","cast":[],"action":"Describe the current representative static picture in English using only this story's visible subjects.","scenePlan":{"purpose":"current visual task","subject":"actual subject","before":"relevant prior state","after":"current visible state","composition":"simple supported arrangement","spatialRelations":[],"requiredProps":[],"continuity":[],"acceptance":["observable check for this picture"]}}
 ]}
 
 ${o.transcriptLabel || "SOURCE TRANSCRIPT FOR THIS CHAPTER:"}

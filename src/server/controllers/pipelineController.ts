@@ -1027,6 +1027,7 @@ import { SCENE_REFERENCE_CONFIG } from "../../services/sceneReferenceService.js"
 import { detectVietnameseNarrationStyleWarnings, isSatiricalVideoGenre, normalizeScriptQualityReport, parseTargetDurationSeconds } from "../../services/scriptQualityService.js";
 import { applyDeterministicStoryboardCoverage, getUnderfilledCinematicSceneIds, normalizeStoryboardQuality } from "../../services/storyboardQualityService.js";
 import { getThumbnailPlanningIssues, getThumbnailTechnicalPlanningIssues, normalizeThumbnailIdeas } from "../../services/thumbnailPromptService.js";
+import { getDownloadedImageMimeType } from "../utils/imageMedia.js";
 import { createStoryboardRetentionDirective, createViewerRetentionDirective } from "../../services/viewerRetentionBlueprintService.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, AspectRatio, AssetAcceptance, ContentSafetyReport, GenerateType, ImageGenerationMode, ImageGeneratorEngine, ProjectLanguage, PromptInputMethod, SceneAssetStatus, StoryboardQualityReport, StoryboardScene, TextInImageMode, ThumbnailItem, ThumbnailTextMode, VisualBible, VisualConfig } from "../../types.js";
 import { getErrorMessage } from "../../utils/errorUtils";
@@ -1264,7 +1265,7 @@ const generateMusicThumbnailAsset = async (input: {
   const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
   let prompt: string = C.EMPTY;
   try {
-    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, provider: planningProvider, model: input.planningModel });
+    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, provider: planningProvider, model: input.planningModel, promptRevision: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_REVISION });
     const response = await generatePlanningWithChatUi({
       provider: planningProvider,
       model: input.planningModel,
@@ -1334,13 +1335,13 @@ const generateMusicThumbnailAsset = async (input: {
         continue;
       }
       const encodedImage = _.toString(result.base64);
-      if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES) {
+      const mimeType = getDownloadedImageMimeType(Buffer.from(encodedImage, SOURCE_TEXT_BASE64));
+      if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES || !mimeType) {
         lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
         logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_INVALID_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
         await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT, { runId: promptRequestId, attempt: attempt + 1, bytes: encodedImage.length });
         continue;
       }
-      const mimeType = _.startsWith(encodedImage, SUNO_AUTOMATION_CONFIG.JPEG_HEADER_SIGNATURE) ? SUNO_AUTOMATION_CONFIG.MIME_IMAGE_JPEG : SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PNG;
       const thumbnail = SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage);
       if (thumbnail) {
         logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_SUCCESS_ATTEMPT_BYTES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));

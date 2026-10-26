@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { visualReadFixture } from "./motionVisualContractVerificationTexts.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -43,7 +44,7 @@ try {
         const set = await asset<PuppetSet>(style, F.SET, scenario.scene, variant);
         const night: PuppetSet = JSON.parse(await fs.readFile(path.resolve(F.LIBRARY, F.SET, set.variants!.night + F.JSON), F.UTF8));
         assert.deepEqual(night.spots, set.spots);
-        const raw = { i: 0, focus: F.CHAR_KEYS[0], who: Object.keys(characters), place: scenario.scene, states: scenario.states, object: scenario.objects[0] || null, objects: scenario.objects, action: P.ACTION_DEFAULT, emotion: P.EXPR_DEFAULT, light: P.DAY, overlays: [] };
+        const raw = { i: 0, visual: visualReadFixture(scenario.scene, scenario.text), focus: F.CHAR_KEYS[0], who: Object.keys(characters), place: scenario.scene, states: scenario.states.map((state: any) => ({ ...state, posture: state.posture || P.POSTURE_ACTIONS[state.action] || P.POSE_DEFAULT })), object: scenario.objects[0] || null, objects: scenario.objects, action: P.ACTION_DEFAULT, emotion: P.EXPR_DEFAULT, light: P.DAY, overlays: [] };
         const line: any = { key: scenario.scene, text: scenario.text, chapterId: scenario.scene, beatId: scenario.scene, place: scenario.scene, cast: raw.who };
         const analysis: any = { title: scenario.scene, logline: scenario.text, cast: Object.keys(characters).map((key) => ({ key, name: key })) };
         const options: any = { exec: {}, log: () => {}, ai: async () => ({ lines: [raw] }) };

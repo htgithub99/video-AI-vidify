@@ -12,4 +12,5 @@ export const MOTION_BROWSER_HANDOFF = {
   ACTIVE_ROOMS: (urls: string): string => `Chrome còn phòng chat đang được tác vụ khác sử dụng: ${urls}`,
   GROK_BUSY: "Chrome Grok còn tác vụ, tab đang dùng hoặc chưa đóng xong.",
   SHARED_BUSY: "Chrome dùng chung còn tác vụ, tab đang dùng hoặc chưa đóng xong.",
+  SHARED_OWNER: "Đã thu hồi room của lượt xuất. Chrome đang phục vụ dự án khác; giữ các room đó và xuất bằng browser render riêng.",
 } as const;

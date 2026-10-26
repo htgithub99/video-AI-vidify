@@ -1,0 +1,1 @@
+export const MOTION_JOB_POLLING = { REQUEST_TIMEOUT_MS: 15000, RETRY_INTERVAL_MS: 1200, MAX_RETRY_INTERVAL_MS: 10000, RETRY_HTTP_STATUSES: [408, 425, 429] as readonly number[], SERVER_ERROR_STATUS: 500, INVALID_RESPONSE: "Chưa nhận được trạng thái tác vụ hợp lệ. Đang kết nối lại…", RECONNECTING: "Đang kết nối lại với tác vụ đang chạy…" } as const;

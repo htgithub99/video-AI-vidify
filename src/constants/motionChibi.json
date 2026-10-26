@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "body": { "head": 0.5, "headW": 1.06, "bodyW": 1.08, "legs": 1, "overlap": 0.06, "limb": "tube", "limbW": 0.14, "armLen": 0.27, "hand": 0.11, "shape": "robe", "idleArms": "down" },
+  "face": { "fill": "#f1dcc3", "eyes": "dot", "eyeW": 0.09, "eyeH": 0.15, "eyeGap": 0.36, "eyeY": 0.59, "eyeColor": "#1a1616", "mouth": "line", "mouthW": 0.115, "mouthH": 0.055, "mouthY": 0.81, "brows": true, "mouthRest": "rest", "nose": true },
+  "description": "Flat Vietnamese folk illustration, large rounded head occupying half the standing height, shaped black hair, expressive eyebrows, small nose and mouth. Compact short blouse with fasteners, dark trousers with legs held together as one closed rounded silhouette, or a long skirt. No separated feet, shoes, central leg gap or splayed legs. Round hands. Highland costumes use woven hems, a waist sash and silver collar bands. Sitting, kneeling and crouching keep the folded lower body compact beneath the torso. Static illustrated poses with a single expressive face and attached limbs."
+}

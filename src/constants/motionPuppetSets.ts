@@ -1,4 +1,6 @@
+import RESOURCE_SCHEMA from "./motionResourceSchema.json";
 export interface PuppetSlotDef {
+  region?: string;
   x: number;
   d?: number;
   wall?: number;
@@ -7,6 +9,7 @@ export interface PuppetSlotDef {
 }
 export const PUPPET_SLOTS: Record<string, Record<string, PuppetSlotDef>> = {
   interior: {
+    scene_center: { x: 0.5, d: 0.9, layer: "floor", maxW: 0.96 },
     wall_left: { x: 0.12, wall: 0.5, layer: "back" },
     wall_right: { x: 0.85, wall: 0.5, layer: "back" },
     door_left: { x: 0.18, d: 0, layer: "back" },
@@ -21,6 +24,10 @@ export const PUPPET_SLOTS: Record<string, Record<string, PuppetSlotDef>> = {
     edge_right: { x: 0.95, d: 1.3, layer: "fg", maxW: 0.14 },
   },
   exterior: {
+    water_left: { x: 0.25, d: 0.65, layer: "floor", maxW: 0.3, region: "water" },
+    water_center: { x: 0.5, d: 0.65, layer: "floor", maxW: 0.6, region: "water" },
+    water_right: { x: 0.75, d: 0.65, layer: "floor", maxW: 0.3, region: "water" },
+    scene_center: { x: 0.5, d: 0.9, layer: "floor", maxW: 0.96 },
     corner_left: { x: 0.06, d: -0.05, layer: "back", maxW: 0.24 },
     corner_right: { x: 0.94, d: -0.05, layer: "back", maxW: 0.24 },
     far_center: { x: 0.5, d: 0, layer: "mid", maxW: 0.7 },
@@ -70,7 +77,7 @@ export const PUPPET_SET = {
   AI_NAME: (key: string): string => key.replace(/_/g, " "),
   MAX_NEW: 2,
   FEATURE_TYPES: ["furniture", "fixture", "wall"],
-  PIECE_KINDS: ["building", "furniture", "fixture", "wall", "scenery"],
+  PIECE_KINDS: RESOURCE_SCHEMA.pieceKinds,
   KIND_SLOTS: {
     building: ["far_center", "far_left", "far_right"],
     furniture: ["back_center", "back_left", "back_right", "mid_left", "mid_right", "mid_center"],

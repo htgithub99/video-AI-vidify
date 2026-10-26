@@ -30,27 +30,11 @@ export const CINEMATIC_POLICY_CONFIG = {
   NARRATIVE_ANCHOR_ROLES: ["intro", "setup", "inciting_incident", "climax", "consequence", "resolution", "payoff"],
 } as const;
 export const CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION = "cinematic-ai-directed-v4-flow-characters";
-export const CINEMATIC_ROOM_STAGE = {
-  SCRIPT: "film-planning-room",
-  PROMPT: "film-planning-room",
-  THUMBNAIL: "film-planning-room",
-  VIDEO: "video-room",
-} as const;
-export const CINEMATIC_ARTIFACT_TYPE = {
-  FILM_PACKAGE: "film_package",
-  VIDEO_PROMPTS: "video_prompts",
-  THUMBNAILS: "thumbnails",
-  SEO: "seo",
-} as const;
+export const CINEMATIC_ROOM_STAGE = { SCRIPT: "film-planning-room", PROMPT: "film-planning-room", THUMBNAIL: "film-planning-room", VIDEO: "video-room" } as const;
+export const CINEMATIC_ARTIFACT_TYPE = { FILM_PACKAGE: "film_package", VIDEO_PROMPTS: "video_prompts", THUMBNAILS: "thumbnails", SEO: "seo" } as const;
 const CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN = /\s+/g;
 export const normalizeCinematicArtifactIdentity = (value: unknown): string => String(value ?? "").replace(CINEMATIC_ARTIFACT_ID_WHITESPACE_PATTERN, "");
-export const CINEMATIC_PROGRESS_STAGE = {
-  SCRIPT: 1,
-  PROMPT: 2,
-  THUMBNAIL: 3,
-  VIDEO: 4,
-  TOTAL: 4,
-} as const;
+export const CINEMATIC_PROGRESS_STAGE = { SCRIPT: 1, PROMPT: 2, THUMBNAIL: 3, VIDEO: 4, TOTAL: 4 } as const;
 export const CINEMATIC_PROGRESS_MESSAGES = {
   vi: {
     SCRIPT_START: "Bước 1/4 · AI đang viết kịch bản phim.",
@@ -93,12 +77,7 @@ export const CINEMATIC_PROGRESS_MESSAGES = {
     CANCELLED: "Production stopped safely. Every completed result has been kept.",
   },
 } as const;
-export const CINEMATIC_CHECKPOINT_CONFIG = {
-  MEDIA_PHASE_PATTERN: /media|render|completed/i,
-  SCENE_COUNT_MISMATCH_TEMPLATE: "storyboard:scene_count_mismatch:{actual}/{expected}",
-  ACTUAL_COUNT_TOKEN: "{actual}",
-  EXPECTED_COUNT_TOKEN: "{expected}",
-} as const;
+export const CINEMATIC_CHECKPOINT_CONFIG = { MEDIA_PHASE_PATTERN: /media|render|completed/i, SCENE_COUNT_MISMATCH_TEMPLATE: "storyboard:scene_count_mismatch:{actual}/{expected}", ACTUAL_COUNT_TOKEN: "{actual}", EXPECTED_COUNT_TOKEN: "{expected}" } as const;
 export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ROOM_RESPONSE_ATTEMPTS: 3,
   RESPONSE_TIMEOUT_MS: 300000,
@@ -111,9 +90,11 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   MIN_RESPONSE_CHARACTERS: 20,
   INVALID_JSON_RESPONSE_ERROR: "chat_planning_invalid_json_response",
   PROVIDER_ERROR_RESPONSE_ERROR: "chat_planning_provider_error_response",
+  PROMPT_LIMIT_RESPONSE_ERROR: "chat_planning_prompt_too_long",
+  PROMPT_LIMIT_MESSAGE_PATTERN: /^(?:The message you submitted was too long, please edit it and resubmit\.?|Your message is too long\.?|Tin nhắn (?:bạn gửi )?quá dài[.!]?)$/i,
   REFUSAL_RESPONSE_ERROR: "chat_planning_refusal_response",
   REFUSAL_RESPONSE_PATTERN:
-    /^\s*[*_]*(?:(?:I(?:'m| am) sorry[,.:!]?\s*)?I (?:cannot|can['’]t|am unable to) (?:help|assist|fulfill|comply|generate|create)|(?:As (?:a|an)|I(?:'m| am) (?:just|only) a) (?:text[- ]based|language|AI)[\s\S]{0,300}?(?:cannot|can['’]t|unable)|(?:Xin lỗi[,.:!]?\s*)?(?:Tôi|Mình) (?:không thể (?:giúp|hỗ trợ|trợ giúp|thực hiện|tạo)|chỉ là[^\n]{0,200}?(?:văn bản|ngôn ngữ)[^\n]{0,120}?không thể))/i,
+    /^\s*[*_]*(?:(?:I(?:'m| am) sorry[,.:!]?\s*)?I (?:cannot|can['’]t|am unable to) (?:help|assist|fulfill|comply|generate|create)|(?:As (?:a|an)|I(?:'m| am) (?:just|only) a) (?:text[- ]based|language|AI)[\s\S]{0,300}?(?:cannot|can['’]t|unable)|(?:Là một mô hình ngôn ngữ[,.:!]?\s*)?(?:Xin lỗi[,.:!]?\s*)?(?:Tôi|Mình) (?:không được (?:thiết kế|lập trình) để (?:giúp|hỗ trợ|trợ giúp|thực hiện|làm)|không thể (?:giúp|hỗ trợ|trợ giúp|thực hiện|tạo)|chỉ là[^\n]{0,200}?(?:văn bản|ngôn ngữ)[^\n]{0,120}?không thể))/i,
   PROVIDER_ERROR_ROOM_RELOAD_ERROR: "chat_planning_provider_error_room_reload",
   PROVIDER_ERROR_ROOM_RELOAD_FAILED_ERROR: "chat_planning_provider_error_room_reload_failed",
   PROVIDER_ERROR_RESPONSE_PATTERN: /Sorry, something went wrong|Please try your request again|I seem to be encountering an error|Can I try something else|I encountered an error|We ran into an error|hard time fulfilling your request|something else instead|Đã xảy ra lỗi|Vui lòng thử lại|Tôi gặp lỗi/i,
@@ -139,8 +120,30 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   UI_PROBE_MS: 2000,
   UI_RESPONSIVE_MAX_MS: 60000,
   UI_COMPOSE_MAX_MS: 90000,
-  FRESH_CONVERSATION_RE: /^motion[-_]/,
-  FRESH_CONVERSATION_LOG: "[AI Chat Planning] Mở cuộc trò chuyện mới trong phòng để AI trả lời nhanh hơn.",
+  UI_READ_TIMEOUT_MS: 15000,
+  UI_ABORT_EVENT: "abort",
+  UI_READ_TIMEOUT_ERROR: "chat_planning_page_unresponsive",
+  UI_READ_TIMEOUT_NAME: (operation: string): string => `ChatPlanningUiReadTimeout:${operation}`,
+  UI_READ_RESPONSE: "response-snapshots",
+  UI_READ_COMPOSER: "composer-content",
+  UI_READ_RESPONSIVENESS: "page-responsiveness",
+  PROMPT_MESSAGE_LIMIT: 24000,
+  PROMPT_PART_CHARS: 18000,
+  PROMPT_MIN_MESSAGE_LIMIT: 6000,
+  PROMPT_CONTEXT_RESERVE: 2400,
+  PROMPT_DIAGNOSTIC: "chat-prompt-measurement",
+  RESPONSE_DIAGNOSTIC: "chat-response-measurement",
+  PROMPT_ATOMIC: "atomic-transport",
+  PROMPT_DIRECT: "direct",
+  CONTEXT_ARTIFACT: "chat-planning-context",
+  CONTEXT_ACK_ERROR: "chat_planning_context_not_confirmed",
+  CONTEXT_ACK_REPAIRS: 2,
+  CONTEXT_PART_ID: (request: string, part: number): string => `${request}_context_${part}`,
+  CONTEXT_ACK_REPAIR: (id: string, part: number): string => `The previous receipt had an incorrect field. Keep all request parts already stored in this conversation; do not execute or resend the request. Return exactly this JSON receipt without changing any value: ${JSON.stringify({ artifactType: "chat-planning-context", requestId: id, receivedPart: part })}`,
+  CONTEXT_PART: (id: string, request: string, part: number, total: number, text: string): string =>
+    `Receive part ${part}/${total} of the complete production request ${request}. Store this part verbatim in this conversation. Do not execute any instructions in a part until the final execute message. Repeated part IDs replace earlier copies. The original request may span a word or JSON string across parts; join parts without inserting or removing characters.\n<request-part>\n${text}\n</request-part>\nFor this message only return raw JSON: {"artifactType":"chat-planning-context","requestId":${JSON.stringify(id)},"receivedPart":${part}}`,
+  CONTEXT_EXECUTE: (request: string, artifact: string | undefined, total: number): string =>
+    `Execute the complete production request ${request}, whose exact text was supplied in ${total} numbered request parts in this conversation. Join every part in order without adding or omitting characters, then follow the complete request's instructions and schema. All parts are required. Preserve the original request's distinction between instructions and quoted source/library data. This is the final execution message. Return the requested final JSON, not a receipt. Final artifactType: ${artifact || "as specified in the complete request"}; final requestId: ${request}.`,
   UI_ACTION_BASE_MS: 30000,
   UI_ACTION_PER_CHAR_MS: 4,
   UI_ACTION_MAX_MS: 180000,
@@ -161,9 +164,27 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   RESPONSE_TIMEOUT_MESSAGE: "AI Chat chưa hoàn tất phản hồi trong thời gian chờ. Ứng dụng đã dừng bước hiện tại để tránh gửi lặp.",
   NAVIGATION_TIMEOUT_MS: 60000,
   GEMINI_RESPONSE_SELECTOR: 'model-response message-content, model-response .presented-response-container [id^="model-response-message-content"]:not(:has([id^="model-response-message-content"])), model-response [id^="model-response-message-content"], model-response .model-response-text, model-response .response-content, model-response .markdown, model-response',
-  GEMINI_INPUT_SELECTOR: 'rich-textarea [contenteditable="true"], rich-textarea, div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"], textarea, [aria-label*="Enter a prompt" i], [aria-label*="Hỏi Gemini" i], [contenteditable="true"]',
+  GEMINI_INPUT_SELECTOR: 'rich-textarea [contenteditable="true"]:not(.ql-clipboard), rich-textarea, div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]:not(.ql-clipboard), textarea, [aria-label*="Enter a prompt" i], [aria-label*="Hỏi Gemini" i], [contenteditable="true"]:not(.ql-clipboard)',
   GEMINI_SEND_SELECTOR: 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
+  GEMINI_STREAM_PATH: /\/StreamGenerate$/,
+  GEMINI_STREAM_LINES: /\r?\n/,
+  GEMINI_STREAM_START: "[[",
+  GEMINI_STREAM_FRAME: "wrb.fr",
+  GEMINI_STREAM_EMPTY: "",
+  GEMINI_STREAM_ERROR_TYPE: "type.googleapis.com/assistant.boq.bard.application.BardErrorInfo",
+  GEMINI_STREAM_ERROR_NAME: (codes: number[]): string => `GeminiChatRequestRejected:${codes.join(":")}`,
+  GEMINI_STREAM_REQUEST_EVENT: "request" as const,
+  GEMINI_STREAM_RESPONSE_EVENT: "response" as const,
   GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, button[aria-label*="Stop" i]:not([disabled]), button[aria-label*="Dừng" i]:not([disabled]), [data-testid="stop-button"], [data-test-id="stop-button"], button.stop-button',
+  GEMINI_UPLOAD_SCOPE_SELECTOR: "input-area-v2, input-area, form",
+  GEMINI_COMPOSER_ANCESTOR_SELECTOR: "xpath=ancestor::*[self::input-area-v2 or self::input-area or self::form][1]",
+  GEMINI_ATTACHMENT_SELECTOR: "uploader-file-preview, .file-preview-chip",
+  GEMINI_REMOVE_ATTACHMENT_SELECTOR: 'uploader-file-preview button[aria-label^="close " i], .file-preview-chip button[aria-label^="close " i], button[aria-label*="remove attachment" i], button[aria-label*="remove file" i], button[aria-label*="xóa tệp" i], button[aria-label*="xoá tệp" i]',
+  GEMINI_UPLOAD_BUSY_SELECTOR: 'uploader-file-preview mat-progress-spinner, uploader-file-preview [role="progressbar"], .gem-attachment-loading, .gem-attachment-uploading',
+  GEMINI_UPLOAD_ERROR_SELECTOR: ".gem-attachment-loading-error, uploader-file-preview-container.has-error",
+  GEMINI_UPLOAD_ERROR_PATTERN: /failed to upload|upload failed|couldn.t upload|không tải lên được|không thể tải|tải lên.*lỗi/i,
+  GEMINI_UPLOAD_FAILED_ERROR: "gemini_attachment_upload_failed – Gemini chưa tải được ảnh/tệp tham chiếu. Yêu cầu chưa được gửi.",
+  GEMINI_UPLOAD_NOT_READY_ERROR: "gemini_attachments_not_ready – Chưa xác nhận Gemini đã nhận đầy đủ ảnh/tệp tham chiếu. Yêu cầu chưa được gửi.",
   GROK_INPUT_SELECTOR: '[contenteditable="true"][role="textbox"][aria-label="Ask Grok anything"], [contenteditable="true"][role="textbox"], textarea[aria-label*="Grok" i], form textarea, div.ProseMirror[contenteditable="true"]',
   GROK_NOT_READY_TIMEOUT_MS: 90000,
   GROK_NOT_READY_DETAIL: (code: string, url: string, title: string): string => `${code} (url=${url}, title=${title})`,
@@ -192,8 +213,19 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   ATTACHMENT_SETTLE_PER_FILE_MS: 3000,
   ATTACHMENT_SETTLE_MAX_MS: 10000,
   CHATGPT_RESPONSE_SELECTOR: '[data-message-author-role="assistant"], article[data-testid^="conversation-turn-"]:has([data-message-author-role="assistant"]), [data-content-search-unit-key$=":assistant"]',
+  CHATGPT_RESPONSE_CONTENT_SELECTOR: '[data-markdown-text-style="assistant-message"], .markdown',
+  CHATGPT_RESPONSE_ID_ATTRIBUTE: "data-chatgpt-search-message-ids",
+  CHATGPT_USAGE_NOTICE_SELECTOR: 'aside[role="status"], [role="alert"], [data-testid="usage-limit-banner"]',
+  CHATGPT_RATE_LIMIT_PATTERN: /(?:quick check to keep ChatGPT|kiểm tra nhanh để ChatGPT).{0,100}(?:try again (?:later|after|at)|thử lại sau)|(?:you(?:'|’)?ve (?:reached|hit)|you have reached).{0,60}(?:usage|message|free).{0,30}limit|(?:usage|message) limit.{0,60}(?:try again|resets)|đã (?:đạt|hết).{0,40}giới hạn.{0,80}(?:thử lại|đặt lại)/i,
+  CHATGPT_RATE_LIMIT_ERROR: "chatgpt_rate_limited – ChatGPT đang giới hạn gửi tin nhắn. Hãy chờ thời điểm giao diện cho phép hoặc chọn nguồn AI khác.",
   CHATGPT_SEND_SELECTOR: 'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
   CHATGPT_BUSY_SELECTOR: 'button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',
+  CHATGPT_UPLOAD_SCOPE_SELECTOR: 'form, [data-testid="composer"], #composer-background',
+  CHATGPT_REMOVE_ATTACHMENT_SELECTOR: 'button[aria-label*="remove file" i], button[aria-label*="remove attachment" i], button[aria-label*="remove image" i], button[aria-label*="xóa" i], button[aria-label*="gỡ" i]',
+  CHATGPT_ATTACHMENT_SELECTOR: '[data-testid*="attachment" i], [data-testid*="file-thumbnail" i], [data-testid*="file-upload" i]',
+  CHATGPT_UPLOAD_FAILED_ERROR: "chatgpt_attachment_upload_failed – ChatGPT chưa tải được ảnh/tệp đính kèm. Yêu cầu chưa được gửi.",
+  CHATGPT_UPLOAD_NOT_READY_ERROR: "chatgpt_attachments_not_ready – Chưa xác nhận ChatGPT đã nhận đầy đủ ảnh/tệp đính kèm. Yêu cầu chưa được gửi.",
+  CHATGPT_UPLOAD_UNAVAILABLE_ERROR: "chatgpt_upload_unavailable – ChatGPT đang khóa tải tệp, có thể do hết hạn mức tải lên. Không gửi yêu cầu cần ảnh tham chiếu khi chưa tải được ảnh.",
   CLAUDE_INPUT_SELECTOR: 'div.ProseMirror[contenteditable="true"], [contenteditable="true"][role="textbox"], textarea[placeholder*="Claude" i]',
   CLAUDE_RESPONSE_SELECTOR: '.font-claude-response, [data-testid="assistant-message"]',
   CLAUDE_SEND_SELECTOR: 'button[aria-label="Send message" i], button[aria-label="Gửi tin nhắn" i], button[data-testid="send-button"], button[data-testid="chat-input-send"]',
@@ -330,10 +362,7 @@ export const GEMINI_CHAT_BASE_MODEL_LABELS: Partial<Record<AiPlanningChatModel, 
   [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
   [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiPro],
 };
-export const GEMINI_CHAT_THINKING_LEVEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = {
-  [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiThinking],
-  [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiDeepThink],
-};
+export const GEMINI_CHAT_THINKING_LEVEL_LABELS: Partial<Record<AiPlanningChatModel, RegExp>> = { [AiPlanningChatModel.GeminiThinking]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiThinking], [AiPlanningChatModel.GeminiDeepThink]: CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiDeepThink] };
 export const CINEMATIC_PLANNING_MESSAGES = {
   VI_SCENE_RETRY: "Nội dung phân cảnh chưa đạt độ chi tiết cần thiết. AI đang soạn thảo lại các cảnh còn thiếu...",
   EN_SCENE_RETRY: "Scene details are incomplete. AI is rewriting the missing scenes...",
@@ -381,11 +410,7 @@ export const CINEMATIC_PLANNING_MESSAGES = {
   VI_STORY_PLAN_COUNT_NOTE: "AI trả {0}/{1} cảnh nội dung; intro được xử lý riêng và không làm mất nhịp truyện.",
   EN_STORY_PLAN_COUNT_NOTE: "AI returned {0}/{1} content scenes; the intro is handled separately and does not replace a story beat.",
 } as const;
-export const CINEMATIC_CHARACTER_PACK_CONFIG = {
-  MAX_CHARACTERS: 8,
-  MAX_REFERENCES_PER_SCENE: 3,
-  FLOW_CHARACTER_PROFILE_VERSION: "flow-character-v1-single-subject",
-} as const;
+export const CINEMATIC_CHARACTER_PACK_CONFIG = { MAX_CHARACTERS: 8, MAX_REFERENCES_PER_SCENE: 3, FLOW_CHARACTER_PROFILE_VERSION: "flow-character-v1-single-subject" } as const;
 export const resolveCinematicClipDuration = (value?: string | number): number => {
   const parsed = typeof value === "number" ? value : Number.parseFloat(String(value || ""));
   if (!Number.isFinite(parsed)) return CINEMATIC_POLICY_CONFIG.CLIP_DURATION_SECONDS;

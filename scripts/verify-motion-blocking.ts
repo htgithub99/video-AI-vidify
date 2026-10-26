@@ -1,5 +1,6 @@
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.js";
 import assert from "node:assert/strict";
+import { visualReadFixture } from "./motionVisualContractVerificationTexts.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -47,7 +48,7 @@ try {
         ],
       };
       const objects = scenario.objects.map((ob) => ({ ...ob, note: scenario.text }));
-      const readRaw = { i: 0, focus: scenario.focus, who: [B.A, B.C], place: scenario.scene, action: P.ACTION_DEFAULT, emotion: P.EXPR_DEFAULT, states: scenario.states, object: objects[0], objects, light: P.DAY, overlays: [] };
+      const readRaw = { i: 0, visual: visualReadFixture(scenario.scene, scenario.text), focus: scenario.focus, who: [B.A, B.C], place: scenario.scene, action: P.ACTION_DEFAULT, emotion: P.EXPR_DEFAULT, states: scenario.states.map((state: any) => ({ ...state, posture: state.posture || P.POSTURE_ACTIONS[state.action] || P.POSE_DEFAULT })), object: objects[0], objects, light: P.DAY, overlays: [] };
       const options: any = { log: () => {}, exec: {}, ai: async () => ({ lines: [readRaw] }) };
       const result = await readPuppetLines([line], [line], analysis, { [scenario.scene]: { key: scenario.scene } as any }, {}, options);
       const read = result.reads[line.key];

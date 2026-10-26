@@ -1,3 +1,4 @@
+import { isTerminalMotionAiError } from "../chatSubmissionRecovery.js";
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
@@ -5,12 +6,19 @@ import { PUPPET as P, PUPPET_PROMPTS, PUPPET_STYLE_DEFAULT, PUPPET_STYLE_DESIGN_
 import { puppetNoPack } from "../../../lib/motionPuppet.js";
 import { getMotionEngineDir } from "../motionEngineService.js";
 import type { MotionStyleReference } from "../../../types/motionVideo.js";
-import type { PuppetStylePack } from "../../../types/motionPuppet.js";
+import type { PuppetStylePack, PuppetReadDraft } from "../../../types/motionPuppet.js";
 import { runMotionAi, type MotionAiImage } from "../motionStoryService.js";
 import type { MotionAiExecution } from "../../../types/motionVideo.js";
 import { withMotionReferenceFiles } from "../motionReferenceService.js";
 import { listPuppets, newPuppetId, puppetHash, puppetRefsDir, readPuppet, writePuppet } from "./kitLibrary.js";
 export interface PuppetRunOptions {
+  readDrafts?: Record<string, PuppetReadDraft>;
+  onReadDraft?: (key: string, draft: PuppetReadDraft) => void;
+  review?: boolean;
+  characterIds?: string[];
+  replan?: (keys: string[]) => void;
+  readCatalog?: string;
+  readCatalogFor?: (text: string) => string;
   exec: MotionAiExecution;
   signal?: AbortSignal;
   log: (s: string) => void;
@@ -58,6 +66,7 @@ const normalizeStyle = (raw: any, base: PuppetPresetDef): Pick<PuppetStylePack, 
       mouthY: num(rf.mouthY, f.mouthY, 0.55, 0.88),
       brows: rf.brows === undefined ? f.brows : rf.brows === true,
       mouthRest: pick(rf.mouthRest, P.MOUTH_RESTS, f.mouthRest),
+      ...(rf.nose !== undefined || f.nose !== undefined ? { nose: rf.nose === undefined ? f.nose === true : rf.nose === true } : {}),
     },
     line: { width: num(rl.width, l.width, 0.004, 0.025), color: hex(rl.color, l.color) },
     vignette: num(raw?.vignette, base.vignette, 0, 0.7),
@@ -122,7 +131,7 @@ const designPuppetStyle = async (brief: PuppetStoryBrief, o: PuppetRunOptions): 
   const hit = _.find(listPuppets<PuppetStylePack>(PUPPET_TYPES.STYLE), (s) => s.designKey === designKey);
   if (hit && !o.fresh) return hit;
   const out = await (o.ai || runMotionAi)(PUPPET_PROMPTS.DESIGN(brief), P.ARTIFACT_STYLE, o.exec, o.signal, o.log).catch((e: any) => {
-    if (o.signal?.aborted) throw e;
+    if (isTerminalMotionAiError(e, o.signal)) throw e;
     return null;
   });
   const id = newPuppetId(PUPPET_TYPES.STYLE, P.DESIGN_SEED + brief.key + Date.now());
@@ -142,7 +151,7 @@ export const resolvePuppetStyle = async (references: MotionStyleReference[], pre
       return name;
     });
     const out = await (o.ai || runMotionAi)(PUPPET_PROMPTS.STYLE({ names: _.map(references, (r) => r.name).join(P.COMMA) }), P.ARTIFACT_STYLE, o.exec, o.signal, o.log, images).catch((e: any) => {
-      if (o.signal?.aborted) throw e;
+      if (isTerminalMotionAiError(e, o.signal)) throw e;
       return null;
     });
     return { out, refs };

@@ -8,13 +8,21 @@ import { speechUnits } from "./motionSpeechRateService.js";
 import os from "os";
 import path from "path";
 import fs from "fs";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { measureVoicePaceFile } from "./motionVoicePaceService.js";
+import { AsyncLocalStorage } from "node:async_hooks";
+import * as MR from "../../constants/motionRuntime.js";
+import { transcribeVieneuAudio } from "./vieneuTtsService.js";
+import { runMotionAudioProcess } from "./motionSoundMixService.js";
+const voiceSpeedScope = new AsyncLocalStorage<{ settings: MotionVoiceSpeedSettings; manual: ReturnType<typeof readVoiceLibrary> }>();
 const round = (value: number, step = V.STEP): number => Math.round(value / step) * step;
-export const readVoiceSpeedSettings = (): MotionVoiceSpeedSettings => {
+const storedVoiceSpeedSettings = (): MotionVoiceSpeedSettings => {
   const data = readMotionVoiceLibraryJson<Partial<MotionVoiceSpeedSettings>>(V.FILE, {});
-  return { ...(data.target ? { target: data.target } : {}), correction: _.clamp(Number(data.correction) || 1, V.CORRECTION_RANGE[0], V.CORRECTION_RANGE[1]), rates: data.rates && _.isObjectLike(data.rates) ? data.rates : {} };
+  return { ...(data.target ? { target: data.target } : {}), correction: _.clamp(Number(data.correction) || 1, V.CORRECTION_RANGE[0], V.CORRECTION_RANGE[1]), rates: data.rates && _.isObjectLike(data.rates) ? data.rates : {}, acousticRates: data.acousticRates && _.isObjectLike(data.acousticRates) ? data.acousticRates : {} };
 };
+export const readVoiceSpeedSettings = (): MotionVoiceSpeedSettings => voiceSpeedScope.getStore()?.settings || storedVoiceSpeedSettings();
+export const withMotionVoiceSpeedSnapshot = <T>(run: () => T): T => (voiceSpeedScope.getStore() ? run() : voiceSpeedScope.run({ settings: structuredClone(storedVoiceSpeedSettings()), manual: structuredClone(readVoiceLibrary()) }, run));
+const manualVoiceSpeed = (voiceId: string): number | undefined => cleanVoiceSpeed((voiceSpeedScope.getStore()?.manual || readVoiceLibrary())[voiceId]?.speed);
 const writeVoiceSpeedSettings = (settings: MotionVoiceSpeedSettings): MotionVoiceSpeedSettings => {
   writeMotionJsonAtomic(motionVoiceLibraryFile(V.FILE), settings);
   return settings;
@@ -68,8 +76,8 @@ export const measureVoiceSpeedReference = async (url: string, signal?: AbortSign
   if (!fetched.ok) throw new Error(fetched.note || V.ERRORS.NO_TRANSCRIPT);
   const focus = Number(V.TIME_PARAM_RE.exec(url)?.[1]);
   const measured = measureTranscriptRate(fetched.raw, Number.isFinite(focus) ? focus : undefined);
-  const target: MotionVoiceSpeedTarget = { rate: measured.rate, url, title: fetched.title, ...(measured.window ? { window: measured.window } : {}), ...(measured.pauses ? { pauses: measured.pauses } : {}), at: Date.now() };
-  return writeVoiceSpeedSettings({ ...readVoiceSpeedSettings(), target, correction: 1 });
+  const target: MotionVoiceSpeedTarget = { rateBasis: V.BASIS.TEXT, rate: measured.rate, url, title: fetched.title, ...(measured.window ? { window: measured.window } : {}), ...(measured.pauses ? { pauses: measured.pauses } : {}), at: Date.now() };
+  return writeVoiceSpeedSettings({ ...readVoiceSpeedSettings(), target, correction: 1, rates: {}, acousticRates: {} });
 };
 export const measureVoiceSpeedAudio = async (name: string, base64: string, signal?: AbortSignal): Promise<MotionVoiceSpeedSettings> => {
   const ext = _.toLower(path.extname(name));
@@ -77,44 +85,75 @@ export const measureVoiceSpeedAudio = async (name: string, base64: string, signa
   const buf = Buffer.from(base64.replace(V.AUDIO.DATA_URL_RE, V.EMPTY), V.BASE64);
   if (buf.length < V.MIN_AUDIO_BYTES) throw new Error(V.ERRORS.AUDIO_EMPTY);
   const file = path.join(os.tmpdir(), V.AUDIO.TMP_PREFIX + randomUUID() + ext);
+  const transcriptFile = file + MR.MOTION_TEXT_WAV;
   try {
     await fs.promises.writeFile(file, buf);
     const r = await measureVoicePaceFile(file, signal);
-    const target: MotionVoiceSpeedTarget = { rate: _.round(r.articulation / V.GAP_FACTOR, 3), url: V.EMPTY, title: path.basename(name), source: V.SOURCE_AUDIO, pauses: r.pauses, phrase: r.phrase, speechRatio: r.speechRatio, at: Date.now() };
-    return writeVoiceSpeedSettings({ ...readVoiceSpeedSettings(), target, correction: 1 });
+    let units = 0;
+    try {
+      await runMotionAudioProcess([MR.MOTION_TEXT_I, file, MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_AR, String(V.AUDIO.SAMPLE_RATE), MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, transcriptFile], signal);
+      const transcript = await transcribeVieneuAudio(transcriptFile, MR.MOTION_TEXT_EMPTY, signal);
+      const count = speechUnits(transcript.text);
+      if (count / r.seconds >= V.RATE_RANGE[0] && count / r.seconds <= V.RATE_RANGE[1]) units = count;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+    }
+    const rate = units >= V.MIN_UNITS ? units / r.seconds : r.rate;
+    const target: MotionVoiceSpeedTarget = {
+      rateBasis: units >= V.MIN_UNITS ? V.BASIS.TEXT : V.BASIS.ACOUSTIC,
+      rate: _.round(rate, 3),
+      url: V.EMPTY,
+      title: path.basename(name),
+      fingerprint: createHash(MR.MOTION_TEXT_SHA256).update(buf).digest(MR.MOTION_TEXT_HEX),
+      source: V.SOURCE_AUDIO,
+      pauses: { ...r.pauses, articulation: _.round(rate / r.speechRatio, 2) },
+      phrase: r.phrase,
+      speechRatio: r.speechRatio,
+      at: Date.now(),
+    };
+    return writeVoiceSpeedSettings({ ...readVoiceSpeedSettings(), target, correction: 1, rates: {}, acousticRates: {} });
   } finally {
     await fs.promises.rm(file, { force: true }).catch(_.noop);
+    await fs.promises.rm(transcriptFile, { force: true }).catch(_.noop);
   }
 };
 export const clearVoiceSpeedReference = (): MotionVoiceSpeedSettings => writeVoiceSpeedSettings(_.omit({ ...readVoiceSpeedSettings(), correction: 1 }, V.TARGET_FIELD) as MotionVoiceSpeedSettings);
 export const voiceSpeedKey = (voiceId: string): string => {
-  const manual = cleanVoiceSpeed(readVoiceLibrary()[voiceId]?.speed);
+  const manual = manualVoiceSpeed(voiceId);
   if (manual) return String(manual);
   const settings = readVoiceSpeedSettings();
-  return settings.target ? [V.AUTO, settings.target.rate, settings.correction.toFixed(3)].join(V.KEY_SEPARATOR) : String(1);
+  return settings.target ? [V.AUTO, settings.target.fingerprint || settings.target.title, settings.target.rate, settings.target.rateBasis || settings.target.source, settings.correction.toFixed(3)].join(V.KEY_SEPARATOR) : String(1);
 };
+export const voiceSpeedUsesAcoustics = (target = readVoiceSpeedSettings().target): boolean => target?.rateBasis === V.BASIS.ACOUSTIC || (!target?.rateBasis && target?.source === V.SOURCE_AUDIO);
+const tempoFromRate = (settings: MotionVoiceSpeedSettings, natural: number): number => _.clamp(round((settings.target!.rate * settings.correction) / natural), V.AUTO_MIN, V.AUTO_MAX);
 export const knownVoiceTempoFactor = (voiceId: string): number | null => {
-  const manual = cleanVoiceSpeed(readVoiceLibrary()[voiceId]?.speed);
+  const manual = manualVoiceSpeed(voiceId);
   if (manual) return manual;
   const settings = readVoiceSpeedSettings();
   if (!settings.target) return 1;
-  const natural = settings.rates[voiceId];
-  return natural ? _.clamp(round((settings.target.rate * V.GAP_FACTOR * settings.correction) / natural), V.AUTO_MIN, V.AUTO_MAX) : null;
+  const natural = (voiceSpeedUsesAcoustics(settings.target) ? settings.acousticRates : settings.rates)?.[voiceId];
+  return natural ? tempoFromRate(settings, natural) : null;
 };
-export const voiceTempoFactor = (voiceId: string, text: string, rawSeconds: number): number => {
-  const manual = cleanVoiceSpeed(readVoiceLibrary()[voiceId]?.speed);
+export const voiceTempoFactor = (voiceId: string, text: string, rawSeconds: number, acousticRate?: number): number => {
+  const manual = manualVoiceSpeed(voiceId);
   if (manual) return manual;
   const settings = readVoiceSpeedSettings();
   if (!settings.target) return 1;
   const units = speechUnits(text);
-  const measured = units >= V.MIN_UNITS && rawSeconds > 0 ? _.clamp(units / rawSeconds, V.RATE_RANGE[0], V.RATE_RANGE[1]) : undefined;
-  const natural = settings.rates[voiceId] || measured;
+  const acoustic = voiceSpeedUsesAcoustics(settings.target);
+  const rates = acoustic ? (settings.acousticRates ||= {}) : settings.rates;
+  const candidate = acoustic ? acousticRate : units / rawSeconds;
+  const measured = units >= V.MIN_UNITS && rawSeconds > 0 && candidate && Number.isFinite(candidate) ? _.clamp(candidate, V.RATE_RANGE[0], V.RATE_RANGE[1]) : undefined;
+  const natural = rates[voiceId] || measured;
   if (measured) {
-    const previous = settings.rates[voiceId];
-    writeVoiceSpeedSettings({ ...settings, rates: { ...settings.rates, [voiceId]: _.round(previous ? previous * (1 - V.RATE_WEIGHT) + measured * V.RATE_WEIGHT : measured, 3) } });
+    const previous = rates[voiceId];
+    const rate = _.round(previous ? previous * (1 - V.RATE_WEIGHT) + measured * V.RATE_WEIGHT : measured, 3);
+    rates[voiceId] = rate;
+    const latest = storedVoiceSpeedSettings();
+    writeVoiceSpeedSettings(acoustic ? { ...latest, acousticRates: { ...latest.acousticRates, [voiceId]: rate } } : { ...latest, rates: { ...latest.rates, [voiceId]: rate } });
   }
   if (!natural) return 1;
-  return _.clamp(round((settings.target.rate * V.GAP_FACTOR * settings.correction) / natural), V.AUTO_MIN, V.AUTO_MAX);
+  return tempoFromRate(settings, natural);
 };
 export const recordVoiceSpeedFeedback = (units: number, totalSeconds: number, usedAuto: boolean): string | undefined => {
   const settings = readVoiceSpeedSettings();

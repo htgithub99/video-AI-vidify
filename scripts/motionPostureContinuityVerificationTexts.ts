@@ -1,7 +1,14 @@
 import type { PuppetLine } from "../src/lib/motionPuppet.js";
 import type { PuppetRead } from "../src/types/motionPuppet.js";
 export const POSTURE_QA = {
-  PASSED: "Posture continuity: lying speech, seated object use, English support aliases, scene resets and explicit standing passed.\n",
+  PASSED: "Posture continuity: lying speech, seated object use, English support aliases, scene resets, explicit standing and under-bed separation passed.\n",
+  UNDER_BED: {
+    STATE: { char: "a", action: "lie", support: "under_wooden_bed" },
+    OTHER: { char: "b", action: "lie", support: "under_wooden_bed" },
+    SPOT: { key: "under_wooden_bed", kind: "lie", x: 630, y: 990, label: "floor beneath the wooden bed" },
+    ALIAS: { key: "beneath_wooden_bed", kind: "lie", x: 630, y: 990, label: "floor beneath the wooden bed" },
+    TOP: { key: "wooden_bed", kind: "lie", x: 630, y: 700, label: "top of the wooden bed" },
+  },
   LINES: ["rest", "speech", "stand", "yard", "return", "memory", "present"].map((key) => ({ key, text: key, beatId: key, place: key === "yard" ? "yard" : "room", chapterId: "chapter", cast: ["a", "b"] })) as PuppetLine[],
   READS: {
     rest: {
@@ -27,8 +34,8 @@ export const POSTURE_QA = {
       place: "room",
       overlays: [],
       states: [
-        { char: "a", action: "talk", support: "chong_tre" },
-        { char: "b", action: "hold" },
+        { char: "a", action: "talk", posture: "idle", support: "chong_tre" },
+        { char: "b", action: "hold", posture: "idle" },
       ],
     },
     stand: {

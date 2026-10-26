@@ -4,10 +4,12 @@ import _ from "lodash";
 import { createHash } from "crypto";
 import { PUPPET as P } from "../../../constants/motionPuppet.js";
 import * as MR from "../../../constants/motionRuntime.js";
-import type { MotionAiExecution, MotionAudioDirection, MotionBeat, MotionGenState, MotionPlace, MotionStoryAnalysis, MotionStyleReference } from "../../../types/motionVideo.js";
+import type { MotionAiExecution, MotionAudioDirection, MotionBeat, MotionGenState, MotionPlace, MotionStoryAnalysis, MotionStoryScript, MotionStyleReference, MotionVoiceTrack } from "../../../types/motionVideo.js";
 import { getMotionRootDirectory } from "../motionLibraryService.js";
 import type { runMotionAi } from "../motionStoryService.js";
+import type { PuppetPlanReadiness } from "./planReadiness.js";
 export interface GenOptions {
+  readiness?: PuppetPlanReadiness;
   audioDirection?: MotionAudioDirection | Promise<MotionAudioDirection | undefined>;
   styleReferences?: MotionStyleReference[];
   characterMotion?: boolean;
@@ -21,6 +23,10 @@ export interface GenOptions {
   onlyLocations?: string[];
   note?: string;
   review?: boolean;
+  sfx?: boolean;
+  previews?: boolean;
+  prepareAudio?: (script: MotionStoryScript) => Promise<MotionAudioDirection | undefined>;
+  resolveVoice?: () => Promise<MotionVoiceTrack | undefined>;
   ai?: typeof runMotionAi;
 }
 export const emptyGen = (): MotionGenState => ({ style: {}, cast: {}, locations: {}, locationInfo: {}, staging: {}, previews: {}, failed: [] });

@@ -1,0 +1,62 @@
+{
+  "completed": true,
+  "date": "2026-10-26T15:18:40.457Z",
+  "testedInventoryHash": "33241d781dbf25c16b1e0eac0b1cd6c8582ec0da7dc76c3cb5fc51b0c6d78404",
+  "cases": 88,
+  "sheets": [
+    {
+      "file": "geometry-1.jpg",
+      "hash": "e7ac8525eb0007063ed584996b35a20feea35f8408f2af932982b54c8e602a53"
+    },
+    {
+      "file": "geometry-2.jpg",
+      "hash": "861f58ccab2bf8cae3f26aaddf95197ea3f0ab10ea66642eb001a762a56fb408"
+    },
+    {
+      "file": "geometry-3.jpg",
+      "hash": "d84a14568fb43010097690c5f52872e608e8979ef0f37eb5b29fcf5b09821058"
+    },
+    {
+      "file": "geometry-4.jpg",
+      "hash": "dbc386721d50578ca66e9715ab04580eb08ac5cd333a9e309c78f88c9b9d3ff3"
+    },
+    {
+      "file": "geometry-5.jpg",
+      "hash": "85cb8972dc9c50332345739a93c51be54059e15866c53f30f461b2a86ba16b15"
+    },
+    {
+      "file": "geometry-6.jpg",
+      "hash": "f85b8cc8b2886653a082cae64b2c932eabf9c6d9c81313303a04fa20fb7a90be"
+    },
+    {
+      "file": "geometry-7.jpg",
+      "hash": "44a8643b7e327306ccbdf343ffe1abdfc2b292b7e0b452544d46977a127bd26b"
+    },
+    {
+      "file": "geometry-8.jpg",
+      "hash": "e235464e8fc71a831954dcdaa93641bbe8baae099f9d3855198f009661003b8d"
+    },
+    {
+      "file": "geometry-9.jpg",
+      "hash": "cba0e90ad78a399e61b7b482252d841cd2ec9b65880aa7d5b378fc8698a2b8aa"
+    },
+    {
+      "file": "geometry-10.jpg",
+      "hash": "2917dfc91e2914501a5eb89a9cc19acccdce7e4f1422259f58ad8ef58c933926"
+    },
+    {
+      "file": "geometry-11.jpg",
+      "hash": "e5ef2d8f9b16deb34c27b5a73eb5d01b84606d05793f1f0ec53e3cd68c3bf40e"
+    }
+  ],
+  "scope": "Reviewed 88 synthetic static illustrations on 11 contact sheets; not exhaustive review of 22 full videos.",
+  "probeCorrections": [
+    "mourning"
+  ],
+  "remaining": [
+    "Che phần thân người dưới mặt nước theo đúng lớp nước.",
+    "Phản chiếu đúng người và đồ vật đang đổi trong gương.",
+    "Đặt trẻ bên trong bát hoặc vật chứa có vành che.",
+    "Bát nghi lễ treo bằng dây với điểm treo riêng."
+  ]
+}

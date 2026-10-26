@@ -1,16 +1,19 @@
+from library_release import assert_legacy_library_target
 from seed_texts import SeedText as KST
 import subprocess
-from seed_utils import SEED_STYLES, seed_id, seed_timestamp
+from seed_utils import SEED_STYLES, seed_id, seed_timestamp, resource_semantics, validate_asset_geometry
 import sys, os, json
 from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scenes import SCENES, build
 from props import PROPS, build_prop
 from chars import ARCH, build_char
+from chibi_design import DESCRIPTIONS, VERSION as CHIBI_VERSION
 from spots import spots_for
 from scenes import T
 SRC = Path(__file__).resolve().parents[2] / KST.SRC / KST.CONSTANTS / KST.MOTIONPUPPETSEED_TS
 OUT = sys.argv[1]
+assert_legacy_library_target(OUT)
 STYLES = SEED_STYLES
 NOW = seed_timestamp()
 catalog = json.loads(subprocess.run([os.environ.get(KST.KIT_NODE, KST.NODE), str(Path(__file__).with_name(KST.EXPORT_SEED_CATALOG_CJS)), str(SRC)], check=True, capture_output=True, text=True, encoding=KST.UTF_8).stdout)
@@ -19,6 +22,8 @@ assert len(places) == len(SCENES), (len(places), len(SCENES))
 assert len(props) == len(PROPS), (len(props), len(PROPS))
 pid = seed_id
 def write(kind, asset):
+    resource_semantics(asset)
+    validate_asset_geometry(asset, asset[KST.ID])
     d = os.path.join(OUT, kind)
     os.makedirs(d, exist_ok=True)
     with open(os.path.join(d, asset[KST.ID] + KST.JSON_EXTENSION), KST.W, encoding=KST.UTF_8) as fh:
@@ -88,7 +93,7 @@ for style, sid in STYLES.items():
                 age=a[KST.AGE],
                 name=a[KST.NAME],
                 role=a[KST.GROUP],
-                desc=a[KST.DESC],
+                desc=DESCRIPTIONS.get(key, a[KST.DESC]) if style == KST.CHIBI_FOLK else a[KST.DESC],
                 tags=[KST.SEED, KST.ARCHETYPE, key, a[KST.GROUP], a[KST.GENDER], a[KST.AGE]],
                 story=KST.EMPTY,
                 height=c[KST.HEIGHT],
@@ -98,7 +103,10 @@ for style, sid in STYLES.items():
                 sprites=c[KST.SPRITES],
                 uses=0,
                 updatedAt=NOW,
+                **(dict(chibiDesignVersion=CHIBI_VERSION) if style == KST.CHIBI_FOLK else {}),
             ),
         )
         count += 1
 print(count)
+from migrate_scene_components import migrate
+migrate(Path(OUT).resolve(), Path(OUT).resolve().parent / "scene-component-migration", True)

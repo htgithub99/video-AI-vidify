@@ -1,0 +1,43 @@
+{
+  "source": "motion-puppet-read-contract-e7dba5e0-b240-41ce-bc83-47a0ce2d2e41",
+  "requested": { "i": 24, "key": "visual::1712::8ed96df8", "text": "Tôi vội lao ra thềm dòm xuống, quả nhiên thấy chị Hai thật đang lội bộ từ ngoài cổng vô, quần áo lấm lem bụi đường." },
+  "unit": {
+    "scene": "san_truoc_real_sister",
+    "purpose": "establish",
+    "show": "In the night courtyard, the real Chi Hai stands weary and covered in travel dust, while the narrator stands at the doorway veranda looking out at her in astonishment.",
+    "sources": [{ "line": "c2_event_943ec18461c7::0::tôi vội lao ra thềm dòm xuống quả nhiên thấy chị hai thật đang lội bộ từ ngoài cổng vô quần áo lấm lem bụi đường", "from": 0, "to": 26 }],
+    "read": {
+      "focus": "chi_hai",
+      "who": ["chi_hai", "toi"],
+      "place": "san_truoc",
+      "action": "idle",
+      "emotion": "neutral",
+      "object": null,
+      "objects": [],
+      "states": [
+        { "char": "chi_hai", "action": "stand", "posture": "idle", "essential": false, "placement": { "relation": "at", "anchor": "courtyard", "evidence": "thấy chị Hai thật đang lội bộ từ ngoài cổng vô" } },
+        { "char": "toi", "action": "stand", "posture": "idle", "essential": false, "placement": { "relation": "beside", "anchor": "door", "evidence": "Tôi vội lao ra thềm dòm xuống" } }
+      ],
+      "overlays": [],
+      "visual": { "scene": "san_truoc_real_sister", "timeline": "present", "evidence": ["Tôi vội lao ra thềm dòm xuống, quả nhiên thấy chị Hai thật đang lội bộ từ ngoài cổng vô, quần áo lấm lem bụi đường."], "fixtures": [] }
+    },
+    "key": "visual::1712::8ed96df8"
+  },
+  "draft": {
+    "i": 24,
+    "focus": "chi_hai",
+    "who": ["chi_hai", "toi"],
+    "place": "san_truoc",
+    "action": "stand",
+    "emotion": "surprised",
+    "object": null,
+    "objects": [],
+    "states": [
+      { "char": "chi_hai", "action": "stand", "posture": "idle", "essential": false, "placement": { "relation": "at", "anchor": "gate", "targets": [], "evidence": "từ ngoài cổng vô" } },
+      { "char": "toi", "action": "stand", "posture": "idle", "essential": false, "placement": { "relation": "at", "anchor": "door", "targets": [], "evidence": "Tôi vội lao ra thềm dòm xuống" } }
+    ],
+    "overlays": [],
+    "visual": { "scene": "Night brick courtyard with the real Chi Hai standing weary and dust covered after entering from the gate while the narrator stands at the house threshold looking down in astonishment", "timeline": "present", "evidence": ["Tôi vội lao ra thềm dòm xuống, quả nhiên thấy chị Hai thật đang lội bộ từ ngoài cổng vô, quần áo lấm lem bụi đường."], "fixtures": [] }
+  },
+  "state": { "rejected": 6, "errors": ["Thiếu visual.scene, visual.timeline hoặc visual.evidence có nội dung."], "routes": { "[\"room-only\",\"deepseek-chat\",\"deepseek-standard\"]": 2, "[\"room-only\",\"chatgpt-ui\",\"chatgpt-auto\"]": 2, "[\"room-only\",\"grok-chat\",\"\"]": 2 } }
+}

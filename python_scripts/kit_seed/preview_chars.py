@@ -3,7 +3,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from chars import ARCH, build_char, inner
 from render import render, sheet
 style = sys.argv[1]
-P = {'chibi_folk': dict(head=0.48, headW=1.06, bodyW=0.82, overlap=0.06, eyeY=0.57, eyeGap=0.36, mouthY=0.75), 'minimal_mask': dict(head=0.36, headW=1.0, bodyW=1.22, overlap=0.08, eyeY=0.41, eyeGap=0.3, mouthY=0.74)}[style]
+from chibi_design import BODY, FACE
+P = {'chibi_folk': {**BODY, **FACE}, 'minimal_mask': dict(head=0.36, headW=1.0, bodyW=1.22, overlap=0.08, eyeY=0.41, eyeGap=0.3, mouthY=0.74)}[style]
 items = []
 for k in ARCH:
     c = build_char(k, style)
@@ -24,7 +25,7 @@ for k in ARCH:
                 parts.append('<ellipse cx="%f" cy="%f" rx="%f" ry="%f" fill="#111"/>' % (x0 - hw / 2 + ex * hw + off, hy + P['eyeY'] * hh, hw * (0.11 if style == 'minimal_mask' else 0.03), hh * (0.18 if style == 'minimal_mask' else 0.03)))
     sp = ''
     if c['sprites']:
-        for j, n in enumerate(['sit', 'lie', 'kneel']):
+        for j, n in enumerate(c['sprites']):
             sp += '<svg x="%d" y="20" width="120" height="120" viewBox="0 0 500 500">%s</svg>' % (480 + j * 0, inner(c['sprites'][n]['svg'])) if False else '<svg x="%d" y="%d" width="110" height="110" viewBox="0 0 500 500">%s</svg>' % (500, 10 + j * 125, inner(c['sprites'][n]['svg']))
     items.append('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" style="background:#d8cfbf">%s%s<text x="10" y="390" font-size="22">%s</text></svg>' % (''.join(parts), sp, k))
 imgs = asyncio.run(render(items, 320, 200))
