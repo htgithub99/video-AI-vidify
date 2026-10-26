@@ -1,4 +1,4 @@
-import { puppetKitSpec, puppetSceneShot, linkPuppetVisualFrames } from "./puppet/compilePuppet.js";
+import { puppetKitSpec, puppetSceneShot, linkPuppetVisualFrames, applyPuppetShotAppearances } from "./puppet/compilePuppet.js";
 import { PUPPET as PUPPET_C } from "../../constants/motionPuppet.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { budgetShotText } from "../../lib/motionTextBudget.js";
@@ -300,6 +300,7 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
   });
   for (let i = 1; i < shots.length; i++) if (shots[i].start < shots[i - 1].end) shots[i - 1].end = shots[i].start;
   linkPuppetVisualFrames(shots);
+  if (gen?.puppet) applyPuppetShotAppearances(shots, gen.puppet);
   const spec: MotionSpec = {
     title: script.title || analysis?.title,
     aspect: opts.aspect,
@@ -314,7 +315,13 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
     subtitles,
     duration: +total.toFixed(3),
   };
-  const kit = gen?.puppet ? puppetKitSpec(gen.puppet, gen.characterMotion === true) : null;
+  const kit = gen?.puppet
+    ? puppetKitSpec(
+        gen.puppet,
+        gen.characterMotion === true,
+        shots.flatMap((shot) => (shot.template === PUPPET_C.TEMPLATE ? ((shot.params as any).frames || []).flatMap((frame: any) => frame.actors || []) : [])),
+      )
+    : null;
   if (kit) spec.kit = kit;
   const finish = motionStyleFinish(analysis?.stylePreset);
   if (finish) spec.finish = finish;

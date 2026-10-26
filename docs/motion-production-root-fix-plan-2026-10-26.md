@@ -612,3 +612,11 @@ Hai phần dưới là yêu cầu triển khai tiếp vào các mã R hiện có
 - Nguồn không đòi bàn không bị dừng chỉ vì mô tả AI thêm bàn; nguồn bắt buộc bàn/quan hệ cốt lõi thì không bị tự đổi thành đặt đất.
 - Preflight và pipeline cùng đầu vào có kết luận tương đương; sửa đúng vùng pending, giữ cast/need đã đạt, không reset truyện hoặc voice/cache không liên quan.
 - Kiểm render ảnh đại diện và sheet bố cục để xác nhận tỉ lệ, vị trí bờ/nước, người/đồ, mặt tựa và không trùng món vẽ liền. Phép kiểm thuần đã làm không thay nghiệm thu ảnh; không tự chạy hoặc tiếp tục video để thực hiện bản cập nhật plan này.
+
+### Đối ứng tiếp sau kiểm kho 22 mẫu
+
+Ngày 26/10 đã triển khai phần nhận diện món thực, capacity/điểm đặt/tỷ lệ/biên khung, metadata các mảnh và bổ sung món thiếu theo [phạm vi C01–C06](motion-reference-coverage-fix-2026-10-26.md). Kho mới `modular-v3-reference-20261026` đã nạp cho cả hai gói; 88 tình huống tổng hợp và 11 bảng ảnh đã kiểm, không tạo video. Chi tiết và khả năng chưa nghiệm thu nằm trong [báo cáo kết quả](video-references/resource-coverage-fix-20261026/index.html); không dùng kết quả này để đánh dấu toàn bộ plan sản xuất hoặc toàn bộ 22 nguồn là hoàn tất.
+
+### Đối ứng ngoại hình ma, màu nền và góc hình
+
+Sau audit **Người Đứng Ngoài Sân**, đã sửa hợp đồng READ về ngoại hình có bằng chứng, biến thể màu theo bộ phận và trạng thái theo nhân vật/dòng thời gian, hình ma giả người/lộ hình, màu nền trầm và lấy khung toàn–trung–cận của hai gói. Chi tiết tại [báo cáo triển khai](motion-horror-appearance-fix-2026-10-26.md), liên quan R07/R20 và F03/F11. Đã kiểm 12 ca mô tả, hai READ mô phỏng AI và 36 ảnh engine; không tạo MP4 mới. Nghiệm thu cảm giác sợ, độ giống mẫu và các lỗi nội dung/bố cục khác trong audit vẫn còn mở; không đóng toàn plan.

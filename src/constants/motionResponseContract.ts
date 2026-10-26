@@ -1,4 +1,5 @@
 import { MOTION_QA as Q } from "./motionQa.js";
+import { MOTION_APPEARANCE as APPEARANCE } from "./motionAppearance.js";
 export interface MotionResponseSchema {
   type?: "object" | "array" | "string" | "number" | "integer" | "boolean" | "null";
   properties?: Record<string, MotionResponseSchema>;
@@ -78,11 +79,21 @@ export const MOTION_THUMBNAIL_SCHEMA = object({ imagePrompt: { type: "string", m
 const cast = array(object({ ...texts("key", "name", "role", "look"), gender: choice("male", "female"), age: choice("child", "adult", "senior"), appearanceOf: nullable(text) }, ["key", "name", "role", "look"]));
 const place = array(object({ ...texts("key", "name", "description"), interior: boolean, time: choice(...MOTION_RESPONSE_VALUES.TIMES) }, ["key", "name", "description", "interior", "time"]));
 const chapters = array(object({ ...texts("id", "title", "summary"), hook: plainText, keyPoints: strings(1), handoff: plainText }, ["id", "title", "summary", "keyPoints"]), 1);
-const state = object({ ...texts("char", "action"), posture: choice("idle", "sit", "lie", "kneel", "crouch"), support: nullable(text), target: nullable(text), gesture: nullable(text), transition: boolean, essential: boolean, placement: object({ relation: choice("at", "beside", "behind", "between"), anchor: text, targets: strings(), evidence: text }, ["relation", "evidence"]) }, [
-  "char",
-  "action",
-  "posture",
-]);
+const appearanceColor = choice(...Object.keys(APPEARANCE.COLORS));
+const state = object(
+  {
+    ...texts("char", "action"),
+    appearance: object({ face: appearanceColor, clothes: appearanceColor, hair: appearanceColor, body: appearanceColor, form: choice(...APPEARANCE.FORMS), evidence: text }, ["evidence"]),
+    posture: choice("idle", "sit", "lie", "kneel", "crouch"),
+    support: nullable(text),
+    target: nullable(text),
+    gesture: nullable(text),
+    transition: boolean,
+    essential: boolean,
+    placement: object({ relation: choice("at", "beside", "behind", "between"), anchor: text, targets: strings(), evidence: text }, ["relation", "evidence"]),
+  },
+  ["char", "action", "posture"],
+);
 const prop = object(
   {
     ...texts("key", "word"),

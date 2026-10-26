@@ -1,0 +1,27 @@
+{
+  "cases": [
+    { "text": "Gương mặt chị trắng bệch, không còn một giọt máu.", "expected": { "face": "white", "form": "revealed" } },
+    { "text": "Bóng ma mặc áo trắng, tóc đen xõa sau lưng.", "expected": { "clothes": "white", "hair": "black" } },
+    { "text": "Cái bóng đã biến thành một hình nhân xám ngoét.", "expected": { "body": "gray", "form": "revealed" } },
+    { "text": "Một bóng trắng đứng ngoài cửa.", "expected": { "body": "white" } },
+    { "text": "Gương mặt không trắng bệch, chị vẫn khỏe mạnh.", "expected": null },
+    { "text": "Đôi mắt đen nhìn chiếc áo ở đó.", "expected": null },
+    { "text": "Chiếc áo đến từ ngôi nhà cũ.", "expected": null },
+    { "text": "Gương mặt lạnh lùng, chiếc áo trắng.", "expected": { "clothes": "white" } },
+    { "text": "Gương mặt lạnh lùng và chiếc áo trắng.", "expected": { "clothes": "white" } },
+    { "text": "Nó không lộ nguyên hình.", "expected": null },
+    { "text": "Her face was pale, her dress was black.", "expected": { "face": "white", "clothes": "black" } },
+    { "text": "Nó trông như người sống.", "expected": { "form": "human" } }
+  ],
+  "whiteFace": "Gương mặt chị trắng bệch.",
+  "whiteClothes": "Chị mặc áo trắng.",
+  "grayBody": "Nó biến thành hình nhân xám ngoét.",
+  "human": "Nó trông như người sống.",
+  "reaction": "Tôi đứng nhìn chị ở cạnh giường.",
+  "root": "scratch/horror-appearance-20261026",
+  "source": "scratch/reference-fix-20261026/inventory.json",
+  "engine": ["motion-engine/texts.js", "motion-engine/core.js", "motion-engine/puppet2d.js"],
+  "modes": ["baseline", "pale", "white_clothes", "gray", "human"],
+  "shots": ["wide", "people", "two", "bust"],
+  "bedside": { "bed": "low_bed", "door": "modular_door", "base": "room_plank" }
+}

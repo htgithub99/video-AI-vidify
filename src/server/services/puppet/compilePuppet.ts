@@ -1,4 +1,8 @@
 import { puppetPropRestRotation } from "../../../lib/motionPuppetAssets.js";
+import { MOTION_APPEARANCE as APPEARANCE } from "../../../constants/motionAppearance.js";
+import { MOTION_PACK as PACK } from "../../../constants/motionPack.js";
+import { puppetAppearanceKey, puppetCharacterAppearance, puppetReadAppearances, mergePuppetAppearances } from "../../../lib/motionAppearance.js";
+import type { PuppetAppearance, PuppetFrameActor } from "../../../types/motionPuppet.js";
 import { MOTION_STAGE_GEOMETRY as G } from "../../../constants/motionStageGeometry.js";
 import { puppetReadObjects } from "../../../lib/motionReadObjects.js";
 import _ from "lodash";
@@ -200,6 +204,24 @@ export const linkPuppetVisualFrames = (shots: MotionShot[]): void => {
   }
   finish();
 };
+export const applyPuppetShotAppearances = (shots: MotionShot[], gen: PuppetGen): void => {
+  const history = new Map<string, Map<string, PuppetAppearance>>();
+  for (const shot of shots) {
+    if (shot.template !== P.TEMPLATE) continue;
+    for (const frame of (shot.params as { frames?: PuppetTimedFrame[] }).frames || []) {
+      const read = gen.reads?.[frame.visualId || frame.line || P.EMPTY];
+      if (!read) continue;
+      const timeline = read.visual?.timeline || P.EMPTY;
+      const known = history.get(timeline) || new Map<string, PuppetAppearance>();
+      for (const [key, appearance] of puppetReadAppearances(read)) known.set(key, mergePuppetAppearances(known.get(key), appearance));
+      frame.actors = frame.actors.map((actor) => {
+        const appearance = known.get(actor.char);
+        return appearance ? { ...actor, appearance, look: puppetAppearanceKey(appearance) } : actor;
+      });
+      history.set(timeline, known);
+    }
+  }
+};
 export const puppetLayoutFrames = (frames: PuppetTimedFrame[], gen: PuppetGen): PuppetTimedFrame[] => {
   return withPuppetGenPack(gen, () => puppetLayoutFramesFromAssets(frames, gen));
 };
@@ -239,16 +261,21 @@ export const puppetSceneShot = (beat: MotionBeat, gen: PuppetGen, start: number,
 };
 const setSpec = (s: PuppetSet) => ({ svg: s.svg, floorY: s.floorY, wallY: puppetHorizon(s), lights: s.lights, time: s.time, framingBounds: s.framingBounds });
 export const puppetIsGhost = (c: PuppetCharacter): boolean => c.group === P.GHOST_GROUP || _.some([c.name, c.role, c.archetype], (v) => !!v && P.GHOST_NAME_RE.test(v));
-export const puppetKitSpec = (gen: PuppetGen, motion: boolean): PuppetKitSpec | null => {
-  return withPuppetGenPack(gen, () => puppetKitSpecFromAssets(gen, motion));
+export const puppetKitSpec = (gen: PuppetGen, motion: boolean, actors: PuppetFrameActor[] = []): PuppetKitSpec | null => {
+  return withPuppetGenPack(gen, () => puppetKitSpecFromAssets(gen, motion, actors));
 };
-const puppetKitSpecFromAssets = (gen: PuppetGen, motion: boolean): PuppetKitSpec | null => {
+const puppetKitSpecFromAssets = (gen: PuppetGen, motion: boolean, actors: PuppetFrameActor[]): PuppetKitSpec | null => {
   const style = readPuppet<PuppetStylePack>(PUPPET_TYPES.STYLE, gen.styleId);
   if (!style) return null;
   const characters: PuppetKitSpec["characters"] = {};
+  const appearances = [...Object.values(gen.reads || {}).flatMap((read) => [...puppetReadAppearances(read)].map(([char, appearance]) => ({ char, appearance }))), ...actors.filter((actor) => actor.appearance)];
+  const characterSpec = (c: PuppetCharacter) => ({ height: c.height, colors: c.colors, head: c.head, body: c.body, sprites: c.sprites });
   for (const [key, id] of _.toPairs(gen.characters)) {
     const c = readPuppet<PuppetCharacter>(PUPPET_TYPES.CHARACTER, id);
-    if (c) characters[key] = { height: c.height, colors: c.colors, head: c.head, body: c.body, sprites: c.sprites, ...((gen.ghosts ? _.includes(gen.ghosts, key) : puppetIsGhost(c)) ? { ghost: true } : {}) };
+    if (c) {
+      const looks = Object.fromEntries(appearances.filter((actor) => actor.char === key && actor.appearance).map((actor) => [puppetAppearanceKey(actor.appearance!), characterSpec(puppetCharacterAppearance(c, actor.appearance!))]));
+      characters[key] = { ...characterSpec(c), ...(Object.keys(looks).length ? { looks } : {}), ...((gen.ghosts ? _.includes(gen.ghosts, key) : puppetIsGhost(c)) ? { ghost: true } : {}) };
+    }
   }
   const sets: PuppetKitSpec["sets"] = {};
   for (const [place, id] of _.toPairs(gen.sets)) {
@@ -274,5 +301,5 @@ const puppetKitSpecFromAssets = (gen: PuppetGen, motion: boolean): PuppetKitSpec
       props[key] = { svg: p.svg, base: p.base, size: p.size || p.height, emitter: p.emitter, grip: p.grip, attachment: p.attachment, ...(p.requirements?.includes(G.BODY_COVER_FEATURE) ? { bodyCover: true } : {}), ...(restRotation !== undefined ? { restRotation } : {}) };
     }
   }
-  return { style: { body: style.body, face: style.face, line: style.line, vignette: style.vignette }, characters, sets, props, motion };
+  return { style: { body: style.body, face: style.face, line: style.line, vignette: style.vignette, ...(Object.values(PACK.PRESETS).includes(gen.styleId) ? { atmosphere: APPEARANCE.PROFILE } : {}) }, characters, sets, props, motion };
 };

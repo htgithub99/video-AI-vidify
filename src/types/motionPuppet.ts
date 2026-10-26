@@ -272,7 +272,16 @@ export interface PuppetSetPlan {
   mirror: boolean;
 }
 export type PuppetAsset = PuppetStylePack | PuppetCharacter | PuppetSet | PuppetProp | PuppetSeries | PuppetPiece | PuppetBase;
+export interface PuppetAppearance {
+  evidence: string;
+  face?: "white" | "gray" | "black" | "red" | "blue" | "green";
+  clothes?: PuppetAppearance["face"];
+  hair?: PuppetAppearance["face"];
+  body?: PuppetAppearance["face"];
+  form?: "human" | "revealed";
+}
 export interface PuppetActorState {
+  appearance?: PuppetAppearance;
   essential?: boolean;
   eyes?: { state: "open" | "closed"; evidence: string };
   placement?: { relation: "at" | "beside" | "behind" | "between"; anchor?: string; targets?: string[]; evidence: string };
@@ -297,6 +306,8 @@ export interface PuppetFrameItem {
   propRot?: number;
 }
 export interface PuppetFrameActor {
+  appearance?: PuppetAppearance;
+  look?: string;
   char: string;
   pose: string;
   gesture?: string;
@@ -501,8 +512,8 @@ export interface PuppetVisualContract {
   fixtures: { key: string; state: string }[];
 }
 export interface PuppetKitSpec {
-  style: Pick<PuppetStylePack, "body" | "face" | "line" | "vignette">;
-  characters: Record<string, Pick<PuppetCharacter, "height" | "colors" | "head" | "body" | "sprites"> & { ghost?: boolean }>;
+  style: Pick<PuppetStylePack, "body" | "face" | "line" | "vignette"> & { atmosphere?: typeof import("../constants/motionAppearance.js").MOTION_APPEARANCE.PROFILE };
+  characters: Record<string, Pick<PuppetCharacter, "height" | "colors" | "head" | "body" | "sprites"> & { ghost?: boolean; looks?: Record<string, Pick<PuppetCharacter, "height" | "colors" | "head" | "body" | "sprites">> }>;
   sets: Record<string, Pick<PuppetSet, "svg" | "floorY" | "lights" | "time" | "variants" | "framingBounds"> & { wallY?: number }>;
   props: Record<string, Pick<PuppetProp, "svg" | "base" | "size" | "emitter" | "grip" | "attachment"> & { restRotation?: number; bodyCover?: boolean }>;
   motion: boolean;

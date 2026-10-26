@@ -1,4 +1,5 @@
 import { puppetSupportCompatible } from "../../../lib/motionPlacement.js";
+import { mergePuppetAppearances } from "../../../lib/motionAppearance.js";
 import { canonicalPuppetReadObjects, puppetReadObjects } from "../../../lib/motionReadObjects.js";
 import _ from "lodash";
 import { PUPPET as P } from "../../../constants/motionPuppet.js";
@@ -53,7 +54,8 @@ export const normalizePuppetReadContinuity = (lines: PuppetLine[], reads: Record
       const physical = unchanged ? (_.includes(P.LOW_POSES, puppetStatePose(before)) ? puppetStatePose(before) : P.POSE_DEFAULT) : state.posture && state.posture !== P.POSE_DEFAULT ? state.posture : P.POSTURE_ACTIONS[state.action];
       const posture = moving ? P.POSE_DEFAULT : physical || (state.posture !== P.POSE_DEFAULT ? state.posture : undefined) || (before && compatible && _.includes(P.SEATED_ACTIONS, state.action) && _.includes(P.LOW_POSES, puppetStatePose(before)) ? puppetStatePose(before) : state.posture);
       const placement = state.placement || (unchanged && before.placement?.targets?.every((char) => read.who.includes(char)) ? before.placement : undefined);
-      const next = { ...state, eyes: state.eyes || before?.eyes, placement, transition: state.transition || moving || explicitChange, support: support || (!moving && !explicitChange && posture && before && compatible && (unchanged || _.includes(P.SEATED_ACTIONS, state.action)) ? before.support : undefined), ...(posture ? { posture } : {}) };
+      const appearance = state.appearance ? mergePuppetAppearances(before?.appearance, state.appearance) : before?.appearance;
+      const next = { ...state, appearance, eyes: state.eyes || before?.eyes, placement, transition: state.transition || moving || explicitChange, support: support || (!moving && !explicitChange && posture && before && compatible && (unchanged || _.includes(P.SEATED_ACTIONS, state.action)) ? before.support : undefined), ...(posture ? { posture } : {}) };
       previous.set(state.char, next);
       return next;
     });

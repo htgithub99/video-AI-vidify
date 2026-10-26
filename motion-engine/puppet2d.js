@@ -70,9 +70,11 @@
     const jobs = [];
     const add = (svg) => svg && jobs.push(loadSvg(svg));
     for (const c of Object.values(kit.characters || {})) {
-      for (const v of Object.values(c.head || {})) add(v);
-      for (const v of Object.values(c.body || {})) add(v);
-      for (const s of Object.values(c.sprites || {})) add(s && s.svg);
+      for (const look of [c, ...Object.values(c.looks || {})]) {
+        for (const v of Object.values(look.head || {})) add(v);
+        for (const v of Object.values(look.body || {})) add(v);
+        for (const s of Object.values(look.sprites || {})) add(s && s.svg);
+      }
     }
     for (const s of Object.values(kit.sets || {})) {
       const p = setParts(s);
@@ -120,9 +122,9 @@
       }
     return { cur: cur || fs[0] || null, prev: idx > 0 ? fs[idx - 1] : null, idx: Math.max(0, idx) };
   }
-  function charOf(S, id) {
+  function charOf(S, id, look) {
     const c = (S.kit.characters || {})[id];
-    return c || { id, height: 1, colors: {} };
+    return (look && c && c.looks && c.looks[look]) || c || { id, height: 1, colors: {} };
   }
   function charLayout(S, c) {
     const B = S.style.body;
@@ -513,14 +515,17 @@
       effectPoint(g, S, A.char, 0, 0, K.EFFECT.feet);
     }
     if (A.sil && !opt.raw) return drawSilhouette(g, S, Object.assign({}, A, { sil: false, talk: 0 }), t, { tint: 1 }, K.SIL.color, K.SIL.actor, 0);
-    if (charOf(S, A.char).ghost && !opt.raw) return drawGhost(g, S, A, t, opt);
+    if (charOf(S, A.char).ghost && !opt.raw && A.appearance?.form !== K.S.HUMAN) return drawGhost(g, S, A, t, opt);
     return drawPuppetRaw(g, S, A, t, opt);
   }
   function drawPuppetRaw(g, S, A, t, opt) {
     S.rigActor = A.char;
     S.rigReach = A.reachPoint || null;
-    const c = charOf(S, A.char);
+    const c = charOf(S, A.char, A.look);
     const L = charLayout(S, c);
+    const revealed = charOf(S, A.char).ghost && A.appearance?.form !== K.S.HUMAN;
+    const expression = revealed && (!A.expr || A.expr === K.S.NEUTRAL) ? K.S.UNCANNY : A.expr || K.S.NEUTRAL;
+    const headState = revealed ? Object.assign({}, S, { style: Object.assign({}, S.style, { face: Object.assign({}, S.style.face, K.REVEALED_FACE) }) }) : S;
     const ps = poseState(S, A, t);
     const tint = opt.tint == null ? 1 : opt.tint;
     const view = A.face === K.S.BACK ? K.S.BACK : A.face === K.S.LEFT || A.face === K.S.RIGHT ? K.S.SIDE : K.S.FRONT;
@@ -547,7 +552,7 @@
         rigBody(g, S, SL);
         rigPoint(g, S, K.CONTACT.mouth, (dir ? K.CONTACT.mouthX : 0) * SL.headW, SL.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * SL.headH);
         effectPoint(g, S, A.char, 0, SL.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * SL.headH, K.EFFECT.targets);
-        drawHead(g, S, c, SL, view, dir ? 1 : 0, A.expr || K.S.NEUTRAL, { level: A.talk || 0, t }, blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
+        drawHead(g, headState, c, SL, view, dir ? 1 : 0, expression, { level: A.talk || 0, t }, revealed ? 0 : blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
         if (A.hold || A.gesture || A.reachPoint || sp.bodyOnly) {
           if (view !== K.S.SIDE) drawArm(g, S, c, SL, -1, ps.l[0], ps.l[1], tint, ps.len);
           const hand = drawArm(g, S, c, SL, 1, ps.r[0], ps.r[1], tint, ps.len);
@@ -597,7 +602,7 @@
     g.translate(0, -(L.headCy + L.headH * 0.45));
     effectPoint(g, S, A.char, 0, L.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * L.headH, K.EFFECT.targets);
     rigPoint(g, S, K.CONTACT.mouth, (dir ? K.CONTACT.mouthX : 0) * L.headW, L.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * L.headH);
-    drawHead(g, S, c, L, view, dir ? 1 : 0, A.expr || K.S.NEUTRAL, { level: A.talk || 0, t }, blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
+    drawHead(g, headState, c, L, view, dir ? 1 : 0, expression, { level: A.talk || 0, t }, revealed ? 0 : blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
     g.restore();
     if (S.style.face.nose && A.pose === K.S.COVER_FACE && view !== K.S.BACK) for (const [side, a] of sides) arm(side, a);
     if (A.wear) for (const w of A.wear) drawWorn(g, S, w, L, view, ps.sprite === K.S.LIE);
@@ -749,10 +754,12 @@
     const parts = setParts(set);
     const img = imgOf(parts[part]);
     if (!img) return;
-    const f = opt && opt.blur && K.FILTER in g;
-    if (f) g.filter = K.BLUR(opt.blur);
+    const profile = S.style.atmosphere?.background;
+    const previous = g.filter;
+    const f = K.FILTER in g && (profile || opt?.blur);
+    if (f) g.filter = [opt?.blur ? K.BLUR(opt.blur) : K.FILTER_NONE, profile ? K.BACKGROUND_GRADE(K.DARK_RE.test(String(set.time || K.EMPTY)) ? profile.night : profile.day, profile.saturation, profile.sepia) : K.FILTER_NONE].filter((value) => value !== K.FILTER_NONE).join(K.S.SPACE);
     g.drawImage(img, x, y, w, h);
-    if (f) g.filter = K.FILTER_NONE;
+    if (f) g.filter = previous || K.FILTER_NONE;
   }
   function darkWanted(F, set) {
     if (!F.light || !set) return false;
@@ -792,7 +799,7 @@
     const kind = F.shot || K.S.PEOPLE;
     if (kind === K.S.OBJECT && F.prop && F.propH) return objectBox(S, F, actors);
     if (K.FULL_SHOTS.indexOf(kind) >= 0 || !actors.length) return { cx: K.SET_W / 2, cy: K.SET_H / 2, h: K.SET_H };
-    const spec = K.SHOT[kind] || K.SHOT.people;
+    const spec = (S.style.face.nose && S.style.atmosphere?.folkShots?.[kind]) || S.style.atmosphere?.shots?.[kind] || K.SHOT[kind] || K.SHOT.people;
     const main = actors.filter((a) => !a.fore && !a.back);
     const list = main.length ? main : actors;
     const halfWidth = (a) => (a.A.pose === K.S.LIE ? a.L.total * 0.55 : a.L.headW) * a.k;
@@ -824,8 +831,22 @@
         list.map((a) => a.y),
       );
     if (spec.head == null) {
+      const profile = S.style.atmosphere;
+      const context = profile
+        ? {
+            x0,
+            x1,
+            top,
+            bottom,
+            height: Math.max.apply(
+              null,
+              list.map((a) => a.L.total * a.k),
+            ),
+          }
+        : null;
       if (F.layoutLocked)
         for (const bounds of set?.framingBounds || []) {
+          if (context && (bounds[0] > context.x1 + context.height * profile.contextMargin || bounds[0] + bounds[2] < context.x0 - context.height * profile.contextMargin || bounds[1] > context.bottom + context.height * profile.contextMargin || bounds[1] + bounds[3] < context.top - context.height * profile.contextMargin || bounds[3] > context.height * profile.contextHeight)) continue;
           x0 = Math.min(x0, bounds[0]);
           x1 = Math.max(x1, bounds[0] + bounds[2]);
           top = Math.min(top, bounds[1]);
@@ -961,7 +982,7 @@
       g.translate(a.x, a.y);
       g.scale(a.k, a.k);
       if (a.blur && K.FILTER in g) g.filter = K.BLUR(a.blur);
-      if (!a.attached && (!charOf(S, a.A.char).ghost || a.A.pose === K.S.LIE)) {
+      if (!a.attached && (!charOf(S, a.A.char).ghost || a.A.appearance?.form === K.S.HUMAN || a.A.pose === K.S.LIE)) {
         g.beginPath();
         g.ellipse(0, 0, a.L.bodyW * 0.55, a.L.bodyW * 0.1, 0, 0, Math.PI * 2);
         g.fillStyle = K.S.FOOT_SHADOW;
@@ -1365,7 +1386,7 @@
     }
     const vr = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);
     vr.addColorStop(0, rgba(K.BLACK, 0));
-    vr.addColorStop(1, rgba(K.BLACK, F.vignette != null ? F.vignette : S.style.vignette != null ? S.style.vignette : K.VIGNETTE));
+    vr.addColorStop(1, rgba(K.BLACK, F.vignette != null ? F.vignette : Math.max(S.style.atmosphere?.vignette || 0, S.style.vignette != null ? S.style.vignette : K.VIGNETTE)));
     g.fillStyle = vr;
     g.fillRect(0, 0, W, H);
     const bs = g.createLinearGradient(0, H * (1 - K.BOTTOM_SHADE.h), 0, H);

@@ -28,6 +28,8 @@ Kho trước: 508 mục/gói. Kho mới: 519 mục/gói, thêm 11 mục/gói; gi
 
 ## Giới hạn chưa nghiệm thu
 
+Đã nạp kho `modular-v3-reference-20261026`; backend PID 71548, cổng 3002. API danh sách và 14 thumbnail mới của hai gói trả thành công. Sau nạp, SHA-256 của 108 file tiến độ/job/checkpoint không đổi. Bằng chứng: `post-activation-integrity.json`.
+
 - Che phần thân người dưới mặt nước theo đúng lớp nước.
 - Phản chiếu đúng người và đồ vật đang đổi trong gương.
 - Đặt trẻ bên trong bát hoặc vật chứa có vành che.

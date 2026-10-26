@@ -30,6 +30,8 @@ import { puppetTokens as tokens, puppetKeyOf as keyOf, puppetSourceQuote } from 
 import _ from "lodash";
 import { PA } from "../../../constants/motionPuppetAssets.js";
 import { MOTION_PLACEMENT as M } from "../../../constants/motionPlacement.js";
+import { MOTION_APPEARANCE as APPEARANCE } from "../../../constants/motionAppearance.js";
+import { normalizePuppetAppearance, withPuppetFrameAppearance } from "../../../lib/motionAppearance.js";
 import { puppetSupportKey } from "../../../lib/motionPlacement.js";
 import { puppetAssetName, puppetEnglish, puppetObjectClass, puppetObjectRequirements } from "../../../lib/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_GENRES, PUPPET_GENRE_ALIAS, PUPPET_GENRE_DEFAULT, PUPPET_PROMPTS as PR, PUPPET_READ_SCHEMA } from "../../../constants/motionPuppet.js";
@@ -222,6 +224,7 @@ const readOf = (raw: any, line: PuppetLine, cast: string[], places: Record<strin
     _.filter(
       _.map(_.castArray(raw?.states || []), (s: any) => ({
         char: _.toString(s?.char),
+        appearance: normalizePuppetAppearance(s?.appearance, line.text),
         essential: typeof s?.essential === "boolean" ? s.essential : undefined,
         transition: typeof s?.transition === "boolean" ? s.transition : undefined,
         action: pick(s?.action, _.keys(P.ACTIONS), P.ACTION_DEFAULT),
@@ -433,6 +436,7 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
         SELECTION.SPATIAL_PROMPT,
         P.READ_POSTURE_PROMPT,
         B.READ_REPAIR,
+        APPEARANCE.READ,
         V.READ_REPAIR_CAST + localCastText,
         V.READ_REPAIR_PLACES + localPlaceText,
         V.READ_REPAIR_CONTEXT + JSON.stringify({ story, previous: puppetStoryContext(context) + P.NL + previousOf(all, first.line.key) }),
@@ -449,6 +453,7 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
         PUPPET_READ_SCHEMA,
         P.READ_POSTURE_PROMPT,
         P.EYE_PROMPT,
+        APPEARANCE.READ,
         V.OWNERSHIP,
         SELECTION.SPATIAL_PROMPT,
         M.CONDITION_PROMPT,
@@ -620,7 +625,7 @@ export const fitPuppetRead = (frame: PuppetFrame, r: PuppetRead, spots: PuppetSp
     out.actors = out.actors.map((a) => ({ ...a, depth: P.DEPTH_MID }));
   }
   if (frame.shot2) out.shot2 = fitPuppetRead(frame.shot2, r, spots);
-  return out;
+  return withPuppetFrameAppearance(out, r);
 };
 const fitHands = (f: PuppetFrame, r: PuppetRead): PuppetFrame => {
   const key = r.object?.key;

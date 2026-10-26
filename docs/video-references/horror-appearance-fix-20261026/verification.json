@@ -1,0 +1,634 @@
+{
+  "passed": true,
+  "sourceCases": 12,
+  "renders": 36,
+  "aiCalls": 0,
+  "videoCreated": false,
+  "inventoryHash": "33241d781dbf25c16b1e0eac0b1cd6c8582ec0da7dc76c3cb5fc51b0c6d78404",
+  "reports": [
+    {
+      "preset": "minimal_mask",
+      "styleId": "stl-ba8ca635c716c880",
+      "identityPreserved": "chr-08a3f78c46664951",
+      "headRatio": 0.36
+    },
+    {
+      "preset": "chibi_folk",
+      "styleId": "stl-e70fac00bbf44662",
+      "identityPreserved": "chr-1bf1690c66b308bb",
+      "headRatio": 0.5
+    },
+    {
+      "file": "minimal_mask-baseline-day-people-0.jpg",
+      "preset": "minimal_mask",
+      "mode": "baseline",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#f1dcc3",
+        "hair": "#2f3a5a",
+        "face": "#e9eef1"
+      },
+      "luminance": 125.6781468619826,
+      "bright": 373475,
+      "bodyRatio": 0.42
+    },
+    {
+      "file": "minimal_mask-baseline-night-people-1.jpg",
+      "preset": "minimal_mask",
+      "mode": "baseline",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#f1dcc3",
+        "hair": "#2f3a5a",
+        "face": "#e9eef1"
+      },
+      "luminance": 44.30689364705741,
+      "bright": 15669,
+      "bodyRatio": 0.42
+    },
+    {
+      "file": "minimal_mask-pale-day-people-2.jpg",
+      "preset": "minimal_mask",
+      "mode": "pale",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 107.05417116772962,
+      "bright": 327501,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-pale-night-people-3.jpg",
+      "preset": "minimal_mask",
+      "mode": "pale",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 41.077297453714685,
+      "bright": 15680,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-white_clothes-day-people-4.jpg",
+      "preset": "minimal_mask",
+      "mode": "white_clothes",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#eeeae2",
+        "sleeve": "#eeeae2",
+        "skin": "#f1dcc3",
+        "hair": "#2f3a5a",
+        "face": "#e9eef1"
+      },
+      "luminance": 109.84306262861355,
+      "bright": 330344,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-white_clothes-night-people-5.jpg",
+      "preset": "minimal_mask",
+      "mode": "white_clothes",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#eeeae2",
+        "sleeve": "#eeeae2",
+        "skin": "#f1dcc3",
+        "hair": "#2f3a5a",
+        "face": "#e9eef1"
+      },
+      "luminance": 43.866111111129825,
+      "bright": 20664,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-gray-day-people-6.jpg",
+      "preset": "minimal_mask",
+      "mode": "gray",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#989c9e",
+        "sleeve": "#989c9e",
+        "skin": "#989c9e",
+        "hair": "#2f3a5a",
+        "face": "#989c9e"
+      },
+      "luminance": 107.584957561715,
+      "bright": 330076,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-gray-night-people-7.jpg",
+      "preset": "minimal_mask",
+      "mode": "gray",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#989c9e",
+        "sleeve": "#989c9e",
+        "skin": "#989c9e",
+        "hair": "#2f3a5a",
+        "face": "#989c9e"
+      },
+      "luminance": 41.60751864713023,
+      "bright": 20375,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-human-day-people-8.jpg",
+      "preset": "minimal_mask",
+      "mode": "human",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#f1dcc3",
+        "hair": "#2f3a5a",
+        "face": "#e9eef1"
+      },
+      "luminance": 106.95998906893419,
+      "bright": 328014,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-human-night-people-9.jpg",
+      "preset": "minimal_mask",
+      "mode": "human",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#f1dcc3",
+        "hair": "#2f3a5a",
+        "face": "#e9eef1"
+      },
+      "luminance": 41.63278806586042,
+      "bright": 18777,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-framing-day-wide-10.jpg",
+      "preset": "minimal_mask",
+      "mode": "framing",
+      "time": "day",
+      "shot": "wide",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 103.75975565842633,
+      "bright": 312650,
+      "bodyRatio": 0.31620000000000004
+    },
+    {
+      "file": "minimal_mask-framing-day-people-11.jpg",
+      "preset": "minimal_mask",
+      "mode": "framing",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 107.05417116772962,
+      "bright": 327501,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-framing-day-two-12.jpg",
+      "preset": "minimal_mask",
+      "mode": "framing",
+      "time": "day",
+      "shot": "two",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 107.05417116772962,
+      "bright": 327501,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-framing-day-bust-13.jpg",
+      "preset": "minimal_mask",
+      "mode": "framing",
+      "time": "day",
+      "shot": "bust",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 105.2636689815142,
+      "bright": 323456,
+      "bodyRatio": 0.8888888888888888
+    },
+    {
+      "file": "minimal_mask-bedside_baseline-day-two-14.jpg",
+      "preset": "minimal_mask",
+      "mode": "bedside_baseline",
+      "time": "day",
+      "shot": "two",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 57.62514660496346,
+      "bright": 28936,
+      "bodyRatio": 0.17485860000000006
+    },
+    {
+      "file": "minimal_mask-bedside_pale-day-two-15.jpg",
+      "preset": "minimal_mask",
+      "mode": "bedside_pale",
+      "time": "day",
+      "shot": "two",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 56.06361561204551,
+      "bright": 48520,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "minimal_mask-bedside_baseline-night-two-16.jpg",
+      "preset": "minimal_mask",
+      "mode": "bedside_baseline",
+      "time": "night",
+      "shot": "two",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 28.192565586405838,
+      "bright": 3621,
+      "bodyRatio": 0.17485860000000006
+    },
+    {
+      "file": "minimal_mask-bedside_pale-night-two-17.jpg",
+      "preset": "minimal_mask",
+      "mode": "bedside_pale",
+      "time": "night",
+      "shot": "two",
+      "colors": {
+        "body": "#916c50",
+        "sleeve": "#916c50",
+        "skin": "#eeeae2",
+        "hair": "#2f3a5a",
+        "face": "#eeeae2"
+      },
+      "luminance": 32.974777520573944,
+      "bright": 40252,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-baseline-day-people-18.jpg",
+      "preset": "chibi_folk",
+      "mode": "baseline",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#ecd2b4",
+        "hair": "#1b1a1c",
+        "face": "#ecd2b4"
+      },
+      "luminance": 106.5535423095807,
+      "bright": 418142,
+      "bodyRatio": 0.42
+    },
+    {
+      "file": "chibi_folk-baseline-night-people-19.jpg",
+      "preset": "chibi_folk",
+      "mode": "baseline",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#ecd2b4",
+        "hair": "#1b1a1c",
+        "face": "#ecd2b4"
+      },
+      "luminance": 48.152364969124314,
+      "bright": 13265,
+      "bodyRatio": 0.42
+    },
+    {
+      "file": "chibi_folk-pale-day-people-20.jpg",
+      "preset": "chibi_folk",
+      "mode": "pale",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 97.16187500011488,
+      "bright": 380609,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-pale-night-people-21.jpg",
+      "preset": "chibi_folk",
+      "mode": "pale",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 46.98648919747836,
+      "bright": 14733,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-white_clothes-day-people-22.jpg",
+      "preset": "chibi_folk",
+      "mode": "white_clothes",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#eeeae2",
+        "sleeve": "#eeeae2",
+        "skin": "#ecd2b4",
+        "hair": "#1b1a1c",
+        "face": "#ecd2b4"
+      },
+      "luminance": 97.19822723774539,
+      "bright": 380617,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-white_clothes-night-people-23.jpg",
+      "preset": "chibi_folk",
+      "mode": "white_clothes",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#eeeae2",
+        "sleeve": "#eeeae2",
+        "skin": "#ecd2b4",
+        "hair": "#1b1a1c",
+        "face": "#ecd2b4"
+      },
+      "luminance": 47.02272119336324,
+      "bright": 14740,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-gray-day-people-24.jpg",
+      "preset": "chibi_folk",
+      "mode": "gray",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#989c9e",
+        "sleeve": "#989c9e",
+        "skin": "#989c9e",
+        "hair": "#1b1a1c",
+        "face": "#989c9e"
+      },
+      "luminance": 96.71388503099695,
+      "bright": 384719,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-gray-night-people-25.jpg",
+      "preset": "chibi_folk",
+      "mode": "gray",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#989c9e",
+        "sleeve": "#989c9e",
+        "skin": "#989c9e",
+        "hair": "#1b1a1c",
+        "face": "#989c9e"
+      },
+      "luminance": 46.53832368822481,
+      "bright": 18782,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-human-day-people-26.jpg",
+      "preset": "chibi_folk",
+      "mode": "human",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#ecd2b4",
+        "hair": "#1b1a1c",
+        "face": "#ecd2b4"
+      },
+      "luminance": 97.52675540136234,
+      "bright": 380715,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-human-night-people-27.jpg",
+      "preset": "chibi_folk",
+      "mode": "human",
+      "time": "night",
+      "shot": "people",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#ecd2b4",
+        "hair": "#1b1a1c",
+        "face": "#ecd2b4"
+      },
+      "luminance": 48.076511059606894,
+      "bright": 15917,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-framing-day-wide-28.jpg",
+      "preset": "chibi_folk",
+      "mode": "framing",
+      "time": "day",
+      "shot": "wide",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 92.41842206798955,
+      "bright": 357168,
+      "bodyRatio": 0.3196
+    },
+    {
+      "file": "chibi_folk-framing-day-people-29.jpg",
+      "preset": "chibi_folk",
+      "mode": "framing",
+      "time": "day",
+      "shot": "people",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 97.16187500011488,
+      "bright": 380609,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-framing-day-two-30.jpg",
+      "preset": "chibi_folk",
+      "mode": "framing",
+      "time": "day",
+      "shot": "two",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 97.16187500011488,
+      "bright": 380609,
+      "bodyRatio": 0.46
+    },
+    {
+      "file": "chibi_folk-framing-day-bust-31.jpg",
+      "preset": "chibi_folk",
+      "mode": "framing",
+      "time": "day",
+      "shot": "bust",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 99.24312435713603,
+      "bright": 361822,
+      "bodyRatio": 0.92
+    },
+    {
+      "file": "chibi_folk-bedside_baseline-day-two-32.jpg",
+      "preset": "chibi_folk",
+      "mode": "bedside_baseline",
+      "time": "day",
+      "shot": "two",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 67.60268261322562,
+      "bright": 75731,
+      "bodyRatio": 0.17673880000000003
+    },
+    {
+      "file": "chibi_folk-bedside_pale-day-two-33.jpg",
+      "preset": "chibi_folk",
+      "mode": "bedside_pale",
+      "time": "day",
+      "shot": "two",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 72.20043724282975,
+      "bright": 137291,
+      "bodyRatio": 0.45999999999999996
+    },
+    {
+      "file": "chibi_folk-bedside_baseline-night-two-34.jpg",
+      "preset": "chibi_folk",
+      "mode": "bedside_baseline",
+      "time": "night",
+      "shot": "two",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 33.05226851848575,
+      "bright": 4945,
+      "bodyRatio": 0.17673880000000003
+    },
+    {
+      "file": "chibi_folk-bedside_pale-night-two-35.jpg",
+      "preset": "chibi_folk",
+      "mode": "bedside_pale",
+      "time": "night",
+      "shot": "two",
+      "colors": {
+        "body": "#d6d4c7",
+        "sleeve": "#d6d4c7",
+        "skin": "#eeeae2",
+        "hair": "#1b1a1c",
+        "face": "#eeeae2"
+      },
+      "luminance": 42.991882716016285,
+      "bright": 37850,
+      "bodyRatio": 0.45999999999999996
+    }
+  ]
+}

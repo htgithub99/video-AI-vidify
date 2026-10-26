@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "release": "modular-v3-reference-20261026",
+  "files": 108,
+  "changed": 0,
+  "api": [
+    {
+      "styleId": "stl-ba8ca635c716c880",
+      "propList": 157,
+      "newPropThumbnails": 7
+    },
+    {
+      "styleId": "stl-e70fac00bbf44662",
+      "propList": 157,
+      "newPropThumbnails": 7
+    }
+  ],
+  "storyStatus": 200,
+  "aiCalls": 0,
+  "videoCreated": false
+}

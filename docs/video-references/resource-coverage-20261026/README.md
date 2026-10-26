@@ -1,5 +1,7 @@
 # Đối chiếu kho tài nguyên với 22 video mẫu — 26/10/2026
 
+Báo cáo này giữ số liệu trước sửa. Xem [kết quả đối ứng và kho đã bổ sung](../resource-coverage-fix-20261026/index.html): 88 tình huống kiểm, 11 bảng ảnh, kèm giới hạn chưa nghiệm thu.
+
 ## Kết luận
 
 **Chưa đủ bằng chứng để xác nhận kho đáp ứng trọn vẹn 22 video. Đã xác định cả món còn thiếu lẫn món có hình nhưng chưa ghép/đặt đúng.**

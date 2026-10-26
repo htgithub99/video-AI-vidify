@@ -363,3 +363,15 @@ Mỗi vai giữ điểm riêng; quần chúng không dùng chỗ đã dành cho 
 Chọn kho kiểm cả nhóm, tư thế và chỗ tựa. Khi chưa có nhóm tương thích, luồng ghép/vẽ mới nhận yêu cầu cụ thể rồi kiểm lại; không xem một cảnh có giường bất kỳ là đủ cho mọi cảnh có người nằm. Ảnh nguồn chỉ để đối chiếu, tài nguyên cài là hình dựng riêng.
 
 Xem [báo cáo và lệnh kiểm tra](docs/motion-folk-library-2026-10-23.md), [bảng ảnh gọn](docs/video-references/folk-blocking-20261023/index.html) và [liên kết tới 22 nguồn](docs/video-references/folk-blocking-20261023/reference-coverage.json). Phạm vi đối chiếu là bảng tổng quan và ảnh chọn lọc, chưa phải toàn bộ cảnh/thoại của 22 video; cơ chế bế/khiêng người chưa nằm trong phần đã kiểm chứng.
+
+## 13. Kho mô-đun đối chiếu mẫu — 26/10/2026
+
+Kho hoạt động dùng bản `modular-v3-reference-20261026`: mỗi gói 519 mục, gồm 62 nhân vật, 157 đạo cụ, 27 nền sạch, 98 mảnh, 174 tổ hợp và một hồ sơ phong cách. Nền sạch không chứa người hoặc đồ ghép; tổ hợp lưu ID nền, ID mảnh và slot. Các phần lịch sử ở trên không cho phép production tự vẽ mới trong hai gói cố định.
+
+Khi ghép, bộ chọn kiểm thành phần thực, số chỗ và quan hệ với vật tựa; dùng điểm đặt cố định cho người và vật. Cao độ tiếp xúc tách khỏi cao độ sàn dùng tính tỷ lệ, nhờ đó người đứng trên sàn cao không rơi xuống đất. Phân đồ vật đồng thời, kiểm chồng lấn và biên khung trước khi nhận lựa chọn. Những tư thế không thiết yếu có thể giản lược thành đứng cạnh vật; tư thế nằm/ngồi thiết yếu vẫn phải đúng điểm tựa.
+
+Khăn phủ người dùng `mount: body` và `owner` là key nhân vật; renderer vẽ vải theo thân và tư thế. Máy quay có thể dùng chân máy làm `support`, với mặt tựa riêng. Cửa/tủ có trạng thái đóng, mở và hé dùng chung điểm đặt. Đồng hồ mới là biến thể tĩnh 3:12.
+
+Kho mới giữ ID món cũ và bản phát hành cũ để khôi phục; không chuyển snapshot lịch sử của dự án sang món khác. Các nhóm vật/chế độ chưa nghiệm thu vẫn được ghi rõ, không suy từ tổng số tài nguyên rằng đã đủ mọi cảnh.
+
+Xem [kết quả và bảng ảnh](docs/video-references/resource-coverage-fix-20261026/index.html), [phạm vi đối ứng](docs/motion-reference-coverage-fix-2026-10-26.md).
