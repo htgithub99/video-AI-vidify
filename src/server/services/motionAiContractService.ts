@@ -20,7 +20,7 @@ export interface MotionAiResponseContract {
   state?: MotionAiContractState;
   checkpoint?: (state: MotionAiContractState) => Promise<void> | void;
   start?: (prompt: string) => string;
-  assess: (raw: any) => { value: any; errors: string[] };
+  assess: (raw: any) => { value: any; errors: string[] } | Promise<{ value: any; errors: string[] }>;
   repair: (prompt: string, value: any, errors: string[]) => string;
   failure: (errors: string[]) => Error;
   rejected?: (raw: any, value: any, errors: string[], route: MotionAiExecution, attempt: number) => Promise<void> | void;
@@ -56,7 +56,7 @@ export const requestMotionAiContract = async (prompt: string, route: MotionAiExe
     }
     signal?.throwIfAborted();
     if (!contract) return raw;
-    const checked = contract.assess(raw);
+    const checked = await contract.assess(raw);
     if (checked.errors.length && contract.schema && raw !== undefined) checked.errors = [...new Set([...checked.errors, ...motionResponseErrors(raw, contract.schema, "", true)])];
     if (responseError) checked.errors = [...checked.errors, responseError];
     if (!checked.errors.length) return checked.value;

@@ -1,4 +1,8 @@
 import { useMotionClipboard } from "../hooks/useMotionClipboard.js";
+import { MUSIC_PLANNING as MUSIC_PLAN } from "../constants/musicPlanning.js";
+import { readMusicPlanResponse } from "../lib/musicPlanning.js";
+import type { MusicPlanProgress } from "../types/musicPlanning.js";
+import { MusicPlanProgressPanel } from "./music/MusicPlanProgressPanel.js";
 import * as SRT from "../constants/sourceText.js";
 import * as MCS from "../constants/musicCreatorStyles.js";
 import { MUSIC_CREATOR_FORMAT as MCF } from "../constants/musicCreator.js";
@@ -148,11 +152,7 @@ import { cn } from "../lib/utils";
 import { jsonUtils } from "../lib/json";
 const saveMusicBlobWithDialog = async (blob: Blob, suggestedName: string): Promise<boolean> => {
   const dataUrl = await readBlobAsDataUrl(blob);
-  const response = await fetch(API_ROUTES.PIPELINE_SAVE_FILE, {
-    method: HTTP_METHODS.POST,
-    headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-    body: jsonUtils.safeStringify({ suggestedName, dataUrl }),
-  });
+  const response = await fetch(API_ROUTES.PIPELINE_SAVE_FILE, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ suggestedName, dataUrl }) });
   const result = await response.json();
   if (!response.ok || !result.success) throw new Error(result.error || SUNO_AUTOMATION_TEXTS.SAVE_FILE_FAILED_ERR);
   return !result.cancelled;
@@ -183,7 +183,10 @@ const writeMusicMedia = async (key: string, value: string): Promise<void> => {
     transaction.onerror = () => reject(transaction.error);
   });
 };
-interface SavedMusicStyle { title: string; content: string; }
+interface SavedMusicStyle {
+  title: string;
+  content: string;
+}
 type SavedMusicInspo = SavedMusicStyle;
 const readSavedInspos = (): SavedMusicInspo[] => {
   const items = jsonUtils.getItem<SavedMusicInspo[]>(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY, []);
@@ -193,8 +196,23 @@ const readSavedStyles = (): SavedMusicStyle[] => {
   const items = jsonUtils.getItem<any[]>(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, []);
   return _.compact(_.map(items, (item) => (_.isString(item) ? { title: _.split(item, SOURCE_TEXT_SYMBOL_4)[0], content: item } : item?.title && item?.content ? item : undefined)));
 };
-interface SongSeoOption { title: string; description: string; hashtags: string[]; tags: string[]; seoScore: number; }
-interface GeneratedSong { songId: string; title: string; lyrics: string; genre: string; mood: string; tempoBpm: number; structure: string[]; originalityNotes: string[]; }
+interface SongSeoOption {
+  title: string;
+  description: string;
+  hashtags: string[];
+  tags: string[];
+  seoScore: number;
+}
+interface GeneratedSong {
+  songId: string;
+  title: string;
+  lyrics: string;
+  genre: string;
+  mood: string;
+  tempoBpm: number;
+  structure: string[];
+  originalityNotes: string[];
+}
 interface MusicStyleAnalysis {
   market: { country: string; region: string; language: string; dialect: string; audienceAge: string; lyricalCharacterAge: string; contentSuitability: string; confidence: number };
   era: { songwritingEra: string; productionEra: string };
@@ -224,9 +242,28 @@ const formatStyleAnalysisItems = (items: unknown[]): string =>
     .compact()
     .join(SOURCE_TEXT_SYMBOL_6)
     .value();
-interface CuratedDownloadedTrack { songId: string; title: string; qualityScore: number; durationSeconds: number; startSeconds: number; }
-interface DownloadedMusicTrack { songId: string; title: string; }
-interface SunoSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; audioInfluence: number; variety: number; personalize: boolean; }
+interface CuratedDownloadedTrack {
+  songId: string;
+  title: string;
+  qualityScore: number;
+  durationSeconds: number;
+  startSeconds: number;
+}
+interface DownloadedMusicTrack {
+  songId: string;
+  title: string;
+}
+interface SunoSettings {
+  excludeStyles: string;
+  vocalGender: "male" | "female" | "auto";
+  duration: "auto";
+  maxMode: boolean;
+  weirdness: number;
+  styleInfluence: number;
+  audioInfluence: number;
+  variety: number;
+  personalize: boolean;
+}
 interface SunoSettingsAnalysis {
   productionAssessment: { syntheticRole: string; cultureAndMarket: string; eraAndGenre: string; vocalProfile: string; songAndArrangementProfile: string; productionGoal: string; risks: string[] };
   parameterRationale: { excludeStyles: string; vocalGender: string; maxMode: string; weirdness: string; styleInfluence: string; audioInfluence: string; variety: string; personalize: string };
@@ -348,18 +385,18 @@ interface PersistedMusicCreatorState {
 const readMusicCreatorState = (): PersistedMusicCreatorState => {
   const state = jsonUtils.getItem<PersistedMusicCreatorState>(SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY, {});
   if (state.songTitleSchemaVersion === SUNO_AUTOMATION_CONFIG.MUSIC_SONG_TITLE_SCHEMA_VERSION) return state;
-  return {
-    ...state,
-    songs: _.map(state.songs || [], (song) => ({
-      ...song,
-      title: VIETNAMESE_MUSIC_TITLE_RESTORATIONS[_.toLower(_.trim(song.title))] || song.title,
-    })),
-    songTitleSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SONG_TITLE_SCHEMA_VERSION,
-  };
+  return { ...state, songs: _.map(state.songs || [], (song) => ({ ...song, title: VIETNAMESE_MUSIC_TITLE_RESTORATIONS[_.toLower(_.trim(song.title))] || song.title })), songTitleSchemaVersion: SUNO_AUTOMATION_CONFIG.MUSIC_SONG_TITLE_SCHEMA_VERSION };
 };
-interface MusicCreatorProps { currentLang?: "vi" | "en"; }
+interface MusicCreatorProps {
+  currentLang?: "vi" | "en";
+}
 type MusicCreatorTexts = (typeof MUSIC_CREATOR_TEXTS)[keyof typeof MUSIC_CREATOR_TEXTS];
-interface HeaderProps { texts: MusicCreatorTexts; isAiConfigOpen: boolean; onToggleAiConfig: () => void; isLoading: boolean; }
+interface HeaderProps {
+  texts: MusicCreatorTexts;
+  isAiConfigOpen: boolean;
+  onToggleAiConfig: () => void;
+  isLoading: boolean;
+}
 const MusicCreatorHeader: React.FC<HeaderProps> = ({ texts, isAiConfigOpen, onToggleAiConfig, isLoading }) => (
   <StudioHeader
     icon={Music2}
@@ -376,7 +413,11 @@ const MusicCreatorHeader: React.FC<HeaderProps> = ({ texts, isAiConfigOpen, onTo
       </>
     }></StudioHeader>
 );
-interface SongCardProps { song: GeneratedSong; index: number; texts: MusicCreatorTexts; }
+interface SongCardProps {
+  song: GeneratedSong;
+  index: number;
+  texts: MusicCreatorTexts;
+}
 const toSentenceCase = (text: string): string => {
   const trimmed = _.trim(text);
   if (!trimmed) return MUSIC_CREATOR_RUNTIME.EMPTY;
@@ -430,7 +471,12 @@ const SongCard: React.FC<SongCardProps> = ({ song, index, texts }) => {
     </StudioCard>
   );
 };
-interface PlaylistSeoCardProps { seoOptions: SongSeoOption[]; texts: MusicCreatorTexts; playlistUrl: string; columns?: 1 | 2 | 3; }
+interface PlaylistSeoCardProps {
+  seoOptions: SongSeoOption[];
+  texts: MusicCreatorTexts;
+  playlistUrl: string;
+  columns?: 1 | 2 | 3;
+}
 const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, playlistUrl, columns = 3 }) => {
   const { copiedKey, copyText: handleCopy } = useMotionClipboard();
   const handleCopyFullOption = (opt: SongSeoOption, index: number) => {
@@ -638,6 +684,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const sunoDownloadRunIdRef = useRef<string | null>(null);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
+  const [musicProgress, setMusicProgress] = useState<MusicPlanProgress[]>([]);
   const [isStopping, setIsStopping] = useState(false);
   const [generationError, setGenerationError] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
@@ -649,10 +696,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   useEffect(() => {
     if (_.isEmpty(songs) || _.isEmpty(playlistSeoOptions)) return;
     if (_.isEqual(curatedDownloadedTracks.length, songs.length)) return;
-    const restoredOptions = _.map(playlistSeoOptions, (option) => ({
-      ...option,
-      description: restoreSeoTimestampTitles(option.description, songs),
-    }));
+    const restoredOptions = _.map(playlistSeoOptions, (option) => ({ ...option, description: restoreSeoTimestampTitles(option.description, songs) }));
     if (!_.isEqual(restoredOptions, playlistSeoOptions)) setPlaylistSeoOptions(restoredOptions);
   }, [songs, playlistSeoOptions, curatedDownloadedTracks]);
   const [thumbnailDescription, setThumbnailDescription] = useState(initialState.thumbnailDescription || MUSIC_CREATOR_RUNTIME.EMPTY);
@@ -898,7 +942,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const previousGeneratedVideoBackground = generatedVideoBackground;
     setViewMode(SOURCE_TEXT_LYRICS);
     setIsLoading(true);
-    setIsGeneratingThumbnail(true);
+    setMusicProgress([{ stage: MUSIC_PLAN.STAGES.INITIALIZE, completedSongs: 0, totalSongs: outputCount }]);
     setSunoPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
     setDownloadPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
     setSunoTestPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
@@ -909,30 +953,37 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     musicRunIdRef.current = runId;
     const abortController = new AbortController();
     musicAbortControllerRef.current = abortController;
+    let receivedSongs = false;
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_PLAN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({
-          requestedSongCount: outputCount,
-          style: trimmedStyle,
-          referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource],
-          projectId: runId,
-          requestId: runId,
-          thumbnailReference,
-          thumbnailReferenceName,
-          thumbnailDescription,
-          sunoInspo,
-          aiExecution: {
-            provider,
-            model,
-            executionMode,
-            chromeHeadless,
-          },
-        }),
+        body: jsonUtils.safeStringify({ requestedSongCount: outputCount, streamProgress: true, style: trimmedStyle, referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource], projectId: runId, requestId: runId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo, aiExecution: { provider, model, executionMode, chromeHeadless } }),
         signal: abortController.signal,
       });
-      const result = await response.json().catch(() => null);
+      const result = await readMusicPlanResponse(response, ({ progress, data }) => {
+        if (abortController.signal.aborted) return;
+        setMusicProgress((items) => [...items.filter((item) => item.stage !== progress.stage), { ...items.find((item) => item.stage === progress.stage), ...progress }]);
+        if (data?.styleAnalysis) setStyleAnalysis(data.styleAnalysis);
+        if (data?.songs?.length) {
+          if (!receivedSongs) {
+            receivedSongs = true;
+            setPlaylistSeoOptions([]);
+            setSunoSettings(undefined);
+            setSunoSettingsAnalysis(undefined);
+            setCuratedDownloadedTracks([]);
+            setDownloadedMusicTracks([]);
+            setGeneratedThumbnail(MUSIC_CREATOR_RUNTIME.EMPTY);
+            setGeneratedVideoBackground(MUSIC_CREATOR_RUNTIME.EMPTY);
+            setPreviewThumbnail(null);
+            void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_GENERATED, MUSIC_CREATOR_RUNTIME.EMPTY).catch(() => undefined);
+            void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, MUSIC_CREATOR_RUNTIME.EMPTY).catch(() => undefined);
+          }
+          setSongs(data.songs);
+        }
+        if (data?.sunoSettings) setSunoSettings(data.sunoSettings);
+        if (data?.sunoSettingsAnalysis) setSunoSettingsAnalysis(data.sunoSettingsAnalysis);
+      });
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || SOURCE_TEMPLATE_HTTP(String(texts.ERROR_GENERATION_FAILED), String(response.status)));
       }
@@ -964,6 +1015,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         setIsGeneratingThumbnail(false);
       } else
         void (async () => {
+          setIsGeneratingThumbnail(true);
           const imageAbortController = new AbortController();
           const imageRunId = SOURCE_TEMPLATE_MUSIC_COVER(String(Date.now()), String(Math.random().toString(36).slice(2)));
           thumbnailAbortControllerRef.current = imageAbortController;
@@ -972,19 +1024,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             const thumbnailResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-              body: jsonUtils.safeStringify({
-                songs: generatedSongs,
-                style: trimmedStyle,
-                styleAnalysis: generatedStyleAnalysis,
-                sourceContext: referenceSource,
-                playlistSeoOptions: generatedPlaylistSeo,
-                thumbnailDescription,
-                thumbnailReference,
-                thumbnailReferenceName,
-                chromeHeadless,
-                aiExecution: { provider, model },
-                imageRunId,
-              }),
+              body: jsonUtils.safeStringify({ songs: generatedSongs, style: trimmedStyle, styleAnalysis: generatedStyleAnalysis, sourceContext: referenceSource, playlistSeoOptions: generatedPlaylistSeo, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless, aiExecution: { provider, model }, imageRunId }),
               signal: imageAbortController.signal,
             });
             const thumbnailResult = await thumbnailResponse.json();
@@ -1010,15 +1050,18 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         })();
     } catch (err: any) {
       if (!musicStoppedByUserRef.current) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanFail);
-      setSongs(previousSongs);
-      setStyleAnalysis(previousStyleAnalysis);
-      setSunoSettings(previousSunoSettings);
-      setSunoSettingsAnalysis(previousSunoSettingsAnalysis);
-      setPlaylistSeoOptions(previousPlaylistSeoOptions);
-      setCuratedDownloadedTracks(previousCuratedDownloadedTracks);
-      setGeneratedThumbnail(previousGeneratedThumbnail);
-      setDownloadedMusicTracks(previousDownloadedMusicTracks);
-      setGeneratedVideoBackground(previousGeneratedVideoBackground);
+      if (!receivedSongs) {
+        setSongs(previousSongs);
+        setStyleAnalysis(previousStyleAnalysis);
+        setSunoSettings(previousSunoSettings);
+        setSunoSettingsAnalysis(previousSunoSettingsAnalysis);
+        setPlaylistSeoOptions(previousPlaylistSeoOptions);
+        setCuratedDownloadedTracks(previousCuratedDownloadedTracks);
+        setGeneratedThumbnail(previousGeneratedThumbnail);
+        setDownloadedMusicTracks(previousDownloadedMusicTracks);
+        setGeneratedVideoBackground(previousGeneratedVideoBackground);
+      }
+      setMusicProgress((items) => [...items.filter((item) => item.stage !== MUSIC_PLAN.STAGES.ERROR), { stage: musicStoppedByUserRef.current ? MUSIC_PLAN.STAGES.STOPPED : MUSIC_PLAN.STAGES.ERROR, completedSongs: items.at(-1)?.completedSongs || 0, totalSongs: outputCount }]);
       setIsGeneratingThumbnail(false);
       if (musicStoppedByUserRef.current) musicResumeRef.current = null;
       else {
@@ -1040,19 +1083,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     setIsRegeneratingSeo(true);
     const runId = SOURCE_TEMPLATE_SEO_2(String(SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX), String(Date.now()), String(Math.random().toString(36).slice(2)));
     try {
-      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SEO_REGENERATE, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({
-          songs,
-          style: activeStyle,
-          referenceSource: referenceSongs,
-          styleAnalysis,
-          projectId: runId,
-          requestId: runId,
-          aiExecution: { provider, model, executionMode, chromeHeadless },
-        }),
-      });
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SEO_REGENERATE, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ songs, style: activeStyle, referenceSource: referenceSongs, styleAnalysis, projectId: runId, requestId: runId, aiExecution: { provider, model, executionMode, chromeHeadless } }) });
       const result = await response.json();
       const regeneratedOptions = _.castArray(result.playlistSeoOptions || []) as SongSeoOption[];
       if (!response.ok || !result.success || _.isEmpty(regeneratedOptions)) throw new Error(result.error || texts.SEO_REGENERATE_ERROR);
@@ -1077,11 +1108,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     musicAbortControllerRef.current?.abort();
     try {
       if (runId) {
-        const response = await fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
-          method: HTTP_METHODS.POST,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true, roomProvider: provider, roomProjectId: runId }),
-        });
+        const response = await fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true, roomProvider: provider, roomProjectId: runId }) });
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.error || texts.STOP_BROWSER_CLOSE_ERROR);
       }
@@ -1120,15 +1147,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({
-          songs: _.isEmpty(resumeSongIds) ? requestedSongs : [],
-          initialSongIds: resumeSongIds,
-          style,
-          inspo: sunoInspo,
-          sunoSettings,
-          evaluateTracks: testOnly ? false : sunoEvaluateTracks,
-          playlistName,
-        }),
+        body: jsonUtils.safeStringify({ songs: _.isEmpty(resumeSongIds) ? requestedSongs : [], initialSongIds: resumeSongIds, style, inspo: sunoInspo, sunoSettings, evaluateTracks: testOnly ? false : sunoEvaluateTracks, playlistName }),
         signal: abortController.signal,
       });
       const result = await response.json();
@@ -1167,10 +1186,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     if (!isCreatingSuno) return;
     sunoAbortControllerRef.current?.abort();
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSunoStop);
-    void fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CANCEL, {
-      method: HTTP_METHODS.POST,
-      headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-    }).catch(() => undefined);
+    void fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CANCEL, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON } }).catch(() => undefined);
     toast.info(texts.SUNO_CANCELLED_TOAST);
   };
   const handleCopyPlaylistUrl = () => {
@@ -1199,19 +1215,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     sunoDownloadAbortControllerRef.current = abortController;
     setIsDownloadingSuno(true);
     try {
-      const folderResponse = await fetch(API_ROUTES.PIPELINE_SELECT_FOLDER, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        signal: abortController.signal,
-      });
+      const folderResponse = await fetch(API_ROUTES.PIPELINE_SELECT_FOLDER, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, signal: abortController.signal });
       const folderResult = await folderResponse.json();
       const folderPath = _.trim(_.toString(folderResult.folderPath));
       if (!folderResponse.ok || !folderResult.success || _.isEmpty(folderPath)) return;
       const tracks = isTestPlaylistDownload
-        ? _.map(_.take(sunoTestTrackIds, 1), (songId) => ({
-            songId,
-            title: SOURCE_TEMPLATE_1_1(String(songs[0]?.title || texts.SUNO_TRACK_LABEL)),
-          }))
+        ? _.map(_.take(sunoTestTrackIds, 1), (songId) => ({ songId, title: SOURCE_TEMPLATE_1_1(String(songs[0]?.title || texts.SUNO_TRACK_LABEL)) }))
         : requestedPlaylistUrl
           ? []
           : _.map(sunoTrackIds, (songId, index) => {
@@ -1235,16 +1244,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
           evaluateTracks: isTestPlaylistDownload ? false : sunoEvaluateTracks,
           style,
           styleAnalysis,
-          aiExecution:
-            sunoEvaluateTracks && !isTestPlaylistDownload
-              ? {
-                  mode: AiPlanningExecutionMode.RoomOnly,
-                  provider: AiPlanningFallbackProvider.GeminiChat,
-                  model,
-                  projectId: evaluationProjectId,
-                  chromeHeadless: false,
-                }
-              : undefined,
+          aiExecution: sunoEvaluateTracks && !isTestPlaylistDownload ? { mode: AiPlanningExecutionMode.RoomOnly, provider: AiPlanningFallbackProvider.GeminiChat, model, projectId: evaluationProjectId, chromeHeadless: false } : undefined,
         }),
         signal: abortController.signal,
       });
@@ -1281,11 +1281,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     sunoDownloadAbortControllerRef.current?.abort();
     const runId = sunoDownloadRunIdRef.current;
     if (runId) {
-      void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true }),
-      }).catch(() => undefined);
+      void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ pipelineRunId: runId, closeBrowser: true }) }).catch(() => undefined);
     }
     setIsDownloadingSuno(false);
     toast.info(texts.SUNO_DOWNLOAD_CANCELLED_TOAST);
@@ -1383,19 +1379,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({
-          songs,
-          style,
-          styleAnalysis,
-          sourceContext: referenceSongs,
-          playlistSeoOptions,
-          thumbnailDescription,
-          thumbnailReference,
-          thumbnailReferenceName,
-          chromeHeadless,
-          aiExecution: { provider, model },
-          imageRunId,
-        }),
+        body: jsonUtils.safeStringify({ songs, style, styleAnalysis, sourceContext: referenceSongs, playlistSeoOptions, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless, aiExecution: { provider, model }, imageRunId }),
         signal: imageAbortController.signal,
       });
       const result = await response.json();
@@ -1419,11 +1403,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   };
   const cancelMusicImageRun = (runId: string | null) => {
     if (!runId) return;
-    void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, {
-      method: HTTP_METHODS.POST,
-      headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-      body: jsonUtils.safeStringify({ pipelineRunId: runId }),
-    }).catch(() => undefined);
+    void fetch(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ pipelineRunId: runId }) }).catch(() => undefined);
   };
   const handleStopThumbnail = () => {
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverStop);
@@ -1456,19 +1436,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({
-          songs: downloadedMusicTracks,
-          style,
-          styleAnalysis,
-          videoBackgroundDescription,
-          videoBackgroundReference,
-          videoBackgroundReferenceName,
-          chromeHeadless,
-          aiExecution: { provider, model },
-          assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,
-          showTrackList: showVideoTrackList,
-          imageRunId,
-        }),
+        body: jsonUtils.safeStringify({ songs: downloadedMusicTracks, style, styleAnalysis, videoBackgroundDescription, videoBackgroundReference, videoBackgroundReferenceName, chromeHeadless, aiExecution: { provider, model }, assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO, showTrackList: showVideoTrackList, imageRunId }),
         signal: imageAbortController.signal,
       });
       const result = await response.json();
@@ -1564,12 +1532,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   {_.map(savedStyles, (savedStyle, styleIndex) => {
                     const isSelected = _.isEqual(style, savedStyle.content);
                     return (
-                      <div
-                        key={SOURCE_TEMPLATE_SYMBOL_5(String(styleIndex), String(savedStyle.title))}
-                        className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, {
-                          [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected,
-                          [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected,
-                        })}>
+                      <div key={SOURCE_TEMPLATE_SYMBOL_5(String(styleIndex), String(savedStyle.title))} className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected })}>
                         <Tooltip content={savedStyle.content} align={SOURCE_TEXT_START}>
                           <Button
                             variant={SOURCE_TEXT_UNSTYLED}
@@ -1599,10 +1562,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               }}
                               disabled={isBusy}
                               title={texts.COPY_STYLE_BTN}
-                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
-                                [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
-                                [MCS.BG_SKY_500_15_HOVER_BG_SKY_500_25_BORDER_BORDER_SKY_500_40_TEXT_SKY_700_DAR]: !isSelected,
-                              })}>
+                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, { [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected, [MCS.BG_SKY_500_15_HOVER_BG_SKY_500_25_BORDER_BORDER_SKY_500_40_TEXT_SKY_700_DAR]: !isSelected })}>
                               {copiedStyleIndex === styleIndex ? <Check className={cn(MCS.W_2_5_H_2_5_SHRINK_0, { [MCS.TEXT_EMERALD_300]: isSelected, [SRT.SOURCE_TEXT_TEXT_EMERALD_500]: !isSelected })} /> : <Copy className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />}
                             </Button>
                           </Tooltip>
@@ -1616,10 +1576,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               }}
                               disabled={isBusy}
                               title={texts.STYLE_UPDATE_BTN}
-                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
-                                [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
-                                [MCS.BG_PURPLE_500_15_HOVER_BG_PURPLE_500_25_BORDER_BORDER_PURPLE_500_40_TEXT_7E]: !isSelected,
-                              })}>
+                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, { [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected, [MCS.BG_PURPLE_500_15_HOVER_BG_PURPLE_500_25_BORDER_BORDER_PURPLE_500_40_TEXT_7E]: !isSelected })}>
                               <Pencil className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                             </Button>
                           </Tooltip>
@@ -1633,10 +1590,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                               }}
                               disabled={isBusy}
                               title={texts.STYLE_DELETE_BTN}
-                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
-                                [MCS.BG_ROSE_500_30_HOVER_BG_ROSE_500_50_BORDER_BORDER_ROSE_300_40_TEXT_WHITE]: isSelected,
-                                [MCS.BG_ROSE_500_15_HOVER_BG_ROSE_500_25_BORDER_BORDER_ROSE_500_40_TEXT_E11D48_D]: !isSelected,
-                              })}>
+                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, { [MCS.BG_ROSE_500_30_HOVER_BG_ROSE_500_50_BORDER_BORDER_ROSE_300_40_TEXT_WHITE]: isSelected, [MCS.BG_ROSE_500_15_HOVER_BG_ROSE_500_25_BORDER_BORDER_ROSE_500_40_TEXT_E11D48_D]: !isSelected })}>
                               <Trash2 className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                             </Button>
                           </Tooltip>
@@ -1696,12 +1650,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                       {_.map(savedInspos, (item, index) => {
                         const isSelected = _.isEqual(sunoInspo, item.content);
                         return (
-                          <div
-                            key={SOURCE_TEMPLATE_SYMBOL_5(String(item.title), String(index))}
-                            className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, {
-                              [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected,
-                              [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected,
-                            })}>
+                          <div key={SOURCE_TEMPLATE_SYMBOL_5(String(item.title), String(index))} className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected })}>
                             <Tooltip content={item.content} align={SOURCE_TEXT_START}>
                               <Button
                                 variant={SOURCE_TEXT_UNSTYLED}
@@ -1735,10 +1684,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   title={texts.INSPO_COPY_NAME_BTN}
                                   aria-label={texts.INSPO_COPY_NAME_BTN}
                                   disabled={isBusy}
-                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
-                                    [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
-                                    [MCS.BG_SKY_500_15_HOVER_BG_SKY_500_25_BORDER_BORDER_SKY_500_40_TEXT_SKY_700_DAR]: !isSelected,
-                                  })}>
+                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, { [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected, [MCS.BG_SKY_500_15_HOVER_BG_SKY_500_25_BORDER_BORDER_SKY_500_40_TEXT_SKY_700_DAR]: !isSelected })}>
                                   {copiedInspoIndex === index ? <Check className={cn(MCS.W_2_5_H_2_5_SHRINK_0, { [MCS.TEXT_EMERALD_300]: isSelected, [SRT.SOURCE_TEXT_TEXT_EMERALD_500]: !isSelected })} /> : <Copy className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />}
                                 </Button>
                               </Tooltip>
@@ -1755,10 +1701,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   }}
                                   disabled={isBusy}
                                   title={texts.STYLE_UPDATE_BTN}
-                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
-                                    [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected,
-                                    [MCS.BG_PURPLE_500_15_HOVER_BG_PURPLE_500_25_BORDER_BORDER_PURPLE_500_40_TEXT_7E]: !isSelected,
-                                  })}>
+                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, { [MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE]: isSelected, [MCS.BG_PURPLE_500_15_HOVER_BG_PURPLE_500_25_BORDER_BORDER_PURPLE_500_40_TEXT_7E]: !isSelected })}>
                                   <Pencil className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                                 </Button>
                               </Tooltip>
@@ -1772,10 +1715,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   }}
                                   disabled={isBusy}
                                   title={texts.STYLE_DELETE_BTN}
-                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, {
-                                    [MCS.BG_ROSE_500_30_HOVER_BG_ROSE_500_50_BORDER_BORDER_ROSE_300_40_TEXT_WHITE]: isSelected,
-                                    [MCS.BG_ROSE_500_15_HOVER_BG_ROSE_500_25_BORDER_BORDER_ROSE_500_40_TEXT_E11D48_D]: !isSelected,
-                                  })}>
+                                  className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, { [MCS.BG_ROSE_500_30_HOVER_BG_ROSE_500_50_BORDER_BORDER_ROSE_300_40_TEXT_WHITE]: isSelected, [MCS.BG_ROSE_500_15_HOVER_BG_ROSE_500_25_BORDER_BORDER_ROSE_500_40_TEXT_E11D48_D]: !isSelected })}>
                                   <Trash2 className={cn(MCS.W_2_5_H_2_5_SHRINK_0)} />
                                 </Button>
                               </Tooltip>
@@ -1835,10 +1775,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                         type={SOURCE_TEXT_BUTTON}
                         onClick={() => setOutputCount(count)}
                         disabled={isBusy}
-                        className={cn(MCS.RELATIVE_H_9_ROUNDED_XL_BORDER_FONT_BOLD_TEXT_XS_FLEX_FLEX_COL_ITEMS_CENTER, {
-                          [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected,
-                          [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected,
-                        })}>
+                        className={cn(MCS.RELATIVE_H_9_ROUNDED_XL_BORDER_FONT_BOLD_TEXT_XS_FLEX_FLEX_COL_ITEMS_CENTER, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected })}>
                         <span>{texts.formatSongCount(count)}</span>
                         {isRecommended && !isSelected && <span className={cn(MCS.ABSOLUTE_TOP_1_PX_1_ROUNDED_TEXT_7PX_FONT_MONO_UPPERCASE_BG_AMBER_500_20_TE)}>{texts.RECOMMENDED_BADGE}</span>}
                       </Button>
@@ -2026,10 +1963,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     type={SOURCE_TEXT_BUTTON}
                     onClick={handleRegenerateThumbnail}
                     disabled={isBusy}
-                    className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTI, {
-                      [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_100_90_DARK_BG_FUCHSIA_950_70_TEXT_86198F]: isGeneratingThumbnail,
-                      [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_500_10_HOVER_BG_FUCHSIA_600_DARK_BG_FUCHSI]: !isGeneratingThumbnail,
-                    })}>
+                    className={cn(MCS.H_9_PX_3_ROUNDED_XL_BORDER_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTI, { [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_100_90_DARK_BG_FUCHSIA_950_70_TEXT_86198F]: isGeneratingThumbnail, [MCS.BORDER_FUCHSIA_500_40_BG_FUCHSIA_500_10_HOVER_BG_FUCHSIA_600_DARK_BG_FUCHSI]: !isGeneratingThumbnail })}>
                     {isGeneratingThumbnail ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_FUCHSIA_600_DARK_TEXT_FUCHSIA_400)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
                     <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isGeneratingThumbnail ? texts.THUMBNAIL_CREATING_SHORT : generatedThumbnail ? texts.THUMBNAIL_REGENERATE : texts.THUMBNAIL_CREATE_BTN}</span>
                   </Button>
@@ -2267,10 +2201,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               type={SOURCE_TEXT_BUTTON}
               onClick={handleDownloadSunoMusic}
               disabled={isBusy || _.isEmpty(_.trim(downloadPlaylistUrl) || sunoPlaylistUrl || sunoTestPlaylistUrl)}
-              className={cn(MCS.H_9_PX_3_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CE, {
-                [MCS.BG_GRADIENT_TO_R_FROM_AMBER_600_VIA_ORANGE_600_TO_ROSE_600_BORDER_AMBER_400]: isDownloadingSuno,
-                [MCS.BG_GRADIENT_TO_R_FROM_AMBER_500_VIA_ORANGE_500_TO_ROSE_600_HOVER_FROM_AMBER]: !isDownloadingSuno,
-              })}>
+              className={cn(MCS.H_9_PX_3_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CE, { [MCS.BG_GRADIENT_TO_R_FROM_AMBER_600_VIA_ORANGE_600_TO_ROSE_600_BORDER_AMBER_400]: isDownloadingSuno, [MCS.BG_GRADIENT_TO_R_FROM_AMBER_500_VIA_ORANGE_500_TO_ROSE_600_HOVER_FROM_AMBER]: !isDownloadingSuno })}>
               {isDownloadingSuno ? <Disc3 className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_AMBER_200)} /> : <Download className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
               <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{isDownloadingSuno ? texts.SUNO_DOWNLOADING_BTN : texts.SUNO_DOWNLOAD_BTN}</span>
             </Button>
@@ -2496,13 +2427,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                             analysis: sunoSettingsAnalysis?.parameterAnalysis?.vocalGender,
                             badgeClass: SOURCE_TEXT_TEXT_FUCHSIA_300_BG_FUCHSIA_500,
                           },
-                          {
-                            label: texts.SUNO_DURATION_LABEL,
-                            value: texts.SUNO_AUTO_VALUE,
-                            reason: MUSIC_CREATOR_RUNTIME.EMPTY,
-                            analysis: sunoSettingsAnalysis?.parameterAnalysis?.duration,
-                            badgeClass: SOURCE_TEXT_TEXT_SLATE_300_BG_SLATE_800,
-                          },
+                          { label: texts.SUNO_DURATION_LABEL, value: texts.SUNO_AUTO_VALUE, reason: MUSIC_CREATOR_RUNTIME.EMPTY, analysis: sunoSettingsAnalysis?.parameterAnalysis?.duration, badgeClass: SOURCE_TEXT_TEXT_SLATE_300_BG_SLATE_800 },
                           {
                             label: texts.SUNO_MAX_MODE_LABEL,
                             value: sunoSettings.maxMode ? texts.SUNO_ON_VALUE : texts.SUNO_OFF_VALUE,
@@ -2556,34 +2481,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     <div className={cn(MCS.GRID_GRID_COLS_1_SM_GRID_COLS_2_LG_GRID_COLS_4_GAP_3)}>
                       {_.map(
                         [
-                          {
-                            label: texts.SUNO_WEIRDNESS_LABEL,
-                            value: sunoSettings.weirdness,
-                            reason: sunoSettingsAnalysis?.parameterRationale.weirdness,
-                            analysis: sunoSettingsAnalysis?.parameterAnalysis?.weirdness,
-                            gradient: SOURCE_TEXT_FROM_PURPLE_500_TO_INDIGO_500,
-                          },
-                          {
-                            label: texts.SUNO_STYLE_INFLUENCE_LABEL,
-                            value: sunoSettings.styleInfluence,
-                            reason: sunoSettingsAnalysis?.parameterRationale.styleInfluence,
-                            analysis: sunoSettingsAnalysis?.parameterAnalysis?.styleInfluence,
-                            gradient: SOURCE_TEXT_FROM_FUCHSIA_500_TO_PINK_500,
-                          },
-                          {
-                            label: texts.SUNO_AUDIO_INFLUENCE_LABEL,
-                            value: sunoSettings.audioInfluence,
-                            reason: sunoSettingsAnalysis?.parameterRationale.audioInfluence,
-                            analysis: sunoSettingsAnalysis?.parameterAnalysis?.audioInfluence,
-                            gradient: SOURCE_TEXT_FROM_AMBER_500_TO_ORANGE_500,
-                          },
-                          {
-                            label: texts.SUNO_VARIETY_LABEL,
-                            value: sunoSettings.variety,
-                            reason: sunoSettingsAnalysis?.parameterRationale.variety,
-                            analysis: sunoSettingsAnalysis?.parameterAnalysis?.variety,
-                            gradient: SOURCE_TEXT_FROM_INDIGO_500_TO_CYAN_500,
-                          },
+                          { label: texts.SUNO_WEIRDNESS_LABEL, value: sunoSettings.weirdness, reason: sunoSettingsAnalysis?.parameterRationale.weirdness, analysis: sunoSettingsAnalysis?.parameterAnalysis?.weirdness, gradient: SOURCE_TEXT_FROM_PURPLE_500_TO_INDIGO_500 },
+                          { label: texts.SUNO_STYLE_INFLUENCE_LABEL, value: sunoSettings.styleInfluence, reason: sunoSettingsAnalysis?.parameterRationale.styleInfluence, analysis: sunoSettingsAnalysis?.parameterAnalysis?.styleInfluence, gradient: SOURCE_TEXT_FROM_FUCHSIA_500_TO_PINK_500 },
+                          { label: texts.SUNO_AUDIO_INFLUENCE_LABEL, value: sunoSettings.audioInfluence, reason: sunoSettingsAnalysis?.parameterRationale.audioInfluence, analysis: sunoSettingsAnalysis?.parameterAnalysis?.audioInfluence, gradient: SOURCE_TEXT_FROM_AMBER_500_TO_ORANGE_500 },
+                          { label: texts.SUNO_VARIETY_LABEL, value: sunoSettings.variety, reason: sunoSettingsAnalysis?.parameterRationale.variety, analysis: sunoSettingsAnalysis?.parameterAnalysis?.variety, gradient: SOURCE_TEXT_FROM_INDIGO_500_TO_CYAN_500 },
                         ],
                         (item) => (
                           <StudioCard key={item.label} className={cn(MCS.P_3_ROUNDED_XL_BG_SLATE_950_60_BORDER_BORDER_SLATE_800_80_SPACE_Y_2_5_SHADO)}>
@@ -2613,7 +2514,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               </div>
             </details>
           )}
-          {isLoading || (isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES.SEO) ? (
+          <MusicPlanProgressPanel progress={musicProgress} language={currentLang} />
+          {(isLoading && _.isEmpty(songs)) || (isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES.SEO) ? (
             <StudioLoadingState secondary={isRegeneratingSeo} icon={isRegeneratingSeo ? Search : Disc3} title={isRegeneratingSeo ? texts.BLOCK_SEO_LOADING : texts.BLOCK_LYRICS_LOADING} description={isRegeneratingSeo ? texts.SEO_OPTIONS_COUNT_BADGE : SOURCE_TEMPLATE_SYMBOL_17(String(texts.HEADER_BADGE), String(outputCount), String(texts.SONG_UNIT))} />
           ) : _.isEmpty(songs) ? (
             <div className={cn(SRT.SOURCE_TEXT_PY_14_FLEX_FLEX_COL_ITEMS_CENTER)}>
@@ -2675,10 +2577,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           key={idx}
                           type={SOURCE_TEXT_BUTTON}
                           onClick={() => setSelectedSeoSongIndex(idx)}
-                          className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_WHITESPACE_NOWRAP_TRANSITION_ALL_C, {
-                            [MCS.BG_GRADIENT_TO_R_FROM_INDIGO_600_TO_PURPLE_600_TEXT_WHITE_BORDER_INDIGO_400]: isSelected,
-                            [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800]: !isSelected,
-                          })}>
+                          className={cn(MCS.PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_FONT_BOLD_WHITESPACE_NOWRAP_TRANSITION_ALL_C, { [MCS.BG_GRADIENT_TO_R_FROM_INDIGO_600_TO_PURPLE_600_TEXT_WHITE_BORDER_INDIGO_400]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800]: !isSelected })}>
                           <span className={cn(MCS.FONT_MONO_FONT_BLACK_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE, { [MCS.TEXT_INDIGO_100]: isSelected, [MCS.TEXT_INDIGO_600_GROUP_HOVER_TEXT_INDIGO_800_DARK_TEXT_INDIGO_400_DARK_GROUP]: !isSelected })}>{texts.formatTrackBadge(idx + 1)}</span>
                           <span className={cn(SRT.SOURCE_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE)}>{_.truncate(toSentenceCase(song.title), { length: 18 })}</span>
                         </Button>

@@ -1,8 +1,13 @@
 import { assertMotionScriptComplete, assertMotionProductionMode } from "../../lib/motionProduction.js";
 import { MOTION_CHAPTER_REPAIR } from "../../constants/motionChapterRepair.js";
 import { MOTION_PRODUCTION } from "../../constants/motionProduction.js";
+import { motionVisualSettingsFor, isRemotionSpec } from "../../lib/motionVisual.js";
+import { applyMotionRenderBehavior, motionRenderBehaviorFor } from "../../lib/motionRenderBehavior.js";
+import { validateRemotionSpec } from "../../lib/motionRemotion.js";
+import type { MotionRenderSpec } from "../../types/motionVisual.js";
+import { buildRemotionScenes } from "./remotion/scenePipeline.js";
+import { compileRemotionStory } from "./remotion/storyCompiler.js";
 import { motionEditorialContext } from "./motionEditorialContextService.js";
-import { PUPPET_STYLE_DEFAULT } from "../../constants/motionPuppet.js";
 import { buildScenesPuppet } from "./puppet/pipelinePuppet.js";
 import { MOTION_SOUND_CONFIG as SOUND } from "../../constants/motionSound.js";
 import { normalizeSoundCues } from "../../lib/motionSound.js";
@@ -69,11 +74,12 @@ export const readStorySource = async (text: string): Promise<MotionStorySource> 
   const source = withFetchInfo(parseStorySource(cleaned), r.notes, r.fetched);
   return report.splitNumbers || report.soundCues || report.missingQuotes ? { ...source, cleaned: report } : source;
 };
-export const validateSpec = (raw: unknown): MotionSpec => {
+export const validateSpec = (raw: unknown): MotionRenderSpec => {
   const spec = (_.isString(raw) ? parseJson(raw) : raw) as MotionSpec;
+  if (isRemotionSpec(spec)) return applyMotionRenderBehavior(validateRemotionSpec(spec), motionRenderBehaviorFor(spec));
   if (!spec || !_.isArray(spec.shots) || _.isEmpty(spec.shots)) throw new Error(MOTION_TEXT_KICH_BAN_DUNG_SPEC_CHUA_CO_CANH_NAO);
   if (spec.shots.length > 2000) throw new Error(MOTION_TEXT_QUA_NHIEU_CANH_TRONG_MOT_VIDEO);
-  return spec;
+  return applyMotionRenderBehavior(spec, motionRenderBehaviorFor(spec));
 };
 export const startMotionVideoRenderInput = (body: Record<string, any>) => {
   const spec = validateSpec(body?.spec);
@@ -111,6 +117,7 @@ export const editorialSession = (body: any, source: MotionStorySource, exec: Mot
 };
 export const analyzeMotionStoryInput = async (body: Record<string, any>) => {
   assertMotionProductionMode(body);
+  const visualSettings = motionVisualSettingsFor(body);
   const source = (body?.source as MotionStorySource) || (await readStorySource(_.toString(body?.text)));
   if (!source?.segments?.length) throw new Error(MOTION_TEXT_CHUA_CO_NOI_DUNG_CAU_CHUYEN);
   const language = storyLanguage(body?.language);
@@ -124,7 +131,7 @@ export const analyzeMotionStoryInput = async (body: Record<string, any>) => {
     async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(String(Number.isFinite(source.words) ? source.words : speechUnits(source.text)), String(Math.round(source.sourceSeconds / 60))));
-      const options = { language, length, styleReferences, videoGenre: motionVideoGenre(body?.videoGenre), stylePreset: _.toString(body?.stylePreset || PUPPET_STYLE_DEFAULT), characterMotion: body?.characterMotion === true, aspect: _.toString(body?.aspect || MR.MOTION_TEXT_16_9), exec };
+      const options = { language, length, visualSettings, styleReferences: visualSettings.mode === "remotion" ? [] : styleReferences, videoGenre: motionVideoGenre(body?.videoGenre), stylePreset: visualSettings.mode === "library" ? visualSettings.packId : undefined, characterMotion: body?.characterMotion === true, aspect: _.toString(body?.aspect || MR.MOTION_TEXT_16_9), exec };
       const recovery = motionTaskCheckpoint<MotionAnalysisDraft>(body.productionId || body.editorialSessionId, MotionStoryJobKind.ANALYZE, [source, options]);
       const analysis = await analyzeStory(source, { ...options, signal: ctx.signal, log: ctx.log, draft: recovery.read(), onDraft: recovery.save });
       ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(String(analysis.chapters.length), String(analysis.cast.length), String(analysis.places.length), String(analysis.facts.length)));
@@ -138,6 +145,8 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
   assertMotionProductionMode(body);
   const source = body?.source as MotionStorySource;
   let analysis = body?.analysis as MotionStoryAnalysis;
+  const visualSettings = motionVisualSettingsFor(body);
+  if (analysis) analysis = { ...analysis, visualSettings, stylePreset: visualSettings.mode === "library" ? visualSettings.packId : undefined };
   if (!source?.segments?.length || !analysis?.chapters?.length) throw new Error(MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC);
   const language = storyLanguage(body?.language);
   if (analysis.videoDna) {
@@ -168,7 +177,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const byChapter: Record<string, MotionBeat[]> = _.groupBy(existing, MOTION_TEXT_CHAPTERID);
       const chapterDrafts: NonNullable<MotionStoryScript["chapterDrafts"]> = structuredClone(body?.chapterDrafts || {});
       const durationRepairStates: NonNullable<MotionStoryScript["durationRepairStates"]> = structuredClone(body?.durationRepairStates || {});
-      const checkpoint = () => ctx.partial({ title: analysis.title, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []), gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates });
+      const checkpoint = () => ctx.partial({ title: analysis.title, visualSettings, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []), gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates });
       const todo = _.filter(chapters, (c) => (_.isEmpty(only) || _.includes(only, c.id)) && (body?.resume !== true || !!chapterDrafts[c.id] || !byChapter[c.id]?.some((beat) => beat.narration?.trim())));
       let done = 0;
       const failed: MotionChapter[] = [];
@@ -229,7 +238,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           ctx.log(MR.MOTION_TEMPLATE_BO_QUA_BUOC_BIEN_TAP(_.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
         }
       }
-      const script: MotionStoryScript = { title: analysis.title, language, beats, gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, ...(edit ? { edit } : {}) };
+      const script: MotionStoryScript = { title: analysis.title, visualSettings, language, beats, gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, ...(edit ? { edit } : {}) };
       ctx.partial(script);
       assertMotionScriptComplete(script, analysis);
       return script;
@@ -261,8 +270,10 @@ export const seoMotionStoryInput = (body: Record<string, any>) => {
 };
 export const scenesMotionStoryInput = (body: Record<string, any>) => {
   assertMotionProductionMode(body);
+  const behavior = motionRenderBehaviorFor(body);
+  const visualSettings = motionVisualSettingsFor(body);
   const raw = body?.analysis as MotionStoryAnalysis;
-  const analysis = (raw ? { ...raw, stylePreset: _.toString(body?.stylePreset || raw.stylePreset || PUPPET_STYLE_DEFAULT) } : raw) as MotionStoryAnalysis;
+  const analysis = (raw ? { ...raw, visualSettings, stylePreset: visualSettings.mode === "library" ? visualSettings.packId : undefined } : raw) as MotionStoryAnalysis;
   const script = body?.script as MotionStoryScript;
   if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
   assertMotionScriptComplete(script, analysis);
@@ -271,56 +282,80 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
   const onlyBeats: string[] = _.map(_.castArray(body?.beats || []), _.toString);
   const onlyLocations: string[] = _.map(_.castArray(body?.locations || []), _.toString);
   const note = _.truncate(_.toString(body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
+  if (visualSettings.mode === "remotion") {
+    const job = startInputJob(
+      body,
+      body?.keepBrowser === true,
+      MotionStoryJobKind.SCENES,
+      (ctx) =>
+        buildRemotionScenes({ ...script, visualSettings }, analysis, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, partial: ctx.partial, scope: body.productionId || body.editorialSessionId, aspect: body.aspect, renderBehavior: motionRenderBehaviorFor(body), review: body.review !== false, restart: body.restart === true, onlyBeats, onlyLocations, note: note || undefined }),
+      (() => {
+        const session = editorialSession(body, body.source, aiExec(body.aiExecution));
+        return session ? { ...session, worker: true } : undefined;
+      })(),
+    );
+    return { success: true, job };
+  }
   if (body?.restart) delete script.gen;
-  const job = startInputJob(body, body?.keepBrowser === true, MotionStoryJobKind.SCENES, async (ctx) => {
-    const autoVoice = body?.autoVoice !== false;
-    ctx.progress(0, MOTION_STORY_CONFIG.SCENES_PREPARING);
-    const audioAbort = new AbortController();
-    const cancelAudio = () => audioAbort.abort(ctx.signal.reason);
-    ctx.signal.addEventListener("abort", cancelAudio, { once: true });
-    if (ctx.signal.aborted) cancelAudio();
-    const voiceOpts = { exec, session: editorialSession(body, body.source, aiExec(body.aiExecution)), scope: body.productionId || body.editorialSessionId, asr: body?.asrCheck === true, aspect: _.toString(body?.aspect || MOTION_TEXT_16_9), signal: audioAbort.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
-    let planJob: Promise<Awaited<ReturnType<typeof directMotionVoice>> | undefined> = Promise.resolve(undefined);
-    let voiceJob: Promise<Awaited<ReturnType<typeof buildMotionVoiceTrack>> | undefined> = Promise.resolve(undefined);
-    const prepareAudio = async (readyScript: MotionStoryScript) => {
-      planJob = autoVoice ? listMotionVoiceSources(audioAbort.signal, ctx.log).then((sources) => directMotionVoice(readyScript, analysis, sources, voiceOpts)) : Promise.resolve(undefined);
-      voiceJob = planJob.then((plan) => (plan ? buildMotionVoiceTrack({ ...readyScript, gen: { ...(readyScript.gen || emptyGen()), voiceCast: motionVoiceCast(readyScript.gen?.voiceCast, plan.roles) } }, analysis, voiceOpts) : undefined));
-      voiceJob.catch(_.noop);
-      return planJob.then((plan) => plan?.direction).catch(() => undefined);
-    };
-    try {
-      const result = await buildScenesPuppet(script, analysis, {
-        prepareAudio,
-        resolveVoice: () => voiceJob,
-        exec,
-        signal: ctx.signal,
-        log: ctx.log,
-        progress: (value, stage) => ctx.progress(value * (autoVoice ? 0.9 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
-        partial: (r) => r && ctx.partial(r),
-        aspect: _.toString(body?.aspect || MOTION_TEXT_16_9),
-        onlyBeats,
-        onlyLocations,
-        styleReferences,
-        characterMotion: body?.characterMotion === true,
-        note: note || undefined,
-        review: body?.review !== false,
-        sfx: body?.sfx !== false,
-        previews: body?.previews !== false,
-        readiness: body?.illustration,
-      });
-      const plan = await planJob;
-      if (plan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, plan.roles);
-      if (autoVoice && !result.gen?.failed?.length) {
-        ctx.progress(0.92, MOTION_VOICE.GENERATING);
-        result.voiceTrack = await voiceJob;
-        ctx.partial(result);
+  const job = startInputJob(
+    body,
+    body?.keepBrowser === true,
+    MotionStoryJobKind.SCENES,
+    async (ctx) => {
+      const autoVoice = body?.autoVoice !== false;
+      ctx.progress(0, MOTION_STORY_CONFIG.SCENES_PREPARING);
+      const audioAbort = new AbortController();
+      const cancelAudio = () => audioAbort.abort(ctx.signal.reason);
+      ctx.signal.addEventListener("abort", cancelAudio, { once: true });
+      if (ctx.signal.aborted) cancelAudio();
+      const voiceOpts = { exec, session: editorialSession(body, body.source, aiExec(body.aiExecution)), scope: body.productionId || body.editorialSessionId, asr: body?.asrCheck === true, aspect: _.toString(body?.aspect || MOTION_TEXT_16_9), signal: audioAbort.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
+      let planJob: Promise<Awaited<ReturnType<typeof directMotionVoice>> | undefined> = Promise.resolve(undefined);
+      let voiceJob: Promise<Awaited<ReturnType<typeof buildMotionVoiceTrack>> | undefined> = Promise.resolve(undefined);
+      const prepareAudio = async (readyScript: MotionStoryScript) => {
+        planJob = autoVoice ? listMotionVoiceSources(audioAbort.signal, ctx.log).then((sources) => directMotionVoice(readyScript, analysis, sources, voiceOpts)) : Promise.resolve(undefined);
+        voiceJob = planJob.then((plan) => (plan ? buildMotionVoiceTrack({ ...readyScript, gen: { ...(readyScript.gen || emptyGen()), voiceCast: motionVoiceCast(readyScript.gen?.voiceCast, plan.roles) } }, analysis, voiceOpts) : undefined));
+        voiceJob.catch(_.noop);
+        return planJob.then((plan) => plan?.direction).catch(() => undefined);
+      };
+      try {
+        const result = await buildScenesPuppet(script, analysis, {
+          prepareAudio,
+          resolveVoice: () => voiceJob,
+          exec,
+          signal: ctx.signal,
+          log: ctx.log,
+          progress: (value, stage) => ctx.progress(value * (autoVoice ? 0.9 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
+          partial: (r) => r && ctx.partial(r),
+          aspect: _.toString(body?.aspect || MOTION_TEXT_16_9),
+          onlyBeats,
+          onlyLocations,
+          styleReferences,
+          characterMotion: behavior.actors === "simple",
+          note: note || undefined,
+          review: body?.review !== false,
+          sfx: body?.sfx !== false,
+          previews: body?.previews !== false,
+          readiness: body?.illustration,
+        });
+        if (result.gen) result.gen.renderBehavior = behavior;
+        const plan = await planJob;
+        if (plan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, plan.roles);
+        if (autoVoice && !result.gen?.failed?.length) {
+          ctx.progress(0.92, MOTION_VOICE.GENERATING);
+          result.voiceTrack = await voiceJob;
+          ctx.partial(result);
+        }
+        return result;
+      } finally {
+        audioAbort.abort();
+        ctx.signal.removeEventListener("abort", cancelAudio);
       }
-      return result;
-    } finally {
-      audioAbort.abort();
-      ctx.signal.removeEventListener("abort", cancelAudio);
-    }
-  }, (() => { const session = editorialSession(body, body.source, aiExec(body.aiExecution)); return session ? { ...session, worker: true } : undefined; })());
+    },
+    (() => {
+      const session = editorialSession(body, body.source, aiExec(body.aiExecution));
+      return session ? { ...session, worker: true } : undefined;
+    })(),
+  );
   return { success: true, job };
 };
 export const voiceMotionStoryInput = (body: Record<string, any>) => {
@@ -330,7 +365,16 @@ export const voiceMotionStoryInput = (body: Record<string, any>) => {
   assertMotionScriptComplete(script, analysis);
   const exec = drawExec(body?.aiExecution);
   const job = startInputJob(body, body?.keepBrowser === true, MotionStoryJobKind.VOICE, async (ctx) => {
-    const track = await buildMotionVoiceTrack(script, analysis, { exec, session: editorialSession(body, body.source, aiExec(body.aiExecution)), scope: body.productionId || body.editorialSessionId, asr: body?.asrCheck === true, aspect: _.toString(body?.aspect || MOTION_TEXT_16_9), signal: ctx.signal, log: ctx.log, onProgress: (done, total) => ctx.progress((0.98 * done) / Math.max(1, total), done === total ? MOTION_VOICE.MIXING : MOTION_VOICE.PROGRESS(done, total)) });
+    const track = await buildMotionVoiceTrack(script, analysis, {
+      exec,
+      session: editorialSession(body, body.source, aiExec(body.aiExecution)),
+      scope: body.productionId || body.editorialSessionId,
+      asr: body?.asrCheck === true,
+      aspect: _.toString(body?.aspect || MOTION_TEXT_16_9),
+      signal: ctx.signal,
+      log: ctx.log,
+      onProgress: (done, total) => ctx.progress((0.98 * done) / Math.max(1, total), done === total ? MOTION_VOICE.MIXING : MOTION_VOICE.PROGRESS(done, total)),
+    });
     ctx.log(MOTION_TEMPLATE_GIONG_DOC_GIAY(String(Math.round(track.totalSeconds))));
     const feedback = recordVoiceSpeedFeedback(
       _.sumBy(track.clips || [], (clip) => speechUnits(clip.text)),
@@ -343,9 +387,11 @@ export const voiceMotionStoryInput = (body: Record<string, any>) => {
   return { success: true, job };
 };
 export const compileMotionStoryInput = async (body: Record<string, any>) => {
+  const behavior = motionRenderBehaviorFor(body);
   const script = body?.script as MotionStoryScript;
   if (!script?.beats?.length) throw new Error(MOTION_TEXT_CHUA_CO_KICH_BAN);
   const analysis = (body?.analysis as MotionStoryAnalysis) || null;
+  const visualSettings = motionVisualSettingsFor(body);
   assertMotionScriptComplete(script, analysis);
   const aspect = _.includes([MOTION_TEXT_16_9, MOTION_TEXT_9_16, MOTION_TEXT_1_1, MOTION_TEXT_4_5], body?.aspect) ? body.aspect : MOTION_TEXT_16_9;
   const requestedVoice = body?.voiceTrack || script.voiceTrack;
@@ -359,8 +405,9 @@ export const compileMotionStoryInput = async (body: Record<string, any>) => {
       _.map(script.beats, (b) => estimateBeatSeconds(b, script.language)),
       uploadedSeconds,
     );
-  const directedScript = typeof body?.characterMotion === MR.MOTION_TEXT_BOOLEAN && script.gen ? { ...script, gen: { ...script.gen, characterMotion: body.characterMotion } } : script;
-  const compiled = compileStorySpec(directedScript, analysis, { aspect, durations, look: body?.look, accent: body?.accent, voiceTrack });
+  const directedScript = script.gen ? { ...script, gen: { ...script.gen, characterMotion: behavior.actors === "simple", renderBehavior: behavior } } : script;
+  const compiled = visualSettings.mode === "remotion" ? compileRemotionStory({ ...directedScript, visualSettings }, analysis ? { ...analysis, visualSettings } : null, { aspect, durations, fps: body.fps, voiceTrack, renderBehavior: behavior, subtitles: body.subtitles }) : compileStorySpec(directedScript, analysis, { aspect, durations, look: body?.look, accent: body?.accent, voiceTrack });
+  compiled.spec = applyMotionRenderBehavior(compiled.spec, behavior);
   const duration = compiled.spec.duration || 1,
     voiceId = voiceTrack?.audioId || (!voiceStale && body?.audioId ? path.basename(String(body.audioId)) : undefined);
   let sound: Awaited<ReturnType<typeof buildMotionSoundTrack>> = { selections: [] },

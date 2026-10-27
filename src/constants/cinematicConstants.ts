@@ -138,6 +138,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CONTEXT_ARTIFACT: "chat-planning-context",
   CONTEXT_ACK_ERROR: "chat_planning_context_not_confirmed",
   CONTEXT_ACK_REPAIRS: 2,
+  CONTEXT_RECEIPT_PATTERN: /\{[^{}]*\}/g,
   CONTEXT_PART_ID: (request: string, part: number): string => `${request}_context_${part}`,
   CONTEXT_ACK_REPAIR: (id: string, part: number): string => `The previous receipt had an incorrect field. Keep all request parts already stored in this conversation; do not execute or resend the request. Return exactly this JSON receipt without changing any value: ${JSON.stringify({ artifactType: "chat-planning-context", requestId: id, receivedPart: part })}`,
   CONTEXT_PART: (id: string, request: string, part: number, total: number, text: string): string =>

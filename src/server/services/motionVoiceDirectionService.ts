@@ -8,7 +8,7 @@ import { applyVoiceLibrary, findVoiceChannel } from "./motionVoiceLibraryService
 import { MOTION_AUDIO_DIRECTION, MOTION_AUDIO_CAST_PROMPT } from "../../constants/motionAudioDirection.js";
 import { motionAudioDirection, motionSpeakerTraits } from "../../lib/motionAudioDirection.js";
 import { motionSceneType } from "../../constants/motionSceneCatalog.js";
-import { motionVoiceSignature, motionVoiceCastContext, motionVoiceSpeaks, motionVoiceAge, normalizeMotionUtterances, fallbackMotionUtterances, selectMotionVoiceRoles, motionNarratorCastKey, motionNarratorLines } from "../../lib/motionVoice.js";
+import { motionVoiceSignature, motionVoiceCastContext, motionVoiceSpeaks, motionVoiceAge, normalizeMotionUtterances, normalizeMotionNarratorSpeakers, fallbackMotionUtterances, selectMotionVoiceRoles, motionNarratorCastKey, motionNarratorLines } from "../../lib/motionVoice.js";
 import type { MotionBeat, MotionStoryScript, MotionStoryAnalysis, MotionVoicePlan, MotionAiExecution, MotionVoicePreset } from "../../types/motionVideo.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { mapMotionAiPool, runMotionAi, runInMotionAiWorkerSession, type MotionEditorialSession } from "./motionStoryService.js";
@@ -193,7 +193,7 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
               draft.rows[beat.id].issues = [{ path: "id", expected: matches.length ? RESPONSE.DUPLICATE_ID : RESPONSE.MISSING_ROW, actual: String(matches.length), value: RESPONSE.VALUE(beat.id) }];
               continue;
             }
-            const item = matches[0];
+            const item = { ...matches[0], utterances: normalizeMotionNarratorSpeakers(matches[0].utterances, motionNarratorCastKey(analysis)) };
             const issues = motionSpeechResponseIssues(item.utterances, speakers, beat.narration);
             draft.rows[beat.id].issues = issues;
             if (issues.length) continue;

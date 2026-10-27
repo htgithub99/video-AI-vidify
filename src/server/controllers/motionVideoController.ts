@@ -1,6 +1,10 @@
 import { startMotionProduction, resumeMotionProduction, getMotionProduction, cancelMotionProduction, getMotionProductionLogs } from "../services/motionProductionService.js";
 import { motionStoryLogs } from "../services/motionLogStore.js";
 import { MOTION_ASSET_PREVIEW as ASSET_PREVIEW } from "../../constants/motionAssetPreview.js";
+import { isRemotionSpec, motionVisualSettingsFor } from "../../lib/motionVisual.js";
+import { MOTION_VISUAL } from "../../constants/motionVisual.js";
+import { renderRemotionStill } from "../services/motionRemotionRenderService.js";
+import { compileRemotionStory } from "../services/remotion/storyCompiler.js";
 import type { MotionStoryScript, MotionProductionResult } from "../../types/motionVideo.js";
 import { analyzeMotionStoryInput, scriptMotionStoryInput, seoMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, readStorySource, storyLanguage, aiExec, drawExec, validateSpec } from "../services/motionProductionActions.js";
 const respondMotionAction = async (req: Request, res: Response, action: (body: Record<string, any>) => unknown): Promise<void> => {
@@ -84,7 +88,7 @@ import { createHash } from "crypto";
 import { getMotionDemoSpec, getMotionEngineClientScript } from "../services/motionEngineService.js";
 import { resolveGenPreview } from "../services/puppet/genState.js";
 
-import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
+import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
 import { releaseMotionEditorialSession } from "../services/motionStoryService.js";
@@ -136,6 +140,7 @@ export const checkMotionVideo = async (req: Request, res: Response): Promise<voi
 export const renderBoard2dSheet = async (req: Request, res: Response): Promise<void> => {
   try {
     const spec = validateSpec(req.body?.spec);
+    if (isRemotionSpec(spec)) throw new Error(MOTION_VISUAL.SETTINGS_CHANGED);
     res.json({ success: true, items: _.map(await puppetSheet(spec), (it) => _.omit(it, [PUPPET_KIT_API.ABS])) });
   } catch (error) {
     fail(res, 400, error);
@@ -221,6 +226,21 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
     const exec = aiExec(req.body?.aiExecution);
     const licenseKey = getResolvedLicenseKey(req);
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.THUMBNAIL, async (ctx) => {
+      if (motionVisualSettingsFor(req.body || {}).mode === "remotion") {
+        const script = req.body?.script as MotionStoryScript;
+        if (!script?.beats?.length) throw new Error(MOTION_VISUAL.SCENES_REQUIRED);
+        const { spec } = compileRemotionStory(script, analysis, { aspect: req.body?.aspect, fps: 30, subtitles: false });
+        spec.subtitles = [{ start: 0, end: spec.duration, text: seo?.title || analysis.title }];
+        const directory = getMotionWorkDirectory(randomUUID());
+        const file = path.join(directory, "thumbnail.png");
+        try {
+          const selected = spec.scenes.find((scene) => scene.nodes.some((node) => node.kind === "character")) || spec.scenes[0];
+          await renderRemotionStill(spec, file, selected.startFrame, ctx.signal);
+          return { thumbnail: `data:image/png;base64,${fs.readFileSync(file).toString("base64")}`, prompt: selected.purpose };
+        } finally {
+          await fs.promises.rm(directory, { recursive: true, force: true });
+        }
+      }
       const result = await generateMotionThumbnail(analysis, seo, { language: storyLanguage(req.body?.language), aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), note: _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 600 }), exec, chromeHeadless: exec.chromeHeadless, signal: ctx.signal, log: ctx.log });
       if (licenseKey) await LicenseService.incrementUsage(licenseKey, FeatureType.IMAGE, 1).catch(_.noop);
       return result;

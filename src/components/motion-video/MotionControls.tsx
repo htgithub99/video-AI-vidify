@@ -91,7 +91,7 @@ const MotionLogSectionCard: FC<{ section: MotionLogSection; lang: "vi" | "en"; i
       <button type="button" className={LOG.UI.HEADER} aria-expanded={open} aria-controls={bodyId} onClick={() => setExpanded(!open)}>
         <span className={LOG.UI.NUMBER}>{index + 1}</span>
         <span className={LOG.UI.TITLE}>{LOG.LABELS[lang][section.key as keyof typeof LOG.LABELS.vi]}</span>
-        <span className={cn(LOG.UI.BADGE, LOG.UI.STATES[section.state])}>{text[section.state as "waiting" | "active" | "done" | "error" | "cancelled" | "recorded"]}</span>
+        <span className={cn(LOG.UI.BADGE, LOG.UI.STATES[section.state])}>{text[section.state as "waiting" | "active" | "done" | "error" | "previous_error" | "cancelled" | "recorded"]}</span>
         <Icon className={LOG.UI.CHEVRON} aria-hidden={true} />
       </button>
       <p className={LOG.UI.SUMMARY} data-motion-log-summary>
@@ -136,7 +136,7 @@ export const MotionFlowLog: FC<{ entries: MotionLogEntry[]; label?: (kind: strin
   const latest = sections.reduce<MotionLogSection | undefined>((last, section) => (!last || section.lastOrder > last.lastOrder ? section : last), undefined);
   const active = sections.some((section) => section.state === "active" || section.state === "error");
   return (
-    <div className={cn(LOG.UI.WRAP, className)}>
+    <div className={cn(LOG.UI.WRAP, className)} {...{ [MOTION_STORY_CONFIG.BUSY_ALLOW_ATTR]: true }}>
       {sections.map((section, index) => (
         <MotionLogSectionCard key={entries[0]?.id + ":" + section.key} section={section} lang={language} index={index} defaultOpen={section.state === "active" || section.state === "error" || (!active && latest?.key === section.key && !!section.rows.length)} />
       ))}

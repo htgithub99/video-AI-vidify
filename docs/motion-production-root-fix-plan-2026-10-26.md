@@ -1,5 +1,9 @@
 # Kế hoạch sửa gốc Video Motion — bản rà code ngày 26/10/2026
 
+## Bổ sung plan bố cục, hiệu ứng và cấu hình ngày 27/10/2026
+
+[Plan chi tiết mới](motion-remotion-layout-settings-root-fix-plan-2026-10-27.md) nối các mục hình minh họa, continuity, settings, camera/effects, review và nghiệm thu của plan này với lỗi production Remotion vừa kiểm. Quy định Giữ tư thế chỉ khóa nhân vật; mưa/khói/lửa và camera có phạm vi riêng; sửa layout theo role/contact/socket và kiểm mọi lựa chọn từ UI qua snapshot tới file xuất. Trạng thái: mới kiểm code/lập plan, chưa sửa runtime hoặc chạy tạo video trong lượt này. Không thay thế hay xóa các hạng mục/bản sửa trước đã có.
+
 ## Bổ sung sửa hợp đồng kết quả AI
 
 Đã đối ứng lỗi kiểu dữ liệu DNA từ production thực tế, quy định đầu ra dùng chung, sửa đúng trường/beat và bảo toàn phần đạt; gộp prompt trùng và tính schema khi chia nhóm. Xem [báo cáo đối ứng và kiểm chứng](motion-response-contract-fix-2026-10-26.md). Backend đã được nạp lại trong đợt bổ sung này; không tạo hoặc tiếp tục video. Những ghi chú “không restart” ở các đợt trước bên dưới là lịch sử; toàn plan vẫn còn các mục nghiệm thu.

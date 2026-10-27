@@ -1,5 +1,6 @@
 import { MOTION_RENDER_VALIDATION as V } from "../constants/motionRenderValidation.js";
-import type { MotionSpec } from "../types/motionVideo.js";
+import type { MotionRenderSpec } from "../types/motionVisual.js";
+import { isRemotionSpec } from "./motionVisual.js";
 export interface MotionMediaRange {
   start: number;
   end: number;
@@ -14,13 +15,15 @@ const merged = (ranges: MotionMediaRange[]): MotionMediaRange[] => {
   return result;
 };
 const overlap = (a: MotionMediaRange, b: MotionMediaRange): number => Math.max(0, Math.min(a.end, b.end) - Math.max(a.start, b.start));
-export const motionOutputQualityIssues = (stderr: string, spec: MotionSpec, speech: MotionMediaRange[] = []): string[] => {
-  const duration = spec.duration || Math.max(0, ...spec.shots.map((shot) => shot.end));
+export const motionOutputQualityIssues = (stderr: string, spec: MotionRenderSpec, speech: MotionMediaRange[] = []): string[] => {
+  const remotion = isRemotionSpec(spec);
+  const shots = remotion ? [] : spec.shots;
+  const duration = spec.duration || Math.max(0, ...shots.map((shot) => shot.end));
   const margin = 2 / (spec.fps || 30);
   const intentionalBlack = merged([
-    { start: 0, end: Math.max(0, spec.fadeIn ?? V.DEFAULT_FADE_IN) * V.FADE_BLACK_RATIO + margin },
-    { start: duration - Math.max(0, spec.fadeOut ?? V.DEFAULT_FADE_OUT) * V.FADE_BLACK_RATIO - margin, end: duration },
-    ...spec.shots
+    { start: 0, end: Math.max(0, remotion ? 0 : (spec.fadeIn ?? V.DEFAULT_FADE_IN)) * V.FADE_BLACK_RATIO + margin },
+    { start: duration - Math.max(0, remotion ? 0 : (spec.fadeOut ?? V.DEFAULT_FADE_OUT)) * V.FADE_BLACK_RATIO - margin, end: duration },
+    ...shots
       .filter((shot) => shot.transition?.type === V.DIP)
       .map((shot) => {
         const seconds = Math.max(0, shot.transition?.duration || 0);

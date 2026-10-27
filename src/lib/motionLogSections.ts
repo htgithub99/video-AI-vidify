@@ -23,9 +23,14 @@ export const motionLogSections = (entries: MotionLogEntry[], language = "vi", jo
   const text = S.TEXT[language === "en" ? "en" : "vi"];
   const sections = new Map<string, MotionLogSection>(S.ORDER.map((key) => [key, { key, rows: [], state: "waiting", summary: "", lastOrder: -1 }]));
   const phase = new Map<string, string>();
+  const sources = new Map<string, string>();
+  const starts = new Map<string, number>();
+  const ends = new Map<string, number>();
   let order = 0;
   for (const row of motionFlowLogRows(entries)) {
     const id = row.key.slice(0, row.key.lastIndexOf(":"));
+    if (!starts.has(id)) starts.set(id, row.time);
+    ends.set(id, row.time);
     const time = row.line.match(P.TIME)?.[0].replace(/\s*·\s*$/u, "") || "";
     let message = row.line.replace(P.TIME, "");
     const scopes: string[] = [];
@@ -39,6 +44,8 @@ export const motionLogSections = (entries: MotionLogEntry[], language = "vi", jo
     const key = declared || kind || inferred || phase.get(id) || "other";
     phase.set(id, key);
     const group = sections.get(key) || sections.get("other")!;
+    if (sources.has(key) && sources.get(key) !== id) group.state = "recorded";
+    sources.set(key, id);
     const technical = S.TECHNICAL.test(message);
     const failure = S.FAILURE.test(message);
     const display = S.CAPTCHA.test(message) ? text.captcha : S.CONTEXT_ERROR.test(message) ? text.contextError : S.OBJECT_ERROR.test(message) ? text.objectError : S.REPAIR.test(message) ? (failure ? text.invalidData : text.repair) : technical && failure ? text.failed : message;
@@ -50,7 +57,8 @@ export const motionLogSections = (entries: MotionLogEntry[], language = "vi", jo
     if (S.COMPLETE.test(message)) group.state = "done";
   }
   const completed = (key: string, yes: unknown) => {
-    if (yes) sections.get(key)!.state = "done";
+    const source = sources.get(key);
+    if (yes && (!source || source === job?.id || (starts.get(source) || 0) <= (job?.startedAt || 0) / 1000)) sections.get(key)!.state = "done";
   };
   if (job?.kind === "production") {
     const result = job.result as MotionProductionResult | undefined;
@@ -61,13 +69,19 @@ export const motionLogSections = (entries: MotionLogEntry[], language = "vi", jo
     completed("scenes", result?.script?.gen?.puppet?.report && !result.script.gen.puppet.report.missing);
     completed("render", result?.rendered);
   }
-  for (const current of [job, render]) {
+  for (const current of [...entries.filter((entry) => entry.status), job, render]) {
     if (!current) continue;
     const kind = "kind" in current ? String(current.kind) : "render";
     const stages = kind === "production" ? motionLogStageKeys(current.stage || "") : [S.KINDS[kind] || "other"];
     const errorKey = current.status === "error" && kind === "production" ? motionLogSectionKey(current.error || "") : undefined;
     for (const key of errorKey ? [errorKey] : stages.length ? stages : ["other"]) {
       const group = sections.get(key)!;
+      const source = sources.get(key);
+      const started = starts.get(current.id) ?? (current.startedAt || 0) / 1000;
+      if (source && source !== current.id && started < (starts.get(source) || 0)) continue;
+      if (source && source !== current.id) group.state = "recorded";
+      sources.set(key, current.id);
+      if (!starts.has(current.id)) starts.set(current.id, started);
       if (current.status === "error") group.state = "error";
       else if (current.status === "cancelled") {
         if (group.state !== "done") group.state = "cancelled";
@@ -78,16 +92,21 @@ export const motionLogSections = (entries: MotionLogEntry[], language = "vi", jo
     for (const ai of Object.values("activeAi" in current ? current.activeAi || {} : {})) {
       if (["error", "cancelled", "completed"].includes(current.status)) continue;
       const active = motionLogSectionKey(ai.artifact);
-      if (active && sections.get(active)!.state !== "done" && ai.phase !== "done") sections.get(active)!.state = "active";
+      if (active && (!sources.has(active) || sources.get(active) === current.id) && sections.get(active)!.state !== "done" && ai.phase !== "done") sections.get(active)!.state = "active";
     }
+  }
+  for (const [key, source] of sources) {
+    const group = sections.get(key)!;
+    if (group.state === "error" && [...starts].some(([id, started]) => id !== source && started > (ends.get(source) ?? starts.get(source) ?? Infinity))) group.state = "previous_error";
   }
   return S.ORDER.filter((key) => S.CORE.includes(key) || sections.get(key)!.state !== "waiting").map((key) => {
     const group = sections.get(key)!;
-    const visible = group.rows.filter((row) => row.visible);
+    const source = sources.get(key);
+    const visible = group.rows.filter((row) => row.visible && (!source || row.key.startsWith(source + ":")));
     const counters = visible.filter((row) => S.COUNTER.test(row.message));
     const last = visible.at(-1);
     const urgent = last && (S.CAPTCHA.test(last.raw) || S.FAILURE.test(last.message) || S.OBJECT_ERROR.test(last.raw));
-    group.summary = (group.state === "active" && !urgent ? counters.at(-1) || last : last)?.message || (group.rows.length ? text.count(group.rows.length) : group.state === "error" ? text.failed : text.empty);
+    group.summary = group.state === "previous_error" ? text.previousError : (group.state === "active" && !urgent ? counters.at(-1) || last : last)?.message || (group.state === "active" ? text.active : group.state === "done" ? text.done : group.state === "error" ? text.failed : group.rows.length ? text.count(group.rows.length) : text.empty);
     return group;
   });
 };

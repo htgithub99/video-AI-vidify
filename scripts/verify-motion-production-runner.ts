@@ -7,6 +7,9 @@ import { MotionJobStatus as S, MotionStoryJobKind as K } from "../src/types/moti
 import { motionVoiceSignature } from "../src/lib/motionVoice.js";
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { MotionProductionStore } from "../src/server/services/motionProductionStore.js";
+import { remotionBeatKey } from "../src/server/services/remotion/sceneKeys.js";
+import { MOTION_REMOTION_LAYOUT as L } from "../src/constants/motionRemotionLayout.js";
+import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-production-runner-"));
 const prior = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
@@ -43,6 +46,10 @@ try {
     return true;
   };
   const deps: any = {
+    recoverMotionIllustrationPlan: async (analysis: any) => ({ analysis }),
+    checkRemotionRuntime: async () => {
+      throw new Error("Legacy library must not initialize Remotion");
+    },
     checkMotionMediaTools: async () => {},
     checkMotionProductionVoice: async () => {},
     detectEncoders: async () => ["libx264"],
@@ -102,6 +109,58 @@ try {
   assert.ok(completed.log.some((line) => line.includes("optional SEO unavailable")));
   const restored = createMotionProductionService(deps, directory, 1);
   assert.deepEqual(restored.getMotionProduction(input.productionId), completed);
+  let remotionPreflight = 0;
+  let remotionScenes = 0;
+  const remotionSettings = { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1 };
+  const remotionService = createMotionProductionService(
+    {
+      ...deps,
+      checkRemotionRuntime: async () => {
+        remotionPreflight++;
+      },
+      recoverMotionIllustrationPlan: async () => {
+        throw new Error("Remotion must not check library coverage");
+      },
+      scenesMotionStoryInput: (body: any) => {
+        assert.deepEqual(body.visualSettings, remotionSettings);
+        assert.equal(body.stylePreset, undefined);
+        assert.equal(body.analysis.stylePreset, undefined);
+        remotionScenes++;
+        const beat = body.script.beats[0];
+        const key = remotionBeatKey(beat, body.analysis);
+        return start(K.SCENES, { ...body.script, visualSettings: remotionSettings, gen: { ...body.script.gen, remotion: { settings: remotionSettings, profileRevision: V.PROFILES.history.revision, layoutRevision: L.REVISION, scenes: { [beat.id]: [{ sourceKey: key, sceneRevision: L.SCENE_REVISION }] }, inputKeys: { [beat.id]: key } } } }, 2);
+      },
+      compileMotionStoryInput: async (body: any) => {
+        assert.deepEqual(body.visualSettings, remotionSettings);
+        return { spec: { engine: "remotion", duration: 2, fps: 24 }, missing: [], voiceStale: false };
+      },
+    } as any,
+    path.join(root, "remotion"),
+    1,
+  );
+  remotionService.startMotionProduction({ ...input, productionId: "remotion", visualSettings: remotionSettings, stylePreset: "must-be-cleared", fps: 24, encoder: "cpu" });
+  for (let i = 0; i < 500 && ![S.COMPLETED, S.ERROR].includes(remotionService.getMotionProduction("remotion")!.status); i++) await delay(2);
+  const remotionJob = remotionService.getMotionProduction("remotion")!;
+  assert.equal(remotionJob.status, S.COMPLETED, remotionJob.error);
+  assert.equal(remotionPreflight, 1);
+  assert.equal((remotionJob.result as any).compiled.spec.engine, "remotion");
+  const remotionRestored = createMotionProductionService(deps, path.join(root, "remotion"), 1);
+  assert.deepEqual(remotionRestored.getMotionProduction("remotion"), remotionJob);
+  const oldFile = path.join(root, "remotion", "remotion.json");
+  const oldRecord = JSON.parse(fs.readFileSync(oldFile, "utf8"));
+  delete oldRecord.result.script.gen.remotion.scenes.beat_1[0].sceneRevision;
+  oldRecord.job.status = S.ERROR;
+  const countsBeforeMigration = { ...counts };
+  fs.writeFileSync(oldFile, JSON.stringify(oldRecord));
+  remotionService.resumeMotionProduction("remotion");
+  for (let i = 0; i < 500 && ![S.COMPLETED, S.ERROR].includes(remotionService.getMotionProduction("remotion")!.status); i++) await delay(2);
+  const migratedJob = remotionService.getMotionProduction("remotion")!;
+  assert.equal(migratedJob.status, S.COMPLETED, migratedJob.error);
+  assert.equal(remotionScenes, 2);
+  assert.equal(counts[K.ANALYZE], countsBeforeMigration[K.ANALYZE]);
+  assert.equal(counts[K.SCRIPT], countsBeforeMigration[K.SCRIPT]);
+  assert.equal(counts[K.VOICE], countsBeforeMigration[K.VOICE]);
+  assert.equal(counts.render, countsBeforeMigration.render + 1);
   failedVoice = true;
   service.startMotionProduction({ ...input, productionId: "voice_failure" });
   const voiceFailure = await until("voice_failure");

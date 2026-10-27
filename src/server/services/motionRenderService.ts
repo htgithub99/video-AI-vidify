@@ -9,6 +9,12 @@ import { MOTION_PATTERNS as MP } from "../../constants/motionPatterns.js";
 import { mixMotionSoundAudio } from "./motionSoundMixService.js";
 import { acquireMotionRenderBrowser } from "./motionStoryService.js";
 import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_RELEASED_LOG } from "../../constants/browserLifecycle.js";
+import { isRemotionSpec } from "../../lib/motionVisual.js";
+import type { MotionRenderSpec } from "../../types/motionVisual.js";
+import { MOTION_VISUAL as VISUAL } from "../../constants/motionVisual.js";
+import { renderRemotionVideo, renderRemotionStill } from "./motionRemotionRenderService.js";
+import { validateRemotionSpec } from "../../lib/motionRemotion.js";
+import { motionRenderBehaviorFor } from "../../lib/motionRenderBehavior.js";
 import { MOTION_SOUND_CONFIG } from "../../constants/motionSound.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { execFile, spawn } from "child_process";
@@ -216,7 +222,7 @@ const measureLoudness = async (file: string, signal?: AbortSignal): Promise<Reco
     return undefined;
   }
 };
-const checkOutput = async (file: string, spec: MotionSpec, options: MotionRenderOptions, signal?: AbortSignal): Promise<string[]> => {
+const checkOutput = async (file: string, spec: MotionRenderSpec, options: MotionRenderOptions, signal?: AbortSignal): Promise<string[]> => {
   const { code, stderr } = await runFfmpegCollect([VALIDATION.STRICT, MOTION_TEXT_I, file, MOTION_TEXT_VF, MOTION_LOUDNESS.BLACK_FILTER, MR.MOTION_TEXT_AF, [MOTION_LOUDNESS.SILENCE_FILTER, MOTION_LOUDNESS.EBUR_FILTER].join(MOTION_LOUDNESS.CHAIN), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal);
   if (code !== 0) throw new Error(PRODUCTION.OUTPUT_INVALID);
   const qualityErrors = motionOutputQualityIssues(stderr, spec, options.speechRanges || (options.requireAudio ? spec.subtitles : undefined));
@@ -407,7 +413,7 @@ const renderSlice = async (slice: WorkerSlice, html: string, ctx: { width: numbe
     await browser.close().catch(_.noop);
   }
 };
-const runJob = async (job: MotionJobState & { controller: AbortController }, spec: MotionSpec, options: MotionRenderOptions): Promise<void> => {
+const runJob = async (job: MotionJobState & { controller: AbortController }, spec: MotionRenderSpec, options: MotionRenderOptions): Promise<void> => {
   const signal = job.controller.signal;
   const started = Date.now();
   const preset = MOTION_QUALITY_PRESETS[options.quality] || MOTION_QUALITY_PRESETS[MotionQuality.STANDARD];
@@ -427,124 +433,161 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     if (!(releaseBrowser as { shared?: boolean }).shared) pushLog(job, MOTION_BROWSER_RELEASED_LOG);
     job.stage = MOTION_TEXT_PREPARE;
     if (signal.aborted) throw new Error(ABORTED);
-    const renderSpec: MotionSpec = _.assign({}, spec, { aspect, fps });
-    const html = buildMotionRenderHtml(renderSpec);
-    const encoders = await detectEncoders();
-    const encoder = pickEncoder(encoders, options.encoder);
-    job.encoder = encoder;
-    pushLog(job, MOTION_TEMPLATE_BO_MA_HOA_FPS_CHAT_LUONG(String(encoder), String(width), String(height), String(fps), String(preset.id)));
-    const probe = await launchBrowser();
-    job.browser = probe.label;
     let duration = 0;
-    let is3dSoftware = false;
-    try {
-      const page = await probe.browser.newPage({ viewport: { width: 320, height: 180 } });
-      await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
-      await page.evaluate(() => (window as any).__fontsReady);
-      const probeSpec = cloneJson(await page.evaluate(() => (window as any).__SPEC));
-      const probeInfo = await page.evaluate(
-        (probe) => {
-          const ME = (window as any).MotionEngine;
-          const sp = ME.normalizeSpec(probe.spec);
-          const gl = ME.T3 && ME.T3.ok ? ME.T3.rendererInfo() : probe.empty;
-          return { duration: sp.duration, shots3d: sp.shots.filter((x: any) => x.template === probe.tpl).length, gl };
-        },
-        { tpl: MOTION_TEXT_GEN3D, spec: probeSpec, empty: MR.MOTION_TEXT_EMPTY },
-      );
-      duration = probeInfo.duration;
-      is3dSoftware = probeInfo.shots3d > 0 && (!probeInfo.gl || MP.SOFTWARE_RENDERER.test(probeInfo.gl));
-      pushLog(job, probeInfo.shots3d ? MOTION_TEMPLATE_CANH_3D_AI_VE_SHOT_WEBGL(String(probeInfo.shots3d), String(_.truncate(probeInfo.gl || MOTION_TEXT_SYMBOL_25, { length: 70 })), String(is3dSoftware ? MOTION_TEXT_KHONG_DUNG_DUOC_GPU_RENDER_SE_CHAM : MR.MOTION_TEXT_EMPTY)) : MOTION_TEXT_KHONG_CO_CANH_3D);
-    } finally {
-      await probe.browser.close().catch(_.noop);
-    }
-    pushLog(job, MOTION_TEMPLATE_TRINH_DUYET_RENDER_THOI_LUONG_S(String(probe.label), String(duration.toFixed(1))));
-    if (options.requireAudio) {
-      const speech = options.audioId && path.join(getMotionAudioDirectory(), path.basename(options.audioId));
-      if (!speech || !fs.existsSync(speech)) throw new Error(PRODUCTION.AUDIO_REQUIRED);
-      await assertMotionSpeechAudio(speech, duration, signal);
-    }
-    if (options.sfx && !options.sfxId && !options.mixedAudioId)
-      try {
-        options.sfxId = await buildSfxTrack(duration, options.sfx.cues, undefined, signal);
-      } catch {
-        pushLog(job, MOTION_SOUND_CONFIG.SKIPPED);
-      }
-    const totalFrames = Math.max(1, Math.round(duration * fps));
-    job.framesTotal = totalFrames;
-    const cpuBudget = is3dSoftware ? Math.max(2, Math.floor((os.cpus().length || 2) / 2)) : os.cpus().length || 2;
-    const workers = Math.min(is3dSoftware ? 1 : 2, workerCount(cpuBudget, Math.round(os.freemem() / 1048576), totalFrames));
-    job.workers = workers;
-    const cacheKey = createHash(MOTION_RENDER_CACHE.HASH)
-      .update(JSON.stringify([MOTION_RENDER_CACHE.VERSION, html, width, height, fps, preset.id, encoder]))
-      .digest(MOTION_RENDER_CACHE.HEX);
-    const cacheRoot = path.join(getMotionRootDirectory(), MOTION_RENDER_CACHE.FOLDER);
-    const cacheDir = path.join(cacheRoot, cacheKey);
-    fs.mkdirSync(cacheDir, { recursive: true });
-    for (const entry of fs.readdirSync(cacheRoot)) {
-      const dir = path.join(cacheRoot, entry);
-      if (entry !== cacheKey && Date.now() - fs.statSync(dir).mtimeMs > MOTION_RENDER_CACHE.MAX_AGE_MS) fs.rmSync(dir, { recursive: true, force: true });
-    }
-    const per = Math.max(1, Math.round(fps * MOTION_RENDER_CACHE.CHUNK_SECONDS));
-    const slices: WorkerSlice[] = _.map(_.range(Math.ceil(totalFrames / per)), (i) => ({ index: i, start: i * per, end: Math.min(totalFrames, (i + 1) * per), file: path.join(cacheDir, MOTION_RENDER_CACHE.CHUNK_FILE(i)) }));
-    const todo: WorkerSlice[] = [];
-    for (const slice of slices) {
-      signal.throwIfAborted();
-      try {
-        await validateMotionMedia(slice.file, { seconds: (slice.end - slice.start) / fps, width, height, fps, frames: slice.end - slice.start }, signal);
-      } catch (error) {
-        signal.throwIfAborted();
-        if (fs.existsSync(slice.file)) fs.unlinkSync(slice.file);
-        todo.push(slice);
-      }
-    }
-    job.status = MotionJobStatus.RENDERING;
-    job.stage = MOTION_TEXT_RENDER_2;
-    pushLog(job, MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG(String(workers), String(totalFrames)));
-    pushLog(job, MOTION_RENDER_CACHE.CHUNKS(slices.length, workers));
-    if (todo.length < slices.length) pushLog(job, MOTION_RENDER_CACHE.RESUMED(slices.length - todo.length, slices.length));
-    const t0 = Date.now();
-    const skipped = _.sumBy(_.difference(slices, todo), (s) => s.end - s.start);
-    job.framesDone = skipped;
-    const onFrames = (n: number) => {
-      job.framesDone += n;
-      const el = (Date.now() - t0) / 1000;
-      job.fpsRender = el > 0 ? (job.framesDone - skipped) / el : 0;
-      job.etaSeconds = job.fpsRender ? (totalFrames - job.framesDone) / job.fpsRender : undefined;
-      job.progress = Math.min(0.94, (job.framesDone / totalFrames) * 0.94);
-      persistRenderJob(job);
-    };
-    let reused = 0;
-    const onReused = (n: number) => (reused += n);
-    const queue = [...todo];
-    const siblingAbort = new AbortController();
-    const workerSignal = AbortSignal.any([signal, siblingAbort.signal]);
-    const worker = async (): Promise<void> => {
-      for (let s = queue.shift(); s; s = queue.shift()) {
-        const temp = s.file + MOTION_RENDER_CACHE.TEMP_SUFFIX;
-        await renderSlice({ ...s, file: temp }, html, { width, height, fps, preset, encoder, signal: workerSignal, onFrames, onReused });
-        await validateMotionMedia(temp, { seconds: (s.end - s.start) / fps, width, height, fps, frames: s.end - s.start }, workerSignal);
-        fs.renameSync(temp, s.file);
-      }
-    };
-    let workerFailure: unknown;
-    const workerResults = await Promise.allSettled(
-      _.times(Math.min(workers, Math.max(1, todo.length)), () =>
-        worker().catch((error) => {
-          workerFailure ||= error;
-          siblingAbort.abort();
-          throw error;
-        }),
-      ),
-    );
-    if (workerResults.some((result) => result.status === "rejected")) throw workerFailure;
-    job.status = MotionJobStatus.ENCODING;
-    job.stage = MOTION_TEXT_MUX;
-    if (reused) pushLog(job, MOTION_RENDER_CACHE.REUSED(reused, totalFrames - skipped));
-    pushLog(job, MOTION_TEMPLATE_RENDER_XONG_S_DANG_GHEP_VIDEO(String(((Date.now() - t0) / 1000) | 0)));
-    const list = path.join(work, MOTION_TEXT_PARTS_TXT);
-    fs.writeFileSync(list, _.map(slices, (s) => MOTION_TEMPLATE_FILE(String(s.file.replace(MP.BACKSLASH, MOTION_TEXT_SYMBOL_16).replace(MP.SINGLE_QUOTE, MOTION_TEXT_SYMBOL_38)))).join(MOTION_TEXT_SYMBOL_27));
+    let totalFrames = 0;
+    let encoder = "";
+    let cacheDir: string | undefined;
     const silent = path.join(work, MOTION_TEXT_VIDEO_MP4);
-    await ffmpegOrThrow([MOTION_TEXT_F, MOTION_TEXT_CONCAT, MOTION_TEXT_SAFE, MOTION_TEXT_0, MOTION_TEXT_I, list, MOTION_TEXT_C, MOTION_TEXT_COPY, silent], signal);
+    if (isRemotionSpec(spec)) {
+      if (options.encoder === "gpu") throw new Error(VISUAL.CPU_ONLY);
+      if (spec.fps !== fps || spec.aspect !== aspect) throw new Error(VISUAL.SETTINGS_CHANGED);
+      duration = spec.duration;
+      totalFrames = Math.ceil(duration * fps);
+      encoder = MOTION_TEXT_LIBX264;
+      job.encoder = encoder;
+      job.browser = VISUAL.MODES.REMOTION;
+      job.framesTotal = totalFrames;
+      job.workers = Math.max(1, Math.min(2, Math.floor(os.freemem() / 1073741824), os.cpus().length));
+      job.status = MotionJobStatus.RENDERING;
+      job.stage = VISUAL.LOG_RENDER;
+      pushLog(job, VISUAL.LOG_RENDER);
+      if (options.requireAudio) {
+        const speech = options.audioId && path.join(getMotionAudioDirectory(), path.basename(options.audioId));
+        if (!speech || !fs.existsSync(speech)) throw new Error(PRODUCTION.AUDIO_REQUIRED);
+        await assertMotionSpeechAudio(speech, duration, signal);
+      }
+      await renderRemotionVideo(spec, silent, {
+        width,
+        height,
+        crf: preset.crf,
+        signal,
+        onProgress: (frames, total) => {
+          job.framesDone = frames;
+          job.progress = Math.min(0.94, (frames / total) * 0.94);
+          persistRenderJob(job);
+        },
+      });
+      await validateMotionMedia(silent, { seconds: duration, width, height, fps, frames: totalFrames }, signal);
+      job.status = MotionJobStatus.ENCODING;
+      job.stage = MOTION_TEXT_MUX;
+    } else {
+      const renderSpec: MotionSpec = _.assign({}, spec, { aspect, fps });
+      const html = buildMotionRenderHtml(renderSpec);
+      const encoders = await detectEncoders();
+      encoder = pickEncoder(encoders, options.encoder);
+      job.encoder = encoder;
+      pushLog(job, MOTION_TEMPLATE_BO_MA_HOA_FPS_CHAT_LUONG(String(encoder), String(width), String(height), String(fps), String(preset.id)));
+      const probe = await launchBrowser();
+      job.browser = probe.label;
+      let is3dSoftware = false;
+      try {
+        const page = await probe.browser.newPage({ viewport: { width: 320, height: 180 } });
+        await page.setContent(html, { waitUntil: MOTION_TEXT_LOAD });
+        await page.evaluate(() => (window as any).__fontsReady);
+        const probeSpec = cloneJson(await page.evaluate(() => (window as any).__SPEC));
+        const probeInfo = await page.evaluate(
+          (probe) => {
+            const ME = (window as any).MotionEngine;
+            const sp = ME.normalizeSpec(probe.spec);
+            const gl = ME.T3 && ME.T3.ok ? ME.T3.rendererInfo() : probe.empty;
+            return { duration: sp.duration, shots3d: sp.shots.filter((x: any) => x.template === probe.tpl).length, gl };
+          },
+          { tpl: MOTION_TEXT_GEN3D, spec: probeSpec, empty: MR.MOTION_TEXT_EMPTY },
+        );
+        duration = probeInfo.duration;
+        is3dSoftware = probeInfo.shots3d > 0 && (!probeInfo.gl || MP.SOFTWARE_RENDERER.test(probeInfo.gl));
+        pushLog(job, probeInfo.shots3d ? MOTION_TEMPLATE_CANH_3D_AI_VE_SHOT_WEBGL(String(probeInfo.shots3d), String(_.truncate(probeInfo.gl || MOTION_TEXT_SYMBOL_25, { length: 70 })), String(is3dSoftware ? MOTION_TEXT_KHONG_DUNG_DUOC_GPU_RENDER_SE_CHAM : MR.MOTION_TEXT_EMPTY)) : MOTION_TEXT_KHONG_CO_CANH_3D);
+      } finally {
+        await probe.browser.close().catch(_.noop);
+      }
+      pushLog(job, MOTION_TEMPLATE_TRINH_DUYET_RENDER_THOI_LUONG_S(String(probe.label), String(duration.toFixed(1))));
+      if (options.requireAudio) {
+        const speech = options.audioId && path.join(getMotionAudioDirectory(), path.basename(options.audioId));
+        if (!speech || !fs.existsSync(speech)) throw new Error(PRODUCTION.AUDIO_REQUIRED);
+        await assertMotionSpeechAudio(speech, duration, signal);
+      }
+      if (options.sfx && !options.sfxId && !options.mixedAudioId)
+        try {
+          options.sfxId = await buildSfxTrack(duration, options.sfx.cues, undefined, signal);
+        } catch {
+          pushLog(job, MOTION_SOUND_CONFIG.SKIPPED);
+        }
+      totalFrames = Math.max(1, Math.round(duration * fps));
+      job.framesTotal = totalFrames;
+      const cpuBudget = is3dSoftware ? Math.max(2, Math.floor((os.cpus().length || 2) / 2)) : os.cpus().length || 2;
+      const workers = Math.min(is3dSoftware ? 1 : 2, workerCount(cpuBudget, Math.round(os.freemem() / 1048576), totalFrames));
+      job.workers = workers;
+      const cacheKey = createHash(MOTION_RENDER_CACHE.HASH)
+        .update(JSON.stringify([MOTION_RENDER_CACHE.VERSION, html, width, height, fps, preset.id, encoder]))
+        .digest(MOTION_RENDER_CACHE.HEX);
+      const cacheRoot = path.join(getMotionRootDirectory(), MOTION_RENDER_CACHE.FOLDER);
+      cacheDir = path.join(cacheRoot, cacheKey);
+      fs.mkdirSync(cacheDir, { recursive: true });
+      for (const entry of fs.readdirSync(cacheRoot)) {
+        const dir = path.join(cacheRoot, entry);
+        if (entry !== cacheKey && Date.now() - fs.statSync(dir).mtimeMs > MOTION_RENDER_CACHE.MAX_AGE_MS) fs.rmSync(dir, { recursive: true, force: true });
+      }
+      const per = Math.max(1, Math.round(fps * MOTION_RENDER_CACHE.CHUNK_SECONDS));
+      const slices: WorkerSlice[] = _.map(_.range(Math.ceil(totalFrames / per)), (i) => ({ index: i, start: i * per, end: Math.min(totalFrames, (i + 1) * per), file: path.join(cacheDir, MOTION_RENDER_CACHE.CHUNK_FILE(i)) }));
+      const todo: WorkerSlice[] = [];
+      for (const slice of slices) {
+        signal.throwIfAborted();
+        try {
+          await validateMotionMedia(slice.file, { seconds: (slice.end - slice.start) / fps, width, height, fps, frames: slice.end - slice.start }, signal);
+        } catch (error) {
+          signal.throwIfAborted();
+          if (fs.existsSync(slice.file)) fs.unlinkSync(slice.file);
+          todo.push(slice);
+        }
+      }
+      job.status = MotionJobStatus.RENDERING;
+      job.stage = MOTION_TEXT_RENDER_2;
+      pushLog(job, MOTION_TEMPLATE_RENDER_SONG_SONG_LUONG_KHUNG(String(workers), String(totalFrames)));
+      pushLog(job, MOTION_RENDER_CACHE.CHUNKS(slices.length, workers));
+      if (todo.length < slices.length) pushLog(job, MOTION_RENDER_CACHE.RESUMED(slices.length - todo.length, slices.length));
+      const t0 = Date.now();
+      const skipped = _.sumBy(_.difference(slices, todo), (s) => s.end - s.start);
+      job.framesDone = skipped;
+      const onFrames = (n: number) => {
+        job.framesDone += n;
+        const el = (Date.now() - t0) / 1000;
+        job.fpsRender = el > 0 ? (job.framesDone - skipped) / el : 0;
+        job.etaSeconds = job.fpsRender ? (totalFrames - job.framesDone) / job.fpsRender : undefined;
+        job.progress = Math.min(0.94, (job.framesDone / totalFrames) * 0.94);
+        persistRenderJob(job);
+      };
+      let reused = 0;
+      const onReused = (n: number) => (reused += n);
+      const queue = [...todo];
+      const siblingAbort = new AbortController();
+      const workerSignal = AbortSignal.any([signal, siblingAbort.signal]);
+      const worker = async (): Promise<void> => {
+        for (let s = queue.shift(); s; s = queue.shift()) {
+          const temp = s.file + MOTION_RENDER_CACHE.TEMP_SUFFIX;
+          await renderSlice({ ...s, file: temp }, html, { width, height, fps, preset, encoder, signal: workerSignal, onFrames, onReused });
+          await validateMotionMedia(temp, { seconds: (s.end - s.start) / fps, width, height, fps, frames: s.end - s.start }, workerSignal);
+          fs.renameSync(temp, s.file);
+        }
+      };
+      let workerFailure: unknown;
+      const workerResults = await Promise.allSettled(
+        _.times(Math.min(workers, Math.max(1, todo.length)), () =>
+          worker().catch((error) => {
+            workerFailure ||= error;
+            siblingAbort.abort();
+            throw error;
+          }),
+        ),
+      );
+      if (workerResults.some((result) => result.status === "rejected")) throw workerFailure;
+      job.status = MotionJobStatus.ENCODING;
+      job.stage = MOTION_TEXT_MUX;
+      if (reused) pushLog(job, MOTION_RENDER_CACHE.REUSED(reused, totalFrames - skipped));
+      pushLog(job, MOTION_TEMPLATE_RENDER_XONG_S_DANG_GHEP_VIDEO(String(((Date.now() - t0) / 1000) | 0)));
+      const list = path.join(work, MOTION_TEXT_PARTS_TXT);
+      fs.writeFileSync(list, _.map(slices, (s) => MOTION_TEMPLATE_FILE(String(s.file.replace(MP.BACKSLASH, MOTION_TEXT_SYMBOL_16).replace(MP.SINGLE_QUOTE, MOTION_TEXT_SYMBOL_38)))).join(MOTION_TEXT_SYMBOL_27));
+      await ffmpegOrThrow([MOTION_TEXT_F, MOTION_TEXT_CONCAT, MOTION_TEXT_SAFE, MOTION_TEXT_0, MOTION_TEXT_I, list, MOTION_TEXT_C, MOTION_TEXT_COPY, silent], signal);
+    }
     const fileName = MOTION_TEMPLATE_SYMBOL_20(String(slugify(options.title || spec.title || MOTION_TEXT_MOTION)), String(aspect.replace(MOTION_TEXT_SYMBOL_39, MOTION_TEXT_X)), String(preset.id), String(Date.now()), String(MOTION_VIDEO_CONSTANTS.EXT_MP4));
     const published = path.join(getMotionRootDirectory(), fileName);
     const out = published + VALIDATION.PART;
@@ -619,6 +662,8 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     signal.throwIfAborted();
     const stat = fs.statSync(out);
     const result: MotionResultItem = {
+      resolvedSettings: { behavior: motionRenderBehaviorFor(spec), ...(isRemotionSpec(spec) ? { layoutRevision: spec.resolvedSettings?.layoutRevision, effectRevision: spec.resolvedSettings?.effectRevision, sceneRevision: spec.resolvedSettings?.sceneRevision } : {}), subtitles: !!spec.subtitles?.length, aspect, fps, quality: preset.id, encoder },
+      ...(isRemotionSpec(spec) ? { visualSettings: { version: 1 as const, mode: "remotion" as const, engine: "remotion" as const, profileId: spec.profileId, componentRevision: VISUAL.COMPONENT_REVISION } } : {}),
       id: job.id,
       title: options.title || spec.title || MOTION_TEXT_VIDEO_MOTION,
       fileName,
@@ -644,7 +689,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     pushLog(job, MOTION_TEMPLATE_HOAN_TAT_MB_S(String((stat.size / 1048576).toFixed(1)), String(result.renderSeconds)));
     persistRenderJob(job, true);
     finishMotionPublication(job.id);
-    fs.promises.rm(cacheDir, { recursive: true, force: true }).catch(_.noop);
+    if (cacheDir) fs.promises.rm(cacheDir, { recursive: true, force: true }).catch(_.noop);
   } catch (error: any) {
     const aborted = signal.aborted || error?.message === ABORTED;
     job.status = aborted ? MotionJobStatus.CANCELLED : MotionJobStatus.ERROR;
@@ -660,7 +705,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
   }
 };
 export const isMotionRenderBusy = (): boolean => _.some([...jobs.values()], (j) => _.includes([MotionJobStatus.QUEUED, MotionJobStatus.PREPARING, MotionJobStatus.RENDERING, MotionJobStatus.ENCODING], j.status));
-export const startMotionRender = (spec: MotionSpec, options: MotionRenderOptions): MotionJobState => {
+export const startMotionRender = (spec: MotionRenderSpec, options: MotionRenderOptions): MotionJobState => {
   const running = _.find([...jobs.values()], (j) => _.includes([MotionJobStatus.QUEUED, MotionJobStatus.PREPARING, MotionJobStatus.RENDERING, MotionJobStatus.ENCODING], j.status));
   if (running) throw new Error(MOTION_TEXT_DANG_CO_MOT_VIDEO_MOTION_DUOC_RENDER_HAY);
   const job = { id: randomUUID(), status: MotionJobStatus.QUEUED, progress: 0, framesDone: 0, framesTotal: 0, startedAt: Date.now(), log: [], controller: new AbortController() } as MotionJobState & { controller: AbortController };
@@ -705,7 +750,17 @@ export const cancelMotionJob = (id?: string): boolean => {
   }
   return any;
 };
-export const checkMotionSpec = async (spec: MotionSpec): Promise<{ duration: number; errors: { t: number; shot: string; error: string }[] }> => {
+export const checkMotionSpec = async (spec: MotionRenderSpec): Promise<{ duration: number; errors: { t: number; shot: string; error: string }[] }> => {
+  if (isRemotionSpec(spec)) {
+    validateRemotionSpec(spec);
+    const work = getMotionWorkDirectory(randomUUID());
+    try {
+      for (const frame of [...new Set([0, Math.floor((spec.duration * spec.fps) / 2), Math.ceil(spec.duration * spec.fps) - 1])]) await renderRemotionStill(spec, path.join(work, `${frame}.png`), frame);
+      return { duration: spec.duration, errors: [] };
+    } finally {
+      await fs.promises.rm(work, { recursive: true, force: true });
+    }
+  }
   const html = buildMotionRenderHtml(spec);
   const { browser } = await launchBrowser();
   try {

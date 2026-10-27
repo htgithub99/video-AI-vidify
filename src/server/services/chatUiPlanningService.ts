@@ -1,5 +1,7 @@
 import { BROWSER_LIFECYCLE_TEXTS, MOTION_BROWSER_HANDOFF } from "../../constants/browserLifecycle.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../constants/motionAiRecovery.js";
+import { MOTION_VISUAL } from "../../constants/motionVisual.js";
+import { parseRemotionAssetReply } from "../../lib/motionVectorAsset.js";
 import { isFinalChatResponseError, uncertainChatSubmission, type ChatPlanningSubmission, type ChatPendingSubmission } from "./chatSubmissionRecovery.js";
 import { observeGeminiGeneration } from "./geminiGenerationObserver.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
@@ -130,7 +132,7 @@ import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { selectDeepSeekChatModel } from "./deepseekModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
-import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts } from "./chatContextReceipt.js";
+import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
 import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, SimpleMutex } from "./imageGeneratorService.js";
@@ -280,7 +282,15 @@ export const repairLooseJson = (text: string): string => {
   }
   return out;
 };
-const parseStrictRoomJson = (text: string): unknown => {
+const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
+  if (artifactType === CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT) {
+    const receipt = parseChatContextReceipt(text);
+    if (receipt !== undefined) return receipt;
+  }
+  if (artifactType === MOTION_VISUAL.ARTIFACT_ASSET) {
+    const vector = parseRemotionAssetReply(text);
+    if (vector !== undefined) return vector;
+  }
   const trimmed = _.trim(text);
   try {
     return parseJson(trimmed);
@@ -689,7 +699,7 @@ const getLastVisibleLocator = async (page: Page, selector: string, timeoutMs: nu
   }
   throw Object.assign(new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND), { [MR.MOTION_TEXT_ROOMPAGE]: page });
 };
-export const getChatResponseSnapshots = async (page: Page, responseSelector: string): Promise<ChatResponseSnapshot[]> =>
+export const getChatResponseSnapshots = async (page: Page, responseSelector: string, artifactType?: string): Promise<ChatResponseSnapshot[]> =>
   readPlanningUi(
     page
       .locator(responseSelector)
@@ -722,7 +732,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
             });
         },
         {
-          preferCodeBlocks: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
+          preferCodeBlocks: AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
           contentSelector: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_CONTENT_SELECTOR : MR.MOTION_TEXT_EMPTY,
           currentMessageIdAttribute: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_ID_ATTRIBUTE : MR.MOTION_TEXT_EMPTY,
           codeSelector: responseSelector === D.RESPONSE ? D.CODE : C.CODE_BLOCK_SELECTOR,
@@ -824,7 +834,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ALERT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, errorMessage: providerErrorAlert });
       throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_ALERT, elapsedMs: Date.now() - startedAt, lastCandidate: _.toString(providerErrorAlert) } });
     }
-    const responseSnapshots = await getChatResponseSnapshots(page, responseSelector);
+    const responseSnapshots = await getChatResponseSnapshots(page, responseSelector, artifactType);
     const count = responseSnapshots.length;
     const responseTexts = _.map(responseSnapshots, SOURCE_TEXT_TEXT);
     const lastResponse = _.trim(_.last(responseTexts) || MR.MOTION_TEXT_EMPTY);
@@ -838,14 +848,14 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     const responseCandidates = _.uniq(_.compact([...responsesWithNewIdentity, ...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
     const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
     const matchingJsonResponse = _.findLast(responseCandidates, (candidate) => {
-      const parsedCandidate = parseStrictRoomJson(candidate);
+      const parsedCandidate = parseStrictRoomJson(candidate, artifactType);
       if (_.isUndefined(parsedCandidate)) return false;
       const returnedArtifactType = _.trim(_.toString(_.get(parsedCandidate, SOURCE_TEXT_ARTIFACTTYPE)));
       const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedCandidate, SOURCE_TEXT_REQUESTID));
       return (_.isEmpty(artifactType) || _.isEqual(returnedArtifactType, artifactType)) && (_.isEmpty(normalizedExpectedRequestId) || _.isEqual(returnedRequestId, normalizedExpectedRequestId));
     });
     const parseableJsonResponse = _.maxBy(
-      _.filter(responseCandidates, (candidate) => !_.isUndefined(parseStrictRoomJson(candidate))),
+      _.filter(responseCandidates, (candidate) => !_.isUndefined(parseStrictRoomJson(candidate, artifactType))),
       (candidate) => candidate.length,
     );
     if (parseableJsonResponse) lastJsonCandidate = parseableJsonResponse;
@@ -867,7 +877,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     }
     lastObservedResponseCount = count;
     lastObservedCandidate = latestText;
-    const parsedLatest = parseStrictRoomJson(latestText);
+    const parsedLatest = parseStrictRoomJson(latestText, artifactType);
     const returnedCompletionMarker = _.trim(_.toString(_.get(parsedLatest, SOURCE_TEXT_COMPLETIONMARKER)));
     const returnedArtifactType = _.trim(_.toString(_.get(parsedLatest, SOURCE_TEXT_ARTIFACTTYPE)));
     const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedLatest, SOURCE_TEXT_REQUESTID));

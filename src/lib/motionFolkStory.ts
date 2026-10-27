@@ -1,6 +1,6 @@
 import { MOTION_FOLK_STORY as F } from "../constants/motionFolkStory.js";
 import { MOTION_FOLK_BELIEFS } from "../constants/motionFolkBeliefs.js";
-import type { MotionFolkStoryContract } from "../types/motionVideo.js";
+import type { MotionFolkStoryContract, MotionStoryAnalysis } from "../types/motionVideo.js";
 import { MOTION_RESPONSE_SCHEMAS } from "../constants/motionResponseContract.js";
 import { motionResponseIssues } from "./motionResponseContract.js";
 const words = (text: string): string[] =>
@@ -65,3 +65,9 @@ export const motionFolkChapterContext = (analysis: { sourceCore?: unknown; story
   sourceCore: analysis.sourceCore,
   storySpine: analysis.storySpine ? { steps: analysis.storySpine.steps.filter((step) => step.chapterId === chapterId), clues: analysis.storySpine.clues.filter((clue) => clue.setupChapterId === chapterId || clue.payoffChapterId === chapterId) } : undefined,
 });
+export const motionFolkChapterWritingContext = (analysis: MotionStoryAnalysis, chapterId: string) => {
+  const context = motionFolkChapterContext(analysis, chapterId);
+  const core = analysis.sourceCore;
+  const contract = analysis.folkStoryContract;
+  return { folkStoryContract: contract ? { profileId: contract.profileId, topic: { name: contract.topic.name, meaning: contract.topic.meaning, aliases: contract.topic.aliases } } : undefined, sourceCore: core ? { premise: core.premise, emotionalStake: core.emotionalStake, endingMeaning: core.endingMeaning } : undefined, storySpine: context.storySpine };
+};

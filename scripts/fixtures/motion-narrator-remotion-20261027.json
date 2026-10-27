@@ -1,0 +1,619 @@
+{
+  "analysis": {
+    "title": "Mâm Cơm Cúng Bưng Vào Hiên",
+    "logline": "Mẹ mất, chị Hai cúng cô hồn vội vàng rồi bưng mâm vào hiên tránh mưa; đêm đó một người lạ ăn hết đồ cúng, và sáng ra chị tôi nói năng y như mẹ tôi hồi còn sống.",
+    "genre": "horror",
+    "genre2": "folk_tale",
+    "factual": false,
+    "characterMotion": false,
+    "videoDna": {
+      "intent": "Kể chuyện cô hồn theo góc nhìn người trong nhà: mâm cơm cúng bị bưng vào hiên, quên rắc muối tiễn, và chị Hai bị đổi hồn.",
+      "audience": "Khán giả Việt yêu truyện tâm linh dân gian, thích cảnh cảnh tỉnh nhẹ về lệ cúng và lòng thành.",
+      "narrative": {
+        "voice": "Ngôi thứ nhất 'tôi', em trong nhà, giọng kể đời thường, câu ngắn, tả việc cụ thể.",
+        "structure": "Mở bằng hậu quả sáng hôm sau, quay lại mâm cơm cúng bưng vào hiên, đêm người lạ ăn đồ cúng, chốt ở chị Hai nói năng như mẹ.",
+        "pacing": "Chậm ở cảnh cúng và bữa cơm, nhanh dần khi tiếng đũa gõ bát, ngưng ở câu cuối về chị Hai."
+      },
+      "visualDna": {
+        "style": "Hoạt họa 2D vẽ tay mộc mạc, màu phẳng, nét rõ, chất làng quê Việt đương đại.",
+        "composition": "Khung tĩnh có chiều sâu, tách vùng sáng của mâm cúng với góc tối hiên và bếp.",
+        "camera": "Máy tĩnh ngang tầm mắt, cận cảnh mâm cơm, bát đũa, bậc cửa; trung cảnh phòng khách và bếp.",
+        "lighting": "Đèn dầu vàng trong bếp, hiên tối ướt mưa, sáng mai lọt qua cửa phòng khách.",
+        "palette": "Nâu gỗ, đỏ gạch, tro xám, trắng đục của gạo muối, xanh đen của đêm mưa.",
+        "materials": "Gỗ thô, gạch men cũ, mâm nhôm, hạt gạo trắng, muối hột, vũng nước mưa trên hiên.",
+        "subjectHierarchy": "Mâm cơm cúng và bậc cửa là tâm điểm; chị Hai và người lạ đứng hai bên; tôi đứng ngoài quan sát."
+      },
+      "creativeProfile": {
+        "role": "Biên kịch và đạo diễn hình ảnh truyện kinh dị dân gian Việt, thiên về chi tiết đời thường.",
+        "writingPrinciples": [
+          "Tả việc cụ thể, câu ngắn, không dùng tính từ sợ chung chung.",
+          "Mỗi chi tiết gieo ra đều phải trả miếng ở cuối truyện."
+        ],
+        "productionPrinciples": [
+          "Chỉ dùng tranh tĩnh 2D có sẵn trong thư viện, không sinh thêm hình.",
+          "Giữ đúng đồ cúng và bối cảnh nhà quê, không thêm nghi lễ bịa."
+        ],
+        "strengths": [
+          "Chi tiết đời thường làm nền cho nỗi sợ",
+          "Gieo và trả miếng gạo muối ở bậc cửa",
+          "Kết lửng ở câu chị Hai nói năng như mẹ"
+        ]
+      },
+      "mustPreserve": [
+        "Cô hồn là linh hồn không nơi nương tựa, có thể chiếm thân xác người sống khi được mời vào nhà mà không tiễn đúng cách.",
+        "Gạo để mời, muối để tiễn; quên rắc muối tiễn là mở đường cho cô hồn vào nhà.",
+        "Chuyện là hư cấu; tục cúng cô hồn mùng hai, mười sáu là bối cảnh dân gian, không phải sự thật kiểm chứng.",
+        "Mở bằng hậu quả, gieo rồi trả miếng gạo muối ở bậc cửa, kết đọng ở câu chị Hai nói năng như mẹ."
+      ],
+      "mustVary": [
+        "Mâm cơm cúng bị bưng vào hiên tránh mưa thay vì để ngoài sân.",
+        "Người lạ ăn hết đồ cúng trong đêm, bỏ lại vết chân ướt.",
+        "Chị Hai thay mẹ cúng và bị đổi hồn, không phải cả nhà cùng đổi tính."
+      ],
+      "mustNotCopy": [
+        "Bốn người: bà nội, vợ, chồng, con trai nhỏ.",
+        "Bà nội qua đời rồi con dâu cúng thay.",
+        "Thằng bé chơi cò cò làm đổ gạo muối khắp phòng khách.",
+        "Người mẹ ôm nhầm đứa trẻ ma rồi mở cửa thấy con thật; chồng nhậu xỉn ngủ như xác chết."
+      ],
+      "uncertainties": [
+        "Mức độ phổ biến của tục rắc gạo mời, muối tiễn khác nhau theo vùng; truyện chỉ dùng như luật hư cấu."
+      ],
+      "evidence": [
+        {
+          "claim": "Mâm cúng bị bưng vào hiên và quên rắc muối tiễn.",
+          "sourceClue": "Key point 1: chị Hai làm vội rồi bưng cả mâm vào hiên tránh mưa, quên rắc muối tiễn ra đường.",
+          "confidence": 98
+        },
+        {
+          "claim": "Người lạ ăn hết mâm cơm cúng trong đêm, chị Hai nhìn tôi như không quen.",
+          "sourceClue": "Key point 2: thấy một người lạ ngồi ăn hết mâm cơm cúng, còn chị Hai đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai.",
+          "confidence": 97
+        },
+        {
+          "claim": "Gạo muối vương bậc cửa là đường cô hồn bước vào.",
+          "sourceClue": "Clue: Vết gạo muối ở bậc cửa chính là đường cô hồn bước vào.",
+          "confidence": 95
+        },
+        {
+          "claim": "Chị Hai bị đổi hồn, nói năng như mẹ tôi.",
+          "sourceClue": "Key point 3: Sáng hôm sau chị Hai nói năng, đi đứng y như mẹ tôi hồi còn sống.",
+          "confidence": 96
+        }
+      ],
+      "version": 1,
+      "sourceKey": "34687:72e906b:c21ff89b",
+      "settings": {
+        "length": "2min",
+        "targetSeconds": 120,
+        "language": "vi",
+        "aspect": "16:9",
+        "drawingMode": "2d",
+        "characterMode": "drawn"
+      },
+      "audienceProfile": {
+        "country": "Việt Nam",
+        "language": "vi",
+        "dialect": "Giọng kể Nam bộ đời thường, xưng 'tôi' và 'chị Hai'",
+        "ageRange": "16-45",
+        "suitability": "Kinh dị dân gian nhẹ, không máu me; tôn trọng tục cúng, ghi rõ chuyện là hư cấu",
+        "viewingContext": "Video ngắn 16:9 khoảng 2 phút, xem trên YouTube và mạng xã hội",
+        "confidence": 92
+      },
+      "era": {
+        "storyPeriod": "Nông thôn Nam bộ đương đại, nhà cấp bốn có hiên và bàn thờ mẹ",
+        "productionStyle": "Hoạt họa 2D phẳng, nét vẽ tay mộc mạc, màu đất trầm"
+      },
+      "format": {
+        "primary": "story",
+        "secondary": [
+          "folk_tale",
+          "horror"
+        ],
+        "factual": false,
+        "reason": "Truyện hư cấu kể ngôi thứ nhất về cô hồn và đổi hồn, không phải sự kiện hay tục lệ đã kiểm chứng."
+      },
+      "editDna": {
+        "pace": "Khoảng 130-150 từ mỗi phút, cảnh tĩnh 4-7 giây",
+        "rhythm": "Chậm ở cảnh cúng, nhanh dần khi tiếng đũa gõ bát, ngưng hẳn ở câu cuối",
+        "hookPlacement": "Mở bằng mâm cúng trong hiên và bậc cửa vương gạo muối ngay 5 giây đầu",
+        "narratorVoice": "Nam trưởng thành, giọng trầm, kể chậm, ngắt nghỉ ở chỗ phát hiện",
+        "soundBed": "Mưa rơi mái hiên, tiếng đũa gõ bát, bước chân ướt, im lặng ở cuối",
+        "segmentForms": [
+          "Cảnh cúng cô hồn ở hiên",
+          "Đêm nghe tiếng đũa gõ bát",
+          "Sáng hôm sau nhìn chị Hai"
+        ],
+        "visualToolkit": [
+          "Tranh tĩnh 2D có nhân vật",
+          "Cận cảnh mâm cơm, bát đũa, bậc cửa vương gạo muối",
+          "Trung cảnh bếp tối và phòng khách có ảnh thờ"
+        ]
+      },
+      "narrativeDna": {
+        "narrativeVoice": "Ngôi thứ nhất 'tôi', giọng đời thường, không hài, sợ đến từ chi tiết quan sát được",
+        "vocabulary": "Từ quen tai Nam bộ, câu ngắn, động từ cụ thể, giải thích tục cúng bằng ngữ cảnh",
+        "themes": [
+          "Cô hồn không nơi nương tựa",
+          "Quên lệ tiễn thì mở đường cho vong vào nhà",
+          "Mất người thân và nỗi sợ người thân thành người khác"
+        ],
+        "imagery": [
+          "Mâm cơm cúng bưng vào hiên",
+          "Hạt gạo muối vương bậc cửa",
+          "Người lạ cúi đầu ăn trong đêm mưa",
+          "Chị Hai nhìn tôi bằng ánh mắt không nhận ra ai"
+        ],
+        "callbacks": [
+          "Gạo muối ở bậc cửa quay lại khi chị Hai nói năng như mẹ",
+          "Câu 'chị Hai nhìn tôi như không quen' lặp ý ở đoạn kết"
+        ]
+      },
+      "influences": [
+        {
+          "name": "Truyện ma kể một nén nhang",
+          "role": "Nguồn tham khảo về nhịp kể và cách gieo chi tiết",
+          "relevance": "Chỉ học cách mở bằng hậu quả và trả miếng chi tiết, không chép tình tiết"
+        }
+      ],
+      "characters": {
+        "design": "Quần áo thường ngày kiểu nhà quê Nam bộ: áo bà ba sẫm, quần lửng, chân đất; người lạ áo xám rách, tóc ướt.",
+        "proportions": "Tỉ lệ người thật, không cách điệu; khuôn mặt mộc, ít trang điểm.",
+        "poseLanguage": "Đứng ngồi tĩnh, vai hơi sụp; chị Hai nhìn thẳng vô hồn sau đêm; người lạ cúi đầu ăn.",
+        "continuity": [
+          "Chị Hai mặc áo sẫm, tóc búi thấp suốt truyện; tôi mặc áo bạc màu.",
+          "Mẹ tôi chỉ xuất hiện trong ảnh thờ và lời kể, không đứng trong cảnh hiện tại."
+        ]
+      },
+      "environment": {
+        "space": "Nhà cấp bốn có hiên trước, bếp riêng và phòng khách đặt bàn thờ mẹ tôi.",
+        "scale": "Không gian hẹp: từ hiên bước vào bếp, từ bếp nhìn ra phòng khách, bậc cửa nối liền.",
+        "propRules": "Mâm cơm cúng đặt trên bàn thấp ngoài hiên, gạo muối để riêng trong đĩa; không bày trong nhà.",
+        "continuity": [
+          "Vũng nước mưa và vết chân ướt trên hiên xuất hiện từ đêm đến sáng.",
+          "Gạo muối vương từ bậc cửa vào nền nhà, không bị quét đi giữa các cảnh."
+        ]
+      },
+      "cinematography": {
+        "framing": "Khung 16:9 tĩnh, dùng khung cửa và bậc cửa chia cảnh, giữ khoảng trống quanh nhân vật.",
+        "focus": "Nét sâu, rõ mâm cúng tiền cảnh và bóng người trong bếp phía sau.",
+        "movement": "Máy đứng yên, chuyển cảnh bằng cắt thẳng, không lia máy.",
+        "editing": "Cắt theo mốc: chiều cúng, đêm ăn cơm, sáng hôm sau; nhịp nhanh dần ở đoạn tiếng đũa."
+      },
+      "audioText": {
+        "narration": "Giọng nam trầm, kể chậm, rõ từng việc, ngắt nghỉ ở chỗ phát hiện.",
+        "sound": "Mưa rơi mái hiên, tiếng đũa gõ bát, tiếng bước chân ướt, im lặng ở câu cuối.",
+        "subtitles": "Phụ đề tiếng Việt đúng chính tả, khớp nhịp kể, không chèn lời dẫn."
+      },
+      "opening": {
+        "visual": "Cận cảnh mâm cơm cúng trên bàn thấp ngoài hiên, mưa nhỏ giọt, bậc cửa vương gạo muối.",
+        "purpose": "Mở bằng hậu quả và vật chứng, đặt câu hỏi vì sao mâm cúng lại ở trong hiên.",
+        "acceptance": [
+          "Người xem thấy rõ mâm cúng, gạo muối và bậc cửa trong một khung.",
+          "Trong 5 giây đầu đã có câu kể nêu việc quên rắc muối tiễn."
+        ]
+      },
+      "qualityChecks": [
+        "Không dùng lại bà nội, đứa con nhỏ, trò cò cò hay cảnh ôm nhầm con.",
+        "Mọi chi tiết gieo ra (gạo muối bậc cửa, chị Hai nhìn không quen) đều được trả ở cuối.",
+        "Không có cảnh máu me; sợ đến từ sai lệch quan sát được.",
+        "Tranh tĩnh 2D khớp nhân vật, hiên nhà, bếp, phòng khách và ảnh thờ mẹ tôi.",
+        "Lời kể tiếng Việt tự nhiên, xưng hô nhất quán 'tôi' và 'chị Hai'."
+      ]
+    },
+    "sfxMood": "horror",
+    "look": "clean",
+    "accent": "#ffb070",
+    "era": "Contemporary Vietnam",
+    "chapters": [
+      {
+        "id": "c1",
+        "title": "Người Lạ Ăn Mâm Cơm Cúng",
+        "summary": "Mẹ tôi mất, chị Hai thay mẹ cúng cô hồn chiều mùng hai nhưng làm vội, bưng cả mâm vào hiên tránh mưa và quên rắc muối tiễn. Đêm đó tôi nghe tiếng đũa gõ bát ngoài hiên, thấy một người lạ ngồi ăn hết mâm cơm cúng, còn chị Hai nhìn tôi như không quen. Sáng ra chị nói năng y như mẹ tôi, người lạ biến mất, chỉ còn gạo muối vương bậc cửa.",
+        "from": 0,
+        "to": 1200,
+        "weight": 5,
+        "mustKeep": true,
+        "hook": "Mâm cơm cúng cô hồn tôi để ngoài sân quên không rắc muối tiễn, đêm đó có người khác lạ ăn cơm nhà tôi, và sáng ra chị Hai tôi không còn nhận ra ai trong nhà.",
+        "keyPoints": [
+          "Mẹ tôi mất, chị Hai thay mẹ làm mâm cơm cúng cô hồn chiều mùng hai, làm vội rồi bưng cả mâm vào hiên tránh mưa, quên rắc muối tiễn ra đường.",
+          "Đêm đó tôi nghe tiếng đũa gõ vào miệng bát ngoài hiên; ra nhìn thì thấy một người lạ ngồi ăn hết mâm cơm cúng, còn chị Hai đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai.",
+          "Sáng hôm sau chị Hai nói năng, đi đứng y như mẹ tôi hồi còn sống; người lạ biến mất, chỉ còn vết chân ướt trên nền nhà và hạt gạo muối vương khắp bậc cửa."
+        ],
+        "handoff": "Chị Hai giờ nấu đúng những món mẹ tôi từng nấu, dọn bàn đúng kiểu mẹ tôi từng dọn, và tôi bắt đầu sợ mình cũng sẽ quên mất chị.",
+        "targetSeconds": 120
+      }
+    ],
+    "cast": [
+      {
+        "key": "toi",
+        "name": "Tôi",
+        "description": "Người kể chuyện, em trong nhà, chứng kiến và ghi lại chuyện",
+        "role": "Người kể chuyện, em trong nhà, chứng kiến và ghi lại chuyện",
+        "look": "Vietnamese adult man, short black hair, plain faded shirt and dark trousers, tired eyes, simple rural look.",
+        "gender": "male",
+        "age": "adult",
+        "narrator": true
+      },
+      {
+        "key": "chi_hai",
+        "name": "Chị Hai",
+        "description": "Chị gái, thay mẹ lo việc cúng cô hồn",
+        "role": "Chị gái, thay mẹ lo việc cúng cô hồn",
+        "look": "Vietnamese adult woman, long black hair tied low, simple dark blouse and loose trousers, worn hands, tired face.",
+        "gender": "female",
+        "age": "adult"
+      },
+      {
+        "key": "me_toi",
+        "name": "Mẹ tôi",
+        "description": "Người mẹ đã mất, chỉ hiện trong hồi tưởng và qua cách chị Hai nói năng",
+        "role": "Người mẹ đã mất, chỉ hiện trong hồi tưởng và qua cách chị Hai nói năng",
+        "look": "Vietnamese elderly woman, gray hair in a low bun, dark brown blouse, gentle lined face, seen only in memory and in the family altar portrait.",
+        "gender": "female",
+        "age": "senior"
+      },
+      {
+        "key": "nguoi_la",
+        "name": "Người lạ",
+        "description": "Kẻ lạ mặt ăn mâm cơm cúng trong đêm",
+        "role": "Kẻ lạ mặt ăn mâm cơm cúng trong đêm",
+        "look": "Vietnamese adult man, thin, pale, wet hair, ragged gray-brown clothes, barefoot, face hard to see clearly.",
+        "gender": "male",
+        "age": "adult"
+      }
+    ],
+    "places": [
+      {
+        "key": "hien_nha",
+        "name": "Hiên nhà",
+        "description": "Small covered front porch of an old rural Vietnamese house, tiled floor, wooden pillars, a low table where the offering tray sits, rain dripping from the eaves, dark evening light.",
+        "interior": false,
+        "time": "night"
+      },
+      {
+        "key": "nha_bep",
+        "name": "Nhà bếp",
+        "description": "Simple rural Vietnamese kitchen with a clay stove, bamboo shelves, dim oil lamp, earthen jars along the wall.",
+        "interior": true,
+        "time": "interior_dark"
+      },
+      {
+        "key": "phong_khach",
+        "name": "Phòng khách",
+        "description": "Modest rural living room with a wooden altar against the back wall, a family portrait, wooden bench and tiled floor, soft morning light through the door.",
+        "interior": true,
+        "time": "interior"
+      }
+    ],
+    "facts": [],
+    "musicMood": "eerie",
+    "videoGenre": "ghost_tale",
+    "folkStoryContract": {
+      "version": 1,
+      "profileId": "vietnamese_folk_recollection_v1",
+      "sourceKey": "34687:72e906b:c21ff89b",
+      "topic": {
+        "id": "cô_hồn",
+        "name": "Cô hồn",
+        "meaning": "Những linh hồn chết không nơi nương tựa, không người thân cúng kiếm, lang thang ngoài đường ngoài xá và có thể chiếm đoạt thân xác người sống nếu được mời vào nhà mà không tiễn đi đúng cách.",
+        "aliases": [
+          "Cô hồn",
+          "cô hồn",
+          "vong linh",
+          "linh hồn vất vưởng",
+          "người khuất mặt khuất mày"
+        ],
+        "evidence": "Cô hồn là những linh hồn vất da giấ dưỡng. Khi mà họ chết rồi đó họ không có nơi nương tựa mà ở nhà cũng không có cúng kiến."
+      }
+    },
+    "topicId": "cô_hồn",
+    "topicEvidence": [
+      {
+        "chapterId": "c1",
+        "quote": "Mẹ tôi mất, chị Hai thay mẹ làm mâm cơm cúng cô hồn chiều mùng hai, làm vội rồi bưng cả mâm vào hiên tránh mưa, quên rắc muối tiễn ra đường."
+      },
+      {
+        "chapterId": "c1",
+        "quote": "Đêm đó tôi nghe tiếng đũa gõ vào miệng bát ngoài hiên; ra nhìn thì thấy một người lạ ngồi ăn hết mâm cơm cúng, còn chị Hai đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai."
+      },
+      {
+        "chapterId": "c1",
+        "quote": "Sáng hôm sau chị Hai nói năng, đi đứng y như mẹ tôi hồi còn sống; người lạ biến mất, chỉ còn vết chân ướt trên nền nhà và hạt gạo muối vương khắp bậc cửa."
+      }
+    ],
+    "illustrationNeeds": [
+      {
+        "id": "n1",
+        "chapterId": "c1",
+        "place": "hien_nha",
+        "evidence": "Mẹ tôi mất, chị Hai thay mẹ làm mâm cơm cúng cô hồn chiều mùng hai, làm vội rồi bưng cả mâm vào hiên tránh mưa, quên rắc muối tiễn ra đường.",
+        "states": [
+          {
+            "char": "chi_hai",
+            "action": "stand",
+            "posture": "idle",
+            "essential": true,
+            "placement": {
+              "relation": "beside",
+              "anchor": "table",
+              "evidence": "bưng cả mâm vào hiên tránh mưa"
+            }
+          }
+        ],
+        "objects": [
+          {
+            "key": "o1",
+            "word": "mâm cơm cúng",
+            "catalogKey": "offering_tray",
+            "type": "other",
+            "size": 1,
+            "mount": "table",
+            "owner": "chi_hai",
+            "ownershipEvidence": "bưng cả mâm vào hiên tránh mưa",
+            "support": "table",
+            "note": "",
+            "requirements": [],
+            "essential": true,
+            "placement": {
+              "anchor": "table",
+              "evidence": "bưng cả mâm vào hiên tránh mưa"
+            }
+          },
+          {
+            "key": "o2",
+            "word": "muối",
+            "catalogKey": "ritual_rice_salt_plate",
+            "type": "other",
+            "size": 1,
+            "mount": "table",
+            "owner": "chi_hai",
+            "ownershipEvidence": "bưng cả mâm vào hiên tránh mưa",
+            "support": "table",
+            "note": "",
+            "requirements": [],
+            "essential": true,
+            "placement": {
+              "anchor": "table",
+              "evidence": "bưng cả mâm vào hiên tránh mưa"
+            }
+          }
+        ],
+        "features": []
+      },
+      {
+        "id": "n2",
+        "chapterId": "c1",
+        "place": "hien_nha",
+        "evidence": "Đêm đó tôi nghe tiếng đũa gõ vào miệng bát ngoài hiên; ra nhìn thì thấy một người lạ ngồi ăn hết mâm cơm cúng, còn chị Hai đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai.",
+        "states": [
+          {
+            "char": "nguoi_la",
+            "action": "sit",
+            "posture": "sit",
+            "support": "table",
+            "essential": true,
+            "placement": {
+              "relation": "at",
+              "anchor": "table",
+              "evidence": "một người lạ ngồi ăn hết mâm cơm cúng"
+            }
+          }
+        ],
+        "objects": [
+          {
+            "key": "o3",
+            "word": "mâm cơm cúng",
+            "catalogKey": "offering_tray",
+            "type": "other",
+            "size": 1,
+            "mount": "table",
+            "owner": "nguoi_la",
+            "ownershipEvidence": "một người lạ ngồi ăn hết mâm cơm cúng",
+            "support": "table",
+            "note": "",
+            "requirements": [],
+            "essential": true,
+            "placement": {
+              "anchor": "table",
+              "evidence": "một người lạ ngồi ăn hết mâm cơm cúng"
+            }
+          },
+          {
+            "key": "o4",
+            "word": "đũa",
+            "catalogKey": "chopsticks",
+            "type": "other",
+            "size": 1,
+            "mount": "held",
+            "owner": "nguoi_la",
+            "ownershipEvidence": "một người lạ ngồi ăn hết mâm cơm cúng",
+            "note": "",
+            "requirements": [],
+            "essential": true,
+            "placement": {
+              "anchor": "table",
+              "evidence": "một người lạ ngồi ăn hết mâm cơm cúng"
+            }
+          }
+        ],
+        "features": []
+      },
+      {
+        "id": "n3",
+        "chapterId": "c1",
+        "place": "nha_bep",
+        "evidence": "chị Hai đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai",
+        "states": [
+          {
+            "char": "chi_hai",
+            "action": "stand",
+            "posture": "idle",
+            "essential": true,
+            "placement": {
+              "relation": "at",
+              "anchor": "bếp",
+              "evidence": "chị Hai đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai"
+            }
+          },
+          {
+            "char": "toi",
+            "action": "stand",
+            "posture": "idle",
+            "essential": true,
+            "placement": {
+              "relation": "beside",
+              "anchor": "chi_hai",
+              "evidence": "chị Hai đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai"
+            }
+          }
+        ],
+        "objects": [],
+        "features": []
+      },
+      {
+        "id": "n4",
+        "chapterId": "c1",
+        "place": "phong_khach",
+        "evidence": "Sáng hôm sau chị Hai nói năng, đi đứng y như mẹ tôi hồi còn sống; người lạ biến mất, chỉ còn vết chân ướt trên nền nhà và hạt gạo muối vương khắp bậc cửa.",
+        "states": [
+          {
+            "char": "chi_hai",
+            "action": "stand",
+            "posture": "idle",
+            "essential": true,
+            "placement": {
+              "relation": "beside",
+              "anchor": "bàn thờ",
+              "evidence": "chị Hai nói năng, đi đứng y như mẹ tôi hồi còn sống"
+            }
+          }
+        ],
+        "objects": [
+          {
+            "key": "o5",
+            "word": "mẹ tôi",
+            "catalogKey": "ancestor_portrait",
+            "type": "other",
+            "size": 1,
+            "mount": "table",
+            "support": "bàn thờ",
+            "note": "",
+            "requirements": [],
+            "essential": true,
+            "placement": {
+              "anchor": "bàn thờ",
+              "evidence": "chị Hai nói năng, đi đứng y như mẹ tôi hồi còn sống"
+            }
+          }
+        ],
+        "features": []
+      }
+    ],
+    "sourceCore": {
+      "premise": "Một gia đình cúng cô hồn qua loa; đồ cúng bị đưa vào nhà, cô hồn theo vào và đêm đó đoạt thân xác cả gia đình.",
+      "emotionalStake": "Người mẹ phải giữ được con trai mình giữa căn nhà đang bị cô hồn chiếm, và cả nhà đánh mất chính mình chỉ sau một đêm.",
+      "causalChain": [
+        "Cúng cô hồn sơ sài, không có lòng thành -> cô hồn tụ về mà không được tiễn đúng lệ",
+        "Đứa con làm gạo muối vương vãi trong nhà -> đường mời cô hồn vào tận nhà mở ra",
+        "Người mẹ ôm nhầm đứa trẻ ma lạnh ngắt -> đến khi nhận ra thì chồng và con thật đã bị đoạt xác",
+        "Ba hồn người sống bị đẩy ra đường -> sáng hôm sau cả nhà 'đổi tính' tốt lên vì đã là người khác"
+      ],
+      "escalation": [
+        "Tiếng gõ, tiếng đập cửa dồn dập hơn mỗi lúc",
+        "Cái bóng nhỏ ngoài cửa xuất hiện trong khi đứa con đang nằm trong lòng mẹ",
+        "Thân xác đang ôm lạnh dần, da trắng bệch",
+        "Chồng ngồi trên giường cười lạnh, mặt không còn một giọt máu"
+      ],
+      "reversal": "Người mẹ tưởng mình đã cứu được con, hóa ra đứa trẻ thật đứng ngoài cửa còn thứ trong lòng bà là ma; kết truyện cho thấy chính người sống mới là kẻ bị đoạt xác và bị đẩy ra đường làm cô hồn.",
+      "endingMeaning": "Người sống mà không sống tử tế, không giữ lệ cúng và lòng thành thì hậu vận có thể tệ hơn cô hồn; cô hồn khi có được một cuộc sống thì sẽ sống rất tốt vì không muốn làm cô hồn nữa."
+    },
+    "storySpine": {
+      "steps": [
+        {
+          "chapterId": "c1",
+          "cause": "Mẹ tôi mất, chị Hai tôi phải thay mẹ lo mâm cơm cúng cô hồn chiều mùng hai; chị làm vội rồi bưng cả mâm vào hiên cho khỏi ướt mưa, quên rắc muối tiễn ra đường.",
+          "event": "Đêm đó tôi nghe tiếng đũa gõ vào miệng bát ngoài hiên; ra nhìn thì thấy một người lạ ngồi ăn hết mâm cơm cúng, còn chị Hai tôi thì đứng trong bếp nhìn tôi bằng ánh mắt không nhận ra ai.",
+          "consequence": "Sáng hôm sau chị Hai nói năng, đi đứng y như mẹ tôi hồi còn sống, còn người lạ ăn cơm kia thì biến mất, chỉ còn vết chân ướt trên nền nhà và hạt gạo muối vương khắp bậc cửa."
+        }
+      ],
+      "clues": [
+        {
+          "detail": "Mâm cơm cúng được bưng vào trong hiên, hạt gạo và muối rơi vương trên bậc cửa, không được rắc ra đường.",
+          "setupChapterId": "c1",
+          "payoffChapterId": "c1",
+          "payoff": "Vết gạo muối ở bậc cửa chính là đường cô hồn bước vào; sau đó trong nhà có thêm một người 'ăn cơm' mà tôi không quen, và chị Hai bị đổi hồn."
+        }
+      ]
+    },
+    "modelCraft": [
+      "Mở đầu bằng hậu quả cụ thể: cả nhà 'đổi tính' sau một đêm",
+      "Gieo và trả miếng chi tiết nhỏ: hạt gạo muối rơi vãi mở đường cho cô hồn",
+      "Lộ manh mối từng lớp: tiếng đập cửa, cái bóng nhỏ, cái lạnh của thân xác",
+      "Dùng khoảng lặng đêm khuya và lời thoại trẻ con để gây sợ",
+      "Cú lật khi người đang ôm hóa ra không phải con mình",
+      "Kết đọng lạnh: người sống thành cô hồn vất vưởng"
+    ],
+    "modelAvoid": [
+      "Bốn người: bà nội, vợ, chồng, con trai nhỏ",
+      "Bà nội qua đời rồi con dâu cúng thay",
+      "Mâm cúng ba chén nước lã, gạo muối",
+      "Thằng bé chơi cò cò làm đổ gạo muối khắp phòng khách",
+      "Người mẹ ôm nhầm đứa trẻ ma rồi mở cửa thấy con thật",
+      "Người chồng nhậu xỉn ngủ như xác chết",
+      "Cả nhà đổi tính tốt lên và mùng mười sáu ba hồn người sống ra ngoài ăn mâm cúng"
+    ],
+    "folkBelief": {
+      "name": "Cô hồn",
+      "meaning": "Linh hồn chết không nơi nương tựa, không người thân cúng kiếm, lang thang ngoài đường ngoài xá; khi được mời vào nhà mà không bị tiễn đi đúng cách thì có thể ở lại và chiếm lấy thân xác người sống.",
+      "signs": [
+        "Gạo muối cúng bị đổ vào trong nhà thay vì rắc ra đường",
+        "Thân xác người bị chiếm lạnh dần, da trắng bệch",
+        "Người lạ ăn hết đồ cúng trong nhà ban đêm"
+      ],
+      "taboos": [
+        "Không được đem mâm cúng cô hồn vào trong nhà",
+        "Không được quên rắc muối tiễn cô hồn ra đường",
+        "Không nói năng, chạm chạm xúc phạm người khuất mặt"
+      ],
+      "remedies": [
+        "Rắc gạo mời trước, rắc muối tiễn sau ra ngoài đường",
+        "Cúng đúng lệ mùng hai, mười sáu với mâm lễ đầy đủ",
+        "Giữ lòng thành khi cúng"
+      ]
+    },
+    "illustrationCoverage": [
+      {
+        "version": 1,
+        "chapterId": "c1",
+        "sourceKey": "5799:805a6df1:a6e40c59",
+        "status": "checked_needs",
+        "needIds": [
+          "n1",
+          "n2",
+          "n3",
+          "n4"
+        ]
+      }
+    ],
+    "visualSettings": {
+      "version": 1,
+      "mode": "remotion",
+      "engine": "remotion",
+      "profileId": "history",
+      "componentRevision": 1
+    }
+  },
+  "source": {
+    "kind": "brief",
+    "title": "Mâm Cơm Cúng Bưng Vào Hiên",
+    "text": "Đây là ý tưởng truyện mới về một gia đình ở miền quê.",
+    "segments": [
+      {
+        "t": 0,
+        "text": "Đây là ý tưởng truyện mới về một gia đình ở miền quê."
+      }
+    ],
+    "sourceSeconds": 120
+  }
+}

@@ -35,14 +35,9 @@ export const motionPartAnalysis = (full: MotionStoryAnalysis, parts: MotionSerie
   const lastBefore = _.last(before),
     firstAfter = _.first(after);
   const title = (language === P.EN ? P.TITLE.en : P.TITLE.vi)(full.title, index + 1, parts.length);
-  return {
-    ...full,
-    title,
-    chapters,
-    series: _.omitBy({ index, count: parts.length, previous: lastBefore ? lastBefore.handoff || lastBefore.summary : undefined, next: firstAfter ? _.compact([firstAfter.title, firstAfter.hook || firstAfter.summary]).join(P.NEXT_JOIN) : undefined }, _.isUndefined) as MotionStoryAnalysis["series"],
-  };
+  return { ...full, title, chapters, series: _.omitBy({ index, count: parts.length, previous: lastBefore ? lastBefore.handoff || lastBefore.summary : undefined, next: firstAfter ? _.compact([firstAfter.title, firstAfter.hook || firstAfter.summary]).join(P.NEXT_JOIN) : undefined }, _.isUndefined) as MotionStoryAnalysis["series"] };
 };
-export const motionCarryGen = (gen?: MotionGenState): Partial<MotionGenState> | undefined => (gen ? (_.pick(gen, P.CARRY_KEYS) as Partial<MotionGenState>) : undefined);
+export const motionCarryGen = (gen?: MotionGenState): Partial<MotionGenState> | undefined => (gen ? ({ ..._.pick(gen, P.CARRY_KEYS), ...(gen.remotion ? { remotion: { ...gen.remotion, scenes: {}, inputKeys: {}, failures: {}, drafts: {}, notes: {} } } : {}) } as Partial<MotionGenState>) : undefined);
 export const motionSeriesStart = (full: MotionStoryAnalysis, wanted: number, language: string): { analysis: MotionStoryAnalysis; series: MotionSeriesState | null } => {
   const parts = motionPartPlan(full.chapters, wanted);
   if (parts.length < 2) return { analysis: full, series: null };

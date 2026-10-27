@@ -1048,6 +1048,10 @@ import { hasValidImages, readEncodedProjectImage, readStyleReferenceImage, resol
 import { cancelAllActiveMediaGeneration, closeAllBatchPages, ensureFlowCharacters, generateBatchImagesWithGeminiChat, generateFlowVideoPromptBatchWithPlaywright, generateImageWithPlaywright, getOrLaunchGlobalBrowser, recoverExistingFlowVideo, scheduleGlobalBrowserCleanup } from "../services/imageGeneratorService.js";
 import { createBatchContinuityContext, createPromptCharacterCards, createScopedVisualBibleContext, createVisualPlanningPayload, getVisualShotPlanIssues } from "../services/imagePromptPlanningService.js";
 import { LicenseService } from "../services/licenseService.js";
+import { MUSIC_PLANNING as MUSIC_PLAN } from "../../constants/musicPlanning.js";
+import { validMusicEditorialReview, musicReviewOrder } from "../../lib/musicPlanning.js";
+import { musicPlanReporter } from "../services/musicPlanProgress.js";
+import { reviewMusicSongBatch } from "../services/musicSongReviewService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
 import {
   createMusicDownloadCheckpointKey,
@@ -1125,17 +1129,7 @@ const QUICK_CHARACTER_FIELDS = [
   SOURCE_TEXT_PROMPT,
   SOURCE_TEXT_REFERENCEGENERATIONPROMPT,
 ] as const;
-const QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = {
-  type: SOURCE_TEXT_ARRAY,
-  minItems: 1,
-  maxItems: CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS,
-  items: {
-    type: SOURCE_TEXT_OBJECT,
-    additionalProperties: false,
-    required: QUICK_CHARACTER_FIELDS,
-    properties: _.fromPairs(_.map(QUICK_CHARACTER_FIELDS, (field) => [field, { type: SOURCE_TEXT_STRING }])),
-  },
-} as const;
+const QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA = { type: SOURCE_TEXT_ARRAY, minItems: 1, maxItems: CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS, items: { type: SOURCE_TEXT_OBJECT, additionalProperties: false, required: QUICK_CHARACTER_FIELDS, properties: _.fromPairs(_.map(QUICK_CHARACTER_FIELDS, (field) => [field, { type: SOURCE_TEXT_STRING }])) } } as const;
 const QUICK_VISUAL_SHOT_PURPOSES = [SOURCE_TEXT_SETUP, SOURCE_TEXT_ACTION, SOURCE_TEXT_REACTION, SOURCE_TEXT_PUNCHLINE, SOURCE_TEXT_REVEAL, SOURCE_TEXT_CALLBACK, SOURCE_TEXT_MONTAGE, SOURCE_TEXT_EMOTIONAL_HOLD, SOURCE_TEXT_OBSTACLE, SOURCE_TEXT_DECISION, SOURCE_TEXT_ESCALATION, SOURCE_TEXT_REVERSAL, SOURCE_TEXT_CLIMAX, SOURCE_TEXT_PAYOFF, SOURCE_TEXT_TRANSITION] as const;
 const QUICK_VISUAL_LAYOUTS = [SOURCE_TEXT_SINGLE_FRAME, SOURCE_TEXT_SPLIT_SCREEN, SOURCE_TEXT_COLLAGE] as const;
 const saveCinematicScriptArtifactCheckpoint = async (projectId: unknown, key: CinematicScriptArtifactKey, artifact: Record<string, unknown>, sourceSignature: string): Promise<void> => {
@@ -1144,13 +1138,7 @@ const saveCinematicScriptArtifactCheckpoint = async (projectId: unknown, key: Ci
   const project = await getProjectDetailFromDb(safeProjectId);
   if (!project) return;
   const matchingArtifacts = _.isEqual(project.cinematicScriptArtifacts?.sourceSignature, sourceSignature) ? project.cinematicScriptArtifacts : undefined;
-  project.cinematicScriptArtifacts = {
-    ...matchingArtifacts,
-    sourceSignature,
-    schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION,
-    [key]: artifact,
-    updatedAt: new Date().toISOString(),
-  };
+  project.cinematicScriptArtifacts = { ...matchingArtifacts, sourceSignature, schemaVersion: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION, [key]: artifact, updatedAt: new Date().toISOString() };
   await saveProjectDetailToDb(project);
 };
 const ensureHookLanguage = async (content: unknown, isVietnamese: boolean): Promise<string> => {
@@ -1158,15 +1146,7 @@ const ensureHookLanguage = async (content: unknown, isVietnamese: boolean): Prom
   if (_.isEmpty(hook) || validateChapterLanguage(hook, isVietnamese).valid) return hook;
   if (!isVietnamese) return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
   try {
-    const response = await generateContentWithRetry({
-      contents: getVietnameseDiacriticsRestorationPrompt(hook),
-      config: {
-        responseMimeType: CONTENT_TYPES.JSON,
-        responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
-        maxOutputTokens: 512,
-      },
-      task: { capability: AiTaskCapability.ScriptWriting },
-    });
+    const response = await generateContentWithRetry({ contents: getVietnameseDiacriticsRestorationPrompt(hook), config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: CHAPTER_RESPONSE_SCHEMA, maxOutputTokens: 512 }, task: { capability: AiTaskCapability.ScriptWriting } });
     const restoredHook = extractCleanChapterSegment(response.text);
     return validateChapterLanguage(restoredHook, true).valid ? restoredHook : REFACTOR_CONSTANTS.VD_EMPTY_STRING;
   } catch (error) {
@@ -1205,7 +1185,18 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
   const feature = _.isEqual(generateType, GenerateType.Video) ? FeatureType.VIDEO : FeatureType.IMAGE;
   requireLicense(feature)(req, res, next);
 };
-interface MusicPlanRequestPayload { requestedSongCount: number; style: string; referenceSongs: string[]; projectId: string; execution: Record<string, any>; requestId: string; thumbnailReference: string; thumbnailReferenceName: string; thumbnailDescription: string; sunoInspo: string; }
+interface MusicPlanRequestPayload {
+  requestedSongCount: number;
+  style: string;
+  referenceSongs: string[];
+  projectId: string;
+  execution: Record<string, any>;
+  requestId: string;
+  thumbnailReference: string;
+  thumbnailReferenceName: string;
+  thumbnailDescription: string;
+  sunoInspo: string;
+}
 let activeMusicPlanRuns = 0;
 const activeMusicPlanCleanup = new Map<string, Promise<void>>();
 const musicPlanCheckpoints = new Map<string, { signature: string; updatedAt: number; styleAnalysis: any; batches: Map<number, any[]> }>();
@@ -1224,21 +1215,7 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
   if (!isValidCount) {
     return { isValid: false, error: MUSIC_CREATOR_TEXTS.vi.SERVER_VALIDATION_ERROR };
   }
-  return {
-    isValid: true,
-    payload: {
-      requestedSongCount,
-      style,
-      referenceSongs,
-      projectId,
-      execution,
-      requestId,
-      thumbnailReference,
-      thumbnailReferenceName,
-      thumbnailDescription,
-      sunoInspo,
-    },
-  };
+  return { isValid: true, payload: { requestedSongCount, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo } };
 };
 const generateMusicThumbnailAsset = async (input: {
   songs: any[];
@@ -1292,13 +1269,7 @@ const generateMusicThumbnailAsset = async (input: {
     planningRun.complete();
     await closeChatPlanningRoom({ provider: planningProvider, projectId: promptRequestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE }).catch(() => undefined);
   }
-  await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS, {
-    runId: promptRequestId,
-    purpose: input.assetPurpose || SOURCE_TEXT_COVER,
-    originalNoteChars: _.trim(input.description).length,
-    plannedPromptChars: prompt.length,
-    hasReference: !_.isEmpty(input.reference),
-  });
+  await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, originalNoteChars: _.trim(input.description).length, plannedPromptChars: prompt.length, hasReference: !_.isEmpty(input.reference) });
   let transientErrorCount = 0;
   const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
@@ -1623,7 +1594,9 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
   });
   activeMusicPlanCleanup.set(requestId, cleanupFinished);
   activeMusicPlanRuns += 1;
+  const report = musicPlanReporter(res, req.body?.streamProgress === true, requestedSongCount);
   let currentStage: string = SUNO_AUTOMATION_CONFIG.STAGE_INITIALIZE;
+  report.progress(currentStage);
   const planStartedAt = Date.now();
   await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STARTED, { runId: requestId, stage: currentStage, provider: execution.provider, model: execution.model, songCount: requestedSongCount, checkpoint: Boolean(existingCheckpoint) });
   try {
@@ -1631,22 +1604,15 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const planningRun = beginChatPlanningRun(requestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, provider);
     req.once(SOURCE_TEXT_ABORTED, planningRun.cancel);
     res.once(SOURCE_TEXT_FINISH, planningRun.complete);
+    res.once("close", () => {
+      if (!res.writableEnded) planningRun.cancel();
+    });
     const generateRoomResponse = (prompt: string, artifactType: string, responseRequestId: string, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE) =>
-      generatePlanningWithChatUi({
-        provider,
-        model: execution.model,
-        prompt,
-        projectId,
-        workerId,
-        chromeHeadless: execution.chromeHeadless !== false,
-        artifactType,
-        requestId: responseRequestId,
-        signal: planningRun.signal,
-        closeRoomOnComplete: false,
-      });
+      generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId: responseRequestId, signal: planningRun.signal, closeRoomOnComplete: false });
     const referenceSource = _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER);
     const analysisRequestId = SOURCE_TEMPLATE_STYLE_ANALYSIS(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
+    report.progress(currentStage);
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
     await closeChatPlanningRoomsForProject({ provider, projectId }).catch(() => undefined);
     let styleAnalysisParsed: any = checkpoint.styleAnalysis;
@@ -1682,9 +1648,11 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     }
     checkpoint.styleAnalysis = styleAnalysisParsed;
     checkpoint.updatedAt = Date.now();
+    report.progress(currentStage, { styleAnalysis: styleAnalysisParsed });
     const songs: any[] = [];
     const completedSongTitles = new Set<string>();
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION;
+    report.progress(currentStage);
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage, songCount: requestedSongCount });
     let responseProvider = provider;
     const composeSongBatch = async (startIndex: number, batchCount: number, maxAttempts: number, requestSuffix: string = C.EMPTY, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE): Promise<any[] | null> => {
@@ -1693,6 +1661,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       let roomWasReloaded = false;
       const batchRequestId = SOURCE_TEMPLATE_BATCH(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`), SOURCE_TEMPLATE_SYMBOL_86(`${startIndex}`), SOURCE_TEMPLATE_SYMBOL_86(`${requestSuffix}`));
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        report.progress(currentStage, undefined, { attempt: attempt + 1 });
         const prompt =
           attempt === 0 || roomWasReloaded ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE) : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues, styleAnalysisParsed);
         roomWasReloaded = false;
@@ -1742,10 +1711,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       return fallbackSongs;
     };
     const initialBatchSize = _.first(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZES)!;
-    const compositionBatches = _.map(_.range(1, requestedSongCount + 1, initialBatchSize), (startIndex) => ({
-      startIndex,
-      batchCount: Math.min(initialBatchSize, requestedSongCount - startIndex + 1),
-    }));
+    const compositionBatches = _.map(_.range(1, requestedSongCount + 1, initialBatchSize), (startIndex) => ({ startIndex, batchCount: Math.min(initialBatchSize, requestedSongCount - startIndex + 1) }));
     for (const batch of compositionBatches) {
       const savedSongs = checkpoint.batches.get(batch.startIndex);
       if (!savedSongs || !validateMusicPlanSongContract({ songs: savedSongs }, batch.batchCount, batch.startIndex)) {
@@ -1754,20 +1720,14 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       }
       _.forEach(savedSongs, (song) => completedSongTitles.add(_.toLower(_.deburr(_.trim(_.toString(song.title))))));
     }
-    const pendingCompositionBatches = _.filter(compositionBatches, (batch) => !checkpoint.batches.has(batch.startIndex));
+    const pendingCompositionBatches = _.filter(compositionBatches, (batch) => !checkpoint.batches.has(batch.startIndex) || checkpoint.batches.get(batch.startIndex)!.some((song) => !validMusicEditorialReview(song.editorialReview)));
     const composedBatchResults: any[][] = _.map(compositionBatches, (batch) => checkpoint.batches.get(batch.startIndex) || []);
     let nextBatchIndex = 0;
     let compositionFailure: unknown;
+    const publishSongs = (stage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION) => report.progress(stage, { songs: _.flatten(composedBatchResults) });
+    publishSongs();
     const roomPreparations = _.map(_.range(Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, pendingCompositionBatches.length)), (workerIndex) =>
-      prepareChatPlanningRoom({
-        provider,
-        model: execution.model,
-        prompt: C.EMPTY,
-        projectId,
-        workerId: workerIndex === 0 ? SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE : SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE,
-        chromeHeadless: execution.chromeHeadless !== false,
-        signal: planningRun.signal,
-      }),
+      prepareChatPlanningRoom({ provider, model: execution.model, prompt: C.EMPTY, projectId, workerId: workerIndex === 0 ? SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE : SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE, chromeHeadless: execution.chromeHeadless !== false, signal: planningRun.signal }),
     );
     const runCompositionWorker = async (workerIndex: number): Promise<void> => {
       await roomPreparations[workerIndex];
@@ -1777,7 +1737,13 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
         const batchIndex = compositionBatches.findIndex((item) => item.startIndex === batch.startIndex);
         try {
           await writeMusicDiagnostic(SOURCE_TEXT_PLAN_BATCH_STARTED, { runId: requestId, stage: currentStage, batch: batch.startIndex, batchSize: batch.batchCount, workerId });
-          composedBatchResults[batchIndex] = await composeAdaptiveBatch(batch.startIndex, batch.batchCount, C.EMPTY, workerId);
+          composedBatchResults[batchIndex] = checkpoint.batches.get(batch.startIndex) || (await composeAdaptiveBatch(batch.startIndex, batch.batchCount, C.EMPTY, workerId));
+          checkpoint.batches.set(batch.startIndex, composedBatchResults[batchIndex]);
+          checkpoint.updatedAt = Date.now();
+          publishSongs();
+          composedBatchResults[batchIndex] = await reviewMusicSongBatch(composedBatchResults[batchIndex], styleAnalysisParsed, `${requestId}_review_${batch.startIndex}`, (prompt, artifact, id) => generateRoomResponse(prompt, artifact, id, workerId), planningRun.signal, isRetryableMusicRoomError);
+          if (composedBatchResults[batchIndex].some((song) => !validMusicEditorialReview(song.editorialReview))) report.progress(currentStage, undefined, { warning: MUSIC_PLAN.WARNING_REVIEW });
+          publishSongs();
           await writeMusicDiagnostic(SOURCE_TEXT_PLAN_BATCH_COMPLETED, { runId: requestId, stage: currentStage, batch: batch.startIndex, songCount: composedBatchResults[batchIndex].length });
           checkpoint.batches.set(batch.startIndex, composedBatchResults[batchIndex]);
           checkpoint.updatedAt = Date.now();
@@ -1793,26 +1759,33 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     if (!validateMusicPlanSongContract({ songs }, requestedSongCount)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
     const rankingRequestId = SOURCE_TEMPLATE_SONG_RANKING(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_RANKING;
+    report.progress(currentStage);
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
     let rankingParsed: any = null;
-    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS; attempt += 1) {
+    for (let attempt = 0; attempt < MUSIC_PLAN.RANKING_ATTEMPTS; attempt += 1) {
+      report.progress(currentStage, undefined, { attempt: attempt + 1 });
       const prompt = attempt === 0 ? SUNO_AUTOMATION_TEXTS.buildMusicRankingPrompt(requestedSongCount, rankingRequestId, songs, styleAnalysisParsed) : SUNO_AUTOMATION_TEXTS.buildMusicRankingCorrectionPrompt(requestedSongCount, rankingRequestId, songs, styleAnalysisParsed);
       try {
         const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_RANKING, rankingRequestId);
         responseProvider = response.provider;
         rankingParsed = jsonUtils.safeParse(response.text, null);
       } catch (error) {
-        if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
+        if (!isRetryableMusicRoomError(error)) throw error;
         logger.warn(SUNO_AUTOMATION_TEXTS.formatMusicRoomRetryLog(currentStage, attempt + 2, _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
         rankingParsed = null;
       }
       if (validateMusicSongRankingContract(rankingParsed, songs, rankingRequestId)) break;
     }
-    if (!validateMusicSongRankingContract(rankingParsed, songs, rankingRequestId)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    if (!validateMusicSongRankingContract(rankingParsed, songs, rankingRequestId)) {
+      rankingParsed = { orderedSongIds: musicReviewOrder(songs).map((song) => song.songId) };
+      report.progress(currentStage, undefined, { warning: MUSIC_PLAN.WARNING_RANKING });
+    }
     const songsById = _.keyBy(songs, (song) => _.trim(_.toString(song?.songId)));
     const rankedSongs = _.map(rankingParsed.orderedSongIds, (songId) => songsById[_.trim(_.toString(songId))]);
+    report.progress(currentStage, { songs: rankedSongs });
     const sunoSettingsRequestId = SOURCE_TEMPLATE_SUNO_SETTINGS(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SUNO_SETTINGS;
+    report.progress(currentStage);
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
     let sunoSettingsParsed: any = null;
     let usableSunoSettingsParsed: any = null;
@@ -1831,19 +1804,10 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       if (validateSunoSettingsContract(sunoSettingsParsed, sunoSettingsRequestId)) break;
     }
     if (!validateSunoSettingsContract(sunoSettingsParsed, sunoSettingsRequestId) && usableSunoSettingsParsed) {
-      sunoSettingsParsed = {
-        ...usableSunoSettingsParsed,
-        artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS,
-        requestId: sunoSettingsRequestId,
-        productionAssessment: {
-          risks: [],
-          ...usableSunoSettingsParsed.productionAssessment,
-        },
-        parameterRationale: usableSunoSettingsParsed.parameterRationale || {},
-        parameterAnalysis: usableSunoSettingsParsed.parameterAnalysis || {},
-      };
+      sunoSettingsParsed = { ...usableSunoSettingsParsed, artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SETTINGS, requestId: sunoSettingsRequestId, productionAssessment: { risks: [], ...usableSunoSettingsParsed.productionAssessment }, parameterRationale: usableSunoSettingsParsed.parameterRationale || {}, parameterAnalysis: usableSunoSettingsParsed.parameterAnalysis || {} };
     }
     if (!hasUsableSunoSettingsResult(sunoSettingsParsed)) throw createAppError(MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR);
+    report.progress(currentStage, { sunoSettings: sunoSettingsParsed.settings, sunoSettingsAnalysis: { productionAssessment: sunoSettingsParsed.productionAssessment, parameterRationale: sunoSettingsParsed.parameterRationale, parameterAnalysis: sunoSettingsParsed.parameterAnalysis } });
     const seoRequestId = SOURCE_TEMPLATE_PLAYLIST_SEO(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     const generatePlaylistSeo = async (): Promise<any> => {
       let parsed: any = null;
@@ -1871,10 +1835,12 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       throw createAppError(SOURCE_TEMPLATE_SEO_CHUA_DAT_DINH_DANG_YEU(SOURCE_TEMPLATE_SYMBOL_86(`${seoIssues.join(SOURCE_TEXT_SYMBOL_6)}`)));
     };
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_SEO_AND_THUMBNAIL;
+    report.progress(currentStage);
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STAGE_STARTED, { runId: requestId, stage: currentStage });
     const { parsed: playlistSeoParsed, warning: seoWarning } = await generatePlaylistSeo()
       .then((parsed) => ({ parsed, warning: undefined as string | undefined }))
       .catch((error) => {
+        planningRun.signal.throwIfAborted();
         const warning = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, MUSIC_CREATOR_TEXTS.vi.SERVER_CONTRACT_ERROR));
         logger.error(SOURCE_TEMPLATE_MUSICPLAN_NON_FATAL_SEO_FAILURE_REQUESTID(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`)), error);
         void writeMusicDiagnostic(SOURCE_TEXT_PLAN_SEO_FAILED, { runId: requestId, stage: currentStage, ...musicErrorDetails(error) });
@@ -1884,17 +1850,14 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     await closeChatPlanningRoomsForProject({ provider, projectId }).catch(() => undefined);
     scheduleGlobalBrowserCleanup();
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_COMPLETED, { runId: requestId, songCount: rankedSongs.length, elapsedMs: Date.now() - planStartedAt, status: seoWarning ? SOURCE_TEXT_SEO_WARNING : SOURCE_TEXT_SUCCESS });
-    return res.json({
+    report.progress(MUSIC_PLAN.STAGES.COMPLETE);
+    return report.finish({
       success: true,
       data: {
         songs: rankedSongs,
         styleAnalysis: styleAnalysisParsed,
         sunoSettings: sunoSettingsParsed.settings,
-        sunoSettingsAnalysis: {
-          productionAssessment: sunoSettingsParsed.productionAssessment,
-          parameterRationale: sunoSettingsParsed.parameterRationale,
-          parameterAnalysis: sunoSettingsParsed.parameterAnalysis,
-        },
+        sunoSettingsAnalysis: { productionAssessment: sunoSettingsParsed.productionAssessment, parameterRationale: sunoSettingsParsed.parameterRationale, parameterAnalysis: sunoSettingsParsed.parameterAnalysis },
         playlistSeoOptions: _.castArray(playlistSeoParsed?.seoOptions || []),
         seoWarning,
         thumbnail: null,
@@ -1905,16 +1868,11 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     const cause = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
     logger.error(SOURCE_TEMPLATE_MUSICPLAN_FAILED_REQUESTID_STAGE_CAUSE(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`), SOURCE_TEMPLATE_SYMBOL_86(`${currentStage}`), SOURCE_TEMPLATE_SYMBOL_86(`${cause}`)), error);
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_FAILED, { runId: requestId, stage: currentStage, elapsedMs: Date.now() - planStartedAt, ...musicErrorDetails(error) });
-    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: SOURCE_TEMPLATE_SYMBOL_40(SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED}`), SOURCE_TEMPLATE_SYMBOL_86(`${currentStage}`), SOURCE_TEMPLATE_SYMBOL_86(`${cause}`)),
-    });
+    report.progress(MUSIC_PLAN.STAGES.ERROR);
+    return report.finish({ success: false, error: SOURCE_TEMPLATE_SYMBOL_40(SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_CREATOR_TEXTS.vi.ERROR_GENERATION_FAILED}`), SOURCE_TEMPLATE_SYMBOL_86(`${currentStage}`), SOURCE_TEMPLATE_SYMBOL_86(`${cause}`)) }, HttpStatus.INTERNAL_SERVER_ERROR);
   } finally {
     try {
-      await closeChatPlanningRoomsForProject({
-        provider: execution.provider || AiPlanningFallbackProvider.GeminiChat,
-        projectId,
-      });
+      await closeChatPlanningRoomsForProject({ provider: execution.provider || AiPlanningFallbackProvider.GeminiChat, projectId });
       if (req.aborted) await closeChatBrowserIfIdle();
     } catch (cleanupError) {
       await writeMusicDiagnostic(SOURCE_TEXT_PLAN_CLEANUP_FAILED, { runId: requestId, ...musicErrorDetails(cleanupError) });
@@ -1950,17 +1908,7 @@ router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE, async (req: Request, res: Respons
           ? SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoRegenerationPrompt(songs, style || MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE, requestId, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, styleAnalysis, referenceSource)
           : SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt(songs, style || MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE, MUSIC_CREATOR_CONSTANTS.REQUIRED_SEO_OPTIONS_COUNT, requestId, seoIssues, styleAnalysis, referenceSource);
       try {
-        const response = await generatePlanningWithChatUi({
-          provider,
-          model: execution.model,
-          prompt,
-          projectId,
-          chromeHeadless: execution.chromeHeadless !== false,
-          artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO,
-          requestId,
-          signal: planningRun.signal,
-          closeRoomOnComplete: false,
-        });
+        const response = await generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, chromeHeadless: execution.chromeHeadless !== false, artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_SEO, requestId, signal: planningRun.signal, closeRoomOnComplete: false });
         parsed = jsonUtils.safeParse(response.text, null);
       } catch (error) {
         if (!isRetryableMusicRoomError(error) || attempt >= SUNO_AUTOMATION_CONFIG.MUSIC_ROOM_RESPONSE_ATTEMPTS - 1) throw error;
@@ -1998,32 +1946,12 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
   req.once(SOURCE_TEXT_ABORTED, planningRun.cancel);
   activeMusicPlanRuns += 1;
   try {
-    const attachments = referenceMatch
-      ? [
-          {
-            name: _.toString((purpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO ? req.body?.videoBackgroundReferenceName : req.body?.thumbnailReferenceName) || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME),
-            mimeType: referenceMatch[1],
-            buffer: Buffer.from(referenceMatch[2], SOURCE_TEXT_BASE64),
-          },
-        ]
-      : [];
+    const attachments = referenceMatch ? [{ name: _.toString((purpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO ? req.body?.videoBackgroundReferenceName : req.body?.thumbnailReferenceName) || SUNO_AUTOMATION_CONFIG.DEFAULT_REFERENCE_THUMBNAIL_NAME), mimeType: referenceMatch[1], buffer: Buffer.from(referenceMatch[2], SOURCE_TEXT_BASE64) }] : [];
     const prompt = SUNO_AUTOMATION_TEXTS.buildMusicImageNoteNormalizationPrompt(note, purpose, !_.isEmpty(attachments), req.body?.showTrackList !== false, requestId, req.body?.styleAnalysis);
     let lastError: unknown;
     for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_ATTEMPTS; attempt += 1) {
       try {
-        const response = await generatePlanningWithChatUi({
-          provider,
-          model: AiPlanningChatModel.GeminiFlash,
-          prompt,
-          projectId: requestId,
-          workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE,
-          chromeHeadless: req.body?.chromeHeadless !== false,
-          attachments,
-          artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_NOTE,
-          requestId,
-          signal: planningRun.signal,
-          closeRoomOnComplete: false,
-        });
+        const response = await generatePlanningWithChatUi({ provider, model: AiPlanningChatModel.GeminiFlash, prompt, projectId: requestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE, chromeHeadless: req.body?.chromeHeadless !== false, attachments, artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_NOTE, requestId, signal: planningRun.signal, closeRoomOnComplete: false });
         const parsed = jsonUtils.safeParse(response.text, null);
         const normalizedNote = _.trim(_.toString(parsed?.normalizedNote));
         if (!_.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_NOTE) || !_.isEqual(parsed?.requestId, requestId) || _.isEmpty(normalizedNote) || normalizedNote.length > SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_MAX_CHARACTERS) {
@@ -2129,9 +2057,7 @@ const downloadSunoEvaluationAudio = async (songIds: string[], cacheKey: string, 
             let wavPath = cachedWav;
             if (!wavPath) {
               const timeoutSignal = AbortSignal.timeout(SUNO_AUTOMATION_CONFIG.AUDIO_DOWNLOAD_WAV_TIMEOUT_MS);
-              const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), {
-                signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
-              });
+              const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), { signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal });
               if (!response.ok) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
               wavPath = await writeMusicEvaluationWav(cacheKey, songId, Buffer.from(await response.arrayBuffer()));
               await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_WAV_CACHED, { songId });
@@ -2189,18 +2115,8 @@ const selectProfessionalSunoTracks = async (groups: Array<{ title: string; candi
     properties: {
       artifactType: { type: SOURCE_TEXT_STRING, enum: [SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION] },
       requestId: { type: SOURCE_TEXT_STRING, enum: [requestId] },
-      selectedTrackIds: {
-        type: SOURCE_TEXT_ARRAY,
-        minItems: groups.length,
-        maxItems: groups.length,
-        items: { type: SOURCE_TEXT_STRING },
-      },
-      qualityScores: {
-        type: SOURCE_TEXT_ARRAY,
-        minItems: groups.length,
-        maxItems: groups.length,
-        items: { type: SOURCE_TEXT_INTEGER, minimum: 0, maximum: 100 },
-      },
+      selectedTrackIds: { type: SOURCE_TEXT_ARRAY, minItems: groups.length, maxItems: groups.length, items: { type: SOURCE_TEXT_STRING } },
+      qualityScores: { type: SOURCE_TEXT_ARRAY, minItems: groups.length, maxItems: groups.length, items: { type: SOURCE_TEXT_INTEGER, minimum: 0, maximum: 100 } },
     },
   });
   const allCandidateIds = _.flatMap(groups, SOURCE_TEXT_CANDIDATES);
@@ -2220,20 +2136,7 @@ const selectProfessionalSunoTracks = async (groups: Array<{ title: string; candi
       const schema = createEvaluationSchema(requestId);
       const prompt = attempt === 0 ? SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationPrompt(style, groups, jsonUtils.safeStringify(schema), styleAnalysis) : SUNO_AUTOMATION_TEXTS.buildTrackBatchEvaluationRetryPrompt(groups, jsonUtils.safeStringify(schema), styleAnalysis);
       try {
-        const response = await generatePlanningWithChatUi({
-          provider: AiPlanningFallbackProvider.GeminiChat,
-          model: room.model,
-          prompt,
-          projectId: room.projectId,
-          workerId: room.workerId,
-          chromeHeadless: false,
-          signal: room.signal,
-          attachments,
-          artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION,
-          requestId,
-          closeRoomOnComplete: false,
-          allowDefaultGeminiModel: true,
-        });
+        const response = await generatePlanningWithChatUi({ provider: AiPlanningFallbackProvider.GeminiChat, model: room.model, prompt, projectId: room.projectId, workerId: room.workerId, chromeHeadless: false, signal: room.signal, attachments, artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION, requestId, closeRoomOnComplete: false, allowDefaultGeminiModel: true });
         const evaluation = parseAiJsonArtifact<{ artifactType: string; requestId: string; selectedTrackIds: string[]; qualityScores: number[] }>(response.text, schema, SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
         if (!_.isEqual(evaluation.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_MUSIC_EVALUATION) || !_.isEqual(normalizeCinematicArtifactIdentity(evaluation.requestId), normalizeCinematicArtifactIdentity(requestId))) {
           throw createAppError(SUNO_AUTOMATION_TEXTS.INVALID_TRACK_SELECTION_ARTIFACT);
@@ -2250,12 +2153,7 @@ const selectProfessionalSunoTracks = async (groups: Array<{ title: string; candi
       } catch (error) {
         lastError = error;
         if (_.isEqual(_.toString(_.get(error, SOURCE_TEXT_CODE)), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE)) throw error;
-        await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_RETRY, {
-          projectId: room.projectId,
-          workerId: room.workerId,
-          attempt: attempt + 1,
-          ...musicErrorDetails(error),
-        });
+        await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_RETRY, { projectId: room.projectId, workerId: room.workerId, attempt: attempt + 1, ...musicErrorDetails(error) });
       }
     }
     throw lastError;
@@ -2272,11 +2170,7 @@ const writeSunoCuratedLog = async (event: string, details: Record<string, unknow
 };
 router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) => {
   const runId = SOURCE_TEMPLATE_SUNO_CREATE(SOURCE_TEMPLATE_SYMBOL_86(`${Date.now()}`));
-  const songs = _.map(_.castArray(req.body?.songs || []), (song) => ({
-    songId: _.trim(_.toString(song?.songId)),
-    title: _.trim(_.toString(song?.title)),
-    lyrics: _.trim(_.toString(song?.lyrics)),
-  }));
+  const songs = _.map(_.castArray(req.body?.songs || []), (song) => ({ songId: _.trim(_.toString(song?.songId)), title: _.trim(_.toString(song?.title)), lyrics: _.trim(_.toString(song?.lyrics)) }));
   const style = _.trim(_.toString(req.body?.style));
   const inspo = _.trim(_.toString(req.body?.inspo));
   const initialSongIds = _.castArray(req.body?.initialSongIds || []);
@@ -2293,11 +2187,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_CREATE, async (req: Request, res: Response) 
   } catch (error) {
     logger.error(SUNO_AUTOMATION_TEXTS.LOG_SUNO_AUTOMATION_FAILED, _.toString(_.get(error, SOURCE_TEXT_STACK, _.get(error, SOURCE_TEXT_MESSAGE, error))));
     await writeMusicDiagnostic(SOURCE_TEXT_SUNO_CREATE_FAILED, { runId, createdCount: _.size(_.get(error, SOURCE_TEXT_CREATEDSONGIDS, [])), ...musicErrorDetails(error) });
-    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, SUNO_AUTOMATION_TEXTS.FAILED_COMPLETE_SUNO_ERR)),
-      createdSongIds: _.castArray(_.get(error, SOURCE_TEXT_CREATEDSONGIDS, [])),
-    });
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ success: false, error: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, SUNO_AUTOMATION_TEXTS.FAILED_COMPLETE_SUNO_ERR)), createdSongIds: _.castArray(_.get(error, SOURCE_TEXT_CREATEDSONGIDS, [])) });
   }
 });
 router.post(ROUTER_PATHS.MUSIC_SUNO_CANCEL, async (_req: Request, res: Response) => {
@@ -2317,29 +2207,13 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
   const closeEvaluationRooms = async (): Promise<void> => {
     if (evaluationRoomsClosed || _.isEmpty(evaluationProjectId)) return;
     evaluationRoomsClosed = true;
-    await Promise.allSettled(
-      _.map(evaluationWorkerIds, (workerId) =>
-        closeChatPlanningRoom({
-          provider: AiPlanningFallbackProvider.GeminiChat,
-          projectId: evaluationProjectId,
-          workerId,
-        }),
-      ),
-    );
+    await Promise.allSettled(_.map(evaluationWorkerIds, (workerId) => closeChatPlanningRoom({ provider: AiPlanningFallbackProvider.GeminiChat, projectId: evaluationProjectId, workerId })));
     const browserClosed = await closeChatBrowserIfIdle();
     await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_BROWSER_CLEANUP, { evaluationRunId, browserClosed });
   };
   try {
-    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_STARTED, {
-      evaluationRunId,
-      evaluateTracks: shouldEvaluateTracks,
-      format: _.toLower(_.trim(_.toString(req.body?.format))),
-      suppliedTrackCount: _.size(_.castArray(req.body?.tracks || [])),
-    });
-    let tracks = _.map(_.castArray(req.body?.tracks || []), (track) => ({
-      songId: _.trim(_.toString(track?.songId)),
-      title: _.trim(_.toString(track?.title)),
-    }));
+    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_STARTED, { evaluationRunId, evaluateTracks: shouldEvaluateTracks, format: _.toLower(_.trim(_.toString(req.body?.format))), suppliedTrackCount: _.size(_.castArray(req.body?.tracks || [])) });
+    let tracks = _.map(_.castArray(req.body?.tracks || []), (track) => ({ songId: _.trim(_.toString(track?.songId)), title: _.trim(_.toString(track?.title)) }));
     if (_.isEmpty(tracks)) {
       await writeSunoCuratedLog(SOURCE_TEXT_PLAYLIST_TRACKS_RECOVERY_STARTED, { evaluationRunId });
       const recoveredSongIds = await getSunoPlaylistSongIds(_.toString(req.body?.playlistUrl));
@@ -2398,12 +2272,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         if (wavPath) sourceWavPaths[track.songId] = wavPath;
         else throw createAppError(SOURCE_TEMPLATE_KHONG_THE_PHUC_HOI_WAV_GOC(SOURCE_TEMPLATE_SYMBOL_86(`${track.title}`)));
       }
-      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_DOWNLOAD_STARTED, {
-        evaluationRunId,
-        trackCount: checkpoint.selectedTracks.length,
-        format: downloadFormat,
-        resumedCount: _.keys(checkpoint.downloadedPaths).length,
-      });
+      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_DOWNLOAD_STARTED, { evaluationRunId, trackCount: checkpoint.selectedTracks.length, format: downloadFormat, resumedCount: _.keys(checkpoint.downloadedPaths).length });
       const downloadedPaths = await downloadSunoTracksToFolder(checkpoint.selectedTracks, downloadFolder, downloadFormat, planningRun?.signal || downloadAbortController.signal, evaluationRunId, {
         existingPaths: checkpoint.downloadedPaths,
         sourceWavPaths,
@@ -2423,13 +2292,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         cumulativeSeconds += durationSeconds;
         return result;
       });
-      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, {
-        evaluationRunId,
-        expectedDownloadCount: checkpoint.selectedTracks.length,
-        downloadedCount: downloadedPaths.length,
-        curatedTracks,
-        success: true,
-      });
+      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, expectedDownloadCount: checkpoint.selectedTracks.length, downloadedCount: downloadedPaths.length, curatedTracks, success: true });
       await deleteMusicDownloadCheckpoint(checkpoint.key);
       await deleteMusicEvaluationAudio(audioCacheKey).catch(() => undefined);
       await deleteMusicEvaluationAudio(checkpoint.key).catch(() => undefined);
@@ -2450,18 +2313,8 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       if (_.some(trackPairs, (pair) => _.size(pair) < 2)) throw createAppError(SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR);
       const pairChunks = _.chunk(trackPairs, SUNO_AUTOMATION_CONFIG.EVALUATION_SONGS_PER_CHUNK);
       evaluationWorkerIds = _.map(pairChunks, (_pairChunk, chunkIndex) => SOURCE_TEMPLATE_CHUNK(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkIndex + 1}`)));
-      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_TRACKS_READY, {
-        evaluationRunId,
-        trackCount: tracks.length,
-        songCount: trackPairs.length,
-        chunkCount: pairChunks.length,
-      });
-      const groupsByChunk = _.map(pairChunks, (pairChunk) =>
-        _.map(pairChunk, (pair) => ({
-          title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, C.EMPTY)),
-          candidates: _.map(pair, SOURCE_TEXT_SONGID),
-        })),
-      );
+      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_TRACKS_READY, { evaluationRunId, trackCount: tracks.length, songCount: trackPairs.length, chunkCount: pairChunks.length });
+      const groupsByChunk = _.map(pairChunks, (pairChunk) => _.map(pairChunk, (pair) => ({ title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, C.EMPTY)), candidates: _.map(pair, SOURCE_TEXT_SONGID) })));
       await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_PREPARATION_STARTED, { evaluationRunId, chunkCount: groupsByChunk.length, trackCount: tracks.length });
       const evaluationAudio = await downloadSunoEvaluationAudio(
         _.flatMap(groupsByChunk, (groups) => _.flatMap(groups, SOURCE_TEXT_CANDIDATES)),
@@ -2469,26 +2322,10 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
         planningRun.signal,
       );
       await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_READY, { evaluationRunId, chunkCount: groupsByChunk.length, trackCount: evaluationAudio.size });
-      const roomPreparations = _.map(evaluationWorkerIds, (workerId) =>
-        prepareChatPlanningRoom({
-          provider: AiPlanningFallbackProvider.GeminiChat,
-          model: req.body?.aiExecution?.model,
-          prompt: C.EMPTY,
-          projectId: evaluationProjectId,
-          workerId,
-          chromeHeadless: false,
-          signal: planningRun.signal,
-          allowDefaultGeminiModel: true,
-        }),
-      );
+      const roomPreparations = _.map(evaluationWorkerIds, (workerId) => prepareChatPlanningRoom({ provider: AiPlanningFallbackProvider.GeminiChat, model: req.body?.aiExecution?.model, prompt: C.EMPTY, projectId: evaluationProjectId, workerId, chromeHeadless: false, signal: planningRun.signal, allowDefaultGeminiModel: true }));
       const evaluationResults = await Promise.allSettled(
         _.map(groupsByChunk, async (groups, chunkIndex) => {
-          await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_STARTED, {
-            evaluationRunId,
-            chunk: chunkIndex + 1,
-            songs: groups.length,
-            candidateTracks: _.sumBy(groups, (group) => group.candidates.length),
-          });
+          await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_STARTED, { evaluationRunId, chunk: chunkIndex + 1, songs: groups.length, candidateTracks: _.sumBy(groups, (group) => group.candidates.length) });
           try {
             await roomPreparations[chunkIndex];
             await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_ROOM_READY, { evaluationRunId, chunk: chunkIndex + 1, workerId: evaluationWorkerIds[chunkIndex] });
@@ -2496,25 +2333,8 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
             await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_ROOM_FAILED, { evaluationRunId, chunk: chunkIndex + 1, ...musicErrorDetails(error) });
             throw error;
           }
-          const selectedTracks = await selectProfessionalSunoTracks(
-            groups,
-            _.trim(_.toString(req.body?.style)),
-            {
-              projectId: evaluationProjectId,
-              workerId: evaluationWorkerIds[chunkIndex],
-              model: req.body?.aiExecution?.model,
-              signal: planningRun.signal,
-            },
-            evaluationAudio,
-            req.body?.styleAnalysis,
-          );
-          await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_COMPLETED, {
-            evaluationRunId,
-            chunk: chunkIndex + 1,
-            selectedTrackCount: selectedTracks.length,
-            selectedTrackIds: _.map(selectedTracks, SOURCE_TEXT_SONGID),
-            qualityScores: _.map(selectedTracks, SOURCE_TEXT_QUALITYSCORE),
-          });
+          const selectedTracks = await selectProfessionalSunoTracks(groups, _.trim(_.toString(req.body?.style)), { projectId: evaluationProjectId, workerId: evaluationWorkerIds[chunkIndex], model: req.body?.aiExecution?.model, signal: planningRun.signal }, evaluationAudio, req.body?.styleAnalysis);
+          await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_COMPLETED, { evaluationRunId, chunk: chunkIndex + 1, selectedTrackCount: selectedTracks.length, selectedTrackIds: _.map(selectedTracks, SOURCE_TEXT_SONGID), qualityScores: _.map(selectedTracks, SOURCE_TEXT_QUALITYSCORE) });
           return selectedTracks;
         }),
       );
@@ -2523,33 +2343,13 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       const selectedTrackChunks = _.map(evaluationResults, (result) => (result as PromiseFulfilledResult<Array<{ songId: string; title: string; qualityScore: number }>>).value);
       const evaluatedTracks = _.flatten(selectedTrackChunks);
       const globallyRankedTracks = _.orderBy(evaluatedTracks, [SOURCE_TEXT_QUALITYSCORE], [SOURCE_TEXT_DESC]);
-      const selectedTracksForDownload = _.map(globallyRankedTracks, (track, rank) => ({
-        songId: track.songId,
-        title: SOURCE_TEMPLATE_SYMBOL_6(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(rank + 1), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, C.EMPTY)}`)),
-        qualityScore: track.qualityScore,
-      }));
+      const selectedTracksForDownload = _.map(globallyRankedTracks, (track, rank) => ({ songId: track.songId, title: SOURCE_TEMPLATE_SYMBOL_6(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(rank + 1), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.trim(track.title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, C.EMPTY)}`)), qualityScore: track.qualityScore }));
       if (!_.isEqual(selectedTracksForDownload.length, trackPairs.length) || !_.isEqual(_.uniq(_.map(selectedTracksForDownload, SOURCE_TEXT_SONGID)).length, trackPairs.length)) {
         throw createAppError(SUNO_AUTOMATION_TEXTS.CURATED_EVALUATION_COUNT_MISMATCH_ERR);
       }
-      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_ALL_EVALS_COMPLETED, {
-        evaluationRunId,
-        expectedSelectionCount: trackPairs.length,
-        selectedTrackCount: selectedTracksForDownload.length,
-        selectedTrackIds: _.map(selectedTracksForDownload, SOURCE_TEXT_SONGID),
-        qualityScores: _.map(selectedTracksForDownload, SOURCE_TEXT_QUALITYSCORE),
-      });
+      await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_ALL_EVALS_COMPLETED, { evaluationRunId, expectedSelectionCount: trackPairs.length, selectedTrackCount: selectedTracksForDownload.length, selectedTrackIds: _.map(selectedTracksForDownload, SOURCE_TEXT_SONGID), qualityScores: _.map(selectedTracksForDownload, SOURCE_TEXT_QUALITYSCORE) });
       await closeEvaluationRooms();
-      const checkpoint: MusicDownloadCheckpoint = {
-        version: 2,
-        key: checkpointKey,
-        candidateIds,
-        selectedTracks: selectedTracksForDownload as MusicDownloadSelection[],
-        folderPath: downloadFolder,
-        format: downloadFormat,
-        downloadedPaths: {},
-        sourceWavRequired: true,
-        updatedAt: Date.now(),
-      };
+      const checkpoint: MusicDownloadCheckpoint = { version: 2, key: checkpointKey, candidateIds, selectedTracks: selectedTracksForDownload as MusicDownloadSelection[], folderPath: downloadFolder, format: downloadFormat, downloadedPaths: {}, sourceWavRequired: true, updatedAt: Date.now() };
       await writeMusicDownloadCheckpoint(checkpoint);
       await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_CHECKPOINT_SAVED, { evaluationRunId, selectedTrackCount: selectedTracksForDownload.length });
       return await finishCuratedDownload(checkpoint);
@@ -2569,10 +2369,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
     await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, trackCount: downloadedPaths.length, format, success: true });
     return res.json({ success: true, downloadedPaths, downloadedTracks: tracks });
   } catch (error) {
-    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_FAILED, {
-      evaluationRunId,
-      ...musicErrorDetails(error),
-    });
+    await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_FAILED, { evaluationRunId, ...musicErrorDetails(error) });
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, SUNO_AUTOMATION_TEXTS.DOWNLOAD_TRACK_FAILED_ERR)) });
   } finally {
     planningRun?.complete();
@@ -2648,10 +2445,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
   }
   try {
     const scenesToRewrite = _.filter(
-      _.map(storyboard, (s: any) => ({
-        id: s.id,
-        prompt: s.prompt || s.script || C.EMPTY,
-      })),
+      _.map(storyboard, (s: any) => ({ id: s.id, prompt: s.prompt || s.script || C.EMPTY })),
       (s: any) => s.prompt,
     );
     if (_.isEmpty(scenesToRewrite)) {
@@ -2667,10 +2461,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS, async (req: Request, res: Response) =>
       const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
       const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective);
       try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON },
-        });
+        const response = await generateContentWithRetry({ contents: prompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
         const parsed = safeParseJSON(response.text, []);
         const expectedIds = _.map(chunkItem, SOURCE_TEXT_ID);
         const returnedIds = _.map(_.castArray(parsed), SOURCE_TEXT_ID);
@@ -2733,11 +2524,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     let planningRoomClosePromise: Promise<void> | undefined;
     const closePlanningRoom = (): Promise<void> => {
       if (!usesChatPlanning || keepPlanningRoomOpen) return Promise.resolve();
-      planningRoomClosePromise ||= closeChatPlanningRoom({
-        provider: planningFallbackProvider,
-        projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE),
-        workerId: planningWorkerId,
-      }).then(async () => {
+      planningRoomClosePromise ||= closeChatPlanningRoom({ provider: planningFallbackProvider, projectId: _.toString(req.body?.projectId || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE), workerId: planningWorkerId }).then(async () => {
         await closeChatBrowserIfIdle();
       });
       return planningRoomClosePromise;
@@ -2820,11 +2607,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         return getCinematicVideoPlanningRepairPrompt(jsonUtils.safeStringify(repairSourceScenes), jsonUtils.safeStringify(previousRepairItems), jsonUtils.safeStringify(issues), continuityContextJson, clipDurationSeconds, CINEMATIC_DIALOGUE_DIRECTIVES.FOLLOW_SOURCE, isVi ? SOURCE_TEXT_VIETNAMESE : SOURCE_TEXT_ENGLISH, videoPromptsRequestId);
       };
       const planningString = { type: SOURCE_TEXT_STRING } as const;
-      const createCinematicPlanningProperties = (expectedSceneIds: string[]) =>
-        ({
-          id: { type: SOURCE_TEXT_STRING, enum: expectedSceneIds },
-          generationPrompt: planningString,
-        }) as const;
+      const createCinematicPlanningProperties = (expectedSceneIds: string[]) => ({ id: { type: SOURCE_TEXT_STRING, enum: expectedSceneIds }, generationPrompt: planningString }) as const;
       const createPlanningItemsSchema = (expectedSceneIds: string[] = sceneIds) =>
         ({
           type: SOURCE_TEXT_ARRAY,
@@ -2871,12 +2654,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
               type: SOURCE_TEXT_OBJECT,
               additionalProperties: false,
               required: [SOURCE_TEXT_ARTIFACTTYPE, SOURCE_TEXT_REQUESTID, SOURCE_TEXT_SCENES, SOURCE_TEXT_COMPLETIONMARKER],
-              properties: {
-                artifactType: { type: SOURCE_TEXT_STRING, enum: [CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS] },
-                requestId: { type: SOURCE_TEXT_STRING, enum: [videoPromptsRequestId] },
-                scenes: createPlanningItemsSchema(expectedSceneIds),
-                completionMarker: { type: SOURCE_TEXT_STRING, enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] },
-              },
+              properties: { artifactType: { type: SOURCE_TEXT_STRING, enum: [CINEMATIC_ARTIFACT_TYPE.VIDEO_PROMPTS] }, requestId: { type: SOURCE_TEXT_STRING, enum: [videoPromptsRequestId] }, scenes: createPlanningItemsSchema(expectedSceneIds), completionMarker: { type: SOURCE_TEXT_STRING, enum: [CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER] } },
             } as const)
           : createPlanningItemsSchema(expectedSceneIds);
       const requestChatUiPlan = async (contents: string, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
@@ -2915,14 +2693,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         throw lastError instanceof Error ? lastError : new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
       };
       const requestApiPlan = async (contents: string, expectedSceneIds: string[] = sceneIds): Promise<any[]> => {
-        const response = await generateContentWithRetry({
-          contents,
-          config: {
-            responseMimeType: CONTENT_TYPES.JSON,
-            responseJsonSchema: createPlanningSchema(expectedSceneIds),
-          },
-          task: { capability: AiTaskCapability.VisualPlanning },
-        });
+        const response = await generateContentWithRetry({ contents, config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: createPlanningSchema(expectedSceneIds) }, task: { capability: AiTaskCapability.VisualPlanning } });
         const parsed = safeParseJSON(response.text, []);
         const parsedScenes = isCinematicPlanning ? _.get(parsed, SOURCE_TEXT_SCENES) : parsed;
         return _.isArray(parsedScenes) ? parsedScenes : [];
@@ -3081,14 +2852,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         const baseScene = _.find(plannedScenes, { id: sceneId });
         const returnedItem = returnedById[sceneId];
         if (!baseScene || !returnedItem) return;
-        const normalizedScene = isCinematicPlanning
-          ? ({
-              ...baseScene,
-              ...returnedItem,
-              id: sceneId,
-              generationPromptProfileVersion: CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION,
-            } as StoryboardScene)
-          : ({ ...baseScene, ...returnedItem } as StoryboardScene);
+        const normalizedScene = isCinematicPlanning ? ({ ...baseScene, ...returnedItem, id: sceneId, generationPromptProfileVersion: CINEMATIC_VIDEO_PROMPT_PROFILE_VERSION } as StoryboardScene) : ({ ...baseScene, ...returnedItem } as StoryboardScene);
         optimizedMap.set(sceneId, normalizedScene);
         const plannedSceneIndex = _.findIndex(plannedScenes, { id: sceneId });
         if (_.gte(plannedSceneIndex, 0)) plannedScenes[plannedSceneIndex] = normalizedScene;
@@ -3118,22 +2882,8 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
         throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
       }
     }
-    const promptQa = isCinematicPlanning
-      ? undefined
-      : validateCompiledImagePrompts(plannedScenes, {
-          backgroundMode: resolvedVisualConfig.styleBackgroundMode,
-          textMode: resolvedVisualConfig.styleTextInImageMode,
-          targetStyle,
-          characters,
-          visualBible: resolvedVisualBible,
-          forbidAspectRatio: true,
-        });
-    const finalizedScenes = isCinematicPlanning
-      ? plannedScenes
-      : _.map(plannedScenes, (scene) => ({
-          ...scene,
-          prompt: appendImagePromptAspectRatio(scene.prompt, aspectRatio || AspectRatio.SixteenNine),
-        }));
+    const promptQa = isCinematicPlanning ? undefined : validateCompiledImagePrompts(plannedScenes, { backgroundMode: resolvedVisualConfig.styleBackgroundMode, textMode: resolvedVisualConfig.styleTextInImageMode, targetStyle, characters, visualBible: resolvedVisualBible, forbidAspectRatio: true });
+    const finalizedScenes = isCinematicPlanning ? plannedScenes : _.map(plannedScenes, (scene) => ({ ...scene, prompt: appendImagePromptAspectRatio(scene.prompt, aspectRatio || AspectRatio.SixteenNine) }));
     const scenesById = _.keyBy(finalizedScenes, SOURCE_TEXT_ID);
     const updatedStoryboard = _.map(storyboard as StoryboardScene[], (scene) => {
       if (_.isEmpty(scene.script || scene.subtitle)) return scene;
@@ -3147,14 +2897,7 @@ router.post(ROUTER_PATHS.OPTIMIZE_PROMPTS, async (req: Request, res: Response) =
     return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.OPTIMIZE_PROMPTS_ERROR, error);
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED,
-      retryable: false,
-      planningIssues: planningFailureIssues,
-      storyboard: planningPartialStoryboard,
-      rotationLogs: error.rotationLogs,
-      diagnostic: _.toString(error?.message),
-    });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED, retryable: false, planningIssues: planningFailureIssues, storyboard: planningPartialStoryboard, rotationLogs: error.rotationLogs, diagnostic: _.toString(error?.message) });
   }
 });
 router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response) => {
@@ -3179,10 +2922,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS, async (req: Request, res: Response)
       const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
       const prompt = getStyleRewriteBatchPrompt(newStyle, jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, isVi, backgroundDirective, textDirective, focusDirective, true);
       try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON },
-        });
+        const response = await generateContentWithRetry({ contents: prompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
         const parsed = safeParseJSON(response.text, []);
         const expectedIds = _.map(thumbsToRewrite, SOURCE_TEXT_ID);
         const returnedIds = _.map(_.castArray(parsed), SOURCE_TEXT_ID);
@@ -3234,10 +2974,7 @@ router.post(ROUTER_PATHS.REWRITE_THUMBNAILS_CHARACTER, async (req: Request, res:
       const focusDirective = visualConfig?.thumbnailImageFocusMode ? resolveImageFocusDirective(visualConfig.thumbnailImageFocusMode, visualConfig.thumbnailBackgroundMode) : undefined;
       const prompt = getCharacterRewriteThumbnailsBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(thumbsToRewrite), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
       try {
-        const response = await generateContentWithRetry({
-          contents: prompt,
-          config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON },
-        });
+        const response = await generateContentWithRetry({ contents: prompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
         const parsed = safeParseJSON(response.text, []);
         const expectedIds = _.map(thumbsToRewrite, SOURCE_TEXT_ID);
         const returnedIds = _.map(_.castArray(parsed), SOURCE_TEXT_ID);
@@ -3286,11 +3023,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
         const correctionDirective = _.isEmpty(artifactIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(artifactIssues)}`));
         const response = await generateContentWithRetry({
           contents: SOURCE_TEMPLATE_SYMBOL_75(`${prompt}`, `${correctionDirective}`),
-          config: {
-            responseMimeType: CONTENT_TYPES.JSON,
-            responseJsonSchema: requiresCompleteArtifact ? CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA : QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA,
-            includeRoomSchemaContract: false,
-          },
+          config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: requiresCompleteArtifact ? CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA : QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA, includeRoomSchemaContract: false },
           task: { capability: AiTaskCapability.TextPlanning },
         });
         const parsed = parseAiJsonArtifact<any>(response.text, requiresCompleteArtifact ? CINEMATIC_CHARACTER_ANALYSIS_RESPONSE_SCHEMA : QUICK_CHARACTER_ANALYSIS_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_CHARACTER_ANALYSIS_RESPONSE);
@@ -3307,17 +3040,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
           ]),
         );
         if (_.isEmpty(artifactIssues)) {
-          result = {
-            characters,
-            ...(requiresCompleteArtifact
-              ? {
-                  characterAnalysis,
-                  characterSpecs,
-                  identityContinuityRisks: parsed.identityContinuityRisks,
-                  artifactWarnings: [],
-                }
-              : {}),
-          };
+          result = { characters, ...(requiresCompleteArtifact ? { characterAnalysis, characterSpecs, identityContinuityRisks: parsed.identityContinuityRisks, artifactWarnings: [] } : {}) };
           break;
         }
       } catch (error) {
@@ -3330,10 +3053,7 @@ router.post(ROUTER_PATHS.ANALYZE_CHARACTER, async (req: Request, res: Response) 
   } catch (error: any) {
     const isVi = isVietnameseRequest(req);
     logger.error(LogEvent.CHARACTER_ANALYSIS_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      error: error.message || getBackendMsg(SOURCE_TEXT_CHARACTER_ANALYZE_FAIL, isVi),
-      rotationLogs: error.rotationLogs,
-    });
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message || getBackendMsg(SOURCE_TEXT_CHARACTER_ANALYZE_FAIL, isVi), rotationLogs: error.rotationLogs });
   }
 });
 router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) => {
@@ -3357,19 +3077,10 @@ router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) 
           base64Data = match[2];
         }
       }
-      parts.push({
-        inlineData: {
-          data: base64Data,
-          mimeType: mimeType,
-        },
-      });
+      parts.push({ inlineData: { data: base64Data, mimeType: mimeType } });
     }
-    parts.push({
-      text: getCharacterExtractPrompt(characterDescription),
-    });
-    const response = await generateContentWithRetry({
-      contents: parts,
-    });
+    parts.push({ text: getCharacterExtractPrompt(characterDescription) });
+    const response = await generateContentWithRetry({ contents: parts });
     if (response && response.text) {
       return res.json({ characterPrompt: response.text.trim() });
     } else {
@@ -3378,10 +3089,7 @@ router.post(ROUTER_PATHS.EXTRACT_CHARACTER, async (req: Request, res: Response) 
   } catch (error: any) {
     const isVi = isVietnameseRequest(req);
     logger.error(LogEvent.CHARACTER_EXTRACTION_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      error: error.message || getBackendMsg(SOURCE_TEXT_CHARACTER_EXTRACT_FAIL, isVi),
-      rotationLogs: error.rotationLogs,
-    });
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message || getBackendMsg(SOURCE_TEXT_CHARACTER_EXTRACT_FAIL, isVi), rotationLogs: error.rotationLogs });
   }
 });
 router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Response) => {
@@ -3403,10 +3111,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
   }
   try {
     const scenesToRewrite = _.filter(
-      _.map(storyboard, (s: any) => ({
-        id: s.id,
-        prompt: s.prompt || s.script || C.EMPTY,
-      })),
+      _.map(storyboard, (s: any) => ({ id: s.id, prompt: s.prompt || s.script || C.EMPTY })),
       (s) => s.prompt,
     );
     if (_.isEmpty(scenesToRewrite)) {
@@ -3421,10 +3126,7 @@ router.post(ROUTER_PATHS.REWRITE_PROMPTS_CHARACTER, async (req: Request, res: Re
       const textDirective = visualConfig?.styleTextInImageMode ? (TEXT_IN_IMAGE_MODE_CONFIG.DIRECTIVES as any)[visualConfig.styleTextInImageMode] : undefined;
       const focusDirective = visualConfig?.imageFocusMode ? resolveImageFocusDirective(visualConfig.imageFocusMode, visualConfig.styleBackgroundMode) : undefined;
       const prompt = getCharacterRewriteBatchPrompt(jsonUtils.safeStringify(finalCharacters), jsonUtils.safeStringify(chunkItem), aspectRatio || AspectRatio.SixteenNine, backgroundDirective, textDirective, focusDirective);
-      const response = await generateContentWithRetry({
-        contents: prompt,
-        config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON },
-      });
+      const response = await generateContentWithRetry({ contents: prompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
       const parsed = safeParseJSON(response.text, []);
       const expectedIds = _.map(chunkItem, SOURCE_TEXT_ID);
       const returnedIds = _.map(_.castArray(parsed), SOURCE_TEXT_ID);
@@ -3464,10 +3166,7 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
   try {
     logStep(getPipelineLog(SOURCE_TEXT_HOOK_STEP1, isVi));
     const combinedPrompt = getMultiStepHookPrompt(originalInput, config.genre, hookType, duration, language, count);
-    const combinedResponse = await generateContentWithRetry({
-      contents: combinedPrompt,
-      config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON },
-    });
+    const combinedResponse = await generateContentWithRetry({ contents: combinedPrompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
     const combinedResult = parseAiJsonArtifact<any>(combinedResponse.text, HOOK_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_HOOK_RESPONSE);
     assertResponseContract(combinedResult, ResponseContractName.Hook);
     logStep(SOURCE_TEMPLATE_TRIGGERS(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_HOOK_STEP1_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${combinedResult.audience || SOURCE_TEXT_GENERAL_AUDIENCE}`), SOURCE_TEMPLATE_SYMBOL_86(`${(combinedResult.triggers || []).join(SOURCE_TEXT_SYMBOL_10)}`)));
@@ -3485,11 +3184,7 @@ router.post(ROUTER_PATHS.HOOKS, async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_HOOKS, error);
     const errorLogs = error.rotationLogs ? [...multiStepLogs, ...error.rotationLogs] : multiStepLogs;
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING,
-      rotationLogs: errorLogs,
-      retryable: true,
-    });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: REFACTOR_CONSTANTS.ERR_HOOK_VERSIONS_MISSING, rotationLogs: errorLogs, retryable: true });
   }
 });
 router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
@@ -3538,12 +3233,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       try {
         const safetyResponse = await generateContentWithRetry({
           contents: SOURCE_TEMPLATE_SYMBOL_75(`${getContentSafetyPrompt(originalInput)}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE : C.EMPTY}`),
-          config: {
-            responseMimeType: CONTENT_TYPES.JSON,
-            responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA,
-            includeRoomSchemaContract: false,
-            maxOutputTokens: CONTENT_SAFETY_CONFIG.MAX_OUTPUT_TOKENS,
-          },
+          config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: CONTENT_SAFETY_RESPONSE_SCHEMA, includeRoomSchemaContract: false, maxOutputTokens: CONTENT_SAFETY_CONFIG.MAX_OUTPUT_TOKENS },
           task: { capability: AiTaskCapability.FactualReview },
         });
         contentSafety = normalizeContentSafety(parseAiJsonArtifact(safetyResponse.text, CONTENT_SAFETY_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_CONTENT_SAFETY_RESPONSE));
@@ -3570,11 +3260,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         let lastHookError: unknown;
         for (let attempt = 0; attempt < TECHNICAL_RESPONSE_RETRY_CONFIG.MAX_ATTEMPTS && !validHookResult; attempt++) {
           try {
-            const hookResponse = await generateContentWithRetry({
-              contents: SOURCE_TEMPLATE_SYMBOL_75(`${hookPrompt}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE_2 : C.EMPTY}`),
-              config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, responseJsonSchema: HOOK_RESPONSE_SCHEMA, includeRoomSchemaContract: false },
-              task: { capability: AiTaskCapability.TextPlanning },
-            });
+            const hookResponse = await generateContentWithRetry({ contents: SOURCE_TEMPLATE_SYMBOL_75(`${hookPrompt}`, `${attempt > 0 ? SOURCE_TEXT_THE_PREVIOUS_RESPONSE_WAS_NOT_ONE_2 : C.EMPTY}`), config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, responseJsonSchema: HOOK_RESPONSE_SCHEMA, includeRoomSchemaContract: false }, task: { capability: AiTaskCapability.TextPlanning } });
             const hookResult = parseAiJsonArtifact<any>(hookResponse.text, HOOK_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_HOOK_RESPONSE);
             assertResponseContract(hookResult, ResponseContractName.Hook);
             const usableVersions = resolveUsableHooks(hookResult.versions, hookType, hookCount, originalInput, isVi);
@@ -3615,14 +3301,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     let groundedResearchResponse: any = null;
     if (config.factCheck && contentSafety.trueCase) {
       try {
-        groundedResearchResponse = await generateContentWithRetry({
-          contents: _.replace(FACT_RESEARCH_CONFIG.PROMPT_TEMPLATE, FACT_RESEARCH_CONFIG.TOPIC_TOKEN, originalInput),
-          config: {
-            tools: [{ googleSearch: {} }],
-            maxOutputTokens: FACT_RESEARCH_CONFIG.MAX_OUTPUT_TOKENS,
-          },
-          task: { capability: AiTaskCapability.FactualReview },
-        });
+        groundedResearchResponse = await generateContentWithRetry({ contents: _.replace(FACT_RESEARCH_CONFIG.PROMPT_TEMPLATE, FACT_RESEARCH_CONFIG.TOPIC_TOKEN, originalInput), config: { tools: [{ googleSearch: {} }], maxOutputTokens: FACT_RESEARCH_CONFIG.MAX_OUTPUT_TOKENS }, task: { capability: AiTaskCapability.FactualReview } });
       } catch (researchError) {
         appWarn(FACT_RESEARCH_CONFIG.FAILED_LOG, researchError);
         throw researchError;
@@ -3653,16 +3332,8 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         creativityLevel: _.clamp(_.toNumber(config.creativityLevel), 0, 10),
         similarityReduction: _.clamp(_.toNumber(config.similarityReduction), 0, 10),
       };
-      cinematicSourceSignature = createCinematicScriptSourceSignature({
-        ...cinematicSourceSignatureInput,
-        artifactSchemas: { filmPackage: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION },
-      });
-      const compatibleCinematicSourceSignatures = _.map(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS, (schemaVersion) =>
-        createCinematicScriptSourceSignature({
-          ...cinematicSourceSignatureInput,
-          artifactSchemas: { filmPackage: schemaVersion },
-        }),
-      );
+      cinematicSourceSignature = createCinematicScriptSourceSignature({ ...cinematicSourceSignatureInput, artifactSchemas: { filmPackage: CINEMATIC_SCRIPT_ARTIFACT_CONFIG.FILM_PACKAGE_SCHEMA_VERSION } });
+      const compatibleCinematicSourceSignatures = _.map(CINEMATIC_SCRIPT_ARTIFACT_CONFIG.LEGACY_FILM_PACKAGE_SCHEMA_VERSIONS, (schemaVersion) => createCinematicScriptSourceSignature({ ...cinematicSourceSignatureInput, artifactSchemas: { filmPackage: schemaVersion } }));
       const checkpointProjectId = path.basename(_.toString(req.body?.projectId));
       cinematicCheckpointProject = _.isEmpty(checkpointProjectId) ? null : await getProjectDetailFromDb(checkpointProjectId).catch(() => null);
       canReuseCinematicCheckpoint = !bypassCache && _.includes([cinematicSourceSignature, ...compatibleCinematicSourceSignatures], _.toString(cinematicCheckpointProject?.cinematicScriptArtifacts?.sourceSignature));
@@ -3738,26 +3409,12 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         if (!cinematicFilmPackage) throw createAppError(SOURCE_TEMPLATE_CINEMATIC_FILM_PACKAGE_INVALID(SOURCE_TEMPLATE_SYMBOL_86(`${_.join(latestIssues, SOURCE_TEXT_SYMBOL_4)}`)));
         await saveCinematicScriptArtifactCheckpoint(req.body?.projectId, SOURCE_TEXT_FILMPACKAGE, cinematicFilmPackage, cinematicSourceSignature);
       }
-      scriptResult = {
-        theme: cinematicFilmPackage.theme,
-        characterSpecs: cinematicFilmPackage.characterSpecs,
-        preferredTerms: [],
-        factCheckNotes: C.EMPTY,
-        creativeBrief: _.pick(cinematicFilmPackage, [SOURCE_TEXT_TITLE, SOURCE_TEXT_LOGLINE, SOURCE_TEXT_THEME, SOURCE_TEXT_VISUALDIRECTION]),
-        factPack: { claims: [] },
-        narrativePlan: undefined,
-        chapters: cinematicFilmPackage.chapters,
-      };
+      scriptResult = { theme: cinematicFilmPackage.theme, characterSpecs: cinematicFilmPackage.characterSpecs, preferredTerms: [], factCheckNotes: C.EMPTY, creativeBrief: _.pick(cinematicFilmPackage, [SOURCE_TEXT_TITLE, SOURCE_TEXT_LOGLINE, SOURCE_TEXT_THEME, SOURCE_TEXT_VISUALDIRECTION]), factPack: { claims: [] }, narrativePlan: undefined, chapters: cinematicFilmPackage.chapters };
     } else {
       const scriptPlanResponse = await requestValidScriptPlan(
         {
           contents: groundedResearchResponse ? SOURCE_TEMPLATE_GROUNDED_RESEARCH_EVIDENCE(SOURCE_TEMPLATE_SYMBOL_86(`${combinedScriptPrompt}`), SOURCE_TEMPLATE_SYMBOL_86(`${groundedResearchResponse.text}`)) : SOURCE_TEMPLATE_FACT_CHECK_MODE_DISABLED_BY_THE(SOURCE_TEMPLATE_SYMBOL_86(`${combinedScriptPrompt}`)),
-          config: {
-            responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-            responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA,
-            includeRoomSchemaContract: false,
-            maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS,
-          },
+          config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, responseJsonSchema: SCRIPT_PLAN_RESPONSE_SCHEMA, includeRoomSchemaContract: false, maxOutputTokens: SCRIPT_PLAN_CONFIG.MAX_OUTPUT_TOKENS },
           task: { capability: config.factCheck ? AiTaskCapability.FactualReview : AiTaskCapability.TextPlanning },
         },
         targetChapterCount,
@@ -3776,11 +3433,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logStep(SOURCE_TEMPLATE_SYMBOL_42(SOURCE_TEMPLATE_SYMBOL_86(`${getPipelineLog(SOURCE_TEXT_SCRIPT_STEP2B_DONE, isVi)}`), SOURCE_TEMPLATE_SYMBOL_86(`${(scriptResult.chapters || []).length}`)));
     if (isCinematicScript) {
       const finalCleanScript = _.trim(_.toString(cinematicFilmPackage?.scriptSegment));
-      const finalChapters = _.map(_.castArray<any>(cinematicFilmPackage?.chapters || []), (chapter: any) => ({
-        id: _.toString(chapter.id),
-        title: _.toString(chapter.title),
-        scriptSegment: _.toString(chapter.scriptSegment),
-      }));
+      const finalChapters = _.map(_.castArray<any>(cinematicFilmPackage?.chapters || []), (chapter: any) => ({ id: _.toString(chapter.id), title: _.toString(chapter.title), scriptSegment: _.toString(chapter.scriptSegment) }));
       const latestCinematicCheckpoint = _.isEmpty(path.basename(_.toString(req.body?.projectId))) ? undefined : await getProjectDetailFromDb(path.basename(_.toString(req.body?.projectId))).catch(() => null);
       const parsedData = {
         rewrittenScript: finalCleanScript,
@@ -3819,11 +3472,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       for (let attemptIndex = 0; attemptIndex < CHAPTER_LANGUAGE_VALIDATION_CONFIG.MAXIMUM_GENERATION_ATTEMPTS; attemptIndex++) {
         const response = await generateContentWithRetry({
           contents: attemptIndex > 0 ? MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(`${contents}`), SOURCE_TEMPLATE_SYMBOL_86(`${isVi ? VIETNAMESE_CHAPTER_RETRY_DIRECTIVE : ENGLISH_CHAPTER_RETRY_DIRECTIVE}`)) : contents,
-          config: {
-            responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-            responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
-            maxOutputTokens: 2048,
-          },
+          config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, responseJsonSchema: CHAPTER_RESPONSE_SCHEMA, maxOutputTokens: 2048 },
           task: { capability: AiTaskCapability.ScriptWriting },
         });
         if (response.aiMetadata) aiMetrics.push(response.aiMetadata);
@@ -3847,15 +3496,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
           const finalCheck = validateChapterLanguage(latestUsableSegment, true);
           if (_.includes(finalCheck.issues, ChapterLanguageIssue.MissingVietnameseDiacritics)) {
             try {
-              const restoreResponse = await generateContentWithRetry({
-                contents: getVietnameseDiacriticsRestorationPrompt(latestUsableSegment),
-                config: {
-                  responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-                  responseJsonSchema: CHAPTER_RESPONSE_SCHEMA,
-                  maxOutputTokens: 2048,
-                },
-                task: { capability: AiTaskCapability.ScriptWriting },
-              });
+              const restoreResponse = await generateContentWithRetry({ contents: getVietnameseDiacriticsRestorationPrompt(latestUsableSegment), config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, responseJsonSchema: CHAPTER_RESPONSE_SCHEMA, maxOutputTokens: 2048 }, task: { capability: AiTaskCapability.ScriptWriting } });
               const restoredSegment = extractCleanChapterSegment(restoreResponse.text);
               if (validateChapterLanguage(restoredSegment, true).valid) {
                 return restoredSegment;
@@ -3885,12 +3526,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         styleGuideline,
         chapterWordTarget,
         splitStrategy,
-        jsonUtils.safeStringify({
-          narrativePlan: scriptResult.narrativePlan,
-          chapterPlan: chapter,
-          completedChapters: _.map(completedChapters, (completedChapter) => _.pick(completedChapter, [SOURCE_TEXT_ID, SOURCE_TEXT_TITLE])),
-          previousChapterSummary,
-        }),
+        jsonUtils.safeStringify({ narrativePlan: scriptResult.narrativePlan, chapterPlan: chapter, completedChapters: _.map(completedChapters, (completedChapter) => _.pick(completedChapter, [SOURCE_TEXT_ID, SOURCE_TEXT_TITLE])), previousChapterSummary }),
       );
       let cleanedSegment = await requestValidChapterSegment(SOURCE_TEMPLATE_ORIGINAL_CONTEXT_CONCEPT_SHEET_CHAPTER_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${originalInput}`), SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(scriptResult)}`), SOURCE_TEMPLATE_SYMBOL_86(`${contentControlDirective}`), SOURCE_TEMPLATE_SYMBOL_86(`${chapterPrompt}`)));
       const chapterMinimumWords = _.floor(chapterWordTarget * (1 - SCRIPT_PROMPT_CONFIG.CHAPTER_WORD_TOLERANCE_RATIO));
@@ -3910,11 +3546,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
         incompleteChapterError.retryable = true;
         throw incompleteChapterError;
       }
-      completedChapters.push({
-        id: chapter.id,
-        title: chapter.title,
-        scriptSegment: cleanedSegment,
-      });
+      completedChapters.push({ id: chapter.id, title: chapter.title, scriptSegment: cleanedSegment });
       previousChapterSummary = cleanedSegment;
       fullScript += cleanedSegment + MOTION_TEXT_SYMBOL_37;
     }
@@ -3929,11 +3561,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
       const correctionDirective = _.isEmpty(editorialIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_2(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(editorialIssues)}`));
       const editorialResponse = await generateContentWithRetry({
         contents: MOTION_TEMPLATE_SYMBOL_27(SOURCE_TEMPLATE_SYMBOL_86(`${getFinalScriptEditorialPrompt(assembledChapterDraft, config.genre, isVi, targetWordCount)}`), SOURCE_TEMPLATE_SYMBOL_86(`${retentionDirective}`), SOURCE_TEMPLATE_SYMBOL_86(`${correctionDirective}`)),
-        config: {
-          responseMimeType: CONTENT_TYPES.JSON,
-          responseJsonSchema: FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA,
-          maxOutputTokens: _.clamp(targetWordCount * 4, 2048, 16384),
-        },
+        config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA, maxOutputTokens: _.clamp(targetWordCount * 4, 2048, 16384) },
         task: { capability: AiTaskCapability.ScriptWriting },
       });
       const editorialResult = parseAiJsonArtifact<any>(editorialResponse.text, FINAL_SCRIPT_EDIT_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_FINAL_SCRIPT_EDIT_RESPONSE);
@@ -3967,11 +3595,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     if (!finalLanguageValidation.valid) throw new Error(PIPELINE_SERVER_ERRORS.SCRIPT_LANGUAGE_INVALID);
     const scriptQaBase = normalizeScriptQualityReport(editorialQa, _.size(_.words(finalCleanScript)), targetDurationSeconds, isVi ? SCRIPT_SPEECH_RATE_CONFIG.VIETNAMESE_WORDS_PER_MINUTE : SCRIPT_SPEECH_RATE_CONFIG.ENGLISH_WORDS_PER_MINUTE);
     const deterministicStyleWarnings = isVi && isSatiricalVideoGenre(config.genre) ? detectVietnameseNarrationStyleWarnings(finalCleanScript) : [];
-    const scriptQa = {
-      ...scriptQaBase,
-      warnings: _.uniq(_.compact([...scriptQaBase.warnings, _.isEmpty(editorialQa) && ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING, !scriptQaBase.durationFit && ADVISORY_QA_CONFIG.SCRIPT_DURATION_WARNING, ...deterministicStyleWarnings])),
-      passed: scriptQaBase.passed && _.isEmpty(deterministicStyleWarnings),
-    };
+    const scriptQa = { ...scriptQaBase, warnings: _.uniq(_.compact([...scriptQaBase.warnings, _.isEmpty(editorialQa) && ADVISORY_QA_CONFIG.SCRIPT_SKIPPED_WARNING, !scriptQaBase.durationFit && ADVISORY_QA_CONFIG.SCRIPT_DURATION_WARNING, ...deterministicStyleWarnings])), passed: scriptQaBase.passed && _.isEmpty(deterministicStyleWarnings) };
     const finalChapters = completedChapters;
     const parsedData = {
       rewrittenScript: finalCleanScript,
@@ -3993,15 +3617,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
     logger.error(LogEvent.ERROR_REWRITING_SCRIPT, error);
     const isVi = config?.language === ProjectLanguage.VI;
     if (_.isEqual(requestContext.getStore()?.aiExecutionMode, AiPlanningExecutionMode.RoomOnly)) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-        error: getRoomOnlyScriptError(requestContext.getStore()?.aiRoomProvider, error, isVi),
-        retryable: true,
-        diagnostic: {
-          message: _.toString(error?.message),
-          artifactIssues: _.compact(_.castArray(error?.artifactIssues)),
-          rotationLogs: _.compact(_.castArray(error?.rotationLogs)),
-        },
-      });
+      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: getRoomOnlyScriptError(requestContext.getStore()?.aiRoomProvider, error, isVi), retryable: true, diagnostic: { message: _.toString(error?.message), artifactIssues: _.compact(_.castArray(error?.artifactIssues)), rotationLogs: _.compact(_.castArray(error?.rotationLogs)) } });
     }
     const rotationLogs = _.castArray(error?.rotationLogs);
     const missingFreeAiKeys = _.some(rotationLogs, (log) => _.isEqual(_.toString(log), FREE_AI_PROVIDER_LOGS.NO_KEYS));
@@ -4025,10 +3641,7 @@ router.post(ROUTER_PATHS.SCRIPT, async (req: Request, res: Response) => {
               ? PIPELINE_CONTROLLER_MESSAGES.FREE_AI_PROVIDER_QUOTA_EXHAUSTED
               : SOURCE_TEXT_THE_FREE_AI_PROVIDERS_ARE_TEMPORARILY
             : getGeminiUserMessage(error, isVi);
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: errorMessage,
-      retryable: Boolean(error?.retryable) || scriptPlanInvalid || languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable,
-    });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: errorMessage, retryable: Boolean(error?.retryable) || scriptPlanInvalid || languageIntegrityFailed || attemptedFreeAi || classifyGeminiError(error).retryable });
   } finally {
   }
 });
@@ -4039,9 +3652,7 @@ router.post(SOURCE_TEXT_DETAILED_PROMPT, async (req: Request, res: Response) => 
   }
   try {
     const prompt = getDetailedPromptBuilderPrompt(sceneScript, setting, time, character, costume, camera, style, aspectRatio || AspectRatio.SixteenNine, characterPrompt, referencePrompt, currentPrompt);
-    const response = await generateContentWithRetry({
-      contents: prompt,
-    });
+    const response = await generateContentWithRetry({ contents: prompt });
     const detailedPrompt = response.text?.trim();
     if (!detailedPrompt) throw createAppError(PIPELINE_SERVER_ERRORS.IMAGE_PROMPT_GENERATION_FAILED);
     res.json({ success: true, prompt: detailedPrompt });
@@ -4062,10 +3673,7 @@ router.post(ROUTER_PATHS.SELECT_VIDEO_SCENES, async (req: Request, res: Response
     let lastIssues: string[] = [];
     for (let attempt = 0; attempt < CINEMATIC_SCRIPT_ARTIFACT_CONFIG.MAX_RESPONSE_ATTEMPTS; attempt++) {
       const correction = _.isEmpty(lastIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_WAS_INVALID_RETURN(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(lastIssues)}`));
-      const response = await generateContentWithRetry({
-        contents: SOURCE_TEMPLATE_SYMBOL_75(`${getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos)}`, `${correction}`),
-        config: { responseMimeType: CONTENT_TYPES.JSON },
-      });
+      const response = await generateContentWithRetry({ contents: SOURCE_TEMPLATE_SYMBOL_75(`${getVideoSceneSelectionPrompt(jsonUtils.safeStringify(scenes), maxVideos)}`, `${correction}`), config: { responseMimeType: CONTENT_TYPES.JSON } });
       const parsed = safeParseJSON(response.text, { videoSceneIds: [] });
       const videoSceneIds = _.get(parsed, REFACTOR_CONSTANTS.VIDEO_SCENE_IDS_KEY);
       lastIssues = _.compact([
@@ -4145,11 +3753,7 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
       ]),
       MOTION_TEXT_SYMBOL_27,
     );
-    const parts: any[] = [
-      {
-        text: getSceneImageQualityPrompt(sceneId, qaNarrativeEvidence, imagePrompt, expectedSubjectCount, qaPurpose, expectedHeadline, layoutId, typographyId, allowBackgroundPeople),
-      },
-    ];
+    const parts: any[] = [{ text: getSceneImageQualityPrompt(sceneId, qaNarrativeEvidence, imagePrompt, expectedSubjectCount, qaPurpose, expectedHeadline, layoutId, typographyId, allowBackgroundPeople) }];
     _.forEach(encodedAssets, (encodedImage) => parts.push({ inlineData: encodedImage }));
     const qualityReferences = _.take(_.uniq(_.compact([referenceAssetUrl, ...referenceAssetUrls])), SCENE_REFERENCE_CONFIG.MAX_IMAGES);
     for (const qualityReference of qualityReferences) {
@@ -4162,32 +3766,18 @@ router.post(ROUTER_PATHS.VALIDATE_SCENE_IMAGE, async (req: Request, res: Respons
     for (const adjacentAssetUrl of adjacentAssetUrls) {
       const encodedAdjacent = readEncodedProjectImage(adjacentAssetUrl);
       if (encodedAdjacent) {
-        parts.push({
-          text: SOURCE_TEXT_THE_NEXT_IMAGE_IS_AN_ADJACENT,
-        });
+        parts.push({ text: SOURCE_TEXT_THE_NEXT_IMAGE_IS_AN_ADJACENT });
         parts.push({ inlineData: encodedAdjacent });
       }
     }
-    const response = await generateContentWithRetry({
-      contents: [
-        {
-          role: SOURCE_TEXT_USER,
-          parts,
-        },
-      ],
-      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_QA_RESPONSE_SCHEMA },
-      task: { capability: AiTaskCapability.VisualQa },
-    });
+    const response = await generateContentWithRetry({ contents: [{ role: SOURCE_TEXT_USER, parts }], config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_QA_RESPONSE_SCHEMA }, task: { capability: AiTaskCapability.VisualQa } });
     const quality = parseAiJsonArtifact(response.text, VISUAL_QA_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_VISUAL_QA_RESPONSE);
     const result = { success: true, quality, rotationLogs: response.rotationLogs };
     setCache(API_ROUTES.PIPELINE_VALIDATE_SCENE_IMAGE, req.body, result);
     return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.VISUAL_QA_ERROR, error);
-    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      error: error.message,
-      rotationLogs: error.rotationLogs,
-    });
+    return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
@@ -4254,20 +3844,13 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
       for (const imgBase64 of _.take(referenceImages, SCENE_REFERENCE_CONFIG.MAX_IMAGES)) {
         try {
           const { data, mimeType } = await readStyleReferenceImage(imgBase64);
-          bibleParts.push({
-            inlineData: {
-              data,
-              mimeType,
-            },
-          });
+          bibleParts.push({ inlineData: { data, mimeType } });
         } catch (referenceError) {
           appWarn(STYLE_EXTRACTION_CONFIG.UNAVAILABLE_ERROR, referenceError);
         }
       }
     }
-    bibleParts.push({
-      text: visualBiblePrompt + (referenceImages && !_.isEmpty(referenceImages) ? VISUAL_BIBLE_REFERENCE_PROMPT : C.EMPTY),
-    });
+    bibleParts.push({ text: visualBiblePrompt + (referenceImages && !_.isEmpty(referenceImages) ? VISUAL_BIBLE_REFERENCE_PROMPT : C.EMPTY) });
     let visualBible: VisualBible = {
       characterSpecs: characterRef || C.EMPTY,
       landscapeSpecs: C.EMPTY,
@@ -4284,10 +3867,7 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
     };
     if (!isCinematicStoryboard) {
       if (!aiProviderAvailable) throw createAppError(PIPELINE_SERVER_ERRORS.VISUAL_BIBLE_INVALID);
-      const bibleResponse = await generateContentWithRetry({
-        contents: bibleParts,
-        config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA },
-      });
+      const bibleResponse = await generateContentWithRetry({ contents: bibleParts, config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VISUAL_BIBLE_RESPONSE_SCHEMA } });
       const parsedVisualBible = parseAiJsonArtifact<VisualBible>(bibleResponse.text, VISUAL_BIBLE_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_VISUAL_BIBLE_RESPONSE);
       const requiredVisualBibleTextFields: Array<keyof VisualBible> = [SOURCE_TEXT_COLORPALETTE, SOURCE_TEXT_CHARACTERSPECS, SOURCE_TEXT_LANDSCAPESPECS, SOURCE_TEXT_LIGHTINGMOOD, SOURCE_TEXT_VISUALSTYLE, SOURCE_TEXT_BACKGROUND, SOURCE_TEXT_LINESTYLE, SOURCE_TEXT_COLORMODE, SOURCE_TEXT_SHADING, SOURCE_TEXT_TEXTPOLICY];
       const visualBibleIsComplete = _.isPlainObject(parsedVisualBible) && _.every(requiredVisualBibleTextFields, (field) => !_.isEmpty(_.trim(_.toString(parsedVisualBible[field])))) && _.isArray(parsedVisualBible.locations) && !_.isEmpty(parsedVisualBible.locations) && _.isArray(parsedVisualBible.props);
@@ -4314,28 +3894,12 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
                 type: SOURCE_TEXT_ARRAY,
                 minItems: cinematicClipCount,
                 maxItems: cinematicClipCount,
-                items: {
-                  type: SOURCE_TEXT_OBJECT,
-                  additionalProperties: false,
-                  required: [SOURCE_TEXT_ID, SOURCE_TEXT_CHAPTERID, SOURCE_TEXT_SCRIPT, SOURCE_TEXT_SUBTITLE],
-                  properties: {
-                    id: { type: SOURCE_TEXT_STRING },
-                    chapterId: { type: SOURCE_TEXT_STRING },
-                    script: { type: SOURCE_TEXT_STRING },
-                    subtitle: { type: SOURCE_TEXT_STRING },
-                  },
-                },
+                items: { type: SOURCE_TEXT_OBJECT, additionalProperties: false, required: [SOURCE_TEXT_ID, SOURCE_TEXT_CHAPTERID, SOURCE_TEXT_SCRIPT, SOURCE_TEXT_SUBTITLE], properties: { id: { type: SOURCE_TEXT_STRING }, chapterId: { type: SOURCE_TEXT_STRING }, script: { type: SOURCE_TEXT_STRING }, subtitle: { type: SOURCE_TEXT_STRING } } },
               },
             },
           } as const)
         : undefined;
-      const splitResponse = await generateContentWithRetry({
-        contents: splitPrompt,
-        config: {
-          responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-          ...(cinematicSplitSchema ? { responseJsonSchema: cinematicSplitSchema } : {}),
-        },
-      });
+      const splitResponse = await generateContentWithRetry({ contents: splitPrompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, ...(cinematicSplitSchema ? { responseJsonSchema: cinematicSplitSchema } : {}) } });
       const splitData = safeParseJSON(splitResponse.text, { scenes: [] });
       let splitScenes = splitData.scenes || [];
       splitStoryboardQa = isCinematicStoryboard ? splitData.storyboardQa : undefined;
@@ -4362,12 +3926,7 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
           const chunkScenes = chunks[i];
           logStoryboardStep(getBilingualMessage(SOURCE_TEXT_STORYBOARD_PROCESSING_BATCH, i + 1, chunks.length));
           const minimalScenesJson = jsonUtils.safeStringify(
-            _.map(chunkScenes, (s: any) => ({
-              id: s.id,
-              chapterId: s.chapterId,
-              script: s.script,
-              subtitle: s.subtitle,
-            })),
+            _.map(chunkScenes, (s: any) => ({ id: s.id, chapterId: s.chapterId, script: s.script, subtitle: s.subtitle })),
             null,
             2,
           );
@@ -4391,12 +3950,7 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
             hasSceneReference,
           );
           try {
-            const batchResponse = await generateContentWithRetry({
-              contents: batchPrompt,
-              config: {
-                responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-              },
-            });
+            const batchResponse = await generateContentWithRetry({ contents: batchPrompt, config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON } });
             const batchData = safeParseJSON(batchResponse.text, { scenes: [] });
             const batchScenes = batchData.scenes || [];
             if (batchResponse.rotationLogs) storyboardLogs.push(...batchResponse.rotationLogs);
@@ -4526,11 +4080,7 @@ router.post(SOURCE_TEXT_STORYBOARD_2, async (req: Request, res: Response) => {
     res.json(data);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_STORYBOARD_GEMINI, error);
-    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: PIPELINE_SERVER_ERRORS.STORYBOARD_GENERATION_FAILED,
-      retryable: true,
-      rotationLogs: error.rotationLogs,
-    });
+    res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.STORYBOARD_GENERATION_FAILED, retryable: true, rotationLogs: error.rotationLogs });
   }
 });
 router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
@@ -4545,10 +4095,7 @@ router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
   const numTags = seoConfig.numTags || 6;
   const isCinematicSeo = isCinematicEpisodeGenre(config.genre || req.body?.genre || req.body?.project?.config?.genre);
   if (!(await isAiProviderAvailable())) {
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED,
-      retryable: true,
-    });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED, retryable: true });
   }
   const seoLogger = new StepLogger();
   const seoLogs = seoLogger.getLogs();
@@ -4567,12 +4114,7 @@ router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
       const correctionDirective = _.isEmpty(seoIssues) ? C.EMPTY : SOURCE_TEMPLATE_THE_PREVIOUS_RESPONSE_FAILED_THESE_CHECKS_3(SOURCE_TEMPLATE_SYMBOL_86(`${jsonUtils.safeStringify(seoIssues)}`));
       const combinedResponse = await generateContentWithRetry({
         contents: SOURCE_TEMPLATE_SYMBOL_75(`${combinedSeoPrompt}`, `${correctionDirective}`),
-        config: {
-          responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-          roomCompletionMarker: isCinematicSeo ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
-          roomArtifactType: isCinematicSeo ? CINEMATIC_ARTIFACT_TYPE.SEO : undefined,
-          roomRequestId: isCinematicSeo ? seoRequestId : undefined,
-        },
+        config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, roomCompletionMarker: isCinematicSeo ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined, roomArtifactType: isCinematicSeo ? CINEMATIC_ARTIFACT_TYPE.SEO : undefined, roomRequestId: isCinematicSeo ? seoRequestId : undefined },
         task: { capability: AiTaskCapability.TextPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
       });
       const candidate = safeParseJSON(combinedResponse.text, undefined);
@@ -4604,21 +4146,12 @@ router.post(SOURCE_TEXT_SEO_2, async (req: Request, res: Response) => {
     logSeoStep(PIPELINE_LOGS.SEO_STEP2_DONE);
     logSeoStep(PIPELINE_LOGS.SEO_STEP3);
     logSeoStep(PIPELINE_LOGS.SEO_DONE_ALL);
-    const parsedData = isCinematicSeo
-      ? { ...seoResult, rotationLogs: seoLogs }
-      : {
-          ...seoResult,
-          rotationLogs: seoLogs,
-        };
+    const parsedData = isCinematicSeo ? { ...seoResult, rotationLogs: seoLogs } : { ...seoResult, rotationLogs: seoLogs };
     setCache(API_ROUTES.PIPELINE_SEO, req.body, parsedData);
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_SEO, error);
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED,
-      retryable: true,
-      rotationLogs: _.castArray(error.rotationLogs),
-    });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.SEO_GENERATION_FAILED, retryable: true, rotationLogs: _.castArray(error.rotationLogs) });
   }
 });
 router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
@@ -4635,10 +4168,7 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
   const hasStyleRef = hasValidImages(visualConfig.styleReferenceImages);
   const refImageStr = hasThumbReference ? SOURCE_TEXT_STRICT_VISUAL_MATCH_ACCURATELY_FOLLOW_THE : hasStyleRef ? SOURCE_TEXT_STRICT_VISUAL_MATCH_ACCURATELY_FOLLOW_THE_2 : visualConfig.thumbnailReferencePrompt || SOURCE_TEXT_DYNAMICALLY_CRAFT_THE_VISUAL_ART_STYLE;
   if (!(await isAiProviderAvailable())) {
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
-      retryable: true,
-    });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED, retryable: true });
   }
   const thumbLogger = new StepLogger();
   const thumbLogs = thumbLogger.getLogs();
@@ -4692,59 +4222,31 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
     if (thumbRefList.length > 0) {
       for (const imgBase64 of thumbRefList) {
         const { data, mimeType } = await readStyleReferenceImage(imgBase64);
-        thumbParts.push({
-          inlineData: {
-            data,
-            mimeType,
-          },
-        });
+        thumbParts.push({ inlineData: { data, mimeType } });
       }
     }
-    let thumbsResult: { concepts: unknown[]; thumbnails: Array<Partial<ThumbnailItem>> } = {
-      concepts: [],
-      thumbnails: [],
-    };
-    const requestParts = _.concat(thumbParts, [
-      {
-        text: combinedThumbnailsPrompt + (!isCinematicThumbnail && visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : C.EMPTY),
-      },
-    ]);
+    let thumbsResult: { concepts: unknown[]; thumbnails: Array<Partial<ThumbnailItem>> } = { concepts: [], thumbnails: [] };
+    const requestParts = _.concat(thumbParts, [{ text: combinedThumbnailsPrompt + (!isCinematicThumbnail && visualConfig.thumbnailReferenceImages && visualConfig.thumbnailReferenceImages.length > 0 ? THUMBNAIL_IMAGE_REFERENCE_PROMPT : C.EMPTY) }]);
     const combinedResponse = await generateContentWithRetry({
       contents: requestParts,
-      config: {
-        responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-        roomCompletionMarker: isCinematicThumbnail ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
-        roomArtifactType: isCinematicThumbnail ? CINEMATIC_ARTIFACT_TYPE.THUMBNAILS : undefined,
-        roomRequestId: isCinematicThumbnail ? thumbnailRequestId : undefined,
-      },
+      config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, roomCompletionMarker: isCinematicThumbnail ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined, roomArtifactType: isCinematicThumbnail ? CINEMATIC_ARTIFACT_TYPE.THUMBNAILS : undefined, roomRequestId: isCinematicThumbnail ? thumbnailRequestId : undefined },
       task: { capability: AiTaskCapability.Thumbnail, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
     });
-    const parsedResult = safeParseJSON(combinedResponse.text, {
-      concepts: [],
-      thumbnails: [],
-    });
+    const parsedResult = safeParseJSON(combinedResponse.text, { concepts: [], thumbnails: [] });
     const returnedThumbnailArtifactType = _.trim(_.toString(parsedResult.artifactType));
     const returnedThumbnailRequestId = _.trim(_.toString(parsedResult.requestId));
     const returnedThumbnailCompletionMarker = _.trim(_.toString(parsedResult.completionMarker));
     if (isCinematicThumbnail && (!_.isEqual(returnedThumbnailArtifactType, CINEMATIC_ARTIFACT_TYPE.THUMBNAILS) || !_.isEqual(returnedThumbnailRequestId, thumbnailRequestId) || !_.isEqual(returnedThumbnailCompletionMarker, CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER))) {
       throw createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
     }
-    thumbsResult = {
-      concepts: _.castArray(parsedResult.concepts || []),
-      thumbnails: _.castArray(parsedResult.thumbnails || []),
-    };
+    thumbsResult = { concepts: _.castArray(parsedResult.concepts || []), thumbnails: _.castArray(parsedResult.thumbnails || []) };
     if (combinedResponse.rotationLogs) thumbLogs.push(...combinedResponse.rotationLogs);
     let planningIssues = isCinematicThumbnail ? getThumbnailTechnicalPlanningIssues(thumbsResult.thumbnails, thumbnailCount, thumbnailTextMode) : getThumbnailPlanningIssues(thumbsResult.thumbnails, thumbnailTextMode, thumbnailCount, refImageStr);
     if (!_.isEmpty(planningIssues)) {
       thumbLogs.push(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(`${ADVISORY_QA_CONFIG.THUMBNAIL_PLANNING_WARNING_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.join(planningIssues, SOURCE_TEXT_SYMBOL_10)}`)));
       const repairResponse = await generateContentWithRetry({
         contents: isCinematicThumbnail ? getCinematicThumbnailTechnicalRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues) : getThumbnailContractRepairPrompt(combinedThumbnailsPrompt, jsonUtils.safeStringify(thumbsResult), planningIssues),
-        config: {
-          responseMimeType: SOURCE_TEXT_APPLICATION_JSON,
-          roomCompletionMarker: isCinematicThumbnail ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined,
-          roomArtifactType: isCinematicThumbnail ? CINEMATIC_ARTIFACT_TYPE.THUMBNAILS : undefined,
-          roomRequestId: isCinematicThumbnail ? thumbnailRequestId : undefined,
-        },
+        config: { responseMimeType: SOURCE_TEXT_APPLICATION_JSON, roomCompletionMarker: isCinematicThumbnail ? CINEMATIC_SCRIPT_ARTIFACT_CONFIG.COMPLETION_MARKER : undefined, roomArtifactType: isCinematicThumbnail ? CINEMATIC_ARTIFACT_TYPE.THUMBNAILS : undefined, roomRequestId: isCinematicThumbnail ? thumbnailRequestId : undefined },
         task: { capability: AiTaskCapability.Thumbnail, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.THUMBNAIL) },
       });
       const repairedResult = safeParseJSON(repairResponse.text, { concepts: [], thumbnails: [] });
@@ -4757,12 +4259,7 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
       if (repairResponse.rotationLogs) thumbLogs.push(...repairResponse.rotationLogs);
     }
     if (!_.isEmpty(planningIssues)) {
-      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-        error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
-        retryable: true,
-        planningIssues,
-        rotationLogs: thumbLogs,
-      });
+      return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED, retryable: true, planningIssues, rotationLogs: thumbLogs });
     }
     logThumbStep(SOURCE_TEMPLATE_LAYOUTS(SOURCE_TEMPLATE_SYMBOL_86(`${PIPELINE_LOGS.THUMB_STEP1_DONE}`), SOURCE_TEMPLATE_SYMBOL_86(`${(thumbsResult.concepts || []).length || 0}`)));
     logThumbStep(PIPELINE_LOGS.THUMB_STEP2);
@@ -4775,11 +4272,7 @@ router.post(SOURCE_TEXT_THUMBNAILS_2, async (req: Request, res: Response) => {
     res.json(parsedData);
   } catch (error: any) {
     logger.error(LogEvent.ERROR_GENERATING_THUMBNAILS_PROMPTS, error);
-    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED,
-      retryable: true,
-      rotationLogs: _.castArray(error.rotationLogs),
-    });
+    return res.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ error: PIPELINE_SERVER_ERRORS.THUMBNAIL_PLANNING_FAILED, retryable: true, rotationLogs: _.castArray(error.rotationLogs) });
   }
 });
 router.post(SOURCE_TEXT_VOICE, requireLicense(FeatureType.VOICE), async (req: Request, res: Response) => {
@@ -4792,20 +4285,10 @@ router.post(SOURCE_TEXT_VOICE, requireLicense(FeatureType.VOICE), async (req: Re
     const mimeType = ttsResult.mimeType || MimeType.MPEG;
     const generatedCharacterCount = _.size(text);
     await incrementFeatureUsage(req, FeatureType.VOICE, generatedCharacterCount);
-    res.json({
-      success: true,
-      audioBase64,
-      mimeType,
-      audioUrl: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-      provider: REFACTOR_CONSTANTS.PROVIDER_AI33,
-    });
+    res.json({ success: true, audioBase64, mimeType, audioUrl: REFACTOR_CONSTANTS.VD_EMPTY_STRING, provider: REFACTOR_CONSTANTS.PROVIDER_AI33 });
   } catch (error: any) {
     logger.error(LogEvent.TTS_PIPELINE_ERROR, error);
-    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: error.message,
-      rotationLogs: error.rotationLogs,
-    });
+    res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: error.message, rotationLogs: error.rotationLogs });
   }
 });
 const persistProjectVideo = async (localProjectId: string, sceneId: string, base64: string, variantIndex?: number): Promise<string> => {
@@ -4887,14 +4370,7 @@ const persistRecoveredFlowScene = async (project: any, scene: StoryboardScene, m
     _.filter(project.storyboard, (candidate) => _.includes(pendingSceneIds, candidate.id) && _.isEqual(candidate.assetStatus, SceneAssetStatus.Failed)),
     REFACTOR_CONSTANTS.AVG_ID_KEY,
   );
-  project.generationCheckpoint = {
-    ...project.generationCheckpoint,
-    phase: _.isEmpty(pendingSceneIds) ? PIPELINE_COMPLETION_CONFIG.MEDIA_COMPLETED_PHASE : PIPELINE_COMPLETION_CONFIG.MEDIA_REPAIR_PHASE,
-    completedSceneIds,
-    pendingSceneIds,
-    failedSceneIds,
-    updatedAt: new Date().toISOString(),
-  };
+  project.generationCheckpoint = { ...project.generationCheckpoint, phase: _.isEmpty(pendingSceneIds) ? PIPELINE_COMPLETION_CONFIG.MEDIA_COMPLETED_PHASE : PIPELINE_COMPLETION_CONFIG.MEDIA_REPAIR_PHASE, completedSceneIds, pendingSceneIds, failedSceneIds, updatedAt: new Date().toISOString() };
   await saveProjectDetailToDb(project);
 };
 router.post(SOURCE_TEXT_RECOVER_FLOW_VIDEO, requireLicense(FeatureType.VIDEO), async (req: Request, res: Response) => {
@@ -4924,14 +4400,7 @@ router.post(SOURCE_TEXT_RECOVER_FLOW_VIDEO, requireLicense(FeatureType.VIDEO), a
         fallbackUrls.push(existingVariantUrl);
         continue;
       }
-      const result = await recoverExistingFlowVideo({
-        flowProjectId,
-        mediaId,
-        expectedDuration: _.toString(project?.visualConfig?.videoDuration),
-        sourceUrl: scene.remoteVideoSourceUrl,
-        chromeHeadless: project?.visualConfig?.chromeHeadless,
-        retainBrowserSession: true,
-      });
+      const result = await recoverExistingFlowVideo({ flowProjectId, mediaId, expectedDuration: _.toString(project?.visualConfig?.videoDuration), sourceUrl: scene.remoteVideoSourceUrl, chromeHeadless: project?.visualConfig?.chromeHeadless, retainBrowserSession: true });
       if (!result.success || _.isEmpty(result.base64)) {
         recoveryWarning = _.defaultTo(result.warning, recoveryWarning);
         break;
@@ -4952,35 +4421,13 @@ router.post(SOURCE_TEXT_RECOVER_FLOW_VIDEO, requireLicense(FeatureType.VIDEO), a
         scene.remoteVideoSourceUrl = undefined;
       }
       await saveProjectDetailToDb(project);
-      return res.json({
-        success: false,
-        base64: null,
-        fallbackUrl: SecurityConstants.EMPTY_STRING,
-        fallbackUrls: [],
-        warning: recoveryWarning,
-        remoteMediaId: shouldRegenerate ? undefined : _.head(persistedMediaIds),
-        remoteMediaIds: shouldRegenerate ? [] : persistedMediaIds,
-        remoteMediaCreated: !shouldRegenerate,
-      });
+      return res.json({ success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, fallbackUrls: [], warning: recoveryWarning, remoteMediaId: shouldRegenerate ? undefined : _.head(persistedMediaIds), remoteMediaIds: shouldRegenerate ? [] : persistedMediaIds, remoteMediaCreated: !shouldRegenerate });
     }
     await persistRecoveredFlowScene(project, scene, persistedMediaIds, fallbackUrls);
-    return res.json({
-      success: true,
-      base64: null,
-      fallbackUrl: _.head(fallbackUrls),
-      fallbackUrls,
-      remoteMediaId: _.head(persistedMediaIds),
-      remoteMediaIds: persistedMediaIds,
-      remoteMediaCreated: true,
-    });
+    return res.json({ success: true, base64: null, fallbackUrl: _.head(fallbackUrls), fallbackUrls, remoteMediaId: _.head(persistedMediaIds), remoteMediaIds: persistedMediaIds, remoteMediaCreated: true });
   } catch (error) {
     logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
-    return res.json({
-      success: false,
-      base64: null,
-      fallbackUrl: C.EMPTY,
-      warning: getMessage(SOURCE_TEXT_SYSTEM_ERROR, undefined, getErrorMessage(error, FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR)),
-    });
+    return res.json({ success: false, base64: null, fallbackUrl: C.EMPTY, warning: getMessage(SOURCE_TEXT_SYSTEM_ERROR, undefined, getErrorMessage(error, FLOW_VIDEO_MEDIA_CONFIG.INVALID_MEDIA_ERROR)) });
   }
 });
 const activeVideoSubmissionKeys = new Set<string>();
@@ -5094,17 +4541,7 @@ router.post(SOURCE_TEXT_GENERATE_FLOW_VIDEO_BATCH, requireBatchVisualLicense, as
     }
     const knownVideoMediaIds = _.uniq(_.compact(_.flatMap(localProject.storyboard || [], (scene) => _.map(!_.isEmpty(scene.remoteVideoMediaIds) ? scene.remoteVideoMediaIds : [scene.remoteVideoMediaId], (mediaId) => _.trim(_.toString(mediaId))))));
     const persistedFlowProjectId = _.toString(localProject.visualConfig?.flowProjectId || req.body?.sandboxConfig?.flowProjectId);
-    const results = await generateFlowVideoPromptBatchWithPlaywright({
-      items: requestedItems,
-      visualConfig: { ...req.body?.visualConfig, generateType: GenerateType.Video },
-      sandboxConfig: {
-        ...req.body?.sandboxConfig,
-        localProjectId,
-        flowProjectId: persistedFlowProjectId || undefined,
-        knownVideoMediaIds,
-      },
-      retainBrowserSession: true,
-    });
+    const results = await generateFlowVideoPromptBatchWithPlaywright({ items: requestedItems, visualConfig: { ...req.body?.visualConfig, generateType: GenerateType.Video }, sandboxConfig: { ...req.body?.sandboxConfig, localProjectId, flowProjectId: persistedFlowProjectId || undefined, knownVideoMediaIds }, retainBrowserSession: true });
     const resolvedFlowProjectId = _.toString(_.find(results, (result) => !_.isEmpty(result.newProjectId))?.newProjectId || persistedFlowProjectId);
     const assignedMediaIds = new Set<string>();
     for (const result of results) {
@@ -5159,26 +4596,11 @@ router.post(ROUTER_PATHS.ENSURE_FLOW_CHARACTERS, requireLicense(FeatureType.IMAG
     const requestedCharacters = _.map(_.castArray(req.body?.characters || []), (character) => {
       const flowPrompt = _.trim(_.toString(character?.referenceGenerationPrompt));
       const identityPrompt = _.trim(_.toString(character?.prompt || character?.description));
-      return {
-        id: _.trim(_.toString(character?.id)),
-        name: _.trim(_.toString(character?.name)),
-        prompt: _.isEmpty(flowPrompt) || FLOW_CHARACTER_CONFIG.LEGACY_REFERENCE_PROMPT_PATTERN.test(flowPrompt) ? identityPrompt || flowPrompt : flowPrompt,
-        info: _.trim(_.toString(character?.description || character?.prompt)),
-      };
+      return { id: _.trim(_.toString(character?.id)), name: _.trim(_.toString(character?.name)), prompt: _.isEmpty(flowPrompt) || FLOW_CHARACTER_CONFIG.LEGACY_REFERENCE_PROMPT_PATTERN.test(flowPrompt) ? identityPrompt || flowPrompt : flowPrompt, info: _.trim(_.toString(character?.description || character?.prompt)) };
     });
-    const result = await ensureFlowCharacters({
-      characters: requestedCharacters,
-      projectId: localProjectId,
-      flowProjectId: _.toString(localProject.visualConfig?.flowProjectId),
-      chromeHeadless: _.isBoolean(req.body?.chromeHeadless) ? req.body.chromeHeadless : localProject.visualConfig?.chromeHeadless,
-      language: req.body?.language,
-      retainBrowserSession: true,
-    });
+    const result = await ensureFlowCharacters({ characters: requestedCharacters, projectId: localProjectId, flowProjectId: _.toString(localProject.visualConfig?.flowProjectId), chromeHeadless: _.isBoolean(req.body?.chromeHeadless) ? req.body.chromeHeadless : localProject.visualConfig?.chromeHeadless, language: req.body?.language, retainBrowserSession: true });
     if (!_.isEmpty(result.newProjectId)) {
-      localProject.visualConfig = {
-        ...localProject.visualConfig,
-        flowProjectId: result.newProjectId,
-      };
+      localProject.visualConfig = { ...localProject.visualConfig, flowProjectId: result.newProjectId };
       await saveProjectDetailToDb(localProject);
     }
     if (result.success) await incrementFeatureUsage(req, FeatureType.IMAGE, result.characters.length);
@@ -5200,13 +4622,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
       if (completedSubmission && _.get(completedSubmission, SOURCE_TEXT_SUCCESS)) return res.json(completedSubmission);
       if (completedSubmission) completedVideoSubmissionResults.delete(requestedIdempotencyKey);
       if (activeVideoSubmissionKeys.has(requestedIdempotencyKey)) {
-        return res.json({
-          success: false,
-          base64: null,
-          fallbackUrl: C.EMPTY,
-          warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
-          remoteSubmissionPending: true,
-        });
+        return res.json({ success: false, base64: null, fallbackUrl: C.EMPTY, warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR, remoteSubmissionPending: true });
       }
       activeVideoSubmissionKey = requestedIdempotencyKey;
       activeVideoSubmissionKeys.add(activeVideoSubmissionKey);
@@ -5221,13 +4637,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
     const requestedVideoProjectKey = isVideoRequest ? _.toString(localProjectId || persistedFlowProjectId) : C.EMPTY;
     if (!_.isEmpty(requestedVideoProjectKey)) {
       if (activeVideoProjectKeys.has(requestedVideoProjectKey)) {
-        return res.json({
-          success: false,
-          base64: null,
-          fallbackUrl: C.EMPTY,
-          warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
-          remoteSubmissionPending: true,
-        });
+        return res.json({ success: false, base64: null, fallbackUrl: C.EMPTY, warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR, remoteSubmissionPending: true });
       }
       activeVideoProjectKey = requestedVideoProjectKey;
       activeVideoProjectKeys.add(activeVideoProjectKey);
@@ -5236,13 +4646,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
     const persistedRemoteMediaIds = _.uniq(_.compact(_.map(!_.isEmpty(persistedScene?.remoteVideoMediaIds) ? persistedScene.remoteVideoMediaIds : [persistedScene?.remoteVideoMediaId], (mediaId) => _.trim(_.toString(mediaId)))));
     const anotherPendingVideoScene = _.find(localProject?.storyboard, (scene) => !_.isEqual(scene.id, sceneId) && scene.remoteVideoDownloadPending && _.isEmpty(scene.assetUrl) && _.isEmpty(scene.assetUrls));
     if (isVideoRequest && anotherPendingVideoScene) {
-      return res.json({
-        success: false,
-        base64: null,
-        fallbackUrl: C.EMPTY,
-        warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR,
-        remoteSubmissionPending: true,
-      });
+      return res.json({ success: false, base64: null, fallbackUrl: C.EMPTY, warning: FLOW_VIDEO_MEDIA_CONFIG.SUBMISSION_IN_PROGRESS_ERROR, remoteSubmissionPending: true });
     }
     if (_.isEqual(visualConfig?.generateType, GenerateType.Video) && !_.isEmpty(persistedFlowProjectId) && !_.isEmpty(persistedRemoteMediaIds) && persistedScene?.remoteVideoDownloadPending && _.isEmpty(persistedScene?.assetUrl) && _.isEmpty(persistedScene?.assetUrls)) {
       const expectedOutputCount = _.defaultTo(persistedScene.remoteVideoExpectedCount, !_.isEmpty(persistedScene.remoteVideoMediaIds) ? FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT : SecurityConstants.DEFAULT_AMOUNT);
@@ -5254,14 +4658,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
           fallbackUrls.push(existingVariantUrl);
           continue;
         }
-        const recoveredResult = await recoverExistingFlowVideo({
-          flowProjectId: persistedFlowProjectId,
-          mediaId,
-          expectedDuration: _.toString(visualConfig?.videoDuration),
-          sourceUrl: persistedScene.remoteVideoSourceUrl,
-          chromeHeadless: visualConfig?.chromeHeadless,
-          retainBrowserSession: true,
-        });
+        const recoveredResult = await recoverExistingFlowVideo({ flowProjectId: persistedFlowProjectId, mediaId, expectedDuration: _.toString(visualConfig?.videoDuration), sourceUrl: persistedScene.remoteVideoSourceUrl, chromeHeadless: visualConfig?.chromeHeadless, retainBrowserSession: true });
         if (!recoveredResult.success || _.isEmpty(recoveredResult.base64)) {
           recoveryWarning = _.defaultTo(recoveredResult.warning, recoveryWarning);
           break;
@@ -5292,15 +4689,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
         });
       }
       await persistRecoveredFlowScene(localProject, persistedScene, persistedRemoteMediaIds, fallbackUrls);
-      const recoveredResponse = {
-        success: true,
-        base64: null,
-        fallbackUrl: _.head(fallbackUrls),
-        fallbackUrls,
-        remoteMediaId: _.head(persistedRemoteMediaIds),
-        remoteMediaIds: persistedRemoteMediaIds,
-        remoteMediaCreated: true,
-      };
+      const recoveredResponse = { success: true, base64: null, fallbackUrl: _.head(fallbackUrls), fallbackUrls, remoteMediaId: _.head(persistedRemoteMediaIds), remoteMediaIds: persistedRemoteMediaIds, remoteMediaCreated: true };
       if (!_.isEmpty(requestedIdempotencyKey)) completedVideoSubmissionResults.set(requestedIdempotencyKey, recoveredResponse);
       return res.json(recoveredResponse);
     }
@@ -5312,23 +4701,11 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
         ),
       ),
     );
-    const resolvedSandboxConfig = {
-      ...sandboxConfig,
-      localProjectId,
-      flowProjectId: persistedFlowProjectId || undefined,
-      projectId: undefined,
-      knownVideoMediaIds,
-    };
+    const resolvedSandboxConfig = { ...sandboxConfig, localProjectId, flowProjectId: persistedFlowProjectId || undefined, projectId: undefined, knownVideoMediaIds };
     if (!_.isEmpty(persistedFlowProjectId)) {
       logger.info(SOURCE_TEMPLATE_GOOGLE_FLOW_REUSING_SHARED_ROOM_FOR(SOURCE_TEMPLATE_SYMBOL_86(`${persistedFlowProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${localProjectId}`)));
     }
-    let result = await generateImageWithPlaywright({
-      prompt,
-      style,
-      visualConfig,
-      sandboxConfig: resolvedSandboxConfig,
-      retainBrowserSession: !_.isEmpty(localProjectId),
-    });
+    let result = await generateImageWithPlaywright({ prompt, style, visualConfig, sandboxConfig: resolvedSandboxConfig, retainBrowserSession: !_.isEmpty(localProjectId) });
     const generatedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
     const generatedRemoteMediaIds = _.uniq(_.compact(_.map(!_.isEmpty(result?.remoteMediaIds) ? result.remoteMediaIds : [result?.remoteMediaId], (mediaId) => _.trim(_.toString(mediaId)))));
     const generatedRemoteMediaId = _.head(generatedRemoteMediaIds);
@@ -5345,10 +4722,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
         generatedScene.remoteVideoExpectedCount = FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT;
         generatedScene.remoteVideoDownloadPending = hasCompleteRemoteBatch && (_.isEmpty(result.base64s) || _.lt(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT));
       }
-      localProject.visualConfig = {
-        ...localProject.visualConfig,
-        flowProjectId: generatedFlowProjectId || localProject.visualConfig?.flowProjectId,
-      };
+      localProject.visualConfig = { ...localProject.visualConfig, flowProjectId: generatedFlowProjectId || localProject.visualConfig?.flowProjectId };
       await saveProjectDetailToDb(localProject);
     }
     if (_.isEqual(visualConfig?.generateType, GenerateType.Video) && result?.remoteMediaCreated && _.lt(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT) && !_.isEmpty(generatedFlowProjectId) && _.gte(_.size(generatedRemoteMediaIds), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
@@ -5360,14 +4734,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
           recoveredFallbackUrls.push(existingVariantUrl);
           continue;
         }
-        const recoveredResult = await recoverExistingFlowVideo({
-          flowProjectId: generatedFlowProjectId,
-          mediaId,
-          expectedDuration: _.toString(visualConfig?.videoDuration),
-          sourceUrl: result.remoteVideoSourceUrl,
-          chromeHeadless: visualConfig?.chromeHeadless,
-          retainBrowserSession: !_.isEmpty(localProjectId),
-        });
+        const recoveredResult = await recoverExistingFlowVideo({ flowProjectId: generatedFlowProjectId, mediaId, expectedDuration: _.toString(visualConfig?.videoDuration), sourceUrl: result.remoteVideoSourceUrl, chromeHeadless: visualConfig?.chromeHeadless, retainBrowserSession: !_.isEmpty(localProjectId) });
         if (!recoveredResult.success || _.isEmpty(recoveredResult.base64)) {
           generatedRecoveryWarning = _.defaultTo(recoveredResult.warning, generatedRecoveryWarning);
           break;
@@ -5377,18 +4744,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
       if (_.gte(_.size(recoveredFallbackUrls), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
         const completedScene = _.find(localProject?.storyboard, { id: sceneId });
         if (completedScene) await persistRecoveredFlowScene(localProject, completedScene, generatedRemoteMediaIds, recoveredFallbackUrls);
-        result = {
-          ...result,
-          success: true,
-          base64: null,
-          base64s: [],
-          fallbackUrl: _.head(recoveredFallbackUrls)!,
-          fallbackUrls: recoveredFallbackUrls,
-          newProjectId: result.newProjectId,
-          remoteMediaId: generatedRemoteMediaId,
-          remoteMediaIds: generatedRemoteMediaIds,
-          remoteMediaCreated: true,
-        };
+        result = { ...result, success: true, base64: null, base64s: [], fallbackUrl: _.head(recoveredFallbackUrls)!, fallbackUrls: recoveredFallbackUrls, newProjectId: result.newProjectId, remoteMediaId: generatedRemoteMediaId, remoteMediaIds: generatedRemoteMediaIds, remoteMediaCreated: true };
       } else if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(generatedRecoveryWarning)) {
         const rejectedScene = _.find(localProject?.storyboard, { id: sceneId });
         if (rejectedScene) {
@@ -5399,26 +4755,13 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
           rejectedScene.assetError = generatedRecoveryWarning;
           await saveProjectDetailToDb(localProject);
         }
-        result = {
-          ...result,
-          success: false,
-          warning: generatedRecoveryWarning,
-          remoteMediaId: undefined,
-          remoteMediaIds: [],
-          remoteMediaCreated: false,
-        };
+        result = { ...result, success: false, warning: generatedRecoveryWarning, remoteMediaId: undefined, remoteMediaIds: [], remoteMediaCreated: false };
       }
     }
     if (result?.success && _.isEqual(visualConfig?.generateType, GenerateType.Video) && _.gte(_.size(result.base64s), FLOW_VIDEO_MEDIA_CONFIG.EXPECTED_OUTPUT_COUNT)) {
       const fallbackUrls = await persistProjectVideoVariants(localProjectId, sceneId, result.base64s!);
       const fallbackUrl = _.head(fallbackUrls)!;
-      result = {
-        ...result,
-        base64: null,
-        base64s: [],
-        fallbackUrl,
-        fallbackUrls,
-      };
+      result = { ...result, base64: null, base64s: [], fallbackUrl, fallbackUrls };
       const completedScene = _.find(localProject?.storyboard, { id: sceneId });
       if (completedScene) {
         completedScene.assetUrl = fallbackUrl;
@@ -5435,10 +4778,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
     const resolvedFlowProjectId = _.toString(result?.newProjectId || persistedFlowProjectId);
     if (localProject && !_.isEmpty(resolvedFlowProjectId) && !_.isEqual(localProject?.visualConfig?.flowProjectId, resolvedFlowProjectId)) {
       const replacedExistingRoom = !_.isEmpty(localProject?.visualConfig?.flowProjectId);
-      localProject.visualConfig = {
-        ...localProject.visualConfig,
-        flowProjectId: resolvedFlowProjectId,
-      };
+      localProject.visualConfig = { ...localProject.visualConfig, flowProjectId: resolvedFlowProjectId };
       await saveProjectDetailToDb(localProject);
       logger.info(replacedExistingRoom ? SOURCE_TEMPLATE_GOOGLE_FLOW_REPLACED_UNAVAILABLE_SHARED_ROOM(SOURCE_TEMPLATE_SYMBOL_86(`${resolvedFlowProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${localProjectId}`)) : SOURCE_TEMPLATE_GOOGLE_FLOW_CREATED_SHARED_ROOM_FOR(SOURCE_TEMPLATE_SYMBOL_86(`${resolvedFlowProjectId}`), SOURCE_TEMPLATE_SYMBOL_86(`${localProjectId}`)));
     }
@@ -5457,12 +4797,7 @@ router.post(SOURCE_TEXT_GENERATE_IMAGE, requireSingleVisualLicense, async (req: 
     return res.json(result);
   } catch (error: any) {
     logger.error(LogEvent.GENERATE_IMAGE_ROUTE_ERROR, error);
-    return res.json({
-      success: false,
-      base64: null,
-      fallbackUrl: C.EMPTY,
-      warning: getMessage(SOURCE_TEXT_SYSTEM_ERROR, undefined, error.message),
-    });
+    return res.json({ success: false, base64: null, fallbackUrl: C.EMPTY, warning: getMessage(SOURCE_TEXT_SYSTEM_ERROR, undefined, error.message) });
   } finally {
     if (!_.isEmpty(activeVideoSubmissionKey)) activeVideoSubmissionKeys.delete(activeVideoSubmissionKey);
     if (!_.isEmpty(activeVideoProjectKey)) activeVideoProjectKeys.delete(activeVideoProjectKey);
@@ -5511,11 +4846,7 @@ router.post(SOURCE_TEXT_GENERATE_BATCH_IMAGES, requireBatchVisualLicense, async 
   } catch (error: any) {
     logger.error(LogEvent.GENERATE_BATCH_IMAGES_ROUTE_ERROR, error);
     if (!res.headersSent) {
-      return res.json({
-        success: false,
-        results: [],
-        warning: BACKEND_MESSAGES.BATCH_GEN_SYSTEM_ERROR.replace(SOURCE_TEXT_0_2, error.message),
-      });
+      return res.json({ success: false, results: [], warning: BACKEND_MESSAGES.BATCH_GEN_SYSTEM_ERROR.replace(SOURCE_TEXT_0_2, error.message) });
     } else {
       res.end();
     }
@@ -5615,10 +4946,7 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
     });
     const audioPath = path.join(tempDir, FINAL_MULTIMODAL_QA_CONFIG.AUDIO_FILE_NAME);
     await new Promise<void>((resolve, reject) => {
-      const process = spawn(executable, [SOURCE_TEXT_Y, SOURCE_TEXT_I, videoPath, SOURCE_TEXT_VN, SOURCE_TEXT_AC, _.toString(FINAL_MULTIMODAL_QA_CONFIG.AUDIO_CHANNELS), SOURCE_TEXT_B_A, FINAL_MULTIMODAL_QA_CONFIG.AUDIO_BITRATE, SOURCE_TEXT_T, _.toString(FINAL_MULTIMODAL_QA_CONFIG.MAX_AUDIO_REVIEW_SECONDS), audioPath], {
-        windowsHide: true,
-        stdio: SOURCE_TEXT_IGNORE,
-      });
+      const process = spawn(executable, [SOURCE_TEXT_Y, SOURCE_TEXT_I, videoPath, SOURCE_TEXT_VN, SOURCE_TEXT_AC, _.toString(FINAL_MULTIMODAL_QA_CONFIG.AUDIO_CHANNELS), SOURCE_TEXT_B_A, FINAL_MULTIMODAL_QA_CONFIG.AUDIO_BITRATE, SOURCE_TEXT_T, _.toString(FINAL_MULTIMODAL_QA_CONFIG.MAX_AUDIO_REVIEW_SECONDS), audioPath], { windowsHide: true, stdio: SOURCE_TEXT_IGNORE });
       process.once(SOURCE_TEXT_ERROR, reject);
       process.once(SOURCE_TEXT_EXIT, (code) => (code === 0 ? resolve() : reject(new Error(PIPELINE_SERVER_ERRORS.FINAL_QA_AUDIO_MISSING))));
     });
@@ -5626,22 +4954,9 @@ router.post(ROUTER_PATHS.VALIDATE_FINAL_VIDEO, async (req: Request, res: Respons
     if (_.isEmpty(frameFiles)) throw new Error(PIPELINE_SERVER_ERRORS.FINAL_QA_FRAMES_MISSING);
     const finalQaPrompt = getCinematicFinalVideoQualityPrompt(_.toString(req.body?.script), _.toString(req.body?.viewerPromise));
     const parts: any[] = [{ text: finalQaPrompt }];
-    _.forEach(frameFiles, (file) =>
-      parts.push({
-        inlineData: {
-          mimeType: FINAL_MULTIMODAL_QA_CONFIG.FRAME_MIME_TYPE,
-          data: fs.readFileSync(path.join(tempDir, file)).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding),
-        },
-      }),
-    );
-    parts.push({
-      inlineData: { mimeType: FINAL_MULTIMODAL_QA_CONFIG.AUDIO_MIME_TYPE, data: fs.readFileSync(audioPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding) },
-    });
-    const response = await generateContentWithRetry({
-      contents: [{ role: SOURCE_TEXT_USER, parts }],
-      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: FINAL_VIDEO_QA_RESPONSE_SCHEMA, maxOutputTokens: FINAL_MULTIMODAL_QA_CONFIG.MAX_OUTPUT_TOKENS },
-      task: { capability: AiTaskCapability.VisualQa },
-    });
+    _.forEach(frameFiles, (file) => parts.push({ inlineData: { mimeType: FINAL_MULTIMODAL_QA_CONFIG.FRAME_MIME_TYPE, data: fs.readFileSync(path.join(tempDir, file)).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding) } }));
+    parts.push({ inlineData: { mimeType: FINAL_MULTIMODAL_QA_CONFIG.AUDIO_MIME_TYPE, data: fs.readFileSync(audioPath).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding) } });
+    const response = await generateContentWithRetry({ contents: [{ role: SOURCE_TEXT_USER, parts }], config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: FINAL_VIDEO_QA_RESPONSE_SCHEMA, maxOutputTokens: FINAL_MULTIMODAL_QA_CONFIG.MAX_OUTPUT_TOKENS }, task: { capability: AiTaskCapability.VisualQa } });
     const quality = parseAiJsonArtifact(response.text, FINAL_VIDEO_QA_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_FINAL_VIDEO_QA_RESPONSE);
     const result = { success: true, quality, aiMetadata: response.aiMetadata, rotationLogs: response.rotationLogs };
     setCache(API_ROUTES.PIPELINE_VALIDATE_FINAL_VIDEO, req.body, result);
@@ -5661,11 +4976,7 @@ router.post(ROUTER_PATHS.REPAIR_VIDEO_PROMPT, async (req: Request, res: Response
   try {
     const response = await generateContentWithRetry({
       contents: _.isEmpty(qaIssues) ? getCinematicVideoPromptPolicyRepairPrompt(prompt) : getCinematicVideoPromptRepairPrompt(prompt, qaIssues, sceneContext),
-      config: {
-        responseMimeType: CONTENT_TYPES.JSON,
-        responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
-        maxOutputTokens: CINEMATIC_GENERATION_RECOVERY_CONFIG.POLICY_REPAIR_MAX_OUTPUT_TOKENS,
-      },
+      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, maxOutputTokens: CINEMATIC_GENERATION_RECOVERY_CONFIG.POLICY_REPAIR_MAX_OUTPUT_TOKENS },
       task: { capability: AiTaskCapability.VisualPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.PROMPT) },
     });
     const review = parseAiJsonArtifact(response.text, VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_VIDEO_PROMPT_REPAIR_RESPONSE);
@@ -5693,11 +5004,7 @@ router.post(ROUTER_PATHS.REPAIR_VISUAL_PROMPT, async (req: Request, res: Respons
           : getVisualPromptQaRepairPrompt(prompt, qaIssues, visualContext, purpose);
     const response = await generateContentWithRetry({
       contents: repairPrompt,
-      config: {
-        responseMimeType: CONTENT_TYPES.JSON,
-        responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA,
-        maxOutputTokens: CINEMATIC_GENERATION_RECOVERY_CONFIG.POLICY_REPAIR_MAX_OUTPUT_TOKENS,
-      },
+      config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, maxOutputTokens: CINEMATIC_GENERATION_RECOVERY_CONFIG.POLICY_REPAIR_MAX_OUTPUT_TOKENS },
       task: { capability: AiTaskCapability.VisualPlanning, roomWorkerId: _.toString(req.body?.roomWorkerId || CINEMATIC_ROOM_STAGE.PROMPT) },
     });
     const review = parseAiJsonArtifact(response.text, VIDEO_PROMPT_POLICY_REPAIR_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_VISUAL_PROMPT_REPAIR_RESPONSE);
@@ -5724,16 +5031,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
       ffmpeg.ffprobe(candidate, (error, metadata) => {
         const videoStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, SOURCE_TEXT_VIDEO_2));
         const audioStream = _.find(metadata?.streams, (stream) => _.isEqual(stream.codec_type, SOURCE_TEXT_AUDIO));
-        resolve(
-          error
-            ? { duration: 0, width: 0, height: 0, hasAudio: false }
-            : {
-                duration: _.toNumber(metadata?.format?.duration),
-                width: _.toNumber(videoStream?.width),
-                height: _.toNumber(videoStream?.height),
-                hasAudio: Boolean(audioStream),
-              },
-        );
+        resolve(error ? { duration: 0, width: 0, height: 0, hasAudio: false } : { duration: _.toNumber(metadata?.format?.duration), width: _.toNumber(videoStream?.width), height: _.toNumber(videoStream?.height), hasAudio: Boolean(audioStream) });
       }),
     );
     const { duration } = mediaInfo;
@@ -5810,20 +5108,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
         });
       });
     }
-    return {
-      sceneId: scene.id,
-      sourcePath: candidate,
-      duration,
-      trimStartSeconds,
-      trimEndSeconds,
-      sourceCrop,
-      warnings,
-      takeDecision,
-      reason,
-      hasAudio: mediaInfo.hasAudio,
-      contactSheetData,
-      contactSheetPath,
-    };
+    return { sceneId: scene.id, sourcePath: candidate, duration, trimStartSeconds, trimEndSeconds, sourceCrop, warnings, takeDecision, reason, hasAudio: mediaInfo.hasAudio, contactSheetData, contactSheetPath };
   };
   const technicalDecisions: any[] = [];
   let analyzedDecisions: any[] = [];
@@ -5895,13 +5180,7 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const reviewMediaByScene = _.keyBy(reviewMediaDecisions, SOURCE_TEXT_SCENEID);
     analyzedDecisions = _.map(analyzedDecisions, (decision) => {
       const media = reviewMediaByScene[decision.sceneId];
-      return media
-        ? {
-            ...decision,
-            contactSheetData: media.contactSheetData,
-            contactSheetPath: media.contactSheetPath,
-          }
-        : decision;
+      return media ? { ...decision, contactSheetData: media.contactSheetData, contactSheetPath: media.contactSheetPath } : decision;
     });
     const reviewableDecisions = _.filter(analyzedDecisions, (decision) => !_.isEmpty(decision.contactSheetData) && aiReviewSceneIds.has(_.toString(decision.sceneId)));
     if (_.isEmpty(reviewableDecisions)) {
@@ -5968,26 +5247,13 @@ router.post(ROUTER_PATHS.ANALYZE_CINEMATIC_CLIPS, async (req: Request, res: Resp
     const globalEditParts: any[] = [{ text: getCinematicGlobalEditDecisionPrompt(metadata, libraryObservations) }];
     _.forEach(reviewableDecisions, (decision) => {
       globalEditParts.push({ text: SOURCE_TEMPLATE_SYMBOL_16(SOURCE_TEMPLATE_SYMBOL_86(`${CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_MEDIA_LABEL_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${decision.sceneId}`)) });
-      globalEditParts.push({
-        inlineData: {
-          mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.IMAGE_MIME_TYPE,
-          data: decision.contactSheetData,
-        },
-      });
+      globalEditParts.push({ inlineData: { mimeType: CINEMATIC_EDIT_ANALYSIS_CONFIG.IMAGE_MIME_TYPE, data: decision.contactSheetData } });
     });
     let editorialDecisions: any[] = [];
     let editorialAiMetadata: unknown;
     let editorialValidationError: string = CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_INVALID_RESPONSE_ERROR;
     for (let attempt = 0; attempt < CINEMATIC_EDIT_ANALYSIS_CONFIG.EDITORIAL_REVIEW_ATTEMPTS; attempt++) {
-      const globalEditResponse = await generateContentWithRetry({
-        contents: [{ role: SOURCE_TEXT_USER, parts: globalEditParts }],
-        config: {
-          responseMimeType: CONTENT_TYPES.JSON,
-          responseJsonSchema: CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA,
-          maxOutputTokens: CINEMATIC_EDIT_ANALYSIS_CONFIG.MAX_OUTPUT_TOKENS,
-        },
-        task: { capability: AiTaskCapability.VisualQa },
-      });
+      const globalEditResponse = await generateContentWithRetry({ contents: [{ role: SOURCE_TEXT_USER, parts: globalEditParts }], config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA, maxOutputTokens: CINEMATIC_EDIT_ANALYSIS_CONFIG.MAX_OUTPUT_TOKENS }, task: { capability: AiTaskCapability.VisualQa } });
       const editArtifact = parseAiJsonArtifact<any>(globalEditResponse.text, CINEMATIC_EDIT_DECISION_RESPONSE_SCHEMA, SOURCE_TEXT_INVALID_CINEMATIC_EDIT_RESPONSE);
       const candidateDecisions = _.castArray(editArtifact.decisions);
       const validation = validateCinematicEditorialDecisions(reviewableDecisions, candidateDecisions);
@@ -6102,12 +5368,7 @@ router.post(ROUTER_PATHS.VALIDATE_AUDIO, async (req: Request, res: Response) => 
           contents: [
             {
               role: SOURCE_TEXT_USER,
-              parts: [
-                {
-                  text: SOURCE_TEMPLATE_SYMBOL_75(`${getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds))}`, `${attempt > 0 ? SOURCE_TEXT_THE_PRIOR_RESPONSE_WAS_INVALID_RETURN : C.EMPTY}`),
-                },
-                { inlineData: { mimeType: _.startsWith(audioBase64, SOURCE_TEXT_UKLGR) ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, data: audioBase64 } },
-              ],
+              parts: [{ text: SOURCE_TEMPLATE_SYMBOL_75(`${getAudioQualityPrompt(_.toString(req.body?.script), _.toNumber(req.body?.targetDurationSeconds))}`, `${attempt > 0 ? SOURCE_TEXT_THE_PRIOR_RESPONSE_WAS_INVALID_RETURN : C.EMPTY}`) }, { inlineData: { mimeType: _.startsWith(audioBase64, SOURCE_TEXT_UKLGR) ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, data: audioBase64 } }],
             },
           ],
           config: { responseMimeType: CONTENT_TYPES.JSON, responseJsonSchema: AUDIO_QUALITY_RESPONSE_SCHEMA },
@@ -6175,10 +5436,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
               if (fs.existsSync(scenesPath)) fs.unlinkSync(scenesPath);
             } catch (cleanupErr) {}
             removeTempAlignDirectoryIfEmpty();
-            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-              success: false,
-              error: getBackendMsg(SOURCE_TEXT_VOICE_ALIGN_INSTALL_ERR, isVi).replace(SOURCE_TEXT_0_2, installError.message),
-            });
+            return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: getBackendMsg(SOURCE_TEXT_VOICE_ALIGN_INSTALL_ERR, isVi).replace(SOURCE_TEXT_0_2, installError.message) });
           }
           logger.log(VOICE_ALIGN_LOGS.WHISPER_INSTALL_SUCCESS);
           runAligner();
@@ -6231,10 +5489,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
           if (stdout) logger.error(SOURCE_TEMPLATE_SYMBOL_75(`${VOICE_ALIGN_LOGS.PYTHON_STDOUT}`, `${stdout}`));
           if (stderr) logger.error(SOURCE_TEMPLATE_SYMBOL_75(`${VOICE_ALIGN_LOGS.PYTHON_STDERR}`, `${stderr}`));
           const pythonError = stderr || stdout;
-          return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-            success: false,
-            error: pythonError ? pythonError : error.message,
-          });
+          return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: pythonError ? pythonError : error.message });
         }
         try {
           if (!fs.existsSync(outputPath)) {
@@ -6285,10 +5540,7 @@ router.post(ROUTER_PATHS.ALIGN_VOICE, async (req: Request, res: Response) => {
               fs.unlinkSync(outputPath);
             } catch (e) {}
           }
-          return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({
-            success: false,
-            error: getBackendMsg(SOURCE_TEXT_VOICE_ALIGN_PARSE_ERR, isVi).replace(SOURCE_TEXT_0_2, err.message),
-          });
+          return res.status(HTTP_STATUS_CODES.INTERNAL_SERVER_ERROR).json({ success: false, error: getBackendMsg(SOURCE_TEXT_VOICE_ALIGN_PARSE_ERR, isVi).replace(SOURCE_TEXT_0_2, err.message) });
         }
       });
     };
@@ -6301,16 +5553,10 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
   const isVi = isVietnameseRequest(req);
   const { filePath, geminiApiKey, sfxFolder, opts, isAutoMode, templateId, parentFolder, imagesDir, voicesDir, projectStyle, projectName, autoExportVideo, videoOutputDir, projectId } = req.body;
   if (!isAutoMode && !filePath) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-      success: false,
-      error: getBackendMsg(SOURCE_TEXT_ULTRA_FILE_REQUIRED, isVi),
-    });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: getBackendMsg(SOURCE_TEXT_ULTRA_FILE_REQUIRED, isVi) });
   }
   if (!isAutoMode && !fs.existsSync(filePath)) {
-    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({
-      success: false,
-      error: getBackendMsg(SOURCE_TEXT_ULTRA_FILE_NOT_FOUND, isVi),
-    });
+    return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false, error: getBackendMsg(SOURCE_TEXT_ULTRA_FILE_NOT_FOUND, isVi) });
   }
   const tempOutputPath = filePath + SOURCE_TEXT_ULTRA_TMP;
   const uniqueId = randomUUID().substring(0, 8);
@@ -6388,12 +5634,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
           if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
         } catch (cleanupErr) {}
         logger.error(SOURCE_TEMPLATE_CAPCUT_ULTRA_PROCESS_FAILED_WITH_EXIT(SOURCE_TEMPLATE_SYMBOL_86(`${code}`)));
-        res.write(
-          jsonUtils.safeStringify({
-            success: false,
-            error: getBackendMsg(SOURCE_TEXT_ULTRA_EXIT_ERROR, isVi).replace(SOURCE_TEXT_0_2, code.toString()),
-          }) + MOTION_TEXT_SYMBOL_27,
-        );
+        res.write(jsonUtils.safeStringify({ success: false, error: getBackendMsg(SOURCE_TEXT_ULTRA_EXIT_ERROR, isVi).replace(SOURCE_TEXT_0_2, code.toString()) }) + MOTION_TEXT_SYMBOL_27);
         res.end();
         return;
       }
@@ -6431,20 +5672,10 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
             }
           }
         }
-        res.write(
-          jsonUtils.safeStringify({
-            success: true,
-            message: getBackendMsg(SOURCE_TEXT_ULTRA_SUCCESS, isVi),
-          }) + MOTION_TEXT_SYMBOL_27,
-        );
+        res.write(jsonUtils.safeStringify({ success: true, message: getBackendMsg(SOURCE_TEXT_ULTRA_SUCCESS, isVi) }) + MOTION_TEXT_SYMBOL_27);
       } catch (fsErr: any) {
         logger.error(SOURCE_TEMPLATE_FILE_COPY_RENAME_UPDATE_FAILED(SOURCE_TEMPLATE_SYMBOL_86(`${fsErr.message}`)));
-        res.write(
-          jsonUtils.safeStringify({
-            success: false,
-            error: fsErr.message,
-          }) + MOTION_TEXT_SYMBOL_27,
-        );
+        res.write(jsonUtils.safeStringify({ success: false, error: fsErr.message }) + MOTION_TEXT_SYMBOL_27);
       }
       res.end();
     });
@@ -6456,12 +5687,7 @@ router.post(SOURCE_TEXT_RUN_ULTRA, async (req: Request, res: Response) => {
       if (fs.existsSync(tempOutputPath)) fs.unlinkSync(tempOutputPath);
     } catch (cleanupErr) {}
     logger.error(getBackendMsg(SOURCE_TEXT_ULTRA_UNEXPECTED_ERR, isVi).replace(SOURCE_TEXT_0_2, err.message));
-    res.write(
-      jsonUtils.safeStringify({
-        success: false,
-        error: err.message,
-      }) + MOTION_TEXT_SYMBOL_27,
-    );
+    res.write(jsonUtils.safeStringify({ success: false, error: err.message }) + MOTION_TEXT_SYMBOL_27);
     res.end();
   }
 });
@@ -6622,19 +5848,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
         _.map(chunk, (item: any, index: number) => ({ index: offset + index + 1, title: item.title })),
         requestId,
       );
-      const result = await generatePlanningWithChatUi({
-        provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat,
-        model: req.body?.model,
-        prompt,
-        projectId: rankingId,
-        signal: planningRun.signal,
-        chromeHeadless: req.body?.chromeHeadless === true,
-        attachments,
-        artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT,
-        requestId,
-        closeRoomOnComplete: false,
-        allowDefaultGeminiModel: true,
-      });
+      const result = await generatePlanningWithChatUi({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, model: req.body?.model, prompt, projectId: rankingId, signal: planningRun.signal, chromeHeadless: req.body?.chromeHeadless === true, attachments, artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT, requestId, closeRoomOnComplete: false, allowDefaultGeminiModel: true });
       const parsed = parseJson(result.text.replace(/^```(?:json)?\s*|\s*```$/g, C.EMPTY));
       const validScores = parsed.artifactType === MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT && parsed.requestId === requestId && Array.isArray(parsed.scores) && parsed.scores.length === chunk.length && parsed.scores.every((item: any) => Number.isInteger(item.index) && item.index >= offset + 1 && item.index <= offset + chunk.length && Number.isInteger(item.score) && item.score >= 0 && item.score <= 100);
       if (!validScores) throw new Error(MUSIC_MIXER_SERVER.ERROR_RANKING_RESPONSE);
@@ -6719,18 +5933,8 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
       targetZipPath: target,
       folders: folders.map((folder: any) => ({
         name: String(folder.name || C.EMPTY),
-        files: Array.isArray(folder.files)
-          ? folder.files.map((file: any) => ({
-              sourcePath: String(file.sourcePath || C.EMPTY),
-              zipPath: String(file.zipPath || C.EMPTY),
-            }))
-          : [],
-        texts: Array.isArray(folder.texts)
-          ? folder.texts.map((textItem: any) => ({
-              content: String(textItem.content || C.EMPTY),
-              zipPath: String(textItem.zipPath || C.EMPTY),
-            }))
-          : [],
+        files: Array.isArray(folder.files) ? folder.files.map((file: any) => ({ sourcePath: String(file.sourcePath || C.EMPTY), zipPath: String(file.zipPath || C.EMPTY) })) : [],
+        texts: Array.isArray(folder.texts) ? folder.texts.map((textItem: any) => ({ content: String(textItem.content || C.EMPTY), zipPath: String(textItem.zipPath || C.EMPTY) })) : [],
       })),
     };
     await fs.promises.writeFile(tempManifestPath, stringifyJson(manifest), SOURCE_TEXT_UTF_8);
@@ -6902,29 +6106,7 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
     zip.file(CAPCUT_CONFIG.AUDIO_NARRATION_FILENAME, fullAudioBuffer);
     zip.file(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES_2(SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`)), fullAudioBuffer);
     zip.file(SOURCE_TEMPLATE_RESOURCES_ORIGINAL_VOICES_3(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.ORIGINAL_VOICE_FILENAME}`)), fullAudioBuffer);
-    const capcutMaterials: any = {
-      audios: [],
-      beats: [],
-      canvases: [],
-      chromas: [],
-      colors: [],
-      drafts: [],
-      effects: [],
-      flowers: [],
-      images: [],
-      keyframes: [],
-      manual_deformations: [],
-      masks: [],
-      sound_channel_mappings: [],
-      speeds: [],
-      stickers: [],
-      tail_leaders: [],
-      texts: [],
-      transitions: [],
-      video_effects: [],
-      videos: [],
-      vocal_separations: [],
-    };
+    const capcutMaterials: any = { audios: [], beats: [], canvases: [], chromas: [], colors: [], drafts: [], effects: [], flowers: [], images: [], keyframes: [], manual_deformations: [], masks: [], sound_channel_mappings: [], speeds: [], stickers: [], tail_leaders: [], texts: [], transitions: [], video_effects: [], videos: [], vocal_separations: [] };
     const videoTrackSegments: any[] = [];
     const subtitleTrackSegments: any[] = [];
     const audioTrackSegments: any[] = [];
@@ -6954,103 +6136,28 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
       const durationUs = Math.round(scRange.duration * 1000000);
       const filename = SOURCE_TEMPLATE_VOICE_WAV(SOURCE_TEMPLATE_SYMBOL_86(`${idx + 1}`));
       const materialId = SOURCE_TEMPLATE_MATERIAL_AUDIO_SCENE(SOURCE_TEMPLATE_SYMBOL_86(`${scRange.id}`));
-      capcutMaterials.audios.push({
-        id: materialId,
-        type: SOURCE_TEXT_AUDIO,
-        duration: durationUs,
-        source_platform: CAPCUT_CONFIG.SOURCE_PLATFORM_TTS,
-        local_material_path: SOURCE_TEMPLATE_RESOURCES_VOICES_4(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)),
-      });
-      audioTrackSegments.push({
-        id: SOURCE_TEMPLATE_SEG_AUDIO_SCENE(SOURCE_TEMPLATE_SYMBOL_86(`${scRange.id}`)),
-        material_id: materialId,
-        source_timerange: {
-          duration: durationUs,
-          start: 0,
-        },
-        target_timerange: {
-          duration: durationUs,
-          start: startUs,
-        },
-        speed: 1.0,
-        volume: project.voiceConfig?.volume || 1.0,
-      });
+      capcutMaterials.audios.push({ id: materialId, type: SOURCE_TEXT_AUDIO, duration: durationUs, source_platform: CAPCUT_CONFIG.SOURCE_PLATFORM_TTS, local_material_path: SOURCE_TEMPLATE_RESOURCES_VOICES_4(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${filename}`)) });
+      audioTrackSegments.push({ id: SOURCE_TEMPLATE_SEG_AUDIO_SCENE(SOURCE_TEMPLATE_SYMBOL_86(`${scRange.id}`)), material_id: materialId, source_timerange: { duration: durationUs, start: 0 }, target_timerange: { duration: durationUs, start: startUs }, speed: 1.0, volume: project.voiceConfig?.volume || 1.0 });
     });
     _.forEach(sceneRanges, (timing, index) => {
       const imgMatId = SOURCE_TEMPLATE_MATERIAL_IMAGE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`));
       const timingDurationUs = Math.round(timing.duration * 1000000);
       const timingStartUs = Math.round(timing.start * 1000000);
-      capcutMaterials.images.push({
-        id: imgMatId,
-        type: SOURCE_TEXT_IMAGE,
-        duration: timingDurationUs,
-        local_material_path: SOURCE_TEMPLATE_IMAGE_JPG_2(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`), SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`)),
-      });
-      videoTrackSegments.push({
-        id: SOURCE_TEMPLATE_SEG_BACKUP_VIDEO_SLIDE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`)),
-        material_id: imgMatId,
-        source_timerange: {
-          duration: timingDurationUs,
-          start: 0,
-        },
-        target_timerange: {
-          duration: timingDurationUs,
-          start: timingStartUs,
-        },
-        extra_info: {
-          camera_motion: timing.cameraMotion,
-          transition_effect: timing.transition,
-        },
-      });
+      capcutMaterials.images.push({ id: imgMatId, type: SOURCE_TEXT_IMAGE, duration: timingDurationUs, local_material_path: SOURCE_TEMPLATE_IMAGE_JPG_2(SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.LOCAL_DRAFT_PATH_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${folderKey}`), SOURCE_TEMPLATE_SYMBOL_86(`${CAPCUT_CONFIG.RESOURCES_IMAGES_DIR}`), SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`)) });
+      videoTrackSegments.push({ id: SOURCE_TEMPLATE_SEG_BACKUP_VIDEO_SLIDE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`)), material_id: imgMatId, source_timerange: { duration: timingDurationUs, start: 0 }, target_timerange: { duration: timingDurationUs, start: timingStartUs }, extra_info: { camera_motion: timing.cameraMotion, transition_effect: timing.transition } });
       const textMatId = SOURCE_TEMPLATE_MATERIAL_TEXT(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`));
-      capcutMaterials.texts.push({
-        id: textMatId,
-        type: SOURCE_TEXT_TEXT,
-        content: jsonUtils.safeStringify({
-          text: timing.subtitle,
-          styles: {
-            font_size: 15.0,
-            text_color: SOURCE_TEXT_FFFF00,
-            stroke: true,
-            stroke_color: SOURCE_TEXT_000000,
-          },
-        }),
-      });
-      subtitleTrackSegments.push({
-        id: SOURCE_TEMPLATE_SEG_SUBTITLE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`)),
-        material_id: textMatId,
-        source_timerange: null,
-        target_timerange: {
-          duration: timingDurationUs,
-          start: timingStartUs,
-        },
-      });
+      capcutMaterials.texts.push({ id: textMatId, type: SOURCE_TEXT_TEXT, content: jsonUtils.safeStringify({ text: timing.subtitle, styles: { font_size: 15.0, text_color: SOURCE_TEXT_FFFF00, stroke: true, stroke_color: SOURCE_TEXT_000000 } }) });
+      subtitleTrackSegments.push({ id: SOURCE_TEMPLATE_SEG_SUBTITLE(SOURCE_TEMPLATE_SYMBOL_86(`${timing.id}`)), material_id: textMatId, source_timerange: null, target_timerange: { duration: timingDurationUs, start: timingStartUs } });
     });
     const draftContentObj = {
-      canvas_config: {
-        height: CAPCUT_CONFIG.CANVAS_HEIGHT,
-        width: CAPCUT_CONFIG.CANVAS_WIDTH,
-        ratio: CAPCUT_CONFIG.CANVAS_RATIO,
-      },
+      canvas_config: { height: CAPCUT_CONFIG.CANVAS_HEIGHT, width: CAPCUT_CONFIG.CANVAS_WIDTH, ratio: CAPCUT_CONFIG.CANVAS_RATIO },
       duration: totalDurationUs,
       id: SOURCE_TEXT_DRAFT_ROOT_TIMELINE,
       materials: capcutMaterials,
       tracks: [
-        {
-          id: SOURCE_TEXT_TRACK_VIDEO_TIMELINE,
-          type: SOURCE_TEXT_VIDEO_2,
-          segments: videoTrackSegments,
-        },
-        {
-          id: SOURCE_TEXT_TRACK_AUDIO_TIMELINE,
-          type: SOURCE_TEXT_AUDIO,
-          segments: audioTrackSegments,
-        },
-        {
-          id: SOURCE_TEXT_TRACK_SUBTITLE_TIMELINE,
-          type: SOURCE_TEXT_TEXT,
-          segments: subtitleTrackSegments,
-        },
+        { id: SOURCE_TEXT_TRACK_VIDEO_TIMELINE, type: SOURCE_TEXT_VIDEO_2, segments: videoTrackSegments },
+        { id: SOURCE_TEXT_TRACK_AUDIO_TIMELINE, type: SOURCE_TEXT_AUDIO, segments: audioTrackSegments },
+        { id: SOURCE_TEXT_TRACK_SUBTITLE_TIMELINE, type: SOURCE_TEXT_TEXT, segments: subtitleTrackSegments },
       ],
     };
     const draftContentStr = jsonUtils.safeStringify(draftContentObj, null, 2);
@@ -7065,42 +6172,16 @@ router.post(ROUTER_PATHS.EXPORT_ZIP, async (req: Request, res: Response) => {
     writeDraftFile(CAPCUT_CONFIG.DRAFT_EXTRA_FILENAME, jsonUtils.safeStringify({ client_os: SOURCE_TEXT_WIN, author: CAPCUT_CONFIG.AUTHOR, sync_time: Math.floor(Date.now() / 1000) }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.DRAFT_AGENCY_CONFIG_FILENAME, jsonUtils.safeStringify({ agency_id: C.EMPTY, org_id: C.EMPTY, user_id: CAPCUT_CONFIG.USER_ID }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.DRAFT_BIZ_CONFIG_FILENAME, jsonUtils.safeStringify({ commercial_use: false, music_copyright_check: true }, null, 2));
-    const draftMetaInfoObj = {
-      draft_id: CAPCUT_CONFIG.ACTIVE_FOLDER_UUID,
-      draft_name: project.name || SOURCE_TEXT_AI_VIDEO_DRAFT,
-      draft_type: SOURCE_TEXT_VIDEO_2,
-      create_time: Date.now(),
-      modify_time: Date.now(),
-      draft_duration: totalDurationUs,
-      tm_draft_modified: Math.floor(Date.now() / 1000),
-      draft_cover_path: CAPCUT_CONFIG.COVER_FILENAME,
-      draft_fold_path: C.EMPTY,
-    };
+    const draftMetaInfoObj = { draft_id: CAPCUT_CONFIG.ACTIVE_FOLDER_UUID, draft_name: project.name || SOURCE_TEXT_AI_VIDEO_DRAFT, draft_type: SOURCE_TEXT_VIDEO_2, create_time: Date.now(), modify_time: Date.now(), draft_duration: totalDurationUs, tm_draft_modified: Math.floor(Date.now() / 1000), draft_cover_path: CAPCUT_CONFIG.COVER_FILENAME, draft_fold_path: C.EMPTY };
     writeDraftFile(CAPCUT_CONFIG.DRAFT_META_INFO_FILENAME, jsonUtils.safeStringify(draftMetaInfoObj, null, 2));
-    const draftSettings = {
-      project_setting: {
-        fps: CAPCUT_CONFIG.FPS,
-        ratio: CAPCUT_CONFIG.CANVAS_RATIO,
-        width: CAPCUT_CONFIG.CANVAS_WIDTH,
-        height: CAPCUT_CONFIG.CANVAS_HEIGHT,
-      },
-      export_setting: {
-        resolution: CAPCUT_CONFIG.RESOLUTION,
-        fps: CAPCUT_CONFIG.FPS,
-        rate_control: CAPCUT_CONFIG.RATE_CONTROL,
-        bit_rate: CAPCUT_CONFIG.BIT_RATE,
-      },
-    };
+    const draftSettings = { project_setting: { fps: CAPCUT_CONFIG.FPS, ratio: CAPCUT_CONFIG.CANVAS_RATIO, width: CAPCUT_CONFIG.CANVAS_WIDTH, height: CAPCUT_CONFIG.CANVAS_HEIGHT }, export_setting: { resolution: CAPCUT_CONFIG.RESOLUTION, fps: CAPCUT_CONFIG.FPS, rate_control: CAPCUT_CONFIG.RATE_CONTROL, bit_rate: CAPCUT_CONFIG.BIT_RATE } };
     writeDraftFile(CAPCUT_CONFIG.DRAFT_SETTINGS_FILENAME, jsonUtils.safeStringify(draftSettings, null, 2));
     writeDraftFile(CAPCUT_CONFIG.DRAFT_VIRTUAL_STORE_FILENAME, jsonUtils.safeStringify({ cache_items: [], local_res_map: [] }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.KEY_VALUE_FILENAME, jsonUtils.safeStringify({ draft_opened_count: 1, last_open_time: Math.floor(Date.now() / 1000) }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.PERFORMANCE_OPT_FILENAME, jsonUtils.safeStringify({ enable_proxy: false, render_quality: 100 }, null, 2));
     writeDraftFile(CAPCUT_CONFIG.TEMPLATE_TMP_FILENAME, TEMPLATE_TMP_CONTENT(project.name));
     writeDraftFile(CAPCUT_CONFIG.TIMELINE_LAYOUT_FILENAME, jsonUtils.safeStringify({ track_scale: 1.0, timeline_scroll_x: 0.0, ruler_offset: 0 }, null, 2));
-    const content = await zip.generateAsync({
-      type: SOURCE_TEXT_NODEBUFFER,
-      compression: SOURCE_TEXT_STORE,
-    });
+    const content = await zip.generateAsync({ type: SOURCE_TEXT_NODEBUFFER, compression: SOURCE_TEXT_STORE });
     res.setHeader(SOURCE_TEXT_CONTENT_TYPE, SOURCE_TEXT_APPLICATION_ZIP);
     const safeFileName = encodeURIComponent(project.name.replace(WHITESPACE_REGEX, SOURCE_TEXT_SYMBOL_25));
     res.setHeader(SOURCE_TEXT_CONTENT_DISPOSITION, SOURCE_TEMPLATE_ATTACHMENT_FILENAME_CAPCUT_PROJECT_BUNDLE_ZIP(SOURCE_TEMPLATE_SYMBOL_86(`${safeFileName}`)));
@@ -7370,29 +6451,11 @@ router.post(SOURCE_TEXT_FFMPEG_RENDER, express.json({ limit: SecurityConstants.L
     const persistedRenderProject = safeProjectId ? await getProjectDetailFromDb(safeProjectId) : undefined;
     const requiredSourceSceneIds = !_.isEmpty(expectedSourceSceneIds) ? _.map(_.castArray(expectedSourceSceneIds), _.toString) : _.map(_.defaultTo(persistedRenderProject?.storyboard, []), SOURCE_TEXT_ID);
     const requiredDurationSeconds = _.gt(_.toNumber(expectedDurationSeconds), 0) ? _.toNumber(expectedDurationSeconds) : parseTargetDurationSeconds(persistedRenderProject?.config?.duration);
-    const renderPayload = {
-      scenes: recoveredScenes,
-      globalAudioUrl,
-      globalAudioBase64,
-      quality: quality as VideoQuality,
-      aspectRatio: aspectRatio as string,
-      projectId: projectId as string,
-      subtitleMode,
-      audioTracks,
-      autoMusicProfile,
-      preserveVideoAudio: Boolean(preserveVideoAudio),
-      expectedSourceSceneIds: requiredSourceSceneIds,
-      expectedDurationSeconds: requiredDurationSeconds,
-    };
+    const renderPayload = { scenes: recoveredScenes, globalAudioUrl, globalAudioBase64, quality: quality as VideoQuality, aspectRatio: aspectRatio as string, projectId: projectId as string, subtitleMode, audioTracks, autoMusicProfile, preserveVideoAudio: Boolean(preserveVideoAudio), expectedSourceSceneIds: requiredSourceSceneIds, expectedDurationSeconds: requiredDurationSeconds };
     const preflight = validateFFmpegRenderOptions(renderPayload);
     if (!preflight.ready) {
       logger.warn(SOURCE_TEMPLATE_RENDER_PREFLIGHT_REJECTED(SOURCE_TEMPLATE_SYMBOL_86(`${safeProjectId || SOURCE_TEXT_UNKNOWN_PROJECT}`), SOURCE_TEMPLATE_SYMBOL_86(`${preflight.issues.join(SOURCE_TEXT_SYMBOL_4)}`)));
-      return res.status(HTTP_STATUS_CODES.UNPROCESSABLE_ENTITY).json({
-        success: false,
-        error: SOURCE_TEXT_RENDER_PREFLIGHT_FAILED,
-        issues: preflight.issues,
-        retryable: true,
-      });
+      return res.status(HTTP_STATUS_CODES.UNPROCESSABLE_ENTITY).json({ success: false, error: SOURCE_TEXT_RENDER_PREFLIGHT_FAILED, issues: preflight.issues, retryable: true });
     }
     const licenseKey = (_.get(req.headers, SecurityConstants.HEADER_LICENSE_KEY) as string) || (_.get(requestContext.getStore(), SecurityConstants.STORE_LICENSE_KEY) as string);
     await renderQueueService.addJob(jobId, renderPayload, licenseKey);
@@ -7409,13 +6472,7 @@ router.get(SOURCE_TEXT_FFMPEG_RENDER_STATUS_JOBID, async (req: Request, res: Res
   if (!job) {
     return res.status(HTTP_STATUS_CODES.NOT_FOUND).json({ error: REFACTOR_CONSTANTS.RENDER_JOB_NOT_FOUND });
   }
-  res.json({
-    success: true,
-    status: job.status,
-    progress: job.progress,
-    url: job.url,
-    error: job.error,
-  });
+  res.json({ success: true, status: job.status, progress: job.progress, url: job.url, error: job.error });
 });
 router.post(ROUTER_PATHS.REFERENCE_AUDIO, async (req: Request, res: Response) => {
   const projectId = path.basename(_.toString(req.params.projectId));

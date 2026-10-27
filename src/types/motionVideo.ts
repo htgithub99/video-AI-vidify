@@ -104,6 +104,7 @@ export interface MotionReferenceStyle {
 }
 export type MotionDrawingMode = "2d" | "3d";
 export interface MotionGenSpec {
+  renderBehavior?: import("./motionVisual.js").MotionRenderBehavior;
   board2d?: MotionBoard2dSpec;
   characterMotion?: boolean;
   characterMode?: "drawn";
@@ -134,6 +135,7 @@ export interface MotionHudSegment {
   end: number;
 }
 export interface MotionSpec {
+  renderBehavior?: import("./motionVisual.js").MotionRenderBehavior;
   kit?: PuppetKitSpec;
   fxCues?: { t: number; kind: string }[];
   fadeIn?: number;
@@ -213,7 +215,7 @@ export interface MotionSoundSelection {
   skipped?: boolean;
 }
 export interface MotionCompiledPreview {
-  spec: MotionSpec;
+  spec: import("./motionVisual.js").MotionRenderSpec;
   sfxCues: MotionSoundCue[];
   missing: string[];
   compilationKey?: string;
@@ -257,6 +259,8 @@ export interface MotionJobState {
   log: string[];
 }
 export interface MotionResultItem {
+  resolvedSettings?: { behavior: import("./motionVisual.js").MotionRenderBehavior; layoutRevision?: number; effectRevision?: number; sceneRevision?: number; subtitles: boolean; aspect: string; fps: number; quality: string; encoder: string };
+  visualSettings?: import("./motionVisual.js").MotionVisualSettings;
   id: string;
   title: string;
   fileName: string;
@@ -376,6 +380,7 @@ export interface MotionStorySpine {
   clues: { detail: string; setupChapterId: string; payoffChapterId: string; payoff: string }[];
 }
 export interface MotionStoryAnalysis {
+  visualSettings?: import("./motionVisual.js").MotionVisualSettings;
   folkStoryContract?: MotionFolkStoryContract;
   topicId?: string;
   topicEvidence?: { chapterId: string; quote: string }[];
@@ -646,6 +651,8 @@ export interface MotionBoard2dSpec {
   castArt?: Record<string, MotionCastArt>;
 }
 export interface MotionGenState {
+  renderBehavior?: import("./motionVisual.js").MotionRenderBehavior;
+  remotion?: import("./motionVisual.js").MotionRemotionState;
   puppet?: PuppetGen;
   board2d?: MotionBoard2d;
   soundDirectionKey?: string;
@@ -695,6 +702,7 @@ export interface MotionSeriesState {
   carryGen?: Partial<MotionGenState>;
 }
 export interface MotionStoryScript {
+  visualSettings?: import("./motionVisual.js").MotionVisualSettings;
   durationRepairStates?: Record<string, { rejected: number; errors: string[] }>;
   chapterDrafts?: Record<string, MotionChapterDraft>;
   voiceTrack?: MotionVoiceTrack;
@@ -873,6 +881,9 @@ export enum MotionStoryJobKind {
 }
 export interface MotionLogEntry {
   startedAt?: number;
+  status?: MotionJobStatus;
+  stage?: string;
+  error?: string;
   id: string;
   kind: string;
   lines: string[];

@@ -22,9 +22,10 @@ export const motionChapterRepairPrompt = (rows: Record<string, any>[], pending: 
   const schema = MOTION_RESPONSE_SCHEMAS["motion-story-chapter"].properties!.beats.items!;
   const targets = pending.map((item) => {
     const draft = rows.find((row) => row.id === item.id);
-    return { ...item, draft, errors: motionResponseIssues(draft, schema).filter((issue) => item.fields.includes(issue.path.split(/[.\[]/)[0])) };
+    const fields = new Set(item.fields);
+    return { ...item, draft: draft && Object.fromEntries(Object.entries(draft).filter(([key]) => fields.has(key))), readOnly: draft && Object.fromEntries(["narration", "cast", "place", "action"].filter((key) => !fields.has(key) && draft[key] !== undefined).map((key) => [key, draft[key]])), errors: motionResponseIssues(draft, schema).filter((issue) => fields.has(issue.path.split(/[.\[]/)[0])) };
   });
-  const neighbours = rows.filter((row, index) => !ids.has(row.id) && rows.slice(Math.max(0, index - P.CONTEXT_NEIGHBOURS), index + P.CONTEXT_NEIGHBOURS + 1).some((item) => ids.has(item.id))).map((row) => ({ id: row.id, narration: row.narration, place: row.place, cast: row.cast, scenePlan: row.scenePlan }));
+  const neighbours = rows.filter((row, index) => !ids.has(row.id) && rows.slice(Math.max(0, index - P.CONTEXT_NEIGHBOURS), index + P.CONTEXT_NEIGHBOURS + 1).some((item) => ids.has(item.id))).map((row) => ({ id: row.id, narration: row.narration, place: row.place, cast: row.cast }));
   const types = Object.fromEntries([...new Set(pending.flatMap((item) => item.fields))].flatMap((field) => (schema.properties?.[field] ? [[field, motionResponseShape(schema.properties[field])]] : [])));
   return R.DIAGNOSTICS + P.CHAPTER_REPAIR(targets, neighbours, { story: context, outputTypes: types });
 };

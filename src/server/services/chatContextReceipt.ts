@@ -1,6 +1,15 @@
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../../constants/cinematicConstants.js";
 import { MOTION_AI_RECOVERY as R } from "../../constants/motionAiRecovery.js";
 import type { Page } from "playwright";
+export const parseChatContextReceipt = (text: string): unknown => {
+  for (const candidate of [...text.matchAll(C.CONTEXT_RECEIPT_PATTERN)].reverse()) {
+    try {
+      const value = JSON.parse(candidate[0]);
+      if (value?.artifactType === C.CONTEXT_ARTIFACT && typeof value.requestId === "string" && Number.isInteger(value.receivedPart) && value.receivedPart > 0) return value;
+    } catch {}
+  }
+  return undefined;
+};
 export class ChatContextReceipts {
   private key?: string;
   private accepted = new Set<number>();
@@ -50,7 +59,14 @@ export const observeChatContextReceipts = (page: Page): ChatContextReceipts => {
 export const confirmChatContextPart = async (prompt: string, id: string, part: number, send: (prompt: string) => Promise<unknown>, signal?: AbortSignal): Promise<void> => {
   for (let attempt = 0; attempt <= C.CONTEXT_ACK_REPAIRS; attempt++) {
     signal?.throwIfAborted();
-    const response = (await send(attempt ? C.CONTEXT_ACK_REPAIR(id, part) : prompt)) as { artifactType?: unknown; requestId?: unknown; receivedPart?: unknown } | null;
+    let response: { artifactType?: unknown; requestId?: unknown; receivedPart?: unknown } | null;
+    try {
+      response = (await send(attempt ? C.CONTEXT_ACK_REPAIR(id, part) : prompt)) as typeof response;
+    } catch (error) {
+      signal?.throwIfAborted();
+      if (!(error instanceof Error) || (error.message !== C.INVALID_JSON_RESPONSE_ERROR && error.message !== C.INVALID_RESPONSE_ERROR)) throw error;
+      continue;
+    }
     signal?.throwIfAborted();
     if (response?.artifactType === C.CONTEXT_ARTIFACT && response.requestId === id && response.receivedPart === part) return;
   }

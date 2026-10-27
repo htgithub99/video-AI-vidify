@@ -902,7 +902,7 @@ export const PUPPET_TEXTS = {
     LIB_COUNTS: (c: Record<string, number>): string => `${c.characters || 0} nhân vật · ${c.sets || 0} bối cảnh · ${c.props || 0} đồ vật`,
     LIB_VARIANTS: (v: string[]): string => (v.length ? "Có bản: " + v.join(", ") : ""),
     LIB_RELOAD: "Tải lại",
-    STYLE_LABEL: "Gói kiểu vẽ",
+    STYLE_LABEL: "Gói vẽ",
     STYLE_HINT: "Tối giản mặt nạ và Chibi màu dân gian chỉ chọn và ghép tài nguyên có sẵn trong đúng gói; kiểm khả năng bố trí trước khi dựng hình, không tự vẽ thêm. Không dùng gói: AI thiết kế theo truyện hoặc ảnh mẫu. Các phần của cùng truyện dùng chung nhân vật, bối cảnh và đồ vật.",
     STYLE_FROM_REFS: "Không dùng gói · theo ảnh mẫu đã tải",
     STYLE_NONE: "Không dùng gói · AI tự thiết kế, vẽ mới hết",

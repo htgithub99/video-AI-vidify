@@ -36,6 +36,7 @@ export const motionVoiceMatchesFilter = (voice: MotionVoicePreset, filter: (type
   }
 };
 export const speechWords = (text: string): string => text.replace(C.TAGS, MR.MOTION_TEXT_EMPTY).replace(P.NON_WORD, MR.MOTION_TEXT_EMPTY).toLowerCase();
+export const normalizeMotionNarratorSpeakers = (raw: unknown, narratorKey?: string): unknown => (Array.isArray(raw) && narratorKey ? raw.map((line) => (line?.speaker === narratorKey && line?.role === MR.MOTION_TEXT_NARRATION ? { ...line, speaker: C.NARRATOR } : line)) : raw);
 const fxStrength = (line: MotionUtterance, delivery: Pick<MotionVoiceDelivery, "mood" | "strength">): number => {
   const share = FX.ROLES.includes(line.role) ? 1 : FX.NARRATOR_SHARE;
   const s = Math.round(delivery.strength * share * 100) / 100;

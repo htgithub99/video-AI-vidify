@@ -2,7 +2,7 @@ import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
+const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8")).replace(/\\\r?\n/g, "");
 const controller = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
 const component = resolveSourceTextConstants(fs.readFileSync("src/components/MusicCreator.tsx", "utf8"));
 const imageGenerator = resolveSourceTextConstants(fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8"));
@@ -37,13 +37,7 @@ for (const option of seoExample.seoOptions) {
   assert.ok(option.hashtags.every((value: string) => /^#[A-Za-z0-9_]+$/.test(value)));
   assert.ok(option.tags.every((value: string) => /^[a-z0-9 ]+$/i.test(value)));
 }
-const imageNotePrompt = SUNO_AUTOMATION_TEXTS.buildMusicImageNoteNormalizationPrompt(
-  "Giữ nguyên text, đổi bố cục.",
-  SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO,
-  true,
-  true,
-  "note-test",
-);
+const imageNotePrompt = SUNO_AUTOMATION_TEXTS.buildMusicImageNoteNormalizationPrompt("Giữ nguyên text, đổi bố cục.", SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO, true, true, "note-test");
 assert.match(imageNotePrompt, /Giữ nguyên text, đổi bố cục/);
 assert.match(imageNotePrompt, /image is attached/);
 assert.match(imageNotePrompt, /track-list checkbox is ON/);
@@ -124,7 +118,7 @@ assert.doesNotMatch(controller, /const hasVietnameseAnalysis/);
 assert.match(controller, /buildMusicStyleAnalysisPrompt/);
 assert.match(controller, /buildMusicPlanPrompt\(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed/);
 assert.match(controller, /const composeAdaptiveBatch/);
-assert.match(controller, /const pendingCompositionBatches = _\.filter\(compositionBatches, \(batch\) => !checkpoint\.batches\.has\(batch\.startIndex\)\)/);
+assert.match(controller, /const pendingCompositionBatches = _\.filter\(compositionBatches, \(batch\) => !checkpoint\.batches\.has\(batch\.startIndex\) \|\| checkpoint\.batches\.get\(batch\.startIndex\)!\.some\(\(song\) => !validMusicEditorialReview\(song\.editorialReview\)\)\)/);
 assert.match(controller, /checkpoint\.batches\.set\(batch\.startIndex/);
 assert.match(controller, /checkpoint\.styleAnalysis = styleAnalysisParsed/);
 assert.doesNotMatch(controller, /await closeActiveBrowser\(true\)/);

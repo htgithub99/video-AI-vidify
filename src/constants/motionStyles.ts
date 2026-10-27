@@ -307,6 +307,7 @@ export const MOTION_STYLES = {
   STEP1_SETTINGS_ROW: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 items-end pt-2 border-t border-slate-800/80",
   STEP1_LENGTH_WRAPPER: "space-y-1 shrink-0",
   STEP1_TOGGLE_WRAPPER: "space-y-1 min-w-0",
+  VISUAL_MODE_SELECT: "block w-full h-[34px] rounded-xl border border-slate-800 bg-slate-955/70 px-3 text-xs font-semibold text-slate-200",
   STUDIO_GRID_LAYOUT: "grid grid-cols-1 xl:grid-cols-12 gap-6 items-start w-full",
   STUDIO_LEFT_COLUMN: "xl:col-span-7 2xl:col-span-8 flex flex-col gap-6 min-w-0",
   STUDIO_RIGHT_COLUMN: "xl:col-span-5 2xl:col-span-4 flex flex-col gap-6 min-w-0 xl:sticky xl:top-4",
@@ -317,6 +318,18 @@ export const MOTION_STYLES = {
   STUDIO_STEPPER_INACTIVE: "bg-slate-955/50 border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700",
   STUDIO_STEPPER_NUM: "w-5 h-5 rounded-lg flex items-center justify-center font-mono font-bold text-[10px] shrink-0",
   STUDIO_PROGRESS_CARD: "glass-card rounded-2xl p-4 sm:p-5 border border-purple-500/30 bg-purple-950/20 shadow-xl space-y-3.5 animate-in fade-in duration-200",
+} as const;
+export const MOTION_REMOTION_STYLES = {
+  PANEL: "space-y-2 min-w-0 font-sans not-italic",
+  COUNT: "text-xs text-slate-400",
+  GRID: "grid grid-cols-1 sm:grid-cols-3 gap-2",
+  CARD: "min-w-0 border border-slate-700 rounded-lg overflow-hidden",
+  OPEN: "block w-full text-left cursor-zoom-in",
+  PENDING: "relative aspect-video min-w-0 overflow-hidden text-slate-400",
+  PENDING_CONTENT: "absolute inset-0 min-w-0 overflow-hidden px-2 py-1 flex flex-col justify-end gap-1",
+  STATUS: "min-w-0 truncate text-xs leading-4",
+  REASON: "min-w-0 line-clamp-2 break-words text-[10px] leading-4",
+  CAPTION: "min-w-0 px-2 py-1 text-[11px] leading-4 text-slate-300 truncate",
 } as const;
 export const MOTION_RULE_STYLES = {
   mustPreserve: {

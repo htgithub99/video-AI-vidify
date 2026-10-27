@@ -30,6 +30,13 @@ import { retimeMotionSeo, seoScriptKey } from "./motionSeoService.js";
 import { MotionLogStore } from "./motionLogStore.js";
 import { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, editorialSession, aiExec } from "./motionProductionActions.js";
 import { runInMotionAiSession } from "./motionStoryService.js";
+import { motionVisualRequest, motionVisualSettingsFor, isRemotionSpec } from "../../lib/motionVisual.js";
+import { MOTION_VISUAL as VISUAL } from "../../constants/motionVisual.js";
+import { motionRenderBehaviorFor } from "../../lib/motionRenderBehavior.js";
+import { MOTION_RENDER_BEHAVIOR as B } from "../../constants/motionRenderBehavior.js";
+import { checkRemotionRuntime } from "./motionRemotionRenderService.js";
+import { remotionStoryBuildCurrent } from "./remotion/sceneKeys.js";
+import { MOTION_REMOTION_LAYOUT as L } from "../../constants/motionRemotionLayout.js";
 interface ProductionRecord {
   illustration?: PuppetPlanReadiness;
   illustrationRecovery?: MotionPlanRecoveryState;
@@ -42,9 +49,12 @@ interface ProductionRecord {
   steps: Record<string, { id: string; done?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string }>;
   owner?: MotionProductionOwner;
 }
-const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice };
+const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan };
 export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS) => {
-  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice } = { ...productionDependencies, ...dependencies };
+  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan } = {
+    ...productionDependencies,
+    ...dependencies,
+  };
   const store = new MotionProductionStore<ProductionRecord>(directory);
   const logs = new MotionLogStore(path.join(directory, P.LOG_FOLDER));
   const active = new Map<string, { record: ProductionRecord; controller: AbortController; owner: MotionProductionOwner }>();
@@ -67,6 +77,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   const run = async (record: ProductionRecord, controller: AbortController, owner: MotionProductionOwner): Promise<void> => {
     const signal = controller.signal;
     const base: Record<string, any> = { ...structuredClone(record.input), productionId: record.job.id, editorialSessionId: record.job.id, keepBrowser: true };
+    base.renderBehavior = motionRenderBehaviorFor(base);
+    base.characterMotion = base.renderBehavior.actors === "simple";
+    log(record, B.LOG(base.renderBehavior.actors, base.renderBehavior.sceneEffects, base.renderBehavior.camera));
     const result = record.result;
     const save = (): void => {
       signal.throwIfAborted();
@@ -213,13 +226,26 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       }
     };
     try {
+      if (record.input.visualSettings || record.input.analysis?.visualSettings || record.input.script?.visualSettings) Object.assign(base, motionVisualRequest(record.input));
+      const visualSettings = motionVisualSettingsFor(base);
+      if (visualSettings.mode === "remotion" && result.script && result.analysis && !remotionStoryBuildCurrent(result.script, result.analysis)) {
+        for (const name of Object.keys(record.steps)) if (name === P.STAGES.SCENES || name.startsWith(P.STAGES.SCENES + " · ") || name === P.STAGES.RENDER) delete record.steps[name];
+        delete result.compiled;
+        delete result.rendered;
+        log(record, L.LOG_REPLAN(result.script.beats.length));
+      }
       record.job.status = S.PREPARING;
       record.job.stage = P.STAGES.PREFLIGHT;
       save();
       const directory = getMotionRootDirectory();
       fs.accessSync(directory, fs.constants.W_OK);
       const disk = fs.statfsSync(directory);
-      if (!base.source?.segments?.length || disk.bavail * disk.bsize < P.MIN_FREE_BYTES || (closedPuppetPackId(base.stylePreset) && !puppetPackStoryCapabilities(base.stylePreset))) throw new Error(P.PREFLIGHT_FAILED);
+      if (!base.source?.segments?.length || disk.bavail * disk.bsize < P.MIN_FREE_BYTES || (visualSettings.mode === "library" && closedPuppetPackId(base.stylePreset) && !puppetPackStoryCapabilities(base.stylePreset))) throw new Error(P.PREFLIGHT_FAILED);
+      log(record, VISUAL.LOG_MODE(visualSettings.mode));
+      if (visualSettings.mode === "remotion") {
+        if (base.encoder === "gpu") throw new Error(VISUAL.CPU_ONLY);
+        await checkRemotionRuntime(signal);
+      }
       if (!base.analyzeOnly) {
         await checkMotionMediaTools(signal);
         await checkMotionProductionVoice(base.voiceChannel, signal);
@@ -242,30 +268,32 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         record.job.stage = P.ANALYSIS_DONE;
         return;
       }
-      const ready = await runInMotionAiSession(
-        record.job.id,
-        () =>
-          recoverMotionIllustrationPlan(
-            { ...result.analysis!, stylePreset: base.stylePreset || result.analysis?.stylePreset },
-            {
-              verifyCoverage: true,
-              exec: base.aiExecution || {},
-              signal,
-              log: (line) => log(record, line),
-              state: (record.illustrationRecovery ||= { attempts: 0, errors: [] }),
-              save: (analysis) => {
-                result.analysis = analysis;
-                save();
+      if (visualSettings.mode === "library") {
+        const ready = await runInMotionAiSession(
+          record.job.id,
+          () =>
+            recoverMotionIllustrationPlan(
+              { ...result.analysis!, stylePreset: base.stylePreset || result.analysis?.stylePreset },
+              {
+                verifyCoverage: true,
+                exec: base.aiExecution || {},
+                signal,
+                log: (line) => log(record, line),
+                state: (record.illustrationRecovery ||= { attempts: 0, errors: [] }),
+                save: (analysis) => {
+                  result.analysis = analysis;
+                  save();
+                },
               },
-            },
-          ),
-        (line) => log(record, line),
-        true,
-        signal,
-        editorialSession(base, base.source, aiExec(base.aiExecution)),
-      );
-      record.illustration = ready.illustration;
-      result.analysis = ready.analysis;
+            ),
+          (line) => log(record, line),
+          true,
+          signal,
+          editorialSession(base, base.source, aiExec(base.aiExecution)),
+        );
+        record.illustration = ready.illustration;
+        result.analysis = ready.analysis;
+      } else result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
       await step<MotionStoryScript>(
         P.STAGES.SCRIPT,
@@ -366,7 +394,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       record.job.stage = P.STAGES.COMPILE;
       if (!result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis)) throw new Error(P.AUDIO_REQUIRED);
       result.compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice.durations, audioId: result.voice.audioId });
-      result.compiled.spec = { ...result.compiled.spec, fps: base.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
+      if (isRemotionSpec(result.compiled.spec) && base.fps && result.compiled.spec.fps !== base.fps) throw new Error(VISUAL.SETTINGS_CHANGED);
+      result.compiled.spec = { ...result.compiled.spec, fps: base.fps || result.compiled.spec.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
       if (result.compiled.missing.length || result.compiled.voiceStale) throw new Error(P.AUDIO_REQUIRED);
       save();
       if (base.autoExport !== false)
@@ -446,7 +475,13 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   const startMotionProduction = (input: Record<string, any>, resume = false): MotionStoryJobState => {
     assertMotionProductionMode(input);
     const id = String(input.productionId || randomUUID());
+    const existing = read(id);
     const normalized = JSON.parse(JSON.stringify({ ...input, productionId: id })) as Record<string, any>;
+    if (!resume || !existing) {
+      if (input.visualSettings || input.analysis?.visualSettings || input.script?.visualSettings) Object.assign(normalized, motionVisualRequest(input));
+      normalized.renderBehavior = motionRenderBehaviorFor(normalized);
+      normalized.characterMotion = normalized.renderBehavior.actors === "simple";
+    }
     if (normalized.voiceChannel) {
       const profile = findVoiceChannel(normalized.voiceChannel);
       if (profile && !String(normalized.voiceChannel).includes(MOTION_VOICE_LIBRARY.REF_SEPARATOR)) normalized.voiceChannel = voiceChannelRef(profile);

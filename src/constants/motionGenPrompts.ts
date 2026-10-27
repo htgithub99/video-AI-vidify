@@ -167,10 +167,7 @@ ${o.cast}
 PLACES (keys):
 ${o.places}
 
-JSON shape (replace descriptions with this chapter's actual data; use only supplied keys):
-{"chapterId":"${o.chapterId}","beats":[
- {"narration":"actual chapter speech","visual":"scene","place":"exact supplied place key","time":"day","weather":"none","shot":"wide","cast":[],"action":"Describe the current representative static picture in English using only this story's visible subjects.","scenePlan":{"purpose":"current visual task","subject":"actual subject","before":"relevant prior state","after":"current visible state","composition":"simple supported arrangement","spatialRelations":[],"requiredProps":[],"continuity":[],"acceptance":["observable check for this picture"]}}
-]}
+Return {"chapterId":"${o.chapterId}","beats":[...]} using the output schema and exact supplied keys. Describe this chapter's actual speech and representative pictures, never placeholder text.
 
 ${o.transcriptLabel || "SOURCE TRANSCRIPT FOR THIS CHAPTER:"}
 ${o.transcript}`;

@@ -1,0 +1,871 @@
+[
+  {
+    "index": 1,
+    "start": 0,
+    "end": 7.754999999999999,
+    "sample": 3.8774999999999995,
+    "text": "Mẹ tôi mất chưa tròn trăm ngày thì tới chiều mùng hai tháng bảy, chị Hai phải đứng ra làm mâm cơm cúng cô hồn thay mẹ.",
+    "scene": {
+      "fromLineId": "c1_event_01a7b9a1835f::0::mẹ tôi mất chưa tròn trăm ngày thì tới chiều mùng hai tháng bảy chị hai phải đứng ra làm mâm cơm cúng cô hồn thay mẹ",
+      "toLineId": "c1_event_01a7b9a1835f::0::mẹ tôi mất chưa tròn trăm ngày thì tới chiều mùng hai tháng bảy chị hai phải đứng ra làm mâm cơm cúng cô hồn thay mẹ",
+      "purpose": "Establish the quiet rural living room where Chi Hai stands solemnly before the family altar, preparing to take over the ritual after their mother passing",
+      "environment": "Modest rural living room interior with muted plaster walls, dark wooden ceiling rafters, tiled floor, and dim afternoon light filtering through the doorway",
+      "nodes": [
+        {
+          "id": "altar_table",
+          "kind": "prop",
+          "description": "Dark rustic wooden family altar table placed against the back wall",
+          "slot": "center",
+          "evidence": "mâm cơm cúng cô hồn thay mẹ",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:5134ff4041eacbd324ded24c72e637cff5f109dac8ecfca84c8b972fddee31df"
+        },
+        {
+          "id": "portrait_mother",
+          "kind": "prop",
+          "description": "Framed black-and-white portrait photograph of the elderly mother resting on the altar",
+          "slot": "center",
+          "relation": "on",
+          "target": "altar_table",
+          "evidence": "mẹ tôi mất chưa tròn trăm ngày",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:1c7fb87d0a05914f3421bbed004e6256973cfb7b4d132c633a75708a6000eeb4"
+        },
+        {
+          "id": "chi_hai_node",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Chi Hai in a simple dark blouse and loose dark trousers, facing towards the altar with an exhausted, quiet expression",
+          "pose": "Standing quietly with hands loosely held in front, looking toward the altar",
+          "slot": "left",
+          "relation": "beside",
+          "target": "altar_table",
+          "evidence": "chị hai phải đứng ra làm mâm cơm cúng cô hồn thay mẹ",
+          "essential": true,
+          "assetKey": "character:chi_hai:de09f4fd00e652c074b688dc789754d07a0a3fc907214be956e2f778e169f5a2"
+        }
+      ],
+      "id": "c1_event_01a7b9a1835f:0",
+      "beatId": "c1_event_01a7b9a1835f",
+      "place": "phong_khach",
+      "text": "Mẹ tôi mất chưa tròn trăm ngày thì tới chiều mùng hai tháng bảy, chị Hai phải đứng ra làm mâm cơm cúng cô hồn thay mẹ.",
+      "sourceKey": "55f34c4ca47a26afb46c619db8d805f6c4906703643611f0492883ad6af8247e",
+      "backgroundKey": "background:18cca9a5ecc6a7208e607938019bbea729673148675d89454e431a554cf5fa16",
+      "aspect": "16:9"
+    },
+    "file": "scene-01.jpg"
+  },
+  {
+    "index": 2,
+    "start": 7.754999999999999,
+    "end": 17.845,
+    "sample": 12.799999999999999,
+    "text": "Hồi mẹ còn sống, mẹ dặn cúng người khuất mày khuất mặt là phải bày ngoài sân đất, cúng xong rắc gạo mời trước rồi rắc muối tiễn sau ra tuốt ngoài đường lớn.",
+    "scene": {
+      "fromLineId": "c1_event_a18b7b739f0c::0::hồi mẹ còn sống mẹ dặn cúng người khuất mày khuất mặt là phải bày ngoài sân đất cúng xong rắc gạo mời trước rồi rắc muối tiễn sau ra tuốt ngoài đường lớn",
+      "toLineId": "c1_event_a18b7b739f0c::0::hồi mẹ còn sống mẹ dặn cúng người khuất mày khuất mặt là phải bày ngoài sân đất cúng xong rắc gạo mời trước rồi rắc muối tiễn sau ra tuốt ngoài đường lớn",
+      "purpose": "Plant the crucial folk rule regarding rice, salt, and proper boundary rituals",
+      "environment": "Modest rural living room interior with a weathered wooden plank table surface under subdued, cool morning ambient light.",
+      "nodes": [
+        {
+          "id": "table_surface",
+          "kind": "prop",
+          "description": "Rustic dark weathered wooden table top with straight simple grain lines.",
+          "slot": "center",
+          "evidence": "resting on the wooden table",
+          "pose": "standing",
+          "assetKey": "prop:d75f024a4dee9ef76b4100ef77899a1a0f4019b2bfa8bb03b3fa5c5344e5f720"
+        },
+        {
+          "id": "bowl_rice_salt",
+          "kind": "prop",
+          "description": "Small coarse ceramic bowl filled with white raw rice grains mixed with crystalline sea salt.",
+          "slot": "center",
+          "relation": "on",
+          "target": "table_surface",
+          "essential": true,
+          "evidence": "cúng xong rắc gạo mời trước rồi rắc muối tiễn sau",
+          "pose": "standing",
+          "assetKey": "prop:c741859199fbb5b38e4fac49e582499ba13c114097bfb9aac6fdd49bdd8f60c4"
+        }
+      ],
+      "id": "c1_event_a18b7b739f0c:0",
+      "beatId": "c1_event_a18b7b739f0c",
+      "place": "phong_khach",
+      "text": "Hồi mẹ còn sống, mẹ dặn cúng người khuất mày khuất mặt là phải bày ngoài sân đất, cúng xong rắc gạo mời trước rồi rắc muối tiễn sau ra tuốt ngoài đường lớn.",
+      "sourceKey": "f4d293e8ecf6f7085a72353eff13e9eb01afe3a6af4afb483a4994aa32877354",
+      "backgroundKey": "background:d0dc510aec6a37e678a0f68b408797b09e0c12b6971e1b74c80ae75b3a00963e",
+      "aspect": "16:9"
+    },
+    "file": "scene-02.jpg"
+  },
+  {
+    "index": 3,
+    "start": 17.845,
+    "end": 25.724999999999998,
+    "sample": 21.784999999999997,
+    "text": "Nhưng chiều đó trời sập tối nhanh quá, mây đen kéo tới cuồn cuộn, gió giật làm tắt mấy cây nhang cắm dở ngoài góc sân.",
+    "scene": {
+      "fromLineId": "c1_event_d33afd9f94c6::0::nhưng chiều đó trời sập tối nhanh quá mây đen kéo tới cuồn cuộn gió giật làm tắt mấy cây nhang cắm dở ngoài góc sân",
+      "toLineId": "c1_event_d33afd9f94c6::0::nhưng chiều đó trời sập tối nhanh quá mây đen kéo tới cuồn cuộn gió giật làm tắt mấy cây nhang cắm dở ngoài góc sân",
+      "purpose": "Show the worsening weather forcing a hurried choice as sudden storm winds extinguish the courtyard incense",
+      "environment": "Front porch threshold and yard under rolling dark storm clouds, wooden pillars supporting the eave, dim slate-gray stormy dusk light with gusty rain beginning to sweep across the courtyard",
+      "nodes": [
+        {
+          "id": "node_chi_hai",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Chi Hai in simple dark blouse and loose trousers, watching the darkening stormy yard with uneasy tension",
+          "pose": "standing under porch roof looking outward toward courtyard",
+          "slot": "left",
+          "evidence": "chi_hai stands under porch roof looking outward",
+          "essential": true,
+          "assetKey": "character:chi_hai:de09f4fd00e652c074b688dc789754d07a0a3fc907214be956e2f778e169f5a2"
+        },
+        {
+          "id": "node_porch_pillars",
+          "kind": "prop",
+          "description": "Weathered dark wooden porch pillars supporting the tiled eave",
+          "slot": "center",
+          "evidence": "wooden pillars",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:a8db57810e5e5ec4c9c740e667c6e7185640c6933b803129d98f1008250968a8"
+        },
+        {
+          "id": "node_extinguished_incense",
+          "kind": "prop",
+          "description": "Bundle of half-burnt incense sticks planted in the ground, thin gray ash cold and extinguished by wind",
+          "slot": "right",
+          "relation": "beside",
+          "target": "node_porch_pillars",
+          "evidence": "gió giật làm tắt mấy cây nhang cắm dở ngoài góc sân",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:671ab5b2aac0da6e2d50ae1a1d3eb788bcadc45385328e5051049e2d377bea00"
+        }
+      ],
+      "id": "c1_event_d33afd9f94c6:0",
+      "beatId": "c1_event_d33afd9f94c6",
+      "place": "hien_nha",
+      "text": "Nhưng chiều đó trời sập tối nhanh quá, mây đen kéo tới cuồn cuộn, gió giật làm tắt mấy cây nhang cắm dở ngoài góc sân.",
+      "sourceKey": "7d5cc38740167f40e571d78f15d2d7a2e44f954db0491a6e047993c737fbfc67",
+      "backgroundKey": "background:d10410dba5aebd3544fc769832477f4c64aeb1676a430b2747a6d7617525469f",
+      "aspect": "16:9"
+    },
+    "file": "scene-03.jpg"
+  },
+  {
+    "index": 4,
+    "start": 25.724999999999998,
+    "end": 32.07,
+    "sample": 28.8975,
+    "text": "Sợ ướt đồ ăn, chị Hai quýnh quáng bưng nguyên cái mâm cơm cúng lùi vào đặt ngay giữa hiên nhà.",
+    "scene": {
+      "fromLineId": "c1_event_2915058e15f6::0::sợ ướt đồ ăn chị hai quýnh quáng bưng nguyên cái mâm cơm cúng lùi vào đặt ngay giữa hiên nhà",
+      "toLineId": "c1_event_2915058e15f6::0::sợ ướt đồ ăn chị hai quýnh quáng bưng nguyên cái mâm cơm cúng lùi vào đặt ngay giữa hiên nhà",
+      "purpose": "Show Chi Hai frantically moving the full offering tray onto the covered porch and placing it onto the low wooden porch table to shield it from the rain",
+      "environment": "Covered front porch of a rural Vietnamese house with weathered wooden pillars, damp terracotta floor tiles, rain dripping from the dark roof eaves, and dim blue-gray evening twilight outside",
+      "nodes": [
+        {
+          "id": "low_porch_table",
+          "kind": "prop",
+          "description": "Low rustic dark wooden porch table placed in the center of the porch",
+          "slot": "center",
+          "evidence": "đặt ngay giữa hiên nhà",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:b2547aa46cceeb61afd1a131c586c609eb00857a564518e0a02c380fba48906b"
+        },
+        {
+          "id": "offering_tray",
+          "kind": "prop",
+          "description": "Round aluminum offering tray loaded with ceremonial food, small bowls, rice, and joss sticks",
+          "slot": "center",
+          "relation": "on",
+          "target": "low_porch_table",
+          "evidence": "bưng nguyên cái mâm cơm cúng lùi vào đặt ngay giữa hiên nhà",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:2492e93eda6d6394d15ebaecbc921b76f749fda92ed2f07afa1a9ba3b4724ac0"
+        },
+        {
+          "id": "chi_hai_node",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Chi Hai in simple dark blouse and loose trousers, stooping slightly as she finishes placing the offering tray with hurried anxiety",
+          "pose": "Bending forward slightly with both hands just releasing the edges of the tray",
+          "slot": "left",
+          "relation": "beside",
+          "target": "low_porch_table",
+          "evidence": "chị hai quýnh quáng bưng nguyên cái mâm cơm cúng lùi vào đặt ngay giữa hiên nhà",
+          "essential": true,
+          "poseEssential": true,
+          "assetKey": "character:7817b284d771ec4954eb293700e45cb8680e5ba1fc78c4982e72ca8ef991e454"
+        }
+      ],
+      "id": "c1_event_2915058e15f6:0",
+      "beatId": "c1_event_2915058e15f6",
+      "place": "hien_nha",
+      "text": "Sợ ướt đồ ăn, chị Hai quýnh quáng bưng nguyên cái mâm cơm cúng lùi vào đặt ngay giữa hiên nhà.",
+      "sourceKey": "d41f7088e447b9853db167a21f4558d94fe2ac559d1c59e6c18b71175476fa52",
+      "backgroundKey": "background:1a05a19c27875e8fdb01d4f500c4d0a9623889f04a67e22a396fd9c3b6786fcd",
+      "aspect": "16:9"
+    },
+    "file": "scene-04.jpg"
+  },
+  {
+    "index": 5,
+    "start": 32.07,
+    "end": 39.685,
+    "sample": 35.8775,
+    "text": "Mâm cơm có ba chén cháo hoa, mấy thẻ nhang tàn, vài củ khoai với đĩa bánh tráng vụn, khói bốc lên là đà sát mép cửa chính.",
+    "scene": {
+      "fromLineId": "c1_event_e83f66cfb58e::0::mâm cơm có ba chén cháo hoa mấy thẻ nhang tàn vài củ khoai với đĩa bánh tráng vụn khói bốc lên là đà sát mép cửa chính",
+      "toLineId": "c1_event_e83f66cfb58e::0::mâm cơm có ba chén cháo hoa mấy thẻ nhang tàn vài củ khoai với đĩa bánh tráng vụn khói bốc lên là đà sát mép cửa chính",
+      "purpose": "Highlight the physical items on the tray and incense drifting toward the living room threshold",
+      "environment": "Covered front porch at night with dim blue-gray ambience, damp tiled ground, wooden threshold, and open doorway edge.",
+      "nodes": [
+        {
+          "id": "low_wooden_table",
+          "kind": "prop",
+          "description": "Low rustic wooden porch table sitting near the open doorway threshold.",
+          "slot": "center",
+          "evidence": "sát mép cửa chính",
+          "pose": "standing",
+          "assetKey": "prop:48a943a2517116796a52d0d18cfb8d23949ae01cec0f36a4c30b7d327f860bf8"
+        },
+        {
+          "id": "offering_tray",
+          "kind": "prop",
+          "description": "Round rustic metal offering tray containing three small ceramic bowls of white watery rice porridge, several smoldering incense sticks curling thin smoke, boiled sweet potatoes, and a plate of broken rice paper crackers.",
+          "slot": "center",
+          "relation": "on",
+          "target": "low_wooden_table",
+          "essential": true,
+          "evidence": "mâm cơm có ba chén cháo hoa mấy thẻ nhang tàn vài củ khoai với đĩa bánh tráng vụn khói bốc lên là đà",
+          "pose": "standing",
+          "assetKey": "prop:44773ab168828b0fc00dc99e7f60902ec6eb2a0aa36ea8af4dabf073cd85d55e"
+        }
+      ],
+      "id": "c1_event_e83f66cfb58e:0",
+      "beatId": "c1_event_e83f66cfb58e",
+      "place": "hien_nha",
+      "text": "Mâm cơm có ba chén cháo hoa, mấy thẻ nhang tàn, vài củ khoai với đĩa bánh tráng vụn, khói bốc lên là đà sát mép cửa chính.",
+      "sourceKey": "2c6e9ad9a99badbbe606d4aced03a5cb21be2b88315017fd630ac416997306b0",
+      "backgroundKey": "background:0ff7ca8b4791a9facd5516da92c4edd8e1cae1f9f33bc24080681cacf8e7bc29",
+      "aspect": "16:9"
+    },
+    "file": "scene-05.jpg"
+  },
+  {
+    "index": 6,
+    "start": 39.685,
+    "end": 46.85,
+    "sample": 43.2675,
+    "text": "Mưa mỗi lúc một nặng hạt, chị vội chạy vào khép cánh cửa gỗ lại, bỏ quên chén muối chưa kịp rắc tiễn ra ngoài đường.",
+    "scene": {
+      "fromLineId": "c1_event_a94530593c7f::0::mưa mỗi lúc một nặng hạt chị vội chạy vào khép cánh cửa gỗ lại bỏ quên chén muối chưa kịp rắc tiễn ra ngoài đường",
+      "toLineId": "c1_event_a94530593c7f::0::mưa mỗi lúc một nặng hạt chị vội chạy vào khép cánh cửa gỗ lại bỏ quên chén muối chưa kịp rắc tiễn ra ngoài đường",
+      "purpose": "Emphasize the fatal omission of leaving salt untossed and spilled at the entrance as the wooden doors are pulled shut against the storm",
+      "environment": "Weathered wooden doorstep threshold with terracotta floor tiles, dark exterior rainfall glistening beyond the doorway sill, dim gloomy dusk shadow cutting across the entryway",
+      "nodes": [
+        {
+          "id": "node_door_threshold",
+          "kind": "prop",
+          "description": "Weathered wooden double doors pulled almost shut at the entryway frame",
+          "slot": "left",
+          "evidence": "khép cánh cửa gỗ lại",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:42099f7a58c2507a7bf83be9269575f957933086fbf34bf4ab08d3b0f40e792e"
+        },
+        {
+          "id": "node_spilled_grains_salt",
+          "kind": "prop",
+          "description": "Small ceramic bowl of salt and white rice grains left forgotten and tipped, spilled grains scattered across the doorstep threshold",
+          "slot": "center",
+          "relation": "beside",
+          "target": "node_door_threshold",
+          "evidence": "bỏ quên chén muối chưa kịp rắc tiễn ra ngoài đường",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:42afefb55e1986bd5af2dda16a35a6519bdebb957c678fba946167e38c56c0b1"
+        }
+      ],
+      "id": "c1_event_a94530593c7f:0",
+      "beatId": "c1_event_a94530593c7f",
+      "place": "hien_nha",
+      "text": "Mưa mỗi lúc một nặng hạt, chị vội chạy vào khép cánh cửa gỗ lại, bỏ quên chén muối chưa kịp rắc tiễn ra ngoài đường.",
+      "sourceKey": "5c314011742ac052bfb6683e11f54f3b45ac612df40b2f2f0e185f051c62c95e",
+      "backgroundKey": "background:de1dae813c6626fc4757e6352e4521d76efb85d5201847c5b35ea152857f1468",
+      "aspect": "16:9"
+    },
+    "file": "scene-06.jpg"
+  },
+  {
+    "index": 7,
+    "start": 46.85,
+    "end": 54.78,
+    "sample": 50.815,
+    "text": "Tới nửa đêm, khi gió bên ngoài rít từng hồi qua kẽ lá, tôi giật mình thức giấc vì nghe thấy tiếng đũa gõ lách cách vào miệng bát.",
+    "scene": {
+      "fromLineId": "c1_event_294760197bf0::0::tới nửa đêm khi gió bên ngoài rít từng hồi qua kẽ lá tôi giật mình thức giấc vì nghe thấy tiếng đũa gõ lách cách vào miệng bát",
+      "toLineId": "c1_event_294760197bf0::0::tới nửa đêm khi gió bên ngoài rít từng hồi qua kẽ lá tôi giật mình thức giấc vì nghe thấy tiếng đũa gõ lách cách vào miệng bát",
+      "purpose": "Convey the waking moment and hearing the strange sound in the dark",
+      "environment": "Dark rural living room at midnight with faint blue moonlight seeping through wooden door slits across the floor and altar wall.",
+      "nodes": [
+        {
+          "id": "wooden_bench",
+          "kind": "prop",
+          "description": "Modest long rural wooden bench set against the wall.",
+          "slot": "center",
+          "evidence": "toi sits on wooden bench",
+          "pose": "standing",
+          "assetKey": "prop:60c5c1d5e9c0ca296eb69fc1d7e24c34f1f92a9e28c047384238a80a6691bdd0"
+        },
+        {
+          "id": "toi",
+          "kind": "character",
+          "entityId": "toi",
+          "description": "Vietnamese adult man, short black hair, plain faded shirt and dark trousers, tired eyes, simple rural look.",
+          "pose": "sitting upright on the bench, tense and listening toward the door",
+          "slot": "center",
+          "relation": "on",
+          "target": "wooden_bench",
+          "essential": true,
+          "poseEssential": true,
+          "evidence": "tôi giật mình thức giấc vì nghe thấy tiếng đũa gõ lách cách",
+          "assetKey": "character:e98f530b0ce8c91a5a59b98ce7186ba68e3cb2360a8220421e51fad128ff18a5"
+        }
+      ],
+      "id": "c1_event_294760197bf0:0",
+      "beatId": "c1_event_294760197bf0",
+      "place": "phong_khach",
+      "text": "Tới nửa đêm, khi gió bên ngoài rít từng hồi qua kẽ lá, tôi giật mình thức giấc vì nghe thấy tiếng đũa gõ lách cách vào miệng bát.",
+      "sourceKey": "46efbec5b680223803292a0ab97688df1f7bd38298e8c15f25ddd343e3786ff3",
+      "backgroundKey": "background:957e8231d3425b8af442172439c0a3116159f398efd368f567c624565510d404",
+      "aspect": "16:9"
+    },
+    "file": "scene-07.jpg"
+  },
+  {
+    "index": 8,
+    "start": 54.78,
+    "end": 60.28,
+    "sample": 57.53,
+    "text": "Tiếng gõ đều đặn, khô khốc như ai đó đang ngồi và cơm thật nhanh giữa bóng tối mịt mùng.",
+    "scene": {
+      "fromLineId": "c1_event_ef6179fe65a7::0::tiếng gõ đều đặn khô khốc như ai đó đang ngồi và cơm thật nhanh giữa bóng tối mịt mùng",
+      "toLineId": "c1_event_ef6179fe65a7::0::tiếng gõ đều đặn khô khốc như ai đó đang ngồi và cơm thật nhanh giữa bóng tối mịt mùng",
+      "purpose": "Build auditory dread and suspense through an eerie composition of the dark, rain-soaked porch where rhythmic eating noises emanate from the shadows",
+      "environment": "Dark covered front porch viewed from within the doorway, shadowed pillars, damp floor, heavy rain falling into the pitch-black yard outside with cold slate blue and charcoal night tones",
+      "nodes": [
+        {
+          "id": "low_wooden_table",
+          "kind": "prop",
+          "description": "Low dark wooden porch table standing dimly in the center shadows",
+          "slot": "center",
+          "evidence": "như ai đó đang ngồi và cơm thật nhanh giữa bóng tối mịt mùng",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:37abb2666219140577ccaec5f9a79f5669a57f2bc75e76eadc7823f33d1bb901"
+        },
+        {
+          "id": "offering_tray_shadowed",
+          "kind": "prop",
+          "description": "Offering tray sitting on the low table, shrouded in deep nighttime gloom",
+          "slot": "center",
+          "relation": "on",
+          "target": "low_wooden_table",
+          "evidence": "ngồi và cơm thật nhanh giữa bóng tối mịt mùng",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:8c1a1fb1b6553cf31ecc55e3784a2c65d377d1450b4d8230f74dc15f1faf0bbd"
+        }
+      ],
+      "id": "c1_event_ef6179fe65a7:0",
+      "beatId": "c1_event_ef6179fe65a7",
+      "place": "hien_nha",
+      "text": "Tiếng gõ đều đặn, khô khốc như ai đó đang ngồi và cơm thật nhanh giữa bóng tối mịt mùng.",
+      "sourceKey": "9b1854439fe990b8abe1442f8a7b3c6c64bb0b015c1be708f2ccf46a1f4310e8",
+      "backgroundKey": "background:6a8501764b54bd721d44e48d64c32714c09e477f121d8c3e766709e369635fcb",
+      "aspect": "16:9"
+    },
+    "file": "scene-08.jpg"
+  },
+  {
+    "index": 9,
+    "start": 60.28,
+    "end": 69.48,
+    "sample": 64.88,
+    "text": "Tôi rón rén bước tới khe cửa hé nhìn ra, thì thấy một người đàn ông lạ mặt, áo quần ướt sũng, đang ngồi thụp dưới sàn ăn ngấu nghiến đồ cúng trên mâm.",
+    "scene": {
+      "fromLineId": "c1_event_56ad48647d64::0::tôi rón rén bước tới khe cửa hé nhìn ra thì thấy một người đàn ông lạ mặt áo quần ướt sũng đang ngồi thụp dưới sàn ăn ngấu nghiến đồ cúng trên mâm",
+      "toLineId": "c1_event_56ad48647d64::0::tôi rón rén bước tới khe cửa hé nhìn ra thì thấy một người đàn ông lạ mặt áo quần ướt sũng đang ngồi thụp dưới sàn ăn ngấu nghiến đồ cúng trên mâm",
+      "purpose": "Reveal the stranger eating the offering food on the porch seen through the door crack",
+      "environment": "Covered front porch viewed through the dark slit of a wooden doorway, tiled floor reflecting wet dark rain light, gloomy night shadows hanging under the eave",
+      "nodes": [
+        {
+          "id": "node_low_wooden_table",
+          "kind": "prop",
+          "description": "Low weathered wooden table sitting on the porch tiles",
+          "slot": "left",
+          "evidence": "bàn cúng",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:18985af7acaa1f88a1faed99f4ca77ec63f494607b718b749737c4104af025ea"
+        },
+        {
+          "id": "node_offering_tray",
+          "kind": "prop",
+          "description": "Round offering tray filled with rice and ceremonial offerings resting on the low table",
+          "slot": "left",
+          "relation": "on",
+          "target": "node_low_wooden_table",
+          "evidence": "mâm",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:aa23c8e505b68c6ebd23540f29831e3691f6730362602037507546fb85fd697c"
+        },
+        {
+          "id": "node_nguoi_la",
+          "kind": "character",
+          "entityId": "nguoi_la",
+          "description": "Thin pale stranger with wet dripping hair and ragged soaked clothes crouching on the floor",
+          "pose": "crouching on floor eating voraciously from the tray",
+          "slot": "center",
+          "relation": "beside",
+          "target": "node_low_wooden_table",
+          "evidence": "người đàn ông lạ mặt, áo quần ướt sũng, đang ngồi thụp dưới sàn ăn ngấu nghiến",
+          "essential": true,
+          "poseEssential": true,
+          "assetKey": "character:cd8145ae0f741ca0d5871051415b3b0ec87a310f8541b0568a98bf28bdd55303"
+        }
+      ],
+      "id": "c1_event_56ad48647d64:0",
+      "beatId": "c1_event_56ad48647d64",
+      "place": "hien_nha",
+      "text": "Tôi rón rén bước tới khe cửa hé nhìn ra, thì thấy một người đàn ông lạ mặt, áo quần ướt sũng, đang ngồi thụp dưới sàn ăn ngấu nghiến đồ cúng trên mâm.",
+      "sourceKey": "62ce6b32b225087360dc022b784585c9426ca171de78125eeb06a370a8531f66",
+      "backgroundKey": "background:ee76c0d75a7dee4b95cb7994834ace63783a63210d8d86ad27046921c4d8e588",
+      "aspect": "16:9"
+    },
+    "file": "scene-09.jpg"
+  },
+  {
+    "index": 10,
+    "start": 69.48,
+    "end": 76.355,
+    "sample": 72.9175,
+    "text": "Tay chân tôi lạnh toát, vừa định quay lại gọi chị Hai thì bắt gặp chị đã đứng sững ở góc bếp tự bao giờ.",
+    "scene": {
+      "fromLineId": "c1_event_e64ebca2fd33::0::tay chân tôi lạnh toát vừa định quay lại gọi chị hai thì bắt gặp chị đã đứng sững ở góc bếp tự bao giờ",
+      "toLineId": "c1_event_e64ebca2fd33::0::tay chân tôi lạnh toát vừa định quay lại gọi chị hai thì bắt gặp chị đã đứng sững ở góc bếp tự bao giờ",
+      "purpose": "Depict Toi freezing in sudden shock as he turns and spots Chi Hai standing rigid and motionless in the dark kitchen corner",
+      "environment": "Dim rural kitchen corner with soot-stained plaster walls, bamboo shelves, earthen jars along the baseboard, and shadowy night atmosphere",
+      "nodes": [
+        {
+          "id": "clay_stove_prop",
+          "kind": "prop",
+          "description": "Rustic traditional terracotta clay wood-stove resting near the kitchen corner",
+          "slot": "right",
+          "evidence": "ở góc bếp",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:dd5a30b7436977f071b72a85f4bfc637fc46d96fd09c89e9aaf5f72323dbcae6"
+        },
+        {
+          "id": "chi_hai_node",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Chi Hai standing completely motionless and rigid in the corner shadow, staring forward with blank hollow eyes",
+          "pose": "Standing stiffly upright with arms straight down at her sides",
+          "slot": "right",
+          "relation": "beside",
+          "target": "clay_stove_prop",
+          "evidence": "chị đã đứng sững ở góc bếp tự bao giờ",
+          "essential": true,
+          "poseEssential": true,
+          "assetKey": "character:cbf524c8c9d97e08ef257bf76c4359bb3bdcf15cec142b6b2d06f37eb8927934"
+        },
+        {
+          "id": "toi_node",
+          "kind": "character",
+          "entityId": "toi",
+          "description": "Toi recoiling slightly in shock, turned halfway toward the kitchen with trembling posture",
+          "pose": "Standing turned three-quarters back with startled wide eyes and tense shoulders",
+          "slot": "left",
+          "evidence": "tay chân tôi lạnh toát vừa định quay lại gọi chị hai thì bắt gặp",
+          "essential": true,
+          "poseEssential": true,
+          "assetKey": "character:4db657347a5d0e01a009e1321ae209e5caac31541babb347aebe537d6c4265ce"
+        }
+      ],
+      "id": "c1_event_e64ebca2fd33:0",
+      "beatId": "c1_event_e64ebca2fd33",
+      "place": "nha_bep",
+      "text": "Tay chân tôi lạnh toát, vừa định quay lại gọi chị Hai thì bắt gặp chị đã đứng sững ở góc bếp tự bao giờ.",
+      "sourceKey": "b2ef5496741cf145eb556ce993ad768d00a9197c36e381fcf732674aac65342f",
+      "backgroundKey": "background:1cd9871f3a9051ec9a978bc5b8e85ec8111c647053ae758fc6176684db39bb05",
+      "aspect": "16:9"
+    },
+    "file": "scene-10.jpg"
+  },
+  {
+    "index": 11,
+    "start": 76.355,
+    "end": 83.00500000000001,
+    "sample": 79.68,
+    "text": "Chị không nói một lời, hai tay buông thõng, giương mắt nhìn trừng trừng vào tôi như nhìn một kẻ hoàn toàn xa lạ.",
+    "scene": {
+      "fromLineId": "c1_event_565a27eb24ff::0::chị không nói một lời hai tay buông thõng giương mắt nhìn trừng trừng vào tôi như nhìn một kẻ hoàn toàn xa lạ",
+      "toLineId": "c1_event_565a27eb24ff::0::chị không nói một lời hai tay buông thõng giương mắt nhìn trừng trừng vào tôi như nhìn một kẻ hoàn toàn xa lạ",
+      "purpose": "Deliver the chilling climax of the section where Chi Hai fails to recognize her brother",
+      "environment": "Dim rural kitchen interior in deep shadow with clay walls, earthen jars, and faint warm flicker from an oil lamp on a low ledge.",
+      "nodes": [
+        {
+          "id": "dim_oil_lamp",
+          "kind": "prop",
+          "description": "Small glass kerosene lamp casting a faint, weak glow.",
+          "slot": "left",
+          "essential": true,
+          "evidence": "faint oil lamp glow",
+          "pose": "standing",
+          "assetKey": "prop:575adb9efb5b46fa64341c6c3e68140029cb3b5fb0b960a9e0d9cfb7e818092d"
+        },
+        {
+          "id": "chi_hai",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Vietnamese adult woman, long black hair tied low, simple dark blouse and loose trousers, worn hands, pale emotionless face.",
+          "pose": "standing stiffly with arms hanging limp, staring forward with blank unblinking eyes",
+          "slot": "center",
+          "relation": "beside",
+          "target": "dim_oil_lamp",
+          "essential": true,
+          "poseEssential": true,
+          "evidence": "chị không nói một lời hai tay buông thõng giương mắt nhìn trừng trừng vào tôi",
+          "assetKey": "character:73d82e8d4f8a33a2c400101e26362a54fcd21b273d567637017356495d632bae"
+        }
+      ],
+      "id": "c1_event_565a27eb24ff:0",
+      "beatId": "c1_event_565a27eb24ff",
+      "place": "nha_bep",
+      "text": "Chị không nói một lời, hai tay buông thõng, giương mắt nhìn trừng trừng vào tôi như nhìn một kẻ hoàn toàn xa lạ.",
+      "sourceKey": "a70b02fa258b39b7a6a97bedd90c4d018d8f32f731fca4ac0bae04c66cb55f16",
+      "backgroundKey": "background:464c1851ad1df36e422b6b408a4d17bb7acf008cbe9d74fab872e737c086a11e",
+      "aspect": "16:9"
+    },
+    "file": "scene-11.jpg"
+  },
+  {
+    "index": 12,
+    "start": 83.00500000000001,
+    "end": 88.775,
+    "sample": 85.89000000000001,
+    "text": "Trời vừa hửng sáng, người lạ ngoài hiên đã biến mất tự lúc nào, không để lại một chút tăm hơi.",
+    "scene": {
+      "fromLineId": "c1_event_faf4aa4f14e9::0::trời vừa hửng sáng người lạ ngoài hiên đã biến mất tự lúc nào không để lại một chút tăm hơi",
+      "toLineId": "c1_event_faf4aa4f14e9::0::trời vừa hửng sáng người lạ ngoài hiên đã biến mất tự lúc nào không để lại một chút tăm hơi",
+      "purpose": "Reveal the complete disappearance of the stranger by dawn, leaving the porch quiet and deserted",
+      "environment": "Quiet covered front porch at daybreak, cool pale misty dawn light spreading across the damp tiled floor and yard, pale slate-gray morning sky",
+      "nodes": [
+        {
+          "id": "node_porch_pillars",
+          "kind": "prop",
+          "description": "Weathered dark wooden porch pillars supporting the tiled eave in pale morning light",
+          "slot": "right",
+          "evidence": "ngoài hiên",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:4b9bffde219e11d9d43d0fbb69a69ea52aeed915f1f6c5571c2dcb64f845798f"
+        },
+        {
+          "id": "node_low_wooden_table",
+          "kind": "prop",
+          "description": "Low weathered wooden table sitting deserted on the porch tiles, empty without the stranger",
+          "slot": "center",
+          "relation": "beside",
+          "target": "node_porch_pillars",
+          "evidence": "người lạ ngoài hiên đã biến mất tự lúc nào không để lại một chút tăm hơi",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:7538de66adb4d295e301d1316fbef3b52acb087fc5742f3f7a9fa294f65fc9f7"
+        }
+      ],
+      "id": "c1_event_faf4aa4f14e9:0",
+      "beatId": "c1_event_faf4aa4f14e9",
+      "place": "hien_nha",
+      "text": "Trời vừa hửng sáng, người lạ ngoài hiên đã biến mất tự lúc nào, không để lại một chút tăm hơi.",
+      "sourceKey": "c1e21c990ef4feafd973875845b758f4f4f91d1507fe25a0b3f502fdc42f2f7c",
+      "backgroundKey": "background:dac81b8cc39304b06e16ad1774195a1932563bd67a46cb6bbef1c50319bb4eb3",
+      "aspect": "16:9"
+    },
+    "file": "scene-12.jpg"
+  },
+  {
+    "index": 13,
+    "start": 88.775,
+    "end": 95.045,
+    "sample": 91.91,
+    "text": "Chỉ còn mâm cơm cúng trống trơn và những vệt chân bùn ướt nhẹp dẫn thẳng qua ngạch cửa vào nhà.",
+    "scene": {
+      "fromLineId": "c1_event_86014600ad23::0::chỉ còn mâm cơm cúng trống trơn và những vệt chân bùn ướt nhẹp dẫn thẳng qua ngạch cửa vào nhà",
+      "toLineId": "c1_event_86014600ad23::0::chỉ còn mâm cơm cúng trống trơn và những vệt chân bùn ướt nhẹp dẫn thẳng qua ngạch cửa vào nhà",
+      "purpose": "Show physical evidence left behind by the stranger entering the home",
+      "environment": "Covered front porch at night with dim blue-gray ambience, damp tiled ground, wooden threshold, and open doorway edge.",
+      "nodes": [
+        {
+          "id": "low_wooden_table",
+          "kind": "prop",
+          "description": "Low rustic wooden porch table sitting near the open doorway threshold.",
+          "slot": "left",
+          "evidence": "mâm cơm cúng trống trơn",
+          "pose": "standing",
+          "assetKey": "prop:48a943a2517116796a52d0d18cfb8d23949ae01cec0f36a4c30b7d327f860bf8"
+        },
+        {
+          "id": "offering_tray",
+          "kind": "prop",
+          "description": "Round rustic metal offering tray with scraped empty bowls and burnt-down incense stubs.",
+          "slot": "left",
+          "relation": "on",
+          "target": "low_wooden_table",
+          "essential": true,
+          "evidence": "mâm cơm cúng trống trơn",
+          "pose": "standing",
+          "assetKey": "prop:cfac259efa64abd6ac34ef04b21a4cc7009215698c9ca22f1874bc41d45b0ae1"
+        },
+        {
+          "id": "muddy_footprints",
+          "kind": "prop",
+          "description": "Wet muddy barefoot prints trailing across the porch floor straight over the wooden threshold into the house.",
+          "slot": "center",
+          "essential": true,
+          "evidence": "những vệt chân bùn ướt nhẹp dẫn thẳng qua ngạch cửa vào nhà",
+          "pose": "standing",
+          "assetKey": "prop:023232ceeb035afa8c4b20a74607d96964ca80b3ef5e5e608dd184747fda915c"
+        }
+      ],
+      "id": "c1_event_86014600ad23:0",
+      "beatId": "c1_event_86014600ad23",
+      "place": "hien_nha",
+      "text": "Chỉ còn mâm cơm cúng trống trơn và những vệt chân bùn ướt nhẹp dẫn thẳng qua ngạch cửa vào nhà.",
+      "sourceKey": "166562f4c9fef7c59929b41a0446dd3e64defec11d83eef7b53877206193bd88",
+      "backgroundKey": "background:0ff7ca8b4791a9facd5516da92c4edd8e1cae1f9f33bc24080681cacf8e7bc29",
+      "aspect": "16:9"
+    },
+    "file": "scene-13.jpg"
+  },
+  {
+    "index": 14,
+    "start": 95.045,
+    "end": 101.895,
+    "sample": 98.47,
+    "text": "Ở bậc cửa, nắm gạo muối chị Hai bỏ quên tối qua đã bị giẫm nát, vung vãi khắp ngõ ngách lối đi.",
+    "scene": {
+      "fromLineId": "c1_event_2d82a7a089ee::0::ở bậc cửa nắm gạo muối chị hai bỏ quên tối qua đã bị giẫm nát vung vãi khắp ngõ ngách lối đi",
+      "toLineId": "c1_event_2d82a7a089ee::0::ở bậc cửa nắm gạo muối chị hai bỏ quên tối qua đã bị giẫm nát vung vãi khắp ngõ ngách lối đi",
+      "purpose": "Highlight the ominous physical proof of the taboo violation through a close focus on crushed rice and salt grains trampled across the wooden door threshold",
+      "environment": "Close framing of the aged wooden door threshold between the dark interior floor and the damp outdoor porch stones under cold morning twilight",
+      "nodes": [
+        {
+          "id": "door_threshold_prop",
+          "kind": "prop",
+          "description": "Weathered dark wooden door threshold beam set between interior floor and outer porch step",
+          "slot": "center",
+          "evidence": "Ở bậc cửa",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:c0bf30bc2c72655368a2070945816c52177aafc4826135631512234eb5c99637"
+        },
+        {
+          "id": "crushed_salt_rice_prop",
+          "kind": "prop",
+          "description": "Crushed white rice grains and coarse sea salt trampled, smeared, and scattered across the threshold beam with faint wet footprint smudges",
+          "slot": "center",
+          "relation": "on",
+          "target": "door_threshold_prop",
+          "evidence": "nắm gạo muối chị hai bỏ quên tối qua đã bị giẫm nát vung vãi khắp ngõ ngách lối đi",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:3009d631f0b56a6e2310dbb7911af2031628c34cc38ab539682b9329648b51f6"
+        }
+      ],
+      "id": "c1_event_2d82a7a089ee:0",
+      "beatId": "c1_event_2d82a7a089ee",
+      "place": "hien_nha",
+      "text": "Ở bậc cửa, nắm gạo muối chị Hai bỏ quên tối qua đã bị giẫm nát, vung vãi khắp ngõ ngách lối đi.",
+      "sourceKey": "a9d6014302e3fe4c49eb46d300101242c5e5fdcf89fdf4fb6ba85704559ed04b",
+      "backgroundKey": "background:54dd43c5cfbf1eba93ccaca221ace11661245b4697fc68f704ee2b394a8cffec",
+      "aspect": "16:9"
+    },
+    "file": "scene-14.jpg"
+  },
+  {
+    "index": 15,
+    "start": 101.895,
+    "end": 107.39,
+    "sample": 104.6425,
+    "text": "Tôi bước vào nhà, thấy chị Hai đang lui cui bưng mâm cơm sáng đặt lên bàn thờ mẹ.",
+    "scene": {
+      "fromLineId": "c1_event_8593c6c77ea6::0::tôi bước vào nhà thấy chị hai đang lui cui bưng mâm cơm sáng đặt lên bàn thờ mẹ",
+      "toLineId": "c1_event_8593c6c77ea6::0::tôi bước vào nhà thấy chị hai đang lui cui bưng mâm cơm sáng đặt lên bàn thờ mẹ",
+      "purpose": "Show Chi Hai performing domestic altar rituals identical to the late mother",
+      "environment": "Modest rural living room interior with soft morning daylight flowing through the open entrance onto the tiled floor and back wall altar.",
+      "nodes": [
+        {
+          "id": "toi",
+          "kind": "character",
+          "entityId": "toi",
+          "description": "Vietnamese adult man, short black hair, plain faded shirt and dark trousers, tired eyes, simple rural look.",
+          "pose": "standing near the doorway, watching quietly",
+          "slot": "left",
+          "evidence": "Tôi bước vào nhà, thấy chị Hai",
+          "assetKey": "character:toi:5c46ff3916e92bd86f6aca132349b188b9a71c66d45d5c1adeaf91c1db28e155"
+        },
+        {
+          "id": "chi_hai",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Vietnamese adult woman, long black hair tied low, simple dark blouse and loose trousers, worn hands, tired face.",
+          "pose": "leaning slightly forward, carefully setting down a food tray onto the altar",
+          "slot": "center",
+          "essential": true,
+          "poseEssential": true,
+          "evidence": "chị Hai đang lui cui bưng mâm cơm sáng đặt lên bàn thờ mẹ",
+          "assetKey": "character:df2739dd4172ff4cddbec19578fdf115e2d10496a869c46114a19cb8de2c3c30"
+        },
+        {
+          "id": "morning_food_tray",
+          "kind": "prop",
+          "description": "Small round tray holding steaming white rice bowls and simple morning offering dishes for the ancestor altar.",
+          "slot": "center",
+          "relation": "heldBy",
+          "target": "chi_hai",
+          "essential": true,
+          "evidence": "bưng mâm cơm sáng đặt lên bàn thờ mẹ",
+          "pose": "standing",
+          "assetKey": "prop:0df928035215a67499a9441932227d305e9a0ca5c10d9b49ac3edc26b12e4ff1"
+        }
+      ],
+      "id": "c1_event_8593c6c77ea6:0",
+      "beatId": "c1_event_8593c6c77ea6",
+      "place": "phong_khach",
+      "text": "Tôi bước vào nhà, thấy chị Hai đang lui cui bưng mâm cơm sáng đặt lên bàn thờ mẹ.",
+      "sourceKey": "c8352fe7838e9d16a4981135d5f445cc85c65756fff9c0cf2c9362961e7a424e",
+      "backgroundKey": "background:749bd13932b4971fddf26f0b44d9fa9082c808f5ec5e334ed7774e470d8beb23",
+      "aspect": "16:9"
+    },
+    "file": "scene-15.jpg"
+  },
+  {
+    "index": 16,
+    "start": 107.39,
+    "end": 112.245,
+    "sample": 109.8175,
+    "text": "Chị quay lại nhìn tôi, cất giọng rầy la chậm rãi và quen thuộc đến lạnh gáy:",
+    "scene": {
+      "fromLineId": "c1_event_f997f7af6d98::0::chị quay lại nhìn tôi cất giọng rầy la chậm rãi và quen thuộc đến lạnh gáy",
+      "toLineId": "c1_event_f997f7af6d98::0::chị quay lại nhìn tôi cất giọng rầy la chậm rãi và quen thuộc đến lạnh gáy",
+      "purpose": "Establish the eerie physical transformation in Chi Hai gaze and demeanor echoing the deceased mother in the morning living room",
+      "environment": "Modest rural Vietnamese living room interior with plaster back wall, wooden ancestral altar shelf, tiled floor, soft morning light filtering through the doorway",
+      "nodes": [
+        {
+          "id": "node_portrait_me",
+          "kind": "prop",
+          "description": "Framed ancestral altar portrait of the late mother with gray hair and gentle lined face",
+          "slot": "right",
+          "evidence": "chị quay lại nhìn tôi",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:a534bacce30e687c02e84506ea21c1716a4ceb4e7badabc1bdbaa6c9e4b11ba6"
+        },
+        {
+          "id": "node_chi_hai",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Chi Hai standing turned toward the viewer with a stern, solemn expression resembling the late mother, long black hair tied low, dark blouse and loose trousers",
+          "pose": "turned toward viewer with solemn strict expression speaking slowly",
+          "slot": "center",
+          "relation": "beside",
+          "target": "node_portrait_me",
+          "evidence": "chị quay lại nhìn tôi cất giọng rầy la chậm rãi",
+          "essential": true,
+          "poseEssential": true,
+          "assetKey": "character:d2e6b59cc5e4d3d9991385102401925381cb3b2d0caf35e56dfd5a326635dea3"
+        }
+      ],
+      "id": "c1_event_f997f7af6d98:0",
+      "beatId": "c1_event_f997f7af6d98",
+      "place": "phong_khach",
+      "text": "Chị quay lại nhìn tôi, cất giọng rầy la chậm rãi và quen thuộc đến lạnh gáy:",
+      "sourceKey": "933d1001bf77ae3fc555ffde608ce3960e386a3d75b6f5a688cfba5a36463f95",
+      "backgroundKey": "background:9638c40ddcf6273c82dcac879ba4573f179707a718de101e71e8bff1c7f6869a",
+      "aspect": "16:9"
+    },
+    "file": "scene-16.jpg"
+  },
+  {
+    "index": 17,
+    "start": 112.245,
+    "end": 118.9,
+    "sample": 114.45750000000001,
+    "text": "\"Dậy rửa mặt đi con, rồi vào ăn chén cơm nóng cho ấm bụng.\"",
+    "scene": {
+      "fromLineId": "c1_event_aa1e634b046f::0::dậy rửa mặt đi con rồi vào ăn chén cơm nóng cho ấm bụng",
+      "toLineId": "c1_event_aa1e634b046f::0::dậy rửa mặt đi con rồi vào ăn chén cơm nóng cho ấm bụng",
+      "purpose": "Deliver the chilling climax and final revelation as Chi Hai speaks with the deceased mother maternal voice and gentle mannerisms",
+      "environment": "Modest rural living room interior with wooden altar against the back wall, morning light filtering through the open doorway across the tiled floor",
+      "nodes": [
+        {
+          "id": "altar_table",
+          "kind": "prop",
+          "description": "Dark rustic wooden family altar table placed against the back wall",
+          "slot": "center",
+          "evidence": "phòng khách với bàn thờ",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:5134ff4041eacbd324ded24c72e637cff5f109dac8ecfca84c8b972fddee31df"
+        },
+        {
+          "id": "portrait_mother",
+          "kind": "prop",
+          "description": "Framed black-and-white portrait photograph of the elderly mother resting on the altar",
+          "slot": "center",
+          "relation": "on",
+          "target": "altar_table",
+          "evidence": "bàn thờ mẹ",
+          "essential": true,
+          "pose": "standing",
+          "assetKey": "prop:1c7fb87d0a05914f3421bbed004e6256973cfb7b4d132c633a75708a6000eeb4"
+        },
+        {
+          "id": "chi_hai_possessed",
+          "kind": "character",
+          "entityId": "chi_hai",
+          "description": "Chi Hai standing calmly with hands folded gently at her waist, gazing tenderly yet unnervingly at Toi like a mother to her young child",
+          "pose": "Standing with hands resting gently across the waist, offering a serene maternal gaze",
+          "slot": "left",
+          "relation": "beside",
+          "target": "altar_table",
+          "evidence": "dậy rửa mặt đi con rồi vào ăn chén cơm nóng cho ấm bụng",
+          "essential": true,
+          "poseEssential": true,
+          "assetKey": "character:b90203b2462e24da4453d5ff39b59227134b7b6773144ca4eef8cbc19c95a2b5"
+        }
+      ],
+      "id": "c1_event_aa1e634b046f:0",
+      "beatId": "c1_event_aa1e634b046f",
+      "place": "phong_khach",
+      "text": "Dậy rửa mặt đi con, rồi vào ăn chén cơm nóng cho ấm bụng.",
+      "sourceKey": "6d67c96e16f867c2da769c73b24dd27f2a71a24632e4ccb5d37f9d4d06641629",
+      "backgroundKey": "background:65fe7407298a8067369a3c66b557d3fe447e1834ff12f7c9d6a8f5374a270d05",
+      "aspect": "16:9"
+    },
+    "file": "scene-17.jpg"
+  }
+]

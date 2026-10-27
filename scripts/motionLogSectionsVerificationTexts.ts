@@ -3,12 +3,13 @@ export const MOTION_LOG_SECTION_TEST = {
   ENTRY: `import React,{useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {MotionFlowLog} from './src/components/motion-video/MotionControls.tsx';
+import {MOTION_STORY_CONFIG} from './src/constants/motionVideo.ts';
 function Fixture(){
 const [entries,setEntries]=useState(JSON.parse(localStorage.getItem('fixture-log-sections')||'null')||DATA.entries);
 const [job,setJob]=useState(DATA.job);
 globalThis.appendLog=()=>setEntries(list=>{const next=list.map(entry=>entry.id==='run'?{...entry,lines:[...entry.lines,'16:39:00 · [Ghép hình từ kho][Đọc cảnh] Đã xong cảnh 3/31']}:entry);localStorage.setItem('fixture-log-sections',JSON.stringify(next));return next});
 globalThis.failLog=()=>{setJob({...DATA.job,status:'error',activeAi:{}});setEntries(list=>list.map(entry=>entry.id==='run'?{...entry,lines:[...entry.lines,'16:40:00 · [Ghép hình từ kho] Lỗi: catalogKey must depict this exact noun phrase']}:entry))};
-return <main><h1>Nhật ký tạo video</h1><MotionFlowLog entries={entries} job={job}/></main>;
+return <main className={MOTION_STORY_CONFIG.BUSY_LOCK_CLASS}><h1>Nhật ký tạo video</h1><MotionFlowLog entries={entries} job={job}/></main>;
 }
 createRoot(document.getElementById('root')).render(<Fixture/>);`,
   ENTRIES: [

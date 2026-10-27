@@ -1,5 +1,6 @@
 import { MOTION_QA as Q } from "./motionQa.js";
 import { MOTION_APPEARANCE as APPEARANCE } from "./motionAppearance.js";
+import { MOTION_REMOTION_SCHEMAS } from "./motionRemotionPrompts.js";
 export interface MotionResponseSchema {
   type?: "object" | "array" | "string" | "number" | "integer" | "boolean" | "null";
   properties?: Record<string, MotionResponseSchema>;
@@ -158,6 +159,7 @@ export const MOTION_ANALYSIS_SCHEMA = object({
   chapters: array(object({ ...texts("id", "title", "summary"), keyPoints: strings(), hook: plainText, handoff: plainText, from: number, to: number, weight: number, mustKeep: boolean }, ["id", "title", "summary"]), 1),
 });
 export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
+  ...MOTION_REMOTION_SCHEMAS,
   "motion-story-analysis": MOTION_ANALYSIS_SCHEMA,
   "motion-dna-profile": object({ videoDna: MOTION_DNA_PROFILE_SCHEMA }),
   "motion-story-new-dna": object({ videoDna: MOTION_DNA_CORE_SCHEMA }),

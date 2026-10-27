@@ -40,10 +40,10 @@ try {
   const logs = await page.evaluate(() => (window as any).motionDraftStudio.logHistory);
   assert.equal(logs.at(-1).lines[0], V.LIVE_LINE);
   const journal = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), MOTION_EDITORIAL.LOG_STORAGE_KEY);
-  assert.deepEqual(journal, logs);
+  assert.deepEqual(journal, JSON.parse(JSON.stringify(logs)));
   await page.reload();
   await page.waitForFunction(() => (window as any).motionDraftStudio?.logHistory.length === 36);
-  assert.deepEqual(await page.evaluate(() => (window as any).motionDraftStudio.logHistory), logs);
+  assert.deepEqual(await page.evaluate(() => (window as any).motionDraftStudio.logHistory), JSON.parse(JSON.stringify(logs)));
   const status = page.locator("p[title]");
   assert.equal(await status.innerText(), V.LABEL);
   assert.equal((await status.getAttribute("title"))!.split("\n").length, 3);

@@ -109,7 +109,9 @@
   function init(ctx) {
     const P = ctx.params || {};
     const frames = (Array.isArray(P.frames) ? P.frames : []).slice().sort((a, b) => a.start - b.start);
-    return { frames, style: styleOf(ctx.spec), kit: (ctx.spec && ctx.spec.kit) || {}, motion: !!(ctx.spec && ctx.spec.kit && ctx.spec.kit.motion) };
+    const kit = (ctx.spec && ctx.spec.kit) || {},
+      behavior = kit.renderBehavior;
+    return { frames, style: styleOf(ctx.spec), kit, motion: behavior ? behavior.actors === "simple" : !!kit.motion, effects: !behavior || behavior.sceneEffects !== "off", camera: !behavior || behavior.camera === "gentle" };
   }
   function frameAt(S, t) {
     const fs = S.frames;
@@ -519,6 +521,10 @@
     return drawPuppetRaw(g, S, A, t, opt);
   }
   function drawPuppetRaw(g, S, A, t, opt) {
+    if (!S.motion) {
+      t = 0;
+      A = Object.assign({}, A, { talk: 0 });
+    }
     S.rigActor = A.char;
     S.rigReach = A.reachPoint || null;
     const c = charOf(S, A.char, A.look);
@@ -552,7 +558,7 @@
         rigBody(g, S, SL);
         rigPoint(g, S, K.CONTACT.mouth, (dir ? K.CONTACT.mouthX : 0) * SL.headW, SL.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * SL.headH);
         effectPoint(g, S, A.char, 0, SL.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * SL.headH, K.EFFECT.targets);
-        drawHead(g, headState, c, SL, view, dir ? 1 : 0, expression, { level: A.talk || 0, t }, revealed ? 0 : blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
+        drawHead(g, headState, c, SL, view, dir ? 1 : 0, expression, { level: A.talk || 0, t }, revealed || !S.motion ? 0 : blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
         if (A.hold || A.gesture || A.reachPoint || sp.bodyOnly) {
           if (view !== K.S.SIDE) drawArm(g, S, c, SL, -1, ps.l[0], ps.l[1], tint, ps.len);
           const hand = drawArm(g, S, c, SL, 1, ps.r[0], ps.r[1], tint, ps.len);
@@ -602,7 +608,7 @@
     g.translate(0, -(L.headCy + L.headH * 0.45));
     effectPoint(g, S, A.char, 0, L.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * L.headH, K.EFFECT.targets);
     rigPoint(g, S, K.CONTACT.mouth, (dir ? K.CONTACT.mouthX : 0) * L.headW, L.headCy + (S.style.face.mouthY - K.EFFECT.headHalf) * L.headH);
-    drawHead(g, headState, c, L, view, dir ? 1 : 0, expression, { level: A.talk || 0, t }, revealed ? 0 : blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
+    drawHead(g, headState, c, L, view, dir ? 1 : 0, expression, { level: A.talk || 0, t }, revealed || !S.motion ? 0 : blinkAt(t, seed) * (A.expr === K.S.SLEEP ? 0 : 1), tint);
     g.restore();
     if (S.style.face.nose && A.pose === K.S.COVER_FACE && view !== K.S.BACK) for (const [side, a] of sides) arm(side, a);
     if (A.wear) for (const w of A.wear) drawWorn(g, S, w, L, view, ps.sprite === K.S.LIE);
@@ -927,7 +933,7 @@
     });
     resolveContacts(S, F, acts, t);
     const box = frameBox(S, F, set, acts);
-    const cam = camera(box, F, k);
+    const cam = S.camera !== false ? camera(box, F, k) : box;
     const sc = H / cam.h;
     g.save();
     const OX = ctx.ox || 0;
@@ -989,7 +995,7 @@
         g.fill();
       }
       const A = Object.assign({}, a.A, { talk: a.talk });
-      if (S.motion && (A.pose === K.S.WALK || A.pose === K.S.RUN)) g.translate((k - 0.5) * K.SET_W * K.WALK_SPEED * (A.face === K.S.LEFT ? -1 : 1) * (A.pose === K.S.RUN ? 2 : 1), 0);
+      if (S.motion && (A.pose === K.S.WALK || A.pose === K.S.RUN)) g.translate((clamp((t - F.start) / Math.max(0.1, F.end - F.start), 0, 1) - 0.5) * K.SET_W * K.WALK_SPEED * (A.face === K.S.LEFT ? -1 : 1) * (A.pose === K.S.RUN ? 2 : 1), 0);
       if (S.motion && (A.trail || K.TRAIL.poses.indexOf(A.pose) >= 0)) {
         const back = A.face === K.S.LEFT ? 1 : -1;
         for (let i = K.TRAIL.n; i >= 1; i--) {
@@ -1107,9 +1113,10 @@
       base = H * Y.y + h / 2;
     glow(g, x, base - h / 2, H * Y.halo, K.NIGHT_RE.test(F.light || K.EMPTY) ? K.COLD : K.GLOW, Y.haloA);
     drawProp(g, S, F.prop, x, base, h, F.propRot || 0);
+    const effectTime = S.effects !== false ? t : 0;
     for (let i = 0; i < Y.dust; i++) {
-      const px = ((hash(i * 3.3) + t * 0.01 * (0.5 + hash(i))) % 1) * W,
-        py = ((hash(i * 7.1) + t * 0.006) % 1) * H;
+      const px = ((hash(i * 3.3) + effectTime * 0.01 * (0.5 + hash(i))) % 1) * W,
+        py = ((hash(i * 7.1) + effectTime * 0.006) % 1) * H;
       g.fillStyle = rgba(K.WHITE, K.DUST_ALPHA * (0.3 + 0.7 * hash(i * 1.9)));
       g.beginPath();
       g.arc(px, py, (0.8 + hash(i * 5.7) * 1.6) * u, 0, Math.PI * 2);
@@ -1119,11 +1126,11 @@
     g.lineWidth = 1.6 * u;
     for (let i = 0; i < Y.wind; i++) {
       const y = H * (0.25 + 0.5 * hash(i * 4.1)),
-        x0 = (((hash(i * 2.3) + t * 0.05) % 1) * 1.4 - 0.2) * W;
+        x0 = (((hash(i * 2.3) + effectTime * 0.05) % 1) * 1.4 - 0.2) * W;
       g.beginPath();
       for (let j = 0; j <= 12; j++) {
         const xx = x0 + j * W * 0.012,
-          yy = y + Math.sin(j * 0.9 + t * 2 + i) * H * 0.006;
+          yy = y + Math.sin(j * 0.9 + effectTime * 2 + i) * H * 0.006;
         if (j) g.lineTo(xx, yy);
         else g.moveTo(xx, yy);
       }
@@ -1159,7 +1166,7 @@
     const L = charLayout(S, charOf(S, A.char));
     const wall = V && V.wall && V.wall < H ? V.wall : null;
     const grow = S.motion ? 1 + D.grow * ME.puppetCameraProgress(F, t) : 1;
-    const fl = S.motion ? 1 - D.flick * (0.5 + 0.5 * Math.sin(t * D.flickHz[0]) * Math.sin(t * D.flickHz[1])) : 1;
+    const fl = 1;
     const kk = ((wall ? wall * D.wallFill : H * D.h) * grow) / L.total;
     g.save();
     if (wall) {
@@ -1291,7 +1298,7 @@
       g.restore();
       return;
     }
-    const fl = S.motion ? 1 - 0.1 * (0.5 + 0.5 * Math.sin(t * 7.3) * Math.sin(t * 2.1)) : 1;
+    const fl = 1;
     const hr = h * 0.075,
       hy = y - h + hr * 1.3;
     if (K.FILTER in g) g.filter = K.BLUR(h * 0.008);
@@ -1320,25 +1327,27 @@
     const W = ctx.W,
       H = ctx.H,
       u = H / 720;
+    const effectTime = S.effects !== false ? t : 0;
     for (const o of F.overlays || []) {
+      if (S.effects === false && (o === K.S.RAIN || o === K.S.FOG || o === K.S.DUST || o === K.S.STEAM || o === K.S.SMOKE || o === K.EFFECT.odor)) continue;
       if (o === K.S.RAIN) {
         g.strokeStyle = rgba(K.RAIN, 0.35);
         g.lineWidth = 1.2 * u;
         for (let i = 0; i < 120; i++) {
-          const x = ((hash(i * 1.7) + t * 0.08) % 1) * W,
-            y = ((hash(i * 3.9) + t * 1.4) % 1) * H;
+          const x = ((hash(i * 1.7) + effectTime * 0.08) % 1) * W,
+            y = ((hash(i * 3.9) + effectTime * 1.4) % 1) * H;
           g.beginPath();
           g.moveTo(x, y);
           g.lineTo(x - 4 * u, y + 18 * u);
           g.stroke();
         }
       } else if (o === K.S.FOG) {
-        for (let i = 0; i < 4; i++) glow(g, ((hash(i * 2.1) + t * 0.01) % 1) * W, H * (0.6 + 0.1 * i), H * 0.6, K.FOG, 0.12);
+        for (let i = 0; i < 4; i++) glow(g, ((hash(i * 2.1) + effectTime * 0.01) % 1) * W, H * (0.6 + 0.1 * i), H * 0.6, K.FOG, 0.12);
       } else if (o === K.S.DUST) {
         for (let i = 0; i < 40; i++) {
           g.fillStyle = rgba(K.WHITE, 0.25 * hash(i * 1.3));
           g.beginPath();
-          g.arc(((hash(i * 2.7) + t * 0.006) % 1) * W, ((hash(i * 5.3) + t * 0.004) % 1) * H, 1.4 * u, 0, Math.PI * 2);
+          g.arc(((hash(i * 2.7) + effectTime * 0.006) % 1) * W, ((hash(i * 5.3) + effectTime * 0.004) % 1) * H, 1.4 * u, 0, Math.PI * 2);
           g.fill();
         }
       } else if (o === K.S.STEAM || o === K.S.SMOKE || o === K.EFFECT.odor) {
@@ -1366,22 +1375,22 @@
           for (let i = 0; i <= K.EFFECT.steps; i++) {
             const spread = i / K.EFFECT.steps;
             let yy = y0 - i * H * K.EFFECT.rise * z;
-            let xx = x0 + spread * ((j - 1) * W * K.EFFECT.spread * z + Math.sin(i * 0.8 + t + j) * W * K.EFFECT.sway * z);
+            let xx = x0 + spread * ((j - 1) * W * K.EFFECT.spread * z + Math.sin(i * 0.8 + effectTime + j) * W * K.EFFECT.sway * z);
             if (F.effectMode === K.EFFECT.toward) {
-              const bend = Math.sin(Math.PI * spread) * Math.sin(i * 0.8 + t + j);
+              const bend = Math.sin(Math.PI * spread) * Math.sin(i * 0.8 + effectTime + j);
               xx = x0 + (target.x - x0) * spread + bend * W * K.EFFECT.sway * z;
               yy = y0 + (target.y - y0) * spread + bend * H * K.EFFECT.sway * z;
             } else if (F.effectMode === K.EFFECT.ground) {
               xx = x0 + (target ? target.x - x0 : W * K.EFFECT.groundWidth * z) * spread + Math.sin(Math.PI * spread) * (j - 1) * W * K.EFFECT.spread * z;
-              yy = y0 + (target ? target.y - y0 : 0) * spread + Math.sin(Math.PI * spread) * Math.sin(i + t + j) * H * K.EFFECT.groundSway * z;
+              yy = y0 + (target ? target.y - y0 : 0) * spread + Math.sin(Math.PI * spread) * Math.sin(i + effectTime + j) * H * K.EFFECT.groundSway * z;
             }
             if (i) g.lineTo(xx, yy);
             else g.moveTo(xx, yy);
           }
           g.stroke();
         }
-      } else if (o === K.S.GHOST) drawGhostPeek(g, ctx, S, F, t);
-      else if (o === K.S.LURK) drawLurk(g, ctx, S, F, t);
+      } else if (o === K.S.GHOST) drawGhostPeek(g, ctx, S, F, S.motion ? t : 0);
+      else if (o === K.S.LURK) drawLurk(g, ctx, S, F, S.motion ? t : 0);
       else if (o === K.S.FLASHBACK) drawFlashback(g, ctx);
     }
     const vr = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95);
@@ -1409,7 +1418,7 @@
     g.restore();
   }
   function drawFrame(g, ctx, S, F, t) {
-    const k = ME.puppetCameraProgress(F, t);
+    const k = S.camera ? ME.puppetCameraProgress(F, t) : 0;
     S.extend = 0;
     S.emitters = {};
     S.targets = {};
@@ -1466,7 +1475,7 @@
       g.fillRect(0, 0, ctx.W, ctx.H);
       g.restore();
     }
-    if (fx && fx.flash) {
+    if (fx && fx.flash && S.effects && !S.kit.renderBehavior) {
       g.save();
       g.globalAlpha = fx.flash;
       g.fillStyle = K.WHITE;
@@ -1490,7 +1499,7 @@
   function bgInit(ctx, bg) {
     const kit = ctx.spec && ctx.spec.kit;
     if (!kit || !bg) return null;
-    return { puppet: true, S: { frames: [], style: styleOf(ctx.spec), kit, motion: !!kit.motion }, F: { set: bg.set, light: bg.light || null } };
+    return { puppet: true, S: { frames: [], style: styleOf(ctx.spec), kit, motion: kit.renderBehavior ? kit.renderBehavior.actors === "simple" : !!kit.motion, effects: !kit.renderBehavior || kit.renderBehavior.sceneEffects !== "off", camera: !kit.renderBehavior || kit.renderBehavior.camera === "gentle" }, F: { set: bg.set, light: bg.light || null } };
   }
   function bgDraw(g, ctx, st) {
     if (!st || !st.S) return;

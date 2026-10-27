@@ -512,6 +512,7 @@ export interface PuppetVisualContract {
   fixtures: { key: string; state: string }[];
 }
 export interface PuppetKitSpec {
+  renderBehavior?: import("./motionVisual.js").MotionRenderBehavior;
   style: Pick<PuppetStylePack, "body" | "face" | "line" | "vignette"> & { atmosphere?: typeof import("../constants/motionAppearance.js").MOTION_APPEARANCE.PROFILE };
   characters: Record<string, Pick<PuppetCharacter, "height" | "colors" | "head" | "body" | "sprites"> & { ghost?: boolean; looks?: Record<string, Pick<PuppetCharacter, "height" | "colors" | "head" | "body" | "sprites">> }>;
   sets: Record<string, Pick<PuppetSet, "svg" | "floorY" | "lights" | "time" | "variants" | "framingBounds"> & { wallY?: number }>;

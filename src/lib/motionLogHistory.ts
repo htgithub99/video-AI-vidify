@@ -1,6 +1,7 @@
 import type { MotionLogEntry } from "../types/motionVideo.js";
 import { MOTION_PROGRESS as P } from "../constants/motionProgress.js";
-export const motionFlowLogRows = (history: MotionLogEntry[]): { key: string; kind: string; section?: string; line: string }[] => {
+export const motionRestoredStoryJobId = (activeId: string | undefined, history: MotionLogEntry[], productionId?: string): string | undefined => activeId || history.filter((entry) => entry.kind !== "render").at(-1)?.id || productionId;
+export const motionFlowLogRows = (history: MotionLogEntry[]): { key: string; kind: string; section?: string; line: string; time: number }[] => {
   const rows = history.flatMap((entry, group) => {
     let time = 0;
     let day = entry.startedAt ? new Date(entry.startedAt).setHours(0, 0, 0, 0) / 1000 : 0;
@@ -27,14 +28,17 @@ export const motionFlowLogRows = (history: MotionLogEntry[]): { key: string; kin
   }
   return rows.sort((a, b) => a.time - b.time || a.group - b.group || a.index - b.index);
 };
-export const mergeMotionLogHistory = (history: MotionLogEntry[], id: string, kind: string, lines: string[] = [], startedAt?: number): MotionLogEntry[] => {
+export const mergeMotionLogHistory = (history: MotionLogEntry[], id: string, kind: string, lines: string[] = [], startedAt?: number, state?: Pick<MotionLogEntry, "status" | "stage" | "error">): MotionLogEntry[] => {
   const index = history.findIndex((entry) => entry.id === id);
-  if (index < 0) return [...history, { id, kind, lines, ...(startedAt ? { startedAt } : {}) }];
+  if (index < 0) return [...history, { id, kind, lines, ...(startedAt ? { startedAt } : {}), ...state }];
   const previous = history[index].lines;
-  if (!lines.length || (lines.length <= previous.length && previous.some((_, start) => lines.every((line, offset) => previous[start + offset] === line)))) return history;
+  if (!lines.length || (lines.length <= previous.length && previous.some((_, start) => lines.every((line, offset) => previous[start + offset] === line)))) {
+    if ((!startedAt || startedAt === history[index].startedAt) && (!state || Object.entries(state).every(([key, value]) => history[index][key as keyof MotionLogEntry] === value))) return history;
+    return history.map((entry, i) => (i === index ? { ...entry, ...(startedAt ? { startedAt } : {}), ...state } : entry));
+  }
   let overlap = Math.min(previous.length, lines.length);
   while (overlap && !lines.slice(0, overlap).every((line, offset) => previous[previous.length - overlap + offset] === line)) overlap--;
   const next = history.slice();
-  next[index] = { ...history[index], id, kind, lines: [...previous, ...lines.slice(overlap)], ...(startedAt ? { startedAt } : {}) };
+  next[index] = { ...history[index], id, kind, lines: [...previous, ...lines.slice(overlap)], ...(startedAt ? { startedAt } : {}), ...state };
   return next;
 };

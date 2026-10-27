@@ -1,5 +1,7 @@
 import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { PRODUCTION_QA } from "./motionProductionVerificationTexts.js";
 import { chromium } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.ts";
@@ -106,6 +108,27 @@ try {
     const valid = { artifactType: RT.MOTION_STORY_CHAPTER, requestId: RT.CURRENT, beats: [{ narration: refusal }] };
     await setResponse(JSON.stringify(valid));
     assert.deepEqual(JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, valid.artifactType, valid.requestId)), valid, RT.QUOTED_DIALOGUE_IN_JSON_IS_NOT_A_REFUSAL);
+    const receipt = { artifactType: CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT, requestId: "context-receipt", receivedPart: 3 };
+    await setResponse('{"artifactType":"chat-planning-context","requestId":"context-receipt","received' + JSON.stringify(receipt));
+    assert.deepEqual(JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, receipt.artifactType, receipt.requestId)), receipt);
+    await assert.rejects(waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, receipt.artifactType, "different-context"), { message: CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR });
+    await setResponse('{"artifactType":"motion-story-chapter","requestId":"current","beats' + JSON.stringify(valid));
+    await assert.rejects(waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, valid.artifactType, valid.requestId), { message: CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR });
+    const vectorReply = fs.readFileSync("scripts/fixtures/motion-remotion-svg-response-20261027.txt", "utf8");
+    await setResponse(vectorReply);
+    const recoveredVector = JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, V.ARTIFACT_ASSET, "motion_remotion_asset-e2cdee3a"));
+    assert.ok(recoveredVector.svg.endsWith("</svg>"));
+    assert.equal(recoveredVector.anchors.base.y, 0.98);
+    await assert.rejects(waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, V.ARTIFACT_ASSET, "different-request"), { message: CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR });
+    const protectedReply = { artifactType: V.ARTIFACT_ASSET, requestId: "escaped-svg", svg: '<svg viewBox="0 0 10 10"><g><rect width="10" height="10"/></g></svg>', anchors: {} };
+    await setResponse(JSON.stringify(protectedReply).replaceAll("<", "\\u003c"));
+    assert.deepEqual(JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, V.ARTIFACT_ASSET, protectedReply.requestId)), protectedReply);
+    await page.setContent('<model-response><div class="markdown"><span>Code JSON:</span><pre><code></code></pre><button>Copy code</button></div></model-response>');
+    await page.locator("code").evaluate((element, value) => {
+      element.textContent = value;
+    }, JSON.stringify(protectedReply));
+    assert.equal((await getChatResponseSnapshots(page, selector, V.ARTIFACT_ASSET))[0].text, JSON.stringify(protectedReply));
+    assert.deepEqual(JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, V.ARTIFACT_ASSET, protectedReply.requestId)), protectedReply);
     await setResponse(RT.A_MALFORMED_RESPONSE_WITH_NO_JSON_OBJECT);
     await assert.rejects(waitForStableResponse(page, selector, RT.BUSY, 0, [], []), { message: CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR });
     await setResponse(RT.SORRY_SOMETHING_WENT_WRONG_PLEASE_TRY_YOUR_REQUEST_AGAIN);
