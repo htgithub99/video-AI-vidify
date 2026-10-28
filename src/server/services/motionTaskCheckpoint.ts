@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import fs from "node:fs";
 import path from "node:path";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
@@ -10,7 +11,7 @@ export const motionTaskCheckpoint = <T>(scope: string | undefined, kind: string,
     read(): T | undefined {
       if (!file || !fs.existsSync(file)) return undefined;
       try {
-        const saved = JSON.parse(fs.readFileSync(file, P.ENCODING));
+        const saved = parseJson(fs.readFileSync(file, P.ENCODING));
         if (saved.version !== P.TASK_VERSION || saved.key !== key || !saved.draft || typeof saved.draft !== "object") throw new Error(P.TASK_INVALID);
         return saved.draft as T;
       } catch {

@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { stringifyJson, parseJson } from "../../lib/jsonStringify.js";
 import { voiceChannelRef } from "../../lib/motionVoice.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
@@ -70,12 +73,12 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
     getMotionRootDirectory(),
     MR.MOTION_TEXT_TTS_CACHE,
     createHash(MR.MOTION_TEXT_SHA256)
-      .update(signature + JSON.stringify(fixed) + JSON.stringify(channel || {}))
+      .update(signature + stringifyJson(fixed) + stringifyJson(channel || {}))
       .digest(MR.MOTION_TEXT_HEX) + MR.MOTION_TEXT_PLAN_JSON,
   );
   let saved: MotionVoicePlan | undefined;
   try {
-    saved = JSON.parse(fs.readFileSync(planFile, MR.MOTION_TEXT_UTF8));
+    saved = parseJson(fs.readFileSync(planFile, MR.MOTION_TEXT_UTF8));
   } catch {}
   if (
     saved?.signature === signature &&
@@ -110,17 +113,19 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
   if (!settled && !draft.casted)
     try {
       casting = await (opts.ai || runMotionAi)(
-        [
-          MOTION_AUDIO_CAST_PROMPT,
-          JSON.stringify({
-            title: script.title,
-            direction: baseDirection,
-            analysis: { title: analysis?.title, logline: analysis?.logline, genre: analysis?.genre, factual: analysis?.factual, format: analysis?.videoDna?.format, audience: analysis?.videoDna?.audienceProfile, cast: analysis?.cast?.map((member) => _.pick(member, ["key", "name", "role", "gender", "age", "description"])) },
-            scriptExcerpts: sampleIndices.map((index) => ({ id: script.beats[index].id, narration: script.beats[index].narration.slice(0, PROMPT.CAST_EXCERPT_CHARS) })),
-            fixed,
-            voices: candidates.map((voice) => _.pick(voice, ["id", "name", "gender", "age", "description", "language"])),
-          }),
-        ].join(MR.MOTION_TEXT_SYMBOL_27),
+        (
+          [
+            MOTION_AUDIO_CAST_PROMPT,
+            stringifyJson({
+              title: script.title,
+              direction: baseDirection,
+              analysis: { title: analysis?.title, logline: analysis?.logline, genre: analysis?.genre, factual: analysis?.factual, format: analysis?.videoDna?.format, audience: analysis?.videoDna?.audienceProfile, cast: analysis?.cast?.map((member) => _.pick(member, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.ROLE, RT_SHARED.GENDER, RT_SHARED.AGE, RT_SERVER.DESCRIPTION])) },
+              scriptExcerpts: sampleIndices.map((index) => ({ id: script.beats[index].id, narration: script.beats[index].narration.slice(0, PROMPT.CAST_EXCERPT_CHARS) })),
+              fixed,
+              voices: candidates.map((voice) => _.pick(voice, [RT_SHARED.ID, RT_SHARED.NAME, RT_SHARED.GENDER, RT_SHARED.AGE, RT_SERVER.DESCRIPTION, RT_SERVER.LANGUAGE])),
+            }),
+          ] as string[]
+        ).join(MR.MOTION_TEXT_SYMBOL_27),
         MOTION_AUDIO_DIRECTION.ARTIFACT,
         opts.exec,
         opts.signal,
@@ -169,7 +174,7 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
   for (const beat of pending) if (!dialogue.includes(beat)) planned.set(beat.id, fallbackBeat(beat));
   if (pending.length) opts.log?.(C.SPLIT_LOG(dialogue.length, pending.length - dialogue.length));
   const dialoguePrompt = (beats: MotionBeat[]) => {
-    const prompt = [MOTION_VOICE_PROMPT, motionResponsePrompt(C.ARTIFACT), JSON.stringify({ direction, cast: analysis?.cast, beats: beats.map((beat) => ({ id: beat.id, narration: beat.narration, cast: beat.cast, action: beat.action, scenePlan: beat.scenePlan, sceneMood: beat.sceneMood })) })].join(MR.MOTION_TEXT_SYMBOL_27);
+    const prompt = ([MOTION_VOICE_PROMPT, motionResponsePrompt(C.ARTIFACT), stringifyJson({ direction, cast: analysis?.cast, beats: beats.map((beat) => ({ id: beat.id, narration: beat.narration, cast: beat.cast, action: beat.action, scenePlan: beat.scenePlan, sceneMood: beat.sceneMood })) })] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
     const diagnostics = beats.filter((beat) => draft.rows[beat.id].issues?.length).map((beat) => ({ id: beat.id, issues: draft.rows[beat.id].issues }));
     return diagnostics.length ? motionResponseRepair(prompt, diagnostics) : prompt;
   };
@@ -190,7 +195,7 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
           for (const beat of open) {
             const matches = rows.filter((row: any) => row?.id === beat.id);
             if (matches.length !== 1) {
-              draft.rows[beat.id].issues = [{ path: "id", expected: matches.length ? RESPONSE.DUPLICATE_ID : RESPONSE.MISSING_ROW, actual: String(matches.length), value: RESPONSE.VALUE(beat.id) }];
+              draft.rows[beat.id].issues = [{ path: RT_SHARED.ID, expected: matches.length ? RESPONSE.DUPLICATE_ID : RESPONSE.MISSING_ROW, actual: String(matches.length), value: RESPONSE.VALUE(beat.id) }];
               continue;
             }
             const item = { ...matches[0], utterances: normalizeMotionNarratorSpeakers(matches[0].utterances, motionNarratorCastKey(analysis)) };
@@ -210,7 +215,7 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
           if (!isMotionContentResponseError(error)) throw error;
           for (const beat of open) {
             draft.rows[beat.id].attempts++;
-            draft.rows[beat.id].issues = [{ path: "beats", expected: RESPONSE.MISSING_ROW, actual: "invalid JSON response", value: RESPONSE.VALUE(String((error as Error)?.message || error)) }];
+            draft.rows[beat.id].issues = [{ path: RT_SERVER.BEATS, expected: RESPONSE.MISSING_ROW, actual: RT_SERVER.INVALID_JSON_RESPONSE, value: RESPONSE.VALUE(String((error as Error)?.message || error)) }];
           }
           recovery.save(draft);
         }

@@ -8,4 +8,4 @@ export const cleanCharacterColors = (value: unknown): Partial<Record<MotionChara
     return typeof hex === "string" && HEX.test(hex.trim()) ? [[role, hex.trim().toLowerCase()]] : [];
   });
   return entries.length ? Object.fromEntries(entries) : undefined;
-};
+};

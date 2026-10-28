@@ -19,8 +19,5 @@ export const partitionCinematicPlanningResponse = (requestedScenes: StoryboardSc
   const completedScenes = _.filter(responseScenes, (scene) => _.includes(requestedSceneIds, scene.id) && !_.includes(issueSceneIds, scene.id) && !_.isEmpty(_.trim(scene.generationPrompt)));
   const completedSceneIds = _.map(completedScenes, SOURCE_TEXT_ID);
   const unresolvedSceneIds = _.isEmpty(issueSceneIds) ? _.difference(requestedSceneIds, completedSceneIds) : _.union(issueSceneIds, _.difference(requestedSceneIds, completedSceneIds));
-  return {
-    completedScenes,
-    unresolvedScenes: _.filter(requestedScenes, (scene) => _.includes(unresolvedSceneIds, scene.id)),
-  };
+  return { completedScenes, unresolvedScenes: _.filter(requestedScenes, (scene) => _.includes(unresolvedSceneIds, scene.id)) };
 };

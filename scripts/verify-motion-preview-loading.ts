@@ -4,18 +4,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { build } from "esbuild";
 import { chromium } from "playwright";
-const bundle = await build({
-  stdin: {
-    contents: VT.IMPORT_REACT_USESTATE_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DO,
-    loader: VT.TSX,
-    resolveDir: process.cwd(),
-  },
-  bundle: true,
-  define: { "import.meta": VT.EMPTY_9 },
-  platform: VT.BROWSER,
-  format: VT.IIFE,
-  write: false,
-});
+const bundle = await build({ stdin: { contents: VT.IMPORT_REACT_USESTATE_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DO, loader: VT.TSX, resolveDir: process.cwd() }, bundle: true, define: { "import.meta": VT.EMPTY_9 }, platform: VT.BROWSER, format: VT.IIFE, write: false });
 const browser = await chromium.launch({ channel: VT.CHROME, headless: true });
 try {
   const page = await browser.newPage();

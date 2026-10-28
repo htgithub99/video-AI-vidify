@@ -12,13 +12,7 @@ export const MOTION_LOUDNESS = {
   NULL_FORMAT: "null",
   NULL_TARGET: "-",
   CHAIN: ",",
-  LOG: {
-    NORMALIZED: (lufs: number): string => `Đã chuẩn hoá âm lượng về ${lufs} LUFS`,
-    LOUDNESS: (lufs: string): string => `Độ to video: ${lufs} LUFS`,
-    BLACK: (count: number): string => `Cảnh báo: phát hiện ${count} đoạn hình đen ≥ 1 giây`,
-    SILENCE: (count: number): string => `Cảnh báo: phát hiện ${count} đoạn im lặng ≥ 4 giây`,
-    SKIPPED: "Bỏ qua chuẩn hoá âm lượng (không đo được)",
-  },
+  LOG: { NORMALIZED: (lufs: number): string => `Đã chuẩn hoá âm lượng về ${lufs} LUFS`, LOUDNESS: (lufs: string): string => `Độ to video: ${lufs} LUFS`, BLACK: (count: number): string => `Cảnh báo: phát hiện ${count} đoạn hình đen ≥ 1 giây`, SILENCE: (count: number): string => `Cảnh báo: phát hiện ${count} đoạn im lặng ≥ 4 giây`, SKIPPED: "Bỏ qua chuẩn hoá âm lượng (không đo được)" },
 } as const;
 export const motionLoudnormFilter = (measured?: Record<string, string>): string => {
   const base = `loudnorm=I=${MOTION_LOUDNESS.TARGET_LUFS}:TP=${MOTION_LOUDNESS.TRUE_PEAK}:LRA=${MOTION_LOUDNESS.RANGE}`;

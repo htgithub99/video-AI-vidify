@@ -1,12 +1,20 @@
+import { parseJson } from "../lib/jsonStringify.js";
 import { stringifyJson } from "../lib/jsonStringify.js";
 import _ from "lodash";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT, WORKFLOW_AREAS } from "../constants/workflowActivity";
 export type WorkflowArea = (typeof WORKFLOW_AREAS)[number];
 export type WorkflowEvent = (typeof WORKFLOW_ACTIVITY_EVENT)[keyof typeof WORKFLOW_ACTIVITY_EVENT];
-export interface WorkflowActivity { id: number; at: number; area: WorkflowArea; event: WorkflowEvent; count?: number; detail?: string; }
+export interface WorkflowActivity {
+  id: number;
+  at: number;
+  area: WorkflowArea;
+  event: WorkflowEvent;
+  count?: number;
+  detail?: string;
+}
 const readActivities = (): WorkflowActivity[] => {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem(WORKFLOW_ACTIVITY_CONFIG.STORAGE_KEY) || WORKFLOW_ACTIVITY_CONFIG.EMPTY_STORAGE);
+    const value: unknown = parseJson(localStorage.getItem(WORKFLOW_ACTIVITY_CONFIG.STORAGE_KEY) || WORKFLOW_ACTIVITY_CONFIG.EMPTY_STORAGE);
     if (!Array.isArray(value)) return [];
     return _.map(
       _.slice(
@@ -22,7 +30,7 @@ const readActivities = (): WorkflowActivity[] => {
         if (_.includes([WORKFLOW_ACTIVITY_EVENT.musicMixerStart, WORKFLOW_ACTIVITY_EVENT.musicMixerDone, WORKFLOW_ACTIVITY_EVENT.musicMixerFail, WORKFLOW_ACTIVITY_EVENT.musicMixerStop] as WorkflowEvent[], event)) {
           resolvedArea = WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer;
         }
-        return { id, at, area: resolvedArea, event, count, detail: typeof detail === "string" ? detail.slice(0, 240) : undefined, };
+        return { id, at, area: resolvedArea, event, count, detail: typeof detail === "string" ? detail.slice(0, 240) : undefined };
       },
     );
   } catch {

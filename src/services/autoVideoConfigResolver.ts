@@ -30,52 +30,30 @@ export const resolveVisualConfig = (source: VisualConfig, allowFlowVideo: boolea
   const requestsGeneratedVideo = _.includes([GenerateType.Video, GenerateType.Mixed], config.generateType as GenerateType);
   if (requestsGeneratedVideo && !allowFlowVideo && !_.isEqual(config.generationMode, ImageGenerationMode.GeminiChat)) {
     config.generationMode = ImageGenerationMode.GeminiChat;
-    issues.push({
-      code: ConfigIssueCode.VideoModeRoutedThroughGemini,
-      severity: ConfigIssueSeverity.Warning,
-    });
+    issues.push({ code: ConfigIssueCode.VideoModeRoutedThroughGemini, severity: ConfigIssueSeverity.Warning });
   }
   const usesGeminiModelPicker = _.isEqual(config.generationMode, ImageGenerationMode.GeminiChat);
   if (_.every([config.characterConsistency, !hasCharacterIdentity(config)], Boolean)) {
     config.characterConsistency = false;
-    issues.push({
-      code: ConfigIssueCode.CharacterConsistencyDisabled,
-      severity: ConfigIssueSeverity.Warning,
-    });
+    issues.push({ code: ConfigIssueCode.CharacterConsistencyDisabled, severity: ConfigIssueSeverity.Warning });
   }
   if (_.isEqual(config.generateType, GenerateType.Image)) {
     if (_.some([config.videoDuration, config.maxVideoScenes], (value) => !_.isNil(value))) {
       delete config.videoDuration;
       delete config.maxVideoScenes;
-      issues.push({
-        code: ConfigIssueCode.ImageModeVideoSettingsRemoved,
-        severity: ConfigIssueSeverity.Warning,
-      });
+      issues.push({ code: ConfigIssueCode.ImageModeVideoSettingsRemoved, severity: ConfigIssueSeverity.Warning });
     }
     if (!usesGeminiModelPicker && _.includes(VIDEO_ENGINES, config.imageGeneratorEngine as (typeof VIDEO_ENGINES)[number])) {
       config.imageGeneratorEngine = ImageGeneratorEngine.Imagen;
-      issues.push({
-        code: ConfigIssueCode.ImageModeVideoEngineReplaced,
-        severity: ConfigIssueSeverity.Warning,
-      });
+      issues.push({ code: ConfigIssueCode.ImageModeVideoEngineReplaced, severity: ConfigIssueSeverity.Warning });
     }
   }
   if (_.some([_.isEqual(config.generateType, GenerateType.Video), _.isEqual(config.generateType, GenerateType.Mixed)]) && !usesGeminiModelPicker && _.includes(IMAGE_ENGINES, config.imageGeneratorEngine as (typeof IMAGE_ENGINES)[number])) {
     config.generateType = GenerateType.Image;
-    issues.push({
-      code: ConfigIssueCode.VideoModeImageEngineUnsupported,
-      severity: ConfigIssueSeverity.Warning,
-    });
+    issues.push({ code: ConfigIssueCode.VideoModeImageEngineUnsupported, severity: ConfigIssueSeverity.Warning });
   }
   if (_.isEqual(config.styleTextInImageMode, TextInImageMode.NoText)) {
-    issues.push({
-      code: ConfigIssueCode.NoTextConstraintApplied,
-      severity: ConfigIssueSeverity.Warning,
-    });
+    issues.push({ code: ConfigIssueCode.NoTextConstraintApplied, severity: ConfigIssueSeverity.Warning });
   }
-  return {
-    config,
-    issues,
-    blocked: _.some(issues, { severity: ConfigIssueSeverity.Blocking }),
-  };
+  return { config, issues, blocked: _.some(issues, { severity: ConfigIssueSeverity.Blocking }) };
 };

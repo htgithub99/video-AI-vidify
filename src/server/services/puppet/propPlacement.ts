@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
 import { MOTION_PACK_SELECTION as K } from "../../../constants/motionPackSelection.js";
 import { puppetPropSpotCandidates } from "./layout.js";
 import type { PuppetFrame, PuppetObject, PuppetRead, PuppetSpot } from "../../../types/motionPuppet.js";
@@ -7,7 +9,7 @@ import { MOTION_STAGE_GEOMETRY as G } from "../../../constants/motionStageGeomet
 export const puppetPropAssignments = (objects: PuppetObject[], spots: PuppetSpot[], previous: { prop: string; propAt?: string | null }[] = [], valid: (assigned: Map<string, string>) => boolean = () => true): Map<string, string>[] => {
   if (puppetNestedPropIssues(objects).length) return [];
   const needs = objects
-    .filter((object) => !puppetObjectParent(object, objects) && !["held", "shoulder", "wear", "body", "air"].includes(object.mount))
+    .filter((object) => !puppetObjectParent(object, objects) && !([RT_SHARED.HELD, RT_SERVER.SHOULDER, RT_SERVER.WEAR, RT_SHARED.BODY, RT_SERVER.AIR] as string[]).includes(object.mount))
     .map((object) => ({ object, candidates: puppetPropSpotCandidates(spots, object).sort((a, b) => Number(b.key === previous.find((item) => item.prop === object.key)?.propAt) - Number(a.key === previous.find((item) => item.prop === object.key)?.propAt)) }))
     .sort((a, b) => a.candidates.length - b.candidates.length);
   const results: Map<string, string>[] = [];
@@ -50,7 +52,7 @@ export const puppetPropAssignmentsValid = (read: PuppetRead, frame: PuppetFrame,
       if (item?.propParent !== object.support || !item.propH || !Number.isFinite(item.propX) || !Number.isFinite(item.propY)) return false;
       continue;
     }
-    if (!object?.placement || ["held", "shoulder", "wear", "body"].includes(object.mount)) continue;
+    if (!object?.placement || ([RT_SHARED.HELD, RT_SERVER.SHOULDER, RT_SERVER.WEAR, RT_SHARED.BODY] as string[]).includes(object.mount)) continue;
     const at = frame.prop === object.key ? frame.propAt : frame.items?.find((item) => item.prop === object.key)?.propAt;
     const spot = spots.find((spot) => spot.key === at);
     if (!spot || !puppetPropSpotCandidates(spots, object).some((candidate) => candidate.key === spot.key)) return false;

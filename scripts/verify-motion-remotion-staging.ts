@@ -1,13 +1,14 @@
+import { canReuseRemotionCharacter } from "./legacy-motion-remotion/characterReuse.js";
 import assert from "node:assert/strict";
-import { canReuseRemotionCharacter, layoutRemotionNodes } from "../src/lib/motionRemotion.js";
+import { layoutRemotionNodes } from "../src/lib/motionRemotion.js";
 import { remotionMountRegion, remotionPoint, remotionVisibleRect } from "../src/lib/motionRemotionGeometry.js";
 import { assignRemotionStaging, normalizeRemotionRelations, prepareRemotionScene, remotionAtomicDescription, remotionIdentityDescription, remotionLegacyAssetIssue } from "../src/lib/motionRemotionStaging.js";
-import { motionSceneCameraScale, motionNodeFrame, remotionSceneView } from "../src/lib/motionRemotionEffects.js";
+import { motionSceneCameraScale, motionNodeFrame, remotionSceneView } from "../src/features/motion/lib/motionRemotionEffects.js";
 import { motionStoryEventLedger } from "../src/lib/motionStoryContinuity.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { MOTION_REMOTION_STAGING as S } from "../src/constants/motionRemotionStaging.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
-import { remotionObjectCatalog, resolveRemotionContinuity } from "../src/server/services/remotion/sceneContinuity.js";
+import { remotionObjectCatalog, resolveRemotionContinuity } from "./legacy-motion-remotion/sceneContinuity.js";
 import { motionInputKey } from "../src/server/services/motionFileUtils.js";
 import type { MotionRemotionNode, MotionRemotionScene, MotionVectorAsset } from "../src/types/motionVisual.js";
 const vector = (key: string, w: number, h: number, extra: Partial<MotionVectorAsset> = {}): MotionVectorAsset => ({
@@ -43,10 +44,7 @@ assert.equal(wrist.nodes[1].attachmentAnchor, "wrist");
 const wristAssets = { ...assets, person: { ...assets.person, anchors: { ...assets.person.anchors, wrist: { x: 0.64, y: 0.55 } } } };
 const wristPlaced = layoutRemotionNodes(wrist.nodes, wristAssets, 1920, 1080, assets.background);
 const wristPerson = wristPlaced.find((n) => n.id === "person")!,
-  wristMark = remotionVisibleRect(
-    wristPlaced.find((n) => n.id === "print")!,
-    assets.bowl,
-  );
+  wristMark = remotionVisibleRect(wristPlaced.find((n) => n.id === "print")!, assets.bowl);
 assert.ok(Math.abs(wristMark.x + wristMark.width / 2 - (wristPerson.x + wristPerson.width * 0.64)) < 0.001);
 assert.ok(Math.abs(wristMark.y + wristMark.height / 2 - (wristPerson.y + wristPerson.height * 0.55)) < 0.001);
 const continuity: any = {
@@ -114,18 +112,7 @@ assert.equal(normalizedAltar.mount, "floor");
 const realistic = layoutRemotionNodes([wrongAltar, holder], assets, 1920, 1080, assets.background);
 assert.ok(realistic.find((n) => n.id === "altar")!.height < realistic.find((n) => n.id === "holder")!.height * 0.8);
 const smallPlaced = layoutRemotionNodes([holder, table, node("small-bowl", "prop", "bowl", { description: "Bát sứ trắng đựng tro", relation: "on", target: table.id })], assets, 1920, 1080, assets.background);
-assert.ok(
-  remotionVisibleRect(
-    smallPlaced.find((n) => n.id === "small-bowl")!,
-    assets.bowl,
-  ).width <=
-    remotionVisibleRect(
-      smallPlaced.find((n) => n.id === holder.id)!,
-      assets.person,
-    ).height *
-      S.SMALL_SIZE.width +
-      1e-6,
-);
+assert.ok(remotionVisibleRect(smallPlaced.find((n) => n.id === "small-bowl")!, assets.bowl).width <= remotionVisibleRect(smallPlaced.find((n) => n.id === holder.id)!, assets.person).height * S.SMALL_SIZE.width + 1e-6);
 const outdoorBackground = { ...assets.background, regions: { ...assets.background.regions, outdoors: { x: 0.6, y: 0.2, width: 0.25, height: 0.55 } } };
 const farGate = node("far-gate", "prop", "gate", { description: "Cổng tre ở xa ngoài sân", role: "object" });
 const farRegion = remotionMountRegion(farGate, outdoorBackground);
@@ -224,14 +211,8 @@ for (const [width, height] of [
     .sort((a, b) => a.x - b.x);
   assert.ok(dishes[0].x + dishes[0].width <= dishes[1].x + 0.01, "separate props on one support");
   const closedDoor = layoutRemotionNodes([node("door", "prop", "gate", { description: "Khung cửa gỗ", role: "fixture", mount: "doorway", slot: "right" }), node("witness", "character", "person", { relation: "behind", target: "door" })], assets, width, height, assets.background);
-  const doorRect = remotionVisibleRect(
-      closedDoor.find((n) => n.id === "door")!,
-      assets.gate,
-    ),
-    witnessRect = remotionVisibleRect(
-      closedDoor.find((n) => n.id === "witness")!,
-      assets.person,
-    );
+  const doorRect = remotionVisibleRect(closedDoor.find((n) => n.id === "door")!, assets.gate),
+    witnessRect = remotionVisibleRect(closedDoor.find((n) => n.id === "witness")!, assets.person);
   assert.ok(witnessRect.x + witnessRect.width <= doorRect.x || witnessRect.x >= doorRect.x + doorRect.width, "door cannot hide the witness");
   const timed = { ...second, view: "detail" as const, focus: ["table"], startFrame: 0, endFrame: 300, nodes: b };
   const view = remotionSceneView(timed, width, height, assets);

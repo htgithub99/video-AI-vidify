@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_EFFECTS as EFFECTS } from "../../../constants/motionEffects.js";
 import { MOTION_AI_ROLE } from "../../../constants/motionAiFallback.js";
 import { isTerminalMotionAiError } from "../chatSubmissionRecovery.js";
@@ -67,8 +69,8 @@ export const buildScenesPuppet = async (script: MotionStoryScript, analysis: Mot
   const id = closedPuppetPackId(analysis.stylePreset);
   if (!id) return buildScenesPuppetImpl(script, analysis, o);
   const assets = [PUPPET_TYPES.STYLE, PUPPET_TYPES.CHARACTER, PUPPET_TYPES.SET, PUPPET_TYPES.PROP, PUPPET_TYPES.BASE, PUPPET_TYPES.PIECE].flatMap((type) => listPuppets(type));
-  o.log(PACK.LOG(analysis.stylePreset || id, assets.filter((asset) => (asset.type === PUPPET_TYPES.STYLE ? asset.id === id : "styleId" in asset && asset.styleId === id)).length));
-  const relevant = assets.filter((asset) => (asset.type === PUPPET_TYPES.STYLE ? asset.id === id : "styleId" in asset && asset.styleId === id));
+  o.log(PACK.LOG(analysis.stylePreset || id, assets.filter((asset) => (asset.type === PUPPET_TYPES.STYLE ? asset.id === id : RT_SERVER.STYLEID in asset && asset.styleId === id)).length));
+  const relevant = assets.filter((asset) => (asset.type === PUPPET_TYPES.STYLE ? asset.id === id : RT_SERVER.STYLEID in asset && asset.styleId === id));
   const accepted = relevant.filter((asset) => puppetPackAssetAllowed(asset, id)).length;
   o.log(SELECTION.INDEX_LOG(accepted, relevant.length - accepted));
   const previous = script.gen?.puppet?.selectionVersion === SELECTION.VERSION && script.gen.puppet.pack?.styleId === id ? script.gen.puppet.pack : o.readiness?.inputKey === puppetPlanReadinessKey(analysis) ? o.readiness.pack : undefined;
@@ -96,7 +98,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
   const drawOptions: PuppetRunOptions = { ...ro, exec: drawExec };
   const referenceKey = o.styleReferences?.length
     ? createHash(P.SHA)
-        .update(JSON.stringify(_.map(o.styleReferences, (r) => r.dataUrl)))
+        .update(stringifyJson(_.map(o.styleReferences, (r) => r.dataUrl)))
         .digest(P.HEX)
     : P.EMPTY;
   analysis = bindVideoDnaSettings({ ...analysis, characterMotion: o.characterMotion === true }, { drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN, aspect: o.aspect || MR.MOTION_TEXT_16_9 });
@@ -390,7 +392,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
         reference: has<PuppetSet>(PUPPET_TYPES.SET, pg.sets[pg.places[k].visualBase || P.EMPTY]),
         uses:
           B.REQUIREMENTS(
-            P.SET_FEATURE_USES(P.SET_BLOCKING_USES(_.map(_.take(placeLines[k] || [], 6), (l) => l.text).join(P.SPACE), JSON.stringify(puppetSetPlacementNeeds(_.values(pg.reads || {}).filter((r) => r.place === k)))), must[k] || []),
+            P.SET_FEATURE_USES(P.SET_BLOCKING_USES(_.map(_.take(placeLines[k] || [], 6), (l) => l.text).join(P.SPACE), stringifyJson(puppetSetPlacementNeeds(_.values(pg.reads || {}).filter((r) => r.place === k)))), must[k] || []),
             _.values(pg.reads || {})
               .filter((r) => r.place === k && r.blocking)
               .map((r) => ({ blocking: r.blocking, states: r.states })),
@@ -442,7 +444,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
   const drawSetsOnce = (keys: string[]): Promise<void> => {
     const must = featuresOf();
     const signature = (key: string) =>
-      JSON.stringify([
+      stringifyJson([
         must[key],
         pg.places[key]?.sceneFeatures,
         pg.places[key]?.desc,
@@ -464,7 +466,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
   const syncReadPostures = (): void => {
     const normalized = normalizePuppetReadContinuity(lines, normalizePuppetVisualState(lines, normalizePuppetSceneConditions(lines, pg.reads || {}, pg.places), pg.places, new Set(listPuppets<PuppetProp>(PUPPET_TYPES.PROP).map((prop) => prop.key)), analysis.cast));
     if (closed) for (const line of lines) if (normalized[line.key]) normalized[line.key].states = simplePuppetStates(normalized[line.key].states || [], line.text);
-    for (const line of lines) if (JSON.stringify(normalized[line.key]) !== JSON.stringify(pg.reads?.[line.key])) delete pg.frames[line.key];
+    for (const line of lines) if (stringifyJson(normalized[line.key]) !== stringifyJson(pg.reads?.[line.key])) delete pg.frames[line.key];
     pg.reads = normalized;
   };
   const readLines = async (todo: PuppetLine[], notes: Record<string, string>): Promise<void> => {
@@ -668,7 +670,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
         });
         if (!affected.length) throw error;
         o.log(I.PREFLIGHT_REPAIR_LOG(attempt + 1, affected.length));
-        const notes = Object.fromEntries(affected.map((line) => [line.key, [I.PREFLIGHT_REPAIR, String((error as Error).message), JSON.stringify(pg.reads?.[line.key])].join(P.NL)]));
+        const notes = Object.fromEntries(affected.map((line) => [line.key, ([I.PREFLIGHT_REPAIR, String((error as Error).message), stringifyJson(pg.reads?.[line.key])] as string[]).join(P.NL)]));
         progress(0.15, PROGRESS.STAGE.READ);
         await readLines(affected, notes);
         drawn.clear();

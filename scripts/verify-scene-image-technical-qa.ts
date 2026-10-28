@@ -1,14 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { getSceneVisualRegenerationReasons, SCENE_VISUAL_QUALITY_CONFIG, shouldRegenerateSceneImage } from "../src/services/sceneVisualQualityService.ts";
-
-const healthy = {
-  anatomy: 96, subjectCount: 95, promptAlignment: 92, narrativeAlignment: 93,
-  environmentRelevance: 90, characterConsistency: 91, composition: 90,
-  styleConsistency: 94, editability: 90, unwantedText: false,
-  multiPanelLayout: false, duplicatedSubjects: false, usableForVideo: true,
-  blockingErrors: [], warnings: [],
-};
+const healthy = { anatomy: 96, subjectCount: 95, promptAlignment: 92, narrativeAlignment: 93, environmentRelevance: 90, characterConsistency: 91, composition: 90, styleConsistency: 94, editability: 90, unwantedText: false, multiPanelLayout: false, duplicatedSubjects: false, usableForVideo: true, blockingErrors: [], warnings: [] };
 assert.equal(shouldRegenerateSceneImage(healthy), false);
 assert.equal(shouldRegenerateSceneImage({ ...healthy, anatomy: 45, blockingErrors: ["extra_arm_and_fused_hand"] }), true);
 assert.equal(shouldRegenerateSceneImage({ ...healthy, duplicatedSubjects: true }), true);
@@ -18,7 +11,7 @@ assert.equal(shouldRegenerateSceneImage({ ...healthy, unwantedText: true }, true
 assert.equal(shouldRegenerateSceneImage({ ...healthy, usableForVideo: false, blockingErrors: ["anachronistic_modern_flag"] }), true);
 assert.ok(getSceneVisualRegenerationReasons({ ...healthy, multiPanelLayout: true }).includes("unwanted_multi_panel_layout"));
 assert.equal(SCENE_VISUAL_QUALITY_CONFIG.MAX_REGENERATION_ATTEMPTS, 1);
-const pipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
+const pipeline = fs.readFileSync("src/features/video-generation/hooks/useAutoVideoPipeline.ts", "utf8");
 assert.match(pipeline, /PIPELINE_REPAIR_VISUAL_PROMPT/);
 assert.match(pipeline, /regenerationAttempt <= SCENE_VISUAL_QUALITY_CONFIG\.MAX_REGENERATION_ATTEMPTS/);
 assert.match(pipeline, /regenerationAttempt >= SCENE_VISUAL_QUALITY_CONFIG\.MAX_REGENERATION_ATTEMPTS/);

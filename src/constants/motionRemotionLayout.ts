@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 export const MOTION_REMOTION_LAYOUT = {
   REVISION: 2,
   SCENE_REVISION: 2,
@@ -41,7 +42,7 @@ export const MOTION_REMOTION_LAYOUT = {
   OPTIONAL_EFFECT: "Bỏ lớp hiệu ứng phụ vì chưa có nguồn/vùng phù hợp; giữ nguyên các lớp hình đã đạt.",
   REQUIRED_EFFECT: "Hiệu ứng cốt lõi cần có nguồn/vùng phù hợp hoặc hình tĩnh thể hiện đúng manh mối.",
   META_REPAIR: (svg: string, anchors: unknown, regions: unknown, required: string[], requiredRegions: string[]) =>
-    `The SVG code below is accepted. Return ONLY {"anchors":{...},"regions":{...}} with normalized coordinates 0..1. Required anchors: ${JSON.stringify(required)}; required regions: ${JSON.stringify(requiredRegions)}. base=bottom, surface=support top, grip=hand/contact, seat=seated contact, body=lying contact, emitter=outlet, flame=wick, pivot=hinge. Preserve accepted anchors ${JSON.stringify(anchors)} and regions ${JSON.stringify(regions)}. Regions {x,y,width,height} must match the actual SVG, not guessed full canvas. Do not redraw SVG. SVG: ${svg}`,
+    `The SVG code below is accepted. Return ONLY {"anchors":{...},"regions":{...}} with normalized coordinates 0..1. Required anchors: ${stringifyJson(required)}; required regions: ${stringifyJson(requiredRegions)}. base=bottom, surface=support top, grip=hand/contact, seat=seated contact, body=lying contact, emitter=outlet, flame=wick, pivot=hinge. Preserve accepted anchors ${stringifyJson(anchors)} and regions ${stringifyJson(regions)}. Regions {x,y,width,height} must match the actual SVG, not guessed full canvas. Do not redraw SVG. SVG: ${svg}`,
   GEOMETRY_ERROR: "Tỷ lệ hoặc vùng tiếp xúc chưa đủ để đặt đúng chủ thể.",
   NODE_ERROR: (id: string, field: string, reason: string) => `Bố trí ${id} · ${field}: ${reason}`,
   LOG_MIGRATE: "Đang nâng bố cục và tách hiệu ứng; giữ kịch bản, giọng và các hình còn phù hợp.",

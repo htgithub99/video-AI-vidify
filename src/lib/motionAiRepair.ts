@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_PRODUCTION as P } from "../constants/motionProduction.js";
 export interface MotionFieldIssue {
   path: string;
@@ -7,7 +8,7 @@ export const mergeMotionRepair = <T>(draft: T, patch: unknown, paths: string[]):
   const result = structuredClone(draft) as any;
   for (const path of paths) {
     if (!path || P.DNA_UNSAFE_PATH.test(path)) continue;
-    const keys = path.split(".");
+    const keys = path.split(RT_SHARED.SYMBOL_CDB4EE);
     let value: any = patch;
     let present = true;
     for (const key of keys) {

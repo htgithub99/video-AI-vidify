@@ -1,11 +1,8 @@
 import logging
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 import string
-
 PUNCTUATION_TO_REMOVE = string.punctuation + '""\'\'“”“”'
 REGEX_SONG_SUFFIX = r'\(\d+\)$'
-
 LOG_START_PROCESS = "-> Bắt đầu xử lý tối ưu hóa CapCut cho tệp tin: {}"
 LOG_OPTS = "-> Cấu hình tùy chọn: {}"
 LOG_COUNT_PHOTOS = "📷 Tìm thấy {} phân cảnh hình ảnh/video trên dòng thời gian."
@@ -47,14 +44,12 @@ LOG_EXPORT_RENDERING = "[Xuất Video] ⏳ Đang kết xuất video bằng ffmpe
 LOG_EXPORT_SUCCESS = "[Xuất Video] ✅ Kết xuất video thành công! File lưu tại: {}"
 LOG_EXPORT_FAIL = "[Xuất Video] ❌ Kết xuất thất bại với mã lỗi {}"
 LOG_EXPORT_ERR = "[Xuất Video] ❌ Lỗi kết xuất: {}"
-
 ERR_NO_MEDIA = "Không tìm thấy hình ảnh, video hoặc âm thanh trên dòng thời gian!"
 ERR_CLI_USAGE = "Cú pháp: python capcut_ultra_tool.py <input_json> <output_json> [opts_json_string] HOẶC python capcut_ultra_tool.py <select-file/select-folder>"
 ERR_OPTS_PARSE = "Lỗi phân tích cú pháp tùy chọn JSON: {}"
 ERR_GENERIC = "ERROR: {}"
 ERR_NO_TIMELINE_MOD = "Không thể thực hiện các thao tác thay đổi timeline do thiếu ảnh/video hoặc âm thanh trên track chính!"
 ERR_SUBTITLE_CONFIG = "Lỗi cấu hình phụ đề: {}"
-
 TRANSITION_NAME = "Chuyển cảnh ngẫu nhiên"
 DEFAULT_TRANSITION_DURATION = 500000
 DEFAULT_FALLBACK_DURATION = 5000000
@@ -87,7 +82,6 @@ Y_AXIS = 'y'
 UTF8_ENCODING = 'utf-8'
 READ_MODE = 'r'
 WRITE_MODE = 'w'
-
 CMD_SELECT_FILE = "select-file"
 CMD_SELECT_FOLDER = "select-folder"
 DIALOG_FILE_TITLE = "Chọn file draft_content.json"
@@ -95,7 +89,6 @@ DIALOG_FOLDER_TITLE = "Chọn thư mục"
 JSON_FILE_TYPES_LABEL = "JSON files"
 JSON_EXT = "*.json"
 ALL_EXT = "*.*"
-
 OPT_SYNC_IMAGE_TO_AUDIO = 'sync_image_to_audio'
 OPT_CUSTOM_AUDIO_ORDER = 'custom_audio_order'
 OPT_AUDIO_ORDER_LIST = 'audio_order_list'
@@ -111,23 +104,18 @@ OPT_AUTO_TRANSITION = 'auto_transition'
 OPT_AUTO_SUBTITLES = 'auto_subtitles'
 OPT_AI_SFX_GENERATOR = 'ai_sfx_generator'
 OPT_API_KEY = 'api_key'
-
 CMD_KILL_CAPCUT = "taskkill /f /t /im CapCut.exe"
 CMD_KILL_JIANYING = "taskkill /f /t /im JianyingPro.exe"
-
 BGM_TRACK_NAME = "BGM Track"
 BGM_TRACK_ID_PREFIX = "bgm_track_{}"
 BGM_MAT_ID_PREFIX = "bgm_mat_{}"
 BGM_SEG_ID_PREFIX = "bgm_seg_{}"
-
 SFX_TRACK_NAME = "SFX Track"
 SFX_TRACK_ID_PREFIX = "sfx_track_{}"
 SFX_MAT_ID_PREFIX = "sfx_mat_{}"
 SFX_SEG_ID_PREFIX = "sfx_seg_{}"
-
 FONT_INTER = 'Inter'
 DUP_PHOTO_PREFIX = "dup_photo_{}"
-
 PROMPT_TEMPLATE = """
 Bạn là một nhà thiết kế âm thanh chuyên nghiệp cho video ngắn.
 Tôi có danh sách các phân cảnh video dưới đây:
@@ -148,47 +136,38 @@ Trả về kết quả dưới dạng JSON object với cấu trúc:
 }}
 Chỉ trả về chuỗi JSON thô hợp lệ, không bọc trong markdown hay bất cứ ký tự nào khác.
 """
-
 SAFE_TRANSFORM_X_MIN = -0.12
 SAFE_TRANSFORM_X_MAX = 0.12
 SAFE_TRANSFORM_Y_MIN = -0.08
 SAFE_TRANSFORM_Y_MAX = 0.08
-
 SAFE_PAN_MIN_SCALE = 1.12
 MAX_ROTATION_DEGREE = 0.5
 LIGHT_ROTATION_MIN = -0.15
 LIGHT_ROTATION_MAX = 0.15
-
 SCALE_MOTION_MIN = 1.08
 SCALE_MOTION_MAX = 1.18
-
 DURATION_HOOK_MIN = 1.5
 DURATION_HOOK_MAX = 2.0
 DURATION_INFO_MIN = 3.0
 DURATION_INFO_MAX = 5.0
 DURATION_IMPORTANT_MIN = 5.0
 DURATION_IMPORTANT_MAX = 8.0
-
 WEIGHT_ZOOM = 0.30
 WEIGHT_PAN = 0.25
 WEIGHT_PUSH = 0.15
 WEIGHT_CORNER = 0.15
 WEIGHT_KEN_BURNS = 0.15
-
 KF_PROPERTY_SCALE = "UNIFORM_SCALE"
 KF_PROPERTY_POSITION_X = "KFTypePositionX"
 KF_PROPERTY_POSITION_Y = "KFTypePositionY"
 KF_PROPERTY_ROTATION = "KFTypeRotation"
 CURVE_EASE_IN_OUT = "EaseInOut"
-
 RATIO_LANDSCAPE = "Landscape"
 RATIO_PORTRAIT = "Portrait"
 RATIO_SQUARE = "Square"
-
 SCENE_HOOK = "Hook"
 SCENE_IMPORTANT = "Important"
 SCENE_INFORMATION = "Information"
-
 MOTION_ZOOM_IN = "Zoom In"
 MOTION_ZOOM_OUT = "Zoom Out"
 MOTION_PAN_LEFT = "Pan Left"
@@ -201,7 +180,6 @@ MOTION_CORNER_LEFT = "Corner Left"
 MOTION_CORNER_RIGHT = "Corner Right"
 MOTION_KEN_BURNS = "Ken Burns"
 MOTION_STATIC_FOCUS = "Static Focus"
-
 GENRE_TIKTOK = "tiktok"
 GENRE_PODCAST = "podcast"
 GENRE_REVIEW = "review"

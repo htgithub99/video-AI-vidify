@@ -25,10 +25,7 @@ const extractVideoFrames = async (assetUrl: string): Promise<EncodedImageAsset[]
     if (dataUrlMatch) fs.writeFileSync(inputPath, Buffer.from(dataUrlMatch[2], REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding));
     const outputPattern = path.join(tempDir, VISUAL_QA_MEDIA_CONFIG.FRAME_FILE_PATTERN);
     await runFrameExtraction(inputPath, outputPattern);
-    return _.map(_.take(_.sortBy(_.filter(fs.readdirSync(tempDir), (file) => _.endsWith(file, VISUAL_QA_MEDIA_CONFIG.FRAME_EXTENSION))), VISUAL_QA_MEDIA_CONFIG.MAX_FRAMES), (file) => ({
-      mimeType: VISUAL_QA_MEDIA_CONFIG.FRAME_MIME_TYPE,
-      data: fs.readFileSync(path.join(tempDir, file)).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding),
-    }));
+    return _.map(_.take(_.sortBy(_.filter(fs.readdirSync(tempDir), (file) => _.endsWith(file, VISUAL_QA_MEDIA_CONFIG.FRAME_EXTENSION))), VISUAL_QA_MEDIA_CONFIG.MAX_FRAMES), (file) => ({ mimeType: VISUAL_QA_MEDIA_CONFIG.FRAME_MIME_TYPE, data: fs.readFileSync(path.join(tempDir, file)).toString(REFACTOR_CONSTANTS.ENCODING_BASE64 as BufferEncoding) }));
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

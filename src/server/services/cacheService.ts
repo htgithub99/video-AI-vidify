@@ -36,10 +36,7 @@ export const checkCache = (endpoint: string, body: any, bypass = false): any | n
 export const setCache = (endpoint: string, body: any, data: any): void => {
   try {
     const key = getCacheKey(endpoint, body);
-    geminiCache[key] = {
-      timestamp: Date.now(),
-      data,
-    };
+    geminiCache[key] = { timestamp: Date.now(), data };
     appLog(SOURCE_TEXT_CACHE_NEW, endpoint);
   } catch (err) {
     appLog(SOURCE_TEXT_CACHE_ERROR, err);

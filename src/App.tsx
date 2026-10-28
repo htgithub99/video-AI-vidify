@@ -1,3 +1,5 @@
+import { FeatureWorkspace } from "./components/common/FeatureWorkspace.js";
+import { AutoVideoGenerator, CinematicFilmStudio, DashboardView, FlowVideoCreator, MotionVideoCreator, MusicCreator, MusicMixer, ProjectList, SettingsView, ShortsExtractor, VideoExporter, ProxyManager } from "./features/screens.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_86,
   SOURCE_TEMPLATE_SYMBOL_75,
@@ -5,9 +7,6 @@ import {
   SOURCE_TEXT_FLEX_1_MIN_W_0_H_FULL,
   SOURCE_TEXT_APP_MAIN_FLEX_1_MIN_H_0,
   SOURCE_TEXT_TAB_LOADING_OVERLAY_SELECT_NONE,
-  SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0,
-  SOURCE_TEXT_HIDDEN,
-  SOURCE_TEXT_W_FULL_H_FULL,
   SOURCE_TEMPLATE_AUTO,
   SOURCE_TEMPLATE_FILM,
   SOURCE_TEMPLATE_PARENT,
@@ -22,22 +21,11 @@ import {
   SOURCE_TEXT_TOP_RIGHT,
 } from "./constants/sourceText.js";
 import _ from "lodash";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
-import AutoVideoGenerator from "./components/AutoVideoGenerator.tsx";
-import CinematicFilmStudio from "./components/CinematicFilmStudio.tsx";
-import DashboardView from "./components/DashboardView.tsx";
-import FlowVideoCreator from "./components/FlowVideoCreator.tsx";
 import Header from "./components/Header.tsx";
-import MotionVideoCreator from "./components/MotionVideoCreator.tsx";
-import MusicCreator from "./components/MusicCreator.tsx";
-import MusicMixer from "./components/MusicMixer.tsx";
-import ProjectList from "./components/ProjectList.tsx";
-import SettingsView from "./components/SettingsView.tsx";
-import ShortsExtractor from "./components/ShortsExtractor.tsx";
 import Sidebar from "./components/Sidebar.tsx";
 import { PageLoadingSpinner } from "./components/ui/Skeleton.tsx";
-import VideoExporter from "./components/VideoExporter.tsx";
 import { API_ROUTES, CINEMATIC_CONFIG, COMMON_STRINGS, CONTENT_TYPE_HEADER, CONTENT_TYPES, DEFAULT_PROJECT_CONFIGS, ERROR_MESSAGES, ErrorMessage, HTTP_METHODS, LOADING_CONFIG, PROJECT_LIST_CONSTANTS, REFACTOR_CONSTANTS, STORAGE_KEYS, STYLE_PRESET_CONFIG, THEME_VALUES } from "./constants";
 import { AppTab, VideoGenre } from "./constants/enums";
 import { jsonUtils } from "./lib/json";
@@ -48,7 +36,6 @@ import { storageUtils } from "./lib/storage";
 import { cn } from "./lib/utils";
 import { AgeGroup, AspectRatio, AssetsMode, AudioType, Gender, GenerateType, HookPosition, ImageGenerationMode, ImageGeneratorEngine, ProjectInputType, ProjectKind, ProjectLanguage, PromptInputMethod, VideoProject } from "./types.js";
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
-const ProxyManager = lazy(() => import("./components/ProxyManager.tsx"));
 const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
   if (_.isEqual(tab, AppTab.AUTO_GENERATOR)) return ProjectKind.Auto;
   if (_.isEqual(tab, AppTab.CINEMATIC_FILM)) return ProjectKind.Cinematic;
@@ -82,12 +69,7 @@ const convertToSlug = (text: string): string => {
   ).substring(REFACTOR_CONSTANTS.ZERO, REFACTOR_CONSTANTS.VD_SLUG_LIMIT);
 };
 const createProjectRecord = async (project: VideoProject): Promise<VideoProject> => {
-  const response = await fetch(API_ROUTES.PROJECTS, {
-    method: HTTP_METHODS.POST,
-    headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-    body: jsonUtils.safeStringify(project),
-    signal: AbortSignal.timeout(PROJECT_LIST_CONSTANTS.CREATE_REQUEST_TIMEOUT_MS),
-  });
+  const response = await fetch(API_ROUTES.PROJECTS, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify(project), signal: AbortSignal.timeout(PROJECT_LIST_CONSTANTS.CREATE_REQUEST_TIMEOUT_MS) });
   if (!response.ok) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
   const savedProject = jsonUtils.safeParse<VideoProject | null>(await response.text(), null);
   if (!savedProject) throw new Error(ERROR_MESSAGES.CREATING_PROJECT);
@@ -128,12 +110,7 @@ export default function App() {
         clearTimeout(timeout);
         const proj = _.find(projectsRef.current, { id });
         if (proj) {
-          fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)), {
-            method: HTTP_METHODS.PUT,
-            headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-            body: jsonUtils.safeStringify(proj),
-            keepalive: true,
-          }).catch((error) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, error));
+          fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)), { method: HTTP_METHODS.PUT, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify(proj), keepalive: true }).catch((error) => appError(ERROR_MESSAGES.FLUSH_SAVE_ON_UNMOUNT, error));
         }
       });
     };
@@ -247,32 +224,12 @@ export default function App() {
               projectKind: isFilmWorkspace ? ProjectKind.Cinematic : ProjectKind.Auto,
               name: SOURCE_TEMPLATE_SYMBOL_75(`${activeProj.name}`, `${targetSuffix}`),
               input: isFilmWorkspace ? { type: ProjectInputType.Idea, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING } : activeProj.input,
-              config: isFilmWorkspace
-                ? {
-                    ...activeProj.config,
-                    genre: VideoGenre.CINEMATIC_EPISODE,
-                    filmFormat: CINEMATIC_CONFIG.SERIES_MODE.SINGLE,
-                    episodeCount: CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT,
-                    seriesBibleRequired: false,
-                  }
-                : activeProj.config,
-              visualConfig: isFilmWorkspace
-                ? {
-                    ...activeProj.visualConfig,
-                    style: STYLE_PRESET_CONFIG.CINEMATIC_PHOTOREAL_ID,
-                    generationMode: ImageGenerationMode.LabsFlow,
-                    generateType: GenerateType.Video,
-                    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
-                  }
-                : activeProj.visualConfig,
+              config: isFilmWorkspace ? { ...activeProj.config, genre: VideoGenre.CINEMATIC_EPISODE, filmFormat: CINEMATIC_CONFIG.SERIES_MODE.SINGLE, episodeCount: CINEMATIC_CONFIG.SINGLE_EPISODE_COUNT, seriesBibleRequired: false } : activeProj.config,
+              visualConfig: isFilmWorkspace ? { ...activeProj.visualConfig, style: STYLE_PRESET_CONFIG.CINEMATIC_PHOTOREAL_ID, generationMode: ImageGenerationMode.LabsFlow, generateType: GenerateType.Video, imageGeneratorEngine: ImageGeneratorEngine.Veo3 } : activeProj.visualConfig,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };
-            fetch(API_ROUTES.PROJECTS, {
-              method: HTTP_METHODS.POST,
-              headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-              body: jsonUtils.safeStringify(childProject),
-            })
+            fetch(API_ROUTES.PROJECTS, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify(childProject) })
               .then((response) => {
                 if (response.ok) {
                   setProjects((prev) => [...prev, childProject]);
@@ -355,39 +312,10 @@ export default function App() {
       description: desc,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      input: {
-        type: ProjectInputType.Script,
-        content: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-      },
-      config: {
-        genre: DEFAULT_PROJECT_CONFIGS.GENRE,
-        language: currentLang as unknown as ProjectLanguage,
-        duration: DEFAULT_PROJECT_CONFIGS.DURATION,
-        rewriteLevel: 50,
-        similarityReduction: 5,
-        creativityLevel: 6,
-        factCheck: true,
-        audience: DEFAULT_PROJECT_CONFIGS.AUDIENCE,
-        writingStyle: DEFAULT_PROJECT_CONFIGS.WRITING_STYLE,
-      },
-      hookConfig: {
-        type: DEFAULT_PROJECT_CONFIGS.HOOK_TYPE,
-        duration: 10,
-        count: 3,
-        positions: HookPosition.Start,
-        versions: [],
-      },
-      voiceConfig: {
-        provider: DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER,
-        audioType: AudioType.TTS,
-        gender: Gender.Male,
-        age: AgeGroup.Adult,
-        emotion: DEFAULT_PROJECT_CONFIGS.VOICE_EMOTION,
-        speed: 1.0,
-        pitch: 1.0,
-        volume: 1.0,
-        voiceURI: DEFAULT_PROJECT_CONFIGS.VOICE_URI,
-      },
+      input: { type: ProjectInputType.Script, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING },
+      config: { genre: DEFAULT_PROJECT_CONFIGS.GENRE, language: currentLang as unknown as ProjectLanguage, duration: DEFAULT_PROJECT_CONFIGS.DURATION, rewriteLevel: 50, similarityReduction: 5, creativityLevel: 6, factCheck: true, audience: DEFAULT_PROJECT_CONFIGS.AUDIENCE, writingStyle: DEFAULT_PROJECT_CONFIGS.WRITING_STYLE },
+      hookConfig: { type: DEFAULT_PROJECT_CONFIGS.HOOK_TYPE, duration: 10, count: 3, positions: HookPosition.Start, versions: [] },
+      voiceConfig: { provider: DEFAULT_PROJECT_CONFIGS.VOICE_PROVIDER, audioType: AudioType.TTS, gender: Gender.Male, age: AgeGroup.Adult, emotion: DEFAULT_PROJECT_CONFIGS.VOICE_EMOTION, speed: 1.0, pitch: 1.0, volume: 1.0, voiceURI: DEFAULT_PROJECT_CONFIGS.VOICE_URI },
       visualConfig: {
         source: DEFAULT_PROJECT_CONFIGS.VISUAL_SOURCE,
         style: DEFAULT_PROJECT_CONFIGS.VISUAL_STYLE,
@@ -405,15 +333,7 @@ export default function App() {
       creditsUsed: 0,
     };
     const autoChildId = SOURCE_TEMPLATE_AUTO(SOURCE_TEMPLATE_SYMBOL_86(`${COMMON_STRINGS.PROJECT_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectSlug}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomStr()}`));
-    const autoChildProject: VideoProject = {
-      ...parentProject,
-      id: autoChildId,
-      parentId: parentId,
-      projectKind: ProjectKind.Auto,
-      name: SOURCE_TEMPLATE_SYMBOL_75(`${parentProject.name}`, `${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const autoChildProject: VideoProject = { ...parentProject, id: autoChildId, parentId: parentId, projectKind: ProjectKind.Auto, name: SOURCE_TEMPLATE_SYMBOL_75(`${parentProject.name}`, `${COMMON_STRINGS.AUTO_CHILD_SUFFIX}`), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     const filmChildId = SOURCE_TEMPLATE_FILM(SOURCE_TEMPLATE_SYMBOL_86(`${COMMON_STRINGS.PROJECT_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${projectSlug}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomStr()}`));
     const filmChildProject: VideoProject = {
       ...parentProject,
@@ -422,20 +342,8 @@ export default function App() {
       projectKind: ProjectKind.Cinematic,
       name: SOURCE_TEMPLATE_SYMBOL_75(`${parentProject.name}`, `${COMMON_STRINGS.CINEMATIC_CHILD_SUFFIX}`),
       input: { type: ProjectInputType.Idea, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING },
-      config: {
-        ...parentProject.config,
-        genre: SOURCE_TEXT_CINEMATIC_AI_EPISODE,
-        filmFormat: SOURCE_TEXT_SINGLE,
-        episodeCount: 1,
-        seriesBibleRequired: false,
-      },
-      visualConfig: {
-        ...parentProject.visualConfig,
-        style: SOURCE_TEXT_CINEMATIC_PHOTOREAL,
-        generationMode: ImageGenerationMode.LabsFlow,
-        generateType: GenerateType.Video,
-        imageGeneratorEngine: ImageGeneratorEngine.Veo3,
-      },
+      config: { ...parentProject.config, genre: SOURCE_TEXT_CINEMATIC_AI_EPISODE, filmFormat: SOURCE_TEXT_SINGLE, episodeCount: 1, seriesBibleRequired: false },
+      visualConfig: { ...parentProject.visualConfig, style: SOURCE_TEXT_CINEMATIC_PHOTOREAL, generationMode: ImageGenerationMode.LabsFlow, generateType: GenerateType.Video, imageGeneratorEngine: ImageGeneratorEngine.Veo3 },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -458,11 +366,7 @@ export default function App() {
     if (pendingSavesRef.current[updated.id]) clearTimeout(pendingSavesRef.current[updated.id]);
     const doSave = async () => {
       try {
-        const response = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${updated.id}`)), {
-          method: HTTP_METHODS.PUT,
-          headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-          body: jsonUtils.safeStringify(updated),
-        });
+        const response = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${updated.id}`)), { method: HTTP_METHODS.PUT, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify(updated) });
         if (!response.ok) {
           throw new Error(SOURCE_TEMPLATE_SYMBOL_3(SOURCE_TEMPLATE_SYMBOL_86(`${ERROR_MESSAGES.HTTP_ERROR_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${response.status}`), SOURCE_TEMPLATE_SYMBOL_86(`${response.statusText}`)));
         }
@@ -538,11 +442,7 @@ export default function App() {
     const updated = { ...projToUpdate, name, description, updatedAt: new Date().toISOString() };
     setProjects((prev) => _.map(prev, (p) => (_.isEqual(p.id, id) ? updated : p)));
     try {
-      const res = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)), {
-        method: HTTP_METHODS.PUT,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify(updated),
-      });
+      const res = await fetch(SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${API_ROUTES.PROJECTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${id}`)), { method: HTTP_METHODS.PUT, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify(updated) });
       if (res.ok) {
         const text = await res.text();
         const savedProject = jsonUtils.safeParse(text, null);
@@ -568,62 +468,42 @@ export default function App() {
               <PageLoadingSpinner />
             </div>
           )}
-          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.DASHBOARD) && SOURCE_TEXT_HIDDEN)}>
+          <FeatureWorkspace feature={AppTab.DASHBOARD} active={activeTab === AppTab.DASHBOARD} language={currentLang} keepMounted>
             <DashboardView currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={handleSelectProject} onNavigateToProjects={() => handleActiveTabChange(AppTab.PROJECTS)} />
-          </div>
-          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.PROJECTS) && SOURCE_TEXT_HIDDEN)}>
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <ProjectList currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={(project) => handleSelectProject(project.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
-            </div>
-          </div>
-          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.AUTO_GENERATOR) && SOURCE_TEXT_HIDDEN)}>
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.PROJECTS} active={activeTab === AppTab.PROJECTS} language={currentLang} keepMounted>
+            <ProjectList currentLang={currentLang} projects={projects} isLoading={isLoadingProjects} onSelectProject={(project) => handleSelectProject(project.id)} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProjectDetails} onDeleteProject={handleDeleteProject} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.AUTO_GENERATOR} active={activeTab === AppTab.AUTO_GENERATOR} language={currentLang} keepMounted>
             <AutoVideoGenerator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
-          </div>
-          <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0, !_.isEqual(activeTab, AppTab.CINEMATIC_FILM) && SOURCE_TEXT_HIDDEN)}>
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.CINEMATIC_FILM} active={activeTab === AppTab.CINEMATIC_FILM} language={currentLang} keepMounted>
             <CinematicFilmStudio currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={handleSelectProject} onCreateProject={handleCreateProject} onUpdateProject={handleUpdateProject} theme={theme as any} />
-          </div>
-          {_.isEqual(activeTab, AppTab.MUSIC_CREATOR) && (
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <MusicCreator currentLang={currentLang} />
-            </div>
-          )}
-          {_.isEqual(activeTab, AppTab.PROXY) && (
-            <div className={SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0}>
-              <Suspense fallback={<PageLoadingSpinner className={SOURCE_TEXT_W_FULL_H_FULL} />}>
-                <ProxyManager currentLang={currentLang} />
-              </Suspense>
-            </div>
-          )}
-          {_.isEqual(activeTab, AppTab.MUSIC_MIXER) && (
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <MusicMixer currentLang={currentLang} />
-            </div>
-          )}
-          {_.isEqual(activeTab, AppTab.VIDEO_CREATOR) && (
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <FlowVideoCreator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} />
-            </div>
-          )}
-          {_.isEqual(activeTab, AppTab.SHORTS_EXTRACTOR) && (
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <ShortsExtractor currentLang={currentLang} />
-            </div>
-          )}
-          {_.isEqual(activeTab, AppTab.VIDEO_EXPORT) && (
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <VideoExporter currentLang={currentLang} />
-            </div>
-          )}
-          {_.isEqual(activeTab, AppTab.MOTION_VIDEO) && (
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <MotionVideoCreator currentLang={currentLang} />
-            </div>
-          )}
-          {_.isEqual(activeTab, AppTab.SETTINGS) && (
-            <div className={cn(SOURCE_TEXT_W_FULL_H_FULL_MIN_H_0)}>
-              <SettingsView currentLang={currentLang} isLoading={isLoadingProjects} />
-            </div>
-          )}
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.MUSIC_CREATOR} active={activeTab === AppTab.MUSIC_CREATOR} language={currentLang}>
+            <MusicCreator currentLang={currentLang} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.PROXY} active={activeTab === AppTab.PROXY} language={currentLang}>
+            <ProxyManager currentLang={currentLang} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.MUSIC_MIXER} active={activeTab === AppTab.MUSIC_MIXER} language={currentLang}>
+            <MusicMixer currentLang={currentLang} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.VIDEO_CREATOR} active={activeTab === AppTab.VIDEO_CREATOR} language={currentLang}>
+            <FlowVideoCreator currentLang={currentLang} projects={projects} selectedProjectId={selectedProjectId} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.SHORTS_EXTRACTOR} active={activeTab === AppTab.SHORTS_EXTRACTOR} language={currentLang}>
+            <ShortsExtractor currentLang={currentLang} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.VIDEO_EXPORT} active={activeTab === AppTab.VIDEO_EXPORT} language={currentLang}>
+            <VideoExporter currentLang={currentLang} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.MOTION_VIDEO} active={activeTab === AppTab.MOTION_VIDEO} language={currentLang}>
+            <MotionVideoCreator currentLang={currentLang} />
+          </FeatureWorkspace>
+          <FeatureWorkspace feature={AppTab.SETTINGS} active={activeTab === AppTab.SETTINGS} language={currentLang}>
+            <SettingsView currentLang={currentLang} isLoading={isLoadingProjects} />
+          </FeatureWorkspace>
         </main>
       </div>
     </div>

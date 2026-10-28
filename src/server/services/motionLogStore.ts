@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import fs from "node:fs";
 import path from "node:path";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
@@ -16,7 +18,7 @@ export class MotionLogStore {
           .readFileSync(file, P.ENCODING)
           .split(/\r?\n/u)
           .filter(Boolean)
-          .map((row) => JSON.parse(row) as { sequence: number; line: string })
+          .map((row) => parseJson(row) as { sequence: number; line: string })
       : [];
     if (rows.some((row, index) => row.sequence !== index + 1 || typeof row.line !== "string")) throw new Error(P.LOG_INVALID);
     const start = Math.max(0, Math.min(rows.length, Math.floor(Number(after) || 0)));
@@ -26,7 +28,7 @@ export class MotionLogStore {
   append(id: string, line: string): void {
     const sequence = (this.counts.get(id) ?? this.read(id).total) + 1;
     fs.mkdirSync(this.directory, { recursive: true });
-    fs.appendFileSync(this.file(id), JSON.stringify({ sequence, line }) + "\n", { encoding: P.ENCODING, flush: true });
+    fs.appendFileSync(this.file(id), stringifyJson({ sequence, line }) + RT_SHARED.SYMBOL_01BA47, { encoding: P.ENCODING, flush: true });
     this.counts.set(id, sequence);
   }
   seed(id: string, lines: string[]): void {

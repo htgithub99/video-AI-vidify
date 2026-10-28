@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { MotionRepairLedger } from "../../lib/motionAiRepair.js";
 import { motionInputKey } from "./motionFileUtils.js";
 import { isTerminalMotionAiError } from "./chatSubmissionRecovery.js";
@@ -76,10 +79,10 @@ export const generateMotionSeo = async (analysis: MotionStoryAnalysis, script: M
     seoOptions: _.times(SEO_OPTION_COUNT, (i) => ({ title: i === 0 && sourceTitle ? sourceTitle : MR.MOTION_TEMPLATE_TITLE_OPTION(i + 1), description: MR.MOTION_TEMPLATE_HOOK_PARAGRAPH_CLOSING_LINE(SEO_CHAPTERS_TOKEN), hashtags: [MR.MOTION_TEXT_TAGONE, MR.MOTION_TEXT_TAGTWO], tags: [MR.MOTION_TEXT_TAG_ONE, MR.MOTION_TEXT_TAG_TWO], seoScore: 85 + i })),
     chapterTitles: [{ id: MR.MOTION_TEXT_C1, title: MR.MOTION_TEXT_SYMBOL }],
   };
-  const prompt = [MR.MOTION_TEMPLATE_ACT_AS_AN_EXCELLENT_YOUTUBE_SEO_COPYWRITER_AND_CHANNEL_EDITOR_FOR(SEO_OPTION_COUNT, JSON.stringify(brief), brief.language, SEO_CHAPTERS_TOKEN, brief.language, JSON.stringify(example)), motionResponsePrompt(ARTIFACT), ...(sourceTitle ? [MOTION_SEO.SOURCE_TITLE_RULE] : [])].join(MR.MOTION_TEXT_SYMBOL_27);
+  const prompt = ([MR.MOTION_TEMPLATE_ACT_AS_AN_EXCELLENT_YOUTUBE_SEO_COPYWRITER_AND_CHANNEL_EDITOR_FOR(SEO_OPTION_COUNT, stringifyJson(brief), brief.language, SEO_CHAPTERS_TOKEN, brief.language, stringifyJson(example)), motionResponsePrompt(ARTIFACT), ...(sourceTitle ? [MOTION_SEO.SOURCE_TITLE_RULE] : [])] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
   const ledger = new MotionRepairLedger<Record<string, any>>(
     Array.from({ length: SEO_OPTION_COUNT }, (_, index) => MOTION_SEO.OPTION_ID(index)),
-    (value) => motionResponseIssues(value, { ...MOTION_SEO_OPTION_SCHEMA, properties: _.pick(MOTION_SEO_OPTION_SCHEMA.properties, ["title", "description", "hashtags", "tags"]) }).map((issue) => ({ path: issue.path.split(/[.\[]/)[0], reason: JSON.stringify(issue) })),
+    (value) => motionResponseIssues(value, { ...MOTION_SEO_OPTION_SCHEMA, properties: _.pick(MOTION_SEO_OPTION_SCHEMA.properties, [RT_SHARED.TITLE, RT_SERVER.DESCRIPTION, RT_SERVER.HASHTAGS, RT_SERVER.TAGS] as string[]) }).map((issue) => ({ path: issue.path.split(/[.\[]/)[0], reason: stringifyJson(issue) })),
   );
   const inputKey = motionInputKey([brief, opts.exec, seoScriptKey(script)]);
   const draft: MotionSeoDraft = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft) : { inputKey, rejected: 0, rows: [], chapterTitles: {}, note: MR.MOTION_TEXT_EMPTY };

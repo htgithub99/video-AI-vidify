@@ -1,4 +1,4 @@
-export type MusicUploadPhase = 'queued' | 'selecting' | 'selected' | 'uploading' | 'ready' | 'submitted' | 'failed' | 'verification-waiting' | 'verification-resumed';
+export type MusicUploadPhase = "queued" | "selecting" | "selected" | "uploading" | "ready" | "submitted" | "failed" | "verification-waiting" | "verification-resumed";
 export interface MusicUploadProgress {
   phase: MusicUploadPhase;
   expected: number;
@@ -11,8 +11,8 @@ export interface MusicUploadProgress {
   elapsedMs?: number;
   message?: string;
 }
-export interface MusicDownloadProgress extends Omit<MusicUploadProgress, 'phase'> {
-  phase: MusicUploadPhase | 'preparing' | 'evaluating' | 'evaluated' | 'evaluation-failed' | 'retrying' | 'exporting' | 'exported';
+export interface MusicDownloadProgress extends Omit<MusicUploadProgress, "phase"> {
+  phase: MusicUploadPhase | "preparing" | "evaluating" | "evaluated" | "evaluation-failed" | "retrying" | "exporting" | "exported";
   room?: number;
   rooms?: number;
   attempt?: number;

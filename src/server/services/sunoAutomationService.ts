@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import {
   SOURCE_BROWSER_TEXT_CHANGE,
   SOURCE_TEMPLATE_API_CLIP,
@@ -85,10 +87,10 @@ import { delayAsync } from "../../lib/asyncUtils";
 import _ from "lodash";
 import type { Locator, Page } from "playwright";
 import { readSunoPlaylistCheckpoint, writeSunoPlaylistCheckpoint } from "./sunoPlaylistCheckpointService.js";
-import { addSunoClipsThroughBulkUi, openSunoBulkPlaylistDialog } from './sunoBulkPlaylistService.js';
-import { settleSunoBrowserClose } from './sunoBrowserCleanup.js';
-import { creationProgress, creationSongIds, openSunoCreationCheckpoint, runSunoCreationCheckpoint, saveSunoCreationCheckpoint, type SunoCreationCheckpoint } from './sunoCreationCheckpointService.js';
-import type { SunoCreationProgress } from '../../types/sunoCreationProgress.js';
+import { addSunoClipsThroughBulkUi, openSunoBulkPlaylistDialog } from "./sunoBulkPlaylistService.js";
+import { settleSunoBrowserClose } from "./sunoBrowserCleanup.js";
+import { creationProgress, creationSongIds, openSunoCreationCheckpoint, runSunoCreationCheckpoint, saveSunoCreationCheckpoint, type SunoCreationCheckpoint } from "./sunoCreationCheckpointService.js";
+import type { SunoCreationProgress } from "../../types/sunoCreationProgress.js";
 import { chromium } from "playwright-extra";
 import path from "path";
 import fs from "fs";
@@ -101,26 +103,59 @@ import { REFACTOR_CONSTANTS } from "../../constants/refactor.js";
 import { logger } from "../../lib/logger.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_PATTERNS, SUNO_AUTOMATION_SELECTORS, SUNO_AUTOMATION_TEXTS, formatSunoPlaylistName, normalizeSunoPlaylistName } from "../../constants/sunoAutomation.js";
-export interface SunoSongInput { songId: string; title: string; lyrics: string; }
-export interface SunoCreationResult { playlistUrl: string; createdSongIds: string[]; }
-export interface SunoAdvancedSettings { excludeStyles: string; vocalGender: "male" | "female" | "auto"; duration: "auto"; maxMode: boolean; weirdness: number; styleInfluence: number; audioInfluence?: number; variety: number; personalize: boolean; }
-export interface ActiveSunoGeneration { title: string; songIds: string[]; }
-export interface SunoDownloadTrack { songId: string; title: string; }
+export interface SunoSongInput {
+  songId: string;
+  title: string;
+  lyrics: string;
+}
+export interface SunoCreationResult {
+  playlistUrl: string;
+  createdSongIds: string[];
+}
+export interface SunoAdvancedSettings {
+  excludeStyles: string;
+  vocalGender: "male" | "female" | "auto";
+  duration: "auto";
+  maxMode: boolean;
+  weirdness: number;
+  styleInfluence: number;
+  audioInfluence?: number;
+  variety: number;
+  personalize: boolean;
+}
+export interface ActiveSunoGeneration {
+  title: string;
+  songIds: string[];
+}
+export interface SunoDownloadTrack {
+  songId: string;
+  title: string;
+}
 export type SunoDownloadFormat = "mp3" | "wav";
 const SUNO_PROFILE_DIR = path.join(getDataDirectory(), SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
 const SUNO_CDP_URL = SUNO_AUTOMATION_CONFIG.SUNO_CDP_URL;
 let activeSunoPage: Page | null = null;
 let sunoCreationRunning = false;
 let sunoCancellationRequested = false;
-const convertSunoAudioToMp3 = (sourcePath: string, destinationPath: string): Promise<void> => new Promise<void>((resolve, reject) => { ffmpeg(sourcePath) .noVideo() .audioCodec(SOURCE_TEXT_LIBMP3LAME) .audioBitrate(SOURCE_TEXT_256K) .format(SOURCE_TEXT_MP3) .on(SOURCE_TEXT_END, () => resolve()) .on(SOURCE_TEXT_ERROR, reject) .save(destinationPath); });
+const convertSunoAudioToMp3 = (sourcePath: string, destinationPath: string): Promise<void> =>
+  new Promise<void>((resolve, reject) => {
+    ffmpeg(sourcePath)
+      .noVideo()
+      .audioCodec(SOURCE_TEXT_LIBMP3LAME)
+      .audioBitrate(SOURCE_TEXT_256K)
+      .format(SOURCE_TEXT_MP3)
+      .on(SOURCE_TEXT_END, () => resolve())
+      .on(SOURCE_TEXT_ERROR, reject)
+      .save(destinationPath);
+  });
 const createSafeAudioFileName = (title: string, index: number, format: SunoDownloadFormat): string => {
   const safeTitle =
     _.filter(_.trim(title).split(""), (character) => character.charCodeAt(0) >= 32)
       .join("")
-      .replace(SUNO_AUTOMATION_PATTERNS.INVALID_FILE_CHARS, " ")
-      .replace(SUNO_AUTOMATION_PATTERNS.WHITESPACES, " ")
+      .replace(SUNO_AUTOMATION_PATTERNS.INVALID_FILE_CHARS, RT_SHARED.SYMBOL_36A9E7)
+      .replace(SUNO_AUTOMATION_PATTERNS.WHITESPACES, RT_SHARED.SYMBOL_36A9E7)
       .replace(SUNO_AUTOMATION_PATTERNS.TRAILING_DOTS_SPACES, "")
-      .slice(0, 140) || `${SUNO_AUTOMATION_TEXTS.DEFAULT_TRACK_PREFIX} ${index + 1}`;
+      .slice(0, 140) || `${SUNO_AUTOMATION_TEXTS.DEFAULT_TRACK_PREFIX}${RT_SHARED.SYMBOL_36A9E7}${index + 1}`;
   return SOURCE_TEMPLATE_SYMBOL_15(`${safeTitle}`, `${format}`);
 };
 const resolveAvailableFilePath = (folderPath: string, fileName: string): string => {
@@ -146,7 +181,11 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
     const existingPath = resume?.existingPaths?.[track.songId];
     if (existingPath && path.dirname(path.resolve(existingPath)) === resolvedFolder && path.extname(existingPath).toLowerCase() === SOURCE_TEMPLATE_SYMBOL_36(`${format}`)) {
       const existingStat = await fs.promises.stat(existingPath).catch(() => null);
-      if (existingStat?.isFile() && existingStat.size > 0) { downloadedPaths.push(existingPath); await writeMusicDiagnostic(SOURCE_TEXT_AUDIO_TRACK_RESUMED, { runId, songId: track.songId, songIndex: index + 1, format, bytes: existingStat.size }); continue; }
+      if (existingStat?.isFile() && existingStat.size > 0) {
+        downloadedPaths.push(existingPath);
+        await writeMusicDiagnostic(SOURCE_TEXT_AUDIO_TRACK_RESUMED, { runId, songId: track.songId, songIndex: index + 1, format, bytes: existingStat.size });
+        continue;
+      }
     }
     await writeMusicDiagnostic(SOURCE_TEXT_AUDIO_TRACK_STARTED, { runId, songId: track.songId, songIndex: index + 1, trackCount: validTracks.length, format });
     const filePath = resolveAvailableFilePath(resolvedFolder, createSafeAudioFileName(track.title, index, format));
@@ -154,7 +193,8 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
     if (sourceWavPath) {
       signal?.throwIfAborted();
       try {
-        if (format === SUNO_AUTOMATION_CONFIG.FORMAT_WAV) await fs.promises.copyFile(sourceWavPath, filePath); else await convertSunoAudioToMp3(sourceWavPath, filePath);
+        if (format === SUNO_AUTOMATION_CONFIG.FORMAT_WAV) await fs.promises.copyFile(sourceWavPath, filePath);
+        else await convertSunoAudioToMp3(sourceWavPath, filePath);
       } catch (error) {
         await fs.promises.rm(filePath, { force: true }).catch(() => undefined);
         throw error;
@@ -175,7 +215,10 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
         const response = await fetch(SUNO_AUTOMATION_CONFIG.formatAudioDownloadUrl(downloadOrigin, track.songId, SUNO_AUTOMATION_CONFIG.FORMAT_WAV), { headers: { Accept: SUNO_AUTOMATION_TEXTS.formatAudioHeaderAccept(SUNO_AUTOMATION_CONFIG.FORMAT_WAV) }, signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal });
         if (!response.ok || !response.body) throw new Error(SUNO_AUTOMATION_TEXTS.formatDownloadHttpError(response.status));
         await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(temporaryWavPath));
-        if (format === SUNO_AUTOMATION_CONFIG.FORMAT_MP3) { await convertSunoAudioToMp3(temporaryWavPath, filePath); await fs.promises.rm(temporaryWavPath, { force: true }); }
+        if (format === SUNO_AUTOMATION_CONFIG.FORMAT_MP3) {
+          await convertSunoAudioToMp3(temporaryWavPath, filePath);
+          await fs.promises.rm(temporaryWavPath, { force: true });
+        }
         await resume?.onTrackDownloaded?.(track.songId, filePath);
         downloadedPaths.push(filePath);
         downloaded = true;
@@ -187,7 +230,9 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
         if (temporaryWavPath !== filePath) await fs.promises.rm(temporaryWavPath, { force: true }).catch(() => undefined);
         signal?.throwIfAborted();
         if (_.includes(_.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)), SOURCE_TEXT_SUNO_DOWNLOAD_HTTP_502)) break;
-        if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) { await delayAsync(SUNO_AUTOMATION_CONFIG.getAudioRetryDelayMs(attempt)); }
+        if (attempt < SUNO_AUTOMATION_CONFIG.EVALUATION_AUDIO_DOWNLOAD_ATTEMPTS - 1) {
+          await delayAsync(SUNO_AUTOMATION_CONFIG.getAudioRetryDelayMs(attempt));
+        }
       }
     }
     if (!downloaded) {
@@ -198,10 +243,34 @@ export const downloadSunoTracksToFolder = async (tracks: SunoDownloadTrack[], fo
   }
   return downloadedPaths;
 };
-const ensureSunoNotCancelled = (): void => { if (sunoCancellationRequested) throw new Error(SUNO_AUTOMATION_TEXTS.CANCELLED_ERR); };
-const waitWithCancellation = async (page: Page, durationMs: number): Promise<void> => { const deadline = Date.now() + durationMs; while (Date.now() < deadline) { ensureSunoNotCancelled(); await page.waitForTimeout(Math.min(500, deadline - Date.now())); } };
-const closeSunoChrome = async (page: Page | null): Promise<void> => settleSunoBrowserClose(async () => { if (!page || page.isClosed()) return; const session = await page .context() .newCDPSession(page) .catch(() => null); if (!session) { await page.close().catch(() => undefined); return; } await session.send(SUNO_AUTOMATION_SELECTORS.BROWSER_CLOSE_CMD).catch(() => undefined); await session.detach().catch(() => undefined); });
-export const cancelActiveSunoCreation = async (): Promise<void> => { sunoCancellationRequested = true; await closeSunoChrome(activeSunoPage); };
+const ensureSunoNotCancelled = (): void => {
+  if (sunoCancellationRequested) throw new Error(SUNO_AUTOMATION_TEXTS.CANCELLED_ERR);
+};
+const waitWithCancellation = async (page: Page, durationMs: number): Promise<void> => {
+  const deadline = Date.now() + durationMs;
+  while (Date.now() < deadline) {
+    ensureSunoNotCancelled();
+    await page.waitForTimeout(Math.min(500, deadline - Date.now()));
+  }
+};
+const closeSunoChrome = async (page: Page | null): Promise<void> =>
+  settleSunoBrowserClose(async () => {
+    if (!page || page.isClosed()) return;
+    const session = await page
+      .context()
+      .newCDPSession(page)
+      .catch(() => null);
+    if (!session) {
+      await page.close().catch(() => undefined);
+      return;
+    }
+    await session.send(SUNO_AUTOMATION_SELECTORS.BROWSER_CLOSE_CMD).catch(() => undefined);
+    await session.detach().catch(() => undefined);
+  });
+export const cancelActiveSunoCreation = async (): Promise<void> => {
+  sunoCancellationRequested = true;
+  await closeSunoChrome(activeSunoPage);
+};
 export const launchSunoLoginBrowser = async (): Promise<{ message: string; profilePath: string; cdpPort: number }> => {
   fs.mkdirSync(SUNO_PROFILE_DIR, { recursive: true });
   try {
@@ -256,7 +325,13 @@ export const findSunoStyleInput = async (page: Page): Promise<Locator | null> =>
 };
 const dismissCookieConsent = async (page: Page): Promise<void> => {
   const consentDialog = page.locator(SUNO_AUTOMATION_SELECTORS.DIALOG_ROLE).filter({ hasText: SUNO_AUTOMATION_PATTERNS.PRIVACY_CENTER });
-  if ( !(await consentDialog .first() .isVisible() .catch(() => false)) ) return;
+  if (
+    !(await consentDialog
+      .first()
+      .isVisible()
+      .catch(() => false))
+  )
+    return;
   const dismissButton = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.COOKIE_CONSENT_BUTTON);
   if (!dismissButton) return;
   await dismissButton.click();
@@ -264,17 +339,16 @@ const dismissCookieConsent = async (page: Page): Promise<void> => {
 };
 const ensureSunoCreatePage = async (page: Page): Promise<void> => {
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.CREATE_PAGE_NAVIGATION_ATTEMPTS; attempt += 1) {
-    await page
-      .goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, {
-        waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED,
-        timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS,
-      })
-      .catch(() => undefined);
+    await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS }).catch(() => undefined);
     await dismissCookieConsent(page);
     let isCreateRoute = SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(new URL(page.url()).pathname);
     if (!isCreateRoute) {
       const createNavigation = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.CREATE_NAVIGATION, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS);
-      if (createNavigation) { await createNavigation.click().catch(() => undefined); await page.waitForURL((url) => SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(url.pathname), { timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS }).catch(() => undefined); isCreateRoute = SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(new URL(page.url()).pathname); }
+      if (createNavigation) {
+        await createNavigation.click().catch(() => undefined);
+        await page.waitForURL((url) => SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(url.pathname), { timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS }).catch(() => undefined);
+        isCreateRoute = SUNO_AUTOMATION_PATTERNS.CREATE_PATH.test(new URL(page.url()).pathname);
+      }
     }
     const createForm = isCreateRoute ? await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED, SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS) : null;
     if (isCreateRoute && createForm) return;
@@ -283,7 +357,10 @@ const ensureSunoCreatePage = async (page: Page): Promise<void> => {
 };
 const revealSunoWindow = async (page: Page): Promise<void> => {
   await page.bringToFront();
-  const session = await page .context() .newCDPSession(page) .catch(() => null);
+  const session = await page
+    .context()
+    .newCDPSession(page)
+    .catch(() => null);
   if (!session) return;
   try {
     const { windowId } = await session.send(SUNO_AUTOMATION_SELECTORS.BROWSER_GET_WINDOW_CMD);
@@ -292,8 +369,18 @@ const revealSunoWindow = async (page: Page): Promise<void> => {
     await session.detach().catch(() => undefined);
   }
 };
-const fillEditable = async (locator: Locator, value: string): Promise<void> => { await locator.fill(value).catch(async () => { await locator.click({ force: true }); await locator.press(SUNO_AUTOMATION_SELECTORS.CONTROL_A); await locator.pressSequentially(value, { delay: 1 }); }); };
-const readEditable = async (locator: Locator): Promise<string> => { const value = await locator.inputValue().catch(() => ""); if (!_.isEmpty(_.trim(value))) return _.trim(value); return _.trim((await locator.textContent().catch(() => "")) || ""); };
+const fillEditable = async (locator: Locator, value: string): Promise<void> => {
+  await locator.fill(value).catch(async () => {
+    await locator.click({ force: true });
+    await locator.press(SUNO_AUTOMATION_SELECTORS.CONTROL_A);
+    await locator.pressSequentially(value, { delay: 1 });
+  });
+};
+const readEditable = async (locator: Locator): Promise<string> => {
+  const value = await locator.inputValue().catch(() => "");
+  if (!_.isEmpty(_.trim(value))) return _.trim(value);
+  return _.trim((await locator.textContent().catch(() => "")) || "");
+};
 const ensureSunoStyle = async (page: Page, style: string): Promise<void> => {
   const expectedStyle = _.trim(style);
   const styleInput = await findSunoStyleInput(page);
@@ -302,17 +389,33 @@ const ensureSunoStyle = async (page: Page, style: string): Promise<void> => {
   if (!_.isEqual(await readEditable(styleInput), expectedStyle)) throw new Error(SUNO_AUTOMATION_TEXTS.STYLE_INPUT_NOT_APPLIED_ERR);
 };
 const formatNumberedSongTitle = (title: string, index: number): string => SOURCE_TEMPLATE_SYMBOL_6(`${index + 1}`, `${_.trim(title).replace(SUNO_AUTOMATION_PATTERNS.LEADING_INDEX, "")}`);
-const collectSongIds = async (page: Page): Promise<string[]> => { const hrefs = await page .locator(SUNO_AUTOMATION_SELECTORS.SONG_ANCHOR) .evaluateAll((anchors) => anchors.map((anchor) => (anchor as HTMLAnchorElement).href)) .catch(() => []); return _.uniq(_.compact(_.map(hrefs, (href) => href.match(SUNO_AUTOMATION_PATTERNS.SONG_URL)?.[1]))); };
+const collectSongIds = async (page: Page): Promise<string[]> => {
+  const hrefs = await page
+    .locator(SUNO_AUTOMATION_SELECTORS.SONG_ANCHOR)
+    .evaluateAll((anchors) => anchors.map((anchor) => (anchor as HTMLAnchorElement).href))
+    .catch(() => []);
+  return _.uniq(_.compact(_.map(hrefs, (href) => href.match(SUNO_AUTOMATION_PATTERNS.SONG_URL)?.[1])));
+};
 export const verifySunoAccount = async (page: Page): Promise<void> => {
   let advancedControl = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED);
-  if (!advancedControl) { await page .locator(SUNO_AUTOMATION_SELECTORS.ADVANCED.join(SOURCE_TEXT_SYMBOL_10)) .first() .waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS }) .catch(() => undefined); advancedControl = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED); }
-  const bodyText = await page .locator(SUNO_AUTOMATION_SELECTORS.BODY) .innerText() .catch(() => "");
+  if (!advancedControl) {
+    await page
+      .locator(SUNO_AUTOMATION_SELECTORS.ADVANCED.join(SOURCE_TEXT_SYMBOL_10))
+      .first()
+      .waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS })
+      .catch(() => undefined);
+    advancedControl = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.ADVANCED);
+  }
+  const bodyText = await page
+    .locator(SUNO_AUTOMATION_SELECTORS.BODY)
+    .innerText()
+    .catch(() => "");
   const hasExpectedWorkspace = SUNO_AUTOMATION_PATTERNS.EXPECTED_SUNO_PROFILE.test(bodyText);
   const hasCreateWorkspace = SUNO_AUTOMATION_PATTERNS.BODY_CREATE.test(bodyText) && SUNO_AUTOMATION_PATTERNS.BODY_LIBRARY_STUDIO.test(bodyText);
   const hasSignedInWorkspace = hasExpectedWorkspace && hasCreateWorkspace && Boolean(advancedControl);
   if (hasSignedInWorkspace) return;
-  const diagnostic = bodyText.replace(SUNO_AUTOMATION_PATTERNS.WHITESPACES, " ").trim().slice(0, 240);
-  throw new Error(`${SUNO_AUTOMATION_TEXTS.formatProfileNotSignedInErr(SUNO_AUTOMATION_CONFIG.EXPECTED_ACCOUNT_EMAIL)} ${SUNO_AUTOMATION_TEXTS.formatDiagnosticDisplay(diagnostic || SUNO_AUTOMATION_TEXTS.EMPTY_DIAGNOSTIC)}`);
+  const diagnostic = bodyText.replace(SUNO_AUTOMATION_PATTERNS.WHITESPACES, RT_SHARED.SYMBOL_36A9E7).trim().slice(0, 240);
+  throw new Error(`${SUNO_AUTOMATION_TEXTS.formatProfileNotSignedInErr(SUNO_AUTOMATION_CONFIG.EXPECTED_ACCOUNT_EMAIL)}${RT_SHARED.SYMBOL_36A9E7}${SUNO_AUTOMATION_TEXTS.formatDiagnosticDisplay(diagnostic || SUNO_AUTOMATION_TEXTS.EMPTY_DIAGNOSTIC)}`);
 };
 const setRangeByLabel = async (page: Page, label: RegExp, value: number): Promise<void> => {
   let range = visibleFirst(page.getByRole(SOURCE_TEXT_SLIDER, { name: label }));
@@ -406,18 +509,27 @@ const applySunoSetting = async (page: Page, label: string, action: () => Promise
       return;
     } catch (error) {
       lastError = error;
-      if (attempt < SUNO_AUTOMATION_CONFIG.SUNO_SETTINGS_APPLY_ATTEMPTS - 1) { logger.warn(SUNO_AUTOMATION_TEXTS.formatSettingRetryLog(label, attempt + 2, _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)))); await page.waitForTimeout(500); }
+      if (attempt < SUNO_AUTOMATION_CONFIG.SUNO_SETTINGS_APPLY_ATTEMPTS - 1) {
+        logger.warn(SUNO_AUTOMATION_TEXTS.formatSettingRetryLog(label, attempt + 2, _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
+        await page.waitForTimeout(500);
+      }
     }
   }
   throw lastError;
 };
 export const configureAdvancedOnce = async (page: Page, style: string, aiSettings?: SunoAdvancedSettings, hasInspo = false): Promise<void> => {
-  if (!aiSettings || !_.every([aiSettings.weirdness, aiSettings.styleInfluence, aiSettings.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101))) { throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR); }
+  if (!aiSettings || !_.every([aiSettings.weirdness, aiSettings.styleInfluence, aiSettings.variety], (value) => _.isInteger(value) && _.inRange(value, 0, 101))) {
+    throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR);
+  }
   await ensureSunoStyle(page, style);
   await applySunoSetting(page, SOURCE_TEXT_WEIRDNESS_2, () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.WEIRDNESS_LABEL, aiSettings.weirdness));
   await applySunoSetting(page, SOURCE_TEXT_STYLE_INFLUENCE, () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.STYLE_INFLUENCE_LABEL, aiSettings.styleInfluence));
   const audioInfluenceControl = visibleFirst(page.getByRole(SOURCE_TEXT_SLIDER, { name: SUNO_AUTOMATION_PATTERNS.AUDIO_INFLUENCE_LABEL }));
-  if (hasInspo) { await audioInfluenceControl.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS }).catch(() => { throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(SOURCE_TEXT_AUDIO_INFLUENCE)); }); }
+  if (hasInspo) {
+    await audioInfluenceControl.waitFor({ state: SUNO_AUTOMATION_SELECTORS.STATE_VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.CREATE_FORM_TIMEOUT_MS }).catch(() => {
+      throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(SOURCE_TEXT_AUDIO_INFLUENCE));
+    });
+  }
   if (await audioInfluenceControl.isVisible().catch(() => false)) {
     if (!_.isInteger(aiSettings.audioInfluence) || !_.inRange(aiSettings.audioInfluence!, 0, 101)) throw new Error(SUNO_AUTOMATION_TEXTS.SUNO_SETTINGS_REQUIRED_ERR);
     await applySunoSetting(page, SOURCE_TEXT_AUDIO_INFLUENCE, () => setRangeByLabel(page, SUNO_AUTOMATION_PATTERNS.AUDIO_INFLUENCE_LABEL, aiSettings.audioInfluence));
@@ -429,23 +541,32 @@ export const configureAdvancedOnce = async (page: Page, style: string, aiSetting
     const excludeInput = await firstVisible(page, SUNO_AUTOMATION_SELECTORS.EXCLUDE_STYLES_INPUT);
     if (!excludeInput) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(SOURCE_TEXT_EXCLUDE_STYLES));
     await fillEditable(excludeInput, _.trim(aiSettings.excludeStyles));
-    if (!_.isEqual(_.trim(await excludeInput.inputValue()), _.trim(aiSettings.excludeStyles))) { throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingNotAppliedErr(SOURCE_TEXT_EXCLUDE_STYLES)); }
+    if (!_.isEqual(_.trim(await excludeInput.inputValue()), _.trim(aiSettings.excludeStyles))) {
+      throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingNotAppliedErr(SOURCE_TEXT_EXCLUDE_STYLES));
+    }
   });
   await applySunoSetting(page, SOURCE_TEXT_DURATION_2, () => selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_DURATION, SUNO_AUTOMATION_CONFIG.OPTION_AUTO));
   await applySunoSetting(page, SOURCE_TEXT_MAX_MODE, () => selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_MAX_MODE, aiSettings.maxMode ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF));
   await applySunoSetting(page, SOURCE_TEXT_PERSONALIZE_2, () => selectOptionBySection(page, SUNO_AUTOMATION_PATTERNS.SECTION_PERSONALIZE, aiSettings.personalize ? SUNO_AUTOMATION_CONFIG.OPTION_ON : SUNO_AUTOMATION_CONFIG.OPTION_OFF));
   await applySunoSetting(page, SOURCE_TEXT_VOCAL_GENDER, async () => {
-    const male = visibleFirst(page.getByRole("button", { name: "Male", exact: true }).or(page.getByRole("radio", { name: "Male", exact: true })));
-    const female = visibleFirst(page.getByRole("button", { name: "Female", exact: true }).or(page.getByRole("radio", { name: "Female", exact: true })));
-    if (!await male.isVisible() || !await female.isVisible()) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(SOURCE_TEXT_VOCAL_GENDER));
+    const male = visibleFirst(page.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.MALE, exact: true }).or(page.getByRole(RT_SERVER.RADIO, { name: RT_SERVER.MALE, exact: true })));
+    const female = visibleFirst(page.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.FEMALE, exact: true }).or(page.getByRole(RT_SERVER.RADIO, { name: RT_SERVER.FEMALE, exact: true })));
+    if (!(await male.isVisible()) || !(await female.isVisible())) throw new Error(SUNO_AUTOMATION_TEXTS.formatSettingControlNotFoundErr(SOURCE_TEXT_VOCAL_GENDER));
     const desired = aiSettings.vocalGender === SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_FEMALE ? female : aiSettings.vocalGender === SUNO_AUTOMATION_CONFIG.VOCAL_GENDER_MALE ? male : null;
-    // Suno toggles an already-selected gender off; neither selected means Auto.
     for (const button of [male, female]) {
       const shouldSelect = button === desired;
       const selected = (await button.getAttribute(SOURCE_TEXT_DATA_SELECTED)) === SUNO_AUTOMATION_SELECTORS.VAL_TRUE;
       if (selected !== shouldSelect) {
         await button.click();
-        await page.waitForFunction(({ element, value }) => element?.getAttribute("data-selected") === String(value), { element: await button.elementHandle(), value: shouldSelect }, { timeout: SUNO_AUTOMATION_CONFIG.SUNO_SETTING_STATE_TIMEOUT_MS });
+        await page.waitForFunction(
+          (__runtimePayload) => {
+            const { RT_SERVER } = __runtimePayload.texts;
+            const { element, value } = __runtimePayload.value;
+            return element?.getAttribute(RT_SERVER.DATA_SELECTED) === String(value);
+          },
+          { value: { element: await button.elementHandle(), value: shouldSelect }, texts: { RT_SERVER: { DATA_SELECTED: RT_SERVER.DATA_SELECTED } } },
+          { timeout: SUNO_AUTOMATION_CONFIG.SUNO_SETTING_STATE_TIMEOUT_MS },
+        );
       }
     }
   });
@@ -465,17 +586,15 @@ export const selectInspoPlaylist = async (page: Page, inspo: string): Promise<vo
     throw new Error(SUNO_AUTOMATION_TEXTS.INSPO_NOT_APPLIED_ERR(targetName));
   });
   const playlistRow = exactResult.locator(SUNO_AUTOMATION_CONFIG.XPATH_CURSOR_POINTER_DIV);
-  if (await playlistRow.count().catch(() => 0)) await playlistRow.click(); else await exactResult.click();
+  if (await playlistRow.count().catch(() => 0)) await playlistRow.click();
+  else await exactResult.click();
   await page
     .waitForFunction(
       ({ conditionSelector, trackSelector }) => {
         const condition = document.querySelector(conditionSelector);
         return !!condition && condition.getClientRects().length > 0 && Array.from(document.querySelectorAll(trackSelector)).some((track) => track.getClientRects().length > 0);
       },
-      {
-        conditionSelector: SUNO_AUTOMATION_SELECTORS.INSPO_APPLIED_CONDITION,
-        trackSelector: SUNO_AUTOMATION_SELECTORS.INSPO_APPLIED_TRACK,
-      },
+      { conditionSelector: SUNO_AUTOMATION_SELECTORS.INSPO_APPLIED_CONDITION, trackSelector: SUNO_AUTOMATION_SELECTORS.INSPO_APPLIED_TRACK },
       { timeout: SUNO_AUTOMATION_CONFIG.INSPO_RESULT_TIMEOUT_MS },
     )
     .catch(() => {
@@ -496,13 +615,23 @@ const createOneSong = async (page: Page, song: SunoSongInput, beginSubmission: (
   const generationResponse = page.waitForResponse((response) => response.request().method() === SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST && SUNO_AUTOMATION_PATTERNS.GENERATE_API.test(response.url()), { timeout: SUNO_AUTOMATION_CONFIG.GENERATE_RESPONSE_TIMEOUT_MS }).catch(() => null);
   await createButton.click();
   const response = await generationResponse;
-  if (response?.ok()) { const payload = await response.json().catch(() => null); const responseIds = _.uniq(_.compact(_.map(_.castArray(_.get(payload, SOURCE_TEXT_CLIPS, [])), (clip) => _.trim(_.toString(_.get(clip, SOURCE_TEXT_ID)))))); if (!_.isEmpty(responseIds)) { await persistIds(responseIds); return responseIds; } }
+  if (response?.ok()) {
+    const payload = await response.json().catch(() => null);
+    const responseIds = _.uniq(_.compact(_.map(_.castArray(_.get(payload, SOURCE_TEXT_CLIPS, [])), (clip) => _.trim(_.toString(_.get(clip, SOURCE_TEXT_ID))))));
+    if (!_.isEmpty(responseIds)) {
+      await persistIds(responseIds);
+      return responseIds;
+    }
+  }
   const deadline = Date.now() + SUNO_AUTOMATION_CONFIG.CREATE_SONG_DEADLINE_MS;
   while (Date.now() < deadline) {
     ensureSunoNotCancelled();
     await page.waitForTimeout(SUNO_AUTOMATION_CONFIG.POLL_INTERVAL_MS);
     const nextIds = _.difference(await collectSongIds(page), beforeIds);
-    if (!_.isEmpty(nextIds)) { await persistIds(nextIds); return nextIds; }
+    if (!_.isEmpty(nextIds)) {
+      await persistIds(nextIds);
+      return nextIds;
+    }
   }
   throw new Error(SUNO_AUTOMATION_TEXTS.formatSongIdTimeoutErr(song.title));
 };
@@ -516,9 +645,9 @@ const removeCompletedGenerations = async (page: Page, active: ActiveSunoGenerati
   const terminalFailures = new Set<string>(SUNO_AUTOMATION_CONFIG.STATUS_TERMINAL_FAILURES);
   const statusesByGeneration = await Promise.all(_.map(active, async (generation) => ({ generation, statuses: await Promise.all(_.map(generation.songIds, (songId) => getSunoClipStatus(page, songId))) })));
   const failed = _.find(statusesByGeneration, ({ statuses }) => _.some(statuses, (status) => terminalFailures.has(status)));
-  if (failed) throw new Error(`${SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR} ${failed.generation.title}`);
+  if (failed) throw new Error(`${SUNO_AUTOMATION_TEXTS.GENERATION_FAILED_ERR}${RT_SHARED.SYMBOL_36A9E7}${failed.generation.title}`);
   for (const { generation, statuses } of statusesByGeneration) {
-    if (statuses.length && statuses.every(status => status === SUNO_AUTOMATION_CONFIG.STATUS_COMPLETE)) await onComplete?.(generation.songIds);
+    if (statuses.length && statuses.every((status) => status === SUNO_AUTOMATION_CONFIG.STATUS_COMPLETE)) await onComplete?.(generation.songIds);
   }
   _.remove(active, (generation) => {
     const current = _.find(statusesByGeneration, (entry) => entry.generation === generation);
@@ -542,18 +671,12 @@ const addSongIdsByPlaylistId = async (page: Page, requestHeaders: Record<string,
   let lastBody = "";
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.PLAYLIST_ADD_ATTEMPTS; attempt += 1) {
     const response = await page.request.post(SOURCE_TEMPLATE_API_PLAYLIST_UPDATE_CLIPS(`${SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL}`), {
-      headers: Object.fromEntries(Object.entries({
-        authorization: requestHeaders.authorization,
-        [SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN]: requestHeaders[SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN],
-        [SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID]: requestHeaders[SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID],
-        [SUNO_AUTOMATION_CONFIG.HEADER_CONTENT_TYPE]: SUNO_AUTOMATION_CONFIG.MIME_APPLICATION_JSON,
-      }).filter(([, value]) => typeof value === "string")),
-      data: {
-        playlist_id: playlistId,
-        update_type: SUNO_AUTOMATION_SELECTORS.UPDATE_TYPE_ADD,
-        metadata: { clip_ids: uniqueSongIds },
-        recommendation_metadata: {},
-      },
+      headers: Object.fromEntries(
+        Object.entries({ authorization: requestHeaders.authorization, [SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN]: requestHeaders[SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN], [SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID]: requestHeaders[SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID], [SUNO_AUTOMATION_CONFIG.HEADER_CONTENT_TYPE]: SUNO_AUTOMATION_CONFIG.MIME_APPLICATION_JSON }).filter(
+          ([, value]) => typeof value === "string",
+        ),
+      ),
+      data: { playlist_id: playlistId, update_type: SUNO_AUTOMATION_SELECTORS.UPDATE_TYPE_ADD, metadata: { clip_ids: uniqueSongIds }, recommendation_metadata: {} },
     });
     lastStatus = response.status();
     lastBody = await response.text().catch(() => "");
@@ -561,19 +684,10 @@ const addSongIdsByPlaylistId = async (page: Page, requestHeaders: Record<string,
     if (!_.includes(SUNO_AUTOMATION_CONFIG.PLAYLIST_ADD_RETRY_STATUS_CODES, lastStatus as 429 | 500 | 502 | 503 | 504)) break;
     await page.waitForTimeout(500 * (attempt + 1));
   }
-  await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_ADD_RESPONSE, {
-    playlistId,
-    songCount: uniqueSongIds.length,
-    code: String(lastStatus),
-    body: _.truncate(lastBody, { length: 500 }),
-  });
+  await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_ADD_RESPONSE, { playlistId, songCount: uniqueSongIds.length, code: String(lastStatus), body: _.truncate(lastBody, { length: 500 }) });
   throw Object.assign(new Error(SUNO_AUTOMATION_TEXTS.formatPlaylistBatchAddFailedErr(lastStatus)), { httpStatus: lastStatus });
 };
-export const playlistClipIds = (payload: any): string[] => _.uniq(_.compact(_.map(
-  [..._.castArray(payload?.playlist_clips || []), ..._.castArray(payload?.playlist?.playlist_clips || []), ..._.castArray(payload?.playlist?.clips || []), ..._.castArray(payload?.clips || [])],
-  (item) => item?.clip_id || item?.clipId || item?.clip?.id || item?.clip?.clip_id || item?.id,
-)));
-
+export const playlistClipIds = (payload: any): string[] => _.uniq(_.compact(_.map([..._.castArray(payload?.playlist_clips || []), ..._.castArray(payload?.playlist?.playlist_clips || []), ..._.castArray(payload?.playlist?.clips || []), ..._.castArray(payload?.clips || [])], (item) => item?.clip_id || item?.clipId || item?.clip?.id || item?.clip?.clip_id || item?.id)));
 export const ensureSunoPlaylistMembers = async (page: Page, headers: Record<string, string>, playlistId: string, songIds: string[], addThroughUi?: (missingIds: string[]) => Promise<void>): Promise<void> => {
   let missingIds = _.uniq(songIds);
   for (let attempt = 0; attempt <= SUNO_AUTOMATION_CONFIG.PLAYLIST_ADD_ATTEMPTS; attempt++) {
@@ -582,17 +696,16 @@ export const ensureSunoPlaylistMembers = async (page: Page, headers: Record<stri
     if (!response.ok()) throw new Error(SOURCE_TEMPLATE_HTTP(`${SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR}`, `${response.status()}`));
     const payload = await response.json();
     const members = new Set(playlistClipIds(payload));
-    // Suno may paginate larger playlists. Read remaining pages before declaring tracks missing.
     const total = Number(payload?.num_total_results || payload?.total_count || members.size);
     for (let pageIndex = 1; members.size < total && pageIndex <= Math.ceil(total / 50); pageIndex++) {
-      const next = await page.request.get(`${SUNO_AUTOMATION_CONFIG.formatPlaylistApiUrl(playlistId)}?page=${pageIndex}`, { headers });
-      if (!next.ok()) throw new Error(`Suno playlist verification HTTP ${next.status()}`);
+      const next = await page.request.get(`${SUNO_AUTOMATION_CONFIG.formatPlaylistApiUrl(playlistId)}${RT_SERVER.PAGE}${pageIndex}`, { headers });
+      if (!next.ok()) throw new Error(`${RT_SERVER.SUNO_PLAYLIST_VERIFICATION_HTTP}${next.status()}`);
       const previousSize = members.size;
       playlistClipIds(await next.json()).forEach((id) => members.add(id));
       if (members.size === previousSize) break;
     }
     missingIds = _.difference(songIds, [...members]);
-    await writeMusicDiagnostic("suno_playlist_members_checked", { playlistId, songCount: songIds.length, trackCount: songIds.length - missingIds.length, attempt: attempt + 1 });
+    await writeMusicDiagnostic(RT_SERVER.SUNO_PLAYLIST_MEMBERS_CHECKED, { playlistId, songCount: songIds.length, trackCount: songIds.length - missingIds.length, attempt: attempt + 1 });
     if (!missingIds.length) return;
     if (attempt === SUNO_AUTOMATION_CONFIG.PLAYLIST_ADD_ATTEMPTS) break;
     if (addThroughUi) await addThroughUi(missingIds);
@@ -601,11 +714,13 @@ export const ensureSunoPlaylistMembers = async (page: Page, headers: Record<stri
   }
   throw new Error(SUNO_AUTOMATION_TEXTS.formatPlaylistMissingTracksErr(missingIds.length, songIds.length));
 };
-
 export const openSunoPlaylistDialog = async (page: Page, runId: string): Promise<Locator> => {
-  // Song markup is server-rendered before authenticated client controls are ready.
-  await page.getByRole("button", { name: "Profile menu button", exact: true }).filter({ visible: true }).first().waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
-  const nameInput = page.getByRole("dialog", { name: /^Add to Playlist$/i }).getByPlaceholder(SUNO_AUTOMATION_SELECTORS.PLAYLIST_NAME_PLACEHOLDER).filter({ visible: true }).first();
+  await page.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.PROFILE_MENU_BUTTON, exact: true }).filter({ visible: true }).first().waitFor({ state: RT_SERVER.VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  const nameInput = page
+    .getByRole(RT_SERVER.DIALOG, { name: /^Add to Playlist$/i })
+    .getByPlaceholder(SUNO_AUTOMATION_SELECTORS.PLAYLIST_NAME_PLACEHOLDER)
+    .filter({ visible: true })
+    .first();
   for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.PLAYLIST_OPEN_ATTEMPTS; attempt++) {
     ensureSunoNotCancelled();
     if (await nameInput.isVisible()) return nameInput;
@@ -613,11 +728,16 @@ export const openSunoPlaylistDialog = async (page: Page, runId: string): Promise
     if (!addButton) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_MENU_NOT_FOUND_ERR);
     await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_MENU_CLICK, { runId, stage: SOURCE_TEXT_ADD_TO_PLAYLIST, attempt: attempt + 1 });
     await addButton.click();
-    if (await nameInput.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPEN_TIMEOUT_MS }).then(() => true).catch(() => false)) return nameInput;
+    if (
+      await nameInput
+        .waitFor({ state: RT_SERVER.VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPEN_TIMEOUT_MS })
+        .then(() => true)
+        .catch(() => false)
+    )
+      return nameInput;
   }
   throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_MENU_NOT_FOUND_ERR);
 };
-
 export const addSongsToPlaylist = async (page: Page, songIds: string[], playlistName: string, runId: string, onSelected?: (count: number) => void): Promise<string> => {
   ensureSunoNotCancelled();
   const uniqueSongIds = _.uniq(_.compact(songIds));
@@ -626,19 +746,19 @@ export const addSongsToPlaylist = async (page: Page, songIds: string[], playlist
   let playlistId = checkpoint?.playlistId || "";
   let requestHeaders: Record<string, string> = {};
   const rememberHeaders = (request: import("playwright").Request) => {
-    if (!request.url().startsWith(SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL + "/")) return;
+    if (!request.url().startsWith(SUNO_AUTOMATION_CONFIG.SUNO_STUDIO_API_URL + RT_SHARED.SYMBOL_8A5EDA)) return;
     const headers = request.headers();
-    for (const key of ["authorization", SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN, SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID]) {
+    for (const key of [RT_SERVER.AUTHORIZATION, SUNO_AUTOMATION_CONFIG.HEADER_BROWSER_TOKEN, SUNO_AUTOMATION_CONFIG.HEADER_DEVICE_ID] as string[]) {
       if (headers[key]) requestHeaders[key] = headers[key];
     }
   };
-  page.on("request", rememberHeaders);
+  page.on(RT_SERVER.REQUEST, rememberHeaders);
   try {
     if (!playlistId && checkpoint?.creationStarted) {
       await page.goto(SOURCE_TEMPLATE_ME_PLAYLISTS(SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL), { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED });
-      const existing = page.getByRole("link", { name: playlistName, exact: true }).first();
-      await existing.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
-      playlistId = (await existing.getAttribute("href"))?.match(SUNO_AUTOMATION_PATTERNS.PLAYLIST_ID_IN_HREF)?.[1] || "";
+      const existing = page.getByRole(RT_SERVER.LINK, { name: playlistName, exact: true }).first();
+      await existing.waitFor({ state: RT_SERVER.VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+      playlistId = (await existing.getAttribute(RT_SERVER.HREF))?.match(SUNO_AUTOMATION_PATTERNS.PLAYLIST_ID_IN_HREF)?.[1] || "";
       if (!playlistId) throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
       await writeSunoPlaylistCheckpoint({ playlistName, songIds: uniqueSongIds, playlistId });
     }
@@ -646,9 +766,12 @@ export const addSongsToPlaylist = async (page: Page, songIds: string[], playlist
       const { nameInput, selectedIds } = await openSunoBulkPlaylistDialog(page, uniqueSongIds, runId, ensureSunoNotCancelled);
       onSelected?.(selectedIds.length);
       await fillEditable(nameInput, playlistName);
-      const dialog = nameInput.locator('xpath=ancestor::*[@role="dialog" or @role="alertdialog"][1]');
-      const create = (await dialog.count() ? dialog : page).getByRole("button", { name: /^Create playlist$/i }).filter({ visible: true }).last();
-      await create.waitFor({ state: "visible", timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+      const dialog = nameInput.locator(RT_SERVER.XPATH_ANCESTOR_ROLE_DIALOG_OR_ROLE_ALERTDIALOG_1);
+      const create = ((await dialog.count()) ? dialog : page)
+        .getByRole(RT_SHARED.BUTTON, { name: /^Create playlist$/i })
+        .filter({ visible: true })
+        .last();
+      await create.waitFor({ state: RT_SERVER.VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
       const playlistMutation = page.waitForResponse((response) => SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test(response.url()) && response.request().method() === SUNO_AUTOMATION_CONFIG.HTTP_METHOD_POST, { timeout: SUNO_AUTOMATION_CONFIG.PLAYLIST_OPTION_TIMEOUT_MS }).catch(() => undefined);
       await writeSunoPlaylistCheckpoint({ playlistName, songIds: uniqueSongIds, creationStarted: true });
       await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_MENU_CLICK, { runId, stage: SOURCE_TEXT_CREATE_PLAYLIST_BUTTON });
@@ -680,12 +803,11 @@ export const addSongsToPlaylist = async (page: Page, songIds: string[], playlist
       if (mutationResponse) rememberHeaders(mutationResponse.request());
     }
     const playlistUrl = new URL(SOURCE_TEMPLATE_PLAYLIST(encodeURIComponent(playlistId)), SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL).toString();
-    await ensureSunoPlaylistMembers(page, requestHeaders, playlistId, uniqueSongIds,
-      missingIds => addSunoClipsThroughBulkUi(page, missingIds, playlistName, runId, ensureSunoNotCancelled, onSelected));
+    await ensureSunoPlaylistMembers(page, requestHeaders, playlistId, uniqueSongIds, (missingIds) => addSunoClipsThroughBulkUi(page, missingIds, playlistName, runId, ensureSunoNotCancelled, onSelected));
     await page.goto(playlistUrl, { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_COMMIT, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
     return playlistUrl;
   } finally {
-    page.off("request", rememberHeaders);
+    page.off(RT_SERVER.REQUEST, rememberHeaders);
   }
 };
 export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, inspo: string = "", aiSettings?: SunoAdvancedSettings, initialSongIds: string[] = [], requestedPlaylistName: string = "", runId = SOURCE_TEMPLATE_SUNO_CREATE(`${Date.now()}`), options?: { testOnly?: boolean; onProgress?: (progress: SunoCreationProgress) => void }): Promise<SunoCreationResult> => {
@@ -695,8 +817,8 @@ export const createSunoPlaylist = async (songs: SunoSongInput[], style: string, 
   let checkpoint: SunoCreationCheckpoint | undefined;
   try {
     const playlistName = normalizeSunoPlaylistName(requestedPlaylistName) || formatSunoPlaylistName(_.trim(songs[0]?.title || SUNO_AUTOMATION_CONFIG.DEFAULT_COLLECTION_TITLE));
-    checkpoint = await openSunoCreationCheckpoint({ songs, style, inspo, settings: aiSettings, initialSongIds: _.uniq(_.compact(_.map(initialSongIds, id => _.trim(_.toString(id))))), testOnly: options?.testOnly === true }, playlistName);
-    options?.onProgress?.(creationProgress(checkpoint, 'recovered'));
+    checkpoint = await openSunoCreationCheckpoint({ songs, style, inspo, settings: aiSettings, initialSongIds: _.uniq(_.compact(_.map(initialSongIds, (id) => _.trim(_.toString(id))))), testOnly: options?.testOnly === true }, playlistName);
+    options?.onProgress?.(creationProgress(checkpoint, RT_SERVER.RECOVERED));
     if (checkpoint.playlistUrl) {
       return await runSunoCreationCheckpoint(checkpoint, { submit: async () => [], wait: async () => {}, playlist: async () => checkpoint!.playlistUrl!, progress: options?.onProgress });
     }
@@ -739,17 +861,17 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
     stage = SOURCE_TEXT_VERIFY_ACCOUNT;
     await writeMusicDiagnostic(SOURCE_TEXT_SUNO_STAGE_STARTED, { runId, stage });
     await verifySunoAccount(page);
-    const activeGenerations: ActiveSunoGeneration[] = checkpoint.songs.flatMap((song, index) => song.songIds.length ? [{ title: formatNumberedSongTitle(songs[index].title, index), songIds: song.songIds }] : []);
+    const activeGenerations: ActiveSunoGeneration[] = checkpoint.songs.flatMap((song, index) => (song.songIds.length ? [{ title: formatNumberedSongTitle(songs[index].title, index), songIds: song.songIds }] : []));
     if (checkpoint.initialSongIds.length) activeGenerations.push({ title: checkpoint.playlistName, songIds: checkpoint.initialSongIds });
     const markAudioComplete = async (ids: string[]) => {
-      const song = checkpoint.songs.find(entry => entry.songIds.length && entry.songIds.every(id => ids.includes(id)));
-      if (song && song.state !== 'complete') {
-        song.state = 'complete';
+      const song = checkpoint.songs.find((entry) => entry.songIds.length && entry.songIds.every((id) => ids.includes(id)));
+      if (song && song.state !== RT_SERVER.COMPLETE) {
+        song.state = RT_SERVER.COMPLETE;
         await saveSunoCreationCheckpoint(checkpoint);
-        onProgress?.(creationProgress(checkpoint, 'waiting'));
+        onProgress?.(creationProgress(checkpoint, RT_SHARED.WAITING));
       }
     };
-    if (checkpoint.songs.some(song => song.state === 'pending')) {
+    if (checkpoint.songs.some((song) => song.state === RT_SERVER.PENDING)) {
       stage = SOURCE_TEXT_CONFIGURE_GENERATION;
       await writeMusicDiagnostic(SOURCE_TEXT_SUNO_STAGE_STARTED, { runId, stage });
       await ensureAdvancedMode(page);
@@ -758,7 +880,10 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
       await configureAdvancedOnce(page, style, aiSettings, hasInspo);
     }
     return await runSunoCreationCheckpoint(checkpoint, {
-      progress: progress => { onProgress?.(progress); void writeMusicDiagnostic(`suno_creation_${progress.phase}`, { runId, stage, songIndex: progress.songIndex, songCount: progress.songCount, createdCount: progress.createdSongIds.length, checkpoint: checkpoint.key }); },
+      progress: (progress) => {
+        onProgress?.(progress);
+        void writeMusicDiagnostic(`${RT_SERVER.SUNO_CREATION}${progress.phase}`, { runId, stage, songIndex: progress.songIndex, songCount: progress.songCount, createdCount: progress.createdSongIds.length, checkpoint: checkpoint.key });
+      },
       submit: async (song, index, persistIds, beginSubmission) => {
         stage = SOURCE_TEXT_GENERATE_SONG;
         await writeMusicDiagnostic(SOURCE_TEXT_SUNO_SONG_STARTED, { runId, stage, songIndex: index + 1, songCount: songs.length });
@@ -770,7 +895,6 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
         try {
           ids = await createOneSong(page, numberedSong, beginSubmission, persistIds);
         } catch (error) {
-          // Preserve any accepted clips, but never press Create again after an uncertain submission.
           const observed = _.difference(await collectSongIds(page), baseline);
           if (observed.length) await persistIds(observed);
           await writeMusicDiagnostic(SOURCE_TEXT_SUNO_SONG_ATTEMPT_FAILED, { runId, stage, songIndex: index + 1, ...musicErrorDetails(error) });
@@ -781,12 +905,14 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
         if (index < songs.length - 1) await waitWithCancellation(page, SUNO_AUTOMATION_CONFIG.BETWEEN_SONG_PROMPTS_DELAY_MS);
         return ids;
       },
-      wait: async () => { await waitForGenerationCapacity(page, activeGenerations, 0, markAudioComplete); },
+      wait: async () => {
+        await waitForGenerationCapacity(page, activeGenerations, 0, markAudioComplete);
+      },
       playlist: async (ids, name) => {
         stage = SOURCE_TEXT_CREATE_PLAYLIST;
         await writeMusicDiagnostic(SOURCE_TEXT_SUNO_STAGE_STARTED, { runId, stage, createdCount: ids.length });
         try {
-          const url = await addSongsToPlaylist(page, ids, name, runId, selectedTracks => onProgress?.({ ...creationProgress(checkpoint, 'playlist'), selectedTracks }));
+          const url = await addSongsToPlaylist(page, ids, name, runId, (selectedTracks) => onProgress?.({ ...creationProgress(checkpoint, RT_SERVER.PLAYLIST), selectedTracks }));
           await writeMusicDiagnostic(SOURCE_TEXT_SUNO_PLAYLIST_COMPLETED, { runId, stage, createdCount: ids.length });
           return url;
         } catch (error) {
@@ -803,23 +929,23 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
   } finally {
     if (cleanupPage) await closeSunoChrome(cleanupPage).catch(() => undefined);
     activeSunoPage = null;
-    await settleSunoBrowserClose(async () => { await browser?.close(); }, 2000);
+    await settleSunoBrowserClose(async () => {
+      await browser?.close();
+    }, 2000);
   }
 };
 export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<string[]> => {
   const normalizedUrl = _.trim(playlistUrl);
-  if (!SUNO_AUTOMATION_PATTERNS.VALID_PLAYLIST_URL.test(normalizedUrl)) { throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR); }
+  if (!SUNO_AUTOMATION_PATTERNS.VALID_PLAYLIST_URL.test(normalizedUrl)) {
+    throw new Error(SUNO_AUTOMATION_TEXTS.PLAYLIST_URL_NOT_FOUND_ERR);
+  }
   const playlistId = normalizedUrl.match(SUNO_AUTOMATION_PATTERNS.PLAYLIST_ID_IN_HREF)?.[1];
   if (!_.isEmpty(playlistId)) {
     const response = await fetch(SUNO_AUTOMATION_CONFIG.formatPlaylistApiUrl(playlistId)).catch(() => null);
     if (response?.ok) {
       const payload = await response.json().catch(() => null);
       const songIds = playlistClipIds(payload);
-      await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_API_RESPONSE, {
-        playlistId,
-        status: response.status,
-        trackCount: songIds.length,
-      });
+      await writeMusicDiagnostic(SUNO_AUTOMATION_CONFIG.EVENT_PLAYLIST_API_RESPONSE, { playlistId, status: response.status, trackCount: songIds.length });
       if (!_.isEmpty(songIds)) return songIds;
     }
   }
@@ -846,6 +972,8 @@ export const getSunoPlaylistSongIds = async (playlistUrl: string): Promise<strin
     return songIds;
   } finally {
     await closeSunoChrome(page);
-    await settleSunoBrowserClose(async () => { await browser.close(); }, 2000);
+    await settleSunoBrowserClose(async () => {
+      await browser.close();
+    }, 2000);
   }
 };

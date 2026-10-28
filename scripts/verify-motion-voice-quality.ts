@@ -6,7 +6,7 @@ import { VOICE_QUALITY_QA as T } from "./motionVoiceQualityVerificationTexts.js"
 import { MOTION_VOICE as C, MOTION_VOICE_QUALITY as Q } from "../src/constants/motionVoice.js";
 import { motionWavHeader } from "../src/server/services/motionSoundMixService.js";
 import { motionVoiceSignal, trimMotionVoiceEdges, motionVoiceBoundaryPadding, compareMotionVoiceText } from "../src/server/services/motionVoiceQualityService.js";
-import { motionVoiceReferenceWindow } from "../src/server/services/motionVoiceReferenceService.js";
+import { motionVoiceReferenceWindow } from "../src/features/motion/server/services/motionVoiceReferenceService.js";
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = path.resolve(T.ROOT + randomUUID());
 const { buildMotionVoiceTrack, motionVoiceSemanticGap, motionVoicePacing } = await import("../src/server/services/motionAudioService.js");

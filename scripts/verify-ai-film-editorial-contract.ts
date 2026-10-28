@@ -1,12 +1,7 @@
 import assert from "node:assert/strict";
-import {
-  applyCinematicContinuityHandoffs,
-  bundleCinematicScenesForGeneration,
-  getCinematicStoryboardContractIssues,
-} from "../src/services/cinematicProductionPolicyService";
+import { applyCinematicContinuityHandoffs, bundleCinematicScenesForGeneration, getCinematicStoryboardContractIssues } from "../src/services/cinematicProductionPolicyService";
 import { prepareProjectMediaPrompt } from "../src/services/projectImageGenerationService";
 import { GenerateType, StoryboardScene } from "../src/types";
-
 const createScene = (id: string, beatCount: number): StoryboardScene => {
   const duration = 10 / beatCount;
   const beats = Array.from({ length: beatCount }, (_, index) => ({
@@ -55,18 +50,12 @@ const createScene = (id: string, beatCount: number): StoryboardScene => {
     cinematicBeats: beats,
   };
 };
-
 for (const beatCount of [3, 4, 5]) {
   const scene = createScene(`scene_${beatCount}`, beatCount);
   assert.deepEqual(getCinematicStoryboardContractIssues([scene]), []);
   assert.deepEqual(bundleCinematicScenesForGeneration([scene], 1), [scene]);
   assert.deepEqual(applyCinematicContinuityHandoffs([scene]), [scene]);
 }
-
 const aiPrompt = "Create one continuous 10-second sequence with exactly 4 chronological shots. Shot 1: setup. Shot 2: obstacle. Shot 3: decision. Shot 4: consequence.";
-assert.equal(
-  prepareProjectMediaPrompt({ sceneId: "scene_4", prompt: aiPrompt, generateType: GenerateType.Video }),
-  aiPrompt,
-);
-
+assert.equal(prepareProjectMediaPrompt({ sceneId: "scene_4", prompt: aiPrompt, generateType: GenerateType.Video }), aiPrompt);
 console.log("AI film editorial contract verified: AI-owned minimum 4 shots, timing and prompt remain unchanged.");

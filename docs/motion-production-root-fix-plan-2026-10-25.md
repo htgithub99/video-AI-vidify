@@ -47,8 +47,8 @@ Yêu cầu sản phẩm tiếp tục giữ:
 
 ### Bản đồ đường gọi dùng làm căn cứ
 
-- UI/lệnh: src/hooks/useMotionStudio.ts, src/components/motion-video/ và motionApi.ts.
-- API: src/server/routes/motionVideoRoutes.ts, src/server/controllers/motionVideoController.ts, src/server/services/motionProductionActions.ts.
+- UI/lệnh: src/features/motion/hooks/useMotionStudio.ts, src/components/motion-video/ và motionApi.ts.
+- API: src/features/motion/server/routes/motionVideoRoutes.ts, src/features/motion/server/controllers/motionVideoController.ts, src/server/services/motionProductionActions.ts.
 - Production/lưu trong src/server/services/: motionProductionService, motionProductionStore, motionProductionPreflight, motionStoryJobService, motionStoryCheckpointService, motionTaskCheckpoint, motionFileUtils.
 - AI/room trong src/server/services/: motionStoryService, motionAiContractService, motionAiWorkerPool, motionEditorialContextService, chatUiPlanningService, chatContextReceipt, chatSubmissionRecovery. Hợp đồng trong src/lib/: motionAiRepair, motionChapterRepair, motionDnaRepair, motionBrowserLifecycle.
 - Minh họa trong src/server/services/puppet/: pipelinePuppet, planReadiness, storyboard, director, visualContract, readContinuity, packCatalog, packPolicy, packLocation, packInventory, kitDraw, setComposer, packSceneChoices, packSelectionContract, spatialPlacement, layout, blocking, compilePuppet, qa, sound.

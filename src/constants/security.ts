@@ -219,14 +219,7 @@ export const SecurityConstants = {
   PASSWORD_PROP: "password",
   RECOVERY_EMAIL_PROP: "recoveryEmail",
 };
-export const LocalizationConstants = {
-  FEATURE_VIDEO: "Video",
-  FEATURE_IMAGE: "Ảnh",
-  FEATURE_VOICE: "Giọng nói",
-  PLAN_LIFETIME: "Vĩnh Viễn",
-  PLAN_PRO: "PRO",
-  PLAN_FREE: "Miễn Phí",
-} as const;
+export const LocalizationConstants = { FEATURE_VIDEO: "Video", FEATURE_IMAGE: "Ảnh", FEATURE_VOICE: "Giọng nói", PLAN_LIFETIME: "Vĩnh Viễn", PLAN_PRO: "PRO", PLAN_FREE: "Miễn Phí" } as const;
 export const SecurityMessages = {
   MISSING_LICENSE_KEY: LICENSE_SECURITY_TEXTS.vi.MISSING_LICENSE_KEY,
   INVALID_OR_REVOKED_LICENSE: LICENSE_SECURITY_TEXTS.vi.INVALID_OR_REVOKED_LICENSE,
@@ -298,12 +291,7 @@ export const SecurityMessages = {
   PLACEHOLDER_VIDEO_OUTPUT_DIR_TOOLTIP: "Đường dẫn thư mục lưu video hoàn chỉnh...",
 } as const;
 export const AutoLoginConstants = {
-  URLS: {
-    SIGN_IN_KEYWORD: "signin",
-    CHALLENGE_KEYWORD: "challenge",
-    REJECTED_SIGN_IN_KEYWORD: "signin/rejected",
-    ACCOUNT_ABOUT_PATH: "/account/about",
-  },
+  URLS: { SIGN_IN_KEYWORD: "signin", CHALLENGE_KEYWORD: "challenge", REJECTED_SIGN_IN_KEYWORD: "signin/rejected", ACCOUNT_ABOUT_PATH: "/account/about" },
   SELECTORS: {
     EMAIL_INPUT: 'input#identifierId, input[name="identifier"], input[type="email"]',
     PWD_INPUT: 'input[name="Passwd"], input[autocomplete="current-password"], input[type="password"]:not([aria-hidden="true"]):not([name="hiddenPassword"])',
@@ -347,20 +335,8 @@ export const AutoLoginConstants = {
     MANUAL_ACCOUNT_CHECK_FAILED: "Chưa thể xác nhận phiên đăng nhập. Hãy hoàn tất xác minh trên Chrome.",
     VERIFICATION_TIMEOUT: "Login verification timed out for: {0}",
   },
-  ERRORS: {
-    NO_ACCOUNT: "Tài khoản không tồn tại.",
-    MISSING_RECOVERY: "Cần nhập Recovery Email nhưng chưa cấu hình.",
-    IDENTITY_VERIFY: "Tài khoản bị bắt xác minh danh tính (Verify it's you).",
-  },
-  DIAGNOSTICS: {
-    FILE_NAME: "google_login_dom_diagnostics.jsonl",
-    SELECTOR: 'form, input, button, [role="alert"], [aria-live="assertive"], iframe, h1, h2',
-    MAX_ELEMENTS: 100,
-    MAX_CLASS_NAME_LENGTH: 250,
-    MAX_TEXT_LENGTH: 300,
-    MAX_HTML_LENGTH: 600,
-    ERROR_MESSAGE: "Không thể ghi trạng thái đăng nhập Google ({0}).",
-  },
+  ERRORS: { NO_ACCOUNT: "Tài khoản không tồn tại.", MISSING_RECOVERY: "Cần nhập Recovery Email nhưng chưa cấu hình.", IDENTITY_VERIFY: "Tài khoản bị bắt xác minh danh tính (Verify it's you)." },
+  DIAGNOSTICS: { FILE_NAME: "google_login_dom_diagnostics.jsonl", SELECTOR: 'form, input, button, [role="alert"], [aria-live="assertive"], iframe, h1, h2', MAX_ELEMENTS: 100, MAX_CLASS_NAME_LENGTH: 250, MAX_TEXT_LENGTH: 300, MAX_HTML_LENGTH: 600, ERROR_MESSAGE: "Không thể ghi trạng thái đăng nhập Google ({0})." },
   CONFIG: {
     NAVIGATION_TIMEOUT_MS: 25000,
     PAGE_READY_DELAY_MS: 3000,

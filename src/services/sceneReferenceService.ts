@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { SOURCE_TEXT_0_2, SOURCE_TEXT_1_3, SOURCE_TEXT_CHARACTERS, SOURCE_TEXT_CHARACTER_0_1, SOURCE_TEXT_CHARACTER_RELATIONSHIPS, SOURCE_TEXT_EXACTLY_0_RECURRING_MAIN_CHARACTERS_ARE, SOURCE_TEXT_ID, SOURCE_TEXT_ONE_RECURRING_MAIN_CHARACTER_IS_PRESENT, SOURCE_TEXT_SYMBOL_10, SOURCE_TEXT_SYMBOL_6, SOURCE_TEXT_SYMBOL_7 } from "../constants/sourceText";
 import _ from "lodash";
 import { CharacterConfig, StoryboardScene, VisualConfig } from "../types";
@@ -11,7 +12,7 @@ export const SCENE_REFERENCE_CONFIG = {
   SINGLE_CHARACTER_INTRO: SOURCE_TEXT_ONE_RECURRING_MAIN_CHARACTER_IS_PRESENT,
   MULTI_CHARACTER_INTRO: SOURCE_TEXT_EXACTLY_0_RECURRING_MAIN_CHARACTERS_ARE,
   IDENTITY_LOCK: IMAGE_PROMPT_CONDITIONAL_RULES.CHARACTER_IDENTITY,
-  CHARACTER_SEPARATOR: "\n",
+  CHARACTER_SEPARATOR: RT_SHARED.SYMBOL_01BA47,
   TRANSIENT_STYLE_PATTERN: /\b(?:cinematic|dramatic|volumetric)\s+lighting\b|\b(?:sharp\s+detail|high\s+quality|photorealistic|3d\s+render)\b/gi,
   DUPLICATE_SEPARATOR_PATTERN: /\s*,\s*,+/g,
 } as const;
@@ -54,11 +55,5 @@ export const resolveCinematicSceneCharacterReferences = (scene: StoryboardScene,
     _.filter(visibleCharacters, (character) => !_.isEmpty(_.trim(character.flowCharacterName))),
     SCENE_REFERENCE_CONFIG.MAX_IMAGES,
   );
-  return {
-    characterIds,
-    referenceImages: [],
-    referenceImageNames: [],
-    referenceCharacterNames: _.compact(_.map(referenceCharacters, (character) => _.trim(character.flowCharacterName))),
-    referenceRoles: [],
-  };
+  return { characterIds, referenceImages: [], referenceImageNames: [], referenceCharacterNames: _.compact(_.map(referenceCharacters, (character) => _.trim(character.flowCharacterName))), referenceRoles: [] };
 };

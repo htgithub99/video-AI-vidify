@@ -195,7 +195,4 @@ export const MOTION_STYLE_VERIFICATION_TEXTS = {
   STAGING_ALSO_KEEPS_GENRE_STORY_EFFECTS_INSIDE_THE_KIT: "Staging also keeps genre/story effects inside the kit",
   STYLE_PROMPTS_PASSED_KIT_DRIVEN_CHARACTER_LOCATION_STAGING_RULES_FOR_FLAT_: "Style prompts passed: kit-driven character/location/staging rules for flat-mask, cel and limbless styles in 2D and 3D, defaults unchanged without a kit, kit sent once, absent parts hidden, face fill, shading and outline.",
 } as const;
-export const MOTION_STYLE_VERIFICATION_FORMATS = {
-  CONTEXT: (context: unknown, message: string): string => `${context}: ${message}`,
-  FIXTURE_FILE: (name: string): string => `scripts/fixtures/motion-style-kits/${name}.json`,
-} as const;
+export const MOTION_STYLE_VERIFICATION_FORMATS = { CONTEXT: (context: unknown, message: string): string => `${context}: ${message}`, FIXTURE_FILE: (name: string): string => `scripts/fixtures/motion-style-kits/${name}.json` } as const;

@@ -25,22 +25,8 @@ const TEST_CONSTANTS = {
   CINEMATIC_CONSTANTS_PATH: VT.SRC_CONSTANTS_CINEMATICCONSTANTS_TS,
   SUCCESS_MESSAGE: VT.CINEMATIC_ROOM_PLANNING_ASSERTIONS_PASSED,
 } as const;
-const MOCK_PREVIOUS_SCENE = {
-  id: VT.SC_1,
-  sequenceId: VT.SEQ_1,
-  actionEndState: VT.KADE_HOLDS_THE_RIFLE_AT_SHOULDER_HEIGHT_BESIDE_THE_BROKEN_GATE,
-  screenDirection: VT.LEFT_TO_RIGHT,
-  eyelineDirection: VT.TOWARD_THE_GATE,
-  locationState: VT.RAINY_GATE_AT_NIGHT,
-  wardrobeState: VT.DARK_FIELD_COAT_RAIN_SOAKED,
-  propState: VT.LASER_RIFLE_IN_BOTH_HANDS_INTACT,
-} as unknown as StoryboardScene;
-const MOCK_CURRENT_SCENE = {
-  id: VT.SC_2,
-  sequenceId: VT.SEQ_1,
-  script: VT.KADE_WARNS_VARG_TO_SURRENDER,
-  characterIds: [VT.KADE, VT.VARG],
-} as unknown as StoryboardScene;
+const MOCK_PREVIOUS_SCENE = { id: VT.SC_1, sequenceId: VT.SEQ_1, actionEndState: VT.KADE_HOLDS_THE_RIFLE_AT_SHOULDER_HEIGHT_BESIDE_THE_BROKEN_GATE, screenDirection: VT.LEFT_TO_RIGHT, eyelineDirection: VT.TOWARD_THE_GATE, locationState: VT.RAINY_GATE_AT_NIGHT, wardrobeState: VT.DARK_FIELD_COAT_RAIN_SOAKED, propState: VT.LASER_RIFLE_IN_BOTH_HANDS_INTACT } as unknown as StoryboardScene;
+const MOCK_CURRENT_SCENE = { id: VT.SC_2, sequenceId: VT.SEQ_1, script: VT.KADE_WARNS_VARG_TO_SURRENDER, characterIds: [VT.KADE, VT.VARG] } as unknown as StoryboardScene;
 const MOCK_CHARACTERS = [
   { id: VT.KADE, name: VT.KADE_2 },
   { id: VT.VARG, name: VT.VARG_2 },
@@ -63,42 +49,9 @@ const MOCK_ENVIRONMENT_ONLY_SCENE = {
   soundDesignCues: [VT.RAIN_AND_COLLAPSING_METAL],
   characterIds: [],
   cinematicBeats: [
-    {
-      sourceSceneId: VT.SC_ENVIRONMENT,
-      shotId: VT.A_2,
-      shotRole: VT.MASTER,
-      visibleAction: VT.RAIN_STRIKES_THE_GATE,
-      dialogueMode: VT.SILENT_ACTION,
-      spokenDialogue: VT.EMPTY_2,
-      speakerCharacterId: VT.EMPTY_2,
-      lipSyncRequired: false,
-      startSecond: 0,
-      endSecond: 3,
-    },
-    {
-      sourceSceneId: VT.SC_ENVIRONMENT,
-      shotId: VT.B,
-      shotRole: VT.COVERAGE,
-      visibleAction: VT.THE_HINGES_BEND_OUTWARD,
-      dialogueMode: VT.SILENT_ACTION,
-      spokenDialogue: VT.EMPTY_2,
-      speakerCharacterId: VT.EMPTY_2,
-      lipSyncRequired: false,
-      startSecond: 3,
-      endSecond: 7,
-    },
-    {
-      sourceSceneId: VT.SC_ENVIRONMENT,
-      shotId: VT.C,
-      shotRole: VT.PAYOFF,
-      visibleAction: VT.THE_GATE_COLLAPSES_INTO_MUD,
-      dialogueMode: VT.SILENT_ACTION,
-      spokenDialogue: VT.EMPTY_2,
-      speakerCharacterId: VT.EMPTY_2,
-      lipSyncRequired: false,
-      startSecond: 7,
-      endSecond: 10,
-    },
+    { sourceSceneId: VT.SC_ENVIRONMENT, shotId: VT.A_2, shotRole: VT.MASTER, visibleAction: VT.RAIN_STRIKES_THE_GATE, dialogueMode: VT.SILENT_ACTION, spokenDialogue: VT.EMPTY_2, speakerCharacterId: VT.EMPTY_2, lipSyncRequired: false, startSecond: 0, endSecond: 3 },
+    { sourceSceneId: VT.SC_ENVIRONMENT, shotId: VT.B, shotRole: VT.COVERAGE, visibleAction: VT.THE_HINGES_BEND_OUTWARD, dialogueMode: VT.SILENT_ACTION, spokenDialogue: VT.EMPTY_2, speakerCharacterId: VT.EMPTY_2, lipSyncRequired: false, startSecond: 3, endSecond: 7 },
+    { sourceSceneId: VT.SC_ENVIRONMENT, shotId: VT.C, shotRole: VT.PAYOFF, visibleAction: VT.THE_GATE_COLLAPSES_INTO_MUD, dialogueMode: VT.SILENT_ACTION, spokenDialogue: VT.EMPTY_2, speakerCharacterId: VT.EMPTY_2, lipSyncRequired: false, startSecond: 7, endSecond: 10 },
   ],
 } as unknown as StoryboardScene;
 const verifyVisualContinuity = () => {
@@ -154,14 +107,7 @@ const verifyDialogueContractExemption = () => {
 };
 const verifyEnvironmentalActionRecognition = () => {
   const issues = getVisualShotPlanIssues(
-    {
-      visualIntent: VT.ESTABLISH_THE_HAZARDOUS_ROUTE,
-      visibleAction: VT.TOXIC_DEMONIC_MIST_SWIRLS_THROUGH_THE_CANYON_AND_OBSCURES_THE_PA,
-      reaction: VT.THE_ROUTE_DISAPPEARS_BEHIND_THE_MOVING_HAZE,
-      storyEvidence: VT.BLACK_VAPOR_GATHERS_BETWEEN_THE_ROCK_WALLS,
-      visualHook: VT.THE_CANYON_IS_VISIBLY_SWALLOWED_BY_THE_ADVANCING_MIST,
-      composition: VT.LAYERED_CANYON_WALLS_FRAME_THE_MOVING_VAPOR,
-    },
+    { visualIntent: VT.ESTABLISH_THE_HAZARDOUS_ROUTE, visibleAction: VT.TOXIC_DEMONIC_MIST_SWIRLS_THROUGH_THE_CANYON_AND_OBSCURES_THE_PA, reaction: VT.THE_ROUTE_DISAPPEARS_BEHIND_THE_MOVING_HAZE, storyEvidence: VT.BLACK_VAPOR_GATHERS_BETWEEN_THE_ROCK_WALLS, visualHook: VT.THE_CANYON_IS_VISIBLY_SWALLOWED_BY_THE_ADVANCING_MIST, composition: VT.LAYERED_CANYON_WALLS_FRAME_THE_MOVING_VAPOR },
     { id: VT.SC_ENVIRONMENT, script: VT.THE_CANYON_IS_COVERED_IN_DEMONIC_MIST } as StoryboardScene,
   );
   assert.equal(
@@ -170,18 +116,8 @@ const verifyEnvironmentalActionRecognition = () => {
   );
 };
 const verifyBlockingContractClassification = () => {
-  const firstScene = {
-    ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE),
-    id: VT.SC_1,
-    screenDirection: VT.LEFT_TO_RIGHT,
-  } as StoryboardScene;
-  const secondScene = {
-    ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE),
-    id: VT.SC_2,
-    continuityFrom: VT.INCORRECT_SCENE,
-    actionStartState: VT.A_DIFFERENT_ACTION_STATE,
-    screenDirection: VT.RIGHT_TO_LEFT,
-  } as StoryboardScene;
+  const firstScene = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), id: VT.SC_1, screenDirection: VT.LEFT_TO_RIGHT } as StoryboardScene;
+  const secondScene = { ..._.cloneDeep(MOCK_ENVIRONMENT_ONLY_SCENE), id: VT.SC_2, continuityFrom: VT.INCORRECT_SCENE, actionStartState: VT.A_DIFFERENT_ACTION_STATE, screenDirection: VT.RIGHT_TO_LEFT } as StoryboardScene;
   firstScene.generationPrompt = VT.FOCUSED_VEO_PROMPT_FOR_SCENE_ONE;
   secondScene.generationPrompt = VT.FOCUSED_VEO_PROMPT_FOR_SCENE_TWO;
   const advisoryIssues = getCinematicStoryboardContractIssues([firstScene, secondScene], TEST_CONSTANTS.DEFAULT_CLIP_DURATION_SECONDS);
@@ -430,11 +366,7 @@ const verifyCinematicPlanningCheckpointing = () => {
   assert.match(pipelineSource, CP.PIPELINECOMPLETED_S_S_PIPELINE_CLOSE_CHAT_PLANNING_ROOMS);
 };
 const verifyLongFilmPlanningBatches = () => {
-  const twentyMinuteScenes = _.map(_.range(120), (index) => ({
-    id: VT.SCENE_2 + _.padStart(_.toString(index + 1), 3, VT.VALUE_0),
-    script: VT.STORY_BEAT + (index + 1),
-    generationPrompt: VT.EMPTY_2,
-  }));
+  const twentyMinuteScenes = _.map(_.range(120), (index) => ({ id: VT.SCENE_2 + _.padStart(_.toString(index + 1), 3, VT.VALUE_0), script: VT.STORY_BEAT + (index + 1), generationPrompt: VT.EMPTY_2 }));
   const batches = createCinematicPlanningBatches(twentyMinuteScenes);
   assert.equal(_.sumBy(batches, VT.LENGTH), twentyMinuteScenes.length);
   assert.equal(batches.length, _.ceil(_.divide(twentyMinuteScenes.length, CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE)));

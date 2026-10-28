@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_STORY_CRAFT as C } from "../constants/motionStoryCraft.js";
 import { mergeMotionRepair } from "./motionAiRepair.js";
 import { MOTION_FOLK_STORY as F } from "../constants/motionFolkStory.js";
@@ -17,29 +18,30 @@ const chapterIds = (draft: Record<string, any>, ids: string[]): Record<string, a
     ...(draft.storySpine ? { storySpine: { ...spine, ...(Array.isArray(spine.steps) ? { steps: spine.steps.map((step: any) => ({ ...object(step), chapterId: remap(step?.chapterId) })) } : {}), ...(Array.isArray(spine.clues) ? { clues: spine.clues.map((clue: any) => ({ ...object(clue), setupChapterId: remap(clue?.setupChapterId), payoffChapterId: remap(clue?.payoffChapterId) })) } : {}) } } : {}),
   };
 };
-export const motionStoryRepairFields = (errors: string[]): string[] => [
-  ...new Set(
-    errors.flatMap((error) =>
-      error === F.ALIGNMENT_ERROR
-        ? ["topicId", "topicEvidence", "belief", "sourceCore.premise", "chapters", "storySpine"]
-        : error.startsWith(F.COPY_PREFIX)
-          ? ["chapters"]
-          : error === C.ERR_SPINE
-            ? ["storySpine.steps"]
-            : error === C.ERR_CLUES
-              ? ["storySpine.clues"]
-              : error === C.ERR_CORE
-                ? ["sourceCore"]
-                : error === C.ERR_CAST
-                  ? ["cast", "places"]
-                  : error === C.ERR_CHAPTERS
-                    ? ["chapters"]
-                    : error === C.ERR_ILLUSTRATION
-                      ? ["illustrationNeeds"]
-                      : [],
+export const motionStoryRepairFields = (errors: string[]): string[] =>
+  [
+    ...new Set(
+      errors.flatMap((error) =>
+        error === F.ALIGNMENT_ERROR
+          ? ([RT_CORE.TOPICID, RT_CORE.TOPICEVIDENCE, RT_CORE.BELIEF, RT_CORE.SOURCECORE_PREMISE, RT_CORE.CHAPTERS, RT_CORE.STORYSPINE] as string[])
+          : error.startsWith(F.COPY_PREFIX)
+            ? ([RT_CORE.CHAPTERS] as string[])
+            : error === C.ERR_SPINE
+              ? ([RT_CORE.STORYSPINE_STEPS] as string[])
+              : error === C.ERR_CLUES
+                ? ([RT_CORE.STORYSPINE_CLUES] as string[])
+                : error === C.ERR_CORE
+                  ? ([RT_CORE.SOURCECORE] as string[])
+                  : error === C.ERR_CAST
+                    ? ([RT_CORE.CAST, RT_CORE.PLACES] as string[])
+                    : error === C.ERR_CHAPTERS
+                      ? ([RT_CORE.CHAPTERS] as string[])
+                      : error === C.ERR_ILLUSTRATION
+                        ? ([RT_CORE.ILLUSTRATIONNEEDS] as string[])
+                        : [],
+      ),
     ),
-  ),
-];
+  ] as string[];
 export const motionStoryDraft = (raw: any, previous: any, ids: string[], allowedFields?: string[]): Record<string, any> => {
   const patch = object(raw?.[C.PATCH]);
   if (!Object.hasOwn(object(raw), C.PATCH)) {
@@ -48,8 +50,8 @@ export const motionStoryDraft = (raw: any, previous: any, ids: string[], allowed
   }
   const before = object(previous);
   const draft = { ...before, ...pick(patch, C.TOP_FIELDS) };
-  if (Object.hasOwn(patch, "sourceCore")) draft.sourceCore = { ...object(before.sourceCore), ...pick(patch.sourceCore, C.CORE_FIELDS) };
-  if (Object.hasOwn(patch, "storySpine")) draft.storySpine = { ...object(before.storySpine), ...pick(patch.storySpine, C.SPINE_FIELDS) };
+  if (Object.hasOwn(patch, RT_CORE.SOURCECORE)) draft.sourceCore = { ...object(before.sourceCore), ...pick(patch.sourceCore, C.CORE_FIELDS) };
+  if (Object.hasOwn(patch, RT_CORE.STORYSPINE)) draft.storySpine = { ...object(before.storySpine), ...pick(patch.storySpine, C.SPINE_FIELDS) };
   if (Array.isArray(patch.chapters)) {
     const incoming = patch.chapters.map((chapter: any) => pick(chapter, C.CHAPTER_FIELDS));
     if (new Set(incoming.map((chapter: any) => chapter.id)).size === incoming.length && incoming.every((chapter: any) => ids.includes(chapter.id))) {

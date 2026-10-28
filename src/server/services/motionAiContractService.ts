@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import type { MotionAiExecution } from "../../types/motionVideo.js";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
 import { isMotionContentResponseError } from "./chatSubmissionRecovery.js";
@@ -31,7 +32,7 @@ export const requestMotionAiContract = async (prompt: string, route: MotionAiExe
   let question = contract?.start?.(prompt) || prompt;
   const state = contract ? (contract.state ||= { rejected: 0, errors: [] }) : undefined;
   const exhausted = () => Object.assign(contract!.failure(state!.errors), { [P.CONTRACT_EXHAUSTED]: true });
-  const routeKey = JSON.stringify([route.mode, route.provider, route.model]);
+  const routeKey = stringifyJson([route.mode, route.provider, route.model]);
   const routeExhausted = () => Object.assign(contract!.failure(state!.errors), { [P.CONTRACT_ROUTE_EXHAUSTED]: true });
   const limit = Math.max(1, contract?.budget || contract?.attempts || 1);
   const stalled = () => Object.assign(contract!.failure([...state!.errors, contract!.progress!.message]), { [P.CONTRACT_EXHAUSTED]: true, [P.CONTRACT_STALLED]: true });

@@ -1,188 +1,231 @@
+if __package__:
+    from .runtime_text import RuntimeText as _CODE_TEXT
+else:
+    from runtime_text import RuntimeText as _CODE_TEXT
 import math, random, re
 from illustration_texts import IllustrationText as I
-
 W, H = 1920, 1080
 NAVY = (12, 20, 38)
-
-
 def hx(c):
-    c = c.lstrip('#')
-    return tuple(int(c[i:i + 2], 16) for i in (0, 2, 4))
-
-
+    c = c.lstrip(_CODE_TEXT.SYMBOL_334359)
+    return tuple(int(c[i : i + 2], 16) for i in (0, 2, 4))
 def tohex(t):
-    return '#%02x%02x%02x' % tuple(max(0, min(255, int(round(v)))) for v in t)
-
-
+    return _CODE_TEXT.VALUE_02X_02X_02X % tuple(max(0, min(255, int(round(v)))) for v in t)
 def mix(a, b, k):
     A, B = hx(a), hx(b) if isinstance(b, str) else b
     return tohex(tuple(A[i] * (1 - k) + B[i] * k for i in range(3)))
-
-
 def shade(c, k):
-    return mix(c, '#000000', k) if k > 0 else mix(c, '#ffffff', -k)
-
-
+    return mix(c, _CODE_TEXT.VALUE_000000, k) if k > 0 else mix(c, _CODE_TEXT.FFFFFF, -k)
 THEMES = {
-    'minimal_mask': dict(
-        line='#0d0e10', lw=5, detail=0, grad=False, night_k=0.8,
-        sky='#95a3ad', sky2='#95a3ad', night_sky='#0b1322', night_sky2='#0f182a',
-        cloud=None, mtn=['#8a9aa2', '#6f8288', '#55696c'],
-        tree='#4b5d3e', tree2='#3f5034', trunk='#7a6650',
-        wall='#b9ad97', wall2='#a89b84', roof='#7b4b3b', roof2='#5e3a2e', thatch='#9c8a5c', thatch2='#7f6f48',
-        door='#4a3322', wood='#6b4a32', wood2='#8a6545', post='#5a3f2b', woven='#a99674', woven2='#8f7d5e',
-        brick='#a5634a', brick2='#8a4f3a', earth='#b6a88b', earth2='#a1937a', dirt='#8c6b4f', grass='#6f7d52', grass2='#5c6a43',
-        field='#7f8c55', field2='#6c7849', water='#6f8790', water2='#5c737c', stone='#8d8a83', stone2='#6f6c66',
-        red='#a6352b', gold='#c9a548', cloth='#e6e2d8', paper='#d9c99a', dark='#25211e', fire='#e8913a', glow='#f2c46a',
-        beam='#4a3727', floorwood='#7a5638', floorwood2='#664630', bamboo='#7e8f52', bamboo2='#5d6b3c', leaf='#5a6d45',
-        mound='#7d6a50', rock='#7f7c75', lamp='#f0d27a', moon='#e9e4cf', interior_wall='#b9ad97', interior_wall2='#a89b84',
+    _CODE_TEXT.MINIMAL_MASK: dict(
+        line=_CODE_TEXT.VALUE_0D0E10,
+        lw=5,
+        detail=0,
+        grad=False,
+        night_k=0.8,
+        sky=_CODE_TEXT.VALUE_95A3AD,
+        sky2=_CODE_TEXT.VALUE_95A3AD,
+        night_sky=_CODE_TEXT.VALUE_0B1322,
+        night_sky2=_CODE_TEXT.VALUE_0F182A,
+        cloud=None,
+        mtn=[_CODE_TEXT.VALUE_8A9AA2, _CODE_TEXT.VALUE_6F8288, _CODE_TEXT.VALUE_55696C],
+        tree=_CODE_TEXT.VALUE_4B5D3E,
+        tree2=_CODE_TEXT.VALUE_3F5034,
+        trunk=_CODE_TEXT.VALUE_7A6650,
+        wall=_CODE_TEXT.B9AD97,
+        wall2=_CODE_TEXT.A89B84,
+        roof=_CODE_TEXT.VALUE_7B4B3B,
+        roof2=_CODE_TEXT.VALUE_5E3A2E,
+        thatch=_CODE_TEXT.VALUE_9C8A5C,
+        thatch2=_CODE_TEXT.VALUE_7F6F48,
+        door=_CODE_TEXT.VALUE_4A3322,
+        wood=_CODE_TEXT.VALUE_6B4A32,
+        wood2=_CODE_TEXT.VALUE_8A6545,
+        post=_CODE_TEXT.VALUE_5A3F2B,
+        woven=_CODE_TEXT.A99674,
+        woven2=_CODE_TEXT.VALUE_8F7D5E,
+        brick=_CODE_TEXT.A5634A,
+        brick2=_CODE_TEXT.VALUE_8A4F3A,
+        earth=_CODE_TEXT.B6A88B,
+        earth2=_CODE_TEXT.A1937A,
+        dirt=_CODE_TEXT.VALUE_8C6B4F,
+        grass=_CODE_TEXT.VALUE_6F7D52,
+        grass2=_CODE_TEXT.VALUE_5C6A43,
+        field=_CODE_TEXT.VALUE_7F8C55,
+        field2=_CODE_TEXT.VALUE_6C7849,
+        water=_CODE_TEXT.VALUE_6F8790,
+        water2=_CODE_TEXT.VALUE_5C737C,
+        stone=_CODE_TEXT.VALUE_8D8A83,
+        stone2=_CODE_TEXT.VALUE_6F6C66,
+        red=_CODE_TEXT.A6352B,
+        gold=_CODE_TEXT.C9A548,
+        cloth=_CODE_TEXT.E6E2D8,
+        paper=_CODE_TEXT.D9C99A,
+        dark=_CODE_TEXT.VALUE_25211E,
+        fire=_CODE_TEXT.E8913A,
+        glow=_CODE_TEXT.F2C46A,
+        beam=_CODE_TEXT.VALUE_4A3727,
+        floorwood=_CODE_TEXT.VALUE_7A5638,
+        floorwood2=_CODE_TEXT.VALUE_664630,
+        bamboo=_CODE_TEXT.VALUE_7E8F52,
+        bamboo2=_CODE_TEXT.VALUE_5D6B3C,
+        leaf=_CODE_TEXT.VALUE_5A6D45,
+        mound=_CODE_TEXT.VALUE_7D6A50,
+        rock=_CODE_TEXT.VALUE_7F7C75,
+        lamp=_CODE_TEXT.F0D27A,
+        moon=_CODE_TEXT.E9E4CF,
+        interior_wall=_CODE_TEXT.B9AD97,
+        interior_wall2=_CODE_TEXT.A89B84,
     ),
-    'chibi_folk': dict(
-        line='#2a2220', lw=3, detail=2, grad=True, night_k=0.7,
-        sky='#a7c0d3', sky2='#e2e9ea', night_sky='#0c1530', night_sky2='#1d2849',
-        cloud='#f1f4f3', mtn=['#b4c3c8', '#8fa6ab', '#5f8180'],
-        tree='#4f7a45', tree2='#3d6338', trunk='#6d4c30',
-        wall='#c9a46a', wall2='#a8854f', roof='#6b4a3a', roof2='#523628', thatch='#b9a062', thatch2='#8f7744',
-        door='#4b3424', wood='#8a6440', wood2='#a87d52', post='#6d4c30', woven='#c3a067', woven2='#a3834f',
-        brick='#9b6a4b', brick2='#835739', earth='#9d7150', earth2='#8a6143', dirt='#8a6143', grass='#6b9a4c', grass2='#55803c',
-        field='#8cbf5f', field2='#6ea54a', water='#8db7c7', water2='#6f9cb0', stone='#a19f97', stone2='#85837b',
-        red='#b8343c', gold='#d9a93b', cloth='#ece6da', paper='#e2cf98', dark='#2b231f', fire='#f08a2c', glow='#f6b85a',
-        beam='#3b2a1e', floorwood='#b58a55', floorwood2='#9a7243', bamboo='#93b05c', bamboo2='#64823b', leaf='#5d8a3f',
-        mound='#8a6a48', rock='#8f8c84', lamp='#f6d27a', moon='#f3efd8', interior_wall='#b8925a', interior_wall2='#9c7a47',
+    _CODE_TEXT.CHIBI_FOLK: dict(
+        line=_CODE_TEXT.VALUE_2A2220,
+        lw=3,
+        detail=2,
+        grad=True,
+        night_k=0.7,
+        sky=_CODE_TEXT.A7C0D3,
+        sky2=_CODE_TEXT.E2E9EA,
+        night_sky=_CODE_TEXT.VALUE_0C1530,
+        night_sky2=_CODE_TEXT.VALUE_1D2849,
+        cloud=_CODE_TEXT.F1F4F3,
+        mtn=[_CODE_TEXT.B4C3C8, _CODE_TEXT.VALUE_8FA6AB, _CODE_TEXT.VALUE_5F8180],
+        tree=_CODE_TEXT.VALUE_4F7A45,
+        tree2=_CODE_TEXT.VALUE_3D6338,
+        trunk=_CODE_TEXT.VALUE_6D4C30,
+        wall=_CODE_TEXT.C9A46A,
+        wall2=_CODE_TEXT.A8854F,
+        roof=_CODE_TEXT.VALUE_6B4A3A,
+        roof2=_CODE_TEXT.VALUE_523628,
+        thatch=_CODE_TEXT.B9A062,
+        thatch2=_CODE_TEXT.VALUE_8F7744,
+        door=_CODE_TEXT.VALUE_4B3424,
+        wood=_CODE_TEXT.VALUE_8A6440,
+        wood2=_CODE_TEXT.A87D52,
+        post=_CODE_TEXT.VALUE_6D4C30,
+        woven=_CODE_TEXT.C3A067,
+        woven2=_CODE_TEXT.A3834F,
+        brick=_CODE_TEXT.VALUE_9B6A4B,
+        brick2=_CODE_TEXT.VALUE_835739,
+        earth=_CODE_TEXT.VALUE_9D7150,
+        earth2=_CODE_TEXT.VALUE_8A6143,
+        dirt=_CODE_TEXT.VALUE_8A6143,
+        grass=_CODE_TEXT.VALUE_6B9A4C,
+        grass2=_CODE_TEXT.VALUE_55803C,
+        field=_CODE_TEXT.VALUE_8CBF5F,
+        field2=_CODE_TEXT.VALUE_6EA54A,
+        water=_CODE_TEXT.VALUE_8DB7C7,
+        water2=_CODE_TEXT.VALUE_6F9CB0,
+        stone=_CODE_TEXT.A19F97,
+        stone2=_CODE_TEXT.VALUE_85837B,
+        red=_CODE_TEXT.B8343C,
+        gold=_CODE_TEXT.D9A93B,
+        cloth=_CODE_TEXT.ECE6DA,
+        paper=_CODE_TEXT.E2CF98,
+        dark=_CODE_TEXT.VALUE_2B231F,
+        fire=_CODE_TEXT.F08A2C,
+        glow=_CODE_TEXT.F6B85A,
+        beam=_CODE_TEXT.VALUE_3B2A1E,
+        floorwood=_CODE_TEXT.B58A55,
+        floorwood2=_CODE_TEXT.VALUE_9A7243,
+        bamboo=_CODE_TEXT.VALUE_93B05C,
+        bamboo2=_CODE_TEXT.VALUE_64823B,
+        leaf=_CODE_TEXT.VALUE_5D8A3F,
+        mound=_CODE_TEXT.VALUE_8A6A48,
+        rock=_CODE_TEXT.VALUE_8F8C84,
+        lamp=_CODE_TEXT.F6D27A,
+        moon=_CODE_TEXT.F3EFD8,
+        interior_wall=_CODE_TEXT.B8925A,
+        interior_wall2=_CODE_TEXT.VALUE_9C7A47,
     ),
 }
-
-KEEP = {'fire', 'glow', 'lamp', 'moon', 'line', 'night_sky', 'night_sky2', 'red', 'gold', 'cloth', 'paper'}
-WARM = {'wall', 'wall2', 'interior_wall', 'interior_wall2', 'wood', 'wood2', 'floorwood', 'floorwood2', 'earth', 'earth2', 'roof', 'roof2', 'door', 'brick', 'brick2', 'thatch', 'thatch2', 'woven', 'woven2'}
-GREEN = {'tree', 'tree2', 'leaf', 'grass', 'grass2', 'bamboo', 'bamboo2', 'field', 'field2'}
-
-
+KEEP = {_CODE_TEXT.FIRE, _CODE_TEXT.GLOW, _CODE_TEXT.LAMP, _CODE_TEXT.MOON, _CODE_TEXT.LINE, _CODE_TEXT.NIGHT_SKY, _CODE_TEXT.NIGHT_SKY2, _CODE_TEXT.RED, _CODE_TEXT.GOLD, _CODE_TEXT.CLOTH, _CODE_TEXT.PAPER}
+WARM = {_CODE_TEXT.WALL, _CODE_TEXT.WALL2, _CODE_TEXT.INTERIOR_WALL, _CODE_TEXT.INTERIOR_WALL2, _CODE_TEXT.WOOD, _CODE_TEXT.WOOD2, _CODE_TEXT.FLOORWOOD, _CODE_TEXT.FLOORWOOD2, _CODE_TEXT.EARTH, _CODE_TEXT.EARTH2, _CODE_TEXT.ROOF, _CODE_TEXT.ROOF2, _CODE_TEXT.DOOR, _CODE_TEXT.BRICK, _CODE_TEXT.BRICK2, _CODE_TEXT.THATCH, _CODE_TEXT.THATCH2, _CODE_TEXT.WOVEN, _CODE_TEXT.WOVEN2}
+GREEN = {_CODE_TEXT.TREE, _CODE_TEXT.TREE2, _CODE_TEXT.LEAF, _CODE_TEXT.GRASS, _CODE_TEXT.GRASS2, _CODE_TEXT.BAMBOO, _CODE_TEXT.BAMBOO2, _CODE_TEXT.FIELD, _CODE_TEXT.FIELD2}
 def vary(k, c, v):
     if v == 1:
-        return mix(c, '#c27a3a', 0.13) if k in WARM else mix(c, '#4f7a3a', 0.12) if k in GREEN else c
+        return mix(c, _CODE_TEXT.C27A3A, 0.13) if k in WARM else mix(c, _CODE_TEXT.VALUE_4F7A3A, 0.12) if k in GREEN else c
     if v == 2:
-        return mix(c, '#c8962e', 0.4) if k in GREEN else mix(c, '#b07a4a', 0.08) if k in WARM else c
+        return mix(c, _CODE_TEXT.C8962E, 0.4) if k in GREEN else mix(c, _CODE_TEXT.B07A4A, 0.08) if k in WARM else c
     if v == 3:
-        return mix(c, '#7d868c', 0.38) if k in ('sky', 'sky2', 'mtn') else mix(c, '#8a9096', 0.14)
+        return mix(c, _CODE_TEXT.VALUE_7D868C, 0.38) if k in (_CODE_TEXT.SKY, _CODE_TEXT.SKY2, _CODE_TEXT.MTN) else mix(c, _CODE_TEXT.VALUE_8A9096, 0.14)
     return c
-
-
 class T:
     def __init__(self, key, night=False, seed=0, v=0):
         self.key = key
         self.v = v
         self.p = dict(THEMES[key])
         for k in list(self.p):
-            if isinstance(self.p[k], str) and self.p[k].startswith('#') and k not in KEEP:
+            if isinstance(self.p[k], str) and self.p[k].startswith(_CODE_TEXT.SYMBOL_334359) and k not in KEEP:
                 self.p[k] = vary(k, self.p[k], v)
-        self.p['mtn'] = [vary('mtn', m, v) for m in THEMES[key]['mtn']]
+        self.p[_CODE_TEXT.MTN] = [vary(_CODE_TEXT.MTN, m, v) for m in THEMES[key][_CODE_TEXT.MTN]]
         self.night = night
         self.rng = random.Random(seed)
         self.grad_id = 0
         self.defs = []
-
     def c(self, name):
         v = self.p[name]
         if self.night and name not in KEEP:
-            return mix(v, NAVY, self.p['night_k'])
+            return mix(v, NAVY, self.p[_CODE_TEXT.NIGHT_K])
         return v
-
     def raw(self, name):
         return self.p[name]
-
     @property
     def lw(self):
-        return self.p['lw']
-
+        return self.p[_CODE_TEXT.LW]
     @property
     def line(self):
-        return self.p['line']
-
+        return self.p[_CODE_TEXT.LINE]
     @property
     def detail(self):
-        return self.p['detail']
-
+        return self.p[_CODE_TEXT.DETAIL]
     def lg(self, stops, x1=0, y1=0, x2=0, y2=1):
         self.grad_id += 1
-        gid = 'g%d' % self.grad_id
-        s = ''.join('<stop offset="%s" stop-color="%s"/>' % (o, c) for o, c in stops)
-        self.defs.append('<linearGradient id="%s" x1="%s" y1="%s" x2="%s" y2="%s">%s</linearGradient>' % (gid, x1, y1, x2, y2, s))
-        return 'url(#%s)' % gid
-
+        gid = _CODE_TEXT.G_D % self.grad_id
+        s = ''.join(_CODE_TEXT.STOP_OFFSET_S_STOP_COLOR_S % (o, c) for o, c in stops)
+        self.defs.append(_CODE_TEXT.LINEARGRADIENT_ID_S_X1_S_Y1_S_X2_S_Y2_S_S_LINEARGRADIENT % (gid, x1, y1, x2, y2, s))
+        return _CODE_TEXT.URL_S % gid
     def rg(self, stops):
         self.grad_id += 1
-        gid = 'g%d' % self.grad_id
-        s = ''.join('<stop offset="%s" stop-color="%s" stop-opacity="%s"/>' % (o, c, a) for o, c, a in stops)
-        self.defs.append('<radialGradient id="%s">%s</radialGradient>' % (gid, s))
-        return 'url(#%s)' % gid
-
-
+        gid = _CODE_TEXT.G_D % self.grad_id
+        s = ''.join(_CODE_TEXT.STOP_OFFSET_S_STOP_COLOR_S_STOP_OPACITY_S % (o, c, a) for o, c, a in stops)
+        self.defs.append(_CODE_TEXT.RADIALGRADIENT_ID_S_S_RADIALGRADIENT % (gid, s))
+        return _CODE_TEXT.URL_S % gid
 def f(v):
-    return ('%.1f' % v).rstrip('0').rstrip('.')
-
-
+    return (_CODE_TEXT.VALUE_1F % v).rstrip(_CODE_TEXT.VALUE_0).rstrip(_CODE_TEXT.SYMBOL_CDB4EE)
 def pts(ps):
-    return ' '.join('%s,%s' % (f(x), f(y)) for x, y in ps)
-
-
+    return _CODE_TEXT.SYMBOL_36A9E7.join(_CODE_TEXT.S_S % (f(x), f(y)) for x, y in ps)
 def svg_attributes(value):
     last = {attr.group(1): attr.start() for attr in re.finditer(I.SVG_ATTRIBUTE, value)}
     return re.sub(I.SVG_ATTRIBUTE, lambda attr: attr.group(0) if attr.start() == last[attr.group(1)] else '', value)
-
-
 def st(t, fill, stroke=True, sw=None, extra=''):
-    s = 'fill="%s"' % fill
+    s = _CODE_TEXT.FILL_S % fill
     if stroke:
-        s += ' stroke="%s" stroke-width="%s" stroke-linejoin="round"' % (t.line, f(sw if sw is not None else t.lw))
+        s += _CODE_TEXT.STROKE_S_STROKE_WIDTH_S_STROKE_LINEJOIN_ROUND % (t.line, f(sw if sw is not None else t.lw))
     return svg_attributes(s + extra)
-
-
 def rect(t, x, y, w, h, fill, stroke=True, sw=None, rx=0, extra=''):
-    r = ' rx="%s"' % f(rx) if rx else ''
-    return '<rect x="%s" y="%s" width="%s" height="%s"%s %s/>' % (f(x), f(y), f(w), f(h), r, st(t, fill, stroke, sw, extra))
-
-
+    r = _CODE_TEXT.RX_S % f(rx) if rx else ''
+    return _CODE_TEXT.RECT_X_S_Y_S_WIDTH_S_HEIGHT_S_S_S % (f(x), f(y), f(w), f(h), r, st(t, fill, stroke, sw, extra))
 def poly(t, ps, fill, stroke=True, sw=None, extra=''):
-    return '<polygon points="%s" %s/>' % (pts(ps), st(t, fill, stroke, sw, extra))
-
-
+    return _CODE_TEXT.POLYGON_POINTS_S_S % (pts(ps), st(t, fill, stroke, sw, extra))
 def path(t, d, fill, stroke=True, sw=None, extra=''):
-    return '<path d="%s" %s/>' % (d, st(t, fill, stroke, sw, extra))
-
-
+    return _CODE_TEXT.PATH_D_S_S % (d, st(t, fill, stroke, sw, extra))
 def circ(t, x, y, r, fill, stroke=True, sw=None, extra=''):
-    return '<circle cx="%s" cy="%s" r="%s" %s/>' % (f(x), f(y), f(r), st(t, fill, stroke, sw, extra))
-
-
+    return _CODE_TEXT.CIRCLE_CX_S_CY_S_R_S_S % (f(x), f(y), f(r), st(t, fill, stroke, sw, extra))
 def ell(t, x, y, rx, ry, fill, stroke=True, sw=None, extra=''):
-    return '<ellipse cx="%s" cy="%s" rx="%s" ry="%s" %s/>' % (f(x), f(y), f(rx), f(ry), st(t, fill, stroke, sw, extra))
-
-
+    return _CODE_TEXT.ELLIPSE_CX_S_CY_S_RX_S_RY_S_S % (f(x), f(y), f(rx), f(ry), st(t, fill, stroke, sw, extra))
 def line(t, x1, y1, x2, y2, color=None, sw=None, extra=''):
-    return svg_attributes('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="%s" stroke-linecap="round"%s/>' % (f(x1), f(y1), f(x2), f(y2), color or t.line, f(sw if sw is not None else t.lw), extra))
-
-
+    return svg_attributes(_CODE_TEXT.LINE_X1_S_Y1_S_X2_S_Y2_S_STROKE_S_STROKE_WIDTH_S_STROKE_LINE % (f(x1), f(y1), f(x2), f(y2), color or t.line, f(sw if sw is not None else t.lw), extra))
 def pline(t, ps, color=None, sw=None, extra=''):
-    return svg_attributes('<polyline points="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round"%s/>' % (pts(ps), color or t.line, f(sw if sw is not None else t.lw), extra))
-
-
+    return svg_attributes(_CODE_TEXT.POLYLINE_POINTS_S_FILL_NONE_STROKE_S_STROKE_WIDTH_S_STROKE_L % (pts(ps), color or t.line, f(sw if sw is not None else t.lw), extra))
 def op(a):
-    return ' opacity="%s"' % f(a)
-
-
+    return _CODE_TEXT.OPACITY_S % f(a)
 def g(id_, items):
-    return '<g id="%s">%s</g>' % (id_, ''.join(items))
-
-
-def svg(t, sky, back, mid, floor, fg, vb='0 0 1920 1080', occ=''):
-    defs = '<defs>%s</defs>' % ''.join(t.defs) if t.defs else ''
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%s">%s%s%s%s%s%s%s</svg>' % (vb, defs, g('sky', sky), g('back', back), g('mid', mid), g('floor', floor), occ, g('fg', fg))
-
-
+    return _CODE_TEXT.G_ID_S_S_G % (id_, ''.join(items))
+def svg(t, sky, back, mid, floor, fg, vb=_CODE_TEXT.VALUE_0_0_1920_1080, occ=''):
+    defs = _CODE_TEXT.DEFS_S_DEFS % ''.join(t.defs) if t.defs else ''
+    return _CODE_TEXT.SVG_XMLNS_HTTP_WWW_W3_ORG_2000_SVG_VIEWBOX_S_S_S_S_S_S_S_S_S % (vb, defs, g(_CODE_TEXT.SKY, sky), g(_CODE_TEXT.BACK, back), g(_CODE_TEXT.MID, mid), g(_CODE_TEXT.FLOOR, floor), occ, g(_CODE_TEXT.FG, fg))
 def psvg(t, items):
-    defs = '<defs>%s</defs>' % ''.join(t.defs) if t.defs else ''
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">%s%s</svg>' % (defs, ''.join(items))
-
-
+    defs = _CODE_TEXT.DEFS_S_DEFS % ''.join(t.defs) if t.defs else ''
+    return _CODE_TEXT.SVG_XMLNS_HTTP_WWW_W3_ORG_2000_SVG_VIEWBOX_0_0_512_512_S_S_S % (defs, ''.join(items))
 def spath(d, color, sw, extra=''):
-    return svg_attributes('<path d="%s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round"%s/>' % (d, color, f(sw), extra))
+    return svg_attributes(_CODE_TEXT.PATH_D_S_FILL_NONE_STROKE_S_STROKE_WIDTH_S_STROKE_LINECAP_RO % (d, color, f(sw), extra))

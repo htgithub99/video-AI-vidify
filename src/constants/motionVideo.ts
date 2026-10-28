@@ -87,6 +87,7 @@ export const MOTION_RENDER_CACHE = {
   CHUNKS: (total: number, workers: number): string => `Render theo ${total} đoạn (${workers} luồng) – nếu bị dừng giữa chừng, lần sau sẽ chạy tiếp từ đoạn dở`,
 };
 export const MOTION_STORY_CONFIG = {
+  SOURCE_PARSE_DELAY_MS: 300,
   PROJECT_ID_PREFIX: "motion-story-",
   ARTIFACT_ANALYSIS: "motion-story-analysis",
   ARTIFACT_STYLE: "motion-style-kit",

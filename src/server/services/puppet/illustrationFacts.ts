@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
 import { MOTION_ILLUSTRATION_POLICY as I } from "../../../constants/motionIllustrationPolicy.js";
 import { illustrationSemanticText } from "../../../lib/motionIllustrationPolicy.js";
 import { puppetKeyOf, puppetSourceQuote, puppetSupportTokens } from "../../../lib/motionPuppetValues.js";
@@ -39,8 +41,8 @@ export const puppetParentEvidence = (object: PuppetObject, parent: PuppetObject,
 };
 export const puppetHoldingEvidence = (object: PuppetObject, line: PuppetLine, cast: MotionCastMember[], history: PuppetLine[] = []): string | undefined => {
   const owner = cast.find((member) => member.key === object.owner);
-  const labels = owner ? [owner.key.replace(/_/g, " "), owner.name].filter(Boolean).map(illustrationSemanticText) : [];
-  const mentions = (text: string): boolean => labels.some((label) => new RegExp("(?<![\\p{L}\\p{N}])" + label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![\\p{L}\\p{N}])", "u").test(text));
+  const labels = owner ? ([owner.key.replace(/_/g, RT_SHARED.SYMBOL_36A9E7), owner.name] as string[]).filter(Boolean).map(illustrationSemanticText) : [];
+  const mentions = (text: string): boolean => labels.some((label) => new RegExp(RT_SERVER.P_L_P_N + label.replace(/[.*+?^${}()|[\]\\]/g, RT_SERVER.SYMBOL_CC839C) + RT_SERVER.P_L_P_N_581F14, RT_SERVER.U).test(text));
   const sources = sceneHistory(line, history);
   for (const source of [...sources, line].reverse())
     for (const clause of source.text.split(I.CLAUSE).reverse()) {
@@ -61,11 +63,11 @@ export const puppetIllustrationReadIssues = (read: PuppetRead, line: PuppetLine,
   history = sceneHistory(line, history);
   const objects = puppetReadObjects(read);
   for (const [index, object] of objects.entries()) {
-    if (object.mount === "floor" && object.support && !I.FLOOR_SUPPORT.test(object.support)) issues.push({ path: "objects." + index + ".support", reason: C.SUPPORT_CONFLICT });
+    if (object.mount === RT_SHARED.FLOOR && object.support && !I.FLOOR_SUPPORT.test(object.support)) issues.push({ path: RT_SHARED.OBJECTS + index + RT_SHARED.SUPPORT, reason: C.SUPPORT_CONFLICT });
     const parent = puppetObjectParent(object, objects);
-    if (parent && !puppetParentEvidence(object, parent, line, history)) issues.push({ path: "objects." + index + ".support", reason: I.INVALID_PARENT });
-    if (!puppetObjectNounFits(object)) issues.push({ path: "objects." + index + ".catalogKey", reason: N.NOUN });
-    if (["held", "shoulder"].includes(object.mount) && !puppetHoldingEvidence(object, line, cast, history)) issues.push({ path: "objects." + index + ".ownershipEvidence", reason: I.INVALID_HOLD });
+    if (parent && !puppetParentEvidence(object, parent, line, history)) issues.push({ path: RT_SHARED.OBJECTS + index + RT_SHARED.SUPPORT, reason: I.INVALID_PARENT });
+    if (!puppetObjectNounFits(object)) issues.push({ path: RT_SHARED.OBJECTS + index + RT_SHARED.CATALOGKEY, reason: N.NOUN });
+    if (([RT_SHARED.HELD, RT_SERVER.SHOULDER] as string[]).includes(object.mount) && !puppetHoldingEvidence(object, line, cast, history)) issues.push({ path: RT_SHARED.OBJECTS + index + RT_SERVER.OWNERSHIPEVIDENCE, reason: I.INVALID_HOLD });
   }
   const text = illustrationSemanticText(line.text);
   for (const clause of text.split(I.CLAUSE))
@@ -73,7 +75,7 @@ export const puppetIllustrationReadIssues = (read: PuppetRead, line: PuppetLine,
       for (const match of clause.matchAll(new RegExp(rule.pattern))) {
         const before = clause.slice(0, match.index);
         const after = clause.slice(match.index! + match[0].length);
-        if (rule.key === "door" && after.trim().startsWith("so")) continue;
+        if (rule.key === RT_SERVER.DOOR && after.trim().startsWith(RT_SERVER.SO)) continue;
         const object = objects
           .filter((object) => {
             const at = before.lastIndexOf(illustrationSemanticText(object.word));
@@ -81,31 +83,31 @@ export const puppetIllustrationReadIssues = (read: PuppetRead, line: PuppetLine,
           })
           .sort((a, b) => before.lastIndexOf(illustrationSemanticText(b.word)) - before.lastIndexOf(illustrationSemanticText(a.word)))[0];
         if (object) {
-          if (["held", "shoulder", "wear", "body"].includes(object.mount)) {
+          if (([RT_SHARED.HELD, RT_SERVER.SHOULDER, RT_SERVER.WEAR, RT_SHARED.BODY] as string[]).includes(object.mount)) {
             const index = read.states?.findIndex((state) => state.char === object.owner) ?? -1;
             const state = read.states?.[index];
-            if (state && state.placement?.anchor !== rule.key && !puppetSupportTokens(state.support || "").includes(rule.key)) issues.push({ path: "states." + index + ".placement", reason: I.MISSING_ANCHOR(rule.key) });
+            if (state && state.placement?.anchor !== rule.key && !puppetSupportTokens(state.support || "").includes(rule.key)) issues.push({ path: RT_SERVER.STATES + index + RT_SERVER.PLACEMENT, reason: I.MISSING_ANCHOR(rule.key) });
             continue;
           }
-          if (object.placement?.anchor !== rule.key && object.support !== rule.key && !object.support?.startsWith(rule.key + "_")) issues.push({ path: "objects." + objects.indexOf(object) + ".placement", reason: I.MISSING_ANCHOR(rule.key) });
+          if (object.placement?.anchor !== rule.key && object.support !== rule.key && !object.support?.startsWith(rule.key + RT_SHARED.SYMBOL_D2E2AD)) issues.push({ path: RT_SHARED.OBJECTS + objects.indexOf(object) + RT_SERVER.PLACEMENT, reason: I.MISSING_ANCHOR(rule.key) });
           continue;
         }
         if (!before.trim()) continue;
         const mentions = cast
           .filter((member) => read.who.includes(member.key) && (!line.speaker || member.key === line.speaker))
           .flatMap((member) => {
-            const labels = [member.key.replace(/_/g, " "), member.name]
+            const labels = ([member.key.replace(/_/g, RT_SHARED.SYMBOL_36A9E7), member.name] as string[])
               .filter(Boolean)
               .map(illustrationSemanticText)
               .filter((label) => label.length > 1);
-            return labels.flatMap((label) => [...before.matchAll(new RegExp("(?<![\\p{L}\\p{N}])" + label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![\\p{L}\\p{N}])", "gu"))].map((match) => ({ key: member.key, at: match.index! })));
+            return labels.flatMap((label) => [...before.matchAll(new RegExp(RT_SERVER.P_L_P_N + label.replace(/[.*+?^${}()|[\]\\]/g, RT_SERVER.SYMBOL_CC839C) + RT_SERVER.P_L_P_N_581F14, RT_SHARED.GU))].map((match) => ({ key: member.key, at: match.index! })));
           })
           .sort((a, b) => b.at - a.at);
         const char = mentions[0]?.key;
         if (!char) continue;
         const index = read.states?.findIndex((state) => state.char === char) ?? -1;
         const state = read.states?.[index];
-        if (state && state.placement?.anchor !== rule.key && !puppetSupportTokens(state.support || "").includes(rule.key)) issues.push({ path: "states." + index + ".placement", reason: I.MISSING_ANCHOR(rule.key) });
+        if (state && state.placement?.anchor !== rule.key && !puppetSupportTokens(state.support || "").includes(rule.key)) issues.push({ path: RT_SERVER.STATES + index + RT_SERVER.PLACEMENT, reason: I.MISSING_ANCHOR(rule.key) });
       }
     }
   return issues;

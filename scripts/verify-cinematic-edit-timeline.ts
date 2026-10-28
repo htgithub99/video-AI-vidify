@@ -89,17 +89,9 @@ const adjacentTimeline = createCinematicEditTimeline([
 ]);
 assert.equal(adjacentTimeline.length, 1);
 assert.deepEqual([adjacentTimeline[0].sourceTrimStartSeconds, adjacentTimeline[0].sourceTrimEndSeconds, adjacentTimeline[0].duration], [0.2, 5, 4.8]);
-const fallbackTimeline = createCinematicEditTimeline([
-  {
-    ...scene,
-    id: "sc_fallback",
-    sourceTrimStartSeconds: 1,
-    sourceTrimEndSeconds: 2,
-    cinematicEditSegments: [],
-  },
-]);
+const fallbackTimeline = createCinematicEditTimeline([{ ...scene, id: "sc_fallback", sourceTrimStartSeconds: 1, sourceTrimEndSeconds: 2, cinematicEditSegments: [] }]);
 assert.deepEqual([fallbackTimeline[0].sourceTrimStartSeconds, fallbackTimeline[0].sourceTrimEndSeconds, fallbackTimeline[0].duration], [1, 2, 7]);
-const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
+const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/features/video-generation/hooks/useAutoVideoPipeline.ts", "utf8"));
 assert.match(pipelineSource, /expectedRenderDuration = nativeFilmAudio[\s\S]*_\.sumBy\(renderableScenes/);
 assert.match(pipelineSource, /storyboard: _\.cloneDeep\(realScenes\)/);
 process.stdout.write(stringifyJson({ passed: true, timelineShots: timeline.length }));

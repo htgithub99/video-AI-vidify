@@ -1,5 +1,7 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { stringifyJson, parseJson } from "../../../lib/jsonStringify.js";
 import { canonicalPuppetReadObjects, mergePuppetReadRepair, puppetReadObjects } from "../../../lib/motionReadObjects.js";
-export { puppetReadObjects } from "../../../lib/motionReadObjects.js";
 import { MOTION_PROGRESS as PROGRESS } from "../../../constants/motionProgress.js";
 import { motionSceneProgress } from "../../../lib/motionSceneProgress.js";
 import { MOTION_ILLUSTRATION_POLICY as IP } from "../../../constants/motionIllustrationPolicy.js";
@@ -41,8 +43,9 @@ import type { PuppetFrame, PuppetFrameActor, PuppetObject, PuppetPlace, PuppetRe
 import { mapMotionAiPool, runMotionAi, writeMotionAiDebug } from "../motionStoryService.js";
 import { puppetLanes } from "./kitDraw.js";
 import { puppetFeatureSpot, puppetStatePose, puppetSupportAssignments } from "./layout.js";
-export { puppetFeatureSpot } from "./layout.js";
 import type { PuppetRunOptions } from "./stylePack.js";
+export { puppetReadObjects } from "../../../lib/motionReadObjects.js";
+export { puppetFeatureSpot } from "./layout.js";
 const pick = (v: unknown, list: readonly string[], d: string): string => (_.isString(v) && list.includes(v) ? v : d);
 export const puppetGenreRules = (genre: string | undefined): string => {
   const g = PUPPET_GENRES[_.toString(genre)] || PUPPET_GENRES[PUPPET_GENRE_ALIAS[_.toString(genre)]] || PUPPET_GENRES[PUPPET_GENRE_DEFAULT];
@@ -213,7 +216,7 @@ const readOf = (raw: any, line: PuppetLine, cast: string[], places: Record<strin
   const object = raw?.object ? objectOf(raw.object, line) : null;
   const sources = _.take(
     _.uniqBy(
-      raw.objects.map((raw: any, index: number) => ({ object: objectOf(raw, line), path: "objects." + index })).filter((source: { object: PuppetObject | null }) => !!source.object),
+      raw.objects.map((raw: any, index: number) => ({ object: objectOf(raw, line), path: RT_SHARED.OBJECTS + index })).filter((source: { object: PuppetObject | null }) => !!source.object),
       (source: { object: PuppetObject }) => source.object.identity || source.object.key,
     ),
     P.OBJECTS_MAX,
@@ -285,19 +288,19 @@ const readOf = (raw: any, line: PuppetLine, cast: string[], places: Record<strin
     else read.visual.evidence = quotes as string[];
   }
   const paths = [
-    ...(badWho ? ["who"] : []),
-    ...(Array.isArray(raw?.objects) ? raw.objects.flatMap((object: any, index: number) => (object?.owner && !who.includes(object.owner) ? ["objects." + index + ".owner"] : [])) : []),
+    ...(badWho ? ([RT_SERVER.WHO] as string[]) : []),
+    ...(Array.isArray(raw?.objects) ? raw.objects.flatMap((object: any, index: number) => (object?.owner && !who.includes(object.owner) ? ([RT_SHARED.OBJECTS + index + RT_SHARED.OWNER] as string[]) : [])) : []),
     ...visual.issues.map((issue) => issue.path),
     ...who.flatMap((char) => {
       if (states.some((state) => state.char === char && state.posture)) return [];
       const at = Array.isArray(raw?.states) ? raw.states.findIndex((state: any) => state.char === char) : -1;
-      return at >= 0 ? ["states." + at + ".posture"] : ["states"];
+      return at >= 0 ? ([RT_SERVER.STATES + at + RT_SERVER.POSTURE] as string[]) : ([RT_SERVER.STATES_923B4B] as string[]);
     }),
-    ...(badBlocking ? ["blocking", ...who.flatMap((char) => (states.some((state) => state.char === char && state.posture) ? [] : ["states"]))] : []),
-    ...(badSpatial ? _.castArray(raw?.states || []).flatMap((state: any, at) => (state?.placement && !states.find((item) => item.char === state.char)?.placement ? ["states." + at + ".placement"] : [])) : []),
-    ...(requestedObject && !object ? ["objects." + primaryIndex] : []),
-    ...(pk && !place ? ["place", "placeDesc"] : []),
-    ...(errors.includes(SELECTION.READ_EVIDENCE_INVALID) ? ["visual.evidence"] : []),
+    ...(badBlocking ? ([RT_SERVER.BLOCKING, ...who.flatMap((char) => (states.some((state) => state.char === char && state.posture) ? [] : ([RT_SERVER.STATES_923B4B] as string[])))] as string[]) : []),
+    ...(badSpatial ? _.castArray(raw?.states || []).flatMap((state: any, at) => (state?.placement && !states.find((item) => item.char === state.char)?.placement ? ([RT_SERVER.STATES + at + RT_SERVER.PLACEMENT] as string[]) : [])) : []),
+    ...(requestedObject && !object ? ([RT_SHARED.OBJECTS + primaryIndex] as string[]) : []),
+    ...(pk && !place ? ([RT_SHARED.PLACE, RT_SERVER.PLACEDESC] as string[]) : []),
+    ...(errors.includes(SELECTION.READ_EVIDENCE_INVALID) ? ([RT_SERVER.VISUAL_EVIDENCE] as string[]) : []),
   ];
   return { read, errors, paths: _.uniq(paths), objectPaths: sources.map((source) => source.path) };
 };
@@ -309,7 +312,7 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
   const result: PuppetReadResult = { reads: {}, newPlaces: {} };
   const localContext = (index: number) => {
     const localLines = all.slice(Math.max(0, index - SB.CONTEXT_LINES), index + 1);
-    const text = localLines.map((line) => [line.text, line.action, JSON.stringify(line.scenePlan)].filter(Boolean).join(P.SPACE)).join(P.NL);
+    const text = localLines.map((line) => ([line.text, line.action, stringifyJson(line.scenePlan)] as string[]).filter(Boolean).join(P.SPACE)).join(P.NL);
     const members = analysis.cast.filter((member) => localLines.some((line) => line.cast?.includes(member.key) || line.speaker === member.key || wordIn(member.name, line.text)));
     const placeKeys = new Set(localLines.flatMap((line) => [line.place, ...(line.sourcePlans || []).map((plan) => plan.place)]).filter(Boolean));
     return { lines: localLines, cast: members.length ? members : analysis.cast, places: (analysis.places || []).filter((place) => !placeKeys.size || placeKeys.has(place.key)), catalog: o.readCatalogFor?.(text) ?? o.readCatalog };
@@ -360,7 +363,7 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
       }
       const before = drafts.get(i);
       const patch = { ...row };
-      if (before && Array.isArray(row.states) && Array.isArray(before.states)) patch.states = [...before.states.map((state: any) => (fields.get(i)?.includes("states") ? state : { ...state, ...row.states.find((entry: any) => entry.char === state.char) })), ...row.states.filter((state: any) => !before.states.some((entry: any) => entry.char === state.char))];
+      if (before && Array.isArray(row.states) && Array.isArray(before.states)) patch.states = [...before.states.map((state: any) => (fields.get(i)?.includes(RT_SERVER.STATES_923B4B) ? state : { ...state, ...row.states.find((entry: any) => entry.char === state.char) })), ...row.states.filter((state: any) => !before.states.some((entry: any) => entry.char === state.char))];
       const draft = before ? mergePuppetReadRepair(before, patch, fields.get(i) || []) : canonicalPuppetReadObjects(structuredClone(row));
       drafts.set(i, draft);
       const fresh: Record<string, PuppetPlace> = {};
@@ -368,18 +371,18 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
       const checked = readOf(draft, all[i], cast, { ...places, ...result.newPlaces }, fresh, closed);
       if (closed) {
         const history = all.slice(0, i);
-        const optionalInvalid = (object: PuppetObject) => object.essential === false && ["held", "shoulder"].includes(object.mount) && !puppetHoldingEvidence(object, all[i], analysis.cast, history);
+        const optionalInvalid = (object: PuppetObject) => object.essential === false && ([RT_SHARED.HELD, RT_SERVER.SHOULDER] as string[]).includes(object.mount) && !puppetHoldingEvidence(object, all[i], analysis.cast, history);
         const keep = checked.read.objects!.map((object) => !optionalInvalid(object));
         checked.read.objects = checked.read.objects?.filter((_, index) => keep[index]);
         checked.objectPaths = checked.objectPaths.filter((_, index) => keep[index]);
         if (checked.read.object && optionalInvalid(checked.read.object)) checked.read.object = null;
         const semanticIssues = puppetIllustrationReadIssues(checked.read, all[i], analysis.cast, all.slice(0, i));
         checked.errors.push(...semanticIssues.map((issue) => issue.reason));
-        checked.paths.push(...semanticIssues.map((issue) => issue.path.replace(/^objects\.(\d+)(?=\.|$)/u, (path, index) => checked.objectPaths[Number(index)] || path)), ...(semanticIssues.some((issue) => issue.reason === IP.INVALID_HOLD) ? ["object", "objects"] : []));
+        checked.paths.push(...semanticIssues.map((issue) => issue.path.replace(/^objects\.(\d+)(?=\.|$)/u, (path, index) => checked.objectPaths[Number(index)] || path)), ...(semanticIssues.some((issue) => issue.reason === IP.INVALID_HOLD) ? ([RT_SHARED.OBJECT, RT_SHARED.OBJECTS_E4CD30] as string[]) : []));
         for (const [at, object] of draft.objects.entries())
           if (object?.placement && !cleanPuppetObjectPlacement(object.placement, all[i].text)) {
             checked.errors.push(IP.INVALID_PLACEMENT);
-            checked.paths.push("objects." + at + ".placement");
+            checked.paths.push(RT_SHARED.OBJECTS + at + RT_SERVER.PLACEMENT);
           }
         if (!checked.errors.length) checked.read.states = simplePuppetStates(checked.read.states || [], all[i].text);
       }
@@ -414,7 +417,7 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
     const first = targets[0] || items[0];
     const context = all.slice(Math.max(0, first.i - SB.CONTEXT_LINES), first.i);
     const localLines = [...context, ...targets.map(({ line }) => line)];
-    const localText = localLines.map((line) => [line.text, line.action, JSON.stringify(line.scenePlan)].filter(Boolean).join(P.SPACE)).join(P.NL);
+    const localText = localLines.map((line) => ([line.text, line.action, stringifyJson(line.scenePlan)] as string[]).filter(Boolean).join(P.SPACE)).join(P.NL);
     const catalog = o.readCatalogFor?.(localText) ?? o.readCatalog ?? P.EMPTY;
     const localCast = analysis.cast.filter((member) => localLines.some((line) => line.cast?.includes(member.key) || line.speaker === member.key || wordIn(member.name, line.text)));
     const localCastText = castText({ ...analysis, cast: localCast.length ? localCast : analysis.cast });
@@ -427,69 +430,75 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
     const pending = targets.map(({ line, i }) => ({ i, key: line.key, text: line.text, plan: puppetLineContext(line), draft: drafts.get(i), allowedFields: fields.get(i), errors: issues.get(i) || [V.READ_MISSING_ROW] }));
     if (repairing) {
       const needsObjects = pending.some((target) => !target.allowedFields?.length || target.allowedFields.some((field) => V.READ_PROP_PATH.test(field)));
-      return [
-        V.READ_PENDING,
-        V.READ_PATCH_SCHEMA,
-        V.READ_REPAIR,
-        SB.READ,
-        SELECTION.READ_PROMPT,
-        SELECTION.SPATIAL_PROMPT,
-        P.READ_POSTURE_PROMPT,
-        B.READ_REPAIR,
-        APPEARANCE.READ,
-        V.READ_REPAIR_CAST + localCastText,
-        V.READ_REPAIR_PLACES + localPlaceText,
-        V.READ_REPAIR_CONTEXT + JSON.stringify({ story, previous: puppetStoryContext(context) + P.NL + previousOf(all, first.line.key) }),
-        V.READ_DRAFT + JSON.stringify(pending),
-        V.READ_ACCEPTED + JSON.stringify(items.filter((item) => result.reads[item.line.key] && Math.abs(item.i - first.i) <= SB.CONTEXT_LINES).map((item) => item.i)),
-        ...(needsObjects ? [P.WHY_READ, I.OBJECT_PROMPT, catalog] : []),
-      ].join(P.NL);
+      return (
+        [
+          V.READ_PENDING,
+          V.READ_PATCH_SCHEMA,
+          V.READ_REPAIR,
+          SB.READ,
+          SELECTION.READ_PROMPT,
+          SELECTION.SPATIAL_PROMPT,
+          P.READ_POSTURE_PROMPT,
+          B.READ_REPAIR,
+          APPEARANCE.READ,
+          V.READ_REPAIR_CAST + localCastText,
+          V.READ_REPAIR_PLACES + localPlaceText,
+          V.READ_REPAIR_CONTEXT + stringifyJson({ story, previous: puppetStoryContext(context) + P.NL + previousOf(all, first.line.key) }),
+          V.READ_DRAFT + stringifyJson(pending),
+          V.READ_ACCEPTED + stringifyJson(items.filter((item) => result.reads[item.line.key] && Math.abs(item.i - first.i) <= SB.CONTEXT_LINES).map((item) => item.i)),
+          ...(needsObjects ? [P.WHY_READ, I.OBJECT_PROMPT, catalog] : []),
+        ] as string[]
+      ).join(P.NL);
     }
     if (closedPuppetPackId(analysis.stylePreset))
-      return [
-        PROMPT.READ_CLOSED,
-        IP.PROMPT,
-        IP.READ_SCHEMA,
-        PUPPET_READ_SCHEMA,
-        P.READ_POSTURE_PROMPT,
-        P.EYE_PROMPT,
-        APPEARANCE.READ,
-        V.OWNERSHIP,
-        SELECTION.SPATIAL_PROMPT,
-        M.CONDITION_PROMPT,
-        JSON.stringify({
-          story,
-          cast: localCastText,
-          places: localPlaceText,
-          previous: puppetStoryContext(context),
-          targets: targets.map(({ line, i }) => ({ i, key: line.key, text: line.text, plan: JSON.parse(puppetLineContext(line)), correction: why[line.key], errors: issues.get(i) })),
-          blocking: B.KINDS,
-          variants: B.VARIANTS,
-          actions: Object.keys(P.ACTIONS),
-          gestures: P.GESTURES,
-          types: P.OBJECT_TYPES,
-          mounts: P.MOUNTS,
-          light: P.LIGHTS,
-          emotion: P.EXPRS,
-          overlays: P.OVERLAYS,
-        }),
-        catalog,
-        V.READ_TARGETS + JSON.stringify(targets.map(({ line, i }) => ({ i, key: line.key }))),
-      ].join(P.NL);
+      return (
+        [
+          PROMPT.READ_CLOSED,
+          IP.PROMPT,
+          IP.READ_SCHEMA,
+          PUPPET_READ_SCHEMA,
+          P.READ_POSTURE_PROMPT,
+          P.EYE_PROMPT,
+          APPEARANCE.READ,
+          V.OWNERSHIP,
+          SELECTION.SPATIAL_PROMPT,
+          M.CONDITION_PROMPT,
+          stringifyJson({
+            story,
+            cast: localCastText,
+            places: localPlaceText,
+            previous: puppetStoryContext(context),
+            targets: targets.map(({ line, i }) => ({ i, key: line.key, text: line.text, plan: parseJson(puppetLineContext(line)), correction: why[line.key], errors: issues.get(i) })),
+            blocking: B.KINDS,
+            variants: B.VARIANTS,
+            actions: Object.keys(P.ACTIONS),
+            gestures: P.GESTURES,
+            types: P.OBJECT_TYPES,
+            mounts: P.MOUNTS,
+            light: P.LIGHTS,
+            emotion: P.EXPRS,
+            overlays: P.OVERLAYS,
+          }),
+          catalog,
+          V.READ_TARGETS + stringifyJson(targets.map(({ line, i }) => ({ i, key: line.key }))),
+        ] as string[]
+      ).join(P.NL);
     const text = targets.map(({ line, i }) => [i, line.speaker || P.EMPTY, line.text, puppetLineContext(line), [why[line.key], ...(issues.get(i) || [])].filter(Boolean).join(P.SEP)].join(P.SEP)).join(P.NL);
-    return [
-      PR.READ({ story: story + P.NL + puppetStoryContext(context), cast: castText(analysis), places: placeText, previous: previousOf(all, first.line.key), lines: text }),
-      P.EYE_PROMPT,
-      o.readCatalog ? P.EMPTY : puppetPackStoryCapabilities(analysis.stylePreset, analysis),
-      o.readCatalog || P.EMPTY,
-      ...(closedPuppetPackId(analysis.stylePreset) ? [SELECTION.READ_PROMPT, SELECTION.SPATIAL_PROMPT] : []),
-      V.READ_TARGETS + JSON.stringify(targets.map(({ line, i }) => ({ i, key: line.key }))),
-    ].join(P.NL);
+    return (
+      [
+        PR.READ({ story: story + P.NL + puppetStoryContext(context), cast: castText(analysis), places: placeText, previous: previousOf(all, first.line.key), lines: text }),
+        P.EYE_PROMPT,
+        o.readCatalog ? P.EMPTY : puppetPackStoryCapabilities(analysis.stylePreset, analysis),
+        o.readCatalog || P.EMPTY,
+        ...(closedPuppetPackId(analysis.stylePreset) ? [SELECTION.READ_PROMPT, SELECTION.SPATIAL_PROMPT] : []),
+        V.READ_TARGETS + stringifyJson(targets.map(({ line, i }) => ({ i, key: line.key }))),
+      ] as string[]
+    ).join(P.NL);
   };
   const question = (targets: typeof items): string => withMotionResponsePrompt(P.ARTIFACT_READ, questionBase(targets));
   const pending = items.filter((item) => requested.has(item.line.key) && !result.reads[item.line.key]);
   const budget = pending.length && closedPuppetPackId(analysis.stylePreset) ? motionPromptPayloadBudget(question([]).length) : undefined;
-  const sameRepairState = (a: number, b: number): boolean => states.get(a)!.rejected === states.get(b)!.rejected && JSON.stringify(states.get(a)!.routes || {}) === JSON.stringify(states.get(b)!.routes || {});
+  const sameRepairState = (a: number, b: number): boolean => states.get(a)!.rejected === states.get(b)!.rejected && stringifyJson(states.get(a)!.routes || {}) === stringifyJson(states.get(b)!.routes || {});
   const groups = motionPromptGroups(pending, question, PROMPT.READ_ITEMS, budget, (before, next) => !!drafts.get(before.i) !== !!drafts.get(next.i) || !sameRepairState(before.i, next.i));
   o.log(P.LOG_READ(lines.length, groups.length));
   await mapMotionAiPool(
@@ -532,7 +541,6 @@ export const readPuppetLines = async (lines: PuppetLine[], all: PuppetLine[], an
   );
   return result;
 };
-
 const poseOf = (r: PuppetRead): string => P.ACTIONS[r.action] || P.POSE_DEFAULT;
 const exprOf = (r: PuppetRead): string => (_.includes(P.SLEEP_ACTIONS, r.action) ? P.EXPR_SLEEP : r.emotion);
 export const readFrame = (r: PuppetRead, line: PuppetLine, cast: string[]): PuppetFrame => {
@@ -695,7 +703,7 @@ export const composePuppetLines = async (lines: PuppetLine[], all: PuppetLine[],
   await mapMotionAiPool(
     groups,
     async (group) => {
-      for (const line of group) o.log(motionSceneProgress(PROGRESS.STAGE.BUILD, PROGRESS.STATUS.START, line, all, _.keyBy(analysis.places, "key")));
+      for (const line of group) o.log(motionSceneProgress(PROGRESS.STAGE.BUILD, PROGRESS.STATUS.START, line, all, _.keyBy(analysis.places, RT_SHARED.KEY)));
       const placeKeys = _.uniq(_.compact(_.map(group, (l) => reads[l.key]?.place)));
       const text = _.map(group, (l, i) => {
         const r = reads[l.key];
@@ -710,12 +718,12 @@ export const composePuppetLines = async (lines: PuppetLine[], all: PuppetLine[],
           r.action,
           r.emotion,
           l.speaker || P.EMPTY,
-          JSON.stringify(r.states || []),
-          JSON.stringify(puppetReadObjects(r)),
-          JSON.stringify(r.blocking || null),
+          stringifyJson(r.states || []),
+          stringifyJson(puppetReadObjects(r)),
+          stringifyJson(r.blocking || null),
           puppetLineContext(l),
-          JSON.stringify(r.visual),
-          JSON.stringify({ fixtures: r.fixtureStates, effectSource: r.effectSource, effectTarget: r.effectTarget, effectMode: r.effectMode }),
+          stringifyJson(r.visual),
+          stringifyJson({ fixtures: r.fixtureStates, effectSource: r.effectSource, effectTarget: r.effectTarget, effectMode: r.effectMode }),
           why[l.key] ? P.FIX_PREFIX + why[l.key] : P.EMPTY,
         ].join(P.SEP);
       }).join(P.NL);
@@ -740,6 +748,6 @@ export const composePuppetLines = async (lines: PuppetLine[], all: PuppetLine[],
     o.log(P.LOG_COMPOSE_MISSING(missing.length));
     for (const l of missing) frames[l.key] = fitPuppetRead(readFrame(reads[l.key], l, cast), reads[l.key], ctx.spots(reads[l.key].place, reads[l.key].light));
   }
-  for (const line of lines) if (frames[line.key]) o.log(motionSceneProgress(PROGRESS.STAGE.BUILD, PROGRESS.STATUS.DONE, line, all, _.keyBy(analysis.places, "key")));
+  for (const line of lines) if (frames[line.key]) o.log(motionSceneProgress(PROGRESS.STAGE.BUILD, PROGRESS.STATUS.DONE, line, all, _.keyBy(analysis.places, RT_SHARED.KEY)));
   return frames;
 };

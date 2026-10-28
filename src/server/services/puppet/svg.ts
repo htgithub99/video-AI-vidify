@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import os from "os";
 import fs from "fs";
 import path from "path";
@@ -67,7 +69,7 @@ export const puppetReviewBoard = async (candidates: MotionAiImage[], references:
   const [w, h] = P.SET_PNG;
   const cells = images.map((image, index) => {
     const bytes = fs.readFileSync(image.path);
-    const source = `data:${image.mimeType};base64,${bytes.toString("base64")}`;
+    const source = `${RT_SERVER.DATA}${image.mimeType}${RT_SERVER.BASE64}${bytes.toString(RT_SHARED.BASE64)}`;
     const x = (index % P.CHECK_BOARD_COLUMNS) * w;
     const y = Math.floor(index / P.CHECK_BOARD_COLUMNS) * h;
     return index < candidates.length ? P.CHECK_CELL(x, y, w, h, source) : P.CHECK_REFERENCE_CELL(x, y, w, h, source, index - candidates.length);

@@ -1,3 +1,4 @@
+import { stringifyJson, parseJson } from "../../../lib/jsonStringify.js";
 import { isPuppetString } from "../../../lib/motionPuppetValues.js";
 import { PA } from "../../../constants/motionPuppetAssets.js";
 import fs from "node:fs";
@@ -41,12 +42,12 @@ const mergeProfiles = (input: Profiles, previous: Profiles | undefined, raw: any
 export const englishPuppetAnalysis = async (analysis: MotionStoryAnalysis, o: PuppetRunOptions): Promise<MotionStoryAnalysis> => {
   o.signal?.throwIfAborted();
   const input = { title: analysis.title, logline: analysis.logline, era: analysis.era, look: analysis.look, cast: analysis.cast.map((c) => ({ key: c.key, name: c.name, role: c.role, look: c.look || c.description, gender: c.gender, age: c.age })), places: analysis.places.map((p) => ({ key: p.key, name: p.name, description: p.description, interior: p.interior, time: p.time })) };
-  const signature = puppetHash(PA.ARTIFACT + PA.VERSION + PA.PROFILE_VERSION + JSON.stringify(input));
+  const signature = puppetHash(PA.ARTIFACT + PA.VERSION + PA.PROFILE_VERSION + stringifyJson(input));
   const directory = puppetLibDir(PA.PROFILES_DIR),
     file = path.join(directory, signature + PA.JSON);
   let cached: unknown;
   try {
-    cached = JSON.parse(fs.readFileSync(file, PA.UTF8));
+    cached = parseJson(fs.readFileSync(file, PA.UTF8));
   } catch {}
   let { profiles, issues } = mergeProfiles(input, undefined, cached);
   if (issues.length) {
@@ -55,7 +56,7 @@ export const englishPuppetAnalysis = async (analysis: MotionStoryAnalysis, o: Pu
     for (let attempt = 0; issues.length && attempt < PA.PROFILE_ATTEMPTS; attempt++) {
       o.signal?.throwIfAborted();
       if (attempt) o.log(PA.PROFILE_REPAIR_LOG(issues, attempt));
-      const prompt = attempt ? PA.PROFILE_REPAIR_PROMPT(JSON.stringify(input), JSON.stringify(profiles), issues) : PA.PROFILE_PROMPT(JSON.stringify(input));
+      const prompt = attempt ? PA.PROFILE_REPAIR_PROMPT(stringifyJson(input), stringifyJson(profiles), issues) : PA.PROFILE_PROMPT(stringifyJson(input));
       const response = await (o.ai || runMotionAi)(prompt, PA.ARTIFACT, o.exec, o.signal, o.log);
       o.signal?.throwIfAborted();
       ({ profiles, issues } = mergeProfiles(input, profiles, response));

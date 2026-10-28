@@ -123,6 +123,7 @@ export interface MotionSceneAnimation {
   keyframes: { at: number; value: string | number }[];
 }
 export interface MotionSceneComposition {
+  geometryRevision?: number;
   revision: number;
   assetKey: string;
   inputKey: string;

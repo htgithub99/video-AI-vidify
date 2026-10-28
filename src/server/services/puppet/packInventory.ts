@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { PUPPET as P, PUPPET_TYPES as T } from "../../../constants/motionPuppet.js";
 import { MOTION_BLOCKING as B } from "../../../constants/motionBlocking.js";
 import { MOTION_PACK_SELECTION as K } from "../../../constants/motionPackSelection.js";
@@ -17,7 +18,7 @@ export const puppetPackAssetIssues = (asset: PuppetAsset): string[] => {
     for (const sprite of Object.values(character.sprites || {})) if (!svgValid(sprite.svg) || !positive(sprite.w, sprite.h) || sprite.anchor?.length !== 2 || !sprite.anchor.every(Number.isFinite) || (sprite.rig && !Object.values(sprite.rig).every(Number.isFinite))) issues.push(K.INVALID_ASSET);
     return [...new Set(issues)];
   }
-  if (!("svg" in asset) || !svgValid(asset.svg)) issues.push(K.INVALID_SVG);
+  if (!(RT_SHARED.SVG in asset) || !svgValid(asset.svg)) issues.push(K.INVALID_SVG);
   if (asset.type === T.PIECE && asset.recipeSvg && !svgValid(asset.recipeSvg)) issues.push(K.INVALID_SVG);
   if (asset.type === T.PIECE && asset.states) {
     if (!asset.stateKey || !Object.keys(asset.states).length) issues.push(K.INVALID_ASSET);
@@ -47,7 +48,7 @@ export const puppetPackAssetIssues = (asset: PuppetAsset): string[] => {
       if (!Array.isArray(bounds) || bounds.length !== 4 || !bounds.every(Number.isFinite) || bounds[0] < 0 || bounds[1] < 0 || !positive(bounds[2], bounds[3]) || bounds[0] + bounds[2] > P.SET_W || bounds[1] + bounds[3] > P.SET_H) issues.push(K.INVALID_ASSET);
     }
   if (asset.type === T.BASE && asset.adaptableLocationFamilies?.some((family) => !Object.hasOwn(SCHEMA.locationPatterns, family))) issues.push(K.INVALID_ASSET);
-  if (asset.type === T.PIECE && asset.placementSurface !== undefined && asset.placementSurface !== "water") issues.push(K.INVALID_ASSET);
+  if (asset.type === T.PIECE && asset.placementSurface !== undefined && asset.placementSurface !== RT_SHARED.WATER) issues.push(K.INVALID_ASSET);
   if (asset.type === T.PIECE && (asset.box?.length !== 4 || !asset.box.every(Number.isFinite) || !positive(asset.box[2], asset.box[3]) || asset.anchor?.length !== 2 || !asset.anchor.every(Number.isFinite))) issues.push(K.INVALID_ASSET);
   if (asset.type === T.PIECE && asset.allowedEnvironments !== undefined && (!Array.isArray(asset.allowedEnvironments) || !asset.allowedEnvironments.length || new Set(asset.allowedEnvironments).size !== asset.allowedEnvironments.length || asset.allowedEnvironments.some((value) => !SCHEMA.environments.includes(value)))) issues.push(K.INVALID_ASSET);
   if (

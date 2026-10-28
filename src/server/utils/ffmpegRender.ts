@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import {
   SOURCE_TEMPLATE_INDEX,
   SOURCE_TEMPLATE_RENDER_DURATION_TOO_SHORT,
@@ -42,12 +43,7 @@ import { hasProductionAudioSource, isBlockedAudioSource } from "../../services/p
 const cleanupDirectory = (directoryPath: string): void => {
   if (fs.existsSync(directoryPath)) {
     try {
-      fs.rmSync(directoryPath, {
-        recursive: true,
-        force: true,
-        maxRetries: FFMPEG_RENDER_CONSTANTS.CLEANUP_MAX_RETRIES,
-        retryDelay: FFMPEG_RENDER_CONSTANTS.CLEANUP_RETRY_DELAY_MS,
-      });
+      fs.rmSync(directoryPath, { recursive: true, force: true, maxRetries: FFMPEG_RENDER_CONSTANTS.CLEANUP_MAX_RETRIES, retryDelay: FFMPEG_RENDER_CONSTANTS.CLEANUP_RETRY_DELAY_MS });
     } catch (error) {
       logger.warn(FFMPEG_RENDER_CONSTANTS.LOG_CLEANUP_WARNING, directoryPath, error);
     }
@@ -66,7 +62,7 @@ export const resolveEncodedMediaSource = (...values: Array<string | undefined>):
 const parsePythonResult = (stdout: string): Record<string, unknown> | undefined =>
   _.findLast(
     _.map(_.split(_.trim(stdout), FFMPEG_RENDER_CONSTANTS.OUTPUT_LINE_SEPARATOR), (line) => {
-      const parsed = _.attempt(JSON.parse, line);
+      const parsed = _.attempt(parseJson, line);
       return _.isError(parsed) ? undefined : parsed;
     }),
     (result) => _.every([!_.isNil(result), _.has(result, FFMPEG_RENDER_KEYS.SUCCESS)], Boolean),
@@ -216,13 +212,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
     if (_.isEmpty(mediaPath) && _.isEmpty(encodedMedia)) {
       throw new Error(SOURCE_TEMPLATE_SCENE_HAS_NO_VALID_VISUAL_ASSET(`${scene.id}`));
     }
-    return {
-      ...scene,
-      [FFMPEG_RENDER_KEYS.IMAGE_BASE64]: mediaPath ? undefined : encodedMedia,
-      [FFMPEG_RENDER_KEYS.AUDIO_BASE64]: audioPath ? undefined : encodedAudio,
-      [FFMPEG_RENDER_KEYS.MEDIA_PATH]: mediaPath,
-      [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath,
-    };
+    return { ...scene, [FFMPEG_RENDER_KEYS.IMAGE_BASE64]: mediaPath ? undefined : encodedMedia, [FFMPEG_RENDER_KEYS.AUDIO_BASE64]: audioPath ? undefined : encodedAudio, [FFMPEG_RENDER_KEYS.MEDIA_PATH]: mediaPath, [FFMPEG_RENDER_KEYS.AUDIO_PATH]: audioPath };
   });
   const audioTracks = _.compact(
     _.map(_.defaultTo(options.audioTracks, []), (track) => {
@@ -257,11 +247,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
   const pyCmd = getPythonCommand();
   const scriptPath = getStaticResourcePath(FFMPEG_RENDER_CONSTANTS.SCRIPT_PATH);
   try {
-    const renderer = execFile(pyCmd, [scriptPath, configPath], {
-      windowsHide: true,
-      maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES,
-      signal,
-    });
+    const renderer = execFile(pyCmd, [scriptPath, configPath], { windowsHide: true, maxBuffer: FFMPEG_RENDER_CONSTANTS.PYTHON_MAX_BUFFER_BYTES, signal });
     const terminateRendererTree = (): void => {
       if (!renderer.pid || !_.isEqual(process.platform, SOURCE_TEXT_WIN32)) return;
       execFile(SOURCE_TEXT_TASKKILL, [SOURCE_TEXT_PID, _.toString(renderer.pid), SOURCE_TEXT_T_2, SOURCE_TEXT_F_2], { windowsHide: true }, () => undefined);
@@ -276,7 +262,7 @@ export const renderFFmpegVideo = async (options: FFmpegRenderOptions, onProgress
       const lines = _.split(progressBuffer + output, FFMPEG_RENDER_CONSTANTS.OUTPUT_LINE_SEPARATOR);
       progressBuffer = lines.pop() || SecurityConstants.EMPTY_STRING;
       _.forEach(lines, (line) => {
-        const parsed = _.attempt(JSON.parse, _.trim(line));
+        const parsed = _.attempt(parseJson, _.trim(line));
         if (!_.isError(parsed) && _.has(parsed, FFMPEG_RENDER_KEYS.PROGRESS)) {
           onProgress?.(_.toNumber(_.get(parsed, FFMPEG_RENDER_KEYS.PROGRESS)));
         }

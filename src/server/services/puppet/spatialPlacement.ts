@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
 import { MOTION_PACK_SELECTION as K } from "../../../constants/motionPackSelection.js";
 import { puppetKeyOf, puppetSourceQuote } from "../../../lib/motionPuppetValues.js";
 import type { PuppetLine } from "../../../lib/motionPuppet.js";
@@ -9,7 +11,7 @@ import { choosePuppetBlocking } from "./blocking.js";
 export const puppetActorSpotCandidates = (actor: Pick<PuppetFrameActor, "pose" | "support" | "spot">, placement: PuppetActorState["placement"], spots: PuppetSpot[], fixed?: string): PuppetSpot[] => {
   const kind = P.POSE_KIND[actor.pose] || P.SPOT_STAND;
   const candidates = spots.filter((spot) => puppetSpotGeometryValid(spot) && (!fixed || spot.key === fixed) && (spot.kind === kind || (kind === P.SPOT_STAND && spot.kind === P.SPOT_DOOR)) && (!actor.support || !!puppetFeatureSpot([spot], actor.support, spot.kind)) && (!placement?.anchor || puppetSpatialAnchorMatches(spot, placement.anchor, spots)));
-  const on = actor.support && candidates.filter((spot) => spot.relation === "on");
+  const on = actor.support && candidates.filter((spot) => spot.relation === RT_SHARED.ON);
   return on && on.length ? on : candidates;
 };
 export const puppetActorAssignments = (read: PuppetRead, spots: PuppetSpot[], compositions?: PuppetComposition[]): Map<string, string> | null => {
@@ -40,7 +42,7 @@ export const cleanPuppetSpatialPlacement = (raw: any, line: PuppetLine, cast: st
   const evidence = typeof raw.evidence === "string" ? puppetSourceQuote(line.text, raw.evidence) : undefined;
   const anchor = puppetKeyOf(raw.anchor) || undefined;
   const targets: string[] = Array.isArray(raw.targets) ? [...new Set<string>(raw.targets.filter((target: unknown): target is string => typeof target === "string" && target !== char && cast.includes(target)))] : [];
-  if (!evidence || (raw.relation === "at" ? !anchor || targets.length > 0 : raw.relation === "between" ? targets.length !== 2 || !!anchor : anchor ? targets.length > 0 : targets.length !== 1)) return;
+  if (!evidence || (raw.relation === RT_SHARED.AT ? !anchor || targets.length > 0 : raw.relation === RT_SERVER.BETWEEN ? targets.length !== 2 || !!anchor : anchor ? targets.length > 0 : targets.length !== 1)) return;
   return { relation: raw.relation, anchor, targets, evidence };
 };
 export const puppetSpatialAnchorDistance = (actor: PuppetSpot, anchor: string, spots: PuppetSpot[]): number => {
@@ -56,23 +58,23 @@ export const puppetSpatialAssignmentsValid = (read: PuppetRead, assignments: Map
     if (!placement) continue;
     const actor = point(state.char);
     if (!actor) return false;
-    if (placement.relation === "at" || (placement.anchor && !(placement.targets || []).length && placement.relation !== "between")) {
+    if (placement.relation === RT_SHARED.AT || (placement.anchor && !(placement.targets || []).length && placement.relation !== RT_SERVER.BETWEEN)) {
       if (!placement.anchor || !puppetSpatialAnchorMatches(actor, placement.anchor, spots)) return false;
-      if (placement.relation === "behind" && !spots.some((spot) => puppetFeatureSpot([spot], placement.anchor!, spot.kind) && (actor.groundY ?? actor.y) <= (spot.groundY ?? spot.y))) return false;
+      if (placement.relation === RT_SHARED.BEHIND && !spots.some((spot) => puppetFeatureSpot([spot], placement.anchor!, spot.kind) && (actor.groundY ?? actor.y) <= (spot.groundY ?? spot.y))) return false;
       continue;
     }
     const targets = (placement.targets || []).map(point);
-    if (targets.length !== (placement.relation === "between" ? 2 : 1) || targets.some((spot) => !spot)) return false;
-    if (placement.relation === "between") {
+    if (targets.length !== (placement.relation === RT_SERVER.BETWEEN ? 2 : 1) || targets.some((spot) => !spot)) return false;
+    if (placement.relation === RT_SERVER.BETWEEN) {
       const [a, b] = targets as PuppetSpot[];
       if (actor.x <= Math.min(a.x, b.x) + K.SPATIAL_GAP || actor.x >= Math.max(a.x, b.x) - K.SPATIAL_GAP) return false;
     } else {
       const target = targets[0]!;
       if (Math.abs(actor.x - target.x) > K.SPATIAL_NEAR || Math.abs((actor.groundY ?? actor.y) - (target.groundY ?? target.y)) > K.SPATIAL_DEPTH) return false;
-      if (placement.relation === "behind") {
+      if (placement.relation === RT_SHARED.BEHIND) {
         if ((actor.groundY ?? actor.y) > (target.groundY ?? target.y)) return false;
         const goal = read.states?.find((other) => other.char === placement.targets?.[0])?.placement;
-        if (goal?.relation === "at" && goal.anchor && puppetSpatialAnchorDistance(actor, goal.anchor, spots) < puppetSpatialAnchorDistance(target, goal.anchor, spots) + K.SPATIAL_GAP) return false;
+        if (goal?.relation === RT_SHARED.AT && goal.anchor && puppetSpatialAnchorDistance(actor, goal.anchor, spots) < puppetSpatialAnchorDistance(target, goal.anchor, spots) + K.SPATIAL_GAP) return false;
       }
     }
   }

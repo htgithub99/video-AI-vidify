@@ -22,46 +22,8 @@ export enum ShortsProgressStage {
   COMPLETED = "completed",
   ERROR = "error",
 }
-export type ShortsGenerationConfig = {
-  sourceVideoPath: string;
-  aspectRatio: ShortsAspectRatio;
-  reframeMode: ShortsReframeMode;
-  clipCount: number;
-  durationMode: ShortsDurationOption;
-  enableSubtitles?: boolean;
-};
-export type HighlightClipItem = {
-  id: string;
-  index: number;
-  startTime: number;
-  endTime: number;
-  duration: number;
-  title: string;
-  hookReason: string;
-  viralScore: number;
-  outputVideoPath: string;
-  videoUrl: string;
-  thumbnailUrl?: string;
-};
-export type ShortsSourceMetadata = {
-  duration: number;
-  width: number;
-  height: number;
-  fps: number;
-  formatName?: string;
-  bitrate?: number;
-  fileSizeBytes: number;
-  fileName: string;
-  filePath: string;
-};
-export type ShortsProgressState = {
-  stage: ShortsProgressStage;
-  percent: number;
-  currentClipIndex?: number;
-  totalClips?: number;
-  message: string;
-};
-export type ShortsAnalysisPayload = {
-  sourceMetadata: ShortsSourceMetadata;
-  clips: HighlightClipItem[];
-};
+export type ShortsGenerationConfig = { sourceVideoPath: string; aspectRatio: ShortsAspectRatio; reframeMode: ShortsReframeMode; clipCount: number; durationMode: ShortsDurationOption; enableSubtitles?: boolean };
+export type HighlightClipItem = { id: string; index: number; startTime: number; endTime: number; duration: number; title: string; hookReason: string; viralScore: number; outputVideoPath: string; videoUrl: string; thumbnailUrl?: string };
+export type ShortsSourceMetadata = { duration: number; width: number; height: number; fps: number; formatName?: string; bitrate?: number; fileSizeBytes: number; fileName: string; filePath: string };
+export type ShortsProgressState = { stage: ShortsProgressStage; percent: number; currentClipIndex?: number; totalClips?: number; message: string };
+export type ShortsAnalysisPayload = { sourceMetadata: ShortsSourceMetadata; clips: HighlightClipItem[] };

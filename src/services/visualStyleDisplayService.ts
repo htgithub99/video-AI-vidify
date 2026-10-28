@@ -1,5 +1,6 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import _ from "lodash";
-const normalizeStyleText = (value: unknown): string => _.trim(_.toString(value).replace(/\s+/g, " "));
+const normalizeStyleText = (value: unknown): string => _.trim(_.toString(value).replace(/\s+/g, RT_SHARED.SYMBOL_36A9E7));
 export const deduplicateVisualStyleText = (value: unknown): string => {
   const normalized = normalizeStyleText(value);
   if (_.isEmpty(normalized)) return normalized;

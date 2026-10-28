@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import _ from "lodash";
 import { PUPPET as P, PUPPET_PROMPTS as PR } from "../../../constants/motionPuppet.js";
 import { MOTION_SOUND_CONFIG, MOTION_SOUND_PROMPT } from "../../../constants/motionSound.js";
@@ -41,7 +43,7 @@ export const directPuppetSound = async (script: MotionStoryScript, analysis: Mot
       const events = beat.data?.soundEvents;
       const valid = Array.isArray(events) ? normalizeSoundEvents(events).length === events.length : beat.data?.soundSilence === true;
       const changed = previous?.inputKey !== undefined && previous.inputKey !== inputKey;
-      const state = { inputKey, attempts: previous?.inputKey === inputKey && Number.isInteger(previous.attempts) && previous.attempts! >= 0 ? previous.attempts! : 0, status: !changed && valid && beat.data?.[P.SOUND_FLAG] === P.SOUND_VERSION ? "accepted" : "pending" };
+      const state = { inputKey, attempts: previous?.inputKey === inputKey && Number.isInteger(previous.attempts) && previous.attempts! >= 0 ? previous.attempts! : 0, status: !changed && valid && beat.data?.[P.SOUND_FLAG] === P.SOUND_VERSION ? RT_SERVER.ACCEPTED : RT_SERVER.PENDING };
       beat.data = { ...(beat.data || {}), [MOTION_SOUND_CONFIG.DIRECTION_STATE]: state };
       if (changed || !valid) delete beat.data[P.SOUND_FLAG];
       return [beat.id, state] as const;
@@ -52,8 +54,8 @@ export const directPuppetSound = async (script: MotionStoryScript, analysis: Mot
   o.log(MOTION_SOUND_CONFIG.PLANNING);
   const promptOf = async (group: MotionBeat[]) => {
     o.signal?.throwIfAborted();
-    const context = JSON.stringify(group.map((beat) => beatContext(beat, gen)));
-    return [MOTION_SOUND_PROMPT, motionResponsePrompt(MOTION_SOUND_CONFIG.ARTIFACT), MOTION_AUDIO_DIRECTION.CONTEXT + JSON.stringify(direction), await motionSoundCatalogPrompt(context), PR.SOUND({ genre, horror: P.HORROR_RE.test(genre), beats: context })].join(MR.MOTION_TEXT_SYMBOL_27);
+    const context = stringifyJson(group.map((beat) => beatContext(beat, gen)));
+    return ([MOTION_SOUND_PROMPT, motionResponsePrompt(MOTION_SOUND_CONFIG.ARTIFACT), MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(direction), await motionSoundCatalogPrompt(context), PR.SOUND({ genre, horror: P.HORROR_RE.test(genre), beats: context })] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
   };
   const groups = await motionPromptGroupsAsync(
     beats.filter((beat) => states.get(beat.id)!.attempts < MOTION_SOUND_CONFIG.DIRECTION_ATTEMPTS),
@@ -78,7 +80,7 @@ export const directPuppetSound = async (script: MotionStoryScript, analysis: Mot
           const supplied = Array.isArray(item.soundEvents) ? item.soundEvents : [];
           const events = normalizeSoundEvents(supplied);
           if (events.length !== supplied.length) continue;
-          states.get(beat.id)!.status = "accepted";
+          states.get(beat.id)!.status = RT_SERVER.ACCEPTED;
           beat.data = { ...(beat.data || {}), soundEvents: events, soundSilence: item.soundSilence === true, [P.SOUND_FLAG]: P.SOUND_VERSION };
         }
       } catch (e: any) {

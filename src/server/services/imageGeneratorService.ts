@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { BROWSER_LIFECYCLE_TEXTS, isDisposableChatBrowserUrl } from "../../constants/browserLifecycle.js";
@@ -234,7 +235,6 @@ import path from "path";
 import crypto from "crypto";
 import { getDataDirectory } from "../utils/paths.js";
 import { ImageGenMessages, SecurityConstants } from "../../constants/security.js";
-chromium.use(stealthPlugin());
 import {
   EXTERNAL_URLS,
   BACKEND_MESSAGES,
@@ -301,6 +301,7 @@ import { getDownloadedImageMimeType } from "../utils/imageMedia.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
+chromium.use(stealthPlugin());
 interface BrowserSession {
   context: BrowserContext;
   page: Page;
@@ -4429,7 +4430,9 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
     if (_.isEqual(tagName, GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_TAG) || tagName === SOURCE_TEXT_DOWNLOAD_GENERATED_IMAGE_BUTTON || !src) {
       const base64Data = await mediaElement
         .evaluate(
-          async (imgEl, browserPayload) => {
+          async (imgEl, __runtimePayload) => {
+            const { RT_SERVER } = __runtimePayload.texts;
+            const browserPayload = __runtimePayload.value;
             const { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG } = browserPayload.texts;
             const extractionConfig = browserPayload.payload;
             try {
@@ -4440,7 +4443,7 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
                   const response = await fetch(sourceUrl);
                   if (response.ok) {
                     const blob = await response.blob();
-                    const converted = blob.type.startsWith("image/")
+                    const converted = blob.type.startsWith(RT_SERVER.IMAGE)
                       ? await new Promise<string>((resolve, reject) => {
                           const reader = new FileReader();
                           reader.onloadend = () => resolve((reader.result as string).split(SOURCE_TEXT_SYMBOL_4)[1]);
@@ -4470,7 +4473,10 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
               return extractionConfig.errorPrefix + getErrorMessage(fetchError);
             }
           },
-          { payload: { errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX, emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE, dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR, dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX }, texts: { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG } },
+          {
+            value: { payload: { errorPrefix: GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX, emptyValue: GEMINI_MEDIA_EXTRACTION_CONFIG.EMPTY_VALUE, dataSeparator: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_SEPARATOR, dataIndex: GEMINI_MEDIA_EXTRACTION_CONFIG.DATA_INDEX }, texts: { SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_SYMBOL_4, SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG } },
+            texts: { RT_SERVER: { IMAGE: RT_SERVER.IMAGE } },
+          },
         )
         .catch(() => null);
       if (base64Data && !_.startsWith(base64Data, GEMINI_MEDIA_EXTRACTION_CONFIG.ERROR_PREFIX) && _.gt(base64Data.length, GEMINI_MEDIA_EXTRACTION_CONFIG.MIN_VALID_MEDIA_LENGTH) && getDownloadedImageMimeType(Buffer.from(base64Data, REFACTOR_CONSTANTS.ENCODING_BASE64))) {
@@ -4554,7 +4560,9 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     ? null
     : await latestResponse
         .evaluate(
-          async (responseEl, browserPayload) => {
+          async (responseEl, __runtimePayload) => {
+            const { RT_SERVER } = __runtimePayload.texts;
+            const browserPayload = __runtimePayload.value;
             const { XRT } = browserPayload.studioTexts;
             const { SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG, SOURCE_TEXT_SYMBOL_4, SOURCE_BROWSER_TEXT_SRC } = browserPayload.texts;
             const excludedSelector = browserPayload.payload;
@@ -4579,7 +4587,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
               const resp = await fetch(src);
               if (!resp.ok) return null;
               const blob = await resp.blob();
-              if (!blob.type.startsWith("image/")) return null;
+              if (!blob.type.startsWith(RT_SERVER.IMAGE)) return null;
               return new Promise<string>((resolve) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
@@ -4592,7 +4600,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
               return null;
             }
           },
-          { payload: GEMINI_MEDIA_EXTRACTION_CONFIG.EXCLUDED_IMAGE_SELECTOR, texts: { SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG, SOURCE_TEXT_SYMBOL_4, SOURCE_BROWSER_TEXT_SRC }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } },
+          { value: { payload: GEMINI_MEDIA_EXTRACTION_CONFIG.EXCLUDED_IMAGE_SELECTOR, texts: { SOURCE_TEXT_CANVAS, SOURCE_BROWSER_TEXT_2D, SOURCE_TEXT_IMAGE_JPEG, SOURCE_TEXT_SYMBOL_4, SOURCE_BROWSER_TEXT_SRC }, studioTexts: { XRT: { EMPTY: XRT.EMPTY } } }, texts: { RT_SERVER: { IMAGE: RT_SERVER.IMAGE } } },
         )
         .catch(() => null);
   if (secondaryBase64 && getDownloadedImageMimeType(Buffer.from(secondaryBase64, REFACTOR_CONSTANTS.ENCODING_BASE64))) {

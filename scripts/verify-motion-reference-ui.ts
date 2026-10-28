@@ -4,17 +4,7 @@ import fs from "node:fs";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { MOTION_REFERENCE_TEXTS } from "../src/constants/motionReference.ts";
-const bundle = await build({
-  stdin: {
-    contents: VT.IMPORT_REACT_USESTATE_FROM_REACT_IMPORT_CREATEROOT_FROM_REAC,
-    loader: VT.TSX,
-    resolveDir: process.cwd(),
-  },
-  bundle: true,
-  platform: VT.BROWSER,
-  format: VT.IIFE,
-  write: false,
-});
+const bundle = await build({ stdin: { contents: VT.IMPORT_REACT_USESTATE_FROM_REACT_IMPORT_CREATEROOT_FROM_REAC, loader: VT.TSX, resolveDir: process.cwd() }, bundle: true, platform: VT.BROWSER, format: VT.IIFE, write: false });
 const browser = await chromium.launch({ channel: VT.CHROME, headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 800, height: 600 } });

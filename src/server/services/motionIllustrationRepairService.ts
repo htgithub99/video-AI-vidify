@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { MOTION_ILLUSTRATION_NEEDS as N } from "../../constants/motionIllustrationNeeds.js";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
 import { MOTION_PROMPT as Q } from "../../constants/motionPrompt.js";
@@ -15,9 +17,9 @@ export const completeMotionIllustrationCoverage = async (analysis: MotionStoryAn
     const sourceKey = motionIllustrationCoverageKey(current, chapterId);
     const existing = (current.illustrationNeeds || []).filter((need) => need.chapterId === chapterId);
     const clues = (current.storySpine?.clues || []).filter((clue) => clue.setupChapterId === chapterId || clue.payoffChapterId === chapterId);
-    const state = (states[JSON.stringify([chapterId, sourceKey])] ||= { rejected: 0, errors: [] });
+    const state = (states[stringifyJson([chapterId, sourceKey])] ||= { rejected: 0, errors: [] });
     const prompt = () => [N.COVERAGE_PROMPT({ chapter, cast: current.cast.map(({ key, name }) => ({ key, name })), places: current.places, existing, clues }, state.errors), Q.PLANNING_NEEDS, options.inventory()].join(Q.SEPARATOR);
-    const exact = (actual: unknown, expected: unknown[]) => Array.isArray(actual) && JSON.stringify([...actual].sort()) === JSON.stringify([...expected].sort());
+    const exact = (actual: unknown, expected: unknown[]) => Array.isArray(actual) && stringifyJson([...actual].sort()) === stringifyJson([...expected].sort());
     options.log?.(N.COVERAGE_LOG(chapterId));
     const contract: MotionAiResponseContract = {
       targetIds: [chapterId],
@@ -47,7 +49,7 @@ export const completeMotionIllustrationCoverage = async (analysis: MotionStoryAn
         const errors = valid ? motionIllustrationNeedsErrors(candidate) : [N.COVERAGE_INVALID];
         if (!errors.length) {
           const needIds = candidate.illustrationNeeds.filter((need) => need.chapterId === chapterId).map((need) => need.id);
-          current = { ...candidate, illustrationCoverage: [...(candidate.illustrationCoverage || []).filter((row) => row.chapterId !== chapterId), { version: N.COVERAGE_VERSION, chapterId, sourceKey: motionIllustrationCoverageKey(candidate, chapterId), status: needIds.length ? "checked_needs" : "checked_empty", needIds }] };
+          current = { ...candidate, illustrationCoverage: [...(candidate.illustrationCoverage || []).filter((row) => row.chapterId !== chapterId), { version: N.COVERAGE_VERSION, chapterId, sourceKey: motionIllustrationCoverageKey(candidate, chapterId), status: needIds.length ? RT_SHARED.CHECKED_NEEDS : RT_SHARED.CHECKED_EMPTY, needIds }] };
           options.save(current);
         }
         return { value: current, errors };
@@ -70,14 +72,14 @@ export const repairMotionIllustrationNeeds = async (draft: any, states: Record<s
     options.save(current);
     let paths = motionIllustrationNeedPaths(current, index);
     if (!paths.length) continue;
-    const prefix = `illustrationNeeds[${index}]`;
-    const errors = () => motionIllustrationNeedsErrors(current).filter((error) => error.startsWith(prefix + ".") || error.startsWith(prefix + ":"));
+    const prefix = `${RT_SHARED.ILLUSTRATIONNEEDS}${index}${RT_SHARED.SYMBOL_CFAE0D}`;
+    const errors = () => motionIllustrationNeedsErrors(current).filter((error) => error.startsWith(prefix + RT_SHARED.SYMBOL_CDB4EE) || error.startsWith(prefix + RT_SHARED.SYMBOL_E7AC07));
     const state = (states[String(index)] ||= { rejected: 0, errors: [] });
     const prompt = () => {
       const need = current.illustrationNeeds[index];
       const chapter = current.chapters.find((chapter: any) => chapter.id === need?.chapterId);
       const context = { chapter: chapter || current.chapters.map((chapter: any) => ({ id: chapter.id, summary: chapter.summary })), cast: current.cast.map((member: any) => ({ key: member.key, name: member.name })), places: current.places.map((place: any) => ({ key: place.key, name: place.name })), clueContract: current.storySpine?.clues };
-      return [N.REPAIR(context, need, paths, errors()), Q.PLANNING_NEEDS, I.PROMPT, paths.some((path) => /(?:key|catalogKey|objects)$/.test(path)) ? options.inventory?.() : undefined].filter(Boolean).join("\n");
+      return [N.REPAIR(context, need, paths, errors()), Q.PLANNING_NEEDS, I.PROMPT, paths.some((path) => /(?:key|catalogKey|objects)$/.test(path)) ? options.inventory?.() : undefined].filter(Boolean).join(RT_SHARED.SYMBOL_01BA47);
     };
     options.log?.(N.ROW_LOG(current.illustrationNeeds[index]?.id || String(index)));
     const contract: MotionAiResponseContract = {
@@ -104,11 +106,11 @@ export const repairMotionIllustrationNeeds = async (draft: any, states: Record<s
         return { value: current.illustrationNeeds[index], errors: pending };
       },
       repair: prompt,
-      failure: (errors) => new Error([N.PART_INVALID, ...errors].join("\n")),
+      failure: (errors) => new Error([N.PART_INVALID, ...errors].join(RT_SHARED.SYMBOL_01BA47)),
     };
     await options.request(prompt(), contract);
   }
   const remaining = motionIllustrationNeedsErrors(current);
-  if (remaining.length) throw new Error([N.PART_INVALID, ...remaining].join("\n"));
+  if (remaining.length) throw new Error([N.PART_INVALID, ...remaining].join(RT_SHARED.SYMBOL_01BA47));
   return current;
 };

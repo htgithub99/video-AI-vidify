@@ -5,7 +5,7 @@ import fs from "node:fs";
 import _ from "lodash";
 import { getBlockingCinematicPlanningIssues, getCinematicScriptReadinessIssues, getCinematicGeneratedTakeIssues, getCinematicSceneContractIssues, getCinematicStoryboardReadinessIssues, repairCinematicStoryboardContract } from "../src/services/cinematicProductionPolicyService";
 import { AssetAcceptance, GenerateType, QaStatus, SceneAssetStatus } from "../src/types";
-import { getPipelineInvalidationState, getReferenceChangeState } from "../src/hooks/autoVideoPipelineUtils";
+import { getPipelineInvalidationState, getReferenceChangeState } from "../src/features/video-generation/hooks/autoVideoPipelineUtils";
 import { clearProjectSceneOutput } from "../src/services/projectRegenerationService";
 import { getVisualShotPlanIssues } from "../src/services/visualPlanningService";
 import { getCinematicStoryboardRecoveryPrompt } from "../src/constants/cinematicPrompts";
@@ -19,62 +19,18 @@ const longCinematicSource = _.join(_.fill(Array(200), "playable"), " ");
 assert.deepEqual(getUnderfilledCinematicSceneIds([{ id: "title_only", script: "Biển Lửa Hỏa Diệm" } as any], longCinematicSource, 5), ["title_only"]);
 const incompleteScriptIssues = getCinematicScriptReadinessIssues("Tôn Ngộ Không vung gậy nhưng câu chuyện đang v", [{ id: "ch_1", title: "Một", scriptSegment: "Câu chuyện đang v" }], { passed: true, durationFit: true } as any, { allowed: true } as any);
 assert.deepEqual(incompleteScriptIssues, []);
-const advisoryCinematicScoreIssues = getCinematicScriptReadinessIssues(
-  "Cảnh phim kết thúc.",
-  [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }],
-  {
-    continuityScore: 84,
-    repetitionScore: 90,
-    factualityScore: 90,
-    emotionalArcScore: 90,
-    conversationalScore: 90,
-    hookPayoffScore: 90,
-    passed: true,
-  } as any,
-  { allowed: true, warnings: [] } as any,
-);
+const advisoryCinematicScoreIssues = getCinematicScriptReadinessIssues("Cảnh phim kết thúc.", [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }], { continuityScore: 84, repetitionScore: 90, factualityScore: 90, emotionalArcScore: 90, conversationalScore: 90, hookPayoffScore: 90, passed: true } as any, { allowed: true, warnings: [] } as any);
 assert(!advisoryCinematicScoreIssues.some((issue) => issue.startsWith("scriptQa:cinematic_score_below_")));
-const hardLowCinematicScoreIssues = getCinematicScriptReadinessIssues(
-  "Cảnh phim kết thúc.",
-  [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }],
-  {
-    continuityScore: 64,
-    repetitionScore: 90,
-    factualityScore: 90,
-    emotionalArcScore: 90,
-    conversationalScore: 90,
-    hookPayoffScore: 90,
-    passed: true,
-  } as any,
-  { allowed: true, warnings: [] } as any,
-);
+const hardLowCinematicScoreIssues = getCinematicScriptReadinessIssues("Cảnh phim kết thúc.", [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }], { continuityScore: 64, repetitionScore: 90, factualityScore: 90, emotionalArcScore: 90, conversationalScore: 90, hookPayoffScore: 90, passed: true } as any, { allowed: true, warnings: [] } as any);
 assert.deepEqual(hardLowCinematicScoreIssues, []);
 assert(
-  !getCinematicScriptReadinessIssues(
-    "Cảnh phim kết thúc.",
-    [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }],
-    {
-      continuityScore: 90,
-      repetitionScore: 90,
-      factualityScore: 90,
-      emotionalArcScore: 90,
-      conversationalScore: 90,
-      hookPayoffScore: 90,
-      passed: true,
-    } as any,
-    { allowed: true, warnings: ["content_safety_response_incomplete"] } as any,
-  ).includes("contentSafety:review_unavailable_or_incomplete"),
+  !getCinematicScriptReadinessIssues("Cảnh phim kết thúc.", [{ id: "ch_1", title: "Một", scriptSegment: "Cảnh phim kết thúc." }], { continuityScore: 90, repetitionScore: 90, factualityScore: 90, emotionalArcScore: 90, conversationalScore: 90, hookPayoffScore: 90, passed: true } as any, { allowed: true, warnings: ["content_safety_response_incomplete"] } as any).includes(
+    "contentSafety:review_unavailable_or_incomplete",
+  ),
 );
 const takeIssues = getCinematicGeneratedTakeIssues(
   [
-    {
-      id: "sc_1",
-      assetUrl: "/assets/projects/test/videos/sc_1.mp4",
-      assetType: GenerateType.Video,
-      assetStatus: SceneAssetStatus.Approved,
-      qaStatus: QaStatus.Passed,
-      acceptance: AssetAcceptance.Approved,
-    },
+    { id: "sc_1", assetUrl: "/assets/projects/test/videos/sc_1.mp4", assetType: GenerateType.Video, assetStatus: SceneAssetStatus.Approved, qaStatus: QaStatus.Passed, acceptance: AssetAcceptance.Approved },
     { id: "sc_2", assetType: GenerateType.Video, assetStatus: SceneAssetStatus.Failed, qaStatus: QaStatus.Failed, acceptance: AssetAcceptance.Rejected },
   ] as any,
   2,
@@ -82,56 +38,9 @@ const takeIssues = getCinematicGeneratedTakeIssues(
 assert(takeIssues.includes("sc_2:asset_missing"));
 assert(!takeIssues.includes("sc_2:qa_failed"));
 assert(!takeIssues.some((issue) => issue.startsWith("storyboard:clip_count:")));
-assert.deepEqual(
-  getCinematicGeneratedTakeIssues(
-    [
-      {
-        id: "sc_advisory_only",
-        assetUrl: "/assets/projects/test/videos/sc_advisory_only.mp4",
-        assetType: GenerateType.Video,
-        assetStatus: SceneAssetStatus.Failed,
-        qaStatus: QaStatus.Failed,
-        acceptance: AssetAcceptance.Rejected,
-      },
-    ] as any,
-    1,
-  ),
-  [],
-  "Downloaded cinematic video must not be blocked by advisory QA state",
-);
-assert.deepEqual(
-  getCinematicGeneratedTakeIssues(
-    [
-      {
-        id: "sc_unreviewed",
-        assetUrl: "/assets/projects/test/videos/sc_unreviewed.mp4",
-        assetType: GenerateType.Video,
-        assetStatus: SceneAssetStatus.Approved,
-        qaStatus: QaStatus.Unavailable,
-        acceptance: AssetAcceptance.AcceptedWithWarning,
-      },
-    ] as any,
-    1,
-  ),
-  [],
-);
-assert.deepEqual(
-  getCinematicGeneratedTakeIssues(
-    [
-      {
-        id: "sc_failed_qa_but_downloaded",
-        assetUrl: "/assets/projects/test/videos/sc_failed_qa_but_downloaded.mp4",
-        assetType: GenerateType.Video,
-        assetStatus: SceneAssetStatus.Failed,
-        qaStatus: QaStatus.Failed,
-        acceptance: AssetAcceptance.Rejected,
-      },
-    ] as any,
-    1,
-  ),
-  [],
-  "Downloaded video with failed QA remains eligible for editor/library analysis",
-);
+assert.deepEqual(getCinematicGeneratedTakeIssues([{ id: "sc_advisory_only", assetUrl: "/assets/projects/test/videos/sc_advisory_only.mp4", assetType: GenerateType.Video, assetStatus: SceneAssetStatus.Failed, qaStatus: QaStatus.Failed, acceptance: AssetAcceptance.Rejected }] as any, 1), [], "Downloaded cinematic video must not be blocked by advisory QA state");
+assert.deepEqual(getCinematicGeneratedTakeIssues([{ id: "sc_unreviewed", assetUrl: "/assets/projects/test/videos/sc_unreviewed.mp4", assetType: GenerateType.Video, assetStatus: SceneAssetStatus.Approved, qaStatus: QaStatus.Unavailable, acceptance: AssetAcceptance.AcceptedWithWarning }] as any, 1), []);
+assert.deepEqual(getCinematicGeneratedTakeIssues([{ id: "sc_failed_qa_but_downloaded", assetUrl: "/assets/projects/test/videos/sc_failed_qa_but_downloaded.mp4", assetType: GenerateType.Video, assetStatus: SceneAssetStatus.Failed, qaStatus: QaStatus.Failed, acceptance: AssetAcceptance.Rejected }] as any, 1), [], "Downloaded video with failed QA remains eligible for editor/library analysis");
 assert.deepEqual(getCinematicStoryboardReadinessIssues([{ id: "only_clip", script: "Một cảnh." }] as any, 2, { passed: true, scriptCoverageScore: 100, pacingCoverageScore: 100 } as any), ["storyboard:scene_count_mismatch:1/2"]);
 assert.deepEqual(getCinematicStoryboardReadinessIssues([{ id: "usable_clip", script: "Một cảnh hoàn chỉnh." }] as any, 1, { passed: true, scriptCoverageScore: 84, pacingCoverageScore: 84, blockingErrors: [] } as any), []);
 assert.deepEqual(
@@ -163,24 +72,8 @@ const repairedFightScene = repairCinematicStoryboardContract([{ id: "fight_repai
 assert.deepEqual(getCinematicSceneContractIssues(repairedFightScene, "10s"), ["fight_repaired:generationPrompt:missing"]);
 assert(!stringifyJson(repairedFightScene).includes("foreground attacker"));
 assert(!getCinematicSceneContractIssues({ id: "retreat_order", script: "The emperor orders his soldiers to retreat while the hero approaches the throne." } as any, "10s").some((issue) => issue.includes(":actionChoreography:")));
-const repairableScene = {
-  id: "sc_repairable",
-  script: "Ngộ Không nhìn quanh thiên đình.",
-  prompt: "A cinematic celestial hall under motivated light.",
-  characterIds: ["char_1"],
-} as any;
-const repairedVisualIssues = getVisualShotPlanIssues(
-  {
-    ...repairableScene,
-    visibleAction: "A defiant and proud moment",
-    visualIntent: "Reveal the character's challenge",
-    reaction: "The celestial guards recoil",
-    storyEvidence: "The challenge in the celestial hall",
-    visualHook: "A lone rebel framed against the throne",
-    composition: "Centered medium shot with visible guards",
-  },
-  repairableScene,
-);
+const repairableScene = { id: "sc_repairable", script: "Ngộ Không nhìn quanh thiên đình.", prompt: "A cinematic celestial hall under motivated light.", characterIds: ["char_1"] } as any;
+const repairedVisualIssues = getVisualShotPlanIssues({ ...repairableScene, visibleAction: "A defiant and proud moment", visualIntent: "Reveal the character's challenge", reaction: "The celestial guards recoil", storyEvidence: "The challenge in the celestial hall", visualHook: "A lone rebel framed against the throne", composition: "Centered medium shot with visible guards" }, repairableScene);
 assert(repairedVisualIssues.some((issue) => issue.includes("visibleAction:no_observable_physical_verb")));
 assert.deepEqual(getBlockingCinematicPlanningIssues(["sc_10:cinematicBeats:0:source_scene_mismatch", "sc_10:cinematicBeats:0:timing_invalid", "sc_10:cinematicBeats:1:generation_prompt_missing_exact_dialogue"]), []);
 assert.deepEqual(
@@ -232,9 +125,9 @@ assert.equal(targetedClipReset.storyboard?.[1].generationPrompt, "retry prompt")
 assert.equal(targetedClipReset.renderedVideoUrl, undefined);
 assert.equal(targetedClipReset.thumbnails?.[0].imageUrl, "/assets/projects/targeted_project/thumbnails/thumb.jpg");
 assert.equal(targetedClipReset.visualConfig.characters?.[0].images?.[0], "/assets/projects/targeted_project/references/character/wukong.png");
-const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
-const autoGeneratorSource = resolveSourceTextConstants(fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8"));
-const previewSource = resolveSourceTextConstants(fs.readFileSync("src/components/auto-video/PreviewPanelSection.tsx", "utf8"));
+const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/features/video-generation/hooks/useAutoVideoPipeline.ts", "utf8"));
+const autoGeneratorSource = resolveSourceTextConstants(fs.readFileSync("src/features/video-generation/components/AutoVideoGenerator.tsx", "utf8"));
+const previewSource = resolveSourceTextConstants(fs.readFileSync("src/features/video-generation/components/PreviewPanelSection.tsx", "utf8"));
 const controllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
 assert.doesNotMatch(pipelineSource, /No valid take remains[\s\S]{0,300}realScenes\s*=\s*_\.filter/, "pipeline still deletes failed scenes before render");
 assert.match(pipelineSource, /getCinematicGeneratedTakeIssues/, "mandatory take gate is not connected");

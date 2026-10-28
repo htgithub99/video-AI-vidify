@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { motionCharacterTraits, motionSemanticText, motionLocationFamily } from "../../../lib/motionResourceSemantics.js";
 import { isTerminalMotionAiError } from "../chatSubmissionRecovery.js";
 import { MOTION_VISUAL_CONTRACT as V } from "../../../constants/motionVisualContract.js";
@@ -128,7 +131,7 @@ export const drawPuppetCharacters = async (style: PuppetStylePack, cast: MotionC
 export const drawPuppetSprites = async (style: PuppetStylePack, c: PuppetCharacter, o: PuppetRunOptions): Promise<PuppetCharacter> => {
   assertPuppetDrawingAllowed();
   const sheet = await puppetImages([{ svg: characterSheetSvg(c, style.body.head), w: P.SHEET_PNG[0], h: P.SHEET_PNG[1] }]);
-  const raw = await quiet(o, PR.SPRITES({ style: puppetStyleText(style), character: c.desc, colors: JSON.stringify(c.colors) }), P.ARTIFACT_SPRITES, [...sheet, ...puppetStyleImages(style, P.CHAR_REF_KINDS, 3)]);
+  const raw = await quiet(o, PR.SPRITES({ style: puppetStyleText(style), character: c.desc, colors: stringifyJson(c.colors) }), P.ARTIFACT_SPRITES, [...sheet, ...puppetStyleImages(style, P.CHAR_REF_KINDS, 3)]);
   const sprites: Record<string, PuppetSprite> = {};
   for (const k of P.SPRITES) {
     const it = raw?.[k];
@@ -158,7 +161,7 @@ export const drawPuppetSets = async (style: PuppetStylePack, jobs: PuppetSetJob[
   const draft = async (k: string, why: string, last: boolean): Promise<PuppetSet> => {
     const { place, uses, reference } = byKey[k];
     o.log(P.LOG_SET(place.name || place.key));
-    const context = reference ? uses + P.NL + V.REFERENCE + JSON.stringify({ svg: reference.svg, spots: reference.spots, compositions: reference.compositions }) : uses;
+    const context = reference ? uses + P.NL + V.REFERENCE + stringifyJson({ svg: reference.svg, spots: reference.spots, compositions: reference.compositions }) : uses;
     const raw = await ask(o, PR.SET({ style: puppetStyleText(style, P.PART_SET), place: descOf(place), uses: context, time: place.time, why, lo: shapes[0], hi: shapes[1] }), P.ARTIFACT_SET, puppetStyleImages(style, setRefKinds(place)));
     const svg = cleanPuppetSvg(raw?.svg, P.SVG_SET_BYTES);
     const n = svgShapes(svg);
@@ -278,7 +281,7 @@ export const matchLibrarySets = async (style: PuppetStylePack, places: PuppetPla
     _.orderBy(
       all.filter((set) => !replaced.has(set.id)),
       [(set) => set.placementVersion || 0, (set) => set.updatedAt, (set) => set.id],
-      ["desc", "desc", "asc"],
+      [RT_SHARED.DESC, RT_SHARED.DESC, RT_SERVER.ASC],
     ),
     setGroup,
   );
@@ -343,13 +346,7 @@ export const matchLibrarySets = async (style: PuppetStylePack, places: PuppetPla
     usePuppet(
       pickOf(
         seed + key,
-        (groups[setGroup(rep)] || [rep]).filter(
-          (s) =>
-            compatible(
-              places.find((place) => place.key === key)!,
-              s,
-            ) && (s.placementVersion || 0) === (rep.placementVersion || 0),
-        ),
+        (groups[setGroup(rep)] || [rep]).filter((s) => compatible(places.find((place) => place.key === key)!, s) && (s.placementVersion || 0) === (rep.placementVersion || 0)),
       ) as PuppetSet,
     ),
   );

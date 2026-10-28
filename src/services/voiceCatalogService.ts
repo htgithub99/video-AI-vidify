@@ -21,10 +21,7 @@ export const fetchVoiceCatalog = async (params: URLSearchParams): Promise<unknow
       return response.json();
     })
     .then((data) => {
-      responseCache.set(requestUrl, {
-        data,
-        expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.VOICES_CACHE_TTL_MS),
-      });
+      responseCache.set(requestUrl, { data, expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.VOICES_CACHE_TTL_MS) });
       return data;
     })
     .finally(() => {

@@ -2,16 +2,10 @@ import assert from "node:assert/strict";
 import { getThumbnailLayoutPrompt } from "../src/constants/prompts.ts";
 import { THUMBNAIL_LAYOUT_CATALOG, THUMBNAIL_PROMPT_CONFIG, ThumbnailLayoutId, ThumbnailTypographyId } from "../src/constants/thumbnail.ts";
 import { resolveBatchTabCount } from "../src/services/batchGenerationPolicy.ts";
-import {
-  createThumbnailGenerationPrompt,
-  getThumbnailPlanningIssues,
-  normalizeThumbnailIdeas,
-  resolveThumbnailReferenceImages,
-} from "../src/services/thumbnailPromptService.ts";
+import { createThumbnailGenerationPrompt, getThumbnailPlanningIssues, normalizeThumbnailIdeas, resolveThumbnailReferenceImages } from "../src/services/thumbnailPromptService.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
 import { GEMINI_CHAT_SPEED_TAB_COUNT, GeminiChatSpeed, ThumbnailTextMode } from "../src/types.ts";
 import { PROJECT_IMAGE_FALLBACK_CONFIG } from "../src/constants/config.ts";
-
 const projectStyleLock = "Flat stick-figure illustration; every person uses round heads, pill torsos, thin stick limbs, bold outlines and flat colors";
 const generated = [
   {
@@ -48,8 +42,7 @@ const generated = [
 const thirdGenerated = [
   {
     id: "ai_3",
-    generationPrompt:
-      `${projectStyleLock}. Use template solo_left_arrow_right as the player walks away from the gaming table, render the exact Vietnamese headline 'RỜI KHỎI BẪY' once on the right in heavy condensed uppercase type, with one curved black arrow pointing left toward the abandoned table`,
+    generationPrompt: `${projectStyleLock}. Use template solo_left_arrow_right as the player walks away from the gaming table, render the exact Vietnamese headline 'RỜI KHỎI BẪY' once on the right in heavy condensed uppercase type, with one curved black arrow pointing left toward the abandoned table`,
     style: "flat editorial stickman illustration",
     hasText: true,
     textText: "RỜI KHỎI BẪY",
@@ -63,7 +56,6 @@ const thirdGenerated = [
     subjectFocus: "Player leaving the table",
   },
 ];
-
 const thumbnails = normalizeThumbnailIdeas([...generated, ...thirdGenerated], 3);
 assert.equal(thumbnails.length, 3);
 assert.deepEqual(
@@ -83,20 +75,11 @@ assert.equal(
 );
 assert.equal(THUMBNAIL_LAYOUT_CATALOG.length, 8);
 assert.deepEqual(getThumbnailPlanningIssues(generated, ThumbnailTextMode.Headline, generated.length, projectStyleLock), []);
-
 assert.throws(() => normalizeThumbnailIdeas([{ ...generated[0], id: "" }], 1), /invalid_ai_thumbnail_artifact/);
-
-const noTextGenerated = generated.map((item) => ({
-  ...item,
-  hasText: false,
-  textText: "",
-  accentWords: [],
-  generationPrompt: `${projectStyleLock}. ${item.subjectFocus}, subject left with clear negative space and one curved black arrow pointing left toward the evidence, no text or logos, free of readable text, 16:9 composition`,
-}));
+const noTextGenerated = generated.map((item) => ({ ...item, hasText: false, textText: "", accentWords: [], generationPrompt: `${projectStyleLock}. ${item.subjectFocus}, subject left with clear negative space and one curved black arrow pointing left toward the evidence, no text or logos, free of readable text, 16:9 composition` }));
 const noTextThumbnails = normalizeThumbnailIdeas(noTextGenerated, 2, "no_text");
 assert.equal(noTextThumbnails[0].hasText, false);
 assert.equal(noTextThumbnails[0].textText, "");
-
 const prompt = createThumbnailGenerationPrompt(thumbnails[0], thumbnails[0].style, "16:9", true);
 assert.ok(prompt.endsWith("--ar 16:9"));
 assert.ok(prompt.includes(thumbnails[0].textText));
@@ -106,25 +89,16 @@ assert.equal(
   THUMBNAIL_LAYOUT_CATALOG.every((layout) => !/\d+(?:-\d+)?%/.test(layout.composition)),
   true,
 );
-
-const references = resolveThumbnailReferenceImages({
-  thumbnailReferenceImages: ["thumb-style.png"],
-});
+const references = resolveThumbnailReferenceImages({ thumbnailReferenceImages: ["thumb-style.png"] });
 assert.deepEqual(references, ["thumb-style.png"]);
-
-const nodeReferences = resolveThumbnailReferenceImages({
-  styleReferenceImages: ["scene-style.png"],
-  thumbnailReferenceImages: ["thumb-style.png", "thumb-layout.png", "thumb-extra.png"],
-});
+const nodeReferences = resolveThumbnailReferenceImages({ styleReferenceImages: ["scene-style.png"], thumbnailReferenceImages: ["thumb-style.png", "thumb-layout.png", "thumb-extra.png"] });
 assert.deepEqual(nodeReferences, ["scene-style.png", "thumb-style.png", "thumb-layout.png"]);
-
 assert.equal(resolveBatchTabCount(3, 1, 3), 3);
 assert.equal(resolveBatchTabCount(8, 1, PROJECT_IMAGE_FALLBACK_CONFIG.TAB_CONCURRENCY), 3);
 assert.equal(resolveBatchTabCount(4, 2), 2);
 assert.equal(resolveBatchTabCount(3, 5, 4), 3);
 assert.equal(GEMINI_CHAT_SPEED_TAB_COUNT[GeminiChatSpeed.Slow], 2);
 assert.equal(GEMINI_CHAT_SPEED_TAB_COUNT[GeminiChatSpeed.Normal], 3);
-
 const directorPrompt = getThumbnailLayoutPrompt("A story about a gambling trap", 3, "flat stickman reference", true, "16:9", ThumbnailTextMode.Headline);
 assert.match(directorPrompt, /EXACTLY 3/);
 assert.match(directorPrompt, /solo_left_arrow_right/);
@@ -137,5 +111,4 @@ assert.match(directorPrompt, /"generationPrompt"\s*:/i);
 assert.match(directorPrompt, /Choose exactly one of the eight layout IDs/i);
 assert.match(directorPrompt, /sports_banner_subject/i);
 assert.match(directorPrompt, /editorial_montage/i);
-
 writeVerificationLog("Thumbnail generation assertions passed");

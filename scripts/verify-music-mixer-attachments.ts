@@ -52,16 +52,8 @@ const start = source.indexOf(SOURCE_TEXT_CONST_SETLOCALFILEPATHSVIACDP);
 const end = source.indexOf(SOURCE_TEXT_CONST_GETCOMPOSERREADINGS, start);
 assert.ok(start >= 0 && end > start);
 assert.match(source, /await attachRoomFiles\(page, attachments, artifactType\)/);
-const code = ts.transpileModule(source.slice(start, end) + SOURCE_TEXT_GLOBALTHIS_ATTACH_ATTACHROOMFILES, {
-  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-}).outputText;
-const sandbox = vm.createContext({
-  _,
-  Buffer,
-  ...sourceTexts,
-  MOTION_TEMPLATE_SYMBOL_12,
-  CINEMATIC_CHAT_PLANNING_CONFIG: { ...CINEMATIC_CHAT_PLANNING_CONFIG, ROOM_DELETE_ACTION_TIMEOUT_MS: 150 },
-});
+const code = ts.transpileModule(source.slice(start, end) + SOURCE_TEXT_GLOBALTHIS_ATTACH_ATTACHROOMFILES, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
+const sandbox = vm.createContext({ _, Buffer, ...sourceTexts, MOTION_TEMPLATE_SYMBOL_12, CINEMATIC_CHAT_PLANNING_CONFIG: { ...CINEMATIC_CHAT_PLANNING_CONFIG, ROOM_DELETE_ACTION_TIMEOUT_MS: 150 } });
 vm.runInContext(code, sandbox);
 const attach = sandbox.attach as (page: Page, attachments: object[], artifactType?: string) => Promise<void>;
 const directory = await mkdtemp(path.join(tmpdir(), SOURCE_TEXT_VIDIFY_MIXER_UPLOAD));

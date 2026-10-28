@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import {
   SOURCE_TEMPLATE_W_API_PHP_ACTION_QUERY_FORMAT,
   SOURCE_TEMPLATE_W_INDEX_PHP_SEARCH_TITLE_SPECIAL,
@@ -143,19 +144,19 @@ const resolveVerifiedWebLicense = (sourceUrl: string): string => {
 const normalizeSearchText = (value: string): string => _.toLower(value).normalize(SOURCE_TEXT_NFD).replace(VIETNAMESE_ACCENT_MARKS_REGEX, "").replace(VIETNAMESE_D_LETTER_REGEX, SOURCE_TEXT_D);
 const relevanceTokens = (value: string): string[] => _.filter(normalizeSearchText(value).match(/[a-z0-9]+/g) || [], (token) => token.length >= 3 && !SEARCH_STOP_WORDS.has(token));
 const relevanceScore = (candidate: SearchCandidate, query: string): number => {
-  const evidenceTokens = new Set(relevanceTokens(`${candidate.title || ""} ${candidate.sourceUrl}`));
+  const evidenceTokens = new Set(relevanceTokens(`${candidate.title || ""}${RT_SHARED.SYMBOL_36A9E7}${candidate.sourceUrl}`));
   return _.uniq(_.filter(relevanceTokens(query), (token) => evidenceTokens.has(token))).length;
 };
 const createCommonsQueryVariants = (query: string): string[] => {
   const originalWords = _.filter(query.split(/\s+/), (word) => relevanceTokens(word).length > 0);
-  const pairs = _.map(_.range(0, _.max([0, originalWords.length - 1]) || 0), (index) => `${originalWords[index]} ${originalWords[index + 1]}`);
+  const pairs = _.map(_.range(0, _.max([0, originalWords.length - 1]) || 0), (index) => `${originalWords[index]}${RT_SHARED.SYMBOL_36A9E7}${originalWords[index + 1]}`);
   return _.slice(_.uniq(_.compact([query, ...pairs])), 0, 5);
 };
 export const isArchivalSearchCandidateRelevant = (candidate: SearchCandidate, query: string): boolean => {
   const queryTokens = relevanceTokens(query);
-  const evidenceTokens = new Set(relevanceTokens(`${candidate.title || ""} ${candidate.sourceUrl}`));
+  const evidenceTokens = new Set(relevanceTokens(`${candidate.title || ""}${RT_SHARED.SYMBOL_36A9E7}${candidate.sourceUrl}`));
   const overlaps = _.filter(queryTokens, (token) => evidenceTokens.has(token));
-  if (_.isEmpty(queryTokens) || MISLEADING_CONTEXT_PATTERN.test(normalizeSearchText(`${candidate.title || ""} ${candidate.sourceUrl}`))) return false;
+  if (_.isEmpty(queryTokens) || MISLEADING_CONTEXT_PATTERN.test(normalizeSearchText(`${candidate.title || ""}${RT_SHARED.SYMBOL_36A9E7}${candidate.sourceUrl}`))) return false;
   const uniqueOverlapCount = _.uniq(overlaps).length;
   const requiredOverlapCount = queryTokens.length >= 6 ? 3 : 2;
   return uniqueOverlapCount >= requiredOverlapCount && _.divide(uniqueOverlapCount, _.max([queryTokens.length, 1])!) >= 0.3;
@@ -245,7 +246,7 @@ const searchBingImages = async (context: BrowserContext, page: Page, query: stri
   return null;
 };
 const searchWikimediaCommons = async (context: BrowserContext, page: Page, query: string, excludedSources: Set<string>): Promise<ArchivalImageResult | null> => {
-  const reducedQuery = _.trim(query.replace(GENERIC_SEARCH_TERMS, " ").replace(/\s+/g, " ")) || query;
+  const reducedQuery = _.trim(query.replace(GENERIC_SEARCH_TERMS, RT_SHARED.SYMBOL_36A9E7).replace(/\s+/g, RT_SHARED.SYMBOL_36A9E7)) || query;
   await page.goto(SOURCE_TEMPLATE_W_INDEX_PHP_SEARCH_TITLE_SPECIAL(`${COMMONS_HOST}`, `${encodeURIComponent(reducedQuery)}`), { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: 30000 });
   for (const searchQuery of createCommonsQueryVariants(reducedQuery)) {
     const apiUrl = SOURCE_TEMPLATE_W_API_PHP_ACTION_QUERY_FORMAT(`${COMMONS_HOST}`, `${encodeURIComponent(searchQuery)}`);
@@ -253,19 +254,7 @@ const searchWikimediaCommons = async (context: BrowserContext, page: Page, query
     const directApiResponse = !apiResponse?.ok() ? await fetch(apiUrl, { headers: { "user-agent": SOURCE_TEXT_VIDIFY_ARCHIVAL_MEDIA_RESOLVER_1_0 } }).catch(() => null) : null;
     if (!apiResponse?.ok() && !directApiResponse?.ok) continue;
     const apiData = apiResponse?.ok() ? await apiResponse.json() : await directApiResponse!.json();
-    const pages = _.orderBy(
-      _.values(_.get(apiData, SOURCE_TEXT_QUERY_PAGES, {})) as any[],
-      (item) =>
-        relevanceScore(
-          {
-            mediaUrl: _.toString(_.get(item, SOURCE_TEXT_IMAGEINFO_0_URL)),
-            sourceUrl: _.toString(_.get(item, SOURCE_TEXT_IMAGEINFO_0_DESCRIPTIONURL)),
-            title: _.toString(item.title),
-          },
-          query,
-        ),
-      SOURCE_TEXT_DESC,
-    );
+    const pages = _.orderBy(_.values(_.get(apiData, SOURCE_TEXT_QUERY_PAGES, {})) as any[], (item) => relevanceScore({ mediaUrl: _.toString(_.get(item, SOURCE_TEXT_IMAGEINFO_0_URL)), sourceUrl: _.toString(_.get(item, SOURCE_TEXT_IMAGEINFO_0_DESCRIPTIONURL)), title: _.toString(item.title) }, query), SOURCE_TEXT_DESC);
     for (const item of pages) {
       const info = _.first(item.imageinfo) as any;
       const mediaUrl = _.toString(info?.url);
@@ -275,13 +264,7 @@ const searchWikimediaCommons = async (context: BrowserContext, page: Page, query
       if (excludedSources.has(sourceUrl) || !isArchivalSearchCandidateRelevant(candidate, query) || !SUPPORTED_MEDIA_PATTERN.test(mediaUrl) || !mimeType.startsWith(SOURCE_TEXT_IMAGE_2) || mimeType.includes(SOURCE_TEXT_SVG)) continue;
       const downloaded = await downloadCandidate(context, candidate);
       if (!downloaded) continue;
-      return {
-        success: true,
-        ...downloaded,
-        sourceUrl,
-        license: _.trim(_.toString(info?.extmetadata?.LicenseShortName?.value || info?.extmetadata?.UsageTerms?.value || SOURCE_TEXT_WIKIMEDIA_COMMONS_SOURCE_PAGE)),
-        provider: SOURCE_TEXT_WIKIMEDIA_COMMONS,
-      };
+      return { success: true, ...downloaded, sourceUrl, license: _.trim(_.toString(info?.extmetadata?.LicenseShortName?.value || info?.extmetadata?.UsageTerms?.value || SOURCE_TEXT_WIKIMEDIA_COMMONS_SOURCE_PAGE)), provider: SOURCE_TEXT_WIKIMEDIA_COMMONS };
     }
   }
   return null;

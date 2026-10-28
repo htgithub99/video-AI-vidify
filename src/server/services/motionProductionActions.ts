@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { assertMotionScriptComplete, assertMotionProductionMode } from "../../lib/motionProduction.js";
 import { MOTION_CHAPTER_REPAIR } from "../../constants/motionChapterRepair.js";
 import { MOTION_PRODUCTION } from "../../constants/motionProduction.js";
@@ -60,7 +63,6 @@ import { MOTION_AI_ROLE } from "../../constants/motionAiFallback.js";
 import { startMotionRender } from "./motionRenderService.js";
 import { startStoryJob, type StoryJobContext } from "./motionStoryJobService.js";
 import { motionInputKey } from "./motionFileUtils.js";
-const startInputJob = (body: Record<string, any>, keepBrowser: boolean, kind: MotionStoryJobKind, run: (ctx: StoryJobContext) => Promise<unknown>, editorial?: MotionEditorialSession) => startStoryJob(keepBrowser, kind, run, editorial, body.productionId || editorial?.id ? motionInputKey([body.productionId || editorial?.id, kind, body]) : undefined);
 import { analyzeStory, editScript, mapMotionAiPool, parseStorySource, writeChapterBeats, type MotionEditorialSession, type MotionAnalysisDraft } from "./motionStoryService.js";
 import { isTerminalMotionAiError } from "./chatSubmissionRecovery.js";
 import { MOTION_EDITORIAL } from "../../constants/motionEditorial.js";
@@ -68,6 +70,7 @@ import { generateMotionSeo, seoScriptKey, type MotionSeoDraft } from "./motionSe
 import { motionTaskCheckpoint } from "./motionTaskCheckpoint.js";
 import { resolveSourceInput, withFetchInfo } from "./motionSourceFetchService.js";
 import { cleanTranscriptInput } from "../../lib/motionSourceClean.js";
+const startInputJob = (body: Record<string, any>, keepBrowser: boolean, kind: MotionStoryJobKind, run: (ctx: StoryJobContext) => Promise<unknown>, editorial?: MotionEditorialSession) => startStoryJob(keepBrowser, kind, run, editorial, body.productionId || editorial?.id ? motionInputKey([body.productionId || editorial?.id, kind, body]) : undefined);
 export const readStorySource = async (text: string): Promise<MotionStorySource> => {
   const r = await resolveSourceInput(text);
   const { text: cleaned, report } = cleanTranscriptInput(r.text);
@@ -110,9 +113,9 @@ export const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MO
 export const editorialSession = (body: any, source: MotionStorySource, exec: MotionAiExecution): MotionEditorialSession | undefined => {
   const id = _.toString(body?.editorialSessionId);
   if (!MOTION_EDITORIAL.ID_PATTERN.test(id) || !source?.segments) return undefined;
-  const revision = createHash("sha256")
-    .update(JSON.stringify([videoDnaSourceKey(source), source.notes, storyLanguage(body?.language), exec]))
-    .digest("hex");
+  const revision = createHash(RT_SERVER.SHA256)
+    .update(stringifyJson([videoDnaSourceKey(source), source.notes, storyLanguage(body?.language), exec]))
+    .digest(RT_SERVER.HEX);
   return { id, revision, context: motionEditorialContext(source, body?.analysis, body?.script, body?.beats, storyLanguage(body?.language)) };
 };
 export const analyzeMotionStoryInput = async (body: Record<string, any>) => {
@@ -131,7 +134,7 @@ export const analyzeMotionStoryInput = async (body: Record<string, any>) => {
     async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(String(Number.isFinite(source.words) ? source.words : speechUnits(source.text)), String(Math.round(source.sourceSeconds / 60))));
-      const options = { language, length, visualSettings, styleReferences: visualSettings.mode === "remotion" ? [] : styleReferences, videoGenre: motionVideoGenre(body?.videoGenre), stylePreset: visualSettings.mode === "library" ? visualSettings.packId : undefined, characterMotion: body?.characterMotion === true, aspect: _.toString(body?.aspect || MR.MOTION_TEXT_16_9), exec };
+      const options = { language, length, visualSettings, styleReferences: visualSettings.mode === RT_SHARED.REMOTION ? [] : styleReferences, videoGenre: motionVideoGenre(body?.videoGenre), stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined, characterMotion: body?.characterMotion === true, aspect: _.toString(body?.aspect || MR.MOTION_TEXT_16_9), exec };
       const recovery = motionTaskCheckpoint<MotionAnalysisDraft>(body.productionId || body.editorialSessionId, MotionStoryJobKind.ANALYZE, [source, options]);
       const analysis = await analyzeStory(source, { ...options, signal: ctx.signal, log: ctx.log, draft: recovery.read(), onDraft: recovery.save });
       ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(String(analysis.chapters.length), String(analysis.cast.length), String(analysis.places.length), String(analysis.facts.length)));
@@ -146,7 +149,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
   const source = body?.source as MotionStorySource;
   let analysis = body?.analysis as MotionStoryAnalysis;
   const visualSettings = motionVisualSettingsFor(body);
-  if (analysis) analysis = { ...analysis, visualSettings, stylePreset: visualSettings.mode === "library" ? visualSettings.packId : undefined };
+  if (analysis) analysis = { ...analysis, visualSettings, stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined };
   if (!source?.segments?.length || !analysis?.chapters?.length) throw new Error(MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC);
   const language = storyLanguage(body?.language);
   if (analysis.videoDna) {
@@ -173,7 +176,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       );
       const chapters = analysis.chapters;
       const carried = body?.carryGen ? ({ ...emptyGen(), ...body.carryGen } as MotionStoryScript["gen"]) : undefined;
-      const keepGen = _.isEmpty(only) ? carried : (body?.gen as MotionStoryScript["gen"]) || carried;
+      const keepGen = ((body?.resume === true || !_.isEmpty(only)) && (body?.gen as MotionStoryScript["gen"])) || carried;
       const byChapter: Record<string, MotionBeat[]> = _.groupBy(existing, MOTION_TEXT_CHAPTERID);
       const chapterDrafts: NonNullable<MotionStoryScript["chapterDrafts"]> = structuredClone(body?.chapterDrafts || {});
       const durationRepairStates: NonNullable<MotionStoryScript["durationRepairStates"]> = structuredClone(body?.durationRepairStates || {});
@@ -201,6 +204,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             speechRate,
             draft: chapterDrafts[chapter.id],
             durationRepair: body?.durationRepair === true,
+            durationRepairScope: body?.durationRepairScope,
             repairState: body?.durationRepair === true ? durationRepairStates[chapter.id] : undefined,
             existing: byChapter[chapter.id],
             onDraft: (draft) => {
@@ -273,7 +277,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
   const behavior = motionRenderBehaviorFor(body);
   const visualSettings = motionVisualSettingsFor(body);
   const raw = body?.analysis as MotionStoryAnalysis;
-  const analysis = (raw ? { ...raw, visualSettings, stylePreset: visualSettings.mode === "library" ? visualSettings.packId : undefined } : raw) as MotionStoryAnalysis;
+  const analysis = (raw ? { ...raw, visualSettings, stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined } : raw) as MotionStoryAnalysis;
   const script = body?.script as MotionStoryScript;
   if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
   assertMotionScriptComplete(script, analysis);
@@ -283,7 +287,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
   const onlyBeats: string[] = _.map(_.castArray(body?.beats || []), _.toString);
   const onlyLocations: string[] = _.map(_.castArray(body?.locations || []), _.toString);
   const note = _.truncate(_.toString(body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
-  if (visualSettings.mode === "remotion") {
+  if (visualSettings.mode === RT_SHARED.REMOTION) {
     const job = startInputJob(
       body,
       body?.keepBrowser === true,
@@ -322,7 +326,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
       ctx.progress(0, MOTION_STORY_CONFIG.SCENES_PREPARING);
       const audioAbort = new AbortController();
       const cancelAudio = () => audioAbort.abort(ctx.signal.reason);
-      ctx.signal.addEventListener("abort", cancelAudio, { once: true });
+      ctx.signal.addEventListener(RT_SHARED.ABORT, cancelAudio, { once: true });
       if (ctx.signal.aborted) cancelAudio();
       const voiceOpts = { exec: mainExec, session: editorialSession(body, body.source, mainExec), scope: body.productionId || body.editorialSessionId, asr: body?.asrCheck === true, aspect: _.toString(body?.aspect || MOTION_TEXT_16_9), signal: audioAbort.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
       let planJob: Promise<Awaited<ReturnType<typeof directMotionVoice>> | undefined> = Promise.resolve(undefined);
@@ -347,7 +351,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
           onlyBeats,
           onlyLocations,
           styleReferences,
-          characterMotion: behavior.actors === "simple",
+          characterMotion: behavior.actors === RT_SHARED.SIMPLE,
           note: note || undefined,
           review: body?.review !== false,
           sfx: body?.sfx !== false,
@@ -365,7 +369,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
         return result;
       } finally {
         audioAbort.abort();
-        ctx.signal.removeEventListener("abort", cancelAudio);
+        ctx.signal.removeEventListener(RT_SHARED.ABORT, cancelAudio);
       }
     },
     (() => {
@@ -422,8 +426,8 @@ export const compileMotionStoryInput = async (body: Record<string, any>) => {
       _.map(script.beats, (b) => estimateBeatSeconds(b, script.language)),
       uploadedSeconds,
     );
-  const directedScript = script.gen ? { ...script, gen: { ...script.gen, characterMotion: behavior.actors === "simple", renderBehavior: behavior } } : script;
-  const compiled = visualSettings.mode === "remotion" ? compileRemotionStory({ ...directedScript, visualSettings }, analysis ? { ...analysis, visualSettings } : null, { aspect, durations, fps: body.fps, voiceTrack, renderBehavior: behavior, subtitles: body.subtitles }) : compileStorySpec(directedScript, analysis, { aspect, durations, look: body?.look, accent: body?.accent, voiceTrack });
+  const directedScript = script.gen ? { ...script, gen: { ...script.gen, characterMotion: behavior.actors === RT_SHARED.SIMPLE, renderBehavior: behavior } } : script;
+  const compiled = visualSettings.mode === RT_SHARED.REMOTION ? compileRemotionStory({ ...directedScript, visualSettings }, analysis ? { ...analysis, visualSettings } : null, { aspect, durations, fps: body.fps, voiceTrack, renderBehavior: behavior, subtitles: body.subtitles }) : compileStorySpec(directedScript, analysis, { aspect, durations, look: body?.look, accent: body?.accent, voiceTrack });
   compiled.spec = applyMotionRenderBehavior(compiled.spec, behavior);
   const duration = compiled.spec.duration || 1,
     voiceId = voiceTrack?.audioId || (!voiceStale && body?.audioId ? path.basename(String(body.audioId)) : undefined);

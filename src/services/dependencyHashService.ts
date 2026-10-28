@@ -23,35 +23,12 @@ export const createDependencyHash = (value: unknown): string => {
   const hexadecimalHash = (hash >>> 0).toString(DEPENDENCY_HASH_CONFIG.RADIX_HEXADECIMAL).padStart(DEPENDENCY_HASH_CONFIG.HASH_PADDING_LENGTH, DEPENDENCY_HASH_CONFIG.HASH_PADDING_CHARACTER);
   return `${DEPENDENCY_HASH_CONFIG.HASH_PREFIX}${hexadecimalHash}`;
 };
-export const createSceneDependencyHash = (scene: Pick<StoryboardScene, "id" | "prompt" | "script">, visualDependencies: unknown): string =>
-  createDependencyHash({
-    sceneId: scene.id,
-    prompt: scene.prompt,
-    script: scene.script,
-    visualDependencies,
-  });
+export const createSceneDependencyHash = (scene: Pick<StoryboardScene, "id" | "prompt" | "script">, visualDependencies: unknown): string => createDependencyHash({ sceneId: scene.id, prompt: scene.prompt, script: scene.script, visualDependencies });
 export const inheritApprovedSceneAsset = (scene: StoryboardScene, previous?: StoryboardScene): StoryboardScene =>
   previous?.dependencyHash === scene.dependencyHash && previous.assetStatus === SceneAssetStatus.Approved
-    ? {
-        ...scene,
-        assetUrl: previous.assetUrl,
-        assetUrls: previous.assetUrls,
-        assetType: previous.assetType,
-        assetStatus: previous.assetStatus,
-        assetRevisionId: previous.assetRevisionId,
-        assetRevisions: previous.assetRevisions,
-      }
+    ? { ...scene, assetUrl: previous.assetUrl, assetUrls: previous.assetUrls, assetType: previous.assetType, assetStatus: previous.assetStatus, assetRevisionId: previous.assetRevisionId, assetRevisions: previous.assetRevisions }
     : previous?.remoteVideoDownloadPending && (!_.isEmpty(previous.remoteVideoMediaIds) || !_.isEmpty(previous.remoteVideoMediaId))
-      ? {
-          ...scene,
-          assetStatus: SceneAssetStatus.Failed,
-          assetError: previous.assetError,
-          remoteVideoMediaId: previous.remoteVideoMediaId,
-          remoteVideoMediaIds: previous.remoteVideoMediaIds,
-          remoteVideoSourceUrl: previous.remoteVideoSourceUrl,
-          remoteVideoExpectedCount: previous.remoteVideoExpectedCount,
-          remoteVideoDownloadPending: true,
-        }
+      ? { ...scene, assetStatus: SceneAssetStatus.Failed, assetError: previous.assetError, remoteVideoMediaId: previous.remoteVideoMediaId, remoteVideoMediaIds: previous.remoteVideoMediaIds, remoteVideoSourceUrl: previous.remoteVideoSourceUrl, remoteVideoExpectedCount: previous.remoteVideoExpectedCount, remoteVideoDownloadPending: true }
       : scene;
 export const appendAssetRevision = (scene: StoryboardScene, assetUrl: string, status: SceneAssetStatus): AssetRevision => {
   const revisionIndex = _.size(scene.assetRevisions) + DEPENDENCY_HASH_CONFIG.REVISION_INDEX_OFFSET;
@@ -69,10 +46,7 @@ export const appendAssetRevision = (scene: StoryboardScene, assetUrl: string, st
   return revision;
 };
 export const rollbackSceneAssetRevision = (scene: StoryboardScene, revisionId: string): StoryboardScene => {
-  const target = _.find(scene.assetRevisions, {
-    id: revisionId,
-    status: SceneAssetStatus.Approved,
-  });
+  const target = _.find(scene.assetRevisions, { id: revisionId, status: SceneAssetStatus.Approved });
   if (!target) throw new Error(DEPENDENCY_HASH_CONFIG.APPROVED_REVISION_REQUIRED);
   const restored = { ...scene, assetUrl: target.assetUrl, assetUrls: [target.assetUrl], assetStatus: SceneAssetStatus.Approved };
   const revision = appendAssetRevision(restored, target.assetUrl, SceneAssetStatus.Approved);

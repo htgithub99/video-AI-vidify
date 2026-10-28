@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
+import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_FOLK_STORY as F } from "../constants/motionFolkStory.js";
 import { MOTION_FOLK_BELIEFS } from "../constants/motionFolkBeliefs.js";
 import type { MotionFolkStoryContract, MotionStoryAnalysis } from "../types/motionVideo.js";
@@ -5,12 +7,12 @@ import { MOTION_RESPONSE_SCHEMAS } from "../constants/motionResponseContract.js"
 import { motionResponseIssues } from "./motionResponseContract.js";
 const words = (text: string): string[] =>
   String(text || "")
-    .normalize("NFC")
+    .normalize(RT_SHARED.NFC)
     .toLowerCase()
     .match(F.WORDS) || [];
 const plain = (text: string): string => words(text).join(F.SPACE);
 const contains = (text: string, term: string): boolean => !!plain(term) && (F.SPACE + plain(text) + F.SPACE).includes(F.SPACE + plain(term) + F.SPACE);
-export const motionFolkContractGuide = (contract?: MotionFolkStoryContract): string => [F.PROFILE, contract ? F.CONTRACT_LABEL + JSON.stringify(contract) : ""].filter(Boolean).join("\n");
+export const motionFolkContractGuide = (contract?: MotionFolkStoryContract): string => ([F.PROFILE, contract ? F.CONTRACT_LABEL + stringifyJson(contract) : ""] as string[]).filter(Boolean).join(RT_SHARED.SYMBOL_01BA47);
 export const motionFolkTopicErrors = (raw: any, source: string): string[] => {
   if (motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS[F.TOPIC_ARTIFACT]).length) return [F.TOPIC_ERROR];
   return [...(!source.includes(raw.evidence) ? [F.TOPIC_EVIDENCE_ERROR] : []), ...(!raw.aliases.some((alias: string) => contains(raw.evidence, alias)) ? [F.TOPIC_ALIAS_ERROR] : [])];
@@ -20,7 +22,7 @@ export const motionFolkTopicContract = (raw: any, sourceKey: string): MotionFolk
   version: F.VERSION,
   profileId: F.PROFILE_ID,
   sourceKey,
-  topic: { id: plain(raw.name).replace(/ /g, "_"), name: raw.name.trim(), meaning: raw.meaning.trim(), aliases: [...new Set<string>([raw.name, ...raw.aliases].map((value) => value.trim()))].slice(0, F.ALIASES_MAX), evidence: raw.evidence.trim() },
+  topic: { id: plain(raw.name).replace(/ /g, RT_SHARED.SYMBOL_D2E2AD), name: raw.name.trim(), meaning: raw.meaning.trim(), aliases: [...new Set<string>([raw.name, ...raw.aliases].map((value) => value.trim()))].slice(0, F.ALIASES_MAX), evidence: raw.evidence.trim() },
 });
 export const motionKnownFolkContract = (title: string, source: string, sourceKey: string): MotionFolkStoryContract | undefined => {
   const ranked = MOTION_FOLK_BELIEFS.map((belief) => ({ belief, title: belief.aliases.some((alias) => contains(title, alias)), count: belief.aliases.reduce((sum, alias) => sum + (F.SPACE + plain(source) + F.SPACE).split(F.SPACE + plain(alias) + F.SPACE).length - 1, 0) }))
@@ -28,11 +30,11 @@ export const motionKnownFolkContract = (title: string, source: string, sourceKey
     .sort((a, b) => Number(b.title) - Number(a.title) || b.count - a.count);
   const chosen = ranked[0]?.belief;
   if (!chosen) return undefined;
-  const data = title + "\n" + source;
+  const data = title + RT_SHARED.SYMBOL_01BA47 + source;
   const alias = chosen.aliases.find((alias) => data.toLowerCase().includes(alias.toLowerCase()));
   if (!alias) return undefined;
   const at = data.toLowerCase().indexOf(alias.toLowerCase());
-  return motionFolkTopicContract({ name: chosen.name, meaning: chosen.meaning.split(".")[0], aliases: chosen.aliases, evidence: data.slice(Math.max(0, at - 50), at + alias.length + 100) }, sourceKey);
+  return motionFolkTopicContract({ name: chosen.name, meaning: chosen.meaning.split(RT_SHARED.SYMBOL_CDB4EE)[0], aliases: chosen.aliases, evidence: data.slice(Math.max(0, at - 50), at + alias.length + 100) }, sourceKey);
 };
 export const motionFolkCopied = (text: string, source: string): boolean => {
   const wanted = words(text),
@@ -59,7 +61,7 @@ export const motionFolkStoryErrors = (raw: any, contract: MotionFolkStoryContrac
 };
 export const scopeMotionFolkStoryRepair = (raw: any, errors: string[]): any => {
   if (!errors.length || !errors.every((error) => error.startsWith(F.COPY_PREFIX))) return raw;
-  const ids = new Set(errors.map((error) => error.slice(F.COPY_PREFIX.length).split(":")[0]));
+  const ids = new Set(errors.map((error) => error.slice(F.COPY_PREFIX.length).split(RT_SHARED.SYMBOL_E7AC07)[0]));
   const incoming = raw?.patch || raw;
   return { patch: { chapters: Array.isArray(incoming?.chapters) ? incoming.chapters.filter((chapter: any) => ids.has(chapter?.id)) : [] } };
 };

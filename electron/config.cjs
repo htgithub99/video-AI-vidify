@@ -37,7 +37,6 @@ const APP_CONFIG = {
   PATH_ENV: "PATH",
   BOOLEAN_FALSE: false,
 };
-
 const MESSAGES = {
   INIT_DB_ERR: "Lỗi sao chép database.db:",
   START_SERVER_ERR: "Lỗi khởi động Express server:",
@@ -58,36 +57,8 @@ const MESSAGES = {
   LOG_SERVER_CJS: "Loading Express server from dist/server.cjs...",
   LOG_SERVER_DEV: "No server.jsc or server.cjs found. Assuming server is running independently in development.",
 };
-
-const PLATFORMS = {
-  WIN: "win32",
-  MAC: "darwin",
-};
-
-const COMMANDS = {
-  CHROME_WIN: 'start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="C:\\chrome_debug_profile" --profile-directory="Profile 2"',
-  CHROME_MAC: 'open -a "Google Chrome" --args --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="/tmp/chrome_debug_profile"',
-};
-
-const ENV_VALUES = {
-  TRUE: "true",
-};
-
-const KEYS = {
-  F12: "F12",
-  I_UPPER: "I",
-  I_LOWER: "i",
-  J_UPPER: "J",
-  J_LOWER: "j",
-  C_UPPER: "C",
-  C_LOWER: "c",
-};
-
-module.exports = {
-  APP_CONFIG,
-  MESSAGES,
-  PLATFORMS,
-  COMMANDS,
-  ENV_VALUES,
-  KEYS,
-};
+const PLATFORMS = { WIN: "win32", MAC: "darwin" };
+const COMMANDS = { CHROME_WIN: 'start chrome.exe --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="C:\\chrome_debug_profile" --profile-directory="Profile 2"', CHROME_MAC: 'open -a "Google Chrome" --args --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="/tmp/chrome_debug_profile"' };
+const ENV_VALUES = { TRUE: "true" };
+const KEYS = { F12: "F12", I_UPPER: "I", I_LOWER: "i", J_UPPER: "J", J_LOWER: "j", C_UPPER: "C", C_LOWER: "c" };
+module.exports = { APP_CONFIG, MESSAGES, PLATFORMS, COMMANDS, ENV_VALUES, KEYS };

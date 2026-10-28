@@ -27,13 +27,14 @@ export const MOTION_VISUAL = {
   MODES: { LIBRARY: "library", REMOTION: "remotion" },
   PROFILES: {
     history: {
-      revision: 1,
+      revision: 2,
       vi: "Lịch sử",
       en: "History — illustrated",
-      direction: "Hand-drawn 2D editorial illustration, expressive readable faces, full-length proportional bodies, clear dark contours, restrained warm parchment palette, era-appropriate clothes and architecture. No generic stick figures or short-legged chibi. White/paper backgrounds are valid for explanatory scenes.",
-      paper: "#e8ddc7",
-      ink: "#292924",
-      muted: "#a88149",
+      direction:
+        "Hand-drawn history explainer cartoon: large round off-white heads, minimal expressive eyes/brows/mouth, compact colored clothing and thin black ink arms/legs, with hair and source-supported era accessories distinguishing people. These intentional stick-limb proportions are valid, not defective anatomy. Use bold slightly irregular black contours and flat muted colors. Alternate spacious white explanatory vignettes with richer illustrated locations: readable architecture, terrain and important artifacts in coherent perspective, quieter than the foreground people. No compulsory parchment tint, realistic long-legged bodies or fixed ancient/European cast. Adapt to the actual period, region and event; learn visual craft from references without copying their characters, scenes, captions or logos.",
+      paper: "#ffffff",
+      ink: "#1b1b1b",
+      muted: "#879277",
     },
     horror: {
       revision: 3,
@@ -109,6 +110,8 @@ export const MOTION_VISUAL = {
   SVG_CLOSE_MISMATCH: (expected: string | undefined, actual: string) => `Thẻ đóng </${actual}> không khớp ${expected ? `<${expected}>` : "thẻ đang mở"}.`,
   ANCHORS_MISSING: (keys: string[]) => `Chỉ bổ sung điểm đặt anchors: ${keys.join(", ")}. Giữ nguyên SVG đã đạt.`,
   LOG_REUSE: (name: string) => `Dùng lại hình nhân vật đã đạt: ${name}.`,
+  LOG_CONTINUE: "Tiếp tục dựng các cảnh còn thiếu; giữ bố cục và hình đã đạt.",
+  LOG_INVALID_SCENES: "Kiểm tra và sửa riêng cảnh chưa hợp lệ; giữ các cảnh đã đạt.",
   STYLE_REFRESH_REASON: "Hình thuộc phiên bản nét vẽ cũ; cần dựng lại theo kiểu hình đã cập nhật.",
   LOG_STYLE_REFRESH: (name: string, count: number) => `Cập nhật nét vẽ ${name}: dựng lại ${count} lớp hình cũ, giữ kịch bản, phân cảnh và bản gốc đối chiếu.`,
   CPU_ONLY: "Nhánh Remotion hiện hỗ trợ mã hóa CPU. Hãy chọn CPU hoặc Tự động.",
@@ -125,6 +128,7 @@ export const MOTION_VISUAL = {
   ARTIFACT_REVIEW: "motion_remotion_review",
   COMPOSITION_ID: "MotionStory",
   BUNDLE_FOLDER: "remotion",
+  BUNDLE_PUBLIC_FOLDER: "empty-public",
   PROJECT_FOLDER: "remotion-projects",
   LOG_MODE: (mode: string) => `Phương thức dựng: ${mode === "remotion" ? "Remotion" : "Kho tài nguyên"}.`,
   LOG_SCENE: (i: number, total: number, id: string) => `Đọc và dựng cảnh Remotion ${i}/${total}: ${id}`,

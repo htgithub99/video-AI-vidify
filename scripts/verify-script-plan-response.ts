@@ -29,17 +29,7 @@ const createScriptPlan = (chapterCount: number): Record<string, unknown> => ({
       finalCost: "A concrete loss",
       realization: "A changed understanding",
     },
-    beats: _.times(6, (index) => ({
-      id: `beat_${index + 1}`,
-      type: index === 0 ? "hook" : index === 5 ? "payoff" : "escalation",
-      event: `Event ${index + 1}`,
-      characterStateBefore: "Before event",
-      characterStateAfter: "After event",
-      visibleAction: "Performs a visible action",
-      retentionPurpose: "Moves the central question",
-      targetDurationSeconds: 20,
-      callbackId: "",
-    })),
+    beats: _.times(6, (index) => ({ id: `beat_${index + 1}`, type: index === 0 ? "hook" : index === 5 ? "payoff" : "escalation", event: `Event ${index + 1}`, characterStateBefore: "Before event", characterStateAfter: "After event", visibleAction: "Performs a visible action", retentionPurpose: "Moves the central question", targetDurationSeconds: 20, callbackId: "" })),
     callbacks: [],
     endingPayoff: "The question is answered",
   },
@@ -66,11 +56,7 @@ const requests: string[] = [];
 const result = await requestValidScriptPlan({ contents: "Create the complete plan", config: {}, task: {} }, chapterCount, async (request) => {
   requests.push(request.contents);
   const responseIndex = _.subtract(requests.length, 1);
-  return {
-    text: responses[responseIndex],
-    aiMetadata: { responseIndex },
-    rotationLogs: [`response_${responseIndex}`],
-  };
+  return { text: responses[responseIndex], aiMetadata: { responseIndex }, rotationLogs: [`response_${responseIndex}`] };
 });
 assert(requests.length === SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS, "invalid script plan was not retried");
 assert(_.includes(requests[1], _.toString(chapterCount)), "retry omitted the required chapter count");

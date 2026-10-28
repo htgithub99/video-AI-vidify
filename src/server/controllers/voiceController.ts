@@ -15,13 +15,7 @@ export const getVoices = async (request: Request, response: Response) => {
     if (_.isEmpty(apiKey)) {
       throw createAppError(SecurityMessages.MISSING_AI33_KEY);
     }
-    const apiResponse = await fetch(targetUrl, {
-      method: HTTP_METHODS.GET,
-      headers: {
-        accept: SecurityConstants.ACCEPT_ALL_JSON,
-        [HTTP_HEADERS.XI_API_KEY]: apiKey,
-      },
-    });
+    const apiResponse = await fetch(targetUrl, { method: HTTP_METHODS.GET, headers: { accept: SecurityConstants.ACCEPT_ALL_JSON, [HTTP_HEADERS.XI_API_KEY]: apiKey } });
     if (!apiResponse.ok) {
       throw createAppError(`${getBackendMsg(SOURCE_TEXT_HTTP_STATUS_ERROR, isVi)}${apiResponse.status}`);
     }
@@ -29,9 +23,6 @@ export const getVoices = async (request: Request, response: Response) => {
     response.json(data);
   } catch (error: any) {
     appWarn(SOURCE_TEXT_FETCH_VOICES_ERR, REFACTOR_CONSTANTS.VOICES_ERR_FAILED_TO_FETCH, error);
-    response.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({
-      success: false,
-      error: REFACTOR_CONSTANTS.VOICES_ERR_FAILED_TO_FETCH,
-    });
+    response.status(HTTP_STATUS_CODES.SERVICE_UNAVAILABLE).json({ success: false, error: REFACTOR_CONSTANTS.VOICES_ERR_FAILED_TO_FETCH });
   }
 };

@@ -22,7 +22,7 @@ export const RESPONSE_QA = {
     { id: "voice_nam", name: "Nam", gender: "male", age: "adult", language: "vi" },
   ],
   THUMBNAIL: "A simple static folk illustration of the approved river scene. Keep the two visible people beside the existing river bank and show the scarf as the only focal clue. Use a calm warm palette and readable Vietnamese title.",
-  THUMB_ENTRY: 'export * from "./src/server/services/motionThumbnailService.ts";',
+  THUMB_ENTRY: 'export * from "./src/features/motion/server/services/motionThumbnailService.ts";',
   STORY_IMPORT: /(?:^|\/)motionStoryService\.js$/,
   IMAGE_IMPORT: /(?:^|\/)imageGeneratorService\.js$/,
   STUB_NAMESPACE: "response-contract-offline",

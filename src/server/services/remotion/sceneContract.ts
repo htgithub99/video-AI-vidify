@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_REMOTION_PROMPTS as P, MOTION_REMOTION_SCHEMAS } from "../../../constants/motionRemotionPrompts.js";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLayout.js";
@@ -20,8 +23,8 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
     for (const node of [...(Array.isArray(old?.nodes) ? old.nodes : []), ...(Array.isArray(item.nodes) ? item.nodes : [])]) {
       if (!node || typeof node !== "object") continue;
       const merged = { ...nodes.get(node.id), ...node };
-      for (const key of ["entityId", "relation", "target", "evidence", "essential", "appearanceChanged", "poseEssential"]) if (merged[key] === null || merged[key] === "") delete merged[key];
-      merged.pose ||= "standing";
+      for (const key of [RT_SERVER.ENTITYID, RT_SERVER.RELATION, RT_SHARED.TARGET, RT_SHARED.EVIDENCE, RT_SERVER.ESSENTIAL, RT_SERVER.APPEARANCECHANGED, RT_SERVER.POSEESSENTIAL] as string[]) if (merged[key] === null || merged[key] === "") delete merged[key];
+      merged.pose ||= RT_SHARED.STANDING;
       nodes.set(node.id, merged);
     }
     const duplicate = Array.isArray(item.nodes) && new Set(item.nodes.map((node: any) => node?.id)).size !== item.nodes.length;
@@ -31,7 +34,7 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
   const errors: string[] = [];
   const scenes: any[] = [];
   for (const item of drafts.values()) {
-    const issues = motionResponseErrors(item, schema, `scenes[${item.fromLineId}]`);
+    const issues = motionResponseErrors(item, schema, `${RT_SERVER.SCENES}${item.fromLineId}${RT_SHARED.SYMBOL_CFAE0D}`);
     if (issues.length) {
       errors.push(...issues);
       continue;
@@ -46,20 +49,20 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
     const source = lines
       .slice(from, to + 1)
       .map((line) => line.text)
-      .join(" ");
+      .join(RT_SHARED.SYMBOL_36A9E7);
     const ids = new Set(item.nodes.map((node: MotionRemotionNode) => node.id));
     if (item.focus) item.focus = [...new Set((item.focus as string[]).filter((id) => ids.has(id)))];
     const nodeErrors: string[] = [];
     const report = (node: MotionRemotionNode, field: string) => nodeErrors.push(P.NODE_ISSUE(item.fromLineId, node.id, field));
     for (const node of item.nodes as MotionRemotionNode[]) {
       node.evidence ||= source;
-      if (node.kind === "character" && node.relation === "on" && node.essential === false && !node.poseEssential) {
-        node.relation = "beside";
-        node.pose = "standing";
-        node.contact = "base";
+      if (node.kind === RT_SHARED.CHARACTER && node.relation === RT_SHARED.ON && node.essential === false && !node.poseEssential) {
+        node.relation = RT_SHARED.BESIDE;
+        node.pose = RT_SHARED.STANDING;
+        node.contact = RT_SHARED.BASE;
       }
       if (ids.size !== item.nodes.length) report(node, P.DUPLICATE_NODE);
-      if (node.kind === "character" && (!node.entityId || !cast.has(node.entityId))) report(node, P.UNKNOWN_CHARACTER);
+      if (node.kind === RT_SHARED.CHARACTER && (!node.entityId || !cast.has(node.entityId))) report(node, P.UNKNOWN_CHARACTER);
       if (node.target && (!ids.has(node.target) || node.target === node.id)) report(node, P.INVALID_TARGET);
       if (!!node.relation !== !!node.target) report(node, P.RELATION_TARGET);
       const seen = new Set<string>();
@@ -87,7 +90,7 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
   return { value: { scenes: errors.length ? [...drafts.values()] : scenes }, errors: [...new Set(errors)], accepted: scenes, drafts: [...drafts.values()] };
 };
 export const mergeEquivalentRemotionDrafts = (scenes: any[]) => {
-  const signature = (scene: any) => JSON.stringify([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node)]);
+  const signature = (scene: any) => stringifyJson([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node)]);
   const merged: any[] = [];
   for (const scene of scenes) {
     const previous = merged.at(-1);
@@ -99,7 +102,7 @@ export const mergeEquivalentRemotionDrafts = (scenes: any[]) => {
 export const remotionScenesFromDraft = (raw: { scenes: any[] }, beatId: string, place: string | undefined, lines: { key: string; text: string }[], sourceKey: string): MotionRemotionScene[] =>
   mergeEquivalentRemotionDrafts(raw.scenes).map((item, index) => ({
     ...item,
-    id: `${beatId}:${index}`,
+    id: `${beatId}${RT_SHARED.SYMBOL_E7AC07}${index}`,
     beatId,
     place,
     ...(item.time ? { declaredTime: item.time } : {}),
@@ -110,7 +113,7 @@ export const remotionScenesFromDraft = (raw: { scenes: any[] }, beatId: string, 
         lines.findIndex((line) => line.key === item.toLineId) + 1,
       )
       .map((line) => line.text)
-      .join(" "),
+      .join(RT_SHARED.SYMBOL_36A9E7),
     sourceKey,
     sceneRevision: L.SCENE_REVISION,
   }));

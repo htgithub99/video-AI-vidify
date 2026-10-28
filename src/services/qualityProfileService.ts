@@ -5,11 +5,7 @@ export interface QualityProfile {
   draftCandidates: number;
   upscale: "key_only" | "approved" | "all_approved";
 }
-const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = {
-  [QualityMode.Economy]: { draftCandidates: 1, upscale: SOURCE_TEXT_KEY_ONLY },
-  [QualityMode.Balanced]: { draftCandidates: 1, upscale: SOURCE_TEXT_KEY_ONLY },
-  [QualityMode.Premium]: { draftCandidates: 1, upscale: SOURCE_TEXT_ALL_APPROVED },
-};
+const QUALITY_PROFILES: Record<QualityMode, QualityProfile> = { [QualityMode.Economy]: { draftCandidates: 1, upscale: SOURCE_TEXT_KEY_ONLY }, [QualityMode.Balanced]: { draftCandidates: 1, upscale: SOURCE_TEXT_KEY_ONLY }, [QualityMode.Premium]: { draftCandidates: 1, upscale: SOURCE_TEXT_ALL_APPROVED } };
 export const resolveQualityProfile = (mode?: QualityMode): QualityProfile => QUALITY_PROFILES[mode || QualityMode.Balanced];
 export const selectScenesForUpscale = (scenes: StoryboardScene[], validatedSceneIds: Set<string>, mode?: QualityMode): StoryboardScene[] => {
   const profile = resolveQualityProfile(mode);

@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLayout.js";
 import { motionVisualSettingsFor } from "../../../lib/motionVisual.js";
@@ -17,11 +19,11 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   const behavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, opts.characterMotion ?? script.gen?.characterMotion);
   const settings = motionVisualSettingsFor({ analysis, script });
   const state = script.gen?.remotion;
-  if (settings.mode !== "remotion" || !state || JSON.stringify(settings) !== JSON.stringify(state.settings)) throw new Error(V.SETTINGS_CHANGED);
+  if (settings.mode !== RT_SHARED.REMOTION || !state || stringifyJson(settings) !== stringifyJson(state.settings)) throw new Error(V.SETTINGS_CHANGED);
   if (!opts.review && Object.keys(state.failures).length) throw new Error(V.SCENES_REQUIRED);
   if (!opts.review && analysis && !remotionStoryBuildCurrent(script, analysis)) throw new Error(V.SCENES_REQUIRED);
-  const aspect = opts.aspect || "16:9";
-  const dimensions = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE["16:9"];
+  const aspect = opts.aspect || RT_SHARED.VALUE_16_9;
+  const dimensions = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE[RT_SHARED.VALUE_16_9];
   const fps = opts.fps || 30;
   const durations = script.beats.map((beat, index) => opts.durations?.[index] || estimateBeatSeconds(beat, script.language));
   const timeline = computeBeatTimeline(script.beats, durations, opts.voiceTrack?.continuous);
@@ -88,7 +90,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
-    engine: "remotion",
+    engine: RT_SHARED.REMOTION,
     version: V.VERSION,
     title: script.title,
     aspect,
@@ -96,7 +98,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     width: dimensions.w,
     height: dimensions.h,
     duration,
-    motion: behavior.actors === "simple",
+    motion: behavior.actors === RT_SHARED.SIMPLE,
     renderBehavior: behavior,
     resolvedSettings: { layoutRevision: L.REVISION, effectRevision: L.EFFECT_REVISION, sceneRevision: L.SCENE_REVISION, behavior },
     profileId: settings.profileId,

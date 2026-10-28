@@ -7,8 +7,8 @@ import { compile } from "@tailwindcss/node";
 import { chromium } from "playwright";
 import { MOTION_PROGRESS as P } from "../src/constants/motionProgress.js";
 import { MOTION_ILLUSTRATION as I } from "../src/constants/motionIllustration.js";
-import { motionLogSections } from "../src/lib/motionLogSections.js";
-import { MOTION_LOG_SECTIONS as S } from "../src/constants/motionLogSections.js";
+import { motionLogSections } from "../src/features/motion/lib/motionLogSections.js";
+import { MOTION_LOG_SECTIONS as S } from "../src/features/motion/constants/motionLogSections.js";
 import { MOTION_LOG_SECTION_TEST as T } from "./motionLogSectionsVerificationTexts.js";
 import { MotionJobStatus, MotionStoryJobKind } from "../src/types/motionVideo.js";
 import type { MotionLogEntry, MotionStoryJobState } from "../src/types/motionVideo.js";
@@ -108,7 +108,7 @@ try {
   assert.ok((await scene.innerText()).includes("catalogKey must depict"));
   await scene.locator("summary").click();
   await page.evaluate(() => (globalThis as any).failLayout());
-  await page.waitForFunction(() => !!document.querySelector('[data-sonner-toast] [data-title]'));
+  await page.waitForFunction(() => !!document.querySelector("[data-sonner-toast] [data-title]"));
   const assertTwoLines = async () => {
     for (const element of [scene.locator("[data-motion-log-summary] span"), scene.locator("[data-motion-log-rows] span").last(), page.locator("[data-sonner-toast] [data-title]")]) {
       const size = await element.evaluate((node) => ({ height: node.clientHeight, scrollHeight: node.scrollHeight, lineHeight: parseFloat(getComputedStyle(node).lineHeight), clamp: getComputedStyle(node).webkitLineClamp }));

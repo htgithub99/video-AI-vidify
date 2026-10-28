@@ -1,3 +1,4 @@
+import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_AUDIO_DIRECTION as C, MOTION_SPEAKER_TRAITS as T } from "../constants/motionAudioDirection.js";
 import { soundText } from "./motionSound.js";
@@ -6,7 +7,20 @@ export const motionSpeakerTraits = (member: Partial<MotionCastMember>): { gender
   const text = soundText([member.name, member.role, member.description, member.look].join(MR.MOTION_TEXT_SYMBOL_13));
   const gender = member.gender || (/\b(female|woman|girl|grandmother|ba lao|ba gia|co gai|be gai|phu nu|nu gioi)\b/.test(text) || T.FEMALE_RE.test(text) ? MR.MOTION_TEXT_FEMALE : /\b(male|man|boy|grandfather|ong lao|ong gia|be trai|dan ong|nam gioi)\b/.test(text) || T.MALE_RE.test(text) ? MR.MOTION_TEXT_MALE : undefined);
   const years = Number(T.YEARS_RE.exec(text)?.[1]);
-  const age = member.age && C.AGES.includes(member.age) ? member.age : years >= T.SENIOR_FROM ? MR.MOTION_TEXT_SENIOR : years > 0 && years <= T.CHILD_UNTIL ? MR.MOTION_TEXT_CHILD : /\b(elderly|senior|grandfather|grandmother|old man|old woman|ong lao|ong gia|ba lao|ba gia|cao tuoi)\b/.test(text) || T.SENIOR_RE.test(text) ? MR.MOTION_TEXT_SENIOR : /\b(child|little boy|little girl|tre em|em be|be trai|be gai)\b/.test(text) || T.CHILD_RE.test(text) ? MR.MOTION_TEXT_CHILD : years > 0 ? C.ADULT_AGE : undefined;
+  const age =
+    member.age && C.AGES.includes(member.age)
+      ? member.age
+      : years >= T.SENIOR_FROM
+        ? MR.MOTION_TEXT_SENIOR
+        : years > 0 && years <= T.CHILD_UNTIL
+          ? MR.MOTION_TEXT_CHILD
+          : /\b(elderly|senior|grandfather|grandmother|old man|old woman|ong lao|ong gia|ba lao|ba gia|cao tuoi)\b/.test(text) || T.SENIOR_RE.test(text)
+            ? MR.MOTION_TEXT_SENIOR
+            : /\b(child|little boy|little girl|tre em|em be|be trai|be gai)\b/.test(text) || T.CHILD_RE.test(text)
+              ? MR.MOTION_TEXT_CHILD
+              : years > 0
+                ? C.ADULT_AGE
+                : undefined;
   return { gender, age };
 };
 const formatMode = (text: string): MotionAudioDirection["mode"] | undefined =>
@@ -33,4 +47,4 @@ export const motionAudioDirection = (script: MotionStoryScript | null, analysis:
   const mode = factual && (explicit || proposed) === MR.MOTION_TEXT_FILM ? MR.MOTION_TEXT_DOCUMENTARY : explicit || proposed;
   return { mode, factual, narrationStyle: [C.NARRATION[mode], dna?.audioText?.narration, dna?.editDna?.narratorVoice, dna?.narrativeDna?.narrativeVoice].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_13), soundStyle: [C.SOUND[mode], dna?.audioText?.sound, dna?.editDna?.soundBed].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_13), dialect: dna?.audienceProfile?.dialect || MR.MOTION_TEXT_EMPTY };
 };
-export const motionAudioContext = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null): string => C.CONTEXT + JSON.stringify(motionAudioDirection(script, analysis));
+export const motionAudioContext = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null): string => C.CONTEXT + stringifyJson(motionAudioDirection(script, analysis));

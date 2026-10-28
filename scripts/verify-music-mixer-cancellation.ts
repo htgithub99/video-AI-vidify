@@ -98,14 +98,7 @@ for (const provider of [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbac
     vm.runInNewContext(bundled.outputFiles[0].text, sandbox);
     const service = module.exports;
     const run = service.beginChatPlanningRun(AUT.MUSIC_MIXER_RANK_TEST, Date.now(), undefined, provider);
-    const result = service.generatePlanningWithChatUi({
-      provider,
-      projectId: AUT.MUSIC_MIXER_RANK_TEST,
-      prompt: AUT.TEST,
-      artifactType: AUT.MUSIC_MIXER_RANKING,
-      signal: run.signal,
-      closeRoomOnComplete: false,
-    });
+    const result = service.generatePlanningWithChatUi({ provider, projectId: AUT.MUSIC_MIXER_RANK_TEST, prompt: AUT.TEST, artifactType: AUT.MUSIC_MIXER_RANKING, signal: run.signal, closeRoomOnComplete: false });
     const rejected = assert.rejects(result, (error: any) => error.message === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
     await reachedPhase.promise;
     assert.equal(service.cancelChatPlanningRun(AUT.MUSIC_MIXER_RANK_TEST), true);

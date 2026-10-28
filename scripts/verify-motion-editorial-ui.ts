@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 import { MOTION_EDITORIAL_VERIFICATION as V } from "./motionEditorialVerificationTexts.ts";
 import { MOTION_DRAFT_VERIFICATION as D } from "./motionDraftVerificationTexts.ts";
 import { MOTION_EDITORIAL } from "../src/constants/motionEditorial.ts";
-import { mergeMotionLogHistory } from "../src/lib/motionLogHistory.ts";
+import { mergeMotionLogHistory } from "../src/features/motion/lib/motionLogHistory.ts";
 import { API_ROUTES } from "../src/constants/apiRoutes.ts";
 const bundle = await build({
   stdin: { contents: V.ENTRY, loader: D.TSX, resolveDir: process.cwd() },

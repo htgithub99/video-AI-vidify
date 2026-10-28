@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { MOTION_AI_RECOVERY as R } from "../src/constants/motionAiRecovery.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { normalizeMotionVector, parseRemotionAssetReply } from "../src/lib/motionVectorAsset.js";
-import { canReuseRemotionCharacter } from "../src/lib/motionRemotion.js";
+import { canReuseRemotionCharacter } from "./legacy-motion-remotion/characterReuse.js";
 import { mergeRemotionSceneDraft } from "../src/server/services/remotion/sceneContract.js";
 const valid = '<svg viewBox="0 0 100 200"><rect x="10" y="10" width="80" height="180"/></svg>';
 const reply = { artifactType: V.ARTIFACT_ASSET, requestId: "current-request", svg: valid, anchors: { base: { x: 0.5, y: 0.98 } } };

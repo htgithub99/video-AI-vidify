@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_UI } from "../../constants/runtime/ui.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "../../lib/utils";
 interface DestructiveActionNoticeProps {
@@ -6,8 +8,8 @@ interface DestructiveActionNoticeProps {
   iconClassName?: string;
 }
 export const DestructiveActionNotice = ({ children, className, iconClassName }: DestructiveActionNoticeProps) => (
-  <div className={cn("p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs font-semibold flex items-center gap-2", className)}>
-    <AlertTriangle className={cn("w-4 h-4 shrink-0", iconClassName)} />
+  <div className={cn(RT_UI.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER, className)}>
+    <AlertTriangle className={cn(RT_SHARED.W_4_H_4_SHRINK_0, iconClassName)} />
     <span>{children}</span>
   </div>
 );

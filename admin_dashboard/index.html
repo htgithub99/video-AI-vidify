@@ -1,667 +1,629 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidify Admin Studio</title>
-    <link rel="stylesheet" href="style.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=Montserrat:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap"
-        rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-admin-text="VIDIFY_ADMIN_STUDIO"></title>
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Merienda:wght@300..900&family=Montserrat:wght@300..900&family=JetBrains+Mono:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet" />
     <style>
-        .ts-wrapper,
-        .ts-control {
-            height: auto !important;
-            min-height: 38px !important;
-            max-height: none !important;
-        }
+      .ts-wrapper,
+      .ts-control {
+        height: auto !important;
+        min-height: 38px !important;
+        max-height: none !important;
+      }
 
-        .ts-control {
-            background: var(--input-bg) !important;
-            border: 1px solid var(--card-border) !important;
-            border-radius: 8px !important;
-            color: white !important;
-            padding: 4px 8px !important;
-            box-shadow: none !important;
-            transition: 0.2s;
-            display: flex !important;
-            align-items: center !important;
-            flex-wrap: wrap !important;
-            gap: 4px !important;
-        }
+      .ts-control {
+        background: var(--input-bg) !important;
+        border: 1px solid var(--card-border) !important;
+        border-radius: 8px !important;
+        color: white !important;
+        padding: 4px 8px !important;
+        box-shadow: none !important;
+        transition: 0.2s;
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+      }
 
-        .ts-wrapper.focus .ts-control {
-            border-color: var(--primary) !important;
-        }
+      .ts-wrapper.focus .ts-control {
+        border-color: var(--primary) !important;
+      }
 
-        .ts-dropdown {
-            background: var(--card-bg) !important;
-            border: 1px solid var(--card-border) !important;
-            color: white !important;
-            z-index: 1050 !important;
-            border-radius: 8px !important;
-            overflow: hidden;
-        }
+      .ts-dropdown {
+        background: var(--card-bg) !important;
+        border: 1px solid var(--card-border) !important;
+        color: white !important;
+        z-index: 1050 !important;
+        border-radius: 8px !important;
+        overflow: hidden;
+      }
 
-        .ts-dropdown .option {
-            padding: 0.5rem 0.75rem;
-        }
+      .ts-dropdown .option {
+        padding: 0.5rem 0.75rem;
+      }
 
-        .ts-dropdown .option:hover,
-        .ts-dropdown .active {
-            background: var(--primary-glow) !important;
-            color: var(--primary) !important;
-        }
+      .ts-dropdown .option:hover,
+      .ts-dropdown .active {
+        background: var(--primary-glow) !important;
+        color: var(--primary) !important;
+      }
 
-        .ts-control input {
-            color: white !important;
-            height: 26px !important;
-            min-height: 26px !important;
-            max-height: 26px !important;
-            line-height: 26px !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
+      .ts-control input {
+        color: white !important;
+        height: 26px !important;
+        min-height: 26px !important;
+        max-height: 26px !important;
+        line-height: 26px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
 
-        .ts-control .item {
-            background: var(--primary) !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 4px !important;
-            padding: 2px 6px !important;
-            font-size: 0.75rem !important;
-            font-weight: 600 !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            height: 24px !important;
-            box-sizing: border-box !important;
-        }
+      .ts-control .item {
+        background: var(--primary) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 4px !important;
+        padding: 2px 6px !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        height: 24px !important;
+        box-sizing: border-box !important;
+      }
 
-        .ts-control .item .remove {
-            border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
-            margin-left: 6px !important;
-            padding-left: 4px !important;
-            color: rgba(255, 255, 255, 0.8) !important;
-            text-decoration: none !important;
-        }
+      .ts-control .item .remove {
+        border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
+        margin-left: 6px !important;
+        padding-left: 4px !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        text-decoration: none !important;
+      }
 
-        .ts-control .item .remove:hover {
-            color: white !important;
-            background: rgba(255, 255, 255, 0.1) !important;
-        }
+      .ts-control .item .remove:hover {
+        color: white !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div id="login-screen" class="screen active">
-        <div class="login-card">
-            <h2>🔑 Đăng Nhập</h2>
-            <p title="Vui lòng nhập tài khoản quản trị hệ thống Vidify">Tài khoản quản trị</p>
-            <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
-                <input type="text" id="admin-username-input" placeholder="Tài khoản...">
-                <input type="password" id="admin-password-input" placeholder="Mật khẩu...">
-                <button id="login-btn" title="Đăng nhập hệ thống Admin">🚀 Đăng Nhập</button>
-            </div>
+      <div class="login-card">
+        <h2><span data-admin-node="DANG_NHAP"></span></h2>
+        <p title="" data-admin-title="VUI_LONG_NHAP_TAI_KHOAN_QUAN_TRI_HE_THONG_VIDIFY"><span data-admin-node="TAI_KHOAN_QUAN_TRI"></span></p>
+        <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%">
+          <input type="text" id="admin-username-input" placeholder="" data-admin-placeholder="TAI_KHOAN" />
+          <input type="password" id="admin-password-input" placeholder="" data-admin-placeholder="MAT_KHAU" />
+          <button id="login-btn" title="" data-admin-title="DANG_NHAP_HE_THONG_ADMIN"><span data-admin-node="DANG_NHAP_F22937"></span></button>
         </div>
+      </div>
     </div>
 
     <div id="dashboard-screen" class="screen">
-        <aside class="admin-sidebar">
-            <div class="sidebar-brand">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                    stroke="#f43f5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg>
-                <span>VIDIFY ADMIN</span>
-                <span class="brand-badge">UI v2.0</span>
-            </div>
-
-            <nav class="sidebar-menu">
-                <button class="nav-tab-btn active" id="nav-tab-users" onclick="switchAdminPage('users')"
-                    title="Quản lý Người Dùng & License">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                    </svg>
-                    <span>Người Dùng</span>
-                </button>
-
-                <button class="nav-tab-btn" id="nav-tab-resources" onclick="switchAdminPage('resources')"
-                    title="Quản lý API Keys & Tài Khoản Google">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                        <line x1="3" y1="9" x2="21" y2="9"></line>
-                        <line x1="9" y1="21" x2="9" y2="9"></line>
-                    </svg>
-                    <span>Tài Nguyên</span>
-                </button>
-
-                <button class="nav-tab-btn" id="nav-tab-config" onclick="switchAdminPage('config')"
-                    title="Bảng Cấu Hình Giới Hạn Quota">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path
-                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                        <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    <span>Cấu Hinh</span>
-                </button>
-            </nav>
-
-            <div class="sidebar-footer">
-                <div class="admin-profile">
-                    <div class="profile-avatar">AD</div>
-                    <div class="profile-info">
-                        <span class="profile-name">Administrator</span>
-                        <span class="profile-role">Hệ thống</span>
-                    </div>
-                </div>
-                <button id="logout-btn" class="btn-logout" title="Đăng xuất khỏi hệ thống">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                    <span>Đăng Xuất</span>
-                </button>
-            </div>
-        </aside>
-
-        <div class="main-container">
-            <header class="main-header">
-                <div class="header-breadcrumb">
-                    <span class="breadcrumb-parent">Admin</span>
-                    <span class="breadcrumb-separator">/</span>
-                    <span class="breadcrumb-current" id="header-page-title">Người Dùng</span>
-                </div>
-                <div class="header-status">
-                    <span class="status-indicator live"></span>
-                    <span class="status-text" title="Hệ thống đang chạy ổn định">Hệ thống ổn định</span>
-                </div>
-            </header>
-
-            <main class="admin-main">
-                <div id="page-users" class="admin-page-content active">
-                    <div class="overview-stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon-wrapper users">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                </svg>
-                            </div>
-                            <div class="stat-data">
-                                <span class="stat-label">Tổng License</span>
-                                <h3 class="stat-value" id="kpi-total-licenses">0</h3>
-                                <span class="stat-sub">Hoạt động: <span id="kpi-active-licenses"
-                                        style="color:var(--emerald); font-weight:700;">0</span></span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon-wrapper keys">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-data">
-                                <span class="stat-label">API Keys</span>
-                                <h3 class="stat-value" id="kpi-total-keys">0</h3>
-                                <span class="stat-sub">Gemini & AI33</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon-wrapper accounts">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                                </svg>
-                            </div>
-                            <div class="stat-data">
-                                <span class="stat-label">Tài Khoản Google</span>
-                                <h3 class="stat-value" id="kpi-total-accounts">0</h3>
-                                <span class="stat-sub" title="Tài khoản Google render">Google Acc render</span>
-                            </div>
-                        </div>
-
-                        <div class="stat-card">
-                            <div class="stat-icon-wrapper packages">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
-                                </svg>
-                            </div>
-                            <div class="stat-data">
-                                <span class="stat-label">Gói Premium</span>
-                                <h3 class="stat-value" id="kpi-premium-users">0</h3>
-                                <span class="stat-sub" title="Gói PRO & Vĩnh viễn">Gói PRO</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <section class="admin-card">
-                        <div class="card-header-row">
-                            <h3 title="Danh sách người dùng và License">🔑 License</h3>
-                            <div class="header-controls">
-                                <div class="filter-group">
-                                    <input type="text" id="search-input" placeholder="Tìm kiếm...">
-                                    <select id="filter-plan" style="width: 140px;">
-                                        <option value="ALL">Tất cả</option>
-                                        <option value="FREE">Gói FREE</option>
-                                        <option value="PRO">Gói PRO</option>
-                                        <option value="PRO_LIFETIME">Vĩnh Viễn</option>
-                                    </select>
-                                    <select id="filter-status" style="width: 140px;">
-                                        <option value="ALL">Tất cả</option>
-                                        <option value="ACTIVE">Hoạt động</option>
-                                        <option value="REVOKED">Bị khóa</option>
-                                        <option value="EXPIRED">Hết hạn</option>
-                                    </select>
-                                </div>
-                                <div class="action-group">
-                                    <button id="sync-expired-btn" class="btn-secondary"
-                                        title="Đồng bộ người dùng đã hết hạn">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                                            <path d="M3 3v5h5" />
-                                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                                            <path d="M16 21v-5h5" />
-                                        </svg>
-                                        Đồng Bộ
-                                    </button>
-                                    <button id="open-create-modal-btn" class="btn-primary"
-                                        title="Tạo mới License cho khách hàng">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M5 12h14" />
-                                            <path d="M12 5v14" />
-                                        </svg>
-                                        Thêm License
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="table-container">
-                            <table id="users-table">
-                                <thead>
-                                    <tr>
-                                        <th title="Tên khách hàng">Khách Hàng</th>
-                                        <th title="License Key">Khóa Key</th>
-                                        <th class="text-center" title="Gói dịch vụ">Gói</th>
-                                        <th class="text-center" title="Trạng thái">Trạng Thái</th>
-                                        <th class="text-center" title="Video / Image / Voice">Sử Dụng</th>
-                                        <th class="text-center" title="Ngày tạo">Ngày Tạo</th>
-                                        <th class="text-center" title="Ngày hết hạn">Hết Hạn</th>
-                                        <th class="text-center" title="Hành động">Hành Động</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="pagination-container" id="pagination-container" style="display: flex;">
-                            <div class="pagination-info">
-                                Hiển thị <select id="page-size-select" class="page-size-select"
-                                    style="width: 60px; height: 30px !important;">
-                                    <option value="5">5</option>
-                                    <option value="10" selected>10</option>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                </select> dòng/trang
-                            </div>
-                            <div class="pagination-controls" id="pagination-controls">
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                <div id="page-resources" class="admin-page-content">
-                    <section class="admin-card">
-                        <div class="card-header-row">
-                            <h3 title="Quản lý API Keys và Tài Khoản Pool">📦 Tài Nguyên</h3>
-                        </div>
-
-                        <div class="sub-tabs">
-                            <button id="tab-btn-keys" class="sub-tab-btn active" onclick="switchResourceSubTab('keys')"
-                                title="Quản lý API Keys Gemini & AI33">🔑 API Keys</button>
-                            <button id="tab-btn-accounts" class="sub-tab-btn" onclick="switchResourceSubTab('accounts')"
-                                title="Quản lý Tài Khoản Google Pool">🌐 Tài Khoản</button>
-                        </div>
-
-                        <div id="tab-content-keys" class="sub-tab-content active">
-                            <div style="display:flex; flex-direction:column; gap:1rem; flex:1; min-height:0;">
-                                <div style="display:flex; justify-content:flex-end; flex-shrink:0;">
-                                    <button id="open-keys-modal-btn" class="btn-primary" title="Thêm API Key mới">
-                                        🔑 Thêm Key
-                                    </button>
-                                </div>
-                                <div class="table-container">
-                                    <table id="keys-table">
-                                        <thead>
-                                            <tr>
-                                                <th class="text-center">Gán Cho Gói</th>
-                                                <th>Gemini Key</th>
-                                                <th>Cerebras Key</th>
-                                                <th>Groq Key</th>
-                                                <th>AI33 Key</th>
-                                                <th class="text-center">Loại Trừ</th>
-                                                <th class="text-center">Hành Động</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="tab-content-accounts" class="sub-tab-content" style="display: none;">
-                            <div style="display:flex; flex-direction:column; gap:1rem; flex:1; min-height:0;">
-                                <div style="display:flex; justify-content:flex-end; flex-shrink:0;">
-                                    <button id="open-account-modal-btn" class="btn-primary"
-                                        title="Thêm tài khoản Google mới vào Pool">
-                                        🌐 Thêm Acc
-                                    </button>
-                                </div>
-                                <div class="table-container">
-                                    <table id="accounts-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Email</th>
-                                                <th>Recovery Email</th>
-                                                <th class="text-center">Trạng Thái</th>
-                                                <th class="text-center">Gán Cho Gói</th>
-                                                <th>Mật Khẩu</th>
-                                                <th class="text-center">Hành Động</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                <div id="page-config" class="admin-page-content">
-                    <section class="admin-card">
-                        <div class="card-header-row">
-                            <h3 title="Bảng cấu hình hạn mức Quota cho các gói dịch vụ">⚙️ Cấu Hình</h3>
-                            <div class="action-group">
-                                <button id="open-plan-create-modal-btn" class="btn-primary"
-                                    title="Tạo gói dịch vụ mới">➕ Thêm Gói</button>
-                            </div>
-                        </div>
-
-                        <div class="table-container" id="plans-container"></div>
-                    </section>
-                </div>
-            </main>
+      <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span><span data-admin-node="VIDIFY_ADMIN"></span></span>
+          <span class="brand-badge"><span data-admin-node="UI_V2_0"></span></span>
         </div>
+
+        <nav class="sidebar-menu">
+          <button class="nav-tab-btn active" id="nav-tab-users" onclick="switchAdminPage('users')" title="" data-admin-title="QUAN_LY_NGUOI_DUNG_LICENSE">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            <span><span data-admin-node="NGUOI_DUNG"></span></span>
+          </button>
+
+          <button class="nav-tab-btn" id="nav-tab-resources" onclick="switchAdminPage('resources')" title="" data-admin-title="QUAN_LY_API_KEYS_TAI_KHOAN_GOOGLE">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="3" y1="9" x2="21" y2="9"></line>
+              <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            <span><span data-admin-node="TAI_NGUYEN"></span></span>
+          </button>
+
+          <button class="nav-tab-btn" id="nav-tab-config" onclick="switchAdminPage('config')" title="" data-admin-title="BANG_CAU_HINH_GIOI_HAN_QUOTA">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span><span data-admin-node="CAU_HINH"></span></span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="admin-profile">
+            <div class="profile-avatar"><span data-admin-node="AD"></span></div>
+            <div class="profile-info">
+              <span class="profile-name"><span data-admin-node="ADMINISTRATOR"></span></span>
+              <span class="profile-role"><span data-admin-node="HE_THONG"></span></span>
+            </div>
+          </div>
+          <button id="logout-btn" class="btn-logout" title="" data-admin-title="DANG_XUAT_KHOI_HE_THONG">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span><span data-admin-node="DANG_XUAT"></span></span>
+          </button>
+        </div>
+      </aside>
+
+      <div class="main-container">
+        <header class="main-header">
+          <div class="header-breadcrumb">
+            <span class="breadcrumb-parent"><span data-admin-node="ADMIN"></span></span>
+            <span class="breadcrumb-separator"><span data-admin-node="SYMBOL"></span></span>
+            <span class="breadcrumb-current" id="header-page-title"><span data-admin-node="NGUOI_DUNG"></span></span>
+          </div>
+          <div class="header-status">
+            <span class="status-indicator live"></span>
+            <span class="status-text" title="" data-admin-title="HE_THONG_DANG_CHAY_ON_DINH"><span data-admin-node="HE_THONG_ON_DINH"></span></span>
+          </div>
+        </header>
+
+        <main class="admin-main">
+          <div id="page-users" class="admin-page-content active">
+            <div class="overview-stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon-wrapper users">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label"><span data-admin-node="TONG_LICENSE"></span></span>
+                  <h3 class="stat-value" id="kpi-total-licenses"><span data-admin-node="VALUE_0"></span></h3>
+                  <span class="stat-sub"
+                    ><span data-admin-node="HOAT_DONG"></span><span id="kpi-active-licenses" style="color: var(--emerald); font-weight: 700"><span data-admin-node="VALUE_0"></span></span
+                  ></span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper keys">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label"><span data-admin-node="API_KEYS"></span></span>
+                  <h3 class="stat-value" id="kpi-total-keys"><span data-admin-node="VALUE_0"></span></h3>
+                  <span class="stat-sub"><span data-admin-node="GEMINI_AI33"></span></span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper accounts">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                  </svg>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label"><span data-admin-node="TAI_KHOAN_GOOGLE"></span></span>
+                  <h3 class="stat-value" id="kpi-total-accounts"><span data-admin-node="VALUE_0"></span></h3>
+                  <span class="stat-sub" title="" data-admin-title="TAI_KHOAN_GOOGLE_RENDER"><span data-admin-node="GOOGLE_ACC_RENDER"></span></span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper packages">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                  </svg>
+                </div>
+                <div class="stat-data">
+                  <span class="stat-label"><span data-admin-node="GOI_PREMIUM"></span></span>
+                  <h3 class="stat-value" id="kpi-premium-users"><span data-admin-node="VALUE_0"></span></h3>
+                  <span class="stat-sub" title="" data-admin-title="GOI_PRO_VINH_VIEN"><span data-admin-node="GOI_PRO"></span></span>
+                </div>
+              </div>
+            </div>
+
+            <section class="admin-card">
+              <div class="card-header-row">
+                <h3 title="" data-admin-title="DANH_SACH_NGUOI_DUNG_VA_LICENSE"><span data-admin-node="LICENSE"></span></h3>
+                <div class="header-controls">
+                  <div class="filter-group">
+                    <input type="text" id="search-input" placeholder="" data-admin-placeholder="TIM_KIEM" />
+                    <select id="filter-plan" style="width: 140px">
+                      <option value="ALL" data-admin-text="TAT_CA"></option>
+                      <option value="FREE" data-admin-text="GOI_FREE"></option>
+                      <option value="PRO" data-admin-text="GOI_PRO"></option>
+                      <option value="PRO_LIFETIME" data-admin-text="VINH_VIEN"></option>
+                    </select>
+                    <select id="filter-status" style="width: 140px">
+                      <option value="ALL" data-admin-text="TAT_CA"></option>
+                      <option value="ACTIVE" data-admin-text="HOAT_DONG_28086B"></option>
+                      <option value="REVOKED" data-admin-text="BI_KHOA"></option>
+                      <option value="EXPIRED" data-admin-text="HET_HAN"></option>
+                    </select>
+                  </div>
+                  <div class="action-group">
+                    <button id="sync-expired-btn" class="btn-secondary" title="" data-admin-title="DONG_BO_NGUOI_DUNG_DA_HET_HAN">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                        <path d="M16 21v-5h5" /></svg
+                      ><span data-admin-node="DONG_BO"></span>
+                    </button>
+                    <button id="open-create-modal-btn" class="btn-primary" title="" data-admin-title="TAO_MOI_LICENSE_CHO_KHACH_HANG">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14" />
+                        <path d="M12 5v14" /></svg
+                      ><span data-admin-node="THEM_LICENSE"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="table-container">
+                <table id="users-table">
+                  <thead>
+                    <tr>
+                      <th title="" data-admin-title="TEN_KHACH_HANG"><span data-admin-node="KHACH_HANG"></span></th>
+                      <th title="" data-admin-title="LICENSE_KEY"><span data-admin-node="KHOA_KEY"></span></th>
+                      <th class="text-center" title="" data-admin-title="GOI_DICH_VU"><span data-admin-node="GOI"></span></th>
+                      <th class="text-center" title="" data-admin-title="TRANG_THAI"><span data-admin-node="TRANG_THAI_5D6E6F"></span></th>
+                      <th class="text-center" title="" data-admin-title="VIDEO_IMAGE_VOICE"><span data-admin-node="SU_DUNG"></span></th>
+                      <th class="text-center" title="" data-admin-title="NGAY_TAO"><span data-admin-node="NGAY_TAO_12B10A"></span></th>
+                      <th class="text-center" title="" data-admin-title="NGAY_HET_HAN"><span data-admin-node="HET_HAN_8E2E41"></span></th>
+                      <th class="text-center" title="" data-admin-title="HANH_DONG"><span data-admin-node="HANH_DONG_EA1FF3"></span></th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+
+              <div class="pagination-container" id="pagination-container" style="display: flex">
+                <div class="pagination-info">
+                  <span data-admin-node="HIEN_THI"></span
+                  ><select id="page-size-select" class="page-size-select" style="width: 60px; height: 30px !important">
+                    <option value="5" data-admin-text="VALUE_5"></option>
+                    <option value="10" selected data-admin-text="VALUE_10"></option>
+                    <option value="20" data-admin-text="VALUE_20"></option>
+                    <option value="50" data-admin-text="VALUE_50"></option></select
+                  ><span data-admin-node="DONG_TRANG"></span>
+                </div>
+                <div class="pagination-controls" id="pagination-controls"></div>
+              </div>
+            </section>
+          </div>
+
+          <div id="page-resources" class="admin-page-content">
+            <section class="admin-card">
+              <div class="card-header-row">
+                <h3 title="" data-admin-title="QUAN_LY_API_KEYS_VA_TAI_KHOAN_POOL"><span data-admin-node="TAI_NGUYEN_193F09"></span></h3>
+              </div>
+
+              <div class="sub-tabs">
+                <button id="tab-btn-keys" class="sub-tab-btn active" onclick="switchResourceSubTab('keys')" title="" data-admin-title="QUAN_LY_API_KEYS_GEMINI_AI33"><span data-admin-node="API_KEYS_382038"></span></button>
+                <button id="tab-btn-accounts" class="sub-tab-btn" onclick="switchResourceSubTab('accounts')" title="" data-admin-title="QUAN_LY_TAI_KHOAN_GOOGLE_POOL"><span data-admin-node="TAI_KHOAN_749A63"></span></button>
+              </div>
+
+              <div id="tab-content-keys" class="sub-tab-content active">
+                <div style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0">
+                  <div style="display: flex; justify-content: flex-end; flex-shrink: 0">
+                    <button id="open-keys-modal-btn" class="btn-primary" title="" data-admin-title="THEM_API_KEY_MOI"><span data-admin-node="THEM_KEY"></span></button>
+                  </div>
+                  <div class="table-container">
+                    <table id="keys-table">
+                      <thead>
+                        <tr>
+                          <th class="text-center"><span data-admin-node="GAN_CHO_GOI"></span></th>
+                          <th><span data-admin-node="GEMINI_KEY"></span></th>
+                          <th><span data-admin-node="CEREBRAS_KEY"></span></th>
+                          <th><span data-admin-node="GROQ_KEY"></span></th>
+                          <th><span data-admin-node="AI33_KEY"></span></th>
+                          <th class="text-center"><span data-admin-node="LOAI_TRU"></span></th>
+                          <th class="text-center"><span data-admin-node="HANH_DONG_EA1FF3"></span></th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div id="tab-content-accounts" class="sub-tab-content" style="display: none">
+                <div style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0">
+                  <div style="display: flex; justify-content: flex-end; flex-shrink: 0">
+                    <button id="open-account-modal-btn" class="btn-primary" title="" data-admin-title="THEM_TAI_KHOAN_GOOGLE_MOI_VAO_POOL"><span data-admin-node="THEM_ACC"></span></button>
+                  </div>
+                  <div class="table-container">
+                    <table id="accounts-table">
+                      <thead>
+                        <tr>
+                          <th><span data-admin-node="EMAIL"></span></th>
+                          <th><span data-admin-node="RECOVERY_EMAIL"></span></th>
+                          <th class="text-center"><span data-admin-node="TRANG_THAI_5D6E6F"></span></th>
+                          <th class="text-center"><span data-admin-node="GAN_CHO_GOI"></span></th>
+                          <th><span data-admin-node="MAT_KHAU_7C7520"></span></th>
+                          <th class="text-center"><span data-admin-node="HANH_DONG_EA1FF3"></span></th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div id="page-config" class="admin-page-content">
+            <section class="admin-card">
+              <div class="card-header-row">
+                <h3 title="" data-admin-title="BANG_CAU_HINH_HAN_MUC_QUOTA_CHO_CAC_GOI_DICH_VU"><span data-admin-node="CAU_HINH_EDFD90"></span></h3>
+                <div class="action-group">
+                  <button id="open-plan-create-modal-btn" class="btn-primary" title="" data-admin-title="TAO_GOI_DICH_VU_MOI"><span data-admin-node="THEM_GOI"></span></button>
+                </div>
+              </div>
+
+              <div class="table-container" id="plans-container"></div>
+            </section>
+          </div>
+        </main>
+      </div>
     </div>
 
     <div id="user-modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="user-modal-title" title="Tạo License mới">Tạo License</h3>
-                <button class="modal-close modal-close-btn" data-modal="user-modal" title="Hủy thao tác">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <div class="form-field">
-                        <label title="Tên hoặc Email">Khách Hàng:</label>
-                        <input type="text" id="modal-username" placeholder="Nhập tên khách hàng...">
-                    </div>
-
-                    <div class="form-field">
-                        <label title="Gói dịch vụ">Gói Dịch Vụ:</label>
-                        <select id="modal-plan-type"></select>
-                    </div>
-
-                    <div class="form-field">
-                        <label title="Trạng thái tài khoản">Trạng Thái:</label>
-                        <select id="modal-status">
-                            <option value="ACTIVE">Hoạt động</option>
-                            <option value="REVOKED">Bị khóa</option>
-                            <option value="EXPIRED">Hết hạn</option>
-                        </select>
-                    </div>
-
-                    <div class="form-field">
-                        <label title="Kiểu reset điểm">Kiểu Quota:</label>
-                        <select id="modal-quota-type">
-                            <option value="DAILY" title="Reset hàng ngày (Daily Quota)">Hàng ngày</option>
-                            <option value="TOTAL" title="Tổng hạn mức cố định (Total Quota)">Hạn mức</option>
-                        </select>
-                    </div>
-
-                    <div id="modal-expires-wrapper" class="form-field" style="display: none;">
-                        <label title="Ngày hết hạn">Hết Hạn:</label>
-                        <input type="date" id="modal-expires">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-close-btn" data-modal="user-modal" title="Hủy thao tác">Hủy</button>
-                <button id="save-user-btn" class="btn-primary" title="Lưu thông tin License">Lưu License</button>
-            </div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 id="user-modal-title" title="" data-admin-title="TAO_LICENSE_MOI"><span data-admin-node="TAO_LICENSE"></span></h3>
+          <button class="modal-close modal-close-btn" data-modal="user-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="SYMBOL_BE64F2"></span></button>
         </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <div class="form-field">
+              <label title="" data-admin-title="TEN_HOAC_EMAIL"><span data-admin-node="KHACH_HANG_4B1BAE"></span></label>
+              <input type="text" id="modal-username" placeholder="" data-admin-placeholder="NHAP_TEN_KHACH_HANG" />
+            </div>
+
+            <div class="form-field">
+              <label title="" data-admin-title="GOI_DICH_VU"><span data-admin-node="GOI_DICH_VU_C3A14C"></span></label>
+              <select id="modal-plan-type"></select>
+            </div>
+
+            <div class="form-field">
+              <label title="" data-admin-title="TRANG_THAI_TAI_KHOAN"><span data-admin-node="TRANG_THAI_B9BCF2"></span></label>
+              <select id="modal-status">
+                <option value="ACTIVE" data-admin-text="HOAT_DONG_28086B"></option>
+                <option value="REVOKED" data-admin-text="BI_KHOA"></option>
+                <option value="EXPIRED" data-admin-text="HET_HAN"></option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label title="" data-admin-title="KIEU_RESET_DIEM"><span data-admin-node="KIEU_QUOTA"></span></label>
+              <select id="modal-quota-type">
+                <option value="DAILY" title="" data-admin-title="RESET_HANG_NGAY_DAILY_QUOTA" data-admin-text="HANG_NGAY"></option>
+                <option value="TOTAL" title="" data-admin-title="TONG_HAN_MUC_CO_DINH_TOTAL_QUOTA" data-admin-text="HAN_MUC"></option>
+              </select>
+            </div>
+
+            <div id="modal-expires-wrapper" class="form-field" style="display: none">
+              <label title="" data-admin-title="NGAY_HET_HAN"><span data-admin-node="HET_HAN_046617"></span></label>
+              <input type="date" id="modal-expires" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary modal-close-btn" data-modal="user-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="HUY"></span></button>
+          <button id="save-user-btn" class="btn-primary" title="" data-admin-title="LUU_THONG_TIN_LICENSE"><span data-admin-node="LUU_LICENSE"></span></button>
+        </div>
+      </div>
     </div>
 
     <div id="delete-modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 title="Xác nhận thao tác xóa License">Xác Nhận</h3>
-                <button class="modal-close modal-close-btn" data-modal="delete-modal" title="Hủy thao tác">✕</button>
-            </div>
-            <div class="modal-body">
-                <p>Thực hiện thao tác với License key: <strong id="delete-key-display"></strong>?</p>
-                <ul style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem; padding-left: 1.5rem;">
-                    <li style="margin-bottom: 0.5rem;" title="Chặn quyền dùng, lưu lại dữ liệu"><strong>Khóa (Xóa
-                            Mềm)</strong></li>
-                    <li title="Xóa hoàn toàn dữ liệu khỏi hệ thống CSDL"><strong>Xóa Vĩnh Viễn</strong></li>
-                </ul>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-close-btn" data-modal="delete-modal"
-                    title="Hủy thao tác">Hủy</button>
-                <button id="btn-soft-delete" class="btn-primary" style="background: #f59e0b !important;"
-                    title="Vô hiệu hóa quyền dùng">🔒 Khóa</button>
-                <button id="btn-hard-delete" class="btn-danger" title="Xóa vĩnh viễn khỏi CSDL">🗑️ Xóa Cứng</button>
-            </div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 title="" data-admin-title="XAC_NHAN_THAO_TAC_XOA_LICENSE"><span data-admin-node="XAC_NHAN"></span></h3>
+          <button class="modal-close modal-close-btn" data-modal="delete-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="SYMBOL_BE64F2"></span></button>
         </div>
+        <div class="modal-body">
+          <p><span data-admin-node="THUC_HIEN_THAO_TAC_VOI_LICENSE_KEY"></span><strong id="delete-key-display"></strong><span data-admin-node="SYMBOL_8A8DE8"></span></p>
+          <ul style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem; padding-left: 1.5rem">
+            <li style="margin-bottom: 0.5rem" title="" data-admin-title="CHAN_QUYEN_DUNG_LUU_LAI_DU_LIEU">
+              <strong><span data-admin-node="KHOA_XOA_MEM"></span></strong>
+            </li>
+            <li title="" data-admin-title="XOA_HOAN_TOAN_DU_LIEU_KHOI_HE_THONG_CSDL">
+              <strong><span data-admin-node="XOA_VINH_VIEN"></span></strong>
+            </li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary modal-close-btn" data-modal="delete-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="HUY"></span></button>
+          <button id="btn-soft-delete" class="btn-primary" style="background: #f59e0b !important" title="" data-admin-title="VO_HIEU_HOA_QUYEN_DUNG"><span data-admin-node="KHOA"></span></button>
+          <button id="btn-hard-delete" class="btn-danger" title="" data-admin-title="XOA_VINH_VIEN_KHOI_CSDL"><span data-admin-node="XOA_CUNG"></span></button>
+        </div>
+      </div>
     </div>
 
     <div id="resource-delete-modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 title="Xác nhận thao tác xóa tài nguyên">Xác Nhận Xóa</h3>
-                <button class="modal-close modal-close-btn" data-modal="resource-delete-modal"
-                    title="Hủy thao tác">✕</button>
-            </div>
-            <div class="modal-body">
-                <p>Bạn có chắc chắn muốn thực hiện thao tác với tài nguyên này không?</p>
-                <ul style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem; padding-left: 1.5rem;">
-                    <li style="margin-bottom: 0.5rem;" title="Tạm thời vô hiệu hóa tài nguyên"><strong>Khóa (Xóa
-                            Mềm)</strong></li>
-                    <li title="Xóa hoàn toàn dữ liệu khỏi CSDL"><strong>Xóa Vĩnh Viễn</strong></li>
-                </ul>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-close-btn" data-modal="resource-delete-modal"
-                    title="Hủy thao tác">Hủy</button>
-                <button id="btn-resource-soft-delete" class="btn-primary" style="background: #f59e0b !important;"
-                    title="Tạm thời vô hiệu hóa">🔒 Khóa</button>
-                <button id="btn-resource-hard-delete" class="btn-danger" title="Xóa vĩnh viễn dữ liệu khỏi CSDL">🗑️ Xóa</button>
-            </div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 title="" data-admin-title="XAC_NHAN_THAO_TAC_XOA_TAI_NGUYEN"><span data-admin-node="XAC_NHAN_XOA"></span></h3>
+          <button class="modal-close modal-close-btn" data-modal="resource-delete-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="SYMBOL_BE64F2"></span></button>
         </div>
+        <div class="modal-body">
+          <p><span data-admin-node="BAN_CO_CHAC_CHAN_MUON_THUC_HIEN_THAO_TAC_VOI_TAI_NGUYEN_NAY_KHONG"></span></p>
+          <ul style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem; padding-left: 1.5rem">
+            <li style="margin-bottom: 0.5rem" title="" data-admin-title="TAM_THOI_VO_HIEU_HOA_TAI_NGUYEN">
+              <strong><span data-admin-node="KHOA_XOA_MEM"></span></strong>
+            </li>
+            <li title="" data-admin-title="XOA_HOAN_TOAN_DU_LIEU_KHOI_CSDL">
+              <strong><span data-admin-node="XOA_VINH_VIEN"></span></strong>
+            </li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary modal-close-btn" data-modal="resource-delete-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="HUY"></span></button>
+          <button id="btn-resource-soft-delete" class="btn-primary" style="background: #f59e0b !important" title="" data-admin-title="TAM_THOI_VO_HIEU_HOA"><span data-admin-node="KHOA"></span></button>
+          <button id="btn-resource-hard-delete" class="btn-danger" title="" data-admin-title="XOA_VINH_VIEN_DU_LIEU_KHOI_CSDL"><span data-admin-node="XOA"></span></button>
+        </div>
+      </div>
     </div>
 
     <div id="device-modal" class="modal-overlay">
-        <div class="modal-container" style="max-width: 420px;">
-            <div class="modal-header">
-                <h3 id="device-modal-title" title="Danh sách thiết bị kết nối">Thiết Bị</h3>
-                <button class="modal-close modal-close-btn" data-modal="device-modal" title="Hủy thao tác">✕</button>
-            </div>
-            <div class="modal-body">
-                <div id="device-list-container" style="margin-bottom: 1.5rem; max-height: 220px; overflow-y: auto;">
-                </div>
-                <div style="display: flex; justify-content: flex-end;">
-                    <button id="modal-reset-device-btn" class="btn-danger"
-                        title="Ngắt kết nối tất cả thiết bị khỏi tài khoản này">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                            <path d="M3 3v5h5" />
-                        </svg>
-                        Gỡ Thiết Bị
-                    </button>
-                </div>
-            </div>
+      <div class="modal-container" style="max-width: 420px">
+        <div class="modal-header">
+          <h3 id="device-modal-title" title="" data-admin-title="DANH_SACH_THIET_BI_KET_NOI"><span data-admin-node="THIET_BI"></span></h3>
+          <button class="modal-close modal-close-btn" data-modal="device-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="SYMBOL_BE64F2"></span></button>
         </div>
+        <div class="modal-body">
+          <div id="device-list-container" style="margin-bottom: 1.5rem; max-height: 220px; overflow-y: auto"></div>
+          <div style="display: flex; justify-content: flex-end">
+            <button id="modal-reset-device-btn" class="btn-danger" title="" data-admin-title="NGAT_KET_NOI_TAT_CA_THIET_BI_KHOI_TAI_KHOAN_NAY">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" /></svg
+              ><span data-admin-node="GO_THIET_BI"></span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="key-modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="key-modal-title">Thêm Key</h3>
-                <button class="modal-close modal-close-btn" data-modal="key-modal" title="Hủy thao tác">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <div class="form-field">
-                        <label>Gán Cho Gói</label>
-                        <select id="keys-assignee-input" multiple></select>
-                    </div>
-                    <div class="form-field">
-                        <label>GEMINI API KEY</label>
-                        <input type="text" id="keys-gemini-input" placeholder="Nhập Gemini API Key...">
-                    </div>
-                    <div class="form-field">
-                        <label>AI33 API KEY</label>
-                        <input type="text" id="keys-ai33-input" placeholder="Nhập AI33 API Key...">
-                    </div>
-                    <div class="form-field"><label>CEREBRAS API KEY</label><input type="text" id="keys-cerebras-input" placeholder="Nhập Cerebras API Key..."></div>
-                    <div class="form-field"><label>GROQ API KEY</label><input type="text" id="keys-groq-input" placeholder="Nhập Groq API Key..."></div>
-                    <div class="form-field">
-                        <label title="Loại trừ đối với các gói hoặc key cụ thể">Loại Trừ Gói</label>
-                        <select id="keys-excluded-input" multiple></select>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-close-btn" data-modal="key-modal" title="Hủy thao tác">Hủy</button>
-                <button id="save-keys-btn" class="btn-primary">Lưu Key</button>
-            </div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 id="key-modal-title"><span data-admin-node="THEM_KEY_2B4849"></span></h3>
+          <button class="modal-close modal-close-btn" data-modal="key-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="SYMBOL_BE64F2"></span></button>
         </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <div class="form-field">
+              <label><span data-admin-node="GAN_CHO_GOI"></span></label>
+              <select id="keys-assignee-input" multiple></select>
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="GEMINI_API_KEY"></span></label>
+              <input type="text" id="keys-gemini-input" placeholder="" data-admin-placeholder="NHAP_GEMINI_API_KEY" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="AI33_API_KEY"></span></label>
+              <input type="text" id="keys-ai33-input" placeholder="" data-admin-placeholder="NHAP_AI33_API_KEY" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="CEREBRAS_API_KEY"></span></label><input type="text" id="keys-cerebras-input" placeholder="" data-admin-placeholder="NHAP_CEREBRAS_API_KEY" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="GROQ_API_KEY"></span></label><input type="text" id="keys-groq-input" placeholder="" data-admin-placeholder="NHAP_GROQ_API_KEY" />
+            </div>
+            <div class="form-field">
+              <label title="" data-admin-title="LOAI_TRU_DOI_VOI_CAC_GOI_HOAC_KEY_CU_THE"><span data-admin-node="LOAI_TRU_GOI"></span></label>
+              <select id="keys-excluded-input" multiple></select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary modal-close-btn" data-modal="key-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="HUY"></span></button>
+          <button id="save-keys-btn" class="btn-primary"><span data-admin-node="LUU_KEY"></span></button>
+        </div>
+      </div>
     </div>
 
     <div id="account-modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="account-modal-title">Thêm Tài Khoản</h3>
-                <button class="modal-close modal-close-btn" data-modal="account-modal" title="Hủy thao tác">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <div class="form-field">
-                        <label>Google Email</label>
-                        <input type="text" id="acc-email-input" placeholder="example@gmail.com">
-                    </div>
-                    <div class="form-field">
-                        <label>Mật Khẩu</label>
-                        <input type="password" id="acc-pwd-input" placeholder="Nhập mật khẩu Google...">
-                    </div>
-                    <div class="form-field">
-                        <label>Email Khôi Phục</label>
-                        <input type="text" id="acc-recovery-input" placeholder="recovery@gmail.com">
-                    </div>
-                    <div class="form-field">
-                        <label>Gán Cho Gói</label>
-                        <select id="acc-assign-input"></select>
-                    </div>
-                    <div class="form-field">
-                        <label>Trạng Thái</label>
-                        <select id="acc-status-input">
-                            <option value="Active">Active</option>
-                            <option value="Error">Error</option>
-                            <option value="REVOKED">Bị khóa</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-close-btn" data-modal="account-modal"
-                    title="Hủy thao tác">Hủy</button>
-                <button id="add-acc-btn" class="btn-primary">Thêm</button>
-            </div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 id="account-modal-title"><span data-admin-node="THEM_TAI_KHOAN"></span></h3>
+          <button class="modal-close modal-close-btn" data-modal="account-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="SYMBOL_BE64F2"></span></button>
         </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <div class="form-field">
+              <label><span data-admin-node="GOOGLE_EMAIL"></span></label>
+              <input type="text" id="acc-email-input" placeholder="" data-admin-placeholder="EXAMPLE_GMAIL_COM" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="MAT_KHAU_7C7520"></span></label>
+              <input type="password" id="acc-pwd-input" placeholder="" data-admin-placeholder="NHAP_MAT_KHAU_GOOGLE" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="EMAIL_KHOI_PHUC"></span></label>
+              <input type="text" id="acc-recovery-input" placeholder="" data-admin-placeholder="RECOVERY_GMAIL_COM" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="GAN_CHO_GOI"></span></label>
+              <select id="acc-assign-input"></select>
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="TRANG_THAI_5D6E6F"></span></label>
+              <select id="acc-status-input">
+                <option value="Active" data-admin-text="ACTIVE"></option>
+                <option value="Error" data-admin-text="ERROR"></option>
+                <option value="REVOKED" data-admin-text="BI_KHOA"></option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary modal-close-btn" data-modal="account-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="HUY"></span></button>
+          <button id="add-acc-btn" class="btn-primary"><span data-admin-node="THEM"></span></button>
+        </div>
+      </div>
     </div>
 
     <div id="plan-modal" class="modal-overlay">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 id="plan-modal-title">Cấu Hình Gói</h3>
-                <button class="modal-close modal-close-btn" data-modal="plan-modal" title="Hủy thao tác">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <div class="form-field">
-                        <label>Tên Gói</label>
-                        <input type="text" id="plan-name-input-modal" placeholder="Tên gói...">
-                    </div>
-                    <div class="form-field">
-                        <label>Giới Hạn Quota</label>
-                        <label class="toggle-switch-wrapper"
-                            style="width:100%; height:38px !important; margin:0 !important;"
-                            title="Dùng Không Giới Hạn (Unlimited)">
-                            <input type="checkbox" id="plan-unlimited-input-modal">
-                            <span class="toggle-slider"></span>
-                            <span class="toggle-text" id="plan-unlimited-label-modal" style="min-width:180px;">Giới hạn</span>
-                        </label>
-                    </div>
-                    <div class="form-field">
-                        <label>Video Quota</label>
-                        <input type="text" id="plan-video-input-modal" placeholder="0">
-                    </div>
-                    <div class="form-field">
-                        <label>Ảnh Quota</label>
-                        <input type="text" id="plan-image-input-modal" placeholder="0">
-                    </div>
-                    <div class="form-field">
-                        <label>Voice Quota</label>
-                        <input type="text" id="plan-voice-input-modal" placeholder="0">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-close-btn" data-modal="plan-modal" title="Hủy thao tác">Hủy</button>
-                <button id="save-plan-btn" class="btn-primary">Lưu</button>
-            </div>
+      <div class="modal-container">
+        <div class="modal-header">
+          <h3 id="plan-modal-title"><span data-admin-node="CAU_HINH_GOI"></span></h3>
+          <button class="modal-close modal-close-btn" data-modal="plan-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="SYMBOL_BE64F2"></span></button>
         </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <div class="form-field">
+              <label><span data-admin-node="TEN_GOI"></span></label>
+              <input type="text" id="plan-name-input-modal" placeholder="" data-admin-placeholder="TEN_GOI_9A0638" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="GIOI_HAN_QUOTA"></span></label>
+              <label class="toggle-switch-wrapper" style="width: 100%; height: 38px !important; margin: 0 !important" title="" data-admin-title="DUNG_KHONG_GIOI_HAN_UNLIMITED">
+                <input type="checkbox" id="plan-unlimited-input-modal" />
+                <span class="toggle-slider"></span>
+                <span class="toggle-text" id="plan-unlimited-label-modal" style="min-width: 180px"><span data-admin-node="GIOI_HAN"></span></span>
+              </label>
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="VIDEO_QUOTA"></span></label>
+              <input type="text" id="plan-video-input-modal" placeholder="" data-admin-placeholder="VALUE_0" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="ANH_QUOTA"></span></label>
+              <input type="text" id="plan-image-input-modal" placeholder="" data-admin-placeholder="VALUE_0" />
+            </div>
+            <div class="form-field">
+              <label><span data-admin-node="VOICE_QUOTA"></span></label>
+              <input type="text" id="plan-voice-input-modal" placeholder="" data-admin-placeholder="VALUE_0" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary modal-close-btn" data-modal="plan-modal" title="" data-admin-title="HUY_THAO_TAC"><span data-admin-node="HUY"></span></button>
+          <button id="save-plan-btn" class="btn-primary"><span data-admin-node="LUU"></span></button>
+        </div>
+      </div>
     </div>
 
     <div id="toast-container" class="toast-container"></div>
@@ -669,79 +631,9 @@
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <script src="constants.js"></script>
+    <script src="labels.js"></script>
     <script src="app.js"></script>
 
-    <script>
-        (function () {
-            function updateKPICards() {
-                const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
-                const totalUsers = _.size(users);
-                const activeUsers = _.size(_.filter(users, u => _.isEqual(_.get(u, 'status'), AdminConstants.STATUS_ACTIVE)));
-                const premiumUsers = _.size(_.filter(users, u => {
-                    const plan = _.find(_.get(window, AdminConstants.GLOBAL_PLANS, []), p => _.isEqual(_.get(p, 'id'), _.get(u, 'plan_id')));
-                    if (!plan) return false;
-                    const planNameUpper = _.toUpper(_.get(plan, 'name'));
-                    return _.some([AdminConstants.PLAN_PRO, AdminConstants.PLAN_VIP, AdminConstants.PLAN_LIFETIME], key => _.includes(planNameUpper, key));
-                }));
-
-                const apiKeys = _.get(window, AdminConstants.GLOBAL_API_KEYS, []);
-                const totalKeys = _.size(apiKeys);
-
-                const accounts = _.get(window, AdminConstants.GLOBAL_ACCOUNTS, []);
-                const totalAccounts = _.size(accounts);
-
-                const elTotalLicenses = document.getElementById('kpi-total-licenses');
-                const elActiveLicenses = document.getElementById('kpi-active-licenses');
-                const elTotalKeys = document.getElementById('kpi-total-keys');
-                const elTotalAccounts = document.getElementById('kpi-total-accounts');
-                const elPremiumUsers = document.getElementById('kpi-premium-users');
-
-                if (elTotalLicenses) elTotalLicenses.textContent = totalUsers;
-                if (elActiveLicenses) elActiveLicenses.textContent = activeUsers;
-                if (elTotalKeys) elTotalKeys.textContent = totalKeys;
-                if (elTotalAccounts) elTotalAccounts.textContent = totalAccounts;
-                if (elPremiumUsers) elPremiumUsers.textContent = premiumUsers;
-            }
-
-            const observer = new MutationObserver(() => {
-                updateKPICards();
-            });
-
-            document.addEventListener('DOMContentLoaded', () => {
-                const checkTableInterval = setInterval(() => {
-                    const targetTableBody = document.querySelector('#users-table tbody');
-                    if (targetTableBody) {
-                        clearInterval(checkTableInterval);
-                        observer.observe(targetTableBody, { childList: true });
-                        updateKPICards();
-                    }
-                }, 500);
-
-                document.addEventListener('click', (e) => {
-                    if (e.target.closest('.nav-tab-btn') || e.target.closest('.sub-tab-btn') || e.target.closest('button')) {
-                        setTimeout(updateKPICards, 150);
-                    }
-                });
-
-                const origSwitchPage = window.switchAdminPage;
-                if (origSwitchPage) {
-                    window.switchAdminPage = function (pageId) {
-                        origSwitchPage(pageId);
-                        const titleMap = {
-                            [AdminConstants.PAGE_USERS]: 'Người Dùng',
-                            [AdminConstants.PAGE_RESOURCES]: 'Tài Nguyên',
-                            [AdminConstants.PAGE_CONFIG]: 'Cấu Hình'
-                        };
-                        const elTitle = document.getElementById('header-page-title');
-                        if (elTitle && _.has(titleMap, pageId)) {
-                            elTitle.textContent = _.get(titleMap, pageId);
-                        }
-                        updateKPICards();
-                    };
-                }
-            });
-        })();
-    </script>
-</body>
-
+    <script src="initialize.js"></script>
+  </body>
 </html>

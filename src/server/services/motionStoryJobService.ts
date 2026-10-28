@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { randomUUID } from "crypto";
 import _ from "lodash";
 import { MOTION_TEMPLATE_DANG_DUNG, MOTION_TEMPLATE_LOI, MOTION_TEMPLATE_MOTION_STORY_FAILED, MOTION_TEMPLATE_SYMBOL_7, MOTION_TEXT_ABORT, MOTION_TEXT_CANCELLED, MOTION_TEXT_CONTROLLER, MOTION_TEXT_DA_HUY, MOTION_TEXT_HOAN_TAT, MOTION_TEXT_STOPPING, MOTION_TEXT_VI_VN } from "../../constants/motionRuntime.js";
@@ -18,7 +20,7 @@ export interface StoryJobContext {
   progress: (value: number, stage?: string) => void;
   partial: (result: unknown) => void;
 }
-const publicJob = (job: InternalJob): MotionStoryJobState => _.omit(job, [MOTION_TEXT_CONTROLLER, "editorialSessionId", "editorialRevision", "requestKey"]) as MotionStoryJobState;
+const publicJob = (job: InternalJob): MotionStoryJobState => _.omit(job, [MOTION_TEXT_CONTROLLER, RT_SERVER.EDITORIALSESSIONID, RT_SERVER.EDITORIALREVISION, RT_SERVER.REQUESTKEY]) as MotionStoryJobState;
 export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, run: (ctx: StoryJobContext) => Promise<unknown>, editorial?: MotionEditorialSession, requestKey?: string): MotionStoryJobState => {
   const running = _.find([...jobs.values()], (j) => !!(requestKey || editorial?.id) && j.kind === kind && j.requestKey === requestKey && j.editorialSessionId === editorial?.id && j.editorialRevision === editorial?.revision && _.includes(ACTIVE, j.status));
   if (running) return publicJob(running);
@@ -36,7 +38,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
   const failedSave = (error: unknown) => {
     persistenceError ||= error;
     job.status = MotionJobStatus.ERROR;
-    job.error = PRODUCTION.SAVE_FAILED + ": " + String((persistenceError as Error)?.message || persistenceError);
+    job.error = PRODUCTION.SAVE_FAILED + RT_SHARED.SYMBOL_45822F + String((persistenceError as Error)?.message || persistenceError);
     logger.error(PRODUCTION.SAVE_FAILED, error);
     if (!job.controller.signal.aborted) job.controller.abort(error);
   };
@@ -108,7 +110,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
     } catch (error: any) {
       const aborted = job.controller.signal.aborted && !persistenceError;
       job.status = aborted ? MotionJobStatus.CANCELLED : MotionJobStatus.ERROR;
-      job.error = aborted ? undefined : persistenceError ? PRODUCTION.SAVE_FAILED + ": " + String((persistenceError as Error)?.message || persistenceError) : _.toString(error?.message || error);
+      job.error = aborted ? undefined : persistenceError ? PRODUCTION.SAVE_FAILED + RT_SHARED.SYMBOL_45822F + String((persistenceError as Error)?.message || persistenceError) : _.toString(error?.message || error);
       try {
         ctx.log(aborted ? MOTION_TEXT_DA_HUY : MOTION_TEMPLATE_LOI(String(job.error)));
       } catch (writeError) {

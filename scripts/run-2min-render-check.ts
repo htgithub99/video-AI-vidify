@@ -20,40 +20,9 @@ if (!fs.existsSync(narrationPath)) throw new Error(`Project ${projectId} has no 
 const scenes: FFmpegRenderOptions["scenes"] = project.storyboard.map((scene, index) => {
   const fileName = availableImages[index % availableImages.length];
   const imageUrl = `/assets/projects/${projectId}/images/${fileName}`;
-  return {
-    id: scene.id,
-    imageUrl,
-    duration: scene.duration,
-    text: scene.script,
-    assetType: GenerateType.Image,
-    cameraMotion: scene.cameraMotion,
-    effects: scene.effects,
-    lightingEffect: scene.lightingEffect,
-    transition: scene.transition,
-  };
+  return { id: scene.id, imageUrl, duration: scene.duration, text: scene.script, assetType: GenerateType.Image, cameraMotion: scene.cameraMotion, effects: scene.effects, lightingEffect: scene.lightingEffect, transition: scene.transition };
 });
-const outputUrl = await renderFFmpegVideo(
-  {
-    projectId,
-    scenes,
-    quality: VideoQuality.HIGHEST,
-    globalAudioUrl: `/assets/projects/${projectId}/voices/narration.wav`,
-    aspectRatio: "16:9",
-  },
-  (progress) => {
-    if (progress % 10 === 0 || progress >= 94) writeVerificationLog(`[render] ${progress}%`);
-  },
-);
-writeVerificationLog(
-  stringifyJson(
-    {
-      projectId,
-      scenes: scenes.length,
-      sourceImages: availableImages.length,
-      storyboardDuration: scenes.reduce((sum, scene) => sum + scene.duration, 0),
-      outputUrl,
-    },
-    null,
-    2,
-  ),
-);
+const outputUrl = await renderFFmpegVideo({ projectId, scenes, quality: VideoQuality.HIGHEST, globalAudioUrl: `/assets/projects/${projectId}/voices/narration.wav`, aspectRatio: "16:9" }, (progress) => {
+  if (progress % 10 === 0 || progress >= 94) writeVerificationLog(`[render] ${progress}%`);
+});
+writeVerificationLog(stringifyJson({ projectId, scenes: scenes.length, sourceImages: availableImages.length, storyboardDuration: scenes.reduce((sum, scene) => sum + scene.duration, 0), outputUrl }, null, 2));

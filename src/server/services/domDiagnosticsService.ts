@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { SOURCE_BROWSER_TEXT_ARIA_BUSY, SOURCE_BROWSER_TEXT_CURRENTSRC, SOURCE_BROWSER_TEXT_DATA_TEST_ID, SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_0_2, SOURCE_TEXT_1_REDACTED, SOURCE_TEXT_ARIA_LABEL, SOURCE_TEXT_HREF, SOURCE_TEXT_R, SOURCE_TEXT_ROLE, SOURCE_TEXT_UTF8 } from "../../constants/sourceText";
 import fs from "fs";
 import path from "path";
@@ -83,26 +84,14 @@ export const captureDomDiagnostics = async (page: Page, state: string, options: 
           });
       },
       {
-        payload: {
-          selector: options.selector,
-          prioritySelector: options.prioritySelector,
-          limits: {
-            maxElements: effectiveMaxElements,
-            maxClassNameLength: options.maxClassNameLength,
-            maxTextLength: options.maxTextLength,
-            maxHtmlLength: options.maxHtmlLength,
-          },
-        },
+        payload: { selector: options.selector, prioritySelector: options.prioritySelector, limits: { maxElements: effectiveMaxElements, maxClassNameLength: options.maxClassNameLength, maxTextLength: options.maxTextLength, maxHtmlLength: options.maxHtmlLength } },
         texts: { SOURCE_BROWSER_TEXT_CURRENTSRC, SOURCE_BROWSER_TEXT_ARIA_BUSY, SOURCE_TEXT_ARIA_LABEL, SOURCE_TEXT_ROLE, SOURCE_BROWSER_TEXT_DATA_TEST_ID, SOURCE_BROWSER_TEXT_SRC, SOURCE_TEXT_HREF },
       },
     );
-    const sanitizedElements: DomDiagnosticElement[] = _.map(elements, (element) => ({
-      ...element,
-      html: sanitizeOuterHtml(element.html, options.maxHtmlLength),
-    }));
+    const sanitizedElements: DomDiagnosticElement[] = _.map(elements, (element) => ({ ...element, html: sanitizeOuterHtml(element.html, options.maxHtmlLength) }));
     const diagnosticPath = path.join(getDataDirectory(), options.fileName);
     rotateDiagnosticFile(diagnosticPath, options.maxFileBytes || Number.MAX_SAFE_INTEGER, options.retainedFileBytes || 0);
-    fs.appendFileSync(diagnosticPath, `${jsonUtils.safeStringify({ capturedAt: new Date().toISOString(), state, url: page.url(), elements: sanitizedElements })}\n`, SOURCE_TEXT_UTF8);
+    fs.appendFileSync(diagnosticPath, `${jsonUtils.safeStringify({ capturedAt: new Date().toISOString(), state, url: page.url(), elements: sanitizedElements })}${RT_SHARED.SYMBOL_01BA47}`, SOURCE_TEXT_UTF8);
   } catch (error: unknown) {
     logger.error(options.errorMessageTemplate.replace(SOURCE_TEXT_0_2, state), getErrorMessage(error));
   }

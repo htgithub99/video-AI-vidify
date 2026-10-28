@@ -14,11 +14,7 @@ export const migrateVideoProject = (project: VideoProject | null): VideoProject 
       acceptance: scene.acceptance || (scene.assetStatus === SceneAssetStatus.Approved ? AssetAcceptance.Approved : scene.assetUrl ? AssetAcceptance.AcceptedWithWarning : undefined),
       assetRevisions: _.defaultTo(scene.assetRevisions, []),
     })),
-    thumbnails: _.map(project.thumbnails, (thumbnail) => ({
-      ...thumbnail,
-      qaStatus: thumbnail.qaStatus || (thumbnail.qa?.passed ? QaStatus.Passed : thumbnail.qa ? QaStatus.Failed : QaStatus.Unavailable),
-      acceptance: thumbnail.acceptance || (thumbnail.qa?.passed ? AssetAcceptance.Approved : thumbnail.imageUrl ? AssetAcceptance.AcceptedWithWarning : AssetAcceptance.Rejected),
-    })),
+    thumbnails: _.map(project.thumbnails, (thumbnail) => ({ ...thumbnail, qaStatus: thumbnail.qaStatus || (thumbnail.qa?.passed ? QaStatus.Passed : thumbnail.qa ? QaStatus.Failed : QaStatus.Unavailable), acceptance: thumbnail.acceptance || (thumbnail.qa?.passed ? AssetAcceptance.Approved : thumbnail.imageUrl ? AssetAcceptance.AcceptedWithWarning : AssetAcceptance.Rejected) })),
     manualReviewItems: _.defaultTo(project.manualReviewItems, []),
     aiMetrics: _.defaultTo(project.aiMetrics, []),
   };

@@ -55,26 +55,12 @@ assert.doesNotMatch(quickVideoPrompt, /cinematicBeats must agree|3-5 explicitly 
 const aiAuthoredVideoPrompt = "One continuous clip: the courier slams the steel door, the latch catches, and the pursuer collides with it.";
 assert.equal(prepareProjectMediaPrompt({ sceneId: "sc_video", prompt: aiAuthoredVideoPrompt, generateType: GenerateType.Video }), aiAuthoredVideoPrompt);
 const controllerSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/controllers/pipelineController.ts", import.meta.url), "utf8"));
-const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
+const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/features/video-generation/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
 assert.match(controllerSource, /if \(isCinematicPlanning\)[\s\S]*getCinematicVideoPlanningPrompt[\s\S]*getQuickVideoPlanningPrompt/);
 assert.match(controllerSource, /quickVideoPromptRequired \? \["generationPrompt"\] : \[\]/);
 assert.match(pipelineSource, /prompt: prepareProjectMediaPrompt\(\{ sceneId: scene\.id, prompt: _\.toString\(scene\.generationPrompt\), generateType: GenerateType\.Video \}\)/);
 const compactCards = createPromptCharacterCards([
-  {
-    id: "char_1",
-    name: "Player",
-    prompt: "blue bean torso",
-    ethnicitySkinTone: "warm brown skin",
-    faceShape: "oval face",
-    eyes: "wide dark eyes",
-    nose: "small straight nose",
-    hair: "short black hair",
-    silhouette: "compact silhouette",
-    signatureClothing: "blue jacket",
-    colorPalette: "blue and charcoal",
-    accessories: "silver wristwatch",
-    images: ["unused"],
-  },
+  { id: "char_1", name: "Player", prompt: "blue bean torso", ethnicitySkinTone: "warm brown skin", faceShape: "oval face", eyes: "wide dark eyes", nose: "small straight nose", hair: "short black hair", silhouette: "compact silhouette", signatureClothing: "blue jacket", colorPalette: "blue and charcoal", accessories: "silver wristwatch", images: ["unused"] },
 ]);
 assert.equal(compactCards[0].id, "char_1");
 assert.equal(compactCards[0].name, "Player");

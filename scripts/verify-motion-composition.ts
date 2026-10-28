@@ -10,7 +10,7 @@ import { normalizeSceneComposition, compositionFrameSvg, mergeSceneCompositionDr
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { remotionSceneReadiness, validateRemotionSpec } from "../src/lib/motionRemotion.js";
 import { normalizeMotionVisualSettings, motionVisualRequest } from "../src/lib/motionVisual.js";
-import { remotionSceneProgress } from "../src/lib/motionRemotionProgress.js";
+import { remotionSceneProgress } from "../src/features/motion/lib/motionRemotionProgress.js";
 import { compileRemotionStory } from "../src/server/services/remotion/storyCompiler.js";
 import { remotionStoryBuildCurrent } from "../src/server/services/remotion/sceneKeys.js";
 import { puppetBeatLines } from "../src/lib/motionPuppet.js";
@@ -77,6 +77,10 @@ try {
   ])
     assert.throws(() => normalizeMotionVisualSettings(invalid));
   const built = normalizeSceneComposition(illustration(), "art", "input", "room", [node], new Set(["uncle"]), 1280, 720);
+  const staleLayer = normalizeSceneComposition({ ...illustration(), layers: [...illustration().layers, { id: "obsolete_group", kind: "prop" }] }, "art", "input", "room", [node], new Set(["uncle"]), 1280, 720);
+  assert.equal(staleLayer.asset.svg, built.asset.svg);
+  assert.deepEqual(staleLayer.composition.layers, built.composition.layers);
+  assert.throws(() => normalizeSceneComposition({ ...illustration(), svg: illustration().svg.replace('id="person"', 'id="another_person"') }, "bad", "bad", "", [node], new Set(["uncle"]), 1280, 720));
   assert.ok(normalizeSceneComposition(illustration(), "art", "input", "room", [node, { id: "smoke", kind: "prop", description: "incense smoke" } as any], new Set(["uncle"]), 1280, 720));
   assert.equal(mergeSceneCompositionDraft(illustration(), { layers: [] }).svg, illustration().svg);
   assert.deepEqual(mergeSceneCompositionDraft(illustration(), { animations: [] }).animations, []);
@@ -252,7 +256,12 @@ try {
     still: async (_spec: unknown, file: string) => {
       fs.writeFileSync(file, "render fixture");
     },
-    ai: async (prompt: string, artifact: string) => (artifact === V.ARTIFACT_REVIEW ? { ok: ++reviews > 1, issues: reviews > 1 ? [] : ["Clothing should be purple"] } : artifact === C.ARTIFACT ? { groupPatches: [{ id: "person", svg: '<g id="person"><path d="M0 0L1 1" fill="#605d76"/><path id="mouth" d="M10 20Q20 20 30 20"/></g>' }] } : ai(prompt, artifact)),
+    ai: async (prompt: string, artifact: string) =>
+      artifact === V.ARTIFACT_REVIEW
+        ? { ok: ++reviews > 1, issues: reviews > 1 ? [] : ["Clothing should be purple"], checks: reviews > 1 ? [] : [{ ok: false, category: "identity", evidence: "The main character wears red instead of the explicitly specified purple clothing.", problem: "Clothing should be purple" }] }
+        : artifact === C.ARTIFACT
+          ? { groupPatches: [{ id: "person", svg: '<g id="person"><path d="M0 0L1 1" fill="#605d76"/><path id="mouth" d="M10 20Q20 20 30 20"/></g>' }] }
+          : ai(prompt, artifact),
   });
   assert.equal(reviews, 2);
   assert.ok(reviewed.gen!.remotion!.scenes.beat[0].reviewKey);

@@ -699,11 +699,7 @@ export const MOTION_VOICE_FX = {
   ENDINGS: { scared: "...", sad: "...", excited: "!", angry: "!", surprised: "!" } as Record<string, string>,
   ENDING_STRENGTH: 0.55,
   END_PUNCT_RE: /[.!?…]+["”']?\s*$/,
-  CLEAN: {
-    TRIM: "anull",
-    FILTER: "highpass=f=55,lowpass=f=14000,equalizer=f=2800:t=q:w=1.1:g=1.5,acompressor=threshold=0.1:ratio=2:attack=12:release=140:makeup=1.2",
-    TAIL: "alimiter=limit=0.9:attack=3:release=60,afade=t=in:d=0.003,areverse,afade=t=in:d=0.003,areverse",
-  },
+  CLEAN: { TRIM: "anull", FILTER: "highpass=f=55,lowpass=f=14000,equalizer=f=2800:t=q:w=1.1:g=1.5,acompressor=threshold=0.1:ratio=2:attack=12:release=140:makeup=1.2", TAIL: "alimiter=limit=0.9:attack=3:release=60,afade=t=in:d=0.003,areverse,afade=t=in:d=0.003,areverse" },
   F: {
     RESAMPLE: (sr: number): string => `aresample=${sr}`,
     SETRATE: (sr: number): string => `asetrate=${sr}`,

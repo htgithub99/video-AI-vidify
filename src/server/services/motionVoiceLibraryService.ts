@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
@@ -8,7 +9,13 @@ import type { MotionVoiceChannel, MotionVoiceChannels, MotionVoiceGroup, MotionV
 import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { vieneuRoot } from "./vieneuTtsService.js";
 import { isAi33Voice } from "../../lib/motionVoice.js";
-interface VoiceMeta { name?: string; gender?: string; age?: string; hidden?: boolean; speed?: number; }
+interface VoiceMeta {
+  name?: string;
+  gender?: string;
+  age?: string;
+  hidden?: boolean;
+  speed?: number;
+}
 type VoiceLibrary = Record<string, VoiceMeta>;
 export const motionVoiceLibraryFile = (name: string): string => {
   const root = vieneuRoot();
@@ -17,7 +24,7 @@ export const motionVoiceLibraryFile = (name: string): string => {
 };
 export const readMotionVoiceLibraryJson = <T>(name: string, fallback: T): T => {
   try {
-    return JSON.parse(fs.readFileSync(motionVoiceLibraryFile(name), MR.MOTION_TEXT_UTF8)) as T;
+    return parseJson(fs.readFileSync(motionVoiceLibraryFile(name), MR.MOTION_TEXT_UTF8)) as T;
   } catch {
     return fallback;
   }

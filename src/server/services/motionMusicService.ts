@@ -9,7 +9,11 @@ import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { runMotionAudioProcess, motionWavHeader } from "./motionSoundMixService.js";
 import { motionAudioHash as hash } from "./motionAudioUtils.js";
 import { motionMusicMoodKey } from "../../lib/motionMusic.js";
-interface MotionStereoAudio { left: Float32Array; right: Float32Array; rate: number; }
+interface MotionStereoAudio {
+  left: Float32Array;
+  right: Float32Array;
+  rate: number;
+}
 export const motionMusicMood = (analysis: MotionStoryAnalysis | null | undefined, wanted?: string): string => {
   return motionMusicMoodKey(wanted) || motionMusicMoodKey(analysis?.musicMood) || M.GENRE_MOOD[_.toString(analysis?.videoGenre)] || M.SFX_MOOD[_.toString(analysis?.sfxMood)] || M.DEFAULT_MOOD;
 };

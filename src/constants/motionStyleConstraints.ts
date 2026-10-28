@@ -87,9 +87,5 @@ export const MOTION_STYLE_PART_RE = {
   hands: /(^|_)(hands?|fingers?|fists?|palms?|thumbs?)(_|$|l|r)/i,
   legs: /(^|_)(legs?|thighs?|shins?|feet|foot|shoes?|boots?)(_|$|l|r)/i,
 } as Record<string, RegExp>;
-export const MOTION_STYLE_LOG = {
-  ENFORCED: (cast: string, items: string): string => `${cast}: ẩn bộ phận style không có / chỉnh màu mặt theo style (${items})`,
-  HIDDEN_PART: (part: string): string => `ẩn ${part}`,
-  FACE_FILL: (hex: string): string => `màu mặt ${hex}`,
-} as const;
+export const MOTION_STYLE_LOG = { ENFORCED: (cast: string, items: string): string => `${cast}: ẩn bộ phận style không có / chỉnh màu mặt theo style (${items})`, HIDDEN_PART: (part: string): string => `ẩn ${part}`, FACE_FILL: (hex: string): string => `màu mặt ${hex}` } as const;
 export const MOTION_STYLE_FRAMING = { HEADS_TOP_HALF: "heads_top_half" } as const;

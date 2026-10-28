@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
 import { puppetPropRestRotation } from "../../../lib/motionPuppetAssets.js";
 import { MOTION_APPEARANCE as APPEARANCE } from "../../../constants/motionAppearance.js";
 import { MOTION_PACK as PACK } from "../../../constants/motionPack.js";
@@ -127,7 +128,7 @@ export const puppetBeatFrames = (beat: MotionBeat, gen: PuppetGen, start: number
         const narration = puppetSourceText(line, range);
         if (previous?.visualId === unit.key && previous.speaker === line.speaker) {
           previous.narration += P.SPACE + narration;
-          if (word.timing === "estimated") previous.timing = word.timing;
+          if (word.timing === RT_SERVER.ESTIMATED) previous.timing = word.timing;
           continue;
         }
         if (previous) {

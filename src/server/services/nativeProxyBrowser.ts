@@ -70,7 +70,11 @@ import { Server } from "proxy-chain";
 import { createProxyDiagnostics } from "./proxyDiagnostics.js";
 type Diagnostics = ReturnType<typeof createProxyDiagnostics>;
 export class NativeProxyRouteError extends Error {}
-export interface NativeProxySession extends EventEmitter { ip: string; open(url: string): Promise<void>; close(): Promise<void>; }
+export interface NativeProxySession extends EventEmitter {
+  ip: string;
+  open(url: string): Promise<void>;
+  close(): Promise<void>;
+}
 export type NativeProxyBrowserFactory = (profilePath: string, proxy: NonNullable<LaunchOptions["proxy"]>, url: string, diagnostics: Diagnostics) => Promise<NativeProxySession>;
 export async function startProxyRelay(proxy: NonNullable<LaunchOptions["proxy"]>, diagnostics?: Diagnostics) {
   const upstream = new URL(proxy.server);
@@ -78,12 +82,7 @@ export async function startProxyRelay(proxy: NonNullable<LaunchOptions["proxy"]>
   if (proxy.username) upstream.username = proxy.username;
   if (proxy.password) upstream.password = proxy.password;
   diagnostics?.protect(proxy.username, proxy.password);
-  const relay = new Server({
-    host: SOURCE_TEXT_127_0_0_1,
-    port: 0,
-    verbose: false,
-    prepareRequestFunction: () => ({ upstreamProxyUrl: upstream.href, requestAuthentication: false }),
-  });
+  const relay = new Server({ host: SOURCE_TEXT_127_0_0_1, port: 0, verbose: false, prepareRequestFunction: () => ({ upstreamProxyUrl: upstream.href, requestAuthentication: false }) });
   relay.on(SOURCE_TEXT_REQUESTFAILED, ({ error }) => diagnostics?.event(SOURCE_TEXT_RELAY_REQUEST_FAILED, {}, error));
   relay.on(SOURCE_TEXT_TUNNELCONNECTFAILED, ({ response }) => diagnostics?.event(SOURCE_TEXT_RELAY_TUNNEL_FAILED, { httpStatus: response?.statusCode }));
   await relay.listen();

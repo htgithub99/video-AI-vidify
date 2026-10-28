@@ -1,6 +1,6 @@
 export const MOTION_DRAFT_VERIFICATION = {
   PATTERNS: { API_MODULE: /motionApi\.ts$/, STORAGE_MODULE: /[\\/]lib[\\/]json\.ts$/, ACTIVITY_MODULE: /motionWorkflowActivity\.ts$/, TOAST_MODULE: /^sonner$/, ANY: /.*/ },
-  ENTRY: `import React from "react"; import { createRoot } from "react-dom/client"; import { useMotionStudio } from "./src/hooks/useMotionStudio.ts"; function Fixture() { globalThis.motionDraftStudio = useMotionStudio(); return null; } createRoot(document.getElementById("root")).render(<Fixture />);`,
+  ENTRY: `import React from "react"; import { createRoot } from "react-dom/client"; import { useMotionStudio } from "./src/features/motion/hooks/useMotionStudio.ts"; function Fixture() { globalThis.motionDraftStudio = useMotionStudio(); return null; } createRoot(document.getElementById("root")).render(<Fixture />);`,
   API_STUB: `export const loadMotionEngineClient = async () => ({}); export const motionRequest = (...args) => globalThis.motionDraftFixture.request(...args); export const pollMotionJob = (...args) => globalThis.motionDraftFixture.poll(...args); export const motionJobStatusUrl = (base, id) => base + id;`,
   STORAGE_STUB: `import { MOTION_EDITORIAL } from "../constants/motionEditorial.ts"; export const jsonUtils = { getItem: (key, fallback) => (key === MOTION_EDITORIAL.LOG_STORAGE_KEY ? globalThis.motionDraftFixture.logJournal : globalThis.motionDraftFixture.stopped) ?? fallback, setItem: (key, value) => { if (key === MOTION_EDITORIAL.LOG_STORAGE_KEY) globalThis.motionDraftFixture.logJournal = structuredClone(value); else globalThis.motionDraftFixture.stopped = value; }, getAsyncItem: async () => structuredClone(globalThis.motionDraftFixture.saved), setAsyncItem: async (_key, value) => { globalThis.motionDraftFixture.saved = structuredClone(value); } };`,
   ACTIVITY_STUB: `export const logMotionActivity = () => {}; export const logStoryTerminal = () => {}; export const loggedMotionAction = async (_event, action) => action();`,
@@ -39,7 +39,7 @@ export const MOTION_DRAFT_VERIFICATION = {
 export const MOTION_STYLE_PICKER_VERIFICATION = {
   ENTRY: `import React, { useState } from "react";
     import { createRoot } from "react-dom/client";
-    import { useMotionStudio } from "./src/hooks/useMotionStudio.ts";
+    import { useMotionStudio } from "./src/features/motion/hooks/useMotionStudio.ts";
     import { MotionStyleSetPicker } from "./src/components/motion-video/MotionSceneLibraryPanel.tsx";
     function Studio() {
       const studio = useMotionStudio();

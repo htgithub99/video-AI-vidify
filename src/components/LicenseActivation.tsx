@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_UI } from "../constants/runtime/ui.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { StudioCard, StudioInput } from "./ui/Studio.js";
 import { SOURCE_TEXT_BG_EMERALD_500, SOURCE_TEXT_BG_EMERALD_500_10, SOURCE_TEXT_BG_ROSE_500, SOURCE_TEXT_BG_ROSE_500_10, SOURCE_TEXT_ERROR, SOURCE_TEXT_SHADOW_EMERALD_950_20, SOURCE_TEXT_SHADOW_ROSE_950_20, SOURCE_TEXT_STATUS, SOURCE_TEXT_SUCCESS, SOURCE_TEXT_TEXT_EMERALD_500, SOURCE_TEXT_TEXT_ROSE_500, SOURCE_TEXT_UNSTYLED } from "../constants/sourceText";
 import React, { useState, useEffect, FC, FormEvent, useCallback, useMemo } from "react";
@@ -21,18 +23,18 @@ const ActivationToast: FC<ToastMessageProps> = ({ type, message, onClose }) => {
   const shadowColor = isError ? SOURCE_TEXT_SHADOW_ROSE_950_20 : SOURCE_TEXT_SHADOW_EMERALD_950_20;
   const bgBarColor = isError ? SOURCE_TEXT_BG_ROSE_500_10 : SOURCE_TEXT_BG_EMERALD_500_10;
   return (
-    <motion.div key={type} initial={{ opacity: 0, y: 30, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }} className={cn("bg-slate-900 shadow-2xl p-4 rounded-xl text-slate-200 text-xs flex items-start gap-3 pointer-events-auto max-w-sm border border-slate-800 relative overflow-hidden", shadowColor)}>
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1.5", accentColor)} />
-      {isError ? <AlertCircle className={cn("w-4.5 h-4.5 shrink-0 mt-0.5 ml-1", textColor)} /> : <Check className={cn("w-4.5 h-4.5 shrink-0 mt-0.5 ml-1 animate-pulse", textColor)} />}
-      <div className={cn("flex-grow flex flex-col gap-0.5 text-left")}>
-        <span className={cn("text-[10px] uppercase font-mono font-bold tracking-wider", textColor)}>{title}</span>
-        <p className={cn("leading-snug text-slate-300 font-medium")}>{message}</p>
+    <motion.div key={type} initial={{ opacity: 0, y: 30, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }} className={cn(RT_UI.BG_SLATE_900_SHADOW_2XL_P_4_ROUNDED_XL_TEXT, shadowColor)}>
+      <div className={cn(RT_UI.ABSOLUTE_LEFT_0_TOP_0_BOTTOM_0_W_1_5, accentColor)} />
+      {isError ? <AlertCircle className={cn(RT_UI.W_4_5_H_4_5_SHRINK_0_MT_0, textColor)} /> : <Check className={cn(RT_UI.W_4_5_H_4_5_SHRINK_0_MT_0_37BFB2, textColor)} />}
+      <div className={cn(RT_UI.FLEX_GROW_FLEX_FLEX_COL_GAP_0_5_TEXT_LEFT)}>
+        <span className={cn(RT_UI.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER, textColor)}>{title}</span>
+        <p className={cn(RT_UI.LEADING_SNUG_TEXT_SLATE_300_FONT_MEDIUM)}>{message}</p>
       </div>
-      <Button variant={SOURCE_TEXT_UNSTYLED} type={SecurityConstants.BUTTON_TYPE_BUTTON} onClick={onClose} className={cn("text-slate-500 hover:text-slate-200 shrink-0 p-0.5 hover:bg-slate-850 rounded shadow-none h-auto w-auto transition-colors")}>
-        <X className={cn("w-3.5 h-3.5")} />
+      <Button variant={SOURCE_TEXT_UNSTYLED} type={SecurityConstants.BUTTON_TYPE_BUTTON} onClick={onClose} className={cn(RT_UI.TEXT_SLATE_500_HOVER_TEXT_SLATE_200_SHRINK_0_P)}>
+        <X className={cn(RT_SHARED.W_3_5_H_3_5)} />
       </Button>
-      <div className={cn("absolute bottom-0 left-0 right-0 h-0.5", bgBarColor)}>
-        <div className={cn("h-full animate-shrinkWidth", accentColor)} />
+      <div className={cn(RT_UI.ABSOLUTE_BOTTOM_0_LEFT_0_RIGHT_0_H_0_5, bgBarColor)}>
+        <div className={cn(RT_UI.H_FULL_ANIMATE_SHRINKWIDTH, accentColor)} />
       </div>
     </motion.div>
   );
@@ -75,16 +77,16 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
   const isRevoked = useMemo(() => _.isEqual(_.get(licenseInfo, SOURCE_TEXT_STATUS), LicenseStatus.REVOKED), [licenseInfo]);
   if (isLoading) {
     return (
-      <div className={cn("flex items-center justify-center min-h-screen bg-slate-955 p-4 relative overflow-hidden")}>
-        <StudioCard className={cn("w-full max-w-md glass-card rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 border border-slate-800/80 space-y-6")}>
-          <div className={cn("flex flex-col items-center space-y-4")}>
-            <div className={cn("w-18 h-18 rounded-3xl skeleton-shimmer")} />
-            <div className={cn("w-48 h-6 rounded-xl skeleton-shimmer")} />
-            <div className={cn("w-64 h-3.5 rounded-lg skeleton-shimmer")} />
+      <div className={cn(RT_UI.FLEX_ITEMS_CENTER_JUSTIFY_CENTER_MIN_H_SCREEN_BG_SLATE)}>
+        <StudioCard className={cn(RT_UI.W_FULL_MAX_W_MD_GLASS_CARD_ROUNDED_3XL_P)}>
+          <div className={cn(RT_UI.FLEX_FLEX_COL_ITEMS_CENTER_SPACE_Y_4)}>
+            <div className={cn(RT_UI.W_18_H_18_ROUNDED_3XL_SKELETON_SHIMMER)} />
+            <div className={cn(RT_UI.W_48_H_6_ROUNDED_XL_SKELETON_SHIMMER)} />
+            <div className={cn(RT_UI.W_64_H_3_5_ROUNDED_LG_SKELETON_SHIMMER)} />
           </div>
-          <div className={cn("space-y-4 pt-2")}>
-            <div className={cn("w-full h-12 rounded-2xl skeleton-shimmer")} />
-            <div className={cn("w-full h-12 rounded-2xl skeleton-shimmer")} />
+          <div className={cn(RT_UI.SPACE_Y_4_PT_2)}>
+            <div className={cn(RT_UI.W_FULL_H_12_ROUNDED_2XL_SKELETON_SHIMMER)} />
+            <div className={cn(RT_UI.W_FULL_H_12_ROUNDED_2XL_SKELETON_SHIMMER)} />
           </div>
         </StudioCard>
       </div>
@@ -93,44 +95,28 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
   if (_.isNil(licenseInfo)) {
     return (
       <>
-        <div className={cn("flex items-center justify-center min-h-screen bg-slate-955 p-4 relative overflow-hidden")}>
-          <div className={cn("absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-rose-600/10 rounded-full blur-[120px] pointer-events-none")} />
-          <div className={cn("absolute bottom-10 right-10 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none")} />
-          <StudioCard className={cn("w-full max-w-md glass-card rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 border border-slate-800/80")}>
-            <div className={cn("flex flex-col items-center text-center mb-8")}>
-              <div className={cn("w-18 h-18 bg-gradient-to-tr from-rose-600 to-amber-500 rounded-3xl flex items-center justify-center mb-5 shadow-lg shadow-rose-500/25 ring-2 ring-white/20")}>
-                <KeyRound className={cn("w-9 h-9 text-white")} />
+        <div className={cn(RT_UI.FLEX_ITEMS_CENTER_JUSTIFY_CENTER_MIN_H_SCREEN_BG_SLATE)}>
+          <div className={cn(RT_UI.ABSOLUTE_TOP_1_4_LEFT_1_2_TRANSLATE_X_1)} />
+          <div className={cn(RT_UI.ABSOLUTE_BOTTOM_10_RIGHT_10_W_96_H_96_BG)} />
+          <StudioCard className={cn(RT_UI.W_FULL_MAX_W_MD_GLASS_CARD_ROUNDED_3XL_P_C97FAA)}>
+            <div className={cn(RT_UI.FLEX_FLEX_COL_ITEMS_CENTER_TEXT_CENTER_MB_8)}>
+              <div className={cn(RT_UI.W_18_H_18_BG_GRADIENT_TO_TR_FROM_ROSE)}>
+                <KeyRound className={cn(RT_UI.W_9_H_9_TEXT_WHITE)} />
               </div>
-              <h2 className={cn("text-2xl font-extrabold text-white mb-2 font-logo tracking-tight truncate")}>{SecurityMessages.ACTIVATION_TITLE}</h2>
-              <p className={cn("text-xs text-slate-400 max-w-xs leading-relaxed truncate")} title={SecurityMessages.ACTIVATION_SUBTITLE_TOOLTIP}>
+              <h2 className={cn(RT_UI.TEXT_2XL_FONT_EXTRABOLD_TEXT_WHITE_MB_2_FONT_LOGO)}>{SecurityMessages.ACTIVATION_TITLE}</h2>
+              <p className={cn(RT_UI.TEXT_XS_TEXT_SLATE_400_MAX_W_XS_LEADING_RELAXED)} title={SecurityMessages.ACTIVATION_SUBTITLE_TOOLTIP}>
                 {SecurityMessages.ACTIVATION_SUBTITLE_SHORT}
               </p>
             </div>
-            <form onSubmit={handleFormSubmit} className={cn("space-y-5")}>
+            <form onSubmit={handleFormSubmit} className={cn(RT_UI.SPACE_Y_5)}>
               <div>
-                <StudioInput
-                  type={SecurityConstants.INPUT_TYPE_TEXT}
-                  value={inputKey}
-                  onChange={(e) => setInputKey(e.target.value)}
-                  placeholder={SecurityMessages.INPUT_PLACEHOLDER_SHORT}
-                  title={SecurityMessages.INPUT_PLACEHOLDER_TOOLTIP}
-                  className={cn("w-full px-4 py-3 bg-slate-950/80 border border-slate-800 focus:border-rose-500 rounded-2xl text-slate-100 placeholder-slate-500 focus:outline-none transition-all font-mono text-center text-xs tracking-wider")}
-                  required
-                />
+                <StudioInput type={SecurityConstants.INPUT_TYPE_TEXT} value={inputKey} onChange={(e) => setInputKey(e.target.value)} placeholder={SecurityMessages.INPUT_PLACEHOLDER_SHORT} title={SecurityMessages.INPUT_PLACEHOLDER_TOOLTIP} className={cn(RT_UI.W_FULL_PX_4_PY_3_BG_SLATE_950_80)} required />
               </div>
-              <Button
-                variant={SOURCE_TEXT_UNSTYLED}
-                type={SecurityConstants.BUTTON_TYPE_SUBMIT}
-                title={SecurityMessages.ACTIVATE_BUTTON}
-                disabled={_.some([isActivating, _.isEmpty(_.trim(inputKey))])}
-                className={cn(
-                  "w-full flex items-center justify-center py-3.5 px-4 rounded-2xl text-xs font-bold text-white bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 hover:from-rose-500 hover:to-amber-500 shadow-lg shadow-rose-600/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
-                  isActivating && "button-skeleton-loading opacity-90 cursor-wait",
-                )}>
+              <Button variant={SOURCE_TEXT_UNSTYLED} type={SecurityConstants.BUTTON_TYPE_SUBMIT} title={SecurityMessages.ACTIVATE_BUTTON} disabled={_.some([isActivating, _.isEmpty(_.trim(inputKey))])} className={cn(RT_UI.W_FULL_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_PY_3_5, isActivating && RT_UI.BUTTON_SKELETON_LOADING_OPACITY_90_CURSOR_WAIT)}>
                 {isActivating ? (
-                  <span className={cn("inline-flex items-center gap-2 relative z-10")}>
-                    <Sparkles className={cn("w-4 h-4 animate-spin")} />
-                    <span className={cn("animate-pulse")}>{SecurityMessages.ACTIVATING_BUTTON}</span>
+                  <span className={cn(RT_UI.INLINE_FLEX_ITEMS_CENTER_GAP_2_RELATIVE_Z_10)}>
+                    <Sparkles className={cn(RT_UI.W_4_H_4_ANIMATE_SPIN)} />
+                    <span className={cn(RT_UI.ANIMATE_PULSE)}>{SecurityMessages.ACTIVATING_BUTTON}</span>
                   </span>
                 ) : (
                   SecurityMessages.ACTIVATE_BUTTON
@@ -139,7 +125,7 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
             </form>
           </StudioCard>
         </div>
-        <div className={cn("fixed bottom-6 right-6 z-[999999] flex flex-col gap-3 pointer-events-none")}>
+        <div className={cn(RT_UI.FIXED_BOTTOM_6_RIGHT_6_Z_999999_FLEX_FLEX_COL)}>
           <AnimatePresence>
             {!_.isEmpty(errorMsg) && <ActivationToast type={SOURCE_TEXT_ERROR} message={errorMsg} onClose={() => setErrorMsg(SecurityConstants.EMPTY_STRING)} />}
             {!_.isEmpty(successMsg) && <ActivationToast type={SOURCE_TEXT_SUCCESS} message={successMsg} onClose={() => setSuccessMsg(SecurityConstants.EMPTY_STRING)} />}
@@ -151,10 +137,10 @@ export const LicenseActivation: FC<{ children: React.ReactNode }> = ({ children 
   return (
     <>
       {licenseInfo.status !== LicenseStatus.ACTIVE && (
-        <div className={cn("fixed top-0 right-0 z-50 p-4 pointer-events-none flex flex-col gap-2 items-end")}>
-          <div className={cn("pointer-events-auto px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center gap-2 shadow-sm")} title={isRevoked ? SecurityMessages.REVOKED_STATUS : SecurityMessages.EXPIRED_STATUS}>
-            <AlertCircle className={cn("w-3.5 h-3.5")} />
-            <span className={cn("text-xs font-bold tracking-wide")}>{isRevoked ? SecurityMessages.REVOKED_STATUS_SHORT : SecurityMessages.EXPIRED_STATUS_SHORT}</span>
+        <div className={cn(RT_UI.FIXED_TOP_0_RIGHT_0_Z_50_P_4_POINTER)}>
+          <div className={cn(RT_UI.POINTER_EVENTS_AUTO_PX_4_PY_1_5_ROUNDED_FULL)} title={isRevoked ? SecurityMessages.REVOKED_STATUS : SecurityMessages.EXPIRED_STATUS}>
+            <AlertCircle className={cn(RT_SHARED.W_3_5_H_3_5)} />
+            <span className={cn(RT_UI.TEXT_XS_FONT_BOLD_TRACKING_WIDE)}>{isRevoked ? SecurityMessages.REVOKED_STATUS_SHORT : SecurityMessages.EXPIRED_STATUS_SHORT}</span>
           </div>
         </div>
       )}

@@ -9,7 +9,15 @@ import { MOTION_PACK as K } from "../src/constants/motionPack.js";
 import type { PuppetAsset, PuppetSet } from "../src/types/motionPuppet.js";
 const root = path.resolve(process.argv[2] || "scratch/motion-scene-components-20261026/staged");
 const library = path.resolve("storage/output/motion-video/kit-library");
-const readAll = (folder: string): PuppetAsset[] => [T.STYLE, T.SET, T.BASE, T.PIECE].flatMap((type) => fs.existsSync(path.join(folder, type)) ? fs.readdirSync(path.join(folder, type)).filter((name) => name.endsWith(".json")).map((name) => JSON.parse(fs.readFileSync(path.join(folder, type, name), "utf8"))) : []);
+const readAll = (folder: string): PuppetAsset[] =>
+  [T.STYLE, T.SET, T.BASE, T.PIECE].flatMap((type) =>
+    fs.existsSync(path.join(folder, type))
+      ? fs
+          .readdirSync(path.join(folder, type))
+          .filter((name) => name.endsWith(".json"))
+          .map((name) => JSON.parse(fs.readFileSync(path.join(folder, type, name), "utf8")))
+      : [],
+  );
 const original = readAll(library);
 const staged = readAll(root);
 const assets = new Map([...original, ...staged].map((asset) => [asset.id, asset]));
@@ -17,7 +25,10 @@ let scenes = 0;
 for (const asset of staged) {
   assert.deepEqual(puppetPackAssetIssues(asset), [], asset.id);
   if (asset.type !== T.SET || !asset.recipe) continue;
-  const resolved = resolveMotionResourceRecipe(asset, (type, id) => { const value = assets.get(id); return value?.type === type ? value : null; });
+  const resolved = resolveMotionResourceRecipe(asset, (type, id) => {
+    const value = assets.get(id);
+    return value?.type === type ? value : null;
+  });
   const before = original.find((row) => row.id === asset.id) as PuppetSet;
   assert.equal(resolved.svg, before.svg, asset.id);
   const missing = new Map(assets);

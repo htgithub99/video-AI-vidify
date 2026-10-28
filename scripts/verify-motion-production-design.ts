@@ -6,14 +6,7 @@ import { validateGenLocation } from "../src/server/services/motionEngineService.
 assert.equal(isProductionCabin({ key: VT.COCKPIT, name: VT.AIRCRAFT_COCKPIT }), false);
 assert.equal(isProductionCabin({ key: VT.AIRPORT, name: VT.AIRPORT_TERMINAL }), false);
 assert.match(productionBriefFor({ name: VT.AIRCRAFT_CABIN_2 }), VT.NO_PRESET_CLASSIFICATION_RE);
-const seats = Array.from({ length: 8 }, (_, row) =>
-  [VT.LEFT, VT.RIGHT].flatMap((side) =>
-    [0, 1].map((seat) => ({
-      name: VF.CABIN_SEAT_NAME(row, side, seat),
-      point: [(side === VT.LEFT ? -1 : 1) * (0.72 + seat * 0.5), -1.4 - row * 1.2],
-    })),
-  ),
-).flat();
+const seats = Array.from({ length: 8 }, (_, row) => [VT.LEFT, VT.RIGHT].flatMap((side) => [0, 1].map((seat) => ({ name: VF.CABIN_SEAT_NAME(row, side, seat), point: [(side === VT.LEFT ? -1 : 1) * (0.72 + seat * 0.5), -1.4 - row * 1.2] })))).flat();
 const raw = {
   name: VT.AIRCRAFT_CABIN_2,
   interior: true,

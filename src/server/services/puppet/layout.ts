@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_EFFECTS as EFFECTS } from "../../../constants/motionEffects.js";
 import { puppetReadObjects } from "../../../lib/motionReadObjects.js";
 import { MOTION_ILLUSTRATION_POLICY as I } from "../../../constants/motionIllustrationPolicy.js";
@@ -74,7 +77,7 @@ export const puppetSpots = (s: SetLike | null | undefined): PuppetSpot[] => {
     .flatMap((spot) => {
       const reference = own.filter((other) => other.kind === P.SPOT_STAND && (!spot.fixture || other.fixture === spot.fixture)).sort((a, b) => Math.abs(a.x - spot.x) - Math.abs(b.x - spot.x))[0];
       const y = spot.groundY ?? ([P.SPOT_SURFACE, P.SPOT_SIT].some((kind) => kind === spot.kind) ? (reference?.groundY ?? reference?.y ?? fy) : spot.y);
-      return I.PROP_ANCHOR_OFFSETS.map((offset, index) => ({ key: spot.key + "_prop_" + index, kind: P.SPOT_OPEN, fixture: spot.fixture || spot.key, x: _.clamp(spot.x + offset, 0, W), y, label: spot.label }));
+      return I.PROP_ANCHOR_OFFSETS.map((offset, index) => ({ key: spot.key + RT_SERVER.PROP + index, kind: P.SPOT_OPEN, fixture: spot.fixture || spot.key, x: _.clamp(spot.x + offset, 0, W), y, label: spot.label }));
     });
   const areas = C.AREAS[s?.locationFamily || P.EMPTY] || [];
   return _.uniqBy([...own, ...ground, ...puppetFloorContacts(fy, s?.horizonY), ...(_.filter(own, { kind: P.SPOT_STAND }).length >= P.SPOT_STAND_MIN ? [] : base)], (p) => p.key).map((spot) => (areas.length && (spot.groundY ?? spot.y) >= (s?.horizonY || 0) ? { ...spot, areas: _.uniq([...(spot.areas || []), ...areas]) } : spot));
@@ -194,7 +197,7 @@ export const puppetSetMissingRequirements = (set: PuppetSet, reads: PuppetRead[]
     const propSlots = new Set<string>();
     for (const state of read.states || [])
       if (state.placement?.anchor && !puppetSpots(set).some((spot) => (spot.kind === (P.POSE_KIND[puppetStatePose(state)] || P.SPOT_STAND) || (spot.kind === P.SPOT_DOOR && (P.POSE_KIND[puppetStatePose(state)] || P.SPOT_STAND) === P.SPOT_STAND)) && puppetSpatialAnchorMatches(spot, state.placement!.anchor!, puppetSpots(set)))) missing.push(C.ANCHOR_MISSING(state.char, state.placement.anchor));
-    if (!puppetSetSupportsReads(set, [read])) missing.push(JSON.stringify(read.states || []));
+    if (!puppetSetSupportsReads(set, [read])) missing.push(stringifyJson(read.states || []));
     if (
       read.blocking &&
       !choosePuppetBlocking(
@@ -203,7 +206,7 @@ export const puppetSetMissingRequirements = (set: PuppetSet, reads: PuppetRead[]
         set,
       )
     )
-      missing.push(JSON.stringify(read.blocking));
+      missing.push(stringifyJson(read.blocking));
     for (const object of objects) {
       const geometry = puppetObjectIsGeometry(object);
       const catalogKey = puppetObjectCatalogKey(object);
@@ -311,7 +314,7 @@ export const layoutPuppetFrame = <T extends Placed>(f: T, ctx: PuppetLayoutCtx):
   const supported = puppetSupportAssignments(
     f.actors
       .filter((actor) => !blocking?.assignments.has(actor.char))
-      .map((actor) => ({ char: actor.char, action: actor.pose, posture: _.includes(P.LOW_POSES, actor.pose) ? actor.pose : undefined, support: actor.support || (!actor.spot && wantKind(actor) === P.SPOT_STAND && spots.some((spot) => spot.kind === P.SPOT_STAND && spot.relation === "beside" && !!restingSupport && featureScore(spot, restingSupport) > 0) ? restingSupport : undefined) })),
+      .map((actor) => ({ char: actor.char, action: actor.pose, posture: _.includes(P.LOW_POSES, actor.pose) ? actor.pose : undefined, support: actor.support || (!actor.spot && wantKind(actor) === P.SPOT_STAND && spots.some((spot) => spot.kind === P.SPOT_STAND && spot.relation === RT_SHARED.BESIDE && !!restingSupport && featureScore(spot, restingSupport) > 0) ? restingSupport : undefined) })),
     spots.filter((spot) => !reserved.has(spot.key)),
     new Map(f.actors.filter((actor) => actor.spot).map((actor) => [actor.char, actor.spot!])),
   );
@@ -335,7 +338,7 @@ export const layoutPuppetFrame = <T extends Placed>(f: T, ctx: PuppetLayoutCtx):
     if (!s) s = pick(kind, i) || (kind === P.SPOT_STAND ? pick(P.SPOT_DOOR, i) : null);
     if (!s && kind !== P.SPOT_STAND) throw new Error(P.SUPPORT_MISSING(a.char, a.support || kind, a.pose));
     if (s) used.add(s.key);
-    const y = s ? s.y : fy - P.SPOT_INSET;
+    const y = s ? (wantKind(a) === P.SPOT_STAND ? (s.groundY ?? s.y) : s.y) : fy - P.SPOT_INSET;
     const x = s ? s.x : (W * (i + 1)) / (f.actors.length + 1);
     const wear = _.filter(a.wear || [], (w) => ctx.props?.[w]?.attachment === P.MOUNT_BODY || P.WEARABLE_RE.test(_.replace(w, /_/g, P.SPACE)));
     if (s && (f.layoutLocked || blocking?.assignments.get(a.char) === s.key || (own && s === own && !front.has(own.key) && !_.includes(P.FREE_SPOTS, own.key)))) pinned.add(i);

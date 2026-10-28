@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import {
   SOURCE_TEMPLATE_THUMBNAIL_BELOW_TARGET,
   SOURCE_TEXT_AUDIO_PERCEPTUAL_QA_PENDING,
@@ -75,16 +76,7 @@ export const resolveGenreVoiceArc = (genre: string = ""): VoiceArc => {
   if (_.includes([SOURCE_TEXT_INVESTIGATION, SOURCE_TEXT_EVIDENCE_DOCUMENTARY, SOURCE_TEXT_REFLECTIVE_ANALYSIS] as string[], blueprintId)) return RESTRAINED_INVESTIGATION_VOICE_ARC;
   return DEFAULT_VOICE_ARC;
 };
-export const PRODUCTION_QA_THRESHOLDS = {
-  MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO,
-  MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO,
-  MAX_SUBTITLE_LINES: 1,
-  MAX_SUBTITLE_CHARS_PER_LINE: 42,
-  MAX_SUBTITLE_CHARS_PER_SECOND: 21,
-  MIN_SUBTITLE_DURATION_SECONDS: 1.2,
-  MAX_TRANSITION_REPETITION_RATIO: 0.75,
-  MIN_THUMBNAIL_SCORE: 80,
-} as const;
+export const PRODUCTION_QA_THRESHOLDS = { MINIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MINIMUM_RATIO, MAXIMUM_DURATION_RATIO: FLEXIBLE_DURATION_CONFIG.MAXIMUM_RATIO, MAX_SUBTITLE_LINES: 1, MAX_SUBTITLE_CHARS_PER_LINE: 42, MAX_SUBTITLE_CHARS_PER_SECOND: 21, MIN_SUBTITLE_DURATION_SECONDS: 1.2, MAX_TRANSITION_REPETITION_RATIO: 0.75, MIN_THUMBNAIL_SCORE: 80 } as const;
 export const evaluateAudioTiming = (actual: number, target: number): AudioQualityReport => {
   const durationRatio = target > 0 ? actual / target : 0;
   const durationFit = target > 0 && durationRatio >= PRODUCTION_QA_THRESHOLDS.MINIMUM_DURATION_RATIO && durationRatio <= PRODUCTION_QA_THRESHOLDS.MAXIMUM_DURATION_RATIO;
@@ -105,30 +97,16 @@ export const evaluateAudioTiming = (actual: number, target: number): AudioQualit
 };
 export const evaluateSubtitles = (scenes: StoryboardScene[], subtitleMode: SubtitleMode = SubtitleMode.BurnIn): SubtitleQualityReport => {
   if (_.isEqual(subtitleMode, SubtitleMode.None)) {
-    return {
-      maxTwoLines: true,
-      semanticBreaks: true,
-      readingTimeFit: true,
-      blockingErrors: [],
-      warnings: [],
-      passed: true,
-    };
+    return { maxTwoLines: true, semanticBreaks: true, readingTimeFit: true, blockingErrors: [], warnings: [], passed: true };
   }
   const subtitleCues = _.flatMap(scenes, (scene) => scene.subtitleCues || []);
-  const lineErrors = _.filter(subtitleCues, (cue) => _.size(_.split(cue.text, "\n")) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES);
-  const longLines = _.filter(subtitleCues, (cue) => _.some(_.split(cue.text, "\n"), (line) => _.size(line) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE));
+  const lineErrors = _.filter(subtitleCues, (cue) => _.size(_.split(cue.text, RT_SHARED.SYMBOL_01BA47)) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES);
+  const longLines = _.filter(subtitleCues, (cue) => _.some(_.split(cue.text, RT_SHARED.SYMBOL_01BA47), (line) => _.size(line) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE));
   const tooFast = _.filter(subtitleCues, (cue) => _.size(_.replace(cue.text, /\s/g, "")) / _.max([cue.durationSeconds, PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS])! > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND);
   const hasSubtitleContent = _.every(scenes, (scene) => !_.isEmpty(scene.subtitle || scene.script));
   const blockingErrors = _.compact([!hasSubtitleContent && SOURCE_TEXT_SUBTITLE_CONTENT_MISSING, _.isEmpty(subtitleCues) && SOURCE_TEXT_SUBTITLE_CUES_MISSING]) as string[];
   const warnings = _.compact([!_.isEmpty(lineErrors) && SOURCE_TEXT_SUBTITLE_MORE_THAN_ONE_LINE, !_.isEmpty(longLines) && SOURCE_TEXT_SUBTITLE_LINE_TOO_LONG, !_.isEmpty(tooFast) && SOURCE_TEXT_SUBTITLE_READING_TIME_INSUFFICIENT, SOURCE_TEXT_SUBTITLE_FOCAL_POSITION_REQUIRES_PREVIEW_QC]);
-  return {
-    maxTwoLines: _.isEmpty(lineErrors),
-    semanticBreaks: _.isEmpty(longLines),
-    readingTimeFit: _.isEmpty(tooFast),
-    blockingErrors,
-    warnings,
-    passed: _.isEmpty(blockingErrors),
-  };
+  return { maxTwoLines: _.isEmpty(lineErrors), semanticBreaks: _.isEmpty(longLines), readingTimeFit: _.isEmpty(tooFast), blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };
 };
 export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => {
   const assetsApproved = _.every(scenes, (scene) => scene.assetStatus === SceneAssetStatus.Approved && scene.acceptance !== AssetAcceptance.Rejected);
@@ -138,30 +116,12 @@ export const evaluateEdit = (scenes: StoryboardScene[]): EditorQualityReport => 
   const editPatternRepetitionRatio = _.isEmpty(editPatterns) ? 1 : dominantEditPatternCount / editPatterns.length;
   const blockingErrors = _.compact([!assetsApproved && SOURCE_TEXT_UNAPPROVED_ASSET_ON_TIMELINE]);
   const warnings = _.compact([!transitionsIntentional && SOURCE_TEXT_MISSING_CAMERA_OR_TRANSITION_INTENT, editPatternRepetitionRatio > PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO && SOURCE_TEXT_EDIT_PATTERN_TOO_REPETITIVE, SOURCE_TEXT_MOTION_SAFE_CROP_REQUIRES_PREVIEW_QC]);
-  return {
-    approvedAssetsOnly: assetsApproved,
-    intentionalTransitions: transitionsIntentional && editPatternRepetitionRatio <= PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO,
-    blockingErrors,
-    warnings,
-    passed: _.isEmpty(blockingErrors),
-  };
+  return { approvedAssetsOnly: assetsApproved, intentionalTransitions: transitionsIntentional && editPatternRepetitionRatio <= PRODUCTION_QA_THRESHOLDS.MAX_TRANSITION_REPETITION_RATIO, blockingErrors, warnings, passed: _.isEmpty(blockingErrors) };
 };
 export const evaluateThumbnail = (quality: SceneVisualQuality): ThumbnailQualityReport => {
   const narrativeAlignment = _.defaultTo(quality.narrativeAlignment, quality.promptAlignment);
-  const scores = {
-    anatomyScore: quality.anatomy,
-    characterConsistencyScore: quality.characterConsistency || 100,
-    focalClarityScore: quality.composition,
-    smallSizeLegibilityScore: quality.editability,
-    titlePromiseAlignmentScore: narrativeAlignment,
-    estimatedCtrScore: _.round(_.mean([quality.composition, narrativeAlignment, quality.editability])),
-  };
+  const scores = { anatomyScore: quality.anatomy, characterConsistencyScore: quality.characterConsistency || 100, focalClarityScore: quality.composition, smallSizeLegibilityScore: quality.editability, titlePromiseAlignmentScore: narrativeAlignment, estimatedCtrScore: _.round(_.mean([quality.composition, narrativeAlignment, quality.editability])) };
   const belowTarget = _.compact(_.map(scores, (value, key) => (value < PRODUCTION_QA_THRESHOLDS.MIN_THUMBNAIL_SCORE ? SOURCE_TEMPLATE_THUMBNAIL_BELOW_TARGET(`${key}`) : "")));
   const blockingErrors = _.uniq(quality.blockingErrors);
-  return {
-    ...scores,
-    blockingErrors,
-    warnings: _.uniq([...quality.warnings, ...belowTarget]),
-    passed: quality.usableForVideo && _.isEmpty(blockingErrors),
-  };
+  return { ...scores, blockingErrors, warnings: _.uniq([...quality.warnings, ...belowTarget]), passed: quality.usableForVideo && _.isEmpty(blockingErrors) };
 };

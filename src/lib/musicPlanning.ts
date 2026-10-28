@@ -1,11 +1,14 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
+import { parseJson } from "./jsonStringify.js";
 import { MUSIC_PLANNING as P } from "../constants/musicPlanning.js";
 import type { MusicEditorialReview, MusicPlanEvent } from "../types/musicPlanning.js";
 const text = (value: unknown, length: number) =>
   String(value ?? "")
     .trim()
     .slice(0, length);
-const scores = ["impact", "wording", "singability", "originality", "fit"] as const;
-export const validMusicEditorialReview = (review: any): review is MusicEditorialReview => review?.version === P.REVIEW_VERSION && scores.every((key) => Number.isInteger(review[key]) && review[key] >= 0 && review[key] <= 100) && ["hook", "strength", "risk"].every((key) => typeof review[key] === "string" && review[key].trim().length > 0);
+const scores = [RT_CORE.IMPACT, RT_CORE.WORDING, RT_CORE.SINGABILITY, RT_CORE.ORIGINALITY, RT_CORE.FIT] as const;
+export const validMusicEditorialReview = (review: any): review is MusicEditorialReview => review?.version === P.REVIEW_VERSION && scores.every((key) => Number.isInteger(review[key]) && review[key] >= 0 && review[key] <= 100) && ([RT_CORE.HOOK, RT_CORE.STRENGTH, RT_CORE.RISK] as string[]).every((key) => typeof review[key] === "string" && review[key].trim().length > 0);
 export const compactMusicSongs = (songs: any[]) =>
   songs.map((song) => ({
     songId: song.songId,
@@ -31,7 +34,7 @@ export const compactMusicProfile = (profile: unknown): unknown => {
     if (value && typeof value === "object" && depth < 4)
       return Object.fromEntries(
         Object.entries(value)
-          .filter(([key]) => !["evidence", "historicalInfluences", "requestId", "artifactType"].includes(key))
+          .filter(([key]) => !([RT_SHARED.EVIDENCE, RT_CORE.HISTORICALINFLUENCES, RT_CORE.REQUESTID, RT_CORE.ARTIFACTTYPE] as string[]).includes(key))
           .map(([key, item]) => [key, compact(item, depth + 1)]),
       );
     return typeof value === "number" || typeof value === "boolean" ? value : undefined;
@@ -46,15 +49,15 @@ export const readMusicPlanResponse = async (response: Response, onProgress: (eve
   let result: any;
   const consume = (line: string) => {
     if (!line.trim()) return;
-    const event = JSON.parse(line) as MusicPlanEvent;
-    if (event.type === "progress") onProgress(event);
-    else if (event.type === "result") result = event.result;
+    const event = parseJson(line) as MusicPlanEvent;
+    if (event.type === RT_SHARED.PROGRESS) onProgress(event);
+    else if (event.type === RT_SHARED.RESULT) result = event.result;
   };
   try {
     for (;;) {
       const { value, done } = await reader.read();
       pending += decoder.decode(value, { stream: !done });
-      const lines = pending.split("\n");
+      const lines = pending.split(RT_SHARED.SYMBOL_01BA47);
       pending = lines.pop() || "";
       lines.forEach(consume);
       if (done) break;

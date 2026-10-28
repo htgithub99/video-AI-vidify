@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import {
   SOURCE_TEMPLATE_REFERENCES,
   SOURCE_TEMPLATE_SYMBOL_45,
@@ -82,7 +83,7 @@ async function getProjectDetail(id: string): Promise<VideoProject | null> {
     if (!_.isEqual(validatedProject, project)) await saveProjectDetailToDb(validatedProject);
     return validatedProject;
   } catch (error) {
-    appError(`${getBackendMsg(SOURCE_TEXT_SQLITE_DETAIL_ERR)} ${id}`, error);
+    appError(`${getBackendMsg(SOURCE_TEXT_SQLITE_DETAIL_ERR)}${RT_SHARED.SYMBOL_36A9E7}${id}`, error);
     return null;
   }
 }
@@ -200,10 +201,7 @@ function processSceneAssets(scene: any, imageDir: string, videoDir: string, audi
     }
   }
   if (sceneUpdated) {
-    const assetRevisions = _.map(scene.assetRevisions, (revision) => ({
-      ...revision,
-      assetUrl: _.isEmpty(revision?.assetUrl) || (_.isString(revision?.assetUrl) && _.startsWith(revision.assetUrl, SOURCE_TEXT_DATA)) ? assetUrl : revision?.assetUrl,
-    }));
+    const assetRevisions = _.map(scene.assetRevisions, (revision) => ({ ...revision, assetUrl: _.isEmpty(revision?.assetUrl) || (_.isString(revision?.assetUrl) && _.startsWith(revision.assetUrl, SOURCE_TEXT_DATA)) ? assetUrl : revision?.assetUrl }));
     return { ...scene, assetUrl, assetUrls, audioUrl, audioBase64, assetRevisions, isUpdated: true };
   }
   return scene;
@@ -404,44 +402,16 @@ const validatePersistedVideoAssets = (project: VideoProject): VideoProject => {
     SOURCE_TEXT_ID,
   );
   const requiresMediaRepair = changed || (!_.isEmpty(project.renderedVideoUrl) && !_.isEmpty(pendingSceneIds));
-  const validatedProject = requiresMediaRepair
-    ? {
-        ...project,
-        storyboard,
-        renderedVideoUrl: undefined,
-        finalQc: undefined,
-        finalMultimodalQa: undefined,
-        manualReviewItems: [],
-        status: REFACTOR_CONSTANTS.STATUS_PARTIAL,
-      }
-    : changed
-      ? { ...project, storyboard }
-      : project;
+  const validatedProject = requiresMediaRepair ? { ...project, storyboard, renderedVideoUrl: undefined, finalQc: undefined, finalMultimodalQa: undefined, manualReviewItems: [], status: REFACTOR_CONSTANTS.STATUS_PARTIAL } : changed ? { ...project, storyboard } : project;
   if (!project.generationCheckpoint) return validatedProject;
-  return {
-    ...validatedProject,
-    generationCheckpoint: {
-      ...project.generationCheckpoint,
-      phase: requiresMediaRepair ? PIPELINE_COMPLETION_CONFIG.MEDIA_REPAIR_PHASE : project.generationCheckpoint.phase,
-      completedSceneIds,
-      pendingSceneIds,
-      failedSceneIds,
-      renderJobId: requiresMediaRepair ? null : project.generationCheckpoint.renderJobId,
-    },
-  };
+  return { ...validatedProject, generationCheckpoint: { ...project.generationCheckpoint, phase: requiresMediaRepair ? PIPELINE_COMPLETION_CONFIG.MEDIA_REPAIR_PHASE : project.generationCheckpoint.phase, completedSceneIds, pendingSceneIds, failedSceneIds, renderJobId: requiresMediaRepair ? null : project.generationCheckpoint.renderJobId } };
 };
 function syncOrphanedScenes(newProject: any, oldProject: any): any[] {
   if (!newProject.allowBulkDeleteImages) {
     return _.map(newProject.storyboard, (newScene: any) => {
       const oldScene = _.find(oldProject.storyboard, (s: any) => _.eq(s.id, newScene.id));
       if (_.get(oldScene, SOURCE_TEXT_ASSETURL) && !_.get(newScene, SOURCE_TEXT_ASSETURL)) {
-        return {
-          ...newScene,
-          assetUrl: oldScene.assetUrl,
-          assetUrls: !_.isEmpty(newScene.assetUrls) ? newScene.assetUrls : !_.isEmpty(oldScene?.assetUrls) ? oldScene.assetUrls : [oldScene.assetUrl],
-          assetName: newScene.assetName || oldScene?.assetName,
-          assetType: newScene.assetType || oldScene?.assetType,
-        };
+        return { ...newScene, assetUrl: oldScene.assetUrl, assetUrls: !_.isEmpty(newScene.assetUrls) ? newScene.assetUrls : !_.isEmpty(oldScene?.assetUrls) ? oldScene.assetUrls : [oldScene.assetUrl], assetName: newScene.assetName || oldScene?.assetName, assetType: newScene.assetType || oldScene?.assetType };
       }
       return newScene;
     });
@@ -635,11 +605,7 @@ const preserveReferenceState = (newProject: VideoProject, oldProject: VideoProje
   nextVisualConfig.characters = _.map(_.defaultTo(nextVisualConfig.characters, []), (character) => {
     const oldCharacter = oldCharactersById[character.id] || oldCharactersByName[_.toLower(_.trim(character.name))];
     if (!oldCharacter || !_.isEmpty(character.images)) return character;
-    return {
-      ...character,
-      images: oldCharacter.images,
-      extracted: Boolean(character.extracted || oldCharacter.extracted || !_.isEmpty(oldCharacter.images)),
-    };
+    return { ...character, images: oldCharacter.images, extracted: Boolean(character.extracted || oldCharacter.extracted || !_.isEmpty(oldCharacter.images)) };
   });
   nextVisualConfig.characterExtracted = Boolean(nextVisualConfig.characterExtracted || _.some(nextVisualConfig.characters, (character) => !_.isEmpty(character.images)));
   return { ...newProject, visualConfig: nextVisualConfig };
@@ -657,7 +623,7 @@ async function saveProjectDetail(project: VideoProject): Promise<VideoProject> {
     await saveProjectDetailToDb(cleanedProject);
     return cleanedProject;
   } catch (error) {
-    appError(`${getBackendMsg(SOURCE_TEXT_SQLITE_WRITE_ERR)} ${project.id}`, error);
+    appError(`${getBackendMsg(SOURCE_TEXT_SQLITE_WRITE_ERR)}${RT_SHARED.SYMBOL_36A9E7}${project.id}`, error);
     throw error;
   }
 }
@@ -689,10 +655,7 @@ const repairLegacyWorkspaceProjects = async (projects: VideoProject[]): Promise<
       if (_.isEqual(project.projectKind, ProjectKind.Container)) continue;
       const detail = await getProjectDetail(project.id);
       if (!detail) continue;
-      await saveProjectDetailToDb({
-        ...detail,
-        projectKind: ProjectKind.Container,
-      });
+      await saveProjectDetailToDb({ ...detail, projectKind: ProjectKind.Container });
       repaired = true;
       continue;
     }
@@ -706,11 +669,7 @@ const repairLegacyWorkspaceProjects = async (projects: VideoProject[]): Promise<
     if (_.isEqual(targetParentId, project.id)) continue;
     const detail = await getProjectDetail(project.id);
     if (!detail) continue;
-    await saveProjectDetailToDb({
-      ...detail,
-      parentId: targetParentId,
-      projectKind: inferredKind,
-    });
+    await saveProjectDetailToDb({ ...detail, parentId: targetParentId, projectKind: inferredKind });
     repaired = true;
   }
   return repaired;
@@ -738,12 +697,7 @@ export const getProjectById = async (request: Request, response: Response) => {
 };
 export const createProject = async (request: Request, response: Response) => {
   const now = new Date().toISOString();
-  const newProject: VideoProject = {
-    ...request.body,
-    id: _.defaultTo(request.body.id, randomUUID()),
-    createdAt: _.defaultTo(request.body.createdAt, now),
-    updatedAt: _.defaultTo(request.body.updatedAt, now),
-  };
+  const newProject: VideoProject = { ...request.body, id: _.defaultTo(request.body.id, randomUUID()), createdAt: _.defaultTo(request.body.createdAt, now), updatedAt: _.defaultTo(request.body.updatedAt, now) };
   try {
     const savedProject = await saveProjectDetail(newProject);
     response.status(201).json(savedProject);
@@ -867,22 +821,12 @@ export const updateProject = async (request: Request, response: Response) => {
       delete newProject.allowAudioCleanup;
       delete newProject.allowReferenceCleanup;
       delete newProject.resetDerivedData;
-      const updatedProject = {
-        ...oldProject,
-        ...newProject,
-        cinematicScriptArtifacts: resolveLatestCinematicArtifacts(oldProject.cinematicScriptArtifacts, newProject.cinematicScriptArtifacts),
-        updatedAt: new Date().toISOString(),
-      };
+      const updatedProject = { ...oldProject, ...newProject, cinematicScriptArtifacts: resolveLatestCinematicArtifacts(oldProject.cinematicScriptArtifacts, newProject.cinematicScriptArtifacts), updatedAt: new Date().toISOString() };
       const savedProject = await saveProjectDetail(updatedProject);
       response.json(savedProject);
     } else {
       const now = new Date().toISOString();
-      const newProject: VideoProject = {
-        ...request.body,
-        id: id,
-        createdAt: _.defaultTo(request.body.createdAt, now),
-        updatedAt: _.defaultTo(request.body.updatedAt, now),
-      };
+      const newProject: VideoProject = { ...request.body, id: id, createdAt: _.defaultTo(request.body.createdAt, now), updatedAt: _.defaultTo(request.body.updatedAt, now) };
       const savedProject = await saveProjectDetail(newProject);
       response.json(savedProject);
     }

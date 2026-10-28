@@ -1,3 +1,4 @@
+import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_STORYBOARD as S } from "../constants/motionStoryboard.js";
 import { PUPPET as P } from "../constants/motionPuppet.js";
 import { MOTION_ILLUSTRATION as I } from "../constants/motionIllustration.js";
@@ -13,7 +14,7 @@ export const puppetSourceText = (line: PuppetLine, range: Pick<PuppetVisualSourc
   return line.text.slice(range.from === 0 ? 0 : words[range.from].start, range.to === words.length ? line.text.length : words[range.to].start).trim();
 };
 export const puppetStoryboardProfile = (analysis: MotionStoryAnalysis) => ({ style: analysis.stylePreset, illustrationVersion: I.VERSION, pacingRevision: MOTION_SCENE_PACING.REVISION, pacing: motionScenePacing(analysis.visualSettings), genre: analysis.videoGenre, format: analysis.videoDna?.format, editing: analysis.videoDna?.editDna, cinematography: analysis.videoDna?.cinematography });
-export const puppetStoryboardInputKey = (lines: PuppetLine[], analysis: MotionStoryAnalysis): string => puppetVisualInputKey([{ text: JSON.stringify([puppetVisualInputKey(lines), puppetStoryboardProfile(analysis), analysis.cast, analysis.places, analysis.illustrationNeeds]) } as PuppetLine]);
+export const puppetStoryboardInputKey = (lines: PuppetLine[], analysis: MotionStoryAnalysis): string => puppetVisualInputKey([{ text: stringifyJson([puppetVisualInputKey(lines), puppetStoryboardProfile(analysis), analysis.cast, analysis.places, analysis.illustrationNeeds]) } as PuppetLine]);
 export const puppetStoryboardCovers = (storyboard: PuppetStoryboard | undefined, lines: PuppetLine[]): boolean => {
   if (!storyboard || storyboard.version !== S.VERSION || !Array.isArray(storyboard.units) || (!storyboard.units.length && lines.length)) return false;
   const expected = lines.flatMap((line) => puppetWords(line.text).map((_word, index) => [line.key, index].join(P.VARIANT_SEP)));

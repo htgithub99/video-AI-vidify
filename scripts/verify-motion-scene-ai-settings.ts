@@ -11,7 +11,7 @@ import { MOTION_VIDEO_TEXTS } from "../src/constants/motionVideoTexts.js";
 import { MOTION_VOICE_LIBRARY } from "../src/constants/motionVoice.ts";
 import { encodeGeminiChatModel } from "../src/constants/geminiChatModels.ts";
 import { AiPlanningChatModel, AiPlanningFallbackProvider, AiPlanningExecutionMode } from "../src/types.ts";
-import { motionSceneAiExecution, motionMainAiExecution } from "../src/lib/motionSceneAi.ts";
+import { motionSceneAiExecution, motionMainAiExecution } from "../src/features/motion/lib/motionSceneAi.ts";
 const mainModel = encodeGeminiChatModel(AiPlanningChatModel.GeminiFlash, RT.LOW);
 const selectedModel = encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, RT.HIGH);
 const original = { aiProvider: AiPlanningFallbackProvider.GeminiChat, aiModel: mainModel, aiMode: AiPlanningExecutionMode.RoomOnly, aiHeadless: false };

@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { normalizeMotionIllustrationNeeds, motionIllustrationCoverageMissing } from "../../lib/motionIllustrationNeeds.js";
 import { MOTION_PLAN_RECOVERY as R } from "../../constants/motionPlanRecovery.js";
 import { MOTION_PACK as K } from "../../constants/motionPack.js";
@@ -16,7 +19,7 @@ import { puppetPackPlanningCapabilities } from "./puppet/packCatalog.js";
 import { MOTION_ILLUSTRATION_NEEDS as N } from "../../constants/motionIllustrationNeeds.js";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
 import { MotionRepairLedger } from "../../lib/motionAiRepair.js";
-const recoverableSetFailure = (error: unknown): boolean => (isMotionResourceError(error) ? error.diagnostic.kind === K.SET && error.diagnostic.reason !== F.REASONS.METADATA && error.diagnostic.reason !== F.REASONS.FILTERED : error instanceof Error && error.message.startsWith(K.MISSING(K.SET, []).split(":")[0]));
+const recoverableSetFailure = (error: unknown): boolean => (isMotionResourceError(error) ? error.diagnostic.kind === K.SET && error.diagnostic.reason !== F.REASONS.METADATA && error.diagnostic.reason !== F.REASONS.FILTERED : error instanceof Error && error.message.startsWith(K.MISSING(K.SET, []).split(RT_SHARED.SYMBOL_E7AC07)[0]));
 export interface MotionPlanRecoveryState {
   attempts: number;
   errors: string[];
@@ -38,15 +41,15 @@ export const recoverMotionIllustrationPlan = async (
   const resting = new Map<string, NonNullable<MotionStoryAnalysis["illustrationNeeds"]>[number]["states"][number]>();
   let restingScope = "";
   draft.illustrationNeeds = draft.illustrationNeeds?.map((need) => {
-    const scope = JSON.stringify([need.chapterId, need.place]);
+    const scope = stringifyJson([need.chapterId, need.place]);
     if (scope !== restingScope) resting.clear();
     restingScope = scope;
     return {
       ...need,
       states: need.states.map((state) => {
-        const key = JSON.stringify([need.chapterId, need.place, state.char]);
+        const key = stringifyJson([need.chapterId, need.place, state.char]);
         const previous = resting.get(key);
-        const unchanged = previous?.posture === "lie" && ["idle", "sit"].includes(state.posture || "idle") && !R.POSTURE_CHANGE.test(motionSemanticText(need.evidence));
+        const unchanged = previous?.posture === RT_SHARED.LIE && ([RT_SHARED.IDLE, RT_SERVER.SIT] as string[]).includes(state.posture || RT_SHARED.IDLE) && !R.POSTURE_CHANGE.test(motionSemanticText(need.evidence));
         const next = unchanged ? { ...state, posture: previous.posture, support: previous.support } : state;
         resting.set(key, next);
         return next;
@@ -59,7 +62,7 @@ export const recoverMotionIllustrationPlan = async (
       const text = motionSemanticText([member.look, member.name].filter(Boolean).join(S.SPACE));
       const male = S.MALE.test(text),
         female = S.FEMALE.test(text);
-      const expected = male !== female ? (male ? "male" : "female") : undefined;
+      const expected = male !== female ? (male ? RT_SHARED.MALE : RT_SHARED.FEMALE) : undefined;
       return expected && member.gender && member.gender !== expected ? [{ key: member.key, name: member.name, look: member.look, current: member.gender, expected }] : [];
     });
     let failure: Error | undefined;
@@ -100,7 +103,7 @@ export const recoverMotionIllustrationPlan = async (
               const trial = await check({ ...probe, places: [{ ...place, name: family, description: family }], illustrationNeeds: variant }, options.signal);
               const stageId = trial?.places[place.key];
               const stage = stageId && trial?.pack?.assets[stageId];
-              if (stageId && stage && motionAssetLocationFamily(stage) === family) choices.push({ optionId: family + "_" + index, stageId, family, name: "name" in stage ? stage.name : family, needs: variant });
+              if (stageId && stage && motionAssetLocationFamily(stage) === family) choices.push({ optionId: family + RT_SHARED.SYMBOL_D2E2AD + index, stageId, family, name: RT_SHARED.NAME in stage ? stage.name : family, needs: variant });
             } catch (error) {
               if (!recoverableSetFailure(error)) throw error;
             }
@@ -108,19 +111,19 @@ export const recoverMotionIllustrationPlan = async (
         if (choices.length) places.push({ key: place.key, name: place.name, description: place.description || place.name, options: choices });
       }
     if (failure && !places.length) throw failure;
-    const repairKey = JSON.stringify([conflicts, places, draft.places, failure?.message]);
+    const repairKey = stringifyJson([conflicts, places, draft.places, failure?.message]);
     if (options.state.checkedRepairs?.includes(repairKey)) throw failure || new Error(R.FAILED);
     options.log(R.LOG);
     const ids = [...conflicts.map((member) => R.CAST_ID + member.key), ...places.map((place) => R.PLACE_ID + place.key)];
     const ledger = new MotionRepairLedger<Record<string, any>>(ids, (row, id) => {
       const member = conflicts.find((member) => R.CAST_ID + member.key === id);
-      if (member) return row.gender === member.expected ? [] : [{ path: "gender", reason: R.INVALID }];
+      if (member) return row.gender === member.expected ? [] : [{ path: RT_SHARED.GENDER, reason: R.INVALID }];
       const place = places.find((place) => R.PLACE_ID + place.key === id)!;
       const option = place.options.find((option) => option.optionId === row.optionId);
       return [
-        ...(!option ? [{ path: "optionId", reason: R.INVALID }] : []),
-        ...(typeof row.name !== "string" || !row.name.trim() || (option && motionLocationFamily(row.name) && motionLocationFamily(row.name) !== option.family) ? [{ path: "name", reason: R.INVALID }] : []),
-        ...(typeof row.description !== "string" || !row.description.trim() || (option && (motionLocationFamily(row.name || "") || motionLocationFamily(row.description)) !== option.family) ? [{ path: "description", reason: R.INVALID }] : []),
+        ...(!option ? [{ path: RT_SERVER.OPTIONID, reason: R.INVALID }] : []),
+        ...(typeof row.name !== "string" || !row.name.trim() || (option && motionLocationFamily(row.name) && motionLocationFamily(row.name) !== option.family) ? [{ path: RT_SHARED.NAME, reason: R.INVALID }] : []),
+        ...(typeof row.description !== "string" || !row.description.trim() || (option && (motionLocationFamily(row.name || "") || motionLocationFamily(row.description)) !== option.family) ? [{ path: RT_SERVER.DESCRIPTION, reason: R.INVALID }] : []),
       ];
     });
     ledger.submit(options.state.rows || []);
@@ -145,7 +148,7 @@ export const recoverMotionIllustrationPlan = async (
         { chapters: draft.chapters.filter((chapter) => places.some((place) => (draft.illustrationNeeds || []).some((need) => need.place === place.key && need.chapterId === chapter.id))).map((chapter) => ({ id: chapter.id, summary: chapter.summary, keyPoints: chapter.keyPoints })) },
         conflicts.filter((member) => ledger.pending().some((item) => item.id === R.CAST_ID + member.key)),
         places.filter((place) => ledger.pending().some((item) => item.id === R.PLACE_ID + place.key)),
-        JSON.stringify({ pending: ledger.pending(), errors: state.errors }),
+        stringifyJson({ pending: ledger.pending(), errors: state.errors }),
       );
     if (ledger.pending().length) {
       const contract = {
@@ -160,7 +163,7 @@ export const recoverMotionIllustrationPlan = async (
         assess: (raw: any) => {
           ledger.submit([...(Array.isArray(raw?.cast) ? raw.cast.map((row: any) => ({ id: R.CAST_ID + row?.key, value: row })) : []), ...(Array.isArray(raw?.places) ? raw.places.map((row: any) => ({ id: R.PLACE_ID + row?.key, value: row })) : [])]);
           save();
-          return { value: ledger.snapshot(), errors: ledger.pending().map((item) => item.id + ": " + item.errors.map((error) => error.path).join(",")) };
+          return { value: ledger.snapshot(), errors: ledger.pending().map((item) => item.id + RT_SHARED.SYMBOL_45822F + item.errors.map((error) => error.path).join(RT_SHARED.SYMBOL_D03502)) };
         },
       };
       if (options.ai) await requestMotionAiContract(prompt(), options.exec, (question) => options.ai!(question, R.ARTIFACT, options.exec, options.signal, options.log), contract, options.signal);

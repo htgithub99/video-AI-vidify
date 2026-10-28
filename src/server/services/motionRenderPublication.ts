@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import fs from "node:fs";
 import path from "node:path";
 import { MOTION_RENDER_VALIDATION as V } from "../../constants/motionRenderValidation.js";
@@ -29,13 +30,13 @@ export const recoverMotionRenderPublications = async (validate: typeof validateM
   if (!fs.existsSync(directory)) return;
   for (const name of fs.readdirSync(directory).filter((name) => name.endsWith(V.PUBLICATION))) {
     try {
-      const manifest = JSON.parse(fs.readFileSync(path.join(directory, name), P.ENCODING));
+      const manifest = parseJson(fs.readFileSync(path.join(directory, name), P.ENCODING));
       const item = manifest.item as MotionResultItem;
       if (manifest.version !== V.CHECKPOINT_VERSION || !item || name !== item.id + V.PUBLICATION || !P.ID_RE.test(item.id) || path.basename(item.fileName) !== item.fileName || typeof manifest.pending !== "string" || path.basename(manifest.pending) !== manifest.pending) throw new Error(P.OUTPUT_INVALID);
       const output = path.join(root, item.fileName);
       const pending = path.join(root, manifest.pending);
       const jobFile = path.join(directory, item.id + P.EXT);
-      const cancelled = () => fs.existsSync(jobFile) && JSON.parse(fs.readFileSync(jobFile, P.ENCODING))?.job?.status === MotionJobStatus.CANCELLED;
+      const cancelled = () => fs.existsSync(jobFile) && parseJson(fs.readFileSync(jobFile, P.ENCODING))?.job?.status === MotionJobStatus.CANCELLED;
       if (cancelled()) continue;
       const file = fs.existsSync(output) ? output : pending;
       await validate(file, { seconds: item.durationSeconds, width: item.width, height: item.height, fps: item.fps, audio: manifest.audio === true, decode: true });

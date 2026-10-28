@@ -224,28 +224,8 @@ export const HTTP_METHODS = { PUT: "PUT", POST: "POST", GET: "GET", DELETE: "DEL
 export const CONTENT_TYPES = { JSON: "application/json", NDJSON: "application/x-ndjson", JPEG: "image/jpeg" };
 export const HTTP_HEADERS = { CONTENT_TYPE: "Content-Type", TRANSFER_ENCODING: "Transfer-Encoding", XI_API_KEY: "xi-api-key" };
 export const QUOTA_TEXTS = {
-  VN: {
-    VIDEO_TOOLTIP: "Số lượng Video đã tạo / Tổng hạn mức cho phép",
-    IMAGE_TOOLTIP: "Số lượng Ảnh tĩnh đã tạo / Tổng hạn mức cho phép",
-    VOICE_TOOLTIP: "Số ký tự Giọng nói đã tạo / Tổng hạn mức cho phép",
-    MEDIA_QUOTA: "Hạn mức Media",
-    VOICE_QUOTA: "Hạn mức Giọng nói",
-    SYNC_MSG: "Dữ liệu được đồng bộ trực tiếp từ máy chủ quản lý",
-    CHARS: "Ký tự",
-    VIDEO: "Video",
-    IMAGE: "Image",
-  },
-  EN: {
-    VIDEO_TOOLTIP: "Generated Videos / Total Limit",
-    IMAGE_TOOLTIP: "Generated Images / Total Limit",
-    VOICE_TOOLTIP: "Generated Voice Chars / Total Limit",
-    MEDIA_QUOTA: "Media Quota",
-    VOICE_QUOTA: "Voice Quota",
-    SYNC_MSG: "Data synced in real-time from server",
-    CHARS: "Chars",
-    VIDEO: "Video",
-    IMAGE: "Image",
-  },
+  VN: { VIDEO_TOOLTIP: "Số lượng Video đã tạo / Tổng hạn mức cho phép", IMAGE_TOOLTIP: "Số lượng Ảnh tĩnh đã tạo / Tổng hạn mức cho phép", VOICE_TOOLTIP: "Số ký tự Giọng nói đã tạo / Tổng hạn mức cho phép", MEDIA_QUOTA: "Hạn mức Media", VOICE_QUOTA: "Hạn mức Giọng nói", SYNC_MSG: "Dữ liệu được đồng bộ trực tiếp từ máy chủ quản lý", CHARS: "Ký tự", VIDEO: "Video", IMAGE: "Image" },
+  EN: { VIDEO_TOOLTIP: "Generated Videos / Total Limit", IMAGE_TOOLTIP: "Generated Images / Total Limit", VOICE_TOOLTIP: "Generated Voice Chars / Total Limit", MEDIA_QUOTA: "Media Quota", VOICE_QUOTA: "Voice Quota", SYNC_MSG: "Data synced in real-time from server", CHARS: "Chars", VIDEO: "Video", IMAGE: "Image" },
 };
 export const TRANSFER_ENCODINGS = { CHUNKED: "chunked" };
 export const HTTP_STATUS_CODES = { OK: 200, BAD_REQUEST: 400, UNPROCESSABLE_ENTITY: 422, NOT_FOUND: 404, INTERNAL_SERVER_ERROR: 500, SERVICE_UNAVAILABLE: 503 };
@@ -355,19 +335,7 @@ export const LOG_MESSAGES = {
   DELETE_OLD_LOCKED_DIR_WARN: "Không thể xóa hoàn toàn thư mục cũ do tệp đang được sử dụng: ",
   MIGRATE_PROJECT_DIR_SUCCESS: "Đã chuyển đổi dữ liệu dự án sang cấu trúc mới: ",
 } as const;
-export const DEFAULT_PROJECT_CONFIGS = {
-  GENRE: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
-  DURATION: "2m",
-  AUDIENCE: "General Audience",
-  WRITING_STYLE: "Professional",
-  HOOK_TYPE: "Auto",
-  VOICE_PROVIDER: "Gemini Speech",
-  VOICE_EMOTION: "Normal",
-  VOICE_URI: "preset-vi-bac",
-  VISUAL_SOURCE: "AI Auto",
-  VISUAL_STYLE: "Realistic",
-  VISUAL_QUALITY: "Standard",
-} as const;
+export const DEFAULT_PROJECT_CONFIGS = { GENRE: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, DURATION: "2m", AUDIENCE: "General Audience", WRITING_STYLE: "Professional", HOOK_TYPE: "Auto", VOICE_PROVIDER: "Gemini Speech", VOICE_EMOTION: "Normal", VOICE_URI: "preset-vi-bac", VISUAL_SOURCE: "AI Auto", VISUAL_STYLE: "Realistic", VISUAL_QUALITY: "Standard" } as const;
 export const EXTERNAL_AUDIO_TEXTS = {
   LOG_ACTION: "handleProcessExternalAudio",
   LOG_ERROR_KEY: "EXTERNAL_AUDIO_ALIGN_FAILED",
@@ -451,25 +419,13 @@ export const VITE_HMR_LOGS = {
     CONNECTED: "[Hệ thống] Đã kết nối lại thành công với máy chủ dịch vụ.",
     HOT_UPDATED: "[Hệ thống] Giao diện đã tự động cập nhật thay đổi mới.",
   },
-  en: {
-    SERVER_CONNECTION_LOST: "[System] Connection lost. Reconnecting...",
-    FAILED_RELOAD_WITH_FILE: "[System] Interface update failed. Please reload page (F5).",
-    FAILED_RELOAD_GENERIC: "[System] Interface update failed. Please reload page (F5).",
-    CONNECTED: "[System] Reconnected to server successfully.",
-    HOT_UPDATED: "[System] Interface updated successfully.",
-  },
+  en: { SERVER_CONNECTION_LOST: "[System] Connection lost. Reconnecting...", FAILED_RELOAD_WITH_FILE: "[System] Interface update failed. Please reload page (F5).", FAILED_RELOAD_GENERIC: "[System] Interface update failed. Please reload page (F5).", CONNECTED: "[System] Reconnected to server successfully.", HOT_UPDATED: "[System] Interface updated successfully." },
 } as const;
 export const LOG_LEVEL_SYMBOLS = { INFO: "ℹ️", SUCCESS: "✅", WARN: "⚠️", ERROR: "❌" };
 export const PIPELINE_STEP5_TEXTS = {
   PROMPT_SAMPLE: `1. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.\n2. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.`,
-  vi: {
-    VIDEO_ZIP_NAME: "danh_sach_video_doc_lap.zip",
-    IMAGE_ZIP_NAME: "danh_sach_anh_doc_lap.zip",
-  },
-  en: {
-    VIDEO_ZIP_NAME: "independent_video_list.zip",
-    IMAGE_ZIP_NAME: "independent_image_list.zip",
-  },
+  vi: { VIDEO_ZIP_NAME: "danh_sach_video_doc_lap.zip", IMAGE_ZIP_NAME: "danh_sach_anh_doc_lap.zip" },
+  en: { VIDEO_ZIP_NAME: "independent_video_list.zip", IMAGE_ZIP_NAME: "independent_image_list.zip" },
 } as const;
 export const SETTINGS_VIEW_TEXTS = {
   vi: {
@@ -512,18 +468,8 @@ export const SETTINGS_VIEW_TEXTS = {
   },
 } as const;
 export const PIPELINE_STEP2_TEXTS = {
-  vi: {
-    THUMBNAIL_SCREEN_DESC: "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.",
-    THUMBNAIL_GENERATE_DESC: "Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click.",
-    BATCH_COUNT_LABEL: "Ảnh & Tiêu đề",
-    CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
-  },
-  en: {
-    THUMBNAIL_SCREEN_DESC: "Batch generate YouTube Thumbnails screen based on script and theme.",
-    THUMBNAIL_GENERATE_DESC: "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.",
-    BATCH_COUNT_LABEL: "Images & Titles",
-    CHAR_REF_NODE: "CHARACTER REFERENCE NODE",
-  },
+  vi: { THUMBNAIL_SCREEN_DESC: "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.", THUMBNAIL_GENERATE_DESC: "Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click.", BATCH_COUNT_LABEL: "Ảnh & Tiêu đề", CHAR_REF_NODE: "CHARACTER REFERENCE NODE" },
+  en: { THUMBNAIL_SCREEN_DESC: "Batch generate YouTube Thumbnails screen based on script and theme.", THUMBNAIL_GENERATE_DESC: "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.", BATCH_COUNT_LABEL: "Images & Titles", CHAR_REF_NODE: "CHARACTER REFERENCE NODE" },
 } as const;
 export const SIDEBAR_TEXTS = {
   vi: {
@@ -586,15 +532,7 @@ export const PROJECT_LIST_TEXTS = {
     imageTooltip: "Ảnh đã dùng / Giới hạn",
     voiceTooltip: "Ký tự voice đã dùng / Giới hạn",
     updatedPrefix: "Cập nhật",
-    genreLabels: {
-      Documentary: "Tài Liệu",
-      Explanation: "Giải Thích",
-      Review: "Đánh Giá",
-      History: "Lịch Sử",
-      Science: "Khoa Học",
-      Story: "Kể Chuyện",
-      News: "Tin Tức",
-    } as Record<string, string>,
+    genreLabels: { Documentary: "Tài Liệu", Explanation: "Giải Thích", Review: "Đánh Giá", History: "Lịch Sử", Science: "Khoa Học", Story: "Kể Chuyện", News: "Tin Tức" } as Record<string, string>,
     linkedChildProjects: "Dự án con liên kết:",
   },
   en: {
@@ -614,30 +552,11 @@ export const PROJECT_LIST_TEXTS = {
     imageTooltip: "Images Used / Limit",
     voiceTooltip: "Voice Characters Used / Limit",
     updatedPrefix: "Updated",
-    genreLabels: {
-      Documentary: "Documentary",
-      Explanation: "Explanation",
-      Review: "Review",
-      History: "History",
-      Science: "Science",
-      Story: "Story",
-      News: "News",
-    } as Record<string, string>,
+    genreLabels: { Documentary: "Documentary", Explanation: "Explanation", Review: "Review", History: "History", Science: "Science", Story: "Story", News: "News" } as Record<string, string>,
     linkedChildProjects: "Linked child projects:",
   },
 } as const;
-export const PROJECT_LIST_CONSTANTS = {
-  FILTER_ALL: "all",
-  LANG_VI: "vi",
-  LANG_EN: "en",
-  SLEEP_DURATION_MS: 1000,
-  CREATE_REQUEST_TIMEOUT_MS: 15000,
-  SKELETON_ITEMS: [1, 2, 3],
-  ITEMS_PER_PAGE: 5,
-  PAGE_ONE: 1,
-  PAGINATION_DELIMITER: "/",
-  DASH_DELIMITER: "-",
-} as const;
+export const PROJECT_LIST_CONSTANTS = { FILTER_ALL: "all", LANG_VI: "vi", LANG_EN: "en", SLEEP_DURATION_MS: 1000, CREATE_REQUEST_TIMEOUT_MS: 15000, SKELETON_ITEMS: [1, 2, 3], ITEMS_PER_PAGE: 5, PAGE_ONE: 1, PAGINATION_DELIMITER: "/", DASH_DELIMITER: "-" } as const;
 export const URL_CONSTANTS = { IGNORED_PARAMS: ["token", "sig", "signature", "expires", "t"], ID_PARAMS: ["id", "docid", "name"] } as const;
 export const PIPELINE_STEP4_TEXTS = {
   LBL_QUALITY: "Chất lượng Video:",
@@ -712,20 +631,7 @@ export const AUTO_GENERATE_TEXTS = {
   ERR_CODE: "AUTO_GENERATE_ERROR",
   POSITION_TOP: "top",
 } as const;
-export const MEDIA_MIX_TEXTS = {
-  vi: {
-    mixed: "Ảnh + video",
-    maxVideos: "Video tối đa",
-    maxVideosTooltip: "Số cảnh video tối đa do AI lựa chọn",
-    selecting: "AI chọn cảnh",
-  },
-  en: {
-    mixed: "Image + video",
-    maxVideos: "Max videos",
-    maxVideosTooltip: "Maximum video scenes selected by AI",
-    selecting: "AI selects scenes",
-  },
-} as const;
+export const MEDIA_MIX_TEXTS = { vi: { mixed: "Ảnh + video", maxVideos: "Video tối đa", maxVideosTooltip: "Số cảnh video tối đa do AI lựa chọn", selecting: "AI chọn cảnh" }, en: { mixed: "Image + video", maxVideos: "Max videos", maxVideosTooltip: "Maximum video scenes selected by AI", selecting: "AI selects scenes" } } as const;
 export const AUTO_GENERATOR_PANEL_TEXTS = {
   vi: {
     bannerTitle: "Tự tạo video",
@@ -954,12 +860,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     lblWords: "từ",
     lblChars: "ký tự",
     cinematicAiDirector: "AI viết và đạo diễn",
-    durationOptions: {
-      min5: "5 phút",
-      min8: "8 phút",
-      min10: "10 phút",
-      min15: "15 phút",
-    },
+    durationOptions: { min5: "5 phút", min8: "8 phút", min10: "10 phút", min15: "15 phút" },
     langViOption: "Tiếng Việt",
   },
   en: {
@@ -1189,12 +1090,7 @@ export const AUTO_GENERATOR_PANEL_TEXTS = {
     lblWords: "words",
     lblChars: "chars",
     cinematicAiDirector: "AI writer and director",
-    durationOptions: {
-      min5: "5 minutes",
-      min8: "8 minutes",
-      min10: "10 minutes",
-      min15: "15 minutes",
-    },
+    durationOptions: { min5: "5 minutes", min8: "8 minutes", min10: "10 minutes", min15: "15 minutes" },
     langViOption: "Vietnamese",
   },
 } as const;
@@ -1277,12 +1173,7 @@ export const VOICE_DIALOG_LANGUAGE_LABELS: Record<string, Record<"vi" | "en", st
   ko: { vi: "Tiếng Hàn", en: "Korean" },
   zh: { vi: "Tiếng Trung", en: "Chinese" },
 };
-export const VOICE_DIALOG_AGE_LABELS: Record<string, Record<"vi" | "en", string>> = {
-  "": { vi: "Tất cả", en: "All" },
-  young: { vi: "Trẻ tuổi", en: "Young" },
-  middle_aged: { vi: "Trung niên", en: "Middle Aged" },
-  old: { vi: "Cao tuổi", en: "Elderly" },
-};
+export const VOICE_DIALOG_AGE_LABELS: Record<string, Record<"vi" | "en", string>> = { "": { vi: "Tất cả", en: "All" }, young: { vi: "Trẻ tuổi", en: "Young" }, middle_aged: { vi: "Trung niên", en: "Middle Aged" }, old: { vi: "Cao tuổi", en: "Elderly" } };
 export const PIPELINE_STEP4_SHORT_TEXTS = {
   vi: {
     RENDER_TITLE: "Kết xuất video",
@@ -1499,10 +1390,7 @@ export const THUMBNAIL_TEXT_GROUPS = {
 } as const;
 export const IMAGE_FOCUS_OPTION_GROUPS = {
   vi: [
-    {
-      label: "Tự động",
-      options: [{ value: "default", label: "Tự động", desc: "AI chọn trọng tâm bố cục phù hợp nhất với từng cảnh" }],
-    },
+    { label: "Tự động", options: [{ value: "default", label: "Tự động", desc: "AI chọn trọng tâm bố cục phù hợp nhất với từng cảnh" }] },
     {
       label: "Trọng tâm chủ thể",
       options: [
@@ -1519,10 +1407,7 @@ export const IMAGE_FOCUS_OPTION_GROUPS = {
     },
   ],
   en: [
-    {
-      label: "Automatic",
-      options: [{ value: "default", label: "Auto", desc: "AI chooses focus adaptively per scene" }],
-    },
+    { label: "Automatic", options: [{ value: "default", label: "Auto", desc: "AI chooses focus adaptively per scene" }] },
     {
       label: "Subject Focus",
       options: [
@@ -1623,18 +1508,7 @@ export const CINEMATIC_SETUP_TEXTS = {
     VIETNAMESE_LANG: "Tiếng Việt",
     ENGLISH_LANG: "English",
     AI_DIRECTOR_TITLE: "Đạo diễn AI",
-    DURATIONS: {
-      ONE_MIN: "1 phút",
-      TWO_MIN: "2 phút",
-      THREE_MIN: "3 phút",
-      FIVE_MIN: "5 phút",
-      EIGHT_MIN: "8 phút",
-      TEN_MIN: "10 phút",
-      FIFTEEN_MIN: "15 phút",
-      THREE_FIVE_MIN: "3–5 phút",
-      FIVE_TEN_MIN: "5–10 phút",
-      TEN_FIFTEEN_MIN: "10–15 phút",
-    },
+    DURATIONS: { ONE_MIN: "1 phút", TWO_MIN: "2 phút", THREE_MIN: "3 phút", FIVE_MIN: "5 phút", EIGHT_MIN: "8 phút", TEN_MIN: "10 phút", FIFTEEN_MIN: "15 phút", THREE_FIVE_MIN: "3–5 phút", FIVE_TEN_MIN: "5–10 phút", TEN_FIFTEEN_MIN: "10–15 phút" },
     SERIES_NOTICE: (count: number) => `AI tự động đồng bộ nhân vật, bối cảnh và phong cách xuyên suốt ${count} tập.`,
   },
   en: {
@@ -1694,18 +1568,7 @@ export const CINEMATIC_SETUP_TEXTS = {
     VIETNAMESE_LANG: "Tiếng Việt",
     ENGLISH_LANG: "English",
     AI_DIRECTOR_TITLE: "AI Director",
-    DURATIONS: {
-      ONE_MIN: "1 min",
-      TWO_MIN: "2 mins",
-      THREE_MIN: "3 mins",
-      FIVE_MIN: "5 mins",
-      EIGHT_MIN: "8 mins",
-      TEN_MIN: "10 mins",
-      FIFTEEN_MIN: "15 mins",
-      THREE_FIVE_MIN: "3–5 mins",
-      FIVE_TEN_MIN: "5–10 mins",
-      TEN_FIFTEEN_MIN: "10–15 mins",
-    },
+    DURATIONS: { ONE_MIN: "1 min", TWO_MIN: "2 mins", THREE_MIN: "3 mins", FIVE_MIN: "5 mins", EIGHT_MIN: "8 mins", TEN_MIN: "10 mins", FIFTEEN_MIN: "15 mins", THREE_FIVE_MIN: "3–5 mins", FIVE_TEN_MIN: "5–10 mins", TEN_FIFTEEN_MIN: "10–15 mins" },
     SERIES_NOTICE: (count: number) => `AI will synchronize characters, settings, and style across ${count} episodes.`,
   },
 } as const;
@@ -1814,106 +1677,22 @@ export const SETTINGS_EXTENDED_TEXTS = {
   },
 } as const;
 export const THUMBNAILS_PREVIEW_TEXTS = {
-  vi: {
-    TITLE: "Ảnh Bìa",
-    TITLE_TOOLTIP: "Bộ sưu tập ảnh bìa được AI thiết kế riêng cho video",
-    UNRENDERED: "Chờ vẽ ảnh",
-    DOWNLOAD: "Tải ảnh",
-    DOWNLOAD_TOOLTIP: "Tải ảnh bìa này về máy tính",
-    ZOOM_TOOLTIP: "Bấm để xem ảnh phóng to",
-    SAMPLE_UNIT: "mẫu",
-  },
-  en: {
-    TITLE: "Thumbnails",
-    TITLE_TOOLTIP: "Custom AI-designed thumbnail artwork for your video",
-    UNRENDERED: "Pending render",
-    DOWNLOAD: "Download",
-    DOWNLOAD_TOOLTIP: "Download this thumbnail to your device",
-    ZOOM_TOOLTIP: "Click to view full size",
-    SAMPLE_UNIT: "samples",
-  },
+  vi: { TITLE: "Ảnh Bìa", TITLE_TOOLTIP: "Bộ sưu tập ảnh bìa được AI thiết kế riêng cho video", UNRENDERED: "Chờ vẽ ảnh", DOWNLOAD: "Tải ảnh", DOWNLOAD_TOOLTIP: "Tải ảnh bìa này về máy tính", ZOOM_TOOLTIP: "Bấm để xem ảnh phóng to", SAMPLE_UNIT: "mẫu" },
+  en: { TITLE: "Thumbnails", TITLE_TOOLTIP: "Custom AI-designed thumbnail artwork for your video", UNRENDERED: "Pending render", DOWNLOAD: "Download", DOWNLOAD_TOOLTIP: "Download this thumbnail to your device", ZOOM_TOOLTIP: "Click to view full size", SAMPLE_UNIT: "samples" },
 } as const;
-export const REGENERATION_TARGET_TEXTS = {
-  vi: {
-    IMAGES: "Tạo lại toàn bộ ảnh",
-    CLIPS: "Tạo lại toàn bộ cảnh quay",
-    VOICE: "Tạo lại giọng đọc",
-    RENDER: "Dựng lại video",
-  },
-  en: {
-    IMAGES: "Regenerate All Images",
-    CLIPS: "Regenerate All Video Clips",
-    VOICE: "Regenerate Voice",
-    RENDER: "Re-render Video",
-  },
-} as const;
+export const REGENERATION_TARGET_TEXTS = { vi: { IMAGES: "Tạo lại toàn bộ ảnh", CLIPS: "Tạo lại toàn bộ cảnh quay", VOICE: "Tạo lại giọng đọc", RENDER: "Dựng lại video" }, en: { IMAGES: "Regenerate All Images", CLIPS: "Regenerate All Video Clips", VOICE: "Regenerate Voice", RENDER: "Re-render Video" } } as const;
 export const COMMON_ACTION_TEXTS = {
-  vi: {
-    THEME_LIGHT_TOOLTIP: "Chuyển giao diện Sáng",
-    THEME_DARK_TOOLTIP: "Chuyển giao diện Tối",
-    RENDERING_PROGRESS: (pct: number) => `Đang dựng video... (${pct}%)`,
-    RENDER_RETRY: (attempt: number) => `Kết nối dựng video tạm gián đoạn, đang thử lại lần ${attempt}...`,
-    PIPELINE_BUSY: "Dự án này đang được xử lý. Vui lòng chờ hoặc hủy trước khi bắt đầu tác vụ mới.",
-  },
-  en: {
-    THEME_LIGHT_TOOLTIP: "Switch to Light theme",
-    THEME_DARK_TOOLTIP: "Switch to Dark theme",
-    RENDERING_PROGRESS: (pct: number) => `Rendering video... (${pct}%)`,
-    RENDER_RETRY: (attempt: number) => `Render connection interrupted, retrying attempt ${attempt}...`,
-    PIPELINE_BUSY: "This project is currently processing. Please wait or cancel before starting a new task.",
-  },
+  vi: { THEME_LIGHT_TOOLTIP: "Chuyển giao diện Sáng", THEME_DARK_TOOLTIP: "Chuyển giao diện Tối", RENDERING_PROGRESS: (pct: number) => `Đang dựng video... (${pct}%)`, RENDER_RETRY: (attempt: number) => `Kết nối dựng video tạm gián đoạn, đang thử lại lần ${attempt}...`, PIPELINE_BUSY: "Dự án này đang được xử lý. Vui lòng chờ hoặc hủy trước khi bắt đầu tác vụ mới." },
+  en: { THEME_LIGHT_TOOLTIP: "Switch to Light theme", THEME_DARK_TOOLTIP: "Switch to Dark theme", RENDERING_PROGRESS: (pct: number) => `Rendering video... (${pct}%)`, RENDER_RETRY: (attempt: number) => `Render connection interrupted, retrying attempt ${attempt}...`, PIPELINE_BUSY: "This project is currently processing. Please wait or cancel before starting a new task." },
 } as const;
 export const SCRIPT_DURATION_LABELS = {
-  vi: {
-    "2m": "2 phút (~300 từ)",
-    "5m": "5 phút (~750 từ)",
-    "10m": "10 phút (~1.500 từ)",
-    "15m": "15 phút (~2.250 từ)",
-    "30m": "30 phút (~4.500 từ)",
-    "40m": "40 phút (~6.000 từ)",
-    "60m": "60 phút (~9.000 từ)",
-    "1h30m": "90 phút (~13.500 từ)",
-    "2h": "120 phút (~18.000 từ)",
-  },
-  en: {
-    "2m": "2 mins (~300 words)",
-    "5m": "5 mins (~750 words)",
-    "10m": "10 mins (~1,500 words)",
-    "15m": "15 mins (~2,250 words)",
-    "30m": "30 mins (~4,500 words)",
-    "40m": "40 mins (~6,000 words)",
-    "60m": "60 mins (~9,000 words)",
-    "1h30m": "90 mins (~13,500 words)",
-    "2h": "120 mins (~18,000 words)",
-  },
+  vi: { "2m": "2 phút (~300 từ)", "5m": "5 phút (~750 từ)", "10m": "10 phút (~1.500 từ)", "15m": "15 phút (~2.250 từ)", "30m": "30 phút (~4.500 từ)", "40m": "40 phút (~6.000 từ)", "60m": "60 phút (~9.000 từ)", "1h30m": "90 phút (~13.500 từ)", "2h": "120 phút (~18.000 từ)" },
+  en: { "2m": "2 mins (~300 words)", "5m": "5 mins (~750 words)", "10m": "10 mins (~1,500 words)", "15m": "15 mins (~2,250 words)", "30m": "30 mins (~4,500 words)", "40m": "40 mins (~6,000 words)", "60m": "60 mins (~9,000 words)", "1h30m": "90 mins (~13,500 words)", "2h": "120 mins (~18,000 words)" },
 } as const;
-export const GENRE_GROUP_LABELS = {
-  vi: {
-    SATIRICAL: "Kể chuyện châm biếm",
-    STORY_EXPLAINER: "Kể chuyện & Giải thích",
-    DOCUMENTARY_KNOWLEDGE: "Tài liệu & Kiến thức",
-    YOUTUBE_TRENDING: "Chủ đề thịnh hành",
-  },
-  en: {
-    SATIRICAL: "Satirical Storytelling",
-    STORY_EXPLAINER: "Narrative & Explainer",
-    DOCUMENTARY_KNOWLEDGE: "Documentary & Science",
-    YOUTUBE_TRENDING: "Trending Topics",
-  },
-} as const;
+export const GENRE_GROUP_LABELS = { vi: { SATIRICAL: "Kể chuyện châm biếm", STORY_EXPLAINER: "Kể chuyện & Giải thích", DOCUMENTARY_KNOWLEDGE: "Tài liệu & Kiến thức", YOUTUBE_TRENDING: "Chủ đề thịnh hành" }, en: { SATIRICAL: "Satirical Storytelling", STORY_EXPLAINER: "Narrative & Explainer", DOCUMENTARY_KNOWLEDGE: "Documentary & Science", YOUTUBE_TRENDING: "Trending Topics" } } as const;
 export const PIPELINE_EXECUTION_ROUTE_TEXTS = {
-  vi: {
-    ROOM_ONLY: "Trình duyệt",
-    API_ONLY: "API",
-    HYBRID: "Tự động",
-    formatRoute: (modeLabel: string, provider: string, model: string) => `[AI] Phương thức xử lý: ${modeLabel} · ${provider} · ${model}.`,
-  },
-  en: {
-    ROOM_ONLY: "Browser",
-    API_ONLY: "API",
-    HYBRID: "Auto",
-    formatRoute: (modeLabel: string, provider: string, model: string) => `[AI] Execution route: ${modeLabel} · ${provider} · ${model}.`,
-  },
+  vi: { ROOM_ONLY: "Trình duyệt", API_ONLY: "API", HYBRID: "Tự động", formatRoute: (modeLabel: string, provider: string, model: string) => `[AI] Phương thức xử lý: ${modeLabel} · ${provider} · ${model}.` },
+  en: { ROOM_ONLY: "Browser", API_ONLY: "API", HYBRID: "Auto", formatRoute: (modeLabel: string, provider: string, model: string) => `[AI] Execution route: ${modeLabel} · ${provider} · ${model}.` },
 } as const;
 export const PIPELINE_FLOW_TEXTS = {
   vi: {

@@ -40,32 +40,14 @@ NEVER exceed 7 seconds per scene to prevent viewer drop-off. Keep each scene's n
     density: SceneDensity.CAU_DAI,
     instruction: `CRITICAL STYLING / SPLITTING MANDATE: Emulate a professional documentary pacing. Split the script so each scene corresponds to a complete, full-length sentence (approx 6-8 seconds per scene). The VERY FIRST scene (the Hook) should be slightly punchier (approx 3-4 seconds) to establish initial engagement. NEVER combine multiple long paragraphs into a single scene. Each scene's narration must be grammatically complete and coherent.`,
   },
-  dramatic: {
-    density: SceneDensity.THEO_DOAN,
-    instruction: `CRITICAL SPLITTING MANDATE: Emulate a cinematic pacing with a punchy Hook. The VERY FIRST scene MUST be gripping and moderately short (approx 4-5 seconds). Following scenes should have a dramatic pacing of 8-10 seconds per scene, focusing on suspenseful transitions and key narrative beats.`,
-  },
+  dramatic: { density: SceneDensity.THEO_DOAN, instruction: `CRITICAL SPLITTING MANDATE: Emulate a cinematic pacing with a punchy Hook. The VERY FIRST scene MUST be gripping and moderately short (approx 4-5 seconds). Following scenes should have a dramatic pacing of 8-10 seconds per scene, focusing on suspenseful transitions and key narrative beats.` },
   paragraph: {
     density: SceneDensity.THEO_DOAN,
     instruction: `CRITICAL SPLITTING MANDATE: Subdivide the script cleanly by entire paragraphs or main thoughts. Keep visual pacing slow and steady (approx 10-15 seconds per scene), but ensure the VERY FIRST scene (the Hook) is concise enough (approx 5-6 seconds) to anchor the viewer. Maintain absolute contextual continuity. DO NOT summarize or skip any part.`,
   },
-  epic: {
-    density: SceneDensity.THEO_DOAN,
-    instruction: `CRITICAL SPLITTING MANDATE: Keep an epic, wide pacing of 12-18 seconds per scene. Each scene corresponds to a grand chapter development or emotional crescendo. The VERY FIRST scene (the Hook) should be slightly faster (approx 6-8 seconds) to build initial momentum.`,
-  },
-  cinematic: {
-    density: SceneDensity.THEO_DOAN,
-    instruction: `CRITICAL SPLITTING MANDATE: Subdivide by main cinematic segments (roughly 15-20 seconds each) to build deep visual atmospheric focus. The VERY FIRST scene (the Hook) should be around 6-8 seconds to establish the cinematic tone quickly.`,
-  },
-  artistic: {
-    density: SceneDensity.THEO_DOAN,
-    instruction: `CRITICAL SPLITTING MANDATE: Keep an artistic, poetic visual rhythm of 20-25 seconds per scene. Focus heavily on details and aesthetic continuity. Ensure the VERY FIRST scene (the Hook) is faster (approx 6-8 seconds) to grab the viewer before slowing down.`,
-  },
-  slowpaced: {
-    density: SceneDensity.THEO_DOAN,
-    instruction: `CRITICAL SPLITTING MANDATE: Subdivide by slow-paced narrative blocks (roughly 25-30 seconds each) for documentary or storytelling. The VERY FIRST scene (the Hook) MUST still be relatively engaging (approx 8-10 seconds) to set the mood before transitioning to slow blocks.`,
-  },
-  super_slow: {
-    density: SceneDensity.THEO_DOAN,
-    instruction: `CRITICAL SPLITTING MANDATE: Keep a super-slow, monumental pacing of over 30 seconds per scene. Ideal for slow atmospheric documentaries and deep-focus landscape layouts. The VERY FIRST scene (the Hook) should be around 10-12 seconds to gently immerse the viewer.`,
-  },
+  epic: { density: SceneDensity.THEO_DOAN, instruction: `CRITICAL SPLITTING MANDATE: Keep an epic, wide pacing of 12-18 seconds per scene. Each scene corresponds to a grand chapter development or emotional crescendo. The VERY FIRST scene (the Hook) should be slightly faster (approx 6-8 seconds) to build initial momentum.` },
+  cinematic: { density: SceneDensity.THEO_DOAN, instruction: `CRITICAL SPLITTING MANDATE: Subdivide by main cinematic segments (roughly 15-20 seconds each) to build deep visual atmospheric focus. The VERY FIRST scene (the Hook) should be around 6-8 seconds to establish the cinematic tone quickly.` },
+  artistic: { density: SceneDensity.THEO_DOAN, instruction: `CRITICAL SPLITTING MANDATE: Keep an artistic, poetic visual rhythm of 20-25 seconds per scene. Focus heavily on details and aesthetic continuity. Ensure the VERY FIRST scene (the Hook) is faster (approx 6-8 seconds) to grab the viewer before slowing down.` },
+  slowpaced: { density: SceneDensity.THEO_DOAN, instruction: `CRITICAL SPLITTING MANDATE: Subdivide by slow-paced narrative blocks (roughly 25-30 seconds each) for documentary or storytelling. The VERY FIRST scene (the Hook) MUST still be relatively engaging (approx 8-10 seconds) to set the mood before transitioning to slow blocks.` },
+  super_slow: { density: SceneDensity.THEO_DOAN, instruction: `CRITICAL SPLITTING MANDATE: Keep a super-slow, monumental pacing of over 30 seconds per scene. Ideal for slow atmospheric documentaries and deep-focus landscape layouts. The VERY FIRST scene (the Hook) should be around 10-12 seconds to gently immerse the viewer.` },
 };

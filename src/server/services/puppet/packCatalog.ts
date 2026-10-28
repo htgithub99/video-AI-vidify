@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_PACK as K } from "../../../constants/motionPack.js";
 import { MOTION_ILLUSTRATION_POLICY as IP } from "../../../constants/motionIllustrationPolicy.js";
 import { MOTION_PACK_SELECTION as S } from "../../../constants/motionPackSelection.js";
@@ -19,7 +20,7 @@ const catalogInterner = () => {
       ids = new Map();
       indexes.set(table, ids);
     }
-    const key = JSON.stringify(value);
+    const key = stringifyJson(value);
     const saved = ids.get(key);
     if (saved !== undefined) return saved;
     const index = table.length;
@@ -54,13 +55,13 @@ export const puppetPackCapabilities = (preset?: string): string => {
     const byKey = new Map(profile.spots.map((spot, i) => [spot[0], spotIds[i]]));
     const layoutIds = (set.compositions || []).map((layout) => intern(layouts, [layout.kind, layout.variant || null, Object.fromEntries(Object.entries(layout.roles).map(([role, spot]) => [role, byKey.get(spot)]))]));
     const stage = intern(stages, [spotIds, layoutIds]);
-    const signature = JSON.stringify([profile.place, profile.interior, stage]);
+    const signature = stringifyJson([profile.place, profile.interior, stage]);
     let row = illustrated.get(signature);
     if (!row) {
       row = [profile.place, profile.interior, stage, []];
       illustrated.set(signature, row);
     }
-    let variant = row[3].find(([time, condition, fixtures]) => time === profile.time && condition === (profile.condition || null) && JSON.stringify(fixtures) === JSON.stringify(profile.fixtureStates || null));
+    let variant = row[3].find(([time, condition, fixtures]) => time === profile.time && condition === (profile.condition || null) && stringifyJson(fixtures) === stringifyJson(profile.fixtureStates || null));
     if (!variant) {
       variant = [profile.time, profile.condition || null, profile.fixtureStates || null, []];
       row[3].push(variant);
@@ -70,7 +71,7 @@ export const puppetPackCapabilities = (preset?: string): string => {
   return (
     K.STORY_PROMPT +
     K.SEPARATOR +
-    JSON.stringify({
+    stringifyJson({
       version: S.VERSION,
       places: [...new Set(sets.map((asset) => asset.group || asset.tags[0]))],
       mode: I.MODE,
@@ -87,7 +88,7 @@ export const puppetPackCapabilities = (preset?: string): string => {
 export const puppetPackStoryCapabilities = (preset?: string, context?: Pick<MotionStoryAnalysis, "places">): string => {
   const assets = packAssets(preset);
   if (!assets) return P.EMPTY;
-  const unique = (rows: unknown[]) => [...new Map(rows.map((row) => [JSON.stringify(row), row])).values()];
+  const unique = (rows: unknown[]) => [...new Map(rows.map((row) => [stringifyJson(row), row])).values()];
   const requested = (context?.places || []).map((place) => motionPlaceLocationFamily({ key: place.key, name: place.name, desc: place.description || place.name, interior: place.interior ?? P.INTERIOR_RE.test(place.key) }));
   const families = new Set(requested.filter(Boolean));
   const sets = families.size && requested.every(Boolean) ? assets.sets.filter((set) => families.has(motionAssetLocationFamily(set))) : assets.sets;
@@ -99,7 +100,7 @@ export const puppetPackStoryCapabilities = (preset?: string, context?: Pick<Moti
     const row = value as unknown[];
     return [row[0], row[1], intern(supports, row[2]), intern(interactions, row[3])];
   });
-  return K.STORY_PROMPT + K.SEPARATOR + JSON.stringify({ mode: I.MODE, schema: K.COMPACT_STORY_SCHEMA, supports, interactions, places: compact, props: unique(assets.props.map((prop) => [prop.key, prop.mount])), characters: unique(assets.characters.map((character) => [character.archetype, character.age, character.gender])) });
+  return K.STORY_PROMPT + K.SEPARATOR + stringifyJson({ mode: I.MODE, schema: K.COMPACT_STORY_SCHEMA, supports, interactions, places: compact, props: unique(assets.props.map((prop) => [prop.key, prop.mount])), characters: unique(assets.characters.map((character) => [character.archetype, character.age, character.gender])) });
 };
 export const puppetPackReadCatalog = (preset?: string, context?: string): string => {
   const assets = packAssets(preset);
@@ -112,19 +113,19 @@ export const puppetPackReadCatalog = (preset?: string, context?: string): string
     const desc = prop.desc.replace(K.READ_CATALOG_BOILERPLATE, P.EMPTY).trim();
     return [prop.key, intern(profiles, [prop.mount, prop.objectType || null, prop.requirements || [], puppetPropSurface(prop) || null]), (text && relevant.size && !relevant.has(prop.key)) || motionSemanticText(desc) === motionSemanticText(prop.key) ? null : desc];
   });
-  return [K.READ_PROMPT, K.READ_CATALOG_SCHEMA, JSON.stringify({ props, profiles })].join(P.NL);
+  return ([K.READ_PROMPT, K.READ_CATALOG_SCHEMA, stringifyJson({ props, profiles })] as string[]).join(P.NL);
 };
 export const puppetPackChapterCapabilities = (preset?: string): string => {
   const styleId = closedPuppetPackId(preset);
   if (!styleId) return P.EMPTY;
   const props = listPuppets<PuppetProp>(T.PROP, (asset) => puppetPackAssetAllowed(asset, styleId));
-  return PROMPT.CHAPTER_LIBRARY + JSON.stringify({ props: [...new Map(props.map((prop) => [JSON.stringify([prop.key, prop.mount]), [prop.key, prop.mount]])).values()] });
+  return PROMPT.CHAPTER_LIBRARY + stringifyJson({ props: [...new Map(props.map((prop) => [stringifyJson([prop.key, prop.mount]), [prop.key, prop.mount]])).values()] });
 };
 export const puppetPackPlanningCapabilities = (preset?: string): string => {
   const assets = packAssets(preset);
   if (!assets) return P.EMPTY;
-  const unique = (rows: unknown[]) => [...new Map(rows.map((row) => [JSON.stringify(row), row])).values()];
-  return [PROMPT.PLANNING_LIBRARY, IP.PROMPT, JSON.stringify({ places: unique(assets.sets.map((set) => [motionAssetLocationFamily(set) || set.group || set.tags[0], set.interior])), props: unique(assets.props.map((prop) => [prop.key, prop.mount, prop.requirements || []])), characters: unique(assets.characters.map((character) => [character.archetype, character.age, character.gender])) })].join(
-    P.NL,
-  );
+  const unique = (rows: unknown[]) => [...new Map(rows.map((row) => [stringifyJson(row), row])).values()];
+  return (
+    [PROMPT.PLANNING_LIBRARY, IP.PROMPT, stringifyJson({ places: unique(assets.sets.map((set) => [motionAssetLocationFamily(set) || set.group || set.tags[0], set.interior])), props: unique(assets.props.map((prop) => [prop.key, prop.mount, prop.requirements || []])), characters: unique(assets.characters.map((character) => [character.archetype, character.age, character.gender])) })] as string[]
+  ).join(P.NL);
 };

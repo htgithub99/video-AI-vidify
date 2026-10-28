@@ -32,10 +32,7 @@ async function initDb(): Promise<Database<sqlite3.Database, sqlite3.Statement>> 
     return dbInstance;
   }
   try {
-    dbInstance = await open({
-      filename: path.join(getDataDirectory(), SQLITE_DB_NAME),
-      driver: sqlite3.Database,
-    });
+    dbInstance = await open({ filename: path.join(getDataDirectory(), SQLITE_DB_NAME), driver: sqlite3.Database });
     await dbInstance.exec(SQL_STATEMENTS.PRAGMA_WAL);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_PROJECTS_TABLE);
     await dbInstance.exec(SQL_STATEMENTS.CREATE_PRESETS_TABLE);
@@ -65,13 +62,7 @@ export async function getPresetsFromDb(): Promise<any[]> {
   try {
     const db = await initDb();
     const rows = await db.all(SQL_STATEMENTS.SELECT_PRESETS_LIST);
-    return _.map(rows, (row) => ({
-      id: row.id,
-      name: row.name,
-      config: jsonUtils.safeParse<any>(row.config, {}),
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    }));
+    return _.map(rows, (row) => ({ id: row.id, name: row.name, config: jsonUtils.safeParse<any>(row.config, {}), createdAt: row.createdAt, updatedAt: row.updatedAt }));
   } catch (error) {
     appError(getBackendMsg(SOURCE_TEXT_SQLITE_PRESETS_LIST_ERR), error);
     return [];
@@ -106,25 +97,9 @@ export async function getProjectsListFromDb(): Promise<any[]> {
       let config = undefined;
       const detail = jsonUtils.safeParse<any>(row.data, {});
       if (!_.isNil(detail.config)) {
-        config = {
-          genre: detail.config.genre,
-          language: detail.config.language,
-          duration: detail.config.duration,
-        };
+        config = { genre: detail.config.genre, language: detail.config.language, duration: detail.config.duration };
       }
-      return {
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        currentStep: row.currentStep,
-        creditsUsed: row.creditsUsed,
-        parentId: detail.parentId,
-        projectKind: detail.projectKind,
-        config,
-        storyboard: _.defaultTo(detail.storyboard, []),
-      };
+      return { id: row.id, name: row.name, description: row.description, createdAt: row.createdAt, updatedAt: row.updatedAt, currentStep: row.currentStep, creditsUsed: row.creditsUsed, parentId: detail.parentId, projectKind: detail.projectKind, config, storyboard: _.defaultTo(detail.storyboard, []) };
     });
   } catch (error) {
     appError(getBackendMsg(SOURCE_TEXT_SQLITE_LIST_ERR), error);
@@ -203,18 +178,8 @@ export async function migrateJsonToSqlite(): Promise<void> {
           currentStep: _.defaultTo(projectMeta.currentStep, 0),
           creditsUsed: _.defaultTo(projectMeta.creditsUsed, 0),
           input: _.defaultTo(projectMeta.input, { type: MIGRATION_DEFAULTS.PROJECTS_DIR, content: REFACTOR_CONSTANTS.VD_EMPTY_STRING }),
-          config: _.defaultTo(projectMeta.config, {
-            genre: MIGRATION_DEFAULTS.GENRE,
-            language: MIGRATION_DEFAULTS.LANGUAGE,
-            duration: MIGRATION_DEFAULTS.DURATION,
-          }),
-          hookConfig: _.defaultTo(projectMeta.hookConfig, {
-            type: MIGRATION_DEFAULTS.HOOK_TYPE,
-            duration: MIGRATION_DEFAULTS.HOOK_DURATION,
-            count: MIGRATION_DEFAULTS.HOOK_COUNT,
-            positions: MIGRATION_DEFAULTS.HOOK_POSITIONS,
-            versions: [],
-          }),
+          config: _.defaultTo(projectMeta.config, { genre: MIGRATION_DEFAULTS.GENRE, language: MIGRATION_DEFAULTS.LANGUAGE, duration: MIGRATION_DEFAULTS.DURATION }),
+          hookConfig: _.defaultTo(projectMeta.hookConfig, { type: MIGRATION_DEFAULTS.HOOK_TYPE, duration: MIGRATION_DEFAULTS.HOOK_DURATION, count: MIGRATION_DEFAULTS.HOOK_COUNT, positions: MIGRATION_DEFAULTS.HOOK_POSITIONS, versions: [] }),
           voiceConfig: _.defaultTo(projectMeta.voiceConfig, {
             provider: MIGRATION_DEFAULTS.VOICE_PROVIDER,
             audioType: MIGRATION_DEFAULTS.VOICE_AUDIO_TYPE,

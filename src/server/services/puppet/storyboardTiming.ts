@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
 import { MOTION_STORYBOARD as S } from "../../../constants/motionStoryboard.js";
 import { puppetWords } from "../../../lib/motionStoryboard.js";
 import type { PuppetLine } from "../../../lib/motionPuppet.js";
@@ -11,15 +12,15 @@ export const puppetWordTimeline = (lines: PuppetLine[], clips: MotionVoiceClip[]
       const chunks = Array.from(clip.text.matchAll(S.CHUNK_RE), (match) => ({ start: match.index!, end: match.index! + match[0].length }));
       const valid = clip.words?.length && clip.words.every(([from, to], index, all) => Number.isFinite(from) && Number.isFinite(to) && from >= 0 && to > from && to <= clip.end - clip.start + S.TIME_EPSILON && (!index || from > all[index - 1][0]));
       return tokens.map((token, index) => {
-        if (valid && clip.words?.length === tokens.length) return { key: token.key, at: clip.start + clip.words[index][0], timing: "words" as const };
+        if (valid && clip.words?.length === tokens.length) return { key: token.key, at: clip.start + clip.words[index][0], timing: RT_SERVER.WORDS };
         if (valid && clip.words?.length === chunks.length) {
           const chunk = chunks.findIndex((part) => token.start >= part.start && token.start < part.end);
           const siblings = tokens.filter((part) => part.start >= chunks[chunk].start && part.start < chunks[chunk].end);
           const position = siblings.indexOf(token);
           const [from, to] = clip.words[chunk];
-          return { key: token.key, at: clip.start + from + ((to - from) * position) / siblings.length, timing: "words" as const };
+          return { key: token.key, at: clip.start + from + ((to - from) * position) / siblings.length, timing: RT_SERVER.WORDS };
         }
-        return { key: token.key, at: clip.start + ((clip.end - clip.start) * index) / Math.max(1, tokens.length), timing: "estimated" as const };
+        return { key: token.key, at: clip.start + ((clip.end - clip.start) * index) / Math.max(1, tokens.length), timing: RT_SERVER.ESTIMATED };
       });
     });
   const total = lines.reduce((sum, line) => sum + puppetWords(line.text).length, 0);
@@ -55,7 +56,7 @@ export const puppetWordTimeline = (lines: PuppetLine[], clips: MotionVoiceClip[]
       at = leftAt + ((rightAt - leftAt) * (index - left)) / Math.max(1, right - left);
     }
     const words = result.get(line) || [];
-    words.push({ at, timing: entry?.timing || "estimated" });
+    words.push({ at, timing: entry?.timing || RT_SERVER.ESTIMATED });
     result.set(line, words);
   }
   return result;

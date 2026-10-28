@@ -13,7 +13,7 @@ export const planningPromptTransport = (prompt: string, submittedChars: number, 
   const parts: string[] = [];
   if (submittedChars > limit) {
     const size = Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_PART_CHARS, limit - CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_CONTEXT_RESERVE);
-    for (let start = 0; start < prompt.length;) {
+    for (let start = 0; start < prompt.length; ) {
       let end = Math.min(prompt.length, start + size);
       if (end < prompt.length && /[\uD800-\uDBFF]/.test(prompt[end - 1])) end--;
       parts.push(prompt.slice(start, end));

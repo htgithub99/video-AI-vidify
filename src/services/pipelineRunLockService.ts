@@ -37,13 +37,7 @@ export const acquirePipelineRunLease = (targetKey: string): PipelineRunLease => 
     }
   }
   const runId = createRunId();
-  const lock: PipelineRunLock = {
-    version: PIPELINE_RUN_LOCK_VERSION,
-    runId,
-    targetKey: normalizedTargetKey,
-    ownerId,
-    expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS),
-  };
+  const lock: PipelineRunLock = { version: PIPELINE_RUN_LOCK_VERSION, runId, targetKey: normalizedTargetKey, ownerId, expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS) };
   jsonUtils.setItem(getStorageKey(normalizedTargetKey), lock);
   activeLeaseRunIds.add(runId);
   return { acquired: true, runId, targetKey: normalizedTargetKey };
@@ -54,13 +48,7 @@ export const refreshPipelineRunLease = (lease: PipelineRunLease): boolean => {
   const ownerId = getOwnerId();
   const isLockRenewable = _.isEqual(currentLock?.runId, lease.runId) || (activeLeaseRunIds.has(lease.runId) && (!currentLock || _.isEqual(currentLock.ownerId, ownerId)));
   if (isLockRenewable) {
-    const refreshedLock: PipelineRunLock = {
-      version: PIPELINE_RUN_LOCK_VERSION,
-      runId: lease.runId,
-      targetKey: lease.targetKey,
-      ownerId,
-      expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS),
-    };
+    const refreshedLock: PipelineRunLock = { version: PIPELINE_RUN_LOCK_VERSION, runId: lease.runId, targetKey: lease.targetKey, ownerId, expiresAt: _.add(Date.now(), REFACTOR_CONSTANTS.PIPELINE_RUN_LOCK_TTL_MS) };
     jsonUtils.setItem(getStorageKey(lease.targetKey), refreshedLock);
     return true;
   }

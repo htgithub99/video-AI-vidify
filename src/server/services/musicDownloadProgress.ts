@@ -1,8 +1,10 @@
-import type { Response } from 'express';
-import { MUSIC_PLANNING as P } from '../../constants/musicPlanning.js';
-import type { MusicDownloadProgress } from '../../types/musicDownloadProgress.js';
-import { musicErrorDetails } from './musicDiagnosticService.js';
-
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
+import type { Response } from "express";
+import { MUSIC_PLANNING as P } from "../../constants/musicPlanning.js";
+import type { MusicDownloadProgress } from "../../types/musicDownloadProgress.js";
+import { musicErrorDetails } from "./musicDiagnosticService.js";
 export const musicDownloadReporter = (res: Response, streaming: boolean) => {
   if (streaming) {
     res.setHeader(P.STREAM_HEADER, P.STREAM_TYPE);
@@ -11,22 +13,24 @@ export const musicDownloadReporter = (res: Response, streaming: boolean) => {
     res.flushHeaders();
   }
   const emit = (event: unknown) => {
-    if (streaming && !res.destroyed && !res.writableEnded) res.write(JSON.stringify(event) + '\n');
+    if (streaming && !res.destroyed && !res.writableEnded) res.write(stringifyJson(event) + RT_SHARED.SYMBOL_01BA47);
   };
-  const heartbeat = streaming ? setInterval(() => {
-    if (!res.destroyed && !res.writableEnded) res.write('\n');
-  }, P.STREAM_HEARTBEAT_MS) : undefined;
+  const heartbeat = streaming
+    ? setInterval(() => {
+        if (!res.destroyed && !res.writableEnded) res.write(RT_SHARED.SYMBOL_01BA47);
+      }, P.STREAM_HEARTBEAT_MS)
+    : undefined;
   heartbeat?.unref();
   const stop = () => clearInterval(heartbeat);
-  res.once('close', stop);
-  res.once('finish', stop);
+  res.once(RT_SERVER.CLOSE, stop);
+  res.once(RT_SERVER.FINISH, stop);
   return {
-    progress: (progress: MusicDownloadProgress) => emit({ type: 'progress', progress: { ...progress, message: progress.message ? musicErrorDetails(new Error(progress.message)).errorMessage : undefined } }),
+    progress: (progress: MusicDownloadProgress) => emit({ type: RT_SHARED.PROGRESS, progress: { ...progress, message: progress.message ? musicErrorDetails(new Error(progress.message)).errorMessage : undefined } }),
     finish: (result: unknown, status = 200) => {
       stop();
       if (res.destroyed || res.writableEnded) return;
       if (!streaming) return res.status(status).json(result);
-      emit({ type: 'result', result });
+      emit({ type: RT_SHARED.RESULT, result });
       res.end();
     },
   };

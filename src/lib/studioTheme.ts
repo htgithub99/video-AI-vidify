@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { Children, isValidElement, type ReactNode } from "react";
 import { STUDIO_BUTTON_PATTERNS as P, STUDIO_CONTROL_CONTENT as C, STUDIO_UI } from "../constants/studioTheme.js";
 import type { ButtonVariant } from "../types.js";
@@ -12,12 +13,12 @@ export const studioControlClassName = (className: string): string =>
   className
     .split(/\s+/)
     .filter((token) => !C.INTERACTION_APPEARANCE.test(token))
-    .join(" ");
+    .join(RT_SHARED.SYMBOL_36A9E7);
 export const studioIconButtonClassName = (className: string): string =>
   className
     .split(/\s+/)
     .filter((token) => !C.ICON_APPEARANCE.test(token))
-    .join(" ");
+    .join(RT_SHARED.SYMBOL_36A9E7);
 export const isStudioControlRole = (role: string | undefined): boolean => !!role && (C.ROLES as readonly string[]).includes(role);
 export const isIconOnlyButton = (children: ReactNode): boolean => {
   let hasIcon = false,

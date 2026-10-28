@@ -1,8 +1,5 @@
 import { stringifyJson } from "../lib/jsonStringify.js";
-export const MUSIC_MIXER_UPLOAD_POLICY = {
-  MAX_WAIT_MS: 60 * 60 * 1000,
-  STALL_TIMEOUT_MS: 15 * 60 * 1000,
-} as const;
+export const MUSIC_MIXER_UPLOAD_POLICY = { MAX_WAIT_MS: 60 * 60 * 1000, STALL_TIMEOUT_MS: 15 * 60 * 1000 } as const;
 export const MUSIC_MIXER_SERVER = {
   SETTINGS_STORAGE_KEY: "music-mixer-settings",
   ROUTE_SELECT_SOURCE: "/music-mixer/select-source",

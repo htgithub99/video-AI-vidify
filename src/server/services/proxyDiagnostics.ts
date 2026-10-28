@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { SOURCE_TEXT_REDACTED, SOURCE_TEXT_1_REDACTED_2, SOURCE_TEXT_PROXY_2, SOURCE_TEXT_LOGS, SOURCE_TEXT_PROXY_DIAGNOSTICS_JSONL, SOURCE_TEMPLATE_PREVIOUS, SOURCE_TEMPLATE_SYMBOL_79, SOURCE_TEXT_UTF8, SOURCE_TEXT_PROXY_KHONG_GHI_DUOC_FILE_LOG_CHAN } from "../../constants/sourceText.js";
 import { appendFileSync, existsSync, mkdirSync, renameSync, statSync } from "node:fs";
 import path from "node:path";
@@ -17,7 +18,7 @@ export function createProxyDiagnostics(directory: string, profileId: string, ope
     },
     event(stage: string, details: Record<string, unknown> = {}, error?: unknown) {
       const entry = { timestamp: new Date().toISOString(), operationId, profileId, operation, stage, elapsedMs: Date.now() - started, ...details, ...(error ? { error: redact(error instanceof Error ? error.message : String(error)).slice(0, 4000) } : {}) };
-      const line = JSON.stringify(entry);
+      const line = stringifyJson(entry);
       logger.info(SOURCE_TEXT_PROXY_2, line);
       try {
         const logs = path.join(directory, SOURCE_TEXT_LOGS);

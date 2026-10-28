@@ -1,5 +1,5 @@
 export interface SunoCreationProgress {
-  phase: 'recovered' | 'submitting' | 'saved' | 'waiting' | 'playlist' | 'completed';
+  phase: "recovered" | "submitting" | "saved" | "waiting" | "playlist" | "completed";
   songCount: number;
   acceptedSongs: number;
   completedSongs: number;

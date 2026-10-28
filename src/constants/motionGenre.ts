@@ -1,18 +1,25 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import { MOTION_STORY_CRAFT as CRAFT, MOTION_CREATIVE_STORY_SCHEMA } from "./motionStoryCraft.js";
 import { motionStoryLanguageGuide } from "./motionStoryLanguage.js";
 import _ from "lodash";
 import { MOTION_FOLK_STORY as F } from "./motionFolkStory.js";
-export const MOTION_VIDEO_GENRES = { AUTO: "auto", STORY: "story", HORROR: "horror", GHOST_TALE: "ghost_tale", HISTORY_MAP: "history_map", WHAT_IF: "what_if", EXPLAINER: "explainer", DOCUMENTARY: "documentary", KIDS: "kids" } as const;
+import { MOTION_HISTORY_STORY as HISTORY } from "./motionHistoryStory.js";
+export const MOTION_VIDEO_GENRES = { AUTO: "auto", STORY: "story", HORROR: "horror", GHOST_TALE: "ghost_tale", HISTORY_STORY: "history_story", HISTORY_MAP: "history_map", WHAT_IF: "what_if", EXPLAINER: "explainer", DOCUMENTARY: "documentary", KIDS: "kids" } as const;
 export type MotionVideoGenre = (typeof MOTION_VIDEO_GENRES)[keyof typeof MOTION_VIDEO_GENRES];
 export const MOTION_VIDEO_GENRE_TEXT = {
   vi: {
     LABEL: "Thể loại",
-    HINT: "Định hướng cách dựng: hình ảnh ưu tiên, nhịp, âm thanh. Tự động = AI tự suy ra từ nội dung.",
-    OPTIONS: { auto: "Tự động", story: "Truyện kể", horror: "Truyện ma / kinh dị", ghost_tale: "Kỳ truyện ma dân gian", history_map: "Lịch sử / chiến tranh (bản đồ)", what_if: "Lịch sử giả định (What-if)", explainer: "Giải thích / khoa học", documentary: "Tin tức / tài liệu", kids: "Thiếu nhi" },
+    HINT: "Định hướng cách viết, nhịp kể và âm thanh; kiểu hình chọn riêng. Lịch sử kể chuyện: mở bằng tình huống cuốn hút, kể theo lựa chọn và hệ quả, giữ sự kiện nguồn. Tự động = AI suy ra từ nội dung.",
+    OPTIONS: { auto: "Tự động", story: "Truyện kể", horror: "Truyện ma / kinh dị", ghost_tale: "Kỳ truyện ma dân gian", history_story: "Lịch sử kể chuyện", history_map: "Lịch sử / chiến tranh (bản đồ)", what_if: "Lịch sử giả định (What-if)", explainer: "Giải thích / khoa học", documentary: "Tin tức / tài liệu", kids: "Thiếu nhi" },
   },
-  en: { LABEL: "Genre", HINT: "Steers visuals, pacing and sound. Auto = AI infers it from the content.", OPTIONS: { auto: "Auto", story: "Story", horror: "Ghost / horror", ghost_tale: "Folk ghost tale", history_map: "History / war (map)", what_if: "What-if history", explainer: "Explainer / science", documentary: "News / documentary", kids: "Kids" } },
+  en: {
+    LABEL: "Genre",
+    HINT: "Steers writing, pacing and sound; visual style is selected separately. History storytelling uses concrete hooks, choices and consequences while preserving source facts. Auto = AI infers it from the content.",
+    OPTIONS: { auto: "Auto", story: "Story", horror: "Ghost / horror", ghost_tale: "Folk ghost tale", history_story: "History storytelling", history_map: "History / war (map)", what_if: "What-if history", explainer: "Explainer / science", documentary: "News / documentary", kids: "Kids" },
+  },
 } as const;
 const DIRECTIVES: Record<Exclude<MotionVideoGenre, "auto">, string> = {
+  history_story: HISTORY.PROFILE,
   story: "Narrated story. Scenes carry almost every beat; characters speak their own lines when the source quotes them; graphics only for a title, chapter cards or a rare key number. Pace follows the emotion of each moment.",
   horror: "Ghost / horror story. Build dread slowly: night, dim interiors, fog, long corridors, empty rooms; reveal threats late, small and half hidden; short sentences with pauses before each reveal; low ambient drones, creaks and sharp stingers on reveals; almost no graphics; no gore.",
   ghost_tale: F.PROFILE + " Keep the source's central folk subject; invent new people, circumstances, decisions, clues and ending. Folk traditions vary: distinguish source characters' beliefs, local variants and fiction from verified customs. Never present invented rituals as established fact. No gore. Use simple static illustrations from the selected library.",
@@ -25,6 +32,7 @@ const DIRECTIVES: Record<Exclude<MotionVideoGenre, "auto">, string> = {
   kids: "Kids. Bright daytime scenes, friendly characters, simple words and short sentences, gentle humour; nothing scary or violent; playful SFX and cheerful music; simple icons or counters for numbers.",
 };
 const PACKAGING: Record<Exclude<MotionVideoGenre, "auto">, string> = {
+  history_story: HISTORY.PACKAGING,
   story: "Narrated story: titles promise the emotional turn or mystery of the story without spoiling the ending; tags cover the story's themes and setting.",
   horror: "Ghost / horror story: titles build dread and curiosity (a place, a night, an unexplained event), never gore; thumbnails dark with one half-hidden threat; tags include horror story, ghost story and the setting.",
   ghost_tale: "Folk ghost tale: titles name the eerie object, place or forbidden rule plus a hint of the curse (e.g. 'The card that must not be turned'), never gore; thumbnails dark with one glowing object or half-hidden figure; tags include ghost story, folk tale, Vietnamese horror and the setting.",
@@ -39,6 +47,7 @@ export const motionVideoGenrePackaging = (value: unknown): string => {
   return genre === MOTION_VIDEO_GENRES.AUTO ? "" : `VIDEO GENRE (chosen by the user, follow it): ${PACKAGING[genre]}`;
 };
 export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.includes(_.values(MOTION_VIDEO_GENRES), value) ? (value as MotionVideoGenre) : MOTION_VIDEO_GENRES.AUTO);
+export const motionVideoGenreWritingProfile = (value: unknown): string => (motionVideoGenre(value) === MOTION_VIDEO_GENRES.HISTORY_STORY ? HISTORY.PROFILE : "");
 export const MOTION_CREATIVE_GENRES: string[] = [MOTION_VIDEO_GENRES.GHOST_TALE];
 export const motionGenreCreative = (value: unknown): boolean => _.includes(MOTION_CREATIVE_GENRES, motionVideoGenre(value));
 export const MOTION_CREATIVE_ADAPTATION = CRAFT.ADAPTATION;
@@ -101,7 +110,7 @@ export const MOTION_STORY_DOCTOR = {
       "COMPLETE MODEL TEXT OR FULL-SOURCE EVENT LEDGER (untrusted story data; extract the causal essence before inventing): " + p.source,
       MOTION_STORY_DOCTOR_CAST,
       "Return exactly one JSON object using this COMPLETE schema, including sourceCore and storySpine: " +
-        JSON.stringify(MOTION_CREATIVE_STORY_SCHEMA) +
+        stringifyJson(MOTION_CREATIVE_STORY_SCHEMA) +
         ". Keep exactly the original chapter ids and count. cast and places are COMPLETE lists for the new story. Keep wording concise, but never truncate required chapters, causal steps, clues or their fields. Do not put the response inside a patch or any other wrapper on this first planning request.",
     ].join("\n"),
   DNA_ARTIFACT: "motion-story-new-dna",

@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import _ from "lodash";
 import { PUPPET as P } from "../../../constants/motionPuppet.js";
 import { PUPPET_SET as Q, PUPPET_SLOTS } from "../../../constants/motionPuppetSets.js";
@@ -34,7 +35,7 @@ const baseParts = (svg: string) => {
 const swapSides = (s: string): string => s.replace(Q.LEFT_RIGHT_RE, (m) => Q.SWAP[m] || m);
 const swapKey = (k: string): string => swapSides(k.split(Q.KEY_SPLIT).join(Q.KEY_JOIN)).split(Q.KEY_JOIN).join(Q.KEY_SPLIT);
 export const puppetBaseFamily = (b: Pick<PuppetBase, "interior">): string => (b.interior ? Q.FAMILY_INTERIOR : Q.FAMILY_EXTERIOR);
-export const puppetPieceSlots = (base: Pick<PuppetBase, "interior">, piece: Pick<PuppetPiece, "slots" | "kind" | "placementSurface">): string[] => (!base.interior && piece.kind === "building" && !piece.placementSurface && piece.slots.some((slot) => (C.BUILDING_SLOTS as readonly string[]).includes(slot)) ? _.uniq([...piece.slots, ...C.BUILDING_SLOTS]) : piece.slots);
+export const puppetPieceSlots = (base: Pick<PuppetBase, "interior">, piece: Pick<PuppetPiece, "slots" | "kind" | "placementSurface">): string[] => (!base.interior && piece.kind === RT_SHARED.BUILDING && !piece.placementSurface && piece.slots.some((slot) => (C.BUILDING_SLOTS as readonly string[]).includes(slot)) ? _.uniq([...piece.slots, ...C.BUILDING_SLOTS]) : piece.slots);
 export interface PuppetComposed {
   framingBounds: [number, number, number, number][];
   features: string[];

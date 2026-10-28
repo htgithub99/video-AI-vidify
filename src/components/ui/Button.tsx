@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { VIDEO_EXPORT_TEXT_NUMBER, VIDEO_EXPORT_TEXT_STRING } from "../../constants/videoExportText";
 import { SOURCE_TEXT_MD, SOURCE_TEXT_PRIMARY, SOURCE_TEXT_UNSTYLED } from "../../constants/sourceText";
 import { cn } from "../../lib/utils";
@@ -11,7 +12,7 @@ import { Sparkles } from "lucide-react";
 const getChildrenText = (node: React.ReactNode): string => {
   if (_.isNil(node)) return "";
   if (typeof node === VIDEO_EXPORT_TEXT_STRING || typeof node === VIDEO_EXPORT_TEXT_NUMBER) return _.toString(node);
-  if (_.isArray(node)) return _.trim(_.join(_.map(node, getChildrenText), " "));
+  if (_.isArray(node)) return _.trim(_.join(_.map(node, getChildrenText), RT_SHARED.SYMBOL_36A9E7));
   if (React.isValidElement(node)) {
     return getChildrenText(node.props.children);
   }

@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
@@ -53,7 +54,12 @@ export const motionWavHeader = (bytes: number, channels: number = C.CHANNELS, sa
   header.writeUInt32LE(bytes, 40);
   return header;
 };
-interface DecodedSound { seconds: number; onset: number; transients: number[]; gain: number; }
+interface DecodedSound {
+  seconds: number;
+  onset: number;
+  transients: number[];
+  gain: number;
+}
 const decodeSound = async (asset: MotionSoundAsset, signal?: AbortSignal): Promise<DecodedSound> => {
   const folder = path.join(motionSfxRoot(), C.DECODED),
     file = path.join(folder, asset.id + C.PCM),
@@ -97,7 +103,7 @@ const decodeSound = async (asset: MotionSoundAsset, signal?: AbortSignal): Promi
       await fs.promises.rm(temporary, { force: true }).catch(() => {});
     }
   }
-  return JSON.parse(await fs.promises.readFile(metadata, C.UTF8));
+  return parseJson(await fs.promises.readFile(metadata, C.UTF8));
 };
 const cachedAudio = async (id: string, task: (temporary: string) => Promise<void>): Promise<string> => {
   const output = path.join(getMotionAudioDirectory(), id);

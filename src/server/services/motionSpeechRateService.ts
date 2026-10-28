@@ -1,3 +1,4 @@
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import * as SRT from "../../constants/sourceText.js";
 import fs from "fs";
 import _ from "lodash";
@@ -19,7 +20,7 @@ const GLOBAL_KEY = SRT.SOURCE_BROWSER_TEXT_SYMBOL;
 const rateFile = (): string => path.join(getMotionRootDirectory(), C.SPEECH_RATE_FILE);
 const readStore = (): SpeechRateStore => {
   try {
-    const data = JSON.parse(fs.readFileSync(rateFile(), MR.MOTION_TEXT_UTF8));
+    const data = parseJson(fs.readFileSync(rateFile(), MR.MOTION_TEXT_UTF8));
     return { global: data?.global || {}, channels: data?.channels || {}, profiles: data?.profiles || {} };
   } catch {
     return { global: {}, channels: {}, profiles: {} };
@@ -41,7 +42,7 @@ const speechProfile = (channelRef: unknown) => {
   const correction = _.clamp(settings.correction || 1, V.CORRECTION_RANGE[0], V.CORRECTION_RANGE[1]);
   const key = createHash(MR.MOTION_TEXT_SHA256)
     .update(
-      JSON.stringify([
+      stringifyJson([
         channelOf(channelRef),
         channel?.narratorVoiceId,
         Object.entries(channel?.roleVoices || {}).sort(([a], [b]) => a.localeCompare(b)),

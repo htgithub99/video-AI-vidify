@@ -8,6 +8,8 @@ import { LicenseActivation } from "./components/LicenseActivation.tsx";
 import { API_ROUTES, REFACTOR_CONSTANTS, SecurityConstants } from "./constants";
 import _ from "lodash";
 import { invalidateBrowserLicenseSession, isLicenseFailureCode } from "./lib/licenseSession";
+import { storageUtils } from "./lib/storage";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const urlParams = new URLSearchParams(window.location.search);
 const tokenFromUrl = urlParams.get(SecurityConstants.QUERY_TOKEN_KEY);
 if (tokenFromUrl) {
@@ -67,7 +69,6 @@ const notifyUsageAfterSuccessfulResponse = (input: RequestInfo | URL, response: 
       .catch(_.noop);
   }
 };
-import { storageUtils } from "./lib/storage";
 window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const licenseKey = storageUtils.get(SecurityConstants.LOCAL_STORAGE_LICENSE_KEY) || SecurityConstants.DEFAULT_LICENSE_KEY;
   const internalToken = sessionStorage.getItem(SecurityConstants.SESSION_TOKEN_KEY);
@@ -81,15 +82,7 @@ window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   notifyUsageAfterSuccessfulResponse(input, response);
   return response;
 };
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: false,
-    },
-  },
-});
+const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false, retry: false } } });
 ReactDOM.createRoot(document.getElementById(SecurityConstants.HTML_ROOT_ID) as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

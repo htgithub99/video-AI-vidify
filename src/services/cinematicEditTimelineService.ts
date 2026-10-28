@@ -110,15 +110,7 @@ export const createCinematicEditTimeline = (scenes: StoryboardScene[]): Storyboa
     const segments = normalizeCinematicEditSegments(scene, safeStartSeconds, safeEndSeconds);
     if (_.isEmpty(segments)) {
       const duration = _.max([zeroSeconds, safeEndSeconds - safeStartSeconds]) || zeroSeconds;
-      return [
-        {
-          ...scene,
-          duration: roundTimelineSeconds(duration),
-          sourceTrimStartSeconds: roundTimelineSeconds(safeStartSeconds),
-          sourceTrimEndSeconds: roundTimelineSeconds(sourceDuration - safeEndSeconds),
-          subtitleCues: [],
-        },
-      ];
+      return [{ ...scene, duration: roundTimelineSeconds(duration), sourceTrimStartSeconds: roundTimelineSeconds(safeStartSeconds), sourceTrimEndSeconds: roundTimelineSeconds(sourceDuration - safeEndSeconds), subtitleCues: [] }];
     }
     const sceneHasDialogue = hasCinematicSceneDialogue(scene);
     const hasLocatedDialogue = _.some(segments, SOURCE_TEXT_CONTAINSDIALOGUE);

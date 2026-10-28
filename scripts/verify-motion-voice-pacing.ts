@@ -73,7 +73,7 @@ try {
   assert.equal(calls.length, 6);
   updateVoiceMeta(VP.VOICE, { speed: 0.9 });
   assert.equal(readMotionVoiceTrack(track.audioId, script, analysis), undefined, VP.CACHE);
-  const { compileMotionStory } = await import("../src/server/controllers/motionVideoController.ts");
+  const { compileMotionStory } = await import("../src/features/motion/server/controllers/motionVideoController.ts");
   let response: any;
   const res: any = {
     json: (value: any) => {

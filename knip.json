@@ -5,7 +5,8 @@
     "server.ts",
     "vite.config.ts",
     "electron/**/*.cjs",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
+    "src/features/motion/remotion/Root.tsx"
   ],
   "project": [
     "src/**/*.{ts,tsx}",
@@ -14,5 +15,8 @@
     "electron/**/*.cjs",
     "scripts/**/*.ts"
   ],
-  "ignoreDependencies": ["electron-builder", "tailwindcss"]
+  "ignoreDependencies": [
+    "electron-builder",
+    "tailwindcss"
+  ]
 }

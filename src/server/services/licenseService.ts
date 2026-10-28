@@ -82,24 +82,11 @@ const parseLicenseInfoFromGasResponse = (data: Record<string, unknown>): License
   plan_type: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.PLAN_NAME_KEY, PlanType.FREE)))) as PlanType,
   quota_type: _.toUpper(_.trim(_.toString(_.get(data, SecurityConstants.QUOTA_TYPE_KEY, SecurityConstants.QUOTA_TYPE_DAILY)))),
   expires_at: _.get(data, SecurityConstants.EXPIRES_AT_KEY, null) as string | null,
-  usage: {
-    video: _.toFinite(_.get(data, SecurityConstants.USAGE_VIDEO_KEY, SecurityConstants.ZERO)),
-    image: _.toFinite(_.get(data, SecurityConstants.USAGE_IMAGE_KEY, SecurityConstants.ZERO)),
-    voice: _.toFinite(_.get(data, SecurityConstants.USAGE_VOICE_KEY, SecurityConstants.ZERO)),
-  },
-  limits: {
-    video: _.toFinite(_.get(data, SecurityConstants.PLAN_QUOTA_VIDEO, SecurityConstants.ZERO)),
-    image: _.toFinite(_.get(data, SecurityConstants.PLAN_QUOTA_IMAGE, SecurityConstants.ZERO)),
-    voice: _.toFinite(_.get(data, SecurityConstants.PLAN_QUOTA_VOICE, SecurityConstants.ZERO)),
-    unlimited: Boolean(_.get(data, SecurityConstants.PLAN_IS_UNLIMITED, false)),
-  },
+  usage: { video: _.toFinite(_.get(data, SecurityConstants.USAGE_VIDEO_KEY, SecurityConstants.ZERO)), image: _.toFinite(_.get(data, SecurityConstants.USAGE_IMAGE_KEY, SecurityConstants.ZERO)), voice: _.toFinite(_.get(data, SecurityConstants.USAGE_VOICE_KEY, SecurityConstants.ZERO)) },
+  limits: { video: _.toFinite(_.get(data, SecurityConstants.PLAN_QUOTA_VIDEO, SecurityConstants.ZERO)), image: _.toFinite(_.get(data, SecurityConstants.PLAN_QUOTA_IMAGE, SecurityConstants.ZERO)), voice: _.toFinite(_.get(data, SecurityConstants.PLAN_QUOTA_VOICE, SecurityConstants.ZERO)), unlimited: Boolean(_.get(data, SecurityConstants.PLAN_IS_UNLIMITED, false)) },
 });
 const executeGasVerification = async (licenseKey: string, deviceId: string): Promise<LicenseInfo> => {
-  const response = await fetch(SecurityConstants.GAS_API_URL, {
-    method: SecurityConstants.HTTP_POST,
-    headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-    body: jsonUtils.safeStringify({ action: GasActions.VERIFY_KEY, admin_key: SecurityConstants.ADMIN_APP_KEY, license_key: licenseKey, device_id: deviceId }),
-  });
+  const response = await fetch(SecurityConstants.GAS_API_URL, { method: SecurityConstants.HTTP_POST, headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON }, body: jsonUtils.safeStringify({ action: GasActions.VERIFY_KEY, admin_key: SecurityConstants.ADMIN_APP_KEY, license_key: licenseKey, device_id: deviceId }) });
   const data = (await response.json()) as Record<string, unknown>;
   if (_.has(data, SecurityConstants.ERROR_KEY)) {
     const errorMsg = _.toString(_.get(data, SecurityConstants.ERROR_KEY));
@@ -147,18 +134,7 @@ export class LicenseService {
     if (isRecognizedServerLicenseKey(licenseKey)) return true;
     const deviceId = getHardwareId();
     try {
-      const response = await fetch(SecurityConstants.GAS_API_URL, {
-        method: SecurityConstants.HTTP_POST,
-        headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-        body: jsonUtils.safeStringify({
-          action: GasActions.UPDATE_USAGE,
-          admin_key: SecurityConstants.ADMIN_APP_KEY,
-          license_key: licenseKey,
-          device_id: deviceId,
-          feature,
-          amount,
-        }),
-      });
+      const response = await fetch(SecurityConstants.GAS_API_URL, { method: SecurityConstants.HTTP_POST, headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON }, body: jsonUtils.safeStringify({ action: GasActions.UPDATE_USAGE, admin_key: SecurityConstants.ADMIN_APP_KEY, license_key: licenseKey, device_id: deviceId, feature, amount }) });
       const data = (await response.json()) as Record<string, unknown>;
       if (_.has(data, SecurityConstants.ERROR_KEY)) {
         appError(SecurityMessages.USAGE_UPDATE_ERROR, _.get(data, SecurityConstants.ERROR_KEY));

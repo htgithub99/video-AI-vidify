@@ -3285,7 +3285,7 @@ export const SOURCE_TEXT_PROXYCHECKFAIL = "proxyCheckFail" as const;
 export const SOURCE_TEXT_MOTION = "motion" as const;
 export const SOURCE_TEXT_MOTIONRENDERSTOP = "motionRenderStop" as const;
 export const SOURCE_TEXT_FIXTURE = "fixture" as const;
-export const SOURCE_TEXT_SRC_HOOKS_USEMOTIONSTUDIO_TS = "src/hooks/useMotionStudio.ts" as const;
+export const SOURCE_TEXT_SRC_HOOKS_USEMOTIONSTUDIO_TS = "src/features/motion/hooks/useMotionStudio.ts" as const;
 export const SOURCE_TEXT_MOTION_FIXTURES = "motion-fixtures" as const;
 export const SOURCE_TEXT_REACT_FIXTURE = "react-fixture" as const;
 export const SOURCE_TEXT_EXPORT_CONST_USECALLBACK_CALLBACK_CALLBACK_EXPORT_CONST =
@@ -3326,7 +3326,7 @@ export const SOURCE_TEXT_RENDER_ERROR = "render error" as const;
 export const SOURCE_TEXT_VIDEO_MP4_2 = "video.mp4" as const;
 export const SOURCE_TEXT_MOTIONRENDERSTART = "motionRenderStart" as const;
 export const SOURCE_TEXT_MOTIONRENDER = "motionRender" as const;
-export const SOURCE_TEXT_SRC_COMPONENTS_PROXYMANAGER_TSX = "src/components/ProxyManager.tsx" as const;
+export const SOURCE_TEXT_SRC_COMPONENTS_PROXYMANAGER_TSX = "src/features/proxy/components/ProxyManager.tsx" as const;
 export const SOURCE_TEXT_CONST_RUN_ASYNC = "  const run = async" as const;
 export const SOURCE_TEXT_CONST_CHECKALL_ASYNC = "  const checkAll = async" as const;
 export const SOURCE_TEXT_PROFILE = "profile" as const;

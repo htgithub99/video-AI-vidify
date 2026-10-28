@@ -1,6 +1,9 @@
 (function (root) {
   root.MotionEngineText = {
     PUPPET: {
+      SIMPLE_MOTION: "simple",
+      NO_EFFECTS: "off",
+      GENTLE_CAMERA: "gentle",
       TEMPLATE: "puppet",
       NAME: "Puppet 2D story",
       CATEGORY: "scene",

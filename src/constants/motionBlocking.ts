@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 export const MOTION_BLOCKING = {
   VERSION: 2,
   KEY_JOIN: "_",
@@ -38,7 +39,7 @@ export const MOTION_BLOCKING = {
   MATCH: (kind: string): string => `Fixed interaction layout unavailable: ${kind}`,
   READ_REPAIR: "Return valid blocking role bindings for visible cast only, and a separate states entry with an explicit posture for every bound participant. Preserve the narration and physical supports. Use null blocking when no supported interaction is shown.",
   READ_INVALID: (key: string): string => `Chưa xác định được tư thế của đủ nhân vật trong bố cục tại câu ${key}. Cần đọc lại câu trước khi chọn bối cảnh.`,
-  REQUIREMENTS: (uses: string, reads: unknown): string => `${uses}\nRequired interaction role bindings and independent body states: ${JSON.stringify(reads)}. Return a compatible composition for each distinct posture combination.`,
+  REQUIREMENTS: (uses: string, reads: unknown): string => `${uses}\nRequired interaction role bindings and independent body states: ${stringifyJson(reads)}. Return a compatible composition for each distinct posture combination.`,
   READ_PROMPT:
     "For an interaction shown in the current illustrated moment, also return blocking:{kind,roles}, mapping role names to existing visible cast keys. Supported kinds and required roles: bedside(patient,caregiver), two_patients(patient_left,patient_right,caregiver), grooming(subject,groomer), conversation(host,guest), counter(seller,customer), stairs(upper,lower), rafters(climber,observer), ritual(officiant,visitor), mourning(deceased,mourner), river_rescue(survivor,rescuer), cradle(infant,caregiver), doorway(inside,outside), teaching(teacher,pupil), offering(giver,receiver), search(leader,companion), boat(rower,passenger), watching(watcher,subject), group_conversation(host,guest,companion), parent_child(adult,child), carrying(carrier,carried), assisting(helper,dependent), window(inside,outside), dining(diner_left,diner_right), work(worker,observer), chase(pursuer,fugitive), contact(initiator,recipient). Use contact only for an explicit physical touch; use carrying for lifting/carrying a person, not holding a prop. Use null for a landscape, object insert, memory without the interaction, or uncertain relation. Never invent a participant to fill a template. Set each participant's states.posture and support separately. Grooming does not imply standing: preserve whether the groomer sits or stands. A speaking patient stays lying. For explicit physical change use states.transition:true; otherwise false. Changing camera or speaking is not a physical transition. Use the same location and concrete furniture keys throughout a continuous scene.",
   COMPOSE_PROMPT:

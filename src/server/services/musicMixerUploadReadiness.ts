@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import {
   SOURCE_TEXT_INPUT_AREA_INPUT_AREA_FORM_DATA_TESTID,
   SOURCE_TEXT_HIDDEN,
@@ -33,9 +34,9 @@ import {
 } from "../../constants/sourceText.js";
 import type { Locator } from "playwright";
 import { MUSIC_MIXER_UPLOAD_POLICY } from "../../constants/musicMixer.js";
-type Attachment = { name: string; path?: string; };
-type UploadState = { labels: string[]; busy: boolean; error: string; progress: string; };
-type WaitPolicy = { maxWaitMs?: number; stallTimeoutMs?: number; pollMs?: number; };
+type Attachment = { name: string; path?: string };
+type UploadState = { labels: string[]; busy: boolean; error: string; progress: string };
+type WaitPolicy = { maxWaitMs?: number; stallTimeoutMs?: number; pollMs?: number };
 export const readMusicMixerUploadState = (input: Locator): Promise<UploadState> =>
   input.evaluate(
     (element, sharedBrowserPayload) => {
@@ -139,7 +140,7 @@ export const waitForMusicMixerUploads = async (input: Locator, attachments: Atta
       continue;
     }
     if (lastState.error) throw new Error(SOURCE_TEMPLATE_TRON_NHAC_TAI_TEP_THAT_BAI(`${lastState.error}`));
-    const snapshot = JSON.stringify([lastState.labels, lastState.busy, lastState.progress]);
+    const snapshot = stringifyJson([lastState.labels, lastState.busy, lastState.progress]);
     if (snapshot !== previousSnapshot) {
       previousSnapshot = snapshot;
       lastChangedAt = Date.now();

@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_UI } from "../constants/runtime/ui.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { SOURCE_TEMPLATE_SYMBOL_4, SOURCE_TEXT_BUTTON, SOURCE_TEXT_PROGRESSLOGICON, SOURCE_TEXT_PROGRESSLOGTIMELINE, SOURCE_TEXT_UNSTYLED } from "../constants/sourceText";
 import { memo, useMemo, useState } from "react";
 import _ from "lodash";
@@ -31,34 +33,12 @@ const parseProgressLog = (log: string, language?: string) => {
   const userFacingMessage = formatUserFacingLog(messageWithoutTime, language);
   const rawCleanMessage = _.trim(userFacingMessage.replace(PROGRESS_LOG_CONFIG.PREFIX_PATTERN, PROGRESS_LOG_CONFIG.EMPTY_VALUE));
   const cleanMessage = formatSeamlessMessage(rawCleanMessage);
-  return {
-    time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE),
-    message: cleanMessage,
-    rawMessage: !_.isEmpty(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT)) ? SOURCE_TEMPLATE_SYMBOL_4(`${_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT)}`, `${userFacingMessage}`) : userFacingMessage,
-    tone: resolveProgressLogTone(userFacingMessage),
-  };
+  return { time: _.defaultTo(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT), PROGRESS_LOG_CONFIG.EMPTY_VALUE), message: cleanMessage, rawMessage: !_.isEmpty(_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT)) ? SOURCE_TEMPLATE_SYMBOL_4(`${_.get(timeMatch, SecurityConstants.DEFAULT_AMOUNT)}`, `${userFacingMessage}`) : userFacingMessage, tone: resolveProgressLogTone(userFacingMessage) };
 };
 const ProgressLogIcon = memo(({ tone, theme }: { tone: ProgressLogTone; theme: AppTheme }) => {
   const style = PROGRESS_LOG_CONFIG.STYLES[tone];
-  const iconClassName = cn(PROGRESS_LOG_CONFIG.CLASSES.ICON, {
-    [style.iconLight]: _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME),
-    [style.iconDark]: !_.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME),
-  });
-  const Icon = _.get(
-    {
-      [ProgressLogTone.Script]: FileText,
-      [ProgressLogTone.Voice]: Mic,
-      [ProgressLogTone.Image]: Palette,
-      [ProgressLogTone.Render]: Film,
-      [ProgressLogTone.SEO]: Search,
-      [ProgressLogTone.Thumbnails]: Sparkles,
-      [ProgressLogTone.Success]: Trophy,
-      [ProgressLogTone.Warning]: AlertTriangle,
-      [ProgressLogTone.Error]: XCircle,
-    },
-    tone,
-    Activity,
-  );
+  const iconClassName = cn(PROGRESS_LOG_CONFIG.CLASSES.ICON, { [style.iconLight]: _.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME), [style.iconDark]: !_.isEqual(theme, PROGRESS_LOG_CONFIG.LIGHT_THEME) });
+  const Icon = _.get({ [ProgressLogTone.Script]: FileText, [ProgressLogTone.Voice]: Mic, [ProgressLogTone.Image]: Palette, [ProgressLogTone.Render]: Film, [ProgressLogTone.SEO]: Search, [ProgressLogTone.Thumbnails]: Sparkles, [ProgressLogTone.Success]: Trophy, [ProgressLogTone.Warning]: AlertTriangle, [ProgressLogTone.Error]: XCircle }, tone, Activity);
   return <Icon className={cn(iconClassName)} />;
 });
 ProgressLogIcon.displayName = SOURCE_TEXT_PROGRESSLOGICON;
@@ -81,15 +61,8 @@ export const ProgressLogTimeline = memo(({ logs, theme, language, context = Prog
     }, 2000);
   };
   return (
-    <div className={cn("relative pl-1.5 py-1 space-y-4")}>
-      {entries.length > 1 && (
-        <div
-          className={cn(PROGRESS_LOG_CONFIG.CLASSES.LINE, {
-            [PROGRESS_LOG_CONFIG.CLASSES.LINE_LIGHT]: isLightTheme,
-            [PROGRESS_LOG_CONFIG.CLASSES.LINE_DARK]: !isLightTheme,
-          })}
-        />
-      )}
+    <div className={cn(RT_UI.RELATIVE_PL_1_5_PY_1_SPACE_Y_4)}>
+      {entries.length > 1 && <div className={cn(PROGRESS_LOG_CONFIG.CLASSES.LINE, { [PROGRESS_LOG_CONFIG.CLASSES.LINE_LIGHT]: isLightTheme, [PROGRESS_LOG_CONFIG.CLASSES.LINE_DARK]: !isLightTheme })} />}
       {_.map(entries, (entry, index) => {
         const style = PROGRESS_LOG_CONFIG.STYLES[entry.tone];
         const isError = _.isEqual(entry.tone, ProgressLogTone.Error);
@@ -98,27 +71,17 @@ export const ProgressLogTimeline = memo(({ logs, theme, language, context = Prog
         const copyTooltip = isError ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_ERROR : isWarning ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_WARNING : PROGRESS_LOG_CONFIG.TOOLTIPS.COPY_LOG;
         const copiedTooltip = isError ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_ERROR : isWarning ? PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_WARNING : PROGRESS_LOG_CONFIG.TOOLTIPS.COPIED_LOG;
         return (
-          <div key={index} className={cn(PROGRESS_LOG_CONFIG.CLASSES.ITEM, "group/log relative")}>
-            <span
-              className={cn(PROGRESS_LOG_CONFIG.CLASSES.ICON_CONTAINER, {
-                [style.iconBgLight]: isLightTheme,
-                [style.iconBgDark]: !isLightTheme,
-              })}>
+          <div key={index} className={cn(PROGRESS_LOG_CONFIG.CLASSES.ITEM, RT_UI.GROUP_LOG_RELATIVE)}>
+            <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.ICON_CONTAINER, { [style.iconBgLight]: isLightTheme, [style.iconBgDark]: !isLightTheme })}>
               <ProgressLogIcon tone={entry.tone} theme={theme} />
             </span>
-            <span
-              className={cn(PROGRESS_LOG_CONFIG.CLASSES.MESSAGE, {
-                [style.textLight]: isLightTheme,
-                [style.textDark]: !isLightTheme,
-              })}>
-              {entry.message}
-            </span>
-            <div className={cn("h-6 flex items-center gap-1.5 ml-2 shrink-0")}>
+            <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.MESSAGE, { [style.textLight]: isLightTheme, [style.textDark]: !isLightTheme })}>{entry.message}</span>
+            <div className={cn(RT_UI.H_6_FLEX_ITEMS_CENTER_GAP_1_5_ML_2)}>
               <Button
                 variant={SOURCE_TEXT_UNSTYLED}
                 type={SOURCE_TEXT_BUTTON}
                 onClick={() => handleCopy(entry.rawMessage, index)}
-                className={cn("w-6 h-6 rounded-md flex items-center justify-center cursor-pointer border-none bg-transparent transition-all", "opacity-40 group-hover/log:opacity-100 hover:!opacity-100 focus:opacity-100", {
+                className={cn(RT_UI.W_6_H_6_ROUNDED_MD_FLEX_ITEMS_CENTER_JUSTIFY, RT_UI.OPACITY_40_GROUP_HOVER_LOG_OPACITY_100_HOVER_OPACITY_100, {
                   "text-emerald-400 !opacity-100": isCopied,
                   "text-slate-400 hover:text-rose-400": !isCopied && isError,
                   "text-slate-400 hover:text-amber-400": !isCopied && !isError && isWarning,
@@ -127,7 +90,7 @@ export const ProgressLogTimeline = memo(({ logs, theme, language, context = Prog
                 })}
                 title={isCopied ? copiedTooltip : copyTooltip}
                 aria-label={isCopied ? copiedTooltip : copyTooltip}>
-                {isCopied ? <Check className={cn("w-3.5 h-3.5 text-emerald-400")} /> : <Copy className={cn("w-3.5 h-3.5")} />}
+                {isCopied ? <Check className={cn(RT_UI.W_3_5_H_3_5_TEXT_EMERALD_400)} /> : <Copy className={cn(RT_SHARED.W_3_5_H_3_5)} />}
               </Button>
               {!_.isEmpty(entry.time) && <span className={cn(PROGRESS_LOG_CONFIG.CLASSES.TIME, { [PROGRESS_LOG_CONFIG.CLASSES.TIME_LIGHT]: isLightTheme }, { [PROGRESS_LOG_CONFIG.CLASSES.TIME_DARK]: !isLightTheme })}>{entry.time}</span>}
             </div>

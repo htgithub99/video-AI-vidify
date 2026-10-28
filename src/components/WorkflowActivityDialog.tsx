@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_UI } from "../constants/runtime/ui.js";
 import { StudioSelect } from "./ui/Studio.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_170,
@@ -120,58 +121,18 @@ type StatusFilterType = (typeof WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS)[key
 const getEventStatusMeta = (event: WorkflowEvent, t: (typeof WORKFLOW_ACTIVITY_TEXT)[keyof typeof WORKFLOW_ACTIVITY_TEXT]) => {
   const statusType = getEventStatusType(event);
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.fail) {
-    return {
-      statusType,
-      label: t.statuses.error,
-      cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_ROSE,
-      avatarClass: SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE,
-      statusBadgeClass: SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE_2,
-      titleClass: SOURCE_TEXT_TEXT_ROSE_200_FONT_BOLD_TEXT,
-      icon: <XCircle className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_3)} />,
-    };
+    return { statusType, label: t.statuses.error, cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_ROSE, avatarClass: SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE, statusBadgeClass: SOURCE_TEXT_BG_ROSE_500_25_TEXT_ROSE_2, titleClass: SOURCE_TEXT_TEXT_ROSE_200_FONT_BOLD_TEXT, icon: <XCircle className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_3)} /> };
   }
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.success) {
-    return {
-      statusType,
-      label: t.statuses.success,
-      cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_EMERALD,
-      avatarClass: SOURCE_TEXT_BG_EMERALD_500_25_TEXT_EMERALD,
-      statusBadgeClass: SOURCE_TEXT_BG_EMERALD_500_20_TEXT_EMERALD,
-      titleClass: SOURCE_TEXT_TEXT_EMERALD_200_FONT_BOLD_TEXT,
-      icon: <CheckCircle2 className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_16)} />,
-    };
+    return { statusType, label: t.statuses.success, cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_EMERALD, avatarClass: SOURCE_TEXT_BG_EMERALD_500_25_TEXT_EMERALD, statusBadgeClass: SOURCE_TEXT_BG_EMERALD_500_20_TEXT_EMERALD, titleClass: SOURCE_TEXT_TEXT_EMERALD_200_FONT_BOLD_TEXT, icon: <CheckCircle2 className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_16)} /> };
   }
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.running) {
-    return {
-      statusType,
-      label: t.statuses.running,
-      cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_SKY,
-      avatarClass: SOURCE_TEXT_BG_SKY_500_25_TEXT_SKY,
-      statusBadgeClass: SOURCE_TEXT_BG_SKY_500_20_TEXT_SKY,
-      titleClass: SOURCE_TEXT_TEXT_SKY_200_FONT_BOLD_TEXT,
-      icon: <Sparkles className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_17)} />,
-    };
+    return { statusType, label: t.statuses.running, cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_SKY, avatarClass: SOURCE_TEXT_BG_SKY_500_25_TEXT_SKY, statusBadgeClass: SOURCE_TEXT_BG_SKY_500_20_TEXT_SKY, titleClass: SOURCE_TEXT_TEXT_SKY_200_FONT_BOLD_TEXT, icon: <Sparkles className={cn(SOURCE_TEXT_W_3_5_H_3_5_TEXT_17)} /> };
   }
   if (statusType === WORKFLOW_ACTIVITY_CONFIG.STATUS_TYPE_KEYS.stop) {
-    return {
-      statusType,
-      label: t.statuses.stopped,
-      cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_AMBER,
-      avatarClass: SOURCE_TEXT_BG_AMBER_500_25_TEXT_AMBER,
-      statusBadgeClass: SOURCE_TEXT_BG_AMBER_500_20_TEXT_AMBER,
-      titleClass: SOURCE_TEXT_TEXT_AMBER_200_FONT_BOLD_TEXT,
-      icon: <Square className={cn(SOURCE_TEXT_W_3_H_3_TEXT_AMBER_300)} />,
-    };
+    return { statusType, label: t.statuses.stopped, cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_AMBER, avatarClass: SOURCE_TEXT_BG_AMBER_500_25_TEXT_AMBER, statusBadgeClass: SOURCE_TEXT_BG_AMBER_500_20_TEXT_AMBER, titleClass: SOURCE_TEXT_TEXT_AMBER_200_FONT_BOLD_TEXT, icon: <Square className={cn(SOURCE_TEXT_W_3_H_3_TEXT_AMBER_300)} /> };
   }
-  return {
-    statusType,
-    label: t.statuses.info,
-    cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_PURPLE,
-    avatarClass: SOURCE_TEXT_BG_PURPLE_500_25_TEXT_PURPLE,
-    statusBadgeClass: SOURCE_TEXT_BG_PURPLE_500_20_TEXT_PURPLE,
-    titleClass: SOURCE_TEXT_TEXT_PURPLE_200_FONT_BOLD_TEXT,
-    icon: <Copy className={cn(SOURCE_TEXT_W_3_H_3_TEXT_PURPLE_300)} />,
-  };
+  return { statusType, label: t.statuses.info, cardClass: SOURCE_TEXT_BORDER_L_4_BORDER_L_PURPLE, avatarClass: SOURCE_TEXT_BG_PURPLE_500_25_TEXT_PURPLE, statusBadgeClass: SOURCE_TEXT_BG_PURPLE_500_20_TEXT_PURPLE, titleClass: SOURCE_TEXT_TEXT_PURPLE_200_FONT_BOLD_TEXT, icon: <Copy className={cn(SOURCE_TEXT_W_3_H_3_TEXT_PURPLE_300)} /> };
 };
 const WORKFLOW_AREA_ICONS = { [WORKFLOW_ACTIVITY_CONFIG.AREAS.music]: Music2, [WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer]: Shuffle, [WORKFLOW_ACTIVITY_CONFIG.AREAS.flow]: Film, [WORKFLOW_ACTIVITY_CONFIG.AREAS.proxy]: Globe, [WORKFLOW_ACTIVITY_CONFIG.AREAS.motion]: Video } as const;
 export default function WorkflowActivityDialog({ isOpen, onClose, language }: WorkflowActivityDialogProps) {
@@ -254,30 +215,9 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
         <div className={SOURCE_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP}>
           <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_GAP_1_5_FLEX}>
             {[
-              {
-                id: WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.all,
-                label: t.statusFilter.all,
-                count: entries.length,
-                icon: null,
-                iconClass: "",
-                activeClass: SOURCE_TEXT_BG_PURPLE_600_20_TEXT_PURPLE_200_BORDER,
-              },
-              {
-                id: WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.success,
-                label: t.statusFilter.success,
-                count: summary.success,
-                icon: CheckCircle2,
-                iconClass: SOURCE_TEXT_TEXT_EMERALD_400,
-                activeClass: SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD_200_BORDER,
-              },
-              {
-                id: WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.error,
-                label: t.statusFilter.error,
-                count: summary.fail,
-                icon: XCircle,
-                iconClass: SOURCE_TEXT_TEXT_ROSE_400,
-                activeClass: SOURCE_TEXT_BG_ROSE_500_15_TEXT_ROSE_200_BORDER,
-              },
+              { id: WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.all, label: t.statusFilter.all, count: entries.length, icon: null, iconClass: "", activeClass: SOURCE_TEXT_BG_PURPLE_600_20_TEXT_PURPLE_200_BORDER },
+              { id: WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.success, label: t.statusFilter.success, count: summary.success, icon: CheckCircle2, iconClass: SOURCE_TEXT_TEXT_EMERALD_400, activeClass: SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD_200_BORDER },
+              { id: WORKFLOW_ACTIVITY_CONFIG.STATUS_FILTER_KEYS.error, label: t.statusFilter.error, count: summary.fail, icon: XCircle, iconClass: SOURCE_TEXT_TEXT_ROSE_400, activeClass: SOURCE_TEXT_BG_ROSE_500_15_TEXT_ROSE_200_BORDER },
             ].map((st) => {
               const isActive = statusFilter === st.id;
               const Icon = st.icon;
@@ -285,7 +225,7 @@ export default function WorkflowActivityDialog({ isOpen, onClose, language }: Wo
                 <Button key={st.id} type={SOURCE_TEXT_BUTTON} variant={WORKFLOW_ACTIVITY_CONFIG.BUTTON_VARIANT_UNSTYLED} onClick={() => setStatusFilter(st.id as StatusFilterType)} className={cn(SOURCE_TEXT_STATUS_BUTTON, isActive ? st.activeClass : SOURCE_TEXT_BG_SLATE_900_80_BORDER_SLATE_800_TEXT)}>
                   {Icon && <Icon className={cn(SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3, st.iconClass)} />}
                   <span>{st.label}</span>
-                  <span className={cn("text-[10px] font-mono px-1.5 py-0.2 rounded-md font-bold", isActive ? SOURCE_TEXT_BG_WHITE_10 : SOURCE_TEXT_TEXT_SLATE_500)}>{st.count}</span>
+                  <span className={cn(RT_UI.TEXT_10PX_FONT_MONO_PX_1_5_PY_0_2, isActive ? SOURCE_TEXT_BG_WHITE_10 : SOURCE_TEXT_TEXT_SLATE_500)}>{st.count}</span>
                 </Button>
               );
             })}

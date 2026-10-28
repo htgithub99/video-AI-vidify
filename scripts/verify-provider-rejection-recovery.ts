@@ -23,11 +23,7 @@ assert.match(sceneRepairPrompt, /visible characters, identity anchors, action, c
 assert.match(sceneRepairPrompt, /scene_001/);
 const thumbnailRepairPrompt = getCinematicThumbnailProviderRepairPrompt("Epic key art for the final confrontation.", { id: "film_cover_1", layoutId: "solo_left_arrow_right" });
 assert.match(thumbnailRepairPrompt, /approved layout and exact visible headline/i);
-const characterRepairPrompt = getCinematicCharacterProviderRepairPrompt("A highly detailed original mythic warrior character reference.", {
-  id: "char_001",
-  name: "Warrior",
-  description: "Adult original fantasy warrior",
-});
+const characterRepairPrompt = getCinematicCharacterProviderRepairPrompt("A highly detailed original mythic warrior character reference.", { id: "char_001", name: "Warrior", description: "Adult original fantasy warrior" });
 assert.match(characterRepairPrompt, /Google Flow Characters/i);
 assert.match(characterRepairPrompt, /complete standalone prompt/i);
 const imageGeneratorSource = resolveSourceTextConstants(readFileSync(new URL("../src/server/services/imageGeneratorService.ts", import.meta.url), "utf8"));
@@ -43,7 +39,7 @@ assert.match(imageGeneratorSource, /if \(activeBrowserInstance\.preserveExternal
 assert.match(imageGeneratorSource, /const sharedChromePage = activeBrowserInstance\?\.preserveExternalPages/);
 const serverSource = resolveSourceTextConstants(readFileSync(new URL("../server.ts", import.meta.url), "utf8"));
 assert.match(serverSource, /if \(!_\.isEqual\(process\.env\.NODE_ENV, SERVER_CONFIG\.PRODUCTION\)\) \{[\s\S]*clearTimeout\(forcedExitTimer\);[\s\S]*process\.exit\(0\);[\s\S]*return;[\s\S]*const killCmd/);
-const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
+const pipelineSource = resolveSourceTextConstants(readFileSync(new URL("../src/features/video-generation/hooks/useAutoVideoPipeline.ts", import.meta.url), "utf8"));
 assert.match(pipelineSource, /CHARACTER_PROVIDER_REJECTION_PURPOSE/);
 assert.match(pipelineSource, /VI_CHARACTER_PROMPT_REPAIRING/);
 assert.match(pipelineSource, /THUMBNAIL_PROVIDER_REJECTION_PURPOSE/);

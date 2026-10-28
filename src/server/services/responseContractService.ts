@@ -14,10 +14,7 @@ export const assertResponseContract = (value: unknown, contract: ResponseContrac
   const requiredPaths = RESPONSE_CONTRACT_CONFIG.REQUIRED_PATHS[contract];
   const missingPaths = _.filter(requiredPaths, (pathValue) => _.isNil(_.get(value, pathValue)));
   if (!_.isEmpty(missingPaths)) {
-    throw createContractError(RESPONSE_CONTRACT_CONFIG.MISSING_PATHS_TEMPLATE, {
-      contract,
-      paths: _.join(missingPaths, SOURCE_TEXT_SYMBOL_25),
-    });
+    throw createContractError(RESPONSE_CONTRACT_CONFIG.MISSING_PATHS_TEMPLATE, { contract, paths: _.join(missingPaths, SOURCE_TEXT_SYMBOL_25) });
   }
   if (_.isEqual(contract, ResponseContractName.Hook) && _.isEmpty(_.get(value, SOURCE_TEXT_VERSIONS))) {
     throw new Error(RESPONSE_CONTRACT_CONFIG.EMPTY_HOOK_VERSIONS_ERROR);

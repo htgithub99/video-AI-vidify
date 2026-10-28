@@ -1,34 +1,13 @@
 import _ from "lodash";
-import {
-  createCinematicVideoPrompt,
-} from "../src/services/cinematicEpisodeService.ts";
-import {
-  applyCinematicContinuityHandoffs,
-  getCinematicStoryboardContractIssues,
-} from "../src/services/cinematicProductionPolicyService.ts";
+import { createCinematicVideoPrompt } from "../src/services/cinematicEpisodeService.ts";
+import { applyCinematicContinuityHandoffs, getCinematicStoryboardContractIssues } from "../src/services/cinematicProductionPolicyService.ts";
 import { GenerateType, ShotPurpose, StoryboardScene } from "../src/types.ts";
-
 console.log("================================================================================");
 console.log("🎬 KHỞI CHẠY TEST QUY TRÌNH SẢN XUẤT PHIM ĐIỆN ẢNH AI (2 PHÚT = 120 GIÂY)");
 console.log("Chủ đề: KADE VOSS | Bounty Hunter - Tập: Đầm Lầy Tử Thần (The Black Swamps)");
 console.log("================================================================================\n");
-
-const makeSampleScene = (partial: Partial<StoryboardScene>): StoryboardScene => ({
-  id: partial.id || "clip_01",
-  chapterId: "ch_01",
-  startTime: "00:00",
-  endTime: "00:10",
-  duration: 10,
-  script: partial.script || "",
-  subtitle: partial.subtitle || "",
-  prompt: partial.prompt || "",
-  shotPurpose: partial.shotPurpose || ShotPurpose.Action,
-  ...partial,
-} as StoryboardScene);
-
-// 1. Khởi tạo Kịch bản phân cảnh 2 phút (12 Clips x 10s = 120s, mỗi Clip chứa 3-4 camera setups)
+const makeSampleScene = (partial: Partial<StoryboardScene>): StoryboardScene => ({ id: partial.id || "clip_01", chapterId: "ch_01", startTime: "00:00", endTime: "00:10", duration: 10, script: partial.script || "", subtitle: partial.subtitle || "", prompt: partial.prompt || "", shotPurpose: partial.shotPurpose || ShotPurpose.Action, ...partial }) as StoryboardScene;
 const sampleScenes: StoryboardScene[] = [
-  // Clip 1 (0s - 10s): Tiếp cận đầm lầy
   makeSampleScene({
     id: "clip_01",
     shotId: "shot_01",
@@ -100,8 +79,6 @@ const sampleScenes: StoryboardScene[] = [
       },
     ],
   }),
-
-  // Clip 2 (10s - 20s): Phát hiện Pháo Đài và Đối thoại đầu tiên
   makeSampleScene({
     id: "clip_02",
     shotId: "shot_02",
@@ -155,26 +132,9 @@ const sampleScenes: StoryboardScene[] = [
         startSecond: 3.0,
         endSecond: 7.0,
       },
-      {
-        sourceSceneId: "clip_02",
-        shotId: "shot_02_c",
-        shotRole: "reaction",
-        shotSize: "extreme close up",
-        cameraAngle: "low angle",
-        visibleAction: "Finger tightens on the laser rifle trigger",
-        reaction: "Ready for combat",
-        transition: "match_cut",
-        dialogueMode: "silent_action",
-        spokenDialogue: "",
-        speakerCharacterId: "",
-        lipSyncRequired: false,
-        startSecond: 7.0,
-        endSecond: 10.0,
-      },
+      { sourceSceneId: "clip_02", shotId: "shot_02_c", shotRole: "reaction", shotSize: "extreme close up", cameraAngle: "low angle", visibleAction: "Finger tightens on the laser rifle trigger", reaction: "Ready for combat", transition: "match_cut", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 7.0, endSecond: 10.0 },
     ],
   }),
-
-  // Clip 3 (20s - 30s): Phản diện Varg đáp trả & Bẫy kích hoạt
   makeSampleScene({
     id: "clip_03",
     shotId: "shot_03",
@@ -196,22 +156,7 @@ const sampleScenes: StoryboardScene[] = [
     screenDirection: "Right to left",
     lighting: "Harsh crimson spotlight from above",
     cinematicBeats: [
-      {
-        sourceSceneId: "clip_03",
-        shotId: "shot_03_a",
-        shotRole: "master",
-        shotSize: "low angle wide shot",
-        cameraAngle: "steep low angle",
-        visibleAction: "Varg appears on the high stone battlement bathed in crimson spotlights",
-        reaction: "",
-        transition: "hard_cut",
-        dialogueMode: "silent_action",
-        spokenDialogue: "",
-        speakerCharacterId: "",
-        lipSyncRequired: false,
-        startSecond: 0,
-        endSecond: 2.5,
-      },
+      { sourceSceneId: "clip_03", shotId: "shot_03_a", shotRole: "master", shotSize: "low angle wide shot", cameraAngle: "steep low angle", visibleAction: "Varg appears on the high stone battlement bathed in crimson spotlights", reaction: "", transition: "hard_cut", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 0, endSecond: 2.5 },
       {
         sourceSceneId: "clip_03",
         shotId: "shot_03_b",
@@ -246,8 +191,6 @@ const sampleScenes: StoryboardScene[] = [
       },
     ],
   }),
-
-  // Clip 4 (30s - 40s): Đấu súng cao trào (4 nhịp liên hoàn trong 10s)
   makeSampleScene({
     id: "clip_04",
     shotId: "shot_04",
@@ -285,22 +228,7 @@ const sampleScenes: StoryboardScene[] = [
         startSecond: 0,
         endSecond: 2.5,
       },
-      {
-        sourceSceneId: "clip_04",
-        shotId: "shot_04_b",
-        shotRole: "coverage",
-        shotSize: "medium tracking shot",
-        cameraAngle: "eye level",
-        visibleAction: "Kade slides on one knee, raising his rifle in a fluid motion",
-        reaction: "",
-        transition: "motivated_reframe",
-        dialogueMode: "silent_action",
-        spokenDialogue: "",
-        speakerCharacterId: "",
-        lipSyncRequired: false,
-        startSecond: 2.5,
-        endSecond: 5.0,
-      },
+      { sourceSceneId: "clip_04", shotId: "shot_04_b", shotRole: "coverage", shotSize: "medium tracking shot", cameraAngle: "eye level", visibleAction: "Kade slides on one knee, raising his rifle in a fluid motion", reaction: "", transition: "motivated_reframe", dialogueMode: "silent_action", spokenDialogue: "", speakerCharacterId: "", lipSyncRequired: false, startSecond: 2.5, endSecond: 5.0 },
       {
         sourceSceneId: "clip_04",
         shotId: "shot_04_c",
@@ -336,14 +264,9 @@ const sampleScenes: StoryboardScene[] = [
     ],
   }),
 ];
-
-// Áp dụng Continuity Locks xuyên suốt các cảnh
 const lockedScenes = applyCinematicContinuityHandoffs(sampleScenes);
-
 console.log(`✅ Đã phân rã kịch bản thành ${lockedScenes.length} Clips (Tổng thời lượng mẫu kiểm thử 40s - 120s)`);
 console.log(`✅ Mỗi Clip đều chứa từ 3 đến 4 Camera Setups liên hoàn (Tiết kiệm 70% chi phí Veo 3)\n`);
-
-// 2. Biên dịch Prompt Đạo Diễn hoàn chỉnh cho Veo 3 cho từng Clip
 lockedScenes.forEach((scene, index) => {
   console.log(`--------------------------------------------------------------------------------`);
   console.log(`🎬 CLIP ${index + 1} / ${lockedScenes.length} [${scene.id}] (Thời lượng: 10s - ${scene.cinematicBeats?.length} Beats)`);
@@ -352,13 +275,10 @@ lockedScenes.forEach((scene, index) => {
   console.log(`🔊 SFX Cues: ${scene.soundDesignCues?.join(" | ")}`);
   console.log(`🔒 Handoff Lock: ${scene.cinematicContinuityHandoff ? `Khóa nối tiếp từ ${scene.cinematicContinuityHandoff.previousClipId}` : "Mở đầu phim"}`);
   console.log(`\n📜 [PROMPT GOOGLE VEO 3 ĐƯỢC SINH TỰ ĐỘNG]:`);
-  
   const veoPrompt = createCinematicVideoPrompt(scene, "Photorealistic cinematic space western short film", GenerateType.Video);
   console.log(veoPrompt);
   console.log("");
 });
-
-// 3. Kiểm định chất lượng toàn bộ Storyboard
 const issues = getCinematicStoryboardContractIssues(lockedScenes);
 console.log("================================================================================");
 console.log(`📋 KẾT QUẢ KIỂM ĐỊNH HỢP ĐỒNG (VALIDATION REPORT):`);

@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { createHash } from "node:crypto";
 import { MOTION_PACK_SELECTION as K } from "../../../constants/motionPackSelection.js";
 import { PUPPET as P, PUPPET_TYPES as T } from "../../../constants/motionPuppet.js";
@@ -9,7 +11,7 @@ import { puppetPropAssignmentsValid } from "./propPlacement.js";
 import { canonicalMotionValue } from "../../../lib/motionValue.js";
 export const puppetSelectionHash = (value: unknown): string =>
   createHash(P.SHA)
-    .update(JSON.stringify(canonicalMotionValue(value)))
+    .update(stringifyJson(canonicalMotionValue(value)))
     .digest(P.HEX);
 export const puppetSelectionFrameKey = (frame: PuppetFrame): string => puppetSelectionHash({ ...frame, speaker: undefined, why: undefined });
 export const puppetSelectionBindings = (gen: PuppetGen, frame: PuppetFrame, resolvedSet?: PuppetSet): PuppetSceneSelection["bindings"] => {
@@ -48,6 +50,6 @@ export const assertPuppetSceneSelection = (gen: PuppetGen, key: string): void =>
   for (const [type, ids] of references)
     for (const id of ids) {
       const asset = id && readPuppet(type, id);
-      if (!asset || (asset.type === T.STYLE ? asset.id !== gen.styleId : !("styleId" in asset) || asset.styleId !== gen.styleId)) throw new Error(K.BAD_SELECTION(key));
+      if (!asset || (asset.type === T.STYLE ? asset.id !== gen.styleId : !(RT_SERVER.STYLEID in asset) || asset.styleId !== gen.styleId)) throw new Error(K.BAD_SELECTION(key));
     }
 };

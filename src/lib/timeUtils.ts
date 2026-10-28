@@ -46,12 +46,7 @@ export const formatCleanDuration = (secsRaw: any): string => {
   const s = _.floor(secs % SECONDS_IN_MINUTE);
   return SOURCE_TEMPLATE_SYMBOL_8(`${m.toString().padStart(TIME_PAD_LENGTH, SOURCE_TEXT_0)}`, `${s.toString().padStart(TIME_PAD_LENGTH, SOURCE_TEXT_0)}`);
 };
-export const formatAudioTime = (secs: number): string => {
-  if (_.isNaN(secs) || !isFinite(secs) || _.lt(secs, 0)) return DEFAULT_TIME_STRING;
-  const m = _.floor(secs / SECONDS_IN_MINUTE);
-  const s = _.floor(secs % SECONDS_IN_MINUTE);
-  return SOURCE_TEMPLATE_SYMBOL_8(`${m.toString().padStart(TIME_PAD_LENGTH, SOURCE_TEXT_0)}`, `${s.toString().padStart(TIME_PAD_LENGTH, SOURCE_TEXT_0)}`);
-};
+export const formatAudioTime = (seconds: number): string => formatCleanDuration(seconds);
 export const formatTimeHelper = (secs: number): string => {
   const minutes = _.floor(secs / SECONDS_IN_MINUTE);
   const remainingSecs = secs % SECONDS_IN_MINUTE;

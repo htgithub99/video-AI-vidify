@@ -7,12 +7,11 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as sourceTexts from "../src/constants/sourceText";
 import { BACKGROUND_OPTION_GROUPS } from "../src/constants/texts";
-import { BackgroundModeSelect } from "../src/components/auto-video/BackgroundModeSelect";
+import { BackgroundModeSelect } from "../src/features/video-generation/components/BackgroundModeSelect";
 import { BackgroundMode } from "../src/types";
 import { blobToBase64, readBlobAsDataUrl } from "../src/lib/fileUtils";
 import { getErrorMessage } from "../src/utils/errorUtils";
 import { delayAsync } from "../src/lib/asyncUtils";
-
 for (const language of ["vi", "en"] as const) {
   const option = BACKGROUND_OPTION_GROUPS[language][0].options[0];
   const html = renderToStaticMarkup(React.createElement(BackgroundModeSelect, { value: option.value as BackgroundMode, onChange: () => undefined, language, label: "Reference label" }));
@@ -24,7 +23,6 @@ assert.equal(getErrorMessage(new Error("original"), "fallback"), "original");
 assert.equal(getErrorMessage(null, "fallback"), "fallback");
 assert.equal(getErrorMessage(42), "42");
 await delayAsync(0);
-
 const originalFileReader = globalThis.FileReader;
 class TestFileReader {
   static result: string | ArrayBuffer = "data:audio/wav;base64,YXVkaW8=";
@@ -57,7 +55,6 @@ try {
   if (originalFileReader) globalThis.FileReader = originalFileReader;
   else Reflect.deleteProperty(globalThis, "FileReader");
 }
-
 let checkedCallbacks = 0;
 let selectionCallback: ts.ArrowFunction | undefined;
 let selectionTree: ts.SourceFile | undefined;
@@ -78,13 +75,16 @@ for (const relative of fs.readdirSync(serverRoot, { recursive: true }).filter((f
         const references = new Set<string>();
         const collect = (part: ts.Node): void => {
           if ((ts.isBindingElement(part) || ts.isVariableDeclaration(part)) && ts.isIdentifier(part.name)) boundNames.add(part.name.text);
-          if (ts.isIdentifier(part) && /^SOURCE_(?:TEXT|BROWSER_TEXT|TEMPLATE)_/.test(part.text)) references.add(part.text);
+          if (ts.isIdentifier(part) && /^SOURCE_(?:TEXT|BROWSER_TEXT|TEMPLATE)_/.test(part.text) && !(ts.isPropertyAccessExpression(part.parent) && part.parent.name === part)) references.add(part.text);
           ts.forEachChild(part, collect);
         };
         collect(callback.body);
         for (const name of references) assert.ok(boundNames.has(name), `${file}: serialized callback captures ${name}`);
         checkedCallbacks++;
-        if (callback.body.getText(tree).includes("SOURCE_TEXT_ARIA_SELECTED") && callback.body.getText(tree).includes(".some(")) { selectionCallback = callback; selectionTree = tree; }
+        if (callback.body.getText(tree).includes("SOURCE_TEXT_ARIA_SELECTED") && callback.body.getText(tree).includes(".some(")) {
+          selectionCallback = callback;
+          selectionTree = tree;
+        }
       }
     }
     ts.forEachChild(node, visit);
@@ -97,6 +97,6 @@ const compiledCallback = ts.transpileModule(`module.exports = (${selectionCallba
 const context = { module: { exports: undefined as unknown } };
 vm.runInNewContext(compiledCallback, context);
 const callback = context.module.exports as (element: { getAttribute: (name: string) => string | null }, payload: { payload: undefined; texts: typeof sourceTexts }) => boolean;
-assert.equal(callback({ getAttribute: (name) => name === "aria-selected" ? "true" : null }, { payload: undefined, texts: sourceTexts }), true);
+assert.equal(callback({ getAttribute: (name) => (name === "aria-selected" ? "true" : null) }, { payload: undefined, texts: sourceTexts }), true);
 assert.equal(callback({ getAttribute: () => null }, { payload: undefined, texts: sourceTexts }), false);
 process.stdout.write(`Shared file reads, localized UI, errors and ${checkedCallbacks} serialized browser callbacks passed\n`);

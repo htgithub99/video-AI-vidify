@@ -79,7 +79,7 @@ import { nativeProxyChromeArgs, type NativeProxyBrowserFactory, type NativeProxy
 import { ProxyService } from "../src/server/services/proxyService";
 import { transformProxySecret } from "../src/server/services/proxySecretStore";
 import { parseProxyImport, proxyServer, validateProxyInput } from "../src/lib/proxyValidation";
-import { emptyProxyWorkspace, nextProxyRevision, restoreProxyWorkspace, workspaceNeedsRecovery } from "../src/lib/proxyWorkspace";
+import { emptyProxyWorkspace, nextProxyRevision, restoreProxyWorkspace, workspaceNeedsRecovery } from "../src/features/proxy/lib/proxyWorkspace";
 const directory = await mkdtemp(path.join(os.tmpdir(), SOURCE_TEXT_VIDIFY_PROXY_TEST));
 const secret = SOURCE_TEXT_TEST_PASSWORD_123;
 const protectedValue = await transformProxySecret(secret);
@@ -104,10 +104,7 @@ const engine = {
   ...chromium,
   launch: async (options: LaunchOptions) => {
     checkLaunches.push(options);
-    return {
-      newContext: async () => ({ newPage: async () => ({ goto: async () => ({ ok: () => true, status: () => 200, json: async () => ({ ip: SOURCE_TEXT_127_0_0_2 }) }) }) }),
-      close: async () => {},
-    };
+    return { newContext: async () => ({ newPage: async () => ({ goto: async () => ({ ok: () => true, status: () => 200, json: async () => ({ ip: SOURCE_TEXT_127_0_0_2 }) }) }) }), close: async () => {} };
   },
 } as unknown as Pick<typeof chromium, "launch" | "launchPersistentContext">;
 const openBrowser: NativeProxyBrowserFactory = async (profilePath, proxy, url, diagnostics) => {

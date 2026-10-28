@@ -33,10 +33,7 @@ const bundled = await build({
       name: VT.QA_FIXTURES,
       setup(builder) {
         builder.onLoad({ filter: VT.MOTION_RENDER_MODULE_RE }, () => ({ contents: RT.EXPORT_CONST_OPENSTILLSESSION_ASYNC_CLOSE_ASYNC_RENDER_ASYNC_SPEC_PICK, loader: VT.TS }));
-        builder.onLoad({ filter: VT.MOTION_ASSET_LIBRARY_MODULE_RE }, () => ({
-          contents: VT.EXPORT_CONST_ENSUREMOTIONLIBRARY_ASYNC_EXPORT_CONST_ENSURELI,
-          loader: VT.TS,
-        }));
+        builder.onLoad({ filter: VT.MOTION_ASSET_LIBRARY_MODULE_RE }, () => ({ contents: VT.EXPORT_CONST_ENSUREMOTIONLIBRARY_ASYNC_EXPORT_CONST_ENSURELI, loader: VT.TS }));
       },
     },
   ],

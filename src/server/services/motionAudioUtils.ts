@@ -1,19 +1,21 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { stringifyJson } from "../../lib/jsonStringify.js";
 import { createHash } from "crypto";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "node:fs";
 import { MOTION_VOICE_QUALITY as Q } from "../../constants/motionVoice.js";
-export const motionAudioHash = (value: unknown): string => createHash(MR.MOTION_TEXT_SHA256).update(JSON.stringify(value)).digest(MR.MOTION_TEXT_HEX).slice(0, 32);
+export const motionAudioHash = (value: unknown): string => createHash(MR.MOTION_TEXT_SHA256).update(stringifyJson(value)).digest(MR.MOTION_TEXT_HEX).slice(0, 32);
 const pcmInfo = (read: (start: number, length: number) => Buffer, size: number) => {
   if (size < 44) throw new Error(Q.INVALID);
   const header = read(0, 12);
   const end = header.readUInt32LE(4) + 8;
-  if (header.toString("ascii", 0, 4) !== MR.MOTION_TEXT_RIFF || header.toString("ascii", 8, 12) !== MR.MOTION_TEXT_WAVE || end > size || end < 44) throw new Error(Q.INVALID);
+  if (header.toString(RT_SERVER.ASCII, 0, 4) !== MR.MOTION_TEXT_RIFF || header.toString(RT_SERVER.ASCII, 8, 12) !== MR.MOTION_TEXT_WAVE || end > size || end < 44) throw new Error(Q.INVALID);
   let offset = 12,
     format: { channels: number; sampleRate: number; bits: number; align: number } | undefined,
     data: { start: number; length: number } | undefined;
   while (offset + 8 <= end) {
     const chunk = read(offset, 8);
-    const key = chunk.toString("ascii", 0, 4),
+    const key = chunk.toString(RT_SERVER.ASCII, 0, 4),
       length = chunk.readUInt32LE(4),
       start = offset + 8;
     if (start + length + (length % 2) > end) throw new Error(Q.INVALID);
@@ -38,7 +40,7 @@ const pcmInfo = (read: (start: number, length: number) => Buffer, size: number) 
 };
 export const motionWavData = (wav: Buffer) => pcmInfo((start, length) => wav.subarray(start, start + length), wav.length);
 export const motionWavFileInfo = (file: string) => {
-  const handle = fs.openSync(file, "r");
+  const handle = fs.openSync(file, RT_SERVER.R);
   try {
     return pcmInfo((start, length) => {
       const buffer = Buffer.alloc(length);

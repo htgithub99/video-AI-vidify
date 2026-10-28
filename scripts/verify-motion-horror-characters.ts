@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
-import { horrorCharacterAsset, horrorCharacterFrame, horrorCharacterSupported } from "../src/lib/motionHorrorCharacter.js";
+import { horrorCharacterAsset, horrorCharacterFrame, horrorCharacterSupported } from "../src/features/motion/lib/motionHorrorCharacter.js";
 import { motionVectorCutoutIssue } from "../src/lib/motionVectorCutout.js";
 import { createVectorCutoutInspector } from "../src/server/services/remotion/vectorCutoutInspector.js";
 import { layoutRemotionNodes } from "../src/lib/motionRemotion.js";

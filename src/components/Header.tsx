@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_UI } from "../constants/runtime/ui.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import {
   SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER,
   SOURCE_TEXT_BG_AMBER_50_TEXT_AMBER_600,
@@ -56,12 +58,12 @@ const QuotaBadge: FC<QuotaBadgeProps> = ({ icon, usage, limit, isUnlimited, colo
   const formattedUsage = formatNumber ? usage.toLocaleString() : usage;
   const formattedLimit = isUnlimited ? UIConstants.INFINITY : formatNumber ? limit.toLocaleString() : limit;
   return (
-    <div className={cn("header-control-item hidden lg:flex items-center gap-2 bg-slate-955/60 border border-slate-800/80 rounded-xl px-2.5 shadow-sm transition-all hover:border-slate-700 hover:bg-slate-900/60 cursor-default shrink-0")} title={tooltip}>
+    <div className={cn(RT_UI.HEADER_CONTROL_ITEM_HIDDEN_LG_FLEX_ITEMS_CENTER_GAP_2)} title={tooltip}>
       {icon}
-      <span className={cn("text-[11px] font-bold text-slate-400 font-mono flex items-center")}>
-        <span className={cn(colorClass, "font-black")}>{formattedUsage}</span>
-        <span className={cn("text-slate-600 mx-1")}>{SOURCE_TEXT_SYMBOL}</span>
-        <span className={cn("text-slate-300")}>{formattedLimit}</span>
+      <span className={cn(RT_UI.TEXT_11PX_FONT_BOLD_TEXT_SLATE_400_FONT_MONO_FLEX)}>
+        <span className={cn(colorClass, RT_UI.FONT_BLACK)}>{formattedUsage}</span>
+        <span className={cn(RT_SHARED.TEXT_SLATE_600_MX_1)}>{SOURCE_TEXT_SYMBOL}</span>
+        <span className={cn(RT_UI.TEXT_SLATE_300)}>{formattedLimit}</span>
       </span>
     </div>
   );
@@ -92,30 +94,9 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
   const isDark = _.isEqual(theme, AppTheme.DARK);
   const planningTexts = CINEMATIC_SETUP_TEXTS[currentLang as Lang] || CINEMATIC_SETUP_TEXTS.vi;
   const roomActions = [
-    {
-      provider: AiPlanningFallbackProvider.GeminiChat,
-      name: planningTexts.GEMINI_CHAT_OPTION,
-      label: planningTexts.CLEAR_GEMINI_ROOMS,
-      subtext: planningTexts.GEMINI_BROWSER,
-      badgeStyle: isDark ? SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE : SOURCE_TEXT_BG_BLUE_50_TEXT_BLUE_600,
-      icon: <Sparkles className={cn("w-3.5 h-3.5")} />,
-    },
-    {
-      provider: AiPlanningFallbackProvider.GrokChat,
-      name: planningTexts.GROK_CHAT_OPTION,
-      label: planningTexts.CLEAR_GROK_ROOMS,
-      subtext: planningTexts.GROK_BROWSER,
-      badgeStyle: isDark ? SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER : SOURCE_TEXT_BG_AMBER_50_TEXT_AMBER_600,
-      icon: <Zap className={cn("w-3.5 h-3.5")} />,
-    },
-    {
-      provider: AiPlanningFallbackProvider.ChatGptUi,
-      name: planningTexts.CHATGPT_UI_OPTION,
-      label: planningTexts.CLEAR_CHATGPT_ROOMS,
-      subtext: planningTexts.CHATGPT_BROWSER,
-      badgeStyle: isDark ? SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD : SOURCE_TEXT_BG_EMERALD_50_TEXT_EMERALD_600,
-      icon: <Bot className={cn("w-3.5 h-3.5")} />,
-    },
+    { provider: AiPlanningFallbackProvider.GeminiChat, name: planningTexts.GEMINI_CHAT_OPTION, label: planningTexts.CLEAR_GEMINI_ROOMS, subtext: planningTexts.GEMINI_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE : SOURCE_TEXT_BG_BLUE_50_TEXT_BLUE_600, icon: <Sparkles className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
+    { provider: AiPlanningFallbackProvider.GrokChat, name: planningTexts.GROK_CHAT_OPTION, label: planningTexts.CLEAR_GROK_ROOMS, subtext: planningTexts.GROK_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER : SOURCE_TEXT_BG_AMBER_50_TEXT_AMBER_600, icon: <Zap className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
+    { provider: AiPlanningFallbackProvider.ChatGptUi, name: planningTexts.CHATGPT_UI_OPTION, label: planningTexts.CLEAR_CHATGPT_ROOMS, subtext: planningTexts.CHATGPT_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD : SOURCE_TEXT_BG_EMERALD_50_TEXT_EMERALD_600, icon: <Bot className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
   ];
   const handleExecuteClearRooms = async () => {
     if (!confirmAction) return;
@@ -147,7 +128,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
   const logoutTooltip = isVietnamese ? SecurityConstants.LOGOUT_KEY_TOOLTIP_VI : SecurityConstants.LOGOUT_KEY_TOOLTIP_EN;
   const logoutLabel = isVietnamese ? SecurityConstants.LOGOUT_KEY_LABEL_VI : SecurityConstants.LOGOUT_KEY_LABEL_EN;
   return (
-    <header className={cn("app-header bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 text-slate-200 sticky top-0 z-50 flex-shrink-0")}>
+    <header className={cn(RT_UI.APP_HEADER_BG_SLATE_950_90_BACKDROP_BLUR_XL_BORDER)}>
       <div className={STUDIO_UI.APP_HEADER_ROW}>
         <div className={STUDIO_UI.APP_HEADER_BRAND}>
           {onToggleMobileMenu && (
@@ -157,10 +138,10 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
           )}
           <StudioIcon icon={Video} />
           <div className={STUDIO_UI.APP_HEADER_TITLE}>
-            <h1 className={cn("text-sm sm:text-base font-extrabold text-slate-100 flex items-center gap-2 font-logo truncate")}>
-              <span className={cn("truncate")}>{t.appTitle}</span>
-              <span className={cn("hidden sm:flex text-[9px] bg-rose-500/10 text-rose-500 font-bold px-2 py-0.5 rounded-full border border-rose-500/20 items-center gap-1 shrink-0")}>
-                <Sparkles className={cn("w-2.5 h-2.5 text-rose-400")} />
+            <h1 className={cn(RT_UI.TEXT_SM_SM_TEXT_BASE_FONT_EXTRABOLD_TEXT_SLATE_100)}>
+              <span className={cn(RT_SHARED.TRUNCATE)}>{t.appTitle}</span>
+              <span className={cn(RT_UI.HIDDEN_SM_FLEX_TEXT_9PX_BG_ROSE_500_10_TEXT)}>
+                <Sparkles className={cn(RT_UI.W_2_5_H_2_5_TEXT_ROSE_400)} />
                 {t.v2_4_PRO}
               </span>
             </h1>
@@ -173,51 +154,46 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
             onClick={() => setIsActivityOpen(true)}
             title={WORKFLOW_ACTIVITY_TEXT[isVietnamese ? WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.vi : WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.en].title}
             aria-label={WORKFLOW_ACTIVITY_TEXT[isVietnamese ? WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.vi : WORKFLOW_ACTIVITY_CONFIG.LANGUAGES.en].title}
-            className={cn("header-control-item w-8 min-w-[32px] p-0 rounded-xl flex items-center justify-center bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white")}>
-            <ClipboardList className={cn("w-4 h-4")} />
+            className={cn(RT_UI.HEADER_CONTROL_ITEM_W_8_MIN_W_32PX_P_0)}>
+            <ClipboardList className={cn(RT_SHARED.W_4_H_4)} />
           </Button>
-          <div className={cn("header-control-item hidden xl:flex items-center gap-2 px-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20")}>
-            <div className={cn("w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]")} />
-            <span className={cn("text-[9px] uppercase font-bold text-emerald-400 font-mono tracking-wider")}>{t.Live_Sync}</span>
+          <div className={cn(RT_UI.HEADER_CONTROL_ITEM_HIDDEN_XL_FLEX_ITEMS_CENTER_GAP_2)}>
+            <div className={cn(RT_UI.W_1_5_H_1_5_ROUNDED_FULL_BG_EMERALD)} />
+            <span className={cn(RT_UI.TEXT_9PX_UPPERCASE_FONT_BOLD_TEXT_EMERALD_400_FONT_MONO)}>{t.Live_Sync}</span>
           </div>
-          <QuotaBadge icon={<Video className={cn("w-3.5 h-3.5 text-blue-400")} />} usage={usageVideo} limit={limitVideo} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_BLUE_400} tooltip={quotaText.VIDEO_TOOLTIP} />
-          <QuotaBadge icon={<ImageIcon className={cn("w-3.5 h-3.5 text-emerald-400")} />} usage={usageImage} limit={limitImage} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_EMERALD_400} tooltip={quotaText.IMAGE_TOOLTIP} />
-          <QuotaBadge icon={<Mic className={cn("w-3.5 h-3.5 text-amber-400")} />} usage={usageVoice} limit={limitVoice} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_AMBER_400} tooltip={quotaText.VOICE_TOOLTIP} formatNumber />
-          <div className={cn("relative shrink-0")} ref={dropdownRef}>
+          <QuotaBadge icon={<Video className={cn(RT_SHARED.W_3_5_H_3_5_TEXT_BLUE_400)} />} usage={usageVideo} limit={limitVideo} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_BLUE_400} tooltip={quotaText.VIDEO_TOOLTIP} />
+          <QuotaBadge icon={<ImageIcon className={cn(RT_UI.W_3_5_H_3_5_TEXT_EMERALD_400)} />} usage={usageImage} limit={limitImage} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_EMERALD_400} tooltip={quotaText.IMAGE_TOOLTIP} />
+          <QuotaBadge icon={<Mic className={cn(RT_SHARED.W_3_5_H_3_5_TEXT_AMBER_400)} />} usage={usageVoice} limit={limitVoice} isUnlimited={isUnlimited} colorClass={SOURCE_TEXT_TEXT_AMBER_400} tooltip={quotaText.VOICE_TOOLTIP} formatNumber />
+          <div className={cn(RT_UI.RELATIVE_SHRINK_0)} ref={dropdownRef}>
             <Button
               variant={SOURCE_TEXT_UNSTYLED}
               type={SOURCE_TEXT_BUTTON}
               onClick={() => setIsDropdownOpen((prev) => !prev)}
-              className={cn("header-control-item px-2.5 rounded-xl inline-flex items-center gap-1.5 text-[11px] font-bold cursor-pointer shadow-sm select-none", {
-                "bg-slate-900/80 border border-slate-800 text-slate-200": isDark,
-                "bg-white/90 border border-stone-200 text-zinc-700": !isDark,
-                "border-slate-700 bg-slate-850 text-white": isDropdownOpen && isDark,
-                "border-stone-300 bg-stone-50 text-zinc-900": isDropdownOpen && !isDark,
-              })}
+              className={cn(RT_UI.HEADER_CONTROL_ITEM_PX_2_5_ROUNDED_XL_INLINE_FLEX, { "bg-slate-900/80 border border-slate-800 text-slate-200": isDark, "bg-white/90 border border-stone-200 text-zinc-700": !isDark, "border-slate-700 bg-slate-850 text-white": isDropdownOpen && isDark, "border-stone-300 bg-stone-50 text-zinc-900": isDropdownOpen && !isDark })}
               title={planningTexts.CLEAR_AI_SESSIONS}
               aria-label={planningTexts.CLEAR_AI_SESSIONS}
               aria-expanded={isDropdownOpen}>
-              <Trash2 className={cn("w-3.5 h-3.5 shrink-0 text-rose-500")} />
-              <span className={cn("leading-none hidden sm:inline")}>{planningTexts.CLEAR_AI_SHORT}</span>
-              <ChevronDown className={cn("w-3 h-3 shrink-0 text-slate-400 transition-transform duration-150", isDropdownOpen && "rotate-180")} />
+              <Trash2 className={cn(RT_UI.W_3_5_H_3_5_SHRINK_0_TEXT_ROSE)} />
+              <span className={cn(RT_UI.LEADING_NONE_HIDDEN_SM_INLINE)}>{planningTexts.CLEAR_AI_SHORT}</span>
+              <ChevronDown className={cn(RT_UI.W_3_H_3_SHRINK_0_TEXT_SLATE_400_TRANSITION, isDropdownOpen && RT_UI.ROTATE_180)} />
             </Button>
             {isDropdownOpen && (
-              <div className={cn("absolute right-0 top-full mt-2 w-64 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl flex flex-col gap-1.5", { "bg-[#181424]/98 border border-[#2c233a] shadow-black/60": isDark, "bg-white/98 border border-zinc-200/90 shadow-xl shadow-zinc-900/10": !isDark })}>
-                <div className={cn("px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-b", { "border-[#2c233a] text-zinc-400": isDark, "border-zinc-100 text-zinc-500": !isDark })}>
-                  <div className={cn("flex items-center gap-1.5")}>
-                    <Trash2 className={cn("w-3 h-3 text-rose-500")} />
+              <div className={cn(RT_UI.ABSOLUTE_RIGHT_0_TOP_FULL_MT_2_W_64_ROUNDED, { "bg-[#181424]/98 border border-[#2c233a] shadow-black/60": isDark, "bg-white/98 border border-zinc-200/90 shadow-xl shadow-zinc-900/10": !isDark })}>
+                <div className={cn(RT_UI.PX_2_5_PY_1_5_TEXT_10PX_FONT_BOLD, { "border-[#2c233a] text-zinc-400": isDark, "border-zinc-100 text-zinc-500": !isDark })}>
+                  <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_1_5)}>
+                    <Trash2 className={cn(RT_UI.W_3_H_3_TEXT_ROSE_500)} />
                     <span className={cn({ "text-zinc-200": isDark, "text-zinc-800": !isDark })}>{planningTexts.CLEAR_AI_MENU}</span>
                   </div>
-                  <span className={cn("text-[9px] font-medium normal-case px-1.5 py-0.5 rounded border", { "text-zinc-400 bg-zinc-800/80 border-zinc-700/50": isDark, "text-zinc-500 bg-zinc-100 border-zinc-200": !isDark })}>{planningTexts.CLOSE_HIDDEN_TABS}</span>
+                  <span className={cn(RT_UI.TEXT_9PX_FONT_MEDIUM_NORMAL_CASE_PX_1_5_PY, { "text-zinc-400 bg-zinc-800/80 border-zinc-700/50": isDark, "text-zinc-500 bg-zinc-100 border-zinc-200": !isDark })}>{planningTexts.CLOSE_HIDDEN_TABS}</span>
                 </div>
-                <div className={cn("flex flex-col gap-1.5 pt-0.5")}>
+                <div className={cn(RT_UI.FLEX_FLEX_COL_GAP_1_5_PT_0_5)}>
                   {_.map(roomActions, (action) => (
-                    <div key={action.provider} className={cn("w-full p-2 rounded-xl flex items-center justify-between gap-2.5 text-left border cursor-default select-none transition-none", { "bg-[#221b2d]/60 border-[#2c233a]/80": isDark, "bg-zinc-50/80 border-zinc-200/70": !isDark })}>
-                      <div className={cn("flex items-center gap-2.5 min-w-0 flex-1")}>
-                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border shadow-xs", action.badgeStyle)}>{action.icon}</div>
-                        <div className={cn("flex flex-col min-w-0")}>
-                          <span className={cn("text-xs font-bold truncate leading-tight", { "text-zinc-100": isDark, "text-zinc-900": !isDark })}>{action.name}</span>
-                          <span className={cn("text-[10px] font-medium truncate leading-tight mt-0.5", { "text-zinc-400": isDark, "text-zinc-500": !isDark })}>{action.subtext}</span>
+                    <div key={action.provider} className={cn(RT_UI.W_FULL_P_2_ROUNDED_XL_FLEX_ITEMS_CENTER_JUSTIFY, { "bg-[#221b2d]/60 border-[#2c233a]/80": isDark, "bg-zinc-50/80 border-zinc-200/70": !isDark })}>
+                      <div className={cn(RT_UI.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0_FLEX)}>
+                        <div className={cn(RT_UI.W_8_H_8_ROUNDED_LG_FLEX_ITEMS_CENTER_JUSTIFY, action.badgeStyle)}>{action.icon}</div>
+                        <div className={cn(RT_UI.FLEX_FLEX_COL_MIN_W_0)}>
+                          <span className={cn(RT_UI.TEXT_XS_FONT_BOLD_TRUNCATE_LEADING_TIGHT, { "text-zinc-100": isDark, "text-zinc-900": !isDark })}>{action.name}</span>
+                          <span className={cn(RT_UI.TEXT_10PX_FONT_MEDIUM_TRUNCATE_LEADING_TIGHT_MT_0_5, { "text-zinc-400": isDark, "text-zinc-500": !isDark })}>{action.subtext}</span>
                         </div>
                       </div>
                       <Button
@@ -229,13 +205,13 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
                           setConfirmAction(action);
                         }}
                         className={cn(
-                          "btn-icon-tiny group/btn w-7 h-7 min-w-[28px] max-w-[28px] min-h-[28px] max-h-[28px] p-0 rounded-lg flex items-center justify-center transition-all duration-150 cursor-pointer shadow-xs active:scale-90 shrink-0",
+                          RT_UI.BTN_ICON_TINY_GROUP_BTN_W_7_H_7_MIN,
                           { "bg-rose-500/15 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/30": isDark, "bg-rose-50 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-200 hover:border-rose-600 hover:shadow-sm hover:shadow-rose-600/20": !isDark },
-                          "disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-rose-500/30",
+                          RT_UI.DISABLED_OPACITY_50_DISABLED_CURSOR_NOT_ALLOWED_FOCUS_OUTLINE_NONE,
                         )}
                         title={planningTexts.CLEAR_ROOM_TOOLTIP.replace(SecurityConstants.PLACEHOLDER_0, action.name)}
                         aria-label={action.label}>
-                        <Trash2 className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover/btn:scale-110")} />
+                        <Trash2 className={cn(RT_UI.W_3_5_H_3_5_SHRINK_0_TRANSITION_TRANSFORM)} />
                       </Button>
                     </div>
                   ))}
@@ -243,20 +219,16 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
               </div>
             )}
           </div>
-          <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={toggleTheme} className={cn("header-control-item w-8 min-w-[32px] max-w-[32px] p-0 text-slate-400 hover:text-slate-100 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-center cursor-pointer shadow-sm")} title={themeTooltip}>
-            {_.isEqual(theme, AppTheme.DARK) ? <Sun className={cn("w-3.5 h-3.5 text-amber-400")} /> : <Moon className={cn("w-3.5 h-3.5 text-sky-400")} />}
+          <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={toggleTheme} className={cn(RT_UI.HEADER_CONTROL_ITEM_W_8_MIN_W_32PX_MAX_W)} title={themeTooltip}>
+            {_.isEqual(theme, AppTheme.DARK) ? <Sun className={cn(RT_SHARED.W_3_5_H_3_5_TEXT_AMBER_400)} /> : <Moon className={cn(RT_UI.W_3_5_H_3_5_TEXT_SKY_400)} />}
           </Button>
-          <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={logoutLicense} className={cn("header-control-item px-2.5 rounded-xl flex items-center gap-1.5 font-bold text-xs bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 cursor-pointer shadow-sm")} title={logoutTooltip}>
-            <LogOut className={cn("w-3.5 h-3.5")} />
-            <span className={cn("hidden lg:inline text-[10px]")}>{logoutLabel}</span>
+          <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={logoutLicense} className={cn(RT_UI.HEADER_CONTROL_ITEM_PX_2_5_ROUNDED_XL_FLEX_ITEMS)} title={logoutTooltip}>
+            <LogOut className={cn(RT_SHARED.W_3_5_H_3_5)} />
+            <span className={cn(RT_UI.HIDDEN_LG_INLINE_TEXT_10PX)}>{logoutLabel}</span>
           </Button>
-          <div className={cn("header-control-container bg-slate-900/80 border border-slate-800 rounded-xl shrink-0 gap-0.5 shadow-inner relative")}>
+          <div className={cn(RT_UI.HEADER_CONTROL_CONTAINER_BG_SLATE_900_80_BORDER_BORDER_SLATE)}>
             {_.map(_.values(AppLanguage), (langCode) => (
-              <Button
-                variant={SOURCE_TEXT_UNSTYLED}
-                key={langCode}
-                onClick={() => setLang(langCode as Lang)}
-                className={cn("btn-lang-item px-2 sm:px-2.5 text-[9px] sm:text-[10px] rounded-lg font-black outline-none flex items-center justify-center relative z-10 cursor-pointer", { "bg-rose-600 text-white shadow-sm shadow-rose-600/30": _.isEqual(currentLang, langCode), "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60": !_.isEqual(currentLang, langCode) })}>
+              <Button variant={SOURCE_TEXT_UNSTYLED} key={langCode} onClick={() => setLang(langCode as Lang)} className={cn(RT_UI.BTN_LANG_ITEM_PX_2_SM_PX_2_5_TEXT, { "bg-rose-600 text-white shadow-sm shadow-rose-600/30": _.isEqual(currentLang, langCode), "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60": !_.isEqual(currentLang, langCode) })}>
                 {langCode.toUpperCase()}
               </Button>
             ))}
@@ -271,22 +243,22 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
         }}
         maxWidth={SOURCE_TEXT_MAX_W_MD}
         title={
-          <div className={cn("flex items-center gap-2 uppercase tracking-wider font-extrabold")}>
-            <Trash2 className={cn("w-4 h-4 text-rose-500")} />
-            <span className={cn("uppercase font-extrabold tracking-wider")}>{planningTexts.CONFIRM_ROOM_CLEANUP}</span>
+          <div className={cn(RT_UI.FLEX_ITEMS_CENTER_GAP_2_UPPERCASE_TRACKING_WIDER_FONT_EXTRABOLD)}>
+            <Trash2 className={cn(RT_SHARED.W_4_H_4_TEXT_ROSE_500)} />
+            <span className={cn(RT_UI.UPPERCASE_FONT_EXTRABOLD_TRACKING_WIDER)}>{planningTexts.CONFIRM_ROOM_CLEANUP}</span>
           </div>
         }>
-        <div className={cn("space-y-4 pt-1")}>
-          <p className={cn("text-slate-700 dark:text-slate-200 text-sm font-medium leading-relaxed")}>{planningTexts.CLEAR_ROOM_CONFIRM.replace(SecurityConstants.PLACEHOLDER_0, confirmAction?.name || REFACTOR_CONSTANTS.VD_EMPTY_STRING)}</p>
-          <div className={cn("p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-semibold leading-relaxed flex items-start gap-2 shadow-sm")}>
-            <AlertTriangle className={cn("w-4 h-4 shrink-0 text-amber-500 mt-0.5")} />
+        <div className={cn(RT_UI.SPACE_Y_4_PT_1)}>
+          <p className={cn(RT_UI.TEXT_SLATE_700_DARK_TEXT_SLATE_200_TEXT_SM_FONT)}>{planningTexts.CLEAR_ROOM_CONFIRM.replace(SecurityConstants.PLACEHOLDER_0, confirmAction?.name || REFACTOR_CONSTANTS.VD_EMPTY_STRING)}</p>
+          <div className={cn(RT_UI.P_3_5_ROUNDED_2XL_BG_ROSE_500_10_BORDER)}>
+            <AlertTriangle className={cn(RT_UI.W_4_H_4_SHRINK_0_TEXT_AMBER_500_MT)} />
             <span>{planningTexts.CLEAR_ROOM_RESOURCE_NOTICE}</span>
           </div>
-          <div className={cn("flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800")}>
-            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} disabled={isClearing || !_.isNull(clearingProvider)} onClick={() => setConfirmAction(null)} className={cn("px-5 py-2.5 text-xs font-bold rounded-xl")}>
+          <div className={cn(RT_UI.FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_3_PT_4_BORDER)}>
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_GHOST} disabled={isClearing || !_.isNull(clearingProvider)} onClick={() => setConfirmAction(null)} className={cn(RT_UI.PX_5_PY_2_5_TEXT_XS_FONT_BOLD_ROUNDED)}>
               {t.cancel || planningTexts.CANCEL_FALLBACK}
             </Button>
-            <Button variant={REFACTOR_CONSTANTS.VARIANT_DANGER} isLoading={isClearing || !_.isNull(clearingProvider)} onClick={handleExecuteClearRooms} className={cn("px-6 py-2.5 text-xs font-bold rounded-xl shadow-md shadow-rose-600/20")}>
+            <Button variant={REFACTOR_CONSTANTS.VARIANT_DANGER} isLoading={isClearing || !_.isNull(clearingProvider)} onClick={handleExecuteClearRooms} className={cn(RT_UI.PX_6_PY_2_5_TEXT_XS_FONT_BOLD_ROUNDED)}>
               {t.delete || planningTexts.DELETE_NOW_FALLBACK}
             </Button>
           </div>

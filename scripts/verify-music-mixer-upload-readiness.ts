@@ -90,13 +90,7 @@ const sandbox = vm.createContext({
   ...sourceTexts,
   MOTION_TEMPLATE_SYMBOL_26,
   CHAT_UI_AUTOMATION_MESSAGES,
-  CINEMATIC_CHAT_PLANNING_CONFIG: {
-    ...CINEMATIC_CHAT_PLANNING_CONFIG,
-    PAGE_READY_TIMEOUT_MS: 500,
-    ATTACHMENT_READY_TIMEOUT_MS: 650,
-    SUBMISSION_POLL_MS: 10,
-    PROMPT_SUBMIT_SETTLE_MS: 0,
-  },
+  CINEMATIC_CHAT_PLANNING_CONFIG: { ...CINEMATIC_CHAT_PLANNING_CONFIG, PAGE_READY_TIMEOUT_MS: 500, ATTACHMENT_READY_TIMEOUT_MS: 650, SUBMISSION_POLL_MS: 10, PROMPT_SUBMIT_SETTLE_MS: 0 },
   pendingRoomResponses: new Map(),
   throwIfPlanningCancelled: (signal?: AbortSignal) => signal?.throwIfAborted(),
   normalizeRoomPrompt: (value: string) => value,
@@ -115,12 +109,7 @@ const sandbox = vm.createContext({
   waitForStableResponse: async () => SOURCE_TEXT_DONE,
   waitForMusicMixerUploads: (input: any, files: any, timeout: number, signal?: AbortSignal) => waitForMusicMixerUploads(input, files, timeout, signal, 20, { maxWaitMs: timeout, stallTimeoutMs: timeout }),
 });
-vm.runInContext(
-  ts.transpileModule(source.slice(start, end) + SOURCE_TEXT_GLOBALTHIS_SUBMIT_SUBMITPROMPT, {
-    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-  }).outputText,
-  sandbox,
-);
+vm.runInContext(ts.transpileModule(source.slice(start, end) + SOURCE_TEXT_GLOBALTHIS_SUBMIT_SUBMITPROMPT, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText, sandbox);
 const browser = await chromium.launch({ channel: SOURCE_TEXT_CHROME, headless: true });
 try {
   const page = await browser.newPage();

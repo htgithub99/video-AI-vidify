@@ -54,11 +54,7 @@ export const SCRIPT_CLICHE_PATTERNS = {
   TRAILER_METAPHOR: /(?:sợi dây vô hình|con tốt(?: thí)?|lật ngược ván cờ|sự thật phơi bày|cái giá phải trả|nhát dao|lõi của hệ thống)/giu,
   SUSPENSE_TEMPLATE: /bạn tưởng[^.!?…]{0,120}(?:nhưng|hóa ra)/giu,
 } as const;
-export const TIME_PARSING_REGEXES = {
-  HOURS: /(\d+(?:\.\d+)?)\s*(?:h\b|hour|hours|giờ)/i,
-  MINUTES: /(\d+(?:\.\d+)?)\s*(?:m\b|min\b|minute|minutes|phút)/i,
-  SECONDS: /\d+(?:\.\d+)?\s*(?:s\b|sec\b|secs\b|second|seconds|giây)/i,
-} as const;
+export const TIME_PARSING_REGEXES = { HOURS: /(\d+(?:\.\d+)?)\s*(?:h\b|hour|hours|giờ)/i, MINUTES: /(\d+(?:\.\d+)?)\s*(?:m\b|min\b|minute|minutes|phút)/i, SECONDS: /\d+(?:\.\d+)?\s*(?:s\b|sec\b|secs\b|second|seconds|giây)/i } as const;
 export const API_PROVIDER_ADVICE_PATTERN = /api\s*key|groq|cerebras|kh[oó]a/i;
 export const HTTP_URL_REGEX = /^https?:\/\//i;
 export const ANSI_ESCAPE_SEQUENCE_REGEX = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");

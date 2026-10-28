@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { assignRemotionSpace, remotionSpaceGuide, normalizeRemotionSpacePose } from "../src/lib/motionRemotionSpace.js";
+import { assignRemotionSpace, remotionSpaceGuide, normalizeRemotionSpacePose } from "./legacy-motion-remotion/space.js";
 import { layoutRemotionNodes } from "../src/lib/motionRemotion.js";
 import { remotionPoint, remotionVisibleRect } from "../src/lib/motionRemotionGeometry.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { MOTION_REMOTION_SPACE as C } from "../src/constants/motionRemotionSpace.js";
-import { remotionClosedCoffin, remotionClosedCoffinAsset, remotionSimpleInterior, remotionInteriorAsset } from "../src/lib/motionRemotionStructure.js";
+import { remotionClosedCoffin, remotionClosedCoffinAsset, remotionSimpleInterior, remotionInteriorAsset } from "./legacy-motion-remotion/structure.js";
 import { remotionDetailNodes } from "../src/lib/motionRemotionVisibility.js";
 import type { MotionRemotionNode, MotionRemotionScene, MotionVectorAsset } from "../src/types/motionVisual.js";
 const node = (id: string, kind: MotionRemotionNode["kind"], description: string, extra: Partial<MotionRemotionNode> = {}): MotionRemotionNode => ({ id, kind, description, pose: "standing", slot: "center", evidence: "still here", assetKey: id, ...extra });
@@ -28,7 +28,7 @@ assert.ok(first.nodes[0].layoutY! < first.nodes.at(-1)!.layoutY!);
 const space = remotionSpaceGuide([first, second]);
 assert.equal(space.regions.floor.y, C.HORIZON);
 assert.ok(space.regions.doorway.y + space.regions.doorway.height < C.FRONT_GROUND);
-assert.ok(Math.abs((space.regions.doorway.width * 16 / 9) / space.regions.doorway.height - 0.58) < 0.001);
+assert.ok(Math.abs((space.regions.doorway.width * 16) / 9 / space.regions.doorway.height - 0.58) < 0.001);
 const portraitSpace = remotionSpaceGuide([first], "9:16");
 assert.ok(portraitSpace.regions.doorway.width > space.regions.doorway.width);
 const entrances = structuredClone(first);
@@ -94,7 +94,12 @@ assert.equal(structuredRoom.backgroundRevision, C.BACKGROUND_REVISION);
 assert.deepEqual(structuredRoom.regions?.doorway, space.regions.doorway);
 assert.ok(!structuredRoom.svg.includes("coffin"));
 const detail = { ...seatedScene, view: "detail" as const, focus: ["actor"], startFrame: 0, endFrame: 30, nodes: [...seatedPlaced, { ...coffin, id: "unrelated-coffin" }] };
-assert.deepEqual(remotionDetailNodes(detail).map((node) => node.id).sort(), ["actor", "mat"]);
+assert.deepEqual(
+  remotionDetailNodes(detail)
+    .map((node) => node.id)
+    .sort(),
+  ["actor", "mat"],
+);
 const withShoes = layoutRemotionNodes([...first.nodes, footwear], { ...assets, sandals: vector("sandals", 300, 120) }, 1920, 1080, background);
 assert.ok(remotionVisibleRect(withShoes.find((n) => n.id === "sandals")!, vector("sandals", 300, 120)).width < 150);
 const edge = structuredClone(first.nodes);
@@ -102,15 +107,5 @@ edge.find((n) => n.id === "adult")!.layoutX = 0.995;
 const clamped = layoutRemotionNodes(edge, assets, 1920, 1080, background);
 assert.equal(clamped.find((n) => n.id === "coffin")!.height, coffin.height);
 assert.equal(clamped.find((n) => n.id === "adult")!.height, adult.height);
-assert.ok(
-  remotionVisibleRect(
-    clamped.find((n) => n.id === "adult")!,
-    assets.adult,
-  ).x +
-    remotionVisibleRect(
-      clamped.find((n) => n.id === "adult")!,
-      assets.adult,
-    ).width <=
-    1920.001,
-);
+assert.ok(remotionVisibleRect(clamped.find((n) => n.id === "adult")!, assets.adult).x + remotionVisibleRect(clamped.find((n) => n.id === "adult")!, assets.adult).width <= 1920.001);
 console.log("Space verified: shared camera/socket guide, stable people across cuts, foreground/background size and depth, coffin footprint, local bounds correction without shrinking the room. No live AI or production run.");

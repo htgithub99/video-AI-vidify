@@ -6,7 +6,7 @@ export const MOTION_CAPTCHA_VERIFICATION = {
   PAGE_URL: "http://motion-captcha.test/",
   HTML: '<button id="unlock">Start</button>',
   BUTTON: "#unlock",
-  ENTRY: "src/lib/motionAlertBeep.ts",
+  ENTRY: "src/features/motion/lib/motionAlertBeep.ts",
   GLOBAL: "MotionCaptchaAudio",
   NAME_SHIM: "window.__name = (target) => target;",
   AUTOPLAY_POLICY: "--autoplay-policy=document-user-activation-required",

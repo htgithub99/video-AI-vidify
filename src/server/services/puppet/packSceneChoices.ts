@@ -1,7 +1,6 @@
 import _ from "lodash";
 import { MOTION_PROGRESS as PROGRESS } from "../../../constants/motionProgress.js";
 import { motionSceneProgress } from "../../../lib/motionSceneProgress.js";
-
 import { MOTION_PACK_SELECTION as K } from "../../../constants/motionPackSelection.js";
 import { PUPPET as P, PUPPET_TYPES as T } from "../../../constants/motionPuppet.js";
 import { PA } from "../../../constants/motionPuppetAssets.js";
@@ -10,7 +9,6 @@ import { puppetObjectClass } from "../../../lib/motionPuppetAssets.js";
 import { puppetSpotGeometryValid } from "../../../lib/motionPlacement.js";
 import { puppetSourceQuote } from "../../../lib/motionPuppetValues.js";
 import type { PuppetCharacter, PuppetFrame, PuppetGen, PuppetProp, PuppetRead, PuppetStylePack } from "../../../types/motionPuppet.js";
-
 import { choosePuppetBlocking } from "./blocking.js";
 import { fitPuppetRead, puppetReadObjects, readFrame } from "./director.js";
 import { layoutPuppetFrame, puppetSetMissingRequirements, puppetSpots } from "./layout.js";
@@ -18,7 +16,6 @@ import { puppetSelectionBindings, puppetSelectionFrameKey, puppetSelectionHash }
 import { readPuppet, puppetSetForLight } from "./kitLibrary.js";
 import type { PuppetSet } from "../../../types/motionPuppet.js";
 import type { PuppetRunOptions } from "./stylePack.js";
-
 import { puppetFramePlacementIssues } from "./packPlacement.js";
 import { puppetPropAssignments, puppetPropAssignmentsValid } from "./propPlacement.js";
 import { puppetSpatialAssignmentsValid, puppetActorSpotCandidates, puppetSpatialAnchorDistance } from "./spatialPlacement.js";
@@ -60,7 +57,6 @@ export const scorePuppetSceneChoice = (frame: PuppetFrame, read: PuppetRead, pre
     (previous?.shot === frame.shot ? K.SCORE.SHOT_CONTINUITY : 0)
   );
 };
-
 export const createPuppetSceneChoices = (line: PuppetLine, read: PuppetRead, gen: PuppetGen, style: PuppetStylePack, previous?: PuppetFrame, stage?: PuppetSet): PuppetSceneChoice[] => {
   const fail = (): never => {
     throw new Error(K.NO_CHOICES(line.key));
@@ -186,7 +182,6 @@ export const createPuppetSceneChoices = (line: PuppetLine, read: PuppetRead, gen
   if (!choices.length) return fail();
   return choices.sort((a, b) => b.score! - a.score! || a.choiceId.localeCompare(b.choiceId)).slice(0, K.CHOICE_LIMIT);
 };
-
 export const composePuppetPackLines = async (todo: PuppetLine[], all: PuppetLine[], gen: PuppetGen, style: PuppetStylePack, _notes: Record<string, string>, o: PuppetRunOptions, onAccepted?: () => void): Promise<Record<string, PuppetFrame>> => {
   const frames: Record<string, PuppetFrame> = {};
   const provisional: Record<string, PuppetFrame> = {};

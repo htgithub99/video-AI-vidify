@@ -13,10 +13,7 @@ import { CINEMATIC_SETUP_TEXTS } from "../../constants/texts";
 import { Lang } from "../../lib/lang";
 import { cn } from "../../lib/utils";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types";
-const CHROME_WINDOW_MODE = {
-  HIDDEN: SOURCE_TEXT_HIDDEN,
-  VISIBLE: SOURCE_TEXT_VISIBLE,
-} as const;
+const CHROME_WINDOW_MODE = { HIDDEN: SOURCE_TEXT_HIDDEN, VISIBLE: SOURCE_TEXT_VISIBLE } as const;
 const SELECT_BASE_CLASSNAME = SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE;
 const FIELD_BASE_CLASSNAME = SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2;
 const PlanningSelectField = ({ title, icon: Icon, iconClassName, value, onChange, disabled = false, fieldDisabled = false, children }: { title: string; icon: typeof Bot; iconClassName: string; value: string; onChange: React.ChangeEventHandler<HTMLSelectElement>; disabled?: boolean; fieldDisabled?: boolean; children: React.ReactNode }) => (
@@ -40,7 +37,17 @@ const PlanningLevelField = ({ title, defaultLabel, value, onChange, disabled, op
     ))}
   </PlanningSelectField>
 );
-interface PlanningTexts { readonly GEMINI_CHAT_OPTION: string; readonly GROK_CHAT_OPTION: string; readonly CHATGPT_UI_OPTION: string; readonly CLAUDE_CHAT_OPTION: string; readonly DEEPSEEK_CHAT_OPTION: string; readonly PLANNING_API_ONLY: string; readonly PLANNING_HYBRID: string; readonly PLANNING_CHROME_HIDDEN: string; readonly PLANNING_CHROME_VISIBLE: string; }
+interface PlanningTexts {
+  readonly GEMINI_CHAT_OPTION: string;
+  readonly GROK_CHAT_OPTION: string;
+  readonly CHATGPT_UI_OPTION: string;
+  readonly CLAUDE_CHAT_OPTION: string;
+  readonly DEEPSEEK_CHAT_OPTION: string;
+  readonly PLANNING_API_ONLY: string;
+  readonly PLANNING_HYBRID: string;
+  readonly PLANNING_CHROME_HIDDEN: string;
+  readonly PLANNING_CHROME_VISIBLE: string;
+}
 interface ChatPlanningSettingsBlockProps {
   provider: AiPlanningFallbackProvider;
   model: AiPlanningChatModel;

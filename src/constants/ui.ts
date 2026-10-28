@@ -7,12 +7,7 @@ export const BUTTON_CLASS_NAME = {
   LOADING_SPINNER: "w-4 h-4 animate-spin shrink-0 app-loading-spinner inline-block text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]",
   LOADING_TEXT: "truncate font-extrabold text-white tracking-wide drop-shadow-sm inline-flex items-center leading-none",
 } as const;
-export const BUTTON_SIZE_CLASS_NAME: Record<ButtonSize, string> = {
-  xs: "px-3 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide",
-  sm: "px-3.5 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide",
-  md: "px-4 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide",
-  lg: "px-5 h-12 min-h-[48px] max-h-[48px] text-sm rounded-xl font-bold",
-};
+export const BUTTON_SIZE_CLASS_NAME: Record<ButtonSize, string> = { xs: "px-3 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide", sm: "px-3.5 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide", md: "px-4 h-10 min-h-[40px] max-h-[40px] text-xs rounded-xl tracking-wide", lg: "px-5 h-12 min-h-[48px] max-h-[48px] text-sm rounded-xl font-bold" };
 export const BUTTON_VARIANT_CLASS_NAME: Record<ButtonVariant, string> = {
   primary: "bg-gradient-to-r from-rose-600 via-rose-500 to-indigo-600 hover:from-rose-500 hover:via-rose-450 hover:to-indigo-500 active:from-rose-700 active:to-indigo-700 text-white border border-rose-400/30 shadow-lg shadow-rose-600/20",
   secondary: "bg-slate-900 hover:bg-slate-850 text-slate-100 border border-slate-800 shadow-sm",
@@ -39,18 +34,7 @@ export const MODAL_CLASS_NAME = {
   DEFAULT_WIDTH: "max-w-2xl",
   WIDTH_PREFIX: "max-w-",
 } as const;
-export const MODAL_SIZE_CLASS_NAME: Record<string, string> = {
-  xs: "max-w-xs",
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-lg",
-  xl: "max-w-xl",
-  "2xl": "max-w-2xl",
-  "3xl": "max-w-3xl",
-  "4xl": "max-w-4xl",
-  "5xl": "max-w-5xl",
-  "6xl": "max-w-6xl",
-};
+export const MODAL_SIZE_CLASS_NAME: Record<string, string> = { xs: "max-w-xs", sm: "max-w-sm", md: "max-w-md", lg: "max-w-lg", xl: "max-w-xl", "2xl": "max-w-2xl", "3xl": "max-w-3xl", "4xl": "max-w-4xl", "5xl": "max-w-5xl", "6xl": "max-w-6xl" };
 export const GROUPED_SELECT_CLASS_NAME = {
   WRAPPER: "space-y-1",
   LABEL: "text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider block",

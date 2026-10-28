@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import type { Page, Response } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../../constants/cinematicConstants.js";
 export const geminiGenerationRejection = (body: string): number[] | null => {
@@ -5,7 +6,7 @@ export const geminiGenerationRejection = (body: string): number[] | null => {
   for (const line of body.split(C.GEMINI_STREAM_LINES)) {
     if (!line.trim().startsWith(C.GEMINI_STREAM_START)) continue;
     try {
-      const parsed = JSON.parse(line);
+      const parsed = parseJson(line);
       if (Array.isArray(parsed)) rows.push(...parsed.filter(Array.isArray));
     } catch {}
   }

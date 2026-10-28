@@ -140,7 +140,7 @@ Mục tiêu đề xuất: phần lớn request động nằm trong khoảng 12.0
 - `src/server/services/puppet/qa.ts:89`: review nhiều khung/ảnh.
 - `src/server/services/motionVoiceDirectionService.ts:78`: casting; `:132`: nhóm thoại.
 - `src/server/services/puppet/sound.ts:30`, `src/server/services/motionSfxLibraryService.ts:124`: âm thanh và catalog đã truy hồi.
-- `src/server/services/motionSeoService.ts:48`, `src/server/services/motionThumbnailService.ts:25`: SEO và thumbnail.
+- `src/server/services/motionSeoService.ts:48`, `src/features/motion/server/services/motionThumbnailService.ts:25`: SEO và thumbnail.
 
 ## Trạng thái
 

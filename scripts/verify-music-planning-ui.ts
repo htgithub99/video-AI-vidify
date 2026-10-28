@@ -7,7 +7,7 @@ import { MUSIC_CREATOR_TEXTS } from "../src/constants/texts.ts";
 import { SUNO_AUTOMATION_CONFIG } from "../src/constants/sunoAutomation.ts";
 const entry = `import React from "react";
 import { createRoot } from "react-dom/client";
-import MusicCreator from "./src/components/MusicCreator.tsx";
+import MusicCreator from "./src/features/music/components/MusicCreator.tsx";
 import { API_ROUTES } from "./src/constants/apiRoutes.ts";
 import { SUNO_AUTOMATION_CONFIG as C } from "./src/constants/sunoAutomation.ts";
 if (!localStorage.getItem("seeded")) { localStorage.setItem(C.MUSIC_CREATOR_STATE_KEY, JSON.stringify({style:"Bolero", outputCount:5, songs:[], songTitleSchemaVersion:C.MUSIC_SONG_TITLE_SCHEMA_VERSION})); localStorage.setItem("seeded","1"); }

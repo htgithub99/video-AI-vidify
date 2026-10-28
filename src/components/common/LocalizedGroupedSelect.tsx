@@ -1,7 +1,7 @@
 import { type LucideIcon } from "lucide-react";
 import _ from "lodash";
 import { type Lang } from "../../lib/lang";
-import { GroupedSelect, type SelectOptionGroup } from "../auto-video/GroupedSelect";
+import { GroupedSelect, type SelectOptionGroup } from "./GroupedSelect";
 export interface LocalizedGroupedSelectProps<T extends string> {
   value: T;
   onChange: (value: T) => void;

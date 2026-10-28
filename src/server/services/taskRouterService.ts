@@ -63,11 +63,7 @@ export const recordModelFailure = (model: string): void => {
   circuitState.set(model, { failures, openedAt });
 };
 export const blockModel = (model: string, cooldownMs: number): void => {
-  circuitState.set(model, {
-    failures: AI_TASK_ROUTER_CONFIG.CIRCUIT_FAILURE_THRESHOLD,
-    openedAt: Date.now(),
-    cooldownMs,
-  });
+  circuitState.set(model, { failures: AI_TASK_ROUTER_CONFIG.CIRCUIT_FAILURE_THRESHOLD, openedAt: Date.now(), cooldownMs });
 };
 export const routeAiTask = (request: AiTaskRequest) => {
   const capability = request.capability || AiTaskCapability.TextPlanning;
@@ -84,17 +80,5 @@ export const routeAiTask = (request: AiTaskRequest) => {
 export const createAiCallMetadata = (route: ReturnType<typeof routeAiTask>, model: string, fallbackIndex: number, latencyMs: number, usage: any): AiCallMetadata => {
   const inputTokens = _.toNumber(usage?.promptTokenCount) || 0;
   const outputTokens = _.toNumber(usage?.candidatesTokenCount) || 0;
-  return {
-    capability: route.capability,
-    provider: SOURCE_TEXT_GOOGLE,
-    model,
-    modelVersion: model,
-    promptVersion: route.promptVersion,
-    estimatedCostUsd: route.estimatedCostUsd,
-    actualCostUsd: estimateCost(inputTokens, outputTokens),
-    latencyMs,
-    inputTokens,
-    outputTokens,
-    fallbackIndex,
-  };
+  return { capability: route.capability, provider: SOURCE_TEXT_GOOGLE, model, modelVersion: model, promptVersion: route.promptVersion, estimatedCostUsd: route.estimatedCostUsd, actualCostUsd: estimateCost(inputTokens, outputTokens), latencyMs, inputTokens, outputTokens, fallbackIndex };
 };

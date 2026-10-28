@@ -3,12 +3,7 @@ import { ConsoleLogType, REFACTOR_CONSTANTS } from "../constants";
 type LogListener = (type: ConsoleLogType, args: unknown[]) => void;
 const listeners = new Set<LogListener>();
 const systemConsole = globalThis.console;
-const nativeConsole = {
-  log: systemConsole.log.bind(systemConsole),
-  warn: systemConsole.warn.bind(systemConsole),
-  error: systemConsole.error.bind(systemConsole),
-  debug: systemConsole.debug.bind(systemConsole),
-};
+const nativeConsole = { log: systemConsole.log.bind(systemConsole), warn: systemConsole.warn.bind(systemConsole), error: systemConsole.error.bind(systemConsole), debug: systemConsole.debug.bind(systemConsole) };
 let isIntercepting = false;
 const notifyListeners = (type: ConsoleLogType, args: unknown[]): void => {
   _.forEach(Array.from(listeners), (listener) => listener(type, args));

@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import _ from "lodash";
 import { MUSIC_PLANNING } from "./musicPlanning.js";
 import { compactMusicSongs, compactMusicSource, musicSeoSongs, compactMusicProfile, musicSettingsSongs } from "../lib/musicPlanning.js";
@@ -471,7 +472,7 @@ ${MUSIC_PLANNING.REVIEW_RULE}
 Song IDs must be song_${String(startIndex).padStart(3, "0")} through song_${String(endIndex).padStart(3, "0")}. Keep every song meaningful, coherent, legally distinct, and different from every song previously created in this room while preserving the shared source/style identity. Each song must include songId, a compelling native-language title, complete performance-ready lyrics of at le\
 ast 300 characters with Suno section labels, specific genre, mood, integer tempoBpm from 40 through 240, structure with at least 3 non-empty sections, and originalityNotes with at least one concrete note explaining how it remains original while fitting the source-derived blueprint. When the inferred language is Vietnamese, write every title and lyric in natural Vietnamese with complete U\
 nicode diacritics; never output Vietnamese titles without tone marks. Never copy lyrics, melodies, hooks, titles, signature phrases or artist identity from the reference. Do not create per-song style prompts or per-song SEO because the user applies the one global style above to the complete list. Required JSON shape: {"artifactType":"${artifactType}","requestId":"${requestId}","songs":[{\
-"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[],"editorialReview":${JSON.stringify(MUSIC_PLANNING.REVIEW_SCHEMA)}}]}`;
+"songId":"song_001","title":"","lyrics":"","genre":"","mood":"","tempoBpm":0,"structure":[],"originalityNotes":[],"editorialReview":${stringifyJson(MUSIC_PLANNING.REVIEW_SCHEMA)}}]}`;
   },
   buildMusicPlanCorrectionPrompt: (batchCount: number, startIndex: number, artifactType: string, batchRequestId: string, issues: string[] = [], styleAnalysis: unknown = null): string =>
     `CORRECTION: The previous batch failed these exact checks: ${issues.join("; ") || "incomplete contract"}. Retry now in this same room as songwriter/composer, lyricist and music producer. ${musicMarketContext(styleAnalysis)} Preserve the stored source-derived language, regional audience, genre grammar, phrasing, instrumentation and production identity while keeping every song original\

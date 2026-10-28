@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
+import { parseJson } from "./jsonStringify.js";
 export const closeMotionJsonContainers = (text: string): string | undefined => {
   const stack: string[] = [];
   let quoted = false;
@@ -8,14 +11,14 @@ export const closeMotionJsonContainers = (text: string): string | undefined => {
     if (quoted) {
       result += token;
       if (escaped) escaped = false;
-      else if (token === "\\") escaped = true;
-      else if (token === '"') quoted = false;
+      else if (token === RT_CORE.SYMBOL) escaped = true;
+      else if (token === RT_CORE.SYMBOL_8A331F) quoted = false;
       continue;
     }
-    if (token === '"') quoted = true;
-    else if (token === "{") stack.push("}");
-    else if (token === "[") stack.push("]");
-    else if (token === "}" || token === "]") {
+    if (token === RT_CORE.SYMBOL_8A331F) quoted = true;
+    else if (token === RT_CORE.SYMBOL_021FB5) stack.push(RT_CORE.SYMBOL_D10B36);
+    else if (token === RT_CORE.SYMBOL_245843) stack.push(RT_SHARED.SYMBOL_CFAE0D);
+    else if (token === RT_CORE.SYMBOL_D10B36 || token === RT_SHARED.SYMBOL_CFAE0D) {
       if (!stack.includes(token)) return undefined;
       while (stack.at(-1) !== token) {
         result += stack.pop();
@@ -27,7 +30,7 @@ export const closeMotionJsonContainers = (text: string): string | undefined => {
   }
   if (!changed || quoted || stack.length) return undefined;
   try {
-    JSON.parse(result);
+    parseJson(result);
     return result;
   } catch {
     return undefined;

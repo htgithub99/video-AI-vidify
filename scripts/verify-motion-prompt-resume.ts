@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { motionPromptGroups, motionPromptGroupsAsync } from "../src/lib/motionPrompt.js";
+import { motionPromptEditorialContext, motionPromptGroups, motionPromptGroupsAsync } from "../src/lib/motionPrompt.js";
 import { motionChapterParts } from "../src/lib/motionChapterParts.js";
+import { motionChapterRepairPrompt, motionChapterPending, normalizeMotionDurationResponse } from "../src/lib/motionChapterRepair.js";
 import { compactMotionSourceLedger } from "../src/lib/motionSourceLedger.js";
 import { MOTION_PROMPT as PROMPT } from "../src/constants/motionPrompt.js";
 import { MOTION_CHAPTER_REPAIR as CHAPTER_REPAIR } from "../src/constants/motionChapterRepair.js";
@@ -26,6 +27,9 @@ const { puppetStoryboardCovers, puppetStoryboardInputKey } = await import("../sr
 const { directMotionVoice } = await import("../src/server/services/motionVoiceDirectionService.js");
 const { directPuppetSound } = await import("../src/server/services/puppet/sound.js");
 const atomic = "x".repeat(20000);
+assert.equal(motionPromptEditorialContext("motion_remotion_design", "unrelated source ledger"), "");
+assert.equal(motionPromptEditorialContext("motion_remotion_composition", "unrelated source ledger"), "");
+assert.ok(motionPromptEditorialContext("motion-dna-profile", "source ledger").includes("source ledger"));
 const groups = motionPromptGroups(["one", "two", atomic, "last"], (rows) => JSON.stringify(rows), 3, 50);
 assert.deepEqual(groups.flat(), ["one", "two", atomic, "last"]);
 assert.ok(groups.some((group) => group.length === 1 && group[0] === atomic));
@@ -131,6 +135,7 @@ const factual = "Sự kiện thứ nhất có nguồn. Sự kiện thứ hai n�
 const factualParts = motionChapterParts(chapter, story, factual, false, 900);
 assert.equal(factualParts.map((part) => part.source).join(" "), factual);
 assert.ok(factualParts.every((part) => /[.!?]$/.test(part.source)));
+assert.deepEqual(motionChapterParts({ ...chapter, targetSeconds: 60 }, story, factual.repeat(300), false, 218), []);
 let chapterDraft: any,
   chapterCalls = 0;
 const narrative = "Người cháu đứng bên cửa, bà chậm rãi chỉ chiếc bát đặt trên bàn.";
@@ -351,6 +356,43 @@ await compactMotionSourceLedger(ledgerParts, invalidOptions);
 assert.equal(invalidCalls, PROMPT.LEDGER_REPAIRS);
 let durationDraft: any;
 let durationCalls = 0;
+const compactDurationPrompt = motionChapterRepairPrompt(
+  [
+    { id: "keep", narration: "one two three four five" },
+    { id: "shorten", narration: "one two three four five six seven eight nine ten" },
+  ],
+  [{ id: "shorten", fields: ["narration", "utterances"], targetUnits: 4 }],
+  {},
+);
+assert.ok(compactDurationPrompt.startsWith("SHORTEN the existing narration from 15 to about 9 speech units TOTAL"));
+assert.ok(compactDurationPrompt.includes('"currentUnits":10'));
+assert.ok(compactDurationPrompt.includes('"speakers":["narrator"]'));
+assert.ok(!compactDurationPrompt.includes("READ-ONLY STORY AND CHAPTER CONTRACT"));
+assert.equal(normalizeMotionDurationResponse({ beats: [{ id: "counted", utterances: [{ speaker: "narrator", words: ["Người", "dân", "sợ", "hãi."] }] }] }).beats[0].narration, "Người dân sợ hãi.");
+const invalidCountedSpeech = { beats: [{ id: "counted", utterances: [{ speaker: "narrator", words: ["Người dân", "sợ hãi."] }] }] };
+assert.deepEqual(normalizeMotionDurationResponse(invalidCountedSpeech), invalidCountedSpeech);
+const proportionalRows = Array.from({ length: 9 }, (_, index) => ({ id: `duration-${index}`, narration: "từ ".repeat(30).trim() }));
+const proportionalPending = motionChapterPending(proportionalRows, 189, 0.15, true);
+assert.equal(proportionalPending.length, 9);
+assert.equal(
+  proportionalPending.reduce((sum, item) => sum + item.targetUnits!, 0),
+  189,
+);
+assert.ok(proportionalPending.every((item) => item.targetUnits === 21));
+const unevenPending = motionChapterPending(
+  [
+    { id: "long", narration: "từ ".repeat(100).trim() },
+    { id: "one", narration: "một" },
+    { id: "two", narration: "hai" },
+  ],
+  3,
+  0.15,
+  true,
+);
+assert.deepEqual(
+  unevenPending.map((item) => item.targetUnits),
+  [1],
+);
 const durationOptions: any = {
   language: "vi",
   exec: {},
@@ -358,20 +400,25 @@ const durationOptions: any = {
   isLast: true,
   durationRepair: true,
   existing: [{ id: "old", chapterId: chapter.id, narration: "Một câu chuyện còn quá ngắn.", visual: "scene" }],
-  repairState: { rejected: CHAPTER_REPAIR.ATTEMPTS - 1, errors: ["previous duration repair"] },
+  repairState: { rejected: CHAPTER_REPAIR.ATTEMPTS - 1, errors: ["previous duration repair"], recovery: { revision: CHAPTER_REPAIR.DURATION_REVISION, previous: [] } },
   onDraft: (draft: any) => {
     durationDraft = draft;
   },
   ai: async () => {
     durationCalls++;
-    return { beats: [] };
+    return { beats: [{ id: "old", narration: "" }] };
   },
 };
 await assert.rejects(writeChapterBeats(source, { ...analysis, chapters: [chapter] }, chapter, durationOptions));
 assert.equal(durationCalls, 1);
 assert.equal(durationDraft.repairState.rejected, CHAPTER_REPAIR.ATTEMPTS);
+assert.equal(durationDraft.rows[0].id, "old");
 await assert.rejects(writeChapterBeats(source, { ...analysis, chapters: [chapter] }, chapter, { ...durationOptions, speechRate: 2.1, repairState: durationDraft.repairState, draft: durationDraft }));
 assert.equal(durationCalls, 1);
+await assert.rejects(writeChapterBeats(source, { ...analysis, chapters: [chapter] }, chapter, { ...durationOptions, durationRepairScope: "next-measured-audio-round", repairState: durationDraft.repairState }));
+assert.equal(durationCalls, 1 + CHAPTER_REPAIR.ATTEMPTS);
+await assert.rejects(writeChapterBeats(source, { ...analysis, chapters: [chapter] }, chapter, { ...durationOptions, durationRepairScope: "next-measured-audio-round", repairState: durationDraft.repairState, draft: durationDraft }));
+assert.equal(durationCalls, 1 + CHAPTER_REPAIR.ATTEMPTS);
 await assert.rejects(
   buildSourceLedger(
     { ...source, kind: "transcript", text: "Nguồn đầy đủ. ".repeat(2000), segments: [] },

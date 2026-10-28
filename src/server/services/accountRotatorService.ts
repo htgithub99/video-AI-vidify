@@ -49,28 +49,14 @@ async function getGasAccounts(): Promise<GoogleAccount[]> {
       logger.warn(REFACTOR_CONSTANTS.LOG_GAS_MISSING_KEY);
       return [];
     }
-    const response = await fetch(SecurityConstants.GAS_API_URL, {
-      method: SecurityConstants.HTTP_POST,
-      headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: jsonUtils.safeStringify({
-        action: GasActions.GET_ACCOUNTS,
-        license_key: licenseKey,
-        plan_id: planType,
-        plan_type: planType,
-      }),
-    });
+    const response = await fetch(SecurityConstants.GAS_API_URL, { method: SecurityConstants.HTTP_POST, headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON }, body: jsonUtils.safeStringify({ action: GasActions.GET_ACCOUNTS, license_key: licenseKey, plan_id: planType, plan_type: planType }) });
     const data: any = await response.json();
     if (_.has(data, SecurityConstants.ERROR_KEY)) {
       logger.error(SOURCE_TEMPLATE_SYMBOL_16(`${SecurityMessages.GAS_FETCH_ERROR}`, `${_.get(data, SecurityConstants.ERROR_KEY)}`));
       return [];
     }
     const accounts = _.get(data, SecurityConstants.ACCOUNTS_KEY, []);
-    return _.map(accounts, (acc: any) => ({
-      email: _.get(acc, SecurityConstants.PROP_EMAIL, ""),
-      password: _.get(acc, SecurityConstants.PASSWORD_PROP, ""),
-      recoveryEmail: _.get(acc, SecurityConstants.RECOVERY_EMAIL_PROP, ""),
-      status: _.get(acc, SecurityConstants.PROP_STATUS, ""),
-    }));
+    return _.map(accounts, (acc: any) => ({ email: _.get(acc, SecurityConstants.PROP_EMAIL, ""), password: _.get(acc, SecurityConstants.PASSWORD_PROP, ""), recoveryEmail: _.get(acc, SecurityConstants.RECOVERY_EMAIL_PROP, ""), status: _.get(acc, SecurityConstants.PROP_STATUS, "") }));
   } catch (error) {
     logger.error(REFACTOR_CONSTANTS.LOG_GAS_FETCH_ERR, error);
     return [];

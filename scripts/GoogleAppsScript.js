@@ -345,13 +345,7 @@ const _ = {
       }
       const planId = row[UserCols.PLAN_ID];
       const plan = this.getPlanById(planId);
-      return this.jsonResponse({
-        status: currentStatus,
-        plan: plan,
-        quota_type: quotaType,
-        expires_at: expiresAt || null,
-        usage: usage,
-      });
+      return this.jsonResponse({ status: currentStatus, plan: plan, quota_type: quotaType, expires_at: expiresAt || null, usage: usage });
     }
     return this.jsonResponse({ error: Messages.KEY_NOT_FOUND, code: HttpCode.NOT_FOUND });
   },
@@ -446,14 +440,7 @@ const _ = {
           expires_at: row[UserCols.EXPIRES_AT],
           device_id: row[UserCols.DEVICE_ID],
           quota_type: row[UserCols.QUOTA_TYPE] || QuotaType.DAILY,
-          usage: uRow
-            ? {
-                video: uRow[UsageCols.VIDEO] || 0,
-                image: uRow[UsageCols.IMAGE] || 0,
-                voice: uRow[UsageCols.VOICE] || 0,
-                last_reset: uRow[UsageCols.LAST_RESET],
-              }
-            : { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING },
+          usage: uRow ? { video: uRow[UsageCols.VIDEO] || 0, image: uRow[UsageCols.IMAGE] || 0, voice: uRow[UsageCols.VOICE] || 0, last_reset: uRow[UsageCols.LAST_RESET] } : { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING },
         };
       },
     );
@@ -654,16 +641,7 @@ const _ = {
   },
   getPlanById: function (planId) {
     const plans = this.getPlans();
-    return (
-      this.find(plans, (p) => this.isEqual(p.id, planId)) || {
-        id: planId,
-        name: Constants.UNKNOWN,
-        quota_video: 0,
-        quota_image: 0,
-        quota_voice: 0,
-        is_unlimited: false,
-      }
-    );
+    return this.find(plans, (p) => this.isEqual(p.id, planId)) || { id: planId, name: Constants.UNKNOWN, quota_video: 0, quota_image: 0, quota_voice: 0, is_unlimited: false };
   },
   getUsageData: function (key) {
     const usageSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(Config.SHEET_USAGE);
@@ -671,12 +649,7 @@ const _ = {
     const data = usageSheet.getDataRange().getValues();
     const usageRow = this.find(data, (row, idx) => idx > 0 && this.isEqual(row[UsageCols.LICENSE_KEY], key));
     if (usageRow) {
-      return {
-        video: usageRow[UsageCols.VIDEO] || 0,
-        image: usageRow[UsageCols.IMAGE] || 0,
-        voice: usageRow[UsageCols.VOICE] || 0,
-        last_reset: usageRow[UsageCols.LAST_RESET],
-      };
+      return { video: usageRow[UsageCols.VIDEO] || 0, image: usageRow[UsageCols.IMAGE] || 0, voice: usageRow[UsageCols.VOICE] || 0, last_reset: usageRow[UsageCols.LAST_RESET] };
     }
     return { video: 0, image: 0, voice: 0, last_reset: Constants.EMPTY_STRING };
   },
@@ -850,15 +823,7 @@ const _ = {
       const assigned = row[AccountsCols.ASSIGNED_TO] || Constants.ALL;
       const prio = getAccountPriority(assigned);
       if (!this.isEqual(prio, -1)) {
-        accounts.push({
-          id: i,
-          email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING,
-          password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING,
-          recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING,
-          status: this.normalizeStatus(row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER),
-          assignedTo: assigned,
-          priority: prio,
-        });
+        accounts.push({ id: i, email: row[AccountsCols.EMAIL] || Constants.EMPTY_STRING, password: row[AccountsCols.PASSWORD] || Constants.EMPTY_STRING, recoveryEmail: row[AccountsCols.RECOVERY_EMAIL] || Constants.EMPTY_STRING, status: this.normalizeStatus(row[AccountsCols.STATUS] || Constants.ACTIVE_LOWER), assignedTo: assigned, priority: prio });
       }
     });
     accounts = this.orderBy(accounts, ["priority"], ["desc"]);
@@ -1015,20 +980,9 @@ const Config = {
   },
   MAX_DEVICES: 2,
 };
-const StatusEnum = {
-  ACTIVE: "ACTIVE",
-  REVOKED: "REVOKED",
-  EXPIRED: "EXPIRED",
-};
-const QuotaType = {
-  DAILY: "DAILY",
-  TOTAL: "TOTAL",
-};
-const FeatureEnum = {
-  VIDEO: "video",
-  IMAGE: "image",
-  VOICE: "voice",
-};
+const StatusEnum = { ACTIVE: "ACTIVE", REVOKED: "REVOKED", EXPIRED: "EXPIRED" };
+const QuotaType = { DAILY: "DAILY", TOTAL: "TOTAL" };
+const FeatureEnum = { VIDEO: "video", IMAGE: "image", VOICE: "voice" };
 const Constants = {
   EMPTY_STRING: "",
   EMPTY_ARRAY: "[]",

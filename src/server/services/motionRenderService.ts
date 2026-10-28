@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { validateMotionMedia, assertMotionSpeechAudio } from "./motionMediaValidation.js";
 import { motionStoryLogs } from "./motionLogStore.js";
 import { motionOutputQualityIssues } from "../../lib/motionOutputQuality.js";
@@ -216,7 +219,7 @@ const measureLoudness = async (file: string, signal?: AbortSignal): Promise<Reco
   const { stderr } = await runFfmpegCollect([MOTION_TEXT_I, file, MR.MOTION_TEXT_AF, motionLoudnormFilter(), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal).catch(() => ({ code: 1, stderr: MR.MOTION_TEXT_EMPTY }));
   const match = MOTION_LOUDNESS.JSON_RE.exec(stderr);
   try {
-    const data = match ? JSON.parse(match[0]) : null;
+    const data = match ? parseJson(match[0]) : null;
     return data && _.every([data.input_i, data.input_tp, data.input_lra, data.input_thresh, data.target_offset], (v) => _.isFinite(parseFloat(v))) ? data : undefined;
   } catch {
     return undefined;
@@ -439,7 +442,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     let cacheDir: string | undefined;
     const silent = path.join(work, MOTION_TEXT_VIDEO_MP4);
     if (isRemotionSpec(spec)) {
-      if (options.encoder === "gpu") throw new Error(VISUAL.CPU_ONLY);
+      if (options.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
       if (spec.fps !== fps || spec.aspect !== aspect) throw new Error(VISUAL.SETTINGS_CHANGED);
       duration = spec.duration;
       totalFrames = Math.ceil(duration * fps);
@@ -518,7 +521,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       const workers = Math.min(is3dSoftware ? 1 : 2, workerCount(cpuBudget, Math.round(os.freemem() / 1048576), totalFrames));
       job.workers = workers;
       const cacheKey = createHash(MOTION_RENDER_CACHE.HASH)
-        .update(JSON.stringify([MOTION_RENDER_CACHE.VERSION, html, width, height, fps, preset.id, encoder]))
+        .update(stringifyJson([MOTION_RENDER_CACHE.VERSION, html, width, height, fps, preset.id, encoder]))
         .digest(MOTION_RENDER_CACHE.HEX);
       const cacheRoot = path.join(getMotionRootDirectory(), MOTION_RENDER_CACHE.FOLDER);
       cacheDir = path.join(cacheRoot, cacheKey);
@@ -579,7 +582,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
           }),
         ),
       );
-      if (workerResults.some((result) => result.status === "rejected")) throw workerFailure;
+      if (workerResults.some((result) => result.status === RT_SERVER.REJECTED)) throw workerFailure;
       job.status = MotionJobStatus.ENCODING;
       job.stage = MOTION_TEXT_MUX;
       if (reused) pushLog(job, MOTION_RENDER_CACHE.REUSED(reused, totalFrames - skipped));
@@ -663,7 +666,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     const stat = fs.statSync(out);
     const result: MotionResultItem = {
       resolvedSettings: { behavior: motionRenderBehaviorFor(spec), ...(isRemotionSpec(spec) ? { layoutRevision: spec.resolvedSettings?.layoutRevision, effectRevision: spec.resolvedSettings?.effectRevision, sceneRevision: spec.resolvedSettings?.sceneRevision } : {}), subtitles: !!spec.subtitles?.length, aspect, fps, quality: preset.id, encoder },
-      ...(isRemotionSpec(spec) ? { visualSettings: { version: 1 as const, mode: "remotion" as const, engine: "remotion" as const, profileId: spec.profileId, componentRevision: VISUAL.COMPONENT_REVISION } } : {}),
+      ...(isRemotionSpec(spec) ? { visualSettings: { version: 1 as const, mode: RT_SHARED.REMOTION, engine: RT_SHARED.REMOTION, profileId: spec.profileId, componentRevision: VISUAL.COMPONENT_REVISION } } : {}),
       id: job.id,
       title: options.title || spec.title || MOTION_TEXT_VIDEO_MOTION,
       fileName,
@@ -721,7 +724,7 @@ export const getMotionJob = (id: string): MotionJobState | null => {
   const result = listMotionResults().find((item) => item.id === id);
   if (!result) {
     try {
-      const saved = JSON.parse(fs.readFileSync(renderCheckpointFile(id), PRODUCTION.ENCODING));
+      const saved = parseJson(fs.readFileSync(renderCheckpointFile(id), PRODUCTION.ENCODING));
       if (saved.version !== VALIDATION.CHECKPOINT_VERSION || saved.job.id !== id) return null;
       const restored = saved.job as MotionJobState;
       if (![MotionJobStatus.COMPLETED, MotionJobStatus.CANCELLED, MotionJobStatus.ERROR].includes(restored.status)) {
@@ -755,7 +758,7 @@ export const checkMotionSpec = async (spec: MotionRenderSpec): Promise<{ duratio
     validateRemotionSpec(spec);
     const work = getMotionWorkDirectory(randomUUID());
     try {
-      for (const frame of [...new Set([0, Math.floor((spec.duration * spec.fps) / 2), Math.ceil(spec.duration * spec.fps) - 1])]) await renderRemotionStill(spec, path.join(work, `${frame}.png`), frame);
+      for (const frame of [...new Set([0, Math.floor((spec.duration * spec.fps) / 2), Math.ceil(spec.duration * spec.fps) - 1])]) await renderRemotionStill(spec, path.join(work, `${frame}${RT_SERVER.PNG_B98B80}`), frame);
       return { duration: spec.duration, errors: [] };
     } finally {
       await fs.promises.rm(work, { recursive: true, force: true });

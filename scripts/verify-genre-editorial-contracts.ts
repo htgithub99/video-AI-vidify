@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
 import { VI_GENRE_GUIDELINES } from "../src/constants/promptGuidelines.ts";
 import { VideoGenre } from "../src/constants/enums.ts";
-
 const explainer = VI_GENRE_GUIDELINES[VideoGenre.NARRATIVE_EXPLAINER];
 assert.match(explainer, /what happened, what concrete detail proves it/i);
 assert.doesNotMatch(explainer, /Vincom|Grab|ChatGPT|đăng xuất khỏi server/i);
-
 const documentary = VI_GENRE_GUIDELINES.History;
 assert.match(documentary, /authentic archival photographs, maps, plans/i);
 assert.match(documentary, /AI reconstruction as archival evidence/i);
-
 console.log("Genre and editorial contract assertions passed.");

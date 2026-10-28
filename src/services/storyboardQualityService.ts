@@ -1,14 +1,15 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import _ from "lodash";
 import { FLEXIBLE_DURATION_CONFIG, SCRIPT_SPEECH_RATE_CONFIG, STORYBOARD_QUALITY_CONFIG } from "../constants/config.js";
 import { StoryboardQualityReport, StoryboardScene } from "../types.js";
-const normalizeCoverageText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value))), /[\p{L}\p{N}]+/gu), " ");
+const normalizeCoverageText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value))), /[\p{L}\p{N}]+/gu), RT_SHARED.SYMBOL_36A9E7);
 export const calculateStoryboardScriptCoverage = (script: string, scenes: Array<Partial<Pick<StoryboardScene, "script" | "subtitle">>>): number => {
   const scriptTokens = _.words(normalizeCoverageText(script), /[^\s]+/g);
   if (_.isEmpty(scriptTokens)) return 1;
   const sceneText = normalizeCoverageText(
     _.join(
       _.map(scenes, (scene) => scene.script || scene.subtitle),
-      " ",
+      RT_SHARED.SYMBOL_36A9E7,
     ),
   );
   const sceneTokenCounts = _.countBy(_.words(sceneText, /[^\s]+/g));
@@ -59,11 +60,5 @@ export const applyDeterministicStoryboardCoverage = (report: StoryboardQualityRe
   });
   const pacingCoverageScore = _.min(scenePacingScores) || 0;
   const warnings = _.uniq(_.compact([...report.warnings, scriptCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.SCRIPT_COVERAGE_WARNING : "", pacingCoverageScore < STORYBOARD_QUALITY_CONFIG.MIN_SCORE ? STORYBOARD_QUALITY_CONFIG.PACING_COVERAGE_WARNING : ""]));
-  return {
-    ...report,
-    scriptCoverageScore,
-    pacingCoverageScore,
-    warnings,
-    passed: report.passed,
-  };
+  return { ...report, scriptCoverageScore, pacingCoverageScore, warnings, passed: report.passed };
 };

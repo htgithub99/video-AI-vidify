@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_UI } from "../../constants/runtime/ui.js";
 import {
   SOURCE_TEMPLATE_PX,
   SOURCE_TEXT_BOTTOM,
@@ -77,26 +78,20 @@ export const Tooltip: React.FC<ITooltipProps & { align?: "start" | "center" | "e
     } else if (_.isEqual(position, TOOLTIP_CONFIG.POS_RIGHT)) {
       transform = SOURCE_TEXT_TRANSLATEY_50;
     }
-    return {
-      position: SOURCE_TEXT_FIXED,
-      top: SOURCE_TEMPLATE_PX(`${coords.top}`),
-      left: SOURCE_TEMPLATE_PX(`${coords.left}`),
-      transform,
-      zIndex: TOOLTIP_CONFIG.Z_INDEX,
-    };
+    return { position: SOURCE_TEXT_FIXED, top: SOURCE_TEMPLATE_PX(`${coords.top}`), left: SOURCE_TEMPLATE_PX(`${coords.left}`), transform, zIndex: TOOLTIP_CONFIG.Z_INDEX };
   };
   const isVertical = _.includes([TOOLTIP_CONFIG.POS_TOP, TOOLTIP_CONFIG.POS_BOTTOM], position);
   const isHorizontal = _.includes([TOOLTIP_CONFIG.POS_LEFT, TOOLTIP_CONFIG.POS_RIGHT], position);
   return (
-    <div ref={triggerRef} className={cn("relative inline-flex items-center justify-center group", className)} onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}>
+    <div ref={triggerRef} className={cn(RT_UI.RELATIVE_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GROUP, className)} onMouseEnter={() => setIsVisible(true)} onMouseLeave={() => setIsVisible(false)}>
       {children}
       {isVisible &&
         !_.isEmpty(content) &&
         createPortal(
-          <div style={getTransformStyle()} className={cn("px-3 py-2 text-xs font-medium text-slate-100 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl pointer-events-none w-max max-w-xs text-center leading-relaxed")}>
+          <div style={getTransformStyle()} className={cn(RT_UI.PX_3_PY_2_TEXT_XS_FONT_MEDIUM_TEXT_SLATE)}>
             {content}
             <div
-              className={cn("absolute w-2.5 h-2.5 bg-slate-900 border border-slate-700/80 rotate-45 transform", {
+              className={cn(RT_UI.ABSOLUTE_W_2_5_H_2_5_BG_SLATE_900, {
                 "bottom-[-5px] border-t-0 border-l-0": _.isEqual(position, TOOLTIP_CONFIG.POS_TOP),
                 "top-[-5px] border-b-0 border-r-0": !_.isEqual(position, TOOLTIP_CONFIG.POS_TOP) && _.isEqual(position, TOOLTIP_CONFIG.POS_BOTTOM),
                 "right-[-5px] border-b-0 border-l-0": !_.isEqual(position, TOOLTIP_CONFIG.POS_TOP) && !_.isEqual(position, TOOLTIP_CONFIG.POS_BOTTOM) && _.isEqual(position, TOOLTIP_CONFIG.POS_LEFT),

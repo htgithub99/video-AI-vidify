@@ -1,3 +1,4 @@
+import { stringifyJson } from "./jsonStringify.js";
 import _ from "lodash";
 import { PUPPET as P, PUPPET_LIBRARY_MODES as LM, PUPPET_STYLE_NONE } from "../constants/motionPuppet.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../types/motionVideo.js";
@@ -55,13 +56,13 @@ export const collectPuppetLines = (script: MotionStoryScript, sceneVisual: strin
   return out;
 };
 export const puppetVisualInputKey = (lines: PuppetLine[]): string => {
-  const source = JSON.stringify(lines);
+  const source = stringifyJson(lines);
   let hash: number = V.HASH_SEED;
   for (let index = 0; index < source.length; index++) hash = Math.imul(hash ^ source.charCodeAt(index), V.HASH_MULTIPLIER);
   return [source.length, (hash >>> 0).toString(V.HASH_BASE)].join(V.KEY_SEPARATOR);
 };
 export const puppetFrameLook = (frame: PuppetFrame): string =>
-  JSON.stringify([frame.shot, frame.set, frame.light, frame.prop, frame.propMount, frame.propAt, frame.propRot, frame.propX, frame.propY, frame.propH, frame.items, frame.blocking, frame.form, frame.anchor, frame.inset, frame.set2, frame.light2, frame.overlays, frame.effectSource, frame.effectTarget, frame.effectMode, frame.smokeX, frame.smokeY, frame.camera, frame.actors]);
+  stringifyJson([frame.shot, frame.set, frame.light, frame.prop, frame.propMount, frame.propAt, frame.propRot, frame.propX, frame.propY, frame.propH, frame.items, frame.blocking, frame.form, frame.anchor, frame.inset, frame.set2, frame.light2, frame.overlays, frame.effectSource, frame.effectTarget, frame.effectMode, frame.smokeX, frame.smokeY, frame.camera, frame.actors]);
 export const puppetNoPack = (stylePreset: unknown, references: number): boolean => references > 0 || !stylePreset || stylePreset === PUPPET_STYLE_NONE;
 export const puppetLibraryMode = (analysis: Pick<MotionStoryAnalysis, "stylePreset" | "series">, references: number): string => ((analysis.series?.count || 0) >= 2 ? LM.SERIES : puppetNoPack(analysis.stylePreset, references) ? LM.FRESH : LM.AUTO);
 export const puppetTags = (v: unknown): string[] => _.take(_.uniq(_.compact(_.map(_.castArray(v || []), (t) => _.snakeCase(_.toString(t))))), P.TAGS_MAX);

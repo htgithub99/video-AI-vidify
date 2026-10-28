@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { parseJson, stringifyJson } from "../../../lib/jsonStringify.js";
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
@@ -42,7 +45,7 @@ export const readPuppet = <T extends PuppetAsset>(type: PuppetType, id: string):
     const mtime = fs.statSync(file).mtimeMs;
     const hit = CACHE.get(file);
     if (hit && hit.mtime === mtime) return resolve(hit.asset);
-    const asset = JSON.parse(fs.readFileSync(file, L.UTF8)) as T;
+    const asset = parseJson(fs.readFileSync(file, L.UTF8)) as T;
     if (asset.type !== type || asset.id !== id || (livePuppetLibrary().version === RELEASE.VERSION && !releasedPuppetAssetAllowed(asset))) return null;
     CACHE.set(file, { mtime, asset });
     return resolve(asset);
@@ -54,18 +57,18 @@ export const readPuppet = <T extends PuppetAsset>(type: PuppetType, id: string):
 export const writePuppet = <T extends PuppetAsset>(asset: T): T => {
   if (guardPuppetAssetWrite(asset)) return asset;
   if (livePuppetLibrary().version === RELEASE.VERSION && !releasedPuppetAssetAllowed(asset)) throw new Error(RELEASE.WRITE_BLOCKED);
-  if (!Object.values(PUPPET_TYPES).includes(asset.type) || !L.ID_RE.test(asset.id)) throw new MotionResourceError({ kind: asset.type, reason: "metadata", name: asset.id, details: [W.IDENTITY] });
+  if (!Object.values(PUPPET_TYPES).includes(asset.type) || !L.ID_RE.test(asset.id)) throw new MotionResourceError({ kind: asset.type, reason: RT_SERVER.METADATA, name: asset.id, details: [W.IDENTITY] });
   const normalized = normalizeMotionResourceSemantics(asset);
   const file = path.join(puppetLibDir(asset.type), asset.id + L.JSON);
   let previous: PuppetAsset | undefined;
-  if (fs.existsSync(file)) previous = JSON.parse(fs.readFileSync(file, L.UTF8));
-  const structural = (value: PuppetAsset): string => JSON.stringify(Object.fromEntries(Object.entries(value).filter(([key]) => !(W.DISPLAY_FIELDS as readonly string[]).includes(key))));
+  if (fs.existsSync(file)) previous = parseJson(fs.readFileSync(file, L.UTF8));
+  const structural = (value: PuppetAsset): string => stringifyJson(Object.fromEntries(Object.entries(value).filter(([key]) => !(W.DISPLAY_FIELDS as readonly string[]).includes(key))));
   const legacyUnchanged = previous && structural(normalizeMotionResourceSemantics(previous)) === structural(normalized);
   const issues = legacyUnchanged ? [] : puppetPackAssetIssues(normalized);
-  if ("semanticVersion" in asset && asset.semanticVersion !== undefined && asset.semanticVersion !== SCHEMA.version) issues.push(W.VERSION);
+  if (RT_SERVER.SEMANTICVERSION in asset && asset.semanticVersion !== undefined && asset.semanticVersion !== SCHEMA.version) issues.push(W.VERSION);
   if (!legacyUnchanged && normalized.type === PUPPET_TYPES.PIECE && !SCHEMA.pieceKinds.includes(normalized.kind)) issues.push(W.KIND);
-  if ("locationFamily" in normalized && normalized.locationFamily && !Object.hasOwn(SCHEMA.locationPatterns, normalized.locationFamily)) issues.push(W.LOCATION);
-  if (issues.length) throw new MotionResourceError({ kind: asset.type, reason: "metadata", name: asset.id, details: [...new Set(issues)] });
+  if (RT_SERVER.LOCATIONFAMILY in normalized && normalized.locationFamily && !Object.hasOwn(SCHEMA.locationPatterns, normalized.locationFamily)) issues.push(W.LOCATION);
+  if (issues.length) throw new MotionResourceError({ kind: asset.type, reason: RT_SERVER.METADATA, name: asset.id, details: [...new Set(issues)] });
   resolvePuppetSetPlan(normalized, (type, id) => readPuppet(type as PuppetType, id));
   writeMotionJsonAtomic(file, normalized);
   CACHE.delete(file);
@@ -122,7 +125,7 @@ export const currentPuppetSet = (id?: string): PuppetSet | null => {
     const replacement = _.orderBy(
       candidates.filter((set) => !seen.has(set.id) && set.replaces?.includes(current!.id)),
       [(set) => set.placementVersion || 0, (set) => set.updatedAt],
-      ["desc", "desc"],
+      [RT_SHARED.DESC, RT_SHARED.DESC],
     )[0];
     if (!replacement) return current;
     current = replacement;
@@ -131,7 +134,7 @@ export const currentPuppetSet = (id?: string): PuppetSet | null => {
 };
 export const puppetPlacementKey = (set: PuppetSet): string =>
   puppetHash(
-    JSON.stringify([
+    stringifyJson([
       set.id,
       set.svg,
       set.spots,

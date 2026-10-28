@@ -2,7 +2,7 @@ export const MOTION_LOG_SECTION_TEST = {
   HTML: '<!doctype html><html><meta charset="utf-8"><link rel="stylesheet" href="/fixture.css"><style>body{background:#100e18;color:#eee;font:14px Arial;margin:20px}main{max-width:760px;margin:auto}button{cursor:pointer}</style><div id="root"></div><script type="module" src="/fixture.js"></script></html>',
   ENTRY: `import React,{useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {MotionFlowLog} from './src/components/motion-video/MotionControls.tsx';
+import {MotionFlowLog} from './src/features/motion/components/MotionControls.tsx';
 import {MOTION_STORY_CONFIG} from './src/constants/motionVideo.ts';
 import {Toaster,toast} from 'sonner';
 function Fixture(){

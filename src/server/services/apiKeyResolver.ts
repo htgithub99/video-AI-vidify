@@ -28,18 +28,8 @@ export interface ResolvedApiKeys {
   cerebrasKey: string;
   groqKey: string;
   ai33Key: string;
-  isUserKey: {
-    gemini: boolean;
-    cerebras: boolean;
-    groq: boolean;
-    ai33: boolean;
-  };
-  source: {
-    gemini: "user_config" | "google_sheet" | "missing";
-    cerebras: "user_config" | "google_sheet" | "missing";
-    groq: "user_config" | "google_sheet" | "missing";
-    ai33: "user_config" | "google_sheet" | "missing";
-  };
+  isUserKey: { gemini: boolean; cerebras: boolean; groq: boolean; ai33: boolean };
+  source: { gemini: "user_config" | "google_sheet" | "missing"; cerebras: "user_config" | "google_sheet" | "missing"; groq: "user_config" | "google_sheet" | "missing"; ai33: "user_config" | "google_sheet" | "missing" };
 }
 function extractFirstNonEmptyString(sources: any[]): string {
   const value = _.find(sources, (candidate) => _.isString(candidate) && !_.isEmpty(_.trim(candidate))) as string | undefined;
@@ -96,14 +86,7 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
   const isAi33UserKey = !_.isEmpty(userAi33Key);
   const isMissingAnyKey = _.includes([isGeminiUserKey, isCerebrasUserKey, isGroqUserKey, isAi33UserKey], false);
   if (!isMissingAnyKey) {
-    return {
-      geminiKey,
-      cerebrasKey,
-      groqKey,
-      ai33Key,
-      isUserKey: { gemini: true, cerebras: true, groq: true, ai33: true },
-      source: { gemini: SOURCE_TEXT_USER_CONFIG, cerebras: SOURCE_TEXT_USER_CONFIG, groq: SOURCE_TEXT_USER_CONFIG, ai33: SOURCE_TEXT_USER_CONFIG },
-    };
+    return { geminiKey, cerebrasKey, groqKey, ai33Key, isUserKey: { gemini: true, cerebras: true, groq: true, ai33: true }, source: { gemini: SOURCE_TEXT_USER_CONFIG, cerebras: SOURCE_TEXT_USER_CONFIG, groq: SOURCE_TEXT_USER_CONFIG, ai33: SOURCE_TEXT_USER_CONFIG } };
   }
   const cacheKey = SOURCE_TEMPLATE_SYMBOL_51(`${licenseKey}`, `${planType}`);
   const cached = resolvedApiKeysCache.get(cacheKey);
@@ -117,12 +100,7 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
       cerebrasKey: cachedCerebras,
       groqKey: cachedGroq,
       ai33Key: cachedAi33,
-      isUserKey: {
-        gemini: isGeminiUserKey,
-        cerebras: isCerebrasUserKey,
-        groq: isGroqUserKey,
-        ai33: isAi33UserKey,
-      },
+      isUserKey: { gemini: isGeminiUserKey, cerebras: isCerebrasUserKey, groq: isGroqUserKey, ai33: isAi33UserKey },
       source: {
         gemini: isGeminiUserKey ? SOURCE_TEXT_USER_CONFIG : !_.isEmpty(cachedGemini) ? SOURCE_TEXT_GOOGLE_SHEET : SOURCE_TEXT_MISSING,
         cerebras: isCerebrasUserKey ? SOURCE_TEXT_USER_CONFIG : !_.isEmpty(cachedCerebras) ? SOURCE_TEXT_GOOGLE_SHEET : SOURCE_TEXT_MISSING,
@@ -131,45 +109,13 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
       },
     };
   }
-  appLog(
-    SecurityMessages.LOG_RESOLVER_CTX,
-    jsonUtils.safeStringify({
-      hasLicenseKey: !_.isEmpty(licenseKey),
-      planType,
-      hasUserGeminiKey: isGeminiUserKey,
-      hasUserCerebrasKey: isCerebrasUserKey,
-      hasUserGroqKey: isGroqUserKey,
-      hasUserAi33Key: isAi33UserKey,
-      isMissingAnyKey,
-    }),
-  );
+  appLog(SecurityMessages.LOG_RESOLVER_CTX, jsonUtils.safeStringify({ hasLicenseKey: !_.isEmpty(licenseKey), planType, hasUserGeminiKey: isGeminiUserKey, hasUserCerebrasKey: isCerebrasUserKey, hasUserGroqKey: isGroqUserKey, hasUserAi33Key: isAi33UserKey, isMissingAnyKey }));
   try {
-    const payload = {
-      [SecurityConstants.PROP_ACTION]: GasActions.GET_API_KEYS,
-      [SecurityConstants.PROP_LICENSE_KEY_GAS]: licenseKey,
-      [SecurityConstants.PROP_PLAN_ID_GAS]: planType,
-      [SecurityConstants.PROP_PLAN_TYPE_GAS]: planType,
-    };
-    appLog(
-      SecurityMessages.LOG_RESOLVER_FETCH,
-      jsonUtils.safeStringify({
-        hasLicenseKey: !_.isEmpty(licenseKey),
-        planType,
-        missingProviders: _.compact([!isGeminiUserKey && SOURCE_TEXT_GEMINI, !isCerebrasUserKey && SOURCE_TEXT_CEREBRAS, !isGroqUserKey && SOURCE_TEXT_GROQ, !isAi33UserKey && SOURCE_TEXT_AI33]),
-      }),
-    );
-    const response = await fetch(SecurityConstants.GAS_API_URL, {
-      method: SecurityConstants.HTTP_POST,
-      headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON },
-      body: jsonUtils.safeStringify(payload),
-    });
+    const payload = { [SecurityConstants.PROP_ACTION]: GasActions.GET_API_KEYS, [SecurityConstants.PROP_LICENSE_KEY_GAS]: licenseKey, [SecurityConstants.PROP_PLAN_ID_GAS]: planType, [SecurityConstants.PROP_PLAN_TYPE_GAS]: planType };
+    appLog(SecurityMessages.LOG_RESOLVER_FETCH, jsonUtils.safeStringify({ hasLicenseKey: !_.isEmpty(licenseKey), planType, missingProviders: _.compact([!isGeminiUserKey && SOURCE_TEXT_GEMINI, !isCerebrasUserKey && SOURCE_TEXT_CEREBRAS, !isGroqUserKey && SOURCE_TEXT_GROQ, !isAi33UserKey && SOURCE_TEXT_AI33]) }));
+    const response = await fetch(SecurityConstants.GAS_API_URL, { method: SecurityConstants.HTTP_POST, headers: { [SecurityConstants.HEADER_CONTENT_TYPE]: SecurityConstants.CONTENT_TYPE_JSON }, body: jsonUtils.safeStringify(payload) });
     const data: any = await response.json();
-    const keyAvailability = {
-      hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini])),
-      hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras])),
-      hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq])),
-      hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33])),
-    };
+    const keyAvailability = { hasGeminiKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini])), hasCerebrasKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.cerebras])), hasGroqKey: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.groq])), hasAi33Key: !_.isEmpty(extractApiKeyFromResponse(data, [...API_KEY_ALIASES.ai33])) };
     appLog(SecurityMessages.LOG_RESOLVER_RESP, jsonUtils.safeStringify(keyAvailability));
     const fetchedGemini = extractApiKeyFromResponse(data, [...API_KEY_ALIASES.gemini]);
     if (!isGeminiUserKey && !_.isEmpty(fetchedGemini)) {
@@ -194,12 +140,7 @@ export async function resolveApiKeys(): Promise<ResolvedApiKeys> {
     cerebrasKey,
     groqKey,
     ai33Key,
-    isUserKey: {
-      gemini: isGeminiUserKey,
-      cerebras: isCerebrasUserKey,
-      groq: isGroqUserKey,
-      ai33: isAi33UserKey,
-    },
+    isUserKey: { gemini: isGeminiUserKey, cerebras: isCerebrasUserKey, groq: isGroqUserKey, ai33: isAi33UserKey },
     source: {
       gemini: isGeminiUserKey ? SOURCE_TEXT_USER_CONFIG : !_.isEmpty(geminiKey) ? SOURCE_TEXT_GOOGLE_SHEET : SOURCE_TEXT_MISSING,
       cerebras: isCerebrasUserKey ? SOURCE_TEXT_USER_CONFIG : !_.isEmpty(cerebrasKey) ? SOURCE_TEXT_GOOGLE_SHEET : SOURCE_TEXT_MISSING,

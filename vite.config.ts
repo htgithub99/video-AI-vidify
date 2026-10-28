@@ -4,9 +4,21 @@ import path from "path";
 import { defineConfig } from "vite";
 import { DEV_WATCH_IGNORED } from "./src/constants/development";
 import { STORAGE_CONFIG } from "./src/constants/storage";
+import { DOCUMENT_CONFIG } from "./src/constants/document";
+import { stringifyJson } from "./src/lib/jsonStringify";
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      {
+        name: "document-config",
+        transformIndexHtml: {
+          order: "pre",
+          handler: (html) => html.replace(/"%DOCUMENT_THEME%"|%DOCUMENT_(TITLE|FONTS_ORIGIN|FONTS_STATIC_ORIGIN|FONT_STYLESHEET)%/g, (_, key: keyof typeof DOCUMENT_CONFIG | undefined) => (key ? String(DOCUMENT_CONFIG[key]).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : stringifyJson(DOCUMENT_CONFIG.THEME).replace(/</g, "\\u003c"))),
+        },
+      },
+      react(),
+      tailwindcss(),
+    ],
     resolve: { alias: { "@": path.resolve(__dirname, ".") } },
     build: {
       rollupOptions: {

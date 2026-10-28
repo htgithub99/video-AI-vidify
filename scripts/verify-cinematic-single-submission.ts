@@ -171,53 +171,11 @@ assert.equal(createFlowDurationOptionPattern("10s").test("8 giây"), false);
 assert.equal(normalizeFlowPromptValue("Shot 1\n\u200B Shot 2"), "Shot 1 Shot 2");
 assert.equal(isFlowPromptValueApplied("Shot 1\n\nShot 2", "Shot 1 Shot 2"), true);
 assert.equal(isFlowPromptValueApplied("Shot 1", "Shot 1 Shot 2"), false);
-assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · 1x", {
-    generateType: GenerateType.Video,
-    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
-    videoResolution: "360p",
-    videoDuration: "10s",
-  }),
-  true,
-);
-assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 16:9 · 10 giây · 1x", {
-    generateType: GenerateType.Video,
-    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
-    aspectRatio: AspectRatio.SixteenNine,
-    videoResolution: "360p",
-    videoDuration: "10s",
-  }),
-  true,
-);
-assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 9:16 · 10 giây · 1x", {
-    generateType: GenerateType.Video,
-    imageGeneratorEngine: ImageGeneratorEngine.Veo3,
-    aspectRatio: AspectRatio.SixteenNine,
-    videoResolution: "360p",
-    videoDuration: "10s",
-  }),
-  false,
-);
-assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · 1x", {
-    generateType: GenerateType.Video,
-    imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast,
-    videoResolution: "360p",
-    videoDuration: "10s",
-  }),
-  true,
-);
-assert.equal(
-  isFlowVideoConfigSummaryMatching("Video · 360p · 8 giây · 1x", {
-    generateType: GenerateType.Video,
-    imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast,
-    videoResolution: "360p",
-    videoDuration: "10s",
-  }),
-  false,
-);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 360p · 10 giây · 1x", { generateType: GenerateType.Video, imageGeneratorEngine: ImageGeneratorEngine.Veo3, videoResolution: "360p", videoDuration: "10s" }), true);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 16:9 · 10 giây · 1x", { generateType: GenerateType.Video, imageGeneratorEngine: ImageGeneratorEngine.Veo3, aspectRatio: AspectRatio.SixteenNine, videoResolution: "360p", videoDuration: "10s" }), true);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 9:16 · 10 giây · 1x", { generateType: GenerateType.Video, imageGeneratorEngine: ImageGeneratorEngine.Veo3, aspectRatio: AspectRatio.SixteenNine, videoResolution: "360p", videoDuration: "10s" }), false);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · 1x", { generateType: GenerateType.Video, imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast, videoResolution: "360p", videoDuration: "10s" }), true);
+assert.equal(isFlowVideoConfigSummaryMatching("Video · 360p · 8 giây · 1x", { generateType: GenerateType.Video, imageGeneratorEngine: ImageGeneratorEngine.Veo3Fast, videoResolution: "360p", videoDuration: "10s" }), false);
 assert.equal(isFlowVideoConfigSummaryMatching("Video · 720p · 8 giây · x2", { generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), false);
 assert.equal(FLOW_DIRECT_VIDEO_CONFIG.VIDEO_OUTPUT_COUNT, 1);
 assert.equal(FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH, 1);
@@ -292,7 +250,7 @@ assert.equal(isNonRetryableFlowVideoError("Ảnh nhân vật chưa được Flow
 assert.equal(isNonRetryableFlowVideoError("Kết nối mạng tạm thời bị gián đoạn."), false);
 assert.notEqual(createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "360p", videoDuration: "10s" }), createFlowVideoConfigState({ generateType: GenerateType.Video, videoResolution: "720p", videoDuration: "8s" }));
 const flowAutomationSource = resolveSourceTextConstants(fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8"));
-const cinematicPipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
+const cinematicPipelineSource = resolveSourceTextConstants(fs.readFileSync("src/features/video-generation/hooks/useAutoVideoPipeline.ts", "utf8"));
 assert.match(flowAutomationSource, /replaceFlowPromptInput/);
 assert.match(flowAutomationSource, /normalizeFlowPromptValue/);
 assert.match(flowAutomationSource, /waitForFlowPromptApplied/);
@@ -350,7 +308,7 @@ assert.doesNotMatch(cinematicPipelineSource, /submitProjectFlowVideoBatch/);
 assert.match(cinematicPipelineSource, /await finishVideoScene\(scene\)/);
 assert.match(cinematicPipelineSource, /attempt <= FLOW_DIRECT_VIDEO_CONFIG\.GENERATION_RETRY_COUNT/);
 assert.match(cinematicPipelineSource, /if \(!hasSceneAsset\(scene\)\) break/);
-const flowCreatorSource = resolveSourceTextConstants(fs.readFileSync("src/components/FlowVideoCreator.tsx", "utf8"));
+const flowCreatorSource = resolveSourceTextConstants(fs.readFileSync("src/features/flow/components/FlowVideoCreator.tsx", "utf8"));
 assert.match(flowCreatorSource, /for \(let attempt = 0; attempt <= FLOW_DIRECT_VIDEO_CONFIG\.GENERATION_RETRY_COUNT; attempt\+\+\)/);
 assert.match(flowCreatorSource, /generated\?\.remoteMediaCreated !== false/);
 assert.doesNotMatch(flowCreatorSource, /const batch: Clip\[\]/);

@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
+import { stringifyJson } from "./jsonStringify.js";
 import _ from "lodash";
 import { MOTION_PRODUCTION as P } from "../constants/motionProduction.js";
 import { normalizeMotionDnaResponse, VIDEO_DNA_PLANNING_INSTRUCTIONS, VIDEO_DNA_PROFILE_INSTRUCTIONS } from "./motionVideoDna.js";
@@ -9,15 +12,23 @@ export const motionDnaRepairPrompt = (draft: any, errors: string[]): string => {
   const groups = [...new Set(paths.map((path) => path.split(/[.\[]/)[0]))];
   const complete = paths.length !== errors.length;
   return P.DNA_REPAIR(
-    JSON.stringify({ ..._.pick(draft, ["title", "logline"]), videoDna: complete ? draft.videoDna : _.pick(draft.videoDna, groups), cast: _.map(draft.cast, (row) => _.pick(row, ["key", "name", "age", "gender"])), places: _.map(draft.places, (row) => _.pick(row, ["key", "name", "interior", "time"])), chapters: _.map(draft.chapters, (row) => _.pick(row, ["id", "title"])) }),
-    JSON.stringify(errors),
-    (complete ? VIDEO_DNA_PLANNING_INSTRUCTIONS + VIDEO_DNA_PROFILE_INSTRUCTIONS : C.DNA_FIELDS) + MOTION_RESPONSE_TEXT.DIAGNOSTICS + JSON.stringify([...motionResponseIssues(draft.videoDna, MOTION_DNA_CORE_SCHEMA, "videoDna"), ...motionResponseIssues(draft.videoDna, MOTION_DNA_PROFILE_SCHEMA, "videoDna")].filter((issue) => errors.some((error) => error.startsWith(issue.path + ":")))),
+    stringifyJson({
+      ..._.pick(draft, [RT_SHARED.TITLE, RT_CORE.LOGLINE]),
+      videoDna: complete ? draft.videoDna : _.pick(draft.videoDna, groups),
+      cast: _.map(draft.cast, (row) => _.pick(row, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SHARED.AGE, RT_SHARED.GENDER] as string[])),
+      places: _.map(draft.places, (row) => _.pick(row, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SHARED.INTERIOR, RT_CORE.TIME] as string[])),
+      chapters: _.map(draft.chapters, (row) => _.pick(row, [RT_SHARED.ID, RT_SHARED.TITLE] as string[])),
+    }),
+    stringifyJson(errors),
+    (complete ? VIDEO_DNA_PLANNING_INSTRUCTIONS + VIDEO_DNA_PROFILE_INSTRUCTIONS : C.DNA_FIELDS) +
+      MOTION_RESPONSE_TEXT.DIAGNOSTICS +
+      stringifyJson([...motionResponseIssues(draft.videoDna, MOTION_DNA_CORE_SCHEMA, RT_CORE.VIDEODNA), ...motionResponseIssues(draft.videoDna, MOTION_DNA_PROFILE_SCHEMA, RT_CORE.VIDEODNA)].filter((issue) => errors.some((error) => error.startsWith(issue.path + RT_SHARED.SYMBOL_E7AC07)))),
   );
 };
 export const motionDnaRepairDraft = (draft: any, reply: any, errors: string[]): any => {
   const next = _.cloneDeep(draft);
   const normalized = normalizeMotionDnaResponse(reply?.videoDna);
-  if (errors.some((error) => error.startsWith("videoDna:")) && _.isPlainObject(normalized)) return { ...next, videoDna: normalized };
+  if (errors.some((error) => error.startsWith(RT_CORE.VIDEODNA_2AABA4)) && _.isPlainObject(normalized)) return { ...next, videoDna: normalized };
   if (!_.isPlainObject(next.videoDna)) next.videoDna = {};
   for (const error of errors) {
     const path = error.match(P.DNA_ERROR_PATH)?.[1];

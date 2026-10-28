@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import {
   SOURCE_TEMPLATE_AR,
   SOURCE_TEMPLATE_B_B,
@@ -45,9 +46,9 @@ const hasMinimumTokenOverlap = (prompt: string, source: unknown, minimumMatches:
   if (_.isEmpty(sourceTokens)) return true;
   return _.gte(_.size(_.intersection(getQaTokens(prompt), sourceTokens)), _.min([minimumMatches, _.size(sourceTokens)])!);
 };
-const normalizePromptComparisonText = (value: unknown): string => _.join(_.words(_.toLower(_.deburr(_.toString(value)))), " ");
+const normalizePromptComparisonText = (value: unknown): string => _.join(_.words(_.toLower(_.deburr(_.toString(value)))), RT_SHARED.SYMBOL_36A9E7);
 const containsExactStyleLock = (prompt: string, styleLock: string): boolean => _.includes(normalizePromptComparisonText(prompt), normalizePromptComparisonText(styleLock));
-const getCharacterLock = (character: CharacterConfig): string => _.join(_.compact([character.name, character.hair, character.signatureClothing, character.accessories]), " ");
+const getCharacterLock = (character: CharacterConfig): string => _.join(_.compact([character.name, character.hair, character.signatureClothing, character.accessories]), RT_SHARED.SYMBOL_36A9E7);
 const createIssue = (sceneId: string, code: string, severity: ImagePromptQualityIssue["severity"]): ImagePromptQualityIssue => ({ sceneId, code, severity });
 export const removeGeneratedTextRequests = (prompt: string): string =>
   _.trim(
@@ -68,7 +69,7 @@ export const deduplicatePromptSentences = (text: string): string => {
     seen.add(normalized);
     return true;
   });
-  return _.join(uniqueParts, " ");
+  return _.join(uniqueParts, RT_SHARED.SYMBOL_36A9E7);
 };
 export const sanitizeImagePrompt = (prompt: string): string => {
   let cleaned = _.trim(_.toString(prompt));
@@ -94,7 +95,7 @@ export const sanitizeImagePrompt = (prompt: string): string => {
     .replace(/circular joints/gi, "")
     .replace(/joint (?:dots|balls|spheres)/gi, "")
     .replace(/\.{2,}/g, SOURCE_TEXT_SYMBOL_23)
-    .replace(/\s+/g, " ")
+    .replace(/\s+/g, RT_SHARED.SYMBOL_36A9E7)
     .trim();
   return cleaned;
 };
@@ -107,7 +108,7 @@ export const appendImagePromptAspectRatio = (prompt: string, aspectRatio?: strin
   IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.lastIndex = 0;
   return SOURCE_TEMPLATE_AR(`${aiGeneratedPrompt}`, `${aspectRatio}`);
 };
-export const enforceImagePromptStyle = (prompt: string, targetStyle = "", narration = "", cameraMotion = "", textMode?: TextInImageMode, aspectRatio?: string): string => {
+export const enforceImagePromptStyle = (prompt: string, targetStyle: string = "", narration: string = "", cameraMotion: string = "", textMode?: TextInImageMode, aspectRatio?: string): string => {
   void targetStyle;
   void narration;
   void cameraMotion;
@@ -155,7 +156,7 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
       if (!_.isEmpty(scene.visibleAction) && IMAGE_PROMPT_QA_CONFIG.ABSTRACT_ONLY_PATTERN.test(_.trim(scene.visibleAction))) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.ABSTRACT_ACTION, SOURCE_TEXT_WARNING));
       if (!_.isNumber(scene.expectedSubjectCount)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_SUBJECT_COUNT, SOURCE_TEXT_WARNING));
       if (_.some(scene.characterIds, (id) => !characterIds.has(id))) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.UNKNOWN_CHARACTER_ID, SOURCE_TEXT_WARNING));
-      const namedCharacterRequested = _.some(options.characters, (character) => new RegExp(SOURCE_TEMPLATE_B_B(`${_.escapeRegExp(character.name)}`), SOURCE_TEXT_I_2).test(_.join([scene.prompt, scene.visibleAction], " ")));
+      const namedCharacterRequested = _.some(options.characters, (character) => new RegExp(SOURCE_TEMPLATE_B_B(`${_.escapeRegExp(character.name)}`), SOURCE_TEXT_I_2).test(_.join([scene.prompt, scene.visibleAction], RT_SHARED.SYMBOL_36A9E7)));
       if (namedCharacterRequested && _.isEmpty(scene.characterIds)) blockingErrors.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.ERROR_CODES.MISSING_CHARACTER_ID, SOURCE_TEXT_BLOCKING));
       _.forEach(
         _.filter(options.characters, (character) => _.includes(scene.characterIds, character.id)),
@@ -183,11 +184,5 @@ export const evaluateImagePrompts = (scenes: StoryboardScene[], options: ImagePr
     if (previousScene && _.gt(getAdjacentSimilarity(previousScene.prompt, scene.prompt), IMAGE_PROMPT_QA_CONFIG.MAX_ADJACENT_SIMILARITY)) warnings.push(createIssue(scene.id, IMAGE_PROMPT_QA_CONFIG.WARNING_CODES.ADJACENT_REPETITION, SOURCE_TEXT_WARNING));
   });
   const blockingSceneIds = new Set(_.map(blockingErrors, SOURCE_TEXT_SCENEID));
-  return {
-    totalPrompts: _.size(scenes),
-    validPrompts: _.subtract(_.size(scenes), blockingSceneIds.size),
-    blockingErrors,
-    warnings,
-    passed: _.isEmpty(blockingErrors) && !_.isEmpty(scenes),
-  };
+  return { totalPrompts: _.size(scenes), validPrompts: _.subtract(_.size(scenes), blockingSceneIds.size), blockingErrors, warnings, passed: _.isEmpty(blockingErrors) && !_.isEmpty(scenes) };
 };

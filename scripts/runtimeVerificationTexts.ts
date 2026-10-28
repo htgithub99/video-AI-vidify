@@ -148,7 +148,7 @@ export const RUNTIME_VERIFICATION_TEXTS = {
   UNKNOWN_RENDER: "unknown-render",
   TSX: "tsx",
   IMPORT_REACT_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DOM_CLIENT_IMPORT:
-    "\n    import React from 'react';\n    import {createRoot} from 'react-dom/client';\n    import {useMotionStudio} from './src/hooks/useMotionStudio.ts';\n    import {jsonUtils} from './src/lib/json.ts';\n    import {MOTION_STORY_CONFIG} from './src/constants/motionVideo.ts';\n    window.previewFixture = {\n      seed: value => sessionStorage.setItem('next-preview-draft', JSON.stringify(value)),\n      saved: () => jsonUtils.getAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {}),\n    };\n    function Fixture() {\n      const studio = useMotionStudio();\n      const result = studio.renderJob?.result;\n      return <>\n        {result && <video data-testid=\"preview\" src={result.videoUrl} controls />}\n        <button onClick={() => studio.deleteResult('finished-render')}>Delete output</button>\n        <button onClick={() => studio.parseSource('New source')}>Change source</button>\n      </>;\n    }\n    (async () => {\n      const seed = sessionStorage.getItem('next-preview-draft');\n      if (seed) {\n        sessionStorage.removeItem('next-preview-draft');\n        await jsonUtils.setAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, JSON.parse(seed));\n      }\n      createRoot(document.getElementById('root')).render(<Fixture />);\n    })();\n  ",
+    "\n    import React from 'react';\n    import {createRoot} from 'react-dom/client';\n    import {useMotionStudio} from './src/features/motion/hooks/useMotionStudio.ts';\n    import {jsonUtils} from './src/lib/json.ts';\n    import {MOTION_STORY_CONFIG} from './src/constants/motionVideo.ts';\n    window.previewFixture = {\n      seed: value => sessionStorage.setItem('next-preview-draft', JSON.stringify(value)),\n      saved: () => jsonUtils.getAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {}),\n    };\n    function Fixture() {\n      const studio = useMotionStudio();\n      const result = studio.renderJob?.result;\n      return <>\n        {result && <video data-testid=\"preview\" src={result.videoUrl} controls />}\n        <button onClick={() => studio.deleteResult('finished-render')}>Delete output</button>\n        <button onClick={() => studio.parseSource('New source')}>Change source</button>\n      </>;\n    }\n    (async () => {\n      const seed = sessionStorage.getItem('next-preview-draft');\n      if (seed) {\n        sessionStorage.removeItem('next-preview-draft');\n        await jsonUtils.setAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, JSON.parse(seed));\n      }\n      createRoot(document.getElementById('root')).render(<Fixture />);\n    })();\n  ",
   BROWSER: "browser",
   IIFE: "iife",
   EMPTY_2: "{}",
@@ -317,9 +317,9 @@ export const RUNTIME_VERIFICATION_FORMATS = {
   SCENE_SETTINGS_ENTRY: (initial: unknown): string => `
     import React from 'react';
     import {createRoot} from 'react-dom/client';
-    import {useMotionStudio} from './src/hooks/useMotionStudio.ts';
-    import {MotionAiSettings} from './src/components/motion-video/MotionAiSettings.tsx';
-    import {MotionReviewToggle} from './src/components/motion-video/MotionReviewToggle.tsx';
+    import {useMotionStudio} from './src/features/motion/hooks/useMotionStudio.ts';
+    import {MotionAiSettings} from './src/features/motion/components/MotionAiSettings.tsx';
+    import {MotionReviewToggle} from './src/features/motion/components/MotionReviewToggle.tsx';
     import {jsonUtils} from './src/lib/json.ts';
     import {MOTION_STORY_CONFIG} from './src/constants/motionVideo.ts';
     function Fixture() {

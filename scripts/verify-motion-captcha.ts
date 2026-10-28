@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { MOTION_CAPTCHA as C } from "../src/constants/motionCaptcha.ts";
-import { createMotionCaptchaAlert } from "../src/lib/motionAlertBeep.ts";
+import { createMotionCaptchaAlert } from "../src/features/motion/lib/motionAlertBeep.ts";
 import { MOTION_CAPTCHA_VERIFICATION as V } from "./motionCaptchaVerificationTexts.ts";
 assert.equal(C.BEEP.COUNT, 5);
 let alerts = 0;

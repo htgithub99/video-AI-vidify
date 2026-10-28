@@ -82,13 +82,16 @@ try {
     (window as any).fixtureResponse = JSON.stringify(value);
   }, response);
   const longPrompt = V.PROMPT + V.CONTEXT_TEXT.repeat(900);
-  const longSubmission: ChatPlanningSubmission = { attempted: false, completed: false };
+  let contextProgress = 0;
+  const longSubmission: ChatPlanningSubmission = { attempted: false, completed: false, onContextProgress: () => contextProgress++ };
   const longResult = await service.submitPrompt(contextPage, roomKey, longPrompt, V.INPUT, V.SEND, V.RESPONSE, V.BUSY, [], [], undefined, V.ARTIFACT, V.REQUEST, undefined, longSubmission);
   assert.deepEqual(JSON.parse(longResult), response);
   const received = await contextPage.evaluate(() => ({ parts: (window as any).parts, messages: (window as any).messages }));
   assert.equal(received.parts.join(""), longPrompt);
   assert.ok(received.messages.every((message: string) => message.length < service.config.PROMPT_MESSAGE_LIMIT));
   assert.equal(received.messages.length, received.parts.length + 1);
+  assert.equal(contextProgress, received.parts.length * 2);
+  assert.ok(received.messages.at(-1)?.includes(R.VECTOR_INSTRUCTION));
   assert.equal(longSubmission.completed, true);
   const receipts = observeChatContextReceipts(contextPage);
   receipts.select(V.REQUEST);

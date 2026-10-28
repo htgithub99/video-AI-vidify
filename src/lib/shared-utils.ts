@@ -32,12 +32,7 @@ export const createAuthenticatedHeaders = (customHeaders: Record<string, string>
   );
 export const safeSystemFetch = async (url: string, payload: any, signal?: AbortSignal): Promise<SystemFetchResult> => {
   try {
-    const response = await fetch(url, {
-      method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
-      headers: createAuthenticatedHeaders(),
-      body: jsonUtils.safeStringify(payload),
-      signal,
-    });
+    const response = await fetch(url, { method: REFACTOR_CONSTANTS.HTTP_METHOD_POST, headers: createAuthenticatedHeaders(), body: jsonUtils.safeStringify(payload), signal });
     const data = await response.json().catch(() => null);
     if (!_.isNil(data) && _.isArray(data.rotationLogs)) {
       _.forEach(data.rotationLogs, (log: string) => {
@@ -47,11 +42,7 @@ export const safeSystemFetch = async (url: string, payload: any, signal?: AbortS
       });
     }
     if (_.eq(response.ok, false)) {
-      return {
-        success: false,
-        error: data?.error || `${ERROR_MESSAGES.API_ERROR_PREFIX}${response.status}`,
-        data,
-      };
+      return { success: false, error: data?.error || `${ERROR_MESSAGES.API_ERROR_PREFIX}${response.status}`, data };
     }
     return { success: true, data };
   } catch (error: any) {
@@ -67,12 +58,7 @@ export const safeSystemFetchStream = async (url: string, payload: any, onLine: (
     inactivityTimer = setTimeout(() => controller.abort(SYSTEM_FETCH_CONFIG.STREAM_ABORT_REASON_TIMEOUT), inactivityTimeoutMs);
   };
   try {
-    const response = await fetch(url, {
-      method: REFACTOR_CONSTANTS.HTTP_METHOD_POST,
-      headers: createAuthenticatedHeaders(),
-      body: jsonUtils.safeStringify(payload),
-      signal: controller.signal,
-    });
+    const response = await fetch(url, { method: REFACTOR_CONSTANTS.HTTP_METHOD_POST, headers: createAuthenticatedHeaders(), body: jsonUtils.safeStringify(payload), signal: controller.signal });
     if (!response.ok) throw new Error(_.join([ERROR_MESSAGES.API_ERROR_PREFIX, response.status], REFACTOR_CONSTANTS.VD_EMPTY_STRING));
     if (!response.body) throw new Error(ERROR_MESSAGES.STREAM_NOT_SUPPORTED);
     const reader = response.body.getReader();

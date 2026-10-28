@@ -1,4 +1,3 @@
-// Explicit opt-in: uploads ten existing cached MP3s to Gemini without sending a prompt.
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -15,7 +14,10 @@ for (const cache of caches.filter((item) => item.isDirectory())) {
   const folder = path.join(root, cache.name, "evaluation-audio");
   const entries = await fs.readdir(folder).catch(() => []);
   if (entries.filter((entry) => entry.endsWith(".mp3")).length >= 10) {
-    paths = entries.filter((entry) => entry.endsWith(".mp3")).slice(0, 10).map((entry) => path.join(folder, entry));
+    paths = entries
+      .filter((entry) => entry.endsWith(".mp3"))
+      .slice(0, 10)
+      .map((entry) => path.join(folder, entry));
     break;
   }
 }
@@ -52,6 +54,5 @@ try {
 } finally {
   observation?.dispose();
   await page.close().catch(() => undefined);
-  // Closing a browser connected over CDP disconnects this client, leaving Chrome running.
   await browser.close();
 }

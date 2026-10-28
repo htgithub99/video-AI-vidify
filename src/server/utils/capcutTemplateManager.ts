@@ -36,12 +36,7 @@ export function listTemplates(): CapcutTemplate[] {
       const id = _.replace(file, TEMPLATE_CONFIG.JSON_EXT, "");
       const uuidRegex = new RegExp(SOURCE_TEMPLATE_A_ZA_Z0_9(`${TEMPLATE_CONFIG.ID_LENGTH}`));
       const name = _.replace(id, uuidRegex, "");
-      templates.push({
-        id: id,
-        name: name,
-        createdAt: stat.birthtime.toISOString(),
-        filePath: filePath,
-      });
+      templates.push({ id: id, name: name, createdAt: stat.birthtime.toISOString(), filePath: filePath });
     }
   }
   return _.orderBy(templates, [TEMPLATE_CONFIG.SORT_FIELD_CREATED_AT], [TEMPLATE_CONFIG.SORT_ORDER_DESC]);

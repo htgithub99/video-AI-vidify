@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash } from "node:crypto";
 import { MOTION_PACK as K } from "../../../constants/motionPack.js";
@@ -11,16 +13,16 @@ interface PackScope {
   assemblies: Record<string, string[]>;
 }
 const scope = new AsyncLocalStorage<PackScope>();
-const styleOf = (asset: PuppetAsset): string | undefined => (asset.type === T.STYLE ? asset.id : "styleId" in asset ? asset.styleId : undefined);
+const styleOf = (asset: PuppetAsset): string | undefined => (asset.type === T.STYLE ? asset.id : RT_SERVER.STYLEID in asset ? asset.styleId : undefined);
 export const closedPuppetPackId = (preset?: string): string | undefined => (preset && (K.PRESETS[preset] || Object.values(K.PRESETS).find((id) => id === preset))) || undefined;
 export const puppetPackActive = (): boolean => !!scope.getStore();
 export const puppetPackAssetAllowed = (asset: PuppetAsset, styleId: string): boolean => {
   if (styleOf(asset) !== styleId || !(K.TYPES as readonly string[]).includes(asset.type)) return false;
   if (puppetPackAssetIssues(asset).length) return false;
   if (asset.type === T.STYLE) return true;
-  if ("aliasOf" in asset && asset.aliasOf) return false;
-  if ("catalogStatus" in asset && asset.catalogStatus === K.QUARANTINED) return false;
-  return ("tags" in asset && asset.tags.includes(K.SEED)) || ("source" in asset && asset.source === K.SEED);
+  if (RT_SERVER.ALIASOF in asset && asset.aliasOf) return false;
+  if (RT_SERVER.CATALOGSTATUS in asset && asset.catalogStatus === K.QUARANTINED) return false;
+  return (RT_SERVER.TAGS in asset && asset.tags.includes(K.SEED)) || (RT_SERVER.SOURCE in asset && asset.source === K.SEED);
 };
 export const runWithPuppetPack = <R>(styleId: string, assets: PuppetAsset[], fn: () => R, previous?: PuppetPackSnapshot): R => {
   if (previous) withPuppetPackSnapshot(previous, () => undefined);
@@ -58,7 +60,7 @@ export const withPuppetAssemblyTrial = <R>(sets: PuppetSet[], sources: string[],
     return fn();
   });
 };
-const contentOf = (asset: PuppetAsset): string => JSON.stringify(Object.fromEntries(Object.entries(asset).filter(([key]) => !(K.IGNORED_FIELDS as readonly string[]).includes(key))));
+const contentOf = (asset: PuppetAsset): string => stringifyJson(Object.fromEntries(Object.entries(asset).filter(([key]) => !(K.IGNORED_FIELDS as readonly string[]).includes(key))));
 export const guardPuppetAssetWrite = (asset: PuppetAsset): boolean => {
   const current = scope.getStore();
   if (!current || !(K.TYPES as readonly string[]).includes(asset.type)) return false;
@@ -79,7 +81,7 @@ export const registerPuppetAssembly = (asset: PuppetSet, sources: string[]): Pup
 const fingerprint = (assets: Record<string, PuppetAsset>, assemblies: Record<string, string[]>): string =>
   createHash(K.HASH)
     .update(
-      JSON.stringify([
+      stringifyJson([
         Object.keys(assets)
           .sort()
           .map((id) => [id, contentOf(assets[id])]),

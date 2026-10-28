@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import {
   SOURCE_TEMPLATE_SCRIPT_PLAN_CHAPTER_MISSING,
   SOURCE_TEMPLATE_SCRIPT_PLAN_INVALID,
@@ -58,16 +59,13 @@ const assertCompleteScriptPlan = (value: Record<string, unknown>, chapterCount: 
     throw new Error(SCRIPT_PLAN_CONFIG.INVALID_CHAPTERS_ERROR);
   }
 };
-const createRetryContents = (contents: string, chapterCount: number): string => _.join([contents, _.replace(SCRIPT_PLAN_CONFIG.RETRY_DIRECTIVE, SCRIPT_PLAN_CONFIG.CHAPTER_COUNT_TOKEN, _.toString(chapterCount))], "\n\n");
+const createRetryContents = (contents: string, chapterCount: number): string => _.join([contents, _.replace(SCRIPT_PLAN_CONFIG.RETRY_DIRECTIVE, SCRIPT_PLAN_CONFIG.CHAPTER_COUNT_TOKEN, _.toString(chapterCount))], RT_SHARED.SYMBOL_75A11D);
 export const requestValidScriptPlan = async (request: ScriptPlanRequest, chapterCount: number, generateContent: GenerateContent): Promise<ValidScriptPlanResult> => {
   const aiMetadata: unknown[] = [];
   const rotationLogs: string[] = [];
   let lastError: unknown;
   for (let attemptIndex = 0; attemptIndex < SCRIPT_PLAN_CONFIG.MAX_RESPONSE_ATTEMPTS; attemptIndex++) {
-    const response = await generateContent({
-      ...request,
-      contents: attemptIndex === 0 ? request.contents : createRetryContents(request.contents, chapterCount),
-    });
+    const response = await generateContent({ ...request, contents: attemptIndex === 0 ? request.contents : createRetryContents(request.contents, chapterCount) });
     if (response.aiMetadata) aiMetadata.push(response.aiMetadata);
     if (response.rotationLogs) rotationLogs.push(...response.rotationLogs);
     try {

@@ -1,10 +1,9 @@
 import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-
 const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8")).replace(/\\\r?\n/g, "");
 const controller = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
-const component = resolveSourceTextConstants(fs.readFileSync("src/components/MusicCreator.tsx", "utf8"));
+const component = resolveSourceTextConstants(fs.readFileSync("src/features/music/components/MusicCreator.tsx", "utf8"));
 const imageGenerator = resolveSourceTextConstants(fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8"));
 const sunoAutomation = resolveSourceTextConstants(fs.readFileSync("src/server/services/sunoAutomationService.ts", "utf8"));
 const chatPlanning = resolveSourceTextConstants(fs.readFileSync("src/server/services/chatUiPlanningService.ts", "utf8"));
@@ -42,7 +41,6 @@ assert.match(imageNotePrompt, /Giữ nguyên text, đổi bố cục/);
 assert.match(imageNotePrompt, /image is attached/);
 assert.match(imageNotePrompt, /track-list checkbox is ON/);
 assert.match(imageNotePrompt, /"normalizedNote"/);
-
 assert.match(constants, /Songwriter\/composer/);
 assert.match(constants, /Lyricist:/);
 assert.match(constants, /Music producer:/);
@@ -197,5 +195,4 @@ assert.match(component, /onClick=\{\(\) => handleCopy\(displayTitle, `title-\$\{
 assert.doesNotMatch(component, /handleCopy\(numberedTitle, `title-/);
 assert.match(component, /texts\.DNA_ANALYSIS_TITLE/);
 assert.match(component, /setStyleAnalysis\(generatedStyleAnalysis\)/);
-
 process.stdout.write("Music composition uses source-grounded songwriter, composer, lyricist, and producer roles.\n");

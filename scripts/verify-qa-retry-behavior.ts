@@ -8,30 +8,8 @@ let sceneQaCalls = 0;
 let imageGenerationCalls = 0;
 let audioQaCalls = 0;
 let finalQaCalls = 0;
-const lowSceneQuality = {
-  anatomy: 40,
-  subjectCount: 40,
-  promptAlignment: 40,
-  characterConsistency: 40,
-  composition: 40,
-  styleConsistency: 40,
-  editability: 40,
-  usableForVideo: true,
-  blockingErrors: [],
-  warnings: ["below target"],
-};
-const lowFinalQuality = {
-  visualScore: 40,
-  cropScore: 40,
-  continuityScore: 40,
-  pacingScore: 40,
-  transitionVarietyScore: 40,
-  promiseAlignmentScore: 40,
-  audioMixScore: 40,
-  subtitleLegibilityScore: 40,
-  blockingErrors: [],
-  warnings: ["below target"],
-};
+const lowSceneQuality = { anatomy: 40, subjectCount: 40, promptAlignment: 40, characterConsistency: 40, composition: 40, styleConsistency: 40, editability: 40, usableForVideo: true, blockingErrors: [], warnings: ["below target"] };
+const lowFinalQuality = { visualScore: 40, cropScore: 40, continuityScore: 40, pacingScore: 40, transitionVarietyScore: 40, promiseAlignmentScore: 40, audioMixScore: 40, subtitleLegibilityScore: 40, blockingErrors: [], warnings: ["below target"] };
 globalThis.fetch = (async (url: string | URL | Request) => {
   const target = String(url);
   if (target.includes("validate-scene-image")) {
@@ -44,21 +22,7 @@ globalThis.fetch = (async (url: string | URL | Request) => {
   }
   if (target.includes("validate-audio")) {
     audioQaCalls += 1;
-    return new Response(
-      stringifyJson({
-        success: true,
-        quality: {
-          pronunciationScore: 40,
-          pauseScore: 40,
-          loudnessScore: 40,
-          naturalnessScore: 40,
-          emotionTransitionScore: 40,
-          blockingErrors: [],
-          warnings: ["below target"],
-        },
-      }),
-      { status: 200 },
-    );
+    return new Response(stringifyJson({ success: true, quality: { pronunciationScore: 40, pauseScore: 40, loudnessScore: 40, naturalnessScore: 40, emotionTransitionScore: 40, blockingErrors: [], warnings: ["below target"] } }), { status: 200 });
   }
   if (target.includes("validate-final-video")) {
     finalQaCalls += 1;
@@ -67,12 +31,7 @@ globalThis.fetch = (async (url: string | URL | Request) => {
   return new Response(stringifyJson({ error: "unexpected request" }), { status: 500 });
 }) as typeof fetch;
 try {
-  const visualResult = acceptGeneratedThumbnail({
-    id: "thumbnail_1",
-    prompt: "A real thumbnail, medium shot",
-    style: "editorial illustration",
-    imageUrl: "real-original-image",
-  } as any);
+  const visualResult = acceptGeneratedThumbnail({ id: "thumbnail_1", prompt: "A real thumbnail, medium shot", style: "editorial illustration", imageUrl: "real-original-image" } as any);
   assert.equal(sceneQaCalls, 0);
   assert.equal(imageGenerationCalls, 0);
   assert.equal(visualResult.approved, true);

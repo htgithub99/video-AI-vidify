@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_PACK as K } from "../../../constants/motionPack.js";
 import { PUPPET_TYPES as T } from "../../../constants/motionPuppet.js";
 import { puppetSupportCompatible } from "../../../lib/motionPlacement.js";
@@ -8,7 +9,7 @@ import { resolvePuppetSetPlan } from "./setPlan.js";
 import { MOTION_LIBRARY_RELEASE as RELEASE } from "../../../constants/motionLibraryRelease.js";
 export const puppetSetWithFixtureStates = (base: PuppetSet, requested: Record<string, string> = {}): PuppetSet | null => {
   if (!puppetPackActive() || !Object.keys(requested).length) return base;
-  if (JSON.stringify(Object.entries(base.fixtureStates || {}).sort()) === JSON.stringify(Object.entries(requested).sort())) return base;
+  if (stringifyJson(Object.entries(base.fixtureStates || {}).sort()) === stringifyJson(Object.entries(requested).sort())) return base;
   const project = (set: PuppetSet): PuppetSet | null => {
     let svg = set.svg;
     const fixtures = (set.fixtures || []).map((fixture) => ({ ...fixture }));
@@ -19,7 +20,7 @@ export const puppetSetWithFixtureStates = (base: PuppetSet, requested: Record<st
       svg = svg.replace(fixture.layer, fixture.states[state]);
       fixture.layer = fixture.states[state];
     }
-    const projected = { ...set, id: newPuppetId(T.SET, K.POLICY + set.id + JSON.stringify(Object.entries(requested).sort())), tags: [...set.tags.filter((tag) => tag !== K.SEED), K.COMPOSED], svg, fixtures, fixtureStates: { ...requested }, variants: undefined };
+    const projected = { ...set, id: newPuppetId(T.SET, K.POLICY + set.id + stringifyJson(Object.entries(requested).sort())), tags: [...set.tags.filter((tag) => tag !== K.SEED), K.COMPOSED], svg, fixtures, fixtureStates: { ...requested }, variants: undefined };
     return set.plan?.version === RELEASE.PLAN_VERSION ? resolvePuppetSetPlan(projected, (type, id) => readPuppet(type as any, id)) : projected;
   };
   const main = project(base);

@@ -33,9 +33,25 @@ import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import type { MotionSpec } from "../../types/motionVideo.js";
 import { getStaticResourcePath } from "../utils/paths.js";
-interface FontEntry { family: string; weight: number; style: string; file: string; unicodeRange: string; }
-interface EngineCache { signature: string; script: string; fontCss: string; fontFaces: { family: string; weight: number; style: string; src: string; unicodeRange: string }[]; }
-export interface MotionValidation<T> { value: T; errors: string[]; warnings?: string[]; stats?: Record<string, number>; }
+interface FontEntry {
+  family: string;
+  weight: number;
+  style: string;
+  file: string;
+  unicodeRange: string;
+}
+interface EngineCache {
+  signature: string;
+  script: string;
+  fontCss: string;
+  fontFaces: { family: string; weight: number; style: string; src: string; unicodeRange: string }[];
+}
+export interface MotionValidation<T> {
+  value: T;
+  errors: string[];
+  warnings?: string[];
+  stats?: Record<string, number>;
+}
 let cache: EngineCache | null = null;
 export const getMotionEngineDir = (): string => {
   const resource = getStaticResourcePath(MOTION_VIDEO_CONSTANTS.ENGINE_DIR);

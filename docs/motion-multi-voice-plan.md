@@ -40,7 +40,7 @@ Planner lỗi hoặc trả chữ không khớp → giữ lời thoại gốc. C�
 | `src/server/services/motionAudioService.ts` | Clip và voice stem stereo |
 | `src/server/services/motionStoryService.ts` | Lượt thoại từ bước viết kịch bản |
 | `src/server/services/motionDirectorService.ts` | Timeline/phụ đề theo clip |
-| `src/hooks/useMotionStudio.ts` | Tự tạo voice, invalidation, preview, xuất |
+| `src/features/motion/hooks/useMotionStudio.ts` | Tự tạo voice, invalidation, preview, xuất |
 | `src/lib/motionAudioDirection.ts` | Phân biệt format, chuẩn hóa đặc điểm nhân vật và định hướng âm thanh chung |
 
 ## Kiểm chứng

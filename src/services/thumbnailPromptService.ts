@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import {
   SOURCE_TEMPLATE_INVALID_AI_THUMBNAIL_ARTIFACT,
   SOURCE_TEMPLATE_THUMBNAIL_MISSING,
@@ -28,7 +29,7 @@ const cleanTextValue = (val: unknown): string => {
   if (_.isEmpty(str)) return "";
   return str.normalize(SOURCE_TEXT_NFC);
 };
-export const normalizeThumbnailHeadline = (value: unknown): string => cleanTextValue(value).replace(/\s+/g, " ").trim().normalize(SOURCE_TEXT_NFC);
+export const normalizeThumbnailHeadline = (value: unknown): string => cleanTextValue(value).replace(/\s+/g, RT_SHARED.SYMBOL_36A9E7).trim().normalize(SOURCE_TEXT_NFC);
 const normalizeThumbnail = (source: Partial<ThumbnailItem>, textMode: string): ThumbnailItem => {
   const hasText = Boolean(source.hasText);
   if (hasText !== !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE)) throw new Error(SOURCE_TEXT_THUMBNAIL_TEXT_MODE_MISMATCH);
@@ -104,8 +105,8 @@ export const getThumbnailPlanningIssues = (generatedItems: Array<Partial<Thumbna
         const hasText = !_.isEqual(textMode, THUMBNAIL_PROMPT_CONFIG.NO_TEXT_MODE);
         const containsAspectRatio = IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.test(generationPrompt);
         IMAGE_PROMPT_QA_CONFIG.ASPECT_FLAG_PATTERN.lastIndex = 0;
-        const normalizedPrompt = _.join(_.words(_.toLower(_.deburr(generationPrompt))), " ");
-        const normalizedStyleLock = _.join(_.words(_.toLower(_.deburr(styleLock))), " ");
+        const normalizedPrompt = _.join(_.words(_.toLower(_.deburr(generationPrompt))), RT_SHARED.SYMBOL_36A9E7);
+        const normalizedStyleLock = _.join(_.words(_.toLower(_.deburr(styleLock))), RT_SHARED.SYMBOL_36A9E7);
         return _.compact([
           ..._.map([SOURCE_TEXT_ID, SOURCE_TEXT_STYLE, SOURCE_TEXT_LAYOUT, SOURCE_TEXT_LAYOUTRATIONALE, SOURCE_TEXT_TYPOGRAPHY, SOURCE_TEXT_TYPOGRAPHYID, SOURCE_TEXT_COLORSUGGESTION, SOURCE_TEXT_SUBJECTFOCUS], (field) => _.isEmpty(_.trim(_.toString(_.get(item, field)))) && SOURCE_TEMPLATE_THUMBNAIL_MISSING(`${field}`)),
           !_.isBoolean(item.hasText) && SOURCE_TEXT_THUMBNAIL_HASTEXT_INVALID,

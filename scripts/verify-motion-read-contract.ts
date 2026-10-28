@@ -6,7 +6,7 @@ import { MOTION_PACK as PACK } from "../src/constants/motionPack.js";
 import { VISUAL_QA as T, visualReadFixture } from "./motionVisualContractVerificationTexts.js";
 import { readPuppetLines, composePuppetLines, fitPuppetRead } from "../src/server/services/puppet/director.js";
 import { normalizePuppetReadContinuity } from "../src/server/services/puppet/readContinuity.js";
-import { motionDisplayedJob } from "../src/lib/motionDisplayedJob.js";
+import { motionDisplayedJob } from "../src/features/motion/lib/motionDisplayedJob.js";
 import { MotionJobStatus as Status, MotionStoryJobKind } from "../src/types/motionVideo.js";
 const lines: any[] = T.BEATS.map((key) => ({ key, text: T.PROP_TEXT, place: T.ROOM, cast: [T.A, T.B] }));
 const analysis: any = { title: T.ROOM, logline: T.TEXT, cast: T.CAST };

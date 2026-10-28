@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { layoutRemotionNodes } from "../src/lib/motionRemotion.js";
-import { resolveRemotionContinuity } from "../src/server/services/remotion/sceneContinuity.js";
+import { resolveRemotionContinuity } from "./legacy-motion-remotion/sceneContinuity.js";
 import { createVectorCutoutInspector } from "../src/server/services/remotion/vectorCutoutInspector.js";
 import { renderRemotionStill } from "../src/server/services/motionRemotionRenderService.js";
 import { normalizeMotionRenderBehavior } from "../src/lib/motionRenderBehavior.js";

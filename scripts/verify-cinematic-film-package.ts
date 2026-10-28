@@ -99,10 +99,7 @@ assert.match(vietnameseThumbnailPrompt, /all surrounding visual direction inside
 const thumbnailRepairPrompt = getCinematicThumbnailTechnicalRepairPrompt(vietnameseThumbnailPrompt, "{}", ["thumbnail_generation_prompt_missing"]);
 assert.match(thumbnailRepairPrompt, /generationPrompt and all visual\/directorial metadata are English/i);
 assert.match(thumbnailRepairPrompt, /only the exact visible headline may use the selected screenplay language/i);
-const providerRepairPrompt = getCinematicThumbnailProviderRepairPrompt('Mythological hero with exact headline "ĐẠI CHIẾN"', {
-  layoutId: "interaction_arrow_headline",
-  textText: "ĐẠI CHIẾN",
-});
+const providerRepairPrompt = getCinematicThumbnailProviderRepairPrompt('Mythological hero with exact headline "ĐẠI CHIẾN"', { layoutId: "interaction_arrow_headline", textText: "ĐẠI CHIẾN" });
 assert.match(providerRepairPrompt, /without mistaking the subject for third-party entertainment content/i);
 assert.match(providerRepairPrompt, /original public-domain interpretation/i);
 assert.match(providerRepairPrompt, /Preserve the same story event, character identity, composition, approved layout and exact visible headline/i);
@@ -149,10 +146,10 @@ assert(incompleteThumbnailIssues.includes("thumbnail_layout_not_in_catalog"));
 assert(incompleteThumbnailIssues.includes("thumbnail_headline_missing"));
 assert(incompleteThumbnailIssues.includes("thumbnail_style_missing"));
 const controllerSource = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
-const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8"));
-const filmSetupSource = resolveSourceTextConstants(fs.readFileSync("src/components/cinematic/CinematicFilmSetupSection.tsx", "utf8"));
+const pipelineSource = resolveSourceTextConstants(fs.readFileSync("src/features/video-generation/hooks/useAutoVideoPipeline.ts", "utf8"));
+const filmSetupSource = resolveSourceTextConstants(fs.readFileSync("src/features/cinematic/components/CinematicFilmSetupSection.tsx", "utf8"));
 const chatSettingsSource = resolveSourceTextConstants(fs.readFileSync("src/components/common/ChatPlanningSettingsBlock.tsx", "utf8"));
-const generatorSource = resolveSourceTextConstants(fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8"));
+const generatorSource = resolveSourceTextConstants(fs.readFileSync("src/features/video-generation/components/AutoVideoGenerator.tsx", "utf8"));
 const episodeServiceSource = resolveSourceTextConstants(fs.readFileSync("src/services/cinematicEpisodeService.ts", "utf8"));
 const imageGeneratorSource = resolveSourceTextConstants(fs.readFileSync("src/server/services/imageGeneratorService.ts", "utf8"));
 const cinematicPromptSource = resolveSourceTextConstants(fs.readFileSync("src/constants/cinematicPrompts.ts", "utf8"));

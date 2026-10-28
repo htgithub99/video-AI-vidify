@@ -77,12 +77,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
   appLog(`${AutoLoginConstants.LOGS.START_LOGIN}${email}`);
   try {
     appLog(AutoLoginConstants.LOGS.NAVIGATING_SIGN_IN);
-    await page
-      .goto(EXTERNAL_URLS.GOOGLE_SIGN_IN, {
-        waitUntil: SOURCE_TEXT_LOAD,
-        timeout: AutoLoginConstants.CONFIG.NAVIGATION_TIMEOUT_MS,
-      })
-      .catch(() => undefined);
+    await page.goto(EXTERNAL_URLS.GOOGLE_SIGN_IN, { waitUntil: SOURCE_TEXT_LOAD, timeout: AutoLoginConstants.CONFIG.NAVIGATION_TIMEOUT_MS }).catch(() => undefined);
     await page.waitForLoadState(SOURCE_TEXT_NETWORKIDLE).catch(() => {});
     await delayAsync(AutoLoginConstants.CONFIG.PAGE_READY_DELAY_MS);
     await captureLoginDomState(page, SOURCE_TEXT_LOGIN_PAGE_OPENED);
@@ -117,10 +112,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
       }
     }
     try {
-      await page.waitForSelector(AutoLoginConstants.SELECTORS.PWD_INPUT, {
-        state: SOURCE_TEXT_VISIBLE,
-        timeout: AutoLoginConstants.CONFIG.PASSWORD_SCREEN_TIMEOUT_MS,
-      });
+      await page.waitForSelector(AutoLoginConstants.SELECTORS.PWD_INPUT, { state: SOURCE_TEXT_VISIBLE, timeout: AutoLoginConstants.CONFIG.PASSWORD_SCREEN_TIMEOUT_MS });
     } catch (err) {
       if (!(await hasVisibleLocator(page, AutoLoginConstants.SELECTORS.MANUAL_VERIFICATION_SELECTORS))) {
         await captureLoginDomState(page, SOURCE_TEXT_PASSWORD_SCREEN_MISSING);
@@ -200,12 +192,7 @@ export async function autoLoginGoogle(page: Page, account: GoogleAccount, isHead
       if (manualWaitLogged && leftLoginFlow && !checkedMyAccountAfterManual) {
         checkedMyAccountAfterManual = true;
         try {
-          await page
-            .goto(EXTERNAL_URLS.GOOGLE_MY_ACCOUNT, {
-              waitUntil: SOURCE_TEXT_DOMCONTENTLOADED,
-              timeout: AutoLoginConstants.CONFIG.MANUAL_ACCOUNT_CHECK_TIMEOUT_MS,
-            })
-            .catch(() => undefined);
+          await page.goto(EXTERNAL_URLS.GOOGLE_MY_ACCOUNT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: AutoLoginConstants.CONFIG.MANUAL_ACCOUNT_CHECK_TIMEOUT_MS }).catch(() => undefined);
           if (_.includes(page.url(), REFACTOR_CONSTANTS.KEYWORD_MY_ACCOUNT)) {
             appLog(AutoLoginConstants.LOGS.MANUAL_VERIFICATION_DONE);
             await captureLoginDomState(page, SOURCE_TEXT_MANUAL_VERIFICATION_COMPLETED);

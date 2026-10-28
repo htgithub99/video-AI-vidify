@@ -37,13 +37,7 @@ export const readDeepSeekUploadState = async (input: Locator) => {
       const chips = Array.from(root.querySelectorAll(config.ATTACHMENT)).filter(dom.visible);
       const alerts = Array.from(document.querySelectorAll(config.ALERT)).filter(dom.visible);
       const images = Array.from(root.querySelectorAll(SRT.SOURCE_TEXT_IMG)).filter(dom.visible) as HTMLImageElement[];
-      return {
-        count: chips.length,
-        labels: chips.map(dom.label),
-        busy: Array.from(root.querySelectorAll(config.UPLOAD_BUSY)).some(dom.visible) || images.some((img) => !img.complete || !img.naturalWidth),
-        failed: [...chips, ...alerts].some((node) => config.UPLOAD_ERROR.test(dom.label(node))),
-        sendReady: Array.from(root.querySelectorAll(config.SEND)).some(dom.visible),
-      };
+      return { count: chips.length, labels: chips.map(dom.label), busy: Array.from(root.querySelectorAll(config.UPLOAD_BUSY)).some(dom.visible) || images.some((img) => !img.complete || !img.naturalWidth), failed: [...chips, ...alerts].some((node) => config.UPLOAD_ERROR.test(dom.label(node))), sendReady: Array.from(root.querySelectorAll(config.SEND)).some(dom.visible) };
     },
     { ...D, studioTexts: { SRT: { SOURCE_TEXT_HIDDEN: SRT.SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE: SRT.SOURCE_TEXT_NONE, SOURCE_TEXT_TITLE: SRT.SOURCE_TEXT_TITLE, SOURCE_TEXT_SYMBOL_52: SRT.SOURCE_TEXT_SYMBOL_52, SOURCE_TEXT_IMG: SRT.SOURCE_TEXT_IMG }, XRT: { IMAGE_LABEL_SELECTOR: XRT.IMAGE_LABEL_SELECTOR, ALT: XRT.ALT } } },
   );

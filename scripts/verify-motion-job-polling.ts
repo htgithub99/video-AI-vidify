@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { pollMotionJob } from "../src/components/motion-video/motionApi.ts";
-import { MOTION_JOB_POLLING as C } from "../src/constants/motionJobPolling.ts";
+import { pollMotionJob } from "../src/features/motion/components/motionApi.ts";
+import { MOTION_JOB_POLLING as C } from "../src/features/motion/constants/motionJobPolling.ts";
 import { MOTION_JOB_POLLING_VERIFICATION as V } from "./motionJobPollingVerificationTexts.ts";
 import { MotionJobStatus } from "../src/types/motionVideo.ts";
 const originalFetch = globalThis.fetch;

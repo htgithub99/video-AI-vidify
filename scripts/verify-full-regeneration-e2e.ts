@@ -3,8 +3,6 @@ import { clearProjectImageOutputs } from "../src/services/projectRegenerationSer
 import { createThumbnailGenerationPrompt } from "../src/services/thumbnailPromptService.ts";
 import { BackgroundMode, ImageFocusMode, TextInImageMode } from "../src/types.ts";
 import { ThumbnailLayoutId, ThumbnailTypographyId } from "../src/constants/thumbnail.ts";
-
-// 1. Kiểm tra dọn dẹp state và làm sạch referencePrompt khi tạo lại ảnh
 const mockProject: any = {
   id: "video_1",
   name: "Dự án video 1",
@@ -17,37 +15,15 @@ const mockProject: any = {
     imageFocusMode: ImageFocusMode.Default,
     aspectRatio: "16:9",
   },
-  storyboard: [
-    {
-      id: "sc_1",
-      script: "Một người phụ nữ đứng trước khu vực nguy hiểm trong nhà máy",
-      visibleAction: "A female worker stops at the edge of a hazardous factory work zone",
-      textAllowed: false,
-      prompt: "Line art: clean black lines. A female worker facing an industrial hazard on the factory floor",
-      assetUrl: "/assets/projects/video_1/images/sc_1.png",
-      assetStatus: "completed",
-    },
-  ],
-  thumbnails: [
-    {
-      id: "th_1",
-      imageUrl: "/assets/projects/video_1/images/thumb_1.png",
-    },
-  ],
+  storyboard: [{ id: "sc_1", script: "Một người phụ nữ đứng trước khu vực nguy hiểm trong nhà máy", visibleAction: "A female worker stops at the edge of a hazardous factory work zone", textAllowed: false, prompt: "Line art: clean black lines. A female worker facing an industrial hazard on the factory floor", assetUrl: "/assets/projects/video_1/images/sc_1.png", assetStatus: "completed" }],
+  thumbnails: [{ id: "th_1", imageUrl: "/assets/projects/video_1/images/thumb_1.png" }],
 };
-
 const regeneratedProject = clearProjectImageOutputs(mockProject);
-
-// referencePrompt phải được reset về style tinh gọn
 assert.equal(regeneratedProject.visualConfig.referencePrompt, "Flat stick-figure illustration");
 assert.equal(regeneratedProject.storyboard[0].assetUrl, undefined);
 assert.equal(regeneratedProject.thumbnails.length, 0);
 assert.equal(regeneratedProject.storyboard[0].prompt, "");
-
-// Prompt của phân cảnh phải sạch hoàn toàn nhãn lý thuyết
 assert.doesNotMatch(regeneratedProject.storyboard[0].prompt, /Line art:|Palette:|Rendering:|Strict character visual lock:/);
-
-// 2. Kiểm tra prompt thumbnail AI được giữ nguyên và chỉ thêm tham số kỹ thuật tỉ lệ.
 const mockThumbnail = {
   id: "th_1",
   prompt: 'Flat stick-figure illustration of a worried worker looking at a warning sign with high tension in the factory. Render exactly one headline: "HIỂM NGUY CẬN KỀ".',
@@ -59,10 +35,8 @@ const mockThumbnail = {
   typographyId: ThumbnailTypographyId.CondensedImpact,
   subjectFocus: "Worried worker",
 };
-
 const thumbPrompt = createThumbnailGenerationPrompt(mockThumbnail, mockThumbnail.style, "16:9", true);
 assert.ok(thumbPrompt.includes("HIỂM NGUY CẬN KỀ"));
 assert.ok(thumbPrompt.includes("--ar 16:9"));
 assert.doesNotMatch(thumbPrompt, /Line art:|Palette:|Rendering:/);
-
 process.stdout.write("Full Regeneration & Cinematic Prompt E2E Verification Passed!\n");

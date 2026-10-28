@@ -126,7 +126,7 @@ export const MOTION_SOUND_KINDS = [
   { kind: "room", layer: "ambience", pattern: /\broom tone\b|\broom\b.*\bambien|\bindoor\b.*\bambien|khong gian phong/, duration: 30 },
 ] as const;
 export const MOTION_SOUND_FOLDER_KINDS: Record<string, string> = { kinh_di_ma_quai: "horror", dien_anh_chuyen_canh: "whoosh", hai_huoc_meme: "cartoon", sci_fi_tuong_lai: "sci_fi" };
-export const MOTION_SOUND_GENRE_ALIAS: Record<string, string> = { horror: "horror", ghost_tale: "horror", mystery: "mystery", true_crime: "mystery", history: "history_map", disaster: "documentary", biography: "documentary", explainer: "explainer" };
+export const MOTION_SOUND_GENRE_ALIAS: Record<string, string> = { horror: "horror", ghost_tale: "horror", mystery: "mystery", true_crime: "mystery", history: "history_map", history_story: "documentary", disaster: "documentary", biography: "documentary", explainer: "explainer" };
 const SCARE_RE = /\bbong nhien\b|\bdot nhien\b|\bbong dung\b|\bchot thay\b|\bgiat minh\b|\bgiat bat\b|\bhien len\b|\bsung so\b|\bla het\b|\bru len\b|\btat phut\b|\bvut tat\b|\bhon via\b|\bbong (?:den|trang|nguoi)\b|\bhon ma\b|\bbong ma\b|\boan hon\b|\bxac chet\b|\bhien ra\b|\bthet len\b|\bhet len\b|\bsuddenly\b|\bghost\b|\bcorpse\b|\bscream/;
 const TENSION_RE = /\bso hai\b|\brun ray\b|\bhoang so\b|\bnin tho\b|\bsong lung\b|\bon lanh\b|\btim dap\b|\bcang thang\b|\bafraid\b|\bterrified\b|\bfear\b/;
 const CALL_RE = /\bthi tham\b|\bxi xao\b|\btieng goi\b|\bgoi ten\b|\bwhisper/;

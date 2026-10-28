@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_APPEARANCE as A } from "../constants/motionAppearance.js";
 import { puppetSourceQuote } from "./motionPuppetValues.js";
 import { illustrationSemanticText } from "./motionIllustrationPolicy.js";
@@ -28,9 +30,9 @@ export const normalizePuppetAppearance = (raw: unknown, source: string): PuppetA
     const description = descriptionOf(text, part, match);
     const localEvidence = evidence.slice(match.index! + match[0].length, match.index! + match[0].length + description.length);
     if (A.COLOR_EVIDENCE[color].test(localEvidence) && A.COLOR_WORDS[color].test(description) && !A.NEGATED.test(description.slice(0, description.search(A.COLOR_WORDS[color])))) out[part] = color;
-    else if (part === "body" && color === "white" && match[0] === "bong trang") out.body = color;
+    else if (part === RT_SHARED.BODY && color === RT_CORE.WHITE && match[0] === RT_CORE.BONG_TRANG) out.body = color;
   }
-  const formMatch = value.form === "revealed" ? text.match(A.REVEAL) : value.form === "human" ? text.match(A.HUMAN) : null;
+  const formMatch = value.form === RT_CORE.REVEALED ? text.match(A.REVEAL) : value.form === RT_CORE.HUMAN ? text.match(A.HUMAN) : null;
   if (formMatch && !A.NEGATED.test(text.slice(0, formMatch.index))) out.form = value.form;
   return A.PARTS.some((part) => out[part]) || out.form ? out : undefined;
 };
@@ -43,10 +45,10 @@ export const inferPuppetAppearance = (source: string): PuppetAppearance | undefi
     const description = descriptionOf(text, part, match);
     const color = Object.entries(A.COLOR_WORDS).find(([, pattern]) => pattern.test(description))?.[0];
     if (color) raw[part] = color;
-    else if (part === "body" && match[0] === "bong trang") raw.body = "white";
+    else if (part === RT_SHARED.BODY && match[0] === RT_CORE.BONG_TRANG) raw.body = RT_CORE.WHITE;
   }
-  if (A.REVEAL.test(text)) raw.form = "revealed";
-  else if (A.HUMAN.test(text)) raw.form = "human";
+  if (A.REVEAL.test(text)) raw.form = RT_CORE.REVEALED;
+  else if (A.HUMAN.test(text)) raw.form = RT_CORE.HUMAN;
   return normalizePuppetAppearance(raw, source);
 };
 export const puppetReadAppearances = (read: PuppetRead): Map<string, PuppetAppearance> => {
@@ -54,8 +56,8 @@ export const puppetReadAppearances = (read: PuppetRead): Map<string, PuppetAppea
   for (const state of read.states || []) if (read.who.includes(state.char) && state.appearance) result.set(state.char, state.appearance);
   return result;
 };
-export const puppetAppearanceKey = (appearance: PuppetAppearance): string => [...A.PARTS.map((part) => appearance[part] || ""), appearance.form || ""].join(":");
-export const mergePuppetAppearances = (before: PuppetAppearance | undefined, next: PuppetAppearance): PuppetAppearance => ({ ...(next.form === "human" ? {} : next.body ? { hair: before?.hair, form: before?.form } : before), ...next });
+export const puppetAppearanceKey = (appearance: PuppetAppearance): string => [...A.PARTS.map((part) => appearance[part] || ""), appearance.form || ""].join(RT_SHARED.SYMBOL_E7AC07);
+export const mergePuppetAppearances = (before: PuppetAppearance | undefined, next: PuppetAppearance): PuppetAppearance => ({ ...(next.form === RT_CORE.HUMAN ? {} : next.body ? { hair: before?.hair, form: before?.form } : before), ...next });
 export const withPuppetFrameAppearance = (frame: PuppetFrame, read: PuppetRead): PuppetFrame => {
   const appearances = puppetReadAppearances(read);
   return {
@@ -74,10 +76,10 @@ export const puppetCharacterAppearance = (character: PuppetCharacter, appearance
   if (clothes) colors.body = colors.sleeve = A.COLORS[clothes];
   if (appearance.hair) colors.hair = A.COLORS[appearance.hair];
   const replacements = (keys: (keyof typeof colors)[]) => new Map(keys.filter((key) => character.colors[key] && colors[key] !== character.colors[key]).map((key) => [character.colors[key]!.toLowerCase(), colors[key]!]));
-  const headColors = replacements(["skin", "face", "hair"]),
+  const headColors = replacements([RT_CORE.SKIN, RT_CORE.FACE, RT_CORE.HAIR]),
     bodyColors = new Map<string, string>();
   if (appearance.body) for (const svg of Object.values(character.body)) for (const match of svg.matchAll(/\bfill=["'](#[0-9a-f]{6}|#[0-9a-f]{3})["']/gi)) bodyColors.set(match[1].toLowerCase(), A.COLORS[appearance.body]);
-  for (const [color, value] of replacements(["body", "sleeve"])) bodyColors.set(color, value);
+  for (const [color, value] of replacements([RT_SHARED.BODY, RT_CORE.SLEEVE])) bodyColors.set(color, value);
   const allColors = new Map([...bodyColors, ...headColors]);
   const recolor = (svg: string, palette: Map<string, string>): string => svg.replace(/#[0-9a-f]{6}\b|#[0-9a-f]{3}\b/gi, (color) => palette.get(color.toLowerCase()) || color);
   const views = (values: PuppetCharacter["head"], palette: Map<string, string>) => Object.fromEntries(Object.entries(values).map(([view, svg]) => [view, recolor(svg, palette)]));

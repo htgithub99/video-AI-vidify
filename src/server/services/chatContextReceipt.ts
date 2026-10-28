@@ -1,10 +1,12 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { parseJson } from "../../lib/jsonStringify.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../../constants/cinematicConstants.js";
 import { MOTION_AI_RECOVERY as R } from "../../constants/motionAiRecovery.js";
 import type { Page } from "playwright";
 export const parseChatContextReceipt = (text: string): unknown => {
   for (const candidate of [...text.matchAll(C.CONTEXT_RECEIPT_PATTERN)].reverse()) {
     try {
-      const value = JSON.parse(candidate[0]);
+      const value = parseJson(candidate[0]);
       if (value?.artifactType === C.CONTEXT_ARTIFACT && typeof value.requestId === "string" && Number.isInteger(value.receivedPart) && value.receivedPart > 0) return value;
     } catch {}
   }
@@ -44,16 +46,16 @@ export const observeChatContextReceipts = (page: Page): ChatContextReceipts => {
     }
   };
   let room = conversation(page.url());
-  page.on("request", (request) => {
+  page.on(RT_SERVER.REQUEST, (request) => {
     if (request.isNavigationRequest() && request.frame() === page.mainFrame()) receipts.invalidate();
   });
-  page.on("framenavigated", (frame) => {
+  page.on(RT_SERVER.FRAMENAVIGATED, (frame) => {
     if (frame !== page.mainFrame()) return;
     const next = conversation(frame.url());
     if (room && room !== next) receipts.invalidate();
     room = next;
   });
-  page.on("close", () => receipts.invalidate());
+  page.on(RT_SERVER.CLOSE, () => receipts.invalidate());
   return receipts;
 };
 export const confirmChatContextPart = async (prompt: string, id: string, part: number, send: (prompt: string) => Promise<unknown>, signal?: AbortSignal): Promise<void> => {

@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_RENDER_VALIDATION as V } from "../constants/motionRenderValidation.js";
 import type { MotionRenderSpec } from "../types/motionVisual.js";
 import { isRemotionSpec } from "./motionVisual.js";
@@ -41,7 +42,7 @@ export const motionOutputQualityIssues = (stderr: string, spec: MotionRenderSpec
   let start: number | undefined;
   const silence: MotionMediaRange[] = [];
   for (const match of stderr.matchAll(V.SILENCE_EVENT)) {
-    if (match[1] === "start") start = Number(match[2]);
+    if (match[1] === RT_CORE.START) start = Number(match[2]);
     else if (start !== undefined) {
       silence.push({ start, end: Number(match[2]) });
       start = undefined;

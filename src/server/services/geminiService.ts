@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { parseJson } from "../../lib/jsonStringify.js";
 import {
   SOURCE_TEMPLATE_AI_ROOM_COMPLETED_WITHOUT_API_FALLBACK,
   SOURCE_TEMPLATE_REQUIRED_RESPONSE_CONTRACT_RETURN_ONLY_VALID,
@@ -115,15 +117,7 @@ export const estimateGeminiContents = (contents: unknown): GeminiContentEstimate
 const createRoomRequestPayload = (contents: unknown): { prompt: string; attachments: Array<{ name: string; mimeType: string; buffer: Buffer }> } => {
   const textParts: string[] = [];
   const attachments: Array<{ name: string; mimeType: string; buffer: Buffer }> = [];
-  const extensionByMimeType: Record<string, string> = {
-    "image/jpeg": SOURCE_TEXT_JPG,
-    "image/png": SOURCE_TEXT_PNG,
-    "image/webp": SOURCE_TEXT_WEBP,
-    "video/mp4": SOURCE_TEXT_MP4,
-    "audio/mpeg": SOURCE_TEXT_MP3,
-    "audio/mp4": SOURCE_TEXT_M4A,
-    "audio/wav": SOURCE_TEXT_WAV,
-  };
+  const extensionByMimeType: Record<string, string> = { "image/jpeg": SOURCE_TEXT_JPG, "image/png": SOURCE_TEXT_PNG, "image/webp": SOURCE_TEXT_WEBP, "video/mp4": SOURCE_TEXT_MP4, "audio/mpeg": SOURCE_TEXT_MP3, "audio/mp4": SOURCE_TEXT_M4A, "audio/wav": SOURCE_TEXT_WAV };
   const visit = (value: unknown): void => {
     if (_.isString(value)) {
       textParts.push(value);
@@ -141,11 +135,7 @@ const createRoomRequestPayload = (contents: unknown): { prompt: string; attachme
       const encodedData = _.includes(rawData, SOURCE_TEXT_BASE64_2) ? _.last(_.split(rawData, SOURCE_TEXT_BASE64_2)) || "" : rawData;
       if (_.isEmpty(encodedData)) throw createAppError(SOURCE_TEXT_ROOM_ONLY_AI_EXECUTION_RECEIVED_AN);
       const extension = extensionByMimeType[mimeType] || _.replace(_.last(_.split(mimeType, SOURCE_TEXT_SYMBOL)) || SOURCE_TEXT_BIN, /[^a-z0-9]/gi, "");
-      attachments.push({
-        name: SOURCE_TEMPLATE_ROOM_MEDIA(`${attachments.length + 1}`, `${extension || SOURCE_TEXT_BIN}`),
-        mimeType,
-        buffer: Buffer.from(encodedData, SOURCE_TEXT_BASE64),
-      });
+      attachments.push({ name: SOURCE_TEMPLATE_ROOM_MEDIA(`${attachments.length + 1}`, `${extension || SOURCE_TEXT_BIN}`), mimeType, buffer: Buffer.from(encodedData, SOURCE_TEXT_BASE64) });
       return;
     }
     if (_.has(source, SOURCE_TEXT_FILEDATA)) throw createAppError(SOURCE_TEXT_ROOM_ONLY_AI_EXECUTION_REQUIRES_INLINE);
@@ -153,22 +143,14 @@ const createRoomRequestPayload = (contents: unknown): { prompt: string; attachme
     _.forEach(_.omit(source, [SOURCE_TEXT_TEXT, SOURCE_TEXT_ROLE]), visit);
   };
   visit(contents);
-  return { prompt: _.join(_.compact(_.map(textParts, _.trim)), "\n\n"), attachments };
+  return { prompt: _.join(_.compact(_.map(textParts, _.trim)), RT_SHARED.SYMBOL_75A11D), attachments };
 };
 const isSchemaCompatibilityError = (error: unknown): boolean => {
-  const normalizedError = _.toLower(_.join([_.toString(_.get(error, SOURCE_TEXT_MESSAGE)), _.toString(error), _.toString(_.get(error, SOURCE_TEXT_STATUS))], " "));
+  const normalizedError = _.toLower(_.join([_.toString(_.get(error, SOURCE_TEXT_MESSAGE)), _.toString(error), _.toString(_.get(error, SOURCE_TEXT_STATUS))], RT_SHARED.SYMBOL_36A9E7));
   return _.some(GEMINI_REQUEST_POLICY.INVALID_ARGUMENT_PATTERNS, (pattern) => _.includes(normalizedError, _.toLower(pattern)));
 };
 let currentModelIndex = 0;
-export const generateContentWithRetry = async (
-  params: {
-    contents: string | any;
-    config?: any;
-    task?: { capability?: AiTaskCapability; budgetUsd?: number; promptVersion?: string; roomWorkerId?: string };
-  },
-  retries: number = GEMINI_REQUEST_POLICY.DEFAULT_RETRIES,
-  delayMs: number = GEMINI_REQUEST_POLICY.BASE_DELAY_MS,
-): Promise<any> => {
+export const generateContentWithRetry = async (params: { contents: string | any; config?: any; task?: { capability?: AiTaskCapability; budgetUsd?: number; promptVersion?: string; roomWorkerId?: string } }, retries: number = GEMINI_REQUEST_POLICY.DEFAULT_RETRIES, delayMs: number = GEMINI_REQUEST_POLICY.BASE_DELAY_MS): Promise<any> => {
   const roomOnlyContext = getRoomOnlyContext();
   const roomExecution = getRoomExecution();
   if (roomOnlyContext && !roomExecution) {
@@ -197,7 +179,7 @@ export const generateContentWithRetry = async (
           closeRoomOnComplete: false,
         });
         if (params.config?.responseJsonSchema) {
-          assertResponseSchema(JSON.parse(candidateResponse.text), params.config.responseJsonSchema, SOURCE_TEXT_CHAT_PLANNING_SCHEMA_MISMATCH);
+          assertResponseSchema(parseJson(candidateResponse.text), params.config.responseJsonSchema, SOURCE_TEXT_CHAT_PLANNING_SCHEMA_MISMATCH);
         }
         roomResponse = candidateResponse;
       } catch (error) {
@@ -208,15 +190,7 @@ export const generateContentWithRetry = async (
       }
     }
     if (!roomResponse) throw lastRoomError instanceof Error ? lastRoomError : createAppError(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-    return {
-      text: roomResponse.text,
-      rotationLogs: [SOURCE_TEMPLATE_AI_ROOM_COMPLETED_WITHOUT_API_FALLBACK(`${roomResponse.provider}`)],
-      aiMetadata: {
-        provider: roomResponse.provider,
-        model: roomExecution.aiRoomModel,
-        executionMode: AiPlanningExecutionMode.RoomOnly,
-      },
-    };
+    return { text: roomResponse.text, rotationLogs: [SOURCE_TEMPLATE_AI_ROOM_COMPLETED_WITHOUT_API_FALLBACK(`${roomResponse.provider}`)], aiMetadata: { provider: roomResponse.provider, model: roomExecution.aiRoomModel, executionMode: AiPlanningExecutionMode.RoomOnly } };
   }
   const keys = await resolveApiKeys();
   const activeApiKey = _.get(keys, SOURCE_TEXT_GEMINIKEY, "");
@@ -228,23 +202,12 @@ export const generateContentWithRetry = async (
     providerError.noRetry = true;
     throw providerError;
   }
-  const clientAi = new GoogleGenAI({
-    apiKey: activeApiKey,
-    httpOptions: {
-      headers: {
-        "User-Agent": SOURCE_TEXT_AISTUDIO_BUILD,
-      },
-    },
-  });
+  const clientAi = new GoogleGenAI({ apiKey: activeApiKey, httpOptions: { headers: { "User-Agent": SOURCE_TEXT_AISTUDIO_BUILD } } });
   const generateWithTimeout = async (): Promise<any> => {
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
     try {
       return await Promise.race([
-        clientAi.models.generateContent({
-          model: activeModelForRequest,
-          contents: params.contents,
-          config: geminiConfigForRequest,
-        }),
+        clientAi.models.generateContent({ model: activeModelForRequest, contents: params.contents, config: geminiConfigForRequest }),
         new Promise((_resolve, reject) => {
           timeoutHandle = setTimeout(() => reject(_.assign(new Error(GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_ERROR), { status: 504, code: SOURCE_TEXT_ETIMEDOUT })), GEMINI_REQUEST_POLICY.REQUEST_TIMEOUT_MS);
         }),
@@ -260,13 +223,7 @@ export const generateContentWithRetry = async (
   const contentEstimate = estimateGeminiContents(params.contents);
   let route: ReturnType<typeof routeAiTask>;
   try {
-    route = routeAiTask({
-      capability: params.task?.capability,
-      estimatedInputTokens: contentEstimate.estimatedTextTokens,
-      mediaInputCount: contentEstimate.mediaInputCount,
-      maxOutputTokens: params.config?.maxOutputTokens,
-      budgetUsd: params.task?.budgetUsd,
-    });
+    route = routeAiTask({ capability: params.task?.capability, estimatedInputTokens: contentEstimate.estimatedTextTokens, mediaInputCount: contentEstimate.mediaInputCount, maxOutputTokens: params.config?.maxOutputTokens, budgetUsd: params.task?.budgetUsd });
   } catch (routeError: any) {
     routeError.rotationLogs = rotationLogs;
     throw routeError;
@@ -276,7 +233,7 @@ export const generateContentWithRetry = async (
   const tryToollessFreeFallback = async (category: string): Promise<any> => {
     if (!_.includes(FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_CATEGORIES, category as never) || _.isEmpty(params.config?.tools) || !_.isString(params.contents)) return null;
     appLogStep(FREE_AI_PROVIDER_LOGS.TOOLLESS_FALLBACK, rotationLogs);
-    const fallback = await generateWithFreeProviders({ ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}\n\n${params.contents}`, config: _.omit(params.config || {}, [SOURCE_TEXT_TOOLS]) }, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+    const fallback = await generateWithFreeProviders({ ...params, contents: `${FREE_AI_PROVIDER_CONFIG.TOOLLESS_FALLBACK_DIRECTIVE}${RT_SHARED.SYMBOL_75A11D}${params.contents}`, config: _.omit(params.config || {}, [SOURCE_TEXT_TOOLS]) }, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
     if (!fallback.response) return null;
     fallback.response.rotationLogs = [...rotationLogs, ...fallback.rotationLogs];
     return fallback.response;

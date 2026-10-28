@@ -56,7 +56,7 @@ function showToast(message, type = ToastType.SUCCESS) {
   const container = el(DOMIds.TOAST_CONTAINER);
   if (_.isNil(container)) return;
   const toast = document.createElement(TagNames.DIV);
-  toast.className = `${AdminClasses.TOAST} ${type === ToastType.SUCCESS ? AdminClasses.TOAST_SUCCESS : AdminClasses.TOAST_ERROR}`;
+  toast.className = `${AdminClasses.TOAST}${AdminRuntimeText.SYMBOL_36A9E7}${type === ToastType.SUCCESS ? AdminClasses.TOAST_SUCCESS : AdminClasses.TOAST_ERROR}`;
   const iconSvg = type === ToastType.SUCCESS ? AdminIcons.SUCCESS_TOAST : AdminIcons.ERROR_TOAST;
   const title = type === ToastType.SUCCESS ? AdminMessages.TOAST_SUCCESS : AdminMessages.TOAST_ERROR;
   toast.innerHTML = AdminTemplates.TOAST(iconSvg, title, escapeHTML(message));
@@ -74,14 +74,7 @@ function showToast(message, type = ToastType.SUCCESS) {
 }
 async function fetchAPI(action, data = {}) {
   try {
-    const response = await fetch(apiUrl, {
-      method: AdminConstants.HTTP_POST,
-      body: AdminJson.stringifyJson({
-        [ApiFields.ACTION]: action,
-        [ApiFields.ADMIN_TOKEN]: adminToken,
-        ...data,
-      }),
-    });
+    const response = await fetch(apiUrl, { method: AdminConstants.HTTP_POST, body: AdminJson.stringifyJson({ [ApiFields.ACTION]: action, [ApiFields.ADMIN_TOKEN]: adminToken, ...data }) });
     const resJson = await response.json();
     if (_.has(resJson, ApiFields.ERROR)) {
       if (_.get(resJson, ApiFields.CODE) === AdminConstants.API_ERROR_UNAUTHORIZED) {
@@ -145,14 +138,7 @@ async function handleLogin() {
   }
   setButtonLoading(loginBtn, true, AdminMessages.LOGIN_PROGRESS);
   try {
-    const response = await fetch(API_BASE_URL, {
-      method: AdminConstants.HTTP_POST,
-      body: AdminJson.stringifyJson({
-        [ApiFields.ACTION]: AdminActions.LOGIN,
-        [ApiFields.USERNAME]: user,
-        [ApiFields.PASSWORD]: pass,
-      }),
-    });
+    const response = await fetch(API_BASE_URL, { method: AdminConstants.HTTP_POST, body: AdminJson.stringifyJson({ [ApiFields.ACTION]: AdminActions.LOGIN, [ApiFields.USERNAME]: user, [ApiFields.PASSWORD]: pass }) });
     const data = await response.json();
     if (_.isEqual(_.get(data, ApiFields.STATUS), ToastType.SUCCESS) && _.has(data, ApiFields.TOKEN)) {
       adminToken = _.get(data, ApiFields.TOKEN);
@@ -195,9 +181,9 @@ async function loadUsers() {
   }
 }
 function applyFilters() {
-  const searchStr = _.toLower(_.get(el(DOMIds.SEARCH_INPUT), "value", AdminConstants.EMPTY_STR));
-  const planFilter = _.get(el(DOMIds.FILTER_PLAN), "value", AdminConstants.FILTER_ALL);
-  const statusFilter = _.get(el(DOMIds.FILTER_STATUS), "value", AdminConstants.FILTER_ALL);
+  const searchStr = _.toLower(_.get(el(DOMIds.SEARCH_INPUT), AdminRuntimeText.VALUE, AdminConstants.EMPTY_STR));
+  const planFilter = _.get(el(DOMIds.FILTER_PLAN), AdminRuntimeText.VALUE, AdminConstants.FILTER_ALL);
+  const statusFilter = _.get(el(DOMIds.FILTER_STATUS), AdminRuntimeText.VALUE, AdminConstants.FILTER_ALL);
   filteredUsers = _.filter(_.get(window, AdminConstants.GLOBAL_USERS, []), (u) => {
     let matchSearch = true;
     if (!_.isEmpty(searchStr)) {
@@ -262,39 +248,10 @@ function renderTable() {
     const expiresAtStr = _.get(user, ApiFields.EXPIRES_AT) ? new Date(_.get(user, ApiFields.EXPIRES_AT)).toLocaleDateString() : AdminMessages.EXPIRES_LIFETIME;
     const quotaType = _.get(user, ApiFields.QUOTA_TYPE, QuotaType.DAILY);
     const quotaTypeLabel = _.isEqual(quotaType, QuotaType.DAILY) ? AdminMessages.QUOTA_DAILY_LABEL : AdminMessages.QUOTA_TOTAL_LABEL;
-    const quotaTypeBadge = `<span style="font-size:0.65rem; padding:0.15rem 0.5rem; border-radius:6px; background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.2); color:#fbbf24; font-family:var(--font-mono); font-weight:700;" title="${quotaType}">${quotaTypeLabel}</span>`;
-    const btnDeviceModal = `<button class="action-btn action-warn" data-action="${AdminConstants.ACTION_DEVICE}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DEVICES}">${AdminIcons.BTN_DEVICE}</button>`;
-    const btnCopy = `<button class="copy-btn" data-action="${AdminConstants.ACTION_COPY}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_COPY}">${AdminIcons.BTN_COPY}</button>`;
-    return `
-            <tr>
-                <td><strong>${escapeHTML(_.get(user, ApiFields.USERNAME))}</strong></td>
-                <td>
-                    <div style="display:flex; align-items:center; gap:0.5rem">
-                        <span style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">${escapeHTML(_.get(user, ApiFields.LICENSE_KEY))}</span>
-                        ${btnCopy}
-                    </div>
-                </td>
-                <td class="text-center">
-                    <span class="badge ${getPlanBadgeClass(planName)}">${escapeHTML(formatPlanDisplayName(planName))}</span>
-                </td>
-                <td class="text-center">
-                    <span class="badge ${getStatusClass(_.get(user, ApiFields.STATUS))}">${escapeHTML(localizeStatus(_.get(user, ApiFields.STATUS)))}</span>
-                </td>
-                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:0.2rem;">
-                    <div>${usageText}</div>
-                    ${quotaTypeBadge}
-                </td>
-                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${new Date(_.get(user, ApiFields.CREATED_AT)).toLocaleDateString()}</td>
-                <td class="text-center" style="font-size: 0.85rem; color: var(--text-muted);">${expiresAtStr}</td>
-                <td class="text-center">
-                    <div style="display: flex; justify-content: center; gap: 0.25rem;">
-                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT}" data-id="${_.get(user, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
-                        ${btnDeviceModal}
-                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE}" data-id="${_.get(user, ApiFields.ID)}" data-key="${_.get(user, ApiFields.LICENSE_KEY)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
-                    </div>
-                </td>
-            </tr>
-        `;
+    const quotaTypeBadge = `${AdminRuntimeText.SPAN_STYLE_FONT_SIZE_0_65REM_PADDING_0_15REM_0_5REM_BORDER_RADIUS}${quotaType}${AdminRuntimeText.SYMBOL_AB2CD7}${quotaTypeLabel}${AdminRuntimeText.SPAN}`;
+    const btnDeviceModal = `${AdminRuntimeText.BUTTON_CLASS_ACTION_BTN_ACTION_WARN_DATA_ACTION}${AdminConstants.ACTION_DEVICE}${AdminRuntimeText.DATA_ID}${_.get(user, ApiFields.ID)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_DEVICES}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_DEVICE}${AdminRuntimeText.BUTTON}`;
+    const btnCopy = `${AdminRuntimeText.BUTTON_CLASS_COPY_BTN_DATA_ACTION}${AdminConstants.ACTION_COPY}${AdminRuntimeText.DATA_KEY}${_.get(user, ApiFields.LICENSE_KEY)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_COPY}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_COPY}${AdminRuntimeText.BUTTON}`;
+    return `${AdminRuntimeText.TR_TD_STRONG}${escapeHTML(_.get(user, ApiFields.USERNAME))}${AdminRuntimeText.STRONG_TD_TD_DIV_STYLE_DISPLAY_FLEX_ALIGN_ITEMS_CENTER_GAP_0_5REM}${escapeHTML(_.get(user, ApiFields.LICENSE_KEY))}${AdminRuntimeText.SPAN_34A77C}${btnCopy}${AdminRuntimeText.DIV_TD_TD_CLASS_TEXT_CENTER_SPAN_CLASS_BADGE}${getPlanBadgeClass(planName)}${AdminRuntimeText.SYMBOL_AB2CD7}${escapeHTML(formatPlanDisplayName(planName))}${AdminRuntimeText.SPAN_TD_TD_CLASS_TEXT_CENTER_SPAN_CLASS_BADGE}${getStatusClass(_.get(user, ApiFields.STATUS))}${AdminRuntimeText.SYMBOL_AB2CD7}${escapeHTML(localizeStatus(_.get(user, ApiFields.STATUS)))}${AdminRuntimeText.SPAN_TD_TD_CLASS_TEXT_CENTER_STYLE_FONT_SIZE_0_85REM_COLOR_VAR_TE}${usageText}${AdminRuntimeText.DIV}${quotaTypeBadge}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_STYLE_FONT_SIZE_0_85REM_COLOR_VAR_TEXT_MU}${new Date(_.get(user, ApiFields.CREATED_AT)).toLocaleDateString()}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_STYLE_FONT_SIZE_0_85REM_COLOR_VAR_TEXT_MU_FD0636}${expiresAtStr}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_DIV_STYLE_DISPLAY_FLEX_JUSTIFY_CONTENT_CE}${AdminConstants.ACTION_EDIT}${AdminRuntimeText.DATA_ID}${_.get(user, ApiFields.ID)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_EDIT}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_EDIT}${AdminRuntimeText.BUTTON_EB54FD}${btnDeviceModal}${AdminRuntimeText.BUTTON_CLASS_ACTION_BTN_ACTION_DANGER_DATA_ACTION}${AdminConstants.ACTION_DELETE}${AdminRuntimeText.DATA_ID}${_.get(user, ApiFields.ID)}${AdminRuntimeText.DATA_KEY}${_.get(user, ApiFields.LICENSE_KEY)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_DELETE}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_DELETE}${AdminRuntimeText.BUTTON_DIV_TD_TR}`;
   });
   tbody.innerHTML = _.join(htmlRows, AdminConstants.EMPTY_STR);
   renderPagination(totalPages);
@@ -314,7 +271,7 @@ function renderPagination(totalPages) {
   controls.appendChild(btnPrev);
   _.forEach(_.range(1, totalPages + 1), (i) => {
     const btnPage = document.createElement(TagNames.BUTTON);
-    btnPage.className = `${AdminClasses.PAGE_BTN} ${i === currentPage ? AdminClasses.ACTIVE : AdminConstants.EMPTY_STR}`;
+    btnPage.className = `${AdminClasses.PAGE_BTN}${AdminRuntimeText.SYMBOL_36A9E7}${i === currentPage ? AdminClasses.ACTIVE : AdminConstants.EMPTY_STR}`;
     btnPage.textContent = i;
     btnPage.onclick = () => {
       currentPage = i;
@@ -358,50 +315,11 @@ function renderPlansConfig() {
     const planName = _.get(plan, ApiFields.NAME);
     const isUnlimited = _.get(plan, ApiFields.IS_UNLIMITED);
     const isRevoked = _.isEqual(normalizeStatus(_.get(plan, ApiFields.STATUS)), AdminConstants.STATUS_REVOKED);
-    const statusBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem;">${AdminMessages.REVOKED_BADGE}</span>` : "";
-    const limitBadge = isUnlimited ? `<span class="badge active">${AdminMessages.UNLIMITED_LABEL}</span>` : `<span class="badge free">${AdminMessages.LIMIT_QUOTA_LABEL}</span>`;
-    rowsHtml += `
-            <tr style="${isRevoked ? "opacity: 0.6;" : ""}">
-                <td>
-                    <div style="display:flex; align-items:center; gap:0.5rem;">
-                        <strong>${escapeHTML(formatPlanDisplayName(planName))}</strong>
-                        ${statusBadge}
-                    </div>
-                </td>
-                <td class="text-center">${limitBadge}</td>
-                <td class="text-center" style="font-family: var(--font-mono); font-weight:600;">${isUnlimited ? "∞" : _.get(plan, ApiFields.QUOTA_VIDEO)}</td>
-                <td class="text-center" style="font-family: var(--font-mono); font-weight:600;">${isUnlimited ? "∞" : _.get(plan, ApiFields.QUOTA_IMAGE)}</td>
-                <td class="text-center" style="font-family: var(--font-mono); font-weight:600;">${isUnlimited ? "∞" : Number(_.get(plan, ApiFields.QUOTA_VOICE)).toLocaleString()}</td>
-                <td class="text-center">
-                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_PLAN}" data-id="${planId}" title="${AdminMessages.ACTION_MODAL_EDIT}">
-                            ${AdminIcons.BTN_EDIT}
-                        </button>
-                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_PLAN}" data-id="${planId}" title="${AdminMessages.ACTION_MODAL_DELETE}">
-                            ${AdminIcons.BTN_DELETE}
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `;
+    const statusBadge = isRevoked ? `${AdminRuntimeText.SPAN_CLASS_BADGE_REVOKED_STYLE_MARGIN_LEFT_0_5REM}${AdminMessages.REVOKED_BADGE}${AdminRuntimeText.SPAN}` : "";
+    const limitBadge = isUnlimited ? `${AdminRuntimeText.SPAN_CLASS_BADGE_ACTIVE}${AdminMessages.UNLIMITED_LABEL}${AdminRuntimeText.SPAN}` : `${AdminRuntimeText.SPAN_CLASS_BADGE_FREE}${AdminMessages.LIMIT_QUOTA_LABEL}${AdminRuntimeText.SPAN}`;
+    rowsHtml += `${AdminRuntimeText.TR_STYLE}${isRevoked ? AdminRuntimeText.OPACITY_0_6 : ""}${AdminRuntimeText.TD_DIV_STYLE_DISPLAY_FLEX_ALIGN_ITEMS_CENTER_GAP_0_5REM_STRONG}${escapeHTML(formatPlanDisplayName(planName))}${AdminRuntimeText.STRONG}${statusBadge}${AdminRuntimeText.DIV_TD_TD_CLASS_TEXT_CENTER}${limitBadge}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_STYLE_FONT_FAMILY_VAR_FONT_MONO_FONT_WEIG}${isUnlimited ? AdminRuntimeText.SYMBOL_78D9CE : _.get(plan, ApiFields.QUOTA_VIDEO)}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_STYLE_FONT_FAMILY_VAR_FONT_MONO_FONT_WEIG}${isUnlimited ? AdminRuntimeText.SYMBOL_78D9CE : _.get(plan, ApiFields.QUOTA_IMAGE)}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_STYLE_FONT_FAMILY_VAR_FONT_MONO_FONT_WEIG}${isUnlimited ? AdminRuntimeText.SYMBOL_78D9CE : Number(_.get(plan, ApiFields.QUOTA_VOICE)).toLocaleString()}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_DIV_STYLE_DISPLAY_FLEX_GAP_0_5REM_JUSTIFY}${AdminConstants.ACTION_EDIT_PLAN}${AdminRuntimeText.DATA_ID}${planId}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_EDIT}${AdminRuntimeText.SYMBOL_9CF383}${AdminIcons.BTN_EDIT}${AdminRuntimeText.BUTTON_BUTTON_CLASS_ACTION_BTN_ACTION_DANGER_DATA_ACTION}${AdminConstants.ACTION_DELETE_PLAN}${AdminRuntimeText.DATA_ID}${planId}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_DELETE}${AdminRuntimeText.SYMBOL_9CF383}${AdminIcons.BTN_DELETE}${AdminRuntimeText.BUTTON_DIV_TD_TR_427FAD}`;
   });
-  container.innerHTML = `
-        <table id="plans-table">
-            <thead>
-                <tr>
-                    <th>Gói Dịch Vụ</th>
-                    <th class="text-center">Chế Độ Giới Hạn</th>
-                    <th class="text-center">Số Video Quota</th>
-                    <th class="text-center">Số Ảnh Quota</th>
-                    <th class="text-center">Số Ký Tự Voice</th>
-                    <th class="text-center">Hành Động</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${rowsHtml}
-            </tbody>
-        </table>
-    `;
+  container.innerHTML = `${AdminRuntimeText.TABLE_ID_PLANS_TABLE_THEAD_TR_TH_GOI_DICH_VU_TH_TH_CLASS_TEXT_CEN}${rowsHtml}${AdminRuntimeText.TBODY_TABLE}`;
 }
 window.openCreatePlanModal = function () {
   window.editingPlanId = null;
@@ -453,13 +371,7 @@ window.handleSavePlan = async function () {
   const isEditing = !_.isNil(window.editingPlanId);
   setButtonLoading(btn, true, isEditing ? AdminMessages.LOADING_UPDATE : AdminMessages.LOADING_ADD);
   try {
-    const payload = {
-      [ApiFields.NAME]: name,
-      [ApiFields.QUOTA_VIDEO]: _.toInteger(video) || AdminConstants.DEFAULT_QUOTA,
-      [ApiFields.QUOTA_IMAGE]: _.toInteger(image) || AdminConstants.DEFAULT_QUOTA,
-      [ApiFields.QUOTA_VOICE]: _.toInteger(voice) || AdminConstants.DEFAULT_QUOTA,
-      [ApiFields.IS_UNLIMITED]: isUnlimited,
-    };
+    const payload = { [ApiFields.NAME]: name, [ApiFields.QUOTA_VIDEO]: _.toInteger(video) || AdminConstants.DEFAULT_QUOTA, [ApiFields.QUOTA_IMAGE]: _.toInteger(image) || AdminConstants.DEFAULT_QUOTA, [ApiFields.QUOTA_VOICE]: _.toInteger(voice) || AdminConstants.DEFAULT_QUOTA, [ApiFields.IS_UNLIMITED]: isUnlimited };
     if (isEditing) {
       payload[ApiFields.ID] = window.editingPlanId;
       await fetchAPI(AdminActions.UPDATE_PLAN, payload);
@@ -510,7 +422,7 @@ function addOptionWithLabel(tsInstance, value) {
       const users = window[AdminConstants.GLOBAL_USERS] || [];
       const user = _.find(users, (u) => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
       if (user) {
-        label = `${_.get(user, ApiFields.USERNAME)} (${trimmed})`;
+        label = `${_.get(user, ApiFields.USERNAME)}${AdminRuntimeText.SYMBOL_4F5A2A}${trimmed}${AdminRuntimeText.SYMBOL_BA5EC5}`;
       }
     }
   }
@@ -667,7 +579,7 @@ async function handleResetDevice() {
   if (!resettingUserId) return;
   const user = _.find(_.get(window, AdminConstants.GLOBAL_USERS, []), (u) => _.isEqual(_.get(u, ApiFields.ID), resettingUserId));
   const keyStr = user ? _.get(user, ApiFields.LICENSE_KEY) : AdminConstants.UNKNOWN_STR;
-  const confirmMsg = _.replace(AdminMessages.RESET_DEVICE_CONFIRM, "{0}", keyStr);
+  const confirmMsg = _.replace(AdminMessages.RESET_DEVICE_CONFIRM, AdminRuntimeText.VALUE_0_A00644, keyStr);
   if (!confirm(confirmMsg)) return;
   const btn = el(DOMIds.MODAL_RESET_DEVICE_BTN);
   setButtonLoading(btn, true, AdminMessages.ACTION_LOADING_RESET_DEVICE);
@@ -730,7 +642,7 @@ async function handleSyncExpired() {
   try {
     const result = await fetchAPI(AdminActions.SYNC_EXPIRED);
     const count = _.get(result, ApiFields.COUNT, 0);
-    showToast(_.replace(AdminMessages.SYNC_SUCCESS, "{0}", count), ToastType.SUCCESS);
+    showToast(_.replace(AdminMessages.SYNC_SUCCESS, AdminRuntimeText.VALUE_0_A00644, count), ToastType.SUCCESS);
     if (count > 0) {
       loadUsers();
     }
@@ -741,7 +653,7 @@ async function handleSyncExpired() {
   }
 }
 function preventNonNumericInput() {
-  const numericInputs = document.querySelectorAll(`${AdminSelectors.NUMERIC_INPUT}, #${DOMIds.PLAN_VIDEO_INPUT_MODAL}, #${DOMIds.PLAN_IMAGE_INPUT_MODAL}, #${DOMIds.PLAN_VOICE_INPUT_MODAL}`);
+  const numericInputs = document.querySelectorAll(`${AdminSelectors.NUMERIC_INPUT}${AdminRuntimeText.SYMBOL_A39912}${DOMIds.PLAN_VIDEO_INPUT_MODAL}${AdminRuntimeText.SYMBOL_A39912}${DOMIds.PLAN_IMAGE_INPUT_MODAL}${AdminRuntimeText.SYMBOL_A39912}${DOMIds.PLAN_VOICE_INPUT_MODAL}`);
   _.forEach(numericInputs, (input) => {
     input.addEventListener(EventTypes.INPUT, function () {
       this.value = _.replace(this.value, AdminRegex.NUMBERS_ONLY, AdminConstants.EMPTY_STR);
@@ -749,7 +661,7 @@ function preventNonNumericInput() {
   });
 }
 function delegateModalCloses() {
-  const closeBtns = document.querySelectorAll(`${AdminSelectors.MODAL_CLOSE_BTN}, .modal-close-btn`);
+  const closeBtns = document.querySelectorAll(`${AdminSelectors.MODAL_CLOSE_BTN}${AdminRuntimeText.MODAL_CLOSE_BTN}`);
   _.forEach(closeBtns, (btn) => {
     btn.addEventListener(EventTypes.CLICK, function () {
       const modalId = this.getAttribute(DataAttributes.MODAL);
@@ -759,19 +671,19 @@ function delegateModalCloses() {
 }
 function delegateTableActions() {
   document.addEventListener(EventTypes.CLICK, function (e) {
-    const target = e.target.closest(`${AdminSelectors.ACTION_BTNS}, [data-action]`);
+    const target = e.target.closest(`${AdminSelectors.ACTION_BTNS}${AdminRuntimeText.DATA_ACTION}`);
     if (!target) return;
-    const action = target.getAttribute(DataAttributes.ACTION) || target.getAttribute("data-action");
-    const key = target.getAttribute(DataAttributes.KEY) || target.getAttribute("data-key");
-    const accountId = target.getAttribute(DataAttributes.ACCOUNT_ID) || target.getAttribute("data-account-id");
-    const uid = target.getAttribute(DataAttributes.ID) || target.getAttribute("data-id");
+    const action = target.getAttribute(DataAttributes.ACTION) || target.getAttribute(AdminRuntimeText.DATA_ACTION_AF03C5);
+    const key = target.getAttribute(DataAttributes.KEY) || target.getAttribute(AdminRuntimeText.DATA_KEY_CAB768);
+    const accountId = target.getAttribute(DataAttributes.ACCOUNT_ID) || target.getAttribute(AdminRuntimeText.DATA_ACCOUNT_ID);
+    const uid = target.getAttribute(DataAttributes.ID) || target.getAttribute(AdminRuntimeText.DATA_ID_B04FC0);
     if (_.isEqual(action, AdminConstants.ACTION_EDIT) && uid) openEditModal(uid);
     if (_.isEqual(action, AdminConstants.ACTION_DEVICE) && uid) openDeviceModal(uid);
     if (_.isEqual(action, AdminConstants.ACTION_DELETE) && uid) openDeleteModal(uid, key);
     if (_.isEqual(action, AdminConstants.ACTION_COPY) && key) copyToClipboard(key);
     if (_.isEqual(action, AdminConstants.ACTION_EDIT_ACC) && accountId) editAccountAdmin(accountId);
     if (_.isEqual(action, AdminConstants.ACTION_DELETE_ACC) && accountId) deleteAccountAdmin(accountId);
-    const keyId = target.getAttribute(DataAttributes.ID) || target.getAttribute("data-id");
+    const keyId = target.getAttribute(DataAttributes.ID) || target.getAttribute(AdminRuntimeText.DATA_ID_B04FC0);
     if (_.isEqual(action, AdminConstants.ACTION_DELETE_KEYS) && keyId) deleteApiKeysAdmin(keyId);
     if (_.isEqual(action, AdminConstants.ACTION_EDIT_KEYS) && keyId) editApiKeysAdmin(keyId);
     if (_.isEqual(action, AdminConstants.ACTION_EDIT_PLAN) && uid) openEditPlanModal(uid);
@@ -795,7 +707,7 @@ function initEventListeners() {
   });
   el(DOMIds.OPEN_PLAN_CREATE_MODAL_BTN)?.addEventListener(EventTypes.CLICK, openCreatePlanModal);
   el(DOMIds.SAVE_PLAN_BTN)?.addEventListener(EventTypes.CLICK, handleSavePlan);
-  el(DOMIds.PLAN_UNLIMITED_INPUT_MODAL)?.addEventListener("change", function (e) {
+  el(DOMIds.PLAN_UNLIMITED_INPUT_MODAL)?.addEventListener(AdminRuntimeText.CHANGE, function (e) {
     const disabled = e.target.checked;
     el(DOMIds.PLAN_VIDEO_INPUT_MODAL).disabled = disabled;
     el(DOMIds.PLAN_IMAGE_INPUT_MODAL).disabled = disabled;
@@ -823,14 +735,14 @@ function initEventListeners() {
     currentPage = AdminConstants.DEFAULT_PAGE;
     renderTable();
   });
-  el("open-keys-modal-btn")?.addEventListener(EventTypes.CLICK, () => {
+  el(AdminRuntimeText.OPEN_KEYS_MODAL_BTN)?.addEventListener(EventTypes.CLICK, () => {
     resetResourceForms();
     window.editingKeyId = null;
     el(DOMIds.KEY_MODAL_TITLE).textContent = AdminMessages.KEYS_TITLE_CREATE;
     el(DOMIds.SAVE_KEYS_BTN).innerHTML = AdminTemplates.BTN_WITH_ICON(AdminIcons.BTN_SAVE, AdminMessages.BTN_SAVE_KEY);
     el(DOMIds.KEY_MODAL).classList.add(AdminClasses.ACTIVE);
   });
-  el("open-account-modal-btn")?.addEventListener(EventTypes.CLICK, () => {
+  el(AdminRuntimeText.OPEN_ACCOUNT_MODAL_BTN)?.addEventListener(EventTypes.CLICK, () => {
     resetResourceForms();
     window.editingAccountId = null;
     el(DOMIds.ACCOUNT_MODAL_TITLE).textContent = AdminMessages.ACC_TITLE_CREATE;
@@ -864,14 +776,7 @@ async function handleSaveKeys() {
   }
   setButtonLoading(btn, true, AdminMessages.LOADING_SAVE);
   try {
-    const payload = {
-      [ApiFields.GEMINI_KEY]: gemini,
-      [ApiFields.CEREBRAS_KEY]: cerebras,
-      [ApiFields.GROQ_KEY]: groq,
-      [ApiFields.AI33_KEY]: ai33,
-      [ApiFields.ASSIGNED_TO]: assignee,
-      [ApiFields.EXCLUDED_TO]: excluded,
-    };
+    const payload = { [ApiFields.GEMINI_KEY]: gemini, [ApiFields.CEREBRAS_KEY]: cerebras, [ApiFields.GROQ_KEY]: groq, [ApiFields.AI33_KEY]: ai33, [ApiFields.ASSIGNED_TO]: assignee, [ApiFields.EXCLUDED_TO]: excluded };
     if (window.editingKeyId) {
       payload[ApiFields.ID] = window.editingKeyId;
     }
@@ -929,7 +834,7 @@ function populateAssignSelects() {
     _.forEach(users, (u) => {
       const keyStr = _.get(u, ApiFields.LICENSE_KEY);
       const uname = _.get(u, ApiFields.USERNAME);
-      userOptions += AdminTemplates.SELECT_OPTION(keyStr, `${uname} (${keyStr})`);
+      userOptions += AdminTemplates.SELECT_OPTION(keyStr, `${uname}${AdminRuntimeText.SYMBOL_4F5A2A}${keyStr}${AdminRuntimeText.SYMBOL_BA5EC5}`);
     });
     optionsHtml += AdminTemplates.OPTGROUP(AdminMessages.ASSIGN_SPECIFIC_LABEL, userOptions);
   }
@@ -956,33 +861,15 @@ function populateAssignSelects() {
   }
   if (keysSelect) {
     keysSelect.innerHTML = optionsHtml;
-    tsKeysModalInstance = new TomSelect(keysSelect, {
-      create: true,
-      maxItems: null,
-      placeholder: AdminMessages.SEARCH_PLACEHOLDER,
-      dropdownParent: AdminConstants.BODY_TAG,
-      plugins: [AdminConstants.PLUGIN_DROPDOWN, AdminConstants.PLUGIN_REMOVE_BUTTON],
-    });
+    tsKeysModalInstance = new TomSelect(keysSelect, { create: true, maxItems: null, placeholder: AdminMessages.SEARCH_PLACEHOLDER, dropdownParent: AdminConstants.BODY_TAG, plugins: [AdminConstants.PLUGIN_DROPDOWN, AdminConstants.PLUGIN_REMOVE_BUTTON] });
   }
   if (accSelect) {
     accSelect.innerHTML = optionsHtml;
-    tsAccModalInstance = new TomSelect(accSelect, {
-      create: true,
-      maxItems: AdminConstants.MAX_ITEMS_SELECT,
-      placeholder: AdminMessages.SEARCH_PLACEHOLDER,
-      dropdownParent: AdminConstants.BODY_TAG,
-      plugins: [AdminConstants.PLUGIN_DROPDOWN],
-    });
+    tsAccModalInstance = new TomSelect(accSelect, { create: true, maxItems: AdminConstants.MAX_ITEMS_SELECT, placeholder: AdminMessages.SEARCH_PLACEHOLDER, dropdownParent: AdminConstants.BODY_TAG, plugins: [AdminConstants.PLUGIN_DROPDOWN] });
   }
   if (excludedSelect) {
     excludedSelect.innerHTML = optionsHtml;
-    tsExcludedModalInstance = new TomSelect(excludedSelect, {
-      create: true,
-      maxItems: null,
-      placeholder: AdminMessages.SEARCH_PLACEHOLDER,
-      dropdownParent: AdminConstants.BODY_TAG,
-      plugins: [AdminConstants.PLUGIN_DROPDOWN, AdminConstants.PLUGIN_REMOVE_BUTTON],
-    });
+    tsExcludedModalInstance = new TomSelect(excludedSelect, { create: true, maxItems: null, placeholder: AdminMessages.SEARCH_PLACEHOLDER, dropdownParent: AdminConstants.BODY_TAG, plugins: [AdminConstants.PLUGIN_DROPDOWN, AdminConstants.PLUGIN_REMOVE_BUTTON] });
   }
 }
 function editApiKeysAdmin(keyId) {
@@ -1101,7 +988,7 @@ async function loadApiKeysAdmin() {
       if (plan) return formatPlanDisplayName(_.get(plan, ApiFields.NAME));
       const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
       const user = _.find(users, (u) => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
-      if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, AdminConstants.KEY_PREVIEW_LENGTH)}...)`;
+      if (user) return `${_.get(user, ApiFields.USERNAME)}${AdminRuntimeText.SYMBOL_4F5A2A}${trimmed.slice(0, AdminConstants.KEY_PREVIEW_LENGTH)}${AdminRuntimeText.SYMBOL_715390}`;
       return formatPlanDisplayName(trimmed);
     });
     return _.join(mapped, AdminConstants.COMMA_JOIN);
@@ -1117,7 +1004,7 @@ async function loadApiKeysAdmin() {
       if (plan) return formatPlanDisplayName(_.get(plan, ApiFields.NAME));
       const users = _.get(window, AdminConstants.GLOBAL_USERS, []);
       const user = _.find(users, (u) => _.isEqual(_.get(u, ApiFields.LICENSE_KEY), trimmed));
-      if (user) return `${_.get(user, ApiFields.USERNAME)} (${trimmed.slice(0, AdminConstants.KEY_PREVIEW_LENGTH)}...)`;
+      if (user) return `${_.get(user, ApiFields.USERNAME)}${AdminRuntimeText.SYMBOL_4F5A2A}${trimmed.slice(0, AdminConstants.KEY_PREVIEW_LENGTH)}${AdminRuntimeText.SYMBOL_715390}`;
       return trimmed;
     });
     return _.join(mapped, AdminConstants.COMMA_JOIN);
@@ -1139,24 +1026,9 @@ async function loadApiKeysAdmin() {
         const keyId = _.get(k, ApiFields.ID);
         const formatValue = (v) => (v ? AdminMessages.PASSWORD_MASK + v.slice(-AdminConstants.KEY_MASK_SUFFIX_LENGTH) : AdminTemplates.DANGER_TEXT(AdminMessages.NO_DATA));
         const isRevoked = _.isEqual(normalizeStatus(_.get(k, ApiFields.STATUS)), AdminConstants.STATUS_REVOKED);
-        const rowStyle = isRevoked ? "opacity: 0.5; background: rgba(239, 68, 68, 0.05);" : "";
-        const statusBadge = isRevoked ? `<span class="badge revoked" style="margin-left: 0.5rem; font-size: 0.65rem;">${AdminMessages.REVOKED_BADGE}</span>` : "";
-        return `
-            <tr style="${rowStyle}">
-                <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(assigneeLabel)}</span>${statusBadge}</td>
-                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(geminiValue)}</td>
-                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(cerebrasValue)}</td>
-                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(groqValue)}</td>
-                <td style="color: var(--text-muted); font-family: monospace;">${formatValue(ai33Value)}</td>
-                <td style="color: var(--text-muted); font-family: monospace; font-size: 0.85rem;" class="text-center">${escapeHTML(excludedValue)}</td>
-                <td class="text-center">
-                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
-                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_KEYS}" data-id="${escapeHTML(keyId)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        const rowStyle = isRevoked ? AdminRuntimeText.OPACITY_0_5_BACKGROUND_RGBA_239_68_68_0_05 : "";
+        const statusBadge = isRevoked ? `${AdminRuntimeText.SPAN_CLASS_BADGE_REVOKED_STYLE_MARGIN_LEFT_0_5REM_FONT_SIZE_0_65R}${AdminMessages.REVOKED_BADGE}${AdminRuntimeText.SPAN}` : "";
+        return `${AdminRuntimeText.TR_STYLE}${rowStyle}${AdminRuntimeText.TD_CLASS_TEXT_CENTER_SPAN_CLASS_BADGE}${badgeClass}${AdminRuntimeText.SYMBOL_AB2CD7}${escapeHTML(assigneeLabel)}${AdminRuntimeText.SPAN}${statusBadge}${AdminRuntimeText.TD_TD_STYLE_COLOR_VAR_TEXT_MUTED_FONT_FAMILY_MONOSPACE}${formatValue(geminiValue)}${AdminRuntimeText.TD_TD_STYLE_COLOR_VAR_TEXT_MUTED_FONT_FAMILY_MONOSPACE}${formatValue(cerebrasValue)}${AdminRuntimeText.TD_TD_STYLE_COLOR_VAR_TEXT_MUTED_FONT_FAMILY_MONOSPACE}${formatValue(groqValue)}${AdminRuntimeText.TD_TD_STYLE_COLOR_VAR_TEXT_MUTED_FONT_FAMILY_MONOSPACE}${formatValue(ai33Value)}${AdminRuntimeText.TD_TD_STYLE_COLOR_VAR_TEXT_MUTED_FONT_FAMILY_MONOSPACE_FONT_SIZE_}${escapeHTML(excludedValue)}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_DIV_STYLE_DISPLAY_FLEX_GAP_0_5REM_JUSTIFY}${AdminConstants.ACTION_EDIT_KEYS}${AdminRuntimeText.DATA_ID}${escapeHTML(keyId)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_EDIT}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_EDIT}${AdminRuntimeText.BUTTON_BUTTON_CLASS_ACTION_BTN_ACTION_DANGER_DATA_ACTION_F053F9}${AdminConstants.ACTION_DELETE_KEYS}${AdminRuntimeText.DATA_ID}${escapeHTML(keyId)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_DELETE}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_DELETE}${AdminRuntimeText.BUTTON_DIV_TD_TR}`;
       }),
       AdminConstants.EMPTY_STR,
     );
@@ -1194,31 +1066,15 @@ async function loadAccountsAdmin() {
         const status = normalizeStatus(_.get(a, ApiFields.STATUS));
         let statusBadge = "";
         if (_.isEqual(status, normalizeStatus(AdminConstants.ACCOUNT_STATUS_ACTIVE))) {
-          statusBadge = `<span class="badge active">${AdminMessages.STATUS_ACTIVE_LABEL}</span>`;
+          statusBadge = `${AdminRuntimeText.SPAN_CLASS_BADGE_ACTIVE}${AdminMessages.STATUS_ACTIVE_LABEL}${AdminRuntimeText.SPAN}`;
         } else if (_.isEqual(status, AdminConstants.ACCOUNT_STATUS_ERROR)) {
-          statusBadge = `<span class="badge expired">${AdminConstants.ACCOUNT_STATUS_ERROR}</span>`;
+          statusBadge = `${AdminRuntimeText.SPAN_CLASS_BADGE_EXPIRED}${AdminConstants.ACCOUNT_STATUS_ERROR}${AdminRuntimeText.SPAN}`;
         } else {
-          statusBadge = `<span class="badge revoked">${AdminMessages.STATUS_REVOKED_LABEL}</span>`;
+          statusBadge = `${AdminRuntimeText.SPAN_CLASS_BADGE_REVOKED}${AdminMessages.STATUS_REVOKED_LABEL}${AdminRuntimeText.SPAN}`;
         }
         const isRevoked = _.isEqual(status, AdminConstants.STATUS_REVOKED);
-        const rowStyle = isRevoked ? "opacity: 0.5; background: rgba(239, 68, 68, 0.05);" : "";
-        return `
-            <tr style="${rowStyle}">
-                <td style="font-weight: 600;">${escapeHTML(_.get(a, ApiFields.EMAIL))}</td>
-                <td style="color: var(--text-muted);">${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}</td>
-                <td class="text-center">
-                    ${statusBadge}
-                </td>
-                <td class="text-center"><span class="badge ${badgeClass}">${escapeHTML(getAssignName(_.get(a, ApiFields.ASSIGNED_TO)))}</span></td>
-                <td style="color: var(--text-muted); font-family: monospace;">${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}</td>
-                <td>
-                    <div class="actions-cell" style="justify-content: center; display:flex; gap:0.5rem;">
-                        <button class="action-btn action-info" data-action="${AdminConstants.ACTION_EDIT_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_EDIT}">${AdminIcons.BTN_EDIT}</button>
-                        <button class="action-btn action-danger" data-action="${AdminConstants.ACTION_DELETE_ACC}" data-account-id="${_.get(a, ApiFields.ID)}" title="${AdminMessages.ACTION_MODAL_DELETE}">${AdminIcons.BTN_DELETE}</button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        const rowStyle = isRevoked ? AdminRuntimeText.OPACITY_0_5_BACKGROUND_RGBA_239_68_68_0_05 : "";
+        return `${AdminRuntimeText.TR_STYLE}${rowStyle}${AdminRuntimeText.TD_STYLE_FONT_WEIGHT_600}${escapeHTML(_.get(a, ApiFields.EMAIL))}${AdminRuntimeText.TD_TD_STYLE_COLOR_VAR_TEXT_MUTED}${escapeHTML(_.get(a, ApiFields.RECOVERY_EMAIL) || AdminMessages.NO_DATA)}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER}${statusBadge}${AdminRuntimeText.TD_TD_CLASS_TEXT_CENTER_SPAN_CLASS_BADGE}${badgeClass}${AdminRuntimeText.SYMBOL_AB2CD7}${escapeHTML(getAssignName(_.get(a, ApiFields.ASSIGNED_TO)))}${AdminRuntimeText.SPAN_TD_TD_STYLE_COLOR_VAR_TEXT_MUTED_FONT_FAMILY_MONOSPACE}${_.get(a, ApiFields.PASSWORD) ? AdminMessages.PASSWORD_MASK : AdminConstants.EMPTY_STR}${AdminRuntimeText.TD_TD_DIV_CLASS_ACTIONS_CELL_STYLE_JUSTIFY_CONTENT_CENTER_DISPLAY}${AdminConstants.ACTION_EDIT_ACC}${AdminRuntimeText.DATA_ACCOUNT_ID_F5CE46}${_.get(a, ApiFields.ID)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_EDIT}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_EDIT}${AdminRuntimeText.BUTTON_BUTTON_CLASS_ACTION_BTN_ACTION_DANGER_DATA_ACTION_F053F9}${AdminConstants.ACTION_DELETE_ACC}${AdminRuntimeText.DATA_ACCOUNT_ID_F5CE46}${_.get(a, ApiFields.ID)}${AdminRuntimeText.TITLE}${AdminMessages.ACTION_MODAL_DELETE}${AdminRuntimeText.SYMBOL_AB2CD7}${AdminIcons.BTN_DELETE}${AdminRuntimeText.BUTTON_DIV_TD_TR}`;
       }),
       AdminConstants.EMPTY_STR,
     );

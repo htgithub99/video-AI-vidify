@@ -7,7 +7,7 @@
 | Kiểu hình | Cách thể hiện |
 | --- | --- |
 | Truyện ma | Không gian tối nhưng đọc được chủ thể, màu áo đúng thoại, người và ma có hình dáng người, chuyển động nhẹ gắn nguồn; hình minh họa đơn giản là đủ. |
-| Lịch sử | Nhân vật theo sự kiện và thời đại, phục trang/kiến trúc theo dữ kiện nguồn; có thể dùng cảnh kể chuyện, chi tiết hiện vật, bản đồ hoặc dòng thời gian. Không ép nhân vật cố định. |
+| Lịch sử | Theo hướng hình Unknown Frequencies: đầu tròn sáng, thân áo gọn, tay chân nét mảnh; bối cảnh rõ phối cảnh/địa điểm, xen kẽ nền trắng khi giải thích. Phục trang/kiến trúc theo nguồn; có thể dùng chi tiết hiện vật, bản đồ hoặc dòng thời gian. Không ép nhân vật cố định. |
 | Giải thích | Chọn quy trình, so sánh, cơ chế/cắt lớp, sơ đồ hoặc ví dụ thực tế. Không bắt có người, căn phòng hay mặt sàn khi nội dung là khái niệm. |
 
 ## Thay đổi chính
@@ -31,6 +31,8 @@
 - Không tạo video sản xuất mới trong lượt cập nhật này. Kết quả kiểm tra kỹ thuật không chứng minh mọi video sau này sẽ đạt chất lượng mẫu. Độ đẹp, tính đúng của phục trang/địa lý và sự nhất quán qua nhiều cảnh vẫn cần đánh giá trên đầu ra AI thực tế.
 
 ## File chính
+
+Cập nhật Lịch sử revision 2 và phạm vi khung mẫu đã xem: [Đối ứng Unknown Frequencies](motion-history-channel-style-2026-10-28.md). SVG kỹ thuật trong prompt không phải kết quả AI mới hoặc bằng chứng video đã đạt độ giống mẫu.
 
 - `src/constants/motionIllustrationProfiles.ts`
 - `src/constants/motionCompositionStyleExamples.ts`

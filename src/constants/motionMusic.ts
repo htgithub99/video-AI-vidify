@@ -89,7 +89,7 @@ export const MOTION_MUSIC = {
     return `[1:a]aresample=48000,aformat=channel_layouts=stereo,highshelf=f=4000:g=-6,lowpass=f=8000,loudnorm=I=${target.toFixed(1)}:TP=${MOTION_MUSIC_LOUDNESS.TRUE_PEAK}:LRA=${MOTION_MUSIC_LOUDNESS.RANGE},aresample=48000[m];[0:a]aresample=48000,aformat=channel_layouts=stereo,asplit=2[v][k];[m][k]sidechaincompress=threshold=0.012:ratio=10:attack=25:release=900[d];[v][d]amix=inputs=2:duration=first:normalize=0[out]`;
   },
   MIX_OUT: "[out]",
-  GENRE_MOOD: { horror: "eerie", ghost_tale: "eerie", history_map: "tense", what_if: "tense", story: "warm", kids: "playful", explainer: "neutral", documentary: "neutral" } as Record<string, string>,
+  GENRE_MOOD: { horror: "eerie", ghost_tale: "eerie", history_story: "neutral", history_map: "tense", what_if: "tense", story: "warm", kids: "playful", explainer: "neutral", documentary: "neutral" } as Record<string, string>,
   SFX_MOOD: { dark: "tense", horror: "eerie", sad: "sad", warm: "warm", epic: "epic", playful: "playful", tense: "tense" } as Record<string, string>,
   CUE_TEMPLATES: ["title", "chapter", "verdict", "ending", "scoreboard"],
   LOG: { BUILT: (mood: string): string => `Đã soạn nhạc nền (${mood})` },

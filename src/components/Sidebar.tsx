@@ -38,9 +38,31 @@ import { useLicense } from "../contexts/LicenseContext";
 import { Lang } from "../lib/lang.js";
 import { cn } from "../lib/utils";
 import { Button } from "./ui/Button";
-interface SidebarProps { currentLang: Lang; activeTab: string; setActiveTab: (tab: string) => void; selectedProjectId: string | null; activeProjectName: string | null; theme?: "light" | "dark" | string; toggleTheme?: () => void; isMobileOpen?: boolean; onCloseMobile?: () => void; }
-interface MenuItemConfig { id: AppTab; label: string; icon: LucideIcon; requiresProject: boolean; hide?: boolean; }
-interface SidebarItemProps { item: MenuItemConfig; isSelected: boolean; isDisabled: boolean; isCollapsed: boolean; onSelect: (id: AppTab) => void; }
+interface SidebarProps {
+  currentLang: Lang;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  selectedProjectId: string | null;
+  activeProjectName: string | null;
+  theme?: "light" | "dark" | string;
+  toggleTheme?: () => void;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+interface MenuItemConfig {
+  id: AppTab;
+  label: string;
+  icon: LucideIcon;
+  requiresProject: boolean;
+  hide?: boolean;
+}
+interface SidebarItemProps {
+  item: MenuItemConfig;
+  isSelected: boolean;
+  isDisabled: boolean;
+  isCollapsed: boolean;
+  onSelect: (id: AppTab) => void;
+}
 const SidebarItem: FC<SidebarItemProps> = ({ item, isSelected, isDisabled, isCollapsed, onSelect }) => {
   const Icon = item.icon;
   return (
@@ -57,12 +79,7 @@ const SidebarItem: FC<SidebarItemProps> = ({ item, isSelected, isDisabled, isCol
         "text-left": !isCollapsed,
       })}
       title={item.label}>
-      <div
-        className={cn(SOURCE_TEXT_APP_NAV_ICON_W_8_H_8, {
-          "bg-rose-600 text-white shadow-sm": isSelected,
-          "bg-slate-900 text-slate-600": isDisabled && !isSelected,
-          "bg-slate-900/80 border border-slate-800 text-slate-400 group-hover:text-slate-200 group-hover:border-slate-700": !isSelected && !isDisabled,
-        })}>
+      <div className={cn(SOURCE_TEXT_APP_NAV_ICON_W_8_H_8, { "bg-rose-600 text-white shadow-sm": isSelected, "bg-slate-900 text-slate-600": isDisabled && !isSelected, "bg-slate-900/80 border border-slate-800 text-slate-400 group-hover:text-slate-200 group-hover:border-slate-700": !isSelected && !isDisabled })}>
         <Icon className={cn(SOURCE_TEXT_W_4_H_4)} />
       </div>
       {!isCollapsed && <span className={cn(SOURCE_TEXT_TEXT_XS_FONT_BOLD_TRACKING_WIDE_TRUNCATE)}>{item.label}</span>}
@@ -77,81 +94,18 @@ export default function Sidebar({ currentLang, activeTab, setActiveTab, selected
   const isGlobalTab = _.includes([AppTab.DASHBOARD, AppTab.PROJECTS, AppTab.SETTINGS, AppTab.PROXY], activeTab as AppTab);
   const shouldHideProjectTabs = !hasSelectedProject || isGlobalTab || _.includes([AppTab.MUSIC_CREATOR, AppTab.MUSIC_MIXER, AppTab.VIDEO_CREATOR, AppTab.SHORTS_EXTRACTOR, AppTab.VIDEO_EXPORT, AppTab.MOTION_VIDEO], activeTab as AppTab);
   const menuItems: MenuItemConfig[] = [
-    {
-      id: AppTab.DASHBOARD,
-      label: texts.DASHBOARD,
-      icon: LayoutDashboard,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.PROJECTS,
-      label: texts.CONTENT,
-      icon: FolderKanban,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.AUTO_GENERATOR,
-      label: texts.AUTO_CREATOR,
-      icon: Zap,
-      requiresProject: true,
-      hide: shouldHideProjectTabs,
-    },
-    {
-      id: AppTab.CINEMATIC_FILM,
-      label: texts.CINEMATIC_FILM,
-      icon: Clapperboard,
-      requiresProject: true,
-      hide: shouldHideProjectTabs,
-    },
-    {
-      id: AppTab.MUSIC_CREATOR,
-      label: texts.MUSIC_CREATOR,
-      icon: Music2,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.PROXY,
-      label: SOURCE_TEXT_PROXY,
-      icon: Globe,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.MUSIC_MIXER,
-      label: texts.MUSIC_MIXER,
-      icon: Shuffle,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.VIDEO_CREATOR,
-      label: texts.VIDEO_CREATOR,
-      icon: Video,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.SHORTS_EXTRACTOR,
-      label: texts.SHORTS_EXTRACTOR,
-      icon: Scissors,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.VIDEO_EXPORT,
-      label: texts.VIDEO_EXPORT,
-      icon: Film,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.MOTION_VIDEO,
-      label: texts.MOTION_VIDEO,
-      icon: Sparkles,
-      requiresProject: false,
-    },
-    {
-      id: AppTab.SETTINGS,
-      label: texts.SETTINGS,
-      icon: Settings,
-      requiresProject: false,
-      hide: _.isEqual(licenseInfo?.plan_type, PlanType.FREE),
-    },
+    { id: AppTab.DASHBOARD, label: texts.DASHBOARD, icon: LayoutDashboard, requiresProject: false },
+    { id: AppTab.PROJECTS, label: texts.CONTENT, icon: FolderKanban, requiresProject: false },
+    { id: AppTab.AUTO_GENERATOR, label: texts.AUTO_CREATOR, icon: Zap, requiresProject: true, hide: shouldHideProjectTabs },
+    { id: AppTab.CINEMATIC_FILM, label: texts.CINEMATIC_FILM, icon: Clapperboard, requiresProject: true, hide: shouldHideProjectTabs },
+    { id: AppTab.MUSIC_CREATOR, label: texts.MUSIC_CREATOR, icon: Music2, requiresProject: false },
+    { id: AppTab.PROXY, label: SOURCE_TEXT_PROXY, icon: Globe, requiresProject: false },
+    { id: AppTab.MUSIC_MIXER, label: texts.MUSIC_MIXER, icon: Shuffle, requiresProject: false },
+    { id: AppTab.VIDEO_CREATOR, label: texts.VIDEO_CREATOR, icon: Video, requiresProject: false },
+    { id: AppTab.SHORTS_EXTRACTOR, label: texts.SHORTS_EXTRACTOR, icon: Scissors, requiresProject: false },
+    { id: AppTab.VIDEO_EXPORT, label: texts.VIDEO_EXPORT, icon: Film, requiresProject: false },
+    { id: AppTab.MOTION_VIDEO, label: texts.MOTION_VIDEO, icon: Sparkles, requiresProject: false },
+    { id: AppTab.SETTINGS, label: texts.SETTINGS, icon: Settings, requiresProject: false, hide: _.isEqual(licenseInfo?.plan_type, PlanType.FREE) },
   ];
   const handleItemSelect = (id: AppTab) => {
     setActiveTab(id);

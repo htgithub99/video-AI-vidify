@@ -1,6 +1,4 @@
 from folk_blocking_texts import FolkText
-
-
 class ClosedPackText:
     CATALOG = "closed_pack_catalog.json"
     OCC = FolkText.OCC

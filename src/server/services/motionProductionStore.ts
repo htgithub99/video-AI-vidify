@@ -1,3 +1,4 @@
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -24,7 +25,7 @@ export class MotionProductionStore<T extends { owner?: MotionProductionOwner }> 
   }
   read(id: string): T | undefined {
     try {
-      return JSON.parse(fs.readFileSync(this.file(id), P.ENCODING)) as T;
+      return parseJson(fs.readFileSync(this.file(id), P.ENCODING)) as T;
     } catch {
       return undefined;
     }
@@ -34,7 +35,7 @@ export class MotionProductionStore<T extends { owner?: MotionProductionOwner }> 
   }
   private lock(id: string): MotionProductionOwner | undefined {
     try {
-      return JSON.parse(fs.readFileSync(this.file(id, P.LOCK_EXT), P.ENCODING));
+      return parseJson(fs.readFileSync(this.file(id, P.LOCK_EXT), P.ENCODING));
     } catch {
       return undefined;
     }
@@ -45,7 +46,7 @@ export class MotionProductionStore<T extends { owner?: MotionProductionOwner }> 
         const descriptor = fs.openSync(lockFile, P.LOCK_MODE);
         const owner = { pid: process.pid, token: randomUUID(), updated: Date.now() };
         try {
-          fs.writeFileSync(descriptor, JSON.stringify(owner), P.ENCODING);
+          fs.writeFileSync(descriptor, stringifyJson(owner), P.ENCODING);
         } finally {
           fs.closeSync(descriptor);
         }
@@ -64,7 +65,7 @@ export class MotionProductionStore<T extends { owner?: MotionProductionOwner }> 
         if (content === undefined) continue;
         let previous: MotionProductionOwner | undefined;
         try {
-          const value = JSON.parse(content);
+          const value = parseJson(content);
           if (Number.isInteger(value.pid) && value.pid > 0 && typeof value.token === "string" && P.ID_RE.test(value.token)) previous = value;
         } catch {}
         if (previous ? motionProcessAlive(previous.pid) : Date.now() - fs.statSync(lockFile).mtimeMs < P.LOCK_MS) throw new Error(P.BUSY_RUN);
@@ -86,7 +87,7 @@ export class MotionProductionStore<T extends { owner?: MotionProductionOwner }> 
   private releaseFile(file: string, owner: MotionProductionOwner): void {
     let current: MotionProductionOwner | undefined;
     try {
-      current = JSON.parse(fs.readFileSync(file, P.ENCODING));
+      current = parseJson(fs.readFileSync(file, P.ENCODING));
     } catch {}
     if (current?.token === owner.token) fs.unlinkSync(file);
   }

@@ -27,12 +27,7 @@ const budgetMap = (params: Record<string, any>, spoken: Set<string>): Record<str
     ..._.map(cities, (c, index) => ({ kind: M.CITIES, index, rank: c?.capital ? R.CAPITAL : R.CITY })),
   ];
   const keep = new Set(_.map(_.take(_.sortBy(slots, M.RANK), B.MAP_TEXT_MAX), (s) => key(s.kind, s.index)));
-  return {
-    ...params,
-    labels: _.filter(labels, (_l, index) => keep.has(key(M.LABELS, index))),
-    arrows: _.map(arrows, (a, index) => (a?.label && !keep.has(key(M.ARROWS, index)) ? _.omit(a, M.LABEL) : a)),
-    cities: _.map(cities, (c, index) => (keep.has(key(M.CITIES, index)) ? c : { ...c, [M.HIDE]: true })),
-  };
+  return { ...params, labels: _.filter(labels, (_l, index) => keep.has(key(M.LABELS, index))), arrows: _.map(arrows, (a, index) => (a?.label && !keep.has(key(M.ARROWS, index)) ? _.omit(a, M.LABEL) : a)), cities: _.map(cities, (c, index) => (keep.has(key(M.CITIES, index)) ? c : { ...c, [M.HIDE]: true })) };
 };
 export const budgetShotText = (template: string, params: Record<string, any>, narration: string, hud?: MotionHud): Record<string, any> => {
   const spoken = new Set(motionTextWords(narration));

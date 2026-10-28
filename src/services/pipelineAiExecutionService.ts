@@ -4,8 +4,18 @@ import { GEMINI_CHAT_MODEL_OPTIONS } from "../constants/geminiChatModels.js";
 import { DEEPSEEK_CHAT_MODES } from "../constants/deepseekChat";
 import { CINEMATIC_CHAT_DEFAULT_MODELS } from "../constants/cinematicConstants";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, VideoProject } from "../types";
-export interface PipelineAiExecutionInput { planningFallbackProvider?: AiPlanningFallbackProvider; planningChatModel?: AiPlanningChatModel; planningExecutionMode?: AiPlanningExecutionMode; planningChromeHeadless?: boolean; }
-export interface ResolvedPipelineAiExecution { provider: AiPlanningFallbackProvider; model: AiPlanningChatModel; mode: AiPlanningExecutionMode; chromeHeadless: boolean; }
+export interface PipelineAiExecutionInput {
+  planningFallbackProvider?: AiPlanningFallbackProvider;
+  planningChatModel?: AiPlanningChatModel;
+  planningExecutionMode?: AiPlanningExecutionMode;
+  planningChromeHeadless?: boolean;
+}
+export interface ResolvedPipelineAiExecution {
+  provider: AiPlanningFallbackProvider;
+  model: AiPlanningChatModel;
+  mode: AiPlanningExecutionMode;
+  chromeHeadless: boolean;
+}
 const resolveEnumValue = <T extends string>(values: T[], ...candidates: unknown[]): T | undefined => _.find(candidates, (candidate): candidate is T => _.includes(values, candidate as T));
 export const resolvePipelineAiExecution = (incoming: PipelineAiExecutionInput, savedProject: VideoProject | null | undefined, isCinematicPipeline: boolean): ResolvedPipelineAiExecution => {
   const savedVisual = savedProject?.visualConfig;

@@ -83,7 +83,7 @@ Log lưu rõ **review ảnh AI đã tắt**; 17 cảnh đều không có reviewK
 - Bảng màu đã thiên xanh xám/nâu tối; các ảnh kiểm tra không còn khung nền trắng quanh đạo cụ như lỗi trước.
 - Hình vẫn có cảm giác từng miếng SVG được đặt lên nền: người chủ yếu nhìn chính diện, ánh sáng và tỷ lệ giữa các lớp chưa thống nhất. So với ảnh tham chiếu đã lưu của “ĐI ĐÁM MA ĐỪNG LẠY BỐN LẠY”, quan hệ người–nội thất–mặt sàn chưa tự nhiên bằng.
 - Màu tối không thay thế việc làm nổi bật dấu hiệu: dấu chân, muối gạo, ánh mắt và vị trí cửa còn khó đọc.
-- Renderer `src/remotion/StoryComposition.tsx:10–19` chọn một scene tại mỗi frame, không hòa hai scene. Các ảnh cặp tại 76,2/76,5; 107,2/107,5; 112,1/112,4 giây cho thấy đổi bố cục rất mạnh. Cảm giác nhảy ở đây gắn với đổi nền/người/vật, không có bằng chứng đó là hiệu ứng rung khung.
+- Renderer `src/features/motion/remotion/StoryComposition.tsx:10–19` chọn một scene tại mỗi frame, không hòa hai scene. Các ảnh cặp tại 76,2/76,5; 107,2/107,5; 112,1/112,4 giây cho thấy đổi bố cục rất mạnh. Cảm giác nhảy ở đây gắn với đổi nền/người/vật, không có bằng chứng đó là hiệu ứng rung khung.
 - Sub ở ảnh kiểm tra không có nền, không tràn khỏi khung. Chưa xác nhận khớp từng chữ với tiếng đọc: `buildSubtitles` chia thời lượng theo số đơn vị chữ, không phải căn chỉnh phát âm thực tế.
 
 ## Âm thanh: chỉ kết quả kỹ thuật

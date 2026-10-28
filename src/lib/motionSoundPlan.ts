@@ -1,3 +1,4 @@
+import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_SOUND_BEDS, MOTION_SOUND_CONFIG as C, MOTION_SOUND_GENRE_ALIAS, MOTION_SOUND_GENRE_CUE as G, MOTION_SOUND_GENRES, MOTION_SOUND_KINDS, MOTION_SOUND_SCARY_PLACE } from "../constants/motionSound.js";
 import { MOTION_VIDEO_GENRES } from "../constants/motionGenre.js";
@@ -77,7 +78,8 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
     const genreBed = palette?.bed;
     if (genreBed && (genreBed.always || MOTION_SOUND_SCARY_PLACE.test(context) || (!interior && C.NIGHT_RE.test(context)))) add({ id: MR.MOTION_TEMPLATE_AMBIENCE(beatId, genreBed.kind), beatId, t: start, kind: genreBed.kind, layer: MR.MOTION_TEXT_AMBIENCE, duration, gainDb: genreBed.gainDb, description: place?.description || location?.name, source: MR.MOTION_TEXT_OFFSCREEN });
     const events = normalizeSoundEvents(staging.soundEvents || beat?.data?.soundEvents).filter((event) => !suppressed.has(event.kind));
-    if (palette?.chapter && beat?.chapterId && lastChapter !== undefined && beat.chapterId !== lastChapter) add({ id: MR.MOTION_TEMPLATE_EVENT(beatId, G.CHAPTER), beatId, t: start + G.CHAPTER_OFFSET, kind: palette.chapter.kind, layer: palette.chapter.layer, duration: MOTION_SOUND_KINDS.find((item) => item.kind === palette.chapter!.kind)!.duration, gainDb: palette.chapter.gainDb, description: palette.chapter.description, source: MR.MOTION_TEXT_OFFSCREEN });
+    if (palette?.chapter && beat?.chapterId && lastChapter !== undefined && beat.chapterId !== lastChapter)
+      add({ id: MR.MOTION_TEMPLATE_EVENT(beatId, G.CHAPTER), beatId, t: start + G.CHAPTER_OFFSET, kind: palette.chapter.kind, layer: palette.chapter.layer, duration: MOTION_SOUND_KINDS.find((item) => item.kind === palette.chapter!.kind)!.duration, gainDb: palette.chapter.gainDb, description: palette.chapter.description, source: MR.MOTION_TEXT_OFFSCREEN });
     if (beat?.chapterId) lastChapter = beat.chapterId;
     const beatText = soundText([beat?.narration, ...(beat?.utterances || []).map((line) => line.text)].join(C.SPACE)),
       beatClips = (clips || []).filter((clip) => clip.beatId === beatId);
@@ -107,7 +109,7 @@ export const compileMotionSoundPlan = (spec: MotionSpec, script?: MotionStoryScr
       const actor = (Array.isArray(staging.actors) ? staging.actors : []).find((a: any) => a.cast === event.actor);
       if (event.actor && !actor && event.source !== MR.MOTION_TEXT_OFFSCREEN) continue;
       if (event.kind === MR.MOTION_TEXT_FOOTSTEP && event.source !== MR.MOTION_TEXT_OFFSCREEN && (!spec.gen?.characterMotion || !actor?.moveTo)) continue;
-      if (event.prop && !JSON.stringify([location?.nodes, staging.props]).includes(MR.MOTION_TEMPLATE_EMPTY_4(event.prop))) continue;
+      if (event.prop && !stringifyJson([location?.nodes, staging.props]).includes(MR.MOTION_TEMPLATE_EMPTY_4(event.prop))) continue;
       const cut = event.anchor === MR.MOTION_TEXT_CUT ? spec.shots.filter((shot) => (shot.params as any)?.soundBeatId === beatId).sort((a, b) => a.start - b.start)[(event.camera || 1) - 1] : undefined;
       if (event.anchor === MR.MOTION_TEXT_CUT && !cut) continue;
       const line = event.utterance ? clips?.find((clip) => clip.beatId === beatId && clip.id === event.utterance) : undefined;

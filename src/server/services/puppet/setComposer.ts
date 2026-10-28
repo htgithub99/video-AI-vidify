@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { isTerminalMotionAiError } from "../chatSubmissionRecovery.js";
 import { setImmediate } from "node:timers/promises";
 import { puppetTimestamp as now, puppetKeyOf as keyOf } from "../../../lib/motionPuppetValues.js";
@@ -182,7 +183,7 @@ export const buildPuppetSets = async (style: PuppetStylePack, needs: PuppetSetNe
       for (const [index, contact] of contacts.entries()) include([...ranked].sort((a, b) => Math.min(contact.count, contactCounts(b)[index]) - Math.min(contact.count, contactCounts(a)[index]))[0]);
       for (const [index, contact] of contacts.entries()) if (contact.count > 1) for (const piece of ranked.filter((piece) => contactCounts(piece)[index] > 0 && Math.ceil(contact.count / contactCounts(piece)[index]) <= piece.slots.length).slice(0, I.ASSEMBLY_PIECES)) include(piece);
       for (const [index] of need.must.entries()) include(ranked.find((piece) => features(piece)[index]));
-      const groupsByFunction = _.groupBy(ranked, (piece) => JSON.stringify([piece.kind, piece.slots, contactCounts(piece).map((count, i) => Math.min(count, contacts[i].count)), features(piece)]));
+      const groupsByFunction = _.groupBy(ranked, (piece) => stringifyJson([piece.kind, piece.slots, contactCounts(piece).map((count, i) => Math.min(count, contacts[i].count)), features(piece)]));
       for (let offset = 0; candidates.length < Math.max(I.ASSEMBLY_PIECES, contacts.length + need.must.length); offset++) {
         const layer = Object.values(groupsByFunction).flatMap((group) => (group[offset] ? [group[offset]] : []));
         if (!layer.length) break;

@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { mergeMotionRepair } from "./motionAiRepair.js";
 import { puppetKeyOf } from "./motionPuppetValues.js";
 import type { PuppetObject, PuppetRead } from "../types/motionPuppet.js";
@@ -31,18 +32,18 @@ export const puppetReadObjects = (read: Pick<PuppetRead, "object" | "objects">):
 export const mergePuppetReadRepair = <T extends ReadObjects>(before: T, patch: ReadObjects, paths: string[]): T => {
   const draft = canonicalPuppetReadObjects(before);
   const next = { ...patch };
-  if (Object.hasOwn(patch, "object") && !Object.hasOwn(patch, "objects")) {
+  if (Object.hasOwn(patch, RT_SHARED.OBJECT) && !Object.hasOwn(patch, RT_SHARED.OBJECTS_E4CD30)) {
     const at = draft.objects.findIndex((object) => object === draft.object);
     if (patch.object && typeof patch.object === "object") {
-      next.objects = paths.includes("objects") ? [...draft.objects] : [];
+      next.objects = paths.includes(RT_SHARED.OBJECTS_E4CD30) ? [...draft.objects] : [];
       next.objects[at < 0 ? draft.objects.length : at] = patch.object;
-    } else if (patch.object === null && paths.includes("objects")) next.objects = draft.objects.filter((_, index) => index !== at);
+    } else if (patch.object === null && paths.includes(RT_SHARED.OBJECTS_E4CD30)) next.objects = draft.objects.filter((_, index) => index !== at);
   }
   const merged = mergeMotionRepair(draft, next, paths);
   const at = draft.objects.findIndex((object) => object === draft.object);
   if (at >= 0 && draft.object) {
     const objects = Array.isArray(merged.objects) ? merged.objects : [];
-    const primary = objects.find((object: any) => sameObject(object, draft.object)) || (!paths.includes("objects") && paths.some((path) => path === "objects." + at || path.startsWith("objects." + at + ".")) ? objects[at] : null);
+    const primary = objects.find((object: any) => sameObject(object, draft.object)) || (!paths.includes(RT_SHARED.OBJECTS_E4CD30) && paths.some((path) => path === RT_SHARED.OBJECTS + at || path.startsWith(RT_SHARED.OBJECTS + at + RT_SHARED.SYMBOL_CDB4EE)) ? objects[at] : null);
     merged.object = primary || null;
   }
   return canonicalPuppetReadObjects(merged);

@@ -50,15 +50,7 @@ try {
   assert.ok((protectedDialogueDecision.selectedDuration || 0) >= 9.5);
   assert.ok(protectedDialogueDecision.segments.every((segment) => segment.containsDialogue));
   const expectedEditorialDecisions = [damagedHeadDecision, ambienceDecision];
-  const completeEditorialDecisions = expectedEditorialDecisions.map((decision) => ({
-    sceneId: decision.sceneId,
-    takeDecision: "trim",
-    segments: decision.candidateSegments!.slice(0, 1).map((segment) => ({
-      segmentId: segment.segmentId,
-      inSeconds: segment.inSeconds,
-      outSeconds: segment.outSeconds,
-    })),
-  }));
+  const completeEditorialDecisions = expectedEditorialDecisions.map((decision) => ({ sceneId: decision.sceneId, takeDecision: "trim", segments: decision.candidateSegments!.slice(0, 1).map((segment) => ({ segmentId: segment.segmentId, inSeconds: segment.inSeconds, outSeconds: segment.outSeconds })) }));
   assert.equal(validateCinematicEditorialDecisions(expectedEditorialDecisions, completeEditorialDecisions).valid, true);
   const dialogueOmitDecisions = [completeEditorialDecisions[1], { sceneId: protectedDialogueDecision.sceneId, takeDecision: "omit", segments: [] }];
   assert.equal(validateCinematicEditorialDecisions([ambienceDecision, protectedDialogueDecision], dialogueOmitDecisions).valid, true);

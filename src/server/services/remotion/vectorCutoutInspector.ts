@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
 import { chromium, type Browser, type Page } from "playwright";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { motionVectorSource } from "../../../lib/motionVectorAsset.js";
@@ -21,7 +23,9 @@ export const createVectorCutoutInspector = (signal?: AbortSignal) => {
     });
     const target = await page;
     const issue = await target.evaluate(
-      async ({ source, config }) => {
+      async (__runtimePayload) => {
+        const { RT_SHARED, RT_SERVER } = __runtimePayload.texts;
+        const { source, config } = __runtimePayload.value;
         const image = new Image();
         await new Promise<void>((resolve, reject) => {
           const timeout = setTimeout(() => reject(new Error(config.RASTER_TIMEOUT)), config.TIMEOUT_MS);
@@ -35,9 +39,9 @@ export const createVectorCutoutInspector = (signal?: AbortSignal) => {
           };
           image.src = source;
         });
-        const canvas = document.querySelector("canvas")!;
+        const canvas = document.querySelector(RT_SHARED.CANVAS)!;
         canvas.width = canvas.height = config.SIZE;
-        const context = canvas.getContext("2d", { willReadFrequently: true })!;
+        const context = canvas.getContext(RT_SERVER.VALUE_2D, { willReadFrequently: true })!;
         context.clearRect(0, 0, config.SIZE, config.SIZE);
         context.drawImage(image, 0, 0, config.SIZE, config.SIZE);
         const pixels = context.getImageData(0, 0, config.SIZE, config.SIZE).data;
@@ -106,23 +110,26 @@ export const createVectorCutoutInspector = (signal?: AbortSignal) => {
         return { issue: opaque / (config.SIZE * config.SIZE) >= config.OPAQUE_RATIO && cornerOpaque / (4 * config.CORNER_SIZE * config.CORNER_SIZE) >= config.CORNER_OPAQUE_RATIO ? config.BACKDROP : undefined, bounds: { x: minX / config.SIZE, y: minY / config.SIZE, width: (maxX - minX + 1) / config.SIZE, height: (maxY - minY + 1) / config.SIZE } };
       },
       {
-        source: motionVectorSource(asset.svg),
-        config: {
-          SIZE: character ? V.CUTOUT.CHARACTER_SIZE : V.CUTOUT.SIZE,
-          CHARACTER: character,
-          BODY_GAP_RATIO: V.CUTOUT.BODY_GAP_RATIO,
-          BODY_PART_RATIO: V.CUTOUT.BODY_PART_RATIO,
-          DISCONNECTED: V.CUTOUT.DISCONNECTED,
-          OPAQUE_ALPHA: V.CUTOUT.OPAQUE_ALPHA,
-          OPAQUE_RATIO: V.CUTOUT.OPAQUE_RATIO,
-          CORNER_SIZE: V.CUTOUT.CORNER_SIZE,
-          CORNER_OPAQUE_RATIO: V.CUTOUT.CORNER_OPAQUE_RATIO,
-          TIMEOUT_MS: V.CUTOUT.TIMEOUT_MS,
-          RASTER_TIMEOUT: V.CUTOUT.RASTER_TIMEOUT,
-          RASTER_FAILED: V.CUTOUT.RASTER_FAILED,
-          EMPTY: V.CUTOUT.EMPTY,
-          BACKDROP: V.CUTOUT.BACKDROP,
+        value: {
+          source: motionVectorSource(asset.svg),
+          config: {
+            SIZE: character ? V.CUTOUT.CHARACTER_SIZE : V.CUTOUT.SIZE,
+            CHARACTER: character,
+            BODY_GAP_RATIO: V.CUTOUT.BODY_GAP_RATIO,
+            BODY_PART_RATIO: V.CUTOUT.BODY_PART_RATIO,
+            DISCONNECTED: V.CUTOUT.DISCONNECTED,
+            OPAQUE_ALPHA: V.CUTOUT.OPAQUE_ALPHA,
+            OPAQUE_RATIO: V.CUTOUT.OPAQUE_RATIO,
+            CORNER_SIZE: V.CUTOUT.CORNER_SIZE,
+            CORNER_OPAQUE_RATIO: V.CUTOUT.CORNER_OPAQUE_RATIO,
+            TIMEOUT_MS: V.CUTOUT.TIMEOUT_MS,
+            RASTER_TIMEOUT: V.CUTOUT.RASTER_TIMEOUT,
+            RASTER_FAILED: V.CUTOUT.RASTER_FAILED,
+            EMPTY: V.CUTOUT.EMPTY,
+            BACKDROP: V.CUTOUT.BACKDROP,
+          },
         },
+        texts: { RT_SHARED: { CANVAS: RT_SHARED.CANVAS }, RT_SERVER: { VALUE_2D: RT_SERVER.VALUE_2D } },
       },
     );
     signal?.throwIfAborted();
@@ -130,7 +137,7 @@ export const createVectorCutoutInspector = (signal?: AbortSignal) => {
   };
   return {
     check: async (asset: MotionVectorAsset, character = false): Promise<string | undefined> => {
-      const key = `${character}:${asset.svg}`;
+      const key = `${character}${RT_SHARED.SYMBOL_E7AC07}${asset.svg}`;
       const previous = checked.get(key);
       const result = previous || chain.then(() => inspect(asset, character));
       chain = result.catch(() => {});
@@ -148,14 +155,14 @@ export const createVectorCutoutInspector = (signal?: AbortSignal) => {
 export const checkRemotionCutoutLayers = async (spec: MotionRemotionSpec, signal?: AbortSignal): Promise<void> => {
   const inspector = createVectorCutoutInspector(signal);
   try {
-    const keys = new Set(spec.scenes.flatMap((scene) => (scene.composition ? [] : scene.nodes.filter((node) => node.kind !== "label").map((node) => node.assetKey!))));
+    const keys = new Set(spec.scenes.flatMap((scene) => (scene.composition ? [] : scene.nodes.filter((node) => node.kind !== RT_SHARED.LABEL).map((node) => node.assetKey!))));
     for (const key of keys) {
       const asset = spec.assets[key];
       const issue = await inspector.check(
         asset,
-        spec.scenes.some((scene) => scene.nodes.some((node) => node.assetKey === key && node.kind === "character")),
+        spec.scenes.some((scene) => scene.nodes.some((node) => node.assetKey === key && node.kind === RT_SHARED.CHARACTER)),
       );
-      if (issue) throw new Error(V.SVG_ERROR(`${asset.description || key}: ${issue}`));
+      if (issue) throw new Error(V.SVG_ERROR(`${asset.description || key}${RT_SHARED.SYMBOL_45822F}${issue}`));
     }
   } finally {
     await inspector.close();

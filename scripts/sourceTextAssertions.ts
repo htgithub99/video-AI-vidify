@@ -1,7 +1,20 @@
 import { stringifyJson } from "../src/lib/jsonStringify.js";
 import ts from "typescript";
 import { readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import * as sourceTexts from "../src/constants/sourceText";
+const runtimeTexts = new Map<string, Record<string, string>>();
+const runtimeFiles = [
+  ...readdirSync("src/constants/runtime")
+    .filter((file) => file.endsWith(".ts"))
+    .map((file) => ({ file: `src/constants/runtime/${file}`, group: path.basename(file, ".ts") })),
+  ...readdirSync("src/features")
+    .map((group) => ({ file: `src/features/${group}/constants/runtimeText.ts`, group }))
+    .filter(({ file }) => existsSync(file)),
+];
+for (const { file, group } of runtimeFiles) runtimeTexts.set(`RT_${group.replaceAll("-", "_").toUpperCase()}`, (await import(pathToFileURL(path.resolve(file)).href)).RUNTIME_TEXT);
 const constantsTree = ts.createSourceFile("sourceText.ts", readFileSync(new URL("../src/constants/sourceText.ts", import.meta.url), "utf8"), ts.ScriptTarget.Latest, true);
 const templates = new Map<string, Array<string | number>>();
 const quoteLiteral = (value: string): string => (value.includes('"') ? "'" + stringifyJson(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'") + "'" : stringifyJson(value));
@@ -28,6 +41,13 @@ export const resolveSourceTextConstants = (source: string): string => {
   const edits: Array<{ start: number; end: number; value: string }> = [];
   const visit = (node: ts.Node): void => {
     if (ts.isImportDeclaration(node)) return;
+    if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression)) {
+      const value = runtimeTexts.get(node.expression.text)?.[node.name.text];
+      if (typeof value === "string") {
+        edits.push({ start: node.getStart(tree), end: node.end, value: quoteLiteral(value) });
+        return;
+      }
+    }
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && templates.has(node.expression.text)) {
       const parts = templates.get(node.expression.text)!;
       const value =

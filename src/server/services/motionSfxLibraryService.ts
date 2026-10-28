@@ -1,3 +1,4 @@
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
@@ -21,7 +22,7 @@ const builtinSource = (): string => {
 const importSource = async (sourceRoot: string, root: string, assets: Map<string, MotionSoundAsset>): Promise<void> => {
   const manifest = path.join(sourceRoot, C.MANIFEST);
   if (!fs.existsSync(manifest)) return;
-  const list = JSON.parse(await fs.promises.readFile(manifest, C.UTF8));
+  const list = parseJson(await fs.promises.readFile(manifest, C.UTF8));
   for (const entry of (Array.isArray(list) ? list : []).slice(0, C.IMPORT_LIMIT)) {
     if (!entry || typeof entry.file !== "string" || !entry.file.toLowerCase().endsWith(C.MP3)) continue;
     const file = path.resolve(sourceRoot, entry.file);
@@ -60,7 +61,7 @@ export const ensureMotionSfxLibrary = async (source = process.env[C.SOURCE_ENV] 
       return [];
     }
   });
-  const sourceSignature = stamps.length ? hash(JSON.stringify(stamps)) : undefined;
+  const sourceSignature = stamps.length ? hash(stringifyJson(stamps)) : undefined;
   const cacheKey = root + (sourceSignature || C.EMPTY);
   if (cachedRoot === cacheKey && cached) return cached;
   if (cachedRoot === cacheKey && pending) return pending;
@@ -69,7 +70,7 @@ export const ensureMotionSfxLibrary = async (source = process.env[C.SOURCE_ENV] 
     fs.mkdirSync(path.join(root, C.ASSETS), { recursive: true });
     const indexFile = path.join(root, C.INDEX);
     try {
-      const index = JSON.parse(await fs.promises.readFile(indexFile, C.UTF8));
+      const index = parseJson(await fs.promises.readFile(indexFile, C.UTF8));
       if (index.version === C.VERSION && (!sourceSignature || index.sourceSignature === sourceSignature) && Array.isArray(index.assets) && index.assets.length)
         return index.assets.filter((asset: MotionSoundAsset) => /^[a-f0-9]{64}$/.test(asset.id) && fs.existsSync(path.join(root, C.ASSETS, asset.id + C.MP3))).map((asset: MotionSoundAsset) => ({ ...asset, kinds: soundAssetKinds(asset.name, asset.sources?.[0]?.file) }));
     } catch {}
@@ -127,7 +128,7 @@ export const motionSoundCatalogPrompt = async (context: string): Promise<string>
       text = soundText(context);
     const relevant = MOTION_SOUND_KINDS.filter((kind) => kind.pattern.test(text));
     const selected = relevant.flatMap((kind) => soundCandidates({ kind: kind.kind, layer: kind.layer, description: context }, assets, 2));
-    return C.CATALOGUE + JSON.stringify([...new Map(selected.map((asset) => [asset.id, { id: asset.id, name: asset.name, seconds: asset.duration, kinds: asset.kinds }])).values()].slice(0, 32));
+    return C.CATALOGUE + stringifyJson([...new Map(selected.map((asset) => [asset.id, { id: asset.id, name: asset.name, seconds: asset.duration, kinds: asset.kinds }])).values()].slice(0, 32));
   } catch {
     return C.EMPTY;
   }

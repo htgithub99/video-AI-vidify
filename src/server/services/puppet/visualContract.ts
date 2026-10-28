@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { createHash } from "node:crypto";
 import { MOTION_VISUAL_CONTRACT as V } from "../../../constants/motionVisualContract.js";
 import { PUPPET as P } from "../../../constants/motionPuppet.js";
@@ -16,7 +18,7 @@ export const assessPuppetVisualContract = (raw: unknown, plannedScene?: string):
   const scene = typeof sceneValue === "string" ? puppetKeyOf(sceneValue) : null,
     timeline = typeof value.timeline === "string" ? puppetKeyOf(value.timeline) : null;
   const evidence = Array.isArray(value.evidence) ? value.evidence.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim()) : [];
-  const issues = [...(!scene ? [{ path: "visual.scene", reason: V.READ_VISUAL_SCENE_INVALID }] : []), ...(!timeline ? [{ path: "visual.timeline", reason: V.READ_VISUAL_TIMELINE_INVALID }] : []), ...(!evidence.length ? [{ path: "visual.evidence", reason: V.READ_VISUAL_EVIDENCE_INVALID }] : [])];
+  const issues = [...(!scene ? [{ path: RT_SERVER.VISUAL_SCENE, reason: V.READ_VISUAL_SCENE_INVALID }] : []), ...(!timeline ? [{ path: RT_SERVER.VISUAL_TIMELINE, reason: V.READ_VISUAL_TIMELINE_INVALID }] : []), ...(!evidence.length ? [{ path: RT_SERVER.VISUAL_EVIDENCE, reason: V.READ_VISUAL_EVIDENCE_INVALID }] : [])];
   if (issues.length) return { issues };
   const fixtures = Array.isArray(value.fixtures)
     ? value.fixtures.flatMap((item) => {
@@ -32,7 +34,7 @@ export const puppetStoryContext = (lines: PuppetLine[]): string => {
   const seen = new Set<string>();
   return (
     V.CONTEXT +
-    JSON.stringify(
+    stringifyJson(
       lines.flatMap((line) =>
         (line.sourcePlans || [{ beatId: line.beatId, place: line.place, time: line.time, action: line.action, scenePlan: line.scenePlan }]).flatMap((source) => {
           if (seen.has(source.beatId)) return [];
@@ -44,7 +46,7 @@ export const puppetStoryContext = (lines: PuppetLine[]): string => {
   );
 };
 export const puppetLineContext = (line: PuppetLine): string =>
-  JSON.stringify({ chapter: line.chapterId, cast: line.cast, speakers: line.speakers, task: line.visualUnit ? { scene: line.visualUnit.scene, purpose: line.visualUnit.purpose, show: line.visualUnit.show } : undefined, sources: line.sourcePlans?.length ? line.sourcePlans : [{ beatId: line.beatId, place: line.place, time: line.time, action: line.action, scenePlan: line.scenePlan }] });
+  stringifyJson({ chapter: line.chapterId, cast: line.cast, speakers: line.speakers, task: line.visualUnit ? { scene: line.visualUnit.scene, purpose: line.visualUnit.purpose, show: line.visualUnit.show } : undefined, sources: line.sourcePlans?.length ? line.sourcePlans : [{ beatId: line.beatId, place: line.place, time: line.time, action: line.action, scenePlan: line.scenePlan }] });
 export const normalizePuppetVisualState = (lines: PuppetLine[], reads: Record<string, PuppetRead>, places: Record<string, PuppetPlace>, catalogKeys?: ReadonlySet<string>, cast: MotionCastMember[] = []): Record<string, PuppetRead> => {
   const output = { ...reads };
   const fixtures = new Map<string, Record<string, string>>();
@@ -143,8 +145,8 @@ export const normalizePuppetVisualState = (lines: PuppetLine[], reads: Record<st
     const resolved = { ...read, object, objects, fixtureStates: state, effectSource: aliases.get(read.effectSource || P.EMPTY) || read.effectSource, effectTarget: aliases.get(read.effectTarget || P.EMPTY) || read.effectTarget };
     if (Object.keys(state).length) {
       const ordered = Object.fromEntries(Object.entries(state).sort(([a], [b]) => a.localeCompare(b)));
-      const key = base.key + V.VARIANT_SEPARATOR + createHash(P.SHA).update(JSON.stringify(ordered)).digest(P.HEX).slice(0, 12);
-      places[key] = { ...base, key, visualBase: base.key, fixtureStates: ordered, desc: base.desc + P.NL + V.FIXTURES + JSON.stringify(ordered) };
+      const key = base.key + V.VARIANT_SEPARATOR + createHash(P.SHA).update(stringifyJson(ordered)).digest(P.HEX).slice(0, 12);
+      places[key] = { ...base, key, visualBase: base.key, fixtureStates: ordered, desc: base.desc + P.NL + V.FIXTURES + stringifyJson(ordered) };
       resolved.place = key;
     } else resolved.place = base.key;
     output[line.key] = resolved;

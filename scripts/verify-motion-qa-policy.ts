@@ -40,6 +40,20 @@ assert.equal(
   FIXTURE.units,
 );
 assert.deepEqual(draft.pending, []);
+let durationCalls = 0;
+const durationBeats = await writeChapterBeats(source, analysis, chapter, {
+  ...options,
+  durationRepair: true,
+  existing: beats,
+  ai: async () => {
+    durationCalls++;
+    return { beats: beats.map((beat) => ({ id: beat.id, narration: beat.narration + " Tôi đứng im, lặng người hồi lâu.", utterances: [{ speaker: "narrator", role: "narration", text: beat.narration + " Tôi đứng im, lặng người hồi lâu." }] })) };
+  },
+});
+assert.equal(durationCalls, 1);
+assert.equal(durationBeats.length, beats.length);
+assert.ok(durationBeats.every((beat, index) => beat.narration.startsWith(beats[index].narration) && beat.narration !== beats[index].narration));
+assert.deepEqual(draft.pending, []);
 assert.ok(warnings.some((warning) => warning.includes(Q.CHAPTER_LENGTH_WARNING(T.CHAPTER, FIXTURE.units, FIXTURE.seconds * T.SPEECH_RATE))));
 assert.ok(!request.includes("HARD LIMIT"));
 assert.doesNotThrow(() => assertMotionScriptComplete({ title: T.TITLE, language: T.LANGUAGE, beats } as any, analysis));
@@ -71,9 +85,12 @@ for (const [actual, expected] of [
   [0, Q.LEVEL.ERROR],
 ] as const)
   assert.equal(motionDurationQa(actual, 68), expected);
+assert.equal(motionDurationQa(76, 60), Q.LEVEL.WARNING);
+assert.equal(motionDurationQa(62, 60), Q.LEVEL.OK);
 for (const category of Q.REVIEW_MINOR) assert.ok(!motionVisualCheckBlocks({ ok: false, category }));
 for (const category of Q.REVIEW_CRITICAL) assert.ok(motionVisualCheckBlocks({ ok: false, category }));
-assert.ok(motionVisualCheckBlocks({ ok: false }));
+assert.ok(!motionVisualCheckBlocks({ ok: false }));
+assert.ok(!motionVisualCheckBlocks({ ok: false, category: "unknown" }));
 assert.ok(!motionVisualCheckBlocks({ ok: true, category: "spatial" }));
 const sheet: any = [{ t: 0, text: T.TEXT, line: T.CHAPTER, lines: [T.CHAPTER], file: T.IMAGE, abs: T.IMAGE }];
 const review = (reply: unknown) => qaPuppet(sheet, analysis, { exec: {}, log: (line) => warnings.push(line), ai: async () => reply as any });

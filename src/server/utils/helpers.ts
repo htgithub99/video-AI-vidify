@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { parseJson } from "../../lib/jsonStringify.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_8,
   SOURCE_TEXT_0,
@@ -35,9 +38,9 @@ const repairJsonStringControls = (value: string): string => {
     } else if (character === SOURCE_TEXT_SYMBOL_3) {
       insideString = !insideString;
       repaired += character;
-    } else if (insideString && character === "\n") repaired += SOURCE_TEXT_N;
-    else if (insideString && character === "\r") repaired += SOURCE_TEXT_R_2;
-    else if (insideString && character === "\t") repaired += SOURCE_TEXT_T_3;
+    } else if (insideString && character === RT_SHARED.SYMBOL_01BA47) repaired += SOURCE_TEXT_N;
+    else if (insideString && character === RT_SERVER.SYMBOL_9D1E0E) repaired += SOURCE_TEXT_R_2;
+    else if (insideString && character === RT_SERVER.SYMBOL_2B4C34) repaired += SOURCE_TEXT_T_3;
     else repaired += character;
   }
   return repaired;
@@ -97,7 +100,7 @@ const parseJSON = (text: string, logFailure: boolean): unknown => {
   const candidates = _.uniq(_.compact([trimmed, ...fencedCandidates, ..._.orderBy(extractBalancedJsonCandidates(trimmed), SOURCE_TEXT_LENGTH, SOURCE_TEXT_DESC), objectStart >= 0 && objectEnd > objectStart ? trimmed.slice(objectStart, objectEnd + 1) : "", arrayStart >= 0 && arrayEnd > arrayStart ? trimmed.slice(arrayStart, arrayEnd + 1) : ""]));
   for (const candidate of candidates) {
     for (const parseCandidate of _.uniq([candidate, repairJsonCandidate(candidate)])) {
-      const parsed = _.attempt(JSON.parse, parseCandidate);
+      const parsed = _.attempt(parseJson, parseCandidate);
       if (!_.isError(parsed)) return parsed;
     }
   }

@@ -61,13 +61,7 @@ interface RenderJob {
   heartbeatAt?: Date;
   licenseKey?: string;
 }
-type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" | "completedAt" | "heartbeatAt"> & {
-  createdAt: string;
-  updatedAt: string;
-  startedAt?: string;
-  completedAt?: string;
-  heartbeatAt?: string;
-};
+type StoredRenderJob = Omit<RenderJob, "createdAt" | "updatedAt" | "startedAt" | "completedAt" | "heartbeatAt"> & { createdAt: string; updatedAt: string; startedAt?: string; completedAt?: string; heartbeatAt?: string };
 const MAX_STALE_JOB_AGE_MS = 10 * 60 * 1000;
 const isPersistableAssetUrl = (value: unknown): boolean => {
   const source = _.trim(_.toString(value));
@@ -84,14 +78,7 @@ const createLightweightPayload = (payload: FFmpegRenderOptions): FFmpegRenderOpt
   audioTracks: _.map(payload.audioTracks, (track) => _.pick(track, [SOURCE_TEXT_ID, SOURCE_TEXT_TYPE, SOURCE_TEXT_ASSETURL, SOURCE_TEXT_STARTSECONDS, SOURCE_TEXT_DURATIONSECONDS, SOURCE_TEXT_VOLUMEDB, SOURCE_TEXT_FADEINSECONDS, SOURCE_TEXT_FADEOUTSECONDS, SOURCE_TEXT_LOOP])),
 });
 const hasRecoverablePersistedPayload = (job: RenderJob): boolean => _.every(job.payload?.scenes, (scene) => isPersistableAssetUrl(scene.imageUrl));
-const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({
-  ...job,
-  createdAt: new Date(job.createdAt),
-  updatedAt: new Date(job.updatedAt),
-  startedAt: job.startedAt ? new Date(job.startedAt) : undefined,
-  completedAt: job.completedAt ? new Date(job.completedAt) : undefined,
-  heartbeatAt: job.heartbeatAt ? new Date(job.heartbeatAt) : undefined,
-});
+const hydrateRenderJob = (job: StoredRenderJob): RenderJob => ({ ...job, createdAt: new Date(job.createdAt), updatedAt: new Date(job.updatedAt), startedAt: job.startedAt ? new Date(job.startedAt) : undefined, completedAt: job.completedAt ? new Date(job.completedAt) : undefined, heartbeatAt: job.heartbeatAt ? new Date(job.heartbeatAt) : undefined });
 const createPublicRenderError = (error: unknown): string => {
   const message = getErrorMessage(error);
   const sceneId = _.get(message.match(RENDER_QUEUE_CONFIG.SCENE_ID_PATTERN), SecurityConstants.DEFAULT_AMOUNT, RENDER_QUEUE_CONFIG.UNKNOWN_SCENE_ID);
@@ -153,15 +140,7 @@ class RenderQueueService {
       });
     }
     const now = new Date();
-    const job: RenderJob = {
-      id: jobId,
-      payload,
-      status: JobStatus.PENDING,
-      progress: SecurityConstants.ZERO,
-      createdAt: now,
-      updatedAt: now,
-      licenseKey,
-    };
+    const job: RenderJob = { id: jobId, payload, status: JobStatus.PENDING, progress: SecurityConstants.ZERO, createdAt: now, updatedAt: now, licenseKey };
     this.queue.push(job);
     this.jobsMap.set(jobId, job);
     await this.persist(job);
@@ -198,14 +177,7 @@ class RenderQueueService {
     let lastError: unknown;
     for (let attempt = SecurityConstants.ZERO; attempt < FFMPEG_RENDER_CONSTANTS.MAX_RENDER_ATTEMPTS; attempt = _.add(attempt, SecurityConstants.DEFAULT_AMOUNT)) {
       try {
-        return await renderFFmpegVideo(
-          {
-            ...job.payload,
-            safeProfile: _.isEqual(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT),
-          },
-          onProgressUpdate,
-          abortSignal,
-        );
+        return await renderFFmpegVideo({ ...job.payload, safeProfile: _.isEqual(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT) }, onProgressUpdate, abortSignal);
       } catch (error) {
         lastError = error;
         if (_.lt(attempt, FFMPEG_RENDER_CONSTANTS.SAFE_PROFILE_ATTEMPT)) {

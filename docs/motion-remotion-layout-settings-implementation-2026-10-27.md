@@ -22,11 +22,11 @@ Ngày: 27/10/2026. Phạm vi: [plan đã duyệt](motion-remotion-layout-setting
 | Nhóm | File |
 | --- | --- |
 | Contract, migration, UI text | `src/constants/motionRenderBehavior.ts`, `src/lib/motionRenderBehavior.ts`, `src/types/motionVisual.ts` |
-| UI và dữ liệu lưu | `src/components/MotionVideoCreator.tsx`, `src/hooks/useMotionStudio.ts`, `src/components/motion-video/MotionRemotionScenes.tsx` |
+| UI và dữ liệu lưu | `src/features/motion/components/MotionVideoCreator.tsx`, `src/features/motion/hooks/useMotionStudio.ts`, `src/features/motion/components/MotionRemotionScenes.tsx` |
 | API/production/export | `src/server/services/motionProductionActions.ts`, `motionProductionService.ts`, `motionRenderService.ts` |
 | Geometry/contact | `src/lib/motionRemotion.ts`, `motionRemotionGeometry.ts`, `src/constants/motionRemotionLayout.ts` |
 | State và asset pipeline | `src/server/services/remotion/sceneContinuity.ts`, `sceneContract.ts`, `scenePipeline.ts`, `vectorCutoutInspector.ts`, `storyCompiler.ts` |
-| Hiệu ứng và render | `src/lib/motionRemotionEffects.ts`, `src/remotion/SceneEffects.tsx`, `StoryComposition.tsx`, `src/server/services/motionRemotionRenderService.ts` |
+| Hiệu ứng và render | `src/features/motion/lib/motionRemotionEffects.ts`, `src/features/motion/remotion/SceneEffects.tsx`, `StoryComposition.tsx`, `src/server/services/motionRemotionRenderService.ts` |
 | Adapter kho | `motion-engine/puppet2d.js` |
 
 Các thay đổi có sẵn về parser SVG/cutout, retry room, log, pagination, voice, SEO và nguồn kho được giữ. Không sửa/xóa dữ liệu kho trong đợt này.

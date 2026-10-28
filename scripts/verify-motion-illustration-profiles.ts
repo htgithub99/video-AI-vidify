@@ -7,7 +7,8 @@ import { MOTION_SCENE_COMPOSITION as C } from "../src/constants/motionSceneCompo
 import { MOTION_SCENE_DESIGN as D } from "../src/constants/motionSceneDesign.js";
 import { MOTION_REMOTION_PROMPTS as P } from "../src/constants/motionRemotionPrompts.js";
 import { MOTION_COMPOSITION_EXAMPLES } from "../src/constants/motionCompositionExamples.js";
-import { MOTION_ILLUSTRATION_PROFILES } from "../src/constants/motionIllustrationProfiles.js";
+import { MOTION_ILLUSTRATION_PROFILES, MOTION_ILLUSTRATION_COMMON } from "../src/constants/motionIllustrationProfiles.js";
+import { MOTION_HISTORY_MAP_CRAFT_EXAMPLE, MOTION_MAP_TIMELINE_CRAFT_EXAMPLE } from "../src/constants/motionCompositionStyleExamples.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { motionVisualCapability } from "../src/lib/motionVisual.js";
 import { buildRemotionScenes } from "../src/server/services/remotion/scenePipeline.js";
@@ -25,7 +26,7 @@ const globalPrompts = [C.PROMPT({}), D.PROMPT({}), P.SCENE({})].join("\n");
 assert.ok(!/coffin|ghost|oil lamp|funeral/i.test(globalPrompts));
 try {
   for (const id of profiles) {
-    for (const format of (id === "horror" ? ["illustration"] : id === "history" ? ["illustration", "map", "timeline"] : ["illustration", "diagram", "comparison", "process", "cutaway"]) as import("../src/types/motionVisual.js").MotionSceneDesign["format"][]) {
+    for (const format of (id === "horror" ? ["illustration"] : id === "history" ? ["illustration", "map", "timeline", "comparison", "process", "cutaway"] : ["illustration", "diagram", "comparison", "process", "cutaway", "map"]) as import("../src/types/motionVisual.js").MotionSceneDesign["format"][]) {
       const example = MOTION_COMPOSITION_EXAMPLES[id];
       const svg = example.slice(example.indexOf("<svg"));
       assert.ok(normalizeMotionVector(svg, id, id, id, true).svg);
@@ -34,6 +35,7 @@ try {
       const settings = { version: 1 as const, mode: "remotion" as const, engine: "remotion" as const, profileId: id, componentRevision: 1 };
       assert.ok(motionVisualCapability(settings).includes(MOTION_ILLUSTRATION_PROFILES[id].planning));
       const diagram = format !== "illustration";
+      const vignette = id === "history" && !diagram;
       const nodes: any[] = diagram
         ? [
             { id: "first", kind: "prop", description: "Source container", slot: "left" },
@@ -41,7 +43,7 @@ try {
             { id: "label", kind: "label", description: "Before → After", slot: "center" },
           ]
         : [{ id: "reader", kind: "character", entityId: "person", description: "Adult reader in a purple robe", slot: "right" }];
-      const text = diagram ? "Compare the source and destination containers: liquid moves from the first to the second." : id === "history" ? "The adult reader explains the written order in the historical hall." : "The reader waits beside the window in the old dark room.";
+      const text = diagram ? "Compare the source and destination containers: liquid moves from the first to the second." : vignette ? "A white-background history cartoon vignette shows the reader explaining the written order, with a round white head and slim ink limbs." : "The reader waits beside the window in the old dark room.";
       const analysis: any = {
         title: id,
         visualSettings: settings,
@@ -55,7 +57,7 @@ try {
         format,
         camera: diagram ? "flat comparison plane" : "wide perspective",
         palette: [V.PROFILES[id].paper],
-        placements: nodes.filter((node) => node.kind !== "label").map((node, index) => ({ id: node.id, box: { x: 0.1 + index * 0.5, y: 0.2, width: 0.3, height: 0.5 }, depth: index + 1, ...(diagram ? {} : { supportId: "floor", contact: { x: 0.25, y: 0.7 } }), construction: node.description })),
+        placements: nodes.filter((node) => node.kind !== "label").map((node, index) => ({ id: node.id, box: { x: 0.1 + index * 0.5, y: 0.2, width: 0.3, height: 0.5 }, depth: index + 1, ...(diagram || vignette ? {} : { supportId: "floor", contact: { x: 0.25, y: 0.7 } }), construction: node.description })),
       };
       const artwork = {
         svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720"><g id="background"><rect width="1280" height="720" fill="${V.PROFILES[id].paper}"/></g>${nodes
@@ -81,6 +83,7 @@ try {
           assert.ok(prompt.includes(`"id":"${id}"`));
           assert.ok(prompt.includes(MOTION_ILLUSTRATION_PROFILES[id].drawing));
           assert.ok(!prompt.includes("Craft reference only:"));
+          if (id === "history" && format === "illustration" && counts[artifact] === 2) return { layers: [] };
           return { layers: artwork.layers };
         }
         const context = JSON.parse(prompt.split("Context:\n")[1].split("\n")[0]);
@@ -90,7 +93,7 @@ try {
         if (artifact === V.ARTIFACT_SCENE) {
           assert.equal(context.artDirection.rules, MOTION_ILLUSTRATION_PROFILES[id].planning);
           const lines = puppetBeatLines(script.beats[0]);
-          return { scenes: [{ fromLineId: lines[0].key, toLineId: lines.at(-1)!.key, purpose: id, environment: diagram ? "plain diagram backdrop" : "room", nodes }] };
+          return { scenes: [{ fromLineId: lines[0].key, toLineId: lines.at(-1)!.key, purpose: id, environment: diagram ? "plain diagram backdrop" : vignette ? "white explanatory vignette" : "room", nodes }] };
         }
         if (artifact === D.ARTIFACT) {
           assert.equal(context.artDirection.rules, MOTION_ILLUSTRATION_PROFILES[id].design);
@@ -99,10 +102,16 @@ try {
         if (artifact === V.ARTIFACT_REVIEW) {
           assert.equal(context.artDirection.rules, MOTION_ILLUSTRATION_PROFILES[id].review);
           assert.deepEqual(context.design, design);
-          return { ok: ++reviews > 1, issues: reviews > 1 ? [] : ["background: wrong explicitly requested background color"] };
+          reviews++;
+          return {
+            ok: false,
+            issues: [reviews > 1 ? "background: prefer more decorative detail" : "background: wrong explicitly requested background color"],
+            checks: reviews > 1 ? [{ ok: false, category: "aesthetic", evidence: "The wall is plain.", problem: "background: prefer more decorative detail" }] : [{ ok: false, category: "story_state", evidence: "The background is red instead of the explicitly requested blue.", problem: "background: wrong explicitly requested background color" }],
+          };
         }
         assert.equal(artifact, C.ARTIFACT);
         assert.equal(context.artDirection.rules, MOTION_ILLUSTRATION_PROFILES[id].drawing);
+        assert.equal(context.artDirection.anatomy, MOTION_ILLUSTRATION_PROFILES[id].anatomy || MOTION_ILLUSTRATION_COMMON.ANATOMY);
         assert.equal(context.artDirection.motion, MOTION_ILLUSTRATION_PROFILES[id].motion);
         if (context.repairOnly) {
           assert.deepEqual(context.design, design);
@@ -111,6 +120,8 @@ try {
         if (format === "map" || format === "timeline") {
           assert.ok(context.drawingReference.includes('id="schematic_map"'));
           assert.ok(!context.drawingReference.includes('id="standing_reader"'));
+          assert.ok(context.drawingReference.endsWith(id === "history" ? MOTION_HISTORY_MAP_CRAFT_EXAMPLE : MOTION_MAP_TIMELINE_CRAFT_EXAMPLE));
+          assert.ok(normalizeMotionVector(context.drawingReference.slice(context.drawingReference.indexOf("<svg")), id, id, id, true).svg);
         } else assert.equal(context.drawingReference, example);
         if (!invalidSent) {
           invalidSent = true;
@@ -133,12 +144,13 @@ try {
       const built = await buildRemotionScenes(script, analysis, opts);
       assert.ok(remotionStoryBuildCurrent(built, analysis));
       const scene = built.gen!.remotion!.scenes.beat[0];
+      if (id === "history" && format === "illustration") assert.equal(counts[C.ARTIFACT], 4);
       assert.deepEqual(scene.composition!.design, design);
       assert.equal(reviews, 2);
       const spec = compileRemotionStory(built, analysis, { durations: [8], fps: 30, renderBehavior: behavior }).spec;
       assert.equal(validateRemotionSpec(spec).profileId, id);
-      if (diagram) {
-        assert.equal(scene.nodes.filter((node) => node.kind === "character").length, 0);
+      if (diagram || vignette) {
+        assert.equal(scene.nodes.filter((node) => node.kind === "character").length, vignette ? 1 : 0);
         assert.equal(scene.composition!.design!.floor, undefined);
         assert.ok(scene.composition!.design!.placements.every((item) => item.supportId === undefined));
       }

@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
 export const motionVectorCutoutIssue = (svg: string): string | undefined => {
   const box = svg
@@ -15,21 +17,21 @@ export const motionVectorCutoutIssue = (svg: string): string | undefined => {
       stack.pop();
       continue;
     }
-    if (name === "rect" && stack.length === 1 && stack[0] === "svg") {
+    if (name === RT_CORE.RECT && stack.length === 1 && stack[0] === RT_SHARED.SVG) {
       const attrs = Object.fromEntries([...attributes.matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/g)].map((attr) => [attr[1], attr[3]]));
-      const length = (value: string | undefined, full: number, fallback: number) => (value === undefined ? fallback : value.endsWith("%") ? (Number.parseFloat(value) * full) / 100 : Number(value.replace(/px$/, "")));
-      const fill = attrs.fill || inheritedFill || "black";
+      const length = (value: string | undefined, full: number, fallback: number) => (value === undefined ? fallback : value.endsWith(RT_SHARED.SYMBOL) ? (Number.parseFloat(value) * full) / 100 : Number(value.replace(/px$/, "")));
+      const fill = attrs.fill || inheritedFill || RT_CORE.BLACK;
       if (
         !attrs.transform &&
         !attrs.style &&
-        !attrs["clip-path"] &&
+        !attrs[RT_CORE.CLIP_PATH] &&
         !attrs.mask &&
         !attrs.visibility &&
         !attrs.display &&
         !Number(attrs.rx || 0) &&
         !Number(attrs.ry || 0) &&
         Number(attrs.opacity ?? 1) >= V.CUTOUT.OPAQUE_RATIO &&
-        Number(attrs["fill-opacity"] ?? 1) >= V.CUTOUT.OPAQUE_RATIO &&
+        Number(attrs[RT_CORE.FILL_OPACITY] ?? 1) >= V.CUTOUT.OPAQUE_RATIO &&
         !/^(?:none|transparent|inherit|url\(|rgba\(|hsla\()/i.test(fill) &&
         !/^#[\da-f]{4}(?:[\da-f]{4})?$/i.test(fill)
       ) {

@@ -46,61 +46,14 @@ const requiresSceneReview = (scene: VideoProject["storyboard"][number]): boolean
 export const createManualReviewItems = (project: VideoProject): ManualReviewItem[] => {
   const createdAt = new Date().toISOString();
   const finalQaBlockingErrors = getUsableFinalQaBlockingErrors(project);
-  const scenes: ManualReviewItem[] = _.map(_.filter(project.storyboard || [], requiresSceneReview), (scene) => ({
-    id: SOURCE_TEMPLATE_REVIEW_SCENE(`${scene.id}`),
-    scope: SOURCE_TEXT_SCENE,
-    targetId: scene.id,
-    reason: scene.assetError || SOURCE_TEMPLATE_SCENE(`${scene.qaStatus || scene.assetStatus}`),
-    status: ManualReviewStatus.Pending,
-    createdAt,
-  }));
+  const scenes: ManualReviewItem[] = _.map(_.filter(project.storyboard || [], requiresSceneReview), (scene) => ({ id: SOURCE_TEMPLATE_REVIEW_SCENE(`${scene.id}`), scope: SOURCE_TEXT_SCENE, targetId: scene.id, reason: scene.assetError || SOURCE_TEMPLATE_SCENE(`${scene.qaStatus || scene.assetStatus}`), status: ManualReviewStatus.Pending, createdAt }));
   const thumbnails: ManualReviewItem[] = _.map(
     _.filter(project.thumbnails || [], (thumbnail) => thumbnail.acceptance === AssetAcceptance.Rejected),
-    (thumbnail) => ({
-      id: SOURCE_TEMPLATE_REVIEW_THUMBNAIL(`${thumbnail.id}`),
-      scope: SOURCE_TEXT_THUMBNAIL,
-      targetId: thumbnail.id,
-      reason: _.join(thumbnail.qa?.blockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEMPLATE_THUMBNAIL(`${thumbnail.qaStatus || SOURCE_TEXT_NOT_APPROVED}`),
-      status: ManualReviewStatus.Pending,
-      createdAt,
-    }),
+    (thumbnail) => ({ id: SOURCE_TEMPLATE_REVIEW_THUMBNAIL(`${thumbnail.id}`), scope: SOURCE_TEXT_THUMBNAIL, targetId: thumbnail.id, reason: _.join(thumbnail.qa?.blockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEMPLATE_THUMBNAIL(`${thumbnail.qaStatus || SOURCE_TEXT_NOT_APPROVED}`), status: ManualReviewStatus.Pending, createdAt }),
   );
-  const audio: ManualReviewItem[] =
-    project.voiceConfig.audioQa && !_.isEmpty(project.voiceConfig.audioQa.blockingErrors)
-      ? [
-          {
-            id: SOURCE_TEXT_REVIEW_AUDIO,
-            scope: SOURCE_TEXT_AUDIO,
-            reason: _.join(project.voiceConfig.audioQa.blockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_AUDIO_QA_FAILED,
-            status: ManualReviewStatus.Pending,
-            createdAt,
-          },
-        ]
-      : [];
-  const subtitles: ManualReviewItem[] =
-    project.config?.subtitleMode !== SubtitleMode.None && project.subtitleQa && !_.isEmpty(project.subtitleQa.blockingErrors)
-      ? [
-          {
-            id: SOURCE_TEXT_REVIEW_SUBTITLE,
-            scope: SOURCE_TEXT_SUBTITLE,
-            reason: _.join(project.subtitleQa.blockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_SUBTITLE_QA_FAILED,
-            status: ManualReviewStatus.Pending,
-            createdAt,
-          },
-        ]
-      : [];
-  const finalVideo: ManualReviewItem[] =
-    project.finalMultimodalQa && project.finalMultimodalQa.reviewAvailable !== false && !_.isEmpty(finalQaBlockingErrors)
-      ? [
-          {
-            id: SOURCE_TEXT_REVIEW_FINAL,
-            scope: SOURCE_TEXT_FINAL,
-            reason: _.join(finalQaBlockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_FINAL_MULTIMODAL_QA_FAILED,
-            status: ManualReviewStatus.Pending,
-            createdAt,
-          },
-        ]
-      : [];
+  const audio: ManualReviewItem[] = project.voiceConfig.audioQa && !_.isEmpty(project.voiceConfig.audioQa.blockingErrors) ? [{ id: SOURCE_TEXT_REVIEW_AUDIO, scope: SOURCE_TEXT_AUDIO, reason: _.join(project.voiceConfig.audioQa.blockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_AUDIO_QA_FAILED, status: ManualReviewStatus.Pending, createdAt }] : [];
+  const subtitles: ManualReviewItem[] = project.config?.subtitleMode !== SubtitleMode.None && project.subtitleQa && !_.isEmpty(project.subtitleQa.blockingErrors) ? [{ id: SOURCE_TEXT_REVIEW_SUBTITLE, scope: SOURCE_TEXT_SUBTITLE, reason: _.join(project.subtitleQa.blockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_SUBTITLE_QA_FAILED, status: ManualReviewStatus.Pending, createdAt }] : [];
+  const finalVideo: ManualReviewItem[] = project.finalMultimodalQa && project.finalMultimodalQa.reviewAvailable !== false && !_.isEmpty(finalQaBlockingErrors) ? [{ id: SOURCE_TEXT_REVIEW_FINAL, scope: SOURCE_TEXT_FINAL, reason: _.join(finalQaBlockingErrors, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_FINAL_MULTIMODAL_QA_FAILED, status: ManualReviewStatus.Pending, createdAt }] : [];
   const resolvedHistory = _.filter(project.manualReviewItems || [], (item) => item.status !== ManualReviewStatus.Pending);
   return _.uniqBy([...resolvedHistory, ...scenes, ...thumbnails, ...audio, ...subtitles, ...finalVideo], SOURCE_TEXT_ID);
 };

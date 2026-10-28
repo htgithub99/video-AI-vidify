@@ -63,7 +63,7 @@ if (child === T.READ) {
     assert.throws(() => assertMotionScriptComplete(script, analysis), { message: P.MISSING_CHAPTERS(T.CHAPTERS[1].title) });
     assert.throws(() => assertMotionScriptComplete({ ...script, beats: [...script.beats, { ...T.BEAT, chapterId: T.CHAPTERS[1].id }] }, analysis), /Kịch bản còn dữ liệu chưa đạt/);
     assert.doesNotThrow(() => assertMotionScriptComplete({ ...script, beats: [...script.beats, { ...T.BEAT, id: T.BEAT.id + "-second", chapterId: T.CHAPTERS[1].id }] }, analysis));
-    const controller = await import("../src/server/controllers/motionVideoController.js");
+    const controller = await import("../src/features/motion/server/controllers/motionVideoController.js");
     for (const action of [controller.seoMotionStory, controller.scenesMotionStory, controller.voiceMotionStory, controller.compileMotionStory]) {
       let status = 200;
       let result: any;

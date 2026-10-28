@@ -67,11 +67,7 @@ try {
       {
         name: CT.ISOLATED_CLAUDE_BROWSER,
         setup(builder) {
-          builder.onLoad({ filter: RT.PATTERN_CLAUDEMODELSERVICE_TS }, async (args) => ({
-            contents: (await readFile(args.path, CT.UTF8)).replace(RT.EXPORT_CONST_SELECTCLAUDECHATMODEL, RT.CONST_APPLYCLAUDECHATMODEL) + RT.EXPORT_CONST_SELECTCLAUDECHATMODEL_ASYNC_ARGS_PARAMETERS_TYPEOF_APPLYC,
-            loader: CT.TS,
-            resolveDir: path.dirname(args.path),
-          }));
+          builder.onLoad({ filter: RT.PATTERN_CLAUDEMODELSERVICE_TS }, async (args) => ({ contents: (await readFile(args.path, CT.UTF8)).replace(RT.EXPORT_CONST_SELECTCLAUDECHATMODEL, RT.CONST_APPLYCLAUDECHATMODEL) + RT.EXPORT_CONST_SELECTCLAUDECHATMODEL_ASYNC_ARGS_PARAMETERS_TYPEOF_APPLYC, loader: CT.TS, resolveDir: path.dirname(args.path) }));
           builder.onResolve({ filter: RT.PATTERN_IMAGEGENERATORSERVICE_JS }, () => ({ path: CT.FIXTURE_BROWSER, namespace: CT.FIXTURE }));
           builder.onLoad({ filter: RT.PATTERN_EMPTY, namespace: CT.FIXTURE }, () => ({ contents: CT.BROWSER_SERVICE_FIXTURE, loader: CT.JS }));
           builder.onLoad({ filter: RT.PATTERN_CINEMATICCONSTANTS_TS }, async (args) => {
@@ -227,14 +223,7 @@ try {
     await rejected;
     assert.equal(cancelPage.isClosed(), true, CT.CANCELLATION_CLOSES_ONLY_THE_TASK_ROOM);
     await cancelClosed;
-    const ui = await build({
-      stdin: { contents: CT.SETTINGS_UI_FIXTURE, loader: CT.TSX, resolveDir: process.cwd() },
-      write: false,
-      bundle: true,
-      platform: CT.BROWSER,
-      format: CT.IIFE,
-      jsx: CT.AUTOMATIC,
-    });
+    const ui = await build({ stdin: { contents: CT.SETTINGS_UI_FIXTURE, loader: CT.TSX, resolveDir: process.cwd() }, write: false, bundle: true, platform: CT.BROWSER, format: CT.IIFE, jsx: CT.AUTOMATIC });
     const uiPage = await originalNewPage();
     await uiPage.setContent(CT.DIV_ID_ROOT_DIV);
     await uiPage.addScriptTag({ content: ui.outputFiles[0].text });

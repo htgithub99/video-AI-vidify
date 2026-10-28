@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
 import { normalizeMotionIllustrationNeeds } from "../../../lib/motionIllustrationNeeds.js";
 import { MOTION_PRODUCTION as P } from "../../../constants/motionProduction.js";
 import { MOTION_PACK as K } from "../../../constants/motionPack.js";
@@ -88,7 +89,7 @@ export const checkPuppetPlanReadiness = async (analysis: MotionStoryAnalysis, si
         if (issues.length) return issues;
         for (const [index, baseRead] of reads.entries()) {
           const need = placeNeeds[index];
-          const read: PuppetRead = { ...baseRead, object: baseRead.objects?.[0] || null, visual: { scene: need.id, timeline: "present", evidence: [need.evidence], fixtures: [] } };
+          const read: PuppetRead = { ...baseRead, object: baseRead.objects?.[0] || null, visual: { scene: need.id, timeline: RT_SERVER.PRESENT, evidence: [need.evidence], fixtures: [] } };
           try {
             createPuppetSceneChoices({ key: need.id, text: need.evidence, cast: read.who, place: read.place } as any, read, { styleId, characters, props, sets: {}, frames: {}, places: { [place.key]: requested } } as PuppetGen, style, undefined, set);
           } catch (error) {

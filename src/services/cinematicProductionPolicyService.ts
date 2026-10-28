@@ -19,11 +19,7 @@ import { CINEMATIC_POLICY_CONFIG, CINEMATIC_POLICY_REQUIRED_FIELDS, CINEMATIC_PR
 import { VideoGenre } from "../constants/enums";
 import { Chapter, ContentSafetyReport, GenerateType, ImageGenerationMode, ImageGeneratorEngine, ScriptQualityReport, StoryboardQualityReport, StoryboardScene, ProjectLanguage, VisualConfig } from "../types";
 import { hasSceneAsset } from "./projectImageGenerationService";
-export const CINEMATIC_PRODUCTION_POLICY = {
-  PLANNING_CHUNK_SIZE: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE,
-  PLANNING_CHUNK_MAX_INPUT_CHARACTERS: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_MAX_INPUT_CHARACTERS,
-  REQUIRED_TEXT_FIELDS: CINEMATIC_POLICY_REQUIRED_FIELDS,
-} as const;
+export const CINEMATIC_PRODUCTION_POLICY = { PLANNING_CHUNK_SIZE: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_SIZE, PLANNING_CHUNK_MAX_INPUT_CHARACTERS: CINEMATIC_POLICY_CONFIG.PLANNING_CHUNK_MAX_INPUT_CHARACTERS, REQUIRED_TEXT_FIELDS: CINEMATIC_POLICY_REQUIRED_FIELDS } as const;
 export const createCinematicPlanningBatches = <T>(items: T[]): T[][] => {
   const batches: T[][] = [];
   let currentBatch: T[] = [];
@@ -48,13 +44,7 @@ export const isCinematicEpisodeGenre = (genre?: string): boolean => _.isEqual(_.
 export const applyCinematicProductionPolicy = (source: VisualConfig, genre?: string, sceneCount: number = 0): VisualConfig => {
   if (!isCinematicEpisodeGenre(genre)) return source;
   const selectedEngineCannotGenerateVideo = _.isEqual(source.imageGeneratorEngine, ImageGeneratorEngine.Imagen);
-  return {
-    ...source,
-    generationMode: ImageGenerationMode.LabsFlow,
-    generateType: GenerateType.Video,
-    maxVideoScenes: Math.max(sceneCount, _.defaultTo(source.maxVideoScenes, 0)),
-    imageGeneratorEngine: selectedEngineCannotGenerateVideo ? ImageGeneratorEngine.Veo3 : source.imageGeneratorEngine,
-  };
+  return { ...source, generationMode: ImageGenerationMode.LabsFlow, generateType: GenerateType.Video, maxVideoScenes: Math.max(sceneCount, _.defaultTo(source.maxVideoScenes, 0)), imageGeneratorEngine: selectedEngineCannotGenerateVideo ? ImageGeneratorEngine.Veo3 : source.imageGeneratorEngine };
 };
 export const getCinematicSceneContractIssues = (scene: StoryboardScene, _requestedDuration?: string | number, _language?: ProjectLanguage): string[] => {
   const issues: string[] = [];

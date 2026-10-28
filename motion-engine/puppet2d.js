@@ -111,7 +111,7 @@
     const frames = (Array.isArray(P.frames) ? P.frames : []).slice().sort((a, b) => a.start - b.start);
     const kit = (ctx.spec && ctx.spec.kit) || {},
       behavior = kit.renderBehavior;
-    return { frames, style: styleOf(ctx.spec), kit, motion: behavior ? behavior.actors === "simple" : !!kit.motion, effects: !behavior || behavior.sceneEffects !== "off", camera: !behavior || behavior.camera === "gentle" };
+    return { frames, style: styleOf(ctx.spec), kit, motion: behavior ? behavior.actors === K.SIMPLE_MOTION : !!kit.motion, effects: !behavior || behavior.sceneEffects !== K.NO_EFFECTS, camera: !behavior || behavior.camera === K.GENTLE_CAMERA };
   }
   function frameAt(S, t) {
     const fs = S.frames;
@@ -1499,7 +1499,7 @@
   function bgInit(ctx, bg) {
     const kit = ctx.spec && ctx.spec.kit;
     if (!kit || !bg) return null;
-    return { puppet: true, S: { frames: [], style: styleOf(ctx.spec), kit, motion: kit.renderBehavior ? kit.renderBehavior.actors === "simple" : !!kit.motion, effects: !kit.renderBehavior || kit.renderBehavior.sceneEffects !== "off", camera: !kit.renderBehavior || kit.renderBehavior.camera === "gentle" }, F: { set: bg.set, light: bg.light || null } };
+    return { puppet: true, S: { frames: [], style: styleOf(ctx.spec), kit, motion: kit.renderBehavior ? kit.renderBehavior.actors === K.SIMPLE_MOTION : !!kit.motion, effects: !kit.renderBehavior || kit.renderBehavior.sceneEffects !== K.NO_EFFECTS, camera: !kit.renderBehavior || kit.renderBehavior.camera === K.GENTLE_CAMERA }, F: { set: bg.set, light: bg.light || null } };
   }
   function bgDraw(g, ctx, st) {
     if (!st || !st.S) return;

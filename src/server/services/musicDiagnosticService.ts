@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import _ from "lodash";
 import { GEMINI_MODEL_ENCODING } from "../../constants/geminiChatModels.js";
 import {
@@ -60,18 +62,18 @@ import { stringifyJson } from "../../lib/jsonStringify.js";
 const logPath = path.join(getLogsDirectory(), SOURCE_TEXT_MUSIC_WORKFLOW_JSONL);
 const safeKeys = new Set([
   GEMINI_MODEL_ENCODING.DIAGNOSTIC_PHASE,
-  "promptRevision",
-  "uploadPending",
-  "uploadFailed",
-  "uploadStatus",
-  "uploadHost",
-  "uploadNetworkError",
-  "uploadMessage",
-  "uploadMethod",
-  "uploadFileCount",
-  "uploadCompleted",
-  "uploadProcessing",
-  "uploadFileErrors",
+  RT_SERVER.PROMPTREVISION,
+  RT_SERVER.UPLOADPENDING,
+  RT_SERVER.UPLOADFAILED,
+  RT_SERVER.UPLOADSTATUS,
+  RT_SERVER.UPLOADHOST,
+  RT_SERVER.UPLOADNETWORKERROR,
+  RT_SERVER.UPLOADMESSAGE,
+  RT_SERVER.UPLOADMETHOD,
+  RT_SERVER.UPLOADFILECOUNT,
+  RT_SERVER.UPLOADCOMPLETED,
+  RT_SERVER.UPLOADPROCESSING,
+  RT_SERVER.UPLOADFILEERRORS,
   SOURCE_TEXT_RUNID,
   SOURCE_TEXT_STAGE,
   SOURCE_TEXT_PROVIDER,
@@ -114,7 +116,7 @@ const safeKeys = new Set([
   SOURCE_TEXT_PURPOSE,
   SOURCE_TEXT_ISSUES,
   SOURCE_TEXT_PARSED,
-] as string[]);
+] as string[] as string[]);
 const sanitizeText = (value: unknown): string =>
   String(value ?? "")
     .replace(ANSI_ESCAPE_SEQUENCE_REGEX, "")
@@ -127,12 +129,14 @@ const sanitizeText = (value: unknown): string =>
     .slice(0, 400);
 export const musicErrorDetails = (error: unknown): Record<string, string> => {
   const source = error instanceof Error ? error : new Error(String(error));
-  const phase = _.get(error, [GEMINI_MODEL_ENCODING.DIAGNOSTICS, "phase"]);
+  const phase = _.get(error, [GEMINI_MODEL_ENCODING.DIAGNOSTICS, RT_SERVER.PHASE] as string[]);
   return { errorName: sanitizeText(source.name), errorMessage: sanitizeText(source.message), ...(typeof phase === "string" ? { [GEMINI_MODEL_ENCODING.DIAGNOSTIC_PHASE]: sanitizeText(phase) } : {}) };
 };
 export const musicUploadDetails = (upload?: { pending: number; failed: boolean; lastFailure?: { url: string; status?: number; errorText?: string } }): Record<string, unknown> => {
   let uploadHost: string | undefined;
-  try { if (upload?.lastFailure?.url) uploadHost = new URL(upload.lastFailure.url).hostname; } catch {}
+  try {
+    if (upload?.lastFailure?.url) uploadHost = new URL(upload.lastFailure.url).hostname;
+  } catch {}
   return { uploadPending: upload?.pending, uploadFailed: upload?.failed, uploadStatus: upload?.lastFailure?.status, uploadHost, uploadNetworkError: upload?.lastFailure?.errorText };
 };
 export const writeMusicDiagnostic = async (event: string, details: Record<string, unknown> = {}): Promise<void> => {
@@ -143,7 +147,7 @@ export const writeMusicDiagnostic = async (event: string, details: Record<string
       safeDetails[key] = typeof value === "string" ? sanitizeText(value) : typeof value === "number" || typeof value === "boolean" ? value : undefined;
     }
     await fs.promises.mkdir(path.dirname(logPath), { recursive: true });
-    await fs.promises.appendFile(logPath, `${stringifyJson({ timestamp: new Date().toISOString(), event: sanitizeText(event), ...safeDetails })}\n`, SOURCE_TEXT_UTF8);
+    await fs.promises.appendFile(logPath, `${stringifyJson({ timestamp: new Date().toISOString(), event: sanitizeText(event), ...safeDetails })}${RT_SHARED.SYMBOL_01BA47}`, SOURCE_TEXT_UTF8);
   } catch (error) {
     logger.warn(SOURCE_TEMPLATE_MUSICDIAGNOSTICS_LOG_WRITE_FAILED(`${musicErrorDetails(error).errorMessage}`));
   }

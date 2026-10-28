@@ -83,12 +83,7 @@ const VI_AI_PROSE_PATTERNS: ReadonlyArray<[string, RegExp]> = [
   [SCRIPT_QUALITY_MESSAGES.TRAILER_METAPHOR_OVERUSED, SCRIPT_CLICHE_PATTERNS.TRAILER_METAPHOR],
   [SCRIPT_QUALITY_MESSAGES.SUSPENSE_TEMPLATE_OVERUSED, SCRIPT_CLICHE_PATTERNS.SUSPENSE_TEMPLATE],
 ];
-const DURATION_REGEX = {
-  HOURS: TIME_PARSING_REGEXES.HOURS,
-  MINUTES: TIME_PARSING_REGEXES.MINUTES,
-  SECONDS: TIME_PARSING_REGEXES.SECONDS,
-  NUMERIC: /\d+(?:\.\d+)?/,
-} as const;
+const DURATION_REGEX = { HOURS: TIME_PARSING_REGEXES.HOURS, MINUTES: TIME_PARSING_REGEXES.MINUTES, SECONDS: TIME_PARSING_REGEXES.SECONDS, NUMERIC: /\d+(?:\.\d+)?/ } as const;
 const SATIRICAL_GENRE_SET = new Set<string>([VideoGenre.SATIRICAL_LIFE_AUTO, VideoGenre.TRANSFORMATION_TIMELINE, VideoGenre.CAREER_SOCIAL_DARKSIDE, VideoGenre.DOWNFALL_CONSEQUENCE, VideoGenre.DARK_COMEDY_TRAGEDY]);
 export const detectVietnameseNarrationStyleWarnings = (script: string): string[] =>
   _.compact(
@@ -106,16 +101,7 @@ export const normalizeHookScore = (value: Partial<HookScore> = {}): HookScore =>
     factualSafety = clampScore(value.factualSafety);
   const unsupportedClaim = Boolean(value.unsupportedClaim);
   const weightedTotal = _.round(retention * SCRIPT_QUALITY_THRESHOLDS.HOOK_WEIGHT_RETENTION + clarity * SCRIPT_QUALITY_THRESHOLDS.HOOK_WEIGHT_CLARITY + emotion * SCRIPT_QUALITY_THRESHOLDS.HOOK_WEIGHT_EMOTION + factualSafety * SCRIPT_QUALITY_THRESHOLDS.HOOK_WEIGHT_FACTUAL_SAFETY, SCRIPT_QUALITY_THRESHOLDS.DECIMAL_PRECISION);
-  return {
-    retention,
-    clarity,
-    emotion,
-    factualSafety,
-    weightedTotal,
-    unsupportedClaim,
-    accepted: !unsupportedClaim && factualSafety >= SCRIPT_QUALITY_THRESHOLDS.HOOK_FACTUAL_SAFETY,
-    reasons: _.compact(_.map(value.reasons, _.toString)),
-  };
+  return { retention, clarity, emotion, factualSafety, weightedTotal, unsupportedClaim, accepted: !unsupportedClaim && factualSafety >= SCRIPT_QUALITY_THRESHOLDS.HOOK_FACTUAL_SAFETY, reasons: _.compact(_.map(value.reasons, _.toString)) };
 };
 export const rankHookVersions = (versions: HookVersion[]): HookVersion[] =>
   _.map(

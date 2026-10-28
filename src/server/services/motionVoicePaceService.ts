@@ -6,7 +6,6 @@ import { randomUUID } from "crypto";
 import { MOTION_VOICE_SPEED as V } from "../../constants/motionVoice.js";
 import type { MotionVoiceSpeedTarget } from "../../types/motionVideo.js";
 import { runMotionAudioProcess } from "./motionSoundMixService.js";
-
 const A = V.AUDIO;
 const quantile = (list: number[], q: number): number => {
   const sorted = _.sortBy(list);

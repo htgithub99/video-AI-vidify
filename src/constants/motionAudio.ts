@@ -1,4 +1,16 @@
-export interface MotionSfxMood { root: number; chord: number[]; gain: number; swell: number; noise: number; pulse: number; pulseFreq: number; shimmer: number; sparkle: number; hitFreq: number; endChime: number; }
+export interface MotionSfxMood {
+  root: number;
+  chord: number[];
+  gain: number;
+  swell: number;
+  noise: number;
+  pulse: number;
+  pulseFreq: number;
+  shimmer: number;
+  sparkle: number;
+  hitFreq: number;
+  endChime: number;
+}
 export const MOTION_SFX_MOODS: Record<string, MotionSfxMood> = {
   dark: { root: 55, chord: [1, 1.189, 1.498], gain: 1, swell: 23, noise: 0, pulse: 0, pulseFreq: 0, shimmer: 0, sparkle: 0, hitFreq: 46, endChime: 392 },
   warm: { root: 65.41, chord: [1, 1.25, 1.5], gain: 1, swell: 23, noise: 0, pulse: 0, pulseFreq: 0, shimmer: 0, sparkle: 0, hitFreq: 46, endChime: 392 },

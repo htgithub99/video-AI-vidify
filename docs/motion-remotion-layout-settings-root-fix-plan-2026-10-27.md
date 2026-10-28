@@ -213,11 +213,11 @@ Thứ tự: S01–S02 → L01–L02 + C01 → V01 → E01–E02 + C02 → S03/V0
 ## 12. File/module dự kiến tác động
 
 - Cấu hình/types: `src/types/motionVisual.ts`, `src/types/motionVideo.ts`, `src/constants/motionVisual.ts`, `src/constants/motionReference.ts`, `src/lib/motionVisual.ts`; helper resolve settings dùng chung ở lib.
-- UI/state: `src/components/MotionVideoCreator.tsx`, `src/hooks/useMotionStudio.ts`, các controls/preview Remotion hiện có. Tái dùng component toggle/select chung; không tạo UI phụ trùng.
+- UI/state: `src/features/motion/components/MotionVideoCreator.tsx`, `src/features/motion/hooks/useMotionStudio.ts`, các controls/preview Remotion hiện có. Tái dùng component toggle/select chung; không tạo UI phụ trùng.
 - Input/orchestration: `src/server/services/motionProductionActions.ts`, `motionProductionService.ts`, checkpoint/store hiện tại.
 - Scene/state: `src/server/services/remotion/sceneContract.ts`, `sceneKeys.ts`, `scenePipeline.ts`, `storyCompiler.ts`, `soundCompiler.ts`, `src/constants/motionRemotionPrompts.ts`.
 - Geometry: refactor `src/lib/motionRemotion.ts` thành helper vai trò/bounds/contact/layout thuần, dùng lại cho readiness/preview/compiler; không có ba solver lệch nhau.
-- Renderer: `src/remotion/StoryComposition.tsx`; effect/actor/camera components nhỏ và deterministic; `src/server/services/motionRemotionRenderService.ts` cho bundle fingerprint.
+- Renderer: `src/features/motion/remotion/StoryComposition.tsx`; effect/actor/camera components nhỏ và deterministic; `src/server/services/motionRemotionRenderService.ts` cho bundle fingerprint.
 - Adapter kho: `motion-engine/puppet2d.js` và constants/compiler tương ứng, chỉ sửa scope motion/effect khi có fixture chứng minh; giữ dữ liệu và policy hai gói.
 - Verification: mở rộng `scripts/verify-motion-remotion*.ts`, kiểm production runner/closed pipeline/settings đang có; thêm fixtures quan hệ/hiệu ứng/cấu hình cần thiết, không tạo một bộ test chỉ lặp implementation.
 

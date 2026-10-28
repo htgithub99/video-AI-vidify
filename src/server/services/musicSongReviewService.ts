@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import { MUSIC_PLANNING as P } from "../../constants/musicPlanning.js";
 import { validMusicEditorialReview, compactMusicProfile } from "../../lib/musicPlanning.js";
 export const reviewMusicSongBatch = async (songs: any[], context: unknown, requestId: string, send: (prompt: string, artifact: string, id: string) => Promise<{ text: string }>, signal: AbortSignal, retryable: (error: unknown) => boolean): Promise<any[]> => {
@@ -8,7 +9,7 @@ export const reviewMusicSongBatch = async (songs: any[], context: unknown, reque
     if (!missing.length) break;
     try {
       const response = await send(P.REVIEW_PROMPT(requestId, missing, compactMusicProfile(context)), P.REVIEW_ARTIFACT, requestId);
-      const parsed = JSON.parse(response.text);
+      const parsed = parseJson(response.text);
       if (parsed?.artifactType !== P.REVIEW_ARTIFACT || parsed.requestId !== requestId || !Array.isArray(parsed.reviews)) continue;
       for (const item of parsed.reviews) {
         if (missing.some((song) => song.songId === item.songId) && parsed.reviews.filter((review: any) => review.songId === item.songId).length === 1 && validMusicEditorialReview(item.editorialReview)) reviews.set(item.songId, item.editorialReview);

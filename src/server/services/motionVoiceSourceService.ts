@@ -15,7 +15,16 @@ import { runMotionAudioProcess } from "./motionSoundMixService.js";
 import { motionVoiceLibraryFile, readMotionVoiceLibraryJson, updateVoiceMeta } from "./motionVoiceLibraryService.js";
 import { isAi33Voice } from "../../lib/motionVoice.js";
 export { isAi33Voice } from "../../lib/motionVoice.js";
-interface Ai33Voice { voiceId: string; provider?: string; name: string; gender?: string; age?: string; language?: string; description?: string; previewUrl?: string; }
+interface Ai33Voice {
+  voiceId: string;
+  provider?: string;
+  name: string;
+  gender?: string;
+  age?: string;
+  language?: string;
+  description?: string;
+  previewUrl?: string;
+}
 const ai33File = (): string => motionVoiceLibraryFile(L.AI33_FILE);
 const readAi33 = (): Record<string, Ai33Voice> => readMotionVoiceLibraryJson(L.AI33_FILE, {});
 const text = (value: unknown, max: number): string => _.trim(_.toString(value ?? MR.MOTION_TEXT_EMPTY)).slice(0, max);

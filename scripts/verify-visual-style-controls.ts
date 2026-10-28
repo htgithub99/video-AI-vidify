@@ -8,7 +8,6 @@ import { BackgroundMode, TextInImageMode, ThumbnailTextMode } from "../src/types
 import { normalizeBackgroundMode, normalizeThumbnailTextMode, SCENE_TEXT_MODE } from "../src/services/visualConfigModeService.ts";
 import { createCharacterConstructionDirective, createSoftStyleDirective, createThumbnailStyleDirective } from "../src/services/styleReferenceService.ts";
 import { deduplicateVisualStyleText } from "../src/services/visualStyleDisplayService.ts";
-
 assert.deepEqual(BACKGROUND_MODE_CONFIG.OPTIONS, ["contextual", "auto", "minimal", "transparent"]);
 assert.equal(Object.values(BACKGROUND_MODE_CONFIG.DESCRIPTIONS.vi).every(Boolean), true);
 assert.deepEqual(THUMBNAIL_TEXT_MODE_CONFIG.OPTIONS, ["headline", "no_text"]);
@@ -22,7 +21,6 @@ assert.match(STYLE_EXTRACTION_PROMPT, /Script controls setting, character action
 assert.match(THUMBNAIL_STYLE_EXTRACTION_PROMPT, /thumbnail visual presentation profile/i);
 assert.match(THUMBNAIL_STYLE_EXTRACTION_PROMPT, /sampleSpecificContent/);
 assert.match(VISUAL_BIBLE_REFERENCE_PROMPT, /soft visual-language reference/);
-
 const styleProfile = {
   medium: "2D digital cartoon illustration composited over a textured photographic background",
   characterType: "stick-figure character construction",
@@ -39,30 +37,18 @@ assert.match(createSoftStyleDirective(styleProfile), /stickfigure character cons
 assert.match(createSoftStyleDirective(styleProfile), /2D digital cartoon illustration/);
 assert.doesNotMatch(createSoftStyleDirective(styleProfile), /dark stone room/);
 assert.match(createCharacterConstructionDirective(styleProfile), /stickfigure character construction/);
-const alternateThumbnailProfile = {
-  ...styleProfile,
-  medium: "photorealistic portrait",
-  characterType: "realistic human photography",
-  characterDna: "full anatomical bodies",
-  worldRendering: "high contrast illustrated background",
-};
+const alternateThumbnailProfile = { ...styleProfile, medium: "photorealistic portrait", characterType: "realistic human photography", characterDna: "full anatomical bodies", worldRendering: "high contrast illustrated background" };
 const thumbnailStyle = createThumbnailStyleDirective(styleProfile, alternateThumbnailProfile);
 assert.match(thumbnailStyle, /high contrast illustrated background/);
 const repeatedVisualDna = "Visual DNA: 2D stickfigure cartoon style set against a moody background.Visual DNA: 2D stickfigure cartoon style set against a moody background.";
-assert.equal(
-  deduplicateVisualStyleText(repeatedVisualDna),
-  "Visual DNA: 2D stickfigure cartoon style set against a moody background.",
-);
-
-const pipeline = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/hooks/useAutoVideoPipeline.ts"), "utf8"));
+assert.equal(deduplicateVisualStyleText(repeatedVisualDna), "Visual DNA: 2D stickfigure cartoon style set against a moody background.");
+const pipeline = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/features/video-generation/hooks/useAutoVideoPipeline.ts"), "utf8"));
 assert.match(pipeline, /startPipeline/);
 assert.doesNotMatch(pipeline, /referencesAreShared/);
-
 const controller = resolveSourceTextConstants(fs.readFileSync(path.resolve("src/server/controllers/pipelineController.ts"), "utf8"));
 assert.match(controller, /requestedStyle[\s\S]*resolveStylePreset\(requestedStyle\)/);
 assert.match(controller, /profileVersion: STYLE_EXTRACTION_CONFIG\.PROFILE_VERSION/);
 assert.match(controller, new RegExp(`PROJECT_ASSET_GROUP\\.${PROJECT_ASSET_GROUP.VISUALS.toUpperCase()}`));
 assert.match(controller, /REFERENCE_ASSET_GROUP\.CHARACTER/);
 assert.match(controller, /REFERENCE_ASSET_GROUP\.UPSCALED/);
-
 process.stdout.write("Visual style control assertions passed.\n");

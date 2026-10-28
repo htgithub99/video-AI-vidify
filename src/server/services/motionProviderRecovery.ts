@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { MOTION_AI_RECOVERY as R } from "../../constants/motionAiRecovery.js";
 type Recovery = { owner: string; done: Promise<{ error?: unknown }>; finish: (result: { error?: unknown }) => void; expires: number; finished: boolean };
 export class MotionProviderRecovery {
@@ -30,12 +31,12 @@ export class MotionProviderRecovery {
     if (!entry || (entry.owner === owner && !entry.finished)) return;
     const result = await new Promise<{ error?: unknown }>((resolve, reject) => {
       const cancel = () => {
-        signal?.removeEventListener("abort", cancel);
+        signal?.removeEventListener(RT_SHARED.ABORT, cancel);
         reject(signal?.reason);
       };
-      signal?.addEventListener("abort", cancel, { once: true });
+      signal?.addEventListener(RT_SHARED.ABORT, cancel, { once: true });
       entry.done.then((value) => {
-        signal?.removeEventListener("abort", cancel);
+        signal?.removeEventListener(RT_SHARED.ABORT, cancel);
         resolve(value);
       });
     });

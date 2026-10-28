@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { buildMotionVoiceTrack } from "../src/server/services/motionAudioService.ts";
-import { compileMotionStory } from "../src/server/controllers/motionVideoController.ts";
+import { compileMotionStory } from "../src/features/motion/server/controllers/motionVideoController.ts";
 import { closeVieneuWorker } from "../src/server/services/vieneuTtsService.ts";
 import { runMotionAudioProcess } from "../src/server/services/motionSoundMixService.ts";
 import { getMotionAudioDirectory, getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";

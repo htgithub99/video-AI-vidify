@@ -43,11 +43,7 @@ export function getProfiles(): GoogleProfile[] {
     const id = SOURCE_TEMPLATE_G_PROFILE(`${i}`);
     const profilePath = path.join(profilesDir, id);
     const isLinked = fs.existsSync(profilePath) && fs.existsSync(path.join(profilePath, SOURCE_TEXT_DEFAULT_2));
-    profiles.push({
-      id,
-      name: SOURCE_TEMPLATE_GOOGLE_PROFILE(`${i}`),
-      isLinked,
-    });
+    profiles.push({ id, name: SOURCE_TEMPLATE_GOOGLE_PROFILE(`${i}`), isLinked });
   }
   return profiles;
 }
@@ -55,10 +51,7 @@ export async function launchLoginBrowser(profileId: string): Promise<void> {
   const profilesDir = getProfilesDir();
   const profilePath = path.join(profilesDir, profileId);
   logger.info(SOURCE_TEMPLATE_STARTING_INTERACTIVE_LOGIN_SESSION_FOR_PROFILE(`${profileId}`));
-  const context = await chromium.launchPersistentContext(profilePath, {
-    headless: false,
-    args: [SOURCE_TEXT_NO_SANDBOX, SOURCE_TEXT_DISABLE_SETUID_SANDBOX, SOURCE_TEXT_DISABLE_BLINK_FEATURES_AUTOMATIONCONTROLLED],
-  });
+  const context = await chromium.launchPersistentContext(profilePath, { headless: false, args: [SOURCE_TEXT_NO_SANDBOX, SOURCE_TEXT_DISABLE_SETUID_SANDBOX, SOURCE_TEXT_DISABLE_BLINK_FEATURES_AUTOMATIONCONTROLLED] });
   let page = _.first(context.pages());
   if (!page) page = await context.newPage();
   await page.goto(EXTERNAL_URLS.GOOGLE_ACCOUNTS);

@@ -1,14 +1,15 @@
+import { canReuseRemotionCharacter } from "./legacy-motion-remotion/characterReuse.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { chromium } from "playwright";
 import { normalizeMotionRenderBehavior, applyMotionRenderBehavior, motionRenderBehaviorFor } from "../src/lib/motionRenderBehavior.js";
-import { layoutRemotionNodes, validateRemotionSpec, canReuseRemotionCharacter, normalizeRemotionPlacement } from "../src/lib/motionRemotion.js";
-import { remotionEffectGeometry, remotionSceneEffects, motionActorScale, motionCameraScale, motionSceneCameraScale, motionFrameSeconds, remotionSceneView } from "../src/lib/motionRemotionEffects.js";
+import { layoutRemotionNodes, validateRemotionSpec, normalizeRemotionPlacement } from "../src/lib/motionRemotion.js";
+import { remotionEffectGeometry, remotionSceneEffects, motionActorScale, motionCameraScale, motionSceneCameraScale, motionFrameSeconds, remotionSceneView } from "../src/features/motion/lib/motionRemotionEffects.js";
 import { remotionRole } from "../src/lib/motionRemotionGeometry.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
-import { resolveRemotionContinuity } from "../src/server/services/remotion/sceneContinuity.js";
+import { resolveRemotionContinuity } from "./legacy-motion-remotion/sceneContinuity.js";
 import { findNativeChrome } from "../src/server/services/nativeProxyBrowser.js";
 import type { MotionRemotionNode, MotionRemotionSpec, MotionVectorAsset, MotionRenderBehavior } from "../src/types/motionVisual.js";
 const output = path.resolve("scratch/motion-behavior-20261027");
@@ -301,7 +302,7 @@ try {
 }
 if (process.argv.includes("--render")) {
   const { renderRemotionStill, motionRemotionSourceFingerprint } = await import("../src/server/services/motionRemotionRenderService.js");
-  const fingerprints = motionRemotionSourceFingerprint([path.resolve("src/remotion/Root.tsx")]);
+  const fingerprints = motionRemotionSourceFingerprint([path.resolve("src/features/motion/remotion/Root.tsx")]);
   assert.equal(fingerprints.length, 64);
   const hashes = [];
   for (const behavior of combinations) {

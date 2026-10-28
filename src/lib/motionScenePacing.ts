@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_SCENE_PACING as P } from "../constants/motionScenePacing.js";
 import { MOTION_STORY_CONFIG } from "../constants/motionVideo.js";
 import type { MotionBeat, MotionStoryScript } from "../types/motionVideo.js";
@@ -5,8 +6,8 @@ import type { MotionScenePacing, MotionVisualSettings } from "../types/motionVis
 import { puppetBeatLines } from "./motionPuppet.js";
 export const motionScenePacing = (settings?: MotionVisualSettings): MotionScenePacing => settings?.pacing || P.DEFAULT;
 export const motionPacingSeconds = (settings?: MotionVisualSettings) => P.SECONDS[motionScenePacing(settings)];
-export const motionBeatVisualSeconds = (beat: MotionBeat, language = "vi") => {
-  const rate = language === "en" ? MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND : MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND;
+export const motionBeatVisualSeconds = (beat: MotionBeat, language: string = RT_SHARED.VI) => {
+  const rate = language === RT_SHARED.EN ? MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND : MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND;
   return Math.max(1, beat.narration.trim().split(/\s+/u).filter(Boolean).length / rate);
 };
 export const motionScenePacingRule = (settings: MotionVisualSettings | undefined, seconds: number) => P.RULE(motionPacingSeconds(settings), Math.max(1, Math.round(seconds / motionPacingSeconds(settings))));

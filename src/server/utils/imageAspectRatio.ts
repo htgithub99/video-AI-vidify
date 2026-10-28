@@ -33,10 +33,7 @@ const readJpegDimensions = (buffer: Buffer): ImageDimensions | undefined => {
     }
     const marker = buffer[_.add(offset, 1)];
     if (IMAGE_DIMENSION_CONFIG.JPEG_START_OF_FRAME_MARKERS.has(marker)) {
-      return {
-        height: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_HEIGHT_OFFSET)),
-        width: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_WIDTH_OFFSET)),
-      };
+      return { height: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_HEIGHT_OFFSET)), width: buffer.readUInt16BE(_.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_WIDTH_OFFSET)) };
     }
     const lengthOffset = _.add(offset, IMAGE_DIMENSION_CONFIG.JPEG_SEGMENT_LENGTH_OFFSET);
     if (_.gte(lengthOffset, _.subtract(buffer.length, 1))) return undefined;

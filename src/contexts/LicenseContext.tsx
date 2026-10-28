@@ -10,17 +10,8 @@ import { storageUtils } from "../lib/storage";
 interface LicenseInfo {
   status: LicenseStatus;
   plan_type: string;
-  usage: {
-    video: number;
-    image: number;
-    voice: number;
-  };
-  limits: {
-    video: number;
-    image: number;
-    voice: number;
-    unlimited: boolean;
-  };
+  usage: { video: number; image: number; voice: number };
+  limits: { video: number; image: number; voice: number; unlimited: boolean };
 }
 interface LicenseContextType {
   licenseKey: string | null;
@@ -31,21 +22,7 @@ interface LicenseContextType {
   refetchLicense: () => void;
 }
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
-const createDefaultProLicenseInfo = (): LicenseInfo => ({
-  status: LicenseStatus.ACTIVE,
-  plan_type: PlanType.PRO_LIFETIME,
-  usage: {
-    video: SecurityConstants.ZERO,
-    image: SecurityConstants.ZERO,
-    voice: SecurityConstants.ZERO,
-  },
-  limits: {
-    video: SecurityConstants.ZERO,
-    image: SecurityConstants.ZERO,
-    voice: SecurityConstants.ZERO,
-    unlimited: true,
-  },
-});
+const createDefaultProLicenseInfo = (): LicenseInfo => ({ status: LicenseStatus.ACTIVE, plan_type: PlanType.PRO_LIFETIME, usage: { video: SecurityConstants.ZERO, image: SecurityConstants.ZERO, voice: SecurityConstants.ZERO }, limits: { video: SecurityConstants.ZERO, image: SecurityConstants.ZERO, voice: SecurityConstants.ZERO, unlimited: true } });
 const isRecognizedEnvironmentKey = (key: string | null): boolean => {
   if (_.isEmpty(key)) return false;
   return _.includes([SecurityConstants.DEFAULT_LICENSE_KEY, getClientEnvironmentLicenseKey()], key);
@@ -65,11 +42,7 @@ const resolveInitialLicenseKey = (): string | null => {
   return null;
 };
 const requestLicenseValidationApi = async (key: string) => {
-  const response = await fetch(API_ROUTES.LICENSE_VALIDATE, {
-    method: REFACTOR_CONSTANTS.LICENSE_METHOD_POST,
-    headers: { [REFACTOR_CONSTANTS.LICENSE_HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.LICENSE_VALUE_APPLICATION_JSON },
-    body: jsonUtils.safeStringify({ [REFACTOR_CONSTANTS.LICENSE_KEY_LICENSE_KEY]: key }),
-  });
+  const response = await fetch(API_ROUTES.LICENSE_VALIDATE, { method: REFACTOR_CONSTANTS.LICENSE_METHOD_POST, headers: { [REFACTOR_CONSTANTS.LICENSE_HEADER_CONTENT_TYPE]: REFACTOR_CONSTANTS.LICENSE_VALUE_APPLICATION_JSON }, body: jsonUtils.safeStringify({ [REFACTOR_CONSTANTS.LICENSE_KEY_LICENSE_KEY]: key }) });
   const data = await response.json().catch(() => null);
   return { response, data };
 };
@@ -195,19 +168,7 @@ export const LicenseProvider: React.FC<{ children: ReactNode }> = ({ children })
     queryClient.setQueryData([REFACTOR_CONSTANTS.LICENSE_QUERY_KEY, licenseKey], null);
   }, [licenseKey, queryClient]);
   const isLoading = !_.isEmpty(licenseKey) && isQueryLoading && !licenseInfo;
-  return (
-    <LicenseContext.Provider
-      value={{
-        licenseKey,
-        licenseInfo: licenseInfo || null,
-        isLoading,
-        activateLicense,
-        logoutLicense,
-        refetchLicense: refetch,
-      }}>
-      {children}
-    </LicenseContext.Provider>
-  );
+  return <LicenseContext.Provider value={{ licenseKey, licenseInfo: licenseInfo || null, isLoading, activateLicense, logoutLicense, refetchLicense: refetch }}>{children}</LicenseContext.Provider>;
 };
 export const useLicense = () => {
   const context = useContext(LicenseContext);

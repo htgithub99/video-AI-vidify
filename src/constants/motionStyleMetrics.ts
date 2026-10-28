@@ -16,37 +16,8 @@ export const MOTION_STYLE_METRIC_LIMITS = {
   groundTilt: [0, 45],
   wideFigure: [0.05, 0.95],
 } as Record<string, [number, number]>;
-export const MOTION_STYLE_METRIC_DEFAULTS = {
-  headAspect: 1,
-  bodyToHead: 1.5,
-  bodyWidth: 0.95,
-  eyeHeight: 0.25,
-  eyeWidth: 0.11,
-  eyeGap: 0.36,
-  eyeY: -0.05,
-  mouthHeight: 0.12,
-  mouthWidth: 0.08,
-  mouthY: -0.24,
-  armThickness: 0.17,
-  armLength: 0.6,
-  groundTilt: 16,
-  wideFigure: 0.3,
-} as const;
-export const MOTION_STYLE_METRIC_VALUES = {
-  BODY_SHAPES: ["dome", "capsule", "box", "trapezoid"],
-  GROUND_VIEWS: ["front", "tilted"],
-  TILTED: "tilted",
-  FRONT: "front",
-  DOME: "dome",
-  CAPSULE: "capsule",
-  BOX: "box",
-  TRAPEZOID: "trapezoid",
-  SHOTS: ["wide", "medium", "close"],
-  CALIBRATED: "calibrated",
-  RADIUS_TOP: "radiusTop",
-  RADIUS_BOTTOM: "radiusBottom",
-  MISSING: "–",
-} as const;
+export const MOTION_STYLE_METRIC_DEFAULTS = { headAspect: 1, bodyToHead: 1.5, bodyWidth: 0.95, eyeHeight: 0.25, eyeWidth: 0.11, eyeGap: 0.36, eyeY: -0.05, mouthHeight: 0.12, mouthWidth: 0.08, mouthY: -0.24, armThickness: 0.17, armLength: 0.6, groundTilt: 16, wideFigure: 0.3 } as const;
+export const MOTION_STYLE_METRIC_VALUES = { BODY_SHAPES: ["dome", "capsule", "box", "trapezoid"], GROUND_VIEWS: ["front", "tilted"], TILTED: "tilted", FRONT: "front", DOME: "dome", CAPSULE: "capsule", BOX: "box", TRAPEZOID: "trapezoid", SHOTS: ["wide", "medium", "close"], CALIBRATED: "calibrated", RADIUS_TOP: "radiusTop", RADIUS_BOTTOM: "radiusBottom", MISSING: "–" } as const;
 export const MOTION_STYLE_FIGURE = {
   HEAD_DIAMETER: 0.72,
   HEAD_OVERLAP: 0.12,

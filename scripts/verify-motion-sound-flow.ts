@@ -2,7 +2,7 @@ import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { compileMotionStory, serveMotionSfx } from "../src/server/controllers/motionVideoController.ts";
+import { compileMotionStory, serveMotionSfx } from "../src/features/motion/server/controllers/motionVideoController.ts";
 import { getMotionAudioDirectory, getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
 import { runMotionAudioProcess } from "../src/server/services/motionSoundMixService.ts";
 import { startMotionRender, getMotionJob } from "../src/server/services/motionRenderService.ts";

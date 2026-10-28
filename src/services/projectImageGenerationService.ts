@@ -127,15 +127,7 @@ export const generateProjectImageOnce = async (item: ProjectImageItem, createPay
   };
 };
 export const submitProjectFlowVideoBatch = async (items: ProjectImageItem[], visualConfig: object, sandboxConfig: object, signal?: AbortSignal): Promise<ProjectFlowVideoBatchResponse> => {
-  const response = await safeSystemFetch(
-    API_ROUTES.PIPELINE_GENERATE_FLOW_VIDEO_BATCH,
-    {
-      items: _.map(items, (item) => ({ ...item, generateType: GenerateType.Video })),
-      visualConfig: { ...visualConfig, generateType: GenerateType.Video },
-      sandboxConfig,
-    },
-    signal,
-  );
+  const response = await safeSystemFetch(API_ROUTES.PIPELINE_GENERATE_FLOW_VIDEO_BATCH, { items: _.map(items, (item) => ({ ...item, generateType: GenerateType.Video })), visualConfig: { ...visualConfig, generateType: GenerateType.Video }, sandboxConfig }, signal);
   return {
     success: Boolean(response.success && _.get(response.data, SOURCE_TEXT_SUCCESS)),
     results: _.castArray(_.get(response.data, SOURCE_TEXT_RESULTS) || []),
@@ -149,17 +141,7 @@ export const recoverProjectFlowVideo = async (request: FlowVideoRecoveryRequest,
   const fallbackUrls = _.filter(_.castArray(_.get(response.data, SOURCE_TEXT_FALLBACKURLS) || []), isPersistedProjectVideoUrl);
   const success = Boolean(response.success && _.get(response.data, REFACTOR_CONSTANTS.AVG_SUCCESS_KEY) && isPersistedProjectVideoUrl(fallbackUrl) && _.size(fallbackUrls) >= _.defaultTo(request.expectedOutputCount, SecurityConstants.DEFAULT_AMOUNT));
   const remoteMediaIds = _.compact(_.castArray(request.mediaIds || request.mediaId || []));
-  return {
-    sceneId: request.sceneId,
-    success,
-    fallbackUrl,
-    fallbackUrls,
-    warning: _.toString(_.find([response.success ? undefined : response.error, _.get(response.data, SOURCE_TEXT_WARNING)], (message) => !_.isEmpty(message))),
-    assetType: GenerateType.Video,
-    remoteMediaId: _.head(remoteMediaIds),
-    remoteMediaIds,
-    remoteMediaCreated: _.get(response.data, SOURCE_TEXT_REMOTEMEDIACREATED, true),
-  };
+  return { sceneId: request.sceneId, success, fallbackUrl, fallbackUrls, warning: _.toString(_.find([response.success ? undefined : response.error, _.get(response.data, SOURCE_TEXT_WARNING)], (message) => !_.isEmpty(message))), assetType: GenerateType.Video, remoteMediaId: _.head(remoteMediaIds), remoteMediaIds, remoteMediaCreated: _.get(response.data, SOURCE_TEXT_REMOTEMEDIACREATED, true) };
 };
 export const createProjectImageUrl = (result: ProjectImageResult): string => {
   if (!_.isEmpty(result.base64)) {

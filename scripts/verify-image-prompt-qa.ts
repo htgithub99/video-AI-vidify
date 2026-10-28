@@ -1,10 +1,10 @@
 import { appendImagePromptAspectRatio, enforceImagePromptStyle, evaluateImagePrompts, removeGeneratedTextRequests, sanitizeImagePrompt } from "../src/services/imagePromptQualityService.ts";
 import { BackgroundMode, TextInImageMode } from "../src/types.ts";
-
-const assert = (value: unknown, message: string): void => { if (!value) throw new Error(message); };
+const assert = (value: unknown, message: string): void => {
+  if (!value) throw new Error(message);
+};
 const createScene = (id: string, prompt: string): any => ({ id, prompt, script: "Narration", subtitle: "Narration" });
 const validPrompt = "Flat stickman illustration of a Vietnamese man opening a workshop door, white canvas with grounded tools, crisp solid shadow shapes, hopeful morning atmosphere, medium wide shot, eye-level composition, clear focal action and balanced subject placement";
-
 assert(sanitizeImagePrompt(`${validPrompt} --ar 16:9`).endsWith("--ar 16:9"), "Aspect-ratio flag was not preserved at the end.");
 assert(evaluateImagePrompts([createScene("sc_1", validPrompt)], { backgroundMode: BackgroundMode.White, textMode: TextInImageMode.Auto }).passed, "Valid image prompt was rejected.");
 assert(evaluateImagePrompts([createScene("sc_1", `${validPrompt}, certificate with Vietnamese text`)], { backgroundMode: BackgroundMode.White, textMode: TextInImageMode.Auto }).passed, "Auto text mode did not preserve the AI planner decision.");
@@ -20,7 +20,6 @@ assert(preservedPrompt === `${aiPrompt} --ar 16:9`, "Application changed AI-auth
 assert(!evaluateImagePrompts([createScene("sc_1", "Realistic Cinematic 3D render of Nam at a table, medium shot")], { targetStyle: referenceStyle }).passed, "Cross-style prompt drift was accepted.");
 const aiViolation = "AI prompt with its own --ar 4:3";
 assert(appendImagePromptAspectRatio(aiViolation, "16:9") === aiViolation, "Application silently rewrote an AI aspect-ratio violation.");
-
 const exactStyleLock = "Flat stickman illustration with round heads, pill torsos, thin stick limbs, bold outlines and flat colors";
 const actionLockedScene = {
   ...createScene("sc_action", `${exactStyleLock}. Vũ leans forward while his left hand holds one watch and his right hand removes the strap, eyes fixed on the clasp, medium eye-level shot composition`),
@@ -36,5 +35,4 @@ const actionLockedScene = {
 };
 assert(evaluateImagePrompts([actionLockedScene], { requireStructuredPlan: true, targetStyle: exactStyleLock }).passed, "An exact shared Style Lock was rejected.");
 assert(!evaluateImagePrompts([{ ...actionLockedScene, prompt: actionLockedScene.prompt.replace(exactStyleLock, "Flat cartoon") }], { requireStructuredPlan: true, targetStyle: exactStyleLock }).passed, "A prompt missing the exact shared Style Lock was accepted.");
-
 process.stdout.write("Image prompt QA assertions passed.\n");

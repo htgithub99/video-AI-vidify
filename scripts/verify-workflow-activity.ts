@@ -96,7 +96,13 @@ const localStorage = { getItem: (key: string) => storage.get(key) || null, setIt
 let store = evaluate(storeBundle.outputFiles[0].text, { localStorage });
 let notifications = 0;
 store.subscribeWorkflowActivity(() => notifications++);
-for (const [area, event] of [ [SOURCE_TEXT_MUSIC, SOURCE_TEXT_MUSICPLANDONE], [SOURCE_TEXT_MIXER, SOURCE_TEXT_MUSICMIXERDONE], [SOURCE_TEXT_FLOW, SOURCE_TEXT_FLOWPLANDONE], [SOURCE_TEXT_PROXY_3, SOURCE_TEXT_PROXYCHECKFAIL], [SOURCE_TEXT_MOTION, SOURCE_TEXT_MOTIONRENDERSTOP], ]) {
+for (const [area, event] of [
+  [SOURCE_TEXT_MUSIC, SOURCE_TEXT_MUSICPLANDONE],
+  [SOURCE_TEXT_MIXER, SOURCE_TEXT_MUSICMIXERDONE],
+  [SOURCE_TEXT_FLOW, SOURCE_TEXT_FLOWPLANDONE],
+  [SOURCE_TEXT_PROXY_3, SOURCE_TEXT_PROXYCHECKFAIL],
+  [SOURCE_TEXT_MOTION, SOURCE_TEXT_MOTIONRENDERSTOP],
+]) {
   store.recordWorkflowActivity(area, event, 1, SOURCE_TEXT_FIXTURE);
 }
 assert.equal(notifications, 5);
@@ -149,7 +155,18 @@ for (const [method, kind, prefix] of [
     const events: any[] = [];
     const result = { chapters: [], cast: [], beats: [{ id: SOURCE_TEXT_BEAT, narration: SOURCE_TEXT_HELLO }], durations: [1], gen: { failed: scenario === SOURCE_TEXT_PARTIAL ? [SOURCE_TEXT_BEAT] : [] } };
     const job = { id: SOURCE_TEXT_FIXTURE, kind, status: scenario === SOURCE_TEXT_ERROR ? MotionJobStatus.ERROR : scenario === SOURCE_TEXT_CANCELLED ? MotionJobStatus.CANCELLED : MotionJobStatus.COMPLETED, result, error: scenario === SOURCE_TEXT_ERROR ? SOURCE_TEXT_PROVIDER_ERROR : undefined };
-    const fixture = { events, state: { source: {}, analysis: { chapters: [] }, script: result, voiceId: SOURCE_TEXT_VOICE_2, autoContinue: false }, request: async () => { if (scenario === SOURCE_TEXT_REQUEST_ERROR) throw new Error(SOURCE_TEXT_REQUEST_FAILED); return { job }; }, poll: async (_url: string, update: (value: any) => void) => { update(job); return job; }, };
+    const fixture = {
+      events,
+      state: { source: {}, analysis: { chapters: [] }, script: result, voiceId: SOURCE_TEXT_VOICE_2, autoContinue: false },
+      request: async () => {
+        if (scenario === SOURCE_TEXT_REQUEST_ERROR) throw new Error(SOURCE_TEXT_REQUEST_FAILED);
+        return { job };
+      },
+      poll: async (_url: string, update: (value: any) => void) => {
+        update(job);
+        return job;
+      },
+    };
     const hook = evaluate(hookBundle.outputFiles[0].text, { fixture }).useMotionStudio();
     await hook[method]();
     const suffix = scenario === SOURCE_TEXT_COMPLETED ? SOURCE_TEXT_DONE_2 : scenario === SOURCE_TEXT_CANCELLED ? SOURCE_TEXT_STOP : SOURCE_TEXT_FAIL;
@@ -164,7 +181,16 @@ for (const [method, kind, prefix] of [
 for (const status of [MotionJobStatus.COMPLETED, MotionJobStatus.ERROR, MotionJobStatus.CANCELLED]) {
   const events: any[] = [];
   const job = { id: SOURCE_TEXT_RENDER, status, error: status === MotionJobStatus.ERROR ? SOURCE_TEXT_RENDER_ERROR : undefined, result: status === MotionJobStatus.COMPLETED ? { id: SOURCE_TEXT_VIDEO_2, fileName: SOURCE_TEXT_VIDEO_MP4_2 } : undefined };
-  const fixture = { events, state: { script: null }, compiled: { spec: {}, missing: [], sfxCues: [] }, request: async () => ({ job }), poll: async (_url: string, update: (value: any) => void) => { update(job); return job; }, };
+  const fixture = {
+    events,
+    state: { script: null },
+    compiled: { spec: {}, missing: [], sfxCues: [] },
+    request: async () => ({ job }),
+    poll: async (_url: string, update: (value: any) => void) => {
+      update(job);
+      return job;
+    },
+  };
   await evaluate(hookBundle.outputFiles[0].text, { fixture }).useMotionStudio().render();
   await new Promise((resolve) => setTimeout(resolve, 0));
   const suffix = status === MotionJobStatus.COMPLETED ? SOURCE_TEXT_DONE_2 : status === MotionJobStatus.CANCELLED ? SOURCE_TEXT_STOP : SOURCE_TEXT_FAIL;

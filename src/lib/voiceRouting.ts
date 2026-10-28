@@ -20,13 +20,5 @@ export const applyVoiceSelection = (project: VideoProject, selection: Partial<Vo
   const nextVoiceConfig = { ...project.voiceConfig, ...selection } as VoiceConfig;
   const nextIdentity = _.pick(nextVoiceConfig, VOICE_TTS_ROUTING_CONFIG.IDENTITY_KEYS);
   if (_.isEqual(currentIdentity, nextIdentity)) return { ...project, voiceConfig: nextVoiceConfig };
-  return {
-    ...project,
-    voiceConfig: {
-      ..._.omit(nextVoiceConfig, VOICE_TTS_ROUTING_CONFIG.GENERATED_AUDIO_KEYS),
-      audioBase64: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-      audioUrl: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-    } as VoiceConfig,
-    storyboard: project.storyboard ? _.map(project.storyboard, (scene) => _.omit(scene, VOICE_TTS_ROUTING_CONFIG.SCENE_AUDIO_KEYS)) : project.storyboard,
-  };
+  return { ...project, voiceConfig: { ..._.omit(nextVoiceConfig, VOICE_TTS_ROUTING_CONFIG.GENERATED_AUDIO_KEYS), audioBase64: REFACTOR_CONSTANTS.VD_EMPTY_STRING, audioUrl: REFACTOR_CONSTANTS.VD_EMPTY_STRING } as VoiceConfig, storyboard: project.storyboard ? _.map(project.storyboard, (scene) => _.omit(scene, VOICE_TTS_ROUTING_CONFIG.SCENE_AUDIO_KEYS)) : project.storyboard };
 };

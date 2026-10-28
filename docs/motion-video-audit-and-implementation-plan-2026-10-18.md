@@ -533,10 +533,10 @@ Voice theo tâm trạng là yêu cầu đã có, không phải tùy chọn bỏ 
 
 | File | Nội dung cần xem |
 | --- | --- |
-| `src/hooks/useMotionStudio.ts` | Luồng UI, auto continue, compile/render, state/cache |
-| `src/server/controllers/motionVideoController.ts` | Endpoint/jobs, scenes trước voice, seed/import |
-| `src/server/routes/motionVideoRoutes.ts` | Route API |
-| `src/lib/motionSceneAi.ts` | Chọn AI vẽ hiện cố định Claude |
+| `src/features/motion/hooks/useMotionStudio.ts` | Luồng UI, auto continue, compile/render, state/cache |
+| `src/features/motion/server/controllers/motionVideoController.ts` | Endpoint/jobs, scenes trước voice, seed/import |
+| `src/features/motion/server/routes/motionVideoRoutes.ts` | Route API |
+| `src/features/motion/lib/motionSceneAi.ts` | Chọn AI vẽ hiện cố định Claude |
 | `src/server/services/motionStoryService.ts` | runMotionAi, session/count/retry, analysis/chapter/edit |
 | `src/server/services/geminiService.ts`, `freeAiProviderService.ts` | Routing API, fallback model/provider |
 | `src/server/services/motionGenService.ts` | Bible/location/staging/sound, dùng/lưu kho, preview |

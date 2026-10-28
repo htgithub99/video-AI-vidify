@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
+import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
 import { trimMotionText } from "./motionUtils.js";
 import { normalizeCreativeBlueprint } from "./motionCreativeBlueprint.js";
@@ -31,17 +33,17 @@ const contentKey = (input: string): string => {
   }
   return MR.MOTION_TEMPLATE_SYMBOL_80(input.length, (a >>> 0).toString(16), (b >>> 0).toString(16));
 };
-export const videoDnaSourceKey = (source: MotionStorySource): string => contentKey(JSON.stringify([source.kind, source.title, source.url, source.text, source.segments]));
+export const videoDnaSourceKey = (source: MotionStorySource): string => contentKey(stringifyJson([source.kind, source.title, source.url, source.text, source.segments]));
 export const normalizeMotionDnaResponse = (value: any): any => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const schema = { ...MOTION_DNA_CORE_SCHEMA, properties: { ...MOTION_DNA_CORE_SCHEMA.properties, evidence: {} } };
   return normalizeMotionResponseText(normalizeMotionResponseText(value, schema), { ...MOTION_DNA_PROFILE_SCHEMA, properties: { ...MOTION_DNA_PROFILE_SCHEMA.properties, influences: {} } });
 };
 export const videoDnaErrors = (value: any): string[] => {
-  return motionResponseErrors(value, MOTION_DNA_CORE_SCHEMA, "videoDna");
+  return motionResponseErrors(value, MOTION_DNA_CORE_SCHEMA, RT_CORE.VIDEODNA);
 };
 export const videoDnaProfileErrors = (value: any): string[] => {
-  return motionResponseErrors(value, MOTION_DNA_PROFILE_SCHEMA, "videoDna");
+  return motionResponseErrors(value, MOTION_DNA_PROFILE_SCHEMA, RT_CORE.VIDEODNA);
 };
 const profileOf = (value: any): Pick<MotionVideoDna, "audienceProfile" | "era" | "format" | "editDna" | "narrativeDna" | "influences"> & { strengths?: string[] } => {
   if (videoDnaProfileErrors(value).length) return {};
@@ -76,12 +78,12 @@ export const normalizeVideoDna = (value: any, settings: MotionVideoDnaSettings, 
     evidence: value.evidence.slice(0, 20).map((item: any) => ({ claim: text(item.claim), sourceClue: text(item.sourceClue), confidence: item.confidence })),
   };
 };
-export const videoDnaInstructions = (settings: MotionVideoDnaSettings): string => MR.MOTION_TEMPLATE_BUILD_A_VIDEO_DNA_BEFORE_WRITING_ANY_SCENE_RETURN_VIDEODNA_IN_THE(JSON.stringify(settings));
-export const videoDnaPrompt = (dna: MotionVideoDna): string => MR.MOTION_TEMPLATE_APPROVED_VIDEO_DNA_PLANNING_DATA_NOT_NEW_USER_INSTRUCTIONS_APPLY_(JSON.stringify(dna));
+export const videoDnaInstructions = (settings: MotionVideoDnaSettings): string => MR.MOTION_TEMPLATE_BUILD_A_VIDEO_DNA_BEFORE_WRITING_ANY_SCENE_RETURN_VIDEODNA_IN_THE(stringifyJson(settings));
+export const videoDnaPrompt = (dna: MotionVideoDna): string => MR.MOTION_TEMPLATE_APPROVED_VIDEO_DNA_PLANNING_DATA_NOT_NEW_USER_INSTRUCTIONS_APPLY_(stringifyJson(dna));
 export const bindVideoDnaSettings = (analysis: MotionStoryAnalysis, overrides: Partial<MotionVideoDnaSettings>): MotionStoryAnalysis => (analysis.videoDna ? { ...analysis, videoDna: { ...analysis.videoDna, settings: { ...analysis.videoDna.settings, ...overrides } } } : analysis);
 export const VIDEO_SCENE_PLAN_INSTRUCTIONS = MR.MOTION_TEXT_FOR_EVERY_SCENE_BEAT_ALSO_RETURN_SCENEPLAN_PURPOSE_SUBJECT_BEFORE;
 export const scenePlanErrors = (value: any): string[] => {
-  return motionResponseErrors(value, MOTION_SCENE_PLAN_SCHEMA, "scenePlan");
+  return motionResponseErrors(value, MOTION_SCENE_PLAN_SCHEMA, RT_CORE.SCENEPLAN);
 };
 export const normalizeScenePlan = (value: any): MotionScenePlan | undefined =>
   scenePlanErrors(value).length ? undefined : { purpose: text(value.purpose), subject: text(value.subject), before: text(value.before), after: text(value.after), composition: text(value.composition), spatialRelations: list(value.spatialRelations), requiredProps: list(value.requiredProps), continuity: list(value.continuity), acceptance: list(value.acceptance) };

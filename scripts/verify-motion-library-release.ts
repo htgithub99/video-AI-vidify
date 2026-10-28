@@ -34,7 +34,7 @@ delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = storage;
 const { listPuppets, readPuppet, writePuppet } = await import("../src/server/services/puppet/kitLibrary.js");
 const { capturePuppetPack, runWithPuppetPack, withPuppetPackSnapshot } = await import("../src/server/services/puppet/packPolicy.js");
-const { seedPuppetKit } = await import("../src/server/services/puppet/kitSeed.js");
+const { seedPuppetKit } = await import("../src/features/motion/server/services/puppet/kitSeed.js");
 const assets = C.TYPES.flatMap((type) => listPuppets(type));
 for (const type of C.TYPES) assert.equal(assets.filter((asset) => asset.type === type).length, report.counts[type]);
 const plans = assets.filter((asset): asset is PuppetSet => asset.type === T.SET);

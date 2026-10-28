@@ -1,8 +1,8 @@
 export const MOTION_EDITORIAL_VERIFICATION = {
   ENTRY: `import React from "react";
 import { createRoot } from "react-dom/client";
-import { useMotionStudio } from "./src/hooks/useMotionStudio.ts";
-import { MotionAiStatusLine, MotionFlowLog } from "./src/components/motion-video/MotionControls.tsx";
+import { useMotionStudio } from "./src/features/motion/hooks/useMotionStudio.ts";
+import { MotionAiStatusLine, MotionFlowLog } from "./src/features/motion/components/MotionControls.tsx";
 import { jsonUtils } from "./src/lib/json.ts";
 import { MOTION_STORY_CONFIG } from "./src/constants/motionVideo.ts";
 import { MOTION_EDITORIAL } from "./src/constants/motionEditorial.ts";

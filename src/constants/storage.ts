@@ -1,13 +1,4 @@
-export const STORAGE_CONFIG = {
-  DIR: "storage",
-  ENV_DIR: "VIDIFY_STORAGE_DIR",
-  MARKER: ".storage-layout.json",
-  LAYOUT_VERSION: 1,
-  TEMP_MIN_AGE_MS: 60 * 60 * 1000,
-  MAX_SCAN_ENTRIES: 200000,
-  TMP_DIR: "tmp",
-  LOGS_DIR: "logs",
-} as const;
+export const STORAGE_CONFIG = { DIR: "storage", ENV_DIR: "VIDIFY_STORAGE_DIR", MARKER: ".storage-layout.json", LAYOUT_VERSION: 1, TEMP_MIN_AGE_MS: 60 * 60 * 1000, MAX_SCAN_ENTRIES: 200000, TMP_DIR: "tmp", LOGS_DIR: "logs" } as const;
 export const STORAGE_MOVES: { from: string; to: string; exclusive?: boolean }[] = [
   { from: "database.db", to: "database.db" },
   { from: "database.db-shm", to: "database.db-shm" },

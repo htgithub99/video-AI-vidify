@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { parseJson } from "../../lib/jsonStringify.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getFfprobePath, getFfmpegPath } from "./shortsPreprocessService.js";
@@ -7,7 +9,7 @@ const execute = promisify(execFile);
 export const probeMotionMedia = async (file: string, signal?: AbortSignal) => {
   signal?.throwIfAborted();
   const { stdout } = await execute(getFfprobePath(), [...V.PROBE, file], { windowsHide: true, signal, maxBuffer: V.MAX_BUFFER });
-  const value = JSON.parse(stdout);
+  const value = parseJson(stdout);
   return { duration: Number(value.format?.duration), streams: (value.streams || []) as { codec_type: string; codec_name: string; width?: number; height?: number; nb_frames?: string; duration?: string; avg_frame_rate?: string }[] };
 };
 export const validateMotionMedia = async (file: string, expected: { seconds: number; width?: number; height?: number; fps?: number; frames?: number; audio?: boolean; decode?: boolean }, signal?: AbortSignal): Promise<number> => {
@@ -15,7 +17,7 @@ export const validateMotionMedia = async (file: string, expected: { seconds: num
   const video = probe.streams.find((stream) => stream.codec_type === V.VIDEO);
   const audio = probe.streams.find((stream) => stream.codec_type === V.AUDIO);
   const tolerance = Math.max(V.TOLERANCE, 2 / (expected.fps || 30));
-  const ratio = video?.avg_frame_rate?.split("/").map(Number);
+  const ratio = video?.avg_frame_rate?.split(RT_SHARED.SYMBOL_8A5EDA).map(Number);
   const fps = ratio?.[1] ? ratio[0] / ratio[1] : 0;
   if (
     !video ||

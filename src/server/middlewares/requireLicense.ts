@@ -10,11 +10,7 @@ import { GenerateType } from "../../types.js";
 const getRequestedUsageAmount = (request: Request, featureType: FeatureType): number => {
   const requestedItems = _.get(request, REFACTOR_CONSTANTS.USAGE_REQUEST_ITEMS_PATH);
   const requestedVisualItems = _.isArray(requestedItems) ? _.filter(requestedItems, (item) => (_.isEqual(featureType, FeatureType.VIDEO) ? _.isEqual(item.generateType, GenerateType.Video) : !_.isEqual(item.generateType, GenerateType.Video))) : requestedItems;
-  const requestedAmountByFeature: Record<FeatureType, number> = {
-    [FeatureType.VIDEO]: SecurityConstants.DEFAULT_AMOUNT,
-    [FeatureType.IMAGE]: _.isArray(requestedVisualItems) ? _.size(requestedVisualItems) : SecurityConstants.DEFAULT_AMOUNT,
-    [FeatureType.VOICE]: _.size(_.toString(_.get(request, REFACTOR_CONSTANTS.USAGE_REQUEST_TEXT_PATH, SecurityConstants.EMPTY_STRING))),
-  };
+  const requestedAmountByFeature: Record<FeatureType, number> = { [FeatureType.VIDEO]: SecurityConstants.DEFAULT_AMOUNT, [FeatureType.IMAGE]: _.isArray(requestedVisualItems) ? _.size(requestedVisualItems) : SecurityConstants.DEFAULT_AMOUNT, [FeatureType.VOICE]: _.size(_.toString(_.get(request, REFACTOR_CONSTANTS.USAGE_REQUEST_TEXT_PATH, SecurityConstants.EMPTY_STRING))) };
   if (_.every([_.includes([FeatureType.IMAGE, FeatureType.VIDEO], featureType), _.isArray(requestedVisualItems)], Boolean)) {
     return _.size(requestedVisualItems);
   }
@@ -25,33 +21,21 @@ export const requireLicense = (featureType?: FeatureType) => {
     try {
       const licenseKey = getResolvedLicenseKey(request);
       if (_.isEmpty(licenseKey)) {
-        return response.status(SecurityConstants.HTTP_UNAUTHORIZED).json({
-          error: SecurityMessages.MISSING_LICENSE_KEY,
-          code: SecurityConstants.LICENSE_MISSING_CODE,
-        });
+        return response.status(SecurityConstants.HTTP_UNAUTHORIZED).json({ error: SecurityMessages.MISSING_LICENSE_KEY, code: SecurityConstants.LICENSE_MISSING_CODE });
       }
       const license = await LicenseService.validateKey(licenseKey);
       if (_.isNil(license)) {
-        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
-          error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
-          code: SecurityConstants.LICENSE_INVALID_CODE,
-        });
+        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({ error: SecurityMessages.INVALID_OR_REVOKED_LICENSE, code: SecurityConstants.LICENSE_INVALID_CODE });
       }
       const status = _.get(license, SecurityConstants.PROP_STATUS);
       if (!_.isEqual(status, LicenseStatus.ACTIVE)) {
-        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
-          error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
-          code: SecurityConstants.LICENSE_INACTIVE_CODE,
-        });
+        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({ error: SecurityMessages.INVALID_OR_REVOKED_LICENSE, code: SecurityConstants.LICENSE_INACTIVE_CODE });
       }
       const expiresAt = _.get(license, SecurityConstants.PROP_EXPIRES_AT);
       if (!_.isNil(expiresAt)) {
         const expiresTime = new Date(expiresAt).getTime();
         if (!isNaN(expiresTime) && _.lt(expiresTime, Date.now())) {
-          return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
-            error: SecurityMessages.INVALID_OR_REVOKED_LICENSE,
-            code: SecurityConstants.LICENSE_INACTIVE_CODE,
-          });
+          return response.status(SecurityConstants.HTTP_FORBIDDEN).json({ error: SecurityMessages.INVALID_OR_REVOKED_LICENSE, code: SecurityConstants.LICENSE_INACTIVE_CODE });
         }
       }
       _.set(request, SecurityConstants.LICENSE_INFO_KEY, license);
@@ -79,18 +63,12 @@ export const requireLicense = (featureType?: FeatureType) => {
         } else {
           errorMsg = _.replace(_.replace(SecurityMessages.QUOTA_DAILY_EXCEEDED, SecurityConstants.PLACEHOLDER_0, featureName), SecurityConstants.PLACEHOLDER_1, planName);
         }
-        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
-          error: errorMsg,
-          code: SecurityConstants.QUOTA_EXCEEDED_CODE,
-        });
+        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({ error: errorMsg, code: SecurityConstants.QUOTA_EXCEEDED_CODE });
       }
       next();
     } catch (error) {
       if (error instanceof LicenseValidationError) {
-        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({
-          error: error.message,
-          code: SecurityConstants.LICENSE_INVALID_CODE,
-        });
+        return response.status(SecurityConstants.HTTP_FORBIDDEN).json({ error: error.message, code: SecurityConstants.LICENSE_INVALID_CODE });
       }
       appError(SecurityConstants.REQUIRE_LICENSE_ERROR_LOG, error);
       response.status(SecurityConstants.HTTP_INTERNAL_ERROR).json({ error: SecurityMessages.INTERNAL_SERVER_ERROR });

@@ -1,7 +1,7 @@
 export const MUSIC_VERIFICATION_TEXTS = {
   VALUE_SRC_SERVER_CONTROLLERS_PIPELINECONTROLLER_TS: "src/server/controllers/pipelineController.ts",
   VALUE_UTF8: "utf8",
-  VALUE_SRC_COMPONENTS_MUSICCREATOR_TSX: "src/components/MusicCreator.tsx",
+  VALUE_SRC_COMPONENTS_MUSICCREATOR_TSX: "src/features/music/components/MusicCreator.tsx",
   VALUE_SRC_CONSTANTS_SUNOAUTOMATION_TS: "src/constants/sunoAutomation.ts",
   VALUE_SRC_CONSTANTS_APIROUTES_TS: "src/constants/apiRoutes.ts",
   VALUE_SRC_SERVER_SERVICES_SUNOAUTOMATIONSERVICE_TS: "src/server/services/sunoAutomationService.ts",

@@ -19,11 +19,7 @@ const fixture = JSON.parse(fs.readFileSync(VT.SCRATCH_MOTION_VOICE_FLOW_RESULT_J
 fixture.script.gen.soundPlanVersion = MOTION_SOUND_CONFIG.VERSION;
 fixture.script.gen.puppet = { version: PUPPET.VERSION };
 const bundle = await build({
-  stdin: {
-    contents: VT.IMPORT_REACT_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DOM_CLI,
-    loader: VT.TSX,
-    resolveDir: process.cwd(),
-  },
+  stdin: { contents: VT.IMPORT_REACT_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DOM_CLI, loader: VT.TSX, resolveDir: process.cwd() },
   bundle: true,
   platform: VT.BROWSER,
   format: VT.IIFE,
@@ -33,10 +29,7 @@ const bundle = await build({
     {
       name: VT.FIXTURE_STORAGE,
       setup(builder) {
-        builder.onLoad({ filter: /[\\/]lib[\\/]json\.ts$/ }, () => ({
-          contents: VT.EXPORT_CONST_JSONUTILS_GETASYNCITEM_ASYNC_KEY_FALLBACK_KEY_M,
-          loader: VT.TS,
-        }));
+        builder.onLoad({ filter: /[\\/]lib[\\/]json\.ts$/ }, () => ({ contents: VT.EXPORT_CONST_JSONUTILS_GETASYNCITEM_ASYNC_KEY_FALLBACK_KEY_M, loader: VT.TS }));
       },
     },
   ],

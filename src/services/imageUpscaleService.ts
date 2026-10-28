@@ -77,21 +77,11 @@ export const upscaleApprovedSceneAssets = async ({ scenes, validatedSceneIds, qu
           upscaledCount = _.add(upscaledCount, 1);
           await persistCheckpoint();
         } catch (error) {
-          onLog(
-            formatUpscaleMessage(IMAGE_UPSCALE_CONFIG.SKIPPED_LOG_TEMPLATE, {
-              sceneId: scene.id,
-              reason: getErrorMessage(error, IMAGE_UPSCALE_CONFIG.UNKNOWN_ERROR),
-            }),
-          );
+          onLog(formatUpscaleMessage(IMAGE_UPSCALE_CONFIG.SKIPPED_LOG_TEMPLATE, { sceneId: scene.id, reason: getErrorMessage(error, IMAGE_UPSCALE_CONFIG.UNKNOWN_ERROR) }));
         }
       }),
     );
   }
-  onLog(
-    formatUpscaleMessage(IMAGE_UPSCALE_CONFIG.COMPLETE_LOG_TEMPLATE, {
-      changed: upscaledCount,
-      total: _.size(targets),
-    }),
-  );
+  onLog(formatUpscaleMessage(IMAGE_UPSCALE_CONFIG.COMPLETE_LOG_TEMPLATE, { changed: upscaledCount, total: _.size(targets) }));
   return upscaledCount;
 };

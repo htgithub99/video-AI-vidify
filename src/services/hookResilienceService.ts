@@ -105,13 +105,7 @@ export const resolveUsableHooks = (versions: unknown, _hookType: string, count: 
       const content = normalizeContent(source.content);
       const type = normalizeContent(source.type);
       if (_.isEmpty(id) || _.isEmpty(type) || !isUsableContent(content) || !isHookTopicallyGrounded(content, sourceText) || !validateChapterLanguage(content, isVietnamese).valid) return null;
-      return {
-        id,
-        content,
-        type,
-        selected: false,
-        score: source.score as HookVersion["score"],
-      };
+      return { id, content, type, selected: false, score: source.score as HookVersion["score"] };
     }),
   );
   if (!_.isEqual(normalized.length, count)) return [];

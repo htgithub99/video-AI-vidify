@@ -57,34 +57,9 @@ export const SHORTS_CONSTANTS = {
   EXPORT_ZIP_PREFIX: "shorts_export_",
   DEFAULT_VIDEO_EXTENSIONS: [".mp4", ".jpg", ".jpeg", ".png", ".webp", ".webm"],
 } as const;
-export const SHORTS_MIME_TYPES: Record<string, string> = {
-  ".mp4": "video/mp4",
-  ".mkv": "video/mp4",
-  ".mov": "video/quicktime",
-  ".webm": "video/webm",
-  ".avi": "video/x-msvideo",
-  ".ts": "video/mp2t",
-} as const;
-export const SHORTS_REGEX = {
-  CLEAN_TITLE: /[^a-z0-9_]/gi,
-  CLEAN_FILENAME: /[^a-z0-9]/gi,
-  VIDEO_EXT: /\.(mp4|mkv|mov|avi|webm|ts|m4v)$/i,
-  RANGE_BYTES: /bytes=/,
-  BACKSLASH: /\\/g,
-  CODE_BLOCK_JSON: /```json/gi,
-  CODE_BLOCK: /```/g,
-} as const;
-export const SHORTS_UI_CONSTANTS = {
-  SOURCE_PLAYING_ID: "source",
-  SEEK_TOOLTIP: "Nhấn để tua đoạn nhạc",
-  LOADING_TEXT: "Loading...",
-  DEFAULT_ZERO_DURATION: "00:00",
-  DEFAULT_ZERO_FILESIZE: "0 MB",
-  PROTOCOLS: {
-    BLOB: "blob:",
-    HTTP: "http",
-  },
-} as const;
+export const SHORTS_MIME_TYPES: Record<string, string> = { ".mp4": "video/mp4", ".mkv": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".avi": "video/x-msvideo", ".ts": "video/mp2t" } as const;
+export const SHORTS_REGEX = { CLEAN_TITLE: /[^a-z0-9_]/gi, CLEAN_FILENAME: /[^a-z0-9]/gi, VIDEO_EXT: /\.(mp4|mkv|mov|avi|webm|ts|m4v)$/i, RANGE_BYTES: /bytes=/, BACKSLASH: /\\/g, CODE_BLOCK_JSON: /```json/gi, CODE_BLOCK: /```/g } as const;
+export const SHORTS_UI_CONSTANTS = { SOURCE_PLAYING_ID: "source", SEEK_TOOLTIP: "Nhấn để tua đoạn nhạc", LOADING_TEXT: "Loading...", DEFAULT_ZERO_DURATION: "00:00", DEFAULT_ZERO_FILESIZE: "0 MB", PROTOCOLS: { BLOB: "blob:", HTTP: "http" } } as const;
 export const SHORTS_LOG_MESSAGES = {
   START_PROCESSING: (path: string) => `[SHORTS] Starting video pipeline: ${path}`,
   AUDIO_EXTRACT_WARN: (err: string) => `[SHORTS] Audio extraction failed, fallback to timeline metadata: ${err}`,

@@ -1,19 +1,14 @@
 import type { MotionFolkBelief } from "../types/motionVideo.js";
-export interface MotionFolkBeliefEntry extends MotionFolkBelief { aliases: string[]; }
-export const MOTION_FOLK_BELIEF_MATCH = {
-  NFC: "NFC",
-  SPACE_RE: /[^\p{L}\p{N}]+/gu,
-  SPACE: " ",
-  MAX: 2,
-  MIN_HITS: 1,
-  EMPTY: "",
-  ALIASES: "aliases",
-} as const;
+export interface MotionFolkBeliefEntry extends MotionFolkBelief {
+  aliases: string[];
+}
+export const MOTION_FOLK_BELIEF_MATCH = { NFC: "NFC", SPACE_RE: /[^\p{L}\p{N}]+/gu, SPACE: " ", MAX: 2, MIN_HITS: 1, EMPTY: "", ALIASES: "aliases" } as const;
 export const MOTION_FOLK_BELIEFS: MotionFolkBeliefEntry[] = [
   {
     name: "Trùng tang (thần trùng)",
     aliases: ["trùng tang", "thần trùng", "quỷ trùng", "liên táng"],
-    meaning: "Người mất phạm giờ, ngày, tháng, năm xấu (giờ trùng) thì bị thần trùng quấy nhiễu và kéo theo người thân: trong nhà lần lượt có người chết khi tang người trước chưa xả (trùng tang liên táng), dân gian hay nói 3, 5, 7 hoặc 9 người. Thầy xem bằng năm, tháng, ngày, giờ mất của người chết, đếm cung trên bàn tay (nam khởi từ Dần, nữ khởi từ Thân): rơi cung Nhập Mộ hay Thiên Di là yên, rơi cung Trùng Tang là phạm; người mất vào Dần, Thân, Tỵ, Hợi cũng bị coi là dễ phạm.",
+    meaning:
+      "Người mất phạm giờ, ngày, tháng, năm xấu (giờ trùng) thì bị thần trùng quấy nhiễu và kéo theo người thân: trong nhà lần lượt có người chết khi tang người trước chưa xả (trùng tang liên táng), dân gian hay nói 3, 5, 7 hoặc 9 người. Thầy xem bằng năm, tháng, ngày, giờ mất của người chết, đếm cung trên bàn tay (nam khởi từ Dần, nữ khởi từ Thân): rơi cung Nhập Mộ hay Thiên Di là yên, rơi cung Trùng Tang là phạm; người mất vào Dần, Thân, Tỵ, Hợi cũng bị coi là dễ phạm.",
     signs: ["người mất đột ngột hoặc mất đúng giờ, ngày bị coi là giờ trùng", "người thân lần lượt ốm rồi mất trong thời gian để tang", "thần trùng được tả như con chim đen mỏ đỏ hoặc hình người đầu chim lảng vảng quanh mộ mới"],
     taboos: ["không để chó, mèo lại gần quan tài", "trong thời gian trùng tang không cưới xin, không sửa nhà, không bốc mộ cải táng", "không chôn vào ngày trùng tang đại kỵ trong tháng", "khi đã gửi vong thì không gọi tên, chưa lập bàn thờ người mất cho đến khi qua một trăm ngày"],
     remedies: ["mời thầy xem giờ, lùi ngày chôn một hai ngày cho tránh ngày trùng", "trấn trùng: rải tro hóa vàng xin ở chùa dưới huyệt, đặt túi bùa thuốc trấn trùng (chu sa, thần sa…) vào quan tài, đặt linh phù dưới gối hoặc trên ngực người mất", "làm huyệt giả, rải tỏi trước khi lấp đất", "gửi vong lên chùa, người nhà đeo bùa ba năm, làm việc thiện hồi hướng cho người mất"],
@@ -66,12 +61,5 @@ export const MOTION_FOLK_BELIEFS: MotionFolkBeliefEntry[] = [
     taboos: ["không để mèo, nhất là mèo đen, nhảy qua xác hay quan tài người chết", "phải có người canh xác suốt đêm"],
     remedies: ["mời thầy pháp trừ quỷ; khi quỷ bị đuổi đi, xác lộ ra như đã chết nhiều ngày"],
   },
-  {
-    name: "Ma thần vòng",
-    aliases: ["thần vòng"],
-    meaning: "Hồn người chết thắt cổ không siêu thoát, ám quanh chỗ chết và xui người khác thắt cổ theo để có người thế chỗ.",
-    signs: ["sợi dây, xà nhà nơi người chết thắt cổ"],
-    taboos: ["kiêng giữ lại sợi dây người chết đã dùng"],
-    remedies: ["mời thầy pháp có kinh nghiệm đưa hồn đi", "đốt sợi dây người chết đã dùng"],
-  },
+  { name: "Ma thần vòng", aliases: ["thần vòng"], meaning: "Hồn người chết thắt cổ không siêu thoát, ám quanh chỗ chết và xui người khác thắt cổ theo để có người thế chỗ.", signs: ["sợi dây, xà nhà nơi người chết thắt cổ"], taboos: ["kiêng giữ lại sợi dây người chết đã dùng"], remedies: ["mời thầy pháp có kinh nghiệm đưa hồn đi", "đốt sợi dây người chết đã dùng"] },
 ];

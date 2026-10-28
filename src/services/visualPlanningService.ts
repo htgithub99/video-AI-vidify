@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import {
   SOURCE_TEMPLATE_ARCHIVALRATIONALE_MISSING,
   SOURCE_TEMPLATE_ARCHIVALSEARCHQUERY_COPIED_FROM_SCRIPT,
@@ -65,7 +66,7 @@ import { DETECTOR_VIETNAMESE_REGEX } from "../constants/regexes";
 import { CharacterConfig, StoryboardScene, VisualBible } from "../types";
 const PHYSICAL_ACTION_PATTERN =
   /\b(?:walks?|steps?|sits?|stands?|turns?|reaches?|opens?|closes?|places?|picks?|sets?|holds?|puts?|counts?|sorts?|reads?|checks?|reviews?|types?|writes?|calls?|speaks?|asks?|answers?|hands?|receives?|pays?|hides?|removes?|packs?|leaves?|enters?|exits?|looks?|watches?|waits?|leans?|covers?|wipes?|pushes?|pulls?|carries?|drops?|tears?|folds?|points?|gestures?|shakes?|nods?|runs?|stops?|scrolls?|taps?|locks?|unlocks?|sends?|shows?|faces?|moves?|crosses?|lifts?|raises?|lowers?|strikes?|hits?|swings?|fires?|shoots?|dodges?|falls?|kneels?|rises?|grabs?|releases?|throws?|catches?|breaks?|shatters?|cracks?|collapses?|explodes?|burns?|glows?|flashes?|swirls?|billows?|rolls?|spreads?|envelops?|obscures?|blocks?|reveals?|emerges?|appears?|disappears?|pours?|flows?|splashes?|ripples?|trembles?|vibrates?|bends?|circles?|advances?|retreats?|follows?|chases?|attacks?|deflects?|struggles?|winces?|smiles?|frowns?)\b/i;
-const normalizePlanningText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value)))), " ");
+const normalizePlanningText = (value: unknown): string => _.join(_.words(_.deburr(_.toLower(_.toString(value)))), RT_SHARED.SYMBOL_36A9E7);
 const hasObservablePhysicalAction = (value: unknown): boolean => PHYSICAL_ACTION_PATTERN.test(_.toString(value));
 export const getVisualShotPlanIssues = (source: Partial<StoryboardScene>, baseScene: StoryboardScene): string[] => {
   const issues: string[] = [];
@@ -99,14 +100,7 @@ export const createVisualCharacterCards = (characters: Array<Partial<CharacterCo
   _.map(characters, (character) => {
     const visualDetails = extractCharacterVisualDetails(character);
     const identityLock = _.join(visualDetails, IMAGE_PROMPT_COMPILER_CONFIG.CHARACTER_SEPARATOR);
-    return {
-      id: character.id,
-      name: character.name,
-      narrativeRole: character.narrativeRole,
-      description: identityLock,
-      identityLock,
-      usesSharedStyleCore: true,
-    };
+    return { id: character.id, name: character.name, narrativeRole: character.narrativeRole, description: identityLock, identityLock, usesSharedStyleCore: true };
   });
 export const createVisualPlanningPayload = (scenes: StoryboardScene[]): Record<string, unknown>[] =>
   _.map(scenes, (scene, index) => ({

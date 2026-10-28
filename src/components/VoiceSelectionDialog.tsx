@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_UI } from "../constants/runtime/ui.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { StudioSegmentedControl, StudioSegmentButton, StudioInput, StudioSelect } from "./ui/Studio.js";
 import _ from "lodash";
 import { Activity, Check, ChevronDown, Globe2, Heart, Mic, Play, Search, Square, User } from "lucide-react";
@@ -48,13 +50,7 @@ interface VoiceDialogFilterState {
   age: string;
   provider: string;
 }
-const DEFAULT_FILTER_STATE: VoiceDialogFilterState = {
-  search: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-  language: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-  gender: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-  age: REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-  provider: DEFAULT_PROVIDER,
-};
+const DEFAULT_FILTER_STATE: VoiceDialogFilterState = { search: REFACTOR_CONSTANTS.VD_EMPTY_STRING, language: REFACTOR_CONSTANTS.VD_EMPTY_STRING, gender: REFACTOR_CONSTANTS.VD_EMPTY_STRING, age: REFACTOR_CONSTANTS.VD_EMPTY_STRING, provider: DEFAULT_PROVIDER };
 const getFilterStorageKey = (scope: string): string => _.join([STORAGE_KEYS.VOICE_DIALOG_FILTERS, scope], REFACTOR_CONSTANTS.VOICE_DIALOG_SCOPE_SEPARATOR);
 const getStoredFilters = (storageKey: string): VoiceDialogFilterState => {
   const storedFilters = jsonUtils.safeParse<Partial<VoiceDialogFilterState>>(storageUtils.get(storageKey), DEFAULT_FILTER_STATE);
@@ -120,22 +116,7 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
     },
     [debouncedSetSearch],
   );
-  const {
-    data: queryData,
-    isLoading,
-    isFetching,
-  } = useVoices(
-    {
-      provider,
-      page,
-      pageSize: parseInt(VOICE_PAGE_SIZE, SecurityConstants.RADIX_10),
-      language,
-      gender,
-      age,
-      search: debouncedSearch,
-    },
-    isOpen,
-  );
+  const { data: queryData, isLoading, isFetching } = useVoices({ provider, page, pageSize: parseInt(VOICE_PAGE_SIZE, SecurityConstants.RADIX_10), language, gender, age, search: debouncedSearch }, isOpen);
   const loading = isLoading || isFetching;
   useEffect(() => {
     if (_.get(queryData, SecurityConstants.SUCCESS_KEY) && _.get(queryData, SecurityConstants.DATA_KEY)) {
@@ -225,60 +206,60 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
       maxWidth={SOURCE_TEXT_6XL}
       title={
         <Tooltip content={dialogTexts.TITLE_TOOLTIP} position={REFACTOR_CONSTANTS.POSITION_BOTTOM} align={REFACTOR_CONSTANTS.ALIGN_START}>
-          <div className={cn("flex items-center gap-3 cursor-help uppercase tracking-wider font-extrabold")}>
-            <Mic className={cn("w-5 h-5 text-rose-500")} />
-            <span className={cn("uppercase font-extrabold tracking-wider")}>{String(dialogTexts.TITLE).toUpperCase()}</span>
+          <div className={cn(RT_UI.FLEX_ITEMS_CENTER_GAP_3_CURSOR_HELP_UPPERCASE_TRACKING_WIDER)}>
+            <Mic className={cn(RT_UI.W_5_H_5_TEXT_ROSE_500)} />
+            <span className={cn(RT_UI.UPPERCASE_FONT_EXTRABOLD_TRACKING_WIDER)}>{String(dialogTexts.TITLE).toUpperCase()}</span>
           </div>
         </Tooltip>
       }>
-      <div className={cn("flex flex-col h-full min-h-[520px] bg-slate-950 text-slate-100 text-left")}>
-        <div className={cn("w-full bg-slate-900/90 border-b border-slate-800/80 p-5 shrink-0 z-10 rounded-t-2xl")}>
-          <div className={cn("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5")}>
-            <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Search className={cn("w-3.5 h-3.5 text-rose-500")} />
+      <div className={cn(RT_UI.FLEX_FLEX_COL_H_FULL_MIN_H_520PX_BG_SLATE)}>
+        <div className={cn(RT_UI.W_FULL_BG_SLATE_900_90_BORDER_B_BORDER_SLATE)}>
+          <div className={cn(RT_UI.GRID_GRID_COLS_1_SM_GRID_COLS_2_MD_GRID)}>
+            <div className={cn(RT_SHARED.SPACE_Y_1_5)}>
+              <label className={cn(RT_UI.TEXT_10PX_FONT_EXTRABOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER)}>
+                <Search className={cn(RT_UI.W_3_5_H_3_5_TEXT_ROSE_500)} />
                 {dialogTexts.searchLabel}
               </label>
-              <div className={cn("relative")}>
-                <StudioInput type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={search} onChange={handleSearchChange} placeholder={dialogTexts.searchPlaceholder} className={cn("w-full h-10 bg-slate-955 border border-slate-800 rounded-xl pl-9 pr-3 text-xs text-slate-100 placeholder:text-slate-500 focus:border-rose-500 outline-none transition-all shadow-inner font-sans font-medium")} />
-                <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400")} />
+              <div className={cn(RT_UI.RELATIVE)}>
+                <StudioInput type={REFACTOR_CONSTANTS.INPUT_TYPE_TEXT} value={search} onChange={handleSearchChange} placeholder={dialogTexts.searchPlaceholder} className={cn(RT_UI.W_FULL_H_10_BG_SLATE_955_BORDER_BORDER_SLATE)} />
+                <Search className={cn(RT_UI.ABSOLUTE_LEFT_3_TOP_1_2_TRANSLATE_Y_1_2)} />
               </div>
             </div>
-            <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Globe2 className={cn("w-3.5 h-3.5 text-sky-500")} />
+            <div className={cn(RT_SHARED.SPACE_Y_1_5)}>
+              <label className={cn(RT_UI.TEXT_10PX_FONT_EXTRABOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER)}>
+                <Globe2 className={cn(RT_UI.W_3_5_H_3_5_TEXT_SKY_500)} />
                 {dialogTexts.providerLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-2xs")}>
-                <StudioSelect value={provider} onChange={(e) => setProvider(_.get(e, SOURCE_TEXT_TARGET_VALUE))} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
+              <div className={cn(RT_UI.RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_955_BORDER_BORDER_SLATE)}>
+                <StudioSelect value={provider} onChange={(e) => setProvider(_.get(e, SOURCE_TEXT_TARGET_VALUE))} className={cn(RT_UI.W_FULL_BG_TRANSPARENT_TEXT_XS_FONT_MEDIUM_TEXT_SLATE)}>
                   {_.map(VOICE_PROVIDER_OPTIONS, (opt) => (
-                    <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn("bg-slate-900 text-slate-100")}>
+                    <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn(RT_UI.BG_SLATE_900_TEXT_SLATE_100)}>
                       {_.get(opt, SOURCE_TEXT_VALUE)}
                     </option>
                   ))}
                 </StudioSelect>
-                <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
+                <ChevronDown className={cn(RT_UI.POINTER_EVENTS_NONE_ABSOLUTE_RIGHT_3_TEXT_SLATE_400_W)} />
               </div>
             </div>
-            <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Globe2 className={cn("w-3.5 h-3.5 text-emerald-500")} />
+            <div className={cn(RT_SHARED.SPACE_Y_1_5)}>
+              <label className={cn(RT_UI.TEXT_10PX_FONT_EXTRABOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER)}>
+                <Globe2 className={cn(RT_UI.W_3_5_H_3_5_TEXT_EMERALD_500)} />
                 {dialogTexts.languageLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-2xs")}>
-                <StudioSelect value={language} onChange={(e) => setLanguage(e.target.value)} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
+              <div className={cn(RT_UI.RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_955_BORDER_BORDER_SLATE)}>
+                <StudioSelect value={language} onChange={(e) => setLanguage(e.target.value)} className={cn(RT_UI.W_FULL_BG_TRANSPARENT_TEXT_XS_FONT_MEDIUM_TEXT_SLATE)}>
                   {_.map(VOICE_LANGUAGE_OPTIONS, (opt) => (
-                    <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn("bg-slate-900 text-slate-100")}>
+                    <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn(RT_UI.BG_SLATE_900_TEXT_SLATE_100)}>
                       {VOICE_DIALOG_LANGUAGE_LABELS[_.get(opt, SOURCE_TEXT_VALUE)]?.[currentLang] || _.get(opt, SOURCE_TEXT_VALUE)}
                     </option>
                   ))}
                 </StudioSelect>
-                <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
+                <ChevronDown className={cn(RT_UI.POINTER_EVENTS_NONE_ABSOLUTE_RIGHT_3_TEXT_SLATE_400_W)} />
               </div>
             </div>
-            <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <User className={cn("w-3.5 h-3.5 text-amber-500")} />
+            <div className={cn(RT_SHARED.SPACE_Y_1_5)}>
+              <label className={cn(RT_UI.TEXT_10PX_FONT_EXTRABOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER)}>
+                <User className={cn(RT_UI.W_3_5_H_3_5_TEXT_AMBER_500)} />
                 {dialogTexts.genderLabel}
               </label>
               <StudioSegmentedControl>
@@ -292,20 +273,20 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                 })}
               </StudioSegmentedControl>
             </div>
-            <div className={cn("space-y-1.5")}>
-              <label className={cn("text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 font-mono")}>
-                <Activity className={cn("w-3.5 h-3.5 text-purple-500")} />
+            <div className={cn(RT_SHARED.SPACE_Y_1_5)}>
+              <label className={cn(RT_UI.TEXT_10PX_FONT_EXTRABOLD_TEXT_SLATE_400_UPPERCASE_TRACKING_WIDER)}>
+                <Activity className={cn(RT_UI.W_3_5_H_3_5_TEXT_PURPLE_500)} />
                 {dialogTexts.ageLabel}
               </label>
-              <div className={cn("relative flex items-center bg-slate-955 border border-slate-800 rounded-xl px-3 h-10 shadow-2xs")}>
-                <StudioSelect value={age} onChange={(e) => setAge(e.target.value)} className={cn("w-full bg-transparent text-xs font-medium text-slate-100 outline-none appearance-none pr-6 cursor-pointer")}>
+              <div className={cn(RT_UI.RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_955_BORDER_BORDER_SLATE)}>
+                <StudioSelect value={age} onChange={(e) => setAge(e.target.value)} className={cn(RT_UI.W_FULL_BG_TRANSPARENT_TEXT_XS_FONT_MEDIUM_TEXT_SLATE)}>
                   {_.map(VOICE_AGE_OPTIONS, (opt) => (
-                    <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn("bg-slate-900 text-slate-100")}>
+                    <option key={_.get(opt, SOURCE_TEXT_VALUE)} value={_.get(opt, SOURCE_TEXT_VALUE)} className={cn(RT_UI.BG_SLATE_900_TEXT_SLATE_100)}>
                       {VOICE_DIALOG_AGE_LABELS[_.get(opt, SOURCE_TEXT_VALUE)]?.[currentLang] || _.get(opt, SOURCE_TEXT_VALUE)}
                     </option>
                   ))}
                 </StudioSelect>
-                <ChevronDown className={cn("pointer-events-none absolute right-3 text-slate-400 w-3.5 h-3.5")} />
+                <ChevronDown className={cn(RT_UI.POINTER_EVENTS_NONE_ABSOLUTE_RIGHT_3_TEXT_SLATE_400_W)} />
               </div>
             </div>
           </div>
@@ -318,29 +299,23 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
             }
           }}>
           {loading && _.isEqual(page, REFACTOR_CONSTANTS.PAGE_ONE) ? (
-            <div className={cn("flex-1 min-h-[420px] flex items-center justify-center p-8 select-none")}>
+            <div className={cn(RT_UI.FLEX_1_MIN_H_420PX_FLEX_ITEMS_CENTER_JUSTIFY_CENTER)}>
               <PageLoadingSpinner />
             </div>
           ) : (
             <>
               {_.isEmpty(filteredVoices) && !loading && (
-                <div className={cn("flex flex-col items-center justify-center text-slate-500 py-20")}>
-                  <Mic className={cn("w-16 h-16 mb-3 opacity-20")} />
-                  <p className={cn("text-xs font-semibold opacity-70")}>{dialogTexts.noVoices}</p>
+                <div className={cn(RT_UI.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_SLATE_500)}>
+                  <Mic className={cn(RT_UI.W_16_H_16_MB_3_OPACITY_20)} />
+                  <p className={cn(RT_UI.TEXT_XS_FONT_SEMIBOLD_OPACITY_70)}>{dialogTexts.noVoices}</p>
                 </div>
               )}
-              <div className={cn("grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3.5 p-4")}>
+              <div className={cn(RT_UI.GRID_GRID_COLS_1_LG_GRID_COLS_2_XL_GRID)}>
                 {_.map(filteredVoices, (voice) => {
                   const isSelected = _.isEqual(selectedVoiceId, _.get(voice, SOURCE_TEXT_VOICE_ID));
                   const isPlaying = _.isEqual(playingId, _.get(voice, REFACTOR_CONSTANTS.VD_VOICE_ID_KEY));
                   return (
-                    <div
-                      key={_.get(voice, SOURCE_TEXT_VOICE_ID)}
-                      className={cn("relative flex items-center gap-3.5 p-3.5 rounded-2xl border transition-all cursor-pointer select-none group", {
-                        "bg-rose-500/15 border-rose-500 shadow-md ring-1 ring-rose-500/60": isSelected,
-                        "bg-slate-900/80 border-slate-800 hover:bg-slate-850 hover:border-rose-400/50 hover:shadow-md hover:-translate-y-0.5": !isSelected,
-                      })}
-                      onClick={() => onSelectVoice({ ...voice, provider })}>
+                    <div key={_.get(voice, SOURCE_TEXT_VOICE_ID)} className={cn(RT_UI.RELATIVE_FLEX_ITEMS_CENTER_GAP_3_5_P_3_5, { "bg-rose-500/15 border-rose-500 shadow-md ring-1 ring-rose-500/60": isSelected, "bg-slate-900/80 border-slate-800 hover:bg-slate-850 hover:border-rose-400/50 hover:shadow-md hover:-translate-y-0.5": !isSelected })} onClick={() => onSelectVoice({ ...voice, provider })}>
                       <Button
                         variant={SOURCE_TEXT_UNSTYLED}
                         type={SOURCE_TEXT_BUTTON}
@@ -348,19 +323,16 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                           e.stopPropagation();
                           handlePlay(voice);
                         }}
-                        className={cn("shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center shadow-md transition-all cursor-pointer border-none", {
-                          "bg-rose-600 text-white animate-pulse": isPlaying,
-                          "bg-slate-955 text-rose-400 group-hover:bg-rose-600 group-hover:text-white": !isPlaying,
-                        })}>
-                        {isPlaying ? <Square className={cn("w-4 h-4 fill-current")} /> : <Play className={cn("w-4 h-4 fill-current ml-0.5")} />}
+                        className={cn(RT_UI.SHRINK_0_W_11_H_11_ROUNDED_2XL_FLEX_ITEMS, { "bg-rose-600 text-white animate-pulse": isPlaying, "bg-slate-955 text-rose-400 group-hover:bg-rose-600 group-hover:text-white": !isPlaying })}>
+                        {isPlaying ? <Square className={cn(RT_UI.W_4_H_4_FILL_CURRENT)} /> : <Play className={cn(RT_SHARED.W_4_H_4_FILL_CURRENT_ML_0_5)} />}
                       </Button>
-                      <div className={cn("flex-1 min-w-0")}>
-                        <div className={cn("flex items-center justify-between gap-2 mb-1.5")}>
-                          <h3 className={cn("font-extrabold text-sm text-slate-100 truncate voice-item-name")}>{_.get(voice, SOURCE_TEXT_NAME)}</h3>
-                          <div className={cn("flex items-center gap-1.5 shrink-0")}>
+                      <div className={cn(RT_SHARED.FLEX_1_MIN_W_0)}>
+                        <div className={cn(RT_UI.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_MB_1_5)}>
+                          <h3 className={cn(RT_UI.FONT_EXTRABOLD_TEXT_SM_TEXT_SLATE_100_TRUNCATE_VOICE_ITEM)}>{_.get(voice, SOURCE_TEXT_NAME)}</h3>
+                          <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_1_5_SHRINK_0)}>
                             {isSelected && (
-                              <span className={cn("shrink-0 flex items-center gap-1 text-[10px] font-black text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-full")}>
-                                <Check className={cn("w-3 h-3 stroke-[3]")} />
+                              <span className={cn(RT_UI.SHRINK_0_FLEX_ITEMS_CENTER_GAP_1_TEXT_10PX_FONT)}>
+                                <Check className={cn(RT_UI.W_3_H_3_STROKE_3)} />
                                 {dialogTexts.selectedLabel}
                               </span>
                             )}
@@ -371,18 +343,18 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                                 e.stopPropagation();
                                 onToggleFavoriteVoice(_.get(voice, SOURCE_TEXT_VOICE_ID), _.get(voice, SOURCE_TEXT_NAME), _.get(voice, SOURCE_TEXT_CATEGORY) || REFACTOR_CONSTANTS.VD_CATEGORY_CUSTOM);
                               }}
-                              className={cn("w-8 h-8 rounded-xl flex items-center justify-center p-0 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer border-none bg-transparent transition-colors")}
+                              className={cn(RT_UI.W_8_H_8_ROUNDED_XL_FLEX_ITEMS_CENTER_JUSTIFY)}
                               title={dialogTexts.favoriteTooltip}>
-                              <Heart className={cn("w-4 h-4 transition-all duration-200", { "text-rose-500 fill-rose-500 scale-110": _.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id"))), "text-slate-400 hover:text-rose-500": !_.some(favoriteVoices, (v) => _.isEqual(_.get(v, "voiceURI"), _.get(voice, "voice_id"))) })} />
+                              <Heart className={cn(RT_UI.W_4_H_4_TRANSITION_ALL_DURATION_200, { "text-rose-500 fill-rose-500 scale-110": _.some(favoriteVoices, (v) => _.isEqual(_.get(v, RT_UI.VOICEURI), _.get(voice, RT_UI.VOICE_ID))), "text-slate-400 hover:text-rose-500": !_.some(favoriteVoices, (v) => _.isEqual(_.get(v, RT_UI.VOICEURI), _.get(voice, RT_UI.VOICE_ID))) })} />
                             </Button>
                           </div>
                         </div>
-                        <div className={cn("flex flex-wrap gap-1 items-center")}>
-                          {_.get(voice, SOURCE_TEXT_GENDER) && <span className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 capitalize whitespace-nowrap")}>{_.get(voice, SOURCE_TEXT_GENDER)}</span>}
-                          {_.get(voice, SOURCE_TEXT_AGE) && <span className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 capitalize whitespace-nowrap")}>{_.get(voice, SOURCE_TEXT_AGE)}</span>}
-                          {(_.get(voice, SOURCE_TEXT_LOCALE) || _.get(voice, SOURCE_TEXT_LANGUAGE)) && <span className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 capitalize whitespace-nowrap")}>{getReadableLanguage(_.get(voice, SOURCE_TEXT_LOCALE) || _.get(voice, SOURCE_TEXT_LANGUAGE), currentLang, true)}</span>}
+                        <div className={cn(RT_UI.FLEX_FLEX_WRAP_GAP_1_ITEMS_CENTER)}>
+                          {_.get(voice, SOURCE_TEXT_GENDER) && <span className={cn(RT_UI.TEXT_9_5PX_FONT_BOLD_PX_2_PY_0_5)}>{_.get(voice, SOURCE_TEXT_GENDER)}</span>}
+                          {_.get(voice, SOURCE_TEXT_AGE) && <span className={cn(RT_UI.TEXT_9_5PX_FONT_BOLD_PX_2_PY_0_5_32B043)}>{_.get(voice, SOURCE_TEXT_AGE)}</span>}
+                          {(_.get(voice, SOURCE_TEXT_LOCALE) || _.get(voice, SOURCE_TEXT_LANGUAGE)) && <span className={cn(RT_UI.TEXT_9_5PX_FONT_BOLD_PX_2_PY_0_5_6051C4)}>{getReadableLanguage(_.get(voice, SOURCE_TEXT_LOCALE) || _.get(voice, SOURCE_TEXT_LANGUAGE), currentLang, true)}</span>}
                           {_.map(_.take(_.get(voice, SOURCE_TEXT_TAGS) || [], 2), (tag, idx) => (
-                            <span key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className={cn("text-[9.5px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 capitalize whitespace-nowrap")}>
+                            <span key={_.join([REFACTOR_CONSTANTS.VD_TAG_PREFIX, idx], REFACTOR_CONSTANTS.VD_EMPTY_STRING)} className={cn(RT_UI.TEXT_9_5PX_FONT_BOLD_PX_2_PY_0_5_2402CE)}>
                               {tag}
                             </span>
                           ))}
@@ -392,11 +364,11 @@ export const VoiceSelectionDialog: React.FC<VoiceSelectionDialogProps> = ({ isOp
                   );
                 })}
               </div>
-              <div ref={observerTarget} className={cn("h-4 w-full mt-4")} />
+              <div ref={observerTarget} className={cn(RT_UI.H_4_W_FULL_MT_4)} />
               {loading && !_.isEmpty(filteredVoices) && (
-                <div className={cn("py-6 flex flex-col items-center justify-center gap-2")}>
-                  <div className={cn("w-6 h-6 border-2 border-slate-700 border-t-rose-500 rounded-full animate-spin")} />
-                  <span className={cn("text-xs text-slate-400 animate-pulse font-mono")}>{dialogTexts.loadingMore}</span>
+                <div className={cn(RT_UI.PY_6_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_GAP)}>
+                  <div className={cn(RT_UI.W_6_H_6_BORDER_2_BORDER_SLATE_700_BORDER)} />
+                  <span className={cn(RT_UI.TEXT_XS_TEXT_SLATE_400_ANIMATE_PULSE_FONT_MONO)}>{dialogTexts.loadingMore}</span>
                 </div>
               )}
             </>

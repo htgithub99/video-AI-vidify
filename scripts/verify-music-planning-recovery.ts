@@ -4,6 +4,9 @@ import fs from "node:fs";
 import { transform } from "esbuild";
 import _ from "lodash";
 import * as ST from "../src/constants/sourceText.ts";
+import { RUNTIME_TEXT as RT_SERVER } from "../src/constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../src/constants/runtime/shared.js";
+import { stringifyJson, parseJson } from "../src/lib/jsonStringify.js";
 import { MUSIC_PLANNING as P } from "../src/constants/musicPlanning.ts";
 import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_TEXTS } from "../src/constants/sunoAutomation.ts";
 import { MUSIC_CREATOR_CONSTANTS } from "../src/constants/refactor.ts";
@@ -112,6 +115,10 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
     response.emit("finish");
   };
   const context: any = {
+    RT_SERVER,
+    RT_SHARED,
+    stringifyJson,
+    parseJson,
     ...ST,
     _,
     SUNO_AUTOMATION_CONFIG,
@@ -151,7 +158,9 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
     closeChatPlanningRoomsForProject: async () => {},
     scheduleGlobalBrowserCleanup() {},
     closeChatBrowserIfIdle: async () => {},
-    prepareChatPlanningRoom: async (request: any) => { preparedRooms.push(request.workerId); },
+    prepareChatPlanningRoom: async (request: any) => {
+      preparedRooms.push(request.workerId);
+    },
     isRetryableMusicRoomError: (error: any) => !controller.signal.aborted && error.message !== "fatal-batch" && error.code !== CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE && !SUNO_AUTOMATION_TEXTS.MUSIC_ROOM_NON_RETRYABLE_ERROR.test(error.message),
     validateMusicStyleAnalysisContract: (value: any) => !!value?.market,
     getMusicStyleAnalysisContractIssues: () => [],

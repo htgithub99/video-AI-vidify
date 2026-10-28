@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
@@ -11,18 +13,34 @@ import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { runMotionAudioProcess } from "./motionSoundMixService.js";
 import { decodeVoicePcm, voicePauses } from "./motionVoicePaceService.js";
 import { closeVieneuWorker, transcribeVieneuAudio, vieneuRoot } from "./vieneuTtsService.js";
-
-export interface MotionTrainedVoice { id: string; name: string; gender: string; description: string; model: string; minutes: number; clips: number; createdAt: number; }
-export interface MotionTrainInput { name: string; gender: string; description: string; consent: boolean; files: { name: string; base64: string }[]; }
-interface TrainCtx { signal: AbortSignal; log: (s: string) => void; progress: (p: number, stage?: string) => void; }
-
+export interface MotionTrainedVoice {
+  id: string;
+  name: string;
+  gender: string;
+  description: string;
+  model: string;
+  minutes: number;
+  clips: number;
+  createdAt: number;
+}
+export interface MotionTrainInput {
+  name: string;
+  gender: string;
+  description: string;
+  consent: boolean;
+  files: { name: string; base64: string }[];
+}
+interface TrainCtx {
+  signal: AbortSignal;
+  log: (s: string) => void;
+  progress: (p: number, stage?: string) => void;
+}
 const envPython = (): string => path.join(vieneuRoot(), T.ENV_DIR, process.platform === T.WIN32 ? T.PY_WIN : T.PY_NIX);
 const repoDir = (): string => path.join(vieneuRoot(), T.REPO_DIR);
 const registryFile = (): string => path.join(vieneuRoot(), T.REGISTRY);
-
 export const listTrainedVoices = (): MotionTrainedVoice[] => {
   try {
-    const list = JSON.parse(fs.readFileSync(registryFile(), T.UTF8)) as MotionTrainedVoice[];
+    const list = parseJson(fs.readFileSync(registryFile(), T.UTF8)) as MotionTrainedVoice[];
     return _.filter(list, (v) => fs.existsSync(v.model));
   } catch {
     return [];
@@ -40,7 +58,6 @@ export const deleteTrainedVoice = async (id: string): Promise<MotionTrainedVoice
   writeMotionJsonAtomic(registryFile(), rest);
   return rest;
 };
-
 const run = (cmd: string, args: string[], ctx: TrainCtx, opts: { cwd?: string; onLine?: (line: string) => void } = {}): Promise<void> =>
   new Promise((resolve, reject) => {
     if (ctx.signal.aborted) return reject(new Error(T.CANCELLED));
@@ -63,7 +80,6 @@ const run = (cmd: string, args: string[], ctx: TrainCtx, opts: { cwd?: string; o
       code === 0 && !ctx.signal.aborted ? resolve() : reject(new Error(tail.trim().split(T.NL).slice(-6).join(T.NL) || String(code)));
     });
   });
-
 const ensureRepo = async (ctx: TrainCtx): Promise<void> => {
   const dir = repoDir();
   if (fs.existsSync(path.join(dir, T.SCRIPTS.TRAIN))) return;
@@ -91,12 +107,12 @@ const ensureEnv = async (ctx: TrainCtx): Promise<string> => {
   await ensureRepo(ctx);
   const python = envPython();
   const marker = path.join(vieneuRoot(), T.ENV_DIR, T.MARKER);
-  if (fs.existsSync(python) && fs.existsSync(marker) && JSON.parse(fs.readFileSync(marker, T.UTF8)).v === T.MARKER_VERSION) return python;
+  if (fs.existsSync(python) && fs.existsSync(marker) && parseJson(fs.readFileSync(marker, T.UTF8)).v === T.MARKER_VERSION) return python;
   ctx.log(T.LOG.SETUP);
   if (!fs.existsSync(python)) await run(getPythonCommand(), [...T.VENV, path.join(vieneuRoot(), T.ENV_DIR)], ctx);
   await run(python, [...T.PIP, ...T.TORCH], ctx);
   await run(python, [...T.PIP, T.EDITABLE, repoDir() + T.EXTRAS], ctx);
-  fs.writeFileSync(marker, JSON.stringify({ v: T.MARKER_VERSION }));
+  fs.writeFileSync(marker, stringifyJson({ v: T.MARKER_VERSION }));
   return python;
 };
 const checkGpu = async (python: string, ctx: TrainCtx): Promise<void> => {
@@ -104,12 +120,11 @@ const checkGpu = async (python: string, ctx: TrainCtx): Promise<void> => {
   await run(python, [...T.GPU_CHECK], ctx, { onLine: (l) => (out = l) }).catch(() => {
     throw new Error(T.ERR.NO_GPU);
   });
-  const gpu = JSON.parse(out || T.EMPTY_JSON) as { ok?: boolean; name?: string; gb?: number };
+  const gpu = parseJson(out || T.EMPTY_JSON) as { ok?: boolean; name?: string; gb?: number };
   if (!gpu.ok) throw new Error(T.ERR.NO_GPU);
   if ((gpu.gb || 0) < T.MIN_GPU_GB) throw new Error(T.ERR.LOW_GPU(gpu.gb || 0));
   ctx.log(T.LOG.GPU(gpu.name || T.EMPTY, gpu.gb || 0));
 };
-
 const splitFile = async (file: string, outDir: string, start: number, ctx: TrainCtx): Promise<{ file: string; seconds: number }[]> => {
   const { seconds, pauses } = voicePauses(await decodeVoicePcm(file, ctx.signal), T.CLIP.CUT_PAUSE);
   const speech: [number, number][] = [];
@@ -141,7 +156,6 @@ const splitFile = async (file: string, outDir: string, start: number, ctx: Train
   }
   return out;
 };
-
 export const trainVieneuVoice = async (input: MotionTrainInput, ctx: TrainCtx): Promise<MotionTrainedVoice> => {
   if (!input.consent) throw new Error(T.ERR.CONSENT);
   const name = _.trim(input.name);
@@ -171,7 +185,7 @@ export const trainVieneuVoice = async (input: MotionTrainInput, ctx: TrainCtx): 
     ctx.log(T.LOG.SPLIT(files.length));
     const clips: { file: string; seconds: number }[] = [];
     for (const f of files) clips.push(...(await splitFile(f, raw, clips.length, ctx)));
-    const total = _.sumBy(clips, "seconds");
+    const total = _.sumBy(clips, RT_SERVER.SECONDS);
     ctx.log(T.LOG.CLIPS(clips.length, _.round(total / 60, 1)));
     if (total < T.MIN_SECONDS) throw new Error(T.ERR.TOO_SHORT(_.round(total / 60, 1)));
     if (total < T.GOOD_SECONDS) ctx.log(T.LOG.WARN_SHORT(_.round(total / 60, 1)));
@@ -189,7 +203,7 @@ export const trainVieneuVoice = async (input: MotionTrainInput, ctx: TrainCtx): 
       ctx.progress(T.PROGRESS.SPLIT + ((T.PROGRESS.ASR - T.PROGRESS.SPLIT) * (i + 1)) / clips.length);
     }
     ctx.log(T.LOG.ASR_DONE(kept.length, clips.length - kept.length));
-    if (_.sumBy(kept, "seconds") < T.MIN_SECONDS) throw new Error(T.ERR.TOO_SHORT(_.round(_.sumBy(kept, "seconds") / 60, 1)));
+    if (_.sumBy(kept, RT_SERVER.SECONDS) < T.MIN_SECONDS) throw new Error(T.ERR.TOO_SHORT(_.round(_.sumBy(kept, RT_SERVER.SECONDS) / 60, 1)));
     await fs.promises.writeFile(path.join(dataset, T.METADATA), rows.join(T.NL) + T.NL, T.UTF8);
     closeVieneuWorker();
     ctx.log(T.LOG.PREPARE);
@@ -213,11 +227,14 @@ export const trainVieneuVoice = async (input: MotionTrainInput, ctx: TrainCtx): 
     });
     const merged = path.join(dir, T.OUTPUT, T.RUN, T.MERGED);
     ctx.log(T.LOG.VOICE);
-    const ref = _.minBy(_.filter(kept, (c) => c.seconds >= T.CLIP.REF_MIN && c.seconds <= T.CLIP.REF_MAX), (c) => Math.abs(c.seconds - T.CLIP.REF_BEST));
+    const ref = _.minBy(
+      _.filter(kept, (c) => c.seconds >= T.CLIP.REF_MIN && c.seconds <= T.CLIP.REF_MAX),
+      (c) => Math.abs(c.seconds - T.CLIP.REF_BEST),
+    );
     if (!ref) throw new Error(T.ERR.NO_REF);
     await run(python, [T.SCRIPTS.VOICE, T.ARG.AUDIO, ref.file, T.ARG.NAME, name, T.ARG.DESCRIPTION, _.trim(input.description) || name, T.ARG.GENDER, input.gender, T.ARG.OUT, merged, T.ARG.DEFAULT], ctx, { cwd: repoDir() });
     ctx.progress(T.PROGRESS.VOICE);
-    const voice: MotionTrainedVoice = { id, name, gender: input.gender, description: _.trim(input.description), model: merged, minutes: _.round(_.sumBy(kept, "seconds") / 60, 1), clips: kept.length, createdAt: Date.now() };
+    const voice: MotionTrainedVoice = { id, name, gender: input.gender, description: _.trim(input.description), model: merged, minutes: _.round(_.sumBy(kept, RT_SERVER.SECONDS) / 60, 1), clips: kept.length, createdAt: Date.now() };
     writeMotionJsonAtomic(registryFile(), [..._.reject(listTrainedVoices(), { id }), voice]);
     await fs.promises.rm(source, { recursive: true, force: true }).catch(_.noop);
     for (const d of await fs.promises.readdir(path.join(dir, T.OUTPUT, T.RUN)).catch(() => [] as string[])) if (d.startsWith(T.CHECKPOINT)) await fs.promises.rm(path.join(dir, T.OUTPUT, T.RUN, d), { recursive: true, force: true }).catch(_.noop);

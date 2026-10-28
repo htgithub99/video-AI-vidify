@@ -1,3 +1,4 @@
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import {
   SOURCE_TEXT_CHECK,
   SOURCE_TEXT_CREDENTIALS,
@@ -121,10 +122,10 @@ export class ProxyService {
     if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error(SOURCE_TEXT_ID_PROXY_KHONG_HOP_LE);
     const row = await (await this.db()).get(SOURCE_TEXT_SELECT_DATA_FROM_PROXY_PROFILES_WHERE_ID, id);
     if (!row) throw new Error(SOURCE_TEXT_KHONG_TIM_THAY_PROXY);
-    return JSON.parse(row.data);
+    return parseJson(row.data);
   }
   private async write(profile: StoredProfile): Promise<void> {
-    await (await this.db()).run(SOURCE_TEXT_INSERT_OR_REPLACE_INTO_PROXY_PROFILES_ID, profile.id, JSON.stringify(profile));
+    await (await this.db()).run(SOURCE_TEXT_INSERT_OR_REPLACE_INTO_PROXY_PROFILES_ID, profile.id, stringifyJson(profile));
   }
   private async exclusive<T>(id: string, state: "opening" | "closing" | "checking" | "saving", task: () => Promise<T>): Promise<T> {
     if (this.stopping) throw new Error(SOURCE_TEXT_DICH_VU_PROXY_DANG_DONG);
@@ -138,17 +139,17 @@ export class ProxyService {
   }
   async list(): Promise<ProxyProfile[]> {
     const rows = await (await this.db()).all(SOURCE_TEXT_SELECT_DATA_FROM_PROXY_PROFILES_ORDER_BY);
-    return rows.map((row) => this.publicProfile(JSON.parse(row.data)));
+    return rows.map((row) => this.publicProfile(parseJson(row.data)));
   }
   async readWorkspace(): Promise<ProxyWorkspaceSnapshot | null> {
     await this.draftQueue.catch(() => {});
     const row = await (await this.db()).get(SOURCE_TEXT_SELECT_REVISION_ENCRYPTED_FROM_PROXY_WORKSPACE_WHERE);
-    return row ? { revision: row.revision, state: JSON.parse(await this.secret(row.encrypted, true)) } : null;
+    return row ? { revision: row.revision, state: parseJson(await this.secret(row.encrypted, true)) } : null;
   }
   async saveWorkspace(value: unknown): Promise<number> {
     const snapshot = value as ProxyWorkspaceSnapshot;
     if (!snapshot || !Number.isSafeInteger(snapshot.revision) || snapshot.revision < 1 || !snapshot.state || typeof snapshot.state !== "object") throw new Error(SOURCE_TEXT_BAN_NHAP_PROXY_KHONG_HOP_LE);
-    const serialized = JSON.stringify(snapshot.state);
+    const serialized = stringifyJson(snapshot.state);
     if (Buffer.byteLength(serialized) > 512000) throw new Error(SOURCE_TEXT_BAN_NHAP_QUA_LON_HAY_CHIA_DANH);
     const task = this.draftQueue
       .catch(() => {})
@@ -196,7 +197,7 @@ export class ProxyService {
     const db = await this.db();
     await db.run(
       SOURCE_TEMPLATE_INSERT_INTO_PROXY_PROFILES_ID_DATA(`${records.map(() => SOURCE_TEXT_SYMBOL_55).join(SOURCE_TEXT_SYMBOL_4)}`),
-      records.flatMap((record) => [record.id, JSON.stringify(record)]),
+      records.flatMap((record) => [record.id, stringifyJson(record)] as string[]),
     );
     return records.map((record) => this.publicProfile(record));
   }

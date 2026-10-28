@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { observeChatUploads } from "./chatUploadObserver.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
@@ -31,7 +33,9 @@ export const getClaudeComposerScope = async (input: Locator, policy: ChatUploadP
 };
 export const readClaudeUploadState = async (input: Locator, policy: ChatUploadPolicy = claudePolicy): Promise<UploadState> =>
   input.evaluate(
-    (element, config) => {
+    (element, __runtimePayload) => {
+      const { RT_SERVER, RT_SHARED } = __runtimePayload.texts;
+      const config = __runtimePayload.value;
       const { ST, C } = config.sharedTexts;
       const dom = {
         visible(node: Element) {
@@ -44,8 +48,26 @@ export const readClaudeUploadState = async (input: Locator, policy: ChatUploadPo
           const parts: string[] = [];
           const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
           while (walker.nextNode()) parts.push(walker.currentNode.textContent || C.EMPTY);
-          const labelledNodes = [node, ...Array.from(node.querySelectorAll('[aria-label], [title], [alt], [aria-describedby]'))];
-          return [...parts, ...labelledNodes.flatMap((child) => [child.getAttribute(ST.SOURCE_TEXT_ARIA_LABEL), child.getAttribute(ST.SOURCE_TEXT_TITLE), child.getAttribute(C.ALT), ...(child.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean).map((id) => document.getElementById(id)?.textContent)])].filter(Boolean).join(ST.SOURCE_TEXT_SYMBOL_52);
+          const labelledNodes = [node, ...Array.from(node.querySelectorAll(RT_SERVER.ARIA_LABEL_TITLE_ALT_ARIA_DESCRIBEDBY))];
+          return (
+            [
+              ...parts,
+              ...labelledNodes.flatMap(
+                (child) =>
+                  [
+                    child.getAttribute(ST.SOURCE_TEXT_ARIA_LABEL),
+                    child.getAttribute(ST.SOURCE_TEXT_TITLE),
+                    child.getAttribute(C.ALT),
+                    ...(child.getAttribute(RT_SERVER.ARIA_DESCRIBEDBY) || "")
+                      .split(/\s+/)
+                      .filter(Boolean)
+                      .map((id) => document.getElementById(id)?.textContent),
+                  ] as string[],
+              ),
+            ] as string[]
+          )
+            .filter(Boolean)
+            .join(ST.SOURCE_TEXT_SYMBOL_52);
         },
       };
       let scope = element.closest(config.scope);
@@ -63,7 +85,6 @@ export const readClaudeUploadState = async (input: Locator, policy: ChatUploadPo
       const removes = Array.from(scope.querySelectorAll(config.remove)).filter(dom.visible);
       const chips = Array.from(scope.querySelectorAll(config.attachment)).filter((node) => dom.visible(node) && !node.querySelector(config.attachment));
       const images = Array.from(scope.querySelectorAll(ST.SOURCE_TEXT_IMG)).filter((node): node is HTMLImageElement => dom.visible(node) && C.UPLOAD_IMAGE_URL_PATTERN.test(node.getAttribute(ST.SOURCE_BROWSER_TEXT_SRC) || C.EMPTY));
-      // Gemini only shows a close button on the hovered chip. Count and label the chips themselves.
       const labels = chips.length ? chips.map(dom.label) : removes.map((node) => dom.label(node.closest(config.attachment) || node.parentElement || node));
       const fileStates = chips.map((node) => {
         const busy = dom.has(node, config.busy);
@@ -77,33 +98,36 @@ export const readClaudeUploadState = async (input: Locator, policy: ChatUploadPo
       const alerts = Array.from(document.querySelectorAll(ST.SOURCE_TEXT_ROLE_ALERT)).filter(dom.visible);
       const failed = explicitError || alerts.some((node) => config.failure.test(dom.label(node))) || labels.some((text) => config.failure.test(text));
       const sendReady = Array.from(scope.querySelectorAll(config.send)).some((node) => dom.visible(node) && !node.hasAttribute(ST.SOURCE_BROWSER_TEXT_DISABLED) && node.getAttribute(ST.SOURCE_TEXT_ARIA_DISABLED) !== ST.SOURCE_TEXT_TRUE);
-      const errorMessage = [...errorNodes, ...alerts.filter((node) => config.failure.test(dom.label(node)))].map(dom.label).filter(Boolean).join(" ").slice(0, 400);
-      return { count: Math.max(removes.length, chips.length, images.length), labels, files: fileStates, busy, failed, sendReady, errorMessage, readyCount: chips.length ? fileStates.filter((file) => file.ready).length : (!config.ready && !busy && !failed ? labels.length : 0), busyCount: fileStates.filter((file) => file.busy).length, failedCount: fileStates.filter((file) => file.failed).length };
+      const errorMessage = [...errorNodes, ...alerts.filter((node) => config.failure.test(dom.label(node)))].map(dom.label).filter(Boolean).join(RT_SHARED.SYMBOL_36A9E7).slice(0, 400);
+      return { count: Math.max(removes.length, chips.length, images.length), labels, files: fileStates, busy, failed, sendReady, errorMessage, readyCount: chips.length ? fileStates.filter((file) => file.ready).length : !config.ready && !busy && !failed ? labels.length : 0, busyCount: fileStates.filter((file) => file.busy).length, failedCount: fileStates.filter((file) => file.failed).length };
     },
     {
-      scope: policy.scope,
-      send: policy.send,
-      remove: policy.remove,
-      attachment: policy.attachment,
-      busy: policy.busy,
-      ready: policy.ready,
-      failure: policy.failure,
-      errorSelector: policy.errorSelector || C.UPLOAD_ERROR_SELECTOR,
-      sharedTexts: {
-        ST: {
-          SOURCE_TEXT_HIDDEN: ST.SOURCE_TEXT_HIDDEN,
-          SOURCE_TEXT_ARIA_LABEL: ST.SOURCE_TEXT_ARIA_LABEL,
-          SOURCE_TEXT_TITLE: ST.SOURCE_TEXT_TITLE,
-          SOURCE_TEXT_SYMBOL_52: ST.SOURCE_TEXT_SYMBOL_52,
-          SOURCE_TEXT_IMG: ST.SOURCE_TEXT_IMG,
-          SOURCE_BROWSER_TEXT_SRC: ST.SOURCE_BROWSER_TEXT_SRC,
-          SOURCE_TEXT_ROLE_ALERT: ST.SOURCE_TEXT_ROLE_ALERT,
-          SOURCE_BROWSER_TEXT_DISABLED: ST.SOURCE_BROWSER_TEXT_DISABLED,
-          SOURCE_TEXT_ARIA_DISABLED: ST.SOURCE_TEXT_ARIA_DISABLED,
-          SOURCE_TEXT_TRUE: ST.SOURCE_TEXT_TRUE,
+      value: {
+        scope: policy.scope,
+        send: policy.send,
+        remove: policy.remove,
+        attachment: policy.attachment,
+        busy: policy.busy,
+        ready: policy.ready,
+        failure: policy.failure,
+        errorSelector: policy.errorSelector || C.UPLOAD_ERROR_SELECTOR,
+        sharedTexts: {
+          ST: {
+            SOURCE_TEXT_HIDDEN: ST.SOURCE_TEXT_HIDDEN,
+            SOURCE_TEXT_ARIA_LABEL: ST.SOURCE_TEXT_ARIA_LABEL,
+            SOURCE_TEXT_TITLE: ST.SOURCE_TEXT_TITLE,
+            SOURCE_TEXT_SYMBOL_52: ST.SOURCE_TEXT_SYMBOL_52,
+            SOURCE_TEXT_IMG: ST.SOURCE_TEXT_IMG,
+            SOURCE_BROWSER_TEXT_SRC: ST.SOURCE_BROWSER_TEXT_SRC,
+            SOURCE_TEXT_ROLE_ALERT: ST.SOURCE_TEXT_ROLE_ALERT,
+            SOURCE_BROWSER_TEXT_DISABLED: ST.SOURCE_BROWSER_TEXT_DISABLED,
+            SOURCE_TEXT_ARIA_DISABLED: ST.SOURCE_TEXT_ARIA_DISABLED,
+            SOURCE_TEXT_TRUE: ST.SOURCE_TEXT_TRUE,
+          },
+          C: { EMPTY: C.EMPTY, ALT: C.ALT, LABEL_ATTRIBUTES_SELECTOR: C.LABEL_ATTRIBUTES_SELECTOR, STATUS_SELECTOR: C.STATUS_SELECTOR, UPLOAD_ERROR_SELECTOR: C.UPLOAD_ERROR_SELECTOR, UPLOAD_IMAGE_URL_PATTERN: C.UPLOAD_IMAGE_URL_PATTERN, UPLOAD_BUSY_TEXT_PATTERN: C.UPLOAD_BUSY_TEXT_PATTERN },
         },
-        C: { EMPTY: C.EMPTY, ALT: C.ALT, LABEL_ATTRIBUTES_SELECTOR: C.LABEL_ATTRIBUTES_SELECTOR, STATUS_SELECTOR: C.STATUS_SELECTOR, UPLOAD_ERROR_SELECTOR: C.UPLOAD_ERROR_SELECTOR, UPLOAD_IMAGE_URL_PATTERN: C.UPLOAD_IMAGE_URL_PATTERN, UPLOAD_BUSY_TEXT_PATTERN: C.UPLOAD_BUSY_TEXT_PATTERN },
       },
+      texts: { RT_SERVER: { ARIA_LABEL_TITLE_ALT_ARIA_DESCRIBEDBY: RT_SERVER.ARIA_LABEL_TITLE_ALT_ARIA_DESCRIBEDBY, ARIA_DESCRIBEDBY: RT_SERVER.ARIA_DESCRIBEDBY }, RT_SHARED: { SYMBOL_36A9E7: RT_SHARED.SYMBOL_36A9E7 } },
     },
   );
 export const observeClaudeUploads = (page: Page) =>
@@ -120,7 +144,7 @@ export const attachmentNamesMatch = (labels: string[], attachments: Attachment[]
     const name = normalize(attachment.path?.split(/[\\/]/).pop() || attachment.name);
     const image = attachment.mimeType.startsWith(ST.SOURCE_TEXT_IMAGE_2);
     if (image && !policy.matchImageNames) return true;
-    const omitExtension = image && policy.omitImageExtension || attachment.mimeType.startsWith("audio/") && policy.omitAudioExtension;
+    const omitExtension = (image && policy.omitImageExtension) || (attachment.mimeType.startsWith(RT_SERVER.AUDIO) && policy.omitAudioExtension);
     const candidates = omitExtension ? [name, name.replace(image ? C.IMAGE_EXTENSION_PATTERN : /\.[a-z0-9]+$/i, C.EMPTY)] : [name];
     const filenames = candidates.map((candidate) => new RegExp(C.FILENAME_PATTERN(_.escapeRegExp(candidate)), ST.SOURCE_TEXT_U_2));
     const index = names.findIndex((label) => filenames.some((filename) => filename.test(label)));
@@ -129,12 +153,23 @@ export const attachmentNamesMatch = (labels: string[], attachments: Attachment[]
     return true;
   });
 };
-export const waitForClaudeUploads = async (input: Locator, attachments: Attachment[], timeoutMs: number, signal?: AbortSignal, observation?: UploadObservation, stableMs = CONFIG.CLAUDE_UPLOAD_STABLE_MS, requireSendReady = false, policy: ChatUploadPolicy = claudePolicy, onProgress?: (state: UploadState & { namesMatch: boolean; pending: number }) => void, waitForSession?: () => Promise<number>): Promise<void> => {
+export const waitForClaudeUploads = async (
+  input: Locator,
+  attachments: Attachment[],
+  timeoutMs: number,
+  signal?: AbortSignal,
+  observation?: UploadObservation,
+  stableMs = CONFIG.CLAUDE_UPLOAD_STABLE_MS,
+  requireSendReady = false,
+  policy: ChatUploadPolicy = claudePolicy,
+  onProgress?: (state: UploadState & { namesMatch: boolean; pending: number }) => void,
+  waitForSession?: () => Promise<number>,
+): Promise<void> => {
   let deadline = Date.now() + timeoutMs;
   let readySince = 0;
   while (Date.now() < deadline) {
     signal?.throwIfAborted();
-    const pausedMs = await waitForSession?.() || 0;
+    const pausedMs = (await waitForSession?.()) || 0;
     deadline += pausedMs;
     if (pausedMs) readySince = 0;
     const state = await readClaudeUploadState(input, policy);
@@ -168,5 +203,9 @@ export const waitForClaudeUploads = async (input: Locator, attachments: Attachme
   }
   const finalState = await readClaudeUploadState(input, policy);
   const matched = attachmentNamesMatch(finalState.labels, attachments, policy);
-  throw uploadFailure(policy.notReadyError, observation?.state(), [finalState.errorMessage, `${finalState.count}/${attachments.length} tệp; sẵn sàng ${finalState.readyCount}; tên ${matched ? 'khớp' : 'chưa khớp'}; đang xử lý ${finalState.busyCount}; lỗi ${finalState.failedCount}`].filter(Boolean).join(' · '));
+  throw uploadFailure(
+    policy.notReadyError,
+    observation?.state(),
+    ([finalState.errorMessage, `${finalState.count}${RT_SHARED.SYMBOL_8A5EDA}${attachments.length}${RT_SERVER.TEP_SAN_SANG}${finalState.readyCount}${RT_SERVER.TEN}${matched ? RT_SERVER.KHOP : RT_SERVER.CHUA_KHOP}${RT_SERVER.DANG_XU_LY}${finalState.busyCount}${RT_SERVER.LOI}${finalState.failedCount}`] as string[]).filter(Boolean).join(RT_SHARED.SYMBOL_588DA4),
+  );
 };

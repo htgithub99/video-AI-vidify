@@ -25,11 +25,7 @@ export const savePreset = async (request: Request, response: Response) => {
       response.status(HttpStatus.BAD_REQUEST).json({ error: BACKEND_MESSAGES.PRESET_NAME_REQUIRED });
       return;
     }
-    const presetData = {
-      id: _.defaultTo(id, `${PRESET_CONSTANTS.ID_PREFIX}${randomUUID()}`),
-      name,
-      config,
-    };
+    const presetData = { id: _.defaultTo(id, `${PRESET_CONSTANTS.ID_PREFIX}${randomUUID()}`), name, config };
     const saved = await savePresetToDb(presetData);
     response.status(HttpStatus.CREATED).json(saved);
   } catch (error: any) {

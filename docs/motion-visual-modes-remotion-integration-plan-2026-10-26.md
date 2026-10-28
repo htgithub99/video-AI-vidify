@@ -36,8 +36,8 @@ Hai lựa chọn dùng chung nguồn, DNA, hợp đồng nội dung, kịch bả
 
 | Điểm nối hiện có | Kết quả đọc code | Việc cần đối ứng |
 |---|---|---|
-| `src/hooks/useMotionStudio.ts` | Có PersistedState, DEFAULTS, compileStateKey; nhiều chỗ đánh giá sẵn sàng trực tiếp qua `gen.puppet`, phiên bản và storyboard | Thêm snapshot chế độ, thay kiểm sẵn sàng bằng dispatch; đưa chế độ vào request/signature phụ thuộc hình |
-| `src/components/MotionVideoCreator.tsx` | Có chọn gói, ảnh tham chiếu, chuyển động, review ảnh; dựng và preview dựa Puppet/ME | Thêm lựa chọn trước gói; chỉ hiện điều khiển có nghĩa với nhánh đã chọn |
+| `src/features/motion/hooks/useMotionStudio.ts` | Có PersistedState, DEFAULTS, compileStateKey; nhiều chỗ đánh giá sẵn sàng trực tiếp qua `gen.puppet`, phiên bản và storyboard | Thêm snapshot chế độ, thay kiểm sẵn sàng bằng dispatch; đưa chế độ vào request/signature phụ thuộc hình |
+| `src/features/motion/components/MotionVideoCreator.tsx` | Có chọn gói, ảnh tham chiếu, chuyển động, review ảnh; dựng và preview dựa Puppet/ME | Thêm lựa chọn trước gói; chỉ hiện điều khiển có nghĩa với nhánh đã chọn |
 | `src/lib/motionProduction.ts` | `assertMotionProductionMode` hiện chỉ nhận drawingMode `2d`; type còn tên `3d` không chứng minh luồng production 3D chạy được | Giữ drawingMode `2d`; thêm visualMode riêng, không dùng `3d` làm mã Remotion |
 | `src/server/services/motionProductionService.ts` | Preflight kiểm kho khi có closed style; sau phân tích gọi recoverMotionIllustrationPlan; media chạy cảnh/voice cùng SEO | Dispatch khả năng minh họa và dựng cảnh theo chế độ; giữ orchestration/checkpoint chung |
 | `src/server/services/motionProductionActions.ts` | analyze mặc định style kho; scenes gọi buildScenesPuppet; compile gọi compileStorySpec; render validate MotionSpec.shots | Đổi các cửa vào qua adapter; tránh nhánh Remotion vô tình nhận mặc định style kho |
@@ -46,7 +46,7 @@ Hai lựa chọn dùng chung nguồn, DNA, hợp đồng nội dung, kịch bả
 | `src/server/services/motionAiContractService.ts` | Đã có assess/repair/checkpoint/budget và đếm không tiến triển | Đăng ký schema/artifact mới, sửa từng mục thay vì tạo thêm vòng retry toàn pipeline |
 | `src/server/services/motionDirectorService.ts` | Compiler dùng duration/voice clips; ưu tiên puppetSceneShot, có graphicParams, subtitle và SFX | Dùng chung timeline chuẩn; compiler mới xuất contract Remotion, không gửi vào compiler Puppet |
 | `src/server/services/motionAudioService.ts` | Có track, clip start/end, chất lượng, words tùy ASR và cache | Giữ TTS/mix đang có; word timing là khả năng tùy nguồn, cần adapter trước khi bật kinetic |
-| `src/components/motion-video/MotionSpecPlayer.tsx` | Preview gọi ME.createRenderer và preload Puppet hoặc phát MP4 | Thêm preview Remotion dùng đúng composition xuất video |
+| `src/features/motion/components/MotionSpecPlayer.tsx` | Preview gọi ME.createRenderer và preload Puppet hoặc phát MP4 | Thêm preview Remotion dùng đúng composition xuất video |
 | `src/server/services/motionRenderService.ts` | Render HTML/Canvas qua Playwright, chunk/cache, encode, job/cancel, publication | Giữ đường Canvas; thêm renderer adapter sau hợp đồng job chung |
 | `motion-engine/history.js`, `motion-engine/scenes.js` | Đã có geomap/map/timeline và graphic templates | Kiểm phần toán/địa danh/ngữ nghĩa có thể tái sử dụng; không gọi Remotion là bản đồ đầu tiên của tool |
 | `package.json`, `src/remotion/` | Chưa có dependency Remotion hoặc thư mục composition tại thời điểm đọc; React hiện 18.3.1 | Thử tương thích/bundle/build trước khi công bố chế độ mới |
@@ -296,7 +296,7 @@ Chỉ mở lựa chọn Remotion dùng thật khi V01–V08 và V10–V12 đạt
 - `src/server/services/remotion/`: scene planner, character design, SVG/media normalization, layout, continuity và compiler theo trách nhiệm.
 - `src/remotion/`: entry, Root, composition và component hiển thị; không chứa gọi AI/TTS hoặc đọc kho từ filesystem trong component.
 - `src/server/services/motionRemotionRenderService.ts`: bundle/still/render adapter và lifecycle.
-- `src/components/motion-video/MotionVisualModeField.tsx`, `MotionVisualPlayer.tsx`: lựa chọn và dispatch Player; giữ thành phần Canvas hiện tại sau adapter.
+- `src/features/motion/components/MotionVisualModeField.tsx`, `MotionVisualPlayer.tsx`: lựa chọn và dispatch Player; giữ thành phần Canvas hiện tại sau adapter.
 
 Tên file cuối có thể thay khi triển khai để khớp cấu trúc repo; danh sách trên chưa phải code đã tồn tại.
 

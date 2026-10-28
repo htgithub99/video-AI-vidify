@@ -1,3 +1,4 @@
+import { stringifyJson, parseJson } from "../../../lib/jsonStringify.js";
 import _ from "lodash";
 import path from "path";
 import { createHash } from "crypto";
@@ -60,8 +61,8 @@ export const puppetSheet = async (spec: MotionSpec, lines: PuppetLine[] = [], me
         lines: keys,
         text: say,
         look,
-        context: JSON.stringify({
-          events: keys.map((key) => ({ source: byKey.has(key) ? JSON.parse(puppetLineContext(byKey.get(key)!)) : undefined, visual: reads[key]?.visual, fixtureStates: reads[key]?.fixtureStates, states: reads[key]?.states, objects: reads[key]?.objects })),
+        context: stringifyJson({
+          events: keys.map((key) => ({ source: byKey.has(key) ? parseJson(puppetLineContext(byKey.get(key)!)) : undefined, visual: reads[key]?.visual, fixtureStates: reads[key]?.fixtureStates, states: reads[key]?.states, objects: reads[key]?.objects })),
           frame: { shot: f.shot, set: f.set, light: f.light, actors: f.actors, prop: f.prop, items: f.items, effectSource: f.effectSource, effectTarget: f.effectTarget, effectMode: f.effectMode },
         }),
       });
@@ -69,7 +70,7 @@ export const puppetSheet = async (spec: MotionSpec, lines: PuppetLine[] = [], me
   }
   if (!picks.length) return [];
   const key = createHash(P.SHA)
-    .update(JSON.stringify([picks, _.map(spec.shots, (s) => s.params), spec.kit]))
+    .update(stringifyJson([picks, _.map(spec.shots, (s) => s.params), spec.kit]))
     .digest(P.HEX)
     .slice(0, 16);
   const dir = genPreviewDir(P.QA_DIR, key);

@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { isPuppetString, puppetSupportTokens } from "./motionPuppetValues.js";
 import { PA } from "../constants/motionPuppetAssets.js";
 import { PUPPET as P } from "../constants/motionPuppet.js";
@@ -37,7 +38,7 @@ export const puppetObjectClass = (ob: Pick<PuppetObject, "key" | "type" | "categ
 };
 export const puppetPropAllowed = (prop: PuppetProp): boolean => prop.catalogStatus !== PA.QUARANTINE && puppetObjectClass({ key: prop.key, type: prop.objectType || P.OBJECT_TYPE_DEFAULT, category: prop.category }) === PA.PROP;
 export const puppetPropReferenceFits = (key: string, prop: PuppetProp, object?: PuppetObject): boolean => (object ? puppetPropFits(object, prop) : puppetPropAllowed(prop) && puppetAssetKey(key) === puppetAssetKey(prop.key));
-export const puppetObjectRequirements = (object: Pick<PuppetObject, "word" | "requirements">): string[] => [...new Set([...(object.requirements || []), ...PA.OBJECT_TRAITS.filter(([, pattern]) => pattern.test((object.word || P.EMPTY).normalize("NFC"))).map(([trait]) => trait)])];
+export const puppetObjectRequirements = (object: Pick<PuppetObject, "word" | "requirements">): string[] => [...new Set([...(object.requirements || []), ...PA.OBJECT_TRAITS.filter(([, pattern]) => pattern.test((object.word || P.EMPTY).normalize(RT_SHARED.NFC))).map(([trait]) => trait)] as string[])] as string[];
 export const puppetPropRestRotation = (object: PuppetObject, prop: PuppetProp): number | undefined => {
   const state = object.physicalState || object.state;
   if (!state || object.mount !== P.MOUNT_FLOOR || puppetAssetKey(prop.key) !== puppetObjectCatalogKey(object)) return undefined;

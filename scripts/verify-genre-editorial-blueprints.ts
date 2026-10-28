@@ -5,8 +5,7 @@ import { createGenreEditorialDirective, listCoveredEditorialGenres, resolveGenre
 import { resolveAutomaticMusicProfile } from "../src/services/soundDesignService.ts";
 import { resolveRolloutConfig } from "../src/services/rolloutService.ts";
 import { resolveGenreVoiceArc } from "../src/services/productionQualityService.ts";
-
-const selectableGenres = GENRE_OPTION_GROUPS.flatMap(group => [...group.options]);
+const selectableGenres = GENRE_OPTION_GROUPS.flatMap((group) => [...group.options]);
 const coveredGenres = new Set(listCoveredEditorialGenres());
 for (const genre of selectableGenres) {
   assert.ok(coveredGenres.has(genre), `Missing editorial blueprint for ${genre}`);
@@ -16,15 +15,12 @@ for (const genre of selectableGenres) {
   assert.ok(resolveGenreVoiceArc(genre).setup.emotion);
   assert.match(createGenreEditorialDirective(genre), /never copy a creator/i);
 }
-
 assert.notEqual(resolveGenreEditorialBlueprint("Review").id, resolveGenreEditorialBlueprint("True Crime").id);
 assert.notEqual(resolveGenreEditorialBlueprint("Science").id, resolveGenreEditorialBlueprint("History").id);
-
 const rollout = resolveRolloutConfig("global-editorial-test");
 assert.equal(rollout.qaMode, "advisory");
 assert.equal(rollout.maxEditorialRepairAttempts, 1);
 assert.ok(Object.values(rollout.flags).every(Boolean));
-
 const controller = fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8");
 assert.match(controller, /createGenreEditorialDirective\(config\.genre\)/);
 assert.match(controller, /continuing_after_final_correction/);

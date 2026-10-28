@@ -1,3 +1,7 @@
+if __package__:
+    from .runtime_text import RuntimeText as _CODE_TEXT
+else:
+    from runtime_text import RuntimeText as _CODE_TEXT
 from library_release import assert_legacy_library_target
 from seed_texts import SeedText as KST
 import subprocess
@@ -109,4 +113,4 @@ for style, sid in STYLES.items():
         count += 1
 print(count)
 from migrate_scene_components import migrate
-migrate(Path(OUT).resolve(), Path(OUT).resolve().parent / "scene-component-migration", True)
+migrate(Path(OUT).resolve(), Path(OUT).resolve().parent / _CODE_TEXT.SCENE_COMPONENT_MIGRATION, True)

@@ -131,13 +131,7 @@ const listenForRequests = async (): Promise<void> => {
     }
   }
 };
-app.use(
-  cors({
-    origin: SERVER_CONFIG.CORS_ORIGIN,
-    methods: [...SERVER_CONFIG.CORS_METHODS],
-    allowedHeaders: [...SERVER_CONFIG.CORS_HEADERS],
-  }),
-);
+app.use(cors({ origin: SERVER_CONFIG.CORS_ORIGIN, methods: [...SERVER_CONFIG.CORS_METHODS], allowedHeaders: [...SERVER_CONFIG.CORS_HEADERS] }));
 app.use(express.json({ limit: SERVER_CONFIG.LIMIT_500MB }));
 app.use(express.urlencoded({ limit: SERVER_CONFIG.LIMIT_500MB, extended: true }));
 app.use((req, res, next) => {
@@ -166,21 +160,7 @@ app.use((req, _res, next) => {
   const aiRoomModel = _.get(executionSource, MOTION_TEXT_MODEL) || _.get(req.body, MOTION_TEXT_PLANNINGCHATMODEL) || _.get(configSource, MOTION_TEXT_PLANNINGCHATMODEL) || _.get(visualSource, MOTION_TEXT_PLANNINGCHATMODEL);
   const aiRoomProjectId = _.toString(_.get(executionSource, MOTION_TEXT_PROJECTID) || _.get(req.body, MOTION_TEXT_PROJECTID) || _.get(req.body, MOTION_TEXT_LOCALPROJECTID) || MOTION_TEXT_PIPELINE_ROOM);
   const aiRoomChromeHeadless = Boolean(_.get(executionSource, MOTION_TEXT_CHROMEHEADLESS) ?? _.get(req.body, MOTION_TEXT_PLANNINGCHROMEHEADLESS) ?? _.get(configSource, MOTION_TEXT_PLANNINGCHROMEHEADLESS) ?? _.get(visualSource, MOTION_TEXT_PLANNINGCHROMEHEADLESS));
-  requestContext.run(
-    {
-      geminiKey,
-      cerebrasKey,
-      groqKey,
-      ai33Key,
-      licenseKey,
-      aiExecutionMode: _.includes(Object.values(AiPlanningExecutionMode), aiExecutionMode) ? aiExecutionMode : undefined,
-      aiRoomProvider: _.includes(Object.values(AiPlanningFallbackProvider), aiRoomProvider) ? aiRoomProvider : undefined,
-      aiRoomModel,
-      aiRoomProjectId,
-      aiRoomChromeHeadless,
-    },
-    next,
-  );
+  requestContext.run({ geminiKey, cerebrasKey, groqKey, ai33Key, licenseKey, aiExecutionMode: _.includes(Object.values(AiPlanningExecutionMode), aiExecutionMode) ? aiExecutionMode : undefined, aiRoomProvider: _.includes(Object.values(AiPlanningFallbackProvider), aiRoomProvider) ? aiRoomProvider : undefined, aiRoomModel, aiRoomProjectId, aiRoomChromeHeadless }, next);
 });
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, SHORTS_CONSTANTS.SHORTS_FOLDER)));
@@ -195,23 +175,7 @@ const startServer = async () => {
   httpServer = createServer(app);
   if (!_.isEqual(process.env.NODE_ENV, SERVER_CONFIG.PRODUCTION)) {
     const { createServer: createViteServer } = await import("vite");
-    viteDevServer = await createViteServer({
-      server: {
-        middlewareMode: true,
-        host: SERVER_CONFIG.HMR_HOST,
-        hmr:
-          process.env.DISABLE_HMR === MOTION_TEXT_TRUE
-            ? false
-            : {
-                server: httpServer,
-                host: SERVER_CONFIG.HMR_HOST,
-                port: SERVER_CONFIG.PORT,
-                clientPort: SERVER_CONFIG.PORT,
-                protocol: MOTION_TEXT_WS,
-              },
-      },
-      appType: SERVER_CONFIG.SPA_TYPE,
-    });
+    viteDevServer = await createViteServer({ server: { middlewareMode: true, host: SERVER_CONFIG.HMR_HOST, hmr: process.env.DISABLE_HMR === MOTION_TEXT_TRUE ? false : { server: httpServer, host: SERVER_CONFIG.HMR_HOST, port: SERVER_CONFIG.PORT, clientPort: SERVER_CONFIG.PORT, protocol: MOTION_TEXT_WS } }, appType: SERVER_CONFIG.SPA_TYPE });
     app.use(viteDevServer.middlewares);
   } else {
     const distPath = __dirname;

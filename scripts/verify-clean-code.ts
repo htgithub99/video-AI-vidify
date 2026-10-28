@@ -1,30 +1,21 @@
-import fs from "fs";
-import path from "path";
-
-const SOURCE_DIRECTORY = "src";
-const SOURCE_FILE_PATTERN = /\.(ts|tsx)$/;
-const COMMENT_PATTERN = /TODO|FIXME|\/\*\*|\{\s*\/\*|(^|[^\S\r\n])\/\//m;
-const DIRECT_CONSOLE_PATTERN = /console\.(log|warn|error|info|debug)/;
-const LOGGER_FILE = path.normalize("src/utils/logger.ts");
-
-const getSourceFiles = (directory: string): string[] => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-  const entryPath = path.join(directory, entry.name);
-  if (entry.isDirectory()) return getSourceFiles(entryPath);
-  return SOURCE_FILE_PATTERN.test(entry.name) ? [entryPath] : [];
-});
-
-const assertNoViolations = (files: string[]): void => {
-  const violations = files.flatMap((filePath) => {
-    const source = fs.readFileSync(filePath, "utf8");
-    const normalizedPath = path.normalize(filePath);
-    const reasons = [
-      ...(COMMENT_PATTERN.test(source) ? ["comment"] : []),
-      ...(normalizedPath !== LOGGER_FILE && DIRECT_CONSOLE_PATTERN.test(source) ? ["direct-console"] : []),
-    ];
-    return reasons.map((reason) => `${normalizedPath}: ${reason}`);
-  });
-  if (violations.length > 0) throw new Error(`Clean-code verification failed: ${violations.join(", ")}`);
-};
-
-assertNoViolations(getSourceFiles(SOURCE_DIRECTORY));
+import fs from "node:fs";
+import path from "node:path";
+import ts from "typescript";
+import { getCommentRanges, parseCode } from "./codeMaintenance.js";
+const files = fs
+  .readdirSync("src", { recursive: true })
+  .filter((file) => /\.tsx?$/.test(String(file)))
+  .map((file) => path.join("src", String(file)));
+const violations: string[] = [];
+for (const file of files) {
+  const source = fs.readFileSync(file, "utf8");
+  const tree = parseCode(source, file);
+  if (getCommentRanges(source, tree).length) violations.push(`${file}: comment`);
+  const visit = (node: ts.Node): void => {
+    if (path.normalize(file) !== path.normalize("src/utils/logger.ts") && ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "console" && ["log", "warn", "error", "info", "debug"].includes(node.name.text)) violations.push(`${file}: direct-console`);
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+}
+if (violations.length) throw new Error(`Clean-code verification failed: ${violations.join(", ")}`);
 process.stdout.write("Clean-code source assertions passed\n");

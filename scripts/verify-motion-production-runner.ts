@@ -229,6 +229,80 @@ try {
   assert.equal(repairWrites, 1);
   assert.equal(repairScenes, 2);
   assert.equal(repairVoices, 3);
+  let draftRepairWrites = 0;
+  let draftRepairScenes = 0;
+  const draftRepairService = createMotionProductionService(
+    {
+      ...deps,
+      scriptMotionStoryInput: (body: any) => {
+        if (!body.durationRepair) return start(K.SCRIPT, structuredClone(script));
+        const interrupted = ++draftRepairWrites === 1;
+        return start(K.SCRIPT, interrupted ? { ...structuredClone(script), chapterDrafts: { chapter_1: { inputKey: "duration", rows: script.beats, pending: [{ id: "beat_1", fields: ["narration"] }] } } } : structuredClone(revised), 5, interrupted ? "duration script interrupted" : undefined);
+      },
+      scenesMotionStoryInput: (body: any) => {
+        draftRepairScenes++;
+        return start(K.SCENES, structuredClone(body.script));
+      },
+      voiceMotionStoryInput: (body: any) => start(K.VOICE, { ...voice, totalSeconds: body.script.beats[0].narration === revised.beats[0].narration ? 2 : 0.8, signature: motionVoiceSignature(body.script, analysis) }),
+    },
+    path.join(root, "duration-draft"),
+    1,
+  );
+  const settleDraftRepair = async () => {
+    for (let i = 0; i < 500; i++) {
+      const state = draftRepairService.getMotionProduction("duration-draft")!;
+      if ([S.ERROR, S.COMPLETED].includes(state.status)) return state;
+      await delay(2);
+    }
+    throw new Error("Duration draft did not settle");
+  };
+  draftRepairService.startMotionProduction({ ...input, productionId: "duration-draft", seo: false });
+  const interruptedDraft = await settleDraftRepair();
+  assert.match(interruptedDraft.error!, /duration script interrupted/);
+  assert.ok((interruptedDraft.result as any).script.chapterDrafts.chapter_1);
+  draftRepairService.resumeMotionProduction("duration-draft");
+  assert.equal((await settleDraftRepair()).status, S.COMPLETED);
+  assert.equal(draftRepairWrites, 2);
+  assert.equal(draftRepairScenes, 2);
+  const minuteAnalysis = { ...analysis, chapters: [{ ...analysis.chapters[0], targetSeconds: 60 }] };
+  let minuteWrites = 0;
+  let minuteVoices = 0;
+  const minuteScenes: string[] = [];
+  const minuteService = createMotionProductionService(
+    {
+      ...deps,
+      analyzeMotionStoryInput: () => start(K.ANALYZE, minuteAnalysis),
+      scriptMotionStoryInput: (body: any) => {
+        if (body.durationRepair) minuteWrites++;
+        return start(K.SCRIPT, { ...script, beats: [{ ...script.beats[0], narration: `Duration revision ${minuteWrites}. ` + "A village story. ".repeat(30).trim() }] });
+      },
+      voiceMotionStoryInput: (body: any) => {
+        minuteVoices++;
+        return start(K.VOICE, { ...voice, totalSeconds: [120, 76][minuteWrites], signature: motionVoiceSignature(body.script, minuteAnalysis) });
+      },
+      scenesMotionStoryInput: (body: any) => {
+        minuteScenes.push(body.script.beats[0].narration);
+        return start(K.SCENES, structuredClone(body.script));
+      },
+    },
+    path.join(root, "minute-duration"),
+    1,
+  );
+  minuteService.startMotionProduction({ ...input, productionId: "minute-duration", seo: false });
+  let minuteState;
+  for (let i = 0; i < 500; i++) {
+    minuteState = minuteService.getMotionProduction("minute-duration")!;
+    if ([S.ERROR, S.COMPLETED].includes(minuteState.status)) break;
+    await delay(2);
+  }
+  assert.equal(minuteState?.status, S.COMPLETED, minuteState?.error);
+  assert.equal(minuteWrites, 1);
+  assert.equal(minuteVoices, 2);
+  assert.deepEqual(
+    minuteScenes.map((text) => text.split(". ")[0]),
+    ["Duration revision 0", "Duration revision 1"],
+  );
+  assert.ok(minuteState?.log.some((line) => line.includes("76") && line.includes("60")));
   let advisoryWrites = 0;
   let advisoryScenes = 0;
   let advisoryVoices = 0;

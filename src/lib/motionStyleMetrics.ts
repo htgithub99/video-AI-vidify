@@ -1,3 +1,4 @@
+import { stringifyJson } from "./jsonStringify.js";
 import _ from "lodash";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_STYLE_METRIC_LIMITS as LIMITS, MOTION_STYLE_METRIC_VALUES as V, MOTION_STYLE_FIGURE as F } from "../constants/motionStyleMetrics.js";
@@ -25,20 +26,14 @@ const shotMixOf = (value: any): MotionStyleShotMix | undefined => {
 };
 export const normalizeMotionStyleMetrics = (value: any): MotionStyleMetrics | undefined => {
   if (!value || typeof value !== MR.MOTION_TEXT_OBJECT || Array.isArray(value)) return undefined;
-  const numbers = _.omitBy(_.mapValues(LIMITS, (_range, key) => numberIn(value[key], key)), _.isUndefined);
-  const metrics = _.omitBy(
-    {
-      ...numbers,
-      bodyShape: _.includes(V.BODY_SHAPES, value.bodyShape) ? value.bodyShape : undefined,
-      groundView: _.includes(V.GROUND_VIEWS, value.groundView) ? value.groundView : undefined,
-      shotMix: shotMixOf(value.shotMix),
-      calibrated: value.calibrated === true ? true : undefined,
-    },
+  const numbers = _.omitBy(
+    _.mapValues(LIMITS, (_range, key) => numberIn(value[key], key)),
     _.isUndefined,
-  ) as MotionStyleMetrics;
+  );
+  const metrics = _.omitBy({ ...numbers, bodyShape: _.includes(V.BODY_SHAPES, value.bodyShape) ? value.bodyShape : undefined, groundView: _.includes(V.GROUND_VIEWS, value.groundView) ? value.groundView : undefined, shotMix: shotMixOf(value.shotMix), calibrated: value.calibrated === true ? true : undefined }, _.isUndefined) as MotionStyleMetrics;
   return _.isEmpty(_.omit(metrics, V.CALIBRATED)) ? undefined : metrics;
 };
-export const motionMetricsText = (metrics: MotionStyleMetrics | undefined): string => (metrics ? JSON.stringify(_.omit(metrics, V.CALIBRATED)) : MR.MOTION_TEXT_EMPTY);
+export const motionMetricsText = (metrics: MotionStyleMetrics | undefined): string => (metrics ? stringifyJson(_.omit(metrics, V.CALIBRATED)) : MR.MOTION_TEXT_EMPTY);
 export const motionGroundTilted = (style: MotionReferenceStyle | undefined, drawingMode?: string): boolean => drawingMode === MR.MOTION_TEXT_2D && style?.metrics?.groundView === V.TILTED;
 const rotation = (rot?: number[]): Mat3 => {
   const [x, y, z] = _.map(rot || [0, 0, 0], (v) => (v || 0) * DEG);
@@ -139,4 +134,4 @@ const scaleNode = (node: any, k: number): any => {
   }
   if (Array.isArray(out.children)) out.children = _.map(out.children, (child) => scaleNode(child, k));
   return out;
-};
+};

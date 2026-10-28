@@ -1,92 +1,93 @@
-# Build and Package Script for Video Workspace Desktop App
-$ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "scripts/powershellTexts.ps1")
 
-Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host " 1. Building Web Assets and Backend Bytecode..." -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
+$ErrorActionPreference = $WORKSPACE_SCRIPT_TEXT.STOP
+
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.VALUE_1_BUILDING_WEB_ASSETS_AND_BACKEND_BYTECODE -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
 
 npm run build
 
-Write-Host "`n==================================================" -ForegroundColor Cyan
-Write-Host " 2. Preparing Standalone Release Directory..." -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL_12 -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.VALUE_2_PREPARING_STANDALONE_RELEASE_DIRECTORY -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
 
-$ReleaseDir = "release\Video-Workspace-win32-x64"
+$ReleaseDir = $WORKSPACE_SCRIPT_TEXT.RELEASE_VIDEO_WORKSPACE_WIN32_X64
 $AppResourceDir = "$ReleaseDir\resources\app"
 
 if (Test-Path $ReleaseDir) {
-    Write-Host "Cleaning existing release directory..."
+    Write-Host $WORKSPACE_SCRIPT_TEXT.CLEANING_EXISTING_RELEASE_DIRECTORY
     Remove-Item -Path $ReleaseDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 New-Item -ItemType Directory -Path $AppResourceDir -Force | Out-Null
 
-Write-Host "Copying Electron binaries..."
-Copy-Item -Path "node_modules\electron\dist\*" -Destination $ReleaseDir -Recurse -Force
+Write-Host $WORKSPACE_SCRIPT_TEXT.COPYING_ELECTRON_BINARIES
+Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.NODE_MODULES_ELECTRON_DIST -Destination $ReleaseDir -Recurse -Force
 
 if (Test-Path "$ReleaseDir\electron.exe") {
-    Rename-Item -Path "$ReleaseDir\electron.exe" -NewName "Video Workspace.exe" -Force
+    Rename-Item -Path "$ReleaseDir\electron.exe" -NewName $WORKSPACE_SCRIPT_TEXT.VIDEO_WORKSPACE_EXE -Force
 }
 
-Write-Host "`n==================================================" -ForegroundColor Cyan
-Write-Host " 3. Copying Application Code and Runtime Modules..." -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL_12 -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.VALUE_3_COPYING_APPLICATION_CODE_AND_RUNTIME_MODULES -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
 
-Copy-Item -Path "dist" -Destination $AppResourceDir -Recurse -Force
-Copy-Item -Path "electron" -Destination $AppResourceDir -Recurse -Force
-Copy-Item -Path "package.json" -Destination $AppResourceDir -Force
+Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.DIST -Destination $AppResourceDir -Recurse -Force
+Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.ELECTRON -Destination $AppResourceDir -Recurse -Force
+Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.PACKAGE_JSON -Destination $AppResourceDir -Force
 
-Write-Host "Copying required node_modules..."
+Write-Host $WORKSPACE_SCRIPT_TEXT.COPYING_REQUIRED_NODE_MODULES
 New-Item -ItemType Directory -Path "$AppResourceDir\node_modules" -Force | Out-Null
 
-robocopy "node_modules" "$AppResourceDir\node_modules" /E /XD ".git" ".cache" ".tmp" /XF "*.ts" "*.map" /NFL /NDL /NJH /NJS /nc /ns /np
+robocopy $WORKSPACE_SCRIPT_TEXT.NODE_MODULES "$AppResourceDir\node_modules" /E /XD $WORKSPACE_SCRIPT_TEXT.GIT $WORKSPACE_SCRIPT_TEXT.CACHE $WORKSPACE_SCRIPT_TEXT.TMP /XF $WORKSPACE_SCRIPT_TEXT.TS $WORKSPACE_SCRIPT_TEXT.MAP /NFL /NDL /NJH /NJS /nc /ns /np
 if ($LASTEXITCODE -ge 8) {
     Write-Warning "Robocopy warning code: $LASTEXITCODE"
 }
 
-Write-Host "`n==================================================" -ForegroundColor Cyan
-Write-Host " 4. Injecting Extra Resources (FFmpeg, Database, Scripts, Assets)..." -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL_12 -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.VALUE_4_INJECTING_EXTRA_RESOURCES_FFMPEG_DATABASE_SCRIPTS_ASSETS -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
 
-if (Test-Path "ffmpeg.exe") {
-    Copy-Item "ffmpeg.exe" -Destination "$ReleaseDir\resources\" -Force
-} elseif (Test-Path "C:\ffmpeg\bin\ffmpeg.exe") {
-    Copy-Item "C:\ffmpeg\bin\ffmpeg.exe" -Destination "$ReleaseDir\resources\" -Force
+if (Test-Path $WORKSPACE_SCRIPT_TEXT.FFMPEG_EXE_31) {
+    Copy-Item $WORKSPACE_SCRIPT_TEXT.FFMPEG_EXE_31 -Destination "$ReleaseDir\resources\" -Force
+} elseif (Test-Path $WORKSPACE_SCRIPT_TEXT.C_FFMPEG_BIN_FFMPEG_EXE) {
+    Copy-Item $WORKSPACE_SCRIPT_TEXT.C_FFMPEG_BIN_FFMPEG_EXE -Destination "$ReleaseDir\resources\" -Force
 }
 
-if (Test-Path "database.db") {
-    Copy-Item "database.db" -Destination "$ReleaseDir\resources\" -Force
+if (Test-Path $WORKSPACE_SCRIPT_TEXT.DATABASE_DB) {
+    Copy-Item $WORKSPACE_SCRIPT_TEXT.DATABASE_DB -Destination "$ReleaseDir\resources\" -Force
 }
 
-if (Test-Path "python_scripts") {
-    Copy-Item -Path "python_scripts" -Destination "$ReleaseDir\resources\" -Recurse -Force
+if (Test-Path $WORKSPACE_SCRIPT_TEXT.PYTHON_SCRIPTS) {
+    Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.PYTHON_SCRIPTS -Destination "$ReleaseDir\resources\" -Recurse -Force
 }
 
-if (Test-Path "motion-engine") {
-    Copy-Item -Path "motion-engine" -Destination "$ReleaseDir\resources\" -Recurse -Force
+if (Test-Path $WORKSPACE_SCRIPT_TEXT.MOTION_ENGINE) {
+    Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.MOTION_ENGINE -Destination "$ReleaseDir\resources\" -Recurse -Force
 }
 
-if (Test-Path "dist/remotion") {
-    Copy-Item -Path "dist/remotion" -Destination "$ReleaseDir/resources/" -Recurse -Force
+if (Test-Path $WORKSPACE_SCRIPT_TEXT.DIST_REMOTION) {
+    Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.DIST_REMOTION -Destination "$ReleaseDir/resources/" -Recurse -Force
 }
 
-if (Test-Path "assets") {
-    Copy-Item -Path "assets" -Destination $AppResourceDir -Recurse -Force
-    Copy-Item -Path "assets" -Destination "$ReleaseDir\resources\" -Recurse -Force
+if (Test-Path $WORKSPACE_SCRIPT_TEXT.ASSETS) {
+    Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.ASSETS -Destination $AppResourceDir -Recurse -Force
+    Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.ASSETS -Destination "$ReleaseDir\resources\" -Recurse -Force
 }
 
-# Remove default_app.asar if present to avoid conflict and save space
+
 if (Test-Path "$ReleaseDir\resources\default_app.asar") {
     try {
         Remove-Item "$ReleaseDir\resources\default_app.asar" -Force -ErrorAction SilentlyContinue
     } catch {}
 }
 
-Write-Host "`n==================================================" -ForegroundColor Cyan
-Write-Host " 5. Creating Portable ZIP Archive..." -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL_12 -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.VALUE_5_CREATING_PORTABLE_ZIP_ARCHIVE -ForegroundColor Cyan
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
 
-$ZipFile = "release\Video-Workspace-v1.0.0-win64.zip"
+$ZipFile = $WORKSPACE_SCRIPT_TEXT.RELEASE_VIDEO_WORKSPACE_V1_0_0_WIN64_ZIP
 if (Test-Path $ZipFile) {
     Remove-Item $ZipFile -Force -ErrorAction SilentlyContinue
 }
@@ -95,13 +96,13 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::CreateFromDirectory((Resolve-Path $ReleaseDir).Path, (Join-Path (Get-Location).Path $ZipFile))
 } catch {
-    Write-Warning "ZIP fallback compression..."
+    Write-Warning $WORKSPACE_SCRIPT_TEXT.ZIP_FALLBACK_COMPRESSION
     Compress-Archive -Path "$ReleaseDir\*" -DestinationPath $ZipFile -Force -ErrorAction SilentlyContinue
 }
 
-Write-Host "`n==================================================" -ForegroundColor Green
-Write-Host " BUILD HOAN TAT THANH CONG!" -ForegroundColor Green
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL_12 -ForegroundColor Green
+Write-Host $WORKSPACE_SCRIPT_TEXT.BUILD_HOAN_TAT_THANH_CONG -ForegroundColor Green
 Write-Host " Executable: $ReleaseDir\Video Workspace.exe" -ForegroundColor Green
 Write-Host " Portable ZIP: $ZipFile" -ForegroundColor Green
-Write-Host "==================================================" -ForegroundColor Green
+Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Green
 

@@ -49,11 +49,7 @@ gen.locations.nha_tho = JSON.parse(JSON.stringify(room));
 gen.cast.lan = { ...fixture.gen.cast.person0, poses: { sit: {}, cry: {} }, expressions: { sad: {}, happy: {} } };
 const beat: any = { id: VT.B1, chapterId: VT.C1, visual: VT.SCENE, place: VT.NHA, cast: [VT.LAN], narration: VT.LAN_NGOI_KHOC, action: VT.LAN_SITS_AND_CRIES, utterances: [{ id: VT.U, speaker: VT.LAN, role: VT.DIALOGUE, text: VT.LAN_NGOI_KHOC, emotion: VT.SAD, speed: 1, pauseBefore: 0, pauseAfter: 0.2, emphasis: [] }] };
 const logs: string[] = [];
-await stageBeats([beat], { title: VT.FIT, language: VT.VI, beats: [beat], gen } as any, analysis, gen, {
-  exec: {},
-  log: (line: string) => logs.push(line),
-  ai: async () => ({ beats: [{ id: VT.B1, location: VT.NHA_THO, actors: [{ cast: VT.LAN, action: VT.DANCE, at: [0, 0], expression: VT.ANGRY }], cameras: [{ shot: VT.MEDIUM, at: 0 }], soundEvents: [] }] }),
-} as any);
+await stageBeats([beat], { title: VT.FIT, language: VT.VI, beats: [beat], gen } as any, analysis, gen, { exec: {}, log: (line: string) => logs.push(line), ai: async () => ({ beats: [{ id: VT.B1, location: VT.NHA_THO, actors: [{ cast: VT.LAN, action: VT.DANCE, at: [0, 0], expression: VT.ANGRY }], cameras: [{ shot: VT.MEDIUM, at: 0 }], soundEvents: [] }] }) } as any);
 const staged: any = gen.staging.b1;
 assert.equal(staged.location, VT.NHA, VT.THE_AI_CANNOT_MOVE_THE_BEAT_TO_ANOTHER_LOCATION);
 assert.ok([VT.SIT, VT.CRY].includes(staged.actors[0].action), VF.POSE_FALLBACK_MESSAGE(staged.actors[0].action));

@@ -1,33 +1,32 @@
+if __package__:
+    from .runtime_text import RuntimeText as _CODE_TEXT
+else:
+    from runtime_text import RuntimeText as _CODE_TEXT
 import html
 import json
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 import chibi_design as D
-
 ROOT = Path(D.ROOT)
-FONT = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 20)
-SMALL = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 16)
-BACKGROUND = "#1c2029"
-manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
-records = [row for row in manifest["records"] if row["type"] == "character_kit"]
-boards = ROOT / "boards"
+FONT = ImageFont.truetype(_CODE_TEXT.C_WINDOWS_FONTS_ARIAL_TTF, 20)
+SMALL = ImageFont.truetype(_CODE_TEXT.C_WINDOWS_FONTS_ARIAL_TTF, 16)
+BACKGROUND = _CODE_TEXT.VALUE_1C2029
+manifest = json.loads((ROOT / _CODE_TEXT.MANIFEST_JSON).read_text(encoding=_CODE_TEXT.UTF_8))
+records = [row for row in manifest[_CODE_TEXT.RECORDS] if row[_CODE_TEXT.TYPE] == _CODE_TEXT.CHARACTER_KIT]
+boards = ROOT / _CODE_TEXT.BOARDS
 boards.mkdir(exist_ok=True)
 sections = []
-
-
 def panel(file, label, width=640, crop=(0, 285, 1280, 680)):
-    image = Image.open(file).convert("RGB").crop(crop)
+    image = Image.open(file).convert(_CODE_TEXT.RGB).crop(crop)
     image = image.resize((width, round(image.height * width / image.width)))
-    result = Image.new("RGB", (width, image.height + 34), BACKGROUND)
+    result = Image.new(_CODE_TEXT.RGB, (width, image.height + 34), BACKGROUND)
     result.paste(image, (0, 34))
-    ImageDraw.Draw(result).text((10, 6), label, font=SMALL, fill="white")
+    ImageDraw.Draw(result).text((10, 6), label, font=SMALL, fill=_CODE_TEXT.WHITE)
     return result
-
-
 def board(name, title, rows):
-    image = Image.new("RGB", (1280, 44 + sum(row[0].height for row in rows)), BACKGROUND)
+    image = Image.new(_CODE_TEXT.RGB, (1280, 44 + sum(row[0].height for row in rows)), BACKGROUND)
     draw = ImageDraw.Draw(image)
-    draw.text((12, 10), title, font=FONT, fill="white")
+    draw.text((12, 10), title, font=FONT, fill=_CODE_TEXT.WHITE)
     y = 44
     for row in rows:
         x = 0
@@ -37,43 +36,38 @@ def board(name, title, rows):
         y += row[0].height
     image.save(boards / name, quality=89, optimize=True)
     sections.append((name, title))
-
-
 for start in range(0, len(records), 10):
     rows = []
-    for row in records[start:start + 10]:
-        asset = json.loads(Path(row["staged"]).read_text(encoding="utf-8"))
-        name = asset["archetype"]
-        rows.append([panel(ROOT / "stills" / (row["id"] + "-before.jpg"), name + " · TRƯỚC"), panel(ROOT / "stills" / (row["id"] + "-after.jpg"), name + " · SAU")])
-    board("characters-%s.jpg" % (start // 10 + 1), "Đứng / ngồi / quỳ / nằm · So sánh nhân vật", rows)
-
-for key in ("festival_woman", "hmong_woman", "highland_man", "old_woman", "boy", "ghost_woman"):
-    rows = [[panel(ROOT / "stills" / (key + "-actions-%s.jpg" % group), ["Đứng · ngồi · quỳ · nằm · giơ tay · chỉ tay", "Đưa · cầm · khấn · sợ · che mặt · cúi chào", "Ngồi xổm · giơ hai tay · đọc · vẫy tay · nghĩ · uống"][group], 1280)] for group in range(3)]
-    rows.append([panel(ROOT / "stills" / (key + "-views.jpg"), "Chính diện · quay trái · quay phải · quay lưng", 1280)])
-    board(key + ".jpg", key, rows)
-
-panel(ROOT / "stills/festival_woman-actions-0.jpg", "Chibi mới · Đứng / ngồi / quỳ / nằm / giơ tay / chỉ tay", 1280).save(ROOT / "preview.jpg", quality=90, optimize=True)
-
-scene_files = sorted((ROOT / "stills").glob("scene-*.jpg"))
+    for row in records[start : start + 10]:
+        asset = json.loads(Path(row[_CODE_TEXT.STAGED]).read_text(encoding=_CODE_TEXT.UTF_8))
+        name = asset[_CODE_TEXT.ARCHETYPE]
+        rows.append([panel(ROOT / _CODE_TEXT.STILLS / (row[_CODE_TEXT.ID] + _CODE_TEXT.BEFORE_JPG), name + _CODE_TEXT.TR_C), panel(ROOT / _CODE_TEXT.STILLS / (row[_CODE_TEXT.ID] + _CODE_TEXT.AFTER_JPG), name + _CODE_TEXT.SAU)])
+    board(_CODE_TEXT.CHARACTERS_S_JPG % (start // 10 + 1), _CODE_TEXT.NG_NG_I_QU_N_M_SO_S_NH_NH_N_V_T, rows)
+for key in (_CODE_TEXT.FESTIVAL_WOMAN, _CODE_TEXT.HMONG_WOMAN, _CODE_TEXT.HIGHLAND_MAN, _CODE_TEXT.OLD_WOMAN, _CODE_TEXT.BOY, _CODE_TEXT.GHOST_WOMAN):
+    rows = [[panel(ROOT / _CODE_TEXT.STILLS / (key + _CODE_TEXT.ACTIONS_S_JPG % group), [_CODE_TEXT.NG_NG_I_QU_N_M_GI_TAY_CH_TAY, _CODE_TEXT.A_C_M_KH_N_S_CHE_M_T_C_I_CH_O, _CODE_TEXT.NG_I_X_M_GI_HAI_TAY_C_V_Y_TAY_NGH_U_NG][group], 1280)] for group in range(3)]
+    rows.append([panel(ROOT / _CODE_TEXT.STILLS / (key + _CODE_TEXT.VIEWS_JPG), _CODE_TEXT.CH_NH_DI_N_QUAY_TR_I_QUAY_PH_I_QUAY_L_NG, 1280)])
+    board(key + _CODE_TEXT.JPG, key, rows)
+panel(ROOT / _CODE_TEXT.STILLS_FESTIVAL_WOMAN_ACTIONS_0_JPG, _CODE_TEXT.CHIBI_M_I_NG_NG_I_QU_N_M_GI_TAY_CH_TAY, 1280).save(ROOT / _CODE_TEXT.PREVIEW_JPG, quality=90, optimize=True)
+scene_files = sorted((ROOT / _CODE_TEXT.STILLS).glob(_CODE_TEXT.SCENE_JPG))
 rows = []
 for start in range(0, len(scene_files), 2):
     cells = []
-    for file in scene_files[start:start + 2]:
-        image = Image.open(file).convert("RGB").resize((640, 360))
-        cell = Image.new("RGB", (640, 394), BACKGROUND)
+    for file in scene_files[start : start + 2]:
+        image = Image.open(file).convert(_CODE_TEXT.RGB).resize((640, 360))
+        cell = Image.new(_CODE_TEXT.RGB, (640, 394), BACKGROUND)
         cell.paste(image, (0, 34))
-        ImageDraw.Draw(cell).text((10, 6), file.stem, font=SMALL, fill="white")
+        ImageDraw.Draw(cell).text((10, 6), file.stem, font=SMALL, fill=_CODE_TEXT.WHITE)
         cells.append(cell)
     rows.append(cells)
-board("scenes.jpg", "Kiểm tư thế trong bối cảnh bằng engine thật", rows)
+board(_CODE_TEXT.SCENES_JPG, _CODE_TEXT.KI_M_T_TH_TRONG_B_I_C_NH_B_NG_ENGINE_TH_T, rows)
 cells = []
-for key in ("fisherman", "festival_woman"):
-    row = next(row for row in records if json.loads(Path(row["staged"]).read_text(encoding="utf-8"))["archetype"] == key)
-    for suffix, label in (("before", "TRƯỚC"), ("after", "SAU")):
-        cells.append(panel(ROOT / "stills" / (row["id"] + "-" + suffix + ".jpg"), key + " · " + label, 320, (60, 290, 290, 660)))
-board("lower-body-comparison.jpg", "Thân dưới khép gọn · Bỏ khe chân và hai bàn chân rời", [cells])
-page = '<!doctype html><html lang="vi"><meta charset="utf-8"><title>Chibi Khăn Piêu</title><style>body{margin:24px;background:#161a22;color:#eee;font:16px system-ui}section{max-width:1280px;margin:30px auto}img{width:100%;height:auto}a{color:#cde3ff}</style><h1>Chibi theo mẫu Khăn Piêu</h1><p>59 nhân vật, ba góc quay và quay lưng, các tư thế minh họa tĩnh. Ảnh do engine Video Motion dựng.</p>'
+for key in (_CODE_TEXT.FISHERMAN, _CODE_TEXT.FESTIVAL_WOMAN):
+    row = next(row for row in records if json.loads(Path(row[_CODE_TEXT.STAGED]).read_text(encoding=_CODE_TEXT.UTF_8))[_CODE_TEXT.ARCHETYPE] == key)
+    for suffix, label in ((_CODE_TEXT.BEFORE, _CODE_TEXT.TR_C_E63210), (_CODE_TEXT.AFTER_F39592, _CODE_TEXT.SAU_233B92)):
+        cells.append(panel(ROOT / _CODE_TEXT.STILLS / (row[_CODE_TEXT.ID] + _CODE_TEXT.SYMBOL_3973E0 + suffix + _CODE_TEXT.JPG), key + _CODE_TEXT.SYMBOL_588DA4 + label, 320, (60, 290, 290, 660)))
+board(_CODE_TEXT.LOWER_BODY_COMPARISON_JPG, _CODE_TEXT.TH_N_D_I_KH_P_G_N_B_KHE_CH_N_V_HAI_B_N_CH_N_R_I, [cells])
+page = _CODE_TEXT.DOCTYPE_HTML_HTML_LANG_VI_META_CHARSET_UTF_8_TITLE_CHIBI_KH_
 for name, title in sections:
-    page += '<section><h2>%s</h2><a href="boards/%s"><img loading="lazy" src="boards/%s"></a></section>' % (html.escape(title), name, name)
-(ROOT / "index.html").write_text(page + "</html>", encoding="utf-8")
+    page += _CODE_TEXT.SECTION_H2_S_H2_A_HREF_BOARDS_S_IMG_LOADING_LAZY_SRC_BOARDS_ % (html.escape(title), name, name)
+(ROOT / _CODE_TEXT.INDEX_HTML).write_text(page + _CODE_TEXT.HTML, encoding=_CODE_TEXT.UTF_8)
 print(json.dumps(dict(boards=len(sections), characters=len(records))))

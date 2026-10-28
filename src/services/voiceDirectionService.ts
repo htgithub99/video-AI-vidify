@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { SOURCE_TEXT_AUDIOBASE64, SOURCE_TEXT_CLIMAX, SOURCE_TEXT_DESCENT, SOURCE_TEXT_ERROR, SOURCE_TEXT_ISOLATION, SOURCE_TEXT_PROVIDER, SOURCE_TEXT_RECKONING, SOURCE_TEXT_RESOLUTION, SOURCE_TEXT_SETUP, SOURCE_TEXT_SPEED } from "../constants/sourceText";
 import _ from "lodash";
 import { API_ROUTES, AUTO_GENERATOR_CONSTANTS, SecurityConstants, VOICE_DIRECTION_CONFIG } from "../constants";
@@ -15,14 +16,14 @@ const splitNarrationForVoiceArc = (text: string): string[] => {
   if (_.gte(_.size(paragraphs), VOICE_DIRECTION_CONFIG.SEGMENT_COUNT)) {
     const chunks = _.chunk(paragraphs, _.ceil(_.divide(_.size(paragraphs), VOICE_DIRECTION_CONFIG.SEGMENT_COUNT)) || 1);
     return _.take(
-      _.map(chunks, (chunk) => _.join(chunk, "\n\n")),
+      _.map(chunks, (chunk) => _.join(chunk, RT_SHARED.SYMBOL_75A11D)),
       VOICE_DIRECTION_CONFIG.SEGMENT_COUNT,
     );
   }
   const sentences = _.filter(_.map(_.split(text, /(?<=[.!?])\s+/), _.trim), Boolean);
   const chunks = _.chunk(sentences, _.ceil(_.divide(_.size(sentences), VOICE_DIRECTION_CONFIG.SEGMENT_COUNT)) || 1);
   return _.take(
-    _.map(chunks, (chunk) => _.join(chunk, " ")),
+    _.map(chunks, (chunk) => _.join(chunk, RT_SHARED.SYMBOL_36A9E7)),
     VOICE_DIRECTION_CONFIG.SEGMENT_COUNT,
   );
 };

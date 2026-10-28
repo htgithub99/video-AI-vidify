@@ -31,12 +31,7 @@ const checkSourceReachability: SourceReachabilityChecker = async (url) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), SOURCE_TIMEOUT_MS);
     try {
-      return await fetch(url, {
-        method,
-        redirect: SOURCE_TEXT_MANUAL,
-        signal: controller.signal,
-        headers: method === SOURCE_TEXT_GET ? { Range: SOURCE_TEXT_BYTES_0_0 } : undefined,
-      });
+      return await fetch(url, { method, redirect: SOURCE_TEXT_MANUAL, signal: controller.signal, headers: method === SOURCE_TEXT_GET ? { Range: SOURCE_TEXT_BYTES_0_0 } : undefined });
     } finally {
       clearTimeout(timeout);
     }
@@ -49,12 +44,7 @@ const checkSourceReachability: SourceReachabilityChecker = async (url) => {
     return false;
   }
 };
-const downgradeUnverifiedClaim = (claim: FactClaim): FactClaim => ({
-  ...claim,
-  status: FactClaimStatus.Unsupported,
-  confidence: _.min([25, _.clamp(_.toNumber(claim.confidence), 0, 100)]) || 0,
-  safeRewrite: _.trim(claim.safeRewrite) || _.trim(claim.text),
-});
+const downgradeUnverifiedClaim = (claim: FactClaim): FactClaim => ({ ...claim, status: FactClaimStatus.Unsupported, confidence: _.min([25, _.clamp(_.toNumber(claim.confidence), 0, 100)]) || 0, safeRewrite: _.trim(claim.safeRewrite) || _.trim(claim.text) });
 export const validateFactPack = async (value: unknown, factCheckEnabled: boolean, checkReachability: SourceReachabilityChecker = checkSourceReachability): Promise<FactPack> => {
   const rawClaims = _.isArray(_.get(value, SOURCE_TEXT_CLAIMS)) ? (_.get(value, SOURCE_TEXT_CLAIMS) as FactClaim[]) : [];
   const claims = await Promise.all(

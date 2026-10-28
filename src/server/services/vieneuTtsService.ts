@@ -1,3 +1,4 @@
+import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import * as MR from "../../constants/motionRuntime.js";
 import fs from "fs";
 import path from "path";
@@ -60,13 +61,13 @@ export const ensureVieneuRuntime = async (signal?: AbortSignal, log?: (value: st
         ready = path.join(runtime, MR.MOTION_TEXT_VIENEU_VERSION_JSON);
       fs.mkdirSync(root, { recursive: true });
       if (fs.existsSync(python) && fs.existsSync(ready)) {
-        const version = JSON.parse(fs.readFileSync(ready, MR.MOTION_TEXT_UTF8));
+        const version = parseJson(fs.readFileSync(ready, MR.MOTION_TEXT_UTF8));
         if (version.package === C.PACKAGE && version.onnx === C.ONNX) return python;
       }
       log?.(C.SETUP);
       if (!fs.existsSync(python)) await execute(getPythonCommand(), [MR.MOTION_TEXT_M, MR.MOTION_TEXT_VENV, runtime], signal);
       await execute(python, [MR.MOTION_TEXT_M, MR.MOTION_TEXT_PIP, MR.MOTION_TEXT_INSTALL, MR.MOTION_TEXT_DISABLE_PIP_VERSION_CHECK, C.PACKAGE, C.ONNX], signal);
-      fs.writeFileSync(ready, JSON.stringify({ package: C.PACKAGE, onnx: C.ONNX }));
+      fs.writeFileSync(ready, stringifyJson({ package: C.PACKAGE, onnx: C.ONNX }));
       return python;
     })().catch((error) => {
       setup = undefined;
@@ -80,10 +81,10 @@ export const ensureVieneuAsr = (signal?: AbortSignal, log?: (value: string) => v
     asrSetup = (async () => {
       const python = await ensureVieneuRuntime(signal, log),
         marker = path.join(vieneuRoot(), C.RUNTIME, C.ASR.MARKER);
-      if (fs.existsSync(marker) && JSON.parse(fs.readFileSync(marker, MR.MOTION_TEXT_UTF8)).package === C.ASR.PACKAGE) return;
+      if (fs.existsSync(marker) && parseJson(fs.readFileSync(marker, MR.MOTION_TEXT_UTF8)).package === C.ASR.PACKAGE) return;
       log?.(C.ASR.SETUP);
       await execute(python, [MR.MOTION_TEXT_M, MR.MOTION_TEXT_PIP, MR.MOTION_TEXT_INSTALL, MR.MOTION_TEXT_DISABLE_PIP_VERSION_CHECK, C.ASR.PACKAGE], signal);
-      fs.writeFileSync(marker, JSON.stringify({ package: C.ASR.PACKAGE }));
+      fs.writeFileSync(marker, stringifyJson({ package: C.ASR.PACKAGE }));
     })().catch((error) => {
       asrSetup = undefined;
       throw error;
@@ -117,7 +118,7 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
       });
       createInterface({ input: child.stdout }).on(MR.MOTION_TEXT_LINE, (line) => {
         try {
-          const response = JSON.parse(line),
+          const response = parseJson(line),
             pending = slot.requests.get(response.id);
           if (pending) {
             slot.requests.delete(response.id);
@@ -156,7 +157,7 @@ const request = async <T>(command: Record<string, unknown>, signal?: AbortSignal
           reject(error);
         },
       });
-      slot.child!.stdin.write(JSON.stringify({ ...command, id }) + MR.MOTION_TEXT_SYMBOL_27);
+      slot.child!.stdin.write(stringifyJson({ ...command, id }) + MR.MOTION_TEXT_SYMBOL_27);
     });
   };
   const pending = slot.queue.then(work, work);
@@ -189,7 +190,7 @@ interface SpeechEntry {
 const speechPending = new Map<string, SpeechEntry[]>();
 const speechDraining = new Set<string>();
 const backendLogged = new Set<string>();
-const speechGroup = (entry: SpeechEntry): string => [entry.voice, entry.delivery.temperature ?? MR.MOTION_TEXT_EMPTY, entry.delivery.silence ?? MR.MOTION_TEXT_EMPTY, JSON.stringify(entry.delivery.pauses)].join(C.BATCH_SEP);
+const speechGroup = (entry: SpeechEntry): string => [entry.voice, entry.delivery.temperature ?? MR.MOTION_TEXT_EMPTY, entry.delivery.silence ?? MR.MOTION_TEXT_EMPTY, stringifyJson(entry.delivery.pauses)].join(C.BATCH_SEP);
 const takeSpeech = (key: string): SpeechEntry[] => {
   const list = speechPending.get(key) || [];
   for (const entry of list.filter((item) => item.signal?.aborted)) entry.reject(new Error(C.CANCELLED));

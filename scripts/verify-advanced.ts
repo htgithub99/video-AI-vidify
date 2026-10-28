@@ -4,11 +4,9 @@ import { rollbackSceneAssetRevision } from "../src/services/dependencyHashServic
 import { resolveRolloutConfig } from "../src/services/rolloutService.ts";
 import { QualityMode, SceneAssetStatus } from "../src/types.ts";
 import { writeVerificationLog } from "./verificationLogger.ts";
-
 const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
-
 assert(!normalizeContentSafety({ sexualExploitationRisk: true }).allowed, "sexual exploitation safety gate failed");
 assert(normalizeContentSafety({}).allowed, "incomplete safety review incorrectly blocked the pipeline");
 const scene: any = {
@@ -25,8 +23,5 @@ const restored = rollbackSceneAssetRevision(scene, "r1");
 assert(restored.assetUrl === "approved" && restored.assetRevisions.at(-1)?.operation === "rollback" && restored.assetRevisions.at(-1)?.parentRevisionId === "r2", "asset rollback lineage failed");
 assert(resolveQualityProfile(QualityMode.Premium).draftCandidates === 1 && resolveQualityProfile().draftCandidates === 1, "single image generation policy failed");
 const rollout = resolveRolloutConfig("project_1");
-assert(
-  rollout.flags.finalQc && rollout.flags.visualQa && rollout.qaMode === "advisory" && ["stable", "canary"].includes(rollout.releaseChannel),
-  "advisory rollout config failed",
-);
+assert(rollout.flags.finalQc && rollout.flags.visualQa && rollout.qaMode === "advisory" && ["stable", "canary"].includes(rollout.releaseChannel), "advisory rollout config failed");
 writeVerificationLog("Advanced safety/rollback/rollout assertions passed");

@@ -37,7 +37,7 @@ import ts from "typescript";
 import _ from "lodash";
 import * as sourceTexts from "../src/constants/sourceText.ts";
 import { MUSIC_MIXER_SERVER } from "../src/constants/musicMixer.ts";
-import { deduplicateMusicMixerTracks, distributeMusicMixerTracks, getMusicMixerTrackKey } from "../src/services/musicMixerTracks.ts";
+import { deduplicateMusicMixerTracks, distributeMusicMixerTracks, getMusicMixerTrackKey } from "../src/features/music-mixer/services/musicMixerTracks.ts";
 const track = (sourcePath: string, lastModified = 1) => ({ sourcePath, path: SOURCE_TEXT_1_SONG_MP3, file: { size: 0, lastModified } });
 const original = track(SOURCE_TEXT_D_MUSIC_1_SONG_MP3);
 const repeated = track(SOURCE_TEXT_D_MUSIC_1_SONG_MP3_2, 99);
@@ -108,12 +108,7 @@ try {
       void callback(null, JSON.stringify([directory, directory]), "");
     },
   });
-  vm.runInContext(
-    ts.transpileModule(controller.slice(start, end), {
-      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None },
-    }).outputText,
-    sandbox,
-  );
+  vm.runInContext(ts.transpileModule(controller.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText, sandbox);
   const result: any = await new Promise((resolve, reject) => {
     handler({}, { json: resolve, status: () => ({ json: reject }) });
   });

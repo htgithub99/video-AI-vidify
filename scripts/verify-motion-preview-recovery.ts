@@ -26,14 +26,7 @@ assert.equal(recovered.result?.videoUrl, result.videoUrl);
 assert.equal(recovered.progress, 1);
 assert.equal(recovered.framesDone, 180);
 assert.equal(getMotionJob(RT.UNKNOWN_RENDER), null);
-const bundle = await build({
-  stdin: { loader: RT.TSX, resolveDir: process.cwd(), contents: RT.IMPORT_REACT_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DOM_CLIENT_IMPORT },
-  bundle: true,
-  platform: RT.BROWSER,
-  format: RT.IIFE,
-  write: false,
-  define: { "import.meta": RT.EMPTY_2 },
-});
+const bundle = await build({ stdin: { loader: RT.TSX, resolveDir: process.cwd(), contents: RT.IMPORT_REACT_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DOM_CLIENT_IMPORT }, bundle: true, platform: RT.BROWSER, format: RT.IIFE, write: false, define: { "import.meta": RT.EMPTY_2 } });
 const browser = await chromium.launch({ channel: RT.CHROME, headless: true });
 try {
   const page = await browser.newPage();

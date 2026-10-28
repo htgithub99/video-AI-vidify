@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import _ from "lodash";
 import {
   SOURCE_TEMPLATE_JSON,
@@ -54,7 +55,7 @@ export const createMusicEvaluationAudioCacheKey = (playlistUrl: string, candidat
 const checkpointPath = (key: string): string => path.join(checkpointDirectory, SOURCE_TEMPLATE_JSON(`${key}`));
 export const readMusicDownloadCheckpoint = async (key: string, candidateIds: string[]): Promise<MusicDownloadCheckpoint | null> => {
   try {
-    const parsed = JSON.parse(await fs.promises.readFile(checkpointPath(key), SOURCE_TEXT_UTF8)) as MusicDownloadCheckpoint;
+    const parsed = parseJson(await fs.promises.readFile(checkpointPath(key), SOURCE_TEXT_UTF8)) as MusicDownloadCheckpoint;
     if (parsed.version !== 2 || parsed.key !== key || parsed.sourceWavRequired !== true || stringifyJson(parsed.candidateIds) !== stringifyJson(candidateIds)) return null;
     if (!Array.isArray(parsed.selectedTracks) || parsed.selectedTracks.length !== candidateIds.length / 2) return null;
     const pairs = _.chunk(candidateIds, 2);

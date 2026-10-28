@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 const TAG_RE = /<(\/?)([A-Za-z][\w:.-]*)\b[^>]*?(\/?)>/g;
 const SKIP_RE = /^<(?:!|\?)/;
 const LEAF_PARENTS: Record<string, RegExp> = { lineargradient: /^stop$/i, radialgradient: /^stop$/i };
@@ -5,7 +6,7 @@ export const balanceSvgTags = (svg: string): string => {
   const stack: string[] = [];
   let out = "";
   let last = 0;
-  const close = () => (out += `</${stack.pop()}>`);
+  const close = () => (out += `${RT_CORE.SYMBOL_2A5357}${stack.pop()}${RT_CORE.SYMBOL_62B67E}`);
   for (const m of svg.matchAll(TAG_RE)) {
     const at = m.index || 0;
     out += svg.slice(last, at);

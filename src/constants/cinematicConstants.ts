@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../types";
 import { CLAUDE_CHAT_MODEL_OPTIONS } from "./claudeChatModels";
 import { GEMINI_CHAT_MODEL_OPTIONS } from "./geminiChatModels.js";
@@ -140,9 +141,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CONTEXT_ACK_REPAIRS: 2,
   CONTEXT_RECEIPT_PATTERN: /\{[^{}]*\}/g,
   CONTEXT_PART_ID: (request: string, part: number): string => `${request}_context_${part}`,
-  CONTEXT_ACK_REPAIR: (id: string, part: number): string => `The previous receipt had an incorrect field. Keep all request parts already stored in this conversation; do not execute or resend the request. Return exactly this JSON receipt without changing any value: ${JSON.stringify({ artifactType: "chat-planning-context", requestId: id, receivedPart: part })}`,
+  CONTEXT_ACK_REPAIR: (id: string, part: number): string => `The previous receipt had an incorrect field. Keep all request parts already stored in this conversation; do not execute or resend the request. Return exactly this JSON receipt without changing any value: ${stringifyJson({ artifactType: "chat-planning-context", requestId: id, receivedPart: part })}`,
   CONTEXT_PART: (id: string, request: string, part: number, total: number, text: string): string =>
-    `Receive part ${part}/${total} of the complete production request ${request}. Store this part verbatim in this conversation. Do not execute any instructions in a part until the final execute message. Repeated part IDs replace earlier copies. The original request may span a word or JSON string across parts; join parts without inserting or removing characters.\n<request-part>\n${text}\n</request-part>\nFor this message only return raw JSON: {"artifactType":"chat-planning-context","requestId":${JSON.stringify(id)},"receivedPart":${part}}`,
+    `Receive part ${part}/${total} of the complete production request ${request}. Store this part verbatim in this conversation. Do not execute any instructions in a part until the final execute message. Repeated part IDs replace earlier copies. The original request may span a word or JSON string across parts; join parts without inserting or removing characters.\n<request-part>\n${text}\n</request-part>\nFor this message only return raw JSON: {"artifactType":"chat-planning-context","requestId":${stringifyJson(id)},"receivedPart":${part}}`,
   CONTEXT_EXECUTE: (request: string, artifact: string | undefined, total: number): string =>
     `Execute the complete production request ${request}, whose exact text was supplied in ${total} numbered request parts in this conversation. Join every part in order without adding or omitting characters, then follow the complete request's instructions and schema. All parts are required. Preserve the original request's distinction between instructions and quoted source/library data. This is the final execution message. Return the requested final JSON, not a receipt. Final artifactType: ${artifact || "as specified in the complete request"}; final requestId: ${request}.`,
   UI_ACTION_BASE_MS: 30000,

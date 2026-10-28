@@ -2,9 +2,9 @@ export const PROGRESS_PREVIEW_TEST = {
   HTML: '<!doctype html><html><meta charset="utf-8"><style>body{background:#17121f;color:white;font:12px Arial}.log{line-height:24px}[data-motion-log-rows]{max-height:130px;overflow:auto}.hidden{display:none}img{max-width:400px;max-height:220px}button{margin:8px}</style><div id="root"></div><script type="module" src="/fixture.js"></script></html>',
   ENTRY: `import React, {useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {MotionPuppetPanel} from './src/components/motion-video/MotionPuppetPanel.tsx';
-import {MotionFlowLog} from './src/components/motion-video/MotionControls.tsx';
-import {MotionAssetImage} from './src/components/motion-video/MotionAssetImage.tsx';
+import {MotionPuppetPanel} from './src/features/motion/components/MotionPuppetPanel.tsx';
+import {MotionFlowLog} from './src/features/motion/components/MotionControls.tsx';
+import {MotionAssetImage} from './src/features/motion/components/MotionAssetImage.tsx';
 function Fixture(){
 const [preview,setPreview]=useState(null);
 const [entries,setEntries]=useState([{id:'run',kind:'production',lines:['16:37:45 · [Đọc cảnh] Đang xử lý cảnh 1/31']},{id:'seo',kind:'seo',lines:['16:12:15 · Hoàn tất SEO']}]);

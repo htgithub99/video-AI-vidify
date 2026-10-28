@@ -20,11 +20,7 @@ try {
     ({ VT, RT }) => {
       const G = (window as any).MotionEngine.GEN,
         T = G.T;
-      const location = G.validateLocation({
-        stage: { center: [0, 0], size: [8, 8] },
-        defs: { oil_lamp: [{ shape: VT.USE, ref: RT.LAMP_BODY }], lamp_body: [{ shape: VT.BOX, size: [0.2, 0.3, 0.2], mat: { color: RT.CC7700 } }] },
-        nodes: [],
-      }).value;
+      const location = G.validateLocation({ stage: { center: [0, 0], size: [8, 8] }, defs: { oil_lamp: [{ shape: VT.USE, ref: RT.LAMP_BODY }], lamp_body: [{ shape: VT.BOX, size: [0.2, 0.3, 0.2], mat: { color: RT.CC7700 } }] }, nodes: [] }).value;
       const validated = G.validateStaging(
         {
           location: VT.ROOM,
@@ -67,25 +63,10 @@ try {
                 poses: { idle: {} },
               },
             },
-            locations: {
-              yard: {
-                ground: { none: true },
-                nodes: [],
-                stage: { center: [0, 2.5], size: [10, 20] },
-                camera: { pos: [0, 2.65, 12.8], target: [0, 1.9, -0.35], fov: 34 },
-              },
-            },
+            locations: { yard: { ground: { none: true }, nodes: [], stage: { center: [0, 2.5], size: [10, 20] }, camera: { pos: [0, 2.65, 12.8], target: [0, 1.9, -0.35], fov: 34 } } },
           },
         };
-        const shot = G.buildShot(
-          { spec: payload, W: 640, H: 360, dur: 6, preview: true },
-          {
-            location: RT.YARD,
-            actors: [{ cast: RT.SPEAKER, at: [0, 2.5], face: 0 }],
-            camera: { shot: VT.MEDIUM, focus: RT.SPEAKER, pos: [0, 2.65, 12.8], target: [0, 1.9, -0.35], fov: 34 },
-          },
-          { noFx: true },
-        );
+        const shot = G.buildShot({ spec: payload, W: 640, H: 360, dur: 6, preview: true }, { location: RT.YARD, actors: [{ cast: RT.SPEAKER, at: [0, 2.5], face: 0 }], camera: { shot: VT.MEDIUM, focus: RT.SPEAKER, pos: [0, 2.65, 12.8], target: [0, 1.9, -0.35], fov: 34 } }, { noFx: true });
         const head = shot.actors[0].actor.anchor(VT.HEAD).project(shot.camera);
         const result = { drawingMode, cameraZ: shot.camera.position.z, head: head.toArray(), issues: shot.issues };
         G.disposeShot(shot);
@@ -102,22 +83,7 @@ try {
   const skyPixel = await page.evaluate(
     ({ VT, RT }) => {
       const G = (window as any).MotionEngine.GEN;
-      const payload = {
-        gen: {
-          drawingMode: VT.VALUE_2D,
-          style: { grade: VT.NEUTRAL },
-          locations: {
-            sky: {
-              time: VT.NIGHT,
-              sky: { top: RT.VALUE_9AA3AB, horizon: RT.VALUE_9AA3AB, city: 0, stars: false },
-              ground: { none: true },
-              nodes: [],
-              stage: { center: [0, 0], size: [8, 8] },
-              camera: { pos: [0, 1, 6], target: [0, 1, 0], fov: 40 },
-            },
-          },
-        },
-      };
+      const payload = { gen: { drawingMode: VT.VALUE_2D, style: { grade: VT.NEUTRAL }, locations: { sky: { time: VT.NIGHT, sky: { top: RT.VALUE_9AA3AB, horizon: RT.VALUE_9AA3AB, city: 0, stars: false }, ground: { none: true }, nodes: [], stage: { center: [0, 0], size: [8, 8] }, camera: { pos: [0, 1, 6], target: [0, 1, 0], fov: 40 } } } } };
       const canvas = document.createElement(VT.CANVAS);
       canvas.width = 320;
       canvas.height = 180;

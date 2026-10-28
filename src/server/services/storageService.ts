@@ -133,12 +133,7 @@ const displayPath = (abs: string): string => {
 };
 export const scanStorageJunk = (): StorageJunkReport => {
   const items = _.map(listCandidates(), (c) => ({ ...c, bytes: sizeOf(c.abs) }));
-  const groups = _.map(_.groupBy(items, STORAGE_TEXTS.GROUP), (list, group) => ({
-    group: group as StorageJunkGroup,
-    bytes: _.sumBy(list, STORAGE_TEXTS.BYTES),
-    count: list.length,
-    items: _.map(_.orderBy(list, [STORAGE_TEXTS.BYTES], [STORAGE_TEXTS.DESC]), (c) => ({ path: displayPath(c.abs), bytes: c.bytes })),
-  }));
+  const groups = _.map(_.groupBy(items, STORAGE_TEXTS.GROUP), (list, group) => ({ group: group as StorageJunkGroup, bytes: _.sumBy(list, STORAGE_TEXTS.BYTES), count: list.length, items: _.map(_.orderBy(list, [STORAGE_TEXTS.BYTES], [STORAGE_TEXTS.DESC]), (c) => ({ path: displayPath(c.abs), bytes: c.bytes })) }));
   return { storageDir: getDataDirectory(), totalBytes: _.sumBy(groups, STORAGE_TEXTS.BYTES), groups: _.orderBy(groups, [STORAGE_TEXTS.BYTES], [STORAGE_TEXTS.DESC]) };
 };
 const recycleWindows = (items: { path: string; big: boolean }[]): Promise<void> =>

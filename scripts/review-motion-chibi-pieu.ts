@@ -76,10 +76,7 @@ try {
     );
     if (kind === "grooming") {
       frame.contacts = [{ actor: "groomer", target: "subject", point: "hand", targetPoint: "head", mode: "reach" }];
-      Object.assign(
-        frame.actors.find((actor) => actor.char === "groomer")!,
-        { hold: "comb", gesture: "hold" },
-      );
+      Object.assign(frame.actors.find((actor) => actor.char === "groomer")!, { hold: "comb", gesture: "hold" });
     }
     if (kind === "dining") for (const actor of frame.actors) Object.assign(actor, { hold: "rice_bowl", gesture: "hold" });
     await render("scene-" + kind, style, cast, frame, set);

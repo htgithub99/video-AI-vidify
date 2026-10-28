@@ -27,55 +27,16 @@ export const genreLabels = {
   Philosophy: "Triết học",
 } as const;
 export const GENRE_OPTION_GROUPS = [
-  {
-    label: GENRE_GROUP_LABELS.vi.SATIRICAL,
-    options: [VideoGenre.SATIRICAL_LIFE_AUTO, VideoGenre.TRANSFORMATION_TIMELINE, VideoGenre.CAREER_SOCIAL_DARKSIDE, VideoGenre.DOWNFALL_CONSEQUENCE, VideoGenre.DARK_COMEDY_TRAGEDY],
-  },
-  {
-    label: GENRE_GROUP_LABELS.vi.STORY_EXPLAINER,
-    options: [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER, VideoGenre.CHARACTER_PSYCHOLOGY, VideoGenre.LORE_WORLD_BUILDING],
-  },
-  {
-    label: GENRE_GROUP_LABELS.vi.DOCUMENTARY_KNOWLEDGE,
-    options: ["History", "Science", "Psychology"],
-  },
-  {
-    label: GENRE_GROUP_LABELS.vi.YOUTUBE_TRENDING,
-    options: ["Review", "News", "Top List", "True Crime"],
-  },
+  { label: GENRE_GROUP_LABELS.vi.SATIRICAL, options: [VideoGenre.SATIRICAL_LIFE_AUTO, VideoGenre.TRANSFORMATION_TIMELINE, VideoGenre.CAREER_SOCIAL_DARKSIDE, VideoGenre.DOWNFALL_CONSEQUENCE, VideoGenre.DARK_COMEDY_TRAGEDY] },
+  { label: GENRE_GROUP_LABELS.vi.STORY_EXPLAINER, options: [VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, VideoGenre.NARRATIVE_EXPLAINER, VideoGenre.CHARACTER_PSYCHOLOGY, VideoGenre.LORE_WORLD_BUILDING] },
+  { label: GENRE_GROUP_LABELS.vi.DOCUMENTARY_KNOWLEDGE, options: ["History", "Science", "Psychology"] },
+  { label: GENRE_GROUP_LABELS.vi.YOUTUBE_TRENDING, options: ["Review", "News", "Top List", "True Crime"] },
 ] as const;
-const GENRE_VALUE_ALIASES: Record<string, string> = {
-  Storytelling: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY,
-  Documentary: "History",
-  Explanation: VideoGenre.NARRATIVE_EXPLAINER,
-  Education: VideoGenre.NARRATIVE_EXPLAINER,
-  Philosophy: "Psychology",
-  "Tâm lý": "Psychology",
-};
+const GENRE_VALUE_ALIASES: Record<string, string> = { Storytelling: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, Documentary: "History", Explanation: VideoGenre.NARRATIVE_EXPLAINER, Education: VideoGenre.NARRATIVE_EXPLAINER, Philosophy: "Psychology", "Tâm lý": "Psychology" };
 export const normalizeGenreValue = (genre?: string): string => _.get(GENRE_VALUE_ALIASES, genre || "", genre || VideoGenre.STORY_DRIVEN_VIDEO_ESSAY);
 export const audLabels = { "General Audience": "Khán giả đại chúng", Kids: "Trẻ em", Teenagers: "Thanh thiếu niên", Adults: "Người lớn", Seniors: "Người cao tuổi" } as const;
-export const styleLabels = {
-  Professional: "Chuyên nghiệp",
-  Documentary: "Tài liệu chân thực",
-  Viral: "Lan truyền / Đề xuất",
-  Mystery: "Bí ẩn / Kịch tính",
-  Drama: "Kịch tính / Gây cấn",
-  Educational: "Mang tính giáo dục",
-  Scientific: "Khoa học thực tiễn",
-} as const;
-export const motionLabels = {
-  "Zoom In": "Phóng to",
-  "Zoom Out": "Thu nhỏ",
-  "Pan Left": "Góc trái",
-  "Pan Right": "Góc phải",
-  "Pan Up": "Góc trên",
-  "Pan Down": "Góc dưới",
-  Drift: "Trôi nhẹ",
-  "Cinematic Arc": "Hình cung",
-  "Push In": "Đẩy vào",
-  "Slow Reveal": "Hé lộ",
-  Static: "Tĩnh",
-} as const;
+export const styleLabels = { Professional: "Chuyên nghiệp", Documentary: "Tài liệu chân thực", Viral: "Lan truyền / Đề xuất", Mystery: "Bí ẩn / Kịch tính", Drama: "Kịch tính / Gây cấn", Educational: "Mang tính giáo dục", Scientific: "Khoa học thực tiễn" } as const;
+export const motionLabels = { "Zoom In": "Phóng to", "Zoom Out": "Thu nhỏ", "Pan Left": "Góc trái", "Pan Right": "Góc phải", "Pan Up": "Góc trên", "Pan Down": "Góc dưới", Drift: "Trôi nhẹ", "Cinematic Arc": "Hình cung", "Push In": "Đẩy vào", "Slow Reveal": "Hé lộ", Static: "Tĩnh" } as const;
 export const stylePresetsKeywords = {
   Stickman: "2D minimalist stick figure illustration, clean uniform bold black outlines on pure solid white background, minimal dot eyes, soft pink circular cheek blush, flat vector without shading",
   "2D Vector": "2D flat vector cartoon illustration, vibrant pastel colors, clean bold outlines, minimalist design, stylized characters",
@@ -166,24 +127,9 @@ export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitc
 export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
 export const AI_MODEL_CAPABILITY = { TEXT: "text", VISUAL: "visual", AUDIO: "audio" } as const;
 export const AI_MODEL_REGISTRY = [
-  {
-    id: "gemini-3.7-flash",
-    freeEligible: true,
-    priority: 1,
-    capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
-  },
-  {
-    id: "gemini-3.6-flash",
-    freeEligible: true,
-    priority: 2,
-    capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
-  },
-  {
-    id: "gemini-3.5-flash-lite",
-    freeEligible: true,
-    priority: 3,
-    capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO],
-  },
+  { id: "gemini-3.7-flash", freeEligible: true, priority: 1, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3.6-flash", freeEligible: true, priority: 2, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3.5-flash-lite", freeEligible: true, priority: 3, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
 ] as const;
 export const AVAILABLE_MODELS = _.map(_.sortBy(_.filter(AI_MODEL_REGISTRY, "freeEligible"), "priority"), "id");
 export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not found", "model is not found", "unsupported model"] as const;

@@ -29,18 +29,7 @@ export const removeRedundantSceneAudioBase64 = (scenes: StoryboardScene[], hasGl
 const applyVoiceAlignments = (scenes: StoryboardScene[], alignments: VoiceAlignment[]): StoryboardScene[] =>
   _.map(scenes, (scene) => {
     const alignment = _.find(alignments, (item) => _.isEqual(item.id, scene.id));
-    return alignment
-      ? {
-          ...scene,
-          duration: alignment.duration,
-          startTime: formatTimeHelper(alignment.start),
-          endTime: formatTimeHelper(alignment.end),
-          _start: alignment.start,
-          _end: alignment.end,
-          audioBase64: alignment.audioBase64,
-          audioUrl: alignment.audioUrl,
-        }
-      : scene;
+    return alignment ? { ...scene, duration: alignment.duration, startTime: formatTimeHelper(alignment.start), endTime: formatTimeHelper(alignment.end), _start: alignment.start, _end: alignment.end, audioBase64: alignment.audioBase64, audioUrl: alignment.audioUrl } : scene;
   });
 export const getVoiceTimelineDuration = (scenes: StoryboardScene[]): number => _.max(_.map(scenes, (scene) => _.toNumber(_.get(scene, SOURCE_TEXT_END_2, 0)))) || _.sumBy(scenes, (scene) => _.toNumber(scene.duration) || 0);
 export const decodeAudioDuration = async (audioBase64: string): Promise<number> => {
@@ -73,31 +62,14 @@ const createProportionalVoiceTimeline = (scenes: StoryboardScene[], totalDuratio
 };
 export const alignVoiceTimeline = async ({ audioBase64, scenes, projectId, projectName, signal }: AlignVoiceTimelineOptions): Promise<VoiceTimelineResult> => {
   const cleanScenes = clearSceneVoiceData(scenes);
-  const response = await safeSystemFetch(
-    API_ROUTES.PIPELINE_ALIGN_VOICE,
-    {
-      audioBase64,
-      scenes: _.map(cleanScenes, (scene) => ({
-        id: scene.id,
-        script: scene.script || scene.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING,
-      })),
-      segment: true,
-      projectId,
-      projectName,
-    },
-    signal,
-  );
+  const response = await safeSystemFetch(API_ROUTES.PIPELINE_ALIGN_VOICE, { audioBase64, scenes: _.map(cleanScenes, (scene) => ({ id: scene.id, script: scene.script || scene.subtitle || REFACTOR_CONSTANTS.VD_EMPTY_STRING })), segment: true, projectId, projectName }, signal);
   if (response.success && response.data?.success && _.isArray(response.data.alignments)) {
     return { scenes: applyVoiceAlignments(cleanScenes, response.data.alignments), backendAligned: true };
   }
   try {
     const audioDuration = await decodeAudioDuration(audioBase64);
     if (audioDuration >= VOICE_ALIGNMENT_CONFIG.MIN_AUDIO_DURATION_SECONDS) {
-      return {
-        scenes: createProportionalVoiceTimeline(cleanScenes, audioDuration),
-        backendAligned: false,
-        warning: _.toString(response.error || response.data?.error || VOICE_ALIGNMENT_CONFIG.BACKEND_WARNING),
-      };
+      return { scenes: createProportionalVoiceTimeline(cleanScenes, audioDuration), backendAligned: false, warning: _.toString(response.error || response.data?.error || VOICE_ALIGNMENT_CONFIG.BACKEND_WARNING) };
     }
   } catch {
     return { scenes: cleanScenes, backendAligned: false, warning: VOICE_ALIGNMENT_CONFIG.DURATION_WARNING };

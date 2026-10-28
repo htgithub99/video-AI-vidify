@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MotionRepairLedger } from "../../../lib/motionAiRepair.js";
 import { requestMotionAiContract, type MotionAiResponseContract } from "../motionAiContractService.js";
 import { MOTION_STORYBOARD as S } from "../../../constants/motionStoryboard.js";
@@ -36,7 +39,7 @@ const boundaryPosition = (value: any, lines: PuppetLine[], offset: number): numb
   }
   return counts.slice(0, index).reduce((sum, count) => sum + count, 0) + word;
 };
-const unitKey = (data: Omit<PuppetVisualUnit, "key">, lines: PuppetLine[], profileKey: string): string => S.UNIT_PREFIX + puppetVisualInputKey([{ text: JSON.stringify([profileKey, { scene: data.scene, purpose: data.purpose, show: data.show, sources: data.sources }, data.sources.map((range) => [range.line, lines.find((line) => line.key === range.line)])]) } as PuppetLine]);
+const unitKey = (data: Omit<PuppetVisualUnit, "key">, lines: PuppetLine[], profileKey: string): string => S.UNIT_PREFIX + puppetVisualInputKey([{ text: stringifyJson([profileKey, { scene: data.scene, purpose: data.purpose, show: data.show, sources: data.sources }, data.sources.map((range) => [range.line, lines.find((line) => line.key === range.line)])]) } as PuppetLine]);
 export const parsePuppetStoryboard = (raw: unknown, lines: PuppetLine[], offset: number, inputKey: string, profileKey = inputKey): PuppetVisualUnit[] | null => {
   const values = (raw as { units?: any[] })?.units;
   if (!Array.isArray(values) || !values.length) return null;
@@ -66,7 +69,7 @@ export const parsePuppetStoryboard = (raw: unknown, lines: PuppetLine[], offset:
 export const planPuppetStoryboard = async (lines: PuppetLine[], beats: MotionBeat[], analysis: MotionStoryAnalysis, o: PuppetRunOptions, previous?: PuppetStoryboard, issues: Record<string, string> = {}, accepted?: (plan: PuppetStoryboard) => void): Promise<PuppetStoryboard> => {
   o.signal?.throwIfAborted();
   const inputKey = puppetStoryboardInputKey(lines, analysis);
-  const profileKey = puppetVisualInputKey([{ text: JSON.stringify([puppetStoryboardProfile(analysis), analysis.cast, analysis.places, analysis.illustrationNeeds]) } as PuppetLine]);
+  const profileKey = puppetVisualInputKey([{ text: stringifyJson([puppetStoryboardProfile(analysis), analysis.cast, analysis.places, analysis.illustrationNeeds]) } as PuppetLine]);
   if (previous?.inputKey === inputKey && puppetStoryboardCovers(previous, lines) && !previous.units.some((unit) => issues[unit.key])) return previous;
   const compatible = previous?.inputKey === inputKey || previous?.profileKey === profileKey;
   const drafts: NonNullable<PuppetStoryboard["drafts"]> = compatible ? { ...previous.drafts } : {};
@@ -75,32 +78,34 @@ export const planPuppetStoryboard = async (lines: PuppetLine[], beats: MotionBea
   type Group = { lines: PuppetLine[]; offset: number; key: string };
   const contextOf = (line: PuppetLine, index: number) => ({ line: index, text: line.text, speaker: line.speaker, beat: line.beatId, chapter: line.chapterId, place: line.place, time: line.time, action: line.action, scenePlan: line.scenePlan });
   const groupKey = (members: PuppetLine[]) => motionInputKey([profileKey, analysis.cast, analysis.places, members]);
-  const sourceOf = (group: Pick<Group, "lines" | "offset">) => S.BOUNDARIES(group.lines.map((_line, index) => index + group.offset)) + P.NL + S.REQUESTED + JSON.stringify(group.lines.map((line, index) => contextOf(line, index + group.offset)));
+  const sourceOf = (group: Pick<Group, "lines" | "offset">) => S.BOUNDARIES(group.lines.map((_line, index) => index + group.offset)) + P.NL + S.REQUESTED + stringifyJson(group.lines.map((line, index) => contextOf(line, index + group.offset)));
   const capabilityCache = new Map<string, string>();
   const promptOf = (group: Pick<Group, "lines" | "offset">, earlier?: PuppetVisualUnit[]) => {
     const placeKeys = new Set(group.lines.map((line) => line.place));
     const places = analysis.places?.filter((place) => placeKeys.has(place.key)) || [];
     const contextPlaces = places.length ? places : analysis.places || [];
-    const capabilityKey = JSON.stringify(contextPlaces);
+    const capabilityKey = stringifyJson(contextPlaces);
     if (!capabilityCache.has(capabilityKey)) capabilityCache.set(capabilityKey, puppetPackStoryCapabilities(analysis.stylePreset, { places: contextPlaces }));
     const chapters = new Set(group.lines.map((line) => line.chapterId));
     const needs = analysis.illustrationNeeds?.filter((need) => chapters.has(need.chapterId));
-    return [
-      S.PROMPT,
-      motionScenePacingRule(
-        analysis.visualSettings,
-        group.lines.reduce((sum, line) => sum + motionBeatVisualSeconds({ narration: line.text } as MotionBeat, o.language), 0),
-      ),
-      I.PROMPT,
-      S.PLAN_READ,
-      motionResponsePrompt(S.ARTIFACT),
-      capabilityCache.get(capabilityKey),
-      S.PROFILE + JSON.stringify({ ...puppetStoryboardProfile(analysis), cast: analysis.cast, places: contextPlaces }),
-      needs?.length ? MOTION_PROMPT.ILLUSTRATION_NEEDS + JSON.stringify(needs) : P.EMPTY,
-      S.CONTEXT + JSON.stringify(lines.slice(Math.max(0, group.offset - S.CONTEXT_LINES), group.offset).map((line) => ({ text: line.text, place: line.place, time: line.time }))),
-      sourceOf(group),
-      earlier?.length ? S.REPAIR_PLAN + JSON.stringify(earlier.map((unit) => ({ ...unit, problem: issues[unit.key] }))) : P.EMPTY,
-    ].join(P.NL);
+    return (
+      [
+        S.PROMPT,
+        motionScenePacingRule(
+          analysis.visualSettings,
+          group.lines.reduce((sum, line) => sum + motionBeatVisualSeconds({ narration: line.text } as MotionBeat, o.language), 0),
+        ),
+        I.PROMPT,
+        S.PLAN_READ,
+        motionResponsePrompt(S.ARTIFACT),
+        capabilityCache.get(capabilityKey),
+        S.PROFILE + stringifyJson({ ...puppetStoryboardProfile(analysis), cast: analysis.cast, places: contextPlaces }),
+        needs?.length ? MOTION_PROMPT.ILLUSTRATION_NEEDS + stringifyJson(needs) : P.EMPTY,
+        S.CONTEXT + stringifyJson(lines.slice(Math.max(0, group.offset - S.CONTEXT_LINES), group.offset).map((line) => ({ text: line.text, place: line.place, time: line.time }))),
+        sourceOf(group),
+        earlier?.length ? S.REPAIR_PLAN + stringifyJson(earlier.map((unit) => ({ ...unit, problem: issues[unit.key] }))) : P.EMPTY,
+      ] as string[]
+    ).join(P.NL);
   };
   const groups: Group[] = [];
   const frozen = new Map<number, Group>();
@@ -209,12 +214,14 @@ export const planPuppetStoryboard = async (lines: PuppetLine[], beats: MotionBea
           for (let line = from; line <= to; line++) requested.add(line);
         }
         const targets = ledger!.pending();
-        return [
-          S.REPAIR_FIELDS(targets),
-          S.BOUNDARIES(group.lines.map((_line, index) => group.offset + index)),
-          S.REQUESTED + JSON.stringify([...requested].sort((a, b) => a - b).map((index) => contextOf(lines[index], index))),
-          S.READ_ONLY + JSON.stringify(values.map((value, index) => ({ id: ledger!.ids[index], from: value.from, scene: value.scene, purpose: value.purpose, show: value.show }))),
-        ].join(P.NL);
+        return (
+          [
+            S.REPAIR_FIELDS(targets),
+            S.BOUNDARIES(group.lines.map((_line, index) => group.offset + index)),
+            S.REQUESTED + stringifyJson([...requested].sort((a, b) => a - b).map((index) => contextOf(lines[index], index))),
+            S.READ_ONLY + stringifyJson(values.map((value, index) => ({ id: ledger!.ids[index], from: value.from, scene: value.scene, purpose: value.purpose, show: value.show }))),
+          ] as string[]
+        ).join(P.NL);
       };
       const assess = (raw: any) => {
         const rows = Array.isArray(raw?.units) ? raw.units.filter((row: unknown) => row && typeof row === "object" && !Array.isArray(row)) : [];
@@ -234,12 +241,14 @@ export const planPuppetStoryboard = async (lines: PuppetLine[], beats: MotionBea
                 .slice(index + 1)
                 .map((row) => boundaryPosition(row, group.lines, group.offset))
                 .filter((at): at is number => at != null);
-              const fields = [
-                position == null || (!index && position !== 0) || (previousPositions.length && position! <= Math.max(...previousPositions)) || (nextPositions.length && position! >= Math.min(...nextPositions)) ? "from" : P.EMPTY,
-                typeof value.scene !== "string" || !puppetKeyOf(value.scene) ? "scene" : P.EMPTY,
-                !S.PURPOSES.includes(value.purpose) ? "purpose" : P.EMPTY,
-                typeof value.show !== "string" || !value.show.trim() ? "show" : P.EMPTY,
-              ].filter(Boolean);
+              const fields = (
+                [
+                  position == null || (!index && position !== 0) || (previousPositions.length && position! <= Math.max(...previousPositions)) || (nextPositions.length && position! >= Math.min(...nextPositions)) ? RT_SERVER.FROM : P.EMPTY,
+                  typeof value.scene !== "string" || !puppetKeyOf(value.scene) ? RT_SHARED.SCENE : P.EMPTY,
+                  !S.PURPOSES.includes(value.purpose) ? RT_SERVER.PURPOSE : P.EMPTY,
+                  typeof value.show !== "string" || !value.show.trim() ? RT_SERVER.SHOW : P.EMPTY,
+                ] as string[]
+              ).filter(Boolean);
               return fields.map((path) => ({ path, reason: S.INVALID_FIELD }));
             },
           );
@@ -254,7 +263,7 @@ export const planPuppetStoryboard = async (lines: PuppetLine[], beats: MotionBea
             .map((row) => ({ id: row.id, value: row.draft! })),
         ].sort((a, b) => ledger!.ids.indexOf(a.id) - ledger!.ids.indexOf(b.id));
         accepted?.(checkpoint());
-        if (ledger.pending().length) return { value: undefined, errors: ledger.pending().map((row) => JSON.stringify({ id: row.id, errors: row.errors })) };
+        if (ledger.pending().length) return { value: undefined, errors: ledger.pending().map((row) => stringifyJson({ id: row.id, errors: row.errors })) };
         const units = parsePuppetStoryboard({ units: ledger.accepted().map((row) => row.value) }, group.lines, group.offset, inputKey, profileKey);
         if (!units) return { value: undefined, errors: [S.INVALID_FIELD] };
         return { value: units, errors: [] };

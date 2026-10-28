@@ -1,10 +1,8 @@
 import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-
 const controller = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
 const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
-
 assert.match(constants, /EVALUATION_SONGS_PER_CHUNK:\s*5/);
 assert.match(controller, /_.chunk\(trackPairs, SUNO_AUTOMATION_CONFIG\.EVALUATION_SONGS_PER_CHUNK\)/);
 assert.match(controller, /const evaluationAudio = await downloadSunoEvaluationAudio[\s\S]*const roomPreparations = _\.map\(evaluationWorkerIds/);
@@ -36,5 +34,4 @@ assert.match(controller, /required: \["artifactType", "requestId", "selectedTrac
 assert.match(controller, /requestId: \{ type: "string"(?: as const)?, enum: \[requestId\] \}/);
 assert.match(controller, /_.orderBy\(evaluatedTracks[\s\S]*qualityScore[\s\S]*\["desc"\]/);
 assert.match(controller, /_.padStart\(_.toString\(rank \+ 1\), 2, "0"\)/);
-
 process.stdout.write("Suno curated download evaluates five-song chunks concurrently, ranks AI winners, and renumbers downloads.\n");

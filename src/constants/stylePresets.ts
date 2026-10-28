@@ -309,10 +309,7 @@ export const GENRE_STYLE_RECOMMENDATIONS: Record<string, string[]> = {
 };
 export const CINEMATIC_FILM_STYLE_PRESET_IDS = ["cinematic_photoreal", "fantasy_concept_art", "tien_hiep_3d"] as const;
 export const getRecommendedStylePresetIds = (genre?: string): string[] => _.filter(_.get(GENRE_STYLE_RECOMMENDATIONS, genre || "", [DEFAULT_STYLE_PRESET_ID]), (presetId) => Boolean(CURATED_STYLE_PRESETS[presetId]));
-const LEGACY_STYLE_ID_ALIASES: Record<string, string> = {
-  tho_bay_mau: "hoat_hinh_2d_vn",
-  gau_truc_hai: "meme_hai_huoc_2d",
-};
+const LEGACY_STYLE_ID_ALIASES: Record<string, string> = { tho_bay_mau: "hoat_hinh_2d_vn", gau_truc_hai: "meme_hai_huoc_2d" };
 const findByPresetId = (normalized: string): CuratedStylePreset | undefined => {
   const resolvedId = _.get(LEGACY_STYLE_ID_ALIASES, normalized, normalized);
   return CURATED_STYLE_PRESETS[resolvedId];

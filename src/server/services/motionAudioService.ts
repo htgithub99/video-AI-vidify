@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.js";
 import { motionSpeechRateProfile, recordSpeechRate } from "./motionSpeechRateService.js";
 import * as MR from "../../constants/motionRuntime.js";
@@ -8,7 +9,7 @@ import { randomUUID } from "crypto";
 import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_FX as FX, MOTION_VOICE_PACING as PACE, MOTION_VOICE_PATTERNS as P, MOTION_VOICE_SPEED, MOTION_VOICE_QUALITY as Q } from "../../constants/motionVoice.js";
 import { knownVoiceTempoFactor, readVoiceSpeedSettings, voiceSpeedKey, voiceTempoFactor, voiceSpeedUsesAcoustics, withMotionVoiceSpeedSnapshot } from "./motionVoiceSpeedService.js";
 import { MOTION_STORY_CONFIG } from "../../constants/motionVideo.js";
-import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance, MotionVoiceDelivery, MotionVoicePlan, MotionVoiceTiming, MotionVoiceClipQuality } from "../../types/motionVideo.js";
+import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance, MotionVoiceDelivery, MotionVoicePlan, MotionVoiceClipQuality } from "../../types/motionVideo.js";
 import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
 import { motionSoundSpatial } from "../../lib/motionSoundPlan.js";
 import { directedSpeechText, isAi33Voice, motionVoiceFilter, motionVoiceSignature, resolveMotionDelivery, motionLanguageCode, motionNarratorCastKey } from "../../lib/motionVoice.js";
@@ -115,10 +116,10 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
     cachedClipValid = true;
   } catch {}
   try {
-    const saved = JSON.parse(fs.readFileSync(checkFile, MR.MOTION_TEXT_UTF8));
+    const saved = parseJson(fs.readFileSync(checkFile, MR.MOTION_TEXT_UTF8));
     if (saved.version === C.ASR.VERSION && saved.text === line.text && saved.checked === !!opts.asr && cachedClipValid) {
       quality = saved.quality;
-      if (quality.status === Q.STATUS.PASSED && fs.existsSync(wordsFile)) words = JSON.parse(fs.readFileSync(wordsFile, MR.MOTION_TEXT_UTF8));
+      if (quality.status === Q.STATUS.PASSED && fs.existsSync(wordsFile)) words = parseJson(fs.readFileSync(wordsFile, MR.MOTION_TEXT_UTF8));
     }
   } catch {}
   if (opts.asr && [Q.STATUS.REVIEW, Q.STATUS.UNAVAILABLE].includes(quality.status as any) && Date.now() - (quality.verifiedAt || 0) >= C.ASR.RECHECK_MS) {
@@ -349,12 +350,6 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
   if (opts.asr) opts.log?.(Q.SUMMARY(checks.filter((status) => status === Q.STATUS.REVIEW).length, checks.filter((status) => status === Q.STATUS.UNAVAILABLE).length));
   return { local, durations };
 };
-export const measureMotionVoice = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTiming> =>
-  withMotionVoiceSpeedSnapshot(async () => {
-    const plan = await voicePlan(script, analysis, opts, deps);
-    const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, motionVoicePacing(analysis));
-    return { signature: plan.signature, beats: Object.fromEntries(plan.beats.map((beat, index) => [beat.id, { duration: durations[index], lines: local.filter((item) => item.beatId === beat.id).map((item) => ({ id: item.line.id, speaker: item.line.speaker, text: item.line.text, from: +item.t.toFixed(3), to: +(item.t + item.audio.duration).toFixed(3) })) }])) };
-  });
 export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> =>
   withMotionVoiceSpeedSnapshot(async () => {
     const rateProfile = motionSpeechRateProfile(script.voiceChannel);
@@ -373,7 +368,7 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
       file = path.join(folder, id),
       metadata = file + MR.MOTION_TEXT_JSON;
     try {
-      const cached = JSON.parse(fs.readFileSync(metadata, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
+      const cached = parseJson(fs.readFileSync(metadata, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
       if (cached.signature === plan.signature && cached.provider === C.PROVIDER && cached.speedKey === speedKey && motionVoiceTrackFilesValid(cached, script) && cached.clips?.every((clip) => !opts.asr || ![Q.STATUS.REVIEW, Q.STATUS.UNAVAILABLE].includes(clip.quality?.status as any) || Date.now() - (clip.quality?.verifiedAt || 0) < C.ASR.RECHECK_MS)) {
         return rememberRate(cached);
       }
@@ -464,7 +459,7 @@ export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, ana
   if (typeof id !== MR.MOTION_TEXT_STRING || !P.VOICE_TRACK.test(id as string)) return;
   const file = path.join(getMotionAudioDirectory(), id as string);
   try {
-    const track = JSON.parse(fs.readFileSync(file + MR.MOTION_TEXT_JSON, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
+    const track = parseJson(fs.readFileSync(file + MR.MOTION_TEXT_JSON, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
     if (track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis, voiceChannelRef(findVoiceChannel(script.voiceChannel)) || script.voiceChannel) && (!track.plan || track.speedKey === voiceTrackSpeedKey(track.plan)) && track.audioId === id && motionVoiceTrackFilesValid(track, script)) return track;
   } catch {}
 };

@@ -1,7 +1,6 @@
 import _ from "lodash";
 import { MOTION_CAST_NAMES as N } from "../constants/motionCastNames.js";
 import type { MotionCastMember } from "../types/motionVideo.js";
-
 export const expandInitialCastNames = (cast: MotionCastMember[]): MotionCastMember[] => {
   const used = new Set<string>(_.map(cast, (c) => c.name));
   return _.map(cast, (c) => {
@@ -15,9 +14,7 @@ export const expandInitialCastNames = (cast: MotionCastMember[]): MotionCastMemb
     return { ...c, name, alias: c.name };
   });
 };
-
 const pattern = (alias: string): RegExp => new RegExp(N.BOUND_HEAD + alias.replace(N.ESCAPE_RE, N.ESCAPE_TO) + N.BOUND_TAIL, N.FLAGS);
-
 export const fullCastNames = (text: string, cast: MotionCastMember[]): string => {
   const named = _.filter(cast, (c) => !!c.alias && c.alias !== c.name);
   if (!text || !named.length) return text;

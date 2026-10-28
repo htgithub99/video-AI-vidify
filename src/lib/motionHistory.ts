@@ -101,15 +101,7 @@ const tone = (v: unknown): string => {
   const value = _.toString(v);
   return _.includes(C.VERDICT_TONES as readonly string[], value) ? value : C.VERDICT_TONES[0];
 };
-export const motionVerdictParams = (d: Record<string, any>): Record<string, unknown> => ({
-  label: text(d.label, C.HUD_TEXT_MAX),
-  title: text(d.title, C.TITLE_MAX),
-  question: text(d.question, C.VERDICT_LINE_MAX),
-  verdict: text(d.verdict, C.VERDICT_TEXT_MAX) || C.EMPTY,
-  tone: tone(d.tone),
-  note: text(d.note, C.VERDICT_LINE_MAX),
-  at: C.VERDICT_STAMP_AT,
-});
+export const motionVerdictParams = (d: Record<string, any>): Record<string, unknown> => ({ label: text(d.label, C.HUD_TEXT_MAX), title: text(d.title, C.TITLE_MAX), question: text(d.question, C.VERDICT_LINE_MAX), verdict: text(d.verdict, C.VERDICT_TEXT_MAX) || C.EMPTY, tone: tone(d.tone), note: text(d.note, C.VERDICT_LINE_MAX), at: C.VERDICT_STAMP_AT });
 export const motionScoreboardParams = (d: Record<string, any>): Record<string, unknown> => {
   const rows = items(d.rows, C.SCOREBOARD_ROWS_MAX, (r) => {
     if (!_.isPlainObject(r)) return null;

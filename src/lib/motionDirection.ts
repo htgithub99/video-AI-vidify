@@ -1,3 +1,4 @@
+import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_REFERENCE_PROMPTS } from "../constants/motionReference.js";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_GEN_PREAMBLE, MOTION_GEN_STORY_PREAMBLE } from "../constants/motionGenPrompts.js";
@@ -20,7 +21,7 @@ export const storyDirectionPrompt = (analysis?: MotionDirection | null, chapter 
   if (!dna) return "";
   return (
     P.STORY_DIRECTION +
-    JSON.stringify({
+    stringifyJson({
       ...(chapter ? {} : { intent: dna.intent, audience: dna.audience }),
       narrative: dna.narrative,
       creativeProfile: chapter ? { writingPrinciples: dna.creativeProfile?.writingPrinciples } : { role: dna.creativeProfile?.role, writingPrinciples: dna.creativeProfile?.writingPrinciples, strengths: dna.creativeProfile?.strengths },

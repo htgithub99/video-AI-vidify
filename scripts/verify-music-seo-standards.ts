@@ -2,11 +2,9 @@ import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { SUNO_AUTOMATION_TEXTS } from "../src/constants/sunoAutomation.ts";
-
 const source = resolveSourceTextConstants(fs.readFileSync("src/server/controllers/pipelineController.ts", "utf8"));
-const component = resolveSourceTextConstants(fs.readFileSync("src/components/MusicCreator.tsx", "utf8"));
+const component = resolveSourceTextConstants(fs.readFileSync("src/features/music/components/MusicCreator.tsx", "utf8"));
 const constants = resolveSourceTextConstants(fs.readFileSync("src/constants/sunoAutomation.ts", "utf8"));
-
 for (const market of [
   { language: "Tiếng Việt", country: "Việt Nam", region: "Miền Nam" },
   { language: "English", country: "United Kingdom", region: "London" },
@@ -21,7 +19,6 @@ for (const market of [
     assert.match(prompt, new RegExp(market.language));
   }
 }
-
 const reference = "YouTube title: Nhạc Bolero Xưa Hải Ngoại Nghe Là Nhớ\nTranscript: nhạc trữ tình";
 const seoWithReference = SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(1, "Bolero", "source-test", 5, [{ title: "Bên Hiên Đợi Người" }], null, reference);
 const seoCorrectionWithReference = SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoCorrectionPrompt([], "Bolero", 5, "source-test", [], null, reference);
@@ -33,7 +30,6 @@ for (const prompt of [seoWithReference, seoCorrectionWithReference, seoRegenerat
   assert.match(prompt, /options 2-5|Options 2-5/i);
 }
 assert.match(SUNO_AUTOMATION_TEXTS.buildMusicPlaylistSeoPrompt(1, "Pop", "no-source", 5), /No reference source was supplied/);
-
 assert.match(constants, /SELECTED MUSIC STYLE/);
 assert.match(constants, /Make a real music listener feel the atmosphere immediately and want to press play/);
 assert.match(constants, /Stay completely honest to the actual song titles, lyrics, genre, mood/);
@@ -79,5 +75,4 @@ assert.match(component, /setViewMode\("seo"\);\s*setIsRegeneratingSeo\(true\)/);
 assert.match(component, /isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES\.SEO/);
 assert.match(component, /BLOCK_SEO_LOADING/);
 assert.match(component, /setViewMode\("lyrics"\);\s*setIsLoading\(true\)/);
-
 process.stdout.write("Music SEO uses the selected style and requests five varied choices without rigid similarity QA.\n");

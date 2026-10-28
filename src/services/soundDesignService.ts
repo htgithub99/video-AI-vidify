@@ -51,28 +51,10 @@ export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = "
       status: AudioCueStatus.Planned,
     });
     if (index === 0) {
-      cues.push({
-        id: SOURCE_TEMPLATE_CUE_SFX_IMPACT(`${scene.id}`),
-        sceneId: scene.id,
-        type: AudioCueType.SoundEffect,
-        description: SOUND_DESIGN_CONFIG.HOOK_SFX_DESCRIPTION,
-        emotionalIntent: SOUND_DESIGN_CONFIG.HOOK_SFX_INTENT,
-        startOffsetSeconds: 0,
-        durationSeconds: SOUND_DESIGN_CONFIG.HOOK_SFX_DURATION_SECONDS,
-        status: AudioCueStatus.Planned,
-      });
+      cues.push({ id: SOURCE_TEMPLATE_CUE_SFX_IMPACT(`${scene.id}`), sceneId: scene.id, type: AudioCueType.SoundEffect, description: SOUND_DESIGN_CONFIG.HOOK_SFX_DESCRIPTION, emotionalIntent: SOUND_DESIGN_CONFIG.HOOK_SFX_INTENT, startOffsetSeconds: 0, durationSeconds: SOUND_DESIGN_CONFIG.HOOK_SFX_DURATION_SECONDS, status: AudioCueStatus.Planned });
     }
     _.forEach(_.take(_.compact(scene.soundDesignCues || []), 3), (description, cueIndex) => {
-      cues.push({
-        id: SOURCE_TEMPLATE_CUE_DIRECTED(`${scene.id}`, `${cueIndex + 1}`),
-        sceneId: scene.id,
-        type: AudioCueType.SoundEffect,
-        description,
-        emotionalIntent: SOURCE_TEXT_SYNCHRONIZE_A_STORY_VISIBLE_PRODUCTION_SOUND,
-        startOffsetSeconds: sceneStartSeconds,
-        durationSeconds: Math.min(SOUND_DESIGN_CONFIG.MAX_SOUND_EFFECT_DURATION_SECONDS, scene.duration),
-        status: AudioCueStatus.Planned,
-      });
+      cues.push({ id: SOURCE_TEMPLATE_CUE_DIRECTED(`${scene.id}`, `${cueIndex + 1}`), sceneId: scene.id, type: AudioCueType.SoundEffect, description, emotionalIntent: SOURCE_TEXT_SYNCHRONIZE_A_STORY_VISIBLE_PRODUCTION_SOUND, startOffsetSeconds: sceneStartSeconds, durationSeconds: Math.min(SOUND_DESIGN_CONFIG.MAX_SOUND_EFFECT_DURATION_SECONDS, scene.duration), status: AudioCueStatus.Planned });
     });
     const emphaticPurpose = _.includes([SOURCE_TEXT_REVEAL, SOURCE_TEXT_PUNCHLINE, SOURCE_TEXT_CHAPTER_TURN] as string[], _.toLower(_.toString(scene.shotPurpose)));
     const transitionSfxHasBreathingRoom = _.gte(index - lastTransitionSfxIndex, 4);
@@ -117,20 +99,9 @@ export const createAudioCueSheet = (scenes: StoryboardScene[], genre: string = "
     }
     sceneStartSeconds = _.add(sceneStartSeconds, scene.duration);
   });
-  return {
-    musicArc: [...SOUND_DESIGN_CONFIG.MUSIC_ARC],
-    cues,
-    mixTargets: {
-      narrationLufs: SOUND_DESIGN_CONFIG.NARRATION_LUFS,
-      musicUnderVoiceDb: SOUND_DESIGN_CONFIG.MUSIC_UNDER_VOICE_DB,
-      peakDb: SOUND_DESIGN_CONFIG.PEAK_DB,
-    },
-  };
+  return { musicArc: [...SOUND_DESIGN_CONFIG.MUSIC_ARC], cues, mixTargets: { narrationLufs: SOUND_DESIGN_CONFIG.NARRATION_LUFS, musicUnderVoiceDb: SOUND_DESIGN_CONFIG.MUSIC_UNDER_VOICE_DB, peakDb: SOUND_DESIGN_CONFIG.PEAK_DB } };
 };
 export const applyOptionalMusicAsset = (cueSheet: AudioCueSheet, assetUrl?: string): AudioCueSheet => {
   if (_.isEmpty(assetUrl)) return cueSheet;
-  return {
-    ...cueSheet,
-    cues: _.map(cueSheet.cues, (cue) => (_.isEqual(cue.type, AudioCueType.Music) ? { ...cue, assetUrl, status: AudioCueStatus.Approved } : cue)),
-  };
+  return { ...cueSheet, cues: _.map(cueSheet.cues, (cue) => (_.isEqual(cue.type, AudioCueType.Music) ? { ...cue, assetUrl, status: AudioCueStatus.Approved } : cue)) };
 };

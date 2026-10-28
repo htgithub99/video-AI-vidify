@@ -1,0 +1,43 @@
+import assert from "node:assert/strict";
+import ts from "typescript";
+import { compactCode, getCommentRanges, parseCode } from "./codeMaintenance.js";
+import { parseJson, stringifyJson, cloneJson } from "../src/lib/jsonStringify.js";
+import { formatMediaFileSize } from "../src/lib/mediaFormat.js";
+const source = ["// header", "const url = 'https://example.com/a//b';", "const pattern = /https?:\\/\\/[^/]+/;", "const text = `first\n\n// literal text\nlast`;", "/* between tokens */ const data = { message: '/* literal */', one: 1, two: 2 };", "const view = <div title='A &amp; B'>{/* jsx comment */}Read <b>this</b> now</div>;"].join("\n\n");
+const emit = (value: string): string => ts.transpileModule(value, { compilerOptions: { target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, removeComments: true } }).outputText;
+const canonical = (value: string): unknown => {
+  const tree = parseCode(emit(value), "compiled.js");
+  const collect = (node: ts.Node): unknown => {
+    if (ts.isParenthesizedExpression(node)) return collect(node.expression);
+    const children: unknown[] = [];
+    ts.forEachChild(node, (child) => {
+      children.push(collect(child));
+    });
+    return [node.kind, ts.isIdentifier(node) || ts.isStringLiteralLike(node) || ts.isNumericLiteral(node) || ts.isRegularExpressionLiteral(node) ? node.text : undefined, children];
+  };
+  return collect(tree);
+};
+const formatted = await compactCode(source);
+assert.equal(getCommentRanges(formatted, parseCode(formatted)).length, 0);
+assert.deepEqual(canonical(formatted), canonical(source));
+assert.equal(await compactCode(formatted), formatted);
+assert.ok(formatted.replaceAll("\r\n", "\n").includes("first\n\n// literal text\nlast"));
+assert.ok(!(await compactCode('a { color: red; /* comment */ content: "/* text */"; }', "sample.css")).includes("/* comment */"));
+assert.ok((await compactCode('<!doctype html><!-- comment --><div title="<!-- literal -->">text</div>', "sample.html")).includes("<!-- literal -->"));
+const value = { title: "Tiếng Việt", values: [1, false, null] };
+assert.deepEqual(parseJson(stringifyJson(value)), value);
+assert.deepEqual(cloneJson(value), value);
+assert.notEqual(cloneJson(value), value);
+assert.equal(stringifyJson({ one: 1, two: 2 }, ["two"], 2), JSON.stringify({ one: 1, two: 2 }, ["two"], 2));
+assert.equal(parseJson<{ count: number }>(' {"count":2}', (_key, value) => (typeof value === "number" ? value * 2 : value)).count, 4);
+assert.throws(() => parseJson("{"), SyntaxError);
+const cyclic: any = {};
+cyclic.self = cyclic;
+assert.throws(() => stringifyJson(cyclic), TypeError);
+assert.throws(() => stringifyJson(1n), TypeError);
+assert.equal(stringifyJson(undefined), undefined);
+assert.equal(formatMediaFileSize(undefined), "0 MB");
+assert.equal(formatMediaFileSize(-1), "0 MB");
+assert.equal(formatMediaFileSize(1024 * 1024), "1.0 MB");
+assert.equal(formatMediaFileSize(1024 ** 3), "1.00 GB");
+process.stdout.write("Formatting semantics, comment removal, JSON contracts and shared media formatting passed\n");

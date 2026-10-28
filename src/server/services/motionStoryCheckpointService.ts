@@ -1,3 +1,4 @@
+import { parseJson } from "../../lib/jsonStringify.js";
 import fs from "node:fs";
 import path from "node:path";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
@@ -16,7 +17,7 @@ export const readMotionStoryCheckpoint = (id: string): MotionStoryJobState | nul
   if (!file) return null;
   if (!fs.existsSync(file)) return null;
   try {
-    const saved = JSON.parse(fs.readFileSync(file, P.ENCODING));
+    const saved = parseJson(fs.readFileSync(file, P.ENCODING));
     const job = saved.job as MotionStoryJobState;
     if (saved.version !== P.SNAPSHOT_VERSION || job?.id !== id || !Object.values(MotionJobStatus).includes(job.status) || !Array.isArray(job.log)) throw new Error(P.SNAPSHOT_INVALID);
     if (![MotionJobStatus.COMPLETED, MotionJobStatus.CANCELLED, MotionJobStatus.ERROR].includes(job.status)) {

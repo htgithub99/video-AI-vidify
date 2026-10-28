@@ -1,10 +1,13 @@
+import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
 import { trimMotionText } from "./motionUtils.js";
 import type { MotionCreativeBlueprint } from "../types/motionVideo.js";
 export const creativeBlueprintErrors = (value: any): string[] => {
   const errors: string[] = [];
   const text = (v: any) => typeof v === MR.MOTION_TEXT_STRING && v.trim().length > 0;
-  const requiredText = (key: string, v: any) => { if (!text(v)) errors.push(MR.MOTION_TEMPLATE_CREATIVEBLUEPRINT_MUST_CONTAIN_USEFUL_TEXT(key)); };
+  const requiredText = (key: string, v: any) => {
+    if (!text(v)) errors.push(MR.MOTION_TEMPLATE_CREATIVEBLUEPRINT_MUST_CONTAIN_USEFUL_TEXT(key));
+  };
   for (const key of [MR.MOTION_TEXT_INTENT, MR.MOTION_TEXT_AUDIENCE]) requiredText(key, value?.[key]);
   for (const [group, keys] of Object.entries({ narrative: [MR.MOTION_TEXT_VOICE, MR.MOTION_TEXT_STRUCTURE, MR.MOTION_TEXT_PACING], visualDna: [MR.MOTION_TEXT_STYLE, MR.MOTION_TEXT_COMPOSITION, MR.MOTION_TEXT_CAMERA, MR.MOTION_TEXT_LIGHTING, MR.MOTION_TEXT_PALETTE, MR.MOTION_TEXT_MATERIALS, MR.MOTION_TEXT_SUBJECTHIERARCHY], creativeProfile: [MR.MOTION_TEXT_ROLE] }))
     for (const key of keys) requiredText(MR.MOTION_TEMPLATE_SYMBOL_71(group, key), value?.[group]?.[key]);
@@ -35,4 +38,4 @@ export const normalizeCreativeBlueprint = (value: any): MotionCreativeBlueprint 
     evidence: value.evidence.slice(0, 20).map((e: any) => ({ claim: text(e.claim), sourceClue: text(e.sourceClue) })),
   };
 };
-export const creativeBlueprintPrompt = (blueprint?: MotionCreativeBlueprint): string => (blueprint ? MR.MOTION_TEMPLATE_PROJECT_CREATIVE_BLUEPRINT_SOURCE_DERIVED_PLANNING_DATA_CARRY_THI(JSON.stringify(blueprint)) : MR.MOTION_TEXT_NO_CREATIVE_BLUEPRINT_IS_STORED_FOR_THIS_LEGACY_PROJECT_FOLLOW_IT);
+export const creativeBlueprintPrompt = (blueprint?: MotionCreativeBlueprint): string => (blueprint ? MR.MOTION_TEMPLATE_PROJECT_CREATIVE_BLUEPRINT_SOURCE_DERIVED_PLANNING_DATA_CARRY_THI(stringifyJson(blueprint)) : MR.MOTION_TEXT_NO_CREATIVE_BLUEPRINT_IS_STORED_FOR_THIS_LEGACY_PROJECT_FOLLOW_IT);

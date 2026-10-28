@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { SOURCE_TEXT_IMBALANCE, SOURCE_TEXT_LINES } from "../constants/sourceText";
 import _ from "lodash";
 import { PRODUCTION_QA_THRESHOLDS } from "./productionQualityService";
@@ -16,7 +17,7 @@ const findBestSemanticBreak = (text: string): number => {
     if (_.inRange(boundary, lowerBound, upperBound + 1)) candidates.push(boundary);
   }
   if (!_.isEmpty(candidates)) return _.minBy(candidates, (boundary) => Math.abs(boundary - midpoint))!;
-  const spaces = _.compact(_.map(text, (char, index) => (_.isEqual(char, " ") ? index + 1 : 0)));
+  const spaces = _.compact(_.map(text, (char, index) => (_.isEqual(char, RT_SHARED.SYMBOL_36A9E7) ? index + 1 : 0)));
   return _.minBy(spaces, (boundary) => Math.abs(boundary - midpoint)) || text.length;
 };
 const splitSemanticPhrases = (text: string): string[] =>
@@ -41,19 +42,19 @@ const splitSemanticPhrases = (text: string): string[] =>
   });
 const createBalancedSubtitleLines = (text: string): string[] => {
   const words = _.flatMap(_.words(text, /[^\s]+/g), (word) => (_.size(word) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE ? splitLongWord(word) : [word]));
-  if (_.isEqual(PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES, 1) || _.size(_.join(words, " ")) <= PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE) return [_.join(words, " ")];
+  if (_.isEqual(PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_LINES, 1) || _.size(_.join(words, RT_SHARED.SYMBOL_36A9E7)) <= PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE) return [_.join(words, RT_SHARED.SYMBOL_36A9E7)] as string[];
   const candidates = _.compact(
     _.map(_.range(1, words.length), (index) => {
-      const first = _.join(_.slice(words, 0, index), " ");
-      const second = _.join(_.slice(words, index), " ");
+      const first = _.join(_.slice(words, 0, index), RT_SHARED.SYMBOL_36A9E7);
+      const second = _.join(_.slice(words, index), RT_SHARED.SYMBOL_36A9E7);
       if (_.some([first, second], (line) => _.size(line) > PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_LINE)) return null;
       return { lines: [first, second], imbalance: Math.abs(first.length - second.length) };
     }),
   );
-  return _.get(_.minBy(candidates, SOURCE_TEXT_IMBALANCE), SOURCE_TEXT_LINES, [_.join(words, " ")]);
+  return _.get(_.minBy(candidates, SOURCE_TEXT_IMBALANCE), SOURCE_TEXT_LINES, [_.join(words, RT_SHARED.SYMBOL_36A9E7)] as string[]);
 };
 export const createSceneSubtitleCues = (scene: StoryboardScene): SubtitleCue[] => {
-  const cueTexts = _.map(splitSemanticPhrases(scene.subtitle || scene.script), (phrase) => _.join(createBalancedSubtitleLines(phrase), "\n"));
+  const cueTexts = _.map(splitSemanticPhrases(scene.subtitle || scene.script), (phrase) => _.join(createBalancedSubtitleLines(phrase), RT_SHARED.SYMBOL_01BA47));
   const cueWeights = _.map(cueTexts, (text) => _.max([_.size(_.replace(text, /\s/g, "")), PRODUCTION_QA_THRESHOLDS.MIN_SUBTITLE_DURATION_SECONDS * PRODUCTION_QA_THRESHOLDS.MAX_SUBTITLE_CHARS_PER_SECOND]) || 0);
   const totalWeight = _.sum(cueWeights);
   let cursor = 0;

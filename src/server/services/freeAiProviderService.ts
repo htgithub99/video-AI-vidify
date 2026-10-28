@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { SOURCE_TEMPLATE_PROVIDER, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_CHOICES_0_MESSAGE_CONTENT, SOURCE_TEXT_FILEDATA, SOURCE_TEXT_INLINEDATA, SOURCE_TEXT_POST, SOURCE_TEXT_USER } from "../../constants/sourceText";
 import _ from "lodash";
 import { FREE_AI_PROVIDER_CONFIG, FREE_AI_PROVIDER_LOGS, GEMINI_REQUEST_POLICY } from "../../constants/config.js";
@@ -26,12 +27,7 @@ interface ProviderCandidate {
   models: readonly string[];
 }
 const resolveGroqModels = (requiresTools: boolean, capability?: AiTaskCapability): readonly string[] => (requiresTools ? FREE_AI_PROVIDER_CONFIG.GROQ.toolModels : capability === AiTaskCapability.ScriptWriting ? FREE_AI_PROVIDER_CONFIG.GROQ.scriptModels : FREE_AI_PROVIDER_CONFIG.GROQ.models);
-const createGroqCandidate = (apiKey: string, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate => ({
-  id: FREE_AI_PROVIDER_CONFIG.GROQ.id,
-  url: FREE_AI_PROVIDER_CONFIG.GROQ.url,
-  models: resolveGroqModels(requiresTools, capability),
-  apiKey,
-});
+const createGroqCandidate = (apiKey: string, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate => ({ id: FREE_AI_PROVIDER_CONFIG.GROQ.id, url: FREE_AI_PROVIDER_CONFIG.GROQ.url, models: resolveGroqModels(requiresTools, capability), apiKey });
 const createProviderCandidates = ({ cerebrasKey, groqKey }: FreeProviderKeys, requiresTools: boolean, capability?: AiTaskCapability): ProviderCandidate[] => {
   if (requiresTools) return _.isEmpty(groqKey) ? [] : [createGroqCandidate(groqKey, true, capability)];
   return _.compact([_.isEmpty(cerebrasKey) ? null : { ...FREE_AI_PROVIDER_CONFIG.CEREBRAS, apiKey: cerebrasKey }, _.isEmpty(groqKey) ? null : createGroqCandidate(groqKey, false, capability)]) as ProviderCandidate[];
@@ -77,7 +73,7 @@ const extractTextContents = (contents: unknown): string => {
     else _.forEach(_.values(source), visit);
   };
   visit(contents);
-  return _.trim(_.join(textParts, "\n\n"));
+  return _.trim(_.join(textParts, RT_SHARED.SYMBOL_75A11D));
 };
 const containsMediaPayload = (contents: unknown): boolean => {
   if (_.isArray(contents)) return _.some(contents, containsMediaPayload);
@@ -91,15 +87,7 @@ const requestModel = async (provider: ProviderCandidate, model: string, request:
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FREE_AI_PROVIDER_CONFIG.REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(provider.url, {
-      method: SOURCE_TEXT_POST,
-      headers: {
-        [FREE_AI_PROVIDER_CONFIG.AUTHORIZATION_HEADER]: `${FREE_AI_PROVIDER_CONFIG.BEARER_PREFIX}${provider.apiKey}`,
-        [FREE_AI_PROVIDER_CONFIG.CONTENT_TYPE_HEADER]: FREE_AI_PROVIDER_CONFIG.JSON_CONTENT_TYPE,
-      },
-      body: jsonUtils.safeStringify(createRequestBody(model, request)),
-      signal: controller.signal,
-    });
+    const response = await fetch(provider.url, { method: SOURCE_TEXT_POST, headers: { [FREE_AI_PROVIDER_CONFIG.AUTHORIZATION_HEADER]: `${FREE_AI_PROVIDER_CONFIG.BEARER_PREFIX}${provider.apiKey}`, [FREE_AI_PROVIDER_CONFIG.CONTENT_TYPE_HEADER]: FREE_AI_PROVIDER_CONFIG.JSON_CONTENT_TYPE }, body: jsonUtils.safeStringify(createRequestBody(model, request)), signal: controller.signal });
     const data: any = await response.json().catch(() => ({}));
     if (!response.ok) throw createProviderError(data, response.status);
     const text = _.toString(_.get(data, SOURCE_TEXT_CHOICES_0_MESSAGE_CONTENT));

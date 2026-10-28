@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-
-const pipeline = fs.readFileSync("src/hooks/useAutoVideoPipeline.ts", "utf8");
-const generator = fs.readFileSync("src/components/AutoVideoGenerator.tsx", "utf8");
-
+const pipeline = fs.readFileSync("src/features/video-generation/hooks/useAutoVideoPipeline.ts", "utf8");
+const generator = fs.readFileSync("src/features/video-generation/components/AutoVideoGenerator.tsx", "utf8");
 assert.match(pipeline, /let currentLogs: string\[\] = config\.resumeMode \? _\.clone\(logs\) : \[\]/);
 assert.match(pipeline, /if \(!config\.resumeMode\) \{[\s\S]*KEY_AUTO_PIPELINE_CURRENT_LOGS[\s\S]*safeStringify\(\[\]\)/);
 assert.match(pipeline, /let currentLogProjectId = config\.resumeMode/);
@@ -14,5 +12,4 @@ assert.doesNotMatch(generator, /if \(!_\.isEmpty\(projectLogs\)\) \{\s*pipelineA
 assert.match(pipeline, /const resetDerivedPresentation = !config\.resumeMode \|\| startsDifferentContent/);
 assert.match(pipeline, /if \(resetDerivedPresentation\) setActiveCreatedProject\(null\)/);
 assert.match(pipeline, /seo: invalidationState\.regenerateSeo \? undefined : existingTargetProj\.seo/);
-
 console.log("New-project log isolation assertions passed.");

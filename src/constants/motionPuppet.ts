@@ -1,3 +1,4 @@
+import { stringifyJson } from "../lib/jsonStringify.js";
 import { MOTION_EFFECTS as EFFECTS } from "./motionEffects.js";
 import { MOTION_VISUAL_CONTRACT as V } from "./motionVisualContract.js";
 import { PA } from "./motionPuppetAssets.js";
@@ -229,7 +230,7 @@ export const PUPPET = {
   SHOT_OBJECT: "object",
   SHOT_GROUP: "group",
   WHY_READ: "For an object physically visible in the current location, object.word must be copied exactly from the sentence. An object only mentioned in a future instruction, recollection, hypothetical event or elsewhere stays null or presence mentioned; do not invent its presence in this scene.",
-  FIX_READ_BASELINE: (note: string, read: unknown): string => `${note}\nPrevious scene interpretation: ${JSON.stringify(read)}\nCorrect only the fields affected by the requested fix. Preserve valid character, place, support and object keys, object appearance and the depicted moment.`,
+  FIX_READ_BASELINE: (note: string, read: unknown): string => `${note}\nPrevious scene interpretation: ${stringifyJson(read)}\nCorrect only the fields affected by the requested fix. Preserve valid character, place, support and object keys, object appearance and the depicted moment.`,
   SHOT_SYMBOL: "symbol",
   LAYOUT_GAP: 0.03,
   LAYOUT_EDGE: 0.05,

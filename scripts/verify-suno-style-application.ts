@@ -59,17 +59,7 @@ try {
   await page.setContent(SF.ADVANCED_FORM_HTML);
   await ensureAdvancedMode(page);
   await ensureAdvancedMode(page);
-  const settings = {
-    excludeStyles: SF.TEXT_EDM_DISTORTED_GUITARS,
-    vocalGender: SF.TEXT_MALE,
-    duration: SF.TEXT_AUTO,
-    maxMode: false,
-    weirdness: 30,
-    styleInfluence: 80,
-    audioInfluence: 50,
-    variety: 75,
-    personalize: false,
-  } as const;
+  const settings = { excludeStyles: SF.TEXT_EDM_DISTORTED_GUITARS, vocalGender: SF.TEXT_MALE, duration: SF.TEXT_AUTO, maxMode: false, weirdness: 30, styleInfluence: 80, audioInfluence: 50, variety: 75, personalize: false } as const;
   await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, settings);
   const lyricsEditor = page.locator(SUNO_AUTOMATION_SELECTORS.LYRICS_INPUT[0]).locator(SF.TEXT_VISIBLE_TRUE);
   await lyricsEditor.fill(SF.TEXT_VERSE_LOI_HAT_TIENG_VIET_CHORUS_MOT_CAU_HAT_MOI);
@@ -88,14 +78,16 @@ try {
       .then((values) => values.join(SF.COMMA_SEPARATOR)),
     SF.TEXT_MALE_AUTO_OFF_OFF,
   );
-  await page.locator('#gender').evaluate((element) => { element.addEventListener('click', () => element.setAttribute('data-clicked', 'true')); });
+  await page.locator("#gender").evaluate((element) => {
+    element.addEventListener("click", () => element.setAttribute("data-clicked", "true"));
+  });
   await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, settings);
-  assert.equal(await page.locator('#gender').getAttribute('data-clicked'), null, 'Applying the same gender twice must not toggle it off');
-  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, { ...settings, vocalGender: 'female' });
-  assert.equal(await page.getByRole('button', { name: 'Female', exact: true }).getAttribute('data-selected'), 'true');
-  assert.equal(await page.getByRole('button', { name: 'Male', exact: true }).getAttribute('data-selected'), 'false');
-  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, { ...settings, vocalGender: 'auto' });
-  assert.equal(await page.locator('#gender [data-selected="true"]').count(), 0, 'Auto must clear persisted gender');
+  assert.equal(await page.locator("#gender").getAttribute("data-clicked"), null, "Applying the same gender twice must not toggle it off");
+  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, { ...settings, vocalGender: "female" });
+  assert.equal(await page.getByRole("button", { name: "Female", exact: true }).getAttribute("data-selected"), "true");
+  assert.equal(await page.getByRole("button", { name: "Male", exact: true }).getAttribute("data-selected"), "false");
+  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, { ...settings, vocalGender: "auto" });
+  assert.equal(await page.locator('#gender [data-selected="true"]').count(), 0, "Auto must clear persisted gender");
   const inspoName = SF.TEXT_BOLERO_HAI_NGOAI;
   await page.setContent(SF.appliedInspoHtml(inspoName));
   await selectInspoPlaylist(page, inspoName);

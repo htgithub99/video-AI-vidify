@@ -119,7 +119,7 @@ Các sửa trước về catalogKey, tư thế nằm, cache khi resume và sức
 
 ## 6. Nguyên nhân UI chính xác
 
-`src/components/MotionVideoCreator.tsx:450` dùng class `FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_2_GAP_2_FLEX_WRAP`; giá trị trong `src/constants/motionStyles.ts:55` là `flex items-center justify-between pt-2 gap-2 flex-wrap`.
+`src/features/motion/components/MotionVideoCreator.tsx:450` dùng class `FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_PT_2_GAP_2_FLEX_WRAP`; giá trị trong `src/features/motion/constants/motionStyles.ts:55` là `flex items-center justify-between pt-2 gap-2 flex-wrap`.
 
 Hàng chứa một `<div />` rỗng và hai `ActionBtn` qua React Fragment. Fragment không tạo phần tử bao, nên khi có nút tiếp tục, flex có ba item: ô rỗng, nút tiếp tục, nút tạo. `justify-between` phân phối khoảng trống giữa ba item; vì vậy nút tiếp tục nằm gần giữa và nút tạo sát phải như ảnh.
 

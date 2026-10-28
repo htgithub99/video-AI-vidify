@@ -1,3 +1,6 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
+import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_PROMPT as P } from "../constants/motionPrompt.js";
 import { motionPromptGroups } from "./motionPrompt.js";
 import { MOTION_RESPONSE_SCHEMAS, MOTION_RESPONSE_TEXT as R } from "../constants/motionResponseContract.js";
@@ -22,7 +25,7 @@ export interface MotionSourceLedgerDraft {
   attempts?: Record<string, number>;
 }
 export const parseMotionSourceLedgerPart = (raw: any, segments: { id: string; t: number; text: string }[], partId: string): MotionSourceLedgerNode | undefined => {
-  if (motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS["motion-story-ledger"].anyOf![0]).length) return;
+  if (motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS[RT_CORE.MOTION_STORY_LEDGER].anyOf![0]).length) return;
   const ids = segments.map((segment) => segment.id);
   if (!Array.isArray(raw?.reviewedSegments) || raw.reviewedSegments.length !== ids.length || new Set(raw.reviewedSegments).size !== ids.length || !ids.every((id) => raw.reviewedSegments.includes(id)) || !Array.isArray(raw.events) || !raw.events.length) return;
   const seen = new Set<string>(),
@@ -49,7 +52,7 @@ export const parseMotionSourceLedgerPart = (raw: any, segments: { id: string; t:
       event.causes.some((id: unknown) => typeof id !== "string" || !seen.has(id))
     )
       return;
-    facts.push({ id: partId + ":" + event.id, sourceId: source.id, t: source.t, kind: event.kind, point: event.point, quote: event.quote, causes: event.causes.map((id: string) => partId + ":" + id) });
+    facts.push({ id: partId + RT_SHARED.SYMBOL_E7AC07 + event.id, sourceId: source.id, t: source.t, kind: event.kind, point: event.point, quote: event.quote, causes: event.causes.map((id: string) => partId + RT_SHARED.SYMBOL_E7AC07 + id) });
     seen.add(event.id);
     lastSourceIndex = index;
   }
@@ -57,11 +60,11 @@ export const parseMotionSourceLedgerPart = (raw: any, segments: { id: string; t:
     const sentences = segment.text.split(P.CHAPTER_SENTENCES).filter((text) => text.trim());
     return { sourceId: segment.id, t: segment.t, first: sentences[0] || segment.text, last: sentences.at(-1) || segment.text };
   };
-  return { ids: [partId], text: facts.map((fact) => fact.id + ": " + fact.point).join(P.SEPARATOR), facts, boundaries: [...new Set([segments[0], segments.at(-1)!])].map(boundary) };
+  return { ids: [partId], text: facts.map((fact) => fact.id + RT_SHARED.SYMBOL_45822F + fact.point).join(P.SEPARATOR), facts, boundaries: [...new Set([segments[0], segments.at(-1)!])].map(boundary) };
 };
 export const compactMotionSourceLedger = async (parts: (string | MotionSourceLedgerNode)[], options: { draft: MotionSourceLedgerDraft; request: (prompt: string) => Promise<unknown>; key: (value: unknown) => string; checkpoint: () => void; signal?: AbortSignal; fallback?: () => void; map?: <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>) => Promise<R[]> }): Promise<string> => {
   const initial = parts.map((part, index) => (typeof part === "string" ? { ids: [String(index + 1)], text: part } : part));
-  const join = (nodes: MotionSourceLedgerNode[]) => nodes.map((node) => JSON.stringify({ parts: node.ids, events: node.text, ...(node.facts?.length ? { facts: node.facts } : {}), ...(node.boundaries?.length ? { sourceBoundaries: node.boundaries } : {}) })).join(P.SEPARATOR);
+  const join = (nodes: MotionSourceLedgerNode[]) => nodes.map((node) => stringifyJson({ parts: node.ids, events: node.text, ...(node.facts?.length ? { facts: node.facts } : {}), ...(node.boundaries?.length ? { sourceBoundaries: node.boundaries } : {}) })).join(P.SEPARATOR);
   let nodes = initial;
   while (join(nodes).length > P.LEDGER_TOTAL_CHARS) {
     options.signal?.throwIfAborted();
@@ -77,8 +80,8 @@ export const compactMotionSourceLedger = async (parts: (string | MotionSourceLed
         boundaries = group.flatMap((node) => node.boundaries || []);
       const key = options.key([group, limit, P.LEDGER_COMPACT(group, limit)]);
       const saved = options.draft.nodes?.[key];
-      const valid = (node: MotionSourceLedgerNode | undefined): node is MotionSourceLedgerNode =>
-        !!node && typeof node.text === "string" && !!node.text.trim() && node.text.length <= limit && Array.isArray(node.ids) && node.ids.length === ids.length && new Set(node.ids).size === ids.length && ids.every((id) => node.ids.includes(id)) && JSON.stringify(node.facts || []) === JSON.stringify(facts) && JSON.stringify(node.boundaries || []) === JSON.stringify(boundaries);
+      const valid = (node: Partial<MotionSourceLedgerNode> | undefined): node is MotionSourceLedgerNode =>
+        !!node && typeof node.text === "string" && !!node.text.trim() && node.text.length <= limit && Array.isArray(node.ids) && node.ids.length === ids.length && new Set(node.ids).size === ids.length && ids.every((id) => node.ids.includes(id)) && stringifyJson(node.facts || []) === stringifyJson(facts) && stringifyJson(node.boundaries || []) === stringifyJson(boundaries);
       if (valid(saved)) {
         return saved;
       }
@@ -88,14 +91,14 @@ export const compactMotionSourceLedger = async (parts: (string | MotionSourceLed
         options.signal?.throwIfAborted();
         const prompt = P.LEDGER_COMPACT(group, limit);
         const raw = (await options.request(diagnostics ? motionResponseRepair(prompt, diagnostics) : prompt)) as { coveredParts?: string[]; summary?: string } | undefined;
-        const candidate = { ids: raw?.coveredParts!, text: raw?.summary!, ...(facts.length ? { facts } : {}), ...(boundaries.length ? { boundaries } : {}) };
+        const candidate = { ids: raw?.coveredParts, text: raw?.summary, ...(facts.length ? { facts } : {}), ...(boundaries.length ? { boundaries } : {}) };
         if (valid(candidate)) {
           (options.draft.nodes ||= {})[key] = candidate;
           options.checkpoint();
           accepted = candidate;
           break;
         }
-        diagnostics = { expectedIds: ids, summaryMaxCharacters: limit, issues: motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS["motion-story-ledger"].anyOf![1]), actual: R.VALUE(raw) };
+        diagnostics = { expectedIds: ids, summaryMaxCharacters: limit, issues: motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS[RT_CORE.MOTION_STORY_LEDGER].anyOf![1]), actual: R.VALUE(raw) };
         (options.draft.attempts ||= {})[key] = (options.draft.attempts?.[key] || 0) + 1;
         options.checkpoint();
       }

@@ -48,7 +48,7 @@ Thử riêng cho cả SCENES và VOICE đều thu được firstJobId bằng sec
 
 **Nghiệm thu:** đóng tab, mất mạng, restart backend ở từng bước rồi nối tiếp được dữ liệu hợp lệ; dự án đã dừng không tự chạy lại; không trộn cấu hình giữa các bước. Rủi ro trộn cấu hình được nhận diện từ việc đọc stateRef ở từng bước, chưa tái hiện như một sự cố riêng.
 
-**Code:** src/hooks/useMotionStudio.ts:362,415,558,663,867; src/server/services/motionStoryCheckpointService.ts:22; src/server/services/motionRenderService.ts:177,602.
+**Code:** src/features/motion/hooks/useMotionStudio.ts:362,415,558,663,867; src/server/services/motionStoryCheckpointService.ts:22; src/server/services/motionRenderService.ts:177,602.
 
 ### P0.3 — Yêu cầu AI nặng, retry chồng tầng và mất nguyên nhân thật
 
@@ -116,7 +116,7 @@ Tool đã lập storyboard theo sự việc và kiểm phủ nguồn. Cần gi�
 
 **Sửa:** tách thành phần bắt buộc và thành phần tùy chọn. SEO, thumbnail, nhạc/SFX thiếu không làm mất kết quả video chính. SEO có thể chạy sau khi chốt truyện hoặc sau khi có thời lượng thật; nếu chưa có thì đánh dấu chờ bổ sung, không báo đã có. Lỗi giọng bắt buộc hoặc sai hình thiết yếu vẫn phải được sửa trước công bố.
 
-**Nghiệm thu:** làm lỗi SEO có chủ đích nhưng video vẫn hoàn thành; làm lỗi giọng bắt buộc thì không xuất bản silent để che lỗi. Code: src/hooks/useMotionStudio.ts:362,592,615.
+**Nghiệm thu:** làm lỗi SEO có chủ đích nhưng video vẫn hoàn thành; làm lỗi giọng bắt buộc thì không xuất bản silent để che lỗi. Code: src/features/motion/hooks/useMotionStudio.ts:362,592,615.
 
 ### P1.6 — Kiểm điều kiện máy và tài nguyên trước việc dài
 

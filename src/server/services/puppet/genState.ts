@@ -1,3 +1,4 @@
+import { stringifyJson } from "../../../lib/jsonStringify.js";
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
@@ -33,7 +34,7 @@ export interface GenOptions {
 export const emptyGen = (): MotionGenState => ({ style: {}, cast: {}, locations: {}, locationInfo: {}, staging: {}, previews: {}, failed: [] });
 export const prepareMotionGen = (previous: MotionGenState | undefined, analysis: MotionStoryAnalysis, referenceKey: string): MotionGenState => {
   const signature = createHash(P.SHA)
-    .update(JSON.stringify({ version: P.GEN_VERSION, referenceKey, cast: analysis.cast, places: analysis.places, era: analysis.era, look: analysis.look }))
+    .update(stringifyJson({ version: P.GEN_VERSION, referenceKey, cast: analysis.cast, places: analysis.places, era: analysis.era, look: analysis.look }))
     .digest(P.HEX);
   const compatible = previous?.creativeSignature === signature;
   return { ...emptyGen(), ...(compatible ? _.cloneDeep(previous || {}) : {}), ...(previous?.voiceCast ? { voiceCast: { ...previous.voiceCast } } : {}), creativeSignature: signature, referenceKey, characterMode: MR.MOTION_TEXT_DRAWN, drawingMode: MR.MOTION_TEXT_2D, videoDna: analysis.videoDna };

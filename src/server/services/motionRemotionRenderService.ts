@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -15,36 +17,38 @@ export const motionRemotionSourceFingerprint = (entryPoints: string[]): string =
   const sources = new Map<string, string>();
   const visit = (file: string) => {
     if (sources.has(file)) return;
-    const source = fs.readFileSync(file, "utf8");
+    const source = fs.readFileSync(file, RT_SERVER.UTF8);
     sources.set(file, source);
     for (const match of source.matchAll(/(?:from\s*|import\s*\(\s*|import\s*)["'](\.[^"']+)["']/g)) {
       const imported = path.resolve(path.dirname(file), match[1]);
-      const target = [imported, imported.replace(/\.js$/, ".ts"), imported.replace(/\.js$/, ".tsx"), `${imported}.ts`, `${imported}.tsx`].find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
+      const target = ([imported, imported.replace(/\.js$/, RT_SERVER.TS), imported.replace(/\.js$/, RT_SERVER.TSX), `${imported}${RT_SERVER.TS}`, `${imported}${RT_SERVER.TSX}`] as string[]).find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile());
       if (target) visit(target);
     }
   };
   entryPoints.forEach(visit);
-  return createHash("sha256")
+  return createHash(RT_SERVER.SHA256)
     .update(
       [...sources.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([file, source]) => `${path.relative(process.cwd(), file)}\n${source}`)
-        .join("\n"),
+        .map(([file, source]) => `${path.relative(process.cwd(), file)}${RT_SHARED.SYMBOL_01BA47}${source}`)
+        .join(RT_SHARED.SYMBOL_01BA47),
     )
-    .digest("hex");
+    .digest(RT_SERVER.HEX);
 };
 export const motionRemotionBundle = async (): Promise<string> => {
-  const entryPoint = path.join(process.cwd(), "src/remotion/Root.tsx");
+  const entryPoint = path.join(process.cwd(), RT_SERVER.SRC_FEATURES_MOTION_REMOTION_ROOT_TSX);
   if (!fs.existsSync(entryPoint)) {
-    const folders = [getStaticResourcePath(V.BUNDLE_FOLDER), path.join(process.cwd(), "dist", V.BUNDLE_FOLDER)];
-    const built = folders.find((folder) => fs.existsSync(path.join(folder, "index.html")));
+    const folders = [getStaticResourcePath(V.BUNDLE_FOLDER), path.join(process.cwd(), RT_SERVER.DIST, V.BUNDLE_FOLDER)] as string[];
+    const built = folders.find((folder) => fs.existsSync(path.join(folder, RT_SERVER.INDEX_HTML)));
     if (!built) throw new Error(V.BUNDLE_MISSING);
     return built;
   }
-  const key = motionRemotionSourceFingerprint([entryPoint, path.join(process.cwd(), "src/server/services/remotion/bundleConfig.ts"), path.join(process.cwd(), "package.json")]);
+  const key = motionRemotionSourceFingerprint([entryPoint, path.join(process.cwd(), RT_SERVER.SRC_SERVER_SERVICES_REMOTION_BUNDLECONFIG_TS), path.join(process.cwd(), RT_SERVER.PACKAGE_JSON)] as string[]);
   if (cached?.key === key) return cached.promise;
   const outDir = path.join(getTempDirectory(), V.BUNDLE_FOLDER, key);
-  const promise = fs.existsSync(path.join(outDir, "index.html")) ? Promise.resolve(outDir) : import("@remotion/bundler").then(({ bundle }) => bundle({ entryPoint, outDir, publicDir: null, enableCaching: true, webpackOverride: motionRemotionWebpack }));
+  const publicDir = path.join(getTempDirectory(), V.BUNDLE_FOLDER, V.BUNDLE_PUBLIC_FOLDER);
+  fs.mkdirSync(publicDir, { recursive: true });
+  const promise = fs.existsSync(path.join(outDir, RT_SERVER.INDEX_HTML)) ? Promise.resolve(outDir) : import("@remotion/bundler").then(({ bundle }) => bundle({ entryPoint, outDir, publicDir, enableCaching: true, webpackOverride: motionRemotionWebpack }));
   cached = { key, promise };
   try {
     return await promise;
@@ -66,14 +70,14 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
   const { makeCancelSignal, openBrowser } = await import("@remotion/renderer");
   const { cancel, cancelSignal } = makeCancelSignal();
   const abort = () => cancel();
-  signal?.addEventListener("abort", abort, { once: true });
+  signal?.addEventListener(RT_SHARED.ABORT, abort, { once: true });
   let browser: Awaited<ReturnType<typeof openBrowser>> | undefined;
   try {
-    browser = await openBrowser("chrome", { browserExecutable: findNativeChrome(), chromiumOptions: { headless: true }, logLevel: "error" });
+    browser = await openBrowser(RT_SERVER.CHROME, { browserExecutable: findNativeChrome(), chromiumOptions: { headless: true }, logLevel: RT_SHARED.ERROR });
     signal?.throwIfAborted();
     return await run(browser, serveUrl, cancelSignal);
   } finally {
-    signal?.removeEventListener("abort", abort);
+    signal?.removeEventListener(RT_SHARED.ABORT, abort);
     await browser?.close({ silent: true });
   }
 };
@@ -83,7 +87,7 @@ export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: stri
   const { selectComposition, renderMedia } = await import("@remotion/renderer");
   await withRemotionBrowser(options.signal, async (browser, serveUrl, cancelSignal) => {
     const inputProps = { document: spec };
-    const selected = await selectComposition({ serveUrl, id: V.COMPOSITION_ID, inputProps, puppeteerInstance: browser, logLevel: "error" });
+    const selected = await selectComposition({ serveUrl, id: V.COMPOSITION_ID, inputProps, puppeteerInstance: browser, logLevel: RT_SHARED.ERROR });
     const total = Math.ceil(spec.duration * spec.fps);
     fs.mkdirSync(path.dirname(output), { recursive: true });
     await renderMedia({
@@ -91,14 +95,14 @@ export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: stri
       composition: { ...selected, width: options.width, height: options.height },
       inputProps,
       outputLocation: output,
-      codec: "h264",
+      codec: RT_SERVER.H264,
       muted: true,
       crf: options.crf,
-      pixelFormat: "yuv420p",
+      pixelFormat: RT_SERVER.YUV420P,
       concurrency: Math.max(1, Math.min(2, Math.floor(os.freemem() / 1073741824), os.cpus().length)),
       puppeteerInstance: browser,
       cancelSignal,
-      logLevel: "error",
+      logLevel: RT_SHARED.ERROR,
       onProgress: ({ renderedFrames }) => options.onProgress(Math.min(total, renderedFrames), total),
     });
   });
@@ -113,9 +117,9 @@ export const renderRemotionStill = (spec: MotionRemotionSpec, output: string, fr
       const { selectComposition, renderStill } = await import("@remotion/renderer");
       await withRemotionBrowser(signal, async (browser, serveUrl, cancelSignal) => {
         const inputProps = { document: spec };
-        const selected = await selectComposition({ serveUrl, id: V.COMPOSITION_ID, inputProps, puppeteerInstance: browser, logLevel: "error" });
+        const selected = await selectComposition({ serveUrl, id: V.COMPOSITION_ID, inputProps, puppeteerInstance: browser, logLevel: RT_SHARED.ERROR });
         fs.mkdirSync(path.dirname(output), { recursive: true });
-        await renderStill({ serveUrl, composition: selected, inputProps, frame: Math.max(0, Math.min(Math.ceil(spec.duration * spec.fps) - 1, frame)), output, imageFormat: "png", scale: Math.min(1, 960 / selected.width), puppeteerInstance: browser, cancelSignal, logLevel: "error" });
+        await renderStill({ serveUrl, composition: selected, inputProps, frame: Math.max(0, Math.min(Math.ceil(spec.duration * spec.fps) - 1, frame)), output, imageFormat: RT_SERVER.PNG, scale: Math.min(1, 960 / selected.width), puppeteerInstance: browser, cancelSignal, logLevel: RT_SHARED.ERROR });
       });
     });
   stillQueue = job.catch(() => undefined);

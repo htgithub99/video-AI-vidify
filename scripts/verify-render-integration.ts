@@ -76,23 +76,9 @@ const outputUrl = await renderFFmpegVideo({
   autoMusicProfile: "satirical_editorial",
   subtitleMode: SubtitleMode.Both,
   scenes: renderScenes,
-  audioTracks: [
-    {
-      id: "optional_missing_music",
-      type: AudioCueType.Music,
-      assetUrl: "/assets/projects/missing/music.mp3",
-      startSeconds: 0,
-      durationSeconds: 3,
-      volumeDb: -18,
-    },
-  ],
+  audioTracks: [{ id: "optional_missing_music", type: AudioCueType.Music, assetUrl: "/assets/projects/missing/music.mp3", startSeconds: 0, durationSeconds: 3, volumeDb: -18 }],
 });
-const sceneAudioOutputUrl = await renderFFmpegVideo({
-  projectId: PROJECT_ID,
-  quality: VideoQuality.LOW,
-  aspectRatio: "16:9",
-  scenes: renderScenes.map((scene) => ({ ...scene, audioBase64: createSilentWav(1) })),
-});
+const sceneAudioOutputUrl = await renderFFmpegVideo({ projectId: PROJECT_ID, quality: VideoQuality.LOW, aspectRatio: "16:9", scenes: renderScenes.map((scene) => ({ ...scene, audioBase64: createSilentWav(1) })) });
 const nativeSourcePath = path.join(PROJECT_DIRECTORY, "native-source.mp4");
 fs.mkdirSync(PROJECT_DIRECTORY, { recursive: true });
 await execFileAsync("ffmpeg", ["-y", "-f", "lavfi", "-i", "testsrc2=s=320x180:r=24:d=6", "-f", "lavfi", "-i", "sine=frequency=440:duration=6", "-shortest", "-c:v", "mpeg4", "-c:a", "aac", nativeSourcePath]);

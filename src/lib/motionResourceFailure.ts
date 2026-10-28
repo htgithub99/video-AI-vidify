@@ -1,3 +1,4 @@
+import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_RESOURCE_FAILURE as C } from "../constants/motionResourceFailure.js";
 export interface MotionResourceDiagnostic {
   kind: string;
@@ -15,4 +16,4 @@ export class MotionResourceError extends Error {
     this.name = C.CODE;
   }
 }
-export const isMotionResourceError = (error: unknown): error is MotionResourceError => error instanceof MotionResourceError || (!!error && typeof error === "object" && "code" in error && error.code === C.CODE && "diagnostic" in error);
+export const isMotionResourceError = (error: unknown): error is MotionResourceError => error instanceof MotionResourceError || (!!error && typeof error === "object" && RT_CORE.CODE in error && error.code === C.CODE && RT_CORE.DIAGNOSTIC in error);

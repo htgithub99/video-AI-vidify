@@ -1,3 +1,7 @@
+if __package__:
+    from .runtime_text import RuntimeText as _CODE_TEXT
+else:
+    from runtime_text import RuntimeText as _CODE_TEXT
 from seed_texts import SeedText as KST
 from core import *
 import re
@@ -226,5 +230,5 @@ from reference_expansion import CHAR_CATALOG
 ARCH.update(CHAR_CATALOG)
 import json
 from pathlib import Path
-for variant_key, variant in json.loads(Path(__file__).with_name("character_variants.json").read_text(encoding="utf-8")).items():
-    ARCH[variant_key] = {**ARCH[variant["base"]], **{key: value for key, value in variant.items() if key != "base"}}
+for variant_key, variant in json.loads(Path(__file__).with_name(_CODE_TEXT.CHARACTER_VARIANTS_JSON).read_text(encoding=_CODE_TEXT.UTF_8)).items():
+    ARCH[variant_key] = {**ARCH[variant[_CODE_TEXT.BASE]], **{key: value for key, value in variant.items() if key != _CODE_TEXT.BASE}}

@@ -1,12 +1,13 @@
-$url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
-$zipPath = "ffmpeg.zip"
+. (Join-Path $PSScriptRoot "scripts/powershellTexts.ps1")
+$url = $WORKSPACE_SCRIPT_TEXT.HTTPS_GITHUB_COM_BTBN_FFMPEG_BUILDS_RELEASES_DOWNLOAD_LATEST_FFMP
+$zipPath = $WORKSPACE_SCRIPT_TEXT.FFMPEG_ZIP
 Write-Host "Downloading FFmpeg from $url ..."
 Invoke-WebRequest -Uri $url -OutFile $zipPath
-Write-Host "Extracting FFmpeg ..."
-Expand-Archive -Path $zipPath -DestinationPath "ffmpeg_temp" -Force
-Write-Host "Copying ffmpeg.exe to project root ..."
-Copy-Item -Path "ffmpeg_temp\*\bin\ffmpeg.exe" -Destination ".\ffmpeg.exe"
-Write-Host "Cleaning up temp files ..."
+Write-Host $WORKSPACE_SCRIPT_TEXT.EXTRACTING_FFMPEG
+Expand-Archive -Path $zipPath -DestinationPath $WORKSPACE_SCRIPT_TEXT.FFMPEG_TEMP -Force
+Write-Host $WORKSPACE_SCRIPT_TEXT.COPYING_FFMPEG_EXE_TO_PROJECT_ROOT
+Copy-Item -Path $WORKSPACE_SCRIPT_TEXT.FFMPEG_TEMP_BIN_FFMPEG_EXE -Destination $WORKSPACE_SCRIPT_TEXT.FFMPEG_EXE
+Write-Host $WORKSPACE_SCRIPT_TEXT.CLEANING_UP_TEMP_FILES
 Remove-Item -Path $zipPath -Force
-Remove-Item -Path "ffmpeg_temp" -Recurse -Force
-Write-Host "FFmpeg has been successfully installed in the project root."
+Remove-Item -Path $WORKSPACE_SCRIPT_TEXT.FFMPEG_TEMP -Recurse -Force
+Write-Host $WORKSPACE_SCRIPT_TEXT.FFMPEG_HAS_BEEN_SUCCESSFULLY_INSTALLED_IN_THE_PROJECT_ROOT

@@ -11,18 +11,8 @@ export const MOTION_PARTS = {
   LINK_REL: "noreferrer",
 };
 export const MOTION_PARTS_TEXT = {
-  vi: {
-    OPTION: (count: number, minutes: number): string => `${count} phần · ≈${minutes} phút/phần`,
-    LABEL: (index: number, count: number): string => `Phần ${index}/${count}`,
-    INFO: (chapters: number, minutes: number): string => `${chapters} chương · ≈${minutes} phút`,
-    CONTINUE: (index: number): string => `Chạy tiếp phần ${index}`,
-  },
-  en: {
-    OPTION: (count: number, minutes: number): string => `${count} parts · ≈${minutes} min each`,
-    LABEL: (index: number, count: number): string => `Part ${index}/${count}`,
-    INFO: (chapters: number, minutes: number): string => `${chapters} chapters · ≈${minutes} min`,
-    CONTINUE: (index: number): string => `Continue with part ${index}`,
-  },
+  vi: { OPTION: (count: number, minutes: number): string => `${count} phần · ≈${minutes} phút/phần`, LABEL: (index: number, count: number): string => `Phần ${index}/${count}`, INFO: (chapters: number, minutes: number): string => `${chapters} chương · ≈${minutes} phút`, CONTINUE: (index: number): string => `Chạy tiếp phần ${index}` },
+  en: { OPTION: (count: number, minutes: number): string => `${count} parts · ≈${minutes} min each`, LABEL: (index: number, count: number): string => `Part ${index}/${count}`, INFO: (chapters: number, minutes: number): string => `${chapters} chapters · ≈${minutes} min`, CONTINUE: (index: number): string => `Continue with part ${index}` },
 };
 export const MOTION_PARTS_STYLES = {
   LIST: "space-y-2",

@@ -10,15 +10,18 @@ export const MOTION_REMOTION_SPACE = {
   OPEN_COFFIN: /\b(?:open|opened|opening|lidless)\b|mở nắp|không nắp|nắp mở/iu,
   CUSTOM_COFFIN: /\b(?:white|red|black|blue|green|gold|silver|metal|glass)\b|trắng|đen|đỏ|xanh|vàng|kính|kim loại/iu,
   COFFIN_COLORS: { wood: "#735039", side: "#49372d", lid: "#886044", ink: "#252730" },
-  OPENING_POLICY: "The only permitted openings are the doorway, gate or window rectangles explicitly listed in spaceGuide.regions. A threshold is only a low strip on the floor, NOT an opening or window. Do not add decorative black rectangles, side doors, wall panels resembling windows, or a second door from the prose description. Do not draw movable objects mentioned in the location description. Floor lines must converge to the supplied vanishing point; no vertical parallel grid.",
+  OPENING_POLICY:
+    "The only permitted openings are the doorway, gate or window rectangles explicitly listed in spaceGuide.regions. A threshold is only a low strip on the floor, NOT an opening or window. Do not add decorative black rectangles, side doors, wall panels resembling windows, or a second door from the prose description. Do not draw movable objects mentioned in the location description. Floor lines must converge to the supplied vanishing point; no vertical parallel grid.",
   MAT_WIDTH: 0.34,
   MAT_HEIGHT: 0.075,
   HORIZON: 0.38,
   BACK_GROUND: 0.46,
   FRONT_GROUND: 0.88,
   CHARACTER_HEIGHT: { child: 0.43, adult: 0.6, senior: 0.57 },
-  COMPOSITION_GUIDE: "The locationComposition is the shared storyboard layout before any asset drawing. All layers use this camera and these normalized ground points, sizes, relations and architectural sockets. Draw only the requested layer, reserving the other subjects' areas. The same physical location and object keep the same design across cuts; detail shots crop this layout. Do not redesign the scene or add furniture to fill free space.",
-  COFFIN_GUIDE: "Use a tight landscape viewBox about 720x420. A solid CLOSED human-length wooden coffin rests HORIZONTALLY on the floor in shallow three-quarter perspective. The long lid runs diagonally from the broad near end at bottom-left to the narrow far end at top-right: lid corners roughly (70,235),(530,65),(650,145),(240,330). Side panels drop only about 50 pixels below this lid. Add two short supports, no long legs. The whole visible silhouette is wider than tall. Never draw a standing coffin, obelisk, tower, chair, open tray or tall pedestal. Preserve a recognizable tapered closed lid and shallow solid side panels.",
+  COMPOSITION_GUIDE:
+    "The locationComposition is the shared storyboard layout before any asset drawing. All layers use this camera and these normalized ground points, sizes, relations and architectural sockets. Draw only the requested layer, reserving the other subjects' areas. The same physical location and object keep the same design across cuts; detail shots crop this layout. Do not redesign the scene or add furniture to fill free space.",
+  COFFIN_GUIDE:
+    "Use a tight landscape viewBox about 720x420. A solid CLOSED human-length wooden coffin rests HORIZONTALLY on the floor in shallow three-quarter perspective. The long lid runs diagonally from the broad near end at bottom-left to the narrow far end at top-right: lid corners roughly (70,235),(530,65),(650,145),(240,330). Side panels drop only about 50 pixels below this lid. Add two short supports, no long legs. The whole visible silhouette is wider than tall. Never draw a standing coffin, obelisk, tower, chair, open tray or tall pedestal. Preserve a recognizable tapered closed lid and shallow solid side panels.",
   ALTAR: /\baltar\b|bàn thờ|bàn cúng/iu,
   COFFIN: /\bcoffin\b|quan tài/iu,
   BED: /\bbed\b|giường/iu,

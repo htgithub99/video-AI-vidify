@@ -1,3 +1,5 @@
+import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
+import { parseJson } from "../../lib/jsonStringify.js";
 import {
   SOURCE_TEMPLATE_AUDIO,
   SOURCE_TEXT_0,
@@ -43,13 +45,13 @@ export const getFfprobePath = (): string => {
 };
 export const inspectVideoFile = async (videoPath: string): Promise<ShortsSourceMetadata> => {
   if (!fs.existsSync(videoPath)) {
-    throw new Error(`${SHORTS_TEXTS.ERR_FILE_NOT_FOUND} ${videoPath}`);
+    throw new Error(`${SHORTS_TEXTS.ERR_FILE_NOT_FOUND}${RT_SHARED.SYMBOL_36A9E7}${videoPath}`);
   }
   const stat = await fs.promises.stat(videoPath);
   const ffprobeCmd = getFfprobePath();
   try {
     const { stdout } = await execFileAsync(ffprobeCmd, [SOURCE_TEXT_V, SOURCE_TEXT_QUIET, SOURCE_TEXT_PRINT_FORMAT, SOURCE_TEXT_JSON, SOURCE_TEXT_SHOW_FORMAT, SOURCE_TEXT_SHOW_STREAMS, videoPath], { maxBuffer: 10 * 1024 * 1024 });
-    const data = JSON.parse(stdout);
+    const data = parseJson(stdout);
     const videoStream = _.find(data.streams, (s: any) => s.codec_type === SOURCE_TEXT_VIDEO_2);
     const duration = parseFloat(data.format?.duration || videoStream?.duration || SOURCE_TEXT_0);
     const width = parseInt(videoStream?.width || `${SHORTS_CONSTANTS.SCALE_16_9_WIDTH}`, 10);
@@ -61,35 +63,15 @@ export const inspectVideoFile = async (videoPath: string): Promise<ShortsSourceM
         fps = Math.round(parseFloat(parts[0]) / parseFloat(parts[1]));
       }
     }
-    return {
-      duration,
-      width,
-      height,
-      fps,
-      formatName: data.format?.format_name || SOURCE_TEXT_MP4,
-      bitrate: parseInt(data.format?.bit_rate || SOURCE_TEXT_0, 10),
-      fileSizeBytes: stat.size,
-      fileName: path.basename(videoPath),
-      filePath: videoPath,
-    };
+    return { duration, width, height, fps, formatName: data.format?.format_name || SOURCE_TEXT_MP4, bitrate: parseInt(data.format?.bit_rate || SOURCE_TEXT_0, 10), fileSizeBytes: stat.size, fileName: path.basename(videoPath), filePath: videoPath };
   } catch (err: any) {
     logger.warn(SHORTS_LOG_MESSAGES.FFPROBE_FALLBACK(err?.message || ""));
-    return {
-      duration: 0,
-      width: SHORTS_CONSTANTS.SCALE_16_9_WIDTH,
-      height: SHORTS_CONSTANTS.SCALE_16_9_HEIGHT,
-      fps: 30,
-      formatName: path.extname(videoPath).replace(SOURCE_TEXT_SYMBOL_23, ""),
-      bitrate: 0,
-      fileSizeBytes: stat.size,
-      fileName: path.basename(videoPath),
-      filePath: videoPath,
-    };
+    return { duration: 0, width: SHORTS_CONSTANTS.SCALE_16_9_WIDTH, height: SHORTS_CONSTANTS.SCALE_16_9_HEIGHT, fps: 30, formatName: path.extname(videoPath).replace(SOURCE_TEXT_SYMBOL_23, ""), bitrate: 0, fileSizeBytes: stat.size, fileName: path.basename(videoPath), filePath: videoPath };
   }
 };
 export const extractAudioFromVideo = async (videoPath: string, customOutputDir?: string): Promise<string> => {
   if (!fs.existsSync(videoPath)) {
-    throw new Error(`${SHORTS_TEXTS.ERR_FILE_NOT_FOUND} ${videoPath}`);
+    throw new Error(`${SHORTS_TEXTS.ERR_FILE_NOT_FOUND}${RT_SHARED.SYMBOL_36A9E7}${videoPath}`);
   }
   const targetDir = customOutputDir || path.join(getTempDirectory(), SHORTS_CONSTANTS.TEMP_AUDIO_DIR);
   await fs.promises.mkdir(targetDir, { recursive: true });

@@ -1,7 +1,7 @@
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.js";
 import fs from "node:fs";
 import path from "node:path";
-import { PCM as M } from "../src/constants/motionPuppetCatalogMigration.js";
+import { PCM as M } from "./legacy-motion-remotion/catalogMigration.js";
 import { PA } from "../src/constants/motionPuppetAssets.js";
 import { puppetAssetName, puppetEnglish, puppetObjectClass, puppetPropAllowed, puppetPropFits } from "../src/lib/motionPuppetAssets.js";
 import type { PuppetProp } from "../src/types/motionPuppet.js";

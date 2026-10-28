@@ -1,0 +1,13 @@
+import { lazy } from "react";
+export const DashboardView = lazy(() => import("./dashboard/components/DashboardView.js"));
+export const ProjectList = lazy(() => import("./projects/components/ProjectList.js"));
+export const AutoVideoGenerator = lazy(() => import("./auto-video/AutoVideoScreen.js"));
+export const CinematicFilmStudio = lazy(() => import("./cinematic/components/CinematicFilmStudio.js"));
+export const MusicCreator = lazy(() => import("./music/components/MusicCreator.js"));
+export const MusicMixer = lazy(() => import("./music-mixer/components/MusicMixer.js"));
+export const FlowVideoCreator = lazy(() => import("./flow/components/FlowVideoCreator.js"));
+export const ShortsExtractor = lazy(() => import("./shorts/components/ShortsExtractor.js"));
+export const VideoExporter = lazy(() => import("./video-export/components/VideoExporter.js"));
+export const MotionVideoCreator = lazy(() => import("./motion/components/MotionVideoCreator.js"));
+export const ProxyManager = lazy(() => import("./proxy/components/ProxyManager.js"));
+export const SettingsView = lazy(() => import("./settings/components/SettingsView.js"));

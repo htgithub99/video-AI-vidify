@@ -51,5 +51,5 @@ class FolkText:
         "kitchen": "Brick hearth with exact pot surface, separate cook position and rear jar shelf.",
         "teaching": "Teacher stands beside board; pupil sits on a drawn bench clear of the teacher.",
         "bell": "Temple bell on a raised landing and separate visitor on lower ground.",
-        "hammock": "Person lies inside the stretched hammock; companion stands beside the head."
+        "hammock": "Person lies inside the stretched hammock; companion stands beside the head.",
     }
