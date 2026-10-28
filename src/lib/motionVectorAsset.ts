@@ -1,5 +1,6 @@
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
 import type { MotionVectorAsset } from "../types/motionVisual.js";
+import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
 const tags = new Set(["svg", "g", "path", "rect", "circle", "ellipse", "polygon", "polyline", "line", "defs", "lineargradient", "radialgradient", "stop", "clippath", "mask", "title", "desc"]);
 export const parseRemotionAssetReply = (text: string): unknown => {
   const start = text.indexOf("{");
@@ -63,17 +64,21 @@ const xmlIssue = (svg: string): string | undefined => {
   if (roots !== 1 || svg.slice(offset).trim()) return V.SVG_REASONS.XML;
   return undefined;
 };
-export const normalizeMotionVector = (raw: unknown, key: string, inputKey: string, description: string): MotionVectorAsset => {
+export const normalizeMotionVector = (raw: unknown, key: string, inputKey: string, description: string, composition = false): MotionVectorAsset => {
   let svg = typeof raw === "string" ? raw.trim() : "";
+  const limit = composition ? C.LIMIT : V.ASSET_LIMIT;
+  const allowed = composition ? new Set([...tags, ...C.FILTER_TAGS]) : tags;
   const fail = (reason: string): never => {
     throw new Error(V.SVG_ERROR(reason));
   };
-  if (!svg || svg.length > V.ASSET_LIMIT + 2048) fail(V.SVG_REASONS.EMPTY);
+  if (!svg || svg.length > limit + 2048) fail(V.SVG_REASONS.EMPTY);
   svg = svg
     .replace(/^```(?:svg|xml|html)?\s*\n?([\s\S]*?)\n?```$/i, "$1")
     .trim()
     .replace(/^<\?xml\s[^?]*\?>\s*/i, "")
     .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\/>>+(?=\s*<)/g, "/>")
+    .replace(/(<(?:path|rect|circle|ellipse|polygon|polyline|line|stop)\b[^<>]*["']\s*\/)(?=<)/gi, "$1>")
     .trim();
   const root = svg.match(/^<svg\b[^>]*>/i)?.[0] || "";
   if (!/\bviewBox\s*=/.test(root)) {
@@ -86,14 +91,14 @@ export const normalizeMotionVector = (raw: unknown, key: string, inputKey: strin
   const namespace = svg.match(/\bxmlns\s*=\s*(["\'])(.*?)\1/);
   if (namespace && namespace[2] !== "http://www.w3.org/2000/svg") fail(V.SVG_REASONS.UNSAFE);
   const checked = svg.replace(/\sxmlns\s*=\s*(["\'])http:\/\/www\.w3\.org\/2000\/svg\1/g, "");
-  const unsafe = /<\?|<!|\bon[a-z]+\s*=|\b(?:href|src)\s*=|(?:https?:|javascript:|data:|@import|expression\s*\()/i.test(checked) || [...svg.matchAll(/<\/?\s*([\w:-]+)/g)].some((tag) => !tags.has(tag[1].toLowerCase())) || [...svg.matchAll(/url\s*\(([^)]+)\)/gi)].some((url) => !/^\s*["']?#[\w.-]+["']?\s*$/.test(url[1]));
-  if (svg.length > V.ASSET_LIMIT) fail(V.SVG_REASONS.EMPTY);
+  const unsafe = /<\?|<!|\bon[a-z]+\s*=|\b(?:href|src)\s*=|(?:https?:|javascript:|data:|@import|expression\s*\()/i.test(checked) || [...svg.matchAll(/<\/?\s*([\w:-]+)/g)].some((tag) => !allowed.has(tag[1].toLowerCase())) || [...svg.matchAll(/url\s*\(([^)]+)\)/gi)].some((url) => !/^\s*["']?#[\w.-]+["']?\s*$/.test(url[1]));
+  if (svg.length > limit) fail(V.SVG_REASONS.EMPTY);
   if (unsafe) fail(V.SVG_REASONS.UNSAFE);
   if (!/^<svg\b/.test(svg)) fail(V.SVG_REASONS.XML);
   const issue = xmlIssue(svg);
   if (issue) fail(issue);
   if (!vb || !vb.slice(1).every((value) => Number.isFinite(Number(value))) || Number(vb[3]) < 1 || Number(vb[4]) < 1 || Number(vb[3]) > 4096 || Number(vb[4]) > 4096) fail(V.SVG_REASONS.DIMENSIONS);
   if (!/<(?:path|rect|circle|ellipse|polygon|polyline|line)\b/i.test(svg)) fail(V.SVG_REASONS.SHAPES);
-  return { key, inputKey, svg: /\bxmlns\s*=/.test(svg) ? svg : svg.replace(/<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"'), width: Number(vb![3]), height: Number(vb![4]), description };
+  return { key, inputKey, svg: /\bxmlns\s*=/.test(svg) ? svg : svg.replace(/<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"'), width: Number(vb![3]), height: Number(vb![4]), description, ...(composition ? { compositionRevision: C.REVISION } : {}) };
 };
-export const motionVectorSource = (svg: string): string => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+export const motionVectorSource = (svg: string, stretch = false): string => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(stretch ? svg.replace(/^<svg\b[^>]*>/i, (root) => root.replace(/\s+preserveAspectRatio\s*=\s*(?:"[^"]*"|'[^']*')/gi, "").replace(/>$/, ' preserveAspectRatio="none">')) : svg)}`;

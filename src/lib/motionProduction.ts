@@ -28,10 +28,10 @@ export const assertMotionScriptComplete = (script: MotionStoryScript, analysis: 
   }
   if (!script.beats?.length || errors.length) throw new Error(P.SCRIPT_INVALID([...new Set(errors)]));
 };
-export const motionDurationRepairChapters = (script: MotionStoryScript, analysis: MotionStoryAnalysis, voice: MotionVoiceTrack): string[] => {
+export const motionDurationRepairChapters = (script: MotionStoryScript, analysis: MotionStoryAnalysis, voice: MotionVoiceTrack, tolerance: number = P.DURATION_TOLERANCE): string[] => {
   const target = analysis.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0);
   let difference = voice.totalSeconds - target;
-  if (!target || Math.abs(difference) <= target * P.DURATION_TOLERANCE) return [];
+  if (!target || Math.abs(difference) <= target * tolerance) return [];
   const direction = Math.sign(difference);
   const measured = voice.durations?.reduce((sum, duration) => sum + (Number.isFinite(duration) ? duration : 0), 0) || 0;
   const rows = analysis.chapters
@@ -43,7 +43,7 @@ export const motionDurationRepairChapters = (script: MotionStoryScript, analysis
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
   const selected = new Set<string>();
   for (const row of rows) {
-    if (Math.abs(difference) <= target * P.DURATION_TOLERANCE) break;
+    if (Math.abs(difference) <= target * tolerance) break;
     selected.add(row.id);
     difference -= row.delta;
   }

@@ -1,10 +1,13 @@
 export const MOTION_REMOTION_LAYOUT = {
   REVISION: 2,
-  SCENE_REVISION: 1,
+  SCENE_REVISION: 2,
   EFFECT_REVISION: 1,
+  SUBJECT_BOTTOM: 0.9,
+  GROUND_BOTTOM: 0.88,
+  FRAME_TOLERANCE: 0.5,
   CONTINUITY_PASSES: 3,
   CONTINUITY_ERROR: "Trạng thái các cảnh liên quan chưa thống nhất sau sửa ảnh; giữ tiến độ để sửa đúng phần phụ thuộc.",
-  ANCHORS: ["base", "surface", "grip", "inside", "seat", "body", "emitter", "flame", "pivot"],
+  ANCHORS: ["base", "surface", "grip", "inside", "seat", "body", "emitter", "flame", "pivot", "wrist"],
   ROLES: ["fixture", "support", "object", "decal"],
   EFFECTS: ["rain", "smoke", "steam", "flame", "fog", "sway"],
   MOUNTS: ["doorway", "wall", "ceiling", "floor", "pillar"],
@@ -52,5 +55,5 @@ export const MOTION_REMOTION_LAYOUT = {
   ASSET_POLICY:
     "Return optional bounds {x,y,width,height} around visible subject, normalized to viewBox. Add seat for a seated person's contact point, body for a lying person's contact, grip for hands, emitter for the physical smoke outlet and flame for a lamp wick when requested. Do not bake smoke, steam, flame, fog or rain streaks into SVG: these are separate renderer layers. Do not add a stool, bowl, floor or other unrelated subject inside a character asset. The base is the true floor contact; seat is the seated contact, not the feet.",
   SCENE_POLICY:
-    "Use role fixture|support|object|decal for props; mount names doorway|wall|ceiling|floor|pillar bind architecture to background regions. Use stable objectId from the supplied continuity catalog for recurring objects; do not invent a new object because its wording/pose changed. contact seat/body only when necessary, otherwise simplify to neutral beside. Add effects [{id,kind:rain|smoke|steam|flame|fog|sway,source:nodeId,region:backgroundRegion,direction:up|ground|left|right,intensity:0..1}]. Rain/fog need a matching region; smoke/flame need their real source. Environment describes architecture only; time/weather are supplied context, never paint them into the background. Preserve supplied prior states unless exact source confirms a change. No spilled/tipped state from merely forgotten; no future reveals. Optional view wide|detail. Keep essential fixture/object states, not detailed gestures.",
+    "Use role fixture|support|object|decal for props; mount names doorway|wall|ceiling|floor|pillar bind architecture to background regions. Use stable objectId from the supplied continuity catalog for recurring objects; do not invent a new object because its wording/pose changed. contact seat/body only when necessary, otherwise simplify to neutral beside. Add effects [{id,kind:rain|smoke|steam|flame|fog|sway,source:nodeId,region:backgroundRegion,direction:up|ground|left|right,intensity:0..1}]. Rain/fog use a background region only (outdoors/floor); wet objects alone do not imply falling rain. Smoke/steam/flame/sway need their real source node ID; anchor is a physical point name emitter/flame/pivot, NEVER another node ID or region. Environment describes architecture only; time/weather are supplied context, never paint them into the background. Preserve supplied prior states unless exact source confirms a change. No spilled/tipped state from merely forgotten; no future reveals. Optional view wide|detail. Keep essential fixture/object states, not detailed gestures.",
 } as const;

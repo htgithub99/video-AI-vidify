@@ -9,9 +9,10 @@ import type { MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from ".
 import type { MotionRemotionSpec, MotionRemotionTimedScene, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import { buildSubtitles, computeBeatTimeline, estimateBeatSeconds } from "../motionDirectorService.js";
-import { remotionBeatPlanCurrent, remotionStoryBuildCurrent } from "./sceneKeys.js";
+import { remotionStoryBuildCurrent } from "./sceneKeys.js";
 import { compileRemotionSound } from "./soundCompiler.js";
 import { motionMusicMood, motionMusicSegments } from "../motionMusicService.js";
+import type { PuppetLine } from "../../../lib/motionPuppet.js";
 export const compileRemotionStory = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect?: string; fps?: number; durations?: number[]; voiceTrack?: MotionVoiceTrack; characterMotion?: boolean; renderBehavior?: MotionRenderBehavior; review?: boolean; subtitles?: boolean }) => {
   const behavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, opts.characterMotion ?? script.gen?.characterMotion);
   const settings = motionVisualSettingsFor({ analysis, script });
@@ -27,11 +28,8 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   const duration = Math.ceil(timeline.total * fps) / fps;
   const scenes: MotionRemotionTimedScene[] = [];
   const subtitles: MotionRemotionSpec["subtitles"] = [];
-  let frame = 0;
+  const timedLines: { line: PuppetLine; start: number; end: number }[] = [];
   script.beats.forEach((beat, index) => {
-    const planned = state.scenes[beat.id];
-    if (!planned?.length) throw new Error(V.SCENES_REQUIRED);
-    if (!opts.review && analysis && !remotionBeatPlanCurrent(beat, analysis, state)) throw new Error(V.SCENES_REQUIRED);
     const lines = puppetBeatLines(beat, motionNarratorCastKey(analysis));
     const clips = opts.voiceTrack?.clips?.filter((clip) => clip.beatId === beat.id) || [];
     const beatEnd = index === script.beats.length - 1 ? Math.ceil(duration * fps) : Math.round(timeline.starts[index + 1] * fps);
@@ -53,19 +51,42 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
       }
       return timeline.starts[index] + ((timeline.ends[index] - timeline.starts[index]) * weights.slice(0, lineIndex).reduce((sum, n) => sum + n, 0)) / total;
     };
-    planned.forEach((scene, sceneIndex) => {
-      const next = planned[sceneIndex + 1];
-      const endFrame = next ? Math.min(beatEnd, Math.max(frame + 1, Math.round(startAt(lines.findIndex((line) => line.key === next.fromLineId)) * fps))) : beatEnd;
-      if (endFrame <= frame) throw new Error(V.INVALID_SPEC);
-      scenes.push({ ...scene, startFrame: frame, endFrame, nodes: layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]) });
-      frame = endFrame;
+    lines.forEach((line, lineIndex) => {
+      const clip = line.utterance && clips.find((item) => item.id === line.utterance);
+      const siblings = lines.filter((item) => item.utterance === line.utterance);
+      const chars = siblings.reduce((sum, item) => sum + item.text.length, 0) || 1;
+      const after = siblings.slice(0, siblings.findIndex((item) => item.key === line.key) + 1).reduce((sum, item) => sum + item.text.length, 0);
+      timedLines.push({ line, start: startAt(lineIndex), end: clip ? clip.start + ((clip.end - clip.start) * after) / chars : lineIndex + 1 < lines.length ? startAt(lineIndex + 1) : beatEnd / fps });
     });
     if (opts.subtitles !== false) {
       if (clips.length) for (const clip of clips) subtitles.push(...buildSubtitles({ ...beat, narration: clip.text }, clip.start, clip.end));
       else subtitles.push(...buildSubtitles(beat, timeline.starts[index], timeline.ends[index]));
     }
   });
-  const used = new Set(scenes.flatMap((scene) => [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)]).filter(Boolean));
+  const positions = new Map(timedLines.map((item, index) => [item.line.key, index]));
+  const planned = script.beats.flatMap((beat) => state.scenes[beat.id] || []);
+  let frame = 0;
+  for (const [index, scene] of planned.entries()) {
+    if (scene.composition && scene.aspect !== aspect) throw new Error(V.SCENES_REQUIRED);
+    const from = positions.get(scene.fromLineId),
+      to = positions.get(scene.toLineId);
+    const next = planned[index + 1],
+      nextPosition = next && positions.get(next.fromLineId);
+    if (from === undefined || to === undefined || to < from || (next && (nextPosition === undefined || nextPosition !== to + 1)) || (!index && from !== 0) || (!next && to !== timedLines.length - 1)) throw new Error(V.INVALID_SPEC);
+    const endFrame = next ? Math.min(Math.ceil(duration * fps), Math.max(frame + 1, Math.round(timedLines[nextPosition!].start * fps))) : Math.ceil(duration * fps);
+    if (endFrame <= frame) throw new Error(V.INVALID_SPEC);
+    const covered = timedLines.slice(from, to + 1);
+    const speaking = covered.flatMap(({ line, start, end }) => {
+      if (!line.speaker) return [];
+      const startFrame = Math.max(frame, Math.round(start * fps)),
+        lastFrame = Math.min(endFrame, Math.round(end * fps));
+      return lastFrame > startFrame ? [{ entityId: line.speaker, startFrame, endFrame: lastFrame }] : [];
+    });
+    scenes.push({ ...scene, sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))], startFrame: frame, endFrame, speaking, nodes: scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]) });
+    frame = endFrame;
+  }
+  if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
+  const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
     engine: "remotion",
     version: V.VERSION,

@@ -58,6 +58,10 @@ const patch = mergeMotionChapterDraft(
 assert.equal(patch[0].place, "bedroom");
 assert.deepEqual(patch[1], rows[1]);
 assert.deepEqual(motionChapterPending(patch, 100), []);
+const shortExpansion = motionChapterPending(rows, 100, 0.15, true);
+assert.equal(shortExpansion.length, 2);
+assert.ok(shortExpansion.every((item) => item.targetUnits! < 100));
+assert.ok(Math.abs(shortExpansion.reduce((sum, item) => sum + item.targetUnits!, 0) - 100) <= 1);
 assert.deepEqual(motionChapterPending([{ id: "speech", narration: "Bà mở cửa.", utterances: [{ text: "Bà đóng cửa." }] }]), [{ id: "speech", fields: ["utterances"] }]);
 assert.equal(motionLocationFamily("Phòng ngủ"), "bedroom");
 assert.equal(motionLocationFamily("Phòng ăn"), "dining");

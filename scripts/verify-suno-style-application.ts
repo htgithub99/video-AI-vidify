@@ -36,7 +36,7 @@ assert.ok(SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test(SF.TEXT_HTTPS_STUDIO
 assert.ok(!SUNO_AUTOMATION_PATTERNS.PLAYLIST_CREATE_API.test(SF.TEXT_HTTPS_STUDIO_API_PROD_SUNO_COM_API_PLAYLIST_UPDATE_CLIPS));
 assert.match(source, /suno_playlist_create_response/);
 assert.match(source, /getByRole\("link", \{ name: playlistName, exact: true \}\)/);
-assert.match(source, /_\.intersection\(uniqueSongIds, await collectSongIds\(page\)\)/);
+assert.match(source, /await ensureSunoPlaylistMembers\(page, requestHeaders, playlistId, uniqueSongIds,/);
 assert.match(source, /if \(hasInspo\) \{\s*await audioInfluenceControl\.waitFor/);
 assert.match(constants, /button\[aria-label="Add inspiration from a playlist"\]/);
 assert.doesNotMatch(constants, /'input\[placeholder\*="Search" i\]'/);
@@ -59,7 +59,7 @@ try {
   await page.setContent(SF.ADVANCED_FORM_HTML);
   await ensureAdvancedMode(page);
   await ensureAdvancedMode(page);
-  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, {
+  const settings = {
     excludeStyles: SF.TEXT_EDM_DISTORTED_GUITARS,
     vocalGender: SF.TEXT_MALE,
     duration: SF.TEXT_AUTO,
@@ -69,7 +69,8 @@ try {
     audioInfluence: 50,
     variety: 75,
     personalize: false,
-  });
+  } as const;
+  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, settings);
   const lyricsEditor = page.locator(SUNO_AUTOMATION_SELECTORS.LYRICS_INPUT[0]).locator(SF.TEXT_VISIBLE_TRUE);
   await lyricsEditor.fill(SF.TEXT_VERSE_LOI_HAT_TIENG_VIET_CHORUS_MOT_CAU_HAT_MOI);
   assert.deepEqual((await lyricsEditor.innerText()).split(/\n+/), [SF.TEXT_VERSE, SF.TEXT_LOI_HAT_TIENG_VIET, SF.TEXT_CHORUS, SF.TEXT_MOT_CAU_HAT_MOI]);
@@ -87,6 +88,14 @@ try {
       .then((values) => values.join(SF.COMMA_SEPARATOR)),
     SF.TEXT_MALE_AUTO_OFF_OFF,
   );
+  await page.locator('#gender').evaluate((element) => { element.addEventListener('click', () => element.setAttribute('data-clicked', 'true')); });
+  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, settings);
+  assert.equal(await page.locator('#gender').getAttribute('data-clicked'), null, 'Applying the same gender twice must not toggle it off');
+  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, { ...settings, vocalGender: 'female' });
+  assert.equal(await page.getByRole('button', { name: 'Female', exact: true }).getAttribute('data-selected'), 'true');
+  assert.equal(await page.getByRole('button', { name: 'Male', exact: true }).getAttribute('data-selected'), 'false');
+  await configureAdvancedOnce(page, SF.TEXT_AUTHENTIC_VIETNAMESE_BOLERO_76_BPM, { ...settings, vocalGender: 'auto' });
+  assert.equal(await page.locator('#gender [data-selected="true"]').count(), 0, 'Auto must clear persisted gender');
   const inspoName = SF.TEXT_BOLERO_HAI_NGOAI;
   await page.setContent(SF.appliedInspoHtml(inspoName));
   await selectInspoPlaylist(page, inspoName);

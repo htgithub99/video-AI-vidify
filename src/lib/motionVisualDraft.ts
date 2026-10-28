@@ -44,6 +44,10 @@ export const motionCompileStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
   return stringifyJson(V.DRAFT_COMPILE_FIELDS.map((key) => (key === "subtitles" ? fields[key] !== false : key === "stylePreset" && (fields.visualSettings as MotionVisualSettings)?.mode === "remotion" ? undefined : fields[key])));
 };
+export const motionRenderStateKey = (state: object) => {
+  const fields = state as Record<string, unknown>;
+  return stringifyJson([motionCompileStateKey(state), fields.quality, fields.encoder, fields.musicMood, fields.musicVolume]);
+};
 export const motionVisualDraftContextKey = (state: Pick<VisualDraftContext, "analysis" | "script">) => {
   const analysis = state.analysis && { ...state.analysis, visualSettings: undefined, stylePreset: undefined, illustrationNeeds: undefined, illustrationCoverage: undefined };
   return stringifyJson([analysis, state.script && { title: state.script.title, language: state.script.language, beats: state.script.beats }]);
@@ -63,7 +67,7 @@ export const captureMotionVisualDraft = (state: VisualDraftContext, runtime: Pic
 });
 export const motionVisualDraftRuntime = (state: VisualDraftContext, draft?: MotionVisualDraft) => {
   const compiled = draft?.contextKey === motionVisualDraftContextKey(state) && draft.compiled?.compilationKey === motionCompileStateKey(state) ? draft.compiled : null;
-  return { compiled, renderJob: compiled && draft?.renderSignature === compiled.compilationKey ? draft.renderJob || null : null };
+  return { compiled, renderJob: compiled && draft?.renderSignature === motionRenderStateKey(state) ? draft.renderJob || null : null };
 };
 export const forgetMotionVisualDraftResults = (drafts: Record<string, MotionVisualDraft> | undefined, id?: string) => Object.fromEntries(Object.entries(drafts || {}).map(([key, draft]) => [key, !id || draft.lastRenderJobId === id || draft.renderJob?.id === id || draft.renderJob?.result?.id === id ? { ...draft, renderJob: null, lastRenderJobId: null, renderSignature: undefined } : draft]));
 export const switchMotionVisualDraft = <T extends VisualDraftContext>(state: T, requested: MotionVisualSettings, runtime: Pick<MotionVisualDraft, "compiled" | "renderJob"> = {}) => {
@@ -71,13 +75,14 @@ export const switchMotionVisualDraft = <T extends VisualDraftContext>(state: T, 
   const drafts = { ...state.visualDrafts, [motionVisualDraftKey(state.visualSettings)]: captureMotionVisualDraft(state, runtime) };
   const saved = drafts[motionVisualDraftKey(settings)];
   const target = saved?.contextKey === motionVisualDraftContextKey(state) ? saved : undefined;
+  const pacingOnly = stringifyJson({ ...state.visualSettings, pacing: undefined }) === stringifyJson({ ...settings, pacing: undefined });
   const next = {
     ...state,
     visualSettings: settings,
     visualDrafts: drafts,
     ...(settings.mode === "remotion" ? { remotionProfile: settings.profileId } : { stylePreset: settings.packId }),
-    analysis: target ? target.analysis : state.analysis && { ...state.analysis, visualSettings: settings, stylePreset: settings.mode === "library" ? settings.packId : undefined, illustrationNeeds: undefined, illustrationCoverage: undefined },
-    script: state.script && { ...state.script, visualSettings: target ? target.scriptSettings : settings, gen: target?.gen },
+    analysis: target ? target.analysis : state.analysis && { ...state.analysis, visualSettings: settings, stylePreset: settings.mode === "library" ? settings.packId : undefined, ...(pacingOnly ? {} : { illustrationNeeds: undefined, illustrationCoverage: undefined }) },
+    script: state.script && { ...state.script, visualSettings: target ? target.scriptSettings : settings, gen: target?.gen || (pacingOnly ? state.script.gen : undefined) },
     thumbnail: target?.thumbnail || null,
     thumbnails: target?.thumbnails || {},
     productionId: target?.productionId,
@@ -106,10 +111,11 @@ export const recoverMotionVisualDraft = <T extends VisualDraftContext>(state: T,
   const compatible = audioCompatible && spec && spec.aspect === state.aspect && spec.fps === state.fps && !!spec.subtitles?.length === (state.subtitles !== false) && stringifyJson(motionRenderBehaviorFor(spec)) === stringifyJson(motionRenderBehaviorFor(state));
   const compiled = compatible ? { ...candidate, compilationKey: motionCompileStateKey(next) } : null;
   const item = result.rendered;
-  const renderJob: MotionJobState | null = compiled && item ? { id: item.id, status: MotionJobStatus.COMPLETED, progress: 1, framesDone: 0, framesTotal: 0, startedAt: 0, log: [], result: item } : null;
+  const renderCompatible = !result.renderSettings || motionRenderStateKey({ ...next, ...result.renderSettings }) === motionRenderStateKey(next);
+  const renderJob: MotionJobState | null = compiled && item && renderCompatible ? { id: item.id, status: MotionJobStatus.COMPLETED, progress: 1, framesDone: 0, framesTotal: 0, startedAt: 0, log: [], result: item } : null;
   if (renderJob) {
     next.lastRenderJobId = item!.id;
-    next.renderSignature = compiled!.compilationKey;
+    next.renderSignature = motionRenderStateKey(next);
   }
   return { state: next, compiled, renderJob };
 };

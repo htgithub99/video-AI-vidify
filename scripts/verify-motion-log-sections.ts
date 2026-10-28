@@ -56,10 +56,10 @@ const staleStage = motionLogSections(entries, "vi", { ...job, stage: "Tạo SEO,
 assert.equal(staleStage.find((section) => section.key === "seo")?.state, "done");
 assert.equal(staleStage.find((section) => section.key === "voice")?.state, "done");
 assert.equal(staleStage.find((section) => section.key === "scenes")?.state, "active");
-const assembly = motionLogSections([{ id: "assembly", kind: "production", lines: [P.SCOPE(P.STAGE.ASSEMBLE, I.ASSEMBLY_START)] }], "vi", { ...job, stage: P.STAGE.ASSEMBLE });
+const assembly = motionLogSections([{ id: "assembly", kind: "production", lines: [P.SCOPE(P.STAGE.ASSEMBLE, I.ASSEMBLY_START)] }], "vi", { ...job, id: "assembly", stage: P.STAGE.ASSEMBLE });
 assert.equal(assembly.find((section) => section.key === "scenes")?.state, "active");
 assert.ok(assembly.find((section) => section.key === "scenes")?.summary.includes(P.STAGE.ASSEMBLE));
-const bundle = await build({ stdin: { contents: `const DATA=${JSON.stringify({ entries, job })};` + T.ENTRY, loader: "tsx", resolveDir: process.cwd() }, bundle: true, platform: "browser", format: "esm", write: false });
+const bundle = await build({ stdin: { contents: `const DATA=${JSON.stringify({ entries, job, longError: T.LONG_ERROR })};` + T.ENTRY, loader: "tsx", resolveDir: process.cwd() }, bundle: true, platform: "browser", format: "esm", write: false });
 const compiler = await compile(await readFile("src/index.css", "utf8"), { base: path.resolve("src"), onDependency: () => {} });
 const css = compiler.build(Object.values(S.UI).flatMap((value) => (typeof value === "string" ? [value] : Object.values(value)).flatMap((classes) => classes.split(/\s+/u))));
 const server = createServer((req, res) => {
@@ -107,9 +107,25 @@ try {
   await scene.locator("summary").click();
   assert.ok((await scene.innerText()).includes("catalogKey must depict"));
   await scene.locator("summary").click();
+  await page.evaluate(() => (globalThis as any).failLayout());
+  await page.waitForFunction(() => !!document.querySelector('[data-sonner-toast] [data-title]'));
+  const assertTwoLines = async () => {
+    for (const element of [scene.locator("[data-motion-log-summary] span"), scene.locator("[data-motion-log-rows] span").last(), page.locator("[data-sonner-toast] [data-title]")]) {
+      const size = await element.evaluate((node) => ({ height: node.clientHeight, scrollHeight: node.scrollHeight, lineHeight: parseFloat(getComputedStyle(node).lineHeight), clamp: getComputedStyle(node).webkitLineClamp }));
+      assert.equal(size.clamp, "2");
+      assert.ok(size.height <= size.lineHeight * 2 + 1, JSON.stringify(size));
+      assert.ok(size.scrollHeight > size.height);
+    }
+  };
+  await assertTwoLines();
+  assert.equal(await page.locator("[data-sonner-toast] [data-title]").textContent(), T.LONG_ERROR);
+  await scene.locator("summary").click();
+  assert.ok((await scene.innerText()).includes(T.LONG_ERROR));
+  await scene.locator("summary").click();
   await mkdir("scratch", { recursive: true });
   await page.screenshot({ path: T.SCREENSHOT, fullPage: true });
   await page.setViewportSize({ width: 360, height: 900 });
+  await assertTwoLines();
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   assert.deepEqual(errors, []);
   process.stdout.write(T.PASSED);

@@ -2034,9 +2034,9 @@ export const MUSIC_CREATOR_TEXTS = {
   vi: {
     HEADER_TITLE: "Sáng tác nhạc",
     HEADER_DESC: "Tạo nhạc AI",
-    HEADER_BADGE: "Suno v3.5",
+    HEADER_BADGE: "Suno",
     STYLE_LABEL: "Phong cách",
-    STYLE_BADGE: "Suno v3.5",
+    STYLE_BADGE: "Suno",
     STYLE_PLACEHOLDER: "Mô tả phong cách dùng để tạo nhạc...",
     STYLE_NAME_PLACEHOLDER: "Tên hiển thị (tùy chọn)...",
     COUNT_LABEL: "Số bài",
@@ -2267,9 +2267,9 @@ export const MUSIC_CREATOR_TEXTS = {
   en: {
     HEADER_TITLE: "Music Studio",
     HEADER_DESC: "AI Music",
-    HEADER_BADGE: "Suno v3.5",
+    HEADER_BADGE: "Suno",
     STYLE_LABEL: "Style",
-    STYLE_BADGE: "Suno v3.5",
+    STYLE_BADGE: "Suno",
     STYLE_PLACEHOLDER: "Describe the style used to create music...",
     STYLE_NAME_PLACEHOLDER: "Display name (optional)...",
     COUNT_LABEL: "Songs",

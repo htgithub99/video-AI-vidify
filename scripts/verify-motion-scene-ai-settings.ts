@@ -42,6 +42,8 @@ try {
       return route.fulfill({ json: { job } });
     }
     if (url.pathname === API_ROUTES.MOTION_STORY_STATUS + job.id) return route.fulfill({ json: { job } });
+    if (url.pathname.startsWith(API_ROUTES.MOTION_STORY_STATUS)) return route.fulfill({ status: 404, json: { error: "Fixture has no previous production job" } });
+    if (url.pathname.startsWith(API_ROUTES.MOTION_STORY_LOGS)) return route.fulfill({ json: { lines: [], next: 0, total: 0 } });
     unexpected.push(url.pathname);
     return route.fulfill({ status: 500, json: { error: RT.UNEXPECTED_REQUEST } });
   });
@@ -80,7 +82,7 @@ try {
   await drawingResponse;
   assert.equal(requests.length, 1);
   assert.deepEqual(requests[0].aiExecution, motionSceneAiExecution(choice));
-  assert.equal(requests[0].mainAiExecution, undefined);
+  assert.deepEqual(requests[0].mainAiExecution, motionMainAiExecution(original));
   await page.getByRole(RT.BUTTON, { name: RT.TEST_DRAWING_REQUEST }).waitFor();
   fs.mkdirSync(path.resolve(RT.SCRATCH), { recursive: true });
   await page.getByTestId(RT.SETTINGS).screenshot({ path: path.resolve(RT.SCRATCH_MOTION_SCENE_AI_SETTINGS_PNG) });

@@ -2,6 +2,7 @@ import { MOTION_REMOTION_PROMPTS as P, MOTION_REMOTION_SCHEMAS } from "../../../
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLayout.js";
 import { motionResponseErrors } from "../../../lib/motionResponseContract.js";
+import { normalizeRemotionRelations } from "../../../lib/motionRemotionStaging.js";
 import type { MotionRemotionNode, MotionRemotionScene } from "../../../types/motionVisual.js";
 export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { key: string; text: string }[], cast: Set<string>) => {
   const schema = MOTION_REMOTION_SCHEMAS[V.ARTIFACT_SCENE].properties!.scenes.items!;
@@ -35,6 +36,7 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
       errors.push(...issues);
       continue;
     }
+    item.nodes = normalizeRemotionRelations(item.nodes);
     const from = lines.findIndex((line) => line.key === item.fromLineId);
     const to = lines.findIndex((line) => line.key === item.toLineId);
     if (from < 0 || to < from) {
@@ -84,8 +86,18 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
   if (cursor !== lines.length || !scenes.length || scenes.length > V.MAX_SCENES_PER_BEAT) errors.push(P.INVALID_RANGE);
   return { value: { scenes: errors.length ? [...drafts.values()] : scenes }, errors: [...new Set(errors)], accepted: scenes, drafts: [...drafts.values()] };
 };
+export const mergeEquivalentRemotionDrafts = (scenes: any[]) => {
+  const signature = (scene: any) => JSON.stringify([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node)]);
+  const merged: any[] = [];
+  for (const scene of scenes) {
+    const previous = merged.at(-1);
+    if (previous && signature(previous) === signature(scene)) previous.toLineId = scene.toLineId;
+    else merged.push(structuredClone(scene));
+  }
+  return merged;
+};
 export const remotionScenesFromDraft = (raw: { scenes: any[] }, beatId: string, place: string | undefined, lines: { key: string; text: string }[], sourceKey: string): MotionRemotionScene[] =>
-  raw.scenes.map((item, index) => ({
+  mergeEquivalentRemotionDrafts(raw.scenes).map((item, index) => ({
     ...item,
     id: `${beatId}:${index}`,
     beatId,

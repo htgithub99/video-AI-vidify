@@ -19,7 +19,7 @@ export const MotionVisualModeField: FC<{ value: MotionVisualSettings; packId?: s
           title={value.mode === "library" ? text.libraryHint : text.remotionHint}
           icon={value.mode === "library" ? Library : Clapperboard}
           disabled={disabled}
-          onClick={() => onChange(value.mode === "remotion" ? { version: 1, mode: "library", engine: "canvas", packId: packId || PUPPET_STYLE_DEFAULT } : { version: 1, mode: "remotion", engine: "remotion", profileId: profileId || "history", componentRevision: V.COMPONENT_REVISION })}
+          onClick={() => onChange(value.mode === "remotion" ? { version: 1, mode: "library", engine: "canvas", packId: packId || PUPPET_STYLE_DEFAULT, pacing: value.pacing } : { version: 1, mode: "remotion", engine: "remotion", profileId: profileId || "history", componentRevision: V.COMPONENT_REVISION, pacing: value.pacing })}
         />
       </div>
       {value.mode === "library" ? (

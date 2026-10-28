@@ -3,7 +3,7 @@ import path from "node:path";
 import { FOLK_QA as Q } from "./motionFolkStoryVerificationTexts.js";
 import { raw, ids, STORY_CRAFT_QA as V } from "./motionStoryCraftVerificationTexts.js";
 import { MOTION_FOLK_STORY as F } from "../src/constants/motionFolkStory.js";
-import { motionKnownFolkContract, motionFolkStoryErrors, motionFolkTopicValid, motionFolkTopicContract, motionFolkCopied, scopeMotionFolkStoryRepair, motionFolkTextDrifts } from "../src/lib/motionFolkStory.js";
+import { motionKnownFolkContract, motionFolkStoryErrors, motionFolkTopicErrors, motionFolkTopicValid, motionFolkTopicContract, motionFolkCopied, scopeMotionFolkStoryRepair, motionFolkTextDrifts } from "../src/lib/motionFolkStory.js";
 const oldStorage = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = path.resolve(Q.STORAGE(process.pid));
 try {
@@ -43,6 +43,8 @@ try {
   const topic = { name: Q.UNKNOWN_NAME, meaning: Q.UNKNOWN_MEANING, aliases: [Q.UNKNOWN_NAME], evidence: Q.UNKNOWN_SOURCE.split(".")[0] };
   assert.ok(motionFolkTopicValid(topic, unknownSource.text));
   assert.equal(motionFolkTopicValid({ ...topic, evidence: Q.SOURCE }, unknownSource.text), false);
+  assert.deepEqual(motionFolkTopicErrors({ ...topic, aliases: ["unrelated subject"] }, unknownSource.text), [F.TOPIC_ALIAS_ERROR]);
+  assert.ok(F.TOPIC_PROMPT(unknownSource.text).includes("copy that alias from the quote"));
   const unknownContract = motionFolkTopicContract(topic, videoDnaSourceKey(unknownSource));
   const unknownRaw = {
     ...raw,
@@ -53,7 +55,7 @@ try {
     topicEvidence: [{ chapterId: ids[0], quote: Q.NEW_UNKNOWN_EVENT }],
     chapters: raw.chapters.map((chapter: any) => ({ ...chapter, summary: Q.NEW_UNKNOWN_EVENT })),
   };
-  let draft: any = { inputKey: "fixture", rejected: 0 };
+  let draft: any = { inputKey: "fixture", rejected: 0, folkTopic: { raw: { ...topic, aliases: ["unrelated subject"] }, state: { rejected: 2, errors: [F.TOPIC_ERROR], routes: { '["room-only","deepseek-chat","deepseek-standard"]': 2 } } } };
   let topicCalls = 0;
   const interrupted = new Error(Q.TOPIC_STATE);
   await assert.rejects(
@@ -74,6 +76,7 @@ try {
     }),
   );
   assert.equal(topicCalls, 1);
+  assert.equal(draft.folkTopic.state.recovery.revision, F.TOPIC_RECOVERY_REVISION);
   assert.deepEqual(draft.folkTopic.contract, unknownContract);
   await developCreativeStory(analysis, unknownSource, {
     language: V.LANGUAGE,
@@ -97,7 +100,7 @@ try {
     },
   });
   assert.equal(chapterPrompts.length, 2);
-  assert.ok(chapterPrompts.every((prompt) => prompt.includes(F.PROFILE) && prompt.includes(locked.topic.id)));
+  assert.ok(chapterPrompts.every((prompt) => (prompt.includes(F.PROFILE) || prompt.includes(F.CHAPTER_PROFILE)) && prompt.includes(locked.topic.id)));
   assert.ok(!chapterPrompts[0].includes(Q.COPY));
   const beat: any = { id: "dialogue", chapterId: ids[0], narration: V.DIALOGUE, visual: V.VISUAL, place: V.PLACE, utterances: [{ id: "line", speaker: V.SPEAKER, role: V.ROLE, text: V.DIALOGUE, emotion: "neutral", speed: 0.95, pauseAfter: 0.3 }] };
   const edited = await editScript({ ...source, text: Q.COPY }, developed, [beat], {

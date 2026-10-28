@@ -1,4 +1,5 @@
 import { MOTION_EFFECTS as EFFECTS } from "../../../constants/motionEffects.js";
+import { MOTION_AI_ROLE } from "../../../constants/motionAiFallback.js";
 import { isTerminalMotionAiError } from "../chatSubmissionRecovery.js";
 import { MOTION_PROGRESS as PROGRESS } from "../../../constants/motionProgress.js";
 import { MotionResourceError, isMotionResourceError } from "../../../lib/motionResourceFailure.js";
@@ -89,7 +90,10 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
   const mode = closed ? LM.AUTO : puppetLibraryMode(analysis, o.styleReferences?.length || 0);
   if (!closed) o.log(P.LOG_MODE(mode));
   const fresh = mode === LM.FRESH && !o.onlyLocations?.length && !o.onlyBeats?.length;
-  const ro: PuppetRunOptions = { exec: o.exec, signal: o.signal, log: o.log, ai: o.ai, fresh, review: o.review };
+  const mainExec = { ...(o.mainExec || o.exec), role: MOTION_AI_ROLE.MAIN };
+  const drawExec = { ...o.exec, role: MOTION_AI_ROLE.DRAW };
+  const ro: PuppetRunOptions = { exec: mainExec, mainExec, drawExec, signal: o.signal, log: o.log, ai: o.ai, fresh, review: o.review };
+  const drawOptions: PuppetRunOptions = { ...ro, exec: drawExec };
   const referenceKey = o.styleReferences?.length
     ? createHash(P.SHA)
         .update(JSON.stringify(_.map(o.styleReferences, (r) => r.dataUrl)))
@@ -186,7 +190,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
     pg.storyboard = plan;
     emit();
   };
-  pg.storyboard = reusablePlan ? prev!.storyboard : await timed(SB.STAGE, () => planPuppetStoryboard(sourceLines, script.beats, analysis, ro, prev?.storyboard, {}, savePlan));
+  pg.storyboard = reusablePlan ? prev!.storyboard : await timed(SB.STAGE, () => planPuppetStoryboard(sourceLines, script.beats, analysis, { ...ro, language: script.language }, prev?.storyboard, {}, savePlan));
   let lines = puppetVisualLines(sourceLines, pg.storyboard!);
   const wantedKeys = new Set(lines.map((line) => line.key));
   pg.frames = _.pickBy(pg.frames, (_frame, key) => wantedKeys.has(key));
@@ -275,7 +279,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
         );
       if (style.procedural) proceduralCast(todo);
       else {
-        const drawn = await drawPuppetCharacters(style, todo, story, castNames, ro);
+        const drawn = await drawPuppetCharacters(style, todo, story, castNames, drawOptions);
         for (const [k, c] of _.toPairs(drawn)) pg.characters[k] = writePuppet({ ...c, ...(ghostKeys.includes(k) ? { humanGhostVersion: EFFECTS.HUMAN_GHOST_VERSION } : {}), originalName: originalCast[k]?.name, originalDesc: originalCast[k]?.look || originalCast[k]?.description, catalogVersion: PA.VERSION }).id;
       }
     }
@@ -428,7 +432,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
       const first = failed[0];
       throw new MotionResourceError({ kind: PACK.SET, reason: RESOURCE.REASONS.COMBINATION, name: failed.map(({ job }) => job.place.name).join(P.COMMA), place: first.job.key, details: _.uniq(failed.flatMap((item) => item.details)).slice(0, 6), candidates: failed.flatMap((item) => item.candidates) });
     }
-    const drawn = await drawPuppetSets(style, jobs, ro);
+    const drawn = await drawPuppetSets(style, jobs, drawOptions);
     for (const [k, set] of _.toPairs(drawn)) if (fits(k, set)) pg.sets[k] = set.id;
     const missing = jobs.filter((j) => !pg.sets[j.key]).map((j) => j.key);
     if (missing.length) throw new Error(PA.SET_ERROR(missing));
@@ -538,7 +542,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
       variants,
       async ({ k, want }) => {
         const set = has<PuppetSet>(PUPPET_TYPES.SET, pg.sets[k]);
-        if (set) await ensureSetVariant(set, want, ro, style);
+        if (set) await ensureSetVariant(set, want, drawOptions, style);
       },
       puppetLanes(o.exec),
     );
@@ -567,7 +571,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
     await mapMotionAiPool(
       _.chunk(todo, P.PROPS_PER_CALL),
       async (group) => {
-        const made = await drawPuppetProps(style, group, notes, setting, ro, objects);
+        const made = await drawPuppetProps(style, group, notes, setting, drawOptions, objects);
         for (const [k, p] of _.toPairs(made)) pg.props[k] = p.id;
         emit();
       },
@@ -588,7 +592,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
     const todo = _.compact(_.map(posed, (k) => has<PuppetCharacter>(PUPPET_TYPES.CHARACTER, pg.characters[k]))).filter((c) => !_.size(c.sprites) && !!c.head?.front);
     if (!todo.length) return;
     o.log(P.LOG_SPRITES(_.map(todo, (c) => c.name)));
-    await mapMotionAiPool(todo, (c) => drawPuppetSprites(style, c, ro), puppetLanes(o.exec));
+    await mapMotionAiPool(todo, (c) => drawPuppetSprites(style, c, drawOptions), puppetLanes(o.exec));
   };
   const castExtras = (todoReads: PuppetRead[]): void => {
     if (mode === LM.FRESH) return;
@@ -622,7 +626,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
     castExtras(todoReads);
     await Promise.all([timed(P.STEP_SETS, () => drawSetsOnce(_.compact([..._.map(todoReads, (r) => r.place), ..._.map(todo, (l) => l.place)]))), timed(P.STEP_PROPS, () => drawProps(todoReads))]);
     progress(base + 0.1, P.STAGE_COMPOSE);
-    Object.assign(pg.frames, await timed(P.STEP_COMPOSE, () => (closed ? composePuppetPackLines(todo, lines, pg, style, notes, ro, emit) : composePuppetLines(todo, lines, analysis, pg.reads || {}, notes, composeCtx, ro))));
+    Object.assign(pg.frames, await timed(P.STEP_COMPOSE, () => (closed ? composePuppetPackLines(todo, lines, pg, style, notes, drawOptions, emit) : composePuppetLines(todo, lines, analysis, pg.reads || {}, notes, composeCtx, drawOptions))));
     carryWear();
     if (!closed) pg.frames = normalizePuppetFrameContinuity(lines, pg.frames, pg.reads || {}, spotsOf);
     emit();
@@ -718,7 +722,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
     if (attempt >= V.QA_REPAIRS) throw new Error(V.QA_UNRESOLVED(redo.length));
     o.log(V.QA_REPAIR_LOG(attempt + 1, redo.length));
     if (replan.size) {
-      pg.storyboard = await timed(SB.STAGE, () => planPuppetStoryboard(sourceLines, script.beats, analysis, ro, pg.storyboard, Object.fromEntries([...replan].map((key) => [key, bad[key]])), savePlan));
+      pg.storyboard = await timed(SB.STAGE, () => planPuppetStoryboard(sourceLines, script.beats, analysis, { ...ro, language: script.language }, pg.storyboard, Object.fromEntries([...replan].map((key) => [key, bad[key]])), savePlan));
       lines = puppetVisualLines(sourceLines, pg.storyboard);
       const keys = new Set(lines.map((line) => line.key));
       pg.frames = _.pickBy(pg.frames, (_frame, key) => keys.has(key) && !bad[key]);

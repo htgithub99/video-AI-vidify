@@ -1,6 +1,7 @@
 import { MOTION_STORY_CRAFT as CRAFT } from "../../constants/motionStoryCraft.js";
+import { motionStoryEventLedger } from "../../lib/motionStoryContinuity.js";
 import { MOTION_FOLK_STORY as FOLK } from "../../constants/motionFolkStory.js";
-import { motionFolkContractGuide, motionFolkTopicValid, motionFolkTopicContract, motionKnownFolkContract, motionFolkStoryErrors, motionFolkChapterContext, motionFolkChapterWritingContext, motionFolkCopied, scopeMotionFolkStoryRepair, motionFolkTextDrifts } from "../../lib/motionFolkStory.js";
+import { motionFolkContractGuide, motionFolkTopicErrors, motionFolkTopicValid, motionFolkTopicContract, motionKnownFolkContract, motionFolkStoryErrors, motionFolkChapterContext, motionFolkChapterWritingContext, motionFolkCopied, scopeMotionFolkStoryRepair, motionFolkTextDrifts } from "../../lib/motionFolkStory.js";
 import type { MotionFolkStoryContract } from "../../types/motionVideo.js";
 import { repairMotionIllustrationNeeds } from "./motionIllustrationRepairService.js";
 import { normalizeMotionIllustrationNeeds, acceptMotionIllustrationAudit } from "../../lib/motionIllustrationNeeds.js";
@@ -26,7 +27,7 @@ import { motionStoryContract, motionStoryContractErrors } from "../../lib/motion
 import { motionStoryDraft, motionStoryIssueLabels, motionStoryRepairFields } from "../../lib/motionStoryRepair.js";
 import { motionDnaRepairDraft, motionDnaRepairPrompt } from "../../lib/motionDnaRepair.js";
 import { MotionProviderRecovery } from "./motionProviderRecovery.js";
-import { requestMotionAiContract, type MotionAiResponseContract } from "./motionAiContractService.js";
+import { requestMotionAiContract, recoverMotionAiContractState, type MotionAiResponseContract } from "./motionAiContractService.js";
 import { MOTION_CAPTCHA_PROBE, MOTION_DOCTOR_FIELDS } from "../../constants/motionStoryFields.js";
 import { expandInitialCastNames, fullCastNames } from "../../lib/motionCastNames.js";
 import { MOTION_CAST_NAMES } from "../../constants/motionCastNames.js";
@@ -1290,6 +1291,9 @@ const resolveMotionFolkContract = async (analysis: MotionStoryAnalysis, source: 
     return known;
   }
   const saved = opts.draft ? (opts.draft.folkTopic ||= { state: { rejected: 0, errors: [] } }) : { state: { rejected: 0, errors: [] }, raw: undefined as any, contract: undefined as MotionFolkStoryContract | undefined };
+  saved.state = recoverMotionAiContractState(saved.state, FOLK.TOPIC_RECOVERY_REVISION);
+  if (saved.raw) saved.state.errors = motionFolkTopicErrors(saved.raw, original);
+  if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
   const input = (source.title || "") + "\n" + modelText;
   const question = () => FOLK.TOPIC_PROMPT(input, saved.state.errors);
   const contract: MotionAiResponseContract = {
@@ -1302,7 +1306,7 @@ const resolveMotionFolkContract = async (analysis: MotionStoryAnalysis, source: 
     },
     assess: (raw) => {
       saved.raw = raw;
-      return { value: raw, errors: motionFolkTopicValid(raw, input) && original.includes(raw.evidence) ? [] : [FOLK.TOPIC_ERROR] };
+      return { value: raw, errors: [...new Set([...motionFolkTopicErrors(raw, input), ...motionFolkTopicErrors(raw, original)])] };
     },
     repair: question,
     failure: () => new Error(FOLK.TOPIC_FAILED),
@@ -1951,7 +1955,7 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
       section,
       isFirst: opts.isFirst && index === 0,
       isLast: opts.isLast && index === parts.length - 1,
-      previous: completed.length ? completed : opts.previous,
+      previous: [...(opts.previous || []), ...completed],
       draft: drafts[String(index)],
       onDraft: (draft) => {
         drafts[String(index)] = draft;
@@ -1994,6 +1998,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       analysis.visualSettings?.mode === "remotion" || closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_SCENES : MOTION_GEN_STORYBOARD_RULES(language),
       MOTION_CAST_NAMES.RULE,
       PROMPT.CHAPTER_VOICE,
+      motionStoryEventLedger(opts.previous),
       MOTION_AUDIO_DIRECTION.CONTEXT + JSON.stringify(_.pick(motionAudioDirection(null, analysis), ["mode", "factual", "narrationStyle", "dialect"])),
       analysis.visualSettings?.mode !== "remotion" && analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + JSON.stringify(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id).map(({ evidence, place, states, objects, features }) => ({ evidence, place, states, objects, features }))) : null,
       motionGenreCreative(analysis.videoGenre) ? FOLK.CHAPTER_PROFILE : closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_GENRE + JSON.stringify({ videoGenre: analysis.videoGenre, genre: analysis.genre, factual: analysis.factual }) : motionVideoGenreDirective(analysis.videoGenre, false),
@@ -2008,6 +2013,8 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   const quotesIndex = factual ? transcriptIndex(source.text) : null;
   const request = prompt;
   const expectedUnits = seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
+  const shortVideo = seconds >= QA.DURATION_SHORT_REPAIR_MIN_SECONDS && seconds <= QA.DURATION_SHORT_REPAIR_MAX_SECONDS;
+  const repairTolerance = shortVideo ? QA.DURATION_SHORT_REPAIR_TOLERANCE : MOTION_PRODUCTION.DURATION_TEXT_TOLERANCE;
   const spokenOf = (list: MotionBeat[]) => list.reduce((sum, beat) => sum + beat.narration.split(MP.WHITESPACE).filter(Boolean).length, 0);
   const inputKey = motionInputKey([request, expectedUnits]);
   const perBeat = Math.max(8, Math.round(units / beatsWanted));
@@ -2015,11 +2022,11 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   let draft = opts.draft && [inputKey, motionInputKey([legacyRequest, expectedUnits])].includes(opts.draft.inputKey) ? { ...structuredClone(opts.draft), inputKey } : undefined;
   if (!draft && opts.durationRepair && opts.existing?.length) {
     const rows = mergeMotionChapterDraft({ beats: opts.existing }, chapter.id);
-    draft = { inputKey, rows, pending: motionChapterPending(rows, expectedUnits, MOTION_PRODUCTION.DURATION_TEXT_TOLERANCE), ...(opts.repairState ? { repairState: structuredClone(opts.repairState) } : {}) };
+    draft = { inputKey, rows, pending: motionChapterPending(rows, expectedUnits, repairTolerance, shortVideo), ...(opts.repairState ? { repairState: structuredClone(opts.repairState) } : {}) };
   }
   const assess = (raw: any) => {
     const rawBeats = mergeMotionChapterDraft(raw, chapter.id, draft).map((beat): Record<string, any> => ({ ...beat, ...(beat.utterances !== undefined ? { utterances: normalizeMotionNarratorSpeakers(beat.utterances, motionNarratorCastKey(analysis)) } : {}) }));
-    const pending = motionChapterPending(rawBeats, opts.durationRepair ? expectedUnits : undefined, opts.durationRepair ? MOTION_PRODUCTION.DURATION_TEXT_TOLERANCE : undefined);
+    const pending = motionChapterPending(rawBeats, opts.durationRepair ? expectedUnits : undefined, opts.durationRepair ? repairTolerance : undefined, shortVideo);
     const responseIssues = motionChapterResponseIssues(
       rawBeats,
       analysis.cast.map((member) => member.key),
@@ -2067,6 +2074,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
           language: opts.language,
           chapter,
           previous: prev,
+          eventLedger: motionStoryEventLedger(opts.previous),
           next: analysis.chapters[analysis.chapters.findIndex((item) => item.id === chapter.id) + 1],
           cast: analysis.cast.map((item) => _.pick(item, ["key", "name", "role", "gender", "age"])),
           places: analysis.places.map((item) => _.pick(item, ["key", "name", "description"])),

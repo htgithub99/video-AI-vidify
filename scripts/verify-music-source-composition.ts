@@ -64,9 +64,9 @@ assert.match(constants, /complete performance-ready lyrics of at least 300 chara
 assert.match(constants, /failed these exact checks/);
 assert.match(constants, /MUSIC_ROOM_RESPONSE_ATTEMPTS: 5/);
 assert.match(constants, /MUSIC_THUMBNAIL_ATTEMPTS: 5/);
-assert.match(constants, /MUSIC_COMPOSITION_ROOM_CONCURRENCY: 2/);
+assert.match(constants, /MUSIC_COMPOSITION_ROOM_CONCURRENCY: 3/);
 const refactorConstants = resolveSourceTextConstants(fs.readFileSync("src/constants/refactor.ts", "utf8"));
-assert.match(refactorConstants, /OUTPUT_BATCH_SIZES: \[2\]/);
+assert.match(refactorConstants, /OUTPUT_BATCH_SIZES: \[3, 2, 1\]/);
 assert.match(controller, /isRetryableMusicRoomError/);
 assert.match(sunoAutomation, /SUNO_CREATE_ACTION_ATTEMPTS/);
 assert.match(sunoAutomation, /formatSunoCreateRetryLog/);
@@ -128,7 +128,8 @@ assert.doesNotMatch(chatPlanning, /if \(!submissionConfirmed && _\.isEmpty\(atta
 assert.match(controller, /size < batchCount/);
 assert.match(controller, /const initialBatchSize = _\.first\(MUSIC_CREATOR_CONSTANTS\.OUTPUT_BATCH_SIZES\)/);
 assert.match(controller, /closeChatPlanningRoomsForProject\(\{ provider, projectId \}\)/);
-assert.match(controller, /workerId: workerIndex === 0 \? SUNO_AUTOMATION_CONFIG\.MUSIC_PLAN_WORKER_TYPE : SUNO_AUTOMATION_CONFIG\.MUSIC_SECOND_ROOM_WORKER_TYPE/);
+assert.match(controller, /SUNO_AUTOMATION_CONFIG\.MUSIC_THIRD_ROOM_WORKER_TYPE/);
+assert.match(controller, /await Promise\.all\(_\.map\(compositionWorkerIds, runCompositionWorker\)\)/);
 assert.doesNotMatch(controller, /music-creator-batch-|closeCompositionRooms/);
 assert.doesNotMatch(controller, /storeMusicSourceInRoom\(batch\.workerId\)/);
 assert.match(controller, /styleAnalysis: styleAnalysisParsed/);

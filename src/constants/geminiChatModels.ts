@@ -36,6 +36,7 @@ export const GEMINI_MODEL_ENCODING = {
   UI_NOT_READY_CODE: "gemini_model_ui_not_ready",
   UI_NOT_READY: (phase: string) => `gemini_model_ui_not_ready: Giao diện Gemini chưa sẵn sàng hoặc chưa xác nhận được lựa chọn (${phase}).`,
   DIAGNOSTICS: "geminiSelection",
+  DIAGNOSTIC_PHASE: "selectionPhase",
 } as const;
 export const GEMINI_CHAT_BASE_MODEL_OPTIONS = [
   { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },

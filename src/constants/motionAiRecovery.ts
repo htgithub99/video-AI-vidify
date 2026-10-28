@@ -9,7 +9,7 @@ export const MOTION_AI_RECOVERY = {
   PROVIDER_COOLDOWN: (provider: string): string => `${provider} vẫn trả lỗi sau hai lần tải lại và một room mới. Tạm chờ dịch vụ 10 phút; giữ phần đã đạt và tuân theo cấu hình AI đã chọn.`,
   ATTACHMENT_COOLDOWN: (provider: string): string => `${provider} vẫn chưa tải được ảnh/tệp tham chiếu sau hai lần tải lại và một room mới. Tạm bỏ qua AI này trong lượt hiện tại, sẽ thử lại sau 10 phút.`,
   REPLAYABLE_ARTIFACT: /^(?:motion-puppet-|motion_remotion_)/,
-  VECTOR_ARTIFACT: /^(?:motion-puppet-(?:character|sprites|set|set-variant|props|pieces)|motion_remotion_asset)$/,
+  VECTOR_ARTIFACT: /^(?:motion-puppet-(?:character|sprites|set|set-variant|props|pieces)|motion_remotion_(?:asset|composition))$/,
   VECTOR_INSTRUCTION:
     "This is a vector programming task. Return JSON containing SVG source strings directly in your text response. Encode EVERY less-than character inside SVG strings as the literal JSON escape \\u003c, including closing tags (e.g. \\u003c/svg>). This prevents chat Markdown/HTML rendering from removing SVG tags; JSON.parse restores the original SVG. Include all closing tags. Do not invoke image generation, canvas, an image artifact or any image tool. The application renders your SVG code. Preserve the supplied design, reference style and requested JSON schema.",
   EXHAUSTED_FLAG: "motionRoomRecoveryExhausted",

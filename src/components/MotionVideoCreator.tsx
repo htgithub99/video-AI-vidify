@@ -28,6 +28,8 @@ import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
 import type { MotionRemotionSpec } from "../types/motionVisual.js";
 import { MOTION_VISUAL } from "../constants/motionVisual.js";
 import { MOTION_RENDER_BEHAVIOR } from "../constants/motionRenderBehavior.js";
+import { MOTION_SCENE_PACING } from "../constants/motionScenePacing.js";
+import type { MotionScenePacing } from "../types/motionVisual.js";
 import { applyMotionRenderBehavior } from "../lib/motionRenderBehavior.js";
 import { MotionVisualModeField } from "./motion-video/MotionVisualModeField.js";
 import { toast } from "sonner";
@@ -227,6 +229,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   useEffect(() => setPreviewReady(false), [previewModal?.imageUrl]);
   const [analysisTab, setAnalysisTab] = useState<"cast" | "places" | "chapters" | "facts">(MOTION_TEXT_CAST);
   const [sceneNote, setSceneNote] = useState<string>(MR.MOTION_TEXT_EMPTY);
+  useEffect(() => {
+    setPreviewModal(null);
+    setPreviewReady(false);
+    setAnalysisTab(MOTION_TEXT_CAST);
+    setSceneNote(MR.MOTION_TEXT_EMPTY);
+  }, [state.editorialSessionId]);
   const busyKind = studio.storyBusy ? studio.storyJob?.kind : null;
   const storyStopping = studio.storyJob?.stage === MOTION_TEXT_STOPPING;
   const renderStopping = studio.renderJob?.stage === MOTION_TEXT_STOPPING;
@@ -461,6 +469,19 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.AUTO_EXPORT}</span>
                   <MotionToggle checked={state.autoExport === true} label={text.AUTO_EXPORT} icon={Rocket} text={state.autoExport ? text.AUTO_EXPORT_ON : text.AUTO_EXPORT_OFF} title={text.AUTO_EXPORT_HINT} disabled={studio.busy} onClick={() => patch({ autoExport: state.autoExport !== true })} />
                 </div>
+                <MotionSelectField
+                  label={MOTION_SCENE_PACING.TEXT[currentLang === "en" ? "en" : "vi"].label}
+                  value={state.visualSettings.pacing || MOTION_SCENE_PACING.DEFAULT}
+                  onChange={(event) => patch({ visualSettings: { ...state.visualSettings, pacing: event.target.value as MotionScenePacing } })}
+                  disabled={studio.storyBusy || studio.renderBusy}
+                  title={MOTION_SCENE_PACING.TEXT[currentLang === "en" ? "en" : "vi"].hint}
+                  className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                  {Object.keys(MOTION_SCENE_PACING.SECONDS).map((key) => (
+                    <option key={key} value={key}>
+                      {MOTION_SCENE_PACING.TEXT[currentLang === "en" ? "en" : "vi"][key as MotionScenePacing]}
+                    </option>
+                  ))}
+                </MotionSelectField>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
                   <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />

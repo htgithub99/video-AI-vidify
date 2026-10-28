@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { chromium } from "playwright";
 import { normalizeMotionRenderBehavior, applyMotionRenderBehavior, motionRenderBehaviorFor } from "../src/lib/motionRenderBehavior.js";
 import { layoutRemotionNodes, validateRemotionSpec, canReuseRemotionCharacter, normalizeRemotionPlacement } from "../src/lib/motionRemotion.js";
-import { remotionEffectGeometry, motionActorScale, motionCameraScale, motionSceneCameraScale, motionFrameSeconds, remotionSceneView } from "../src/lib/motionRemotionEffects.js";
+import { remotionEffectGeometry, remotionSceneEffects, motionActorScale, motionCameraScale, motionSceneCameraScale, motionFrameSeconds, remotionSceneView } from "../src/lib/motionRemotionEffects.js";
 import { remotionRole } from "../src/lib/motionRemotionGeometry.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { resolveRemotionContinuity } from "../src/server/services/remotion/sceneContinuity.js";
@@ -135,6 +135,26 @@ const focalView = remotionSceneView(focalScene, 800, 450);
 assert.equal(focalView.scale, 1.8);
 assert.ok(540 * focalView.scale + focalView.x >= 0 && 610 * focalView.scale + focalView.x <= 800);
 assert.ok(210 * focalView.scale + focalView.y >= 0 && 270 * focalView.scale + focalView.y <= 450);
+const portraitScene = { ...focalScene, focus: ["reaction"], nodes: [{ ...focalScene.nodes[0], id: "reaction", kind: "character" as const, x: 320, y: 150, width: 90, height: 250 }] };
+const portraitView = remotionSceneView(portraitScene, 800, 450);
+assert.ok(portraitView.scale > 1.8);
+assert.ok(320 * portraitView.scale + portraitView.x >= 0 && 410 * portraitView.scale + portraitView.x <= 800);
+assert.ok(150 * portraitView.scale + portraitView.y >= 0 && 250 * portraitView.scale + portraitView.y <= 450);
+assert.deepEqual(remotionSceneView({ ...portraitScene, view: "wide" }, 800, 450), { scale: 1, x: 0, y: 0 });
+const correctedEffects = remotionSceneEffects({
+  ...fixture.scenes[0],
+  effects: [
+    { id: "candle", kind: "flame", source: "candle", anchor: "portrait" },
+    { id: "rain", kind: "rain", source: "puddle", anchor: "puddle", region: "background" },
+    { id: "mouth-smoke", kind: "smoke", source: "person", anchor: "grip" },
+  ],
+});
+assert.equal(correctedEffects[0].anchor, "flame");
+assert.equal(correctedEffects[1].anchor, undefined);
+assert.equal(correctedEffects[1].source, undefined);
+assert.equal(correctedEffects[1].region, "outdoors");
+assert.equal(correctedEffects[2].anchor, "grip");
+assert.deepEqual(remotionSceneEffects({ ...fixture.scenes[0], effects: correctedEffects }), correctedEffects);
 assert.equal(motionSceneCameraScale(combinations[7], 24, { ...fixture.scenes[0], nodes: [{ ...fixture.scenes[0].nodes[0], x: 0, essential: true }] }, 800, 450), 1);
 for (const fps of [24, 30, 60]) {
   const lateScene = { ...fixture.scenes[0], nodes: [], startFrame: fps * 120, endFrame: fps * 156 };

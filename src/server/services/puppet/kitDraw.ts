@@ -23,9 +23,9 @@ import { cleanPuppetCompositions } from "./blocking.js";
 import { puppetStyleImages, puppetStyleText, type PuppetRunOptions } from "./stylePack.js";
 export const puppetLanes = (exec: MotionAiExecution): number => (_.includes(MOTION_GEN_CONFIG.SERIAL_PROVIDERS, exec.provider) ? 1 : Math.min(P.LANES, MOTION_STORY_CONFIG.PROVIDER_PARALLEL[String(exec.provider)] || P.LANES));
 const hex = (v: unknown): string | undefined => (_.isString(v) && P.HEX_RE.test(v) ? v.toLowerCase() : undefined);
-const ask = (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> => (o.ai || runMotionAi)(prompt, artifact, o.exec, o.signal, o.log, images && images.length ? images : undefined);
+const ask = (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> => (o.ai || runMotionAi)(prompt, artifact, ([P.ARTIFACT_CHAR_CHECK, P.ARTIFACT_SET_CHECK, P.ARTIFACT_CAST_MATCH, P.ARTIFACT_LIB_MATCH] as string[]).includes(artifact) ? o.mainExec || o.exec : o.exec, o.signal, o.log, images && images.length ? images : undefined);
 const quiet = (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> =>
-  (o.ai || runMotionAi)(prompt, artifact, o.exec, o.signal, o.log, images && images.length ? images : undefined).catch((e: any) => {
+  ask(o, prompt, artifact, images).catch((e: any) => {
     if (isTerminalMotionAiError(e, o.signal)) throw e;
     return null;
   });
@@ -302,25 +302,27 @@ export const matchLibrarySets = async (style: PuppetStylePack, places: PuppetPla
   if (!rest.length) return out;
   const side = (inside: boolean): string => (inside ? P.INSIDE : P.OUTSIDE);
   const candidates = library.filter((s) => rest.some((pl) => compatible(pl, s)));
-  const raw = puppetPackActive() ? undefined : await quiet(
-    o,
-    PR.LIB_MATCH({
-      places: _.map(rest, (pl) =>
-        [
-          pl.key,
-          pl.name,
-          pl.desc,
-          side(pl.interior),
-          candidates
-            .filter((s) => compatible(pl, s))
-            .map((s) => s.id)
-            .join(P.COMMA),
-        ].join(P.SEP),
-      ).join(P.NL),
-      library: _.map(candidates, (s) => [s.id, s.name, s.desc, side(s.interior)].join(P.SEP)).join(P.NL),
-    }),
-    P.ARTIFACT_LIB_MATCH,
-  );
+  const raw = puppetPackActive()
+    ? undefined
+    : await quiet(
+        o,
+        PR.LIB_MATCH({
+          places: _.map(rest, (pl) =>
+            [
+              pl.key,
+              pl.name,
+              pl.desc,
+              side(pl.interior),
+              candidates
+                .filter((s) => compatible(pl, s))
+                .map((s) => s.id)
+                .join(P.COMMA),
+            ].join(P.SEP),
+          ).join(P.NL),
+          library: _.map(candidates, (s) => [s.id, s.name, s.desc, side(s.interior)].join(P.SEP)).join(P.NL),
+        }),
+        P.ARTIFACT_LIB_MATCH,
+      );
   const byId = _.keyBy(library, (s) => s.id);
   for (const m of _.castArray(raw?.matches || [])) {
     const pl = _.find(rest, { key: _.toString(m?.key) });
@@ -341,7 +343,13 @@ export const matchLibrarySets = async (style: PuppetStylePack, places: PuppetPla
     usePuppet(
       pickOf(
         seed + key,
-        (groups[setGroup(rep)] || [rep]).filter((s) => compatible(places.find((place) => place.key === key)!, s) && (s.placementVersion || 0) === (rep.placementVersion || 0)),
+        (groups[setGroup(rep)] || [rep]).filter(
+          (s) =>
+            compatible(
+              places.find((place) => place.key === key)!,
+              s,
+            ) && (s.placementVersion || 0) === (rep.placementVersion || 0),
+        ),
       ) as PuppetSet,
     ),
   );

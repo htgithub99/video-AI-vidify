@@ -37,6 +37,7 @@ import { MOTION_RENDER_BEHAVIOR as B } from "../../constants/motionRenderBehavio
 import { checkRemotionRuntime } from "./motionRemotionRenderService.js";
 import { remotionStoryBuildCurrent } from "./remotion/sceneKeys.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../constants/motionRemotionLayout.js";
+import { MOTION_SCENE_PACING as PACING } from "../../constants/motionScenePacing.js";
 interface ProductionRecord {
   illustration?: PuppetPlanReadiness;
   illustrationRecovery?: MotionPlanRecoveryState;
@@ -71,6 +72,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   };
   const publicJob = (record: ProductionRecord): MotionStoryJobState => {
     const job = structuredClone({ ...record.job, result: record.result });
+    if (job.result.rendered) job.result.renderSettings = { quality: record.input.quality, encoder: record.input.encoder, musicMood: record.input.musicMood, musicVolume: record.input.musicVolume };
     if (record.steps[P.STAGES.SEO]?.done) delete job.result.seoJobId;
     return job;
   };
@@ -232,6 +234,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         for (const name of Object.keys(record.steps)) if (name === P.STAGES.SCENES || name.startsWith(P.STAGES.SCENES + " · ") || name === P.STAGES.RENDER) delete record.steps[name];
         delete result.compiled;
         delete result.rendered;
+        record.job.progress = Math.min(record.job.progress, P.MEDIA_PROGRESS.BASE + (record.steps[P.STAGES.VOICE]?.done ? P.MEDIA_PROGRESS.VOICE : 0));
         log(record, L.LOG_REPLAN(result.script.beats.length));
       }
       record.job.status = S.PREPARING;
@@ -313,7 +316,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         const jobs = [
           step<MotionStoryScript>(
             stage(P.STAGES.SCENES),
-            () => scenesMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, illustration: record.illustration, aiExecution: base.sceneAiExecution || base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false }),
+            () => scenesMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, illustration: record.illustration, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false }),
             (script) => {
               result.script = { ...script, ...(result.voice ? { voiceTrack: result.voice } : {}) };
             },
@@ -324,7 +327,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           ),
           step<MotionVoiceTrack>(
             stage(P.STAGES.VOICE),
-            () => voiceMotionStoryInput({ ...base, analysis: result.analysis, script: voicedScript, aiExecution: base.sceneAiExecution || base.aiExecution }),
+            () => voiceMotionStoryInput({ ...base, analysis: result.analysis, script: voicedScript, aiExecution: base.aiExecution }),
             (voice) => {
               result.voice = voice;
               if (result.script) result.script.voiceTrack = voice;
@@ -354,7 +357,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       };
       await buildMedia();
       const targetSeconds = result.analysis!.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0);
-      const durationFits = () => motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.ERROR;
+      const shortVideo = targetSeconds >= Q.DURATION_SHORT_REPAIR_MIN_SECONDS && targetSeconds <= Q.DURATION_SHORT_REPAIR_MAX_SECONDS;
+      const durationTolerance = shortVideo ? Q.DURATION_SHORT_REPAIR_TOLERANCE : Q.DURATION_TOLERANCE;
+      const durationFits = () => motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.ERROR && (!!record.durationRepair?.done || !shortVideo || Math.abs(result.voice!.totalSeconds / targetSeconds - 1) <= Q.DURATION_SHORT_REPAIR_TOLERANCE);
       const repairMediaPending = () => {
         const repair = record.durationRepair;
         if (!repair || repair.done) return false;
@@ -365,12 +370,12 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         const previous = record.durationRepair;
         if (!previous || previous.done) {
           if ((previous?.round || 0) >= P.DURATION_REPAIRS) throw new Error(P.DURATION_FAILED(result.voice!.totalSeconds, targetSeconds));
-          record.durationRepair = { round: (previous?.round || 0) + 1, rate: speechUnits(result.script!.beats.map((beat) => beat.narration).join(P.SEPARATOR)) / result.voice!.totalSeconds, chapters: motionDurationRepairChapters(result.script!, result.analysis!, result.voice!) };
+          record.durationRepair = { round: (previous?.round || 0) + 1, rate: speechUnits(result.script!.beats.map((beat) => beat.narration).join(P.SEPARATOR)) / result.voice!.totalSeconds, chapters: motionDurationRepairChapters(result.script!, result.analysis!, result.voice!, durationTolerance) };
           log(record, P.DURATION_REPAIR(result.voice!.totalSeconds, targetSeconds));
           save();
         }
         const repair = record.durationRepair!;
-        repair.chapters ||= motionDurationRepairChapters(result.script!, result.analysis!, result.voice!);
+        repair.chapters ||= motionDurationRepairChapters(result.script!, result.analysis!, result.voice!, durationTolerance);
         await step<MotionStoryScript>(
           P.DURATION_STEP(P.STAGES.SCRIPT, repair.round),
           () => scriptMotionStoryInput({ ...base, analysis: result.analysis, beats: result.script!.beats, gen: result.script?.gen, chapterDrafts: result.script?.chapterDrafts, durationRepairStates: result.script?.durationRepairStates, chapterIds: repair.chapters, durationRepair: true, speechRate: repair.rate, editorPass: false }),
@@ -396,6 +401,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       result.compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice.durations, audioId: result.voice.audioId });
       if (isRemotionSpec(result.compiled.spec) && base.fps && result.compiled.spec.fps !== base.fps) throw new Error(VISUAL.SETTINGS_CHANGED);
       result.compiled.spec = { ...result.compiled.spec, fps: base.fps || result.compiled.spec.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
+      if (isRemotionSpec(result.compiled.spec)) {
+        const short = (result.compiled.spec.scenes || []).filter((scene) => (scene.endFrame - scene.startFrame) / result.compiled!.spec.fps < PACING.SHORT_SECONDS).length;
+        if (short) log(record, PACING.SHORT_LOG(short));
+      }
       if (result.compiled.missing.length || result.compiled.voiceStale) throw new Error(P.AUDIO_REQUIRED);
       save();
       if (base.autoExport !== false)
@@ -497,9 +506,11 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     if (!previous && store.exists(id)) throw new Error(P.SNAPSHOT_INVALID);
     if (previous) {
       if (previous.inputKey !== key) throw new Error(P.INVALID_RUN);
-      if (!resume || previous.job.status === S.COMPLETED) return publicJob(previous);
+      const outdatedRemotion = previous.result.script && previous.result.analysis && motionVisualSettingsFor({ script: previous.result.script, analysis: previous.result.analysis }).mode === "remotion" && !remotionStoryBuildCurrent(previous.result.script, previous.result.analysis);
+      if (!resume || (previous.job.status === S.COMPLETED && !outdatedRemotion)) return publicJob(previous);
       previous.job.error = undefined;
       log(previous, P.RUN_RESUMED);
+      log(previous, PACING.RESUME_LOG);
       return launch(previous);
     }
     const result: MotionProductionResult = structuredClone({ ...(normalized.analysis ? { analysis: normalized.analysis, series: normalized.series || null } : {}), ...(normalized.script ? { script: normalized.script } : {}) });

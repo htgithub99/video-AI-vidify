@@ -14,6 +14,7 @@ export interface GenOptions {
   styleReferences?: MotionStyleReference[];
   characterMotion?: boolean;
   exec: MotionAiExecution;
+  mainExec?: MotionAiExecution;
   signal?: AbortSignal;
   log: (s: string) => void;
   progress?: (p: number, stage?: string) => void;

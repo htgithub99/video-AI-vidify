@@ -300,7 +300,7 @@ export const buildPuppetSets = async (style: PuppetStylePack, needs: PuppetSetNe
     await drawPuppetPieces(
       style,
       _.filter(fresh, (f) => !pieces[f.key]),
-      o,
+      { ...o, exec: o.drawExec || o.exec },
     ),
   );
   const out: Record<string, PuppetSet> = {};

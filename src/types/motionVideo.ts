@@ -925,6 +925,7 @@ export interface MotionStoryJobState {
   startedAt: number;
 }
 export interface MotionProductionResult {
+  renderSettings?: { quality?: MotionQuality; encoder?: MotionEncoderPreference; musicMood?: string; musicVolume?: number };
   analysis?: MotionStoryAnalysis;
   script?: MotionStoryScript;
   voice?: MotionVoiceTrack;

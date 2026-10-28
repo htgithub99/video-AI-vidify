@@ -519,7 +519,7 @@ export const MUSIC_CREATOR_CONSTANTS = {
   ARTIFACT_TYPE: "music_project",
   PROJECT_ID_PREFIX: "music-",
   SOURCE_CHUNK_CHARACTERS: 12_000,
-  OUTPUT_BATCH_SIZES: [2] as const,
+  OUTPUT_BATCH_SIZES: [3, 2, 1] as const,
   PRESET_STYLES: ["Pop Ballad Việt Nam, giọng nữ truyền cảm, điệp khúc cao trào", "Lofi Chillout thư giãn, giai điệu nhẹ nhàng, piano mộc", "Acoustic Indie Pop, guitar mộc mạc, giọng nam ấm áp", "Cinematic Epic hào hùng, dàn nhạc giao hưởng, tiết tấu dồn dập", "EDM Bass Boosted sôi động, drop bùng nổ, synthesizer hiện đại", "R&B Soul hiện đại, giai điệu quyến rũ, nhịp beat êm ái"] as const,
   SAMPLE_REFERENCES: ["Nàng Thơ - Hoàng Dũng", "Đi Để Trở Về - Soobin Hoàng Sơn", "Ngày Chưa Giông Bão - Bùi Lan Hương"] as const,
 } as const;

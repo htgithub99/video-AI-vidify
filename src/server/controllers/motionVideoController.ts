@@ -458,7 +458,8 @@ export const seedPuppetKitItems = (req: Request, res: Response): void => {
   try {
     const styleId = _.toString(req.body?.styleId || PUPPET_STYLE_DEFAULT);
     const exec = drawExec(req.body?.aiExecution);
-    const job = startStoryJob(false, MotionStoryJobKind.LIBRARY, async (ctx) => seedPuppetKit(styleId, _.toString(req.body?.genre || PUPPET_SEED_DEFAULT), { exec, signal: ctx.signal, log: ctx.log }, (v) => ctx.progress(v)));
+    const mainExec = aiExec(req.body?.mainAiExecution || req.body?.aiExecution);
+    const job = startStoryJob(false, MotionStoryJobKind.LIBRARY, async (ctx) => seedPuppetKit(styleId, _.toString(req.body?.genre || PUPPET_SEED_DEFAULT), { exec, mainExec, signal: ctx.signal, log: ctx.log }, (v) => ctx.progress(v)));
     res.json({ success: true, job });
   } catch (error) {
     fail(res, 400, error);

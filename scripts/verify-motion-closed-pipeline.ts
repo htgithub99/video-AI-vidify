@@ -43,6 +43,8 @@ try {
     const calls: string[] = [];
     const logs: string[] = [];
     const ai = async (_prompt: string, artifact: string, _exec?: any, _signal?: any, _log?: any, images?: any[]): Promise<any> => {
+      assert.equal(_exec.provider, artifact === P.ARTIFACT_COMPOSE ? "scene-provider" : "content-provider");
+      assert.equal(_exec.role, artifact === P.ARTIFACT_COMPOSE ? "draw" : "main");
       calls.push(artifact);
       const rows = gap ? [Q.GAP_SOURCE] : missingAnchor ? [Q.ANCHOR_SOURCE] : includeBowl ? [Q.PORRIDGE_SOURCE] : Q.SOURCE;
       if (artifact === S.ARTIFACT) {
@@ -79,7 +81,8 @@ try {
       throw new Error(Q.UNEXPECTED(artifact));
     };
     const options: any = {
-      exec: {},
+      exec: { provider: "scene-provider", model: "scene-model" },
+      mainExec: { provider: "content-provider", model: "content-model" },
       ai,
       review: false,
       log: (line: string) => {

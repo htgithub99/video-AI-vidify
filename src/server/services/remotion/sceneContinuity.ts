@@ -2,19 +2,28 @@ import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLa
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
 import { normalizeRemotionPlacement } from "../../../lib/motionRemotion.js";
+import { assignRemotionStaging, prepareRemotionScene } from "../../../lib/motionRemotionStaging.js";
 import type { MotionStoryAnalysis, MotionStoryScript } from "../../../types/motionVideo.js";
-import type { MotionRemotionNode } from "../../../types/motionVisual.js";
+import type { MotionRemotionNode, MotionRemotionScene } from "../../../types/motionVisual.js";
 import { motionInputKey } from "../motionFileUtils.js";
+import { assignRemotionSpace, normalizeRemotionSpacePose } from "../../../lib/motionRemotionSpace.js";
 export const remotionObjectCatalog = (analysis: MotionStoryAnalysis, script?: MotionStoryScript, place?: string) => {
   const catalog = new Map(
     (analysis.illustrationNeeds || [])
       .filter((need) => !place || need.place === place)
       .flatMap((need) => need.objects || [])
-      .map((object) => [object.identity || object.key, { id: object.identity || object.key, description: object.baseDescription || object.description || object.word }]),
+      .map((object) => [object.identity || object.key, { id: object.identity || object.key, description: object.baseDescription || object.description || object.word, word: object.word, aliases: [] as string[] }]),
   );
   for (const description of new Set((script?.beats || []).filter((beat) => !place || beat.place === place).flatMap((beat) => beat.scenePlan?.requiredProps || []))) {
     const id = `object_${motionInputKey(description.normalize("NFC").trim().toLowerCase()).slice(0, 12)}`;
-    if (![...catalog.values()].some((item) => item.description === description)) catalog.set(id, { id, description });
+    const subject = description
+      .normalize("NFC")
+      .trim()
+      .toLowerCase()
+      .replace(/^(?:một|hai|chiếc|cái|tấm|bộ)\s+/u, "");
+    const matches = [...catalog.values()].filter((item) => item.word && (subject === item.word.toLowerCase() || subject.startsWith(item.word.toLowerCase() + " ")));
+    if (matches.length === 1) matches[0].aliases.push(id);
+    else if (![...catalog.values()].some((item) => item.description === description)) catalog.set(id, { id, description, word: "", aliases: [] });
   }
   return [...catalog.values()];
 };
@@ -24,8 +33,10 @@ export const resolveRemotionContinuity = (script: MotionStoryScript, analysis: M
   const ledger = new Map<string, Map<string, MotionRemotionNode>>();
   const objectLocation = new Map<string, string>();
   const changed = new Set<string>();
+  const stagedScenes: MotionRemotionScene[] = [];
   let time: string | undefined, weather: string | undefined;
   for (const beat of script.beats) {
+    const catalog = remotionObjectCatalog(analysis, script, beat.place);
     time = beat.time || time;
     weather = beat.weather || weather;
     for (const scene of state.scenes[beat.id] || []) {
@@ -33,12 +44,20 @@ export const resolveRemotionContinuity = (script: MotionStoryScript, analysis: M
       const nodeKey = (nodes: MotionRemotionNode[]) => motionInputKey(nodes.map(({ assetKey, ...node }) => node));
       if (!scene.continuityDraft || nodeKey(scene.nodes) !== scene.continuityDraft.resolvedKey) scene.continuityDraft = { nodes: structuredClone(scene.nodes), resolvedKey: "" };
       scene.nodes = normalizeRemotionPlacement(structuredClone(scene.continuityDraft.nodes));
+      prepareRemotionScene(scene, state.settings?.mode === "remotion" ? state.settings.profileId : undefined);
+      if (state.settings?.mode === "remotion" && state.settings.profileId === "horror") normalizeRemotionSpacePose(scene.nodes);
+      for (const node of scene.nodes) {
+        const identity = catalog.find((item) => item.id === node.objectId || item.aliases.includes(node.objectId || ""));
+        if (identity) node.objectId = identity.id;
+      }
       for (const node of scene.nodes) {
         const accepted = resolvedNodes.find((item) => item.id === node.id && item.description === node.description && item.pose === node.pose && item.state === node.state);
         if (accepted?.assetKey) node.assetKey = accepted.assetKey;
+        else if (resolvedNodes.some((item) => item.id === node.id)) delete node.assetKey;
       }
       const location = scene.place || `unplaced:${beat.id}`;
       const prior = ledger.get(location) || new Map<string, MotionRemotionNode>();
+      const previousNodes = new Map(prior);
       const old = scene.continuityKey;
       if (!scene.continuityKey) {
         if (scene.time) scene.declaredTime ||= scene.time;
@@ -74,8 +93,8 @@ export const resolveRemotionContinuity = (script: MotionStoryScript, analysis: M
           if (previous.mount) node.mount ||= previous.mount;
           const target = previous.target && [...prior.values()].find((n) => n.id === previous.target);
           const targetNode = scene.nodes.find((n) => (target ? remotionObjectIdentity(n) === remotionObjectIdentity(target) : n.id === previous.target));
-          if (previous.relation && targetNode) {
-            node.target = targetNode.id;
+          if (previous.relation && previous.target && (!target || !removed.has(remotionObjectIdentity(target)))) {
+            node.target = targetNode?.id || previous.target;
             node.relation = previous.relation;
           }
         }
@@ -99,19 +118,31 @@ export const resolveRemotionContinuity = (script: MotionStoryScript, analysis: M
         scene.nodes.push(inherited);
         return inherited;
       };
-      if (scene.view !== "detail") for (const node of prior.values()) if (node.persistent) inherit(node);
+      for (const node of prior.values()) if (node.persistent && (scene.view !== "detail" || node.role === "fixture")) inherit(node);
+      for (const node of previousNodes.values()) {
+        if (node.role !== "decal" || node.relation !== "inside" || !node.target) continue;
+        const host = [...previousNodes.values()].find((item) => item.id === node.target);
+        const currentHost = host && scene.nodes.find((item) => remotionObjectIdentity(item) === remotionObjectIdentity(host));
+        if (host && currentHost && host.state === currentHost.state && !removed.has(remotionObjectIdentity(host))) inherit(node);
+      }
       for (const node of scene.nodes)
         if (node.target && !scene.nodes.some((n) => n.id === node.target)) {
           const original = [...prior.values()].find((n) => n.id === node.target),
             target = original && scene.nodes.find((n) => remotionObjectIdentity(n) === remotionObjectIdentity(original));
           if (target) node.target = target.id;
-          else if (original?.kind === "prop" && !removed.has(remotionObjectIdentity(original)) && scene.nodes.length < V.MAX_NODES && (node.relation === "on" || node.relation === "inside")) scene.nodes.push(structuredClone(original));
+          else if (original?.kind === "prop" && !removed.has(remotionObjectIdentity(original)) && (node.relation === "on" || node.relation === "inside")) {
+            const inherited = inherit(original);
+            if (inherited) node.target = inherited.id;
+          }
           else if (node.persistent && node.kind !== "character") {
             delete node.target;
             delete node.relation;
           }
         }
       ledger.set(location, prior);
+      stagedScenes.push(scene);
+      assignRemotionStaging(stagedScenes, analysis.cast);
+      if (state.settings?.mode === "remotion" && state.settings.profileId === "horror") assignRemotionSpace(stagedScenes);
       scene.continuityDraft.resolvedKey = nodeKey(scene.nodes);
       scene.continuityKey = motionInputKey([location, scene.time, scene.weather, scene.nodes.map(({ assetKey, ...node }) => node), L.REVISION]);
       if (old && old !== scene.continuityKey) {

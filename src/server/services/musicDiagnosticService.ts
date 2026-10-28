@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { GEMINI_MODEL_ENCODING } from "../../constants/geminiChatModels.js";
 import {
   SOURCE_TEMPLATE_MUSICDIAGNOSTICS_LOG_WRITE_FAILED,
   SOURCE_TEXT_ACTUALCHARS,
@@ -58,7 +59,19 @@ import { ANSI_ESCAPE_SEQUENCE_REGEX } from "../../constants/regexes.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
 const logPath = path.join(getLogsDirectory(), SOURCE_TEXT_MUSIC_WORKFLOW_JSONL);
 const safeKeys = new Set([
+  GEMINI_MODEL_ENCODING.DIAGNOSTIC_PHASE,
   "promptRevision",
+  "uploadPending",
+  "uploadFailed",
+  "uploadStatus",
+  "uploadHost",
+  "uploadNetworkError",
+  "uploadMessage",
+  "uploadMethod",
+  "uploadFileCount",
+  "uploadCompleted",
+  "uploadProcessing",
+  "uploadFileErrors",
   SOURCE_TEXT_RUNID,
   SOURCE_TEXT_STAGE,
   SOURCE_TEXT_PROVIDER,
@@ -114,7 +127,13 @@ const sanitizeText = (value: unknown): string =>
     .slice(0, 400);
 export const musicErrorDetails = (error: unknown): Record<string, string> => {
   const source = error instanceof Error ? error : new Error(String(error));
-  return { errorName: sanitizeText(source.name), errorMessage: sanitizeText(source.message) };
+  const phase = _.get(error, [GEMINI_MODEL_ENCODING.DIAGNOSTICS, "phase"]);
+  return { errorName: sanitizeText(source.name), errorMessage: sanitizeText(source.message), ...(typeof phase === "string" ? { [GEMINI_MODEL_ENCODING.DIAGNOSTIC_PHASE]: sanitizeText(phase) } : {}) };
+};
+export const musicUploadDetails = (upload?: { pending: number; failed: boolean; lastFailure?: { url: string; status?: number; errorText?: string } }): Record<string, unknown> => {
+  let uploadHost: string | undefined;
+  try { if (upload?.lastFailure?.url) uploadHost = new URL(upload.lastFailure.url).hostname; } catch {}
+  return { uploadPending: upload?.pending, uploadFailed: upload?.failed, uploadStatus: upload?.lastFailure?.status, uploadHost, uploadNetworkError: upload?.lastFailure?.errorText };
 };
 export const writeMusicDiagnostic = async (event: string, details: Record<string, unknown> = {}): Promise<void> => {
   try {

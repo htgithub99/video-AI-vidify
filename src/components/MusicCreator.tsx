@@ -1,8 +1,8 @@
 import { useMotionClipboard } from "../hooks/useMotionClipboard.js";
-import { MUSIC_PLANNING as MUSIC_PLAN } from "../constants/musicPlanning.js";
 import { readMusicPlanResponse } from "../lib/musicPlanning.js";
-import type { MusicPlanProgress } from "../types/musicPlanning.js";
-import { MusicPlanProgressPanel } from "./music/MusicPlanProgressPanel.js";
+import { readMusicDownloadResponse } from '../lib/musicDownloadProgress.js';
+import { readSunoCreationResponse, formatSunoCreationProgress } from '../lib/sunoCreationProgress.js';
+import { recordMusicDownloadProgressActivity } from '../services/musicDownloadActivity.js';
 import * as SRT from "../constants/sourceText.js";
 import * as MCS from "../constants/musicCreatorStyles.js";
 import { MUSIC_CREATOR_FORMAT as MCF } from "../constants/musicCreator.js";
@@ -371,6 +371,7 @@ interface PersistedMusicCreatorState {
   sunoTestTrackIds?: string[];
   downloadPlaylistUrl?: string;
   sunoTrackIds?: string[];
+  sunoPendingPlaylist?: { songIds: string[]; playlistName: string; sourceTitle: string; testOnly: boolean; resumeGeneration?: boolean } | null;
   curatedDownloadedTracks?: CuratedDownloadedTrack[];
   sunoDownloadFormat?: SunoDownloadFormat;
   sunoEvaluateTracks?: boolean;
@@ -678,13 +679,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const videoBackgroundRunIdRef = useRef<string | null>(null);
   const musicStoppedByUserRef = useRef(false);
   const sunoAbortControllerRef = useRef<AbortController | null>(null);
-  const sunoPendingPlaylistRef = useRef<{ songIds: string[]; playlistName: string; sourceTitle: string; testOnly: boolean } | null>(null);
+  const [sunoPendingPlaylist, setSunoPendingPlaylist] = useState<PersistedMusicCreatorState["sunoPendingPlaylist"]>(initialState.sunoPendingPlaylist || null);
   const sunoDownloadAbortControllerRef = useRef<AbortController | null>(null);
   const sunoDownloadStoppedByUserRef = useRef(false);
   const sunoDownloadRunIdRef = useRef<string | null>(null);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(initialState.isAiConfigOpen ?? false);
   const [isLoading, setIsLoading] = useState(false);
-  const [musicProgress, setMusicProgress] = useState<MusicPlanProgress[]>([]);
   const [isStopping, setIsStopping] = useState(false);
   const [generationError, setGenerationError] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [isRegeneratingSeo, setIsRegeneratingSeo] = useState(false);
@@ -774,6 +774,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         sunoTestTrackIds,
         downloadPlaylistUrl,
         sunoTrackIds,
+        sunoPendingPlaylist,
         curatedDownloadedTracks,
         sunoDownloadFormat,
         sunoEvaluateTracks,
@@ -809,6 +810,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     sunoTestTrackIds,
     downloadPlaylistUrl,
     sunoTrackIds,
+    sunoPendingPlaylist,
     curatedDownloadedTracks,
     sunoDownloadFormat,
     sunoEvaluateTracks,
@@ -942,7 +944,6 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const previousGeneratedVideoBackground = generatedVideoBackground;
     setViewMode(SOURCE_TEXT_LYRICS);
     setIsLoading(true);
-    setMusicProgress([{ stage: MUSIC_PLAN.STAGES.INITIALIZE, completedSongs: 0, totalSongs: outputCount }]);
     setSunoPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
     setDownloadPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
     setSunoTestPlaylistUrl(MUSIC_CREATOR_RUNTIME.EMPTY);
@@ -954,6 +955,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const abortController = new AbortController();
     musicAbortControllerRef.current = abortController;
     let receivedSongs = false;
+    const planningWarnings = new Set<string>();
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_PLAN, {
         method: HTTP_METHODS.POST,
@@ -963,7 +965,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       });
       const result = await readMusicPlanResponse(response, ({ progress, data }) => {
         if (abortController.signal.aborted) return;
-        setMusicProgress((items) => [...items.filter((item) => item.stage !== progress.stage), { ...items.find((item) => item.stage === progress.stage), ...progress }]);
+        if (progress.warning && !planningWarnings.has(progress.warning)) {
+          planningWarnings.add(progress.warning);
+          toast.warning(progress.warning);
+        }
         if (data?.styleAnalysis) setStyleAnalysis(data.styleAnalysis);
         if (data?.songs?.length) {
           if (!receivedSongs) {
@@ -1007,7 +1012,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       void writeMusicMedia(SUNO_AUTOMATION_CONFIG.MEDIA_KEY_VIDEO_BACKGROUND, MUSIC_CREATOR_RUNTIME.EMPTY).catch(() => undefined);
       setSelectedSeoSongIndex(0);
       musicResumeRef.current = null;
-      sunoPendingPlaylistRef.current = null;
+      setSunoPendingPlaylist(null);
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanDone, generatedSongs.length);
       if (seoWarning && _.isEmpty(generatedPlaylistSeo)) toast.error(seoWarning);
@@ -1061,7 +1066,6 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         setDownloadedMusicTracks(previousDownloadedMusicTracks);
         setGeneratedVideoBackground(previousGeneratedVideoBackground);
       }
-      setMusicProgress((items) => [...items.filter((item) => item.stage !== MUSIC_PLAN.STAGES.ERROR), { stage: musicStoppedByUserRef.current ? MUSIC_PLAN.STAGES.STOPPED : MUSIC_PLAN.STAGES.ERROR, completedSongs: items.at(-1)?.completedSongs || 0, totalSongs: outputCount }]);
       setIsGeneratingThumbnail(false);
       if (musicStoppedByUserRef.current) musicResumeRef.current = null;
       else {
@@ -1139,25 +1143,33 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     try {
       const requestedSongs = testOnly ? _.take(songs, 1) : songs;
       const sourceTitle = testOnly ? requestedSongs[0]?.title : playlistSeoOptions[0]?.title || requestedSongs[0]?.title;
-      const pending = sunoPendingPlaylistRef.current;
+      const pending = sunoPendingPlaylist;
       const canResume = pending?.sourceTitle === sourceTitle && pending.testOnly === testOnly;
       const playlistName = canResume ? pending.playlistName : formatSunoPlaylistName(sourceTitle, testOnly, _.slice(crypto.randomUUID().split(SOURCE_TEXT_SYMBOL_15), 0, 2).join(MUSIC_CREATOR_RUNTIME.EMPTY).toUpperCase());
       const resumeSongIds = canResume ? pending.songIds : [];
+      const playlistOnly = canResume && !pending.resumeGeneration && !_.isEmpty(resumeSongIds);
       if (_.isEmpty(resumeSongIds) && !testOnly) setSunoTrackIds([]);
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_CREATE, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ songs: _.isEmpty(resumeSongIds) ? requestedSongs : [], initialSongIds: resumeSongIds, style, inspo: sunoInspo, sunoSettings, evaluateTracks: testOnly ? false : sunoEvaluateTracks, playlistName }),
+        body: jsonUtils.safeStringify({ songs: playlistOnly ? [] : requestedSongs, initialSongIds: playlistOnly ? resumeSongIds : [], style, inspo: sunoInspo, sunoSettings, evaluateTracks: testOnly ? false : sunoEvaluateTracks, playlistName, stream: true, testOnly }),
         signal: abortController.signal,
       });
-      const result = await response.json();
+      const result = await readSunoCreationResponse(response, progress => {
+        recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicSunoProgress, undefined, formatSunoCreationProgress(progress, currentLang));
+        if (progress.createdSongIds.length) {
+          setSunoPendingPlaylist({ songIds: progress.createdSongIds, playlistName: progress.playlistName, sourceTitle, testOnly, resumeGeneration: !playlistOnly });
+          if (testOnly) setSunoTestTrackIds(progress.createdSongIds);
+          else setSunoTrackIds(progress.createdSongIds);
+        }
+      });
       const createdSongIds = _.map(_.castArray(result.createdSongIds || []), _.toString);
-      if (!response.ok && !_.isEmpty(createdSongIds)) {
-        sunoPendingPlaylistRef.current = { songIds: createdSongIds, playlistName, sourceTitle, testOnly };
+      if ((!response.ok || !result.success) && !_.isEmpty(createdSongIds)) {
+        setSunoPendingPlaylist({ songIds: createdSongIds, playlistName: result.playlistName || playlistName, sourceTitle, testOnly, resumeGeneration: result.generationCheckpoint === true && !playlistOnly });
         if (!testOnly) setSunoTrackIds(createdSongIds);
       }
       if (!response.ok || !result.success || _.isEmpty(result.playlistUrl)) throw new Error(result.error || texts.SUNO_CREATE_ERROR);
-      sunoPendingPlaylistRef.current = null;
+      setSunoPendingPlaylist(null);
       const createdPlaylistUrl = _.toString(result.playlistUrl);
       if (testOnly) {
         setSunoTestPlaylistUrl(createdPlaylistUrl);
@@ -1203,7 +1215,6 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const isTestPlaylistDownload = !requestedPlaylistUrl && !sunoPlaylistUrl && Boolean(sunoTestPlaylistUrl);
     const activePlaylistUrl = requestedPlaylistUrl || sunoPlaylistUrl || sunoTestPlaylistUrl;
     if (_.isEmpty(activePlaylistUrl) || isDownloadingSuno) return;
-    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadStart);
     if (sunoEvaluateTracks && !isTestPlaylistDownload && provider !== AiPlanningFallbackProvider.GeminiChat) {
       setSunoDownloadError(SUNO_AUTOMATION_TEXTS.TRACK_EVALUATION_ROOM_REQUIRED_ERR);
       toast.error(SUNO_AUTOMATION_TEXTS.TRACK_EVALUATION_ROOM_REQUIRED_ERR);
@@ -1231,10 +1242,12 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             });
       const evaluationProjectId = SOURCE_TEMPLATE_MUSIC_TRACK_EVALUATION(String(Date.now()));
       sunoDownloadRunIdRef.current = evaluationProjectId;
+      recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadStart);
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
         body: jsonUtils.safeStringify({
+          stream: true,
           folderPath,
           tracks,
           maxTracks: isTestPlaylistDownload ? 1 : undefined,
@@ -1248,7 +1261,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         }),
         signal: abortController.signal,
       });
-      const result = await response.json();
+      const result = await readMusicDownloadResponse(response, (progress) => {
+        if (abortController.signal.aborted) return;
+        recordMusicDownloadProgressActivity(progress, currentLang);
+      });
       if (!response.ok || !result.success) throw new Error(result.error || texts.SUNO_DOWNLOAD_ERROR);
       const downloadedTracks = _.castArray(result.downloadedTracks || []) as DownloadedMusicTrack[];
       if (!_.isEmpty(downloadedTracks)) setDownloadedMusicTracks(downloadedTracks);
@@ -1262,7 +1278,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       toast.success(texts.SUNO_DOWNLOAD_SUCCESS.replace(SOURCE_TEXT_COUNT, _.toString(_.size(result.downloadedPaths))).replace(SOURCE_TEXT_FOLDER, folderPath));
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadDone, _.size(result.downloadedPaths));
     } catch (error: any) {
-      if (!sunoDownloadStoppedByUserRef.current) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadFail);
+      if (!sunoDownloadStoppedByUserRef.current) recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicDownloadFail, undefined, _.toString(error?.message || texts.SUNO_DOWNLOAD_ERROR));
       if (!sunoDownloadStoppedByUserRef.current) {
         const message = _.toString(error?.message || texts.SUNO_DOWNLOAD_ERROR);
         setSunoDownloadError(message);
@@ -2514,8 +2530,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               </div>
             </details>
           )}
-          <MusicPlanProgressPanel progress={musicProgress} language={currentLang} />
-          {(isLoading && _.isEmpty(songs)) || (isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES.SEO) ? (
+          {isLoading || (isRegeneratingSeo && viewMode === MUSIC_VIEW_MODES.SEO) ? (
             <StudioLoadingState secondary={isRegeneratingSeo} icon={isRegeneratingSeo ? Search : Disc3} title={isRegeneratingSeo ? texts.BLOCK_SEO_LOADING : texts.BLOCK_LYRICS_LOADING} description={isRegeneratingSeo ? texts.SEO_OPTIONS_COUNT_BADGE : SOURCE_TEMPLATE_SYMBOL_17(String(texts.HEADER_BADGE), String(outputCount), String(texts.SONG_UNIT))} />
           ) : _.isEmpty(songs) ? (
             <div className={cn(SRT.SOURCE_TEXT_PY_14_FLEX_FLEX_COL_ITEMS_CENTER)}>

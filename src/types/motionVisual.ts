@@ -1,6 +1,7 @@
 import type { MotionSpec } from "./motionVideo.js";
 export type MotionVisualMode = "library" | "remotion";
 export type MotionRemotionProfile = "history" | "horror" | "explainer";
+export type MotionScenePacing = "few" | "medium" | "many";
 export interface MotionRenderBehavior {
   version: 1;
   actors: "fixed" | "simple";
@@ -24,7 +25,7 @@ export interface MotionRemotionEffect {
   direction?: "up" | "ground" | "left" | "right";
   intensity?: number;
 }
-export type MotionVisualSettings = { version: 1; mode: "library"; engine: "canvas"; packId: string } | { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number };
+export type MotionVisualSettings = ({ version: 1; mode: "library"; engine: "canvas"; packId: string } | { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number }) & { pacing?: MotionScenePacing };
 export interface MotionVectorAsset {
   key: string;
   inputKey: string;
@@ -37,6 +38,14 @@ export interface MotionVectorAsset {
   bounds?: MotionVisualRect;
   layerRevision?: number;
   stateKey?: string;
+  stagingRevision?: number;
+  characterRevision?: number;
+  characterScale?: number;
+  spaceRevision?: number;
+  projectionRevision?: number;
+  backgroundRevision?: number;
+  compositionRevision?: number;
+  space?: { revision: number; horizon: number; vanishingPoint: { x: number; y: number }; regions: Record<string, MotionVisualRect> };
 }
 export interface MotionRemotionNode {
   id: string;
@@ -47,6 +56,7 @@ export interface MotionRemotionNode {
   slot: "left" | "center" | "right";
   relation?: "beside" | "behind" | "on" | "inside" | "heldBy";
   target?: string;
+  attachmentAnchor?: string;
   evidence: string;
   essential?: boolean;
   appearanceChanged?: boolean;
@@ -59,10 +69,18 @@ export interface MotionRemotionNode {
   state?: string;
   stateEvidence?: string;
   persistent?: boolean;
+  age?: "child" | "adult" | "senior";
+  layoutX?: number;
+  layoutY?: number;
+  layoutHeight?: number;
+  layoutDepth?: number;
+  layoutSocket?: string;
+  groundTargets?: string[];
 }
 export interface MotionRemotionScene {
   id: string;
   beatId: string;
+  sourceBeatIds?: string[];
   fromLineId: string;
   toLineId: string;
   purpose: string;
@@ -88,6 +106,38 @@ export interface MotionRemotionScene {
   continuityKey?: string;
   continuityDraft?: { nodes: MotionRemotionNode[]; resolvedKey: string };
   removedObjects?: string[];
+  composition?: MotionSceneComposition;
+  speaking?: { entityId: string; startFrame: number; endFrame: number }[];
+}
+export interface MotionSceneLayer {
+  id: string;
+  kind: "background" | "character" | "prop" | "effect";
+  entityId?: string;
+  description?: string;
+}
+export interface MotionSceneAnimation {
+  target: string;
+  channel: "actor" | "effect" | "speech";
+  attribute: "transform" | "d" | "opacity";
+  period?: number;
+  keyframes: { at: number; value: string | number }[];
+}
+export interface MotionSceneComposition {
+  revision: number;
+  assetKey: string;
+  inputKey: string;
+  layers: MotionSceneLayer[];
+  animations: MotionSceneAnimation[];
+  continuityNotes?: string;
+  design?: MotionSceneDesign;
+}
+export interface MotionSceneDesign {
+  format?: "illustration" | "diagram" | "comparison" | "map" | "timeline" | "process" | "cutaway";
+  camera: string;
+  palette?: string[];
+  floor?: { horizon: number; outline: { x: number; y: number }[] };
+  placements: { id: string; box: { x: number; y: number; width: number; height: number }; depth: number; supportId?: string; contact?: { x: number; y: number }; construction: string }[];
+  continuityNotes?: string;
 }
 export interface MotionRemotionState {
   version: number;
@@ -104,6 +154,10 @@ export interface MotionRemotionState {
   renderBehavior?: MotionRenderBehavior;
   layoutRevision?: number;
   locations?: Record<string, { environment: string; backgroundKey?: string }>;
+  stagingRevision?: number;
+  spaceBuildRevision?: number;
+  compositionRevision?: number;
+  pacingRevision?: number;
 }
 export interface MotionRemotionPlacedNode extends MotionRemotionNode {
   x: number;

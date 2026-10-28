@@ -41,7 +41,7 @@ export const MOTION_PRODUCTION = {
   INVALID_RUN: "Lượt sản xuất không hợp lệ hoặc cấu hình không còn khớp. Giữ lượt cũ và tạo lượt mới với cấu hình đã thay đổi.",
   SNAPSHOT_INVALID: "Bản lưu lượt sản xuất không khớp cấu hình gốc. Tiến độ và log được giữ để phục hồi; không ghi đè hoặc tự chạy lại lượt này.",
   BUSY_RUN: "Lượt sản xuất đang được xử lý ở một tiến trình khác.",
-  STAGES: { PREFLIGHT: "Kiểm điều kiện tạo video", ANALYZE: "Phân tích nội dung", SCRIPT: "Viết kịch bản", SCENES: "Ghép hình từ kho", VOICE: "Tạo giọng", COMPILE: "Chốt hình và tiếng", RENDER: "Xuất và kiểm MP4", SEO: "Tạo SEO", DONE: "Video đã hoàn thành" },
+  STAGES: { PREFLIGHT: "Kiểm điều kiện tạo video", ANALYZE: "Phân tích nội dung", SCRIPT: "Viết kịch bản", SCENES: "Dựng cảnh minh họa", VOICE: "Tạo giọng", COMPILE: "Chốt hình và tiếng", RENDER: "Xuất và kiểm MP4", SEO: "Tạo SEO", DONE: "Video đã hoàn thành" },
   RUN_STARTED: "Đã nhận lượt tạo video; backend giữ cấu hình và tiến độ qua reload.",
   RUN_RESUMED: "Tiếp tục từ phần đã lưu của lượt tạo video.",
   RUN_STOPPED: "Đã dừng lượt tạo video.",

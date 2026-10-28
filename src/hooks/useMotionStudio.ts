@@ -66,7 +66,9 @@ import { MOTION_VISUAL } from "../constants/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../lib/motionRenderBehavior.js";
 import type { MotionVisualSettings, MotionRemotionProfile, MotionRenderBehavior } from "../types/motionVisual.js";
 import type { StorageCleanResult, StorageJunkReport } from "../types/storage.js";
-import { captureMotionVisualDraft, forgetMotionVisualDraftResults, hasMotionVisualDraft, motionCompileStateKey, motionVisualDraftContextKey, motionVisualDraftKey, motionVisualDraftRuntime, recoverMotionVisualDraft, switchMotionVisualDraft, type MotionVisualDraft } from "../lib/motionVisualDraft.js";
+import { captureMotionVisualDraft, forgetMotionVisualDraftResults, hasMotionVisualDraft, motionCompileStateKey, motionRenderStateKey, motionVisualDraftContextKey, motionVisualDraftKey, motionVisualDraftRuntime, recoverMotionVisualDraft, switchMotionVisualDraft, type MotionVisualDraft } from "../lib/motionVisualDraft.js";
+import { motionVisualBeatGroups } from "../lib/motionScenePacing.js";
+import { MOTION_SCENE_PACING } from "../constants/motionScenePacing.js";
 const STOPPED_TOAST = MOTION_TEXT_DA_DUNG_STOPPED;
 const reportStoryError = (error: unknown): void => {
   const message = getMotionErrorMessage(error);
@@ -586,7 +588,7 @@ export function useMotionStudio() {
       if (result.rendered) {
         setResults((items) => [result.rendered!, ...items.filter((item) => item.id !== result.rendered!.id)]);
         setRenderJob({ id: result.rendered.id, status: MotionJobStatus.COMPLETED, progress: 1, framesDone: 0, framesTotal: 0, startedAt: job.startedAt, log: [], result: result.rendered });
-        patch({ lastRenderJobId: result.rendered.id, renderSignature: compileStateKey(stateRef.current) });
+        patch({ lastRenderJobId: result.rendered.id, renderSignature: motionRenderStateKey({ ...stateRef.current, ...result.renderSettings }) });
       }
     },
     [patch],
@@ -657,25 +659,69 @@ export function useMotionStudio() {
   const startProduction = useCallback(
     async (overrides: Record<string, unknown> = {}, resumeId?: string) => {
       const now = stateRef.current;
-      if (!now.source) return;
+      if (!now.source || flowDepth.current) return;
       if (now.visualSettingsError) {
         toast.error(now.visualSettingsError);
         return;
       }
       resumeAutomation();
       const id = resumeId || createMotionEditorialId();
-      if (!resumeId) {
-        if (now.productionId) await motionRequest(API_ROUTES.MOTION_STORY_CANCEL, { jobId: now.productionId });
-        logHistoryRef.current = [];
-        logCursors.current.clear();
-        jsonUtils.setItem(MOTION_EDITORIAL.LOG_STORAGE_KEY, []);
-        setLogHistory([]);
-        setCompiled(null);
-        setRenderJob(null);
-      }
-      patch({ autoRun: true, productionId: id, editorialSessionId: id, ...(resumeId ? {} : { logHistory: [], analysis: null, series: null, script: null, voice: null, seo: null, seoJobId: undefined, uploadedAudio: null, activeRenderJobId: MR.MOTION_TEXT_EMPTY, lastRenderJobId: null }) });
       await inFlow(async () => {
         try {
+          if (!resumeId) {
+            pollAbort.current?.abort();
+            renderPollAbort.current?.abort();
+            persist.cancel();
+            logHistoryRef.current = [];
+            logCursors.current.clear();
+            settledSeoJobs.current.clear();
+            visualRecoveryAttempts.current.clear();
+            alertCaptcha.current = createMotionCaptchaAlert();
+            voiceRequested.current = MR.MOTION_TEXT_EMPTY;
+            voicePending.current = null;
+            voiceAttempt.current = { signature: MR.MOTION_TEXT_EMPTY, count: 0 };
+            compiledSig.current = MR.MOTION_TEXT_EMPTY;
+            compileRevision.current++;
+            restoredRenderJob.current = undefined;
+            visualRuntime.current = { compiled: null, renderJob: null };
+            jsonUtils.setItem(MOTION_EDITORIAL.LOG_STORAGE_KEY, []);
+            setLogHistory([]);
+            setStoryJob(null);
+            setCompiled(null);
+            setRenderJob(null);
+            setVoiceError(MR.MOTION_TEXT_EMPTY);
+            setCompileError(MR.MOTION_TEXT_EMPTY);
+            patch({
+              autoRun: true,
+              automationPaused: false,
+              productionId: id,
+              editorialSessionId: id,
+              logHistory: [],
+              analysis: null,
+              series: null,
+              script: null,
+              voice: null,
+              seo: null,
+              seoJobId: undefined,
+              uploadedAudio: null,
+              thumbnail: null,
+              thumbnails: {},
+              soundOverrides: {},
+              visualDrafts: {},
+              look: MR.MOTION_TEXT_EMPTY,
+              voiceHold: MR.MOTION_TEXT_EMPTY,
+              activeStoryJobId: MR.MOTION_TEXT_EMPTY,
+              activeStoryRunId: MR.MOTION_TEXT_EMPTY,
+              activeRenderJobId: MR.MOTION_TEXT_EMPTY,
+              lastRenderJobId: null,
+              renderSignature: undefined,
+            });
+            persist(stateRef.current);
+            persist.flush();
+            const storyIds = new Set([now.productionId, now.activeStoryJobId, now.seoJobId].filter(Boolean));
+            for (const jobId of storyIds) await motionRequest(API_ROUTES.MOTION_STORY_CANCEL, { jobId });
+            if (now.activeRenderJobId) await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: now.activeRenderJobId });
+          } else patch({ autoRun: true, productionId: id, editorialSessionId: id });
           const body = resumeId
             ? { productionId: resumeId }
             : {
@@ -696,7 +742,7 @@ export function useMotionStudio() {
                 asrCheck: now.asrCheck,
                 sfx: now.sfx,
                 sfxVolume: now.sfxVolume,
-                soundOverrides: now.soundOverrides,
+                soundOverrides: stateRef.current.soundOverrides,
                 subtitles: now.subtitles,
                 quality: now.quality,
                 fps: now.fps,
@@ -715,7 +761,7 @@ export function useMotionStudio() {
         }
       });
     },
-    [inFlow, runStoryJob, patch, resumeAutomation, applyProduction],
+    [inFlow, runStoryJob, patch, resumeAutomation, applyProduction, persist],
   );
   const analyze = useCallback(() => startProduction({ analyzeOnly: stateRef.current.autoContinue === false }), [startProduction]);
   const resumeProduction = useCallback(() => (stateRef.current.productionId ? startProduction({}, stateRef.current.productionId) : Promise.resolve()), [startProduction]);
@@ -795,7 +841,7 @@ export function useMotionStudio() {
       resumeAutomation();
       await inFlow(async () => {
         try {
-          report = await runStoryJob(PUPPET_KIT_API.URLS.SEED, { styleId, aiExecution: motionSceneAiExecution(now) });
+          report = await runStoryJob(PUPPET_KIT_API.URLS.SEED, { styleId, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now) });
         } catch (e: any) {
           reportStoryError(e);
         }
@@ -839,7 +885,7 @@ export function useMotionStudio() {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, ...motionVisualRequest(now), characterMotion: now.characterMotion, review: now.aiReview !== false, autoVoice: false, sfx: now.sfx, previews: !exportOn(now), ...req },
+            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, ...motionVisualRequest(now), characterMotion: now.characterMotion, review: now.aiReview !== false, autoVoice: false, sfx: now.sfx, previews: !exportOn(now), ...req },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           if (!flowCancelled.current && !stateRef.current.automationPaused) requestVoice(result, analysis);
@@ -869,7 +915,7 @@ export function useMotionStudio() {
         try {
           setVoiceError(MR.MOTION_TEXT_EMPTY);
           if (stateRef.current.voiceHold) patch({ voiceHold: MR.MOTION_TEXT_EMPTY });
-          const track = (await runStoryJob(API_ROUTES.MOTION_STORY_VOICE, { script, analysis: snapshot.analysis, aspect: snapshot.aspect, asrCheck: snapshot.asrCheck === true, aiExecution: motionSceneAiExecution(snapshot) })) as MotionVoiceTrack;
+          const track = (await runStoryJob(API_ROUTES.MOTION_STORY_VOICE, { script, analysis: snapshot.analysis, aspect: snapshot.aspect, asrCheck: snapshot.asrCheck === true, aiExecution: motionMainAiExecution(snapshot) })) as MotionVoiceTrack;
           if (narrationSignature(stateRef.current.script, stateRef.current.analysis) !== signature || track.signature !== signature) return;
           const current = stateRef.current;
           const voiceCast = track.plan?.roles && current.script?.gen ? motionVoiceCast(current.script.gen.voiceCast, track.plan.roles) : undefined;
@@ -955,7 +1001,7 @@ export function useMotionStudio() {
       return;
     }
     if (!hydrated || state.visualSettingsError || state.autoExport || (state.activeStoryJobId && state.activeStoryJobId === state.productionId)) return;
-    if (state.visualSettings.mode === "remotion" && (!state.script.gen?.remotion || state.script.beats.some((beat) => !state.script!.gen?.remotion?.scenes[beat.id]?.length))) {
+    if (state.visualSettings.mode === "remotion" && (!state.script.gen?.remotion || (state.script.gen.remotion.pacingRevision === MOTION_SCENE_PACING.REVISION ? motionVisualBeatGroups(state.script).some((group) => !state.script!.gen?.remotion?.scenes[group.id]?.length) : state.script.beats.some((beat) => !state.script!.gen?.remotion?.scenes[beat.id]?.length)))) {
       setCompiled(null);
       setCompileError(MR.MOTION_TEXT_EMPTY);
       return;
@@ -994,7 +1040,8 @@ export function useMotionStudio() {
     async (jobId: string) => {
       const sourceText = stateRef.current.rawText;
       const visualKey = motionVisualDraftKey(stateRef.current.visualSettings);
-      const current = () => mounted.current && stateRef.current.rawText === sourceText && motionVisualDraftKey(stateRef.current.visualSettings) === visualKey;
+      const sessionId = stateRef.current.editorialSessionId;
+      const current = () => mounted.current && stateRef.current.editorialSessionId === sessionId && stateRef.current.rawText === sourceText && motionVisualDraftKey(stateRef.current.visualSettings) === visualKey;
       renderPollAbort.current?.abort();
       const ctrl = new AbortController();
       renderPollAbort.current = ctrl;
@@ -1107,25 +1154,27 @@ export function useMotionStudio() {
         if (flowCancelled.current || stateRef.current.automationPaused) return;
         logMotionActivity(MOTION_ACTIVITY_PREFIX.render, WORKFLOW_ACTIVITY_CONFIG.EVENT_SUFFIX.start);
         renderRequested = true;
+        const exportState = stateRef.current;
+        const exportSignature = motionRenderStateKey(exportState);
         const { job } = await motionRequest<{ job: MotionJobState }>(API_ROUTES.MOTION_VIDEO_RENDER, {
           spec: isRemotionSpec(c.spec) ? c.spec : { ...c.spec, gen: c.spec.gen ? { ...c.spec.gen, characterMotion: state.characterMotion } : undefined },
           options: {
-            quality: state.quality,
-            aspect: state.aspect,
-            fps: state.fps,
-            encoder: isRemotionSpec(c.spec) ? MotionEncoderPreference.CPU : state.encoder,
+            quality: exportState.quality,
+            aspect: exportState.aspect,
+            fps: exportState.fps,
+            encoder: isRemotionSpec(c.spec) ? MotionEncoderPreference.CPU : exportState.encoder,
             title: state.analysis?.title || state.script?.title || MOTION_TEXT_MOTION,
             audioId,
             mixedAudioId: c.audioPreviewId,
             sfxId: state.sfx ? c.sfxId : undefined,
             audioVolume: 1,
             sfxVolume: state.sfxVolume,
-            music: state.musicMood === MOTION_MUSIC.OFF ? undefined : { mood: state.musicMood || MOTION_MUSIC.AUTO, volume: state.musicVolume ?? MOTION_MUSIC.DEFAULT_VOLUME },
+            music: exportState.musicMood === MOTION_MUSIC.OFF ? undefined : { mood: exportState.musicMood || MOTION_MUSIC.AUTO, volume: exportState.musicVolume ?? MOTION_MUSIC.DEFAULT_VOLUME },
             sfx: state.sfx ? { cues: c.sfxCues, mood: state.analysis?.sfxMood || state.analysis?.genre || MOTION_TEXT_DARK } : undefined,
           },
         });
         setRenderJob(job);
-        patch({ activeRenderJobId: job.id, renderSignature: c.compilationKey });
+        patch({ activeRenderJobId: job.id, renderSignature: exportSignature });
         if (flowCancelled.current || stateRef.current.automationPaused) await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: job.id }).catch(reportStoryError);
         void followRender(job.id);
       } catch (e: any) {
@@ -1244,7 +1293,7 @@ export function useMotionStudio() {
     voiceValid,
     voiceError: voiceError || compileError,
     audioPreparing: !state.automationPaused && !!state.script?.beats.length && ((!state.uploadedAudio && !voiceValid) || compiled?.compilationKey !== compileStateKey(state) || !compiled?.audioPreviewId) && !voiceError && !compileError,
-    previewVideoUrl: renderJob?.status === MotionJobStatus.COMPLETED && compiled?.compilationKey === compileStateKey(state) && state.renderSignature === compiled.compilationKey ? renderJob.result?.videoUrl : undefined,
+    previewVideoUrl: renderJob?.status === MotionJobStatus.COMPLETED && compiled?.compilationKey === compileStateKey(state) && state.renderSignature === motionRenderStateKey(state) ? renderJob.result?.videoUrl : undefined,
     audioId,
     previewAudioId: compiled?.compilationKey === compileStateKey(state) ? (compiled.voiceStale ? undefined : compiled.audioPreviewId || audioId) : audioId,
     parseSource,

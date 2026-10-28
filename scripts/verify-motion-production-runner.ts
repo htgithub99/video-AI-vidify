@@ -60,11 +60,16 @@ try {
       assert.equal(input.previews, false);
       assert.equal(input.review, false);
       assert.equal(input.aiExecution.strictProvider, true);
+      assert.deepEqual(input.mainAiExecution, input.aiExecution.provider === "scene-provider" ? { provider: "content-provider", model: "content-model", strictProvider: true } : input.aiExecution);
       const error = failedScene ? "scene root cause" : undefined;
       failedScene = false;
       return start(K.SCENES, structuredClone(script), 35, error);
     },
-    voiceMotionStoryInput: () => start(K.VOICE, voice, 8, failedVoice ? "voice root cause" : undefined),
+    voiceMotionStoryInput: (body: any) => {
+      assert.equal(body.aiExecution.provider, "content-provider");
+      assert.equal(body.aiExecution.model, "content-model");
+      return start(K.VOICE, voice, 8, failedVoice ? "voice root cause" : undefined);
+    },
     compileMotionStoryInput: async () => ({ spec: { duration: 2 }, missing: [], voiceStale: false }),
     startMotionVideoRenderInput: (input: any) => {
       assert.equal(input.options.requireAudio, true);
@@ -81,7 +86,7 @@ try {
   };
   const directory = path.join(root, "records");
   const service = createMotionProductionService(deps, directory, 1);
-  const input = { productionId: "first", source, language: "en", aiReview: false, autoExport: true, aiExecution: { strictProvider: true } };
+  const input = { productionId: "first", source, language: "en", aiReview: false, autoExport: true, aiExecution: { provider: "content-provider", model: "content-model", strictProvider: true }, sceneAiExecution: { provider: "scene-provider", model: "scene-model", strictProvider: true } };
   const until = async (id: string) => {
     for (let i = 0; i < 500; i++) {
       const state = service.getMotionProduction(id)!;

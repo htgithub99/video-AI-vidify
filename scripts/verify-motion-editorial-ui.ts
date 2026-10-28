@@ -7,6 +7,7 @@ import { MOTION_EDITORIAL_VERIFICATION as V } from "./motionEditorialVerificatio
 import { MOTION_DRAFT_VERIFICATION as D } from "./motionDraftVerificationTexts.ts";
 import { MOTION_EDITORIAL } from "../src/constants/motionEditorial.ts";
 import { mergeMotionLogHistory } from "../src/lib/motionLogHistory.ts";
+import { API_ROUTES } from "../src/constants/apiRoutes.ts";
 const bundle = await build({
   stdin: { contents: V.ENTRY, loader: D.TSX, resolveDir: process.cwd() },
   bundle: true,
@@ -53,12 +54,70 @@ try {
   await page.setViewportSize({ width: 760, height: 650 });
   await mkdir("scratch", { recursive: true });
   await page.screenshot({ path: V.SCREENSHOT });
+  await page.evaluate(() => {
+    (window as any).motionDraftFixture.blockCancel = true;
+  });
   await page.getByRole("button", { name: V.NEW_BUTTON }).click();
+  await page.waitForFunction(() => !!(window as any).motionDraftFixture.releaseCancel);
+  const reset = await page.evaluate(() => {
+    const studio = (window as any).motionDraftStudio;
+    return { state: studio.state, storyJob: studio.storyJob, renderJob: studio.renderJob, compiled: studio.compiled, logHistory: studio.logHistory };
+  });
+  for (const key of ["analysis", "series", ...D.RESET_KEYS]) assert.equal(reset.state[key], null, key);
+  for (const key of ["thumbnails", "soundOverrides", "visualDrafts"]) assert.deepEqual(reset.state[key], {}, key);
+  for (const key of ["activeStoryJobId", "activeStoryRunId", "activeRenderJobId", "voiceHold"]) assert.equal(reset.state[key], "", key);
+  assert.equal(reset.state.lastRenderJobId, null);
+  assert.equal(reset.state.renderSignature, undefined);
+  assert.equal(reset.state.seoJobId, undefined);
+  assert.equal(reset.state.autoRun, true);
+  assert.equal(reset.state.automationPaused, false);
+  assert.equal(reset.storyJob, null);
+  assert.equal(reset.renderJob, null);
+  assert.equal(reset.compiled, null);
+  assert.deepEqual(reset.logHistory, []);
+  assert.deepEqual(reset.state.source, D.SOURCE);
+  assert.equal(reset.state.rawText, D.SOURCE.text);
+  assert.equal(reset.state.autoContinue, false);
+  assert.equal(reset.state.autoExport, false);
+  assert.notEqual(reset.state.productionId, "old-production");
+  await page.getByRole("button", { name: V.NEW_BUTTON }).click();
+  await page.evaluate(() => (window as any).motionDraftFixture.releaseCancel());
   await page.waitForFunction(() => (window as any).motionDraftStudio.logHistory.length === 1 && (window as any).motionDraftStudio.logHistory[0].id === (window as any).motionDraftStudio.state.productionId);
+  const requests = await page.evaluate(() => (window as any).motionDraftFixture.requests);
+  const productions = requests.filter((entry: any) => entry.url === API_ROUTES.MOTION_PRODUCTION);
+  assert.equal(productions.length, 1);
+  assert.deepEqual(productions[0].body.soundOverrides, {});
+  const savedReset = await page.evaluate(() => (window as any).motionDraftFixture.resetSnapshot);
+  for (const key of ["analysis", "series", ...D.RESET_KEYS]) assert.equal(savedReset[key], null, key);
+  assert.deepEqual(savedReset.visualDrafts, {});
+  assert.deepEqual(savedReset.logHistory, []);
   const newId = await page.evaluate(() => (window as any).motionDraftStudio.state.productionId);
   await page.reload();
   await page.waitForFunction((id) => (window as any).motionDraftStudio?.logHistory[0]?.id === id, newId);
   assert.equal(await page.evaluate(() => (window as any).motionDraftStudio.logHistory.length), 1);
+  await page.waitForFunction(() => !(window as any).motionDraftStudio.busy);
+  await page.evaluate(({ analysis, script, thumbnail, overrides }) => (window as any).motionDraftStudio.patch({ analysis, script, thumbnail, thumbnails: { 0: thumbnail }, soundOverrides: overrides, autoExport: true }), { analysis: D.ANALYSIS, script: D.SCRIPT, thumbnail: D.THUMBNAIL, overrides: D.OVERRIDES });
+  await page.waitForFunction(() => !!(window as any).motionDraftStudio.state.thumbnail);
+  await page.evaluate(() => (window as any).motionDraftStudio.resumeProduction());
+  await page.waitForFunction(() => !(window as any).motionDraftStudio.busy);
+  const resumed = await page.evaluate(() => (window as any).motionDraftStudio.state);
+  assert.equal(resumed.productionId, newId);
+  assert.deepEqual(resumed.analysis, D.ANALYSIS);
+  assert.deepEqual(resumed.script.beats, D.SCRIPT.beats);
+  assert.deepEqual(resumed.thumbnail, D.THUMBNAIL);
+  assert.deepEqual(resumed.soundOverrides, D.OVERRIDES);
+  await page.evaluate(() => (window as any).motionDraftStudio.patch({ visualSettings: { version: 1, mode: "remotion", engine: "remotion", profileId: "horror", componentRevision: 1 } }));
+  await page.waitForFunction(() => (window as any).motionDraftStudio.state.visualSettings.mode === "remotion");
+  await page.getByRole("button", { name: V.NEW_BUTTON }).click();
+  await page.waitForFunction((id) => !(window as any).motionDraftStudio.busy && (window as any).motionDraftStudio.state.productionId !== id, newId);
+  const remotion = await page.evaluate(() => (window as any).motionDraftStudio.state);
+  assert.equal(remotion.visualSettings.mode, "remotion");
+  assert.equal(remotion.visualSettings.profileId, "horror");
+  assert.equal(remotion.autoExport, true);
+  assert.equal(remotion.script, null);
+  assert.equal(remotion.thumbnail, null);
+  assert.deepEqual(remotion.soundOverrides, {});
+  assert.deepEqual(remotion.visualDrafts, {});
   const original = [{ id: D.JOB_ID, kind: "scenes", lines: ["a", "b", "c"] }];
   assert.deepEqual(mergeMotionLogHistory(original, D.JOB_ID, "scenes", ["b", "c", "d"])[0].lines, ["a", "b", "c", "d"]);
   assert.equal(mergeMotionLogHistory(original, D.JOB_ID, "scenes", ["a", "b"]), original);

@@ -1,0 +1,18 @@
+export const MOTION_HORROR_CHARACTER = {
+  REVISION: 2,
+  BLINK: { PERIOD: 5.7, SECONDS: 0.16 },
+  COLORS: { ink: "#20232c", skin: "#c4c9c6", ghost: "#d9dedb", hair: "#242831", grayHair: "#777d80", shirt: "#605d76", blouse: "#414751", trousers: "#343b46", white: "#e1e2da", eyes: "#dce0dc" },
+  NON_HUMAN: /\b(?:dog|cat|buffalo|horse|bird|snake|dragon|animal|robot)\b|con (?:chó|mèo|trâu|ngựa|rắn)/iu,
+  SIMPLE_CLOTHES: /\b(?:shirt|blouse)\b|áo (?:bà ba|sơ mi)/iu,
+  SPECIAL_CLOTHES: /\b(?:uniform|armor|armour|gown|dress|robe|ceremonial|helmet|crown)\b/iu,
+  NAMED_COLORS: { white: "#e1e2da", black: "#343943", charcoal: "#414751", gray: "#737b81", grey: "#737b81", red: "#764b50", blue: "#506179", green: "#586757", yellow: "#9a9065", purple: "#605d76", brown: "#6c5b4c" },
+  GHOST: /\b(?:ghost|spirit|specter|spectre|hollow eyes|limp posture)\b|hồn ma|vong|người áo trắng/iu,
+  SEATED: /\b(?:seated|sitting|sit|squatting)\b/iu,
+  LYING: /\b(?:lying|reclining|unconscious|dead)\b/iu,
+  BACK: /\b(?:back turned|back to|from behind|rear view)\b/iu,
+  SLEEP: /\b(?:asleep|sleeping|unconscious|dead|closed eyes)\b/iu,
+  FEAR: /\b(?:frightened|terrified|afraid|shocked|horrified)\b|sợ|kinh hãi|tái mét/iu,
+  WHITE: /\bwhite\s+(?:shirt|blouse|robe|dress|clothes|clothing)\b|áo trắng/iu,
+  CLOTHES_COLOR: /(?:shirt|blouse|robe|dress|clothes)[^,;#]{0,30}(#[\da-f]{6})\b/iu,
+  LOG: (name: string) => `Dựng nhân vật truyện ma theo nét vẽ chung: ${name}.`,
+} as const;

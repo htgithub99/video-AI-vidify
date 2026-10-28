@@ -12,6 +12,7 @@ import type { MotionAiExecution } from "../../../types/motionVideo.js";
 import { withMotionReferenceFiles } from "../motionReferenceService.js";
 import { listPuppets, newPuppetId, puppetHash, puppetRefsDir, readPuppet, writePuppet } from "./kitLibrary.js";
 export interface PuppetRunOptions {
+  language?: string;
   readDrafts?: Record<string, PuppetReadDraft>;
   onReadDraft?: (key: string, draft: PuppetReadDraft) => void;
   review?: boolean;
@@ -20,6 +21,8 @@ export interface PuppetRunOptions {
   readCatalog?: string;
   readCatalogFor?: (text: string) => string;
   exec: MotionAiExecution;
+  mainExec?: MotionAiExecution;
+  drawExec?: MotionAiExecution;
   signal?: AbortSignal;
   log: (s: string) => void;
   ai?: typeof runMotionAi;

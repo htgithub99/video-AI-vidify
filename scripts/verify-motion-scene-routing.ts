@@ -42,6 +42,8 @@ const fixture = {
         return Promise.resolve({ roles: [], direction: {} });
       case VT.BUILDMOTIONVOICETRACK:
         return Promise.resolve(track);
+      case "buildRemotionScenes":
+        return Promise.resolve(structuredClone(script));
       case VT.SEEDPUPPETKIT:
         return Promise.resolve({ sets: 0, props: 0 });
       case VT.RECORDSPEECHRATE:
@@ -69,7 +71,7 @@ try {
       {
         name: V.PLUGIN,
         setup(builder) {
-          builder.onResolve({ filter: V.SERVICES }, (args) => (imports.has(args.path) ? { path: args.path, namespace: V.NAMESPACE } : undefined));
+          builder.onResolve({ filter: V.SERVICES }, (args) => (args.importer.endsWith("motionProductionActions.ts") && imports.has(args.path) ? { path: args.path, namespace: V.NAMESPACE } : undefined));
           builder.onLoad({ filter: /.*/, namespace: V.NAMESPACE }, (args) => ({ loader: VT.JS, contents: [...imports.get(args.path)!.keys()].map(V.EXPORT).join(VT.NEWLINE) }));
         },
       },
@@ -79,55 +81,45 @@ try {
   fs.writeFileSync(output, bundled.outputFiles[0].text);
   const controller = await import(pathToFileURL(output).href);
   const aiExecution = { provider: P.GeminiChat, model: encodeGeminiChatModel(M.GeminiFlash, VT.HIGH), mode: E.RoomOnly, chromeHeadless: false };
-  let expected = { ...aiExecution, role: MOTION_AI_ROLE.DRAW };
+  const expected = { ...aiExecution, role: MOTION_AI_ROLE.DRAW };
   const mainAiExecution = { provider: P.DeepSeekChat, model: M.DeepSeekStandard, mode: E.RoomOnly, chromeHeadless: true };
+  const mainExpected = { ...mainAiExecution, role: MOTION_AI_ROLE.MAIN };
   const invoke = async (handler: any, extra = {}) => {
     calls.length = 0;
-    let response: any;
-    handler(
-      { body: { script: structuredClone(script), analysis: structuredClone(analysis), aiExecution, mainAiExecution, ...extra } },
-      {
-        json(value: any) {
-          response = value;
-        },
-        status(value: number) {
-          throw new Error(String(value));
-        },
-      },
-    );
+    const response = handler({ script: structuredClone(script), analysis: structuredClone(analysis), aiExecution, mainAiExecution, ...extra });
     assert.equal(response.success, true);
     await task;
   };
-  const expectExec = (name: string, index: number) => {
+  const expectExec = (name: string, index: number, execution: any) => {
     const call = calls.find((item) => item.name === name);
     assert.ok(call, name);
-    assert.deepEqual(call.args[index].exec, expected);
-    assert.equal(call.args[index].mainExec, undefined);
+    assert.deepEqual(call.args[index].exec, execution);
     return call.args[index];
   };
   await invoke(controller.scenesMotionStory);
-  expectExec(VT.BUILDSCENESPUPPET, 2);
-  expectExec(VT.DIRECTMOTIONVOICE, 3);
-  expectExec(VT.BUILDMOTIONVOICETRACK, 2);
+  assert.deepEqual(expectExec(VT.BUILDSCENESPUPPET, 2, expected).mainExec, mainExpected);
+  expectExec(VT.DIRECTMOTIONVOICE, 3, mainExpected);
+  expectExec(VT.BUILDMOTIONVOICETRACK, 2, mainExpected);
   await invoke(controller.scenesMotionStory, { autoVoice: false, beats: [VT.B1], locations: [VT.ROOM], restart: true });
-  const options = expectExec(VT.BUILDSCENESPUPPET, 2);
+  const options = expectExec(VT.BUILDSCENESPUPPET, 2, expected);
   assert.deepEqual(options.onlyBeats, [VT.B1]);
   assert.deepEqual(options.onlyLocations, [VT.ROOM]);
   assert.equal(
     calls.some((call) => call.name === VT.DIRECTMOTIONVOICE),
     false,
   );
-  await invoke(controller.seedPuppetKitItems, { styleId: V.STYLE });
-  expectExec(VT.SEEDPUPPETKIT, 2);
   await invoke(controller.voiceMotionStory);
-  expectExec(VT.BUILDMOTIONVOICETRACK, 2);
-  expected = { ...expected, strictProvider: true } as typeof expected;
+  expectExec(VT.BUILDMOTIONVOICETRACK, 2, mainExpected);
+  await invoke(controller.voiceMotionStory, { mainAiExecution: undefined });
+  expectExec(VT.BUILDMOTIONVOICETRACK, 2, { ...aiExecution, role: MOTION_AI_ROLE.MAIN });
   await invoke(controller.scenesMotionStory, { aiExecution: { ...aiExecution, strictProvider: true } });
-  expectExec(VT.BUILDSCENESPUPPET, 2);
-  expectExec(VT.DIRECTMOTIONVOICE, 3);
-  expectExec(VT.BUILDMOTIONVOICETRACK, 2);
-  await invoke(controller.voiceMotionStory, { aiExecution: { ...aiExecution, strictProvider: true } });
-  expectExec(VT.BUILDMOTIONVOICETRACK, 2);
+  expectExec(VT.BUILDSCENESPUPPET, 2, { ...expected, strictProvider: true });
+  expectExec(VT.DIRECTMOTIONVOICE, 3, mainExpected);
+  expectExec(VT.BUILDMOTIONVOICETRACK, 2, mainExpected);
+  await invoke(controller.voiceMotionStory, { mainAiExecution: { ...mainAiExecution, strictProvider: true } });
+  expectExec(VT.BUILDMOTIONVOICETRACK, 2, { ...mainExpected, strictProvider: true });
+  await invoke(controller.scenesMotionStory, { visualSettings: { version: 1, mode: "remotion", engine: "remotion", profileId: "horror", componentRevision: 1 } });
+  assert.deepEqual(expectExec("buildRemotionScenes", 2, expected).mainExec, mainExpected);
   process.stdout.write(V.PASSED);
 } finally {
   delete (globalThis as any).__motionSceneRouting;

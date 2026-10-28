@@ -4,13 +4,15 @@ import { MOTION_ILLUSTRATION as I } from "../constants/motionIllustration.js";
 import { collectPuppetLines, puppetBeatLines, puppetVisualInputKey, type PuppetLine } from "./motionPuppet.js";
 import type { PuppetGen, PuppetStoryboard, PuppetVisualSource } from "../types/motionPuppet.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../types/motionVideo.js";
+import { motionScenePacing } from "./motionScenePacing.js";
+import { MOTION_SCENE_PACING } from "../constants/motionScenePacing.js";
 export const puppetWords = (text: string): { key: string; start: number; end: number }[] => Array.from(text.matchAll(S.WORD_RE), (match) => ({ key: match[0].normalize(P.NFC).toLowerCase(), start: match.index!, end: match.index! + match[0].length }));
 export const puppetSourceText = (line: PuppetLine, range: Pick<PuppetVisualSource, "from" | "to">): string => {
   const words = puppetWords(line.text);
   if (!words[range.from] || range.to <= range.from || range.to > words.length) return P.EMPTY;
   return line.text.slice(range.from === 0 ? 0 : words[range.from].start, range.to === words.length ? line.text.length : words[range.to].start).trim();
 };
-export const puppetStoryboardProfile = (analysis: MotionStoryAnalysis) => ({ style: analysis.stylePreset, illustrationVersion: I.VERSION, genre: analysis.videoGenre, format: analysis.videoDna?.format, editing: analysis.videoDna?.editDna, cinematography: analysis.videoDna?.cinematography });
+export const puppetStoryboardProfile = (analysis: MotionStoryAnalysis) => ({ style: analysis.stylePreset, illustrationVersion: I.VERSION, pacingRevision: MOTION_SCENE_PACING.REVISION, pacing: motionScenePacing(analysis.visualSettings), genre: analysis.videoGenre, format: analysis.videoDna?.format, editing: analysis.videoDna?.editDna, cinematography: analysis.videoDna?.cinematography });
 export const puppetStoryboardInputKey = (lines: PuppetLine[], analysis: MotionStoryAnalysis): string => puppetVisualInputKey([{ text: JSON.stringify([puppetVisualInputKey(lines), puppetStoryboardProfile(analysis), analysis.cast, analysis.places, analysis.illustrationNeeds]) } as PuppetLine]);
 export const puppetStoryboardCovers = (storyboard: PuppetStoryboard | undefined, lines: PuppetLine[]): boolean => {
   if (!storyboard || storyboard.version !== S.VERSION || !Array.isArray(storyboard.units) || (!storyboard.units.length && lines.length)) return false;

@@ -4,12 +4,14 @@ export const MOTION_LOG_SECTION_TEST = {
 import {createRoot} from 'react-dom/client';
 import {MotionFlowLog} from './src/components/motion-video/MotionControls.tsx';
 import {MOTION_STORY_CONFIG} from './src/constants/motionVideo.ts';
+import {Toaster,toast} from 'sonner';
 function Fixture(){
 const [entries,setEntries]=useState(JSON.parse(localStorage.getItem('fixture-log-sections')||'null')||DATA.entries);
 const [job,setJob]=useState(DATA.job);
 globalThis.appendLog=()=>setEntries(list=>{const next=list.map(entry=>entry.id==='run'?{...entry,lines:[...entry.lines,'16:39:00 · [Ghép hình từ kho][Đọc cảnh] Đã xong cảnh 3/31']}:entry);localStorage.setItem('fixture-log-sections',JSON.stringify(next));return next});
 globalThis.failLog=()=>{setJob({...DATA.job,status:'error',activeAi:{}});setEntries(list=>list.map(entry=>entry.id==='run'?{...entry,lines:[...entry.lines,'16:40:00 · [Ghép hình từ kho] Lỗi: catalogKey must depict this exact noun phrase']}:entry))};
-return <main className={MOTION_STORY_CONFIG.BUSY_LOCK_CLASS}><h1>Nhật ký tạo video</h1><MotionFlowLog entries={entries} job={job}/></main>;
+globalThis.failLayout=()=>{toast.error(DATA.longError,{duration:Infinity});setJob({...DATA.job,status:'error',error:DATA.longError,activeAi:{}});setEntries(list=>list.map(entry=>entry.id==='run'?{...entry,lines:[...entry.lines,'16:41:00 · [Ghép hình từ kho] Lỗi: '+DATA.longError]}:entry))};
+return <><Toaster position="top-right"/><main className={MOTION_STORY_CONFIG.BUSY_LOCK_CLASS}><h1>Nhật ký tạo video</h1><MotionFlowLog entries={entries} job={job}/></main></>;
 }
 createRoot(document.getElementById('root')).render(<Fixture/>);`,
   ENTRIES: [
@@ -32,5 +34,6 @@ createRoot(document.getElementById('root')).render(<Fixture/>);`,
     { id: "seo", kind: "seo", lines: ["16:12:15 · Hoàn tất SEO"] },
   ],
   SCREENSHOT: "scratch/motion-log-sections-20261026.png",
+  LONG_ERROR: "Ghép hình từ kho: " + "Bố trí node_san · bounds: Tỷ lệ hoặc vùng tiếp xúc chưa đủ để đặt đúng chủ thể. ".repeat(120) + "Kết thúc lỗi bố cục.",
   PASSED: "Motion log sections passed: six stable phases, scoped and legacy classification, parallel progress, accurate completed/error states, collapsed raw diagnostics, independent expansion, follow-scroll without jumping, mobile layout and reload history. No AI, TTS or video.\n",
 } as const;

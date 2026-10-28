@@ -95,7 +95,7 @@ const MotionLogSectionCard: FC<{ section: MotionLogSection; lang: "vi" | "en"; i
         <Icon className={LOG.UI.CHEVRON} aria-hidden={true} />
       </button>
       <p className={LOG.UI.SUMMARY} data-motion-log-summary>
-        {section.summary}
+        <span className={LOG.UI.SUMMARY_TEXT}>{section.summary}</span>
       </p>
       <div id={bodyId} hidden={!open}>
         <div

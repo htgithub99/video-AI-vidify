@@ -34,7 +34,7 @@ export const ADVANCED_FORM_HTML = `
       <button aria-expanded="false" onclick="this.setAttribute('aria-expanded', 'true'); document.querySelector('#more-options').hidden = false">More Options</button>
       <div id="more-options" hidden>
         <input placeholder="Exclude styles">
-        <div>Vocal Gender<button data-selected="false">Male</button><button data-selected="false">Female</button></div>
+        <div id="gender">Vocal Gender<button data-selected="false"><span><span>Female</span></span></button><button data-selected="false"><span><span>Male</span></span></button></div>
         <div><span>Duration</span><button data-selected="true">Custom</button><button data-selected="false">Auto</button></div>
         <div><span>Max Mode</span><button data-selected="false">Off</button><button data-selected="true">On</button></div>
         <div role="slider" tabindex="0" aria-label="Weirdness" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
@@ -47,7 +47,9 @@ export const ADVANCED_FORM_HTML = `
     <script>
       document.querySelectorAll('[role="slider"]').forEach(slider => slider.style.cssText = 'width: 200px; height: 20px');
       document.querySelectorAll('#more-options button').forEach(button => button.onclick = () => {
+        const selected = button.getAttribute('data-selected') === 'true';
         button.parentElement.querySelectorAll('button').forEach(other => other.setAttribute('data-selected', String(other === button)));
+        if (button.parentElement.id === 'gender' && selected) button.setAttribute('data-selected', 'false');
       });
       document.querySelectorAll('#more-options [role="slider"]').forEach(slider => slider.onkeydown = event => {
         const delta = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;

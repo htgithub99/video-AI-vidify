@@ -1,10 +1,14 @@
 export const MOTION_VISUAL = {
   VERSION: 1,
   COMPONENT_REVISION: 1,
-  RECOVERY_REVISION: "remotion-isolated-layers-20261027",
+  RECOVERY_REVISION: "remotion-composition-and-anatomy-20261028",
   DRAFT_COMPILE_FIELDS: ["script", "analysis", "stylePreset", "aspect", "look", "voice", "uploadedAudio", "fps", "characterMotion", "renderBehavior", "subtitles", "sfx", "sfxVolume", "soundOverrides", "visualSettings"],
   CUTOUT: {
     SIZE: 64,
+    CHARACTER_SIZE: 256,
+    BODY_GAP_RATIO: 0.018,
+    BODY_PART_RATIO: 0.08,
+    DISCONNECTED: "Hình người bị đứt rời giữa các phần cơ thể. Vẽ lại cùng nhân vật với đầu nối liền cổ, cổ nối vai và thân, tay chân nối thân; không chèn khoảng trong suốt giữa đầu và cổ. Không thêm bóng rời dưới chân.",
     OPAQUE_ALPHA: 250,
     OPAQUE_RATIO: 0.985,
     CORNER_SIZE: 4,
@@ -23,7 +27,7 @@ export const MOTION_VISUAL = {
   MODES: { LIBRARY: "library", REMOTION: "remotion" },
   PROFILES: {
     history: {
-      revision: 0,
+      revision: 1,
       vi: "Lịch sử",
       en: "History — illustrated",
       direction: "Hand-drawn 2D editorial illustration, expressive readable faces, full-length proportional bodies, clear dark contours, restrained warm parchment palette, era-appropriate clothes and architecture. No generic stick figures or short-legged chibi. White/paper backgrounds are valid for explanatory scenes.",
@@ -32,20 +36,20 @@ export const MOTION_VISUAL = {
       muted: "#a88149",
     },
     horror: {
-      revision: 1,
+      revision: 3,
       vi: "Truyện ma",
       en: "Horror — atmospheric illustration",
       direction:
-        "Vietnamese folk-horror 2D hand-drawn cartoon: dark slightly uneven outlines, matte solid fills, sparse hand-drawn texture and at most one flat shadow. People have pale gray oval faces, simple dark eyes/brows/mouth, recognizable age/hair/clothes, slender elongated clothed bodies and simple limbs; heads moderately enlarged, not giant chibi heads or realistic anatomy. Closed quiet mouths, restrained uneasy expressions. Environments fill the frame with simple room/yard perspective, a few floor/wall lines and readable silhouettes. Muted slate blue-gray, charcoal, dusty olive, dull brown and faded purple; night scenes dark but subjects readable, daylight subdued rather than uniformly black. Avoid cream/parchment presentation backgrounds, glossy wood gradients, 3D shading, photorealism, polished icons or cute mascot ghosts. Ghosts retain the person's silhouette with restrained pallor/translucency. Keep stated white clothes/skin white. Illustrate the story with simple static staging; simplify optional actions. Do not copy a reference video's logo, LIVE badge, timestamp or text overlays.",
+        "Vietnamese hand-drawn horror cartoon: uneven dark ink contours, matte flat colors, one flat shadow at most. Adult head is about one fifth of full height; pale blue-gray oval face, black hair, visible eyebrows and eyelids, small nose and short closed unsmiling mouth. Draw clothed shoulders, torso, bent elbows, hands and natural trouser legs, not a long tapering tube with dot hands. Use three-quarter/profile faces and slight asymmetry; anxious brows and tired eyes, never a pleasant smile or a uniform front-facing doll. Keep a simple readable silhouette, no realistic anatomy or tiny chibi legs. Rooms have a clear perspective floor leading to the rear wall, door depth, restrained irregular surface lines, no glossy gradients. Colors: slate walls #555e69, charcoal outlines #20232c, dusty purple clothing #605d76, gray olive floor #575a51, pale faces #c4c9c6. Night shading stays readable and preserves white clothing. Ghosts keep a human silhouette, pale face, dark hollow eyes, limp posture; never a cute mascot or a floating bedsheet with a smile. Simple illustrative poses are sufficient. Use layered atmosphere and gentle movement separately. No reference logos, LIVE badges, timestamps or text overlays.",
       paper: "#262b32",
       ink: "#eee8da",
       muted: "#697474",
     },
     explainer: {
-      revision: 0,
+      revision: 1,
       vi: "Giải thích",
       en: "Explainer — diagrams",
-      direction: "Clear flat 2D educational illustration, readable distinct silhouettes and simple shapes, muted blue/cream palette, generous negative space. Diagram labels and arrows are drawn separately by code. Adapt each person and object to the actual subject; no compulsory military imagery.",
+      direction: "Clear flat 2D educational illustration, readable distinct silhouettes and simple shapes, muted blue/cream palette, generous negative space. Use short source-supported SVG labels and arrows only where they clarify the explanation. Adapt each person and object to the actual subject; no compulsory military imagery.",
       paper: "#ecf0ec",
       ink: "#20354a",
       muted: "#527995",
@@ -126,7 +130,7 @@ export const MOTION_VISUAL = {
   LOG_SCENE: (i: number, total: number, id: string) => `Đọc và dựng cảnh Remotion ${i}/${total}: ${id}`,
   LOG_READY: (i: number, total: number) => `Đã dựng cảnh Remotion ${i}/${total}.`,
   LOG_ASSET: (name: string) => `Dựng hình Remotion: ${name}`,
-  LOG_REJECTED: (artifact: string, errors: string[]) => `${artifact === "motion_remotion_asset" ? "Hình SVG" : artifact === "motion_remotion_scene" ? "Dữ liệu phân cảnh" : "Review ảnh"} cần sửa: ${errors.join("; ")}`,
+  LOG_REJECTED: (artifact: string, errors: string[]) => `${artifact === "motion_remotion_asset" || artifact === "motion_remotion_composition" ? "Hình SVG" : artifact === "motion_remotion_scene" ? "Dữ liệu phân cảnh" : artifact === "motion_remotion_design" ? "Thiết kế phối cảnh" : "Review ảnh"} cần sửa: ${errors.join("; ")}`,
   LOG_REVIEW: (i: number, total: number) => `Review ảnh Remotion ${i}/${total}.`,
   LOG_REPAIR: (id: string) => `Sửa đúng cảnh Remotion ${id} theo kết quả review.`,
   LOG_REVIEW_OFF: "Review ảnh AI đã tắt; vẫn kiểm dữ liệu và bố cục Remotion.",

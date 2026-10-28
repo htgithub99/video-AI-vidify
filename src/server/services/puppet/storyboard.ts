@@ -18,6 +18,7 @@ import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
 import { MOTION_PROMPT } from "../../../constants/motionPrompt.js";
 import { MOTION_PROGRESS as PROGRESS } from "../../../constants/motionProgress.js";
 import type { PuppetRunOptions } from "./stylePack.js";
+import { motionScenePacingRule, motionBeatVisualSeconds } from "../../../lib/motionScenePacing.js";
 const boundaryPosition = (value: any, lines: PuppetLine[], offset: number): number | null => {
   const index = value?.from?.line - offset;
   if (!Number.isInteger(value?.from?.line) || index < 0 || index >= lines.length) return null;
@@ -86,6 +87,10 @@ export const planPuppetStoryboard = async (lines: PuppetLine[], beats: MotionBea
     const needs = analysis.illustrationNeeds?.filter((need) => chapters.has(need.chapterId));
     return [
       S.PROMPT,
+      motionScenePacingRule(
+        analysis.visualSettings,
+        group.lines.reduce((sum, line) => sum + motionBeatVisualSeconds({ narration: line.text } as MotionBeat, o.language), 0),
+      ),
       I.PROMPT,
       S.PLAN_READ,
       motionResponsePrompt(S.ARTIFACT),

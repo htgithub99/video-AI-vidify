@@ -4,9 +4,10 @@ import * as ST from "../../constants/sourceText.js";
 import _ from "lodash";
 import type { Locator, Page } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../../constants/cinematicConstants.js";
+import { uploadFailure } from "./chatUploadRecovery.js";
 type Attachment = { name: string; mimeType: string; path?: string };
-type UploadState = { count: number; labels: string[]; busy: boolean; failed: boolean; sendReady: boolean };
-export type ChatUploadPolicy = { scope: string; send: string; remove: string; attachment: string; busy: string; failure: RegExp; failedError: string; notReadyError: string; composerAncestor?: string; errorSelector?: string; matchImageNames?: boolean; omitImageExtension?: boolean };
+export type UploadState = { count: number; labels: string[]; files: Array<{ label: string; busy: boolean; failed: boolean; ready: boolean }>; busy: boolean; failed: boolean; sendReady: boolean; readyCount: number; busyCount: number; failedCount: number; errorMessage?: string };
+export type ChatUploadPolicy = { scope: string; send: string; remove: string; attachment: string; busy: string; failure: RegExp; failedError: string; notReadyError: string; composerAncestor?: string; errorSelector?: string; ready?: string; matchImageNames?: boolean; omitImageExtension?: boolean; omitAudioExtension?: boolean };
 const claudePolicy: ChatUploadPolicy = {
   scope: CONFIG.CLAUDE_UPLOAD_SCOPE_SELECTOR,
   send: CONFIG.CLAUDE_SEND_SELECTOR,
@@ -36,11 +37,15 @@ export const readClaudeUploadState = async (input: Locator, policy: ChatUploadPo
         visible(node: Element) {
           return node.getClientRects().length > 0 && getComputedStyle(node).visibility !== ST.SOURCE_TEXT_HIDDEN;
         },
+        has(node: Element, selector: string) {
+          return node.matches(selector) || Array.from(node.querySelectorAll(selector)).some(dom.visible);
+        },
         label(node: Element) {
           const parts: string[] = [];
           const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
           while (walker.nextNode()) parts.push(walker.currentNode.textContent || C.EMPTY);
-          return [...parts, node.getAttribute(ST.SOURCE_TEXT_ARIA_LABEL), node.getAttribute(ST.SOURCE_TEXT_TITLE), node.getAttribute(C.ALT), ...Array.from(node.querySelectorAll(C.LABEL_ATTRIBUTES_SELECTOR)).flatMap((child) => [child.getAttribute(ST.SOURCE_TEXT_TITLE), child.getAttribute(C.ALT)])].filter(Boolean).join(ST.SOURCE_TEXT_SYMBOL_52);
+          const labelledNodes = [node, ...Array.from(node.querySelectorAll('[aria-label], [title], [alt], [aria-describedby]'))];
+          return [...parts, ...labelledNodes.flatMap((child) => [child.getAttribute(ST.SOURCE_TEXT_ARIA_LABEL), child.getAttribute(ST.SOURCE_TEXT_TITLE), child.getAttribute(C.ALT), ...(child.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean).map((id) => document.getElementById(id)?.textContent)])].filter(Boolean).join(ST.SOURCE_TEXT_SYMBOL_52);
         },
       };
       let scope = element.closest(config.scope);
@@ -54,18 +59,26 @@ export const readClaudeUploadState = async (input: Locator, policy: ChatUploadPo
           parent = parent.parentElement;
         }
       }
-      if (!scope) return { count: 0, labels: [], busy: false, failed: false, sendReady: false };
+      if (!scope) return { count: 0, labels: [], files: [], busy: false, failed: false, sendReady: false, readyCount: 0, busyCount: 0, failedCount: 0 };
       const removes = Array.from(scope.querySelectorAll(config.remove)).filter(dom.visible);
       const chips = Array.from(scope.querySelectorAll(config.attachment)).filter((node) => dom.visible(node) && !node.querySelector(config.attachment));
       const images = Array.from(scope.querySelectorAll(ST.SOURCE_TEXT_IMG)).filter((node): node is HTMLImageElement => dom.visible(node) && C.UPLOAD_IMAGE_URL_PATTERN.test(node.getAttribute(ST.SOURCE_BROWSER_TEXT_SRC) || C.EMPTY));
-      const labels = removes.length ? removes.map((node) => dom.label(node.closest(config.attachment) || node.parentElement || node)) : chips.map(dom.label);
+      // Gemini only shows a close button on the hovered chip. Count and label the chips themselves.
+      const labels = chips.length ? chips.map(dom.label) : removes.map((node) => dom.label(node.closest(config.attachment) || node.parentElement || node));
+      const fileStates = chips.map((node) => {
+        const busy = dom.has(node, config.busy);
+        const failed = dom.has(node, config.errorSelector) || config.failure.test(dom.label(node));
+        return { label: dom.label(node), busy, failed, ready: !busy && !failed && (!config.ready || dom.has(node, config.ready)) };
+      });
       const statuses = Array.from(scope.querySelectorAll(C.STATUS_SELECTOR)).filter(dom.visible).map(dom.label).join(ST.SOURCE_TEXT_SYMBOL_52);
       const busy = Array.from(scope.querySelectorAll(config.busy)).some(dom.visible) || C.UPLOAD_BUSY_TEXT_PATTERN.test(statuses) || images.some((img) => !img.complete || !img.naturalWidth);
-      const explicitError = Array.from(scope.querySelectorAll(config.errorSelector)).some(dom.visible);
+      const errorNodes = Array.from(scope.querySelectorAll(config.errorSelector)).filter(dom.visible);
+      const explicitError = errorNodes.length > 0;
       const alerts = Array.from(document.querySelectorAll(ST.SOURCE_TEXT_ROLE_ALERT)).filter(dom.visible);
       const failed = explicitError || alerts.some((node) => config.failure.test(dom.label(node))) || labels.some((text) => config.failure.test(text));
       const sendReady = Array.from(scope.querySelectorAll(config.send)).some((node) => dom.visible(node) && !node.hasAttribute(ST.SOURCE_BROWSER_TEXT_DISABLED) && node.getAttribute(ST.SOURCE_TEXT_ARIA_DISABLED) !== ST.SOURCE_TEXT_TRUE);
-      return { count: Math.max(removes.length, chips.length, images.length), labels, busy, failed, sendReady };
+      const errorMessage = [...errorNodes, ...alerts.filter((node) => config.failure.test(dom.label(node)))].map(dom.label).filter(Boolean).join(" ").slice(0, 400);
+      return { count: Math.max(removes.length, chips.length, images.length), labels, files: fileStates, busy, failed, sendReady, errorMessage, readyCount: chips.length ? fileStates.filter((file) => file.ready).length : (!config.ready && !busy && !failed ? labels.length : 0), busyCount: fileStates.filter((file) => file.busy).length, failedCount: fileStates.filter((file) => file.failed).length };
     },
     {
       scope: policy.scope,
@@ -73,6 +86,7 @@ export const readClaudeUploadState = async (input: Locator, policy: ChatUploadPo
       remove: policy.remove,
       attachment: policy.attachment,
       busy: policy.busy,
+      ready: policy.ready,
       failure: policy.failure,
       errorSelector: policy.errorSelector || C.UPLOAD_ERROR_SELECTOR,
       sharedTexts: {
@@ -99,27 +113,36 @@ export const observeClaudeUploads = (page: Page) =>
     return url.hostname === C.CLAUDE_HOST && request.method() === ST.SOURCE_TEXT_POST && (C.UPLOAD_PATH_PATTERN.test(url.pathname) || C.MULTIPART_PATTERN.test(contentType));
   });
 type UploadObservation = Pick<ReturnType<typeof observeClaudeUploads>, "state">;
-export const waitForClaudeUploads = async (input: Locator, attachments: Attachment[], timeoutMs: number, signal?: AbortSignal, observation?: UploadObservation, stableMs = CONFIG.CLAUDE_UPLOAD_STABLE_MS, requireSendReady = false, policy: ChatUploadPolicy = claudePolicy): Promise<void> => {
-  const deadline = Date.now() + timeoutMs;
-  let readySince = 0;
+export const attachmentNamesMatch = (labels: string[], attachments: Attachment[], policy: ChatUploadPolicy): boolean => {
   const normalize = (value: string) => value.normalize(ST.SOURCE_TEXT_NFC).toLowerCase();
-  const expected = attachments.map((attachment) => ({ name: normalize(attachment.path?.split(/[\\/]/).pop() || attachment.name), image: attachment.mimeType.startsWith(ST.SOURCE_TEXT_IMAGE_2) }));
+  const names = labels.map(normalize);
+  return attachments.every((attachment) => {
+    const name = normalize(attachment.path?.split(/[\\/]/).pop() || attachment.name);
+    const image = attachment.mimeType.startsWith(ST.SOURCE_TEXT_IMAGE_2);
+    if (image && !policy.matchImageNames) return true;
+    const omitExtension = image && policy.omitImageExtension || attachment.mimeType.startsWith("audio/") && policy.omitAudioExtension;
+    const candidates = omitExtension ? [name, name.replace(image ? C.IMAGE_EXTENSION_PATTERN : /\.[a-z0-9]+$/i, C.EMPTY)] : [name];
+    const filenames = candidates.map((candidate) => new RegExp(C.FILENAME_PATTERN(_.escapeRegExp(candidate)), ST.SOURCE_TEXT_U_2));
+    const index = names.findIndex((label) => filenames.some((filename) => filename.test(label)));
+    if (index < 0) return false;
+    names.splice(index, 1);
+    return true;
+  });
+};
+export const waitForClaudeUploads = async (input: Locator, attachments: Attachment[], timeoutMs: number, signal?: AbortSignal, observation?: UploadObservation, stableMs = CONFIG.CLAUDE_UPLOAD_STABLE_MS, requireSendReady = false, policy: ChatUploadPolicy = claudePolicy, onProgress?: (state: UploadState & { namesMatch: boolean; pending: number }) => void, waitForSession?: () => Promise<number>): Promise<void> => {
+  let deadline = Date.now() + timeoutMs;
+  let readySince = 0;
   while (Date.now() < deadline) {
     signal?.throwIfAborted();
+    const pausedMs = await waitForSession?.() || 0;
+    deadline += pausedMs;
+    if (pausedMs) readySince = 0;
     const state = await readClaudeUploadState(input, policy);
     const network = observation?.state();
-    if (state.failed || network?.failed) throw new Error(policy.failedError);
-    const names = state.labels.map(normalize);
-    const namesMatch = expected.every((item) => {
-      if (item.image && !policy.matchImageNames) return true;
-      const candidates = item.image && policy.omitImageExtension ? [item.name, item.name.replace(C.IMAGE_EXTENSION_PATTERN, C.EMPTY)] : [item.name];
-      const filenames = candidates.map((candidate) => new RegExp(C.FILENAME_PATTERN(_.escapeRegExp(candidate)), ST.SOURCE_TEXT_U_2));
-      const index = names.findIndex((label) => filenames.some((filename) => filename.test(label)));
-      if (index < 0) return false;
-      names.splice(index, 1);
-      return true;
-    });
-    if (state.count === attachments.length && namesMatch && !state.busy && (!requireSendReady || state.sendReady) && !network?.pending) {
+    const namesMatch = attachmentNamesMatch(state.labels, attachments, policy);
+    onProgress?.({ ...state, namesMatch, pending: network?.pending || 0 });
+    if (state.failed || network?.failed) throw uploadFailure(policy.failedError, network, state.errorMessage);
+    if (state.count === attachments.length && namesMatch && (!policy.ready || state.readyCount === attachments.length) && !state.busy && (!requireSendReady || state.sendReady) && !network?.pending) {
       if (!readySince) readySince = Date.now();
       if (Date.now() - readySince >= stableMs) {
         signal?.throwIfAborted();
@@ -143,5 +166,7 @@ export const waitForClaudeUploads = async (input: Locator, attachments: Attachme
       if (signal?.aborted) cancel();
     });
   }
-  throw new Error(policy.notReadyError);
+  const finalState = await readClaudeUploadState(input, policy);
+  const matched = attachmentNamesMatch(finalState.labels, attachments, policy);
+  throw uploadFailure(policy.notReadyError, observation?.state(), [finalState.errorMessage, `${finalState.count}/${attachments.length} tệp; sẵn sàng ${finalState.readyCount}; tên ${matched ? 'khớp' : 'chưa khớp'}; đang xử lý ${finalState.busyCount}; lỗi ${finalState.failedCount}`].filter(Boolean).join(' · '));
 };

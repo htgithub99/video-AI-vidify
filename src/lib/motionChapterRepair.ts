@@ -41,7 +41,7 @@ export const mergeMotionChapterDraft = (raw: any, chapter: string, before?: Moti
     return pending && patch && counts.get(row.id) === 1 ? mergeMotionRepair(row, patch, pending.fields) : structuredClone(row);
   });
 };
-export const motionChapterPending = (rows: Record<string, any>[], expectedUnits?: number, tolerance?: number): MotionChapterDraft["pending"] => {
+export const motionChapterPending = (rows: Record<string, any>[], expectedUnits?: number, tolerance?: number, spreadExpansion = false): MotionChapterDraft["pending"] => {
   const missing = rows.filter((row) => !units(row.narration)).map((row) => ({ id: row.id, fields: [...C.FIELDS] }));
   if (missing.length) return missing;
   const tokens = (text: string) => (text.toLowerCase().normalize("NFC").match(C.WORDS) || []).join(" ");
@@ -57,7 +57,8 @@ export const motionChapterPending = (rows: Record<string, any>[], expectedUnits?
   for (const row of [...rows].sort((a, b) => (short ? units(a.narration) - units(b.narration) : units(b.narration) - units(a.narration)))) {
     if (remaining <= 0) break;
     const count = units(row.narration);
-    const change = short ? Math.min(remaining, Math.max(average, average * 2 - count)) : Math.min(remaining, Math.max(0, count - Math.max(12, Math.floor(average / 2))));
+    const expansion = spreadExpansion ? Math.max(1, Math.ceil(((expectedUnits - total) * count) / Math.max(1, total))) : Math.max(average, average * 2 - count);
+    const change = short ? Math.min(remaining, expansion) : Math.min(remaining, Math.max(0, count - Math.max(12, Math.floor(average / 2))));
     if (!change) continue;
     remaining -= change;
     selected.push({ id: row.id, fields: ["narration", "utterances"], targetUnits: Math.round(count + (short ? change : -change)) });

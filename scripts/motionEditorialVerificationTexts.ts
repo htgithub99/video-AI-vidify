@@ -11,16 +11,22 @@ import { MOTION_VOICE_LIBRARY } from "./src/constants/motionVoice.ts";
 import { MOTION_DRAFT_VERIFICATION as D } from "./scripts/motionDraftVerificationTexts.ts";
 const oldLogs = Array.from({length: 35}, (_, i) => ({id: String(i), kind: "analyze", lines: ["09:00:00 · Accepted DNA " + i]}));
 if (!localStorage.getItem("fixture-seeded")) {
-  await jsonUtils.setAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {source: D.SOURCE, rawText: D.SOURCE.text, script: D.SCRIPT, analysis: D.ANALYSIS, autoRun: false, autoContinue: false, autoExport: false, activeStoryJobId: D.JOB_ID, logHistory: oldLogs});
+  await jsonUtils.setAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {source: D.SOURCE, rawText: D.SOURCE.text, script: D.SCRIPT, analysis: D.ANALYSIS, voice: D.VOICE, uploadedAudio: D.UPLOAD, seo: D.SEO, thumbnail: D.THUMBNAIL, thumbnails: {0: D.THUMBNAIL}, soundOverrides: D.OVERRIDES, visualDrafts: {old: {gen: D.SCRIPT.gen}}, productionId: "old-production", editorialSessionId: "old-editorial", autoRun: false, autoContinue: false, autoExport: false, activeStoryJobId: D.JOB_ID, logHistory: oldLogs});
   localStorage.setItem("fixture-seeded", "1");
 }
 const fixture = globalThis.motionDraftFixture = {requests: [], errors: [], request: async (url, body) => {
   fixture.requests.push({url, body});
   if (url === MOTION_VOICE_LIBRARY.CHANNELS_URL) return {channels: []};
   if (url === API_ROUTES.MOTION_VIDEO_RESULTS) return {items: []};
-  if (url === API_ROUTES.MOTION_STORY_CANCEL) return {cancelled: false};
+  if (url === API_ROUTES.MOTION_STORY_CANCEL) {
+    if (fixture.blockCancel) await new Promise(resolve => fixture.releaseCancel = () => {fixture.blockCancel = false; resolve();});
+    return {cancelled: false};
+  }
   if (url === API_ROUTES.MOTION_STORY_COMPILE) return {spec: {shots: [], duration: 5}, missing: [], sfxCues: []};
-  if (url === API_ROUTES.MOTION_PRODUCTION) return {job: {id: body.productionId, productionId: body.productionId, kind: "production", status: "error", log: ["10:00:00 · New video"]}};
+  if (url === API_ROUTES.MOTION_PRODUCTION || url === API_ROUTES.MOTION_PRODUCTION_RESUME) {
+    fixture.resetSnapshot = await jsonUtils.getAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {});
+    return {job: {id: body.productionId, productionId: body.productionId, kind: "production", status: "error", log: ["10:00:00 · New video"]}};
+  }
   throw new Error(url);
 }, poll: async (url, update) => {
   const fresh = !url.endsWith(D.JOB_ID);

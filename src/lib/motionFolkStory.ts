@@ -11,7 +11,11 @@ const words = (text: string): string[] =>
 const plain = (text: string): string => words(text).join(F.SPACE);
 const contains = (text: string, term: string): boolean => !!plain(term) && (F.SPACE + plain(text) + F.SPACE).includes(F.SPACE + plain(term) + F.SPACE);
 export const motionFolkContractGuide = (contract?: MotionFolkStoryContract): string => [F.PROFILE, contract ? F.CONTRACT_LABEL + JSON.stringify(contract) : ""].filter(Boolean).join("\n");
-export const motionFolkTopicValid = (raw: any, source: string): boolean => !motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS[F.TOPIC_ARTIFACT]).length && source.includes(raw.evidence) && raw.aliases.some((alias: string) => contains(raw.evidence, alias));
+export const motionFolkTopicErrors = (raw: any, source: string): string[] => {
+  if (motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS[F.TOPIC_ARTIFACT]).length) return [F.TOPIC_ERROR];
+  return [...(!source.includes(raw.evidence) ? [F.TOPIC_EVIDENCE_ERROR] : []), ...(!raw.aliases.some((alias: string) => contains(raw.evidence, alias)) ? [F.TOPIC_ALIAS_ERROR] : [])];
+};
+export const motionFolkTopicValid = (raw: any, source: string): boolean => !motionFolkTopicErrors(raw, source).length;
 export const motionFolkTopicContract = (raw: any, sourceKey: string): MotionFolkStoryContract => ({
   version: F.VERSION,
   profileId: F.PROFILE_ID,
@@ -69,5 +73,5 @@ export const motionFolkChapterWritingContext = (analysis: MotionStoryAnalysis, c
   const context = motionFolkChapterContext(analysis, chapterId);
   const core = analysis.sourceCore;
   const contract = analysis.folkStoryContract;
-  return { folkStoryContract: contract ? { profileId: contract.profileId, topic: { name: contract.topic.name, meaning: contract.topic.meaning, aliases: contract.topic.aliases } } : undefined, sourceCore: core ? { premise: core.premise, emotionalStake: core.emotionalStake, endingMeaning: core.endingMeaning } : undefined, storySpine: context.storySpine };
+  return { folkStoryContract: contract ? { profileId: contract.profileId, topic: { id: contract.topic.id, name: contract.topic.name, meaning: contract.topic.meaning, aliases: contract.topic.aliases } } : undefined, sourceCore: core ? { premise: core.premise, emotionalStake: core.emotionalStake, endingMeaning: core.endingMeaning } : undefined, storySpine: context.storySpine };
 };

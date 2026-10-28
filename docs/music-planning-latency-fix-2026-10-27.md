@@ -23,9 +23,21 @@ Chậm chủ yếu ở việc gửi lại toàn bộ lời để xếp hạng v�
 5. Chỉ đối với xác nhận truyền dữ liệu, có thể lấy một JSON xác nhận hoàn chỉnh trong phản hồi bị ghép lỗi. Vẫn kiểm tra đúng loại, request ID và số phần. Khi xác nhận sai, yêu cầu sửa ngay trong room, không gửi lại toàn bộ dữ liệu.
 6. Kết quả sản xuất thông thường vẫn giữ kiểm tra JSON và định danh; không áp dụng cách đọc xác nhận nới hơn cho lời bài hát, kịch bản hoặc dữ liệu khác.
 7. API hỗ trợ NDJSON để gửi tên bước, số bài hoàn thành/tổng, lượt thử và dữ liệu từng lô. Client cũ không yêu cầu streaming vẫn nhận JSON cuối như trước.
-8. Heartbeat giữ luồng HTTP hoạt động; đóng kết nối hủy lượt đang chạy. Giao diện giữ bài đã nhận khi mất kết nối hoặc dừng; bài được lưu qua cơ chế lưu workspace hiện có.
+8. Heartbeat giữ luồng HTTP hoạt động; đóng kết nối hủy lượt đang chạy. Bài nhận từng lô được lưu qua cơ chế lưu workspace hiện có, nhưng khi còn sáng tác, giao diện luôn dùng loading cũ và chỉ hiện toàn bộ kết quả sau phản hồi hoàn tất. Đã bỏ khung “Tiến độ sáng tác” theo yêu cầu người dùng. Mất kết nối hoặc dừng vẫn giữ bài đã nhận để phục hồi.
 9. Thumbnail chỉ báo đang tạo khi thật sự gửi yêu cầu tạo ảnh. Khi nhận bài mới, xóa liên kết ảnh và kết quả tải cũ để không ghép nhầm sang lượt mới.
 10. Lỗi SEO vẫn là cảnh báo, giữ bài và cấu hình đã đạt. Hủy trong bước SEO phải dừng, không bị chuyển thành kết quả thành công.
+11. Mặc định viết năm bài mỗi lượt, hai room độc lập. Khi phản hồi không đạt, chia lô theo thứ tự `5 → 2 → 1`; giữ toàn bộ các lô đã hoàn thành. Phản hồi nhỏ cuối danh sách không phải đủ năm bài nếu số bài còn lại ít hơn.
+12. `gemini_thinking_unavailable` được phân loại là lỗi cấu hình model không thể sửa bằng cách viết lại lời hoặc chia lô nhỏ. Giữ nguyên lỗi thực tế, không thử lại năm lần rồi thay thành lỗi JSON. Log mới có `selectionPhase` để phân biệt lỗi ở chọn model và chọn mức tư duy. Không tự đổi model hoặc giảm mức tư duy đã chọn.
+
+## Lượt lỗi mới và đánh giá lô năm bài
+
+Lượt `music_1793097318384_fq5ldxcwx8` bắt đầu 17:35:18, đã viết 18/25 bài qua chín lô. Từ 17:44:58, lô bắt đầu ở bài 19 gặp `gemini_thinking_unavailable` với `gemini-argon::high`; lô tiếp theo cũng gặp lỗi này. Tool cũ thử lại năm lần cho mỗi lô và kết thúc lúc 17:46:41 bằng lỗi định dạng, làm mất nguyên nhân ban đầu trong thông báo cuối.
+
+Chưa có bằng chứng trong log về vượt token, cắt phản hồi hoặc lỗi lời bài hát ở hai lô đó: lỗi xảy ra khi áp dụng lựa chọn model trước bước gửi yêu cầu sáng tác. Log cũ không có pha lựa chọn hoặc thông báo hạn mức, nên chưa thể khẳng định nguyên nhân bên ngoài là hết hạn mức hay tùy chọn bị khóa ở đâu.
+
+Chín phản hồi đạt có độ dài 8.148–8.327 ký tự cho hai bài, trung bình 8.236 ký tự. Ước tính tuyến tính năm bài khoảng 20.589 ký tự đầu ra. Đây là ước tính từ lượt chạy, không phải đo token thực tế hoặc cam kết giới hạn của Gemini web. Prompt đầu vào giữ cùng DNA và hướng dẫn, chỉ đổi phạm vi/số bài; đầu ra mỗi lượt tăng khoảng 2,5 lần nhưng tổng lời cho 25 bài gần như giữ nguyên. Nếu các lô đều đạt, số lượt sáng tác giảm từ 13 xuống 5, giúp giảm việc gửi lặp hướng dẫn và DNA.
+
+Kiểm thử mô phỏng route đã xác nhận hai room nhận năm bài mỗi room; phản hồi không đạt có thể chia xuống hai rồi một bài; lỗi model không khả dụng chỉ được gọi một lần ở lô đó, giữ nguyên nguyên nhân và dữ liệu lô đã đạt. Không chạy sáng tác thật. Thay đổi backend này chưa được nạp vào tiến trình đang chạy nhằm giữ checkpoint của 18 bài hiện có; cần nạp lại backend trước lượt dùng chính sách mới.
 
 ## Số liệu kiểm thử mô phỏng
 
@@ -47,7 +59,7 @@ Tất cả giữ đủ tiêu đề và ID; không chứa lại toàn bộ lời 
 
 - `npx tsc --noEmit --pretty false`: đạt.
 - `npx tsx scripts/verify-music-planning-recovery.ts`: đạt; thực thi route sản xuất với AI mô phỏng, hai worker, checkpoint cũ thiếu đánh giá, phục hồi từng mục, JSON tương thích, streaming UTF-8, xếp hạng dự phòng, SEO lỗi và hủy.
-- `npx tsx scripts/verify-music-planning-ui.ts`: đạt; dùng component thật trên trình duyệt cục bộ, kiểm tra tiến độ, lời hiện sớm, mất kết nối/tải lại, thứ tự cuối, thời điểm tạo thumbnail và dừng.
+- `npx tsx scripts/verify-music-planning-ui.ts`: đạt; dùng component thật trên trình duyệt cục bộ, kiểm tra loading duy trì ở mọi bước dù đã lưu đủ bài, chỉ hiện danh sách khi nhận kết quả cuối; đồng thời kiểm tra mất kết nối/tải lại, thứ tự cuối, thời điểm tạo thumbnail và dừng.
 - `npx tsx scripts/verify-chat-composer-validation.ts`: đạt.
 - `npx tsx scripts/verify-chat-response-snapshots.ts`: đạt; bao gồm xác nhận ghép lỗi, sai request ID và việc tiếp tục từ chối JSON sản xuất bị ghép lỗi.
 - Bộ static cũ `verify-music-source-composition.ts` còn assertion không khớp biểu thức `TRACK_EVALUATION_WORKER_ID` đã chuyển qua hàm hằng chuỗi. Không dùng kết quả bộ này để khẳng định toàn bộ luồng Suno đã qua kiểm thử.

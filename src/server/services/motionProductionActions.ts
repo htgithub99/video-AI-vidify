@@ -278,6 +278,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
   if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
   assertMotionScriptComplete(script, analysis);
   const exec = drawExec(body?.aiExecution);
+  const mainExec = { ...aiExec(body?.mainAiExecution || body?.aiExecution), role: MOTION_AI_ROLE.MAIN };
   const styleReferences = normalizeMotionReferences(body?.styleReferences);
   const onlyBeats: string[] = _.map(_.castArray(body?.beats || []), _.toString);
   const onlyLocations: string[] = _.map(_.castArray(body?.locations || []), _.toString);
@@ -288,9 +289,24 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
       body?.keepBrowser === true,
       MotionStoryJobKind.SCENES,
       (ctx) =>
-        buildRemotionScenes({ ...script, visualSettings }, analysis, { exec, signal: ctx.signal, log: ctx.log, progress: ctx.progress, partial: ctx.partial, scope: body.productionId || body.editorialSessionId, aspect: body.aspect, renderBehavior: motionRenderBehaviorFor(body), review: body.review !== false, restart: body.restart === true, onlyBeats, onlyLocations, note: note || undefined }),
+        buildRemotionScenes({ ...script, visualSettings }, analysis, {
+          exec,
+          mainExec,
+          signal: ctx.signal,
+          log: ctx.log,
+          progress: ctx.progress,
+          partial: ctx.partial,
+          scope: body.productionId || body.editorialSessionId,
+          aspect: body.aspect,
+          renderBehavior: motionRenderBehaviorFor(body),
+          review: body.review !== false,
+          restart: body.restart === true,
+          onlyBeats,
+          onlyLocations,
+          note: note || undefined,
+        }),
       (() => {
-        const session = editorialSession(body, body.source, aiExec(body.aiExecution));
+        const session = editorialSession(body, body.source, mainExec);
         return session ? { ...session, worker: true } : undefined;
       })(),
     );
@@ -308,7 +324,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
       const cancelAudio = () => audioAbort.abort(ctx.signal.reason);
       ctx.signal.addEventListener("abort", cancelAudio, { once: true });
       if (ctx.signal.aborted) cancelAudio();
-      const voiceOpts = { exec, session: editorialSession(body, body.source, aiExec(body.aiExecution)), scope: body.productionId || body.editorialSessionId, asr: body?.asrCheck === true, aspect: _.toString(body?.aspect || MOTION_TEXT_16_9), signal: audioAbort.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
+      const voiceOpts = { exec: mainExec, session: editorialSession(body, body.source, mainExec), scope: body.productionId || body.editorialSessionId, asr: body?.asrCheck === true, aspect: _.toString(body?.aspect || MOTION_TEXT_16_9), signal: audioAbort.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
       let planJob: Promise<Awaited<ReturnType<typeof directMotionVoice>> | undefined> = Promise.resolve(undefined);
       let voiceJob: Promise<Awaited<ReturnType<typeof buildMotionVoiceTrack>> | undefined> = Promise.resolve(undefined);
       const prepareAudio = async (readyScript: MotionStoryScript) => {
@@ -322,6 +338,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
           prepareAudio,
           resolveVoice: () => voiceJob,
           exec,
+          mainExec,
           signal: ctx.signal,
           log: ctx.log,
           progress: (value, stage) => ctx.progress(value * (autoVoice ? 0.9 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
@@ -352,7 +369,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
       }
     },
     (() => {
-      const session = editorialSession(body, body.source, aiExec(body.aiExecution));
+      const session = editorialSession(body, body.source, mainExec);
       return session ? { ...session, worker: true } : undefined;
     })(),
   );
@@ -363,11 +380,11 @@ export const voiceMotionStoryInput = (body: Record<string, any>) => {
   if (!script?.beats?.length) throw new Error(MOTION_VOICE.EMPTY);
   const analysis = (body?.analysis as MotionStoryAnalysis) || null;
   assertMotionScriptComplete(script, analysis);
-  const exec = drawExec(body?.aiExecution);
+  const exec = { ...aiExec(body?.mainAiExecution || body?.aiExecution), role: MOTION_AI_ROLE.MAIN };
   const job = startInputJob(body, body?.keepBrowser === true, MotionStoryJobKind.VOICE, async (ctx) => {
     const track = await buildMotionVoiceTrack(script, analysis, {
       exec,
-      session: editorialSession(body, body.source, aiExec(body.aiExecution)),
+      session: editorialSession(body, body.source, exec),
       scope: body.productionId || body.editorialSessionId,
       asr: body?.asrCheck === true,
       aspect: _.toString(body?.aspect || MOTION_TEXT_16_9),
