@@ -7,17 +7,16 @@ import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLayout.js";
 import { MOTION_REMOTION_PROMPTS as P, MOTION_REMOTION_SCHEMAS } from "../../../constants/motionRemotionPrompts.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../constants/motionSceneComposition.js";
-import { MOTION_SCENE_DESIGN as D } from "../../../constants/motionSceneDesign.js";
 import { MOTION_QA as Q } from "../../../constants/motionQa.js";
 import { motionVisualCheckBlocks } from "../../../lib/motionQa.js";
 import { motionIllustrationDirection, motionCompositionReference } from "../../../lib/motionIllustrationProfile.js";
-import { normalizeMotionSceneDesign } from "../../../lib/motionSceneDesign.js";
 import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
 import { MOTION_AI_ROLE } from "../../../constants/motionAiFallback.js";
 import { motionVisualSettingsFor } from "../../../lib/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
-import { normalizeSceneComposition, mergeSceneCompositionDraft, motionCompositionMissingChannels } from "../../../lib/motionSceneComposition.js";
-import { createCompositionGeometryInspector, MotionCompositionMeasurementError } from "./compositionGeometryInspector.js";
+import { compositionActorMotion, compositionMissingNodes, compositionRepairDraft } from "../../../lib/motionHorrorComposition.js";
+import { normalizeFirstSceneComposition, failedSceneComposition, mergeSceneCompositionDraft, motionCompositionMissingChannels } from "../../../lib/motionSceneComposition.js";
+import { createCompositionGeometryInspector } from "./compositionGeometryInspector.js";
 import { remotionSceneReadiness } from "../../../lib/motionRemotion.js";
 import { puppetBeatLines } from "../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../lib/motionVoice.js";
@@ -36,7 +35,7 @@ import { renderRemotionStill } from "../motionRemotionRenderService.js";
 import { getMotionWorkDirectory } from "../motionLibraryService.js";
 import type { MotionAiExecution, MotionAiLog, MotionStoryAnalysis, MotionStoryScript } from "../../../types/motionVideo.js";
 import type { MotionAiContractState } from "../../../types/motionAiContract.js";
-import type { MotionRemotionState, MotionRenderBehavior, MotionSceneDesign } from "../../../types/motionVisual.js";
+import type { MotionRemotionState, MotionRenderBehavior } from "../../../types/motionVisual.js";
 export interface RemotionSceneOptions {
   exec: MotionAiExecution;
   mainExec?: MotionAiExecution;
@@ -50,6 +49,7 @@ export interface RemotionSceneOptions {
   review?: boolean;
   restart?: boolean;
   onlyBeats?: string[];
+  onlyScenes?: string[];
   onlyLocations?: string[];
   note?: string;
   ai?: typeof runMotionAi;
@@ -64,7 +64,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const profileRevision = V.PROFILES[settings.profileId].revision;
     const aspect = opts.aspect || RT_SHARED.VALUE_16_9;
     const [width, height] = aspect === RT_SERVER.VALUE_9_16 ? [720, 1280] : aspect === RT_SERVER.VALUE_1_1 ? [1000, 1000] : aspect === RT_SERVER.VALUE_4_5 ? [800, 1000] : [1280, 720];
-    type Checkpoint = { state: MotionRemotionState; requests: Record<string, MotionAiContractState>; compositions?: Record<string, unknown>; designs?: Record<string, MotionSceneDesign> };
+    type Checkpoint = { state: MotionRemotionState; requests: Record<string, MotionAiContractState>; compositions?: Record<string, unknown> };
     const checkpoint = motionTaskCheckpoint<Checkpoint>(opts.scope, V.PROJECT_FOLDER, [PACING.REVISION, C.REVISION, profileRevision, settings, aspect]);
     const saved = opts.restart ? undefined : checkpoint.read() || motionTaskCheckpoint<Checkpoint>(opts.scope, V.PROJECT_FOLDER, [PACING.REVISION, C.REVISION, profileRevision, settings, analysis.cast, analysis.places, script.beats, aspect, opts.note]).read();
     const incoming = script.gen?.remotion;
@@ -72,7 +72,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const state: MotionRemotionState = !opts.restart && carried?.version === V.VERSION && stringifyJson(carried.settings) === stringifyJson(settings) ? structuredClone(carried) : { version: V.VERSION, settings, assets: {}, scenes: {}, inputKeys: {}, failures: {} };
     const requests = opts.restart ? {} : saved?.requests || {};
     const compositions: Record<string, unknown> = opts.restart ? {} : saved?.compositions || {};
-    const designs: Record<string, MotionSceneDesign> = opts.restart ? {} : saved?.designs || {};
     for (const key of Object.keys(requests)) requests[key] = recoverMotionAiContractState(requests[key], `${V.RECOVERY_REVISION}${RT_SHARED.SYMBOL_E7AC07}${C.REVISION}${RT_SHARED.SYMBOL_E7AC07}${profileRevision}`);
     state.notes ||= {};
     state.drafts ||= {};
@@ -82,25 +81,33 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       opts.signal?.throwIfAborted();
       state.updatedAt = Math.max(Date.now(), (state.updatedAt || 0) + 1);
       result.gen!.failed = Object.keys(state.failures);
-      checkpoint.save({ state, requests, compositions, designs });
+      checkpoint.save({ state, requests, compositions });
       opts.partial?.(structuredClone(result));
     };
-    const ask = async (key: string, artifact: string, prompt: string, assess: MotionAiResponseContract["assess"], images?: Parameters<typeof runMotionAi>[5]) => {
-      const drawing = artifact === C.ARTIFACT || artifact === D.ARTIFACT;
-      const exec = { ...(drawing ? opts.exec : opts.mainExec || opts.exec), role: drawing ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN };
+    const ask = async (key: string, artifact: string, prompt: string, assess: MotionAiResponseContract["assess"], images?: Parameters<typeof runMotionAi>[5], context?: unknown, budget?: { remaining: number }) => {
+      const drawing = artifact === C.ARTIFACT;
+      const single = drawing && !opts.review;
+      const exec = { ...(drawing ? opts.exec : opts.mainExec || opts.exec), role: drawing ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN, ...(single ? { singleResponse: true, strictProvider: true } : {}) };
+      if (single) requests[key] = { rejected: 0, errors: [] };
       const contract: MotionAiResponseContract = {
         schema: MOTION_REMOTION_SCHEMAS[artifact],
-        attempts: exec.strictProvider ? V.REQUEST_BUDGET : V.REQUEST_ATTEMPTS,
-        routeAttempts: exec.strictProvider ? V.REQUEST_BUDGET : V.REQUEST_ATTEMPTS,
-        budget: V.REQUEST_BUDGET,
+        attempts: single ? C.GUARD.ATTEMPTS : exec.strictProvider ? V.REQUEST_BUDGET : V.REQUEST_ATTEMPTS,
+        routeAttempts: single ? C.GUARD.ATTEMPTS : exec.strictProvider ? V.REQUEST_BUDGET : V.REQUEST_ATTEMPTS,
+        budget: single ? C.GUARD.ATTEMPTS : V.REQUEST_BUDGET,
         state: (requests[key] ||= { rejected: 0, errors: [] }),
         checkpoint: (value) => {
           requests[key] = value;
           save();
         },
         assess,
-        start: artifact === C.ARTIFACT && compositions[key] && requests[key]?.errors.length ? (base) => C.REPAIR(base, compositions[key], requests[key].errors) : undefined,
-        repair: (base, draft, errors) => (artifact === C.ARTIFACT ? C.REPAIR(base, draft, errors) : P.REPAIR(base, draft, errors)),
+        beforeAttempt: budget
+          ? () => {
+              if (budget.remaining <= 0) throw Object.assign(new Error(C.REVIEW_LIMIT), { [MOTION_PRODUCTION.CONTRACT_EXHAUSTED]: true });
+              budget.remaining--;
+            }
+          : undefined,
+        start: !single && artifact === C.ARTIFACT && compositions[key] && requests[key]?.errors.length ? () => C.REPAIR(context, compositions[key], requests[key].errors) : undefined,
+        repair: (_base, draft, errors) => (artifact === C.ARTIFACT ? C.REPAIR(context, draft, errors) : P.REPAIR(context, draft, errors)),
         rejected: async (raw, draft, errors, route, attempt) => {
           opts.log(V.LOG_REJECTED(artifact, errors));
           await writeMotionAiDebug(`${artifact}${RT_SHARED.SYMBOL_3973E0}${key}${RT_SHARED.SYMBOL_3973E0}${attempt}`, { stage: artifact, provider: route.provider, model: route.model, errors, response: raw, draft });
@@ -109,8 +116,16 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       };
       return opts.ai ? requestMotionAiContract(prompt, exec, (question) => opts.ai!(question, artifact, exec, opts.signal, opts.log, images), contract, opts.signal) : runMotionAi(prompt, artifact, exec, opts.signal, opts.log, images, 0, contract);
     };
-    const fatal = (error: unknown) => error instanceof MotionCompositionMeasurementError || opts.signal?.aborted || motionCaptchaError(error) || (isTerminalMotionAiError(error, opts.signal) && !(error as Record<string, unknown>)?.[MOTION_PRODUCTION.CONTRACT_EXHAUSTED]);
-    const beats = script.beats.filter((beat) => (!opts.onlyBeats?.length || opts.onlyBeats.includes(beat.id)) && (!opts.onlyLocations?.length || opts.onlyLocations.includes(beat.place || "")));
+    const fatal = (error: unknown) => opts.signal?.aborted || motionCaptchaError(error) || (isTerminalMotionAiError(error, opts.signal) && !(error as Record<string, unknown>)?.[MOTION_PRODUCTION.CONTRACT_EXHAUSTED]);
+    const selectedSceneOwners = opts.onlyScenes?.length
+      ? new Set(
+          Object.values(state.scenes)
+            .flat()
+            .filter((scene) => opts.onlyScenes!.includes(scene.id))
+            .map((scene) => scene.beatId),
+        )
+      : undefined;
+    const beats = script.beats.filter((beat) => (!selectedSceneOwners || selectedSceneOwners.has(beat.id)) && (!opts.onlyBeats?.length || opts.onlyBeats.includes(beat.id)) && (!opts.onlyLocations?.length || opts.onlyLocations.includes(beat.place || "")));
     const planGroups = motionVisualBeatGroups(script);
     const selectedIds = new Set(beats.map((beat) => beat.id));
     const selectedGroups = planGroups.filter((group) => group.beats.some((beat) => selectedIds.has(beat.id)));
@@ -118,6 +133,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const cast = new Set(analysis.cast.map((member) => member.key));
     opts.log(V.LOG_MODE(settings.mode));
     opts.log(C.LOG);
+    opts.log(C.LOG_SINGLE);
     if (!opts.review) opts.log(V.LOG_REVIEW_OFF);
     opts.log(PACING.LOG(planGroups.length, script.beats.length, PACING.TEXT.vi[motionScenePacing(settings)]));
     await mapMotionAiPool(selectedGroups, async (group) => {
@@ -134,13 +150,13 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       opts.log(L.LOG_PLAN(planGroups.indexOf(group) + 1, planGroups.length));
       try {
         for (const member of group.beats) delete state.failures[member.id];
-        if (!remotionGroupPlanCurrent(group.beats, analysis, state, opts.note)) {
+        if (!remotionGroupPlanCurrent(group.beats, analysis, state, opts.onlyScenes?.length ? undefined : opts.note)) {
           const lines = group.beats.flatMap((member) => puppetBeatLines(member, motionNarratorCastKey(analysis)));
           const context = {
             profile: V.PROFILES[settings.profileId].direction,
             artDirection: motionIllustrationDirection(settings.profileId, RT_SERVER.PLANNING),
             era: analysis.era,
-            beat: { id: beat.id, scenePlan: beat.scenePlan, action: beat.action, time: beat.time, weather: beat.weather, shot: beat.shot },
+            beat: { id: beat.id, shot: beat.shot },
             beats: group.beats.map((member) => ({ id: member.id, scenePlan: member.scenePlan, action: member.action, time: member.time, weather: member.weather })),
             pacing: motionScenePacingRule(settings, group.seconds),
             lines: lines.map((line) => ({ id: line.key, text: line.text })),
@@ -149,11 +165,18 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             priorFacts: motionStoryEventLedger(script.beats.slice(0, script.beats.indexOf(beat))),
             note,
           };
-          const draft = await ask(`${RT_SERVER.PLAN}${inputKey}`, V.ARTIFACT_SCENE, P.SCENE(context) + RT_SHARED.SYMBOL_01BA47 + C.PLAN_POLICY, (raw) => {
-            const checked = mergeRemotionSceneDraft(raw, state.drafts![inputKey] || [], lines, cast);
-            state.drafts![inputKey] = checked.drafts;
-            return checked;
-          });
+          const draft = await ask(
+            `${RT_SERVER.PLAN}${inputKey}`,
+            V.ARTIFACT_SCENE,
+            P.SCENE(context) + RT_SHARED.SYMBOL_01BA47 + C.PLAN_POLICY,
+            (raw) => {
+              const checked = mergeRemotionSceneDraft(raw, state.drafts![inputKey] || [], lines, cast);
+              state.drafts![inputKey] = checked.drafts;
+              return checked;
+            },
+            undefined,
+            context,
+          );
           state.scenes[beat.id] = remotionScenesFromDraft(draft, beat.id, beat.place, lines, inputKey);
           for (const scene of state.scenes[beat.id]) {
             const from = lines.findIndex((line) => line.key === scene.fromLineId),
@@ -182,216 +205,247 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const location = scene.locationKey || scene.place || scene.beatId;
       groups.set(location, [...(groups.get(location) || []), scene]);
     }
-    const ready = new Set(allScenes.filter((scene) => scene.composition && scene.aspect === aspect && remotionSceneReadiness(scene, state).preview).map((scene) => scene.id));
-    const originalCompositionKeys = new Map(allScenes.map((scene) => [scene.id, scene.composition?.inputKey]));
-    const sceneFailures = new Map<string, string>();
-    await mapMotionAiPool([...groups.values()], async (scenes) => {
-      for (let index = 0; index < scenes.length; index++) {
-        const scene = scenes[index];
-        if (!selected.has(scene.beatId)) continue;
-        opts.signal?.throwIfAborted();
-        const beat = script.beats.find((beat) => beat.id === scene.beatId)!;
-        const previous = scenes
-          .slice(0, index)
-          .reverse()
-          .find((other) => other.composition && state.assets[other.composition.assetKey]);
-        const previousAsset = previous?.composition && state.assets[previous.composition.assetKey];
-        const inputKey = remotionCompositionKey(scene, analysis, width, height, state.notes![beat.id]);
-        const legacyInputKey = motionInputKey([C.REVISION, scene.sourceKey, scene.purpose, scene.environment, scene.nodes, scene.text, settings, V.PROFILES[settings.profileId].revision, width, height, state.notes![beat.id], previous && originalCompositionKeys.get(previous.id)]);
-        const key = `${RT_SERVER.COMPOSITION}${inputKey}`;
-        opts.log(C.LOG_DRAW(allScenes.indexOf(scene) + 1, allScenes.length, scene.purpose));
-        try {
-          const existingReady = remotionSceneReadiness(scene, state).preview;
-          const existingGeometryErrors = existingReady && scene.composition && scene.composition.geometryRevision !== C.GEOMETRY_REVISION ? await geometry.check(state.assets[scene.composition.assetKey], scene.composition) : [];
-          if (![inputKey, legacyInputKey].includes(scene.composition?.inputKey || "") || !existingReady || existingGeometryErrors.length) {
-            const designKey = `${RT_SERVER.DESIGN}${inputKey}`;
-            if (existingGeometryErrors.length && scene.composition?.design) {
-              designs[designKey] = scene.composition.design;
-              compositions[key] ||= { svg: state.assets[scene.composition.assetKey].svg, layers: scene.composition.layers, animations: scene.composition.animations, design: scene.composition.design, continuityNotes: scene.composition.continuityNotes };
+    const ready = new Set(allScenes.filter((scene) => scene.build?.status !== "failed" && scene.composition && scene.aspect === aspect && remotionSceneReadiness(scene, state).preview).map((scene) => scene.id));
+    const legacyPreviousKeys = new Map<string, string | undefined>();
+    for (const scenes of groups.values()) {
+      let previousKey: string | undefined;
+      for (const scene of scenes) {
+        legacyPreviousKeys.set(scene.id, previousKey);
+        if (scene.composition && state.assets[scene.composition.assetKey]) previousKey = scene.composition.inputKey;
+      }
+    }
+    const processed = new Set<string>();
+    const drawScene = async (scene: (typeof allScenes)[number], previous?: (typeof allScenes)[number]) => {
+      if (!selected.has(scene.beatId) || (opts.onlyScenes?.length && !opts.onlyScenes.includes(scene.id))) return;
+      opts.signal?.throwIfAborted();
+      const beat = script.beats.find((beat) => beat.id === scene.beatId)!;
+      const previousAsset = previous?.composition && state.assets[previous.composition.assetKey];
+      if (opts.onlyScenes?.includes(scene.id) && opts.note !== undefined) scene.drawingNote = opts.note;
+      const inputKey = remotionCompositionKey(scene, analysis, width, height, scene.drawingNote ?? state.notes![beat.id]);
+      const legacyInputKey = motionInputKey([C.REVISION, scene.sourceKey, scene.purpose, scene.environment, scene.nodes, scene.text, settings, V.PROFILES[settings.profileId].revision, width, height, state.notes![beat.id], legacyPreviousKeys.get(scene.id)]);
+      const key = `${RT_SERVER.COMPOSITION}${inputKey}:${scene.id}`;
+      const requestBudget = opts.review ? { remaining: C.REVIEW_REQUESTS } : undefined;
+      const request: typeof ask = async (requestKey, artifact, prompt, assess, images, context) => {
+        scene.requestKeys ||= [];
+        if (!scene.requestKeys.includes(requestKey)) scene.requestKeys.push(requestKey);
+        return ask(requestKey, artifact, prompt, assess, images, context, requestBudget);
+      };
+      opts.log(C.LOG_DRAW(allScenes.indexOf(scene) + 1, allScenes.length, scene.purpose));
+      try {
+        const targeted = !!opts.onlyScenes?.includes(scene.id);
+        if (targeted) {
+          for (const requestKey of scene.requestKeys || []) {
+            delete requests[requestKey];
+            delete compositions[requestKey];
+          }
+          scene.requestKeys = [];
+          delete scene.build;
+          delete scene.reviewKey;
+          delete compositions[key];
+          delete requests[key];
+        }
+        const existingReady = remotionSceneReadiness(scene, state).preview;
+        if (scene.build?.status === "failed" && scene.build.inputKey === inputKey && existingReady) {
+          processed.add(scene.id);
+          return;
+        }
+        if (opts.review && !targeted && !existingReady && scene.composition && state.assets[scene.composition.assetKey]) compositions[key] ||= { svg: state.assets[scene.composition.assetKey].svg, layers: scene.composition.layers, animations: scene.composition.animations, design: scene.composition.design, continuityNotes: scene.composition.continuityNotes };
+        if (targeted || ![inputKey, legacyInputKey].includes(scene.composition?.inputKey || "") || !existingReady) {
+          const continuitySvg = previousAsset && previousAsset.svg.length <= C.CONTINUITY_SVG_LIMIT ? previousAsset.svg : undefined;
+          const context = {
+            width,
+            height,
+            viewBox: `${RT_SHARED.VALUE_0_0}${width}${RT_SHARED.SYMBOL_36A9E7}${height}`,
+            profile: V.PROFILES[settings.profileId].direction,
+            artDirection: motionIllustrationDirection(settings.profileId, RT_SHARED.DRAWING),
+            drawingReference: continuitySvg ? undefined : motionCompositionReference(settings.profileId, previous?.composition?.design),
+            renderBehavior: state.renderBehavior,
+            era: analysis.era,
+            place: analysis.places.find((place) => place.key === beat.place),
+            scene: { purpose: scene.purpose, text: scene.text, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, nodes: scene.nodes },
+            cast: analysis.cast.filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
+            dialogueSpeakers: [...new Set(script.beats.filter((member) => (scene.sourceBeatIds || [scene.beatId]).includes(member.id)).flatMap((member) => member.utterances?.filter((line) => line.role === RT_SERVER.DIALOGUE).map((line) => line.speaker) || []))] as string[],
+            continuity: previousAsset ? { text: previous.text, layers: previous.composition!.layers, design: previous.composition!.design, notes: previous.composition!.continuityNotes, svg: continuitySvg } : undefined,
+            note: scene.drawingNote ?? state.notes![beat.id],
+          };
+          const assess = (raw: unknown) => {
+            try {
+              const merged = mergeSceneCompositionDraft(compositions[key], raw);
+              const draft = compositionRepairDraft(merged);
+              compositions[key] = draft;
+              const built = normalizeFirstSceneComposition(draft, key, inputKey, scene.purpose, scene.nodes, cast, width, height);
+              const absent = compositionMissingNodes(built.composition, scene.nodes);
+              if (absent.length) opts.log(C.MISSING_ADVISORY(absent));
+              built.composition.geometryRevision = C.GEOMETRY_REVISION;
+              return { value: built, errors: [] };
+            } catch (error) {
+              return { value: compositions[key] || raw, errors: [String((error as Error).message)] };
             }
-            if (!designs[designKey]) {
-              opts.log(D.LOG(allScenes.indexOf(scene) + 1, allScenes.length));
-              designs[designKey] = await ask(
-                designKey,
-                D.ARTIFACT,
-                D.PROMPT({
-                  aspect,
-                  profile: V.PROFILES[settings.profileId].direction,
-                  artDirection: motionIllustrationDirection(settings.profileId, RT_SERVER.DESIGN_A77DE8),
-                  era: analysis.era,
-                  purpose: scene.purpose,
-                  text: scene.text,
-                  environment: scene.environment,
-                  nodes: scene.nodes,
-                  cast: analysis.cast.filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
-                  continuity: previous?.composition ? { design: previous.composition.design, notes: previous.composition.continuityNotes, layers: previous.composition.layers } : undefined,
-                  note: state.notes![beat.id],
-                }),
-                (raw) => {
-                  const draft = (compositions[designKey] = { ...((compositions[designKey] as Record<string, unknown>) || {}), ...raw });
-                  try {
-                    return { value: normalizeMotionSceneDesign(draft, scene.nodes), errors: [] };
-                  } catch (error) {
-                    return { value: draft, errors: [String((error as Error).message)] };
-                  }
-                },
+          };
+          const recovered = compositions[key] && (await assess(compositions[key]));
+          if (recovered?.errors.length) (requests[key] ||= { rejected: 0, errors: [] }).errors = recovered.errors;
+          const built = recovered && !recovered.errors.length ? recovered.value : await request(key, C.ARTIFACT, C.PROMPT(context), assess, undefined, context);
+          state.assets[key] = built.asset;
+          delete compositions[key];
+          scene.composition = built.composition;
+          scene.aspect = aspect;
+          save();
+        }
+        if (scene.composition) {
+          if (!opts.review) scene.composition.unchecked = true;
+          scene.composition.inputKey = inputKey;
+          scene.composition.geometryRevision = C.GEOMETRY_REVISION;
+          state.assets[scene.composition.assetKey].inputKey = inputKey;
+        }
+        const ensureActorMotion = () => {
+          if (!scene.composition) return;
+          const reviewed = !!scene.reviewKey && scene.reviewKey === motionInputKey([scene.composition, scene.text, settings]);
+          const result = compositionActorMotion(scene.composition, state.assets[scene.composition.assetKey], scene.nodes, cast, state.renderBehavior);
+          if (!result.added) return;
+          scene.composition = result.composition;
+          if (reviewed) scene.reviewKey = motionInputKey([scene.composition, scene.text, settings]);
+          opts.log(C.GUARD.LOG_MOTION(scene.id, result.added));
+          save();
+        };
+        ensureActorMotion();
+        if (opts.review) {
+          for (let attempt = 0; attempt < C.REVIEW_PASSES; attempt++) {
+            const reviewKey = motionInputKey([scene.composition, scene.text, settings]);
+            if (scene.reviewKey === reviewKey) break;
+            const spec = remotionSceneReadiness(scene, state).preview;
+            if (!spec) throw new Error(V.INVALID_SPEC);
+            const file = path.join(getMotionWorkDirectory(motionInputKey([opts.scope, reviewKey])), `${reviewKey}${RT_SERVER.PNG_B98B80}`);
+            opts.log(V.LOG_REVIEW(allScenes.indexOf(scene) + 1, allScenes.length));
+            let review: { ok: boolean; issues: string[]; checks?: { ok?: boolean; category?: string; evidence?: string; problem?: string }[] };
+            try {
+              try {
+                const issues = await geometry.check(state.assets[scene.composition!.assetKey], scene.composition!);
+                if (issues.length) opts.log(C.GEOMETRY_ADVISORY(issues));
+              } catch (error) {
+                if (opts.signal?.aborted) throw error;
+                opts.log(Q.REVIEW_UNAVAILABLE(String((error as Error).message)));
+              }
+              await (opts.still || renderRemotionStill)(spec, file, 0, opts.signal);
+              review = await request(
+                `${RT_SERVER.REVIEW_E375B5}${reviewKey}`,
+                V.ARTIFACT_REVIEW,
+                P.REVIEW({ narration: scene.text, nodes: scene.nodes, design: scene.composition!.design, profile: V.PROFILES[settings.profileId].direction, artDirection: motionIllustrationDirection(settings.profileId, RT_SHARED.REVIEW) }),
+                (raw) => ({ value: raw, errors: typeof raw?.ok === "boolean" && Array.isArray(raw.issues) && raw.issues.every((issue: unknown) => typeof issue === "string") && (raw.ok || raw.issues.length) ? [] : [P.REVIEW_REQUIRED] }),
+                [{ name: `${scene.id}${RT_SERVER.PNG_B98B80}`, mimeType: RT_SERVER.IMAGE_PNG, path: file }],
               );
-              delete compositions[designKey];
-              save();
+            } catch (error) {
+              if (opts.signal?.aborted || motionCaptchaError(error)) throw error;
+              opts.log(Q.REVIEW_UNAVAILABLE(String((error as Error).message)));
+              break;
+            } finally {
+              fs.rmSync(file, { force: true });
             }
-            const continuitySvg = previousAsset && previousAsset.svg.length <= C.CONTINUITY_SVG_LIMIT ? previousAsset.svg : undefined;
-            const context = {
+            if (!review.ok) {
+              const checks = Array.isArray(review.checks) ? review.checks.filter((check) => check && typeof check === "object") : [];
+              const blocking = checks.filter((check) => check.ok !== true && motionVisualCheckBlocks({ ...check, ok: false }) && typeof check.evidence === "string" && check.evidence.trim() && typeof check.problem === "string" && check.problem.trim());
+              const issues = blocking.map((check) => check.problem!);
+              const advisory = [
+                ...review.issues.filter((issue) => !issues.includes(issue)),
+                ...checks
+                  .filter((check) => !blocking.includes(check))
+                  .map((check) => check.problem || check.category || "")
+                  .filter(Boolean),
+              ];
+              if (advisory.length) opts.log(Q.REVIEW_ADVISORY(allScenes.indexOf(scene), [...new Set(advisory)].join(RT_SHARED.SYMBOL_0A2D3F)));
+              review = { ...review, ok: !blocking.length, issues };
+            }
+            if (review.ok) {
+              scene.reviewKey = reviewKey;
+              save();
+              break;
+            }
+            if (attempt === C.REVIEW_PASSES - 1) throw new Error(P.ERROR(scene.id, review.issues));
+            const repairKey = `${key}${RT_SERVER.REPAIR}${reviewKey}`;
+            opts.log(V.LOG_REPAIR(scene.id));
+            compositions[repairKey] ||= { svg: state.assets[scene.composition!.assetKey].svg, layers: scene.composition!.layers, animations: scene.composition!.animations, design: scene.composition!.design, continuityNotes: scene.composition!.continuityNotes };
+            const repairContext = {
               width,
               height,
               viewBox: `${RT_SHARED.VALUE_0_0}${width}${RT_SHARED.SYMBOL_36A9E7}${height}`,
+              narration: scene.text,
+              scene: { nodes: scene.nodes, environment: scene.environment },
+              renderBehavior: state.renderBehavior,
               profile: V.PROFILES[settings.profileId].direction,
               artDirection: motionIllustrationDirection(settings.profileId, RT_SHARED.DRAWING),
-              drawingReference: continuitySvg && previous?.composition?.design?.format === designs[designKey].format ? undefined : motionCompositionReference(settings.profileId, designs[designKey]),
-              design: designs[designKey],
-              era: analysis.era,
-              place: analysis.places.find((place) => place.key === beat.place),
-              scene: { purpose: scene.purpose, text: scene.text, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, nodes: scene.nodes },
-              cast: analysis.cast.filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
-              dialogueSpeakers: [...new Set(script.beats.filter((member) => (scene.sourceBeatIds || [scene.beatId]).includes(member.id)).flatMap((member) => member.utterances?.filter((line) => line.role === RT_SERVER.DIALOGUE).map((line) => line.speaker) || []))] as string[],
-              continuity: previousAsset ? { text: previous.text, layers: previous.composition!.layers, design: previous.composition!.design, notes: previous.composition!.continuityNotes, svg: continuitySvg } : undefined,
-              note: state.notes![beat.id],
+              repairOnly: review.issues,
             };
-            const assess = async (raw: unknown) => {
-              try {
-                const draft = mergeSceneCompositionDraft(compositions[key], raw);
-                compositions[key] = draft;
-                const built = normalizeSceneComposition({ ...draft, design: designs[designKey] }, key, inputKey, scene.purpose, scene.nodes, cast, width, height);
-                const errors = await geometry.check(built.asset, built.composition);
-                if (errors.length) return { value: draft, errors };
-                built.composition.geometryRevision = C.GEOMETRY_REVISION;
-                return { value: built, errors: [] };
-              } catch (error) {
-                if (error instanceof MotionCompositionMeasurementError) throw error;
-                return { value: compositions[key] || raw, errors: [String((error as Error).message)] };
-              }
-            };
-            const recovered = compositions[key] && (await assess(compositions[key]));
-            if (recovered?.errors.length) (requests[key] ||= { rejected: 0, errors: [] }).errors = recovered.errors;
-            const built = recovered && !recovered.errors.length ? recovered.value : await ask(key, C.ARTIFACT, C.PROMPT(context), assess);
-            state.assets[key] = built.asset;
-            delete compositions[key];
-            scene.composition = built.composition;
-            scene.aspect = aspect;
+            const fixed = await request(
+              repairKey,
+              C.ARTIFACT,
+              C.REPAIR(repairContext, compositions[repairKey], review.issues),
+              (raw) => {
+                try {
+                  const draft = mergeSceneCompositionDraft(compositions[repairKey], raw);
+                  compositions[repairKey] = draft;
+                  const built = normalizeFirstSceneComposition(draft, repairKey, repairKey, scene.purpose, scene.nodes, cast, width, height);
+                  return { value: built, errors: [] };
+                } catch (error) {
+                  return { value: compositions[repairKey], errors: [String((error as Error).message)] };
+                }
+              },
+              undefined,
+              repairContext,
+            );
+            state.assets[repairKey] = fixed.asset;
+            delete compositions[repairKey];
+            scene.composition = { ...fixed.composition, inputKey, geometryRevision: C.GEOMETRY_REVISION };
+            state.assets[repairKey].inputKey = inputKey;
             save();
           }
-          if (scene.composition) {
-            scene.composition.inputKey = inputKey;
-            scene.composition.geometryRevision = C.GEOMETRY_REVISION;
-            state.assets[scene.composition.assetKey].inputKey = inputKey;
-          }
-          const missingChannels = motionCompositionMissingChannels(scene, state.renderBehavior);
-          if (missingChannels.length) {
-            const composition = scene.composition!;
-            const asset = state.assets[composition.assetKey];
-            const motionKey = `${RT_SERVER.MOTION}${motionInputKey([asset.svg, composition.animations, missingChannels])}`;
-            opts.log(C.LOG_MOTION_PATCH(scene.id));
-            const patched = await ask(motionKey, C.ARTIFACT, C.REPAIR(C.PROMPT({ profile: V.PROFILES[settings.profileId].direction, scene: { nodes: scene.nodes, text: scene.text }, renderBehavior: state.renderBehavior }), { svg: asset.svg, layers: composition.layers, animations: composition.animations, design: composition.design }, [C.MOTION_REQUIRED(missingChannels)]), (raw) => {
-              try {
-                const incoming = Array.isArray(raw?.animations) ? raw.animations.filter((animation: Record<string, unknown>) => missingChannels.includes(animation?.channel as "actor" | "effect")) : [];
-                const animations = [...composition.animations, ...incoming];
-                const built = normalizeSceneComposition({ svg: asset.svg, layers: composition.layers, design: composition.design, continuityNotes: composition.continuityNotes, animations }, asset.key, inputKey, scene.purpose, scene.nodes, cast, width, height);
-                const missing = motionCompositionMissingChannels({ ...scene, composition: built.composition }, state.renderBehavior);
-                return missing.length ? { value: { svg: asset.svg, layers: composition.layers, design: composition.design, animations }, errors: [C.MOTION_REQUIRED(missing)] } : { value: built, errors: [] };
-              } catch (error) {
-                return { value: { animations: raw?.animations }, errors: [String((error as Error).message)] };
-              }
-            });
-            scene.composition = { ...patched.composition, geometryRevision: C.GEOMETRY_REVISION };
-            save();
-          }
-          if (opts.review) {
-            for (let attempt = 0; attempt < 3; attempt++) {
-              const reviewKey = motionInputKey([scene.composition, scene.text, settings]);
-              if (scene.reviewKey === reviewKey) break;
-              const spec = remotionSceneReadiness(scene, state).preview;
-              if (!spec) throw new Error(V.INVALID_SPEC);
-              const file = path.join(getMotionWorkDirectory(motionInputKey([opts.scope, reviewKey])), `${reviewKey}${RT_SERVER.PNG_B98B80}`);
-              opts.log(V.LOG_REVIEW(allScenes.indexOf(scene) + 1, allScenes.length));
-              let review: { ok: boolean; issues: string[]; checks?: { ok?: boolean; category?: string; evidence?: string; problem?: string }[] };
-              try {
-                await (opts.still || renderRemotionStill)(spec, file, 0, opts.signal);
-                review = await ask(
-                  `${RT_SERVER.REVIEW_E375B5}${reviewKey}`,
-                  V.ARTIFACT_REVIEW,
-                  P.REVIEW({ narration: scene.text, nodes: scene.nodes, design: scene.composition!.design, profile: V.PROFILES[settings.profileId].direction, artDirection: motionIllustrationDirection(settings.profileId, RT_SHARED.REVIEW) }),
-                  (raw) => ({ value: raw, errors: typeof raw?.ok === "boolean" && Array.isArray(raw.issues) && raw.issues.every((issue: unknown) => typeof issue === "string") && (raw.ok || raw.issues.length) ? [] : [P.REVIEW_REQUIRED] }),
-                  [{ name: `${scene.id}${RT_SERVER.PNG_B98B80}`, mimeType: RT_SERVER.IMAGE_PNG, path: file }],
-                );
-              } finally {
-                fs.rmSync(file, { force: true });
-              }
-              if (!review.ok) {
-                const checks = Array.isArray(review.checks) ? review.checks.filter((check) => check && typeof check === "object") : [];
-                const blocking = checks.filter((check) => check.ok !== true && motionVisualCheckBlocks({ ...check, ok: false }) && typeof check.evidence === "string" && check.evidence.trim() && typeof check.problem === "string" && check.problem.trim());
-                const issues = blocking.map((check) => check.problem!);
-                const advisory = [
-                  ...review.issues.filter((issue) => !issues.includes(issue)),
-                  ...checks
-                    .filter((check) => !blocking.includes(check))
-                    .map((check) => check.problem || check.category || "")
-                    .filter(Boolean),
-                ];
-                if (advisory.length) opts.log(Q.REVIEW_ADVISORY(allScenes.indexOf(scene), [...new Set(advisory)].join(RT_SHARED.SYMBOL_0A2D3F)));
-                review = { ...review, ok: !blocking.length, issues };
-              }
-              if (review.ok) {
-                scene.reviewKey = reviewKey;
-                save();
-                break;
-              }
-              if (attempt === 2) throw new Error(P.ERROR(scene.id, review.issues));
-              const repairKey = `${key}${RT_SERVER.REPAIR}${reviewKey}`;
-              opts.log(V.LOG_REPAIR(scene.id));
-              compositions[repairKey] ||= { svg: state.assets[scene.composition!.assetKey].svg, layers: scene.composition!.layers, animations: scene.composition!.animations, design: scene.composition!.design, continuityNotes: scene.composition!.continuityNotes };
-              const fixed = await ask(
-                repairKey,
-                C.ARTIFACT,
-                C.PROMPT({ width, height, narration: scene.text, nodes: scene.nodes, design: scene.composition!.design, profile: V.PROFILES[settings.profileId].direction, artDirection: motionIllustrationDirection(settings.profileId, RT_SHARED.DRAWING), acceptedScene: { ...scene.composition, svg: state.assets[scene.composition!.assetKey].svg }, repairOnly: review.issues }),
-                async (raw) => {
-                  try {
-                    const draft = mergeSceneCompositionDraft(compositions[repairKey], raw);
-                    compositions[repairKey] = draft;
-                    const built = normalizeSceneComposition(draft, repairKey, repairKey, scene.purpose, scene.nodes, cast, width, height);
-                    const errors = await geometry.check(built.asset, built.composition);
-                    if (errors.length) return { value: draft, errors };
-                    const missing = motionCompositionMissingChannels({ ...scene, composition: built.composition }, state.renderBehavior);
-                    return { value: built, errors: missing.length ? [C.MOTION_REQUIRED(missing)] : [] };
-                  } catch (error) {
-                    if (error instanceof MotionCompositionMeasurementError) throw error;
-                    return { value: compositions[repairKey], errors: [String((error as Error).message)] };
-                  }
-                },
-              );
-              state.assets[repairKey] = fixed.asset;
-              delete compositions[repairKey];
-              scene.composition = { ...fixed.composition, inputKey, geometryRevision: C.GEOMETRY_REVISION };
-              state.assets[repairKey].inputKey = inputKey;
-              save();
-            }
-          }
-          const remainingChannels = motionCompositionMissingChannels(scene, state.renderBehavior);
-          if (remainingChannels.length) throw new Error(C.MOTION_PENDING(scene.id, remainingChannels));
-          ready.add(scene.id);
-          sceneFailures.delete(scene.id);
-          if (!allScenes.some((other) => other.beatId === beat.id && sceneFailures.has(other.id))) delete state.failures[beat.id];
-          save();
-          opts.log(V.LOG_READY(ready.size, allScenes.length));
-          opts.progress?.(ready.size / Math.max(1, allScenes.length), V.LOG_READY(ready.size, allScenes.length));
-        } catch (error) {
-          ready.delete(scene.id);
-          state.failures[beat.id] = String((error as Error).message);
-          sceneFailures.set(scene.id, state.failures[beat.id]);
-          if (!opts.signal?.aborted) save();
-          if (fatal(error)) throw error;
-          opts.log(V.LOG_FAILED(scene.id, state.failures[beat.id]));
         }
+        ensureActorMotion();
+        const remainingChannels = motionCompositionMissingChannels(scene, state.renderBehavior);
+        if (remainingChannels.length)
+          opts.log(
+            PACING.MOTION_LOG(
+              scene.id,
+              remainingChannels.map((channel) => PACING.CHANNELS[channel]),
+            ),
+          );
+        ready.add(scene.id);
+        scene.build = { inputKey, status: "accepted", review: !!opts.review && scene.reviewKey === motionInputKey([scene.composition, scene.text, settings]) };
+        processed.add(scene.id);
+        save();
+        opts.log(V.LOG_READY(ready.size, allScenes.length));
+        opts.progress?.(processed.size / Math.max(1, allScenes.length), V.LOG_READY(ready.size, allScenes.length));
+      } catch (error) {
+        if (opts.signal?.aborted || motionCaptchaError(error)) throw error;
+        ready.delete(scene.id);
+        const reason = String((error as Error).message);
+        if (scene.aspect !== aspect || !remotionSceneReadiness(scene, state).preview) {
+          const failed = failedSceneComposition(key, inputKey, width, height);
+          state.assets[key] = failed.asset;
+          scene.composition = failed.composition;
+          scene.aspect = aspect;
+        }
+        scene.build = { inputKey, status: "failed", review: !!opts.review, error: reason };
+        processed.add(scene.id);
+        save();
+        opts.log(C.LOG_CONTINUE(scene.id, reason));
+        opts.progress?.(processed.size / Math.max(1, allScenes.length), C.LOG_CONTINUE(scene.id, reason));
       }
+    };
+    const queues: { scenes: typeof allScenes; anchor?: (typeof allScenes)[number] }[] = [];
+    await mapMotionAiPool([...groups.values()], async (scenes) => {
+      const candidates = scenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)));
+      if (!candidates.length) return;
+      let anchor = scenes.find((scene) => !opts.onlyScenes?.includes(scene.id) && scene.build?.status !== "failed" && scene.composition && scene.aspect === aspect && remotionSceneReadiness(scene, state).preview);
+      if (!anchor) {
+        const first = candidates.shift()!;
+        await drawScene(first);
+        if (first.build?.status !== "failed" && first.composition) anchor = first;
+      }
+      queues.push({ scenes: candidates, anchor });
     });
+    await mapMotionAiPool(
+      queues.flatMap(({ scenes, anchor }) => scenes.map((scene) => ({ scene, anchor }))),
+      async ({ scene, anchor }) => drawScene(scene, anchor),
+    );
     state.compositionRevision = C.REVISION;
     state.profileRevision = V.PROFILES[settings.profileId].revision;
     if (!Object.keys(state.failures).length && planGroups.every((group) => remotionGroupPlanCurrent(group.beats, analysis, state))) {

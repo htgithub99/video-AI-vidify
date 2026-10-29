@@ -2,9 +2,19 @@ import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_PROMPT as C } from "../constants/motionPrompt.js";
 import { MOTION_EDITORIAL as E } from "../constants/motionEditorial.js";
 export const motionPromptEditorialContext = (artifact: string, context: string): string => (C.SELF_CONTAINED_ARTIFACTS.includes(artifact) ? "" : E.CONTEXT(context));
+export const motionPromptSingleMessage = (artifact: string = ""): boolean => C.SINGLE_MESSAGE_ARTIFACTS.includes(artifact);
 export const motionPromptPayloadBudget = (_fixedChars: number, budget = C.TARGET_CHARS - C.WRAPPER_RESERVE): number => budget;
 export const motionPromptBudget = (artifact: string = "", provider: string = "", model: string = ""): number => Math.max(C.MIN_TRANSPORT_CHARS, Math.min(C.TARGET_CHARS, C.ROUTE_BUDGETS[provider] || C.TARGET_CHARS, C.MODEL_BUDGETS[provider + RT_SHARED.SYMBOL_E7AC07 + model] || C.TARGET_CHARS, C.ARTIFACT_BUDGETS[artifact] || C.TARGET_CHARS));
-export const motionPromptMeasurement = (payload: string, full: string, contextChars = 0, images = 0, budget: number = C.TARGET_CHARS) => ({ payloadChars: payload.length, wrapperChars: Math.max(0, full.length - payload.length - contextChars), contextChars, finalChars: full.length, images, budget, overflow: full.length > budget, action: full.length > budget ? C.ACTION.TRANSPORT : C.ACTION.DIRECT });
+export const motionPromptMeasurement = (payload: string, full: string, contextChars = 0, images = 0, budget: number = C.TARGET_CHARS, singleMessage = false) => ({
+  payloadChars: payload.length,
+  wrapperChars: Math.max(0, full.length - payload.length - contextChars),
+  contextChars,
+  finalChars: full.length,
+  images,
+  budget,
+  overflow: full.length > budget,
+  action: !singleMessage && full.length > budget ? C.ACTION.TRANSPORT : C.ACTION.DIRECT,
+});
 export const motionPromptGroups = <T>(items: readonly T[], build: (group: T[]) => string, maxItems = Number.MAX_SAFE_INTEGER, budget = C.TARGET_CHARS - C.WRAPPER_RESERVE, boundary?: (previous: T, next: T) => boolean): T[][] => {
   const groups: T[][] = [];
   let current: T[] = [];

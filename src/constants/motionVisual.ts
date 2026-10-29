@@ -27,27 +27,27 @@ export const MOTION_VISUAL = {
   MODES: { LIBRARY: "library", REMOTION: "remotion" },
   PROFILES: {
     history: {
-      revision: 2,
+      revision: 4,
       vi: "Lịch sử",
       en: "History — illustrated",
       direction:
-        "Hand-drawn history explainer cartoon: large round off-white heads, minimal expressive eyes/brows/mouth, compact colored clothing and thin black ink arms/legs, with hair and source-supported era accessories distinguishing people. These intentional stick-limb proportions are valid, not defective anatomy. Use bold slightly irregular black contours and flat muted colors. Alternate spacious white explanatory vignettes with richer illustrated locations: readable architecture, terrain and important artifacts in coherent perspective, quieter than the foreground people. No compulsory parchment tint, realistic long-legged bodies or fixed ancient/European cast. Adapt to the actual period, region and event; learn visual craft from references without copying their characters, scenes, captions or logos.",
+        "Hand-drawn web-comic history explainer: every person is a template cartoon with a large pure white round head and a thick near-black outline, two solid black dot eyes with short brow strokes and a tiny mouth, no neck, a flat-colored bean-shaped body, thin black ink arms and two short ink legs without hands or feet; identity comes from hair caps, headwear, facial hair, expression and uniform details. Pictures alternate between pure white dialogue vignettes with figures at the left and right thirds and handwritten speech lines, dark desaturated relief maps with glowing translucent regions, thick campaign arrows and a large cropped figure in a corner, and richly illustrated period places in muted earthy tones with clean black outlines. Big bold dates or figures appear only when stated by the source. No glossy 3D, realistic bodies or horror lighting. Adapt to the actual period, region and event; learn visual craft from references without copying their characters, scenes, captions or logos.",
       paper: "#ffffff",
       ink: "#1b1b1b",
       muted: "#879277",
     },
     horror: {
-      revision: 3,
+      revision: 12,
       vi: "Truyện ma",
       en: "Horror — atmospheric illustration",
       direction:
-        "Vietnamese hand-drawn horror cartoon: uneven dark ink contours, matte flat colors, one flat shadow at most. Adult head is about one fifth of full height; pale blue-gray oval face, black hair, visible eyebrows and eyelids, small nose and short closed unsmiling mouth. Draw clothed shoulders, torso, bent elbows, hands and natural trouser legs, not a long tapering tube with dot hands. Use three-quarter/profile faces and slight asymmetry; anxious brows and tired eyes, never a pleasant smile or a uniform front-facing doll. Keep a simple readable silhouette, no realistic anatomy or tiny chibi legs. Rooms have a clear perspective floor leading to the rear wall, door depth, restrained irregular surface lines, no glossy gradients. Colors: slate walls #555e69, charcoal outlines #20232c, dusty purple clothing #605d76, gray olive floor #575a51, pale faces #c4c9c6. Night shading stays readable and preserves white clothing. Ghosts keep a human silhouette, pale face, dark hollow eyes, limp posture; never a cute mascot or a floating bedsheet with a smile. Simple illustrative poses are sufficient. Use layered atmosphere and gentle movement separately. No reference logos, LIVE badges, timestamps or text overlays.",
-      paper: "#262b32",
+        "Vietnamese 2D Flash folk horror in the 'Than trung' narrated-story look. Every person is a faceless mask puppet: a large perfectly round white head (#e8eef0) with a thick near-black outline, two tall solid black oval eyes set close together in the upper half, one small solid black vertical oval mouth, no nose, ears, hair, brows, pupils or neck; directly below the head (touching it, never tucked under it) stands a tombstone body: a round arch top, near-vertical sides about 1.15 head diameters wide widening to about 1.25 at the flat base, about 1.7 head diameters tall, so the whole puppet is about 2.7 head diameters tall, in one flat muted color, with short rounded arm nubs at the shoulders and, when gesturing, one long smooth curved noodle arm in the body color. Children are the same puppet at about two thirds size; ghosts are the same puppet with a pale gray-white translucent body and a faded base. Backgrounds show the actual place of each scene as flat unshaded shapes with thin dark edges only on architecture, furniture and objects, in muted cold colors (gray-blue day sky, dark olive polygon foliage, beige plaster or plank walls, dark brown wood, red-brown tiles, terracotta or earth ground, dark navy nights). A strong dark gradient vignette darkens the bottom of every frame. Big readable subjects and few details; no texture noise, no realistic anatomy, no glossy 3D, no logos, UI or text.",
+      paper: "#202327",
       ink: "#eee8da",
       muted: "#697474",
     },
     explainer: {
-      revision: 1,
+      revision: 3,
       vi: "Giải thích",
       en: "Explainer — diagrams",
       direction: "Clear flat 2D educational illustration, readable distinct silhouettes and simple shapes, muted blue/cream palette, generous negative space. Use short source-supported SVG labels and arrows only where they clarify the explanation. Adapt each person and object to the actual subject; no compulsory military imagery.",
@@ -71,6 +71,7 @@ export const MOTION_VISUAL = {
       sceneWaiting: "Chờ dựng hình",
       sceneStopped: "Chưa hoàn tất · lượt dựng đã dừng",
       sceneFailed: "Chưa hoàn tất · cần sửa hình",
+      retryScene: "Tạo lại cảnh này",
       scenePlanning: "Chưa có phân cảnh chi tiết",
       scene: (index: number) => `Cảnh ${index}`,
       missingBackground: "Chưa có hình nền",
@@ -91,6 +92,7 @@ export const MOTION_VISUAL = {
       sceneWaiting: "Waiting for illustration",
       sceneStopped: "Incomplete · scene generation stopped",
       sceneFailed: "Incomplete · illustration needs repair",
+      retryScene: "Regenerate this scene",
       scenePlanning: "Detailed scene plan pending",
       scene: (index: number) => `Scene ${index}`,
       missingBackground: "Background missing",
@@ -137,9 +139,10 @@ export const MOTION_VISUAL = {
   LOG_REJECTED: (artifact: string, errors: string[]) => `${artifact === "motion_remotion_asset" || artifact === "motion_remotion_composition" ? "Hình SVG" : artifact === "motion_remotion_scene" ? "Dữ liệu phân cảnh" : artifact === "motion_remotion_design" ? "Thiết kế phối cảnh" : "Review ảnh"} cần sửa: ${errors.join("; ")}`,
   LOG_REVIEW: (i: number, total: number) => `Review ảnh Remotion ${i}/${total}.`,
   LOG_REPAIR: (id: string) => `Sửa đúng cảnh Remotion ${id} theo kết quả review.`,
-  LOG_REVIEW_OFF: "Review ảnh AI đã tắt; vẫn kiểm dữ liệu và bố cục Remotion.",
+  LOG_REVIEW_OFF: "Đã tắt duyệt ảnh: nhận một kết quả vẽ cho mỗi cảnh, không tự yêu cầu sửa; cảnh không render được sẽ đánh dấu để tạo lại riêng.",
   LOG_RENDER: "Remotion đang xuất hình theo timeline.",
   LOG_FAILED: (id: string, reason: string) => `Cảnh Remotion ${id} chưa hoàn tất: ${reason}`,
+  RETRY_SCENES: (count: number) => `${count} cảnh cần kiểm tra; các phần khác đã được giữ. Bấm Tạo lại cảnh này tại cảnh cần sửa.`,
   CAPABILITY:
     "Visual mode: Remotion. Use script-specific people, places and props, not any fixed folk asset pack. Illustrate essential identities, counts, colors and spatial relationships. Complex optional actions may be represented by a clear static image. Scene data is rendered as layered React/SVG; maps/diagrams only when relevant. Reuse recurring entity identities, allow deliberate age/clothing/state changes. Never invent library asset IDs, spots, recipes, coordinates, frames or URLs.",
 } as const;

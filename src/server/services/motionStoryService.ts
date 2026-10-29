@@ -16,7 +16,7 @@ import { MOTION_PROMPT as PROMPT } from "../../constants/motionPrompt.js";
 import { closedPuppetPackId } from "./puppet/packPolicy.js";
 import { motionVisualCapability } from "../../lib/motionVisual.js";
 import type { MotionVisualSettings } from "../../types/motionVisual.js";
-import { motionPromptGroups, motionPromptMeasurement, motionPromptBudget, motionPromptEditorialContext } from "../../lib/motionPrompt.js";
+import { motionPromptGroups, motionPromptMeasurement, motionPromptBudget, motionPromptEditorialContext, motionPromptSingleMessage } from "../../lib/motionPrompt.js";
 import { motionChapterParts } from "../../lib/motionChapterParts.js";
 import { motionTaskCheckpoint } from "./motionTaskCheckpoint.js";
 import { motionInputKey } from "./motionFileUtils.js";
@@ -773,7 +773,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       if (run.halt.error) throw run.halt.error;
       return await motionAiRunStore.run({ ...run, workerId }, () => runMotionAiTask(prompt, artifactType, exec, signal, activityLog, images, attempt, contract));
     } catch (error) {
-      if (_.get(error, AIR.UNCERTAIN_FLAG)) run.halt.error = error as Error;
+      if (!exec.singleResponse && _.get(error, AIR.UNCERTAIN_FLAG)) run.halt.error = error as Error;
       throw error;
     } finally {
       run.lastWorkerId = workerId;
@@ -869,11 +869,12 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   const restoreContext = currentRun?.editorial && (currentRun.rooms.get(currentRun.workerId) !== provider || currentRun.roomRefreshes.has(currentRun.workerId) || attempt > 0);
   const editorialContext = restoreContext ? motionPromptEditorialContext(artifactType, currentRun.editorial!.context) : MR.MOTION_TEXT_EMPTY;
   const basePrompt = editorialContext + prompt;
-  const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
-  const fullPrompt = MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity));
+  const singleMessage = motionPromptSingleMessage(artifactType);
+  const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
+  const fullPrompt = singleMessage ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity)) : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity));
   log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
-  const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")));
-  if (measurement.overflow) log?.(PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
+  const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")), singleMessage);
+  if (measurement.overflow) log?.(singleMessage ? PROMPT.SINGLE_MESSAGE_LOG(artifactType, measurement.finalChars) : PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
   try {
     fs.appendFileSync(path.join(getLogsDirectory(), PROMPT.DIAGNOSTIC_FILE), stringifyJson({ at: new Date().toISOString(), artifact: artifactType, provider: exec.provider, model: exec.model, ...measurement }) + PROMPT.SEPARATOR);
   } catch {
@@ -1043,6 +1044,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
       if (!captchaRetry && contentRepair && isMotionContentResponseError(caught)) {
         roomOk = true;
+        throw caught;
+      }
+      if (!captchaRetry && exec.singleResponse) {
+        roomOk = submission.completed;
         throw caught;
       }
       if (!captchaRetry && submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
@@ -1516,7 +1521,7 @@ export const developCreativeStory = async (analysis: MotionStoryAnalysis, source
         await writeMotionAiDebug(MOTION_TEMPLATE_SYMBOL_5(D.ARTIFACT, randomUUID().slice(0, 8)), { stage: CRAFT.CONTRACT_STAGE, artifact: D.ARTIFACT, provider: route.provider, model: route.model, attempt, errors, expectedChapterIds: ids, response: raw, draft: value });
       },
     };
-    const prompt = ([D.PROMPT(promptInput), CRAFT.IDS + stringifyJson(ids), analysis.visualSettings?.mode === RT_SHARED.REMOTION ? motionVisualCapability(analysis.visualSettings) : PROMPT.ILLUSTRATION_AUDIT] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
+    const prompt = ([D.PROMPT(promptInput), CRAFT.IDS + stringifyJson(ids), analysis.visualSettings?.mode === RT_SHARED.REMOTION ? "" : PROMPT.ILLUSTRATION_AUDIT] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
     let raw = Object.keys(draft).length && !storyErrors(draft).length ? draft : opts.ai ? await requestMotionAiContract(prompt, opts.exec, (question) => opts.ai!(question, D.ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(prompt, D.ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
     if (analysis.visualSettings?.mode !== RT_SHARED.REMOTION)
       raw = await repairMotionIllustrationNeeds(raw, (saved.needs ||= {}), {

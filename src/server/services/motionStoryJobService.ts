@@ -11,6 +11,7 @@ import { runInMotionAiSession, type MotionEditorialSession } from "./motionStory
 import { saveMotionStoryCheckpoint, readMotionStoryCheckpoint } from "./motionStoryCheckpointService.js";
 import { MOTION_PRODUCTION as PRODUCTION } from "../../constants/motionProduction.js";
 import { motionStoryLogs } from "./motionLogStore.js";
+import { MOTION_EDITORIAL } from "../../constants/motionEditorial.js";
 type InternalJob = MotionStoryJobState & { controller: AbortController; editorialSessionId?: string; editorialRevision?: string; requestKey?: string };
 const jobs = new Map<string, InternalJob>();
 const ACTIVE = [MotionJobStatus.QUEUED, MotionJobStatus.PREPARING, MotionJobStatus.RENDERING, MotionJobStatus.ENCODING];
@@ -24,7 +25,7 @@ const publicJob = (job: InternalJob): MotionStoryJobState => _.omit(job, [MOTION
 export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, run: (ctx: StoryJobContext) => Promise<unknown>, editorial?: MotionEditorialSession, requestKey?: string): MotionStoryJobState => {
   const running = _.find([...jobs.values()], (j) => !!(requestKey || editorial?.id) && j.kind === kind && j.requestKey === requestKey && j.editorialSessionId === editorial?.id && j.editorialRevision === editorial?.revision && _.includes(ACTIVE, j.status));
   if (running) return publicJob(running);
-  if (editorial) for (const previous of jobs.values()) if (previous.editorialSessionId === editorial.id && previous.editorialRevision !== editorial.revision && _.includes(ACTIVE, previous.status)) previous.controller.abort();
+  if (editorial) for (const previous of jobs.values()) if (previous.editorialSessionId === editorial.id && previous.editorialRevision !== editorial.revision && _.includes(ACTIVE, previous.status)) previous.controller.abort(MOTION_EDITORIAL.CONTEXT_REPLACED);
   const job: InternalJob = { id: randomUUID(), kind, status: MotionJobStatus.RENDERING, progress: 0, log: [], startedAt: Date.now(), controller: new AbortController(), editorialSessionId: editorial?.id, editorialRevision: editorial?.revision, requestKey };
   jobs.set(job.id, job);
   const logs = motionStoryLogs();
@@ -112,7 +113,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
       job.status = aborted ? MotionJobStatus.CANCELLED : MotionJobStatus.ERROR;
       job.error = aborted ? undefined : persistenceError ? PRODUCTION.SAVE_FAILED + RT_SHARED.SYMBOL_45822F + String((persistenceError as Error)?.message || persistenceError) : _.toString(error?.message || error);
       try {
-        ctx.log(aborted ? MOTION_TEXT_DA_HUY : MOTION_TEMPLATE_LOI(String(job.error)));
+        ctx.log(aborted ? (typeof job.controller.signal.reason === "string" ? job.controller.signal.reason : MOTION_TEXT_DA_HUY) : MOTION_TEMPLATE_LOI(String(job.error)));
       } catch (writeError) {
         failedSave(writeError);
       }

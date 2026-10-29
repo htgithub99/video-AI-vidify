@@ -107,6 +107,9 @@ export interface MotionRemotionScene {
   continuityDraft?: { nodes: MotionRemotionNode[]; resolvedKey: string };
   removedObjects?: string[];
   composition?: MotionSceneComposition;
+  build?: { inputKey: string; status: "accepted" | "failed"; review: boolean; error?: string };
+  drawingNote?: string;
+  requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
 }
 export interface MotionSceneLayer {
@@ -123,6 +126,7 @@ export interface MotionSceneAnimation {
   keyframes: { at: number; value: string | number }[];
 }
 export interface MotionSceneComposition {
+  unchecked?: boolean;
   geometryRevision?: number;
   revision: number;
   assetKey: string;

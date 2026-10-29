@@ -1,4 +1,3 @@
-import { stringifyJson } from "../lib/jsonStringify.js";
 export const MOTION_REMOTION_LAYOUT = {
   REVISION: 2,
   SCENE_REVISION: 2,
@@ -41,20 +40,10 @@ export const MOTION_REMOTION_LAYOUT = {
   REGIONS_ERROR: "Vùng bố trí phải nằm trong nền và có kích thước hợp lệ.",
   OPTIONAL_EFFECT: "Bỏ lớp hiệu ứng phụ vì chưa có nguồn/vùng phù hợp; giữ nguyên các lớp hình đã đạt.",
   REQUIRED_EFFECT: "Hiệu ứng cốt lõi cần có nguồn/vùng phù hợp hoặc hình tĩnh thể hiện đúng manh mối.",
-  META_REPAIR: (svg: string, anchors: unknown, regions: unknown, required: string[], requiredRegions: string[]) =>
-    `The SVG code below is accepted. Return ONLY {"anchors":{...},"regions":{...}} with normalized coordinates 0..1. Required anchors: ${stringifyJson(required)}; required regions: ${stringifyJson(requiredRegions)}. base=bottom, surface=support top, grip=hand/contact, seat=seated contact, body=lying contact, emitter=outlet, flame=wick, pivot=hinge. Preserve accepted anchors ${stringifyJson(anchors)} and regions ${stringifyJson(regions)}. Regions {x,y,width,height} must match the actual SVG, not guessed full canvas. Do not redraw SVG. SVG: ${svg}`,
   GEOMETRY_ERROR: "Tỷ lệ hoặc vùng tiếp xúc chưa đủ để đặt đúng chủ thể.",
   NODE_ERROR: (id: string, field: string, reason: string) => `Bố trí ${id} · ${field}: ${reason}`,
   LOG_MIGRATE: "Đang nâng bố cục và tách hiệu ứng; giữ kịch bản, giọng và các hình còn phù hợp.",
   LOG_REPLAN: (count: number) => `Đọc lại bố cục ${count} đoạn theo quy tắc phân cảnh mới; giữ kịch bản, giọng, SEO và hình còn phù hợp.`,
   LOG_LAYOUT: (index: number, total: number) => `Bố trí cảnh ${index}/${total}: tỷ lệ, điểm tiếp xúc và hiệu ứng.`,
   LOG_PLAN: (index: number, total: number) => `Phân cảnh Remotion: đọc đoạn ${index}/${total}.`,
-  CONTINUITY_POLICY:
-    "Use the supplied object catalog IDs across all beats. Set persistent=true only for stationary furnishings/key objects that remain visible at this location; never for people. removedObjects contains persistent objectIds explicitly removed by the current source. stateEvidence is the current source phrase confirming a changed state or owner. Without an explicit change, preserve existing state/owner/contact/slot. Do not invent a spill from forgetting. Identify the same physical place with the supplied place ID, including detail views. Time/weather come from the supplied beat; use time only when source confirms a change.",
-  LOCATION_POLICY:
-    "One stable architectural design per physical location. Draw neutral subdued daylight; lighting and weather are separate renderer layers. Do not draw rain streaks, smoke, flames, fog, people, furniture or movable objects. Return normalized regions for floor, wall, outdoors and any requested mount sockets. Outdoors must cover only openings/exterior, not interior walls or the roofed floor. Regions must match the actual SVG. Leave requested door/window mounts as openings for separate fixtures; never include a second copy of the excluded nodes.",
-  ASSET_POLICY:
-    "Return optional bounds {x,y,width,height} around visible subject, normalized to viewBox. Add seat for a seated person's contact point, body for a lying person's contact, grip for hands, emitter for the physical smoke outlet and flame for a lamp wick when requested. Do not bake smoke, steam, flame, fog or rain streaks into SVG: these are separate renderer layers. Do not add a stool, bowl, floor or other unrelated subject inside a character asset. The base is the true floor contact; seat is the seated contact, not the feet.",
-  SCENE_POLICY:
-    "Use role fixture|support|object|decal for props; mount names doorway|wall|ceiling|floor|pillar bind architecture to background regions. Use stable objectId from the supplied continuity catalog for recurring objects; do not invent a new object because its wording/pose changed. contact seat/body only when necessary, otherwise simplify to neutral beside. Add effects [{id,kind:rain|smoke|steam|flame|fog|sway,source:nodeId,region:backgroundRegion,direction:up|ground|left|right,intensity:0..1}]. Rain/fog use a background region only (outdoors/floor); wet objects alone do not imply falling rain. Smoke/steam/flame/sway need their real source node ID; anchor is a physical point name emitter/flame/pivot, NEVER another node ID or region. Environment describes architecture only; time/weather are supplied context, never paint them into the background. Preserve supplied prior states unless exact source confirms a change. No spilled/tipped state from merely forgotten; no future reveals. Optional view wide|detail. Keep essential fixture/object states, not detailed gestures.",
 } as const;

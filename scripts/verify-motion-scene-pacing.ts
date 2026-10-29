@@ -8,7 +8,6 @@ import { normalizeMotionVisualSettings } from "../src/lib/motionVisual.js";
 import { remotionSceneProgress } from "../src/features/motion/lib/motionRemotionProgress.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../src/constants/motionSceneComposition.js";
-import { MOTION_SCENE_DESIGN as D } from "../src/constants/motionSceneDesign.js";
 import { buildRemotionScenes } from "../src/server/services/remotion/scenePipeline.js";
 import { compileRemotionStory } from "../src/server/services/remotion/storyCompiler.js";
 import { remotionStoryBuildCurrent } from "../src/server/services/remotion/sceneKeys.js";
@@ -67,7 +66,6 @@ try {
         assert.ok(context.pacing.includes("SOFT"));
         return { scenes: [{ fromLineId: context.lines[0].id, toLineId: context.lines.at(-1).id, purpose: "quiet exchange", environment: "house", nodes: [node] }] };
       }
-      if (artifact === D.ARTIFACT) return { camera: "wide", placements: [{ id: "person", box: { x: 0.2, y: 0.2, width: 0.2, height: 0.6 }, depth: 1, supportId: "floor", contact: { x: 0.3, y: 0.8 }, construction: "connected person on floor" }] };
       if (artifact === C.ARTIFACT)
         return {
           svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720"><g id="room"><rect width="1280" height="720" fill="#303741"/></g><g id="person"><path d="M200 100L300 100L300 500L200 500Z" fill="#605d76"/><path id="mouth" d="M220 120Q230 120 240 120" stroke="#000"/></g></svg>',

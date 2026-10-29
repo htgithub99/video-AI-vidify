@@ -58,6 +58,8 @@ export const validateSceneComposition = (composition: MotionSceneComposition, as
     composition.animations.length > C.ANIMATIONS
   )
     throw new Error(C.ERROR("", C.INVALID));
+  const safe = normalizeMotionVector(asset.svg, asset.key, asset.inputKey, asset.description, true);
+  if (safe.width !== asset.width || safe.height !== asset.height) throw new Error(C.VIEWBOX);
   const elements = compositionElements(asset.svg);
   if (composition.design) normalizeMotionSceneDesign(composition.design, nodes);
   const ids = new Set<string>();
@@ -68,7 +70,7 @@ export const validateSceneComposition = (composition: MotionSceneComposition, as
   }
   if (!composition.layers.some((layer) => layer.kind === RT_SHARED.BACKGROUND)) throw new Error(C.ERROR(RT_CORE.LAYERS, C.INVALID));
   const missing = nodes.filter((node) => node.kind !== RT_SHARED.LABEL && !composition.layers.some((layer) => layer.id === node.id && (layer.kind === node.kind || (node.kind === RT_SHARED.PROP && layer.kind === RT_CORE.EFFECT)) && (node.kind !== RT_SHARED.CHARACTER || layer.entityId === node.entityId)));
-  if (missing.length) throw new Error(C.MISSING(missing.map((node) => node.id)));
+  if (missing.length && !composition.unchecked) throw new Error(C.MISSING(missing.map((node) => node.id)));
   const animated = new Set<string>();
   for (const animation of composition.animations) {
     const element = elements.get(animation.target),
@@ -114,6 +116,39 @@ export const normalizeSceneComposition = (raw: any, key: string, inputKey: strin
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
 };
+export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number) => {
+  let asset = normalizeMotionVector(raw?.svg, key, inputKey, description, true);
+  if (asset.width !== width || asset.height !== height || !/^0[\s,]+0[\s,]/.test(asset.svg.match(/\bviewBox\s*=\s*["']([^"']+)["']/)?.[1]?.trim() || "")) {
+    const fitted = asset.svg.replace(/^<svg\b[^>]*>/, (root) => `${root.replace(/\s(?:width|height|x|y|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "").slice(0, -1)} width="100%" height="100%" x="0" y="0" preserveAspectRatio="xMidYMid meet">`);
+    asset = normalizeMotionVector(`<svg viewBox="0 0 ${width} ${height}">${fitted}</svg>`, key, inputKey, description, true);
+  }
+  const elements = compositionElements(asset.svg);
+  let background = "scene_canvas";
+  while (elements.has(background)) background += "_";
+  asset.svg = asset.svg.replace(/^(<svg\b[^>]*>)/, `$1<g id="${background}">`).replace(/<\/svg>$/, "</g></svg>");
+  const layers: MotionSceneLayer[] = [{ id: background, kind: "background" }];
+  for (const layer of [...(Array.isArray(raw?.layers) ? raw.layers : []), ...nodes]) {
+    if (!layer || !C.ID.test(layer.id) || elements.get(layer.id)?.tag !== "g" || !(C.KINDS as readonly string[]).includes(layer.kind) || layers.some((other) => other.id === layer.id) || (layer.kind === "character" && !cast.has(layer.entityId)) || layers.length >= C.LAYERS) continue;
+    layers.push({ id: layer.id, kind: layer.kind, ...(layer.kind === "character" ? { entityId: layer.entityId } : {}) });
+  }
+  const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, unchecked: true, layers, animations: [], ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
+  try {
+    if (raw?.design) composition.design = normalizeMotionSceneDesign(raw.design, nodes);
+  } catch {
+    composition.design = undefined;
+  }
+  for (const animation of Array.isArray(raw?.animations) ? raw.animations.slice(0, C.ANIMATIONS) : []) {
+    try {
+      validateSceneComposition({ ...composition, animations: [...composition.animations, animation] }, asset, nodes, cast);
+      composition.animations.push(animation);
+    } catch {
+      continue;
+    }
+  }
+  validateSceneComposition(composition, asset, nodes, cast);
+  return { asset, composition };
+};
+export const failedSceneComposition = (key: string, inputKey: string, width: number, height: number) => normalizeFirstSceneComposition({ svg: C.PLACEHOLDER_SVG(width, height) }, key, inputKey, C.PLACEHOLDER, [], new Set(), width, height);
 export const mergeSceneCompositionDraft = (previous: unknown, raw: unknown): Record<string, unknown> => {
   const merged: Record<string, any> = { ...(previous && typeof previous === "object" && !Array.isArray(previous) ? previous : {}), ...(raw && typeof raw === "object" && !Array.isArray(raw) ? Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== undefined)) : {}) };
   if (merged.groupPatches !== undefined) {

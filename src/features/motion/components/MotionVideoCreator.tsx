@@ -532,9 +532,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 ) : (
                   <>
-                    {state.productionId && job?.kind === MotionStoryJobKind.PRODUCTION && (job.status === MotionJobStatus.ERROR || job.status === MotionJobStatus.CANCELLED) && (
+                    {state.productionId && job?.kind === MotionStoryJobKind.PRODUCTION && (job.status === MotionJobStatus.ERROR || job.status === MotionJobStatus.CANCELLED || (job.status === MotionJobStatus.COMPLETED && state.script?.beats?.length && !state.seo?.options?.length)) && (
                       <ActionBtn icon={Sparkles} onClick={() => void studio.resumeProduction()} disabled={studio.storyBusy}>
-                        {MOTION_PRODUCTION.UI_RESUME}
+                        {job.status === MotionJobStatus.COMPLETED ? MOTION_PRODUCTION.UI_RESUME_SEO : MOTION_PRODUCTION.UI_RESUME}
                       </ActionBtn>
                     )}
                     <ActionBtn icon={Sparkles} onClick={() => void studio.analyze()} disabled={!state.source || studio.storyBusy} className={MOTION_STYLES.PX_5_PY_2_5}>
@@ -879,6 +879,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       script={state.script}
                       renderBehavior={state.renderBehavior}
                       language={currentLang}
+                      onRedo={(scene) => void studio.buildScenes({ scenes: [scene.id], note: sceneNote || undefined })}
                       busy={(busyKind === MotionStoryJobKind.SCENES || busyKind === MotionStoryJobKind.PRODUCTION) && !storyStopping}
                       onOpen={(scene, preview, index) => setPreviewModal({ type: RT_MOTION.BEAT, id: scene.id, title: visualText.scene(index + 1), imageUrl: "", remotion: preview, narration: scene.text, beats: [scene.beatId] })}
                     />
@@ -1090,7 +1091,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       if (m.type === MR.MOTION_TEXT_LOCATION) {
                         void studio.buildScenes({ locations: [m.id], note: sceneNote || undefined });
                       } else {
-                        void studio.buildScenes({ beats: m.beats, note: sceneNote || undefined });
+                        void studio.buildScenes({ ...(m.remotion ? { scenes: [m.id] } : { beats: m.beats }), note: sceneNote || undefined });
                       }
                     }}
                     disabled={studio.storyBusy}

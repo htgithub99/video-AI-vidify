@@ -16,11 +16,11 @@ export const remotionSceneProgress = (script: MotionStoryScript, busy = false, l
     const plans = group.beats.every((member) => covered.has(member.id)) ? stored : undefined;
     return (plans?.length ? plans : [undefined]).map((scene) => {
       const readiness: ReturnType<typeof remotionSceneReadiness> = scene ? remotionSceneReadiness(scene, state) : {};
-      const failure = state?.failures[beat.id];
-      const reason = readiness.error || (readiness.missingBackground ? text.missingBackground : readiness.missingAssets?.length ? text.missingAssets(readiness.missingAssets) : "") || failure || (!scene ? text.scenePlanning : "");
-      const status = readiness.preview ? RT_SHARED.READY : failure ? RT_SHARED.FAILED : busy ? RT_SHARED.WAITING : RT_MOTION.STOPPED;
+      const failure = scene?.build?.status === "failed" ? scene.build.error : state?.failures[beat.id];
+      const reason = failure || readiness.error || (readiness.missingBackground ? text.missingBackground : readiness.missingAssets?.length ? text.missingAssets(readiness.missingAssets) : "") || (!scene ? text.scenePlanning : "");
+      const status = failure ? RT_SHARED.FAILED : readiness.preview ? RT_SHARED.READY : busy ? RT_SHARED.WAITING : RT_MOTION.STOPPED;
       return { key: scene?.id || beat.id, beatId: beat.id, scene, preview: readiness.preview, status, reason, narration: scene?.text || beat.narration || "" };
     });
   });
-  return { entries, ready: entries.filter((entry) => !!entry.preview).length, total: entries.length };
+  return { entries, ready: entries.filter((entry) => entry.status === RT_SHARED.READY).length, total: entries.length };
 };

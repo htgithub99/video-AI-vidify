@@ -8,10 +8,10 @@ export const isPlanningChatModel = (value: unknown): value is AiPlanningChatMode
 export const throwIfPlanningCancelled = (signal?: AbortSignal): void => {
   if (signal?.aborted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR);
 };
-export const planningPromptTransport = (prompt: string, submittedChars: number, requestedLimit?: number): { limit: number; parts: string[] } => {
+export const planningPromptTransport = (prompt: string, submittedChars: number, requestedLimit?: number, singleMessage = false): { limit: number; parts: string[] } => {
   const limit = Math.max(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_MIN_MESSAGE_LIMIT, Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_MESSAGE_LIMIT, Number.isFinite(requestedLimit) ? requestedLimit! : CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_MESSAGE_LIMIT));
   const parts: string[] = [];
-  if (submittedChars > limit) {
+  if (!singleMessage && submittedChars > limit) {
     const size = Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_PART_CHARS, limit - CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_CONTEXT_RESERVE);
     for (let start = 0; start < prompt.length; ) {
       let end = Math.min(prompt.length, start + size);

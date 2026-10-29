@@ -12,6 +12,8 @@ import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C, CHAT_JSON_PATTERNS as JP } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
 import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport } from "../../lib/chatPlanningUtils.js";
+import { motionPromptSingleMessage } from "../../lib/motionPrompt.js";
+import { MOTION_PROMPT } from "../../constants/motionPrompt.js";
 import * as MR from "../../constants/motionRuntime.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_683,
@@ -1204,10 +1206,11 @@ const submitPrompt = async (
 ): Promise<string> => {
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
   const isDeepSeek = inputSelector === D.INPUT;
-  const responseDirective = isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
+  const singleMessage = motionPromptSingleMessage(artifactType);
+  const responseDirective = singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(String(normalizedPrompt)), SOURCE_TEMPLATE_SYMBOL_86(String(responseDirective)));
-  const { limit, parts } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit);
+  const { limit, parts } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit, singleMessage);
   if (parts.length) {
     const request = requestId || createHash(SOURCE_TEXT_SHA256).update(prompt).digest(SOURCE_TEXT_HEX).slice(0, 12);
     await writeMusicDiagnostic(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_DIAGNOSTIC, { runId: request, stage: artifactType, promptChars: prompt.length, submittedChars: submittedPrompt.length, messageLimit: limit, chunkCount: parts.length, attachmentCount: attachments.length, status: CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_ATOMIC });

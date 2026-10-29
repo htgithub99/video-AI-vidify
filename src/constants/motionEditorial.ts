@@ -2,6 +2,7 @@ export const MOTION_EDITORIAL = {
   ID_PREFIX: "motion-editorial-",
   ID_PATTERN: /^[a-zA-Z0-9_-]{1,128}$/,
   IDLE_MS: 60 * 60 * 1000,
+  CONTEXT_REPLACED: "Đã dừng tác vụ cũ vì nguồn, ngôn ngữ hoặc AI nội dung của phiên đã thay đổi.",
   MAIN: "editorial-main",
   HELPERS: "editorial-helpers",
   SHARED: "shared",

@@ -10,6 +10,7 @@ import { MotionProductionStore } from "../src/server/services/motionProductionSt
 import { remotionBeatKey } from "../src/server/services/remotion/sceneKeys.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../src/constants/motionRemotionLayout.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
+import { seoScriptKey } from "../src/server/services/motionSeoService.js";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-production-runner-"));
 const prior = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
@@ -116,10 +117,14 @@ try {
   assert.deepEqual(restored.getMotionProduction(input.productionId), completed);
   let remotionPreflight = 0;
   let remotionScenes = 0;
+  let remotionTargetSeconds = 2;
   const remotionSettings = { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1 };
   const remotionService = createMotionProductionService(
     {
       ...deps,
+      analyzeMotionStoryInput: () => start(K.ANALYZE, { ...analysis, chapters: analysis.chapters.map((chapter: any) => ({ ...chapter, targetSeconds: remotionTargetSeconds })) }),
+      scriptMotionStoryInput: () => start(K.SCRIPT, { ...script, beats: script.beats.map((beat: any) => ({ ...beat, narration: remotionTargetSeconds === 2 ? beat.narration : Array(30).fill(beat.narration).join(" ") })) }),
+      voiceMotionStoryInput: (body: any) => start(K.VOICE, { ...voice, signature: motionVoiceSignature(body.script, body.analysis) }),
       checkRemotionRuntime: async () => {
         remotionPreflight++;
       },
@@ -166,6 +171,17 @@ try {
   assert.equal(counts[K.SCRIPT], countsBeforeMigration[K.SCRIPT]);
   assert.equal(counts[K.VOICE], countsBeforeMigration[K.VOICE]);
   assert.equal(counts.render, countsBeforeMigration.render + 1);
+  remotionTargetSeconds = 100;
+  const durationCounts = { ...counts };
+  remotionService.startMotionProduction({ ...input, productionId: "remotion-duration-advisory", visualSettings: remotionSettings, seo: false });
+  for (let i = 0; i < 500 && ![S.COMPLETED, S.ERROR].includes(remotionService.getMotionProduction("remotion-duration-advisory")!.status); i++) await delay(2);
+  const remotionDurationJob = remotionService.getMotionProduction("remotion-duration-advisory")!;
+  assert.equal(remotionDurationJob.status, S.COMPLETED, remotionDurationJob.error);
+  assert.equal(counts[K.SCRIPT], durationCounts[K.SCRIPT] + 1);
+  assert.equal(counts[K.VOICE], durationCounts[K.VOICE] + 1);
+  assert.equal(counts[K.SCENES], durationCounts[K.SCENES] + 1);
+  assert.ok(remotionDurationJob.log.some((line) => line.includes("timeline") && line.includes("100")));
+  remotionTargetSeconds = 2;
   failedVoice = true;
   service.startMotionProduction({ ...input, productionId: "voice_failure" });
   const voiceFailure = await until("voice_failure");
@@ -334,7 +350,8 @@ try {
   assert.equal(advisoryScenes, 1);
   assert.equal(advisoryVoices, 1);
   assert.equal((advisoryState.result as any).voice.totalSeconds, 1.3);
-  const seoProgress = createMotionProductionService({ ...deps, seoMotionStoryInput: () => start(K.SEO, { options: [], chapters: [{ id: analysis.chapters[0].id, t: 0, title: source.title }] }, 3), scenesMotionStoryInput: (body: any) => start(K.SCENES, structuredClone(body.script), 100) }, path.join(root, "seo-progress"), 1);
+  const seoPack = { options: [{ title: "A village story", description: "A story.", hashtags: [], tags: [], seoScore: 90 }], chapters: [{ id: analysis.chapters[0].id, t: 0, title: source.title }], scriptKey: seoScriptKey(script), timingFrom: "estimate" };
+  const seoProgress = createMotionProductionService({ ...deps, seoMotionStoryInput: () => start(K.SEO, seoPack, 3), scenesMotionStoryInput: (body: any) => start(K.SCENES, structuredClone(body.script), 100) }, path.join(root, "seo-progress"), 1);
   seoProgress.startMotionProduction({ ...input, productionId: "seo-progress" });
   let seoWhileScenes = false;
   for (let i = 0; i < 500; i++) {
@@ -358,6 +375,91 @@ try {
   const oldSeoService = createMotionProductionService(deps, path.join(root, "seo-progress"), 1);
   assert.equal(oldSeoService.getMotionProduction("seo-progress")!.result?.seoJobId, undefined);
   assert.equal(fs.readFileSync(oldSeoFile, "utf8"), oldSeoBytes);
+  let seoAttempts = 0;
+  let seoScenario: "recover" | "fail" | "hang" | "pass" = "recover";
+  const seoDirectory = path.join(root, "seo-recovery");
+  const seoRecovery = createMotionProductionService(
+    {
+      ...deps,
+      scenesMotionStoryInput: (body: any) => start(K.SCENES, structuredClone(body.script), 12),
+      seoMotionStoryInput: () => {
+        seoAttempts++;
+        const response = start(K.SEO, seoPack, seoScenario === "hang" ? -1 : 2, seoScenario === "fail" || (seoScenario === "recover" && seoAttempts === 2) ? "seo service interrupted" : undefined);
+        if (seoScenario === "recover" && seoAttempts === 1) cancel(response.job.id);
+        return response;
+      },
+    },
+    seoDirectory,
+    1,
+    1,
+    20,
+  );
+  const seoUntil = async (id: string) => {
+    for (let i = 0; i < 500; i++) {
+      const state = seoRecovery.getMotionProduction(id)!;
+      if ([S.ERROR, S.CANCELLED, S.COMPLETED].includes(state.status)) return state;
+      await delay(2);
+    }
+    throw new Error("SEO recovery did not settle");
+  };
+  seoRecovery.startMotionProduction({ ...input, productionId: "seo-recover" });
+  const seoRecovered = await seoUntil("seo-recover");
+  assert.equal(seoRecovered.status, S.COMPLETED, seoRecovered.error);
+  assert.equal(seoAttempts, 3);
+  assert.equal(seoRecovered.result?.seo?.timingFrom, "voice");
+  assert.equal(seoRecovered.result?.seoJobId, undefined);
+  assert.equal(seoRecovered.log.filter((line) => line.includes("phục hồi riêng SEO")).length, 2);
+  const seoCounts = { ...counts };
+  seoRecovery.resumeMotionProduction("seo-recover");
+  await delay(5);
+  assert.deepEqual(counts, seoCounts);
+  seoScenario = "fail";
+  seoAttempts = 0;
+  seoRecovery.startMotionProduction({ ...input, productionId: "seo-exhausted" });
+  const seoFailed = await seoUntil("seo-exhausted");
+  assert.equal(seoFailed.status, S.COMPLETED);
+  assert.equal(seoAttempts, P.SEO_RETRIES + 1);
+  assert.equal(seoFailed.result?.seo, undefined);
+  assert.ok(seoFailed.log.some((line) => line.includes(P.SEO_EXHAUSTED)));
+  const failedSeoFile = path.join(seoDirectory, "seo-exhausted.json");
+  const legacySeo = JSON.parse(fs.readFileSync(failedSeoFile, "utf8"));
+  legacySeo.steps[P.STAGES.SEO].done = true;
+  fs.writeFileSync(failedSeoFile, JSON.stringify(legacySeo));
+  seoScenario = "pass";
+  const beforeSeoResume = { ...counts };
+  const renderedBeforeSeoResume = structuredClone(seoFailed.result?.rendered);
+  seoRecovery.resumeMotionProduction("seo-exhausted");
+  const seoOnly = await seoUntil("seo-exhausted");
+  assert.equal(seoOnly.status, S.COMPLETED, seoOnly.error);
+  assert.equal(seoOnly.result?.seo?.options.length, 1);
+  assert.equal(seoAttempts, P.SEO_RETRIES + 2);
+  for (const kind of [K.ANALYZE, K.SCRIPT, K.SCENES, K.VOICE, "render"]) assert.equal(counts[kind], beforeSeoResume[kind]);
+  assert.deepEqual(seoOnly.result?.rendered, renderedBeforeSeoResume);
+  seoScenario = "hang";
+  seoAttempts = 0;
+  seoRecovery.startMotionProduction({ ...input, productionId: "seo-timeout" });
+  const timedSeo = await seoUntil("seo-timeout");
+  assert.equal(timedSeo.status, S.COMPLETED);
+  assert.equal(seoAttempts, 1);
+  assert.equal(timedSeo.result?.seoJobId, undefined);
+  assert.ok(timedSeo.log.some((line) => line.includes(P.SEO_PENDING)));
+  const timedRecord = JSON.parse(fs.readFileSync(path.join(seoDirectory, "seo-timeout.json"), "utf8"));
+  assert.equal(timedRecord.steps[P.STAGES.SEO].done, undefined);
+  assert.equal(jobs.get(timedRecord.steps[P.STAGES.SEO].id).status, S.CANCELLED);
+  seoScenario = "pass";
+  seoRecovery.resumeMotionProduction("seo-timeout");
+  assert.equal((await seoUntil("seo-timeout")).result?.seo?.options.length, 1);
+  seoScenario = "hang";
+  seoAttempts = 0;
+  seoRecovery.startMotionProduction({ ...input, productionId: "seo-stop" });
+  for (let i = 0; i < 500 && !seoAttempts; i++) await delay(2);
+  assert.equal(seoRecovery.cancelMotionProduction("seo-stop"), true);
+  await delay(25);
+  assert.equal(seoRecovery.getMotionProduction("seo-stop")?.status, S.CANCELLED);
+  assert.equal(seoAttempts, 1);
+  seoRecovery.recoverMotionProductions();
+  await delay(5);
+  assert.equal(seoAttempts, 1);
   const originalScript = structuredClone(script);
   const snapshotService = createMotionProductionService({ ...deps, scenesMotionStoryInput: (body: any) => start(K.SCENES, body.script, 5), voiceMotionStoryInput: (body: any) => start(K.VOICE, { ...voice, signature: motionVoiceSignature(body.script, analysis) }) }, path.join(root, "snapshot"), 1);
   snapshotService.startMotionProduction({ ...input, productionId: "snapshot", analysis, script: originalScript, voiceChannel: "selected-profile", seo: false });
@@ -441,7 +543,7 @@ try {
   const takeover = store.acquire("run");
   assert.equal(takeover.pid, process.pid);
   store.release("run", takeover);
-  console.log("Production runner: parallel work, targeted resume, idempotency, optional SEO, cancellation, persistence and fencing passed.");
+  process.stdout.write("Production runner: parallel work, targeted resume, idempotency, optional SEO, cancellation, persistence and fencing passed.\n");
 } finally {
   if (prior === undefined) delete process.env.VIDIFY_STORAGE_DIR;
   else process.env.VIDIFY_STORAGE_DIR = prior;

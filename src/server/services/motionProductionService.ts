@@ -50,11 +50,11 @@ interface ProductionRecord {
   inputKey: string;
   job: MotionStoryJobState;
   result: MotionProductionResult;
-  steps: Record<string, { id: string; done?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string }>;
+  steps: Record<string, { id: string; done?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; recoveryStopped?: boolean }>;
   owner?: MotionProductionOwner;
 }
 const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan };
-export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS) => {
+export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS, seoWaitMs: number = P.SEO_WAIT_MS) => {
   const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan } = {
     ...productionDependencies,
     ...dependencies,
@@ -64,6 +64,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   const active = new Map<string, { record: ProductionRecord; controller: AbortController; owner: MotionProductionOwner }>();
   const failedSnapshots = new Map<string, ProductionRecord>();
   const terminal = (status: S): boolean => [S.COMPLETED, S.CANCELLED, S.ERROR].includes(status);
+  const seoMatches = (seo: any, script?: MotionStoryScript): seo is MotionSeoPack => !!script && Array.isArray(seo?.options) && seo.options.length > 0 && Array.isArray(seo.chapters) && seo.scriptKey === seoScriptKey(script);
   const read = (id: string): ProductionRecord | undefined => {
     const record = failedSnapshots.get(id) || store.read(id);
     return record?.version === P.RUN_VERSION && record.job?.id === id && record.input && record.inputKey === motionInputKey(record.input) ? record : undefined;
@@ -81,7 +82,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     if (record.steps[P.STAGES.SEO]?.done) delete job.result.seoJobId;
     return job;
   };
-  const run = async (record: ProductionRecord, controller: AbortController, owner: MotionProductionOwner): Promise<void> => {
+  const run = async (record: ProductionRecord, controller: AbortController, owner: MotionProductionOwner, seoOnly = false): Promise<void> => {
     const signal = controller.signal;
     try {
       const base: Record<string, any> = { ...structuredClone(record.input), productionId: record.job.id, editorialSessionId: record.job.id, keepBrowser: true };
@@ -105,62 +106,108 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const mediaProgress = { scenes: 0, voice: 0 };
       const syncSeo = (): void => {
         const task = record.steps[P.STAGES.SEO];
-        if (!task?.id || task.done) return;
+        if (!task || task.recoveryStopped || (task.done && seoMatches(result.seo, result.script))) return;
         const job = getStoryJob(task.id);
-        if (!job) return;
+        if (!job) {
+          startSeo();
+          return;
+        }
         const previous = task.log || [];
         let overlap = Math.min(previous.length, job.log.length);
         while (overlap && previous.slice(-overlap).some((line, index) => line !== job.log[index])) overlap--;
         for (const line of job.log.slice(overlap)) log(record, PROGRESS.SCOPE(P.STAGES.SEO, line));
         task.log = [...job.log];
         if (!terminal(job.status)) return;
-        if (job.status === S.COMPLETED && job.result && task.inputKey === seoScriptKey(result.script!)) result.seo = result.voice ? retimeMotionSeo(job.result as MotionSeoPack, result.script!, result.analysis!, result.voice.durations) : (job.result as MotionSeoPack);
-        else if (job.error) log(record, P.OPTIONAL_FAILED(P.STAGES.SEO, job.error));
-        task.done = true;
+        if (job.status === S.COMPLETED && seoMatches(job.result, result.script) && task.inputKey === seoScriptKey(result.script!)) {
+          result.seo = result.voice ? retimeMotionSeo(job.result, result.script!, result.analysis!, result.voice.durations) : job.result;
+          task.done = true;
+          task.status = S.COMPLETED;
+        } else {
+          if (task.status !== job.status) log(record, PROGRESS.SCOPE(P.STAGES.SEO, P.OPTIONAL_FAILED(P.STAGES.SEO, job.error || P.SEO_INTERRUPTED)));
+          task.done = false;
+          task.status = job.status;
+        }
         delete result.seoJobId;
+        if (!task.done) startSeo();
       };
       const startSeo = (): void => {
+        signal.throwIfAborted();
         if (base.seo === false) return;
         const inputKey = seoScriptKey(result.script!);
         const previous = record.steps[P.STAGES.SEO];
-        if (previous?.inputKey === inputKey) return;
+        const sameScript = previous?.inputKey === inputKey;
+        if (sameScript) {
+          if (seoMatches(result.seo, result.script)) {
+            previous.done = true;
+            delete result.seoJobId;
+            return;
+          }
+          previous.done = false;
+          if (previous.recoveryStopped) return;
+          const state = previous.id && getStoryJob(previous.id);
+          if (state && state.status === S.COMPLETED && seoMatches(state.result, result.script)) {
+            result.seo = result.voice ? retimeMotionSeo(state.result, result.script!, result.analysis!, result.voice.durations) : state.result;
+            previous.done = true;
+            previous.status = S.COMPLETED;
+            delete result.seoJobId;
+            return;
+          }
+          if (state && !terminal(state.status)) {
+            result.seoJobId = previous.id;
+            return;
+          }
+          if ((previous.retries || 0) >= P.SEO_RETRIES) {
+            previous.recoveryStopped = true;
+            delete result.seoJobId;
+            log(record, PROGRESS.SCOPE(P.STAGES.SEO, P.SEO_EXHAUSTED));
+            return;
+          }
+          log(record, PROGRESS.SCOPE(P.STAGES.SEO, P.SEO_RETRY((previous.retries || 0) + 1)));
+        }
         if (previous?.id) cancelStoryJob(previous.id);
         delete result.seo;
         delete result.seoJobId;
-        record.steps[P.STAGES.SEO] = { id: "", inputKey };
+        record.steps[P.STAGES.SEO] = { id: "", inputKey, retries: sameScript ? (previous.retries || 0) + 1 : 0 };
         try {
           const response = seoMotionStoryInput({ ...base, analysis: result.analysis, script: structuredClone(result.script) });
           record.steps[P.STAGES.SEO].id = response.job.id;
           result.seoJobId = response.job.id;
         } catch (error) {
-          log(record, P.OPTIONAL_FAILED(P.STAGES.SEO, String((error as Error).message)));
+          record.steps[P.STAGES.SEO].status = S.ERROR;
+          log(record, PROGRESS.SCOPE(P.STAGES.SEO, P.OPTIONAL_FAILED(P.STAGES.SEO, String((error as Error).message))));
         }
         save();
       };
       const finishSeo = async (): Promise<void> => {
-        const task = record.steps[P.STAGES.SEO];
-        if (!task?.id || !result.voice) return;
-        const deadline = Date.now() + P.SEO_WAIT_MS;
+        if (!record.steps[P.STAGES.SEO] || !result.voice) return;
+        const deadline = Date.now() + seoWaitMs;
         for (;;) {
           signal.throwIfAborted();
           syncSeo();
-          const job = getStoryJob(task.id);
-          if (!job || terminal(job.status)) {
-            if (job?.status === S.COMPLETED && job.result && task.inputKey === seoScriptKey(result.script!)) {
-              result.seo = retimeMotionSeo(job.result as MotionSeoPack, result.script!, result.analysis!, result.voice.durations);
-              task.done = true;
-            } else if (job?.error) log(record, P.OPTIONAL_FAILED(P.STAGES.SEO, job.error));
-            break;
-          }
+          const task = record.steps[P.STAGES.SEO];
+          if (task.done || task.recoveryStopped) break;
           if (Date.now() >= deadline) {
-            cancelStoryJob(task.id);
-            log(record, P.SEO_PENDING);
+            if (task.id) cancelStoryJob(task.id);
+            task.status = S.CANCELLED;
+            task.recoveryStopped = true;
+            delete result.seoJobId;
+            log(record, PROGRESS.SCOPE(P.STAGES.SEO, P.SEO_PENDING));
             break;
           }
           await delay(Math.min(pollMs, Math.max(1, deadline - Date.now())), undefined, { signal });
         }
+        if (seoMatches(result.seo, result.script)) result.seo = retimeMotionSeo(result.seo, result.script!, result.analysis!, result.voice.durations);
         save();
       };
+      if (seoOnly) {
+        record.job.stage = P.STAGES.SEO;
+        startSeo();
+        await finishSeo();
+        signal.throwIfAborted();
+        record.job.status = S.COMPLETED;
+        record.job.stage = result.rendered ? P.STAGES.DONE : P.PREVIEW_DONE;
+        return;
+      }
       const step = async <T>(name: string, start: () => Promise<{ job: { id: string } }> | { job: { id: string } }, receive: (value: T) => void, offset: number, size: number, render = false, media?: keyof typeof mediaProgress): Promise<void> => {
         signal.throwIfAborted();
         if (record.steps[name]?.done) {
@@ -369,7 +416,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (!record.durationRepair || record.durationRepair.done) await buildMedia();
       const targetSeconds = result.analysis!.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0);
       const durationTolerance = Q.DURATION_TOLERANCE;
-      const durationFits = () => motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.ERROR;
+      const remotionDuration = result.analysis?.visualSettings?.mode === RT_SHARED.REMOTION;
+      const durationFits = () => (remotionDuration ? Number.isFinite(result.voice!.totalSeconds) && result.voice!.totalSeconds > 0 : motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.ERROR);
       const repairMediaPending = () => {
         const repair = record.durationRepair;
         if (!repair || repair.done) return false;
@@ -404,7 +452,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         record.durationRepair.done = true;
         save();
       }
-      if (motionDurationQa(result.voice!.totalSeconds, targetSeconds) === Q.LEVEL.WARNING) log(record, Q.DURATION_WARNING(result.voice!.totalSeconds, targetSeconds));
+      if (motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.OK) log(record, Q.DURATION_WARNING(result.voice!.totalSeconds, targetSeconds));
       await finishSeo();
       signal.throwIfAborted();
       record.job.stage = P.STAGES.COMPILE;
@@ -491,7 +539,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (active.get(record.job.id)?.owner.token === owner.token) active.delete(record.job.id);
     }
   };
-  const launch = (record: ProductionRecord): MotionStoryJobState => {
+  const launch = (record: ProductionRecord, seoOnly = false): MotionStoryJobState => {
     const owner = store.acquire(record.job.id);
     const controller = new AbortController();
     record.owner = owner;
@@ -503,7 +551,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       throw error;
     }
     active.set(record.job.id, { record, controller, owner });
-    void run(record, controller, owner).catch((error) => {
+    void run(record, controller, owner, seoOnly).catch((error) => {
       record.job.status = controller.signal.aborted ? S.CANCELLED : S.ERROR;
       record.job.error = controller.signal.aborted ? undefined : String((error as Error)?.message || error);
       record.job.activeAi = {};
@@ -552,11 +600,18 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     if (previous) {
       if (previous.inputKey !== key) throw new Error(P.INVALID_RUN);
       const outdatedRemotion = previous.result.script && previous.result.analysis && motionVisualSettingsFor({ script: previous.result.script, analysis: previous.result.analysis }).mode === RT_SHARED.REMOTION && !remotionStoryBuildCurrent(previous.result.script, previous.result.analysis);
-      if (!resume || (previous.job.status === S.COMPLETED && !outdatedRemotion)) return publicJob(previous);
+      const seoOnly = previous.job.status === S.COMPLETED && !outdatedRemotion;
+      if (!resume || (seoOnly && (previous.input.seo === false || seoMatches(previous.result.seo, previous.result.script)))) return publicJob(previous);
+      const seo = previous.steps[P.STAGES.SEO];
+      if (seo && !seoMatches(previous.result.seo, previous.result.script)) {
+        seo.done = false;
+        seo.retries = 0;
+        delete seo.recoveryStopped;
+      }
       previous.job.error = undefined;
-      log(previous, P.RUN_RESUMED);
-      log(previous, PACING.RESUME_LOG);
-      return launch(previous);
+      log(previous, seoOnly ? P.SEO_RESUMED : P.RUN_RESUMED);
+      if (!seoOnly) log(previous, PACING.RESUME_LOG);
+      return launch(previous, seoOnly);
     }
     const result: MotionProductionResult = structuredClone({ ...(normalized.analysis ? { analysis: normalized.analysis, series: normalized.series || null } : {}), ...(normalized.script ? { script: normalized.script } : {}) });
     const record: ProductionRecord = { version: P.RUN_VERSION, input: normalized, inputKey: key, job: { id, productionId: id, kind: K.PRODUCTION, status: S.QUEUED, progress: 0, log: [P.RUN_STARTED], startedAt: Date.now() }, result, steps: {} };
@@ -575,9 +630,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       return structuredClone({ id, productionId: id, kind: K.PRODUCTION, status: S.ERROR, progress: saved?.job?.progress || 0, startedAt: saved?.job?.startedAt || 0, log: [...(Array.isArray(saved?.job?.log) ? saved.job.log : []), P.SNAPSHOT_INVALID], error: P.SNAPSHOT_INVALID, result: saved?.result });
     }
     const seo = record.steps[P.STAGES.SEO];
-    if (seo && !seo.done && !active.has(id)) {
+    if (seo && !seoMatches(record.result.seo, record.result.script) && !active.has(id)) {
       const job = getStoryJob(seo.id);
-      if (job?.status === S.COMPLETED && record.result.script && record.result.analysis && seo.inputKey === seoScriptKey(record.result.script)) {
+      if (job?.status === S.COMPLETED && seoMatches(job.result, record.result.script) && record.result.script && record.result.analysis && seo.inputKey === seoScriptKey(record.result.script)) {
         let owner: MotionProductionOwner | undefined;
         try {
           owner = store.acquire(id);

@@ -320,6 +320,8 @@ export const MOTION_STYLES = {
   STUDIO_PROGRESS_CARD: "glass-card rounded-2xl p-4 sm:p-5 border border-purple-500/30 bg-purple-950/20 shadow-xl space-y-3.5 animate-in fade-in duration-200",
 } as const;
 export const MOTION_REMOTION_STYLES = {
+  RETRY: "m-2 px-2 py-1 text-[11px] rounded border border-slate-600 text-purple-300 hover:bg-slate-800 disabled:opacity-40",
+  FAILURE: "px-2 py-1 text-[10px] leading-4 text-amber-300 line-clamp-2 break-words",
   PANEL: "space-y-2 min-w-0 font-sans not-italic",
   COUNT: "text-xs text-slate-400",
   GRID: "grid grid-cols-1 sm:grid-cols-3 gap-2",

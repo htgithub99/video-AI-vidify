@@ -127,7 +127,7 @@ export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: Mo
           continue;
         }
         validateSceneComposition(scene.composition, state.assets[scene.composition.assetKey], scene.nodes, new Set(analysis.cast.map((member) => member.key)));
-        if (scene.composition.geometryRevision !== C.GEOMETRY_REVISION || motionCompositionMissingChannels(scene, script.gen?.renderBehavior || state.renderBehavior).length) pending = true;
+        if (!scene.composition.unchecked && scene.build?.status !== "failed" && (scene.composition.geometryRevision !== C.GEOMETRY_REVISION || motionCompositionMissingChannels(scene, script.gen?.renderBehavior || state.renderBehavior).length)) pending = true;
       }
     } catch {
       return RT_SERVER.INVALID;

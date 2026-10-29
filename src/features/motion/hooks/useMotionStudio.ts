@@ -202,6 +202,7 @@ const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, langu
 const chainOn = (s: PersistedState): boolean => !s.automationPaused && (s.autoContinue !== false || s.autoRun === true);
 const exportOn = (s: PersistedState): boolean => !s.automationPaused && (s.autoExport === true || s.autoRun === true);
 export interface MotionScenesRequest {
+  scenes?: string[];
   beats?: string[];
   locations?: string[];
   restart?: boolean;
@@ -913,8 +914,12 @@ export function useMotionStudio() {
           if (!flowCancelled.current && !stateRef.current.automationPaused) requestVoice(result, analysis);
           patch({ script: result });
           setCompiled(null);
-          const failed = result.gen?.failed?.length || 0;
-          if (failed) toast.warning(MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP(String(failed)));
+          const failed =
+            (result.gen?.failed?.length || 0) +
+            Object.values(result.gen?.remotion?.scenes || {})
+              .flat()
+              .filter((scene) => scene.build?.status === "failed").length;
+          if (failed) toast.warning(result.gen?.remotion ? MOTION_VISUAL.RETRY_SCENES(failed) : MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP(String(failed)));
           else toast.success(PUPPET.TOAST_DONE);
           return result;
         } catch (e: any) {

@@ -27,7 +27,6 @@ const { puppetStoryboardCovers, puppetStoryboardInputKey } = await import("../sr
 const { directMotionVoice } = await import("../src/server/services/motionVoiceDirectionService.js");
 const { directPuppetSound } = await import("../src/server/services/puppet/sound.js");
 const atomic = "x".repeat(20000);
-assert.equal(motionPromptEditorialContext("motion_remotion_design", "unrelated source ledger"), "");
 assert.equal(motionPromptEditorialContext("motion_remotion_composition", "unrelated source ledger"), "");
 assert.ok(motionPromptEditorialContext("motion-dna-profile", "source ledger").includes("source ledger"));
 const groups = motionPromptGroups(["one", "two", atomic, "last"], (rows) => JSON.stringify(rows), 3, 50);

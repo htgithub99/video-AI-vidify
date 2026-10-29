@@ -114,7 +114,7 @@ export const editorialSession = (body: any, source: MotionStorySource, exec: Mot
   const id = _.toString(body?.editorialSessionId);
   if (!MOTION_EDITORIAL.ID_PATTERN.test(id) || !source?.segments) return undefined;
   const revision = createHash(RT_SERVER.SHA256)
-    .update(stringifyJson([videoDnaSourceKey(source), source.notes, storyLanguage(body?.language), exec]))
+    .update(stringifyJson([videoDnaSourceKey(source), source.notes, storyLanguage(body?.language), { provider: exec.provider, model: exec.model, mode: exec.mode }]))
     .digest(RT_SERVER.HEX);
   return { id, revision, context: motionEditorialContext(source, body?.analysis, body?.script, body?.beats, storyLanguage(body?.language)) };
 };
@@ -306,6 +306,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
           review: body.review !== false,
           restart: body.restart === true,
           onlyBeats,
+          onlyScenes: _.map(_.castArray(body?.scenes || []), _.toString),
           onlyLocations,
           note: note || undefined,
         }),

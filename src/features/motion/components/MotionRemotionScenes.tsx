@@ -11,7 +11,7 @@ import { Pagination } from "../../../components/ui/Pagination.js";
 import { MotionRemotionStill } from "./MotionRemotionStill.js";
 import type { MotionRemotionSpec, MotionRemotionScene, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { MotionStoryScript } from "../../../types/motionVideo.js";
-export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; busy?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void }> = ({ script, language, renderBehavior, busy = false, onOpen }) => {
+export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; busy?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void }> = ({ script, language, renderBehavior, busy = false, onOpen, onRedo }) => {
   const [page, setPage] = useState<number>(STUDIO_PAGINATION.FIRST_PAGE);
   const progress = remotionSceneProgress(renderBehavior && script.gen?.remotion ? { ...script, gen: { ...script.gen, remotion: { ...script.gen.remotion, renderBehavior } } } : script, busy, language);
   const pagination = getPagination(progress.total, page, V.SCENES_PER_PAGE);
@@ -43,11 +43,21 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
                   </div>
                 </div>
               )}
+              {entry.preview && entry.status === RT_SHARED.FAILED && (
+                <p className={S.FAILURE} title={entry.reason}>
+                  {entry.reason}
+                </p>
+              )}
               <p className={S.CAPTION} title={entry.narration || entry.scene?.purpose}>
                 {title}
                 {RT_MOTION.CAPTION_SEPARATOR}
                 {entry.narration || entry.scene?.purpose}
               </p>
+              {entry.scene && onRedo && (
+                <button type={RT_SHARED.BUTTON} className={S.RETRY} disabled={busy} onClick={() => onRedo(entry.scene!)}>
+                  {text.retryScene}
+                </button>
+              )}
             </div>
           );
         })}

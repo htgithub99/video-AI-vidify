@@ -3,7 +3,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { MOTION_SCENE_COMPOSITION as C } from "../src/constants/motionSceneComposition.js";
-import { MOTION_SCENE_DESIGN as D } from "../src/constants/motionSceneDesign.js";
 import { normalizeMotionSceneDesign } from "../src/lib/motionSceneDesign.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { normalizeSceneComposition, compositionFrameSvg, mergeSceneCompositionDraft, validateSceneComposition } from "../src/lib/motionSceneComposition.js";
@@ -170,9 +169,8 @@ try {
     }
     if (artifact === C.ARTIFACT) {
       const size = prompt.match(/"width":(\d+),"height":(\d+)/)!;
-      return illustration(Number(size[1]), Number(size[2]));
+      return { ...illustration(Number(size[1]), Number(size[2])), design: design() };
     }
-    if (artifact === D.ARTIFACT) return design();
     throw new Error(`Unexpected AI call: ${artifact}`);
   };
   const opts: any = {
@@ -189,7 +187,7 @@ try {
   const generated = await buildRemotionScenes(script, analysis, opts);
   assert.ok(remotionStoryBuildCurrent(generated, analysis));
   assert.deepEqual(generated.gen!.remotion!.scenes.beat[0].composition!.design, design());
-  assert.equal(calls[D.ARTIFACT], 1);
+  assert.equal(calls["motion_remotion_design"], undefined);
   assert.equal(generated.gen!.remotion!.scenes.beat.length, 1);
   assert.ok(remotionSceneReadiness(generated.gen!.remotion!.scenes.beat[0], generated.gen!.remotion).preview);
   const progress = remotionSceneProgress({ ...generated, beats: [...generated.beats, { ...script.beats[0], id: "future", place: "outside" }] }, true);
@@ -235,23 +233,25 @@ try {
       return patchAttempts === 1 ? { ...illustration(), layers: [] } : { layers: illustration().layers };
     },
   });
-  assert.equal(patchAttempts, 2);
+  assert.equal(patchAttempts, 1);
   assert.ok(remotionStoryBuildCurrent(patched, analysis));
   let designAttempts = 0;
   const patchedDesign = await buildRemotionScenes(script, analysis, {
     ...opts,
     scope: "design-field-patch",
     ai: async (prompt: string, artifact: string) => {
-      if (artifact !== D.ARTIFACT) return ai(prompt, artifact);
-      return ++designAttempts === 1 ? { ...design(), camera: {} } : { camera: design().camera };
+      if (artifact !== C.ARTIFACT) return ai(prompt, artifact);
+      designAttempts++;
+      return { ...illustration(), design: { ...design(), camera: {} } };
     },
   });
-  assert.equal(designAttempts, 2);
-  assert.deepEqual(patchedDesign.gen!.remotion!.scenes.beat[0].composition!.design, design());
+  assert.equal(designAttempts, 1);
+  assert.equal(patchedDesign.gen!.remotion!.scenes.beat[0].composition!.design, undefined);
   let reviews = 0;
   const reviewed = await buildRemotionScenes(generated, analysis, {
     ...opts,
     scope: "review-scene",
+    geometry: { check: async () => [] },
     review: true,
     still: async (_spec: unknown, file: string) => {
       fs.writeFileSync(file, "render fixture");
@@ -273,25 +273,22 @@ try {
     ],
   };
   let multiPartial: any;
-  await assert.rejects(() =>
-    buildRemotionScenes(multi, analysis, {
-      ...opts,
-      scope: "independent-scenes",
-      partial: (value: any) => {
-        multiPartial = value;
-      },
-      ai: async (prompt: string, artifact: string) => {
-        const context = JSON.parse(prompt.split("Context:\n")[1].split("\n")[0]);
-        if (artifact === V.ARTIFACT_SCENE) {
-          const source = puppetBeatLines(multi.beats.find((beat: any) => beat.id === context.beat.id));
-          return { scenes: [{ fromLineId: source[0].key, toLineId: source.at(-1)!.key, purpose: context.beat.id, environment: "room", nodes: [node] }] };
-        }
-        if (artifact === D.ARTIFACT) return design();
-        return context.scene.purpose === "bad" ? { svg: "broken", layers: [] } : illustration();
-      },
-    }),
-  );
-  assert.ok(multiPartial.gen.remotion.failures.bad);
+  await buildRemotionScenes(multi, analysis, {
+    ...opts,
+    scope: "independent-scenes",
+    partial: (value: any) => {
+      multiPartial = value;
+    },
+    ai: async (prompt: string, artifact: string) => {
+      const context = JSON.parse(prompt.split("Context:\n")[1].split("\n")[0]);
+      if (artifact === V.ARTIFACT_SCENE) {
+        const source = puppetBeatLines(multi.beats.find((beat: any) => beat.id === context.beat.id));
+        return { scenes: [{ fromLineId: source[0].key, toLineId: source.at(-1)!.key, purpose: context.beat.id, environment: "room", nodes: [node] }] };
+      }
+      return context.scene.purpose === "bad" ? { svg: "broken", layers: [] } : illustration();
+    },
+  });
+  assert.equal(multiPartial.gen.remotion.scenes.bad[0].build.status, "failed");
   assert.equal(multiPartial.gen.remotion.failures.good, undefined);
   assert.ok(remotionSceneReadiness(multiPartial.gen.remotion.scenes.good[0], multiPartial.gen.remotion).preview);
   const beforeAspect = calls[C.ARTIFACT];
@@ -301,13 +298,14 @@ try {
   const damaged = structuredClone(generated);
   delete damaged.gen!.remotion!.assets[damaged.gen!.remotion!.scenes.beat[0].composition!.assetKey];
   assert.equal(remotionStoryBuildCurrent(damaged, analysis), false);
-  await assert.rejects(() => buildRemotionScenes(script, analysis, { ...opts, scope: "failed-composition", ai: async (_prompt: string, artifact: string) => (artifact === C.ARTIFACT ? { svg: "broken", layers: [] } : ai(_prompt, artifact)) }));
+  await buildRemotionScenes(script, analysis, { ...opts, scope: "failed-composition", ai: async (_prompt: string, artifact: string) => (artifact === C.ARTIFACT ? { svg: "broken", layers: [] } : ai(_prompt, artifact)) });
   assert.ok(partial.gen.remotion.scenes.beat.length);
-  assert.ok(Object.keys(partial.gen.remotion.failures).length);
-  const acceptedDesignCalls = calls[D.ARTIFACT];
+  assert.equal(partial.gen.remotion.scenes.beat[0].build.status, "failed");
+  const acceptedDesignCalls = calls["motion_remotion_design"];
   const resumed = await buildRemotionScenes(script, analysis, { ...opts, scope: "failed-composition" });
   assert.ok(remotionStoryBuildCurrent(resumed, analysis));
-  assert.equal(calls[D.ARTIFACT], acceptedDesignCalls);
+  assert.equal(calls["motion_remotion_design"], acceptedDesignCalls);
+  assert.equal(resumed.gen!.remotion!.scenes.beat[0].build!.status, "failed");
   console.log("Scene composition: spatial design, group repair, legacy preview, safety, speech gating, independent effects, checkpoint resume, aspect rebuild, voice timing and partial failure persistence passed.");
 } finally {
   if (priorStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;

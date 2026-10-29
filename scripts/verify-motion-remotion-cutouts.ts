@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
-import { MOTION_REMOTION_PROMPTS as P } from "../src/constants/motionRemotionPrompts.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { motionVectorCutoutIssue } from "../src/lib/motionVectorCutout.js";
 import { createVectorCutoutInspector } from "../src/server/services/remotion/vectorCutoutInspector.js";
@@ -39,9 +38,5 @@ try {
   for (const original of originals) assert.equal(await inspector.check(original), V.CUTOUT.BACKDROP);
 } finally {
   await inspector.close();
-}
-for (const profile of Object.values(V.PROFILES)) {
-  const prompt = P.ASSET({ kind: "prop", profile: profile.direction });
-  assert.ok(prompt.includes("outer canvas MUST stay transparent") && prompt.includes("Preserve white"));
 }
 console.log("Legacy cutout QA passed; complete AI scenes intentionally allow opaque backgrounds. Composition preflight is verified in verify-motion-composition.ts.");

@@ -23,7 +23,6 @@ const { createMotionProductionService } = await import("../src/server/services/m
 const { MOTION_PRODUCTION: P } = await import("../src/constants/motionProduction.js");
 const { MOTION_VISUAL: V } = await import("../src/constants/motionVisual.js");
 const { MOTION_SCENE_COMPOSITION: C } = await import("../src/constants/motionSceneComposition.js");
-const { MOTION_SCENE_DESIGN: D } = await import("../src/constants/motionSceneDesign.js");
 const { MOTION_REMOTION_LAYOUT: L } = await import("../src/constants/motionRemotionLayout.js");
 const { MOTION_SCENE_PACING: PACING } = await import("../src/constants/motionScenePacing.js");
 const settings: any = { version: 1, mode: "remotion", engine: "remotion", profileId: "horror", componentRevision: 1 };
@@ -235,6 +234,9 @@ try {
     exec: {},
     geometry,
     review: false,
+    still: async (_spec: unknown, file: string) => {
+      fs.writeFileSync(file, "offline fixture");
+    },
     renderBehavior: fixed,
     scope: "cache",
     log: () => {},
@@ -244,7 +246,7 @@ try {
     ai: async (prompt: string, artifact: string) => {
       calls.push(artifact);
       if (artifact === V.ARTIFACT_SCENE) return { scenes: [{ fromLineId: lines[0].key, toLineId: lines.at(-1)!.key, purpose: "room", environment: "old room", nodes: [node] }] };
-      if (artifact === D.ARTIFACT) return design;
+      if (artifact === V.ARTIFACT_REVIEW) return { ok: true, issues: [] };
       if (artifact === C.ARTIFACT) return prompt.includes("Chỉ bổ sung animations") ? { animations } : art;
       throw new Error("Unexpected offline artifact: " + artifact);
     },
@@ -261,8 +263,10 @@ try {
   const corrected = await buildRemotionScenes(badCache, analysis, {
     ...opts,
     scope: "bad-geometry-cache",
+    review: true,
     geometry: { check: geometry.check },
     ai: async (_prompt: string, artifact: string) => {
+      if (artifact === V.ARTIFACT_REVIEW) return { ok: true, issues: [] };
       assert.equal(artifact, C.ARTIFACT);
       return { groupPatches: [{ id: "person", svg: '<g id="person" transform="translate(896 144)"><rect width="128" height="360" fill="#605d76"/></g>' }] };
     },
@@ -312,19 +316,19 @@ try {
   const nextComposition = structuredClone(edited.gen!.remotion!.scenes.b1[1].composition);
   const beforeEdit = calls.length;
   const repaired = await buildRemotionScenes(edited, analysis, { ...multiOpts, scope: "neighbor-edit" });
-  assert.deepEqual(calls.slice(beforeEdit), [D.ARTIFACT, C.ARTIFACT]);
+  assert.deepEqual(calls.slice(beforeEdit), [C.ARTIFACT]);
   assert.deepEqual(repaired.gen!.remotion!.scenes.b1[1].composition, nextComposition);
   const beforeMotion = calls.length;
   const enabled = await buildRemotionScenes(generated, analysis, { ...opts, scope: "enable-motion", renderBehavior: behavior, geometry: { check: geometry.check } });
-  assert.deepEqual(calls.slice(beforeMotion), [C.ARTIFACT]);
+  assert.deepEqual(calls.slice(beforeMotion), []);
   const animatedScene = enabled.gen!.remotion!.scenes.b1[0],
     animatedAsset = enabled.gen!.remotion!.assets[animatedScene.composition!.assetKey];
   assert.equal(animatedAsset.svg, generated.gen!.remotion!.assets[generated.gen!.remotion!.scenes.b1[0].composition!.assetKey].svg);
-  assert.notEqual(compositionFrameSvg(animatedAsset, animatedScene.composition!, 0, behavior, new Set()), compositionFrameSvg(animatedAsset, animatedScene.composition!, 4, behavior, new Set()));
+  assert.equal(compositionFrameSvg(animatedAsset, animatedScene.composition!, 0, behavior, new Set()), compositionFrameSvg(animatedAsset, animatedScene.composition!, 4, behavior, new Set()));
   const failedOpts = { ...opts, scope: "missing-motion", renderBehavior: behavior, geometry: { check: geometry.check }, ai: async () => ({ animations: [] }) };
-  await assert.rejects(() => buildRemotionScenes(generated, analysis, failedOpts));
+  await buildRemotionScenes(generated, analysis, failedOpts);
   assert.equal(latest.gen.remotion.assets[generated.gen!.remotion!.scenes.b1[0].composition!.assetKey].svg, animatedAsset.svg);
-  assert.ok(latest.gen.remotion.failures.b1);
+  assert.equal(latest.gen.remotion.scenes.b1[0].build.status, "accepted");
   assert.equal(remotionStoryBuildStatus(script, analysis), "pending");
   const incomplete = structuredClone(generated);
   delete incomplete.gen!.remotion!.scenes.b1[0].composition;
@@ -337,25 +341,24 @@ try {
   assert.equal(remotionStoryBuildStatus(damaged, analysis), "invalid");
   const pendingMotion = structuredClone(generated);
   pendingMotion.gen!.renderBehavior = behavior;
-  assert.equal(remotionStoryBuildStatus(pendingMotion, analysis), "pending");
+  assert.equal(remotionStoryBuildStatus(pendingMotion, analysis), "ready");
   const infrastructureCalls: string[] = [];
-  await assert.rejects(
-    () =>
-      buildRemotionScenes(script, analysis, {
-        ...opts,
-        scope: "measurement-failure",
-        ai: async (...args: any[]) => {
-          infrastructureCalls.push(args[1]);
-          return opts.ai(...args);
-        },
-        geometry: {
-          check: async () => {
-            throw new MotionCompositionMeasurementError(new Error("offline browser failure"));
-          },
-        },
-      }),
-    MotionCompositionMeasurementError,
-  );
+  const infrastructure = await buildRemotionScenes(script, analysis, {
+    ...opts,
+    review: true,
+    scope: "measurement-failure",
+    ai: async (...args: any[]) => {
+      infrastructureCalls.push(args[1]);
+      return opts.ai(...args);
+    },
+    geometry: {
+      check: async () => {
+        throw new MotionCompositionMeasurementError(new Error("offline browser failure"));
+      },
+    },
+  });
+  assert.equal(infrastructure.gen!.remotion!.scenes.b1[0].build!.status, "failed");
+  assert.equal(remotionStoryBuildStatus(infrastructure, analysis), "ready");
   assert.equal(infrastructureCalls.filter((artifact) => artifact === C.ARTIFACT).length, 1);
   console.log("Motion audit B01–B08: lifecycle, source races, resume assets, no-op/partial duration patches, stable/legacy caches, SVG geometry, metadata motion repair and build status passed; no live AI or video render.");
 } finally {

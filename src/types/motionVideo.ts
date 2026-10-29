@@ -889,6 +889,7 @@ export interface MotionLogEntry {
   lines: string[];
 }
 export interface MotionAiExecution {
+  singleResponse?: boolean;
   provider?: string;
   model?: string;
   mode?: string;
