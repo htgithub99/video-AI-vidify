@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { RESPONSE_QA as V } from "./motionResponseContractVerificationTexts.js";
 import { MOTION_RESPONSE_SCHEMAS, MOTION_DNA_CORE_SCHEMA, MOTION_THUMBNAIL_SCHEMA } from "../src/constants/motionResponseContract.js";
+import { MOTION_THUMBNAIL } from "../src/constants/motionThumbnail.js";
 import { motionResponsePrompt, motionResponseIssues, withMotionResponsePrompt } from "../src/lib/motionResponseContract.js";
 import { normalizeMotionDnaResponse, videoDnaErrors } from "../src/lib/motionVideoDna.js";
 import { motionDnaRepairDraft, motionDnaRepairPrompt } from "../src/lib/motionDnaRepair.js";
@@ -90,23 +91,16 @@ try {
   let profileCalls = 0;
   const partialProfile: any = structuredClone(V.ANALYSIS.videoDna);
   delete partialProfile.narrativeDna.vocabulary;
-  const coreOnly: any = structuredClone(V.ANALYSIS.videoDna);
-  for (const key of ["audienceProfile", "era", "format", "editDna", "narrativeDna", "influences"]) delete coreOnly[key];
-  delete coreOnly.creativeProfile.strengths;
   const profiled = await analyzeStory(source, {
     ...settings,
-    ai: async (prompt) => {
+    ai: async () => {
       profileCalls++;
-      if (profileCalls === 1) return { ...structuredClone(V.ANALYSIS), videoDna: coreOnly };
-      if (profileCalls === 2) return { videoDna: partialProfile };
-      assert.equal(profileCalls, 3);
-      assert.ok(prompt.includes("videoDna.narrativeDna.vocabulary"));
-      return { videoDna: { narrativeDna: { vocabulary: V.ANALYSIS.videoDna.narrativeDna.vocabulary }, audienceProfile: { country: "wrong" } } };
+      return { ...structuredClone(V.ANALYSIS), videoDna: partialProfile };
     },
   });
-  assert.equal(profileCalls, 3);
+  assert.equal(profileCalls, 1);
   assert.equal(profiled.videoDna!.audienceProfile!.country, V.ANALYSIS.videoDna.audienceProfile.country);
-  assert.equal(profiled.videoDna!.narrativeDna!.vocabulary, V.ANALYSIS.videoDna.narrativeDna.vocabulary);
+  assert.equal(profiled.videoDna!.narrativeDna!.vocabulary, V.ANALYSIS.videoDna.narrative.voice);
   let sourceFieldCalls = 0;
   const malformedAnalysis: any = structuredClone(V.ANALYSIS);
   malformedAnalysis.chapters[0].summary = 8;
@@ -135,7 +129,6 @@ try {
       assert.equal(chapterCalls, 2);
       assert.ok(prompt.includes("unknown cast key"));
       assert.ok(prompt.includes("unknown place key"));
-      assert.ok(prompt.includes('"action":"string'));
       return { beats: [{ id: "c1:beat:1", narration: "wrong", place: "river", cast: ["nam"], action: V.ANALYSIS.places[0].description, shot: "wide" }] };
     },
   });
@@ -143,7 +136,7 @@ try {
   assert.equal(chapterRows[0].narration, V.NARRATION[0]);
   assert.equal(chapterRows[0].place, "river");
   assert.deepEqual(chapterRows[0].cast, ["nam"]);
-  assert.equal(chapterRows[0].shot, "wide");
+  assert.equal(chapterRows[0].shot, "medium");
   const script: any = { title: V.TITLE, language: "vi", beats: V.NARRATION.map((narration, index) => ({ id: `b${index + 1}`, chapterId: "c1", narration, visual: "scene" })), gen: { voiceCast: { narrator: "voice_narrator", nam: "voice_nam" } } };
   const voiceAnalysis: any = { title: V.TITLE, cast: [{ key: "nam", name: "Nam", gender: "male", age: "adult" }], places: [], chapters: [] };
   let speechCalls = 0;
@@ -235,7 +228,9 @@ try {
     fs.writeFileSync(bundlePath, bundled.outputFiles[0].text);
     const service = await import(pathToFileURL(bundlePath).href);
     const result = await service.generateMotionThumbnail(analysis, undefined, { language: "vi", exec: {} });
-    assert.equal(result.prompt, V.THUMBNAIL);
+    assert.ok(result.prompt.startsWith(V.THUMBNAIL + "\n"));
+    assert.ok(result.prompt.includes(MOTION_THUMBNAIL.LAYOUT));
+    assert.ok(result.prompt.includes(MOTION_THUMBNAIL.STYLE_RULE));
     assert.equal(thumbnailCalls, 2);
   } finally {
     fs.rmSync(bundlePath, { force: true });

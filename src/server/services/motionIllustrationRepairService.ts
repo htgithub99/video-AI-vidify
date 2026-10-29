@@ -7,6 +7,7 @@ import { MOTION_ILLUSTRATION_POLICY as I } from "../../constants/motionIllustrat
 import { mergeMotionRepair } from "../../lib/motionAiRepair.js";
 import { motionIllustrationCoverageKey, motionIllustrationCoverageMissing, motionIllustrationNeedPaths, motionIllustrationNeedsErrors, normalizeMotionIllustrationNeedOptionals } from "../../lib/motionIllustrationNeeds.js";
 import { motionValueKey } from "../../lib/motionValue.js";
+import { MOTION_EDITORIAL_POLICY as E } from "../../constants/motionEditorialPolicy.js";
 import type { MotionStoryAnalysis } from "../../types/motionVideo.js";
 import type { MotionAiContractState, MotionAiResponseContract } from "./motionAiContractService.js";
 export const completeMotionIllustrationCoverage = async (analysis: MotionStoryAnalysis, states: Record<string, MotionAiContractState>, options: { signal?: AbortSignal; log?: (line: string) => void; inventory: () => string; request: (prompt: string, contract: MotionAiResponseContract) => Promise<any>; save: (draft: MotionStoryAnalysis) => void }): Promise<MotionStoryAnalysis> => {
@@ -19,32 +20,19 @@ export const completeMotionIllustrationCoverage = async (analysis: MotionStoryAn
     const clues = (current.storySpine?.clues || []).filter((clue) => clue.setupChapterId === chapterId || clue.payoffChapterId === chapterId);
     const state = (states[stringifyJson([chapterId, sourceKey])] ||= { rejected: 0, errors: [] });
     const prompt = () => [N.COVERAGE_PROMPT({ chapter, cast: current.cast.map(({ key, name }) => ({ key, name })), places: current.places, existing, clues }, state.errors), Q.PLANNING_NEEDS, options.inventory()].join(Q.SEPARATOR);
-    const exact = (actual: unknown, expected: unknown[]) => Array.isArray(actual) && stringifyJson([...actual].sort()) === stringifyJson([...expected].sort());
     options.log?.(N.COVERAGE_LOG(chapterId));
     const contract: MotionAiResponseContract = {
       targetIds: [chapterId],
       attempts: P.CONTRACT_ROUTE_ATTEMPTS,
       routeAttempts: P.CONTRACT_ROUTE_ATTEMPTS,
-      budget: P.CONTRACT_TOTAL_ATTEMPTS,
+      budget: E.REPAIR_ATTEMPTS,
       state,
       checkpoint: () => options.save(current),
       start: prompt,
       repair: prompt,
       failure: () => new Error(N.COVERAGE_INVALID),
       assess: (raw) => {
-        const valid =
-          raw?.chapterId === chapterId &&
-          raw.checked === true &&
-          exact(
-            raw.reviewedNeedIds,
-            existing.map((need) => need.id),
-          ) &&
-          exact(
-            raw.reviewedClues,
-            clues.map((_, index) => index),
-          ) &&
-          Array.isArray(raw.needs) &&
-          raw.needs.every((need: any) => need?.chapterId === chapterId);
+        const valid = raw?.chapterId === chapterId && raw.checked === true && Array.isArray(raw.needs) && raw.needs.every((need: any) => need?.chapterId === chapterId);
         const candidate = normalizeMotionIllustrationNeedOptionals({ ...current, illustrationNeeds: [...(current.illustrationNeeds || []), ...(valid ? raw.needs : [])] });
         const errors = valid ? motionIllustrationNeedsErrors(candidate) : [N.COVERAGE_INVALID];
         if (!errors.length) {
@@ -86,7 +74,7 @@ export const repairMotionIllustrationNeeds = async (draft: any, states: Record<s
       targetIds: [original.id || String(index)],
       attempts: P.CONTRACT_ROUTE_ATTEMPTS,
       routeAttempts: P.CONTRACT_ROUTE_ATTEMPTS,
-      budget: P.CONTRACT_TOTAL_ATTEMPTS,
+      budget: E.REPAIR_ATTEMPTS,
       state,
       progress: { key: () => motionValueKey([current.illustrationNeeds[index], errors()]), limit: N.NO_PROGRESS_ATTEMPTS, message: N.NO_PROGRESS },
       checkpoint: () => options.save(current),

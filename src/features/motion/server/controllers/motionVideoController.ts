@@ -1,4 +1,3 @@
-import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../../constants/runtimeText.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import { startMotionProduction, resumeMotionProduction, getMotionProduction, cancelMotionProduction, getMotionProductionLogs } from "../../../../server/services/motionProductionService.js";
@@ -6,8 +5,6 @@ import { motionStoryLogs } from "../../../../server/services/motionLogStore.js";
 import { MOTION_ASSET_PREVIEW as ASSET_PREVIEW } from "../../constants/motionAssetPreview.js";
 import { isRemotionSpec, motionVisualSettingsFor } from "../../../../lib/motionVisual.js";
 import { MOTION_VISUAL } from "../../../../constants/motionVisual.js";
-import { renderRemotionStill } from "../../../../server/services/motionRemotionRenderService.js";
-import { compileRemotionStory } from "../../../../server/services/remotion/storyCompiler.js";
 import type { MotionStoryScript, MotionProductionResult } from "../../../../types/motionVideo.js";
 import { analyzeMotionStoryInput, scriptMotionStoryInput, seoMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, readStorySource, storyLanguage, aiExec, drawExec, validateSpec } from "../../../../server/services/motionProductionActions.js";
 import { puppetSheet } from "../../../../server/services/puppet/qa.js";
@@ -78,7 +75,7 @@ import { prepareMotionVoiceReference } from "../services/motionVoiceReferenceSer
 import { createHash } from "crypto";
 import { getMotionDemoSpec, getMotionEngineClientScript } from "../../../../server/services/motionEngineService.js";
 import { resolveGenPreview } from "../../../../server/services/puppet/genState.js";
-import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, getMotionWorkDirectory, listMotionResults } from "../../../../server/services/motionLibraryService.js";
+import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../../../../server/services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration } from "../../../../server/services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../../../../server/services/motionStoryJobService.js";
 import { releaseMotionEditorialSession } from "../../../../server/services/motionStoryService.js";
@@ -212,22 +209,17 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
     const exec = aiExec(req.body?.aiExecution);
     const licenseKey = getResolvedLicenseKey(req);
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.THUMBNAIL, async (ctx) => {
-      if (motionVisualSettingsFor(req.body || {}).mode === RT_SHARED.REMOTION) {
-        const script = req.body?.script as MotionStoryScript;
-        if (!script?.beats?.length) throw new Error(MOTION_VISUAL.SCENES_REQUIRED);
-        const { spec } = compileRemotionStory(script, analysis, { aspect: req.body?.aspect, fps: 30, subtitles: false });
-        spec.subtitles = [{ start: 0, end: spec.duration, text: seo?.title || analysis.title }];
-        const directory = getMotionWorkDirectory(randomUUID());
-        const file = path.join(directory, RT_MOTION.THUMBNAIL_PNG);
-        try {
-          const selected = spec.scenes.find((scene) => scene.nodes.some((node) => node.kind === RT_SHARED.CHARACTER)) || spec.scenes[0];
-          await renderRemotionStill(spec, file, selected.startFrame, ctx.signal);
-          return { thumbnail: `${RT_MOTION.DATA_IMAGE_PNG_BASE64}${fs.readFileSync(file).toString(RT_SHARED.BASE64)}`, prompt: selected.purpose };
-        } finally {
-          await fs.promises.rm(directory, { recursive: true, force: true });
-        }
-      }
-      const result = await generateMotionThumbnail(analysis, seo, { language: storyLanguage(req.body?.language), aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9), note: _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 600 }), exec, chromeHeadless: exec.chromeHeadless, signal: ctx.signal, log: ctx.log });
+      const result = await generateMotionThumbnail(analysis, seo, {
+        script: req.body?.script,
+        visualSettings: motionVisualSettingsFor(req.body || {}),
+        language: storyLanguage(req.body?.language),
+        aspect: _.toString(req.body?.aspect || MR.MOTION_TEXT_16_9),
+        note: _.truncate(_.toString(req.body?.note || MR.MOTION_TEXT_EMPTY), { length: 600 }),
+        exec,
+        chromeHeadless: exec.chromeHeadless,
+        signal: ctx.signal,
+        log: ctx.log,
+      });
       if (licenseKey) await LicenseService.incrementUsage(licenseKey, FeatureType.IMAGE, 1).catch(_.noop);
       return result;
     });

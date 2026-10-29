@@ -65,3 +65,19 @@ export const trimMotionVoiceEdges = (wav: Buffer): Buffer => {
   return Buffer.concat([motionWavHeader(pcm.length, 1), pcm]);
 };
 export const motionVoiceBoundaryPadding = (requested: number, previousTail = 0, nextHead = 0): number => Math.max(0, requested - previousTail - nextHead);
+
+/** Exclude ASR words outside the clip or entirely over silence. */
+export const motionSupportedTranscript = (wav: Buffer, transcript: { text: string; words: { w: string; s: number; e: number }[] }) => {
+  const info = motionWavData(wav);
+  if (!transcript.words.length) return transcript;
+  const floor = Math.pow(10, Q.EDGE_DB / 20);
+  const words = transcript.words.filter((word) => {
+    if (!Number.isFinite(word.s) || !Number.isFinite(word.e) || word.e < word.s || word.s < 0 || word.s >= info.duration) return false;
+    const from = Math.max(0, Math.floor((word.s - 0.02) * info.sampleRate));
+    const to = Math.min(Math.floor(info.duration * info.sampleRate), Math.ceil(Math.max(word.e, word.s + 0.02) * info.sampleRate));
+    let energy = 0;
+    for (let i = from; i < to; i++) for (let ch = 0; ch < info.channels; ch++) energy += (wav.readInt16LE(info.start + (i * info.channels + ch) * 2) / 32768) ** 2;
+    return to > from && Math.sqrt(energy / ((to - from) * info.channels)) >= floor;
+  });
+  return { text: words.length === transcript.words.length ? transcript.text : words.map((word) => word.w).join(" "), words };
+};

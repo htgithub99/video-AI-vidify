@@ -41,11 +41,11 @@ const result = await analyzeStory(source, {
   },
 });
 assert.equal(coreCalls, 1);
-assert.equal(profileCalls, 1);
+assert.equal(profileCalls, 0);
 assert.equal(result.title, raw.title);
 assert.equal(result.videoDna?.intent, DNA.intent);
 assert.equal(result.videoDna?.environment.propRules, DNA.environment.propRules);
-assert.equal(result.videoDna?.audienceProfile?.country, "Vietnam");
+assert.equal(result.videoDna?.audienceProfile?.country, "unspecified");
 await analyzeStory(source, {
   ...options,
   draft,
@@ -64,9 +64,9 @@ const pending = await analyzeStory(source, {
     return raw;
   },
 });
-assert.equal(invalidProfiles, 2);
+assert.equal(invalidProfiles, 0);
 assert.equal(pending.videoDna?.intent, DNA.intent);
-assert.equal(pending.videoDna?.audienceProfile, undefined);
+assert.equal(pending.videoDna?.audienceProfile?.confidence, 0);
 const segments = [
   { id: "s1", t: 0, text: "Nam nhận bát cơm. Nam đem nó ra bến sông." },
   { id: "s2", t: 8, text: "Dấu tay trên bát là của bà. Nam trở về nhà." },
@@ -109,4 +109,4 @@ await buildSourceLedger(longSource, {
     throw new Error("accepted source ledger reran");
   },
 });
-console.log(JSON.stringify({ passed: true, coreAndProfileSeparated: true, acceptedCoreLocked: true, optionalProfileBounded: true, sourceEvidenceAndCausalLinks: true, protectedFactsAndEnding: true, resume: true, videoCreated: false }));
+console.log(JSON.stringify({ passed: true, singleAnalysisRequest: true, acceptedCoreLocked: true, optionalProfileRequests: 0, sourceEvidenceAndCausalLinks: true, protectedFactsAndEnding: true, resume: true, videoCreated: false }));

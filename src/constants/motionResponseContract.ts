@@ -2,6 +2,7 @@ import { stringifyJson } from "../lib/jsonStringify.js";
 import { MOTION_QA as Q } from "./motionQa.js";
 import { MOTION_APPEARANCE as APPEARANCE } from "./motionAppearance.js";
 import { MOTION_REMOTION_SCHEMAS } from "./motionRemotionPrompts.js";
+import { MOTION_EDITORIAL_POLICY } from "./motionEditorialPolicy.js";
 export interface MotionResponseSchema {
   type?: "object" | "array" | "string" | "number" | "integer" | "boolean" | "null";
   properties?: Record<string, MotionResponseSchema>;
@@ -65,6 +66,7 @@ export const MOTION_UTTERANCE_SCHEMA = object(
   {
     id: text,
     speaker: text,
+      voiceSpeaker: nullable(text),
     role: choice("narration", "dialogue", "thought", "offscreen"),
     text,
     emotion: choice("neutral", "warm", "serious", "tense", "surprised", "sad", "excited", "scared", "angry"),
@@ -146,7 +148,7 @@ const story = object({
   cast,
   places: place,
   illustrationNeeds: needs,
-  illustrationAudit: array(object({ chapterId: text, checked: boolean, needIds: strings(), clueIndices: array(integer) })),
+  illustrationAudit: array(object({ chapterId: text, checked: boolean })),
   notes: plainText,
 });
 const ledgerRead = object({ reviewedSegments: strings(1), events: array(object({ ...texts("id", "sourceId", "point", "quote"), kind: choice("event", "cause", "clue", "setup", "payoff", "outcome", "uncertainty"), causes: strings() }), 1) });
@@ -154,7 +156,7 @@ const ledgerCompact = object({ coveredParts: strings(1), summary: text });
 export const MOTION_ANALYSIS_SCHEMA = object({
   title: text,
   logline: text,
-  videoDna: MOTION_DNA_CORE_SCHEMA,
+  videoDna: { ...MOTION_DNA_CORE_SCHEMA, properties: { ...MOTION_DNA_CORE_SCHEMA.properties, format: MOTION_DNA_PROFILE_SCHEMA.properties!.format, audienceProfile: MOTION_DNA_PROFILE_SCHEMA.properties!.audienceProfile } },
   cast: array(object({ ...texts("key", "name", "role", "look", "description"), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["key", "name"])),
   places: array(object({ ...texts("key", "name", "description"), interior: boolean, time: choice(...MOTION_RESPONSE_VALUES.TIMES) }, ["key", "name", "description"])),
   chapters: array(object({ ...texts("id", "title", "summary"), keyPoints: strings(), hook: plainText, handoff: plainText, from: number, to: number, weight: number, mustKeep: boolean }, ["id", "title", "summary"]), 1),
@@ -163,7 +165,7 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   ...MOTION_REMOTION_SCHEMAS,
   "motion-story-analysis": MOTION_ANALYSIS_SCHEMA,
   "motion-dna-profile": object({ videoDna: MOTION_DNA_PROFILE_SCHEMA }),
-  "motion-story-new-dna": object({ videoDna: MOTION_DNA_CORE_SCHEMA }),
+  "motion-story-new-dna": object({ videoDna: object(Object.fromEntries(MOTION_EDITORIAL_POLICY.RETUNE_FIELDS.map((key) => [key, MOTION_DNA_CORE_SCHEMA.properties![key]]))) }),
   "motion-story-ledger": { anyOf: [ledgerRead, ledgerCompact] },
   "motion-folk-source-topic": object({ name: { ...text, maxLength: MOTION_RESPONSE_LIMITS.TOPIC_CHARS }, meaning: { ...text, maxLength: MOTION_RESPONSE_LIMITS.MEANING_CHARS }, aliases: { ...array({ ...text, maxLength: MOTION_RESPONSE_LIMITS.TOPIC_CHARS }, 1), maxItems: MOTION_RESPONSE_LIMITS.ALIASES_MAX }, evidence: { ...text, maxLength: MOTION_RESPONSE_LIMITS.EVIDENCE_CHARS } }),
   "motion-story-doctor": story,
@@ -197,7 +199,7 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   }),
   "motion-story-seo": object({ seoOptions: array(MOTION_SEO_OPTION_SCHEMA, 1), chapterTitles: array(object(texts("id", "title"))) }, ["seoOptions"]),
   "motion-story-thumbnail-prompt": MOTION_THUMBNAIL_SCHEMA,
-  "motion-illustration-coverage": object({ chapterId: text, checked: boolean, reviewedNeedIds: strings(), reviewedClues: array(integer), needs }),
+  "motion-illustration-coverage": object({ chapterId: text, checked: boolean, needs }),
   "motion-illustration-need-repair": object({ need }),
   "motion-illustration-plan-repair": object({ cast: array(object({ key: text, gender: choice("male", "female") })), places: array(object(texts("key", "optionId", "name", "description"))) }),
   "motion-puppet-asset-profiles": object({ ...texts("title", "logline", "era", "look"), cast: array(object(texts("key", "name", "role", "look"), ["key", "name"])), places: array(object(texts("key", "name", "description"), ["key", "name"])) }, ["cast", "places"]),

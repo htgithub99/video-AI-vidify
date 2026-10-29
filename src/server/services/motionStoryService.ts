@@ -3,6 +3,8 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { MOTION_STORY_CRAFT as CRAFT } from "../../constants/motionStoryCraft.js";
 import { motionStoryEventLedger } from "../../lib/motionStoryContinuity.js";
 import { MOTION_FOLK_STORY as FOLK } from "../../constants/motionFolkStory.js";
+import { MOTION_FOLK_WRITING as FOLK_WRITING, motionFolkWritingGuide } from "../../constants/motionFolkWriting.js";
+import { motionFolkStyleFindings } from "../../lib/motionFolkWriting.js";
 import { motionFolkContractGuide, motionFolkTopicErrors, motionFolkTopicValid, motionFolkTopicContract, motionKnownFolkContract, motionFolkStoryErrors, motionFolkChapterContext, motionFolkChapterWritingContext, motionFolkCopied, scopeMotionFolkStoryRepair, motionFolkTextDrifts } from "../../lib/motionFolkStory.js";
 import type { MotionFolkStoryContract } from "../../types/motionVideo.js";
 import { repairMotionIllustrationNeeds } from "./motionIllustrationRepairService.js";
@@ -10,6 +12,7 @@ import { normalizeMotionIllustrationNeeds, acceptMotionIllustrationAudit } from 
 import { closeMotionJsonContainers } from "../../lib/motionJsonRecovery.js";
 import { MOTION_PRODUCTION } from "../../constants/motionProduction.js";
 import { MOTION_QA as QA } from "../../constants/motionQa.js";
+import { MOTION_EDITORIAL_POLICY as EDITORIAL_POLICY } from "../../constants/motionEditorialPolicy.js";
 import { MOTION_CHAPTER_REPAIR as CHAPTER_REPAIR } from "../../constants/motionChapterRepair.js";
 import { mergeMotionChapterDraft, motionChapterPending, motionChapterRepairPrompt, motionChapterResponseIssues, normalizeMotionDurationResponse } from "../../lib/motionChapterRepair.js";
 import { MOTION_PROMPT as PROMPT } from "../../constants/motionPrompt.js";
@@ -159,7 +162,7 @@ import { MOTION_STORY_CONFIG, MOTION_STORY_LENGTH_SECONDS } from "../../constant
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { productionPreamble } from "../../lib/motionDirection.js";
 import { normalizeCreativeBlueprint } from "../../lib/motionCreativeBlueprint.js";
-import { VIDEO_DNA_PROFILE_INSTRUCTIONS, normalizeMotionDnaResponse, normalizeScenePlan, normalizeVideoDna, scenePlanErrors, videoDnaErrors, videoDnaProfileErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
+import { inheritMotionDnaStyle, normalizeScenePlan, normalizeVideoDna, scenePlanErrors, videoDnaErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
 import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifiedQuotes } from "../../lib/motionSourceClean.js";
 import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
@@ -1332,59 +1335,12 @@ interface MotionAnalysisRecovery {
   draft?: MotionAnalysisDraft;
   onDraft?: (draft: MotionAnalysisDraft) => void;
 }
-const enrichMotionDnaProfile = async (raw: any, settings: MotionVideoDnaSettings, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre } & MotionAnalysisRecovery): Promise<any> => {
-  raw = { ...raw, videoDna: normalizeMotionDnaResponse(raw?.videoDna) };
-  if (!videoDnaProfileErrors(raw?.videoDna).length) return raw;
-  const writingProfile = motionVideoGenreWritingProfile(opts.videoGenre);
-  const context = {
-    settings,
-    title: raw.title,
-    logline: raw.logline,
-    chapters: raw.chapters?.map((chapter: any) => _.pick(chapter, [RT_SHARED.ID, RT_SHARED.TITLE, RT_SHARED.SUMMARY])),
-    cast: raw.cast?.map((member: any) => _.pick(member, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.ROLE, RT_SHARED.AGE, RT_SHARED.GENDER])),
-    core: _.pick(raw.videoDna, [RT_SERVER.INTENT, RT_SERVER.AUDIENCE, RT_SERVER.NARRATIVE, RT_SHARED.EVIDENCE]),
-    ...(writingProfile ? { writingProfile } : {}),
-  };
-  const key = motionInputKey(context);
-  const saved = opts.draft ? ((opts.draft.profiles ||= {})[key] ||= { state: { rejected: 0, errors: [] } }) : { raw: undefined, state: { rejected: 0, errors: [] as string[] } };
-  const merge = (value: any) => ({ ...raw, videoDna: { ...raw.videoDna, ..._.pick(value, [RT_SERVER.AUDIENCEPROFILE, RT_SERVER.ERA, RT_SERVER.FORMAT, RT_SERVER.EDITDNA, RT_SERVER.NARRATIVEDNA, RT_SERVER.INFLUENCES]), creativeProfile: { ...raw.videoDna?.creativeProfile, ...(Array.isArray(value?.creativeProfile?.strengths) ? { strengths: value.creativeProfile.strengths } : {}) } } });
-  if (saved.raw && !videoDnaProfileErrors(merge(saved.raw).videoDna).length) return merge(saved.raw);
-  if (saved.state.rejected >= MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS) return raw;
-  opts.log?.(PROMPT.DNA_PROFILE_LOG);
-  const prompt = () => (saved.raw ? [motionDnaRepairPrompt(merge(saved.raw), videoDnaProfileErrors(merge(saved.raw).videoDna)), writingProfile].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) : PROMPT.DNA_PROFILE_PROMPT(VIDEO_DNA_PROFILE_INSTRUCTIONS, context, saved.state.errors));
-  const contract: MotionAiResponseContract = {
-    attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
-    budget: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
-    state: saved.state,
-    checkpoint: () => {
-      if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-    },
-    assess: (response) => {
-      const value = normalizeMotionDnaResponse(response?.videoDna || response);
-      const before = merge(saved.raw);
-      const merged = motionDnaRepairDraft(before, { videoDna: value }, videoDnaProfileErrors(before.videoDna));
-      const errors = videoDnaProfileErrors(merged.videoDna);
-      saved.raw = merged.videoDna;
-      if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-      return { value: merged, errors };
-    },
-    repair: prompt,
-    failure: () => new Error(PROMPT.DNA_PROFILE_PENDING),
-  };
-  try {
-    return opts.ai ? await requestMotionAiContract(prompt(), opts.exec, (question) => opts.ai!(question, PROMPT.DNA_PROFILE_ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(prompt(), PROMPT.DNA_PROFILE_ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
-  } catch (error) {
-    if (isTerminalMotionAiError(error, opts.signal) && !_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED)) throw error;
-    opts.log?.(PROMPT.DNA_PROFILE_PENDING);
-    return raw;
-  }
-};
 const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | undefined, source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<MotionVideoDna | undefined> => {
   if (!old?.settings) return undefined;
   const D = MOTION_STORY_DOCTOR;
   opts.log?.(D.LOG_DNA);
   const base = {
-    instructions: ([PROMPT.DNA_CORE + stringifyJson(old.settings), motionStoryLanguageGuide(old.settings.language, false, true)] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+    instructions: ([EDITORIAL_POLICY.RETUNE, EDITORIAL_POLICY.COMPACT, motionStoryLanguageGuide(old.settings.language, false, true)] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     directive: ([motionVideoGenreDirective(story.videoGenre, false), story.folkStoryContract ? FOLK.CONTRACT_LABEL + stringifyJson(story.folkStoryContract) : ""] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     story: stringifyJson({ ..._.pick(story, MOTION_DOCTOR_FIELDS.STORY), sourceCore: story.sourceCore, storySpine: story.storySpine }),
     craft: (story.modelCraft || []).join(MR.MOTION_TEXT_SYMBOL_41),
@@ -1397,7 +1353,8 @@ const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | und
   if (opts.draft && opts.draft.retune?.inputKey !== inputKey) opts.draft.retune = { inputKey, rejected: 0, errors: [] };
   const state = opts.draft ? (opts.draft.retune ||= { rejected: 0, errors: [] }) : { rejected: 0, errors: [] as string[], raw: undefined as any, contract: undefined as import("./motionAiContractService.js").MotionAiContractState | undefined, budget: undefined as number | undefined };
   const contractState = (state.contract ||= { rejected: state.rejected, errors: state.errors });
-  if (state.raw) state.raw = normalizeMotionDnaResponse(state.raw);
+  const inherit = (patch: any) => inheritMotionDnaStyle(old, patch, story);
+  if (state.raw) state.raw = inherit(state.raw);
   state.budget ||= legacy ? D.DNA_ATTEMPTS : MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS;
   const checkpoint = () => {
     state.rejected = contractState.rejected;
@@ -1413,7 +1370,7 @@ const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | und
     checkpoint,
     start: question,
     assess: (response) => {
-      const raw = normalizeMotionDnaResponse(response?.videoDna || response);
+      const raw = inherit(response?.videoDna || response);
       state.raw = state.raw ? motionDnaRepairDraft({ videoDna: state.raw }, { videoDna: raw }, videoDnaErrors(state.raw)).videoDna : raw;
       return { value: state.raw, errors: videoDnaErrors(state.raw) };
     },
@@ -1429,8 +1386,7 @@ const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | und
     return undefined;
   }
   checkpoint();
-  const profiled = await enrichMotionDnaProfile({ ...story, videoDna: dna }, old.settings, opts);
-  const normalized = normalizeVideoDna(profiled.videoDna, old.settings, videoDnaSourceKey(source));
+  const normalized = normalizeVideoDna(dna, old.settings, videoDnaSourceKey(source));
   if (normalized) {
     opts.log?.(D.LOG_DNA_OK);
     return normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: old.settings.language } } : normalized;
@@ -1648,7 +1604,7 @@ export const analyzeStory = async (
   const genreDirective = [motionVideoGenreDirective(opts.videoGenre, false), motionGenreCreative(opts.videoGenre) ? FOLK.SOURCE_ANALYSIS : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
   const fullRequest = withMotionResponsePrompt(
     MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
-    ([prompt, PROMPT.DNA_CORE + stringifyJson(settings), SOURCE_READING_RULES, sourceDirections(source), briefNote] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
+    ([prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, SOURCE_READING_RULES, sourceDirections(source), briefNote] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
       MR.MOTION_TEXT_SYMBOL_27 +
       (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
       MR.MOTION_TEXT_SYMBOL_27 +
@@ -1683,13 +1639,13 @@ export const analyzeStory = async (
   let raw =
     lastRaw && !motionAnalysisResponseErrors(lastRaw).length ? lastRaw : opts.ai ? await requestMotionAiContract(fullRequest, opts.exec, (prompt) => opts.ai!(prompt, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(fullRequest, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log, undefined, 0, contract);
   checkpoint();
-  raw = await enrichMotionDnaProfile(raw, settings, { ...opts, draft });
+  opts.log?.(EDITORIAL_POLICY.PROFILE_LOG);
   const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
   const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
   opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
   return develop(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target), raw)));
 };
-export const editScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; scope?: string }): Promise<{ beats: MotionBeat[]; edit: { reviewed: number; rewritten: number; notes: string[] } }> => {
+export const editScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }): Promise<{ beats: MotionBeat[]; edit: { reviewed: number; rewritten: number; notes: string[] } }> => {
   const dna = analysis.videoDna;
   const writingProfile = motionVideoGenreWritingProfile(analysis.videoGenre);
   const brief = stringifyJson({
@@ -1705,6 +1661,9 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
   const byId = new Map(beats.map((b) => [b.id, b]));
   const notes: string[] = [];
   let rewritten = 0;
+  const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;
+  const styleIds = new Set(motionFolkStyleFindings(beats, opts.language, analysis.videoGenre).map((finding) => finding.id));
+  const editLimit = (lines: MotionBeat[]): number => Math.max(2, Math.ceil(lines.length * 0.15), lines.filter((line) => styleIds.has(line.id)).length);
   const editorPrompt = (lines: MotionBeat[]): string => {
     const chapterIds = new Set(lines.map((line) => line.chapterId));
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
@@ -1712,13 +1671,17 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     const model = motionGenreCreative(analysis.videoGenre) ? chapters.map((chapter) => modelPart(analysis, chapter, source).slice(0, FOLK.REFERENCE_CHARS)).join(MR.MOTION_TEXT_SYMBOL_27) : chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceSlice(source, chapter.from, chapter.to))).join(MR.MOTION_TEXT_SYMBOL_27);
     const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;
     const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
-    const limit = Math.max(2, Math.ceil(lines.length * 0.15));
+    const limit = editLimit(lines);
+    const styleFocus = lines.filter((line) => styleIds.has(line.id)).map((line) => line.id);
     return withMotionResponsePrompt(
       MOTION_STORY_EDIT_ARTIFACT,
-      motionGenreCreative(analysis.videoGenre) ? MOTION_STORY_DOCTOR.EDITOR_PROMPT({ brief, language, previous, lines: review, model, limit }) : [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      [
+        motionGenreCreative(analysis.videoGenre) ? MOTION_STORY_DOCTOR.EDITOR_PROMPT({ brief, language, previous, lines: review, model, limit }) : [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+        ...(styleFocus.length ? [FOLK_WRITING.FOCUS(styleFocus)] : []),
+      ].join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
-  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, FOLK.VERSION]);
+  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, FOLK.VERSION, FOLK_WRITING.VERSION, opts.focusIds]);
   const saved = recovery.read() || {};
   const keys = new Map(beats.map((beat) => [beat.id, motionInputKey([editorPrompt([beat]), beat.utterances])]));
   const apply = (beat: MotionBeat, narration: string, reason?: string, utterances?: MotionBeat["utterances"]): void => {
@@ -1726,9 +1689,9 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     rewritten++;
     if (reason) notes.push(MR.MOTION_TEMPLATE_SYMBOL_306(beat.id, _.truncate(reason, { length: 140 })));
   };
-  for (const beat of beats) if (saved[beat.id]?.inputKey === keys.get(beat.id) && saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances);
+  for (const beat of targets) if (saved[beat.id]?.inputKey === keys.get(beat.id) && saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances);
   const groups = motionPromptGroups(
-    beats.filter((beat) => saved[beat.id]?.inputKey !== keys.get(beat.id)),
+    targets.filter((beat) => saved[beat.id]?.inputKey !== keys.get(beat.id)),
     editorPrompt,
     PROMPT.EDITOR_ITEMS,
     undefined,
@@ -1737,7 +1700,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
   await mapMotionAiPool(groups, async (group, gi) => {
     try {
       const ids = new Set(group.map((beat) => beat.id));
-      const limit = Math.max(2, Math.ceil(group.length * 0.15));
+      const limit = editLimit(group);
       const raw = await requestMotionEditorResponse(
         editorPrompt(group),
         group,
@@ -1745,7 +1708,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
         motionGenreCreative(analysis.videoGenre),
         (question) => (opts.ai || runMotionAi)(question, MOTION_STORY_EDIT_ARTIFACT, opts.exec, opts.signal, opts.log),
         opts.signal,
-        [motionStoryLanguageGuide(opts.language, true, true), ...(motionGenreCreative(analysis.videoGenre) ? [FOLK.PROFILE] : []), brief].join(MR.MOTION_TEXT_SYMBOL_27),
+        [motionStoryLanguageGuide(opts.language, true, true), ...(motionGenreCreative(analysis.videoGenre) ? [FOLK.PROFILE, motionFolkWritingGuide(opts.language)] : []), brief].join(MR.MOTION_TEXT_SYMBOL_27),
       );
       if (!Array.isArray(raw?.edits)) return;
       const duplicates = new Set(raw.edits.filter((entry: any, index: number, all: any[]) => all.some((other, at) => at !== index && other?.id === entry?.id)).map((entry: any) => entry?.id));
@@ -1754,7 +1717,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
         const narration = _.trim(_.toString(e?.narration));
         if (!beat || duplicates.has(beat.id) || !ids.has(beat.id) || !narration || (motionGenreCreative(analysis.videoGenre) && motionFolkCopied(narration, source.text || ""))) continue;
         if (motionGenreCreative(analysis.videoGenre) && motionFolkTextDrifts(narration, analysis.folkStoryContract, stringifyJson([beat.narration, analysis.chapters.find((chapter) => chapter.id === beat.chapterId), motionFolkChapterContext(analysis, beat.chapterId)]))) continue;
-        const protectedSpeech = _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role));
+        const protectedSpeech = !!beat.utterances?.length && (motionGenreCreative(analysis.videoGenre) || _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role)));
         let utterances: MotionBeat["utterances"];
         if (protectedSpeech) {
           if (!motionGenreCreative(analysis.videoGenre) || !Array.isArray(e.utterances) || e.utterances.length !== beat.utterances!.length || !e.utterances.every((line: any, index: number) => line?.speaker === beat.utterances![index].speaker && line?.role === beat.utterances![index].role && typeof line.text === "string" && !!line.text.trim())) continue;
@@ -1765,6 +1728,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
             narration,
           );
           if (utterances.length !== beat.utterances!.length) continue;
+          utterances = beat.utterances!.map((line, index) => ({ ...line, text: utterances![index].text }));
         }
         const ratio = narration.split(MP.WHITESPACE).length / Math.max(1, beat.narration.split(MP.WHITESPACE).length);
         if (ratio < MOTION_STORY_CONFIG.EDIT_RATIO_MIN || ratio > MOTION_STORY_CONFIG.EDIT_RATIO_MAX) continue;
@@ -1780,8 +1744,8 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
       opts.log?.(MR.MOTION_TEMPLATE_BIEN_TAP_NHOM_CHUONG_BO_QUA(gi + 1, getMotionErrorMessage(error, 100)));
     }
   });
-  opts.log?.(MR.MOTION_TEMPLATE_BIEN_TAP_VIEN_DOC_CAU_SUA_CAU(beats.length, rewritten));
-  return { beats: beats.map((b) => byId.get(b.id) || b), edit: { reviewed: beats.length, rewritten, notes: _.take(notes, 40) } };
+  opts.log?.(MR.MOTION_TEMPLATE_BIEN_TAP_VIEN_DOC_CAU_SUA_CAU(targets.length, rewritten));
+  return { beats: beats.map((b) => byId.get(b.id) || b), edit: { reviewed: targets.length, rewritten, notes: _.take(notes, 40) } };
 };
 const MOTION_STORY_EDIT_ARTIFACT = MR.MOTION_TEXT_MOTION_STORY_EDIT;
 const ADULT_TITLE = MP.UNSUITABLE_CAST;
@@ -1960,11 +1924,19 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
   const creative = motionGenreCreative(analysis.videoGenre);
   const expectedUnits = (chapter.targetSeconds || 120) * (opts.speechRate || (opts.language !== MOTION_TEXT_EN ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
   const sourceText = creative ? modelPart(analysis, chapter, source) : sourceSlice(source, chapter.from, chapter.to);
-  const parts = motionChapterParts(chapter, analysis, sourceText, creative, expectedUnits);
+  const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.previousSummary, opts.isFirst, opts.isLast, ...(creative ? [FOLK_WRITING.VERSION] : [])]);
+  const continuing = opts.draft?.inputKey === inputKey;
+  const parts = continuing && opts.draft?.partition ? opts.draft.partition : motionChapterParts(chapter, analysis, sourceText, creative, expectedUnits, continuing && opts.draft?.parts ? PROMPT.CHAPTER_OUTPUT_UNITS : undefined);
   if (!parts.length || opts.durationRepair || (opts.draft && !opts.draft.parts)) return writeChapterBeatsPart(source, analysis, chapter, opts);
-  const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.previousSummary, opts.isFirst, opts.isLast]);
   const drafts = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft.parts || {}) : {};
-  const save = () => opts.onDraft?.({ inputKey, rows: [], pending: parts.flatMap((_part, index) => (drafts[String(index)]?.pending.length ? drafts[String(index)].pending.map((row) => ({ ...row, id: String(index) + RT_SHARED.SYMBOL_E7AC07 + row.id })) : drafts[String(index)]?.rows.length ? [] : [{ id: String(index), fields: [...CHAPTER_REPAIR.FIELDS] }])), parts: structuredClone(drafts) });
+  const save = () =>
+    opts.onDraft?.({
+      inputKey,
+      partition: structuredClone(parts),
+      rows: [],
+      pending: parts.flatMap((_part, index) => (drafts[String(index)]?.pending.length ? drafts[String(index)].pending.map((row) => ({ ...row, id: String(index) + RT_SHARED.SYMBOL_E7AC07 + row.id })) : drafts[String(index)]?.rows.length ? [] : [{ id: String(index), fields: [...CHAPTER_REPAIR.FIELDS] }])),
+      parts: structuredClone(drafts),
+    });
   save();
   opts.log?.(PROMPT.CHAPTER_PART_LOG(chapter.id, parts.length));
   const completed: MotionBeat[] = [];
@@ -2024,7 +1996,9 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       motionStoryEventLedger(opts.previous),
       MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
       analysis.visualSettings?.mode !== RT_SHARED.REMOTION && analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + stringifyJson(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id).map(({ evidence, place, states, objects, features }) => ({ evidence, place, states, objects, features }))) : null,
-      motionGenreCreative(analysis.videoGenre) ? FOLK.CHAPTER_PROFILE : motionVideoGenreWritingProfile(analysis.videoGenre) || (closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_GENRE + stringifyJson({ videoGenre: analysis.videoGenre, genre: analysis.genre, factual: analysis.factual }) : motionVideoGenreDirective(analysis.videoGenre, false)),
+      motionGenreCreative(analysis.videoGenre)
+        ? [FOLK.CHAPTER_PROFILE, motionFolkWritingGuide(opts.language)].join(MR.MOTION_TEXT_SYMBOL_27)
+        : motionVideoGenreWritingProfile(analysis.videoGenre) || (closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_GENRE + stringifyJson({ videoGenre: analysis.videoGenre, genre: analysis.genre, factual: analysis.factual }) : motionVideoGenreDirective(analysis.videoGenre, false)),
       analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
     ] as string[]).join(MR.MOTION_TEXT_SYMBOL_27),
     cast: stringifyJson(analysis.cast.map((member) => ({ ..._.pick(member, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.ALIAS, RT_SERVER.ROLE, RT_SHARED.GENDER, RT_SHARED.AGE, RT_SERVER.APPEARANCEOF]), ...(member.key === motionNarratorCastKey(analysis) ? { narrationSpeaker: MOTION_VOICE.NARRATOR } : {}) }))),
@@ -2131,7 +2105,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
             !!closedPuppetPackId(analysis.stylePreset),
           ),
           ...(!opts.durationRepair ? motionFolkChapterWritingContext(analysis, chapter.id) : {}),
-          ...(!opts.durationRepair && motionGenreCreative(analysis.videoGenre) ? { writingProfile: FOLK.PROFILE, originality: FOLK.COPY_ERROR(chapter.id) } : {}),
+          ...(motionGenreCreative(analysis.videoGenre) ? { writingProfile: [FOLK.PROFILE, motionFolkWritingGuide(opts.language)].join(MR.MOTION_TEXT_SYMBOL_27), originality: FOLK.COPY_ERROR(chapter.id) } : {}),
           ...(!opts.durationRepair && motionVideoGenreWritingProfile(analysis.videoGenre) ? { writingProfile: motionVideoGenreWritingProfile(analysis.videoGenre) } : {}),
           ...(factual && draft.pending.some((item) => missingNarration(draft!.rows.find((row) => row.id === item.id))) ? { source: sourceSlice(source, chapter.from, chapter.to) } : {}),
         })

@@ -54,7 +54,7 @@ assert.equal(analysis.videoDna.sourceKey, videoDnaSourceKey(source));
 assert.notEqual(videoDnaSourceKey({ ...source, text: source.text + VT.CHANGED_ENDING }), videoDnaSourceKey(source));
 assert.ok(prompts[0].includes(VT.USER_SETTINGS_ARE_AUTHORITATIVE));
 assert.ok(productionPreamble(analysis, VT.VISUAL).includes(VT.APPROVED_VIDEO_DNA));
-assert.ok(videoDnaErrors({ ...rawDna(VT.FORMS), opening: {} }).some((error) => error.includes(VT.OPENING)));
+assert.deepEqual(videoDnaErrors({ ...rawDna(VT.FORMS), opening: {} }), [], "Optional opening descriptions are derived locally from the accepted DNA");
 assert.ok(videoDnaErrors({ ...rawDna(VT.FORMS), evidence: [{ claim: VT.FORM, sourceClue: VT.INPUT, confidence: 101 }] }).length);
 const nestedResponse = { title: raw.title, logline: raw.logline, videoDna: { ...rawDna(VT.PASTEL_FORMS), visualDna: { ...rawDna(VT.PASTEL_FORMS).visualDna, palette: [AUT.C8B89A, AUT.VALUE_8B9A7A] }, chapters: raw.chapters, places: raw.places, cast: [{ key: AUT.NARRATOR, name: AUT.NARRATOR_2, role: AUT.WITNESS }] } };
 const nestedSnapshot = JSON.stringify(nestedResponse);

@@ -7,6 +7,7 @@ export const motionSpeechResponseIssues = (raw: unknown, speakers: string[], nar
   const issues = motionResponseIssues(raw, { type: RT_CORE.ARRAY, items: MOTION_UTTERANCE_SCHEMA, minItems: 1 }, RT_SHARED.UTTERANCES);
   if (!Array.isArray(raw)) return issues;
   raw.forEach((line, index) => {
+    if (line?.voiceSpeaker != null && (!speakers.includes(line.voiceSpeaker) || line.voiceSpeaker === RT_CORE.NARRATOR || line.speaker === RT_CORE.NARRATOR)) issues.push({ path: `utterances.${index}.voiceSpeaker`, expected: "Exact non-narrator cast key for an explicitly attributed voice source", actual: String(line.voiceSpeaker), value: C.VALUE(line) });
     if (!speakers.includes(line?.speaker) || (line?.role === RT_SHARED.NARRATION && line?.speaker !== RT_CORE.NARRATOR) || (line?.speaker === RT_CORE.NARRATOR && line?.role !== undefined && line.role !== RT_SHARED.NARRATION)) issues.push({ path: `${RT_CORE.UTTERANCES}${index}${RT_CORE.SPEAKER}`, expected: C.DIALOGUE_SPEAKER, actual: String(line?.speaker), value: C.VALUE(line) });
   });
   if (raw.every((line) => typeof line?.text === "string") && speechWords(raw.map((line) => line.text).join(RT_SHARED.SYMBOL_36A9E7)) !== speechWords(narration)) issues.push({ path: RT_SHARED.UTTERANCES, expected: C.DIALOGUE_MISMATCH, actual: RT_CORE.TEXT_MISMATCH, value: C.VALUE(raw.map((line) => line.text)) });

@@ -55,6 +55,7 @@ export const MOTION_PRODUCTION = {
   UI_RESUME: "Tiếp tục lượt này",
   UI_RESUME_SEO: "Tiếp tục SEO",
   ANALYSIS_DONE: "Đã phân tích; sẵn sàng viết kịch bản",
+  INVENTORY_STAGE: "Phân tích nội dung · Kiểm phương án kho",
   PREVIEW_DONE: "Đã dựng hình và giọng; sẵn sàng xem trước hoặc xuất video",
   AUDIO_REQUIRED: "Video kể chuyện cần track giọng hợp lệ trước khi xuất. Tiến độ dựng hình được giữ.",
   AUDIO_TOO_SHORT: "Track giọng không phủ đủ thời lượng video. Cần chốt lại timeline trước khi xuất.",

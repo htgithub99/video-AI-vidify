@@ -19,7 +19,7 @@ import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.j
 import { assertMotionScriptComplete, assertMotionProductionMode, motionDurationRepairChapters } from "../../lib/motionProduction.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionSeriesStart } from "../../lib/motionParts.js";
-import { motionVoiceSignature } from "../../lib/motionVoice.js";
+import { motionVoiceSignature, withMotionVoiceMode } from "../../lib/motionVoice.js";
 import { motionInputKey } from "./motionFileUtils.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { getStoryJob, cancelStoryJob } from "./motionStoryJobService.js";
@@ -50,7 +50,7 @@ interface ProductionRecord {
   inputKey: string;
   job: MotionStoryJobState;
   result: MotionProductionResult;
-  steps: Record<string, { id: string; done?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; recoveryStopped?: boolean }>;
+  steps: Record<string, { id: string; done?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean }>;
   owner?: MotionProductionOwner;
 }
 const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan };
@@ -78,6 +78,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   };
   const publicJob = (record: ProductionRecord): MotionStoryJobState => {
     const job = structuredClone({ ...record.job, result: record.result });
+    job.stepStates = Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error }]] : [])));
     if (job.result.rendered) job.result.renderSettings = { quality: record.input.quality, encoder: record.input.encoder, musicMood: record.input.musicMood, musicVolume: record.input.musicVolume };
     if (record.steps[P.STAGES.SEO]?.done) delete job.result.seoJobId;
     return job;
@@ -103,6 +104,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const waiting = new Map<string, string>();
       const stage = () => [...running].map((name) => waiting.get(name) || name).join(P.SEPARATOR);
       const activities = new Map<string, MotionStoryJobState["activeAi"]>();
+      const syncStep = (name: string, state: Pick<MotionStoryJobState, "id" | "status" | "stage" | "progress" | "startedAt" | "error">): void => {
+        const task = record.steps[name];
+        if (task) Object.assign(task, { status: state.status, stage: state.stage, progress: state.progress, startedAt: state.startedAt, updatedAt: Date.now(), error: state.error });
+      };
       const mediaProgress = { scenes: 0, voice: 0 };
       const syncSeo = (): void => {
         const task = record.steps[P.STAGES.SEO];
@@ -117,6 +122,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         while (overlap && previous.slice(-overlap).some((line, index) => line !== job.log[index])) overlap--;
         for (const line of job.log.slice(overlap)) log(record, PROGRESS.SCOPE(P.STAGES.SEO, line));
         task.log = [...job.log];
+        syncStep(P.STAGES.SEO, job);
         if (!terminal(job.status)) return;
         if (job.status === S.COMPLETED && seoMatches(job.result, result.script) && task.inputKey === seoScriptKey(result.script!)) {
           result.seo = result.voice ? retimeMotionSeo(job.result, result.script!, result.analysis!, result.voice.durations) : job.result;
@@ -154,6 +160,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           }
           if (state && !terminal(state.status)) {
             result.seoJobId = previous.id;
+            syncStep(P.STAGES.SEO, state);
             return;
           }
           if ((previous.retries || 0) >= P.SEO_RETRIES) {
@@ -171,6 +178,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         try {
           const response = seoMotionStoryInput({ ...base, analysis: result.analysis, script: structuredClone(result.script) });
           record.steps[P.STAGES.SEO].id = response.job.id;
+          syncStep(P.STAGES.SEO, response.job);
           result.seoJobId = response.job.id;
         } catch (error) {
           record.steps[P.STAGES.SEO].status = S.ERROR;
@@ -230,7 +238,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           let state = record.steps[name] && get(record.steps[name].id);
           if (!state || state.status === S.ERROR || state.status === S.CANCELLED) {
             const response = await start();
-            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [] };
+            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [], done: false, status: S.QUEUED, error: undefined, startedAt: Date.now() };
             if (signal.aborted) {
               cancelStoryJob(response.job.id);
               cancelMotionJob(response.job.id);
@@ -248,6 +256,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
             while (overlap && prior.slice(-overlap).some((line, index) => line !== state!.log[index])) overlap--;
             for (const line of state.log.slice(overlap)) log(record, PROGRESS.SCOPE(name, line));
             saved.log = [...state.log];
+            syncStep(name, state);
             record.job.stage = [...running].map((item) => (item === name && state.stage ? item + P.SEPARATOR + state.stage : waiting.get(item) || item)).join(P.SEPARATOR);
             if (media && state.status !== S.ERROR && state.status !== S.CANCELLED) mediaProgress[media] = state.status === S.COMPLETED ? 1 : state.progress;
             record.job.progress = Math.max(record.job.progress, media ? P.MEDIA_PROGRESS.BASE + P.MEDIA_PROGRESS.SCENES * mediaProgress.scenes + P.MEDIA_PROGRESS.VOICE * mediaProgress.voice : offset + state.progress * size);
@@ -260,6 +269,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
                 if (state.status === S.ERROR && P.SERVICE_ERROR_RE.test(state.error || "") && (saved.retries || 0) < P.SERVICE_RETRIES) {
                   saved.retries = (saved.retries || 0) + 1;
                   saved.retryAt = Date.now() + serviceRetryMs;
+                  saved.status = S.PREPARING;
+                  saved.stage = P.SERVICE_WAIT(name, saved.retries);
+                  delete saved.error;
                   log(record, P.SERVICE_WAIT(name, saved.retries));
                   save();
                   break;
@@ -325,35 +337,45 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         return;
       }
       if (visualSettings.mode === RT_SHARED.LIBRARY) {
-        const ready = await runInMotionAiSession(
-          record.job.id,
-          () =>
-            recoverMotionIllustrationPlan(
-              { ...result.analysis!, stylePreset: base.stylePreset || result.analysis?.stylePreset },
-              {
-                verifyCoverage: true,
-                exec: base.aiExecution || {},
-                signal,
-                log: (line) => log(record, line),
-                state: (record.illustrationRecovery ||= { attempts: 0, errors: [] }),
-                save: (analysis) => {
-                  result.analysis = analysis;
-                  save();
+        record.steps[P.INVENTORY_STAGE] = { id: record.job.id, status: S.RENDERING, startedAt: Date.now() };
+        record.job.stage = P.INVENTORY_STAGE;
+        save();
+        let ready: Awaited<ReturnType<typeof recoverMotionIllustrationPlan>>;
+        try {
+          ready = await runInMotionAiSession(
+            record.job.id,
+            () =>
+              recoverMotionIllustrationPlan(
+                { ...result.analysis!, stylePreset: base.stylePreset || result.analysis?.stylePreset },
+                {
+                  verifyCoverage: true,
+                  exec: base.aiExecution || {},
+                  signal,
+                  log: (line) => log(record, line),
+                  state: (record.illustrationRecovery ||= { attempts: 0, errors: [] }),
+                  save: (analysis) => {
+                    result.analysis = analysis;
+                    save();
+                  },
                 },
-              },
-            ),
-          (line) => log(record, line),
-          true,
-          signal,
-          editorialSession(base, base.source, aiExec(base.aiExecution)),
-        );
+              ),
+            (line) => log(record, line),
+            true,
+            signal,
+            editorialSession(base, base.source, aiExec(base.aiExecution)),
+          );
+          Object.assign(record.steps[P.INVENTORY_STAGE], { done: true, status: S.COMPLETED, updatedAt: Date.now() });
+        } catch (error) {
+          Object.assign(record.steps[P.INVENTORY_STAGE], { status: signal.aborted ? S.CANCELLED : S.ERROR, error: String((error as Error).message), updatedAt: Date.now() });
+          throw error;
+        }
         record.illustration = ready.illustration;
         result.analysis = ready.analysis;
       } else result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
       await step<MotionStoryScript>(
         P.STAGES.SCRIPT,
-        () => scriptMotionStoryInput({ ...base, analysis: result.analysis, resume: true, beats: result.script?.beats || [], gen: result.script?.gen, chapterDrafts: result.script?.chapterDrafts, carryGen: base.carryGen }),
+        () => scriptMotionStoryInput({ ...base, analysis: result.analysis, resume: true, beats: result.script?.beats || [], gen: result.script?.gen, chapterDrafts: result.script?.chapterDrafts, voiceSettings: result.script?.voiceSettings, carryGen: base.carryGen }),
         (script) => {
           result.script = script;
         },
@@ -361,6 +383,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         0.2,
       );
       if (base.voiceChannel) result.script!.voiceChannel = base.voiceChannel;
+      if (typeof base.multiVoice === "boolean") result.script = withMotionVoiceMode(result.script!, base.multiVoice);
       const buildMedia = async (round = 0, media: "both" | "voice" | "scenes" = RT_SERVER.BOTH) => {
         assertMotionScriptComplete(result.script!, result.analysis);
         startSeo();
@@ -436,7 +459,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         repair.chapters ||= motionDurationRepairChapters(result.script!, result.analysis!, result.voice!, durationTolerance);
         await step<MotionStoryScript>(
           P.DURATION_STEP(P.STAGES.SCRIPT, repair.round),
-          () => scriptMotionStoryInput({ ...base, analysis: result.analysis, beats: result.script!.beats, gen: result.script?.gen, chapterDrafts: result.script?.chapterDrafts, durationRepairStates: result.script?.durationRepairStates, chapterIds: repair.chapters, durationRepair: true, durationRepairScope: P.DURATION_STEP(record.job.id, repair.round), speechRate: repair.rate, editorPass: false }),
+          () => scriptMotionStoryInput({ ...base, analysis: result.analysis, beats: result.script!.beats, gen: result.script?.gen, chapterDrafts: result.script?.chapterDrafts, voiceSettings: result.script?.voiceSettings, durationRepairStates: result.script?.durationRepairStates, chapterIds: repair.chapters, durationRepair: true, durationRepairScope: P.DURATION_STEP(record.job.id, repair.round), speechRate: repair.rate, editorPass: false }),
           (script) => {
             result.script = script;
           },
@@ -515,6 +538,11 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         logger.error(P.SAVE_FAILED, error);
       }
       record.job.activeAi = {};
+      for (const task of Object.values(record.steps))
+        if (!task.done && task.status && !terminal(task.status)) {
+          task.status = S.CANCELLED;
+          task.updatedAt = Date.now();
+        }
       delete record.owner;
       if (store.owns(record.job.id, owner)) {
         if (store.read(record.job.id)?.job.status === S.CANCELLED) record.job.status = S.CANCELLED;

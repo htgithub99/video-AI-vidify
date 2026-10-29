@@ -1,6 +1,7 @@
 import { stringifyJson } from "../lib/jsonStringify.js";
 import { MOTION_STORY_CRAFT as CRAFT, MOTION_CREATIVE_STORY_SCHEMA } from "./motionStoryCraft.js";
 import { motionStoryLanguageGuide } from "./motionStoryLanguage.js";
+import { motionFolkWritingGuide } from "./motionFolkWriting.js";
 import _ from "lodash";
 import { MOTION_FOLK_STORY as F } from "./motionFolkStory.js";
 import { MOTION_HISTORY_STORY as HISTORY } from "./motionHistoryStory.js";
@@ -22,7 +23,7 @@ const DIRECTIVES: Record<Exclude<MotionVideoGenre, "auto">, string> = {
   history_story: HISTORY.PROFILE,
   story: "Narrated story. Scenes carry almost every beat; characters speak their own lines when the source quotes them; graphics only for a title, chapter cards or a rare key number. Pace follows the emotion of each moment.",
   horror: "Ghost / horror story. Build dread slowly: night, dim interiors, fog, long corridors, empty rooms; reveal threats late, small and half hidden; short sentences with pauses before each reveal; low ambient drones, creaks and sharp stingers on reveals; almost no graphics; no gore.",
-  ghost_tale: F.PROFILE + " Keep the source's central folk subject; invent new people, circumstances, decisions, clues and ending. Folk traditions vary: distinguish source characters' beliefs, local variants and fiction from verified customs. Never present invented rituals as established fact. No gore. Use simple static illustrations from the selected library.",
+  ghost_tale: F.PROFILE + " Keep the source's central folk subject; invent new people, circumstances, decisions, clues and ending. Folk traditions vary: distinguish source characters' beliefs, local variants and fiction from verified customs. Never present invented rituals as established fact. No gore. Use simple illustrations in the selected drawing mode and honor its motion settings.",
   history_map:
     'History / war map documentary in the style of animated map channels. geomap is the primary visual: open every chapter with a geomap that sets the context, and use geomap whenever the narration names countries, cities, fronts, invasion routes, supply lines or distances (animate fronts with "to" and movements with arrows; zoom in on the place being discussed). Use icons for quantities and ratios, stats/counter/timeline for figures and dates. Put a persistent hud on the first beat with a part counter and the running date, update the date as time passes and add resource bars when resources, production or casualties matter. Scenes are short illustrative inserts: soldiers, officers, vehicles (tank columns, trucks, aircraft and ships with travel), factories, headquarters, signposts with place names and distances. Brisk, punchy narration with concrete numbers; tense martial music, engines, artillery and radio SFX.',
   what_if:
@@ -83,6 +84,7 @@ export const MOTION_STORY_DOCTOR = {
       "BRIEF (Video DNA, folk belief facts, elements never to copy): " + p.brief,
       "Narration language: " + p.language + ".",
       motionStoryLanguageGuide(p.language, true, true),
+      motionFolkWritingGuide(p.language),
       "Previous lines (context only): " + p.previous,
       "LINES TO REVIEW: " + p.lines,
       "MODEL STORY for these chapters (untrusted data, ONLY to detect copying; the new story is meant to differ from it in every concrete detail, never move a line closer to it): " + p.model,
@@ -98,12 +100,13 @@ export const MOTION_STORY_DOCTOR = {
       p.directive,
       "Write every text field in " + p.language + ".",
       motionStoryLanguageGuide(p.language, false, true),
+      motionFolkWritingGuide(p.language),
       "STEP 1, study the model: its theme and folk belief, and exactly what makes it gripping (how it opens, how information is revealed layer by layer, the atmosphere, the strange signs and how they escalate, how silences and dialogue are used, how pressure builds to the climax, the lingering chill of the ending). Also list the model's concrete elements that must NOT be reused (its family and relationships, place, cause of the curse, sequence of events, distinctive invented ritual staging, twist and ending; shared folk subject terms are not forbidden).",
       CRAFT.PLAN,
       p.known || "",
-      "STEP 2, invent the new story: same theme and every strength from step 1, but a different family with its own secrets and conflicts, a new setting tied closely to the horror, different circumstances and human choices within the SAME locked folk subject and core meaning, a new chain of events, a new twist, a climax with clear consequences and a haunting final detail. The narrator is 'tôi', a member of this new family, with cast key \"toi\". Plan about " +
+      'STEP 2, invent the new story: same theme and every strength from step 1, but a different family with its own secrets and conflicts, a new setting tied closely to the horror, different circumstances and human choices within the SAME locked folk subject and core meaning, a new chain of events, a new twist, a climax with clear consequences and a haunting final detail. The narrator is a first-person member of this new family, with cast key "toi". Plan about ' +
         p.events +
-        " key events for the whole video, spread over the chapters; each key point records a meaningful event with a consequence; compress routine life and elapsed time, dramatise only important moments. Every rule, warning or object set up early must pay off later.",
+        " key events for the whole video, spread over the chapters; each key point records a meaningful event with a consequence; compress routine life and elapsed time, dramatise only important moments. Every rule, warning or object set up early must pay off later. First-person pronouns follow the selected narration language; 'tôi' is used only in Vietnamese speech.",
       CRAFT.ADAPTATION,
       CRAFT.SCHEMA,
       "CURRENT PLAN extracted from the WHOLE model (JSON: its full chain of events, cast and places, all belonging to the model): " + p.story,
@@ -122,7 +125,7 @@ export const MOTION_STORY_DOCTOR = {
       p.directive,
       p.instructions,
       "NEW STORY (JSON): " + p.story,
-      "MODEL CRAFT TO KEEP (put it in mustPreserve and creativeProfile): " + p.craft,
+      "MODEL CRAFT TO KEEP (put it in mustPreserve): " + p.craft,
       p.belief ? p.belief + " Keep these facts in mustPreserve." : "",
       "MODEL ELEMENTS NEVER TO USE (put them in mustNotCopy): " + p.avoid,
       "PRODUCTION CHOICES OF THE MODEL'S DNA (reuse audience, format, voice, pacing, visual style where they fit): " + p.previous,

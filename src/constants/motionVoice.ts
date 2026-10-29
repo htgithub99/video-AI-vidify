@@ -1,10 +1,10 @@
 export const MOTION_VOICE_RANK = { REGION: 4, REGION_MISS: -3, STORY: 1, NEWS: -2 } as const;
 export const MOTION_VOICE = {
   VERSION: 5,
-  PLAN_VERSION: 7,
+  PLAN_VERSION: 8,
   DIRECT_SPEECH_RE: /[:：]\s*["“«‘']?\s*\p{Lu}|["“«][^"”»]{2,}["”»]/u,
   CLIP_VERSION: 7,
-  TRACK_VERSION: 10,
+  TRACK_VERSION: 11,
   PAUSE: { FIRST: 0.15, SAME_SPEAKER: 0.1, SPEAKER_CHANGE: 0.22, BEAT_END: 0.22 },
   TEMPO: { MIN: 0.85, MAX: 1.15, SPEED_MIN: 0.85, SPEED_MAX: 1.15, NARRATION_SCALE: 0.94, DIALOGUE_SCALE: 0.94 },
   PROVIDER: "vieneu",
@@ -15,7 +15,7 @@ export const MOTION_VOICE = {
     COMMAND: "transcribe",
     MAX_ERROR: 0.12,
     MAX_ERROR_RUN: 2,
-    VERSION: 4,
+    VERSION: 5,
     CHECK_EXT: ".check.json",
     RECHECK_MS: 86400000,
     RETRIES: 2,
@@ -73,6 +73,7 @@ export const MOTION_VOICE = {
   REFERENCE_INVALID: "Mẫu giọng cần là audio có ít nhất 3 giây tiếng nói và tối đa 20 MB.",
   SETUP: "Chuẩn bị VieNeu-TTS; lần đầu cần tải runtime và model, các lần sau dùng cache.",
   PLANNING: "Phân vai và lên nhịp lời thoại theo kịch bản.",
+  SINGLE_VOICE_LOG: "Phân vai giọng tắt: người kể đọc toàn bộ lời dẫn và lời thoại; bỏ qua AI phân vai giọng.",
   GENERATING: "Tạo lời thoại VieNeu-TTS theo nhân vật.",
   PROGRESS: (done: number, total: number): string => `Tạo lời thoại: ${done}/${total} câu`,
   MIXING: "Ghép lời thoại vào dòng thời gian.",
@@ -80,7 +81,9 @@ export const MOTION_VOICE = {
   CASTING_SKIPPED: "Kênh giọng đã khóa đủ người dẫn và mọi vai, giới tính/tuổi đã rõ – bỏ qua lượt AI phân vai giọng.",
   SPLIT_RETRY: "Phân vai lời thoại chưa dùng được – gửi lại yêu cầu gốc một lần (không kèm nhận xét).",
   SPLIT_ATTEMPTS: 2,
-  SHARED_VOICE: (groups: string): string => `Không đủ giọng phù hợp để mỗi vai một giọng riêng – các vai sau đang dùng chung giọng: ${groups}. Hãy thêm giọng (cùng giới tính/độ tuổi) vào thư viện hoặc kênh giọng.`,
+  SHARED_VOICE: (groups: string): string => `Các vai đang dùng chung giọng: ${groups}. Người kể và vai kể ngôi thứ nhất có thể dùng chung; các vai còn lại dùng phương án phù hợp trong kho.`,
+  CHANNEL_FALLBACK: (speaker: string, expected: string, actual: string): string => `Giọng ${speaker}: kênh chọn ${expected}, đang dùng ${actual} vì giọng đã chọn không có hoặc không phù hợp vai.`,
+  VOICE_SOURCE_LOG: (speaker: string, source: string): string => `Lời thoại ${speaker}: dùng giọng ${source} theo trạng thái mượn/nhập giọng trong truyện.`,
   TYPE_AGE: { child: ["boy", "girl", "baby", "ghost_child"], adult: ["middle_man", "middle_woman", "young_man", "young_woman"] } as Record<string, string[]>,
   FAILED: "Không tạo được lời thoại VieNeu. Các câu đã tạo được giữ trong cache; bấm dựng tiếp để tiếp tục.",
   EMPTY: "Chưa có lời thoại để tạo giọng.",
@@ -98,10 +101,10 @@ export const MOTION_VOICE = {
   EMOTIONS: ["neutral", "warm", "serious", "tense", "surprised", "sad", "excited", "scared", "angry"] as const,
   TAGS: /\[(?:cười|thở dài|hắng giọng)\]/gi,
 } as const;
-export const MOTION_VOICE_PROMPT = `Direct speech ONLY for the provided existing story. Split each beat.narration into ordered utterances, preserve its exact spoken words in order, no additions or omissions. Narration belongs to narrator; only direct speech with a clear source belongs to a cast key. Do not turn descriptions into invented dialogue. Distinguish narration, dialogue, thought, offscreen. Keep one voice per character. Return JSON {beats:[{id,utterances:[{id,speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text:"unchanged source words",emotion:"neutral|warm|serious|tense|surprised|sad|excited|scared|angry",intensity:0..1,speed:0.85..1.15,pauseBefore:seconds,pauseAfter:seconds,emphasis:["words in this text"]}]}]}. Speech must flow like one continuous telling: pauses normally 0.05..0.3 seconds, up to 0.6 only for a motivated dramatic beat; do not split a sentence into separate utterances unless the speaker changes. emphasis only marks words to stress, it never adds a pause. Describe expression without adding bracket tags to text. Each input beat may give its sceneMood; set each line's emotion and intensity from that beat's situation and the speaker's state, keep neutral when unclear, and keep the narrator restrained. Unknown speaker remains narrator. Do not assume every video needs dialogue. Factual quotations must keep their actual attribution. No QA score or redraw request.`;
+export const MOTION_VOICE_PROMPT = `Direct speech ONLY for the provided existing story. Split each beat.narration into ordered utterances, preserve its exact spoken words in order, no additions or omissions. Narration belongs to narrator; only direct speech with a clear source belongs to a cast key. Do not turn descriptions into invented dialogue. Distinguish narration, dialogue, thought, offscreen. Keep stable character voices. Fully separate the attribution (e.g. "she said:") from ALL sentences of that direct speech, even if another sentence already has a character speaker. Optional voiceSpeaker is an exact cast key only when the story explicitly says another identified person/spirit speaks through the visible speaker; speaker remains the visible character. Never invent a voice source. Return JSON {beats:[{id,utterances:[{id,speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text:"unchanged source words",emotion:"neutral|warm|serious|tense|surprised|sad|excited|scared|angry",intensity:0..1,speed:0.85..1.15,pauseBefore:seconds,pauseAfter:seconds,emphasis:["words in this text"]}]}]}. Speech must flow like one continuous telling: pauses normally 0.05..0.3 seconds, up to 0.6 only for a motivated dramatic beat; do not split a sentence into separate utterances unless the speaker changes. emphasis only marks words to stress, it never adds a pause. Describe expression without adding bracket tags to text. Each input beat may give its sceneMood; set each line's emotion and intensity from that beat's situation and the speaker's state, keep neutral when unclear, and keep the narrator restrained. Unknown speaker remains narrator. Do not assume every video needs dialogue. Factual quotations must keep their actual attribution. No QA score or redraw request.`;
 export const MOTION_VOICE_MOOD_RULE = `Each beat may also carry "sceneMood":{"mood":"neutral|warm|serious|tense|surprised|sad|excited|scared|angry","intensity":0..1} – the mood of what is happening in that beat (not of the whole place or video; the same room can be calm, then tense, then relieved). Take it from the source events, the user's directions and the speaker's situation; use the Video DNA only as background. A speaker's own utterance emotion may differ from the scene mood. When the source does not show a clear feeling use neutral or a low intensity – never invent fear because a scene is dark or excitement because the music is cheerful. A character's direct speech, however, must carry that character's feeling in this exact moment, judged from the words and the situation: a cry or plea in danger is scared (0.7-1), scolding or shouting at someone is angry, mourning or regret is sad, a joyful call or reunion is excited, a hushed warning is tense; never leave a clearly emotional line neutral. The narrator keeps a restrained storytelling delivery that suits the genre and does not act out the characters. Never add bracket tags, sound words or extra words to spoken text to show emotion.`;
 export const MOTION_STORY_VOICE_PROMPT = `Include optional utterances for each beat: [{speaker:"narrator or exact cast key",role:"narration|dialogue|thought|offscreen",text,emotion:"neutral|warm|serious|tense|surprised|sad|excited|scared|angry",intensity:0..1,speed:0.85..1.15,pauseBefore:0..0.3,pauseAfter:0..0.6,emphasis:["words in text"]}]. ${MOTION_VOICE_MOOD_RULE} The ordered utterance texts must contain exactly the spoken words of beat.narration, including narration and attribution, with no extra words or missing words. For films keep camera, stage instructions and speaker labels in action/scenePlan, never in spoken narration. For any narrative told as a story (folk tales, horror, drama, children's stories, memoirs, recollections and true stories told as stories – not lectures, news or explainers), the characters must speak in their own voices like an animated story: in at least a third of the beats where a speaking character is present, include one or two short lines of direct speech (a call, a question, a reaction, a promise) inside beat.narration, assign each line to the speaker's exact cast key with role dialogue, and keep the narrator for the rest. For true stories and memoirs, take these lines from what the source reports the characters saying (a transcript often has no quotation marks) and do not invent new facts; for fiction you may write new short lines. Whenever beat.narration contains direct speech, that speech must be its own utterance with the speaker's cast key, never left inside a narrator utterance. Animals speak only if the story treats them as speaking; otherwise their sounds are sound effects. The added lines count toward the beat length, so trim narration to keep the timing. Lectures, news, explainers and documentaries must preserve attribution and may only use dialogue supported by source quotations; never invent dialogue. Do not add acting tags inside spoken text. Narrator is a separate role, not a character visible in every shot. Expression is advisory and must not trigger repeated QA.`;
-export const MOTION_VOICE_TEXT = { vi: { preparing: "Đang tự phân vai, tạo lời thoại và phối âm thanh theo kịch bản", previewError: "Không phát được âm thanh xem trước" }, en: { preparing: "Automatically casting voices and mixing sound for the script", previewError: "Preview audio could not be played" } } as const;
+export const MOTION_VOICE_TEXT = { vi: { preparing: "Đang tự phân vai, tạo lời thoại và phối âm thanh theo kịch bản", preparingSingle: "Đang tạo giọng người kể cho toàn bộ nội dung và phối âm thanh", previewError: "Không phát được âm thanh xem trước" }, en: { preparing: "Automatically casting voices and mixing sound for the script", preparingSingle: "Creating narrator speech for all narration and dialogue, and mixing audio", previewError: "Preview audio could not be played" } } as const;
 export const MOTION_VOICE_STYLES = { VIDEO: "w-full max-h-[420px] rounded-xl bg-black" } as const;
 export const MOTION_VOICE_GROUP = { MALE_ADULT: "male_adult", FEMALE_ADULT: "female_adult", CHILD: "child", SENIOR_MALE: "senior_male", SENIOR_FEMALE: "senior_female" } as const;
 export const MOTION_VOICE_FILTER = { ALL: "all", PRESET: "preset", CUSTOM: "custom", AI33: "ai33", MALE: "male", FEMALE: "female" } as const;
@@ -189,6 +192,10 @@ export const MOTION_VOICE_CHANNEL_TEXT = {
     RESET_PREVIEW: "Đặt lại câu đọc",
     CHANNELS: "Kênh giọng",
     CHANNELS_HINT: "Mỗi kênh/chủ đề dùng một giọng người kể cố định cho mọi video. Có thể gán thêm giọng cố định cho các vai.",
+    MULTI_VOICE: "Phân vai giọng",
+    MULTI_VOICE_ON: "Nhiều giọng",
+    MULTI_VOICE_OFF: "Một giọng",
+    MULTI_VOICE_HINT: "Bật: nhân vật dùng giọng riêng. Tắt: người kể đọc toàn bộ lời dẫn và lời thoại bằng giọng đã chọn, giữ nhịp đọc tham chiếu. Áp dụng cho cả Kho và Remotion; audio tải lên được giữ nguyên.",
     NEW_CHANNEL: "Thêm kênh",
     CHANNEL_NAME: "Tên kênh / chủ đề",
     NARRATOR: "Giọng người kể",
@@ -274,6 +281,10 @@ export const MOTION_VOICE_CHANNEL_TEXT = {
     RESET_PREVIEW: "Reset preview sentence",
     CHANNELS: "Voice channels",
     CHANNELS_HINT: "Each channel/topic keeps one fixed narrator voice for every video. Fixed voices per role are optional.",
+    MULTI_VOICE: "Voice casting",
+    MULTI_VOICE_ON: "Multiple voices",
+    MULTI_VOICE_OFF: "Narrator only",
+    MULTI_VOICE_HINT: "On: characters use separate voices. Off: the selected narrator reads all narration and dialogue with reference pacing. Works with Library and Remotion; uploaded audio remains unchanged.",
     NEW_CHANNEL: "Add channel",
     CHANNEL_NAME: "Channel / topic name",
     NARRATOR: "Narrator voice",
@@ -635,7 +646,11 @@ export const MOTION_VOICE_SPEED = {
   },
 } as const;
 export const MOTION_VOICE_PACING = {
-  VERSION: 8,
+  VERSION: 10,
+  NARRATOR_CADENCE: { MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
+  CADENCE_LOG: (count: number, min: number, max: number, target: number, limited: number, matched = 0, expected = 0): string => `Nhịp người kể: cân tốc độ trung bình ${count} đoạn theo mẫu ${target.toFixed(2)} tiếng/giây; đo lại ${min.toFixed(2)}–${max.toFixed(2)}. Khớp ${matched}/${expected} ranh giới dấu câu bằng âm thanh; phần chưa chắc giữ nhịp tự nhiên (${limited} đoạn chạm giới hạn).`,
+  CADENCE_FALLBACK: "Đoạn kể chưa đo chắc nhịp; giữ tốc độ dự phòng và tiếp tục dựng.",
+  CADENCE_ERROR: (reason: string): string => `Chưa cân nhịp được đoạn kể (${reason.slice(0, 120)}); giữ tốc độ dự phòng.`,
   REFERENCE_RATE_MARGIN: 1.05,
   CONTINUATION_SHARE: 0.6,
   RESPONSE_SHARE: 0.85,

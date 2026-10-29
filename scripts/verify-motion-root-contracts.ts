@@ -72,7 +72,7 @@ assert.deepEqual(motionIllustrationCoverageMissing(acceptMotionIllustrationAudit
 assert.deepEqual(motionIllustrationCoverageMissing(acceptMotionIllustrationAudit(acceptMotionIllustrationAudit(analysis, audit), audit)), []);
 assert.deepEqual(motionIllustrationCoverageMissing(acceptMotionIllustrationAudit(analysis, [{ ...audit[0], checked: false }])), ["c1", "c2"]);
 const withClue = { ...analysis, storySpine: { clues: [{ detail: "Chiếc khăn", setupChapterId: "c1", payoffChapterId: "c2", payoff: "Bà nhận ra nó." }] } };
-assert.deepEqual(motionIllustrationCoverageMissing(acceptMotionIllustrationAudit(withClue, audit)), ["c1", "c2"]);
+assert.deepEqual(motionIllustrationCoverageMissing(acceptMotionIllustrationAudit(withClue, audit)), [], "Confirmed chapter review records clue coverage locally without echoed index lists");
 const failedStates: any = {};
 let rejected = 0;
 await assert.rejects(

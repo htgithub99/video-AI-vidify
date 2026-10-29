@@ -25,9 +25,7 @@ export const acceptMotionIllustrationAudit = (analysis: MotionStoryAnalysis, aud
       .filter((need) => need.chapterId === chapter.id)
       .map((need) => need.id)
       .sort();
-    const clues = (analysis.storySpine?.clues || []).flatMap((clue, index) => (clue.setupChapterId === chapter.id || clue.payoffChapterId === chapter.id ? [index] : []));
-    const equal = (actual: unknown, expected: unknown[]) => Array.isArray(actual) && stringifyJson([...actual].sort()) === stringifyJson([...expected].sort());
-    if (rows.length !== 1 || row.checked !== true || !equal(row.needIds, needs) || !equal(row.clueIndices, clues)) continue;
+    if (rows.length !== 1 || row.checked !== true) continue;
     coverage.splice(0, coverage.length, ...coverage.filter((row) => row.chapterId !== chapter.id), { version: N.COVERAGE_VERSION, chapterId: chapter.id, sourceKey: motionIllustrationCoverageKey(analysis, chapter.id), status: needs.length ? RT_SHARED.CHECKED_NEEDS : RT_SHARED.CHECKED_EMPTY, needIds: needs });
   }
   return { ...analysis, illustrationCoverage: coverage };

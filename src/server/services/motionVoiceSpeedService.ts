@@ -23,6 +23,7 @@ const storedVoiceSpeedSettings = (): MotionVoiceSpeedSettings => {
 export const readVoiceSpeedSettings = (): MotionVoiceSpeedSettings => voiceSpeedScope.getStore()?.settings || storedVoiceSpeedSettings();
 export const withMotionVoiceSpeedSnapshot = <T>(run: () => T): T => (voiceSpeedScope.getStore() ? run() : voiceSpeedScope.run({ settings: structuredClone(storedVoiceSpeedSettings()), manual: structuredClone(readVoiceLibrary()) }, run));
 const manualVoiceSpeed = (voiceId: string): number | undefined => cleanVoiceSpeed((voiceSpeedScope.getStore()?.manual || readVoiceLibrary())[voiceId]?.speed);
+export const voiceUsesReferenceSpeed = (voiceId: string): boolean => !manualVoiceSpeed(voiceId) && !!readVoiceSpeedSettings().target;
 const writeVoiceSpeedSettings = (settings: MotionVoiceSpeedSettings): MotionVoiceSpeedSettings => {
   writeMotionJsonAtomic(motionVoiceLibraryFile(V.FILE), settings);
   return settings;

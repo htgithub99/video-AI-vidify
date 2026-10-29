@@ -439,6 +439,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </option>
                   ))}
                 </MotionSelectField>
+                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{voiceText.MULTI_VOICE}</span>
+                  <MotionToggle checked={state.multiVoice !== false} label={voiceText.MULTI_VOICE} icon={Users} text={state.multiVoice !== false ? voiceText.MULTI_VOICE_ON : voiceText.MULTI_VOICE_OFF} title={voiceText.MULTI_VOICE_HINT} disabled={studio.busy} onClick={() => patch({ multiVoice: state.multiVoice === false })} />
+                </div>
                 <MotionSelectField label={musicText.LABEL} value={state.musicMood || MOTION_MUSIC.AUTO} onChange={(e) => patch({ musicMood: e.target.value })} title={musicText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
                   {_.map(musicText.MOODS, (label, mood) => (
                     <option key={mood} value={mood}>
@@ -810,7 +814,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           {state.series && <MotionPartsCard series={state.series} text={text} lang={currentLang} busy={studio.busy} ready={!!state.script?.beats?.length} className={cardCls} onContinue={() => void studio.continuePart()} />}
           <StudioCard className={cardCls}>
             <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
-            {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].preparing}</p> : null}
+            {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? "preparingSingle" : "preparing"]}</p> : null}
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {state.autoExport ? (

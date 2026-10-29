@@ -35,6 +35,20 @@ const formatMode = (text: string): MotionAudioDirection["mode"] | undefined =>
           : /\b(mixed|hon hop)\b/.test(text)
             ? MR.MOTION_TEXT_MIXED
             : undefined;
+// Transfer delivery traits, never the source video's names or family roles.
+const narrationTraits = (values: unknown[]): string[] => {
+  const text = soundText(values.filter((value) => typeof value === "string").join(" "));
+  return [
+    [/\b(ngoi thu nhat|first person|xung toi)\b/, "First-person telling."],
+    [/\b(am|trong am|am ap|warm)\b/, "Warm delivery."],
+    [/\b(tram|low|deep)\b/, "Low, restrained delivery."],
+    [/\b(cham|slow)\b/, "Unhurried delivery; follow the selected voice pace."],
+    [/\b(moc mac|gan gui|conversational|khau ngu)\b/, "Natural conversational language."],
+    [/\b(diem tinh|calm|trung tinh|neutral)\b/, "Calm delivery."],
+    [/\b(au lo|anxiety|uneasy)\b/, "Subtle unease where supported by the script."],
+    [/\b(khong hai|khong gay cuoi|no comedy)\b/, "No comic delivery."],
+  ].flatMap(([pattern, instruction]) => (pattern as RegExp).test(text) ? [instruction as string] : []);
+};
 export const motionAudioDirection = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null, suggested?: any): MotionAudioDirection => {
   const dna = analysis?.videoDna,
     explicit = formatMode(soundText(dna?.format?.primary));
@@ -45,6 +59,6 @@ export const motionAudioDirection = (script: MotionStoryScript | null, analysis:
   const baseline = explicit || (factual ? MR.MOTION_TEXT_DOCUMENTARY : formatMode(context)) || (dialogue > 1 && dialogue > lines.length / 2 ? MR.MOTION_TEXT_FILM : MR.MOTION_TEXT_STORYTELLING);
   const proposed = C.MODES.includes(suggested?.mode) ? (suggested.mode as MotionAudioDirection["mode"]) : baseline;
   const mode = factual && (explicit || proposed) === MR.MOTION_TEXT_FILM ? MR.MOTION_TEXT_DOCUMENTARY : explicit || proposed;
-  return { mode, factual, narrationStyle: [C.NARRATION[mode], dna?.audioText?.narration, dna?.editDna?.narratorVoice, dna?.narrativeDna?.narrativeVoice].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_13), soundStyle: [C.SOUND[mode], dna?.audioText?.sound, dna?.editDna?.soundBed].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_13), dialect: dna?.audienceProfile?.dialect || MR.MOTION_TEXT_EMPTY };
+  return { mode, factual, narrationStyle: [C.NARRATION[mode], ...narrationTraits([dna?.audioText?.narration, dna?.editDna?.narratorVoice, dna?.narrativeDna?.narrativeVoice, suggested?.narrationStyle])].join(MR.MOTION_TEXT_SYMBOL_13), soundStyle: [...new Set([C.SOUND[mode], dna?.audioText?.sound, dna?.editDna?.soundBed].filter(Boolean))].join(MR.MOTION_TEXT_SYMBOL_13), dialect: dna?.audienceProfile?.dialect || MR.MOTION_TEXT_EMPTY };
 };
 export const motionAudioContext = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null): string => C.CONTEXT + stringifyJson(motionAudioDirection(script, analysis));

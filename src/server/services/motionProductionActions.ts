@@ -19,6 +19,8 @@ import { normalizeMotionReferences } from "../../lib/motionReference.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
 import { motionGenreCreative, motionVideoGenre } from "../../constants/motionGenre.js";
+import { motionScriptEditorialPlan } from "../../lib/motionFolkWriting.js";
+import { MOTION_FOLK_WRITING } from "../../constants/motionFolkWriting.js";
 import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
@@ -53,7 +55,7 @@ import { parseJson } from "../../lib/jsonStringify.js";
 import { logger } from "../../lib/logger.js";
 import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionChapter, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource } from "../../types/motionVideo.js";
 import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "./motionAudioService.js";
-import { motionVoiceCast } from "../../lib/motionVoice.js";
+import { motionVoiceCast, withMotionVoiceMode } from "../../lib/motionVoice.js";
 import { MOTION_VOICE, MOTION_VOICE_PATTERNS } from "../../constants/motionVoice.js";
 import { directMotionVoice } from "./motionVoiceDirectionService.js";
 import { createHash } from "crypto";
@@ -163,6 +165,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
   const only: string[] = _.map(_.castArray(body?.chapterIds || []), _.toString);
   const existing: MotionBeat[] = _.castArray(body?.beats || []);
   const speechRate = body?.durationRepair && Number(body?.speechRate) > 0 ? Number(body.speechRate) : motionSpeechRate(body?.voiceChannel, language);
+  const voiceScript = (script: MotionStoryScript): MotionStoryScript => withMotionVoiceMode({ ...script, voiceSettings: body?.voiceSettings }, body?.multiVoice ?? body?.voiceSettings?.multiVoice ?? true);
   const job = startInputJob(
     body,
     body?.keepBrowser === true,
@@ -180,7 +183,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const byChapter: Record<string, MotionBeat[]> = _.groupBy(existing, MOTION_TEXT_CHAPTERID);
       const chapterDrafts: NonNullable<MotionStoryScript["chapterDrafts"]> = structuredClone(body?.chapterDrafts || {});
       const durationRepairStates: NonNullable<MotionStoryScript["durationRepairStates"]> = structuredClone(body?.durationRepairStates || {});
-      const checkpoint = () => ctx.partial({ title: analysis.title, visualSettings, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []), gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates });
+      const checkpoint = () => ctx.partial(voiceScript({ title: analysis.title, visualSettings, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []), gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates }));
       const todo = _.filter(chapters, (c) => (_.isEmpty(only) || _.includes(only, c.id)) && (body?.resume !== true || !!chapterDrafts[c.id] || !byChapter[c.id]?.some((beat) => beat.narration?.trim())));
       let done = 0;
       const failed: MotionChapter[] = [];
@@ -231,10 +234,12 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = !failed.length && !Object.keys(chapterDrafts).length && _.every(chapters, (c) => byChapter[c.id]?.length);
-      if ((_.isEmpty(only) || body?.resume === true) && complete && body?.editorPass !== false && chapters.length > 1) {
+      const editorial = motionScriptEditorialPlan(beats, { language, genre: analysis.videoGenre, chapterCount: chapters.length, complete, editorPass: body?.editorPass, only, resume: body?.resume });
+      if (editorial) {
+        if (editorial.findings.length) ctx.log(MOTION_FOLK_WRITING.LOG(editorial.findings.length));
         ctx.log(MR.MOTION_TEXT_BIEN_TAP_VIEN_DOC_LAI_TOAN_BO_LOI_DAN);
         try {
-          const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId });
+          const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId, focusIds: editorial.focusIds });
           beats = r.beats;
           edit = r.edit;
         } catch (error) {
@@ -242,7 +247,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           ctx.log(MR.MOTION_TEMPLATE_BO_QUA_BUOC_BIEN_TAP(_.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
         }
       }
-      const script: MotionStoryScript = { title: analysis.title, visualSettings, language, beats, gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, ...(edit ? { edit } : {}) };
+      const script = voiceScript({ title: analysis.title, visualSettings, language, beats, gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, ...(edit ? { edit } : {}) });
       ctx.partial(script);
       assertMotionScriptComplete(script, analysis);
       return script;

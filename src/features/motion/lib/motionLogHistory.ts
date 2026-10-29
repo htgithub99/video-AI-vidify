@@ -30,9 +30,18 @@ export const motionFlowLogRows = (history: MotionLogEntry[]): { key: string; kin
   }
   return rows.sort((a, b) => a.time - b.time || a.group - b.group || a.index - b.index);
 };
-export const mergeMotionLogHistory = (history: MotionLogEntry[], id: string, kind: string, lines: string[] = [], startedAt?: number, state?: Pick<MotionLogEntry, "status" | "stage" | "error">): MotionLogEntry[] => {
+export const mergeMotionLogHistory = (history: MotionLogEntry[], id: string, kind: string, lines: string[] = [], startedAt?: number, state?: Pick<MotionLogEntry, "status" | "stage" | "error" | "stepStates">): MotionLogEntry[] => {
   const index = history.findIndex((entry) => entry.id === id);
   if (index < 0) return [...history, { id, kind, lines, ...(startedAt ? { startedAt } : {}), ...state }];
+  if (state && (state.stepStates || history[index].stepStates)) {
+    const steps = { ...history[index].stepStates };
+    for (const [key, incoming] of Object.entries(state.stepStates || {})) {
+      const current = steps[key];
+      if (current && ((current.startedAt || 0) > (incoming.startedAt || 0) || (current.id === incoming.id && (current.updatedAt || 0) > (incoming.updatedAt || 0)))) continue;
+      steps[key] = incoming;
+    }
+    state = { ...state, stepStates: steps };
+  }
   const previous = history[index].lines;
   if (!lines.length || (lines.length <= previous.length && previous.some((_, start) => lines.every((line, offset) => previous[start + offset] === line)))) {
     if ((!startedAt || startedAt === history[index].startedAt) && (!state || Object.entries(state).every(([key, value]) => history[index][key as keyof MotionLogEntry] === value))) return history;

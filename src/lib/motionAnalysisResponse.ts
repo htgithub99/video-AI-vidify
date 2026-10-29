@@ -5,9 +5,10 @@ import { STUDIO_RUNTIME as XRT } from "../constants/studioRuntime.js";
 import * as SRT from "../constants/sourceText.js";
 import { normalizeMotionDnaResponse } from "./motionVideoDna.js";
 import _ from "lodash";
-import { MOTION_ANALYSIS_SCHEMA, MOTION_RESPONSE_TEXT as R } from "../constants/motionResponseContract.js";
+import { MOTION_ANALYSIS_SCHEMA, MOTION_DNA_CORE_SCHEMA, MOTION_RESPONSE_TEXT as R } from "../constants/motionResponseContract.js";
 import { motionResponseErrors, motionResponseIssues } from "./motionResponseContract.js";
 import { motionDnaRepairDraft, motionDnaRepairPrompt } from "./motionDnaRepair.js";
+const validationSchema = { ...MOTION_ANALYSIS_SCHEMA, properties: { ...MOTION_ANALYSIS_SCHEMA.properties, videoDna: MOTION_DNA_CORE_SCHEMA } };
 export const normalizeMotionAnalysisResponse = (value: any): any => {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const dna = value.videoDna;
@@ -16,10 +17,10 @@ export const normalizeMotionAnalysisResponse = (value: any): any => {
   for (const key of [SRT.SOURCE_TEXT_CHAPTERS, XRT.CAST, XRT.PLACES, XRT.FACTS, XRT.LOOK, XRT.ACCENT, XRT.SFX_MOOD]) if (value[key] === undefined && dna[key] !== undefined) restored[key] = dna[key];
   return { ...value, ...restored, videoDna: normalizeMotionDnaResponse(dna) };
 };
-export const motionAnalysisResponseErrors = (raw: any): string[] => motionResponseErrors(raw, MOTION_ANALYSIS_SCHEMA);
+export const motionAnalysisResponseErrors = (raw: any): string[] => motionResponseErrors(normalizeMotionAnalysisResponse(raw), validationSchema);
 export const motionAnalysisRepairPrompt = (draft: any, errors: string[], sourceContext?: string): string => {
   if (errors.every((error) => error.startsWith(RT_CORE.VIDEODNA))) return motionDnaRepairPrompt(draft, errors);
-  const issues = motionResponseIssues(draft, MOTION_ANALYSIS_SCHEMA);
+  const issues = motionResponseIssues(draft, validationSchema);
   const fields = [...new Set(issues.map((issue) => issue.path.split(/[.\[]/)[0]))];
   return (
     R.ANALYSIS_REPAIR +

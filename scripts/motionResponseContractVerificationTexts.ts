@@ -26,7 +26,12 @@ export const RESPONSE_QA = {
   STORY_IMPORT: /(?:^|\/)motionStoryService\.js$/,
   IMAGE_IMPORT: /(?:^|\/)imageGeneratorService\.js$/,
   STUB_NAMESPACE: "response-contract-offline",
-  STORY_STUB: "export const runMotionAi = (...args) => globalThis.__responseContractAi(...args);",
+  STORY_STUB: [
+    "export const runMotionAi = (...args) => globalThis.__responseContractAi(...args);",
+    "export const mapMotionAiPool = (items, worker) => Promise.all(items.map(worker));",
+    "export const runInMotionAiWorkerSession = (_scope, action) => action();",
+    'export const acquireMotionRenderBrowser = () => { throw new Error("Unexpected browser render in offline response contract test"); };',
+  ].join("\n"),
   IMAGE_STUB: 'export const generateImageWithPlaywright = async () => ({success:true,base64:"A".repeat(12000)});',
   ANALYSIS: {
     title: "Câu chuyện ở bến sông",

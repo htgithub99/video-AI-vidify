@@ -5,6 +5,7 @@ import { MOTION_TEXT_EMPTY } from "../../../constants/motionRuntime.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { normalizeMotionVisualSettings } from "../../../lib/motionVisual.js";
 import { motionRenderBehaviorFor } from "../../../lib/motionRenderBehavior.js";
+import { motionVoiceSignature } from "../../../lib/motionVoice.js";
 import { MotionJobStatus, type MotionStoryAnalysis, type MotionStoryScript, type MotionCompiledPreview, type MotionJobState, type MotionThumbnail, type MotionProductionResult } from "../../../types/motionVideo.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
 export interface MotionVisualDraft {
@@ -109,7 +110,7 @@ export const recoverMotionVisualDraft = <T extends VisualDraftContext>(state: T,
   const next = { ...state, analysis, script: { ...state.script, gen: script.gen, visualSettings: script.visualSettings } };
   const candidate = result.compiled;
   const spec = candidate?.spec;
-  const audioCompatible = !state.uploadedAudio && state.voice?.audioId === result.voice?.audioId && stringifyJson(state.voice?.durations) === stringifyJson(result.voice?.durations) && state.script.voiceChannel === script.voiceChannel;
+  const audioCompatible = !state.uploadedAudio && state.voice?.audioId === result.voice?.audioId && stringifyJson(state.voice?.durations) === stringifyJson(result.voice?.durations) && state.script.voiceChannel === script.voiceChannel && motionVoiceSignature(state.script, state.analysis) === motionVoiceSignature(script, analysis);
   const compatible = audioCompatible && spec && spec.aspect === state.aspect && spec.fps === state.fps && !!spec.subtitles?.length === (state.subtitles !== false) && stringifyJson(motionRenderBehaviorFor(spec)) === stringifyJson(motionRenderBehaviorFor(state));
   const compiled = compatible ? { ...candidate, compilationKey: motionCompileStateKey(next) } : null;
   const item = result.rendered;

@@ -3,7 +3,7 @@ export const MOTION_STORY_LANGUAGE = {
   EMPTY: "",
   SEPARATOR: "\n",
   COMPACT:
-    "Dùng từ quen tai, động từ cụ thể và câu ngắn/vừa nối thành mạch kể; nghe một lần hiểu ai làm gì, ở đâu, vì sao. Tránh câu dịch máy, danh từ hóa, từ Hán Việt nặng, triết lý dài, nhắc lại nỗi sợ và lạm dụng rồi/bỗng/ba chấm. Giữ từ tín ngưỡng cần thiết và giải thích qua ngữ cảnh. Thoại tự nhiên, xưng hô nhất quán theo tuổi, quan hệ, vùng và thời đại; không trộn ba/má với bố/mẹ hay dùng tiếng lóng hiện đại trong truyện xưa. Giữ nguyên sự kiện, góc kể, đại từ rõ nghĩa, thứ tự lộ manh mối và lời trích thật. Học cách kể của mẫu, không chép câu/tình tiết hay lỗi chép lời. Không đọc timestamp/nhãn nhạc. Tự đọc thầm và sửa câu gượng trước khi trả kết quả.",
+    "Dùng từ quen tai, động từ cụ thể và câu ngắn/vừa nối thành mạch kể; nghe một lần hiểu ai làm gì, ở đâu, vì sao. Giữ câu ngắn nhấn ý và lặp có tiến triển; một beat có thể có nhiều câu. Tránh câu dịch máy, danh từ hóa, từ Hán Việt nặng, triết lý dài, nhắc lại nỗi sợ và lạm dụng rồi/bỗng/ba chấm. Giữ từ tín ngưỡng cần thiết và giải thích qua ngữ cảnh. Thoại tự nhiên, xưng hô nhất quán theo tuổi, quan hệ, vùng và thời đại; không trộn ba/má với bố/mẹ hay dùng tiếng lóng hiện đại trong truyện xưa. Giữ nguyên sự kiện, góc kể, đại từ rõ nghĩa, thứ tự lộ manh mối và lời trích thật. Học cách kể của mẫu, không chép câu/tình tiết hay lỗi chép lời. Không đọc timestamp/nhãn nhạc. Tự đọc thầm và sửa câu gượng trước khi trả kết quả.",
   RULES: [
     "NGÔN NGỮ KỂ CHUYỆN TIẾNG VIỆT — áp dụng cho lời kể, lời thoại và câu viết lại. Đây là yêu cầu về cách diễn đạt; giữ nguyên cốt truyện, góc kể, sự kiện, quan hệ và thời đại đã chọn. Nếu hồ sơ phong cách yêu cầu văn hoa hoặc câu dịch máy, ưu tiên lời Việt tự nhiên, nghe một lần hiểu ngay.",
     "Dùng lời ăn tiếng nói hằng ngày, động từ cụ thể, từ quen tai. Nói rõ ai làm gì, ở đâu, vì sao; tránh danh từ hóa, chuỗi tính từ, từ Hán Việt nặng nề và hình ảnh trừu tượng khó hình dung. Giữ từ chuyên môn, tín ngưỡng và tên đồ vật cần thiết, giải thích ngắn qua ngữ cảnh khi xuất hiện lần đầu. Không thay mọi từ Hán Việt bằng từ khác một cách máy móc.",
@@ -20,7 +20,8 @@ export const MOTION_STORY_LANGUAGE = {
     ["Bà yêu cầu tôi tuyệt đối không được phản hồi khi nghe âm thanh gọi tên mình.", "Bà dặn: Nghe ai gọi tên thì đừng trả lời, con nhé."],
   ],
   EXAMPLE: (pair: readonly string[]): string => `Câu gượng: ${pair[0]} → Câu tự nhiên: ${pair[1]}`,
-  REVIEW: "Khi biên tập tiếng Việt, câu dịch máy, từ cầu kỳ không hợp cảnh, đại từ mơ hồ, xưng hô sai vùng/vai vế và câu bị chặt vụn cũng là lỗi cần sửa. Chỉ sửa câu có vấn đề rõ ràng, giữ sự kiện, góc nhìn, manh mối, mức độ hé lộ, cảnh minh họa và độ dài tương đương; không coi từ tín ngưỡng quen dùng là lỗi chỉ vì đó là từ Hán Việt.",
+  REVIEW:
+    "Khi biên tập tiếng Việt, câu dịch máy, từ cầu kỳ không hợp cảnh, đại từ mơ hồ, xưng hô sai vùng/vai vế và câu bị chặt vụn làm tối nghĩa cũng là lỗi cần sửa. Giữ câu ngắn nhấn ý và lặp có tiến triển; không gộp thành câu dài chỉ vì chúng ngắn. Chỉ sửa câu có vấn đề rõ ràng, giữ sự kiện, góc nhìn, manh mối, mức độ hé lộ, cảnh minh họa và độ dài tương đương; không coi từ tín ngưỡng quen dùng là lỗi chỉ vì đó là từ Hán Việt.",
 } as const;
 export const motionStoryLanguageGuide = (language: string, review = false, compact = false): string =>
   MOTION_STORY_LANGUAGE.VI_RE.test(language.trim()) ? [...(compact ? [MOTION_STORY_LANGUAGE.RULES[0], MOTION_STORY_LANGUAGE.COMPACT] : [...MOTION_STORY_LANGUAGE.RULES, MOTION_STORY_LANGUAGE.EXAMPLE_NOTE, ...MOTION_STORY_LANGUAGE.EXAMPLES.map(MOTION_STORY_LANGUAGE.EXAMPLE)]), ...(review ? [MOTION_STORY_LANGUAGE.REVIEW] : [])].join(MOTION_STORY_LANGUAGE.SEPARATOR) : MOTION_STORY_LANGUAGE.EMPTY;

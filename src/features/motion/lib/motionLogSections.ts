@@ -3,7 +3,7 @@ import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_LOG_SECTIONS as S } from "../constants/motionLogSections.js";
 import { MOTION_PROGRESS as P } from "../../../constants/motionProgress.js";
 import { motionFlowLogRows } from "./motionLogHistory.js";
-import type { MotionLogEntry, MotionStoryJobState, MotionJobState, MotionProductionResult } from "../../../types/motionVideo.js";
+import type { MotionLogEntry, MotionStoryJobState, MotionJobState, MotionProductionResult, MotionStepState } from "../../../types/motionVideo.js";
 export interface MotionSectionRow {
   key: string;
   time: string;
@@ -67,11 +67,13 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     completed(RT_MOTION.ANALYZE, result?.analysis);
     completed(RT_MOTION.SCRIPT, result?.script?.beats?.length && motionLogStageKeys(job.stage || "").some((key) => ([RT_SHARED.SCENES, RT_SHARED.VOICE, RT_MOTION.SEO, RT_MOTION.RENDER] as string[]).includes(key)));
     completed(RT_MOTION.SEO, result?.seo?.options?.length);
+    if (result?.seoJobId && !([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(job.status)) sections.get(RT_MOTION.SEO)!.state = RT_MOTION.ACTIVE;
     completed(RT_SHARED.VOICE, result?.voice?.audioId);
     completed(RT_SHARED.SCENES, result?.script?.gen?.puppet?.report && !result.script.gen.puppet.report.missing);
     completed(RT_MOTION.RENDER, result?.rendered);
   }
-  for (const current of [...entries.filter((entry) => entry.status), job, render]) {
+  const currents = [...entries.filter((entry) => entry.status), job, render];
+  for (const current of currents) {
     if (!current) continue;
     const kind = RT_MOTION.KIND in current ? String(current.kind) : RT_MOTION.RENDER;
     const stages = kind === RT_MOTION.PRODUCTION ? motionLogStageKeys(current.stage || "") : ([S.KINDS[kind] || RT_MOTION.OTHER] as string[]);
@@ -96,6 +98,31 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
       const active = motionLogSectionKey(ai.artifact);
       if (active && (!sources.has(active) || sources.get(active) === current.id) && sections.get(active)!.state !== RT_MOTION.DONE && ai.phase !== RT_MOTION.DONE) sections.get(active)!.state = RT_MOTION.ACTIVE;
     }
+  }
+  const explicit = new Map<string, { state: MotionStepState; source: string; parentStatus: string }>();
+  for (const current of currents) {
+    if (!current) continue;
+    const kind = RT_MOTION.KIND in current ? String(current.kind) : RT_MOTION.RENDER;
+    const states: [string, MotionStepState][] = kind === RT_MOTION.PRODUCTION ? Object.entries("stepStates" in current ? current.stepStates || {} : {}) : [[S.KINDS[kind] || RT_MOTION.RENDER, current as MotionStepState]];
+    for (const [name, state] of states) {
+      const keys = S.ORDER.includes(name as (typeof S.ORDER)[number]) ? [name] : motionLogStageKeys(name);
+      for (const key of keys) {
+        const previous = explicit.get(key);
+        const start = state.startedAt || current.startedAt || 0;
+        if (previous && (previous.state.startedAt || 0) > start) continue;
+        if (previous && previous.state.id === state.id && (previous.state.updatedAt || 0) > (state.updatedAt || 0)) continue;
+        const source = sources.get(key);
+        if (source && source !== current.id && (starts.get(source) || 0) > start / 1000) continue;
+        explicit.set(key, { state: { ...state, startedAt: start }, source: current.id, parentStatus: current.status || "" });
+      }
+    }
+  }
+  for (const [key, { state, source, parentStatus }] of explicit) {
+    const group = sections.get(key)!;
+    const ownerStatus = job?.id === source ? job.status : render?.id === source ? render.status : parentStatus;
+    const stopped = ([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(ownerStatus);
+    group.state = state.status === RT_SHARED.COMPLETED ? RT_MOTION.DONE : state.status === RT_SHARED.ERROR ? RT_SHARED.ERROR : state.status === RT_MOTION.CANCELLED || stopped ? RT_MOTION.CANCELLED : RT_MOTION.ACTIVE;
+    sources.set(key, source);
   }
   for (const [key, source] of sources) {
     const group = sections.get(key)!;

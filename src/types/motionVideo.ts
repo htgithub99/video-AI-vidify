@@ -715,6 +715,7 @@ export interface MotionStoryScript {
   edit?: { reviewed: number; rewritten: number; notes: string[] };
 }
 export interface MotionChapterDraft {
+  partition?: { points: string[]; source: string; seconds: number }[];
   parts?: Record<string, MotionChapterDraft>;
   repairState?: { rejected: number; errors: string[] };
   inputKey: string;
@@ -754,6 +755,8 @@ export interface MotionVoiceTrack {
   totalSeconds: number;
 }
 export interface MotionUtterance {
+  /** Actual voice source when the visible speaker is quoting/possessed; exact cast key. */
+  voiceSpeaker?: string;
   id: string;
   speaker: string;
   role: "narration" | "dialogue" | "thought" | "offscreen";
@@ -766,6 +769,7 @@ export interface MotionUtterance {
   emphasis: string[];
 }
 export interface MotionVoiceSettings {
+  multiVoice?: boolean;
   voices?: Record<string, string>;
   utterances?: Record<string, MotionUtterance[]>;
 }
@@ -829,7 +833,18 @@ export interface MotionAudioDirection {
   soundStyle: string;
   dialect: string;
 }
+export interface MotionVoiceCadence {
+  pausesMatched?: number;
+  pausesExpected?: number;
+  before: number;
+  after: number;
+  target: number;
+  tempo: number;
+  limited: boolean;
+}
 export interface MotionVoiceClip {
+  voiceSpeaker?: string;
+  cadence?: MotionVoiceCadence;
   quality?: MotionVoiceClipQuality;
   id: string;
   beatId: string;
@@ -880,6 +895,7 @@ export enum MotionStoryJobKind {
   TRAIN_VOICE = "train_voice",
 }
 export interface MotionLogEntry {
+  stepStates?: Record<string, MotionStepState>;
   startedAt?: number;
   status?: MotionJobStatus;
   stage?: string;
@@ -911,7 +927,17 @@ export interface MotionAiActivity {
   targetIds?: string[];
 }
 export type MotionAiLog = (line: string, activity?: MotionAiActivity) => void;
+export interface MotionStepState {
+  id: string;
+  status: MotionJobStatus;
+  updatedAt?: number;
+  stage?: string;
+  progress?: number;
+  startedAt?: number;
+  error?: string;
+}
 export interface MotionStoryJobState {
+  stepStates?: Record<string, MotionStepState>;
   productionId?: string;
   interrupted?: boolean;
   id: string;

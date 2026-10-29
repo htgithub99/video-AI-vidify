@@ -351,11 +351,13 @@ try {
   assert.equal(advisoryVoices, 1);
   assert.equal((advisoryState.result as any).voice.totalSeconds, 1.3);
   const seoPack = { options: [{ title: "A village story", description: "A story.", hashtags: [], tags: [], seoScore: 90 }], chapters: [{ id: analysis.chapters[0].id, t: 0, title: source.title }], scriptKey: seoScriptKey(script), timingFrom: "estimate" };
-  const seoProgress = createMotionProductionService({ ...deps, seoMotionStoryInput: () => start(K.SEO, seoPack, 3), scenesMotionStoryInput: (body: any) => start(K.SCENES, structuredClone(body.script), 100) }, path.join(root, "seo-progress"), 1);
+  const seoProgress = createMotionProductionService({ ...deps, seoMotionStoryInput: () => start(K.SEO, seoPack, 40), scenesMotionStoryInput: (body: any) => start(K.SCENES, structuredClone(body.script), 100) }, path.join(root, "seo-progress"), 1);
   seoProgress.startMotionProduction({ ...input, productionId: "seo-progress" });
   let seoWhileScenes = false;
+  let seoRunningState = false;
   for (let i = 0; i < 500; i++) {
     const current = seoProgress.getMotionProduction("seo-progress")!;
+    if (current.stepStates?.[P.STAGES.SEO]?.status === S.RENDERING) seoRunningState = true;
     if (current.result?.seo && current.status !== S.COMPLETED) {
       seoWhileScenes = true;
       assert.equal(current.result.seoJobId, undefined);
@@ -366,6 +368,8 @@ try {
     await delay(2);
   }
   assert.ok(seoWhileScenes);
+  assert.ok(seoRunningState, "SEO background status must be published while scenes are running");
+  assert.equal(seoProgress.getMotionProduction("seo-progress")!.stepStates?.[P.STAGES.SEO]?.status, S.COMPLETED);
   assert.equal(seoProgress.getMotionProduction("seo-progress")!.status, S.COMPLETED);
   const oldSeoFile = path.join(root, "seo-progress", "seo-progress.json");
   const oldSeoRecord = JSON.parse(fs.readFileSync(oldSeoFile, "utf8"));
@@ -513,6 +517,33 @@ try {
   assert.equal(recoveredService.getMotionProduction("service")!.status, S.COMPLETED);
   assert.equal(serviceScenes, 2);
   assert.equal(serviceVoices, 1);
+  let singleVoiceCalls = 0;
+  let singleSceneCalls = 0;
+  const singleService = createMotionProductionService({
+    ...deps,
+    scenesMotionStoryInput: (body: any) => {
+      assert.equal(body.script.voiceSettings.multiVoice, false);
+      return start(K.SCENES, structuredClone(body.script), 10, ++singleSceneCalls === 1 ? "scene root cause" : undefined);
+    },
+    voiceMotionStoryInput: (body: any) => {
+      singleVoiceCalls++;
+      assert.equal(body.script.voiceSettings.multiVoice, false, "Production must apply narrator-only mode before starting audio");
+      return start(K.VOICE, { ...voice, signature: motionVoiceSignature(body.script, body.analysis) }, 1);
+    },
+    compileMotionStoryInput: async (body: any) => {
+      assert.equal(body.script.voiceSettings.multiVoice, false);
+      assert.equal(body.voiceTrack.signature, motionVoiceSignature(body.script, body.analysis));
+      return { spec: { duration: 2 }, missing: [], voiceStale: false };
+    },
+  }, path.join(root, "single-voice"), 1);
+  singleService.startMotionProduction({ ...input, productionId: "single-voice", analysis, multiVoice: false, seo: false, autoExport: false });
+  for (let i = 0; i < 500 && singleService.getMotionProduction("single-voice")?.status !== S.ERROR; i++) await delay(2);
+  assert.equal(singleService.getMotionProduction("single-voice")!.status, S.ERROR);
+  singleService.resumeMotionProduction("single-voice");
+  for (let i = 0; i < 500 && singleService.getMotionProduction("single-voice")?.status !== S.COMPLETED; i++) await delay(2);
+  assert.equal(singleService.getMotionProduction("single-voice")!.status, S.COMPLETED, "Saved production resumes with its selected voice mode");
+  assert.equal(singleVoiceCalls, 1, "Scene recovery preserves the valid narrator-only voice track");
+  assert.equal(singleSceneCalls, 2);
   let exhaustedServices = 0;
   const exhaustedService = createMotionProductionService(
     {

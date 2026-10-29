@@ -25,6 +25,7 @@ import { isMotionContentResponseError, isTerminalMotionAiError } from "./chatSub
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
 import { motionResponsePrompt, motionResponseRepair, type MotionResponseIssue } from "../../lib/motionResponseContract.js";
 import { motionSpeechResponseIssues } from "../../lib/motionSpeechResponse.js";
+import { hasUnassignedMotionSpeech, repairMotionSpeechAttribution, resolveMotionVoiceSources } from "../../lib/motionVoiceAttribution.js";
 import { MOTION_RESPONSE_TEXT as RESPONSE } from "../../constants/motionResponseContract.js";
 export interface MotionVoiceOptions {
   session?: MotionEditorialSession;
@@ -45,21 +46,24 @@ const knownTraits = (analysis: MotionStoryAnalysis | null): Record<string, { gen
       return [member.key, { gender: traits.gender, age: traits.age || typeAge(member.type) }];
     }),
   );
-const castingSettled = (analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], direction: ReturnType<typeof motionAudioDirection>, channel: ReturnType<typeof findVoiceChannel>, fixed: Record<string, string>): boolean => {
+const castingSettled = (analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], direction: ReturnType<typeof motionAudioDirection>, channel: ReturnType<typeof findVoiceChannel>, fixed: Record<string, string>, manual: Record<string, string> = {}): boolean => {
   const speakers = [C.NARRATOR, ..._.map(analysis?.cast || [], MR.MOTION_TEXT_KEY)];
-  if (_.every(speakers, (speaker) => fixed[speaker] && voices.some((voice) => voice.id === fixed[speaker]))) return true;
+  const bindings = { ...fixed, ...manual };
+  if (_.every(speakers, (speaker) => bindings[speaker] && voices.some((voice) => voice.id === bindings[speaker])) && (!channel || (manual[C.NARRATOR] || fixed[C.NARRATOR]) === channel.narratorVoiceId || !!manual[C.NARRATOR])) return true;
   if (!channel) return false;
   const traits = knownTraits(analysis);
   if (_.some(analysis?.cast || [], (member) => !traits[member.key].gender || !traits[member.key].age)) return false;
   try {
-    return _.every(selectMotionVoiceRoles(analysis, voices, {}, direction, traits, channel, fixed), (role) => role.locked || fixed[role.speaker] === role.voiceId);
+    const roles = selectMotionVoiceRoles(analysis, voices, {}, direction, traits, channel, fixed, manual);
+    const narrator = roles.find((role) => role.speaker === C.NARRATOR);
+    return _.every(roles, (role) => role.locked || fixed[role.speaker] === role.voiceId || (role.speaker === motionNarratorCastKey(analysis) && narrator?.locked && role.voiceId === narrator.voiceId));
   } catch {
     return false;
   }
 };
 const fallbackBeat = (beat: MotionBeat): MotionVoicePlan["beats"][number] => ({ id: beat.id, utterances: fallbackMotionUtterances(beat.id, beat.narration) });
-const needsDialogue = (beat: MotionBeat, lines: MotionVoicePlan["beats"][number]["utterances"], speakers: string[]): boolean => speakers.length > 1 && lines.every((line) => line.speaker === C.NARRATOR) && C.DIRECT_SPEECH_RE.test(beat.narration);
-export const directMotionVoice = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> => runInMotionAiWorkerSession(opts.scope || script.title, () => planMotionVoice(script, analysis, voices, opts), opts.log, opts.signal, opts.session);
+const needsDialogue = (beat: MotionBeat, lines: MotionVoicePlan["beats"][number]["utterances"], speakers: string[]): boolean => speakers.length > 1 && (hasUnassignedMotionSpeech(lines) || lines.every((line) => line.speaker === C.NARRATOR) && C.DIRECT_SPEECH_RE.test(beat.narration));
+export const directMotionVoice = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> => script.voiceSettings?.multiVoice === false ? planMotionVoice(script, analysis, voices, opts) : runInMotionAiWorkerSession(opts.scope || script.title, () => planMotionVoice(script, analysis, voices, opts), opts.log, opts.signal, opts.session);
 const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> => {
   const channel = findVoiceChannel(script.voiceChannel),
     pinned = new Set<string>(channel ? [channel.narratorVoiceId, ...Object.values(channel.roleVoices || {})] : []);
@@ -69,6 +73,19 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
   const signature = motionVoiceSignature(script, analysis, voiceChannelRef(channel) || script.voiceChannel),
     speakers = [C.NARRATOR, ...(analysis?.cast || []).map((member) => member.key)],
     fixed = script.gen?.voiceCast || {};
+  const manual = script.voiceSettings?.voices || {};
+  if (script.voiceSettings?.multiVoice === false) {
+    opts.signal?.throwIfAborted();
+    const narratorKey = motionNarratorCastKey(analysis);
+    const narratorAnalysis = analysis ? { ...analysis, cast: analysis.cast.filter((member) => member.key === narratorKey) } : null;
+    const direction = motionAudioDirection(script, analysis);
+    const narrator = selectMotionVoiceRoles(narratorAnalysis, voices, {}, direction, {}, channel, _.pick(fixed, C.NARRATOR), _.pick(manual, C.NARRATOR))[0];
+    opts.log?.(C.SINGLE_VOICE_LOG);
+    if (channel) opts.log?.(MOTION_VOICE_LIBRARY.LOCKED_LOG + channel.name);
+    return { version: C.PLAN_VERSION, signature, direction, roles: [narrator], beats: script.beats.map(fallbackBeat) };
+  }
+  const prepareLines = (beat: MotionBeat, lines: MotionVoicePlan["beats"][number]["utterances"]) => script.voiceSettings?.utterances?.[beat.id] ? lines : repairMotionSpeechAttribution(lines, beat, analysis);
+  const requiresDialogue = (beat: MotionBeat, lines: MotionVoicePlan["beats"][number]["utterances"]) => !script.voiceSettings?.utterances?.[beat.id] && needsDialogue(beat, lines, speakers);
   const planFile = path.join(
     getMotionRootDirectory(),
     MR.MOTION_TEXT_TTS_CACHE,
@@ -86,12 +103,17 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
     Array.isArray(saved.roles) &&
     Array.isArray(saved.beats) &&
     saved.beats.length === script.beats.length &&
-    script.beats.every((beat) => saved!.beats.filter((row) => row?.id === beat.id && normalizeMotionUtterances(row.utterances, beat.id, speakers, beat.narration).length && !needsDialogue(beat, row.utterances, speakers)).length === 1) &&
+    script.beats.every((beat) => saved!.beats.filter((row) => row?.id === beat.id && normalizeMotionUtterances(row.utterances, beat.id, speakers, beat.narration).length && !requiresDialogue(beat, row.utterances)).length === 1) &&
     saved.roles.every((role) => voices.some((voice) => voice.id === role.voiceId && (!role.gender || voice.gender === role.gender))) &&
-    (!channel || saved.roles.some((role) => role.speaker === C.NARRATOR && role.voiceId === channel.narratorVoiceId))
+    (!channel || saved.roles.some((role) => role.speaker === C.NARRATOR && role.voiceId === (manual[C.NARRATOR] || channel.narratorVoiceId))) &&
+    Object.entries(manual).every(([speaker, voiceId]) => !voices.some((voice) => voice.id === voiceId) || saved!.roles.some((role) => role.speaker === speaker && role.voiceId === voiceId))
   ) {
     const narratorKey = motionNarratorCastKey(analysis);
-    return { ...saved, beats: saved.beats.map((beat) => ({ ...beat, utterances: motionNarratorLines(beat.utterances, narratorKey, script.beats.find((b) => b.id === beat.id)?.narration) })) };
+    const beats = saved.beats.map((beat) => {
+      const original = script.beats.find((b) => b.id === beat.id)!;
+      return { ...beat, utterances: motionNarratorLines(prepareLines(original, beat.utterances), narratorKey, original.narration) };
+    });
+    return { ...saved, beats: resolveMotionVoiceSources(beats, script, analysis) };
   }
   opts.log?.(C.PLANNING);
   let casting: any;
@@ -99,10 +121,10 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
   const recovery = motionTaskCheckpoint<{ casting?: any; casted?: boolean; rows: Record<string, { key: string; value?: MotionVoicePlan["beats"][number]; attempts: number; issues?: MotionResponseIssue[] }> }>(opts.scope || signature, C.ARTIFACT, [C.PLAN_VERSION, castContext, voices, channel, fixed, script.voiceChannel]);
   const draft = recovery.read() || { rows: {} };
   casting = draft.casting;
-  const settled = castingSettled(analysis, voices, motionAudioDirection(script, analysis), channel, fixed);
+  const settled = castingSettled(analysis, voices, motionAudioDirection(script, analysis), channel, fixed, manual);
   if (settled) opts.log?.(C.CASTING_SKIPPED);
   const baseDirection = motionAudioDirection(script, analysis);
-  const defaults = selectMotionVoiceRoles(analysis, voices, {}, baseDirection, knownTraits(analysis), channel, fixed);
+  const defaults = selectMotionVoiceRoles(analysis, voices, {}, baseDirection, knownTraits(analysis), channel, fixed, manual);
   const candidateIds = new Set([...defaults.map((role) => role.voiceId), ...Object.values(fixed), ...pinned]);
   for (const role of defaults) {
     const alternatives = voices.filter((voice) => (!role.gender || voice.gender === role.gender) && (!role.age || motionVoiceAge(voice) === role.age));
@@ -121,7 +143,7 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
               direction: baseDirection,
               analysis: { title: analysis?.title, logline: analysis?.logline, genre: analysis?.genre, factual: analysis?.factual, format: analysis?.videoDna?.format, audience: analysis?.videoDna?.audienceProfile, cast: analysis?.cast?.map((member) => _.pick(member, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.ROLE, RT_SHARED.GENDER, RT_SHARED.AGE, RT_SERVER.DESCRIPTION])) },
               scriptExcerpts: sampleIndices.map((index) => ({ id: script.beats[index].id, narration: script.beats[index].narration.slice(0, PROMPT.CAST_EXCERPT_CHARS) })),
-              fixed,
+              fixed: { ...fixed, ...Object.fromEntries(defaults.filter((role) => role.locked).map((role) => [role.speaker, role.voiceId])), ...manual },
               voices: candidates.map((voice) => _.pick(voice, [RT_SHARED.ID, RT_SHARED.NAME, RT_SHARED.GENDER, RT_SHARED.AGE, RT_SERVER.DESCRIPTION, RT_SERVER.LANGUAGE])),
             }),
           ] as string[]
@@ -146,7 +168,12 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
     if (candidates.some((voice) => voice.id === role.voiceId)) requested[role.speaker] = role.voiceId;
     inferred[role.speaker] = { gender: ([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE] as readonly string[]).includes(role.gender) ? role.gender : inferred[role.speaker]?.gender, age: ([MR.MOTION_TEXT_CHILD, MR.MOTION_TEXT_ADULT, MR.MOTION_TEXT_SENIOR] as readonly string[]).includes(role.age) ? role.age : inferred[role.speaker]?.age };
   }
-  const roles = selectMotionVoiceRoles(analysis, voices, requested, direction, inferred, channel, fixed);
+  const roles = selectMotionVoiceRoles(analysis, voices, requested, direction, inferred, channel, fixed, manual);
+  if (channel) for (const role of roles) {
+    if (manual[role.speaker] || role.speaker === motionNarratorCastKey(analysis)) continue;
+    const expected = role.speaker === C.NARRATOR ? channel.narratorVoiceId : channel.roleVoices?.[role.age === "child" ? "child" : role.age === "senior" ? role.gender === "female" ? "senior_female" : "senior_male" : role.gender === "female" ? "female_adult" : "male_adult"];
+    if (expected && expected !== role.voiceId) opts.log?.(C.CHANNEL_FALLBACK(role.name, expected, role.voiceId));
+  }
   const shared = _.filter(
     _.groupBy(roles, (role) => role.voiceId),
     (group) => group.length > 1,
@@ -159,14 +186,14 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
     if (draft.rows[beat.id]?.key !== key) draft.rows[beat.id] = { key, attempts: 0 };
     const restored = draft.rows[beat.id].value;
     if (restored) {
-      const utterances = normalizeMotionUtterances(restored.utterances, beat.id, speakers, beat.narration);
-      if (utterances.length) {
+      const utterances = prepareLines(beat, normalizeMotionUtterances(restored.utterances, beat.id, speakers, beat.narration));
+      if (utterances.length && !requiresDialogue(beat, utterances)) {
         planned.set(beat.id, { id: beat.id, utterances });
         continue;
       }
     }
-    const explicit = normalizeMotionUtterances(script.voiceSettings?.utterances?.[beat.id] || beat.utterances, beat.id, speakers, beat.narration),
-      unvoiced = needsDialogue(beat, explicit, speakers);
+    const explicit = prepareLines(beat, normalizeMotionUtterances(script.voiceSettings?.utterances?.[beat.id] || beat.utterances, beat.id, speakers, beat.narration)),
+      unvoiced = requiresDialogue(beat, explicit);
     if (explicit.length && !unvoiced) planned.set(beat.id, { id: beat.id, utterances: explicit });
   }
   const pending = script.beats.filter((beat) => !planned.has(beat.id));
@@ -199,10 +226,12 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
               continue;
             }
             const item = { ...matches[0], utterances: normalizeMotionNarratorSpeakers(matches[0].utterances, motionNarratorCastKey(analysis)) };
+            const normalized = prepareLines(beat, normalizeMotionUtterances(item.utterances, beat.id, speakers, beat.narration));
             const issues = motionSpeechResponseIssues(item.utterances, speakers, beat.narration);
+            if (normalized.length && requiresDialogue(beat, normalized)) issues.push({ path: "utterances", expected: "Separate the complete directly attributed speech from narration", actual: "Partial dialogue attribution", value: RESPONSE.VALUE(normalized) });
             draft.rows[beat.id].issues = issues;
             if (issues.length) continue;
-            const utterances = normalizeMotionUtterances(item.utterances, beat.id, speakers, beat.narration);
+            const utterances = normalized;
             if (utterances.length) {
               const value = { id: beat.id, utterances };
               planned.set(beat.id, value);
@@ -235,6 +264,11 @@ const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryA
       return { ...b, utterances: motionNarratorLines(b.utterances, narratorKey, beat.narration) };
     }),
   };
+  plan.beats = resolveMotionVoiceSources(plan.beats, script, analysis);
+  for (const source of new Set(plan.beats.flatMap((beat) => beat.utterances.filter((line) => line.voiceSpeaker).map((line) => `${line.speaker}|${line.voiceSpeaker}`)))) {
+    const [speaker, voiceSpeaker] = source.split("|");
+    opts.log?.(C.VOICE_SOURCE_LOG(speaker, voiceSpeaker));
+  }
   fs.mkdirSync(path.dirname(planFile), { recursive: true });
   writeMotionJsonAtomic(planFile, plan);
   return plan;

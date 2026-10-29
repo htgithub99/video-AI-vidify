@@ -20,10 +20,9 @@ export const MOTION_PROMPT = {
   READ_ITEMS: 4,
   READ_ITEM_KEY: "read-item:",
   READ_SCOPED_ITEM_KEY: "read-item-v2:",
-  ILLUSTRATION_AUDIT:
-    "After checking every locked chapter event and clue, include illustrationAudit:[{chapterId,checked:true,needIds:[every illustrationNeeds id for this chapter],clueIndices:[every global storySpine.clues index set up or paid off here]}]. Use one row per chapter; empty lists explicitly confirm no essential special arrangement/clue. Do not mark checked unless all events and clues were considered. This declaration avoids a redundant review request; invalid/missing declarations will be reviewed separately.",
+  ILLUSTRATION_AUDIT: "After checking every locked chapter event and clue, include illustrationAudit:[{chapterId,checked:true}]. Use one row per chapter. Do not mark checked unless all events, clue setup and payoff were considered. Code records need IDs and clue coverage locally; do not echo confirmation lists. Missing declarations will be reviewed separately.",
   DNA_CORE:
-    "Derive compact source-based videoDna in the selected language. Use concrete guidance and observable checks. Evidence uses actual source clues. Preserve the whole causal chain and ending; distinguish facts from uncertainty. Specify essential people/place/clues using simple static illustrations. In a closed pack select existing assets, never design new ones. Optional audience/era/format/edit/narrative profiles are assessed separately. Settings are authoritative: ",
+    "Derive compact source-based videoDna in the selected language. Use concrete guidance and observable checks. Evidence uses actual source clues. Preserve the whole causal chain and ending; distinguish facts from uncertainty. Specify essential people/place/clues using simple static illustrations. In a closed pack select existing assets, never design new ones. Include the optional format and audienceProfile only when supported by evidence; unknown audience details may be omitted. Other style metadata is derived locally from this DNA, without a separate AI request. Settings are authoritative: ",
   DNA_PROFILE_ARTIFACT: "motion-dna-profile",
   DNA_PROFILE_LOG: "Phân tích riêng hồ sơ phong cách từ phần nội dung đã chốt.",
   DNA_PROFILE_PENDING: "Hồ sơ phong cách bổ sung chưa đạt; giữ DNA cốt lõi và truyện đã lưu.",
@@ -50,6 +49,7 @@ export const MOTION_PROMPT = {
   CONTEXT_NEIGHBOURS: 1,
   ID: { VALID: /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/, HASH_CHARS: 12, PREFIX: "event_", SEPARATOR: "_" },
   CHAPTER_OUTPUT_UNITS: 360,
+  CHAPTER_COMPACT_OUTPUT_UNITS: 720,
   CHAPTER_PREVIOUS_BEATS: 1,
   CHAPTER_SOURCE_CHARS: 5500,
   CHAPTER_SENTENCES: /(?<=[.!?。！？])\s+(?=[\p{L}\p{N}\p{P}])/u,

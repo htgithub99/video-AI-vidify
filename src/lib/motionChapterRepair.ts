@@ -9,9 +9,10 @@ import { MOTION_RESPONSE_SCHEMAS, MOTION_RESPONSE_TEXT as R } from "../constants
 import { motionResponseIssues, motionResponseShape, type MotionResponseIssue } from "./motionResponseContract.js";
 import { motionSpeechResponseIssues } from "./motionSpeechResponse.js";
 import { MOTION_VOICE } from "../constants/motionVoice.js";
+import { normalizeMotionChapterMetadata } from "./motionEditorialMetadata.js";
 export const motionChapterResponseIssues = (rows: Record<string, any>[], cast: string[], places: string[], closed: boolean): { id: string; issues: MotionResponseIssue[] }[] => {
   const schema = MOTION_RESPONSE_SCHEMAS[RT_CORE.MOTION_STORY_CHAPTER].properties!.beats.items!;
-  return rows.flatMap((row) => {
+  return normalizeMotionChapterMetadata(rows).flatMap((row) => {
     const issues = motionResponseIssues(row, { ...schema, properties: Object.fromEntries(Object.entries(schema.properties!).filter(([key]) => !([RT_CORE.SCENEPLAN, RT_SHARED.UTTERANCES] as string[]).includes(key))) });
     if (Array.isArray(row.utterances) && row.utterances.length) issues.push(...motionSpeechResponseIssues(row.utterances, [RT_CORE.NARRATOR, ...cast] as string[], typeof row.narration === "string" ? row.narration : ""));
     else if (row.utterances !== undefined && !Array.isArray(row.utterances)) issues.push({ path: RT_SHARED.UTTERANCES, expected: RT_CORE.ARRAY_OF_UTTERANCES, actual: typeof row.utterances, value: R.VALUE(row.utterances) });
@@ -50,7 +51,7 @@ export const motionChapterRepairPrompt = (rows: Record<string, any>[], pending: 
       R.DIAGNOSTICS +
       C.DURATION_REQUEST(
         targets.map((item) => ({ id: item.id, currentUnits: item.currentUnits, targetUnits: item.targetUnits, narration: item.draft?.narration, speakers: item.draft?.utterances?.length ? [...new Set(item.draft.utterances.map((line: any) => line.speaker))] : [MOTION_VOICE.NARRATOR] })),
-        { language: story?.language, title: story?.title, neighbours },
+        { language: story?.language, title: story?.title, neighbours, ...(story?.writingProfile ? { writingProfile: story.writingProfile } : {}), ...(story?.originality ? { originality: story.originality } : {}) },
       )
     );
   }
@@ -69,7 +70,7 @@ export const normalizeMotionDurationResponse = (raw: any): any => {
   };
 };
 export const mergeMotionChapterDraft = (raw: any, chapter: string, before?: MotionChapterDraft): Record<string, any>[] => {
-  const incoming = Array.isArray(raw?.beats) ? raw.beats.filter((row: unknown) => row && typeof row === "object" && !Array.isArray(row)) : [];
+  const incoming = Array.isArray(raw?.beats) ? normalizeMotionChapterMetadata(raw.beats.filter((row: unknown) => row && typeof row === "object" && !Array.isArray(row))) : [];
   if (!before?.rows.length) return incoming.map((row: any, index: number) => ({ ...row, id: C.ID(chapter, index) }));
   const counts = new Map<string, number>();
   for (const row of incoming) counts.set(row.id, (counts.get(row.id) || 0) + 1);
