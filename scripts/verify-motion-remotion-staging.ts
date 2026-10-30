@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { layoutRemotionNodes } from "../src/lib/motionRemotion.js";
 import { remotionMountRegion, remotionPoint, remotionVisibleRect } from "../src/lib/motionRemotionGeometry.js";
 import { assignRemotionStaging, normalizeRemotionRelations, prepareRemotionScene, remotionAtomicDescription, remotionIdentityDescription, remotionLegacyAssetIssue } from "../src/lib/motionRemotionStaging.js";
-import { motionSceneCameraScale, motionNodeFrame, remotionSceneView } from "../src/features/motion/lib/motionRemotionEffects.js";
+import { motionSceneCameraFrame, motionNodeFrame, remotionSceneView } from "../src/features/motion/lib/motionRemotionEffects.js";
 import { motionStoryEventLedger } from "../src/lib/motionStoryContinuity.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { MOTION_REMOTION_STAGING as S } from "../src/constants/motionRemotionStaging.js";
@@ -217,13 +217,13 @@ for (const [width, height] of [
   const timed = { ...second, view: "detail" as const, focus: ["table"], startFrame: 0, endFrame: 300, nodes: b };
   const view = remotionSceneView(timed, width, height, assets);
   for (const seconds of [0, 5, 10]) {
-    const camera = motionSceneCameraScale({ version: 1, actors: "fixed", sceneEffects: "off", camera: "gentle" }, seconds, timed, width, height, 30, [timed], assets);
+    const camera = motionSceneCameraFrame({ version: 1, actors: "fixed", sceneEffects: "off", camera: "gentle" }, seconds, timed, width, height, 30, [timed], assets);
     for (const n of b.filter((item) => timed.focus.includes(item.id))) {
       const r = remotionVisibleRect(n, assets[n.assetKey! as keyof typeof assets]);
-      const left = width / 2 + (r.x * view.scale + view.x - width / 2) * camera,
-        right = width / 2 + ((r.x + r.width) * view.scale + view.x - width / 2) * camera;
-      const top = height / 2 + (r.y * view.scale + view.y - height / 2) * camera,
-        bottom = height / 2 + ((r.y + r.height) * view.scale + view.y - height / 2) * camera;
+      const left = width / 2 + (r.x * view.scale + view.x - width / 2) * camera.scale + camera.x,
+        right = width / 2 + ((r.x + r.width) * view.scale + view.x - width / 2) * camera.scale + camera.x;
+      const top = height / 2 + (r.y * view.scale + view.y - height / 2) * camera.scale + camera.y,
+        bottom = height / 2 + ((r.y + r.height) * view.scale + view.y - height / 2) * camera.scale + camera.y;
       assert.ok(left >= -0.01 && top >= -0.01 && right <= width + 0.01 && bottom <= height + 0.01, `camera ${width}x${height}`);
     }
   }
@@ -231,4 +231,4 @@ for (const [width, height] of [
 const ledger = motionStoryEventLedger([{ id: "prior", chapterId: "chapter", narration: "Anh không chôn chiếc hộp. Anh ném nó xuống sông.", visual: "scene", place: "river" }]);
 assert.ok(ledger.includes("không chôn chiếc hộp") && ledger.includes("ném nó xuống sông"));
 assert.ok(ledger.length <= S.FACT_BUDGET + S.FACT_POLICY.length + 30);
-console.log("Legacy staging: identity, relations, floor contact, camera, smoke source, crowd and event ledger passed. Whole-scene build/recovery is covered by verify-motion-composition.ts.");
+process.stdout.write("Legacy staging: identity, relations, floor contact, camera, smoke source, crowd and event ledger passed. Whole-scene build/recovery is covered by verify-motion-composition.ts.");

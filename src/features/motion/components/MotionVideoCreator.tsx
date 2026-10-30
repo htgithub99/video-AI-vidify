@@ -23,7 +23,7 @@ import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } from "../../../constants/motionGenre.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { isRemotionSpec } from "../../../lib/motionVisual.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
@@ -123,6 +123,7 @@ import { MOTION_STORY_CONFIG } from "../../../constants/motionVideo.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils";
+import { getMotionErrorMessage } from "../../../lib/motionUtils.js";
 import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../../../types/motionVideo.js";
 import type { StorageJunkReport } from "../../../types/storage.js";
 import { MotionAiSettings } from "./MotionAiSettings.js";
@@ -451,6 +452,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   ))}
                   <option value={MOTION_MUSIC.OFF}>{musicText.OFF}</option>
                 </MotionSelectField>
+                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SFX}</span>
+                  <MotionToggle checked={state.sfx} label={text.SFX} icon={Volume2} text={!state.sfx ? text.SFX_OFF : studio.compiled && !studio.busy && !studio.compiled.sfxCues?.length ? text.SFX_EMPTY : text.SFX_ON} title={text.SFX_HINT} disabled={studio.busy} onClick={() => patch({ sfx: !state.sfx })} />
+                </div>
                 <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                   <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{asrText.LABEL}</span>
                   <MotionToggle checked={state.asrCheck === true} label={asrText.LABEL} icon={ScanSearch} text={state.asrCheck ? asrText.ON : asrText.OFF} title={asrText.HINT} disabled={studio.storyBusy} onClick={() => patch({ asrCheck: state.asrCheck !== true })} />
@@ -1235,11 +1240,25 @@ const JunkDialog: FC<{ studio: MotionStudio; text: MotionVideoTexts; onClose: ()
   );
 };
 const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ studio, text }) => {
-  const [confirm, setConfirm] = useState<MotionResultItem | true | null>(null);
+  const [confirm, setConfirm] = useState<MotionResultItem[] | true | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [deleteError, setDeleteError] = useState("");
   const [busy, setBusy] = useState(false);
   const [junkOpen, setJunkOpen] = useState(false);
+  const selected = studio.results.filter((result) => picked.has(result.id));
+  const allSelected = studio.results.length > 0 && selected.length === studio.results.length;
+  useEffect(() => {
+    setPicked((previous) => {
+      const next = new Set(studio.results.filter((result) => previous.has(result.id)).map((result) => result.id));
+      return next.size === previous.size ? previous : next;
+    });
+  }, [studio.results]);
+  const askDelete = (items: MotionResultItem[] | true) => {
+    setDeleteError("");
+    setConfirm(items);
+  };
   const junkButton = (
-    <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setJunkOpen(true)} disabled={studio.renderBusy} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_ROUNDED_LG_TEXT_XS_FONT}>
+    <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setJunkOpen(true)} disabled={busy || studio.renderBusy} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_ROUNDED_LG_TEXT_XS_FONT}>
       <Sparkles className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_AMBER_500} />
       <span>{text.JUNK_BUTTON}</span>
     </Button>
@@ -1248,11 +1267,30 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
   const runDelete = async () => {
     if (!confirm) return;
     setBusy(true);
+    setDeleteError("");
     try {
-      const freed = confirm === true ? await studio.deleteAllResults() : await studio.deleteResult(confirm.id);
-      toast.success(MOTION_TEMPLATE_JOIN_SPACE(text.RESULTS_FREED, formatBytes(freed)));
-      setConfirm(null);
+      let freed = 0;
+      let firstError = "";
+      const failed: MotionResultItem[] = [];
+      if (confirm === true) freed = await studio.deleteAllResults();
+      else
+        for (const item of confirm) {
+          try {
+            freed += await studio.deleteResult(item.id);
+          } catch (error) {
+            failed.push(item);
+            firstError ||= getMotionErrorMessage(error);
+          }
+        }
+      if (confirm === true || failed.length < confirm.length) toast.success(MOTION_TEMPLATE_JOIN_SPACE(text.RESULTS_FREED, formatBytes(freed)));
+      if (failed.length) {
+        const message = [text.RESULTS_DELETE_FAILED.replace("{count}", String(failed.length)), firstError].filter(Boolean).join(" ");
+        setConfirm(failed);
+        setDeleteError(message);
+        toast.error(message);
+      } else setConfirm(null);
     } catch (e: any) {
+      setDeleteError(getMotionErrorMessage(e));
       toast.error(e?.message);
     } finally {
       setBusy(false);
@@ -1271,12 +1309,37 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
   return (
     <div className={MOTION_STYLES.FLEX_FLEX_COL_GAP_4_W_FULL_PB_16_TEXT_LEFT}>
       <StudioCard className={cn(cardCls, MR.MOTION_TEXT_PX_4_PY_2_MIN_H_44PX_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_3_FLEX)}>
+        <label className={MOTION_STYLES.RESULT_SELECT_ALL}>
+          <StudioInput
+            type={MOTION_TEXT_CHECKBOX}
+            className={MR.MOTION_TEXT_W_4_H_4}
+            checked={allSelected}
+            ref={(input) => {
+              if (input) input.indeterminate = selected.length > 0 && !allSelected;
+            }}
+            disabled={busy}
+            onChange={() => setPicked(allSelected ? new Set() : new Set(studio.results.map((result) => result.id)))}
+          />
+          <span>{text.RESULTS_SELECT_ALL}</span>
+        </label>
         <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE_TEXT_XS_SM_TEXT_SM_FONT_BOL}>
           <span className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_LEADING_NONE}>{MOTION_TEMPLATE_JOIN_SPACE(MOTION_TEMPLATE_JOIN_SPACE(String(studio.results.length), text.RESULTS_SUMMARY), formatBytes(_.sumBy(studio.results, (r) => r.sizeBytes || 0)))}</span>
         </div>
         <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_ML_AUTO_MY_AUTO}>
+          {selected.length > 0 && (
+            <span className={MOTION_STYLES.RESULT_SELECTION_COUNT} aria-live="polite">
+              {text.RESULTS_SELECTED} {selected.length}/{studio.results.length}
+            </span>
+          )}
+          <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete(selected)} disabled={busy || studio.renderBusy || selected.length === 0} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
+            <Trash2 className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_ROSE_600_DARK_TEXT_ROSE_400} />
+            <span>
+              {text.RESULTS_DELETE_SELECTED}
+              {selected.length > 0 ? ` (${selected.length})` : ""}
+            </span>
+          </Button>
           {junkButton}
-          <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setConfirm(true)} disabled={studio.renderBusy} title={text.RESULTS_DELETE_ALL} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
+          <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete(true)} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE_ALL} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
             <Trash2 className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_ROSE_600_DARK_TEXT_ROSE_400} />
             <span>{text.RESULTS_DELETE_ALL}</span>
           </Button>
@@ -1284,15 +1347,33 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
       </StudioCard>
       <div className={MOTION_STYLES.GRID_GRID_COLS_1_MD_GRID_COLS_2_2XL_GRID_COLS_3_GAP_5_PB_8}>
         {_.map(studio.results, (r) => (
-          <StudioCard key={r.id} className={cn(cardCls, MR.MOTION_TEXT_P_4_SPACE_Y_3_BG_WHITE_95_DARK_BG_SLATE_900_80_BORDER_BORDER_SLAT)}>
+          <StudioCard key={r.id} className={cn(cardCls, MR.MOTION_TEXT_P_4_SPACE_Y_3_BG_WHITE_95_DARK_BG_SLATE_900_80_BORDER_BORDER_SLAT, picked.has(r.id) && MOTION_STYLES.RESULT_SELECTED)}>
             <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD}>
               <video src={r.videoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD_BLOCK} />
+              <label className={MOTION_STYLES.RESULT_SELECT} title={`${text.RESULTS_SELECT_VIDEO}: ${r.title}`}>
+                <StudioInput
+                  type={MOTION_TEXT_CHECKBOX}
+                  className={MR.MOTION_TEXT_W_4_H_4}
+                  aria-label={`${text.RESULTS_SELECT_VIDEO}: ${r.title}`}
+                  checked={picked.has(r.id)}
+                  disabled={busy}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setPicked((previous) => {
+                      const next = new Set(previous);
+                      if (checked) next.add(r.id);
+                      else next.delete(r.id);
+                      return next;
+                    });
+                  }}
+                />
+              </label>
               <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_FLEX_ITEMS_CENTER_GAP_2_Z_10}>
                 <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.saveResult(r)} title={text.SAVE_AS} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
                   <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300_GROUP_HOVER_TEXT_WHITE} />
                   <span>{text.SAVE_AS}</span>
                 </Button>
-                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setConfirm(r)} title={text.RESULTS_DELETE} className={MR.MOTION_TEXT_P_1_5_ROUNDED_LG_BG_TRANSPARENT_HOVER_BG_TRANSPARENT_TEXT_SLATE_4}>
+                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete([r])} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE} aria-label={`${text.RESULTS_DELETE}: ${r.title}`} className={MR.MOTION_TEXT_P_1_5_ROUNDED_LG_BG_TRANSPARENT_HOVER_BG_TRANSPARENT_TEXT_SLATE_4}>
                   <Trash2 className={MR.MOTION_TEXT_W_4_H_4} />
                 </Button>
               </div>
@@ -1334,8 +1415,19 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
           </div>
         }>
         <div className={MOTION_STYLES.SPACE_Y_4_TEXT_LEFT}>
-          {confirm && confirm !== true && <div className={MOTION_STYLES.P_2_5_ROUNDED_XL_BG_SLATE_100_DARK_BG_SLATE_955_BORDER_BORDER_SLATE_200_DARK_BORDER_SLATE_800}>{confirm.title}</div>}
-          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED}>{confirm === true ? text.RESULTS_CONFIRM_ALL : text.RESULTS_CONFIRM_ONE}</p>
+          {confirm && confirm !== true && (
+            <ul className={MOTION_STYLES.RESULT_CONFIRM_LIST}>
+              {confirm.map((item) => (
+                <li key={item.id}>{item.title}</li>
+              ))}
+            </ul>
+          )}
+          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED}>{confirm === true ? text.RESULTS_CONFIRM_ALL : confirm?.length === 1 ? text.RESULTS_CONFIRM_ONE : text.RESULTS_CONFIRM_SELECTED.replace("{count}", String(confirm?.length || 0))}</p>
+          {deleteError && (
+            <p role="alert" className={MOTION_STYLES.TEXT_11PX_TEXT_PURPLE_300}>
+              {deleteError}
+            </p>
+          )}
           <div className={MOTION_STYLES.P_3_ROUNDED_XL_BG_ROSE_500_10_BORDER_BORDER_ROSE_500_20_TEXT_ROSE_700_DARK_TEXT_ROSE_400}>{MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC}</div>
           <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_END_GAP_2_5_PT_4_BORDER_T_BORDER_SLATE_200}>
             <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => setConfirm(null)} disabled={busy} className={MOTION_STYLES.PX_4_PY_2_ROUNDED_XL_TEXT_XS_FONT_BOLD_BORDER_BORDER_SLATE_300_2}>

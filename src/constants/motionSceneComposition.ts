@@ -13,8 +13,8 @@ const repairContext = (input: unknown): unknown => {
   }
 };
 export const MOTION_SCENE_COMPOSITION = {
-  REVISION: 3,
-  SUPPORTED_REVISIONS: [1, 2, 3],
+  REVISION: 4,
+  SUPPORTED_REVISIONS: [1, 2, 3, 4],
   ARTIFACT: "motion_remotion_composition",
   LIMIT: 150000,
   LAYERS: 96,
@@ -32,12 +32,7 @@ export const MOTION_SCENE_COMPOSITION = {
     BOB: 0.005,
     BOB_SECONDS: 3.4,
     BOB_STEP: 0.35,
-    ARM_DEGREES: -7,
-    ARM_SECONDS: 2.6,
-    ARM: "_arm",
-    ARM_PIVOT: /^\s*translate\(/,
     BOB_VALUE: (y: number) => `translate(0 ${y})`,
-    ARM_VALUE: (degrees: number) => `rotate(${degrees})`,
     ESCAPED_TAG: /\\u003c/gi,
     SEPARATORS: /[\s,]+/g,
     IDENTITY: "translate(0 0)",
@@ -50,6 +45,7 @@ export const MOTION_SCENE_COMPOSITION = {
     SHAPE: "#",
     TRANSLATE_VALUE: (x: number, y: number) => `translate(${x} ${y})`,
     LOG_MOTION: (id: string, count: number) => `Cảnh ${id}: thêm chuyển động thở nhẹ cho ${count} nhân vật chưa có chuyển động.`,
+    LOG_ATTACHMENT: (id: string, count: number) => `Cảnh ${id}: giữ tĩnh ${count} chuyển động để đồ vật không rời tay; giữ hình và tiếp tục.`,
   },
   REVIEW_PASSES: 3,
   REVIEW_REQUESTS: 6,

@@ -53,6 +53,7 @@ export interface MotionRemotionNode {
   entityId?: string;
   description: string;
   pose: string;
+  representation?: "full" | "bust" | "detail";
   slot: "left" | "center" | "right";
   relation?: "beside" | "behind" | "on" | "inside" | "heldBy";
   target?: string;

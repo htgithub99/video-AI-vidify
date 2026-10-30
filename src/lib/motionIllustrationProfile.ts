@@ -9,6 +9,7 @@ export const motionIllustrationDirection = (id: MotionRemotionProfile, stage: Mo
   id,
   revision: V.PROFILES[id].revision,
   grammar: MOTION_ILLUSTRATION_COMMON.GRAMMAR,
+  storyContract: MOTION_ILLUSTRATION_COMMON.STORY_CONTRACT,
   rules: MOTION_ILLUSTRATION_PROFILES[id][stage],
   ...(stage === RT_SHARED.DRAWING ? { anatomy: MOTION_ILLUSTRATION_PROFILES[id].anatomy || MOTION_ILLUSTRATION_COMMON.ANATOMY, motion: MOTION_ILLUSTRATION_PROFILES[id].motion, ...(MOTION_ILLUSTRATION_PROFILES[id].layouts ? { layouts: MOTION_ILLUSTRATION_PROFILES[id].layouts } : {}) } : {}),
 });

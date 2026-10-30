@@ -77,3 +77,23 @@ export const motionAutoSoundEvents = (parts: unknown[]): MotionSoundEvent[] => {
   const kinds = MOTION_SOUND_KINDS.filter((item) => item.pattern.test(text)).slice(0, C.AUTO_MAX_EVENTS);
   return normalizeSoundEvents(kinds.map((item, index) => ({ id: item.kind, kind: item.kind, layer: item.layer, at: C.AUTO_AT[index] ?? C.AUTO_AT[0], description: item.kind, source: C.SOURCES[0] })));
 };
+export const motionNarratedSoundEvents = (narration: string): MotionSoundEvent[] => {
+  const text = soundText(narration);
+  const rules: [string, RegExp][] = [
+    ["dish", /\b(?:dua|thia|muong)\b.{0,24}\b(?:go|cham|va)\b.{0,24}\b(?:bat|chen|dia)\b|\b(?:chopsticks?|cutlery)\b.{0,24}\b(?:tap|tapping|clink)\b/u],
+    ["door", /\b(?:tieng go cua|knocking at the door|door slams?)\b/u],
+    ["bell", /\b(?:tieng chuong|chuong reo|bells? ring(?:ing)?)\b/u],
+    ["footstep", /\b(?:tieng buoc chan|heard footsteps?|sound of footsteps?)\b/u],
+    ["rain", /\b(?:tieng mua|sound of rain)\b/u],
+  ];
+  const events: Record<string, unknown>[] = [];
+  for (const clause of text.split(/[.!?;:…]/u)) {
+    if (/\b(?:khong (?:co|con|nghe|thay|duoc)|chua nghe|dung|neu|gia su|if|never|do not|no sound|did not hear|could not hear)\b/u.test(clause)) continue;
+    for (const [kind, rule] of rules) {
+      const match = rule.exec(clause);
+      if (!match || events.some((event) => event.kind === kind)) continue;
+      events.push({ id: `heard_${kind}`, kind, at: Math.min(0.95, Math.max(0, (text.indexOf(clause) + match.index) / Math.max(1, text.length))), description: clause.trim(), source: "offscreen" });
+    }
+  }
+  return normalizeSoundEvents(events.slice(0, C.AUTO_MAX_EVENTS));
+};

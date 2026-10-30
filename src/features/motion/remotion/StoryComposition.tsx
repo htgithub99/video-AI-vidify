@@ -8,7 +8,7 @@ import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLa
 import { MOTION_REMOTION_STAGING as S } from "../../../constants/motionRemotionStaging.js";
 import { motionVectorSource } from "../../../lib/motionVectorAsset.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
-import { motionActorLocked, motionNodeFrame, motionSceneCameraScale, motionFrameSeconds, motionPropAngle, remotionSceneView } from "../lib/motionRemotionEffects.js";
+import { motionActorLocked, motionNodeFrame, motionSceneCameraFrame, motionFrameSeconds, motionPropAngle, remotionSceneView } from "../lib/motionRemotionEffects.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
 import { horrorCharacterFrame } from "../lib/motionHorrorCharacter.js";
 import { remotionDetailNodes } from "../../../lib/motionRemotionVisibility.js";
@@ -25,7 +25,7 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
   const t = motionFrameSeconds(frame, document.fps),
     behavior = normalizeMotionRenderBehavior(document.renderBehavior, document.motion);
   const subtitle = document.subtitles.find((item) => t >= item.start && t < item.end);
-  const scale = motionSceneCameraScale(behavior, t, sourceScene, document.width, document.height, document.fps, document.scenes, document.assets),
+  const camera = motionSceneCameraFrame(behavior, t, sourceScene, document.width, document.height, document.fps, document.scenes, document.assets),
     w = document.width,
     h = document.height;
   const view = remotionSceneView(scene, w, h, document.assets);
@@ -37,7 +37,7 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: palette.paper, color: palette.ink, fontFamily: RT_MOTION.ARIAL_SANS_SERIF, overflow: RT_SHARED.HIDDEN }}>
       <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.SCALE_0E0502}${width / w}${RT_SHARED.SYMBOL_D03502}${height / h}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
-        <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.SCALE_0E0502}${scale}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.CENTER_CENTER }}>
+        <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`, transformOrigin: RT_MOTION.CENTER_CENTER }}>
           <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.TRANSLATE}${view.x}${RT_MOTION.PX}${view.y}${RT_MOTION.PX_SCALE}${view.scale}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
             {compositionAsset && scene?.composition && <Img src={motionVectorSource(compositionFrameSvg(compositionAsset, scene.composition, (frame - scene.startFrame) / document.fps, behavior, speakers))} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}
             {!scene?.composition && scene?.backgroundKey && document.assets[scene.backgroundKey] && <Img src={motionVectorSource(document.assets[scene.backgroundKey].svg, true)} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}

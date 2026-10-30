@@ -12,6 +12,12 @@ import { motionVisualBeatGroups } from "../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../constants/motionScenePacing.js";
 import { puppetBeatLines } from "../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../lib/motionVoice.js";
+import { MOTION_SOUND_CONFIG } from "../../../constants/motionSound.js";
+import { PUPPET } from "../../../constants/motionPuppet.js";
+const visualBeatData = (data: MotionBeat["data"]) => {
+  const fields = Object.entries(data || {}).filter(([key]) => !["soundEvents", "soundSilence", MOTION_SOUND_CONFIG.DIRECTION_STATE, PUPPET.SOUND_FLAG].includes(key));
+  return fields.length ? Object.fromEntries(fields) : undefined;
+};
 const normalized = (value: unknown): unknown =>
   typeof value === "string"
     ? value.normalize(RT_SHARED.NFC).trim().replace(/\s+/gu, RT_SHARED.SYMBOL_36A9E7)
@@ -53,7 +59,7 @@ export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis,
         weather: beat.weather,
         shot: beat.shot,
         sceneMood: beat.sceneMood,
-        data: beat.data,
+        data: visualBeatData(beat.data),
         hud: beat.hud,
       },
       note,

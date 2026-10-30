@@ -911,12 +911,6 @@
     const w = h * A;
     return { cx: clamp((x0 + x1) / 2, w / 2, K.SET_W - w / 2), cy: clamp(F.propY - h * O.base + h / 2, h / 2, K.SET_H - h / 2), h };
   }
-  function camera(box, F, k) {
-    const m = K.MOVE[(F.camera && F.camera.move) || K.FILTER_NONE] || K.MOVE.none;
-    const z = lerp(m[0], m[1], ease(k));
-    const dx = m.length > 2 ? lerp(m[2], m[3], ease(k)) * box.h : 0;
-    return { cx: box.cx + dx, cy: box.cy, h: box.h * z };
-  }
   function drawStage(g, ctx, S, F, t, k) {
     const W = ctx.W,
       H = ctx.H;
@@ -933,7 +927,7 @@
     });
     resolveContacts(S, F, acts, t);
     const box = frameBox(S, F, set, acts);
-    const cam = S.camera !== false ? camera(box, F, k) : box;
+    const cam = box;
     const sc = H / cam.h;
     g.save();
     const OX = ctx.ox || 0;
@@ -941,6 +935,8 @@
     g.fillRect(OX, 0, W, H);
     g.setTransform(sc, 0, 0, sc, OX + W / 2 - cam.cx * sc, H / 2 - cam.cy * sc);
     S.view = { sc, ox: OX + W / 2 - cam.cx * sc, oy: H / 2 - cam.cy * sc };
+    S.cameraRects = acts.filter((a) => !a.fore && a.A.pose !== K.S.LIE).map((a) => ({ x: (a.x - a.L.headW * a.k) * sc + S.view.ox, y: (a.y - a.L.total * a.k) * sc + S.view.oy, width: a.L.headW * a.k * sc * 2, height: a.L.total * a.k * sc }));
+    if (F.prop && F.propH > 0 && Number.isFinite(F.propX) && Number.isFinite(F.propY)) S.cameraRects.push({ x: (F.propX * K.SET_W - F.propH / 2) * sc + S.view.ox, y: (F.propY - F.propH) * sc + S.view.oy, width: F.propH * sc, height: F.propH * sc });
     if (set) drawSetLayer(g, S, set, K.S.MAIN, 0, 0, K.SET_W, K.SET_H, null);
     else {
       g.fillStyle = K.NIGHT_TINT;
@@ -1417,14 +1413,15 @@
     g.fill(K.EVENODD);
     g.restore();
   }
-  function drawFrame(g, ctx, S, F, t) {
-    const k = S.camera ? ME.puppetCameraProgress(F, t) : 0;
+  function drawFrameContent(g, ctx, S, F, t) {
+    const k = 0;
     S.extend = 0;
     S.emitters = {};
     S.targets = {};
     S.feet = {};
     S.effectContext = g;
     S.view = null;
+    S.cameraRects = [];
     g.save();
     if (F.shot === K.S.INSERT && F.prop) drawInsert(g, ctx, S, F, t, k);
     else if (F.shot === K.S.SYMBOL && F.prop) drawSymbol(g, ctx, S, F, t);
@@ -1435,6 +1432,28 @@
     if (F.inset) drawInset(g, ctx, S, F, t);
     drawOverlays(g, ctx, S, F, t);
     if (F.shot === K.SHOT_BLINK) blink(g, ctx, F, t);
+    g.restore();
+  }
+  function drawFrame(g, ctx, S, F, t) {
+    if (!S.camera || !ME.cameraFrame) return drawFrameContent(g, ctx, S, F, t);
+    const W = ctx.W, H = ctx.H;
+    const layer = S.cameraLayer || (S.cameraLayer = ME.makeCanvas(W, H));
+    if (layer.width !== W || layer.height !== H) { layer.width = W; layer.height = H; }
+    const target = layer.getContext(K.CTX2D);
+    target.clearRect(0, 0, W, H);
+    // Draw the whole scene first so absolute setTransform calls, effects and
+    // foreground characters all receive the same final camera transform.
+    drawFrameContent(target, Object.assign({}, ctx, { ox: 0 }), S, F, t);
+    const move = F.camera && F.camera.move;
+    const modes = { pan_left: "left", pan_right: "right", pan_up: "up", pan_down: "down", push: "push", pull: "pull" };
+    const camera = ME.cameraFrame({ enabled: true, seconds: t, start: F.visualStart ?? F.start, end: F.visualEnd ?? F.end, width: W, height: H, seed: String(F.id ?? F.visualStart ?? F.start ?? 0), mode: modes[move], protectedRects: S.cameraRects });
+    g.save();
+    g.beginPath();
+    g.rect(ctx.ox || 0, 0, W, H);
+    g.clip();
+    g.translate((ctx.ox || 0) + W / 2 + camera.x, H / 2 + camera.y);
+    g.scale(camera.scale, camera.scale);
+    g.drawImage(layer, -W / 2, -H / 2);
     g.restore();
   }
   function draw(g, ctx) {

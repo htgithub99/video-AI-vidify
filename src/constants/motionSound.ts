@@ -14,7 +14,7 @@ export const MOTION_SOUND_CONFIG = {
   INDEX: "index.json",
   ASSETS: "assets",
   DECODED: "decoded",
-  VERSION: 4,
+  VERSION: 5,
   BUILTIN_DIR: "sfx",
   SAMPLE_RATE: 48000,
   CHANNELS: 2,

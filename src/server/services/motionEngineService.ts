@@ -31,6 +31,7 @@ import {
 } from "../../constants/motionRuntime.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../constants/motionVideo.js";
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
+import { motionCameraFrame, MOTION_CAMERA_REVISION } from "../../lib/motionCamera.js";
 import type { MotionSpec } from "../../types/motionVideo.js";
 import { getStaticResourcePath } from "../utils/paths.js";
 interface FontEntry {
@@ -82,13 +83,13 @@ const readFonts = (dir: string): EngineCache["fontFaces"] => {
 };
 export const loadMotionEngine = (): EngineCache => {
   const dir = getMotionEngineDir();
-  const signature = engineSignature(dir);
+  const signature = `${engineSignature(dir)}:camera-${MOTION_CAMERA_REVISION}`;
   if (cache && cache.signature === signature) return cache;
-  const script = _.map(MOTION_VIDEO_CONSTANTS.ENGINE_FILES, (file) => fs.readFileSync(path.join(dir, file), MOTION_TEXT_UTF8)).join(MOTION_TEXT_SYMBOL_29);
+  const script = _.map(MOTION_VIDEO_CONSTANTS.ENGINE_FILES, (file) => fs.readFileSync(path.join(dir, file), MOTION_TEXT_UTF8)).join(MOTION_TEXT_SYMBOL_29) + `\nMotionEngine.cameraFrame = ${motionCameraFrame.toString()};`;
   const fontFaces = readFonts(dir);
   const fontCss = _.map(fontFaces, (f) => MOTION_TEMPLATE_FONT_FACE_FONT_FAMILY_FONT_STYLE_FONT_WEIGHT(String(f.family), String(f.style), String(f.weight), String(f.src), String(f.unicodeRange))).join(MOTION_TEXT_SYMBOL_27);
   const built = { signature, script, fontCss, fontFaces };
-  cache = engineSignature(dir) === signature ? built : null;
+  cache = `${engineSignature(dir)}:camera-${MOTION_CAMERA_REVISION}` === signature ? built : null;
   return built;
 };
 export const getMotionEngineClientScript = (): string => {

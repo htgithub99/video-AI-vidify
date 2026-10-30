@@ -329,7 +329,7 @@ export const PUPPET = {
   DEPTH_FORE: "fore",
   LIGHTS: ["day", "night", "lamp", "dawn"],
   OVERLAYS: ["rain", "fog", "dust", "steam", "smoke", EFFECTS.ODOR, "ghost", "flashback", "lurk"],
-  MOVES: ["drift", "push", "pull", "pan_left", "pan_right", "none"],
+  MOVES: ["drift", "push", "pull", "pan_left", "pan_right", "pan_up", "pan_down", "none"],
   TEMPLATE: "puppet",
   LOG_CHAR_PROCEDURAL: (n: number): string => `Kiểu vẽ tối giản: ${n} nhân vật dựng sẵn theo mẫu (không cần AI vẽ).`,
   HEIGHT_SENIOR: 0.96,

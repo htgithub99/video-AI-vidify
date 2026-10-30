@@ -16,6 +16,7 @@ export const remotionLegacyAssetIssue = (node: MotionRemotionNode, asset: Motion
 export const normalizeRemotionRelations = (nodes: MotionRemotionNode[]): MotionRemotionNode[] =>
   nodes.map((original) => {
     let node = { ...original };
+    if (node.kind === RT_SHARED.CHARACTER && !node.representation && /^(?:bàn tay|cánh tay|ngón tay|bàn chân|đôi mắt|khuôn mặt|hands? (?:of|reaching)|close[- ]?up of (?:the |a )?(?:hand|face|eyes|feet))\b/iu.test(node.description)) node.representation = "detail";
     const peer = node.kind === RT_SHARED.CHARACTER && ([RT_SHARED.BESIDE, RT_SHARED.BEHIND] as string[]).includes(node.relation || "") && nodes.find((candidate) => candidate.kind === RT_SHARED.CHARACTER && candidate.id === node.target && ([RT_SHARED.BESIDE, RT_SHARED.BEHIND] as string[]).includes(candidate.relation || "") && candidate.target === node.id);
     if (peer && node.id.localeCompare(peer.id) < 0) {
       delete node.relation;

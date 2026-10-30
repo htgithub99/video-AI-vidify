@@ -1198,20 +1198,20 @@ export function useMotionStudio() {
         const exportState = stateRef.current;
         const exportSignature = motionRenderStateKey(exportState);
         const { job } = await motionRequest<{ job: MotionJobState }>(API_ROUTES.MOTION_VIDEO_RENDER, {
-          spec: isRemotionSpec(c.spec) ? c.spec : { ...c.spec, gen: c.spec.gen ? { ...c.spec.gen, characterMotion: state.characterMotion } : undefined },
+          spec: isRemotionSpec(c.spec) ? c.spec : { ...c.spec, gen: c.spec.gen ? { ...c.spec.gen, characterMotion: exportState.characterMotion } : undefined },
           options: {
             quality: exportState.quality,
             aspect: exportState.aspect,
             fps: exportState.fps,
             encoder: isRemotionSpec(c.spec) ? MotionEncoderPreference.CPU : exportState.encoder,
-            title: state.analysis?.title || state.script?.title || MOTION_TEXT_MOTION,
-            audioId,
+            title: exportState.analysis?.title || exportState.script?.title || MOTION_TEXT_MOTION,
+            audioId: exportState.voice?.signature === narrationSignature(exportState.script, exportState.analysis) ? exportState.voice.audioId : exportState.uploadedAudio?.id,
             mixedAudioId: c.audioPreviewId,
-            sfxId: state.sfx ? c.sfxId : undefined,
+            sfxId: exportState.sfx ? c.sfxId : undefined,
             audioVolume: 1,
-            sfxVolume: state.sfxVolume,
+            sfxVolume: exportState.sfxVolume,
             music: exportState.musicMood === MOTION_MUSIC.OFF ? undefined : { mood: exportState.musicMood || MOTION_MUSIC.AUTO, volume: exportState.musicVolume ?? MOTION_MUSIC.DEFAULT_VOLUME },
-            sfx: state.sfx ? { cues: c.sfxCues, mood: state.analysis?.sfxMood || state.analysis?.genre || MOTION_TEXT_DARK } : undefined,
+            sfx: exportState.sfx ? { cues: c.sfxCues, mood: exportState.analysis?.sfxMood || exportState.analysis?.genre || MOTION_TEXT_DARK } : undefined,
           },
         });
         setRenderJob(job);

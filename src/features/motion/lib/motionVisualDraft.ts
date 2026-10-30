@@ -6,6 +6,7 @@ import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { normalizeMotionVisualSettings } from "../../../lib/motionVisual.js";
 import { motionRenderBehaviorFor } from "../../../lib/motionRenderBehavior.js";
 import { motionVoiceSignature } from "../../../lib/motionVoice.js";
+import { MOTION_CAMERA_REVISION } from "../../../lib/motionCamera.js";
 import { MotionJobStatus, type MotionStoryAnalysis, type MotionStoryScript, type MotionCompiledPreview, type MotionJobState, type MotionThumbnail, type MotionProductionResult } from "../../../types/motionVideo.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
 export interface MotionVisualDraft {
@@ -49,7 +50,7 @@ export const motionCompileStateKey = (state: object) => {
 };
 export const motionRenderStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
-  return stringifyJson([motionCompileStateKey(state), fields.quality, fields.encoder, fields.musicMood, fields.musicVolume]);
+  return stringifyJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, fields.encoder, fields.musicMood, fields.musicVolume]);
 };
 export const motionVisualDraftContextKey = (state: Pick<VisualDraftContext, "analysis" | "script">) => {
   const analysis = state.analysis && { ...state.analysis, visualSettings: undefined, stylePreset: undefined, illustrationNeeds: undefined, illustrationCoverage: undefined };

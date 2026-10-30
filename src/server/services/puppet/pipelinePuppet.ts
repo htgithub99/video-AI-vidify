@@ -783,7 +783,8 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
   o.log(P.LOG_DONE(pg.report.frames, pg.report.characters, pg.report.sets, pg.report.props));
   o.log(P.LOG_STEP_TIME(P.STEP_TOTAL, (Date.now() - started) / 1000));
   gen.failed = [];
-  gen.soundPlanVersion = MOTION_SOUND_CONFIG.VERSION;
+  if (o.sfx !== false) gen.soundPlanVersion = MOTION_SOUND_CONFIG.VERSION;
+  else delete gen.soundPlanVersion;
   gen.updatedAt = new Date().toISOString();
   emit();
   progress(1, MR.MOTION_TEXT_DONE);

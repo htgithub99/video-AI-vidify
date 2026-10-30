@@ -316,6 +316,11 @@ export const MOTION_STYLES = {
   STUDIO_STEPPER_ACTIVE: "bg-purple-500/15 border-purple-500/40 text-purple-300 shadow-sm shadow-purple-500/10",
   STUDIO_STEPPER_DONE: "bg-emerald-500/10 border-emerald-500/30 text-emerald-300",
   STUDIO_STEPPER_INACTIVE: "bg-slate-955/50 border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700",
+  RESULT_SELECT: "absolute top-3 left-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-white/20 bg-slate-950/85 shadow-sm cursor-pointer",
+  RESULT_SELECTED: "ring-2 ring-purple-500/70",
+  RESULT_SELECT_ALL: "inline-flex items-center gap-2 text-xs font-semibold cursor-pointer shrink-0",
+  RESULT_SELECTION_COUNT: "text-xs text-purple-400 whitespace-nowrap",
+  RESULT_CONFIRM_LIST: "max-h-36 overflow-y-auto space-y-1 text-xs break-words",
   STUDIO_STEPPER_NUM: "w-5 h-5 rounded-lg flex items-center justify-center font-mono font-bold text-[10px] shrink-0",
   STUDIO_PROGRESS_CARD: "glass-card rounded-2xl p-4 sm:p-5 border border-purple-500/30 bg-purple-950/20 shadow-xl space-y-3.5 animate-in fade-in duration-200",
 } as const;

@@ -308,6 +308,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
           scope: body.productionId || body.editorialSessionId,
           aspect: body.aspect,
           renderBehavior: motionRenderBehaviorFor(body),
+          sfx: body.sfx !== false,
           review: body.review !== false,
           restart: body.restart === true,
           onlyBeats,

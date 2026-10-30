@@ -157,6 +157,26 @@ try {
     },
   });
   assert.equal(calls.length, beforeSecondResume);
+  const { MOTION_SOUND_CONFIG: soundConfig } = await import("../src/constants/motionSound.js");
+  assert.equal(repaired.gen?.soundPlanVersion, undefined, "SFX off never pretends to have a current sound plan");
+  let soundCalls = 0;
+  const soundOpts = {
+    ...opts,
+    sfx: true,
+    ai: async (_prompt: string, artifact: string, exec: any) => {
+      assert.equal(artifact, soundConfig.ARTIFACT, "Enabling SFX on completed images must not draw again");
+      assert.equal(exec.provider, "content-ai");
+      soundCalls++;
+      return { beats: [{ id: "b1", soundEvents: [{ id: "knock", kind: "door", at: 0.5, source: "offscreen" }] }] };
+    },
+  };
+  const withSound = await buildRemotionScenes(repaired, analysis, soundOpts);
+  assert.equal(soundCalls, 1);
+  assert.equal(withSound.gen!.soundPlanVersion, soundConfig.VERSION);
+  assert.equal(compileRemotionStory(withSound, analysis, { durations: [12] }).sfxCues[0]?.kind, "door");
+  await buildRemotionScenes(withSound, analysis, soundOpts);
+  await buildRemotionScenes(withSound, analysis, { ...soundOpts, sfx: false });
+  assert.equal(soundCalls, 1, "SFX cache and off both avoid additional AI calls");
   for (const result of [undefined, {}, { svg: "" }, { ...art(), svg: art().svg.replace("</svg>", "<script>alert(1)</script></svg>") }, { ...art(), svg: art().svg.replace("</svg>", '<image href="https://example.com/x.png"/></svg>') }]) {
     assert.throws(() => normalizeFirstSceneComposition(result, "bad", "bad", "", [node], new Set(["guest"]), 1280, 720));
   }

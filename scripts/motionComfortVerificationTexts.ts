@@ -56,7 +56,7 @@ export const COMFORT_QA = {
   MOTION_ENGINE: ["motion-engine/texts.js", "motion-engine/core.js", "motion-engine/puppet2d.js"],
   HTML: '<html><body><canvas id="stage" width="1920" height="1080"></canvas></body></html>',
   HOOK: "ME.PUPPET2D = { init,",
-  EXPOSE: "ME.drawStage = drawStage; ME.comfortCamera = camera; ME.PUPPET2D = { init,",
+  EXPOSE: "ME.drawStage = drawStage; ME.PUPPET2D = { init,",
   CONTEXT: "2d",
   CANVAS: "stage",
   NO_MOVE: "none",

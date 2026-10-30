@@ -4,10 +4,24 @@ import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneCompositi
 import { compositionElements, validateSceneComposition } from "./motionSceneComposition.js";
 import type { MotionRemotionNode, MotionRenderBehavior, MotionSceneAnimation, MotionSceneComposition, MotionVectorAsset } from "../types/motionVisual.js";
 export const compositionMissingNodes = (composition: MotionSceneComposition, nodes: MotionRemotionNode[]): string[] => nodes.filter((node) => node.kind !== RT_SHARED.LABEL && !composition.layers.some((layer) => layer.id === node.id)).map((node) => node.id);
+export const compositionAttachedMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[]) => {
+  const elements = compositionElements(asset.svg);
+  const held = nodes.filter((node) => node.relation === "heldBy" && node.target && elements.has(node.id));
+  const animations = composition.animations.filter((animation) => {
+    if (animation.channel !== RT_CORE.ACTOR || animation.attribute !== RT_CORE.TRANSFORM) return true;
+    return !held.some((prop) => {
+      const owner = composition.layers.find((layer) => layer.id === prop.target || layer.entityId === prop.target)?.id || prop.target!;
+      const chain = [animation.target, ...(elements.get(animation.target)?.ancestors || [])];
+      const movesOwner = chain.includes(owner);
+      return movesOwner && ![prop.id, ...(elements.get(prop.id)?.ancestors || [])].includes(animation.target);
+    });
+  });
+  return { composition: animations.length === composition.animations.length ? composition : { ...composition, animations }, removed: composition.animations.length - animations.length };
+};
 export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior?: MotionRenderBehavior): { composition: MotionSceneComposition; added: number } => {
   if (behavior?.actors !== RT_SHARED.SIMPLE || !asset) return { composition, added: 0 };
   const elements = compositionElements(asset.svg);
-  const characters = composition.layers.filter((layer) => layer.kind === RT_SHARED.CHARACTER);
+  const characters = composition.layers.filter((layer) => layer.kind === RT_SHARED.CHARACTER && !nodes.some((node) => node.id === layer.id && node.representation === "detail") && !nodes.some((node) => node.relation === "heldBy" && (node.target === layer.id || (!!layer.entityId && node.target === layer.entityId)) && !elements.get(node.id)?.ancestors.includes(layer.id)));
   const moving = new Set<string>();
   for (const animation of composition.animations) {
     if (animation.channel !== RT_CORE.ACTOR) continue;
@@ -24,10 +38,17 @@ export const compositionActorMotion = (composition: MotionSceneComposition, asse
       const lift = Number((-asset.height * C.GUARD.BOB).toFixed(2));
       const tracks: MotionSceneAnimation[] = [];
       if (!taken.has(`${layer.id}${RT_SHARED.SYMBOL_E7AC07}${RT_CORE.TRANSFORM}`))
-        tracks.push({ target: layer.id, channel: RT_CORE.ACTOR, attribute: RT_CORE.TRANSFORM, period, keyframes: [{ at: 0, value: C.GUARD.BOB_VALUE(0) }, { at: period / 2, value: C.GUARD.BOB_VALUE(lift) }, { at: period, value: C.GUARD.BOB_VALUE(0) }] });
-      const arm = `${layer.id}${C.GUARD.ARM}`;
-      if (C.GUARD.ARM_PIVOT.test(elements.get(arm)?.attributes.transform || "") && !taken.has(`${arm}${RT_SHARED.SYMBOL_E7AC07}${RT_CORE.TRANSFORM}`))
-        tracks.push({ target: arm, channel: RT_CORE.ACTOR, attribute: RT_CORE.TRANSFORM, period: C.GUARD.ARM_SECONDS, keyframes: [{ at: 0, value: C.GUARD.ARM_VALUE(0) }, { at: C.GUARD.ARM_SECONDS / 2, value: C.GUARD.ARM_VALUE(C.GUARD.ARM_DEGREES) }, { at: C.GUARD.ARM_SECONDS, value: C.GUARD.ARM_VALUE(0) }] });
+        tracks.push({
+          target: layer.id,
+          channel: RT_CORE.ACTOR,
+          attribute: RT_CORE.TRANSFORM,
+          period,
+          keyframes: [
+            { at: 0, value: C.GUARD.BOB_VALUE(0) },
+            { at: period / 2, value: C.GUARD.BOB_VALUE(lift) },
+            { at: period, value: C.GUARD.BOB_VALUE(0) },
+          ],
+        });
       const accepted = tracks.filter((track) => {
         try {
           validateSceneComposition({ ...composition, unchecked: true, animations: [...composition.animations, ...extra, track] }, asset, nodes, cast);

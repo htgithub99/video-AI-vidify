@@ -4,6 +4,7 @@ import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLayout.js";
 import { MOTION_RENDER_BEHAVIOR as B } from "../../../constants/motionRenderBehavior.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
+import { motionCameraFrame } from "../../../lib/motionCamera.js";
 import { remotionPoint, remotionVisibleRect } from "../../../lib/motionRemotionGeometry.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
 import type { MotionRemotionScene, MotionRemotionNode, MotionRemotionPlacedNode, MotionVectorAsset, MotionRemotionTimedScene, MotionRenderBehavior, MotionVisualRect } from "../../../types/motionVisual.js";
@@ -13,7 +14,6 @@ export const motionStableSeed = (value: string): number => {
   for (const c of value) seed = Math.imul(seed ^ c.charCodeAt(0), 16777619);
   return (seed >>> 0) / 4294967296;
 };
-export const motionCameraScale = (behavior: MotionRenderBehavior, seconds: number) => (behavior.camera === RT_SHARED.GENTLE ? 1 + B.CAMERA.AMOUNT * Math.min(1, Math.max(0, seconds) / B.CAMERA.SECONDS) : 1);
 export const motionActorScale = (behavior: MotionRenderBehavior, seconds: number, id: string, locked = false) => (behavior.actors === RT_SHARED.SIMPLE && !locked ? 1 + B.ACTOR.AMOUNT * (0.5 - 0.5 * Math.cos((seconds * Math.PI * 2) / B.ACTOR.SECONDS + motionStableSeed(id) * Math.PI * 2)) : 1);
 export const motionPropAngle = (behavior: MotionRenderBehavior, seconds: number, id: string) => (behavior.sceneEffects === RT_SHARED.GENTLE ? Math.sin(seconds * 0.65 + motionStableSeed(id) * Math.PI * 2) * 0.35 : 0);
 export const motionActorLocked = (scene: MotionRemotionScene, node: MotionRemotionNode) => (node.kind === RT_SHARED.CHARACTER ? node.relation === RT_SHARED.ON || node.relation === RT_SHARED.INSIDE : !!node.relation || scene.nodes.some((n) => n.target === node.id));
@@ -64,31 +64,26 @@ export const remotionSceneView = (scene: MotionRemotionTimedScene | undefined, w
 export const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined, scenes: MotionRemotionTimedScene[]) => {
   const index = scene ? scenes.indexOf(scene) : -1;
   if (!scene || index < 0) return scene;
-  const key = (item: MotionRemotionTimedScene) => stringifyJson([item.locationKey || item.place || item.id, item.view || RT_MOTION.WIDE, [...(item.focus || [])].sort()]);
+  // Continue only an actual reused illustration, not every drawing at one location.
+  const key = (item: MotionRemotionTimedScene) => stringifyJson([item.composition?.assetKey || item.id, item.view || RT_MOTION.WIDE, [...(item.focus || [])].sort()]);
   const shotKey = key(scene);
   let first = index,
     last = index;
   while (first > 0 && scenes[first - 1].endFrame === scenes[first].startFrame && key(scenes[first - 1]) === shotKey) first--;
   while (last < scenes.length - 1 && scenes[last].endFrame === scenes[last + 1].startFrame && key(scenes[last + 1]) === shotKey) last++;
-  return { startFrame: scenes[first].startFrame, endFrame: scenes[last].endFrame };
+  return { startFrame: scenes[first].startFrame, endFrame: scenes[last].endFrame, id: scenes[first].id };
 };
-export const motionSceneCameraScale = (behavior: MotionRenderBehavior, seconds: number, scene: MotionRemotionTimedScene | undefined, width: number, height: number, fps = 30, scenes: MotionRemotionTimedScene[] = [], assets: Record<string, MotionVectorAsset> = {}) => {
+export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: number, scene: MotionRemotionTimedScene | undefined, width: number, height: number, fps = 30, scenes: MotionRemotionTimedScene[] = [], assets: Record<string, MotionVectorAsset> = {}) => {
   const view = remotionSceneView(scene, width, height, assets);
   const range = remotionCameraRange(scene, scenes);
-  const localSeconds = Math.max(0, seconds - (range?.startFrame || 0) / fps);
-  const duration = range ? (range.endFrame - range.startFrame) / fps : B.CAMERA.SECONDS;
-  let scale = motionCameraScale(behavior, (localSeconds * B.CAMERA.SECONDS) / Math.max(B.CAMERA.SECONDS, duration));
-  if (scene?.composition) return scale;
-  for (const node of scene?.nodes || []) {
-    if (!node.essential && node.kind !== RT_SHARED.CHARACTER) continue;
-    const rect = remotionVisibleRect(node, assets[node.assetKey || ""]);
-    const left = rect.x * view.scale + view.x,
-      right = (rect.x + rect.width) * view.scale + view.x,
-      top = rect.y * view.scale + view.y,
-      bottom = (rect.y + rect.height) * view.scale + view.y;
-    for (const limit of [width / (width - 2 * left), width / (2 * right - width), height / (height - 2 * top), height / (2 * bottom - height)]) if (Number.isFinite(limit) && limit > 0) scale = Math.min(scale, Math.max(1, limit));
-  }
-  return scale;
+  const selected = (scene?.nodes || []).filter((node) => node.essential || node.kind === RT_SHARED.CHARACTER || scene?.focus?.includes(node.id));
+  const protectedRects = scene?.composition
+    ? (scene.composition.design?.placements || []).filter((placement) => selected.some((node) => node.id === placement.id)).map(({ box }) => ({ x: box.x * width, y: box.y * height, width: box.width * width, height: box.height * height }))
+    : selected.map((node) => {
+        const rect = remotionVisibleRect(node, assets[node.assetKey || ""]);
+        return { x: rect.x * view.scale + view.x, y: rect.y * view.scale + view.y, width: rect.width * view.scale, height: rect.height * view.scale };
+      });
+  return motionCameraFrame({ enabled: behavior.camera === RT_SHARED.GENTLE, seconds, start: (range?.startFrame || 0) / fps, end: range ? range.endFrame / fps : 12, width, height, seed: range?.id || scene?.id || "", protectedRects });
 };
 export const remotionSceneEffects = (scene: MotionRemotionScene): NonNullable<MotionRemotionScene["effects"]> => {
   if (scene.effects)

@@ -135,7 +135,6 @@
       FULL_SHOTS: ["establishing", "wide", "object"],
       FORE: { scale: 1.75, y: 1.18, x: 0.2, tint: 0.18, blur: 2 },
       BACKD: { scale: 0.68, lift: 0.05, blur: 1.5 },
-      MOVE: { push: [1, 0.992], pull: [0.992, 1], none: [1, 1], pan_left: [1, 1, 0.003, -0.003], pan_right: [1, 1, -0.003, 0.003], drift: [1, 0.994] },
       INSERT: { zoom: 1.6, blur: 7, dim: "rgba(10,10,14,0.28)", h: 0.52, x: 0.56, base: 0.88, push: 0.008, figH: 1.3, figX: 0.24 },
       SYMBOL: { bg: "#07080b", h: 0.32, y: 0.64, halo: 0.42, haloA: 0.22, dust: 34, wind: 5 },
       CLOSE: { zoom: 1.35, blur: 6, dim: "rgba(10,10,14,0.2)", headK: 0.85, headMin: 0.26, headMax: 0.45, y: 0.42, x: 0.5, push: 0.006 },

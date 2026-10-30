@@ -14,7 +14,7 @@ import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
 import { MOTION_AI_ROLE } from "../../../constants/motionAiFallback.js";
 import { motionVisualSettingsFor } from "../../../lib/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
-import { compositionActorMotion, compositionMissingNodes, compositionRepairDraft } from "../../../lib/motionHorrorComposition.js";
+import { compositionActorMotion, compositionAttachedMotion, compositionMissingNodes, compositionRepairDraft } from "../../../lib/motionHorrorComposition.js";
 import { normalizeFirstSceneComposition, failedSceneComposition, mergeSceneCompositionDraft, motionCompositionMissingChannels } from "../../../lib/motionSceneComposition.js";
 import { createCompositionGeometryInspector } from "./compositionGeometryInspector.js";
 import { remotionSceneReadiness } from "../../../lib/motionRemotion.js";
@@ -33,6 +33,8 @@ import { motionVisualBeatGroups, motionScenePacingRule, motionScenePacing } from
 import { MOTION_SCENE_PACING as PACING } from "../../../constants/motionScenePacing.js";
 import { renderRemotionStill } from "../motionRemotionRenderService.js";
 import { getMotionWorkDirectory } from "../motionLibraryService.js";
+import { directMotionSound } from "../motionSoundDirectionService.js";
+import { MOTION_SOUND_CONFIG } from "../../../constants/motionSound.js";
 import type { MotionAiExecution, MotionAiLog, MotionStoryAnalysis, MotionStoryScript } from "../../../types/motionVideo.js";
 import type { MotionAiContractState } from "../../../types/motionAiContract.js";
 import type { MotionRemotionState, MotionRenderBehavior } from "../../../types/motionVisual.js";
@@ -47,6 +49,7 @@ export interface RemotionSceneOptions {
   aspect?: string;
   renderBehavior?: MotionRenderBehavior;
   review?: boolean;
+  sfx?: boolean;
   restart?: boolean;
   onlyBeats?: string[];
   onlyScenes?: string[];
@@ -300,11 +303,14 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         const ensureActorMotion = () => {
           if (!scene.composition) return;
           const reviewed = !!scene.reviewKey && scene.reviewKey === motionInputKey([scene.composition, scene.text, settings]);
+          const attached = compositionAttachedMotion(scene.composition, state.assets[scene.composition.assetKey], scene.nodes);
+          scene.composition = attached.composition;
+          if (attached.removed) opts.log(C.GUARD.LOG_ATTACHMENT(scene.id, attached.removed));
           const result = compositionActorMotion(scene.composition, state.assets[scene.composition.assetKey], scene.nodes, cast, state.renderBehavior);
-          if (!result.added) return;
+          if (!result.added && !attached.removed) return;
           scene.composition = result.composition;
           if (reviewed) scene.reviewKey = motionInputKey([scene.composition, scene.text, settings]);
-          opts.log(C.GUARD.LOG_MOTION(scene.id, result.added));
+          if (result.added) opts.log(C.GUARD.LOG_MOTION(scene.id, result.added));
           save();
         };
         ensureActorMotion();
@@ -466,6 +472,16 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           .map(([id, reason]) => V.LOG_FAILED(id, reason))
           .join(RT_SHARED.SYMBOL_01BA47),
       );
+    if (opts.sfx === true) {
+      try {
+        await directMotionSound(result, analysis, { exec: opts.mainExec || opts.exec, signal: opts.signal, log: opts.log, ai: opts.ai, onAccepted: save });
+        result.gen!.soundPlanVersion = MOTION_SOUND_CONFIG.VERSION;
+        save();
+      } catch (error) {
+        if (opts.signal?.aborted || motionCaptchaError(error)) throw error;
+        opts.log(MOTION_SOUND_CONFIG.SKIPPED);
+      }
+    }
     return result;
   } finally {
     await geometry.close?.();

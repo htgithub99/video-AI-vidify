@@ -134,7 +134,15 @@ try {
   assert.equal(merged[0].toLineId, "b");
   assert.equal(mergeEquivalentRemotionDrafts([draft, { ...draft, purpose: "essential reveal", fromLineId: "b", toLineId: "b" }]).length, 2);
   assert.equal(mergeEquivalentRemotionDrafts([draft, { ...draft, nodes: [{ ...node, state: "dead" }], fromLineId: "b", toLineId: "b" }]).length, 2);
-  assert.ok(logs.some((line) => line.includes("minh họa tĩnh")));
+  assert.ok(
+    logs.some((line) => line.includes("thở nhẹ")),
+    "The log describes the actual gentle fallback",
+  );
+  assert.deepEqual(
+    built.gen!.remotion!.scenes.b0[0].composition!.animations.map((animation) => animation.target),
+    ["person"],
+    "Fallback breathes without inventing a raised arm or speech",
+  );
   console.log("Scene pacing passed: cross-beat planning/drawing, exact voice/dialogue/subtitle timing, semantic boundaries, bounded groups, cache reuse, pacing invalidation, library policy and export music signatures. No live AI/TTS/video.");
 } finally {
   if (previousStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
