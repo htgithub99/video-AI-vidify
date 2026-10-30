@@ -36,7 +36,7 @@
     "test:motion-thumbnail": "tsx scripts/verify-motion-thumbnail.ts && tsx scripts/verify-motion-thumbnail-ui.ts",
     "test:motion-captcha": "tsx scripts/verify-motion-captcha.ts",
     "test:motion-preview": "tsx scripts/verify-motion-preview-loading.ts && tsx scripts/verify-motion-preview-recovery.ts",
-    "test:motion-scene-ai": "tsx scripts/verify-motion-scene-routing.ts && tsx scripts/verify-motion-scene-ai-settings.ts",
+    "test:motion-scene-ai": "tsx scripts/verify-motion-scene-routing.ts && tsx scripts/verify-motion-scene-ai-settings.ts && tsx scripts/verify-motion-scene-fallback.ts && tsx scripts/verify-motion-action-layout.ts",
     "test:deepseek": "tsx scripts/verify-deepseek-chat.ts",
     "test:motion-controls": "tsx scripts/verify-motion-references.ts && node scripts/verify-motion-static-cast.mjs && tsx scripts/verify-motion-advisory-qa.ts && tsx scripts/verify-motion-characters.ts && tsx scripts/verify-motion-render-controls.ts && tsx scripts/verify-motion-reference-ui.ts",
     "test:suno-evaluation": "tsx scripts/verify-suno-track-evaluation.ts",

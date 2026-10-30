@@ -259,6 +259,7 @@
   outline: none !important;
 }
 :root:is(.light, .dark) [class*="focus-within:"]:has(> :is(input, select, textarea)),
+:root:is(.light, .dark) .studio-planning-extra-field,
 :root:is(.light, .dark) :is(.input-control, .select-control, .custom-select-trigger, [role="combobox"]) {
   background: var(--studio-input) !important;
   border-color: var(--studio-border) !important;
@@ -271,6 +272,11 @@
   box-shadow: none !important;
   transform: none !important;
   color: var(--studio-text) !important;
+}
+:root:is(.light, .dark) .studio-planning-extra-field > [role="switch"] {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
 }
 :root:is(.light, .dark) .toggle-switch {
   background: var(--studio-surface-raised) !important;

@@ -112,7 +112,14 @@ export const startMotionVideoRenderInput = (body: Record<string, any>) => {
 };
 export const storyLanguage = (v: unknown): string => (v === MOTION_TEXT_EN ? MOTION_TEXT_EN : MOTION_TEXT_VI);
 export const storyLength = (v: unknown): MotionStoryLength => (_.includes(_.values(MotionStoryLength), v) ? (v as MotionStoryLength) : MotionStoryLength.FULL);
-export const aiExec = (v: any): MotionAiExecution => ({ provider: _.toString(v?.provider || MR.MOTION_TEXT_EMPTY), model: _.toString(v?.model || MR.MOTION_TEXT_EMPTY), mode: _.toString(v?.mode || MR.MOTION_TEXT_EMPTY), chromeHeadless: v?.chromeHeadless !== false, ...(v?.strictProvider === true ? { strictProvider: true } : {}) });
+export const aiExec = (v: any): MotionAiExecution => ({
+  provider: _.toString(v?.provider || MR.MOTION_TEXT_EMPTY),
+  model: _.toString(v?.model || MR.MOTION_TEXT_EMPTY),
+  mode: _.toString(v?.mode || MR.MOTION_TEXT_EMPTY),
+  chromeHeadless: v?.chromeHeadless !== false,
+  ...(typeof v?.allowFallback === "boolean" ? { allowFallback: v.allowFallback, ...(v.allowFallback === false ? { strictProvider: true } : {}) } : {}),
+  ...(v?.strictProvider === true ? { strictProvider: true } : {}),
+});
 export const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MOTION_AI_ROLE.DRAW });
 export const editorialSession = (body: any, source: MotionStorySource, exec: MotionAiExecution): MotionEditorialSession | undefined => {
   const id = _.toString(body?.editorialSessionId);

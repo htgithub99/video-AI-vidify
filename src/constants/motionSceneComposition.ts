@@ -87,6 +87,7 @@ export const MOTION_SCENE_COMPOSITION = {
   LOG: "Remotion: AI thiết kế trọn cảnh; giữ nguyên bố cục và các lớp hình AI đã dựng.",
   LOG_SINGLE: "Mỗi cảnh dùng một yêu cầu thiết kế và vẽ. Tự sửa lỗi định dạng nhẹ; cảnh hỏng được thử lại sau khi xong lượt đầu. Tắt duyệt ảnh không gọi sửa thẩm mỹ.",
   LOG_CONTINUE: (id: string, reason: string) => `Cảnh ${id} cần tạo lại: ${reason}. Tiếp tục các cảnh còn lại.`,
+  PROGRESS_CONTINUE: (index: number, total: number) => `Cảnh ${index}/${total} gặp lỗi; đang tiếp tục các cảnh còn lại.`,
   LOG_RECOVERY: (count: number) => `Dựng cảnh: lượt đầu đã xong; bắt đầu phục hồi ${count} cảnh lỗi.`,
   LOG_LOCAL_REPAIR: (index: number, total: number) => `Cảnh ${index}/${total}: đã sửa cấu trúc SVG bằng code (thẻ đóng thiếu, thuộc tính trùng); không gọi thêm AI.`,
   LOG_RETRY: (index: number, total: number, scene: number, scenes: number) => `Phục hồi cảnh ${scene}/${scenes} · ${index}/${total} cảnh lỗi.`,

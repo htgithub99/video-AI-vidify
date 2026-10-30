@@ -728,7 +728,7 @@ export const logMotionAiChain = (entry: { artifact: string; step: number; total:
 };
 export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => {
   const primary = { ...exec, strictProvider: true, chained: true };
-  if (exec.strictProvider) return [primary];
+  if (exec.strictProvider || exec.allowFallback === false) return [primary];
   const list = exec.role === MOTION_AI_ROLE.DRAW ? MOTION_AI_FALLBACK.DRAW : MOTION_AI_FALLBACK.MAIN;
   const rest = _.map(
     _.filter(list, (r) => r.provider !== exec.provider),
@@ -795,6 +795,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   }
 };
 const runMotionAiTask = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0, contract?: MotionAiResponseContract): Promise<any> => {
+  if (exec.allowFallback === false) exec = { ...exec, strictProvider: true };
   if (contract) contract.schema ||= MOTION_RESPONSE_SCHEMAS[artifactType];
   const editorial = motionAiRunStore.getStore()?.workerMode ? undefined : motionAiRunStore.getStore()?.editorial;
   const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
@@ -826,7 +827,7 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     return request(exec, attempt);
   }
   const configured = motionAiRoutes(exec);
-  const routes = editorial?.route ? [editorial.route, ...configured.filter((route) => route.provider !== editorial.route!.provider || route.model !== editorial.route!.model)] : configured;
+  const routes = editorial?.route && exec.role !== MOTION_AI_ROLE.DRAW ? [editorial.route, ...configured.filter((route) => route.provider !== editorial.route!.provider || route.model !== editorial.route!.model)] : configured;
   let failure: unknown = null;
   for (let i = 0; i < routes.length; i++) {
     signal?.throwIfAborted();
@@ -842,7 +843,7 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     const step = { artifact: artifactType, step: i + 1, total: routes.length, provider: String(routes[i].provider), model: String(routes[i].model || MR.MOTION_TEXT_EMPTY) };
     try {
       const out = await request(routes[i]);
-      if (editorial) editorial.route = routes[i];
+      if (editorial && exec.role !== MOTION_AI_ROLE.DRAW) editorial.route = routes[i];
       logMotionAiChain({ ...step, result: MOTION_AI_FALLBACK.RESULT_OK });
       return out;
     } catch (error: any) {

@@ -64,14 +64,14 @@ export const ChipButton: FC<{ active: boolean; onClick: () => void; children: Re
 export const ActionBtn: FC<{ onClick: () => void; disabled?: boolean; busy?: boolean; icon: typeof Film; children: React.ReactNode; className?: string; title?: string; variant?: "primary" | "secondary" | "danger" }> = ({ onClick, disabled, busy, icon: Icon, children, className, title, variant = MOTION_TEXT_PRIMARY }) => {
   const styles = { primary: busy ? MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA : MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_VIA_2, secondary: MOTION_TEXT_BG_SLATE_100_HOVER_BG_SLATE_200_TEXT, danger: MOTION_TEXT_BG_ROSE_600_HOVER_BG_ROSE_500_TEXT_2 };
   return (
-    <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={onClick} disabled={disabled || busy} title={title} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_5_ROUNDED_XL, styles[variant], className)}>
+    <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={onClick} disabled={disabled || busy} title={title} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_5_ROUNDED_XL, styles[variant], busy && MOTION_STYLES.ACTION_BUSY, className)}>
       {busy ? <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Icon className={MOTION_STYLES.W_4_H_4_SHRINK_0} />}
-      <span>{children}</span>
+      <span className={MOTION_STYLES.ACTION_TEXT}>{children}</span>
     </Button>
   );
 };
 export const StopBtn: FC<{ onClick: () => void; label: string; stopping?: boolean; className?: string }> = ({ onClick, label, stopping, className }) => (
-  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={onClick} disabled={stopping} {...{ [MOTION_STORY_CONFIG.BUSY_ALLOW_ATTR]: true }} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_ROUNDED_XL, className)}>
+  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={onClick} disabled={stopping} {...{ [MOTION_STORY_CONFIG.BUSY_ALLOW_ATTR]: true }} className={cn(MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_2_PX_4_PY_2_ROUNDED_XL, MOTION_STYLES.STOP_BUTTON, className)}>
     {stopping ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0} /> : <Square className={MOTION_STYLES.W_3_5_H_3_5_FILL_CURRENT} />}
     <span>{label}</span>
   </Button>

@@ -3,6 +3,7 @@ import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
+import { motionProgressLabel } from "../../../lib/motionProgressLabel.js";
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea, StudioInput } from "../../../components/ui/Studio.js";
 import { MotionToggle } from "./MotionToggle.js";
 import { MotionPartsCard } from "./MotionPartsCard.js";
@@ -535,9 +536,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               {!remotionMode && <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />}
               <div className={MOTION_STYLES.FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP}>
                 {busyKind === MOTION_TEXT_ANALYZE || busyKind === MotionStoryJobKind.PRODUCTION ? (
-                  <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>
-                    <ActionBtn busy={true} icon={Sparkles} onClick={() => {}} className={MOTION_STYLES.PX_5_PY_2_5}>
-                      {busyKind === MotionStoryJobKind.PRODUCTION ? job?.stage || MOTION_PRODUCTION.RUN_LABEL : text.ANALYZING}
+                  <div className={MOTION_STYLES.PRODUCTION_ACTIONS}>
+                    <ActionBtn busy={true} icon={Sparkles} onClick={() => {}} className={MOTION_STYLES.PRODUCTION_ACTION_BUTTON}>
+                      {motionProgressLabel(busyKind === MotionStoryJobKind.PRODUCTION ? job?.stage || MOTION_PRODUCTION.RUN_LABEL : text.ANALYZING)}
                     </ActionBtn>
                     {stopAi}
                   </div>

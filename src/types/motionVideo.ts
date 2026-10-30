@@ -887,6 +887,7 @@ export interface MotionLogEntry {
   lines: string[];
 }
 export interface MotionAiExecution {
+  allowFallback?: boolean;
   singleResponse?: boolean;
   provider?: string;
   model?: string;

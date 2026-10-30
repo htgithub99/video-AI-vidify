@@ -131,7 +131,7 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
           <span className={CHAT_PLANNING_STYLES.BADGE_TEXT}>{badgeSummary}</span>
         </div>
       </div>
-      <div className={cn(CHAT_PLANNING_STYLES.GRID, extraControl || hasClaudeEffort || hasGeminiThinking ? CHAT_PLANNING_STYLES.GRID_WITH_EXTRA : CHAT_PLANNING_STYLES.GRID_DEFAULT, CHAT_PLANNING_STYLES.GAP)}>
+      <div className={cn(CHAT_PLANNING_STYLES.GRID, extraControl && (hasClaudeEffort || hasGeminiThinking) ? CHAT_PLANNING_STYLES.GRID_WITH_LEVEL_AND_EXTRA : extraControl || hasClaudeEffort || hasGeminiThinking ? CHAT_PLANNING_STYLES.GRID_WITH_EXTRA : CHAT_PLANNING_STYLES.GRID_DEFAULT, CHAT_PLANNING_STYLES.GAP)}>
         <PlanningSelectField title={texts.PLANNING_AI_LABEL} icon={Bot} iconClassName={CHAT_PLANNING_STYLES.PROVIDER_ICON} value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)}>
           <option value={AiPlanningFallbackProvider.GeminiChat} className={CHAT_PLANNING_STYLES.OPTION}>
             {texts.GEMINI_CHAT_OPTION}

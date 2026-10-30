@@ -116,6 +116,13 @@ try {
   expectExec(VT.BUILDSCENESPUPPET, 2, { ...expected, strictProvider: true });
   expectExec(VT.DIRECTMOTIONVOICE, 3, mainExpected);
   expectExec(VT.BUILDMOTIONVOICETRACK, 2, mainExpected);
+  for (const allowFallback of [false, true]) {
+    for (const mode of ["library", "remotion"]) {
+      await invoke(controller.scenesMotionStory, { aiExecution: { ...aiExecution, allowFallback }, ...(mode === "remotion" ? { visualSettings: { version: 1, mode, engine: mode, profileId: "horror", componentRevision: 1 } } : {}) });
+      const selected = { ...expected, allowFallback, ...(allowFallback ? {} : { strictProvider: true }) };
+      assert.deepEqual(expectExec(mode === "remotion" ? "buildRemotionScenes" : VT.BUILDSCENESPUPPET, 2, selected).mainExec, mainExpected);
+    }
+  }
   await invoke(controller.voiceMotionStory, { mainAiExecution: { ...mainAiExecution, strictProvider: true } });
   expectExec(VT.BUILDMOTIONVOICETRACK, 2, { ...mainExpected, strictProvider: true });
   await invoke(controller.scenesMotionStory, { visualSettings: { version: 1, mode: "remotion", engine: "remotion", profileId: "horror", componentRevision: 1 } });

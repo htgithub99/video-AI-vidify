@@ -26,7 +26,7 @@ import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { motionCastIdentity, motionSceneStaging } from "../../../../../lib/motionCastIdentity.js";
 import { motionStoryEventLedger } from "../../../../../lib/motionStoryContinuity.js";
-import { runMotionAi, mapMotionAiPool, writeMotionAiDebug, motionCaptchaError } from "../motionStoryService.js";
+import { runMotionAi, motionAiRoutes, mapMotionAiPool, writeMotionAiDebug, motionCaptchaError } from "../motionStoryService.js";
 import { recoverMotionAiContractState, requestMotionAiContract, type MotionAiResponseContract } from "../motionAiContractService.js";
 import { isTerminalMotionAiError } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { motionInputKey } from "../motionFileUtils.js";
@@ -110,13 +110,14 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const ask = async (key: string, artifact: string, prompt: string, assess: MotionAiResponseContract["assess"], images?: Parameters<typeof runMotionAi>[5], context?: unknown, budget?: { remaining: number }) => {
       const drawing = artifact === C.ARTIFACT;
       const single = drawing && !opts.review;
-      const exec = { ...(drawing ? opts.exec : opts.mainExec || opts.exec), role: drawing ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN, ...(single ? { singleResponse: true, strictProvider: true } : {}) };
+      const selectedExec = drawing ? opts.exec : opts.mainExec || opts.exec;
+      const exec = { ...selectedExec, role: drawing ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN, ...(single ? { singleResponse: true, ...(selectedExec.allowFallback === true ? {} : { strictProvider: true }) } : {}) };
       if (single) requests[key] = { rejected: 0, errors: [] };
       const contract: MotionAiResponseContract = {
         schema: MOTION_REMOTION_SCHEMAS[artifact],
         attempts: single ? C.GUARD.ATTEMPTS : exec.strictProvider ? V.REQUEST_BUDGET : V.REQUEST_ATTEMPTS,
         routeAttempts: single ? C.GUARD.ATTEMPTS : exec.strictProvider ? V.REQUEST_BUDGET : V.REQUEST_ATTEMPTS,
-        budget: single ? C.GUARD.ATTEMPTS : V.REQUEST_BUDGET,
+        budget: single ? C.GUARD.ATTEMPTS * motionAiRoutes(exec).length : V.REQUEST_BUDGET,
         state: (requests[key] ||= { rejected: 0, errors: [] }),
         checkpoint: (value) => {
           requests[key] = value;
@@ -463,7 +464,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         processed.add(scene.id);
         save();
         opts.log(C.LOG_CONTINUE(scene.id, reason));
-        if (!retry) opts.progress?.((0.9 * processed.size) / progressTotal(), C.LOG_CONTINUE(scene.id, reason));
+        if (!retry) opts.progress?.((0.9 * processed.size) / progressTotal(), C.PROGRESS_CONTINUE(allScenes.indexOf(scene) + 1, allScenes.length));
       }
     };
     const drawingSlots = new MotionAiWorkerPool(MOTION_STORY_CONFIG.WORKER_IDS);

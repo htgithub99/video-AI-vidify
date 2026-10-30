@@ -181,6 +181,7 @@ const DEFAULTS: PersistedState = {
   sceneAiProvider: MOTION_SCENE_AI.PRIMARY_PROVIDER,
   sceneAiModel: MOTION_SCENE_AI.PRIMARY_MODEL,
   sceneAiHeadless: true,
+  sceneAiFallback: true,
   aiReview: true,
   videoGenre: MOTION_VIDEO_GENRE_DEFAULT,
   stylePreset: PUPPET_STYLE_DEFAULT,
@@ -945,7 +946,7 @@ export function useMotionStudio() {
         }
       });
     },
-    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
+    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
   const voicePending = useRef<{ signature: string; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
   const generateVoice = useCallback(

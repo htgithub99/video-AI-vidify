@@ -3,6 +3,8 @@ import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSe
 import { MOTION_AI_SETTINGS_TEXT } from "../../../constants/motionSceneLibrary.js";
 import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { AiPlanningExecutionMode } from "../../../types.js";
+import { Shuffle } from "lucide-react";
+import { MotionToggle } from "./MotionToggle.js";
 import type { Lang } from "../../../lib/lang.js";
 import { motionSceneAiExecution, resolveMotionSceneExecution, type MotionAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
 export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice>) => void; currentLang: Lang }) {
@@ -44,6 +46,7 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onChromeHeadlessChange={(value) => patch({ sceneAiHeadless: value })}
           currentLang={currentLang}
           roomOnly
+          extraControl={<MotionToggle checked={state.sceneAiFallback !== false} label={text.FALLBACK_LABEL} title={text.FALLBACK_HINT} text={state.sceneAiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ sceneAiFallback: state.sceneAiFallback === false })} />}
         />
       </section>
     </div>

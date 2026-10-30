@@ -14,6 +14,7 @@ export const CHAT_PLANNING_STYLES = {
   BADGE_TEXT: "font-semibold text-slate-300",
   GRID: "grid grid-cols-1",
   GRID_WITH_EXTRA: "sm:grid-cols-2 lg:grid-cols-4",
+  GRID_WITH_LEVEL_AND_EXTRA: "sm:grid-cols-2 lg:grid-cols-5",
   GRID_DEFAULT: "sm:grid-cols-3",
   GAP: "gap-3",
   PROVIDER_ICON: "w-3.5 h-3.5 text-violet-400 mr-2 shrink-0",
@@ -22,5 +23,5 @@ export const CHAT_PLANNING_STYLES = {
   DISABLED: "opacity-40",
   MODEL_ICON: "w-3.5 h-3.5 text-purple-400 mr-2 shrink-0",
   CHROME_ICON: "w-3.5 h-3.5 text-sky-400 mr-2 shrink-0",
-  EXTRA_FIELD: "justify-between",
+  EXTRA_FIELD: "studio-planning-extra-field justify-between",
 } as const;
