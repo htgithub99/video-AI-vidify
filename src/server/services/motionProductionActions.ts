@@ -19,6 +19,8 @@ import { normalizeMotionReferences } from "../../lib/motionReference.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
 import { MOTION_VIDEO_GENRE_ERROR, motionVideoGenre } from "../../constants/motionGenre.js";
+import { MOTION_GENRE_STYLE } from "../../constants/motionGenreStyle.js";
+import { motionGenreStyleFindings } from "../../lib/motionGenreStyle.js";
 import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
@@ -232,11 +234,13 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = !failed.length && !Object.keys(chapterDrafts).length && _.every(chapters, (c) => byChapter[c.id]?.length);
-      const editorial = complete && body?.editorPass !== false && !(only?.length && body?.resume !== true) && chapters.length > 1;
+      const styleFindings = complete ? motionGenreStyleFindings(beats, language, analysis.videoGenre) : [];
+      const editorial = complete && body?.editorPass !== false && !(only?.length && body?.resume !== true) && (chapters.length > 1 || styleFindings.length > 0);
       if (editorial) {
+        if (styleFindings.length) ctx.log(MOTION_GENRE_STYLE.LOG(styleFindings.length));
         ctx.log(MR.MOTION_TEXT_BIEN_TAP_VIEN_DOC_LAI_TOAN_BO_LOI_DAN);
         try {
-          const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId });
+          const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId, ...(chapters.length > 1 ? {} : { focusIds: [...new Set(styleFindings.map((finding) => finding.id))] }) });
           beats = r.beats;
           edit = r.edit;
         } catch (error) {

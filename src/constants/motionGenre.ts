@@ -19,12 +19,26 @@ export const MOTION_VIDEO_GENRE_TEXT = {
     OPTIONS: { pov: "POV – You are the character", witness: "Witness recollection (first-person)", chronicle: "Entire history in N minutes (chronicle)", verdict: "Big question – weigh every candidate (verdict)" },
   },
 } as const;
-const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
+const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
 const GENRE_TEXT = {
   PACKAGING: "VIDEO GENRE (chosen by the user, follow it): ",
   DIRECTIVE: "VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ",
+  CAST: " Any protagonist, narrator, companion or relative required by this genre is a cast member even when invented; this overrides any rule against inventing people.",
+  STYLE: "WRITING STYLE FOR THIS VIDEO (highest priority for how every narration line sounds: person, tense, sentence length, word choice and devices; facts still come from the source and the plan): ",
+  SAMPLE: " STYLE SAMPLE (self-made with invented content; imitate its person, rhythm, sentence length and devices, never its content, names or images): ",
+  CHECK: " BEFORE ANSWERING, CHECK EVERY LINE: ",
 } as const;
 export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.includes(_.values(MOTION_VIDEO_GENRES), value) ? (value as MotionVideoGenre) : MOTION_VIDEO_GENRE_DEFAULT);
 export const motionVideoGenrePackaging = (value: unknown): string => GENRE_TEXT.PACKAGING + PROFILES[motionVideoGenre(value)].PACKAGING;
-export const motionVideoGenreWritingProfile = (value: unknown): string => PROFILES[motionVideoGenre(value)].PROFILE;
-export const motionVideoGenreDirective = (value: unknown): string => GENRE_TEXT.DIRECTIVE + PROFILES[motionVideoGenre(value)].PROFILE;
+export const motionVideoGenreWritingProfile = (value: unknown): string => {
+  const profile = PROFILES[motionVideoGenre(value)];
+  return profile.PROFILE + GENRE_TEXT.CHECK + profile.CHECK;
+};
+export const motionVideoGenreDirective = (value: unknown): string => {
+  const profile = PROFILES[motionVideoGenre(value)];
+  return GENRE_TEXT.DIRECTIVE + profile.PROFILE + " " + profile.PLAN + GENRE_TEXT.CAST;
+};
+export const motionVideoGenreStyleGuide = (value: unknown): string => {
+  const profile = PROFILES[motionVideoGenre(value)];
+  return GENRE_TEXT.STYLE + profile.PROFILE + GENRE_TEXT.SAMPLE + profile.SAMPLE + GENRE_TEXT.CHECK + profile.CHECK;
+};

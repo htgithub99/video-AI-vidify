@@ -46,8 +46,10 @@ import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import { normalizeMotionHud } from "../../lib/motionHistory.js";
-import { motionVideoGenre, motionVideoGenreDirective, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../constants/motionGenre.js";
+import { motionVideoGenre, motionVideoGenreDirective, motionVideoGenreStyleGuide, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../constants/motionGenre.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../constants/motionMusic.js";
+import { MOTION_GENRE_STYLE } from "../../constants/motionGenreStyle.js";
+import { motionGenreStyleFindings } from "../../lib/motionGenreStyle.js";
 import _ from "lodash";
 import { puppetPackPlanningCapabilities, puppetPackChapterCapabilities } from "./puppet/packCatalog.js";
 import path from "path";
@@ -1356,7 +1358,9 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
   const notes: string[] = [];
   let rewritten = 0;
   const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;
-  const editLimit = (lines: MotionBeat[]): number => Math.max(2, Math.ceil(lines.length * 0.15));
+  const styleFindings = motionGenreStyleFindings(beats, opts.language, analysis.videoGenre);
+  const styleIds = new Set(styleFindings.map((finding) => finding.id));
+  const editLimit = (lines: MotionBeat[]): number => Math.max(2, Math.ceil(lines.length * 0.15), lines.filter((line) => styleIds.has(line.id)).length);
   const editorPrompt = (lines: MotionBeat[]): string => {
     const chapterIds = new Set(lines.map((line) => line.chapterId));
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
@@ -1365,9 +1369,10 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;
     const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
     const limit = editLimit(lines);
+    const styleFocus = styleFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     return withMotionResponsePrompt(
       MOTION_STORY_EDIT_ARTIFACT,
-      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true), styleFocus.length ? MOTION_GENRE_STYLE.FOCUS(styleFocus) : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
   const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, opts.focusIds]);
@@ -1636,7 +1641,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), SOURCE_READING_RULES),
     role: PROMPT.CHAPTER_ROLE,
     outline: opts.section || chapterOutline(analysis, chapter),
-    genre: MR.MOTION_TEXT_EMPTY,
+    genre: motionVideoGenreStyleGuide(analysis.videoGenre),
     title: analysis.title,
     logline: analysis.logline,
     chapterId: chapter.id,
@@ -1659,7 +1664,6 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       motionStoryEventLedger(opts.previous),
       MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
       analysis.visualSettings?.mode !== RT_SHARED.REMOTION && analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + stringifyJson(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id).map(({ evidence, place, states, objects, features }) => ({ evidence, place, states, objects, features }))) : null,
-      motionVideoGenreWritingProfile(analysis.videoGenre),
       analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
     ] as string[]).join(MR.MOTION_TEXT_SYMBOL_27),
     cast: stringifyJson(analysis.cast.map((member) => ({ ..._.pick(member, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.ALIAS, RT_SERVER.ROLE, RT_SHARED.GENDER, RT_SHARED.AGE, RT_SERVER.APPEARANCEOF]), ...(member.key === motionNarratorCastKey(analysis) ? { narrationSpeaker: MOTION_VOICE.NARRATOR } : {}) }))),
