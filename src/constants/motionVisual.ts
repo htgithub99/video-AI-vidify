@@ -27,11 +27,11 @@ export const MOTION_VISUAL = {
   MODES: { LIBRARY: "library", REMOTION: "remotion" },
   PROFILES: {
     history: {
-      revision: 5,
+      revision: 6,
       vi: "Lịch sử",
       en: "History — illustrated",
       direction:
-        "Hand-drawn web-comic history explainer: every person is a template cartoon with a large pure white round head and a thick near-black outline, two solid black dot eyes with short brow strokes and a tiny mouth, no neck, a flat-colored bean-shaped body, thin black ink arms and two short ink legs without hands or feet; identity comes from hair caps, headwear, facial hair, expression and uniform details. Pictures alternate between pure white dialogue vignettes with figures at the left and right thirds and handwritten speech lines, dark desaturated relief maps with glowing translucent regions, thick campaign arrows and a large cropped figure in a corner, and richly illustrated period places in muted earthy tones with clean black outlines. Big bold dates or figures appear only when stated by the source. No glossy 3D, realistic bodies or horror lighting. Adapt to the actual period, region and event; learn visual craft from references without copying their characters, scenes, captions or logos.",
+        "Modern 2D animated history story in a clean web-cartoon look: every person has a large pure white round head with a thick near-black outline, two big round white eyes with black pupils, expressive short brows and a simple line mouth, no nose or ears, a short black neck and a slim fully clothed body about 4.3 head diameters tall with sleeve tubes, solid black mitten hands, trousers or skirt and boots; hairstyle, headwear, clothing, colors and expression are designed per character and stay consistent for each recurring person. Anonymous background extras may be simple stick figures or greyed figures. Backgrounds are richly drawn period places with clean dark outlines, flat colors with soft cel shading, atmospheric depth and dramatic light (sky gradients, smoke columns, light shafts in dark rooms). Shots alternate wide establishing views with many small people, waist-up two-shots, chest-up reactions, action mediums and occasional multi-panel montages. No glossy 3D, photorealism, horror vignette, captions or logos; adapt everything to the actual period, region and event and never copy reference characters or scenes.",
       paper: "#ffffff",
       ink: "#1b1b1b",
       muted: "#879277",

@@ -354,19 +354,6 @@ export interface MotionCreativeBlueprint {
   uncertainties: string[];
   evidence: { claim: string; sourceClue: string }[];
 }
-export interface MotionFolkBelief {
-  name: string;
-  meaning: string;
-  signs: string[];
-  taboos: string[];
-  remedies: string[];
-}
-export interface MotionFolkStoryContract {
-  version: number;
-  profileId: string;
-  sourceKey: string;
-  topic: { id: string; name: string; meaning: string; aliases: string[]; evidence: string };
-}
 export interface MotionSourceCore {
   premise: string;
   emotionalStake: string;
@@ -381,7 +368,6 @@ export interface MotionStorySpine {
 }
 export interface MotionStoryAnalysis {
   visualSettings?: import("./motionVisual.js").MotionVisualSettings;
-  folkStoryContract?: MotionFolkStoryContract;
   topicId?: string;
   topicEvidence?: { chapterId: string; quote: string }[];
   illustrationCoverage?: { version: number; chapterId: string; sourceKey: string; status: "checked_empty" | "checked_needs"; needIds: string[] }[];
@@ -410,9 +396,6 @@ export interface MotionStoryAnalysis {
   cast: MotionCastMember[];
   places: MotionPlace[];
   facts: MotionFact[];
-  modelCraft?: string[];
-  modelAvoid?: string[];
-  folkBelief?: MotionFolkBelief;
 }
 export interface MotionSceneMood {
   mood: MotionUtterance["emotion"];

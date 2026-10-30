@@ -10,7 +10,7 @@ try {
   const { prepareMotionThumbnailReferences, motionThumbnailStyle, rankMotionThumbnailScenes } = await import("../src/features/motion/server/services/motionThumbnailReferences.js");
   const { MOTION_THUMBNAIL: T } = await import("../src/constants/motionThumbnail.js");
   const { MOTION_VISUAL: V } = await import("../src/constants/motionVisual.js");
-  const analysis: any = { title: "Tiếng gọi ngoài sân", logline: "Người chị nghe tiếng gọi bên chiếc giếng.", look: "OLD GENERIC 3D LOOK", videoGenre: "ghost_tale", cast: [{ key: "sister", name: "Người chị", look: "Áo xanh" }], chapters: [{ id: "c1", title: "Chiếc giếng" }] };
+  const analysis: any = { title: "Tiếng gọi ngoài sân", logline: "Người chị nghe tiếng gọi bên chiếc giếng.", look: "OLD GENERIC 3D LOOK", videoGenre: "witness", cast: [{ key: "sister", name: "Người chị", look: "Áo xanh" }], chapters: [{ id: "c1", title: "Chiếc giếng" }] };
   const seo: any = { title: "TIẾNG GỌI BÊN GIẾNG", description: "Người chị áo xanh nghe tiếng gọi bên chiếc giếng cũ." };
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6M/wAAAAASUVORK5CYII=", "base64");
   const reference = "data:image/png;base64," + png.toString("base64");

@@ -78,7 +78,6 @@
     "test:motion-asset-catalog": "tsx scripts/verify-motion-asset-catalog.ts",
     "motion:migrate-asset-catalog": "tsx scripts/migrate-motion-asset-catalog.ts",
     "test:motion-voice-runtime": "tsx scripts/verify-motion-voice-runtime.ts",
-    "test:motion-story-craft": "tsx scripts/verify-motion-story-craft.ts && tsx scripts/verify-motion-folk-story.ts && tsx scripts/verify-motion-folk-writing.ts",
     "test:motion-visual-contract": "tsx scripts/verify-motion-frame-references.ts && tsx scripts/verify-motion-read-contract.ts && tsx scripts/verify-motion-visual-contract.ts && tsx scripts/verify-motion-effect-routing.ts && tsx scripts/verify-motion-posture-continuity.ts",
     "test:motion-storyboard": "tsx scripts/verify-motion-storyboard.ts",
     "test:motion-closed-pack": "tsx scripts/verify-motion-closed-pack.ts --installed",

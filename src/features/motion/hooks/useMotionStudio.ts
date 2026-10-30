@@ -24,7 +24,7 @@ import type { MotionCompiledPreview, MotionLogEntry, MotionSoundOverride, Motion
 import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../services/motionWorkflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../../../constants/workflowActivity";
 import * as MR from "../../../constants/motionRuntime.js";
-import { MOTION_VIDEO_GENRES, type MotionVideoGenre } from "../../../constants/motionGenre.js";
+import { MOTION_VIDEO_GENRE_DEFAULT, motionVideoGenre, type MotionVideoGenre } from "../../../constants/motionGenre.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -181,7 +181,7 @@ const DEFAULTS: PersistedState = {
   sceneAiModel: MOTION_SCENE_AI.PRIMARY_MODEL,
   sceneAiHeadless: true,
   aiReview: true,
-  videoGenre: MOTION_VIDEO_GENRES.AUTO,
+  videoGenre: MOTION_VIDEO_GENRE_DEFAULT,
   stylePreset: PUPPET_STYLE_DEFAULT,
   asrCheck: true,
   multiVoice: true,
@@ -768,7 +768,7 @@ export function useMotionStudio() {
                 aspect: now.aspect,
                 aiExecution: motionMainAiExecution(now),
                 sceneAiExecution: motionSceneAiExecution(now),
-                videoGenre: now.videoGenre || MOTION_VIDEO_GENRES.AUTO,
+                videoGenre: motionVideoGenre(now.videoGenre),
                 ...motionVisualRequest(now),
                 voiceChannel: selectedChannelRef(now, channelsRef.current),
                 multiVoice: now.multiVoice !== false,

@@ -8,13 +8,11 @@ import { motionChapterRepairPrompt, motionChapterPending, normalizeMotionDuratio
 import { compactMotionSourceLedger } from "../src/lib/motionSourceLedger.js";
 import { MOTION_PROMPT as PROMPT } from "../src/constants/motionPrompt.js";
 import { MOTION_CHAPTER_REPAIR as CHAPTER_REPAIR } from "../src/constants/motionChapterRepair.js";
-import { motionStoryDraft } from "../src/lib/motionStoryRepair.js";
 import { ChatContextReceipts } from "../src/server/services/chatContextReceipt.js";
 import { MOTION_VISUAL_CONTRACT as V } from "../src/constants/motionVisualContract.js";
 import { MOTION_STORYBOARD as S } from "../src/constants/motionStoryboard.js";
 import { PUPPET as P } from "../src/constants/motionPuppet.js";
 import { VISUAL_QA as T, visualReadFixture } from "./motionVisualContractVerificationTexts.js";
-import { STORY_CRAFT_QA } from "./motionStoryCraftVerificationTexts.js";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-prompt-resume-"));
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
@@ -50,12 +48,6 @@ assert.equal(receipts.has(1), false);
 receipts.accept(1);
 receipts.select("request-b");
 assert.equal(receipts.has(1), false);
-const locked = { title: "Accepted story", storySpine: { steps: [{ event: "Locked cause" }], clues: [] }, cast: [{ key: "a" }] };
-const merged = motionStoryDraft({ patch: { title: "Wrong", storySpine: { steps: [], clues: [{ detail: "Fixed clue" }] }, cast: [] } }, locked, [], ["storySpine.clues"]);
-assert.equal(merged.title, locked.title);
-assert.deepEqual(merged.cast, locked.cast);
-assert.deepEqual(merged.storySpine.steps, locked.storySpine.steps);
-assert.equal(merged.storySpine.clues.length, 1);
 const lines: any[] = Array.from({ length: 3 }, (_, index) => ({ key: "read-" + index, beatId: "beat-" + index, chapterId: "chapter", text: T.PROP_TEXT, place: T.ROOM, cast: [T.A, T.B] }));
 const analysis: any = { title: T.ROOM, logline: T.TEXT, cast: T.CAST, places: [], chapters: [] };
 const places: any = { [T.ROOM]: { key: T.ROOM, name: T.ROOM, desc: T.ROOM, interior: true, time: P.NIGHT } };
@@ -121,20 +113,15 @@ await assert.rejects(
   /missing legacy row/,
 );
 const chapter: any = { id: "chapter", title: "Đêm trở về", summary: "Người cháu về nhà, thấy chiếc bát rồi tìm ra người gõ cửa.", targetSeconds: 240, keyPoints: ["Người cháu trở về nhà.", "Bà chỉ chiếc bát trên bàn.", "Có tiếng gõ ngoài cửa.", "Người cháu nhận ra người khách."] };
-const story: any = { title: chapter.title, logline: chapter.summary, chapters: [chapter], cast: [], places: [{ key: "room", name: "Gian nhà", description: "Gian nhà trong làng" }], videoGenre: STORY_CRAFT_QA.GENRE };
-const source: any = { title: chapter.title, kind: "brief", text: chapter.summary, segments: [{ t: 0, text: chapter.summary }], sourceSeconds: 240 };
-const partition = motionChapterParts(chapter, story, source.text, true, 900);
-assert.ok(partition.length > 1);
-assert.deepEqual(
-  partition.flatMap((part) => part.points),
-  chapter.keyPoints,
-);
-assert.ok(Math.abs(partition.reduce((sum, part) => sum + part.seconds, 0) - 240) < 1e-9);
+const story: any = { title: chapter.title, logline: chapter.summary, chapters: [chapter], cast: [], places: [{ key: "room", name: "Gian nhà", description: "Gian nhà trong làng" }], videoGenre: "pov" };
 const factual = "Sự kiện thứ nhất có nguồn. Sự kiện thứ hai nối tiếp. Kết luận cuối giữ nguyên!";
-const factualParts = motionChapterParts(chapter, story, factual, false, 900);
-assert.equal(factualParts.map((part) => part.source).join(" "), factual);
-assert.ok(factualParts.every((part) => /[.!?]$/.test(part.source)));
-assert.deepEqual(motionChapterParts({ ...chapter, targetSeconds: 60 }, story, factual.repeat(300), false, 218), []);
+const source: any = { title: chapter.title, kind: "brief", text: factual, segments: [{ t: 0, text: factual }], sourceSeconds: 240 };
+const partition = motionChapterParts(chapter, story, source.text, 900);
+assert.ok(partition.length > 1);
+assert.equal(partition.map((part) => part.source).join(" "), factual);
+assert.ok(partition.every((part) => /[.!?]$/.test(part.source)));
+assert.ok(Math.abs(partition.reduce((sum, part) => sum + part.seconds, 0) - 240) < 1e-9);
+assert.deepEqual(motionChapterParts({ ...chapter, targetSeconds: 60 }, story, factual.repeat(300), 218), []);
 let chapterDraft: any,
   chapterCalls = 0;
 const narrative = "Người cháu đứng bên cửa, bà chậm rãi chỉ chiếc bát đặt trên bàn.";

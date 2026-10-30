@@ -17,9 +17,6 @@ import { DEEPSEEK_CHAT_CONFIG as D } from "../src/constants/deepseekChat.ts";
 import { PUPPET as PU, PUPPET_STYLE_PRESETS, PUPPET_TYPES } from "../src/constants/motionPuppet.ts";
 import { exhaustedMotionRoom } from "../src/server/services/chatSubmissionRecovery.ts";
 import { closeMotionJsonContainers } from "../src/lib/motionJsonRecovery.ts";
-import { ids, raw, STORY_CRAFT_QA as STORY } from "./motionStoryCraftVerificationTexts.js";
-import { MOTION_STORY_CRAFT as CRAFT } from "../src/constants/motionStoryCraft.ts";
-import { MOTION_STORY_DOCTOR as DOCTOR } from "../src/constants/motionGenre.ts";
 import { MOTION_VISUAL_CONTRACT as VISUAL } from "../src/constants/motionVisualContract.ts";
 import { VISUAL_QA as READ, visualReadFixture } from "./motionVisualContractVerificationTexts.ts";
 const coordination = new MotionProviderRecovery();
@@ -399,60 +396,6 @@ try {
     await service.releaseMotionEditorialSession(V.EDITORIAL.id);
   }
   reset();
-  const storyAnalysis = { videoGenre: STORY.GENRE, title: STORY.OLD_TITLE, logline: STORY.OLD, chapters: ids.map((id) => ({ id, title: id, summary: STORY.OLD_CHAPTER, keyPoints: [STORY.OLD_EVENT], targetSeconds: 120 })), cast: [], places: [], facts: [] };
-  const storySource = { title: STORY.MODEL, text: V.STORY, segments: [], sourceSeconds: 240, kind: STORY.BRIEF };
-  fixture.send = async (request) => {
-    const response = fixture.sent.length === 1 ? { ...raw, sourceCore: undefined, storySpine: undefined } : { patch: { sourceCore: raw.sourceCore, storySpine: raw.storySpine } };
-    return { text: JSON.stringify({ ...response, requestId: request.requestId }), provider: request.provider };
-  };
-  const story = await within(service.developCreativeStory(storyAnalysis, storySource, { language: STORY.LANGUAGE, exec: storyExec }));
-  assert.deepEqual(
-    fixture.sent.map((request) => request.provider),
-    [P.GeminiChat, P.GeminiChat],
-  );
-  assert.equal(story.title, raw.title);
-  assert.deepEqual(story.storySpine, raw.storySpine);
-  assert.deepEqual(story.sourceCore, raw.sourceCore);
-  assert.ok(fixture.sent[1].prompt.includes(CRAFT.ERR_SPINE));
-  assert.equal(fixture.apiCalls, 0);
-  const chain = (await readFile(path.join(process.env.VIDIFY_STORAGE_DIR!, STORY.CHAIN_LOG), "utf8"))
-    .trim()
-    .split(STORY.JSONL_LINES)
-    .map((line) => JSON.parse(line))
-    .filter((entry) => entry.artifact === DOCTOR.ARTIFACT);
-  assert.deepEqual(
-    chain.map((entry) => [entry.provider, entry.result]),
-    [[P.GeminiChat, FALLBACK.RESULT_OK]],
-  );
-  reset();
-  let strictReplies = 0;
-  fixture.send = async (request) => {
-    strictReplies++;
-    return { text: JSON.stringify({ ...raw, sourceCore: undefined, requestId: request.requestId }), provider: request.provider };
-  };
-  await assert.rejects(within(service.developCreativeStory(storyAnalysis, storySource, { language: STORY.LANGUAGE, exec: { ...storyExec, strictProvider: true } })), (error: Error) => error.message === CRAFT.CONTRACT_FAILED([CRAFT.LABELS.sourceCore]));
-  assert.equal(strictReplies, DOCTOR.ATTEMPTS);
-  assert.ok(fixture.sent.every((request) => request.provider === P.GeminiChat));
-  reset();
-  fixture.send = async (request) => ({ text: JSON.stringify({ ...raw, sourceCore: undefined, requestId: request.requestId }), provider: request.provider });
-  await assert.rejects(within(service.developCreativeStory(storyAnalysis, storySource, { language: STORY.LANGUAGE, exec: storyExec })), (error: Error) => error.message === CRAFT.CONTRACT_FAILED([CRAFT.LABELS.sourceCore]));
-  const contentRoutes = service.motionAiRoutes(storyExec);
-  assert.deepEqual(
-    fixture.sent.map((request) => request.provider),
-    contentRoutes.flatMap((route) => Array.from({ length: PRODUCTION.CONTRACT_ROUTE_ATTEMPTS }, () => route.provider)).slice(0, PRODUCTION.CONTRACT_TOTAL_ATTEMPTS),
-  );
-  assert.equal(fixture.apiCalls, 0);
-  reset();
-  fixture.send = async (request) => ({ text: JSON.stringify({ ...(request.provider === P.GeminiChat ? { ...raw, sourceCore: undefined } : { patch: { sourceCore: raw.sourceCore } }), requestId: request.requestId }), provider: request.provider });
-  const fallbackStory = await within(service.developCreativeStory(storyAnalysis, storySource, { language: STORY.LANGUAGE, exec: storyExec }));
-  assert.deepEqual(
-    fixture.sent.map((request) => request.provider),
-    [P.GeminiChat, P.GeminiChat, contentRoutes[1].provider],
-  );
-  assert.equal(fallbackStory.title, raw.title);
-  assert.deepEqual(fallbackStory.sourceCore, raw.sourceCore);
-  assert.deepEqual(fallbackStory.storySpine, raw.storySpine);
-  assert.equal(fixture.apiCalls, 0);
   reset();
   const captchaConfig = service.MOTION_CAPTCHA;
   const originalCaptchaPoll = captchaConfig.POLL_MS;

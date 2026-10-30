@@ -11,12 +11,7 @@ import { layoutPuppetFrame, puppetSpots } from "../src/server/services/puppet/la
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { PUPPET } from "../src/constants/motionPuppet.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../src/constants/cinematicConstants.js";
-import { developCreativeStory } from "../src/server/services/motionStoryService.js";
 import { MOTION_ILLUSTRATION_NEEDS as N } from "../src/constants/motionIllustrationNeeds.js";
-import { motionStoryContract } from "../src/lib/motionStoryCraft.js";
-import { MOTION_FOLK_STORY as F } from "../src/constants/motionFolkStory.js";
-import { motionFolkTopicContract } from "../src/lib/motionFolkStory.js";
-import { videoDnaSourceKey } from "../src/lib/motionVideoDna.js";
 const original: any[] = [
   { char: Q.ACTOR, posture: "sit", action: "sit", support: "chair", placement: { relation: "at", anchor: Q.DOOR, evidence: Q.SOURCE } },
   { char: "patient", posture: "lie", action: "lie", support: Q.BED },
@@ -77,38 +72,6 @@ await repairMotionIllustrationNeeds(fixed, states, {
     throw new Error(Q.FORBIDDEN);
   },
 });
-let analysisCalls = 0;
-let savedAnalysis: any;
-const topic = { name: real.belief.name, meaning: real.belief.meaning, aliases: [Q.TOPIC_ALIAS], evidence: Q.TOPIC_ALIAS };
-const storySource: any = { title: topic.name, text: Q.TOPIC_ALIAS + ". " + Q.SOURCE };
-const topicContract = motionFolkTopicContract(topic, videoDnaSourceKey(storySource));
-const upgradedDraft = {
-  ...draft,
-  topicId: topicContract.topic.id,
-  topicEvidence: [{ chapterId: real.chapters[0].id, quote: Q.TOPIC_ALIAS }],
-  sourceCore: { ...draft.sourceCore, premise: Q.TOPIC_ALIAS + ": " + draft.sourceCore.premise },
-  storySpine: { ...draft.storySpine, steps: draft.storySpine.steps.map((step: any, index: number) => (index ? step : { ...step, cause: Q.TOPIC_ALIAS + ": " + step.cause })) },
-};
-const recoveredStory = await developCreativeStory({ ...real, videoGenre: "ghost_tale", illustrationNeeds: undefined, chapters: real.chapters.map((chapter: any) => ({ ...chapter, targetSeconds: 120 })) }, storySource, {
-  language: "vi",
-  exec: {},
-  draft: { inputKey: Q.SOURCE, rejected: 0, creative: { raw: upgradedDraft, state: { rejected: 2, errors: ["illustrationNeeds"] }, budget: 2, repairRevision: 1 } },
-  onDraft: (value) => {
-    savedAnalysis = structuredClone(value);
-  },
-  ai: async (_prompt, artifact) => {
-    analysisCalls++;
-    if (artifact === F.TOPIC_ARTIFACT) return topic;
-    assert.equal(artifact, N.ARTIFACT);
-    return { need: { objects: [{ mount: "table" }, { mount: "table" }] } };
-  },
-});
-assert.equal(analysisCalls, 2);
-assert.equal(recoveredStory.title, real.title);
-assert.deepEqual(recoveredStory.sourceCore, motionStoryContract(upgradedDraft).sourceCore);
-assert.equal(savedAnalysis.creative.state.rejected, 2);
-assert.equal(savedAnalysis.creative.repairRevision, N.REVISION);
-assert.deepEqual(motionIllustrationNeedsErrors(recoveredStory), []);
 const routeState: MotionAiContractState = { rejected: 0, errors: [] };
 const contract: MotionAiResponseContract = { attempts: 2, routeAttempts: 2, budget: 6, state: routeState, assess: (raw) => ({ value: raw, errors: raw?.ok ? [] : [Q.SOURCE] }), repair: () => Q.SOURCE, failure: (errors) => new Error(errors.join("\n")) };
 const primary: any = { provider: "gemini-chat", model: "gemini-flash::low" };

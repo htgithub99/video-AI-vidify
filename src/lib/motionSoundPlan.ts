@@ -1,7 +1,6 @@
 import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_SOUND_BEDS, MOTION_SOUND_CONFIG as C, MOTION_SOUND_GENRE_ALIAS, MOTION_SOUND_GENRE_CUE as G, MOTION_SOUND_GENRES, MOTION_SOUND_KINDS, MOTION_SOUND_SCARY_PLACE } from "../constants/motionSound.js";
-import { MOTION_VIDEO_GENRES } from "../constants/motionGenre.js";
 import { motionCueLimit, normalizeSoundEvents, normalizeSoundCues, soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
 import { MOTION_AUDIO_DIRECTION } from "../constants/motionAudioDirection.js";
@@ -21,7 +20,7 @@ export const motionSoundSpatial = (spec: MotionSpec, time: number, actor: any, d
   return { position, pan: Math.max(-0.8, Math.min(0.8, screenX / Math.max(1, distance * 0.65))), attenuation: -Math.min(12, Math.max(0, 20 * Math.log10(Math.max(1, distance / 2)))) };
 };
 export const motionSoundGenre = (analysis?: MotionStoryAnalysis | null): MotionSoundGenrePalette | undefined => {
-  const chosen = analysis?.videoGenre && analysis.videoGenre !== MOTION_VIDEO_GENRES.AUTO ? analysis.videoGenre : MOTION_SOUND_GENRE_ALIAS[analysis?.genre || C.EMPTY];
+  const chosen = MOTION_SOUND_GENRE_ALIAS[analysis?.videoGenre || C.EMPTY] || MOTION_SOUND_GENRE_ALIAS[analysis?.genre || C.EMPTY];
   return chosen ? MOTION_SOUND_GENRES[chosen] || MOTION_SOUND_GENRES[MOTION_SOUND_GENRE_ALIAS[chosen]] : undefined;
 };
 const wordTime = (clips: MotionVoiceClip[], pattern: RegExp): number | undefined => {

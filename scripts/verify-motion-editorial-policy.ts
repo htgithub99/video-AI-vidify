@@ -6,7 +6,7 @@ import { MOTION_EDITORIAL_POLICY as E } from "../src/constants/motionEditorialPo
 import { MOTION_LOG_SECTIONS as LOG } from "../src/features/motion/constants/motionLogSections.js";
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { MOTION_RESPONSE_SCHEMAS } from "../src/constants/motionResponseContract.js";
-import { inheritMotionDnaStyle, normalizeVideoDna, videoDnaErrors } from "../src/lib/motionVideoDna.js";
+import { normalizeVideoDna, videoDnaErrors } from "../src/lib/motionVideoDna.js";
 import { normalizeMotionChapterMetadata } from "../src/lib/motionEditorialMetadata.js";
 import { motionChapterResponseIssues } from "../src/lib/motionChapterRepair.js";
 import { motionChapterParts } from "../src/lib/motionChapterParts.js";
@@ -90,25 +90,8 @@ try {
     ])
       assert.ok(motionChapterResponseIssues([invalid], [analysis.cast[0].key], [analysis.places[0].key], mode === "library").length);
     const chapter = { ...analysis.chapters[0], targetSeconds: 120 };
-    assert.equal(motionChapterParts(chapter, analysis, "Short source", true, 410).length, 0);
-    assert.ok(motionChapterParts({ ...chapter, targetSeconds: 600 }, analysis, "Short source", true, 2000).length > 1);
-    const patch = {
-      intent: "New story intent",
-      mustPreserve: ["New event"],
-      mustVary: ["New costume"],
-      mustNotCopy: ["Source wording"],
-      uncertainties: [],
-      evidence: [{ claim: "New event", sourceClue: "New chapter", confidence: 90 }],
-      characters: { ...dna.characters, continuity: ["New character"] },
-      environment: { ...dna.environment, space: "New place", continuity: ["New place"] },
-      opening: { visual: "New event", purpose: "New hook", acceptance: ["New character"] },
-    };
-    const inherited = normalizeVideoDna(inheritMotionDnaStyle(analysis.videoDna!, patch, analysis), analysis.videoDna!.settings, analysis.videoDna!.sourceKey)!;
-    assert.equal(inherited.narrative.voice, analysis.videoDna!.narrative.voice);
-    assert.equal(inherited.intent, patch.intent);
-    assert.deepEqual(inherited.mustPreserve, patch.mustPreserve);
-    assert.ok(!JSON.stringify(inherited).includes("Old character"));
-    assert.ok(videoDnaErrors(inheritMotionDnaStyle(analysis.videoDna!, {}, analysis)).length, "Missing new content must not silently inherit source facts");
+    assert.equal(motionChapterParts(chapter, analysis, "Short source", 410).length, 0);
+    assert.ok(motionChapterParts({ ...chapter, targetSeconds: 600 }, analysis, "Short source. Second source line. Third source line.", 2000).length > 1);
   }
   assert.equal(JSON.stringify(dna), snapshot);
   assert.deepEqual(Object.keys(MOTION_RESPONSE_SCHEMAS["motion-story-new-dna"].properties!.videoDna.properties!), E.RETUNE_FIELDS);

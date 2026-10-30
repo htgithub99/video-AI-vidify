@@ -20,7 +20,7 @@ import { puppetBeatVisualLines } from "../../../lib/motionStoryboard.js";
 import { motionDisplayedJob } from "../lib/motionDisplayedJob.js";
 import { MOTION_REFERENCE_TEXTS } from "../../../constants/motionReference.js";
 import * as MR from "../../../constants/motionRuntime.js";
-import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, type MotionVideoGenre } from "../../../constants/motionGenre.js";
+import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, motionVideoGenre, type MotionVideoGenre } from "../../../constants/motionGenre.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
 import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
@@ -522,7 +522,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     onClick={() => patch({ renderBehavior: { ...state.renderBehavior, camera: state.renderBehavior.camera === RT_SHARED.GENTLE ? RT_SHARED.FIXED : RT_SHARED.GENTLE } })}
                   />
                 </div>
-                <MotionSelectField label={genreText.LABEL} value={state.videoGenre || MOTION_VIDEO_GENRES.AUTO} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                <MotionSelectField label={genreText.LABEL} value={motionVideoGenre(state.videoGenre)} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
                   {_.map(MOTION_VIDEO_GENRES, (genre) => (
                     <option key={genre} value={genre}>
                       {genreText.OPTIONS[genre]}

@@ -1,14 +1,6 @@
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
-import { MOTION_STORY_CRAFT as CRAFT } from "../../constants/motionStoryCraft.js";
 import { motionStoryEventLedger } from "../../lib/motionStoryContinuity.js";
-import { MOTION_FOLK_STORY as FOLK } from "../../constants/motionFolkStory.js";
-import { MOTION_FOLK_WRITING as FOLK_WRITING, motionFolkWritingGuide } from "../../constants/motionFolkWriting.js";
-import { motionFolkStyleFindings } from "../../lib/motionFolkWriting.js";
-import { motionFolkContractGuide, motionFolkTopicErrors, motionFolkTopicValid, motionFolkTopicContract, motionKnownFolkContract, motionFolkStoryErrors, motionFolkChapterContext, motionFolkChapterWritingContext, motionFolkCopied, scopeMotionFolkStoryRepair, motionFolkTextDrifts } from "../../lib/motionFolkStory.js";
-import type { MotionFolkStoryContract } from "../../types/motionVideo.js";
-import { repairMotionIllustrationNeeds } from "./motionIllustrationRepairService.js";
-import { normalizeMotionIllustrationNeeds, acceptMotionIllustrationAudit } from "../../lib/motionIllustrationNeeds.js";
 import { closeMotionJsonContainers } from "../../lib/motionJsonRecovery.js";
 import { MOTION_PRODUCTION } from "../../constants/motionProduction.js";
 import { MOTION_QA as QA } from "../../constants/motionQa.js";
@@ -28,12 +20,9 @@ import { motionSourceChunks } from "../../lib/motionSourceChunks.js";
 import { compactMotionSourceLedger, parseMotionSourceLedgerPart, type MotionSourceLedgerDraft, type MotionSourceLedgerNode } from "../../lib/motionSourceLedger.js";
 import { MOTION_EDITORIAL } from "../../constants/motionEditorial.js";
 import { motionStoryLanguageGuide } from "../../constants/motionStoryLanguage.js";
-import { motionStoryContract, motionStoryContractErrors } from "../../lib/motionStoryCraft.js";
-import { motionStoryDraft, motionStoryIssueLabels, motionStoryRepairFields } from "../../lib/motionStoryRepair.js";
-import { motionDnaRepairDraft, motionDnaRepairPrompt } from "../../lib/motionDnaRepair.js";
 import { MotionProviderRecovery } from "./motionProviderRecovery.js";
 import { requestMotionAiContract, recoverMotionAiContractState, type MotionAiResponseContract } from "./motionAiContractService.js";
-import { MOTION_CAPTCHA_PROBE, MOTION_DOCTOR_FIELDS } from "../../constants/motionStoryFields.js";
+import { MOTION_CAPTCHA_PROBE } from "../../constants/motionStoryFields.js";
 import { expandInitialCastNames, fullCastNames } from "../../lib/motionCastNames.js";
 import { MOTION_CAST_NAMES } from "../../constants/motionCastNames.js";
 import { MOTION_AUDIO_DIRECTION } from "../../constants/motionAudioDirection.js";
@@ -57,11 +46,9 @@ import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import { normalizeMotionHud } from "../../lib/motionHistory.js";
-import { MOTION_CREATIVE_EDITOR, MOTION_STORY_DOCTOR, motionGenreCreative, motionVideoGenre, motionVideoGenreDirective, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../constants/motionGenre.js";
-import { findFolkBeliefs, knownFolkBelief } from "../../lib/motionFolkBelief.js";
+import { motionVideoGenre, motionVideoGenreDirective, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../constants/motionGenre.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../constants/motionMusic.js";
 import _ from "lodash";
-import { MOTION_ILLUSTRATION_NEEDS as NEEDS } from "../../constants/motionIllustrationNeeds.js";
 import { puppetPackPlanningCapabilities, puppetPackChapterCapabilities } from "./puppet/packCatalog.js";
 import path from "path";
 import { CINEMATIC_CHAT_MODEL_OPTIONS, CINEMATIC_CHAT_PLANNING_CONFIG } from "../../constants/index.js";
@@ -162,7 +149,7 @@ import { MOTION_STORY_CONFIG, MOTION_STORY_LENGTH_SECONDS } from "../../constant
 import { parseJson, stringifyJson } from "../../lib/jsonStringify.js";
 import { productionPreamble } from "../../lib/motionDirection.js";
 import { normalizeCreativeBlueprint } from "../../lib/motionCreativeBlueprint.js";
-import { inheritMotionDnaStyle, normalizeScenePlan, normalizeVideoDna, scenePlanErrors, videoDnaErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
+import { normalizeScenePlan, normalizeVideoDna, scenePlanErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
 import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifiedQuotes } from "../../lib/motionSourceClean.js";
 import { getMotionErrorMessage, normalizeMotionText } from "../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../types.js";
@@ -170,7 +157,7 @@ import { parseClaudeChatModel } from "../../constants/claudeChatModels.js";
 import { GEMINI_MODEL_ENCODING, parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { DEEPSEEK_CHAT_CONFIG, DEEPSEEK_CHAT_MODES } from "../../constants/deepseekChat.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
-import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionFolkBelief, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDna, type MotionVideoDnaSettings } from "../../types/motionVideo.js";
+import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDnaSettings } from "../../types/motionVideo.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, getChatPlanningRoom, prepareChatPlanningRoom, reloadChatPlanningRoom, resumeChatPlanningResponse } from "./chatUiPlanningService.js";
 import { exhaustedMotionRoom, isChatAttachmentError, isFinalChatResponseError, isMotionContentResponseError, isTerminalMotionAiError, uncertainChatSubmission, type ChatPlanningSubmission } from "./chatSubmissionRecovery.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../constants/motionAiRecovery.js";
@@ -908,7 +895,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     signal?.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     run?.signal.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     let timedOut = false;
-    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, MOTION_STORY_DOCTOR.ARTIFACT, MOTION_STORY_DOCTOR.DNA_ARTIFACT], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : _.includes(MOTION_STORY_CONFIG.ROOM_SHORT_ARTIFACTS, artifactType) ? MOTION_STORY_CONFIG.ROOM_SHORT_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
+    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : _.includes(MOTION_STORY_CONFIG.ROOM_SHORT_ARTIFACTS, artifactType) ? MOTION_STORY_CONFIG.ROOM_SHORT_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
     let watchdog: ReturnType<typeof setTimeout> | undefined;
     let retryRoom = false;
     let replaceRoom = false;
@@ -1267,16 +1254,7 @@ const withMusicMood = (analysis: MotionStoryAnalysis, raw: any): MotionStoryAnal
   const mood = musicMoodOf(raw?.musicMood);
   return { ...analysis, chapters, ...(mood ? { musicMood: mood } : {}) };
 };
-const doctorText = (v: unknown, max: number): string | undefined => (_.trim(_.toString(v ?? MR.MOTION_TEXT_EMPTY)) ? _.truncate(_.trim(_.toString(v)), { length: max }) : undefined);
-const shortenDna = (v: unknown): unknown => {
-  const D = MOTION_STORY_DOCTOR;
-  if (_.isString(v)) return _.truncate(v, { length: D.DNA_PREVIOUS_TEXT_MAX });
-  if (_.isArray(v)) return _.map(_.take(v, D.DNA_PREVIOUS_LIST_MAX), shortenDna);
-  if (_.isPlainObject(v)) return _.mapValues(v as Record<string, unknown>, shortenDna);
-  return v;
-};
 export interface MotionAnalysisDraft {
-  folkTopic?: { contract?: MotionFolkStoryContract; raw?: any; state: import("./motionAiContractService.js").MotionAiContractState };
   core?: { state: import("./motionAiContractService.js").MotionAiContractState; budget: number };
   ledgerReadParts?: Record<string, { raw?: unknown; state: import("./motionAiContractService.js").MotionAiContractState }>;
   ledgerReductions?: MotionSourceLedgerDraft;
@@ -1286,293 +1264,13 @@ export interface MotionAnalysisDraft {
   rejected: number;
   base?: MotionStoryAnalysis;
   completed?: MotionStoryAnalysis;
-  creative?: { raw: any; state: import("./motionAiContractService.js").MotionAiContractState; needs?: Record<string, import("./motionAiContractService.js").MotionAiContractState>; repairRevision?: number; writingRevision?: number; budget?: number };
   retune?: { inputKey?: string; raw?: any; rejected: number; errors: string[]; contract?: import("./motionAiContractService.js").MotionAiContractState; budget?: number };
   profiles?: Record<string, { raw?: any; state: import("./motionAiContractService.js").MotionAiContractState }>;
 }
-const resolveMotionFolkContract = async (analysis: MotionStoryAnalysis, source: MotionStorySource, modelText: string, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<MotionFolkStoryContract> => {
-  const sourceKey = videoDnaSourceKey(source);
-  const original = (source.title || "") + RT_SHARED.SYMBOL_01BA47 + (source.text || "");
-  const valid = (value?: MotionFolkStoryContract) => value?.version === FOLK.VERSION && value.profileId === FOLK.PROFILE_ID && value.sourceKey === sourceKey && motionFolkTopicValid(value.topic, original);
-  if (valid(opts.draft?.folkTopic?.contract)) return opts.draft!.folkTopic!.contract!;
-  if (valid(analysis.folkStoryContract)) return analysis.folkStoryContract!;
-  const known = motionKnownFolkContract(source.title || "", source.text || "", sourceKey);
-  if (known) {
-    if (opts.draft) {
-      opts.draft.folkTopic = { contract: known, state: { rejected: 0, errors: [] } };
-      opts.onDraft?.(structuredClone(opts.draft));
-    }
-    return known;
-  }
-  const saved = opts.draft ? (opts.draft.folkTopic ||= { state: { rejected: 0, errors: [] } }) : { state: { rejected: 0, errors: [] }, raw: undefined as any, contract: undefined as MotionFolkStoryContract | undefined };
-  saved.state = recoverMotionAiContractState(saved.state, FOLK.TOPIC_RECOVERY_REVISION);
-  if (saved.raw) saved.state.errors = motionFolkTopicErrors(saved.raw, original);
-  if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-  const input = (source.title || "") + RT_SHARED.SYMBOL_01BA47 + modelText;
-  const question = () => FOLK.TOPIC_PROMPT(input, saved.state.errors);
-  const contract: MotionAiResponseContract = {
-    attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
-    routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
-    budget: MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS,
-    state: saved.state,
-    checkpoint: () => {
-      if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-    },
-    assess: (raw) => {
-      saved.raw = raw;
-      return { value: raw, errors: [...new Set([...motionFolkTopicErrors(raw, input), ...motionFolkTopicErrors(raw, original)])] };
-    },
-    repair: question,
-    failure: () => new Error(FOLK.TOPIC_FAILED),
-  };
-  const raw =
-    saved.raw && motionFolkTopicValid(saved.raw, input) && original.includes(saved.raw.evidence) ? saved.raw : opts.ai ? await requestMotionAiContract(question(), opts.exec, (prompt) => opts.ai!(prompt, FOLK.TOPIC_ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(question(), FOLK.TOPIC_ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
-  saved.contract = motionFolkTopicContract(raw, sourceKey);
-  if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-  return saved.contract;
-};
 interface MotionAnalysisRecovery {
   draft?: MotionAnalysisDraft;
   onDraft?: (draft: MotionAnalysisDraft) => void;
 }
-const newStoryDna = async (story: MotionStoryAnalysis, old: MotionVideoDna | undefined, source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<MotionVideoDna | undefined> => {
-  if (!old?.settings) return undefined;
-  const D = MOTION_STORY_DOCTOR;
-  opts.log?.(D.LOG_DNA);
-  const base = {
-    instructions: ([EDITORIAL_POLICY.RETUNE, EDITORIAL_POLICY.COMPACT, motionStoryLanguageGuide(old.settings.language, false, true)] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
-    directive: ([motionVideoGenreDirective(story.videoGenre, false), story.folkStoryContract ? FOLK.CONTRACT_LABEL + stringifyJson(story.folkStoryContract) : ""] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
-    story: stringifyJson({ ..._.pick(story, MOTION_DOCTOR_FIELDS.STORY), sourceCore: story.sourceCore, storySpine: story.storySpine }),
-    craft: (story.modelCraft || []).join(MR.MOTION_TEXT_SYMBOL_41),
-    avoid: (story.modelAvoid || []).join(MR.MOTION_TEXT_SYMBOL_41),
-    belief: story.folkBelief ? D.BELIEF(story.folkBelief) : undefined,
-    previous: stringifyJson(shortenDna(_.pick(old, D.DNA_PREVIOUS_KEYS))),
-  };
-  const inputKey = motionInputKey(base);
-  const legacy = !!opts.draft?.retune && opts.draft.retune.inputKey === inputKey && !opts.draft.retune.contract;
-  if (opts.draft && opts.draft.retune?.inputKey !== inputKey) opts.draft.retune = { inputKey, rejected: 0, errors: [] };
-  const state = opts.draft ? (opts.draft.retune ||= { rejected: 0, errors: [] }) : { rejected: 0, errors: [] as string[], raw: undefined as any, contract: undefined as import("./motionAiContractService.js").MotionAiContractState | undefined, budget: undefined as number | undefined };
-  const contractState = (state.contract ||= { rejected: state.rejected, errors: state.errors });
-  const inherit = (patch: any) => inheritMotionDnaStyle(old, patch, story);
-  if (state.raw) state.raw = inherit(state.raw);
-  state.budget ||= legacy ? D.DNA_ATTEMPTS : MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS;
-  const checkpoint = () => {
-    state.rejected = contractState.rejected;
-    state.errors = contractState.errors;
-    if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-  };
-  const question = () => (state.raw ? motionDnaRepairPrompt({ videoDna: state.raw }, videoDnaErrors(state.raw)) : withMotionResponsePrompt(D.DNA_ARTIFACT, D.DNA_PROMPT(base)));
-  const contract: MotionAiResponseContract = {
-    attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
-    routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
-    budget: state.budget,
-    state: contractState,
-    checkpoint,
-    start: question,
-    assess: (response) => {
-      const raw = inherit(response?.videoDna || response);
-      state.raw = state.raw ? motionDnaRepairDraft({ videoDna: state.raw }, { videoDna: raw }, videoDnaErrors(state.raw)).videoDna : raw;
-      return { value: state.raw, errors: videoDnaErrors(state.raw) };
-    },
-    repair: question,
-    failure: () => new Error(D.ERR_DNA),
-  };
-  let dna: any;
-  try {
-    dna = state.raw && !videoDnaErrors(state.raw).length ? state.raw : opts.ai ? await requestMotionAiContract(question(), opts.exec, (prompt) => opts.ai!(prompt, D.DNA_ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(question(), D.DNA_ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
-  } catch (error) {
-    if ((isTerminalMotionAiError(error, opts.signal) && !_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED)) || MOTION_PRODUCTION.SERVICE_ERROR_RE.test(String((error as Error)?.message))) throw error;
-    opts.log?.(D.LOG_DNA_FAIL);
-    return undefined;
-  }
-  checkpoint();
-  const normalized = normalizeVideoDna(dna, old.settings, videoDnaSourceKey(source));
-  if (normalized) {
-    opts.log?.(D.LOG_DNA_OK);
-    return normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: old.settings.language } } : normalized;
-  }
-  opts.log?.(D.LOG_DNA_FAIL);
-  return undefined;
-};
-export const developCreativeStory = async (analysis: MotionStoryAnalysis, source: MotionStorySource, opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<MotionStoryAnalysis> => {
-  if (!motionGenreCreative(analysis.videoGenre)) return analysis;
-  const D = MOTION_STORY_DOCTOR;
-  opts.log?.(D.LOG_START);
-  const saved: NonNullable<MotionAnalysisDraft["creative"]> = opts.draft ? (opts.draft.creative ||= { raw: {}, state: { rejected: 0, errors: [] } }) : { raw: {}, state: { rejected: 0, errors: [] as string[] } };
-  if (saved.writingRevision !== FOLK.VERSION) {
-    if (Object.keys(saved.raw || {}).length && saved.repairRevision === NEEDS.REVISION) {
-      saved.budget = Math.max(saved.budget || 0, saved.state.rejected) + MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS;
-      saved.state.routes = {};
-    }
-    saved.writingRevision = FOLK.VERSION;
-  }
-  if (saved.repairRevision !== NEEDS.REVISION) {
-    const legacy = Object.keys(saved.raw || {}).length > 0 && saved.state.errors.includes(CRAFT.ERR_ILLUSTRATION);
-    saved.budget = Math.max(saved.budget || 0, saved.state.rejected) + MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS;
-    saved.repairRevision = NEEDS.REVISION;
-    if (legacy) opts.log?.(NEEDS.MIGRATION(saved.state.rejected));
-    if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-  }
-  let draft: any = saved.raw;
-  let folkContract: MotionFolkStoryContract | undefined;
-  const storyErrors = (value: any) => [
-    ...motionStoryContractErrors(
-      value,
-      analysis.chapters.map((chapter) => chapter.id),
-    ).filter((error) => error !== CRAFT.ERR_ILLUSTRATION),
-    ...(folkContract ? motionFolkStoryErrors(value, folkContract, source.text || "") : []),
-  ];
-  let contractErrors: string[] = storyErrors(draft);
-  try {
-    const story = stringifyJson({
-      title: analysis.title,
-      logline: analysis.logline,
-      cast: _.map(analysis.cast, (c) => _.pick(c, [MR.MOTION_TEXT_KEY, MR.MOTION_TEXT_NAME, MOTION_DOCTOR_FIELDS.ROLE, MOTION_DOCTOR_FIELDS.GENDER, MOTION_DOCTOR_FIELDS.AGE, MOTION_DOCTOR_FIELDS.LOOK])),
-      places: _.map(analysis.places, (p) => _.pick(p, [MR.MOTION_TEXT_KEY, MR.MOTION_TEXT_NAME, MOTION_DOCTOR_FIELDS.DESCRIPTION, MOTION_DOCTOR_FIELDS.INTERIOR, MOTION_DOCTOR_FIELDS.TIME])),
-      chapters: _.map(analysis.chapters, (c) => _.pick(c, MOTION_DOCTOR_FIELDS.CHAPTER)),
-    });
-    const seconds = Math.round(_.sumBy(analysis.chapters, (c) => c.targetSeconds || 0)) || analysis.chapters.length * 150;
-    const text = source.text || MR.MOTION_TEXT_EMPTY;
-    const modelText = text.length <= CRAFT.SOURCE_LIMIT ? text : (await buildSourceLedger(source, opts)) || text;
-    folkContract = await resolveMotionFolkContract(analysis, source, modelText, opts);
-    opts.log?.(FOLK.TOPIC_LOG(folkContract.topic.name));
-    contractErrors = storyErrors(draft);
-    const known = findFolkBeliefs([analysis.title, analysis.logline, text].join(MR.MOTION_TEXT_SYMBOL_27));
-    const promptInput = {
-      directive: [motionFolkContractGuide(folkContract), FOLK.ALIGNMENT_RULE, motionVisualCapability(analysis.visualSettings) || puppetPackPlanningCapabilities(analysis.stylePreset)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
-      language: opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE,
-      story,
-      source: modelText,
-      seconds,
-      events: Math.max(3, Math.round(seconds / D.SECONDS_PER_EVENT)),
-      ...(known.length ? { known: D.KNOWN_BELIEF(_.map(known, D.BELIEF)) } : {}),
-    };
-    const ids = analysis.chapters.map((c) => c.id);
-    const repair = (_prompt: string, value: any, errors: string[]) => {
-      const pending = errors.length ? errors : storyErrors(value);
-      return [PROMPT.STORY_REPAIR(ids, motionStoryRepairFields(pending), value, pending, pending.includes(CRAFT.ERR_CORE) ? modelText : undefined), motionFolkContractGuide(folkContract), FOLK.ALIGNMENT_RULE, CRAFT.SCHEMA, motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
-    };
-    const contract: MotionAiResponseContract = {
-      attempts: D.ATTEMPTS,
-      routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
-      budget: saved.budget,
-      state: saved.state,
-      checkpoint: (state) => {
-        saved.state = state;
-        if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-      },
-      start: (prompt) => (Object.keys(draft).length ? repair(prompt, draft, contractErrors) : prompt),
-      assess: (raw) => {
-        const errors = Object.keys(draft).length ? storyErrors(draft) : [];
-        draft = motionStoryDraft(scopeMotionFolkStoryRepair(raw, errors), draft, ids, Object.keys(draft).length ? motionStoryRepairFields(errors) : undefined);
-        contractErrors = storyErrors(draft);
-        saved.raw = draft;
-        if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-        return { value: draft, errors: contractErrors };
-      },
-      repair,
-      failure: (errors) => new Error(CRAFT.CONTRACT_ERROR(motionStoryIssueLabels(errors))),
-      rejected: async (raw, value, errors, route, attempt) => {
-        opts.log?.(CRAFT.LOG_REPAIR(attempt, motionStoryIssueLabels(errors)));
-        await writeMotionAiDebug(MOTION_TEMPLATE_SYMBOL_5(D.ARTIFACT, randomUUID().slice(0, 8)), { stage: CRAFT.CONTRACT_STAGE, artifact: D.ARTIFACT, provider: route.provider, model: route.model, attempt, errors, expectedChapterIds: ids, response: raw, draft: value });
-      },
-    };
-    const prompt = ([D.PROMPT(promptInput), CRAFT.IDS + stringifyJson(ids), analysis.visualSettings?.mode === RT_SHARED.REMOTION ? "" : PROMPT.ILLUSTRATION_AUDIT] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
-    let raw = Object.keys(draft).length && !storyErrors(draft).length ? draft : opts.ai ? await requestMotionAiContract(prompt, opts.exec, (question) => opts.ai!(question, D.ARTIFACT, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(prompt, D.ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, contract);
-    if (analysis.visualSettings?.mode !== RT_SHARED.REMOTION)
-      raw = await repairMotionIllustrationNeeds(raw, (saved.needs ||= {}), {
-        signal: opts.signal,
-        log: opts.log,
-        inventory: () => puppetPackPlanningCapabilities(analysis.stylePreset),
-        save: (value) => {
-          draft = value;
-          saved.raw = value;
-          if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-        },
-        request: (question, part) => (opts.ai ? requestMotionAiContract(question, opts.exec, (message) => opts.ai!(message, NEEDS.ARTIFACT, opts.exec, opts.signal, opts.log), part, opts.signal) : runMotionAi(question, NEEDS.ARTIFACT, opts.exec, opts.signal, opts.log, undefined, 0, part)),
-      });
-    if (closedPuppetPackId(analysis.stylePreset)) raw = normalizeMotionIllustrationNeeds(raw);
-    saved.raw = raw;
-    if (opts.draft) opts.onDraft?.(structuredClone(opts.draft));
-    const byId = new Map<string, any>(_.map(_.castArray(raw?.chapters || []), (c: any) => [_.toString(c?.id), c] as [string, any]));
-    let touched = 0;
-    const chapters = _.map(analysis.chapters, (c) => {
-      const d: any = byId.get(c.id);
-      if (!d) return c;
-      const keyPoints = _.take(_.compact(_.map(_.castArray(d.keyPoints || []), (k) => doctorText(k, D.POINT_MAX))) as string[], D.KEYPOINTS_MAX);
-      touched++;
-      return _.omitBy({ ...c, title: doctorText(d.title, 80) || c.title, summary: doctorText(d.summary, 400) || c.summary, hook: doctorText(d.hook, D.TEXT_MAX) || c.hook, handoff: doctorText(d.handoff, D.TEXT_MAX) || c.handoff, keyPoints: keyPoints.length ? keyPoints : c.keyPoints }, _.isUndefined) as MotionChapter;
-    });
-    if (!touched) throw new Error(CRAFT.CONTRACT_ERROR(motionStoryIssueLabels([CRAFT.ERR_CHAPTERS])));
-    const newCast = _.uniqBy(
-      _.compact(
-        _.map(_.castArray(raw?.cast || []), (c: any) => {
-          const name = doctorText(c?.name, 60);
-          if (!name) return null;
-          const key = slugKey(_.toString(c?.key || c?.name));
-          const role = doctorText(c?.role, 80);
-          return _.omitBy(
-            { key, name, appearanceOf: c?.appearanceOf ? slugKey(c.appearanceOf) : undefined, description: role, role, look: doctorText(c?.look, 300), gender: pickEnum([MR.MOTION_TEXT_MALE, MR.MOTION_TEXT_FEMALE], c?.gender, undefined as any), age: pickEnum(MOTION_DOCTOR_FIELDS.AGES, c?.age, undefined as any), ...(key === D.NARRATOR_KEY ? { narrator: true } : {}) },
-            _.isNil,
-          ) as unknown as MotionCastMember;
-        }),
-      ),
-      MR.MOTION_TEXT_KEY,
-    );
-    const newPlaces = _.uniqBy(
-      _.compact(
-        _.map(_.castArray(raw?.places || []), (p: any) => {
-          const name = doctorText(p?.name, 60);
-          return name ? ({ key: slugKey(_.toString(p?.key || p?.name)), name, description: doctorText(p?.description, 300) || name, interior: p?.interior === true, time: pickEnum(TIMES, p?.time, MOTION_TEXT_DAY) } as MotionPlace) : null;
-        }),
-      ),
-      MR.MOTION_TEXT_KEY,
-    );
-    const cast = newCast;
-    const places = newPlaces.length ? newPlaces : analysis.places;
-    const strengths = _.take(_.compact(_.map(_.castArray(raw?.model?.strengths || []), (x) => doctorText(x, D.POINT_MAX))) as string[], D.LIST_MAX);
-    const beliefList = (v: unknown) => _.take(_.compact(_.map(_.castArray(v || []), (x) => doctorText(x, D.POINT_MAX))) as string[], D.LIST_MAX);
-    const beliefName = doctorText(raw?.belief?.name, 80);
-    const reference = knownFolkBelief(folkContract.topic.name);
-    const folkBelief: MotionFolkBelief | undefined = reference ? reference : beliefName ? { name: beliefName, meaning: doctorText(raw?.belief?.meaning, D.NOTES_MAX) || MR.MOTION_TEXT_EMPTY, signs: beliefList(raw?.belief?.signs), taboos: beliefList(raw?.belief?.taboos), remedies: beliefList(raw?.belief?.remedies) } : undefined;
-    if (strengths.length) opts.log?.(D.LOG_MODEL(doctorText(raw?.model?.theme, D.TEXT_MAX) || MR.MOTION_TEXT_EMPTY, strengths));
-    opts.log?.(D.LOG_DONE(touched, cast.length, places.length, doctorText(raw?.notes, D.NOTES_MAX) || MR.MOTION_TEXT_EMPTY));
-    const avoid = _.take(_.compact(_.map(_.castArray(raw?.model?.avoid || []), (x) => doctorText(x, D.POINT_MAX))) as string[], D.LIST_MAX);
-    const retune = <T extends { mustPreserve: string[]; mustNotCopy: string[]; evidence: unknown[] }>(dna: T | undefined): T | undefined =>
-      dna ? { ...dna, mustPreserve: strengths.length ? strengths : dna.mustPreserve, mustNotCopy: _.uniq([...(dna.mustNotCopy || []), ...avoid]), evidence: strengths.length ? _.map(strengths, (claim) => ({ claim, sourceClue: D.EVIDENCE_CLUE, confidence: D.EVIDENCE_CONFIDENCE })) : dna.evidence } : dna;
-    const story2 = acceptMotionIllustrationAudit(
-      {
-        ...analysis,
-        folkStoryContract: folkContract,
-        topicId: raw.topicId,
-        topicEvidence: structuredClone(raw.topicEvidence),
-        illustrationNeeds: Array.isArray(raw?.illustrationNeeds) ? structuredClone(raw.illustrationNeeds) : undefined,
-        title: doctorText(raw?.title, 120) || analysis.title,
-        logline: doctorText(raw?.logline, 400) || analysis.logline,
-        chapters,
-        cast: expandInitialCastNames(cast),
-        places,
-        facts: [],
-        ...motionStoryContract(raw),
-        modelCraft: strengths,
-        modelAvoid: avoid,
-        ...(folkBelief ? { folkBelief } : {}),
-        videoDna: undefined,
-        creativeBlueprint: retune(analysis.creativeBlueprint),
-      },
-      raw.illustrationAudit,
-    );
-    if (!analysis.videoDna) return story2;
-    const videoDna = await newStoryDna(story2, analysis.videoDna, source, opts);
-    if (!videoDna) throw new Error(D.ERR_DNA);
-    return { ...story2, videoDna };
-  } catch (error: any) {
-    if (_.toString(error?.message).includes(NEEDS.PART_INVALID) || MOTION_PRODUCTION.SERVICE_ERROR_RE.test(_.toString(error?.message))) throw error;
-    if (isTerminalMotionAiError(error, opts.signal) && !_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED)) throw error;
-    opts.log?.(D.LOG_FAIL(_.truncate(_.toString(error?.message || error), { length: 140 })));
-    throw Object.assign(new Error(_.toString(error?.message) === D.ERR_DNA ? D.ERR_DNA : contractErrors.length ? CRAFT.CONTRACT_FAILED(motionStoryIssueLabels(contractErrors)) : D.ERR_FAILED, { cause: error }), { [MOTION_PRODUCTION.CONTRACT_EXHAUSTED]: !!_.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED) });
-  }
-};
 export const analyzeStory = async (
   source: MotionStorySource,
   opts: { visualSettings?: MotionVisualSettings; styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre; stylePreset?: string } & MotionAnalysisRecovery,
@@ -1583,15 +1281,13 @@ export const analyzeStory = async (
     opts.signal?.throwIfAborted();
     opts.onDraft?.(structuredClone(draft));
   };
-  const develop = async (analysis: MotionStoryAnalysis) => {
-    draft.base = analysis;
+  const complete = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => {
+    draft.completed = analysis;
     checkpoint();
-    draft.completed = await developCreativeStory(analysis, source, { ...opts, draft });
-    checkpoint();
-    return draft.completed;
+    return analysis;
   };
-  if (draft.completed && (!motionGenreCreative(opts.videoGenre) || draft.completed.folkStoryContract?.version === FOLK.VERSION)) return draft.completed;
-  if (draft.base) return develop(draft.base);
+  if (draft.completed) return draft.completed;
+  if (draft.base) return complete(draft.base);
   const target = resolveTargetSeconds(source, opts.length);
   const settings: MotionVideoDnaSettings = { length: opts.length, targetSeconds: target, language: opts.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, aspect: opts.aspect || MR.MOTION_TEXT_16_9, drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN };
   const chapterCount = _.clamp(Math.round(target / 150), 1, 24);
@@ -1600,8 +1296,8 @@ export const analyzeStory = async (
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
   const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
-  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...analysis, visualSettings: opts.visualSettings, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre), ...(motionGenreCreative(opts.videoGenre) ? { factual: false } : {}) });
-  const genreDirective = [motionVideoGenreDirective(opts.videoGenre, false), motionGenreCreative(opts.videoGenre) ? FOLK.SOURCE_ANALYSIS : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
+  const finish = (analysis: MotionStoryAnalysis): MotionStoryAnalysis => ({ ...analysis, visualSettings: opts.visualSettings, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre) });
+  const genreDirective = motionVideoGenreDirective(opts.videoGenre);
   const fullRequest = withMotionResponsePrompt(
     MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
     ([prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, SOURCE_READING_RULES, sourceDirections(source), briefNote] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
@@ -1643,45 +1339,38 @@ export const analyzeStory = async (
   const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
   const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
   opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
-  return develop(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target), raw)));
+  return complete(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target), raw)));
 };
 export const editScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }): Promise<{ beats: MotionBeat[]; edit: { reviewed: number; rewritten: number; notes: string[] } }> => {
   const dna = analysis.videoDna;
   const writingProfile = motionVideoGenreWritingProfile(analysis.videoGenre);
   const brief = stringifyJson({
-    ...(writingProfile ? { writingProfile } : {}),
+    writingProfile,
     audience: dna?.audienceProfile,
     narrativeVoice: dna?.narrativeDna?.narrativeVoice || dna?.narrative.voice,
     callbacks: dna?.narrativeDna?.callbacks,
     mustPreserve: dna?.mustPreserve,
     mustNotCopy: dna?.mustNotCopy,
-    ...(motionGenreCreative(analysis.videoGenre) ? { adaptation: MOTION_CREATIVE_EDITOR, sourceCore: analysis.sourceCore, storySpine: analysis.storySpine, folkBelief: analysis.folkBelief } : {}),
-    ...(motionGenreCreative(analysis.videoGenre) ? { folkStoryContract: analysis.folkStoryContract } : {}),
   });
   const byId = new Map(beats.map((b) => [b.id, b]));
   const notes: string[] = [];
   let rewritten = 0;
   const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;
-  const styleIds = new Set(motionFolkStyleFindings(beats, opts.language, analysis.videoGenre).map((finding) => finding.id));
-  const editLimit = (lines: MotionBeat[]): number => Math.max(2, Math.ceil(lines.length * 0.15), lines.filter((line) => styleIds.has(line.id)).length);
+  const editLimit = (lines: MotionBeat[]): number => Math.max(2, Math.ceil(lines.length * 0.15));
   const editorPrompt = (lines: MotionBeat[]): string => {
     const chapterIds = new Set(lines.map((line) => line.chapterId));
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
     const previous = stringifyJson(beats.slice(Math.max(0, beats.indexOf(lines[0]) - 2), beats.indexOf(lines[0])).map((beat) => beat.narration));
-    const model = motionGenreCreative(analysis.videoGenre) ? chapters.map((chapter) => modelPart(analysis, chapter, source).slice(0, FOLK.REFERENCE_CHARS)).join(MR.MOTION_TEXT_SYMBOL_27) : chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceSlice(source, chapter.from, chapter.to))).join(MR.MOTION_TEXT_SYMBOL_27);
+    const model = chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceSlice(source, chapter.from, chapter.to))).join(MR.MOTION_TEXT_SYMBOL_27);
     const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;
     const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
     const limit = editLimit(lines);
-    const styleFocus = lines.filter((line) => styleIds.has(line.id)).map((line) => line.id);
     return withMotionResponsePrompt(
       MOTION_STORY_EDIT_ARTIFACT,
-      [
-        motionGenreCreative(analysis.videoGenre) ? MOTION_STORY_DOCTOR.EDITOR_PROMPT({ brief, language, previous, lines: review, model, limit }) : [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
-        ...(styleFocus.length ? [FOLK_WRITING.FOCUS(styleFocus)] : []),
-      ].join(MR.MOTION_TEXT_SYMBOL_27),
+      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
-  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, FOLK.VERSION, FOLK_WRITING.VERSION, opts.focusIds]);
+  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, opts.focusIds]);
   const saved = recovery.read() || {};
   const keys = new Map(beats.map((beat) => [beat.id, motionInputKey([editorPrompt([beat]), beat.utterances])]));
   const apply = (beat: MotionBeat, narration: string, reason?: string, utterances?: MotionBeat["utterances"]): void => {
@@ -1705,34 +1394,21 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
         editorPrompt(group),
         group,
         [MOTION_VOICE.NARRATOR, ...analysis.cast.map((member) => member.key)],
-        motionGenreCreative(analysis.videoGenre),
+        false,
         (question) => (opts.ai || runMotionAi)(question, MOTION_STORY_EDIT_ARTIFACT, opts.exec, opts.signal, opts.log),
         opts.signal,
-        [motionStoryLanguageGuide(opts.language, true, true), ...(motionGenreCreative(analysis.videoGenre) ? [FOLK.PROFILE, motionFolkWritingGuide(opts.language)] : []), brief].join(MR.MOTION_TEXT_SYMBOL_27),
+        [motionStoryLanguageGuide(opts.language, true, true), brief].join(MR.MOTION_TEXT_SYMBOL_27),
       );
       if (!Array.isArray(raw?.edits)) return;
       const duplicates = new Set(raw.edits.filter((entry: any, index: number, all: any[]) => all.some((other, at) => at !== index && other?.id === entry?.id)).map((entry: any) => entry?.id));
       for (const e of _.take(_.castArray(raw?.edits || []), limit)) {
         const beat = byId.get(_.toString(e?.id));
         const narration = _.trim(_.toString(e?.narration));
-        if (!beat || duplicates.has(beat.id) || !ids.has(beat.id) || !narration || (motionGenreCreative(analysis.videoGenre) && motionFolkCopied(narration, source.text || ""))) continue;
-        if (motionGenreCreative(analysis.videoGenre) && motionFolkTextDrifts(narration, analysis.folkStoryContract, stringifyJson([beat.narration, analysis.chapters.find((chapter) => chapter.id === beat.chapterId), motionFolkChapterContext(analysis, beat.chapterId)]))) continue;
-        const protectedSpeech = !!beat.utterances?.length && (motionGenreCreative(analysis.videoGenre) || _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role)));
-        let utterances: MotionBeat["utterances"];
-        if (protectedSpeech) {
-          if (!motionGenreCreative(analysis.videoGenre) || !Array.isArray(e.utterances) || e.utterances.length !== beat.utterances!.length || !e.utterances.every((line: any, index: number) => line?.speaker === beat.utterances![index].speaker && line?.role === beat.utterances![index].role && typeof line.text === "string" && !!line.text.trim())) continue;
-          utterances = normalizeMotionUtterances(
-            beat.utterances!.map((line, index) => ({ ...line, text: e.utterances[index].text })),
-            beat.id,
-            [MOTION_VOICE.NARRATOR, ...analysis.cast.map((member) => member.key)],
-            narration,
-          );
-          if (utterances.length !== beat.utterances!.length) continue;
-          utterances = beat.utterances!.map((line, index) => ({ ...line, text: utterances![index].text }));
-        }
+        if (!beat || duplicates.has(beat.id) || !ids.has(beat.id) || !narration) continue;
+        if (beat.utterances?.length && _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role))) continue;
         const ratio = narration.split(MP.WHITESPACE).length / Math.max(1, beat.narration.split(MP.WHITESPACE).length);
         if (ratio < MOTION_STORY_CONFIG.EDIT_RATIO_MIN || ratio > MOTION_STORY_CONFIG.EDIT_RATIO_MAX) continue;
-        apply(beat, narration, e?.reason ? _.toString(e.reason) : undefined, utterances);
+        apply(beat, narration, e?.reason ? _.toString(e.reason) : undefined);
       }
       for (const beat of group) {
         const changed = byId.get(beat.id)!;
@@ -1875,7 +1551,7 @@ const chapterOutline = (analysis: MotionStoryAnalysis, chapter: MotionChapter): 
   const prev = idx > 0 ? analysis.chapters[idx - 1] : undefined;
   const next = analysis.chapters[idx + 1];
   const series = analysis.series;
-  const openingStyles: readonly string[] = motionGenreCreative(analysis.videoGenre) ? MOTION_STORY_DOCTOR.OPENING_STYLES : OPENING_STYLES;
+  const openingStyles: readonly string[] = OPENING_STYLES;
   const others = _.compact(_.map(analysis.chapters, (c, i) => (i === idx ? null : MR.MOTION_TEMPLATE_SYMBOL_312(c.id, c.title, c.hook || c.handoff || c.summary)))).join(MR.MOTION_TEXT_SYMBOL_27);
   return [
     MR.MOTION_TEXT_WHOLE_VIDEO_OUTLINE_PLANNED_ONCE_FOLLOW_IT_SO_THE_CHAPTERS_READ_A,
@@ -1887,18 +1563,6 @@ const chapterOutline = (analysis: MotionStoryAnalysis, chapter: MotionChapter): 
   ]
     .filter(Boolean)
     .join(MR.MOTION_TEXT_SYMBOL_27);
-};
-const modelPart = (analysis: MotionStoryAnalysis, chapter: MotionChapter, source: MotionStorySource): string => {
-  const own = _.filter(source.segments, (s) => s.t >= (chapter.from ?? 0) - 0.5 && s.t < (chapter.to ?? Infinity));
-  if (chapter.from !== undefined && own.length && own.length < source.segments.length) return _.map(own, MR.MOTION_TEXT_TEXT).join(MR.MOTION_TEXT_SYMBOL_13);
-  const text = source.text || MR.MOTION_TEXT_EMPTY;
-  const n = Math.max(1, analysis.chapters.length);
-  const idx = Math.max(0, _.findIndex(analysis.chapters, { id: chapter.id }));
-  return text.slice(Math.floor((text.length * idx) / n), Math.floor((text.length * (idx + 1)) / n));
-};
-const modelGuide = (analysis: MotionStoryAnalysis, chapter: MotionChapter): string => {
-  const D = MOTION_STORY_DOCTOR;
-  return _.compact([CRAFT.WRITE, CRAFT.GUIDE + stringifyJson(motionFolkChapterWritingContext(analysis, chapter.id)), analysis.folkBelief ? D.BELIEF(analysis.folkBelief) : null, analysis.modelCraft?.length ? D.MODEL_CRAFT(analysis.modelCraft) : null, analysis.modelAvoid?.length ? D.MODEL_AVOID(analysis.modelAvoid) : null] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
 };
 interface MotionChapterWriteOptions {
   repairState?: { rejected: number; errors: string[] };
@@ -1921,12 +1585,11 @@ interface MotionChapterWriteOptions {
 }
 export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
   opts.signal?.throwIfAborted();
-  const creative = motionGenreCreative(analysis.videoGenre);
   const expectedUnits = (chapter.targetSeconds || 120) * (opts.speechRate || (opts.language !== MOTION_TEXT_EN ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
-  const sourceText = creative ? modelPart(analysis, chapter, source) : sourceSlice(source, chapter.from, chapter.to);
-  const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.previousSummary, opts.isFirst, opts.isLast, ...(creative ? [FOLK_WRITING.VERSION] : [])]);
+  const sourceText = sourceSlice(source, chapter.from, chapter.to);
+  const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.previousSummary, opts.isFirst, opts.isLast]);
   const continuing = opts.draft?.inputKey === inputKey;
-  const parts = continuing && opts.draft?.partition ? opts.draft.partition : motionChapterParts(chapter, analysis, sourceText, creative, expectedUnits, continuing && opts.draft?.parts ? PROMPT.CHAPTER_OUTPUT_UNITS : undefined);
+  const parts = continuing && opts.draft?.partition ? opts.draft.partition : motionChapterParts(chapter, analysis, sourceText, expectedUnits, continuing && opts.draft?.parts ? PROMPT.CHAPTER_OUTPUT_UNITS : undefined);
   if (!parts.length || opts.durationRepair || (opts.draft && !opts.draft.parts)) return writeChapterBeatsPart(source, analysis, chapter, opts);
   const drafts = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft.parts || {}) : {};
   const save = () =>
@@ -1943,8 +1606,8 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
   for (const [index, part] of parts.entries()) {
     opts.signal?.throwIfAborted();
     const section = PROMPT.CHAPTER_PART(index, parts.length, part.points, parts[index - 1]?.points.at(-1), parts[index + 1]?.points[0]);
-    const partChapter = { ...chapter, targetSeconds: part.seconds, ...(creative ? { summary: part.points.join(MR.MOTION_TEXT_SYMBOL_27), keyPoints: part.points } : {}) };
-    const partSource = creative ? source : { ...source, text: part.source, segments: [{ t: chapter.from || 0, text: part.source }] };
+    const partChapter = { ...chapter, targetSeconds: part.seconds };
+    const partSource = { ...source, text: part.source, segments: [{ t: chapter.from || 0, text: part.source }] };
     const result = await writeChapterBeatsPart(partSource, analysis, partChapter, {
       ...opts,
       section,
@@ -1970,7 +1633,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   const unitName = isVi ? MOTION_TEXT_VIETNAMESE_SYLLABLES_WORDS : MOTION_TEXT_WORDS;
   const prev = opts.previous?.length ? _.map(_.takeRight(opts.previous, PROMPT.CHAPTER_PREVIOUS_BEATS), (b) => MOTION_TEMPLATE_SYMBOL_53(String(b.narration))).join(MOTION_TEXT_SYMBOL_27) : opts.previousSummary ? MOTION_TEMPLATE_SYMBOL_53(String(opts.previousSummary)) : MR.MOTION_TEXT_EMPTY;
   const prompt = MOTION_GEN_CHAPTER_PROMPT({
-    preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), motionGenreCreative(analysis.videoGenre) ? PROMPT.CHAPTER_SOURCE : SOURCE_READING_RULES),
+    preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), SOURCE_READING_RULES),
     role: PROMPT.CHAPTER_ROLE,
     outline: opts.section || chapterOutline(analysis, chapter),
     genre: MR.MOTION_TEXT_EMPTY,
@@ -1996,17 +1659,14 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       motionStoryEventLedger(opts.previous),
       MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
       analysis.visualSettings?.mode !== RT_SHARED.REMOTION && analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + stringifyJson(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id).map(({ evidence, place, states, objects, features }) => ({ evidence, place, states, objects, features }))) : null,
-      motionGenreCreative(analysis.videoGenre)
-        ? [FOLK.CHAPTER_PROFILE, motionFolkWritingGuide(opts.language)].join(MR.MOTION_TEXT_SYMBOL_27)
-        : motionVideoGenreWritingProfile(analysis.videoGenre) || (closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_GENRE + stringifyJson({ videoGenre: analysis.videoGenre, genre: analysis.genre, factual: analysis.factual }) : motionVideoGenreDirective(analysis.videoGenre, false)),
+      motionVideoGenreWritingProfile(analysis.videoGenre),
       analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
     ] as string[]).join(MR.MOTION_TEXT_SYMBOL_27),
     cast: stringifyJson(analysis.cast.map((member) => ({ ..._.pick(member, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.ALIAS, RT_SERVER.ROLE, RT_SHARED.GENDER, RT_SHARED.AGE, RT_SERVER.APPEARANCEOF]), ...(member.key === motionNarratorCastKey(analysis) ? { narrationSpeaker: MOTION_VOICE.NARRATOR } : {}) }))),
     places: _.map(analysis.places, (p) => MOTION_TEMPLATE_SYMBOL_55(String(p.key), String(p.name), String(p.description))).join(MOTION_TEXT_SYMBOL_27),
-    transcript: motionGenreCreative(analysis.videoGenre) ? modelGuide(analysis, chapter) : sourceSlice(source, chapter.from, chapter.to),
-    ...(motionGenreCreative(analysis.videoGenre) ? { transcriptLabel: PROMPT.CHAPTER_GUIDE_LABEL } : {}),
+    transcript: sourceSlice(source, chapter.from, chapter.to),
   });
-  const factual = !motionGenreCreative(analysis.videoGenre) && (analysis.videoDna?.format?.factual ?? analysis.factual) !== false && source.kind !== MR.MOTION_TEXT_BRIEF;
+  const factual = (analysis.videoDna?.format?.factual ?? analysis.factual) !== false && source.kind !== MR.MOTION_TEXT_BRIEF;
   const quotesIndex = factual ? transcriptIndex(source.text) : null;
   const request = prompt;
   const expectedUnits = seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
@@ -2059,13 +1719,6 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       if (existing) existing.fields = [...new Set([...existing.fields, ...fields])];
       else pending.push({ id: item.id, fields });
     }
-    const copied = motionGenreCreative(analysis.videoGenre) ? rawBeats.filter((beat) => motionFolkCopied(beat.narration, source.text || "")) : [];
-    const drifted = motionGenreCreative(analysis.videoGenre) ? rawBeats.filter((beat) => motionFolkTextDrifts(beat.narration, analysis.folkStoryContract, stringifyJson([chapter, motionFolkChapterContext(analysis, chapter.id)]))) : [];
-    for (const beat of [...copied, ...drifted]) {
-      const row = pending.find((item) => item.id === beat.id);
-      if (row) row.fields = [...new Set([...row.fields, RT_SHARED.NARRATION, RT_SHARED.UTTERANCES] as string[])] as string[];
-      else pending.push({ id: beat.id, fields: [RT_SHARED.NARRATION, RT_SHARED.UTTERANCES] as string[] });
-    }
     draft = { inputKey, rows: rawBeats, pending, ...(draft?.repairState ? { repairState: draft.repairState } : {}) };
     opts.onDraft?.(structuredClone(draft));
     const normalized = normalizeBeats(rawBeats, chapter.id, analysis);
@@ -2079,8 +1732,6 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     if (advisory.length) opts.log?.(MOTION_QA_MESSAGES.ADVISORY(advisory));
     const problems: string[] = [];
     for (const item of responseIssues) problems.push(...item.issues.map((issue) => MOTION_RESPONSE_TEXT.EXPECTED(item.id + RT_SHARED.SYMBOL_CDB4EE + issue.path, issue.expected, issue.actual)));
-    if (copied.length) problems.push(...copied.map((beat) => FOLK.COPY_ERROR(beat.id)));
-    if (drifted.length) problems.push(...drifted.map((beat) => FOLK.DRIFT_ERROR(beat.id)));
     if (pending.some((item) => missingNarration(rawBeats.find((beat) => beat.id === item.id)))) problems.push(QA.NARRATION_MISSING);
     if (pending.some((item) => item.fields.length === 1 && item.fields[0] === RT_SHARED.UTTERANCES && !responseIssues.some((beat) => beat.id === item.id))) problems.push(QA.SPEECH_MISMATCH);
     if (opts.durationRepair && pending.some((item) => item.targetUnits !== undefined)) problems.push(QA.DURATION_REPAIR_REQUIRED(spokenUnits, seconds, expectedUnits));
@@ -2104,9 +1755,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
             analysis.places.map((place) => place.key),
             !!closedPuppetPackId(analysis.stylePreset),
           ),
-          ...(!opts.durationRepair ? motionFolkChapterWritingContext(analysis, chapter.id) : {}),
-          ...(motionGenreCreative(analysis.videoGenre) ? { writingProfile: [FOLK.PROFILE, motionFolkWritingGuide(opts.language)].join(MR.MOTION_TEXT_SYMBOL_27), originality: FOLK.COPY_ERROR(chapter.id) } : {}),
-          ...(!opts.durationRepair && motionVideoGenreWritingProfile(analysis.videoGenre) ? { writingProfile: motionVideoGenreWritingProfile(analysis.videoGenre) } : {}),
+          ...(!opts.durationRepair ? { writingProfile: motionVideoGenreWritingProfile(analysis.videoGenre) } : {}),
           ...(factual && draft.pending.some((item) => missingNarration(draft!.rows.find((row) => row.id === item.id))) ? { source: sourceSlice(source, chapter.from, chapter.to) } : {}),
         })
       : request;

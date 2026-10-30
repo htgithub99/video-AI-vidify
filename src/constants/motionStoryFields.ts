@@ -1,2 +1,1 @@
 export const MOTION_CAPTCHA_PROBE = { URL: "url", TITLE: "title", HEAD: "textHead" };
-export const MOTION_DOCTOR_FIELDS = { STORY: ["title", "logline", "chapters", "cast", "places"], ROLE: "role", GENDER: "gender", AGE: "age", LOOK: "look", DESCRIPTION: "description", INTERIOR: "interior", TIME: "time", CHAPTER: ["id", "title", "summary", "hook", "keyPoints", "handoff", "targetSeconds"], AGES: ["child", "adult", "senior"] };
