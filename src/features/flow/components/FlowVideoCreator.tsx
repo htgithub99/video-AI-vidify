@@ -1,4 +1,7 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
+import { CopyButton } from "../../../components/common/CopyButton.js";
+import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { RUNTIME_TEXT as RT_FLOW } from "../constants/runtimeText.js";
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea } from "../../../components/ui/Studio.js";
 import _ from "lodash";
@@ -51,7 +54,7 @@ import { DestructiveActionNotice } from "../../../components/common/DestructiveA
 import { delayAsync } from "../../../lib/asyncUtils";
 import { getErrorMessage } from "../../../utils/errorUtils";
 import { useEffect, useState } from "react";
-import { Film, FolderOpen, Sparkles, Copy, Check, Trash2, AlertTriangle, Video, Play, Flame, SlidersHorizontal } from "lucide-react";
+import { Film, FolderOpen, Sparkles, Check, Trash2, AlertTriangle, Video, Play, Flame, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { recordWorkflowActivity } from "../../../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../../../constants/workflowActivity";
@@ -122,8 +125,9 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
   const [showSettings, setShowSettings] = useState(false);
   const [busy, setBusy] = useState<"planning" | "generating" | null>(null);
   const [progress, setProgress] = useState("");
-  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
-  const [isCopiedAll, setIsCopiedAll] = useState(false);
+  const { copiedKey: copiedPromptId, copyText: copyPrompt } = useClipboardFeedback({ language: currentLang });
+  const { copiedKey: copiedAllKey, copyText: copyAll } = useClipboardFeedback({ language: currentLang });
+  const isCopiedAll = copiedAllKey !== null;
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const [clipToDelete, setClipToDelete] = useState<Clip | null>(null);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
@@ -369,20 +373,12 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
     }
   };
   const handleCopyPrompt = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedPromptId(id);
-    toast.success(flowTexts.PROMPT_COPIED);
-    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowCopy);
-    setTimeout(() => setCopiedPromptId(null), 2000);
+    void copyPrompt(text, id, flowTexts.PROMPT_COPIED, () => recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowCopy));
   };
   const handleCopyAllPrompts = () => {
     if (!clips.length) return;
     const allText = _.map(clips, (c, i) => SOURCE_TEMPLATE_SYMBOL_6(`${i + 1}`, `${c.prompt}`)).join(RT_SHARED.SYMBOL_75A11D);
-    navigator.clipboard.writeText(allText);
-    setIsCopiedAll(true);
-    toast.success(flowTexts.PROMPTS_COPIED(clips.length));
-    recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowCopy, clips.length);
-    setTimeout(() => setIsCopiedAll(false), 2000);
+    void copyAll(allText, CLIPBOARD_FEEDBACK.ALL, flowTexts.PROMPTS_COPIED(clips.length), () => recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.flow, WORKFLOW_ACTIVITY_EVENT.flowCopy, clips.length));
   };
   const handleDeleteClip = (clip: Clip) => {
     setClipToDelete(clip);
@@ -559,9 +555,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
               </div>
               {clips.length > 0 && (
                 <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_1_5)}>
-                  <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleCopyAllPrompts} className={cn(RT_FLOW.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX)} title={isCopiedAll ? (isVi ? SOURCE_TEXT_DA_SAO_CHEP : SOURCE_TEXT_COPIED) : flowTexts.COPY_ALL}>
-                    {isCopiedAll ? <Check className={cn(RT_FLOW.W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD)} /> : <Copy className={cn(RT_SHARED.W_4_H_4)} />}
-                  </Button>
+                  <CopyButton onClick={handleCopyAllPrompts} className={cn(RT_FLOW.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX)} title={flowTexts.COPY_ALL} copied={isCopiedAll} copiedTitle={isVi ? SOURCE_TEXT_DA_SAO_CHEP : SOURCE_TEXT_COPIED} iconClassName={RT_SHARED.W_4_H_4} copiedIconClassName={RT_FLOW.W_4_H_4_TEXT_EMERALD_500_DARK_TEXT_EMERALD} />
                   <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleClearAllPrompts} disabled={!!busy} className={cn(RT_FLOW.BTN_ICON_TINY_W_7_H_7_MIN_W_28PX_9DA0C7)} title={flowTexts.CLEAR_ALL}>
                     <Trash2 className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} />
                   </Button>
@@ -589,9 +583,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
                         {clip.prompt}
                       </p>
                       <div className={cn(RT_FLOW.FLEX_ITEMS_CENTER_GAP_1_SHRINK_0_PT_0_5)}>
-                        <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={() => handleCopyPrompt(clip.id, clip.prompt)} className={cn(RT_FLOW.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX)} title={copiedPromptId === clip.id ? (isVi ? SOURCE_TEXT_DA_SAO_CHEP : SOURCE_TEXT_COPIED) : flowTexts.COPY}>
-                          {copiedPromptId === clip.id ? <Check className={cn(RT_FLOW.W_3_5_H_3_5_TEXT_EMERALD_500_DARK)} /> : <Copy className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />}
-                        </Button>
+                        <CopyButton onClick={() => handleCopyPrompt(clip.id, clip.prompt)} className={cn(RT_FLOW.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX)} title={flowTexts.COPY} copied={copiedPromptId === clip.id} copiedTitle={isVi ? SOURCE_TEXT_DA_SAO_CHEP : SOURCE_TEXT_COPIED} iconClassName={RT_SHARED.W_3_5_H_3_5_SHRINK_0} copiedIconClassName={RT_FLOW.W_3_5_H_3_5_TEXT_EMERALD_500_DARK} />
                         <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} disabled={!!busy} onClick={() => handleDeleteClip(clip)} className={cn(RT_FLOW.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_5328FC)} title={flowTexts.DELETE}>
                           <Trash2 className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
                         </Button>

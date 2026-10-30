@@ -2,7 +2,7 @@ import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts"
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
+import { getMotionRootDirectory } from "../src/features/motion/server/services/motionLibraryService.ts";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";

@@ -3,7 +3,7 @@ import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { buildMotionRenderHtml, validateGenCharacter, MOTION_ASSET_BASE } from "../src/server/services/motionEngineService.ts";
+import { buildMotionRenderHtml, validateGenCharacter, MOTION_ASSET_BASE } from "../src/features/motion/server/services/motionEngineService.ts";
 import { designBible, emptyGen, prepareMotionGen } from "../src/server/services/motionGenService.ts";
 import { needsAuthoredCharacters } from "../src/lib/motionVideoDna.ts";
 import { MOTION_GEN_BIBLE_PROMPT } from "../src/constants/motionGenPrompts.ts";

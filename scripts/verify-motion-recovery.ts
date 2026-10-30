@@ -8,7 +8,7 @@ import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvide
 import { MotionJobStatus, MotionStoryJobKind } from "../src/types/motionVideo.ts";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../src/constants/cinematicConstants.ts";
 import { productionPreamble } from "../src/lib/motionDirection.ts";
-import { getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
+import { getMotionRootDirectory } from "../src/features/motion/server/services/motionLibraryService.ts";
 const fixture = { requests: [] as any[], events: [] as string[], refuse: true, apiCalls: 0 };
 (globalThis as any).__motionRecovery = fixture;
 const bundle = await build({

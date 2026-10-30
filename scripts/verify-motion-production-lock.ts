@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { MotionProductionStore } from "../src/server/services/motionProductionStore.js";
+import { MotionProductionStore } from "../src/features/motion/server/services/motionProductionStore.js";
 const childDirectory = process.argv[process.argv.indexOf("--child") + 1];
 if (process.argv.includes("--child")) {
   const store = new MotionProductionStore(childDirectory);

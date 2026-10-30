@@ -3,7 +3,7 @@ export const MOTION_BROWSER_VERIFICATION = {
   PROJECT: "motion-story-browser-handoff",
   WORKER: "untracked-worker",
   NEXT: "next-session",
-  ENTRY: 'export * from "./src/server/services/motionRenderService.ts"; export * from "./src/server/services/motionStoryService.ts"; export * from "./src/server/services/chatUiPlanningService.ts"; export { closeAppBrowserAfterTask } from "./src/server/services/imageGeneratorService.ts";',
+  ENTRY: 'export * from "./src/features/motion/server/services/motionRenderService.ts"; export * from "./src/features/motion/server/services/motionStoryService.ts"; export * from "./src/server/services/chatUiPlanningService.ts"; export { closeAppBrowserAfterTask } from "./src/server/services/imageGeneratorService.ts";',
   PORT_FILES: /(?:apiRoutes|refactor)\.ts$/,
   RENDER_FILE: /motionRenderService\.ts$/,
   STORY_FILE: /motionStoryService\.ts$/,

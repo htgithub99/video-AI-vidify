@@ -1,7 +1,7 @@
 import { RUNTIME_VERIFICATION_TEXTS as RT, RUNTIME_VERIFICATION_FORMATS as RF } from "./runtimeVerificationTexts.ts";
 import { STUDIO_VERIFICATION_TEXTS as AUT } from "./studioVerificationTexts.js";
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
-import { analyzeStory, parseStorySource, resolveMotionReferenceStyle } from "../src/server/services/motionStoryService.ts";
+import { analyzeStory, parseStorySource, resolveMotionReferenceStyle } from "../src/features/motion/server/services/motionStoryService.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,9 +9,9 @@ import { normalizeMotionReferences, normalizeMotionReferenceStyle, hasMotionRend
 import { MOTION_REFERENCE_AI, MOTION_REFERENCE_CONFIG, MOTION_REFERENCE_PROMPTS } from "../src/constants/motionReference.ts";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../src/types.ts";
 import { MOTION_STORY_CONFIG } from "../src/constants/motionVideo.ts";
-import { withMotionReferenceFiles } from "../src/server/services/motionReferenceService.ts";
+import { withMotionReferenceFiles } from "../src/features/motion/server/services/motionReferenceService.ts";
 import { prepareMotionGen } from "../src/server/services/motionGenService.ts";
-import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
+import { compileStorySpec } from "../src/features/motion/server/services/motionDirectorService.ts";
 import type { MotionStoryAnalysis } from "../src/types/motionVideo.ts";
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = path.resolve(AUT.FORMAT_SCRATCH_MOTION_REFERENCES(process.pid));

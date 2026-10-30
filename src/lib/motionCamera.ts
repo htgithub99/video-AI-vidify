@@ -1,4 +1,6 @@
-export type MotionCameraMode = "push" | "pull" | "left" | "right" | "up" | "down";
+import { MOTION_CAMERA as C } from "../constants/motionCamera.js";
+import { stringifyJson } from "./jsonStringify.js";
+export type MotionCameraMode = (typeof C.MODES)[number];
 export interface MotionCameraInput {
   enabled: boolean;
   seconds: number;
@@ -11,10 +13,8 @@ export interface MotionCameraInput {
   protectedRects?: { x: number; y: number; width: number; height: number }[];
 }
 export const MOTION_CAMERA_REVISION = 2;
-
-// Self-contained: the Canvas runtime receives this same function, without imports.
-export function motionCameraFrame(input: MotionCameraInput) {
-  const modes: MotionCameraMode[] = ["push", "left", "right", "up", "down", "pull"];
+function cameraFrame(input: MotionCameraInput, modes: readonly MotionCameraMode[]) {
+  const [pushMode, leftMode, rightMode, upMode, downMode, pullMode] = modes;
   let hash = 2166136261;
   for (let i = 0; i < input.seed.length; i++) hash = Math.imul(hash ^ input.seed.charCodeAt(i), 16777619);
   const mode = input.mode || modes[(hash >>> 0) % modes.length];
@@ -22,7 +22,6 @@ export function motionCameraFrame(input: MotionCameraInput) {
   if (!input.enabled || duration < 2 || !(input.width > 0 && input.height > 0)) return { scale: 1, x: 0, y: 0, mode };
   const p = Math.max(0, Math.min(1, (input.seconds - input.start) / duration));
   const progress = p * p * (3 - 2 * p);
-  // At most 0.56% of frame width/height per second; no oscillation.
   let left = input.width,
     right = 0,
     top = input.height,
@@ -41,14 +40,12 @@ export function motionCameraFrame(input: MotionCameraInput) {
   }
   const amount = Math.max(0, Math.min(0.045, duration * 0.0037, right > left ? input.width / (right - left) - 1 : 1, bottom > top ? input.height / (bottom - top) - 1 : 1));
   const endpoints: { scale: number; x: number; y: number }[] = [];
-  // Solve both endpoints once. Affine interpolation then preserves every
-  // constraint in between, without sudden corrections while the shot plays.
   for (let endpoint = 0; endpoint <= 1; endpoint++) {
-    const delta = amount * (mode === "push" ? endpoint : mode === "pull" ? 1 - endpoint : 1);
+    const delta = amount * (mode === pushMode ? endpoint : mode === pullMode ? 1 - endpoint : 1);
     const mx = (delta * input.width) / 2,
       my = (delta * input.height) / 2;
-    const desiredX = mode === "left" || mode === "right" ? (mode === "left" ? -1 : 1) * (endpoint - 0.5) * amount * input.width : 0;
-    const desiredY = mode === "up" || mode === "down" ? (mode === "up" ? -1 : 1) * (endpoint - 0.5) * amount * input.height : 0;
+    const desiredX = mode === leftMode || mode === rightMode ? (mode === leftMode ? -1 : 1) * (endpoint - 0.5) * amount * input.width : 0;
+    const desiredY = mode === upMode || mode === downMode ? (mode === upMode ? -1 : 1) * (endpoint - 0.5) * amount * input.height : 0;
     const minX = Math.max(-mx, right > left ? -left - (left - input.width / 2) * delta : -mx);
     const maxX = Math.min(mx, right > left ? input.width - right - (right - input.width / 2) * delta : mx);
     const minY = Math.max(-my, bottom > top ? -top - (top - input.height / 2) * delta : -my);
@@ -57,3 +54,5 @@ export function motionCameraFrame(input: MotionCameraInput) {
   }
   return { scale: endpoints[0].scale + (endpoints[1].scale - endpoints[0].scale) * progress, x: endpoints[0].x + (endpoints[1].x - endpoints[0].x) * progress, y: endpoints[0].y + (endpoints[1].y - endpoints[0].y) * progress, mode };
 }
+export const motionCameraFrame = (input: MotionCameraInput) => cameraFrame(input, C.MODES);
+export const motionCameraBrowserSource = (): string => C.BROWSER_SOURCE(cameraFrame.toString(), stringifyJson(C.MODES));

@@ -3,7 +3,7 @@ import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { buildMotionRenderHtml, MOTION_ASSET_BASE, resolveMotionAsset } from "../src/server/services/motionEngineService.ts";
+import { buildMotionRenderHtml, MOTION_ASSET_BASE, resolveMotionAsset } from "../src/features/motion/server/services/motionEngineService.ts";
 const spec = JSON.parse(fs.readFileSync(VT.MOTION_ENGINE_DEMO_EDITORIAL_QA_JSON, VT.UTF8));
 spec.gen.style = { outlineColor: VT.VALUE_101010, outlineWidth: 0.04 };
 spec.shots = [spec.shots[0]];

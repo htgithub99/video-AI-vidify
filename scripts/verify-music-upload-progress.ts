@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import express from "express";
-import { musicDownloadReporter } from "../src/server/services/musicDownloadProgress.js";
+import { musicDownloadReporter } from "../src/features/music/server/services/musicDownloadProgress.js";
 import { readMusicDownloadResponse } from "../src/features/music/lib/musicDownloadProgress.js";
 import type { MusicDownloadProgress } from "../src/types/musicDownloadProgress.js";
 const values = new Map<string, string>();

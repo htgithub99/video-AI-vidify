@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { motionVectorCutoutIssue } from "../src/lib/motionVectorCutout.js";
-import { createVectorCutoutInspector } from "../src/server/services/remotion/vectorCutoutInspector.js";
+import { createVectorCutoutInspector } from "../src/features/motion/server/services/remotion/vectorCutoutInspector.js";
 const svg = (content: string, attrs = "") => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" ${attrs}>${content}</svg>`;
 const isolated = svg('<path d="M35 10H65L80 90H20Z" fill="#fff"/>');
 const background = svg('<rect width="100" height="100" fill="#eee"/>');

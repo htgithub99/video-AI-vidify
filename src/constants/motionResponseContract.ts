@@ -66,7 +66,7 @@ export const MOTION_UTTERANCE_SCHEMA = object(
   {
     id: text,
     speaker: text,
-      voiceSpeaker: nullable(text),
+    voiceSpeaker: nullable(text),
     role: choice("narration", "dialogue", "thought", "offscreen"),
     text,
     emotion: choice("neutral", "warm", "serious", "tense", "surprised", "sad", "excited", "scared", "angry"),

@@ -8,11 +8,11 @@ import { modularDoor } from "./motionModularArt.js";
 import { MOTION_LIBRARY_RELEASE as C } from "../src/constants/motionLibraryRelease.js";
 import { MOTION_PACK as K } from "../src/constants/motionPack.js";
 import { PUPPET_TYPES as T } from "../src/constants/motionPuppet.js";
-import { activePuppetLibrary, releasedPuppetAssetAllowed } from "../src/server/services/puppet/libraryRelease.js";
-import { resolvePuppetSetPlan } from "../src/server/services/puppet/setPlan.js";
-import { puppetPackAssetIssues } from "../src/server/services/puppet/packInventory.js";
-import { puppetPackAssetAllowed } from "../src/server/services/puppet/packPolicy.js";
-import { writeMotionJsonAtomic } from "../src/server/services/motionFileUtils.js";
+import { activePuppetLibrary, releasedPuppetAssetAllowed } from "../src/features/motion/server/services/puppet/libraryRelease.js";
+import { resolvePuppetSetPlan } from "../src/features/motion/server/services/puppet/setPlan.js";
+import { puppetPackAssetIssues } from "../src/features/motion/server/services/puppet/packInventory.js";
+import { puppetPackAssetAllowed } from "../src/features/motion/server/services/puppet/packPolicy.js";
+import { writeMotionJsonAtomic } from "../src/features/motion/server/services/motionFileUtils.js";
 import type { PuppetAsset, PuppetBase, PuppetPiece, PuppetProp, PuppetSpot } from "../src/types/motionPuppet.js";
 const root = path.resolve(R.ROOT),
   destination = path.resolve(root, C.RELEASES, R.ID),

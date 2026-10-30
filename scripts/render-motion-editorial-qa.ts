@@ -1,7 +1,7 @@
 import { MOTION_VERIFICATION_TEXTS as VT } from "./motionVerificationTexts.js";
 import fs from "node:fs";
 import path from "node:path";
-import { getMotionJob, openStillSession, startMotionRender } from "../src/server/services/motionRenderService.ts";
+import { getMotionJob, openStillSession, startMotionRender } from "../src/features/motion/server/services/motionRenderService.ts";
 import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality } from "../src/types/motionVideo.ts";
 import { hasMotionRenderFailure } from "../src/lib/motionReference.ts";
 const spec = JSON.parse(fs.readFileSync(VT.MOTION_ENGINE_DEMO_EDITORIAL_QA_JSON, VT.UTF8));

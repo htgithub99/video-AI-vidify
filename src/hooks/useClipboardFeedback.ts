@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-export const useClipboardFeedback = () => {
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+import { CLIPBOARD_FEEDBACK as C } from "../constants/clipboardFeedback.js";
+import type { Lang } from "../lib/lang.js";
+export const useClipboardFeedback = <Key extends string | number = string>({ duration = C.DURATION_MS, language = C.LANGUAGE }: { duration?: number; language?: Lang } = {}) => {
+  const [copiedKey, setCopiedKey] = useState<Key | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef(true);
   useEffect(() => {
@@ -11,17 +13,23 @@ export const useClipboardFeedback = () => {
       if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
     };
   }, []);
-  const copyText = (text: string, key: string, message: string) => {
-    void navigator.clipboard.writeText(text).then(() => {
-      if (!activeRef.current) return;
+  const copyText = async (text: string, key: Key, message: string, onCopied?: () => void): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (!activeRef.current) return false;
       if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
       setCopiedKey(key);
       toast.success(message);
+      onCopied?.();
       timeoutRef.current = setTimeout(() => {
         timeoutRef.current = null;
         setCopiedKey(null);
-      }, 2000);
-    });
+      }, duration);
+      return true;
+    } catch {
+      if (activeRef.current) toast.error(C.UI[language].FAILED);
+      return false;
+    }
   };
   return { copiedKey, copyText };
 };

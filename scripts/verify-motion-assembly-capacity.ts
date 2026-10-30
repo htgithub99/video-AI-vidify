@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { MOTION_PACK as K } from "../src/constants/motionPack.js";
 import { PUPPET as P, PUPPET_TYPES as T } from "../src/constants/motionPuppet.js";
-import { listPuppets, readPuppet } from "../src/server/services/puppet/kitLibrary.js";
-import { runWithPuppetPack } from "../src/server/services/puppet/packPolicy.js";
-import { buildPuppetSets, composePuppetSet } from "../src/server/services/puppet/setComposer.js";
-import { puppetSetMissingRequirements, puppetSetPlacementNeeds } from "../src/server/services/puppet/layout.js";
-import { puppetPackAssemblyBaseFits, puppetPackAssemblyLocationFits } from "../src/server/services/puppet/packLocation.js";
+import { listPuppets, readPuppet } from "../src/features/motion/server/services/puppet/kitLibrary.js";
+import { runWithPuppetPack } from "../src/features/motion/server/services/puppet/packPolicy.js";
+import { buildPuppetSets, composePuppetSet } from "../src/features/motion/server/services/puppet/setComposer.js";
+import { puppetSetMissingRequirements, puppetSetPlacementNeeds } from "../src/features/motion/server/services/puppet/layout.js";
+import { puppetPackAssemblyBaseFits, puppetPackAssemblyLocationFits } from "../src/features/motion/server/services/puppet/packLocation.js";
 import type { PuppetBase, PuppetPiece, PuppetRead, PuppetStylePack } from "../src/types/motionPuppet.js";
 const assets = [T.STYLE, T.CHARACTER, T.SET, T.PROP, T.BASE, T.PIECE].flatMap((type) => listPuppets(type));
 const objects = ["plate", "lamp"].map((key) => ({ key, identity: key, word: key, type: "small", category: "prop", mount: P.MOUNT_TABLE, support: "table", size: 0.3 }));

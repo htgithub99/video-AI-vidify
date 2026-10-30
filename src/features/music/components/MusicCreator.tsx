@@ -1,5 +1,6 @@
 import { openIndexedDatabase } from "../../../lib/indexedDatabase.js";
 import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
+import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { readMusicPlanResponse } from "../../../lib/musicPlanning.js";
 import { readMusicDownloadResponse } from "../lib/musicDownloadProgress.js";
 import { readSunoCreationResponse, formatSunoCreationProgress } from "../lib/sunoCreationProgress.js";
@@ -657,8 +658,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const [styleName, setStyleName] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [editingStyleIndex, setEditingStyleIndex] = useState<number | null>(null);
   const [styleToDelete, setStyleToDelete] = useState<SavedMusicStyle | null>(null);
-  const [copiedStyleIndex, setCopiedStyleIndex] = useState<number | null>(null);
-  const [copiedInspoIndex, setCopiedInspoIndex] = useState<number | null>(null);
+  const { copiedKey: copiedStyleIndex, copyText: copyStyle } = useClipboardFeedback<number>({ language: currentLang });
+  const { copiedKey: copiedInspoIndex, copyText: copyInspiration } = useClipboardFeedback<number>({ language: currentLang });
   const [outputCount, setOutputCount] = useState<number>(initialState.outputCount || MUSIC_CREATOR_CONSTANTS.DEFAULT_SONG_COUNT);
   const [referenceSongs, setReferenceSongs] = useState(initialState.referenceSongs || MUSIC_CREATOR_RUNTIME.EMPTY);
   const [provider, setProvider] = useState<AiPlanningFallbackProvider>(initialState.provider || AiPlanningFallbackProvider.ChatGptUi);
@@ -713,7 +714,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const [sunoEvaluateTracks, setSunoEvaluateTracks] = useState(initialState.sunoEvaluateTracks ?? true);
   const [isDownloadingSuno, setIsDownloadingSuno] = useState(false);
   const [sunoDownloadError, setSunoDownloadError] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
-  const [isCopiedPlaylistUrl, setIsCopiedPlaylistUrl] = useState(false);
+  const { copiedKey: copiedPlaylistKey, copyText: copyPlaylist } = useClipboardFeedback({ language: currentLang });
+  const isCopiedPlaylistUrl = copiedPlaylistKey !== null;
   const [sunoInspo, setSunoInspo] = useState(initialState.sunoInspo || MUSIC_CREATOR_RUNTIME.EMPTY);
   const [sunoInspoDraft, setSunoInspoDraft] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [savedInspos, setSavedInspos] = useState<SavedMusicInspo[]>(readSavedInspos);
@@ -830,10 +832,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     setStyleName(savedStyles[index].title);
   };
   const handleCopyStyle = (savedStyle: SavedMusicStyle, index: number) => {
-    navigator.clipboard.writeText(savedStyle.content);
-    setCopiedStyleIndex(index);
-    toast.success(texts.COPY_STYLE_SUCCESS);
-    window.setTimeout(() => setCopiedStyleIndex(null), 2000);
+    void copyStyle(savedStyle.content, index, texts.COPY_STYLE_SUCCESS);
   };
   const handleCancelStyleEdit = () => {
     setEditingStyleIndex(null);
@@ -909,8 +908,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCopy);
     if (_.isEmpty(songs)) return;
     const allContent = _.map(songs, (song) => song.lyrics).join(SOURCE_TEXT_SYMBOL_13);
-    navigator.clipboard.writeText(allContent);
-    toast.success(texts.COPY_ALL_SUCCESS);
+    void copyText(allContent, CLIPBOARD_FEEDBACK.ALL, texts.COPY_ALL_SUCCESS);
   };
   const handleCopyAllSeo = () => {
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCopy);
@@ -918,8 +916,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const allContent = _.map(displayedSeoOptions, (opt, idx) =>
       SOURCE_TEMPLATE_SYMBOL_12(String(texts.formatOptionLabel(idx + 1)), String(texts.formatScoreLabel(opt.seoScore)), String(texts.SEO_FIELD_TITLE), String(opt.title), String(texts.SEO_FIELD_DESCRIPTION), String(opt.description), String(texts.HASHTAGS_LABEL), String(opt.hashtags.join(SRT.SOURCE_TEXT_SYMBOL_52)), String(texts.TAGS_LABEL), String(opt.tags.join(SOURCE_TEXT_SYMBOL_10))),
     ).join(SOURCE_TEXT_SYMBOL_14);
-    navigator.clipboard.writeText(allContent);
-    toast.success(texts.COPY_ALL_SEO_SUCCESS);
+    void copyText(allContent, CLIPBOARD_FEEDBACK.ALL, texts.COPY_ALL_SEO_SUCCESS);
   };
   const handleGenerate = async () => {
     if (isBusy) return;
@@ -1200,10 +1197,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const handleCopyPlaylistUrl = () => {
     const activePlaylistUrl = _.trim(downloadPlaylistUrl) || sunoPlaylistUrl;
     if (!activePlaylistUrl) return;
-    navigator.clipboard.writeText(activePlaylistUrl);
-    setIsCopiedPlaylistUrl(true);
-    toast.success(texts.SUNO_PLAYLIST_COPY_SUCCESS);
-    setTimeout(() => setIsCopiedPlaylistUrl(false), 2000);
+    void copyPlaylist(activePlaylistUrl, CLIPBOARD_FEEDBACK.ALL, texts.SUNO_PLAYLIST_COPY_SUCCESS);
   };
   const handleDownloadSunoMusic = async () => {
     if (isBusy) return;
@@ -1688,10 +1682,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   type={SOURCE_TEXT_BUTTON}
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    await navigator.clipboard.writeText(item.title);
-                                    setCopiedInspoIndex(index);
-                                    toast.success(texts.INSPO_COPY_NAME_SUCCESS);
-                                    window.setTimeout(() => setCopiedInspoIndex(null), 2000);
+                                    await copyInspiration(item.title, index, texts.INSPO_COPY_NAME_SUCCESS);
                                   }}
                                   title={texts.INSPO_COPY_NAME_BTN}
                                   aria-label={texts.INSPO_COPY_NAME_BTN}

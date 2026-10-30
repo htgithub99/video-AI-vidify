@@ -16,7 +16,7 @@ import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState
 process.env.VIDIFY_STORAGE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "motion-narrator-recovery-"));
 delete process.env.APP_DATA_DIR;
 const fixture = JSON.parse(fs.readFileSync(new URL("./fixtures/motion-narrator-remotion-20261027.json", import.meta.url), "utf8"));
-const { writeChapterBeats } = await import("../src/server/services/motionStoryService.js");
+const { writeChapterBeats } = await import("../src/features/motion/server/services/motionStoryService.js");
 const narration = "Tôi nghe tiếng nước chảy dưới mái, còn chị Hai vẫn nhìn ra khoảng sân trước mặt.";
 const dialogue = "Chị để tôi xem thử một chút đã.";
 const raw = [

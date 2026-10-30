@@ -1,3 +1,5 @@
+import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
+import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { AbsoluteFill, Img, useCurrentFrame, useVideoConfig } from "remotion";
@@ -37,7 +39,7 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: palette.paper, color: palette.ink, fontFamily: RT_MOTION.ARIAL_SANS_SERIF, overflow: RT_SHARED.HIDDEN }}>
       <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.SCALE_0E0502}${width / w}${RT_SHARED.SYMBOL_D03502}${height / h}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
-        <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`, transformOrigin: RT_MOTION.CENTER_CENTER }}>
+        <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RUNTIME_VALUES.TRANSLATE_59C8632A}${camera.x}${RUNTIME_VALUES.PX_2AFF6F79}${camera.y}${RUNTIME_VALUES.PX_SCALE_02D041CE}${camera.scale}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_12}`, transformOrigin: RT_MOTION.CENTER_CENTER }}>
           <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.TRANSLATE}${view.x}${RT_MOTION.PX}${view.y}${RT_MOTION.PX_SCALE}${view.scale}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
             {compositionAsset && scene?.composition && <Img src={motionVectorSource(compositionFrameSvg(compositionAsset, scene.composition, (frame - scene.startFrame) / document.fps, behavior, speakers))} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}
             {!scene?.composition && scene?.backgroundKey && document.assets[scene.backgroundKey] && <Img src={motionVectorSource(document.assets[scene.backgroundKey].svg, true)} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}

@@ -8,11 +8,11 @@ import { inferPuppetAppearance, normalizePuppetAppearance, puppetAppearanceKey, 
 import { MOTION_APPEARANCE as A } from "../src/constants/motionAppearance.js";
 import { MOTION_PACK as PACK } from "../src/constants/motionPack.js";
 import { PUPPET as P } from "../src/constants/motionPuppet.js";
-import { runWithPuppetPack } from "../src/server/services/puppet/packPolicy.js";
-import { puppetKitSpec, applyPuppetShotAppearances } from "../src/server/services/puppet/compilePuppet.js";
-import { readPuppetLines } from "../src/server/services/puppet/director.js";
-import { composePuppetSet } from "../src/server/services/puppet/setComposition.js";
-import { layoutPuppetFrame } from "../src/server/services/puppet/layout.js";
+import { runWithPuppetPack } from "../src/features/motion/server/services/puppet/packPolicy.js";
+import { puppetKitSpec, applyPuppetShotAppearances } from "../src/features/motion/server/services/puppet/compilePuppet.js";
+import { readPuppetLines } from "../src/features/motion/server/services/puppet/director.js";
+import { composePuppetSet } from "../src/features/motion/server/services/puppet/setComposition.js";
+import { layoutPuppetFrame } from "../src/features/motion/server/services/puppet/layout.js";
 import type { PuppetAsset, PuppetCharacter, PuppetAppearance, PuppetStylePack, PuppetBase, PuppetPiece } from "../src/types/motionPuppet.js";
 for (const sample of Q.cases) {
   const actual = inferPuppetAppearance(sample.text);

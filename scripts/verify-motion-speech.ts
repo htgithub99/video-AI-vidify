@@ -16,10 +16,10 @@ try {
   const { normalizeMotionUtterances, motionNarratorLines, motionNarratorCastKey } = await import("../src/lib/motionVoice.ts");
   const { motionQuotedSpeech } = await import("../src/lib/motionSpeech.ts");
   const { puppetBeatLines } = await import("../src/lib/motionPuppet.ts");
-  const { compileStorySpec } = await import("../src/server/services/motionDirectorService.ts");
-  const { puppetBeatFrames } = await import("../src/server/services/puppet/compilePuppet.ts");
-  const { normalizeBeats } = await import("../src/server/services/motionStoryService.ts");
-  const { directMotionVoice } = await import("../src/server/services/motionVoiceDirectionService.ts");
+  const { compileStorySpec } = await import("../src/features/motion/server/services/motionDirectorService.ts");
+  const { puppetBeatFrames } = await import("../src/features/motion/server/services/puppet/compilePuppet.ts");
+  const { normalizeBeats } = await import("../src/features/motion/server/services/motionStoryService.ts");
+  const { directMotionVoice } = await import("../src/features/motion/server/services/motionVoiceDirectionService.ts");
   const role = (speaker: string, text: string, kind: MotionUtterance["role"], id = speaker): MotionUtterance => ({ id, speaker, role: kind, text, emotion: VT.NEUTRAL, speed: 1, pauseBefore: 0, pauseAfter: 0, emphasis: [] });
   const narrator = role(V.NARRATOR, V.NARRATION, VT.DIALOGUE);
   const normalized = normalizeMotionUtterances([{ ...narrator, role: VT.NARRATION }], V.CHAPTER, [C.NARRATOR, V.NARRATOR], V.NARRATION);

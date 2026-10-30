@@ -1,3 +1,4 @@
+import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_REMOTION_STAGING as S } from "../constants/motionRemotionStaging.js";
@@ -16,7 +17,7 @@ export const remotionLegacyAssetIssue = (node: MotionRemotionNode, asset: Motion
 export const normalizeRemotionRelations = (nodes: MotionRemotionNode[]): MotionRemotionNode[] =>
   nodes.map((original) => {
     let node = { ...original };
-    if (node.kind === RT_SHARED.CHARACTER && !node.representation && /^(?:bàn tay|cánh tay|ngón tay|bàn chân|đôi mắt|khuôn mặt|hands? (?:of|reaching)|close[- ]?up of (?:the |a )?(?:hand|face|eyes|feet))\b/iu.test(node.description)) node.representation = "detail";
+    if (node.kind === RT_SHARED.CHARACTER && !node.representation && /^(?:bàn tay|cánh tay|ngón tay|bàn chân|đôi mắt|khuôn mặt|hands? (?:of|reaching)|close[- ]?up of (?:the |a )?(?:hand|face|eyes|feet))\b/iu.test(node.description)) node.representation = RUNTIME_VALUES.DETAIL_9C0211C5;
     const peer = node.kind === RT_SHARED.CHARACTER && ([RT_SHARED.BESIDE, RT_SHARED.BEHIND] as string[]).includes(node.relation || "") && nodes.find((candidate) => candidate.kind === RT_SHARED.CHARACTER && candidate.id === node.target && ([RT_SHARED.BESIDE, RT_SHARED.BEHIND] as string[]).includes(candidate.relation || "") && candidate.target === node.id);
     if (peer && node.id.localeCompare(peer.id) < 0) {
       delete node.relation;

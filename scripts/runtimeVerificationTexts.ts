@@ -178,7 +178,7 @@ export const RUNTIME_VERIFICATION_TEXTS = {
   A_LATE_COMPLETION_MUST_NOT_ATTACH_AN_OLD_VIDEO_TO_A_NEWLY_EDITED_SOURC: "A late completion must not attach an old video to a newly edited source",
   RECOVERY_MUST_NOT_START_RENDERING_AI_GENERATION_OR_COMPILATION: "Recovery must not start rendering, AI generation or compilation",
   MOTION_PREVIEW_RECOVERY_PASSED_REFRESH_PERSISTED_OUTPUT_ID_SERVER_REST: "Motion preview recovery passed: refresh, persisted output ID, server restart/expired jobs, exact legacy part, deletion and source changes.",
-  EXPORT_FROM_SRC_SERVER_SERVICES_MOTIONSTORYSERVICE_TS_EXPORT_FROM_SRC_: "export * from './src/server/services/motionStoryService.ts'; export * from './src/server/services/motionStoryJobService.ts'; export { MOTION_STORY_CONFIG } from './src/constants/motionVideo.ts';",
+  EXPORT_FROM_SRC_SERVER_SERVICES_MOTIONSTORYSERVICE_TS_EXPORT_FROM_SRC_: "export * from './src/features/motion/server/services/motionStoryService.ts'; export * from './src/features/motion/server/services/motionStoryJobService.ts'; export { MOTION_STORY_CONFIG } from './src/constants/motionVideo.ts';",
   TS: "ts",
   NODE: "node",
   ESM: "esm",

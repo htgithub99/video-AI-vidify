@@ -182,7 +182,7 @@ export const RUNTIME_TEXT = {
   SRC_FEATURES_MOTION_REMOTION_ROOT_TSX: "src/features/motion/remotion/Root.tsx",
   DIST: MOTION_TEXT_DIST,
   INDEX_HTML: MOTION_TEXT_INDEX_HTML,
-  SRC_SERVER_SERVICES_REMOTION_BUNDLECONFIG_TS: "src/server/services/remotion/bundleConfig.ts",
+  SRC_SERVER_SERVICES_REMOTION_BUNDLECONFIG_TS: "src/features/motion/server/services/remotion/bundleConfig.ts",
   PACKAGE_JSON: "package.json",
   CHROME: SOURCE_TEXT_CHROME,
   H264: "h264",

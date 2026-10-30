@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { buildMotionRenderHtml, MOTION_ASSET_BASE, resolveMotionAsset } from "../src/server/services/motionEngineService.ts";
+import { buildMotionRenderHtml, MOTION_ASSET_BASE, resolveMotionAsset } from "../src/features/motion/server/services/motionEngineService.ts";
 import { planMotionCoverage } from "../src/lib/motionCoverage.ts";
 const cameras = planMotionCoverage({ actors: [], camera: { pos: [0, 1.4, 1], target: [0, 1.2, -2.9] } }, 6);
 assert.deepEqual(cameras[1].target, [0, 1.2, -2.9], "Prop-only coverage must preserve its narrative anchor");

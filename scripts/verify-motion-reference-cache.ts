@@ -8,7 +8,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { withCachedMotionReferenceStyle } from "../src/server/services/motionReferenceCacheService.ts";
-import { analyzeStory, parseStorySource } from "../src/server/services/motionStoryService.ts";
+import { analyzeStory, parseStorySource } from "../src/features/motion/server/services/motionStoryService.ts";
 import { MOTION_REFERENCE_AI, MOTION_REFERENCE_CONFIG as C } from "../src/constants/motionReference.ts";
 import { MOTION_STORY_CONFIG } from "../src/constants/motionVideo.ts";
 import { MotionStoryLength } from "../src/types/motionVideo.ts";

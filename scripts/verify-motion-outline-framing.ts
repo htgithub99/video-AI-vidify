@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
-import { openStillSession } from "../src/server/services/motionRenderService.ts";
+import { openStillSession } from "../src/features/motion/server/services/motionRenderService.ts";
 import { MOTION_VIDEO_CONSTANTS } from "../src/constants/motionVideo.ts";
 import { beatPreviewSpec } from "../src/server/services/motionGenService.ts";
 const data = JSON.parse(fs.readFileSync(ST.SCRIPTS_FIXTURES_MOTION_STYLE_KITS_MASK_PROJECT_JSON, ST.UTF8));

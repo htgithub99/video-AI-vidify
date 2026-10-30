@@ -3,7 +3,7 @@ import { MOTION_VERIFICATION_TEXTS as V } from "./motionVerificationTexts.js";
 import { PRODUCTION_QA as Q } from "./motionProductionVerificationTexts.js";
 import { motionDnaRepairDraft, motionDnaRepairPrompt } from "../src/lib/motionDnaRepair.js";
 import { videoDnaErrors } from "../src/lib/motionVideoDna.js";
-import { analyzeStory, parseStorySource, type MotionAnalysisDraft } from "../src/server/services/motionStoryService.js";
+import { analyzeStory, parseStorySource, type MotionAnalysisDraft } from "../src/features/motion/server/services/motionStoryService.js";
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { MotionStoryLength } from "../src/types/motionVideo.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../src/constants/cinematicConstants.js";

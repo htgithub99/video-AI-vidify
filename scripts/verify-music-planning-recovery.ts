@@ -16,8 +16,8 @@ import { AiPlanningFallbackProvider } from "../src/types.ts";
 import { GEMINI_MODEL_ENCODING } from "../src/constants/geminiChatModels.ts";
 import { musicErrorDetails } from "../src/server/services/musicDiagnosticService.ts";
 import { compactMusicSongs, musicReviewOrder, readMusicPlanResponse, validMusicEditorialReview } from "../src/lib/musicPlanning.ts";
-import { musicPlanReporter } from "../src/server/services/musicPlanProgress.ts";
-import { reviewMusicSongBatch } from "../src/server/services/musicSongReviewService.ts";
+import { musicPlanReporter } from "../src/features/music/server/services/musicPlanProgress.ts";
+import { reviewMusicSongBatch } from "../src/features/music/server/services/musicSongReviewService.ts";
 import { confirmChatContextPart, parseChatContextReceipt } from "../src/server/services/chatContextReceipt.ts";
 const review = { version: 1, impact: 75, wording: 81, singability: 79, originality: 80, fit: 88, hook: "Nỗi nhớ trong đêm", strength: "Lời tự nhiên", risk: "Cao trào còn nhẹ" };
 const songs = Array.from({ length: 30 }, (_, i) => ({

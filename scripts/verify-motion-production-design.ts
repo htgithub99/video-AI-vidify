@@ -2,7 +2,7 @@ import { MOTION_VERIFICATION_TEXTS as VT, MOTION_VERIFICATION_FORMATS as VF } fr
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { isProductionCabin, productionBriefFor, productionStaging } from "../src/lib/motionProductionDesign.ts";
-import { validateGenLocation } from "../src/server/services/motionEngineService.ts";
+import { validateGenLocation } from "../src/features/motion/server/services/motionEngineService.ts";
 assert.equal(isProductionCabin({ key: VT.COCKPIT, name: VT.AIRCRAFT_COCKPIT }), false);
 assert.equal(isProductionCabin({ key: VT.AIRPORT, name: VT.AIRPORT_TERMINAL }), false);
 assert.match(productionBriefFor({ name: VT.AIRCRAFT_CABIN_2 }), VT.NO_PRESET_CLASSIFICATION_RE);

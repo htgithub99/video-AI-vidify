@@ -1,8 +1,7 @@
 . (Join-Path $PSScriptRoot "scripts/powershellTexts.ps1")
 $ErrorActionPreference = $WORKSPACE_SCRIPT_TEXT.STOP
-
 $PYTHON_VERSION = $WORKSPACE_SCRIPT_TEXT.VALUE_3_10_11
-$PYTHON_URL = "https://www.python.org/ftp/python/$PYTHON_VERSION/python-$PYTHON_VERSION-embed-amd64.zip"
+$PYTHON_URL = $WORKSPACE_SCRIPT_TEXT.PYTHON_EMBED_URL -f $PYTHON_VERSION
 $PIP_URL = $WORKSPACE_SCRIPT_TEXT.HTTPS_BOOTSTRAP_PYPA_IO_GET_PIP_PY
 $PYTHON_EXE_NAME = $WORKSPACE_SCRIPT_TEXT.PYTHON_EXE
 $PYTHON_COMMAND_FLAG = $WORKSPACE_SCRIPT_TEXT.C
@@ -31,11 +30,9 @@ $PTH_ENABLED_SITE = $WORKSPACE_SCRIPT_TEXT.IMPORT_SITE_67
 $DIRECTORY_ITEM_TYPE = $WORKSPACE_SCRIPT_TEXT.DIRECTORY
 $EXIT_SUCCESS = 0
 $EXIT_FAILURE = 1
-
 $TARGET_DIR = Join-Path $PSScriptRoot $TARGET_RELATIVE_DIR
 $ZIP_PATH = Join-Path $PSScriptRoot $ZIP_RELATIVE_PATH
 $PIP_SCRIPT = Join-Path $TARGET_DIR $PIP_SCRIPT_NAME
-
 if (Test-Path (Join-Path $TARGET_DIR $PYTHON_EXE_NAME)) {
     Write-Host ($RUNTIME_EXISTS_MESSAGE -f $TARGET_DIR)
     $pythonExe = Join-Path $TARGET_DIR $PYTHON_EXE_NAME
@@ -50,19 +47,15 @@ if (Test-Path (Join-Path $TARGET_DIR $PYTHON_EXE_NAME)) {
     }
     exit $EXIT_SUCCESS
 }
-
 Write-Host ($DOWNLOAD_PYTHON_MESSAGE -f $PYTHON_VERSION)
 Invoke-WebRequest -Uri $PYTHON_URL -OutFile $ZIP_PATH
-
 Write-Host ($EXTRACT_PYTHON_MESSAGE -f $TARGET_DIR)
 if (-not (Test-Path $TARGET_DIR)) {
     New-Item -ItemType $DIRECTORY_ITEM_TYPE -Force -Path $TARGET_DIR | Out-Null
 }
 Expand-Archive -Path $ZIP_PATH -DestinationPath $TARGET_DIR -Force
-
 Write-Host $CLEAN_ZIP_MESSAGE
 Remove-Item -Path $ZIP_PATH -Force
-
 Write-Host $ENABLE_PACKAGES_MESSAGE
 $pthFile = Join-Path $TARGET_DIR $PTH_FILE_NAME
 if (Test-Path $pthFile) {
@@ -70,10 +63,8 @@ if (Test-Path $pthFile) {
     $content = $content -replace $PTH_DISABLED_SITE, $PTH_ENABLED_SITE
     Set-Content -Path $pthFile -Value $content
 }
-
 Write-Host $DOWNLOAD_PIP_MESSAGE
 Invoke-WebRequest -Uri $PIP_URL -OutFile $PIP_SCRIPT
-
 Write-Host $INSTALL_PIP_MESSAGE
 $pythonExe = Join-Path $TARGET_DIR $PYTHON_EXE_NAME
 & $pythonExe $PIP_SCRIPT
@@ -81,14 +72,11 @@ if ($LASTEXITCODE -ne $EXIT_SUCCESS) {
     Write-Error $PIP_INSTALL_ERROR
     exit $EXIT_FAILURE
 }
-
 Write-Host $CLEAN_PIP_MESSAGE
 Remove-Item -Path $PIP_SCRIPT -Force
-
 & $pythonExe $PYTHON_MODULE_FLAG $PIP_MODULE $PIP_INSTALL_COMMAND $PIL_PACKAGE
 if ($LASTEXITCODE -ne $EXIT_SUCCESS) {
     Write-Error $PIL_INSTALL_ERROR
     exit $EXIT_FAILURE
 }
-
 Write-Host $SETUP_SUCCESS_MESSAGE

@@ -108,9 +108,9 @@ delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
 process.env.MOTION_SFX_SOURCE = path.join(root, "no-external-assets");
 try {
-  const { directMotionSound } = await import("../src/server/services/motionSoundDirectionService.js");
-  const { directPuppetSound } = await import("../src/server/services/puppet/sound.js");
-  const { compileRemotionSound } = await import("../src/server/services/remotion/soundCompiler.js");
+  const { directMotionSound } = await import("../src/features/motion/server/services/motionSoundDirectionService.js");
+  const { directPuppetSound } = await import("../src/features/motion/server/services/puppet/sound.js");
+  const { compileRemotionSound } = await import("../src/features/motion/server/services/remotion/soundCompiler.js");
   const make = (): any => ({ title: "SFX", language: "vi", beats: [{ id: "b", chapterId: "c", place: "room", narration: "Trong bếp có tiếng đũa gõ vành bát." }] });
   let calls = 0;
   const opts: any = {

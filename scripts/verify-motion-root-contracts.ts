@@ -3,20 +3,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { acceptMotionIllustrationAudit, motionIllustrationCoverageMissing, motionIllustrationNeedsErrors } from "../src/lib/motionIllustrationNeeds.js";
-import { completeMotionIllustrationCoverage } from "../src/server/services/motionIllustrationRepairService.js";
-import { requestMotionAiContract } from "../src/server/services/motionAiContractService.js";
+import { completeMotionIllustrationCoverage } from "../src/features/motion/server/services/motionIllustrationRepairService.js";
+import { requestMotionAiContract } from "../src/features/motion/server/services/motionAiContractService.js";
 import { motionVoiceSignature } from "../src/lib/motionVoice.js";
-import { puppetHoldingEvidence, puppetParentEvidence } from "../src/server/services/puppet/illustrationFacts.js";
-import { normalizePuppetVisualState } from "../src/server/services/puppet/visualContract.js";
+import { puppetHoldingEvidence, puppetParentEvidence } from "../src/features/motion/server/services/puppet/illustrationFacts.js";
+import { normalizePuppetVisualState } from "../src/features/motion/server/services/puppet/visualContract.js";
 import { MOTION_PACK as K } from "../src/constants/motionPack.js";
-import { layoutPuppetFrame, puppetSetPlacementNeeds, puppetSetMissingRequirements } from "../src/server/services/puppet/layout.js";
-import { puppetPropAssignments, puppetPropAssignmentsValid } from "../src/server/services/puppet/propPlacement.js";
+import { layoutPuppetFrame, puppetSetPlacementNeeds, puppetSetMissingRequirements } from "../src/features/motion/server/services/puppet/layout.js";
+import { puppetPropAssignments, puppetPropAssignmentsValid } from "../src/features/motion/server/services/puppet/propPlacement.js";
 import { puppetObjectParentEvidence } from "../src/lib/motionPropSupport.js";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-root-contracts-"));
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
-const { normalizeBeats } = await import("../src/server/services/motionStoryService.js");
-const { recoverMotionIllustrationPlan } = await import("../src/server/services/motionPlanRecoveryService.js");
+const { normalizeBeats } = await import("../src/features/motion/server/services/motionStoryService.js");
+const { recoverMotionIllustrationPlan } = await import("../src/features/motion/server/services/motionPlanRecoveryService.js");
 const { MotionResourceError } = await import("../src/lib/motionResourceFailure.js");
 const cast = [
   { key: "a", name: "Nam", gender: "male", age: "adult", role: "villager" },

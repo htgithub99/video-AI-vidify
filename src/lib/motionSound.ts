@@ -1,3 +1,4 @@
+import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { motionFiniteNumber } from "./motionNumber.js";
 import { MOTION_PATTERNS as MP } from "../constants/motionPatterns.js";
 import * as MR from "../constants/motionRuntime.js";
@@ -80,11 +81,11 @@ export const motionAutoSoundEvents = (parts: unknown[]): MotionSoundEvent[] => {
 export const motionNarratedSoundEvents = (narration: string): MotionSoundEvent[] => {
   const text = soundText(narration);
   const rules: [string, RegExp][] = [
-    ["dish", /\b(?:dua|thia|muong)\b.{0,24}\b(?:go|cham|va)\b.{0,24}\b(?:bat|chen|dia)\b|\b(?:chopsticks?|cutlery)\b.{0,24}\b(?:tap|tapping|clink)\b/u],
-    ["door", /\b(?:tieng go cua|knocking at the door|door slams?)\b/u],
-    ["bell", /\b(?:tieng chuong|chuong reo|bells? ring(?:ing)?)\b/u],
-    ["footstep", /\b(?:tieng buoc chan|heard footsteps?|sound of footsteps?)\b/u],
-    ["rain", /\b(?:tieng mua|sound of rain)\b/u],
+    [RUNTIME_VALUES.DISH_EDCF27A6, /\b(?:dua|thia|muong)\b.{0,24}\b(?:go|cham|va)\b.{0,24}\b(?:bat|chen|dia)\b|\b(?:chopsticks?|cutlery)\b.{0,24}\b(?:tap|tapping|clink)\b/u],
+    [RUNTIME_VALUES.DOOR_2534E2DE, /\b(?:tieng go cua|knocking at the door|door slams?)\b/u],
+    [RUNTIME_VALUES.BELL_F683740C, /\b(?:tieng chuong|chuong reo|bells? ring(?:ing)?)\b/u],
+    [RUNTIME_VALUES.FOOTSTEP_08346ADF, /\b(?:tieng buoc chan|heard footsteps?|sound of footsteps?)\b/u],
+    [RUNTIME_VALUES.RAIN_319B44C5, /\b(?:tieng mua|sound of rain)\b/u],
   ];
   const events: Record<string, unknown>[] = [];
   for (const clause of text.split(/[.!?;:…]/u)) {
@@ -92,7 +93,7 @@ export const motionNarratedSoundEvents = (narration: string): MotionSoundEvent[]
     for (const [kind, rule] of rules) {
       const match = rule.exec(clause);
       if (!match || events.some((event) => event.kind === kind)) continue;
-      events.push({ id: `heard_${kind}`, kind, at: Math.min(0.95, Math.max(0, (text.indexOf(clause) + match.index) / Math.max(1, text.length))), description: clause.trim(), source: "offscreen" });
+      events.push({ id: `${RUNTIME_VALUES.HEARD_7FC70332}${kind}`, kind, at: Math.min(0.95, Math.max(0, (text.indexOf(clause) + match.index) / Math.max(1, text.length))), description: clause.trim(), source: RUNTIME_VALUES.OFFSCREEN_44B609C2 });
     }
   }
   return normalizeSoundEvents(events.slice(0, C.AUTO_MAX_EVENTS));

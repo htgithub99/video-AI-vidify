@@ -1,4 +1,4 @@
-const AdminJson = { stringifyJson: (value, replacer, space) => JSON.stringify(value, replacer, space) };
+const AdminJson = { parseJson: (text, reviver) => JSON.parse(text, reviver), stringifyJson: (value, replacer, space) => JSON.stringify(value, replacer, space) };
 const API_BASE_URL = "https://script.google.com/macros/s/AKfycbzfi-Y7XAx08iUhzippVUeG-Zf4RScElQObIS1RIfO2KTEkUGDSa0TmpkS35aKbik32/exec";
 const AdminConstants = {
   TOKEN_KEY: "adminToken",
@@ -525,7 +525,7 @@ const AdminTemplates = {
     `,
   DANGER_TEXT: (text) => `<span style="color:var(--danger)">${text}</span>`,
 };
-const AdminTextBindings = { TEXT_ATTRIBUTE: "data-admin-text", TEXT_SELECTOR: "[data-admin-text]", NODE_ATTRIBUTE: "data-admin-node", NODE_SELECTOR: "[data-admin-node]", ATTRIBUTES: { title: "data-admin-title", placeholder: "data-admin-placeholder", "aria-label": "data-admin-aria-label", alt: "data-admin-alt" } };
+const AdminTextBindings = { TEXT_ATTRIBUTE: "data-admin-text", TEXT_SELECTOR: "[data-admin-text]", NODE_ATTRIBUTE: "data-admin-node", NODE_SELECTOR: "[data-admin-node]", attributeSelector: (name) => `[${name}]`, ATTRIBUTES: { title: "data-admin-title", placeholder: "data-admin-placeholder", "aria-label": "data-admin-aria-label", alt: "data-admin-alt" } };
 const AdminRuntimeText = {
   VIDIFY_ADMIN_STUDIO: "Vidify Admin Studio",
   DANG_NHAP: "🔑 Đăng Nhập",

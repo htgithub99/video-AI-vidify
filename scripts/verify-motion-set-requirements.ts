@@ -1,8 +1,8 @@
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { puppetSetMissingRequirements } from "../src/server/services/puppet/layout.js";
-import { drawPuppetSets } from "../src/server/services/puppet/kitDraw.js";
+import { puppetSetMissingRequirements } from "../src/features/motion/server/services/puppet/layout.js";
+import { drawPuppetSets } from "../src/features/motion/server/services/puppet/kitDraw.js";
 import type { PuppetRead, PuppetSet, PuppetStylePack } from "../src/types/motionPuppet.js";
 const wall: PuppetRead = { focus: VT.PLACE, who: [], action: VT.STAND, emotion: VT.NEUTRAL, overlays: [], object: { word: VT.VACH_DAT, key: VT.EARTHEN_WALL, type: VT.WALL, category: VT.SCENE_FEATURE, mount: VT.FLOOR, size: 2, note: VT.EARTHEN_WALL_041874A4 } };
 const rest: PuppetRead = { focus: VT.A, who: [VT.A], action: VT.LIE, emotion: VT.NEUTRAL, overlays: [], states: [{ char: VT.A, action: VT.LIE, support: VT.BED }] };

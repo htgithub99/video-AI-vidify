@@ -1,3 +1,4 @@
+import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_LOG_SECTIONS as S } from "../constants/motionLogSections.js";
@@ -103,7 +104,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
   for (const current of currents) {
     if (!current) continue;
     const kind = RT_MOTION.KIND in current ? String(current.kind) : RT_MOTION.RENDER;
-    const states: [string, MotionStepState][] = kind === RT_MOTION.PRODUCTION ? Object.entries("stepStates" in current ? current.stepStates || {} : {}) : [[S.KINDS[kind] || RT_MOTION.RENDER, current as MotionStepState]];
+    const states: [string, MotionStepState][] = kind === RT_MOTION.PRODUCTION ? Object.entries(RUNTIME_VALUES.STEPSTATES_CBD0DF09 in current ? current.stepStates || {} : {}) : [[S.KINDS[kind] || RT_MOTION.RENDER, current as MotionStepState]];
     for (const [name, state] of states) {
       const keys = S.ORDER.includes(name as (typeof S.ORDER)[number]) ? [name] : motionLogStageKeys(name);
       for (const key of keys) {

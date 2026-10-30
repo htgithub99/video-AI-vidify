@@ -1,16 +1,10 @@
+import { GeminiErrorCategory } from "../../constants/runtime/enums.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { SOURCE_TEXT_404, SOURCE_TEXT_429, SOURCE_TEXT_DAILYQUOTA, SOURCE_TEXT_FATAL, SOURCE_TEXT_QUOTA, SOURCE_TEXT_RATELIMIT, SOURCE_TEXT_RESOURCE_EXHAUSTED, SOURCE_TEXT_TRANSIENT, SOURCE_TEXT_UNSUPPORTEDMODEL, SOURCE_TEXT_ZEROQUOTA } from "../../constants/sourceText";
 import _ from "lodash";
 import { GEMINI_DAILY_QUOTA_PATTERNS, GEMINI_NON_RETRYABLE_MODEL_PATTERNS, GEMINI_QUOTA_STATUSES, GEMINI_RETRY_REGEX, GEMINI_RETRYABLE_ERROR_KEYWORDS, GEMINI_RETRYABLE_STATUSES, GEMINI_USER_MESSAGES, GEMINI_ZERO_QUOTA_PATTERNS } from "../../constants/index.js";
 import { GEMINI_REQUEST_POLICY } from "../../constants/config.js";
-export enum GeminiErrorCategory {
-  UnsupportedModel = "unsupported_model",
-  ZeroQuota = "zero_quota",
-  DailyQuota = "daily_quota",
-  RateLimit = "rate_limit",
-  Transient = "transient",
-  Fatal = "fatal",
-}
+export { GeminiErrorCategory };
 export interface GeminiErrorDecision {
   category: GeminiErrorCategory;
   retryable: boolean;

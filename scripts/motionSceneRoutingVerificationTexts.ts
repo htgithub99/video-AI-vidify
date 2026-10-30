@@ -1,5 +1,5 @@
 export const SRV = {
-  CONTROLLER: "src/server/services/motionProductionActions.ts",
+  CONTROLLER: "src/features/motion/server/services/motionProductionActions.ts",
   IMPORTS: /import\s*\{([^}]+)\}\s*from\s*["'](\.\/[^"']+)["']/g,
   SERVICES: /^\.\//,
   ALIAS: /\s+as\s+/,
@@ -7,7 +7,7 @@ export const SRV = {
   TYPE_IMPORT: /^type\s/,
   PLUGIN: "motion-scene-controller-offline",
   NAMESPACE: "motion-scene-controller-stubs",
-  ENTRY: 'export { scenesMotionStoryInput as scenesMotionStory, voiceMotionStoryInput as voiceMotionStory } from "./src/server/services/motionProductionActions.ts";',
+  ENTRY: 'export { scenesMotionStoryInput as scenesMotionStory, voiceMotionStoryInput as voiceMotionStory } from "./src/features/motion/server/services/motionProductionActions.ts";',
   EXPORT: (name: string): string => `export const ${name} = (...args) => globalThis.__motionSceneRouting.invoke(${JSON.stringify(name)}, args);`,
   BUNDLE: (pid: number): string => `node_modules/.cache/motion-scene-routing-${pid}.mjs`,
   STYLE: "minimal_mask",

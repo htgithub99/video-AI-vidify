@@ -700,7 +700,7 @@ export interface MotionStoryScript {
 export interface MotionChapterDraft {
   partition?: { points: string[]; source: string; seconds: number }[];
   parts?: Record<string, MotionChapterDraft>;
-  repairState?: { rejected: number; errors: string[] };
+  repairState?: import("./motionAiContract.js").MotionAiContractState;
   inputKey: string;
   rows: Record<string, any>[];
   pending: { id: string; fields: string[]; targetUnits?: number }[];
@@ -738,7 +738,6 @@ export interface MotionVoiceTrack {
   totalSeconds: number;
 }
 export interface MotionUtterance {
-  /** Actual voice source when the visible speaker is quoting/possessed; exact cast key. */
   voiceSpeaker?: string;
   id: string;
   speaker: string;

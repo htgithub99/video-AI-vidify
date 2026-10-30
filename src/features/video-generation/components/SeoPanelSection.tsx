@@ -1,13 +1,14 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { CopyButton } from "../../../components/common/CopyButton.js";
+import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
+import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { RUNTIME_TEXT as RT_VIDEO_GENERATION } from "../constants/runtimeText.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
 import { SOURCE_TEMPLATE_SYMBOL_30, SOURCE_TEMPLATE_SYMBOL_31, SOURCE_TEXT_ROTATIONLOGS, SOURCE_TEXT_SEO_SOURCE_FALLBACK_USED, SOURCE_TEXT_SYMBOL_10 } from "../../../constants/sourceText";
 import { cn } from "../../../lib/utils";
 import React from "react";
 import _ from "lodash";
-import { Copy, Target } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "../../../components/ui/Button";
+import { Target } from "lucide-react";
 import { REFACTOR_CONSTANTS } from "../../../constants";
 import { AUTO_GENERATOR_CONSTANTS } from "../../../constants/config";
 import { AUTO_VIDEO_UI_TEXTS } from "../../../constants/texts";
@@ -16,6 +17,7 @@ interface SeoPanelSectionProps {
   activeCreatedProject: VideoProject | null | undefined;
 }
 export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedProject }) => {
+  const { copyText } = useClipboardFeedback();
   const seo = activeCreatedProject?.seo;
   if (!seo || (_.isEmpty(seo.titles) && _.isEmpty(seo.descriptions))) {
     return null;
@@ -24,17 +26,14 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
   const scoreAvailable = (score: unknown): boolean => _.isFinite(score) && _.gte(_.toNumber(score), 0);
   const usesUnscoredFallback = _.some(seo.titles, (title) => !scoreAvailable(title.seoScore)) || _.includes(_.castArray(_.get(seo, SOURCE_TEXT_ROTATIONLOGS)), SOURCE_TEXT_SEO_SOURCE_FALLBACK_USED) || _.every(seo.titles, (title) => _.every([title.searchScore, title.ctrScore, title.compScore, title.seoScore], (score) => _.isEqual(score, 0)));
   const handleCopyTitle = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TITLE);
+    void copyText(text, CLIPBOARD_FEEDBACK.ALL, AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TITLE);
   };
   const handleCopyDesc = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_DESC);
+    void copyText(text, CLIPBOARD_FEEDBACK.ALL, AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_DESC);
   };
   const handleCopyTags = (items: string[], isHashtag: boolean) => {
     const textToCopy = isHashtag ? _.map(items, (t) => SOURCE_TEMPLATE_SYMBOL_30(`${t.replace(/^#+/, REFACTOR_CONSTANTS.VD_EMPTY_STRING)}`)).join(RT_SHARED.SYMBOL_36A9E7) : items.join(SOURCE_TEXT_SYMBOL_10);
-    navigator.clipboard.writeText(textToCopy);
-    toast.success(AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TAGS);
+    void copyText(textToCopy, CLIPBOARD_FEEDBACK.ALL, AUTO_GENERATOR_CONSTANTS.UI_SEO_COPIED_TAGS);
   };
   return (
     <StudioCard className={cn(RT_VIDEO_GENERATION.BG_SLATE_900_90_BORDER_BORDER_SLATE_800_P_5)}>
@@ -52,9 +51,7 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
               <div key={i} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_80_P)}>
                 <div className={cn(RT_VIDEO_GENERATION.FLEX_ITEMS_START_JUSTIFY_BETWEEN_GAP_3)}>
                   <p className={cn(RT_VIDEO_GENERATION.FONT_BOLD_TEXT_SLATE_100_TEXT_XS_LEADING_SNUG)}>{title.text}</p>
-                  <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} onClick={() => handleCopyTitle(title.text)} className={cn(RT_VIDEO_GENERATION.TEXT_SLATE_500_HOVER_TEXT_SLATE_100_P_1_ROUNDED)} title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_TITLE_TOOLTIP}>
-                    <Copy className={cn(RT_SHARED.W_3_5_H_3_5)} />
-                  </Button>
+                  <CopyButton onClick={() => handleCopyTitle(title.text)} className={cn(RT_VIDEO_GENERATION.TEXT_SLATE_500_HOVER_TEXT_SLATE_100_P_1_ROUNDED)} title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_TITLE_TOOLTIP} iconClassName={RT_SHARED.W_3_5_H_3_5} />
                 </div>
                 <div className={cn(RT_VIDEO_GENERATION.GRID_GRID_COLS_4_GAP_2_PT_2_BORDER_T)}>
                   {_.map(
@@ -89,9 +86,7 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
             {_.map(seo.descriptions || [], (desc, i) => (
               <div key={i} className={cn(RT_VIDEO_GENERATION.BG_SLATE_955_60_BORDER_BORDER_SLATE_800_80_P_55C5CD)}>
                 <p className={cn(RT_VIDEO_GENERATION.TEXT_11PX_TEXT_SLATE_300_LEADING_RELAXED_FONT_SANS)}>{desc.text}</p>
-                <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} onClick={() => handleCopyDesc(desc.text)} className={cn(RT_VIDEO_GENERATION.TEXT_SLATE_500_HOVER_TEXT_SLATE_100_P_1_ROUNDED)} title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_DESC_TOOLTIP}>
-                  <Copy className={cn(RT_SHARED.W_3_5_H_3_5)} />
-                </Button>
+                <CopyButton onClick={() => handleCopyDesc(desc.text)} className={cn(RT_VIDEO_GENERATION.TEXT_SLATE_500_HOVER_TEXT_SLATE_100_P_1_ROUNDED)} title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_DESC_TOOLTIP} iconClassName={RT_SHARED.W_3_5_H_3_5} />
               </div>
             ))}
           </div>
@@ -106,11 +101,7 @@ export const SeoPanelSection: React.FC<SeoPanelSectionProps> = ({ activeCreatedP
               <div key={label} className={cn(RT_SHARED.SPACE_Y_1_5)}>
                 <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
                   <span className={cn(RT_VIDEO_GENERATION.TEXT_10PX_TEXT_SLATE_400_UPPERCASE_FONT_MONO_TRACKING_WIDER)}>{label}</span>
-                  {!_.isEmpty(items) && (
-                    <Button type={REFACTOR_CONSTANTS.BUTTON_TYPE_BUTTON} variant={REFACTOR_CONSTANTS.VARIANT_UNSTYLED} onClick={() => handleCopyTags(items, isHashtag)} className={cn(RT_VIDEO_GENERATION.TEXT_SLATE_500_HOVER_TEXT_SLATE_100_P_1_ROUNDED)} title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_TAGS_TOOLTIP}>
-                      <Copy className={cn(RT_SHARED.W_3_5_H_3_5)} />
-                    </Button>
-                  )}
+                  {!_.isEmpty(items) && <CopyButton onClick={() => handleCopyTags(items, isHashtag)} className={cn(RT_VIDEO_GENERATION.TEXT_SLATE_500_HOVER_TEXT_SLATE_100_P_1_ROUNDED)} title={AUTO_GENERATOR_CONSTANTS.UI_SEO_COPY_TAGS_TOOLTIP} iconClassName={RT_SHARED.W_3_5_H_3_5} />}
                 </div>
                 <div className={cn(RT_SHARED.FLEX_FLEX_WRAP_GAP_1_5)}>
                   {_.map(items, (tag, i) => (

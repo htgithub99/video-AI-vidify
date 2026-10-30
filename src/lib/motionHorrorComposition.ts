@@ -1,12 +1,15 @@
+import * as COMMON_RUNTIME from "../constants/sourceText.js";
+import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
 import { compositionElements, validateSceneComposition } from "./motionSceneComposition.js";
+import { motionAnonymousLayer } from "./motionActorTracks.js";
 import type { MotionRemotionNode, MotionRenderBehavior, MotionSceneAnimation, MotionSceneComposition, MotionVectorAsset } from "../types/motionVisual.js";
 export const compositionMissingNodes = (composition: MotionSceneComposition, nodes: MotionRemotionNode[]): string[] => nodes.filter((node) => node.kind !== RT_SHARED.LABEL && !composition.layers.some((layer) => layer.id === node.id)).map((node) => node.id);
 export const compositionAttachedMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[]) => {
   const elements = compositionElements(asset.svg);
-  const held = nodes.filter((node) => node.relation === "heldBy" && node.target && elements.has(node.id));
+  const held = nodes.filter((node) => node.relation === RUNTIME_VALUES.HELDBY_F9249A57 && node.target && elements.has(node.id));
   const animations = composition.animations.filter((animation) => {
     if (animation.channel !== RT_CORE.ACTOR || animation.attribute !== RT_CORE.TRANSFORM) return true;
     return !held.some((prop) => {
@@ -21,7 +24,10 @@ export const compositionAttachedMotion = (composition: MotionSceneComposition, a
 export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior?: MotionRenderBehavior): { composition: MotionSceneComposition; added: number } => {
   if (behavior?.actors !== RT_SHARED.SIMPLE || !asset) return { composition, added: 0 };
   const elements = compositionElements(asset.svg);
-  const characters = composition.layers.filter((layer) => layer.kind === RT_SHARED.CHARACTER && !nodes.some((node) => node.id === layer.id && node.representation === "detail") && !nodes.some((node) => node.relation === "heldBy" && (node.target === layer.id || (!!layer.entityId && node.target === layer.entityId)) && !elements.get(node.id)?.ancestors.includes(layer.id)));
+  const characters = composition.layers.filter(
+    (layer) =>
+      layer.kind === RT_SHARED.CHARACTER && !motionAnonymousLayer(layer) && !nodes.some((node) => node.id === layer.id && node.representation === RUNTIME_VALUES.DETAIL_9C0211C5) && !nodes.some((node) => node.relation === RUNTIME_VALUES.HELDBY_F9249A57 && (node.target === layer.id || (!!layer.entityId && node.target === layer.entityId)) && !elements.get(node.id)?.ancestors.includes(layer.id)),
+  );
   const moving = new Set<string>();
   for (const animation of composition.animations) {
     if (animation.channel !== RT_CORE.ACTOR) continue;
@@ -78,7 +84,7 @@ const compositionClosingTags = (svg: string): string => {
 };
 export const compositionRepairDraft = (input: Record<string, any>): Record<string, any> => {
   if (typeof input?.svg !== "string") return input;
-  const draft: Record<string, any> = { ...input, svg: compositionClosingTags(input.svg.replace(C.GUARD.ESCAPED_TAG, "<")) };
+  const draft: Record<string, any> = { ...input, svg: compositionClosingTags(input.svg.replace(C.GUARD.ESCAPED_TAG, RUNTIME_VALUES.VALUE_DABD3AFF)) };
   if (!Array.isArray(draft.animations)) return draft;
   let elements: ReturnType<typeof compositionElements>;
   try {
@@ -86,7 +92,7 @@ export const compositionRepairDraft = (input: Record<string, any>): Record<strin
   } catch {
     return draft;
   }
-  const flat = (value: unknown) => String(value).replace(C.GUARD.SEPARATORS, " ").trim();
+  const flat = (value: unknown) => String(value).replace(C.GUARD.SEPARATORS, COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52).trim();
   const numbers = (value: string) => value.match(C.NUMBER)?.map(Number) || [];
   const delta = (base: string, value: unknown, absolute: boolean): string | undefined => {
     const text = flat(value);

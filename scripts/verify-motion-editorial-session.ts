@@ -9,9 +9,9 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-editorial-session-"))
 const prior = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
 try {
-  const { editorialSession } = await import("../src/server/services/motionProductionActions.js");
-  const { startStoryJob, getStoryJob, cancelStoryJob } = await import("../src/server/services/motionStoryJobService.js");
-  const { releaseMotionEditorialSession } = await import("../src/server/services/motionStoryService.js");
+  const { editorialSession } = await import("../src/features/motion/server/services/motionProductionActions.js");
+  const { startStoryJob, getStoryJob, cancelStoryJob } = await import("../src/features/motion/server/services/motionStoryJobService.js");
+  const { releaseMotionEditorialSession } = await import("../src/features/motion/server/services/motionStoryService.js");
   const source = { title: "A village story", text: "A family returns home.", segments: [{ t: 0, text: "A family returns home." }] } as MotionStorySource;
   const body = { editorialSessionId: "editorial-session-regression", language: "vi" };
   const exec: MotionAiExecution = { provider: "deepseek-chat", model: "deepseek-auto", mode: "room-only", chromeHeadless: false };

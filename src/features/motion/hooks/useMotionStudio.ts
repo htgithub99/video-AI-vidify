@@ -1,3 +1,4 @@
+import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_PROGRESS as MOTION_LOG_PROGRESS } from "../../../constants/motionProgress.js";
@@ -929,11 +930,13 @@ export function useMotionStudio() {
           if (!flowCancelled.current && !stateRef.current.automationPaused) requestVoice(result, analysis);
           patch({ script: result });
           setCompiled(null);
-          const failed =
-            (result.gen?.failed?.length || 0) +
-            Object.values(result.gen?.remotion?.scenes || {})
+          const failed = new Set([
+            ...(result.gen?.failed || []),
+            ...Object.values(result.gen?.remotion?.scenes || {})
               .flat()
-              .filter((scene) => scene.build?.status === "failed").length;
+              .filter((scene) => scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED)
+              .map((scene) => scene.id),
+          ]).size;
           if (failed) toast.warning(result.gen?.remotion ? MOTION_VISUAL.RETRY_SCENES(failed) : MOTION_TEMPLATE_CANH_CHUA_DUNG_DUOC_BAM_DUNG_TIEP(String(failed)));
           else toast.success(PUPPET.TOAST_DONE);
           return result;
@@ -1156,7 +1159,7 @@ export function useMotionStudio() {
         if (state.visualSettings.mode === RT_SHARED.REMOTION) {
           if (!state.script || !state.analysis) return;
           const rebuilt = await buildScenes({}, state.script, state.analysis);
-          if (!rebuilt || rebuilt.gen?.failed?.length) return;
+          if (!rebuilt || Object.keys(rebuilt.gen?.remotion?.failures || {}).length) return;
           c = await compile(rebuilt);
         } else if (
           state.script &&

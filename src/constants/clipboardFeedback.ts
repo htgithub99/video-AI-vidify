@@ -1,0 +1,1 @@
+export const CLIPBOARD_FEEDBACK = { DURATION_MS: 2000, SHORT_DURATION_MS: 1800, ALL: "all", LANGUAGE: "vi", UI: { vi: { FAILED: "Không thể sao chép. Hãy thử lại." }, en: { FAILED: "Could not copy. Please try again." } } } as const;

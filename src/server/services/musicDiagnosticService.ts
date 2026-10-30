@@ -116,7 +116,7 @@ const safeKeys = new Set([
   SOURCE_TEXT_PURPOSE,
   SOURCE_TEXT_ISSUES,
   SOURCE_TEXT_PARSED,
-] as string[] as string[]);
+] as string[]);
 const sanitizeText = (value: unknown): string =>
   String(value ?? "")
     .replace(ANSI_ESCAPE_SEQUENCE_REGEX, "")

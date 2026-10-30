@@ -4,7 +4,7 @@ export const MUSIC_VERIFICATION_TEXTS = {
   VALUE_SRC_COMPONENTS_MUSICCREATOR_TSX: "src/features/music/components/MusicCreator.tsx",
   VALUE_SRC_CONSTANTS_SUNOAUTOMATION_TS: "src/constants/sunoAutomation.ts",
   VALUE_SRC_CONSTANTS_APIROUTES_TS: "src/constants/apiRoutes.ts",
-  VALUE_SRC_SERVER_SERVICES_SUNOAUTOMATIONSERVICE_TS: "src/server/services/sunoAutomationService.ts",
+  VALUE_SRC_SERVER_SERVICES_SUNOAUTOMATIONSERVICE_TS: "src/features/music/server/services/sunoAutomationService.ts",
   VALUE_SRC_SERVER_SERVICES_CHATUIPLANNINGSERVICE_TS: "src/server/services/chatUiPlanningService.ts",
   VALUE_PYTHON_SCRIPTS_CAPCUT_ULTRA_TOOL_PY: "python_scripts/capcut_ultra_tool.py",
   VALUE_TI_NG_M_A: "Tiếng Mưa",

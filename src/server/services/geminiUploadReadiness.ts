@@ -1,3 +1,4 @@
+import { RUNTIME_VALUES } from "../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import type { Page } from "playwright";
@@ -44,7 +45,7 @@ export const verifyGeminiSubmittedFiles = async (page: Page, files: Array<{ name
   while (Date.now() < deadline) {
     signal?.throwIfAborted();
     deadline += (await waitForSession?.()) || 0;
-    const queries = await page.locator("user-query").evaluateAll(
+    const queries = await page.locator(RUNTIME_VALUES.USER_QUERY_1CBBF8F9).evaluateAll(
       (nodes, __runtimePayload) => {
         const { RT_SHARED, RT_SERVER } = __runtimePayload.texts;
         return nodes.map((node) => ({ text: (node.textContent || "").replace(/\s+/g, RT_SHARED.SYMBOL_36A9E7).trim(), count: node.querySelectorAll(RT_SERVER.USER_QUERY_FILE_PREVIEW).length, labels: Array.from(node.querySelectorAll(RT_SERVER.USER_QUERY_FILE_PREVIEW_BUTTON_ARIA_LABEL)).map((button) => button.getAttribute(RT_SERVER.ARIA_LABEL) || "") }));

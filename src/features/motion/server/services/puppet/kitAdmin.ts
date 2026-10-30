@@ -6,10 +6,10 @@ import _ from "lodash";
 import { puppetAssetName, puppetPropAllowed } from "../../../../../lib/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_KIT_API as A, PUPPET_TYPES, type PuppetType } from "../../../../../constants/motionPuppet.js";
 import type { PuppetAsset, PuppetCharacter, PuppetProp, PuppetSeries, PuppetSet, PuppetStylePack, PuppetPackSnapshot } from "../../../../../types/motionPuppet.js";
-import { deletePuppet, listPuppets, puppetLibDir, puppetRefsDir, readPuppet, writePuppet } from "../../../../../server/services/puppet/kitLibrary.js";
-import { characterSheetSvg, proceduralViews } from "../../../../../server/services/puppet/svg.js";
-import { ensurePuppetPresets } from "../../../../../server/services/puppet/stylePack.js";
-import { closedPuppetPackId, puppetPackAssetAllowed, withPuppetPackSnapshot } from "../../../../../server/services/puppet/packPolicy.js";
+import { deletePuppet, listPuppets, puppetLibDir, puppetRefsDir, readPuppet, writePuppet } from "./kitLibrary.js";
+import { characterSheetSvg, proceduralViews } from "./svg.js";
+import { ensurePuppetPresets } from "./stylePack.js";
+import { closedPuppetPackId, puppetPackAssetAllowed, withPuppetPackSnapshot } from "./packPolicy.js";
 export interface PuppetKitItem {
   id: string;
   type: string;

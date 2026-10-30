@@ -1,11 +1,8 @@
+import { ResponseContractName } from "../../constants/runtime/enums.js";
 import { SOURCE_TEMPLATE_SYMBOL_37, SOURCE_TEXT_CHAPTERS, SOURCE_TEXT_SCRIPTSEGMENT, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_VERSIONS } from "../../constants/sourceText";
 import _ from "lodash";
 import { RESPONSE_CONTRACT_CONFIG } from "../../constants/index.js";
-export enum ResponseContractName {
-  Hook = "hook",
-  ScriptPlan = "script_plan",
-  Chapter = "chapter",
-}
+export { ResponseContractName };
 const createContractError = (template: string, replacements: Record<string, string>): Error => new Error(_.reduce(replacements, (message, value, key) => message.replace(SOURCE_TEMPLATE_SYMBOL_37(`${key}`), value), template));
 export const assertResponseContract = (value: unknown, contract: ResponseContractName): void => {
   if (!_.isPlainObject(value)) {

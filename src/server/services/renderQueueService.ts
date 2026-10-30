@@ -1,3 +1,4 @@
+import { JobStatus } from "../../constants/runtime/enums.js";
 import {
   SOURCE_TEXT_ASPECTRATIO,
   SOURCE_TEXT_ASSETTYPE,
@@ -40,13 +41,6 @@ import { getRenderJobFromDb, getRenderJobsFromDb, saveRenderJobToDb } from "../u
 import { FFmpegRenderOptions, renderFFmpegVideo } from "../utils/ffmpegRender.js";
 import { LicenseService } from "./licenseService.js";
 import { FeatureType, SecurityConstants, SecurityMessages } from "../../constants/security.js";
-enum JobStatus {
-  PENDING = "pending",
-  PROCESSING = "processing",
-  COMPLETED = "completed",
-  FAILED = "failed",
-  CANCELLED = "cancelled",
-}
 interface RenderJob {
   id: string;
   payload: FFmpegRenderOptions;

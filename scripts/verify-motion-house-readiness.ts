@@ -5,10 +5,10 @@ import { PUPPET as P, PUPPET_TYPES as T } from "../src/constants/motionPuppet.js
 import { motionPieceContactSpots, motionPieceEnvironmentFits, motionPieceContextFits, motionPlaceLocationFamily, normalizeMotionResourceSemantics } from "../src/lib/motionResourceSemantics.js";
 import { puppetSupportCompatible, puppetSpotGeometryValid } from "../src/lib/motionPlacement.js";
 import { puppetSceneFeatureFits, puppetSetFeatureEvidence } from "../src/lib/motionPuppetAssets.js";
-import { checkPuppetPlanReadiness } from "../src/server/services/puppet/planReadiness.js";
-import { listPuppets } from "../src/server/services/puppet/kitLibrary.js";
-import { withPuppetPackSnapshot } from "../src/server/services/puppet/packPolicy.js";
-import { puppetSetMissingRequirements, puppetSetPlacementNeeds, puppetPropSpotCandidates, puppetSpots, layoutPuppetFrame } from "../src/server/services/puppet/layout.js";
+import { checkPuppetPlanReadiness } from "../src/features/motion/server/services/puppet/planReadiness.js";
+import { listPuppets } from "../src/features/motion/server/services/puppet/kitLibrary.js";
+import { withPuppetPackSnapshot } from "../src/features/motion/server/services/puppet/packPolicy.js";
+import { puppetSetMissingRequirements, puppetSetPlacementNeeds, puppetPropSpotCandidates, puppetSpots, layoutPuppetFrame } from "../src/features/motion/server/services/puppet/layout.js";
 import { HOUSE_READINESS_QA as Q } from "./motionHouseReadinessVerificationTexts.js";
 import FIXTURE from "./fixtures/motion-house-altar-20261026.json";
 import type { MotionStoryAnalysis } from "../src/types/motionVideo.js";

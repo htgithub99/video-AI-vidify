@@ -1,3 +1,4 @@
+import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
@@ -48,7 +49,7 @@ export const normalizeMotionDnaResponse = (value: any): any => {
   for (const [key, fallback] of Object.entries(defaults)) {
     const field = MOTION_DNA_CORE_SCHEMA.properties![key];
     if (!motionResponseErrors(normalized[key], field).length) continue;
-    if (field.type === "object") normalized[key] = Object.fromEntries(Object.entries(field.properties!).map(([name, rule]) => [name, !motionResponseErrors(normalized[key]?.[name], rule).length ? normalized[key][name] : (fallback as any)[name]]));
+    if (field.type === COMMON_RUNTIME.SOURCE_TEXT_OBJECT) normalized[key] = Object.fromEntries(Object.entries(field.properties!).map(([name, rule]) => [name, !motionResponseErrors(normalized[key]?.[name], rule).length ? normalized[key][name] : (fallback as any)[name]]));
     else if (!motionResponseErrors(fallback, field).length) normalized[key] = fallback;
   }
   return normalized;
@@ -73,7 +74,7 @@ const profileOf = (value: any): Pick<MotionVideoDna, "audienceProfile" | "era" |
   value = { ...value };
   for (const [key, field] of Object.entries(MOTION_DNA_PROFILE_SCHEMA.properties!)) {
     const fallback = (defaults as Record<string, any>)[key];
-    if (field.type === "object" && fallback) value[key] = Object.fromEntries(Object.entries(field.properties!).map(([name, rule]) => [name, !motionResponseErrors(value[key]?.[name], rule).length ? value[key][name] : fallback[name]]));
+    if (field.type === COMMON_RUNTIME.SOURCE_TEXT_OBJECT && fallback) value[key] = Object.fromEntries(Object.entries(field.properties!).map(([name, rule]) => [name, !motionResponseErrors(value[key]?.[name], rule).length ? value[key][name] : fallback[name]]));
     else if (motionResponseErrors(value[key], field).length) value[key] = fallback;
   }
   const fields = (group: any, keys: string[]) => Object.fromEntries(keys.map((key) => [key, text(group[key])]));

@@ -2,8 +2,6 @@ import _ from "lodash";
 import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { MOTION_JOB_POLLING as POLL } from "../constants/motionJobPolling.js";
 import {
-  MOTION_TEMPLATE_GB,
-  MOTION_TEMPLATE_MB,
   MOTION_TEMPLATE_SYMBOL_10,
   MOTION_TEMPLATE_SYMBOL_11,
   MOTION_TEMPLATE_SYMBOL_3,
@@ -21,6 +19,8 @@ import {
   MOTION_TEXT_SCRIPT,
 } from "../../../constants/motionRuntime.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
+import { readBlobAsDataUrl } from "../../../lib/fileUtils.js";
+import { formatMediaFileSize } from "../../../lib/mediaFormat.js";
 export const motionRequest = async <T = any>(url: string, body?: unknown, method?: string, signal?: AbortSignal): Promise<T> => {
   const init: RequestInit = body === undefined && !method ? { signal } : { method: method || MOTION_TEXT_POST, headers: { "Content-Type": MOTION_TEXT_APPLICATION_JSON }, body: body === undefined ? undefined : stringifyJson(body), signal };
   const response = await fetch(url, init);
@@ -108,17 +108,8 @@ export const formatSeconds = (s?: number): string => {
     sec = v % 60;
   return h ? MOTION_TEMPLATE_SYMBOL_10(`${h}`, `${String(m).padStart(2, MOTION_TEXT_0)}`, `${String(sec).padStart(2, MOTION_TEXT_0)}`) : MOTION_TEMPLATE_SYMBOL_11(`${m}`, `${String(sec).padStart(2, MOTION_TEXT_0)}`);
 };
-export const formatBytes = (b?: number): string => {
-  const v = _.toNumber(b) || 0;
-  return v > 1073741824 ? MOTION_TEMPLATE_GB(`${(v / 1073741824).toFixed(2)}`) : MOTION_TEMPLATE_MB(`${(v / 1048576).toFixed(1)}`);
-};
-export const readFileBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(_.toString(r.result));
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
+export const formatBytes = formatMediaFileSize;
+export const readFileBase64 = readBlobAsDataUrl;
 export const motionAudioUrl = (id?: string): string | undefined => (id ? `${MOTION_TEXT_ASSETS_MOTION_VIDEO_AUDIO}${encodeURIComponent(id)}` : undefined);
 export const motionJobStatusUrl = (prefix: string, id: string): string => `${prefix}${encodeURIComponent(id)}`;
 export const formatMotionProgress = (progress = 0, minimum = 0): string => MOTION_TEMPLATE_SYMBOL_3(String(Math.min(100, Math.max(minimum, Math.round(progress * 100)))));

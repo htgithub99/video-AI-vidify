@@ -1,16 +1,8 @@
+import { AiTaskCapability } from "../../constants/runtime/enums.js";
 import { SOURCE_TEXT_BUDGETUSD, SOURCE_TEXT_CAPABILITY, SOURCE_TEXT_ESTIMATEDCOSTUSD, SOURCE_TEXT_GOOGLE, SOURCE_TEXT_ID } from "../../constants/sourceText";
 import _ from "lodash";
 import { AI_MODEL_CAPABILITY, AI_MODEL_REGISTRY, AI_TASK_ROUTER_CONFIG } from "../../constants/index.js";
-export enum AiTaskCapability {
-  TextPlanning = "text_planning",
-  ScriptWriting = "script_writing",
-  FactualReview = "factual_review",
-  VisualPlanning = "visual_planning",
-  StyleExtraction = "style_extraction",
-  VisualQa = "visual_qa",
-  AudioQa = "audio_qa",
-  Thumbnail = "thumbnail",
-}
+export { AiTaskCapability };
 export interface AiTaskRequest {
   capability?: AiTaskCapability;
   estimatedInputTokens: number;

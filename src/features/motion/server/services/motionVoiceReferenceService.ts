@@ -2,10 +2,10 @@ import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import { MOTION_VOICE as C, MOTION_VOICE_LIBRARY as L } from "../../../../constants/motionVoice.js";
 import * as MR from "../../../../constants/motionRuntime.js";
-import { runMotionAudioProcess } from "../../../../server/services/motionSoundMixService.js";
+import { runMotionAudioProcess } from "./motionSoundMixService.js";
 import { transcribeVieneuAudio } from "../../../../server/services/vieneuTtsService.js";
-import { probeMediaDuration } from "../../../../server/services/motionRenderService.js";
-import { motionVoiceSignal } from "../../../../server/services/motionVoiceQualityService.js";
+import { probeMediaDuration } from "./motionRenderService.js";
+import { motionVoiceSignal } from "./motionVoiceQualityService.js";
 type ReferenceWord = { w: string; s: number; e: number };
 export const motionVoiceReferenceWindow = (words: ReferenceWord[], duration: number): { start: number; seconds: number } => {
   const valid = words.filter((word) => Number.isFinite(word.s) && Number.isFinite(word.e) && word.e > word.s && word.s >= 0 && word.e <= duration).sort((a, b) => a.s - b.s);

@@ -1436,17 +1436,18 @@
   }
   function drawFrame(g, ctx, S, F, t) {
     if (!S.camera || !ME.cameraFrame) return drawFrameContent(g, ctx, S, F, t);
-    const W = ctx.W, H = ctx.H;
+    const W = ctx.W,
+      H = ctx.H;
     const layer = S.cameraLayer || (S.cameraLayer = ME.makeCanvas(W, H));
-    if (layer.width !== W || layer.height !== H) { layer.width = W; layer.height = H; }
+    if (layer.width !== W || layer.height !== H) {
+      layer.width = W;
+      layer.height = H;
+    }
     const target = layer.getContext(K.CTX2D);
     target.clearRect(0, 0, W, H);
-    // Draw the whole scene first so absolute setTransform calls, effects and
-    // foreground characters all receive the same final camera transform.
     drawFrameContent(target, Object.assign({}, ctx, { ox: 0 }), S, F, t);
     const move = F.camera && F.camera.move;
-    const modes = { pan_left: "left", pan_right: "right", pan_up: "up", pan_down: "down", push: "push", pull: "pull" };
-    const camera = ME.cameraFrame({ enabled: true, seconds: t, start: F.visualStart ?? F.start, end: F.visualEnd ?? F.end, width: W, height: H, seed: String(F.id ?? F.visualStart ?? F.start ?? 0), mode: modes[move], protectedRects: S.cameraRects });
+    const camera = ME.cameraFrame({ enabled: true, seconds: t, start: F.visualStart ?? F.start, end: F.visualEnd ?? F.end, width: W, height: H, seed: String(F.id ?? F.visualStart ?? F.start ?? 0), mode: K.CAMERA_MODES[move], protectedRects: S.cameraRects });
     g.save();
     g.beginPath();
     g.rect(ctx.ox || 0, 0, W, H);

@@ -3,8 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { MotionLogStore } from "../src/server/services/motionLogStore.js";
-import { motionWavData, motionWavFileInfo } from "../src/server/services/motionAudioUtils.js";
+import { MotionLogStore } from "../src/features/motion/server/services/motionLogStore.js";
+import { motionWavData, motionWavFileInfo } from "../src/features/motion/server/services/motionAudioUtils.js";
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { MOTION_VOICE as V, MOTION_VOICE_QUALITY as Q } from "../src/constants/motionVoice.js";
 import { MotionJobStatus as S, MotionStoryJobKind as K } from "../src/types/motionVideo.js";
@@ -12,11 +12,11 @@ import { assertMotionProductionMode, assertMotionScriptComplete, motionDurationR
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-persistence-integrity-"));
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
-const { motionWavHeader } = await import("../src/server/services/motionSoundMixService.js");
-const { getMotionAudioDirectory, getMotionRootDirectory } = await import("../src/server/services/motionLibraryService.js");
-const { motionVoiceTrackFilesValid } = await import("../src/server/services/motionAudioService.js");
-const { readMotionStoryCheckpoint } = await import("../src/server/services/motionStoryCheckpointService.js");
-const { startStoryJob, cancelStoryJob, getStoryJob } = await import("../src/server/services/motionStoryJobService.js");
+const { motionWavHeader } = await import("../src/features/motion/server/services/motionSoundMixService.js");
+const { getMotionAudioDirectory, getMotionRootDirectory } = await import("../src/features/motion/server/services/motionLibraryService.js");
+const { motionVoiceTrackFilesValid } = await import("../src/features/motion/server/services/motionAudioService.js");
+const { readMotionStoryCheckpoint } = await import("../src/features/motion/server/services/motionStoryCheckpointService.js");
+const { startStoryJob, cancelStoryJob, getStoryJob } = await import("../src/features/motion/server/services/motionStoryJobService.js");
 const rename = fs.renameSync,
   append = fs.appendFileSync;
 try {

@@ -1,4 +1,4 @@
-export const TEXT_SRC_SERVER_SERVICES_SUNOAUTOMATIONSERVICE_TS = "src/server/services/sunoAutomationService.ts" as const;
+export const TEXT_SRC_SERVER_SERVICES_SUNOAUTOMATIONSERVICE_TS = "src/features/music/server/services/sunoAutomationService.ts" as const;
 export const TEXT_UTF8 = "utf8" as const;
 export const TEXT_SRC_CONSTANTS_SUNOAUTOMATION_TS = "src/constants/sunoAutomation.ts" as const;
 export const TEXT_HTTPS_STUDIO_API_PROD_SUNO_COM_API_PLAYLIST_CREATE = "https://studio-api-prod.suno.com/api/playlist/create/" as const;

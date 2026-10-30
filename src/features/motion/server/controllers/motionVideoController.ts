@@ -1,13 +1,13 @@
 import { RUNTIME_TEXT as RT_MOTION } from "../../constants/runtimeText.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
-import { startMotionProduction, resumeMotionProduction, getMotionProduction, cancelMotionProduction, getMotionProductionLogs } from "../../../../server/services/motionProductionService.js";
-import { motionStoryLogs } from "../../../../server/services/motionLogStore.js";
+import { startMotionProduction, resumeMotionProduction, getMotionProduction, cancelMotionProduction, getMotionProductionLogs } from "../services/motionProductionService.js";
+import { motionStoryLogs } from "../services/motionLogStore.js";
 import { MOTION_ASSET_PREVIEW as ASSET_PREVIEW } from "../../constants/motionAssetPreview.js";
 import { isRemotionSpec, motionVisualSettingsFor } from "../../../../lib/motionVisual.js";
 import { MOTION_VISUAL } from "../../../../constants/motionVisual.js";
 import type { MotionStoryScript, MotionProductionResult } from "../../../../types/motionVideo.js";
-import { analyzeMotionStoryInput, scriptMotionStoryInput, seoMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, readStorySource, storyLanguage, aiExec, drawExec, validateSpec } from "../../../../server/services/motionProductionActions.js";
-import { puppetSheet } from "../../../../server/services/puppet/qa.js";
+import { analyzeMotionStoryInput, scriptMotionStoryInput, seoMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, readStorySource, storyLanguage, aiExec, drawExec, validateSpec } from "../services/motionProductionActions.js";
+import { puppetSheet } from "../services/puppet/qa.js";
 const respondMotionAction = async (req: Request, res: Response, action: (body: Record<string, any>) => unknown): Promise<void> => {
   try {
     res.json(await action(req.body || {}));
@@ -19,17 +19,17 @@ import { listPuppetKit, puppetKitThumb, removePuppetKit, renamePuppetKit } from 
 import { seedPuppetKit } from "../services/puppet/kitSeed.js";
 import { PUPPET_KIT_API, PUPPET_STYLE_DEFAULT } from "../../../../constants/motionPuppet.js";
 import { PUPPET_SEED_DEFAULT } from "../../../../constants/motionPuppetSeed.js";
-import { deleteTrainedVoice, listTrainedVoices, trainVieneuVoice } from "../../../../server/services/motionVoiceTrainService.js";
+import { deleteTrainedVoice, listTrainedVoices, trainVieneuVoice } from "../services/motionVoiceTrainService.js";
 import { MOTION_VOICE_TRAIN } from "../../../../constants/motionVoiceTrain.js";
-import { motionSoundAudition } from "../../../../server/services/motionSoundMixService.js";
-import { ensureMotionSfxLibrary, resolveMotionSfxAsset } from "../../../../server/services/motionSfxLibraryService.js";
+import { motionSoundAudition } from "../services/motionSoundMixService.js";
+import { ensureMotionSfxLibrary, resolveMotionSfxAsset } from "../services/motionSfxLibraryService.js";
 import * as MR from "../../../../constants/motionRuntime.js";
 import { randomUUID } from "crypto";
 import type { Request, Response } from "express";
 import fs from "fs";
-import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMotionVoiceSources, removeAi33Voice, synthesizeMotionSpeech } from "../../../../server/services/motionVoiceSourceService.js";
+import { addAi33Voice, ai33VoiceSample, isAi33Voice, listMotionVoices as listMotionVoiceSources, removeAi33Voice, synthesizeMotionSpeech } from "../services/motionVoiceSourceService.js";
 import _ from "lodash";
-import { clearVoiceSpeedReference, measureVoiceSpeedReference, measureVoiceSpeedAudio, readVoiceSpeedSettings } from "../../../../server/services/motionVoiceSpeedService.js";
+import { clearVoiceSpeedReference, measureVoiceSpeedReference, measureVoiceSpeedAudio, readVoiceSpeedSettings } from "../services/motionVoiceSpeedService.js";
 import path from "path";
 import {
   MOTION_TEMPLATE_MOTION,
@@ -69,16 +69,16 @@ import { MotionStoryJobKind, type MotionSeoOption, type MotionStoryAnalysis } fr
 import { getResolvedLicenseKey } from "../../../../server/services/apiKeyResolver.js";
 import { LicenseService } from "../../../../server/services/licenseService.js";
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY, MOTION_VOICE_PATTERNS } from "../../../../constants/motionVoice.js";
-import { applyVoiceLibrary, deleteVoiceChannel, readVoiceChannels, removeCustomVoice, saveVoiceChannel, updateVoiceMeta } from "../../../../server/services/motionVoiceLibraryService.js";
+import { applyVoiceLibrary, deleteVoiceChannel, readVoiceChannels, removeCustomVoice, saveVoiceChannel, updateVoiceMeta } from "../services/motionVoiceLibraryService.js";
 import { registerVieneuVoice, vieneuRoot } from "../../../../server/services/vieneuTtsService.js";
 import { prepareMotionVoiceReference } from "../services/motionVoiceReferenceService.js";
 import { createHash } from "crypto";
-import { getMotionDemoSpec, getMotionEngineClientScript } from "../../../../server/services/motionEngineService.js";
-import { resolveGenPreview } from "../../../../server/services/puppet/genState.js";
-import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../../../../server/services/motionLibraryService.js";
-import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration } from "../../../../server/services/motionRenderService.js";
-import { cancelStoryJob, getStoryJob, startStoryJob } from "../../../../server/services/motionStoryJobService.js";
-import { releaseMotionEditorialSession } from "../../../../server/services/motionStoryService.js";
+import { getMotionDemoSpec, getMotionEngineClientScript } from "../services/motionEngineService.js";
+import { resolveGenPreview } from "../services/puppet/genState.js";
+import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
+import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration } from "../services/motionRenderService.js";
+import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
+import { releaseMotionEditorialSession } from "../services/motionStoryService.js";
 import { generateMotionThumbnail } from "../services/motionThumbnailService.js";
 import { cleanStorageJunk, scanStorageJunk } from "../../../../server/services/storageService.js";
 import { getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";

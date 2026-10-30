@@ -3,7 +3,7 @@ import { resolveSourceTextConstants } from "./sourceTextAssertions";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { configureAdvancedOnce, ensureAdvancedMode, findSunoStyleInput, selectInspoPlaylist, verifySunoAccount } from "../src/server/services/sunoAutomationService.js";
+import { configureAdvancedOnce, ensureAdvancedMode, findSunoStyleInput, selectInspoPlaylist, verifySunoAccount } from "../src/features/music/server/services/sunoAutomationService.js";
 import { SUNO_AUTOMATION_PATTERNS, SUNO_AUTOMATION_SELECTORS } from "../src/constants/sunoAutomation.js";
 const source = resolveSourceTextConstants(fs.readFileSync(SF.TEXT_SRC_SERVER_SERVICES_SUNOAUTOMATIONSERVICE_TS, SF.TEXT_UTF8));
 const constants = resolveSourceTextConstants(fs.readFileSync(SF.TEXT_SRC_CONSTANTS_SUNOAUTOMATION_TS, SF.TEXT_UTF8));

@@ -6,16 +6,16 @@ import { setTimeout as delay } from "node:timers/promises";
 import { MotionJobStatus as S, MotionStoryJobKind as K } from "../src/types/motionVideo.js";
 import { motionVoiceSignature } from "../src/lib/motionVoice.js";
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
-import { MotionProductionStore } from "../src/server/services/motionProductionStore.js";
-import { remotionBeatKey } from "../src/server/services/remotion/sceneKeys.js";
+import { MotionProductionStore } from "../src/features/motion/server/services/motionProductionStore.js";
+import { remotionBeatKey } from "../src/features/motion/server/services/remotion/sceneKeys.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../src/constants/motionRemotionLayout.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
-import { seoScriptKey } from "../src/server/services/motionSeoService.js";
+import { seoScriptKey } from "../src/features/motion/server/services/motionSeoService.js";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-production-runner-"));
 const prior = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
 try {
-  const { createMotionProductionService } = await import("../src/server/services/motionProductionService.js");
+  const { createMotionProductionService } = await import("../src/features/motion/server/services/motionProductionService.js");
   const jobs = new Map<string, any>();
   const counts: Record<string, number> = {};
   const events: string[] = [];
@@ -519,23 +519,27 @@ try {
   assert.equal(serviceVoices, 1);
   let singleVoiceCalls = 0;
   let singleSceneCalls = 0;
-  const singleService = createMotionProductionService({
-    ...deps,
-    scenesMotionStoryInput: (body: any) => {
-      assert.equal(body.script.voiceSettings.multiVoice, false);
-      return start(K.SCENES, structuredClone(body.script), 10, ++singleSceneCalls === 1 ? "scene root cause" : undefined);
+  const singleService = createMotionProductionService(
+    {
+      ...deps,
+      scenesMotionStoryInput: (body: any) => {
+        assert.equal(body.script.voiceSettings.multiVoice, false);
+        return start(K.SCENES, structuredClone(body.script), 10, ++singleSceneCalls === 1 ? "scene root cause" : undefined);
+      },
+      voiceMotionStoryInput: (body: any) => {
+        singleVoiceCalls++;
+        assert.equal(body.script.voiceSettings.multiVoice, false, "Production must apply narrator-only mode before starting audio");
+        return start(K.VOICE, { ...voice, signature: motionVoiceSignature(body.script, body.analysis) }, 1);
+      },
+      compileMotionStoryInput: async (body: any) => {
+        assert.equal(body.script.voiceSettings.multiVoice, false);
+        assert.equal(body.voiceTrack.signature, motionVoiceSignature(body.script, body.analysis));
+        return { spec: { duration: 2 }, missing: [], voiceStale: false };
+      },
     },
-    voiceMotionStoryInput: (body: any) => {
-      singleVoiceCalls++;
-      assert.equal(body.script.voiceSettings.multiVoice, false, "Production must apply narrator-only mode before starting audio");
-      return start(K.VOICE, { ...voice, signature: motionVoiceSignature(body.script, body.analysis) }, 1);
-    },
-    compileMotionStoryInput: async (body: any) => {
-      assert.equal(body.script.voiceSettings.multiVoice, false);
-      assert.equal(body.voiceTrack.signature, motionVoiceSignature(body.script, body.analysis));
-      return { spec: { duration: 2 }, missing: [], voiceStale: false };
-    },
-  }, path.join(root, "single-voice"), 1);
+    path.join(root, "single-voice"),
+    1,
+  );
   singleService.startMotionProduction({ ...input, productionId: "single-voice", analysis, multiVoice: false, seo: false, autoExport: false });
   for (let i = 0; i < 500 && singleService.getMotionProduction("single-voice")?.status !== S.ERROR; i++) await delay(2);
   assert.equal(singleService.getMotionProduction("single-voice")!.status, S.ERROR);

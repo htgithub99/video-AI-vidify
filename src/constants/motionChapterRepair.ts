@@ -3,6 +3,9 @@ import { MOTION_QA as Q } from "./motionQa.js";
 export const MOTION_CHAPTER_REPAIR = {
   ATTEMPTS: 3,
   DURATION_REVISION: "motion-duration-counted-speech-20261028",
+  SPEECH_REVISION: "motion-chapter-speech-alignment-20261030",
+  SPEECH_RECOVERY_LOG: (chapter: string): string => `Chương ${chapter}: phục hồi lượt sửa phân vai còn lỗi; giữ nguyên lời dẫn và các phần đã đạt.`,
+  SPEECH_REPAIRED_LOG: (chapter: string, count: number): string => `Chương ${chapter}: đã tách lời thoại bị chép lặp ở ${count} nhịp bằng code, giữ nguyên nội dung và người nói.`,
   DURATION_REQUEST: (targets: unknown, context: unknown): string =>
     `Edit the supplied narration only. Return JSON {"beats":[{"id":"exact provided id","utterances":[{"speaker":"one of this beat's supplied speakers","words":["one","whitespace-free","spoken","unit"]}]}]}. For Vietnamese, split EVERY syllable into a separate array item, e.g. ["Người","dân","sống","trong","sợ","hãi."] has length 6. The sum of words.length in each beat should be about its targetUnits; count the array items before returning. Code joins these words into narration and utterance text. Return every listed ID once. Preserve language, the central event, historical accuracy, hypothetical disclaimers and the ending. Secondary details may be omitted to fit targetUnits. No scene descriptions or new events.\nTARGETS: ${stringifyJson(targets)}\nCONTEXT: ${stringifyJson(context)}`,
   DURATION_RULE: (current: number, target: number): string =>

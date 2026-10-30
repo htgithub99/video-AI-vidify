@@ -64,7 +64,6 @@ export const remotionSceneView = (scene: MotionRemotionTimedScene | undefined, w
 export const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined, scenes: MotionRemotionTimedScene[]) => {
   const index = scene ? scenes.indexOf(scene) : -1;
   if (!scene || index < 0) return scene;
-  // Continue only an actual reused illustration, not every drawing at one location.
   const key = (item: MotionRemotionTimedScene) => stringifyJson([item.composition?.assetKey || item.id, item.view || RT_MOTION.WIDE, [...(item.focus || [])].sort()]);
   const shotKey = key(scene);
   let first = index,

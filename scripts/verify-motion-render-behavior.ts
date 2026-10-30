@@ -1,4 +1,4 @@
-import { motionCameraFrame } from "../src/lib/motionCamera.js";
+import { motionCameraBrowserSource } from "../src/lib/motionCamera.js";
 import { canReuseRemotionCharacter } from "./legacy-motion-remotion/characterReuse.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -164,7 +164,6 @@ for (const fps of [24, 30, 60]) {
   assert.ok(end.scale <= 1.045);
   assert.deepEqual(motionSceneCameraFrame(combinations[0], 155, lateScene, 800, 450, fps), { scale: 1, x: 0, y: 0, mode: end.mode });
   const next = { ...lateScene, id: "next-shot", startFrame: fps * 156, endFrame: fps * 192 };
-  // A new illustration starts its own movement even at the same location.
   assert.deepEqual(motionSceneCameraFrame(combinations[7], 156, next, 800, 450, fps, [lateScene, next]), motionSceneCameraFrame(combinations[7], 156, next, 800, 450, fps));
   const first = { ...lateScene, composition: { assetKey: "reused" } } as any;
   const reused = { ...next, composition: { assetKey: "reused" } } as any;
@@ -237,9 +236,9 @@ const collision: any = {
 resolveRemotionContinuity(collision, { places: [] } as any);
 assert.equal(collision.gen.remotion.scenes.b[0].nodes.length, 2);
 assert.equal(new Set(collision.gen.remotion.scenes.b[0].nodes.map((n: MotionRemotionNode) => n.id)).size, 2);
-const { validateSpec } = await import("../src/server/services/motionProductionActions.js");
+const { validateSpec } = await import("../src/features/motion/server/services/motionProductionActions.js");
 assert.deepEqual(motionRenderBehaviorFor(validateSpec(JSON.stringify(fixture))), normalizeMotionRenderBehavior());
-const { motionRemotionSourceFingerprint } = await import("../src/server/services/motionRemotionRenderService.js");
+const { motionRemotionSourceFingerprint } = await import("../src/features/motion/server/services/motionRemotionRenderService.js");
 const dependencyFolder = path.join(output, "dependency-fixture");
 fs.mkdirSync(dependencyFolder, { recursive: true });
 fs.writeFileSync(path.join(dependencyFolder, "root.ts"), 'export { value } from "./child.js";');
@@ -264,7 +263,7 @@ try {
   await page.setContent('<canvas width="640" height="360"></canvas>');
   await page.addScriptTag({ content: "globalThis.__name=(value)=>value" });
   for (const file of ["motion-engine/texts.js", "motion-engine/core.js", "motion-engine/puppet2d.js"]) await page.addScriptTag({ content: fs.readFileSync(file, "utf8") });
-  await page.addScriptTag({ content: `MotionEngine.cameraFrame = ${motionCameraFrame.toString()}` });
+  await page.addScriptTag({ content: `MotionEngine.cameraFrame = ${motionCameraBrowserSource()}` });
   const samples = await page.evaluate(async (combinations) => {
     const me = (window as any).MotionEngine,
       canvas = document.querySelector("canvas")!,
@@ -302,7 +301,7 @@ try {
   await browser.close();
 }
 if (process.argv.includes("--render")) {
-  const { renderRemotionStill, motionRemotionSourceFingerprint } = await import("../src/server/services/motionRemotionRenderService.js");
+  const { renderRemotionStill, motionRemotionSourceFingerprint } = await import("../src/features/motion/server/services/motionRemotionRenderService.js");
   const fingerprints = motionRemotionSourceFingerprint([path.resolve("src/features/motion/remotion/Root.tsx")]);
   assert.equal(fingerprints.length, 64);
   const hashes = [];
@@ -318,7 +317,7 @@ if (process.argv.includes("--render")) {
   fs.writeFileSync(path.join(output, "remotion-matrix.json"), JSON.stringify(hashes, null, 2));
 }
 if (process.argv.includes("--lighting")) {
-  const { renderRemotionStill } = await import("../src/server/services/motionRemotionRenderService.js");
+  const { renderRemotionStill } = await import("../src/features/motion/server/services/motionRemotionRenderService.js");
   const hashes: Record<string, string> = {};
   for (const revision of [0, 2])
     for (const time of ["day", "night"]) {

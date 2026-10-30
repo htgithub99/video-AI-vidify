@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { cleanPuppetSpatialPlacement, puppetSpatialAssignmentsValid, puppetActorAssignments } from "../src/server/services/puppet/spatialPlacement.js";
-import { scorePuppetSceneChoice } from "../src/server/services/puppet/packSceneChoices.js";
+import { cleanPuppetSpatialPlacement, puppetSpatialAssignmentsValid, puppetActorAssignments } from "../src/features/motion/server/services/puppet/spatialPlacement.js";
+import { scorePuppetSceneChoice } from "../src/features/motion/server/services/puppet/packSceneChoices.js";
 import { SPATIAL_QA as T } from "./motionSpatialVerificationTexts.js";
 import { puppetSourceQuote } from "../src/lib/motionPuppetValues.js";
 assert.equal(puppetSourceQuote(T.PUNCTUATED, T.UNPUNCTUATED), T.PUNCTUATED.slice(0, -1));

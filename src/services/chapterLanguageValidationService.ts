@@ -1,3 +1,4 @@
+import { ChapterLanguageIssue } from "../constants/runtime/enums.js";
 import _ from "lodash";
 import { TECHNICAL_RESPONSE_RETRY_CONFIG } from "../constants/config";
 import { VIETNAMESE_DIACRITIC_REGEX } from "../constants/regexes";
@@ -6,11 +7,7 @@ const LETTER_REGEX = /\p{L}/gu;
 const WORD_REGEX = /\p{L}+/gu;
 const JOINED_PUNCTUATION_REGEX = /[,.!?;:](?=\p{L})/gu;
 const COMMON_UNACCENTED_VIETNAMESE_PATTERN = /\b(?:ban|dang|trong|phong|nguoi|khong|duoc|nhung|chung|ta|thoi|gian|voi|anh|sang|cam|giac|ap|luc|xa|hoi|de|nang|nhin|vao|guong|khi|doi|tay|run|ray|tu|hoi|lieu|day|co|phai|la|cai|bay|cuoc|doi|mot|hop|dong|lao|dong|muc|luong|trieu|ruoi|dat|truoc|mat|buoc|ky|ten|chap|nhan|chan|con|duong|nhieu|chong|gai|bat|dau|hanh|trinh|trac|phia)\b/i;
-export enum ChapterLanguageIssue {
-  MissingVietnameseDiacritics = "missing_vietnamese_diacritics",
-  JoinedPunctuation = "joined_punctuation",
-  JoinedWords = "joined_words",
-}
+export { ChapterLanguageIssue };
 export interface ChapterLanguageValidation {
   valid: boolean;
   issues: ChapterLanguageIssue[];

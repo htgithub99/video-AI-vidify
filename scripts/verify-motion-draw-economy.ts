@@ -2,7 +2,7 @@ import { MOTION_STYLE_VERIFICATION_TEXTS as ST, MOTION_STYLE_VERIFICATION_FORMAT
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { designBible, designLocation, designLocationGroup, prepareMotionGen, withBeatPlaces } from "../src/server/services/motionGenService.ts";
-import { validateGenLocation } from "../src/server/services/motionEngineService.ts";
+import { validateGenLocation } from "../src/features/motion/server/services/motionEngineService.ts";
 import { createMotionDrawBudget, motionDrawSummary, motionDrawUsed } from "../src/lib/motionDrawBudget.ts";
 import { motionFallbackLocation, motionLocationGroups, motionMatchPlace, motionTrimRepeats } from "../src/lib/motionDrawEconomy.ts";
 import { MOTION_DRAW_BUDGET } from "../src/constants/motionDrawBudget.ts";

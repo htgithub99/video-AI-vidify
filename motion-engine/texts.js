@@ -4,6 +4,7 @@
       SIMPLE_MOTION: "simple",
       NO_EFFECTS: "off",
       GENTLE_CAMERA: "gentle",
+      CAMERA_MODES: { pan_left: "left", pan_right: "right", pan_up: "up", pan_down: "down", push: "push", pull: "pull" },
       TEMPLATE: "puppet",
       NAME: "Puppet 2D story",
       CATEGORY: "scene",

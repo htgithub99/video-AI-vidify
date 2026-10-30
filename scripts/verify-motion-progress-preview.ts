@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { motionFlowLogRows } from "../src/features/motion/lib/motionLogHistory.js";
-import { checkPuppetPlanReadiness } from "../src/server/services/puppet/planReadiness.js";
+import { checkPuppetPlanReadiness } from "../src/features/motion/server/services/puppet/planReadiness.js";
 import { puppetKitThumb } from "../src/features/motion/server/services/puppet/kitAdmin.js";
 import { PROGRESS_PREVIEW_TEST as T } from "./motionProgressPreviewVerificationTexts.js";
 import FIXTURE from "./fixtures/motion-house-altar-20261026.json";

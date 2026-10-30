@@ -5,14 +5,14 @@ import path from "node:path";
 import { MOTION_PACK as K } from "../src/constants/motionPack.js";
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { PRODUCTION_QA as Q } from "./motionProductionVerificationTexts.js";
-import { checkPuppetPlanReadiness } from "../src/server/services/puppet/planReadiness.js";
-import { motionTaskCheckpoint } from "../src/server/services/motionTaskCheckpoint.js";
-import { listPuppets } from "../src/server/services/puppet/kitLibrary.js";
-import { puppetPackReadCatalog } from "../src/server/services/puppet/packCatalog.js";
-import { puppetPackAssetAllowed } from "../src/server/services/puppet/packPolicy.js";
+import { checkPuppetPlanReadiness } from "../src/features/motion/server/services/puppet/planReadiness.js";
+import { motionTaskCheckpoint } from "../src/features/motion/server/services/motionTaskCheckpoint.js";
+import { listPuppets } from "../src/features/motion/server/services/puppet/kitLibrary.js";
+import { puppetPackReadCatalog } from "../src/features/motion/server/services/puppet/packCatalog.js";
+import { puppetPackAssetAllowed } from "../src/features/motion/server/services/puppet/packPolicy.js";
 import { motionSemanticText } from "../src/lib/motionResourceSemantics.js";
 import { motionIllustrationNeedsErrors, motionIllustrationNeedsValid } from "../src/lib/motionIllustrationNeeds.js";
-import { normalizeAnalysis } from "../src/server/services/motionStoryService.js";
+import { normalizeAnalysis } from "../src/features/motion/server/services/motionStoryService.js";
 const analysis: any = {
   title: Q.TITLE,
   logline: Q.BEAT.narration,

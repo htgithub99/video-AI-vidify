@@ -7,7 +7,7 @@ import { chromium } from "playwright";
 import { sunoBulkPlaylistFixture } from "./sunoBulkPlaylistFixtures.js";
 const scratch = await fs.mkdtemp(path.join(os.tmpdir(), "vidify-suno-bulk-scroll-"));
 process.env.VIDIFY_STORAGE_DIR = scratch;
-const { openSunoBulkPlaylistDialog } = await import("../src/server/services/sunoBulkPlaylistService.js");
+const { openSunoBulkPlaylistDialog } = await import("../src/features/music/server/services/sunoBulkPlaylistService.js");
 const ids = Array.from({ length: 50 }, () => randomUUID());
 const older = Array.from({ length: 500 }, () => randomUUID());
 const browser = await chromium.launch({ headless: true });

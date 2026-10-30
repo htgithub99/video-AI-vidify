@@ -2,6 +2,7 @@ import { RUNTIME_VERIFICATION_TEXTS as RT } from "./runtimeVerificationTexts.ts"
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
+import { MOTION_SCENE_COMPOSITION as SCENE } from "../src/constants/motionSceneComposition.js";
 import { PRODUCTION_QA } from "./motionProductionVerificationTexts.js";
 import { chromium } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.ts";
@@ -123,6 +124,38 @@ try {
     const protectedReply = { artifactType: V.ARTIFACT_ASSET, requestId: "escaped-svg", svg: '<svg viewBox="0 0 10 10"><g><rect width="10" height="10"/></g></svg>', anchors: {} };
     await setResponse(JSON.stringify(protectedReply).replaceAll("<", "\\u003c"));
     assert.deepEqual(JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, 0, [], [], undefined, V.ARTIFACT_ASSET, protectedReply.requestId)), protectedReply);
+    const currentScene = { artifactType: SCENE.ARTIFACT, requestId: "scene-current", svg: protectedReply.svg };
+    const oldScene = { ...currentScene, requestId: "scene-old", notes: "old output ".repeat(1000) };
+    await page.setContent('<model-response data-message-id="old"><div class="markdown"></div></model-response>');
+    await page.locator(".markdown").evaluate((element, value) => {
+      element.textContent = value;
+    }, JSON.stringify(oldScene));
+    const initial = await getChatResponseSnapshots(page, selector, SCENE.ARTIFACT);
+    await page.locator(".markdown").evaluate((element, value) => {
+      element.textContent = value + "\nHistorical DOM changed";
+    }, JSON.stringify(oldScene));
+    const currentMalformed = JSON.stringify(currentScene).replace(/"\}$/, "\n}");
+    const delayedAppend = page.waitForTimeout(80).then(async () => {
+      await page.locator("body").evaluate((element) => {
+        element.insertAdjacentHTML("beforeend", '<model-response data-message-id="new"><div class="markdown"></div></model-response>');
+      });
+      await page
+        .locator(".markdown")
+        .last()
+        .evaluate((element, value) => {
+          element.textContent = value;
+        }, currentMalformed);
+    });
+    assert.deepEqual(JSON.parse(await waitForStableResponse(page, selector, RT.BUSY, initial.length, [], initial, undefined, SCENE.ARTIFACT, currentScene.requestId)), currentScene);
+    await delayedAppend;
+    const incomplete = '{"artifactType":"motion_remotion_composition","requestId":"scene-current","svg":"<svg';
+    await page
+      .locator(".markdown")
+      .last()
+      .evaluate((element, value) => {
+        element.textContent = value;
+      }, incomplete);
+    await assert.rejects(waitForStableResponse(page, selector, RT.BUSY, initial.length, [], initial, undefined, SCENE.ARTIFACT, currentScene.requestId), (error: any) => error.message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR && error.diagnostics.lastCandidate === incomplete);
     await page.setContent('<model-response><div class="markdown"><span>Code JSON:</span><pre><code></code></pre><button>Copy code</button></div></model-response>');
     await page.locator("code").evaluate((element, value) => {
       element.textContent = value;

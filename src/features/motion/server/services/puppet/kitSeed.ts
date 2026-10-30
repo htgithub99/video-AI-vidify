@@ -2,11 +2,11 @@ import _ from "lodash";
 import { PUPPET as P, PUPPET_TYPES } from "../../../../../constants/motionPuppet.js";
 import { PUPPET_SEED_DEFAULT, PUPPET_SEED_PACKS, PUPPET_SEED_PROPS_PER_ROUND, PUPPET_SEED_SETS_PER_ROUND, PUPPET_SEED_SETTING, PUPPET_SEED_TAG, PUPPET_SEED_USES } from "../../../../../constants/motionPuppetSeed.js";
 import type { PuppetProp, PuppetSet, PuppetStylePack } from "../../../../../types/motionPuppet.js";
-import { drawPuppetProps, drawPuppetSets, ensureSetVariant, puppetLanes } from "../../../../../server/services/puppet/kitDraw.js";
-import { mapMotionAiPool } from "../../../../../server/services/motionStoryService.js";
-import { listPuppets, readPuppet, writePuppet } from "../../../../../server/services/puppet/kitLibrary.js";
-import { presetStyle, type PuppetRunOptions } from "../../../../../server/services/puppet/stylePack.js";
-import { closedPuppetPackId } from "../../../../../server/services/puppet/packPolicy.js";
+import { drawPuppetProps, drawPuppetSets, ensureSetVariant, puppetLanes } from "./kitDraw.js";
+import { mapMotionAiPool } from "../motionStoryService.js";
+import { listPuppets, readPuppet, writePuppet } from "./kitLibrary.js";
+import { presetStyle, type PuppetRunOptions } from "./stylePack.js";
+import { closedPuppetPackId } from "./packPolicy.js";
 import { MOTION_LIBRARY_RELEASE as RELEASE } from "../../../../../constants/motionLibraryRelease.js";
 export interface PuppetSeedReport {
   style: string;

@@ -1,7 +1,7 @@
 . (Join-Path $PSScriptRoot "scripts/powershellTexts.ps1")
 $url = $WORKSPACE_SCRIPT_TEXT.HTTPS_GITHUB_COM_BTBN_FFMPEG_BUILDS_RELEASES_DOWNLOAD_LATEST_FFMP
 $zipPath = $WORKSPACE_SCRIPT_TEXT.FFMPEG_ZIP
-Write-Host "Downloading FFmpeg from $url ..."
+Write-Host ($WORKSPACE_SCRIPT_TEXT.DOWNLOAD_FFMPEG -f $url)
 Invoke-WebRequest -Uri $url -OutFile $zipPath
 Write-Host $WORKSPACE_SCRIPT_TEXT.EXTRACTING_FFMPEG
 Expand-Archive -Path $zipPath -DestinationPath $WORKSPACE_SCRIPT_TEXT.FFMPEG_TEMP -Force

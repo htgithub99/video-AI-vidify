@@ -8,9 +8,10 @@ const priorStorage = process.env.VIDIFY_STORAGE_DIR;
 const priorData = process.env.APP_DATA_DIR;
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
-const { buildRemotionScenes } = await import("../src/server/services/remotion/scenePipeline.js");
-const { compileRemotionStory } = await import("../src/server/services/remotion/storyCompiler.js");
-const { remotionStoryBuildStatus } = await import("../src/server/services/remotion/sceneKeys.js");
+const { buildRemotionScenes } = await import("../src/features/motion/server/services/remotion/scenePipeline.js");
+const { compileRemotionStory } = await import("../src/features/motion/server/services/remotion/storyCompiler.js");
+const { remotionStoryBuildStatus } = await import("../src/features/motion/server/services/remotion/sceneKeys.js");
+const { remotionStoryRecoveryPending } = await import("../src/features/motion/server/services/remotion/sceneKeys.js");
 const { remotionSceneProgress } = await import("../src/features/motion/lib/motionRemotionProgress.js");
 const { normalizeFirstSceneComposition } = await import("../src/lib/motionSceneComposition.js");
 const { validateRemotionSpec } = await import("../src/lib/motionRemotion.js");
@@ -86,7 +87,7 @@ try {
     },
   };
   const generated = await buildRemotionScenes(script, analysis, opts);
-  assert.equal(calls.filter((call) => call.artifact === C.ARTIFACT).length, 4);
+  assert.equal(calls.filter((call) => call.artifact === C.ARTIFACT).length, 5);
   assert.equal(calls.filter((call) => call.artifact === V.ARTIFACT_SCENE).length, 1);
   assert.equal(calls[0].exec.provider, "content-ai");
   assert.equal(geometryCalls, 0);
@@ -96,7 +97,13 @@ try {
     scenes.map((scene) => scene.build?.status),
     ["accepted", "failed", "accepted", "accepted"],
   );
-  assert.equal(remotionStoryBuildStatus(generated, analysis), "ready");
+  assert.equal(remotionStoryBuildStatus(generated, analysis), "partial");
+  assert.deepEqual(generated.gen!.failed, [scenes[1].id]);
+  assert.equal(scenes[1].build?.attempts, 2);
+  assert.equal(remotionStoryRecoveryPending(generated), false);
+  const legacyFailed = structuredClone(generated);
+  delete legacyFailed.gen!.remotion!.scenes.b1[1].build!.attempts;
+  assert.equal(remotionStoryRecoveryPending(legacyFailed), true, "Old failed scenes receive their deferred recovery on resume");
   const progress = remotionSceneProgress(generated);
   assert.equal(progress.ready, 3);
   assert.equal(progress.total, 4);
@@ -273,8 +280,8 @@ try {
         return art();
       },
     });
-    assert.equal(drawings, 4);
-    assert.equal(remotionStoryBuildStatus(continued, analysis), "ready");
+    assert.equal(drawings, failure === "anchor" ? 5 : 8);
+    assert.equal(remotionStoryBuildStatus(continued, analysis), "partial");
     assert.equal(remotionSceneProgress(continued).ready, failure === "anchor" ? 3 : 0);
     validateRemotionSpec(compileRemotionStory(continued, analysis, { durations: [12] }).spec);
   }
@@ -334,6 +341,76 @@ try {
       validateRemotionSpec(compileRemotionStory(accepted, { ...analysis, visualSettings: scopedSettings }, { durations: [12] }).spec);
     }
   }
+  for (const profileId of ["horror", "history", "explainer"] as const) {
+    const counts = new Map<string, number>();
+    const finished = new Set<string>();
+    const logs: string[] = [];
+    const scopedSettings = { ...settings, profileId };
+    const recovered = await buildRemotionScenes(
+      { ...script, visualSettings: scopedSettings },
+      { ...analysis, visualSettings: scopedSettings },
+      {
+        ...opts,
+        scope: `deferred-${profileId}`,
+        log: (message: string) => logs.push(message),
+        ai: async (prompt: string, artifact: string) => {
+          if (artifact === V.ARTIFACT_SCENE) return plan();
+          assert.equal(artifact, C.ARTIFACT, "Review off never sends a critique/repair task");
+          const purpose = context(prompt).scene.purpose;
+          const count = (counts.get(purpose) || 0) + 1;
+          counts.set(purpose, count);
+          if (count > 1) assert.equal(finished.size, 4, "No deferred request before the first pass finishes");
+          await delay(5);
+          finished.add(purpose);
+          if (purpose === "shot1" && count === 1) throw new Error("Transient drawing failure");
+          const result = art();
+          if (purpose === "shot0") result.svg = result.svg.replace(/<\/g><\/svg>$/, "</svg>");
+          return result;
+        },
+      },
+    );
+    assert.deepEqual([...counts.values()].sort(), [1, 1, 1, 2]);
+    assert.deepEqual(recovered.gen!.failed, []);
+    assert.equal(remotionStoryBuildStatus(recovered, { ...analysis, visualSettings: scopedSettings }), "ready");
+    assert.ok(logs.includes(C.LOG_LOCAL_REPAIR(1, 4)), "A locally repaired scene must be logged with its scene index");
+    assert.ok(logs.some((message) => message.includes("bắt đầu phục hồi 1 cảnh lỗi")));
+    const prior = [...counts];
+    await buildRemotionScenes(
+      recovered,
+      { ...analysis, visualSettings: scopedSettings },
+      {
+        ...opts,
+        scope: `deferred-${profileId}`,
+        ai: async () => {
+          throw new Error("Completed scenes must be cached");
+        },
+      },
+    );
+    assert.deepEqual([...counts], prior);
+  }
+  let recoveryInterrupted = false;
+  const resumeCounts = new Map<string, number>();
+  const resumeOptions = {
+    ...opts,
+    scope: "resume-deferred",
+    log: (message: string) => {
+      if (!recoveryInterrupted && message.includes("bắt đầu phục hồi")) {
+        recoveryInterrupted = true;
+        throw new Error("Interrupted between passes");
+      }
+    },
+    ai: async (prompt: string, artifact: string) => {
+      if (artifact === V.ARTIFACT_SCENE) return plan();
+      const purpose = context(prompt).scene.purpose;
+      const count = (resumeCounts.get(purpose) || 0) + 1;
+      resumeCounts.set(purpose, count);
+      return purpose === "shot1" && count === 1 ? { svg: "broken" } : art();
+    },
+  };
+  await assert.rejects(buildRemotionScenes(script, analysis, resumeOptions), /Interrupted between passes/);
+  const fromCheckpoint = await buildRemotionScenes(script, analysis, resumeOptions);
+  assert.deepEqual(fromCheckpoint.gen!.failed, []);
+  assert.deepEqual([...resumeCounts.values()].sort(), [1, 1, 1, 2]);
   let criticalCalls = 0;
   const critical = await buildRemotionScenes(script, analysis, {
     ...reviewOptions,
@@ -344,7 +421,7 @@ try {
       return artifact === V.ARTIFACT_REVIEW ? { ok: false, issues: ["wrong visible person"], checks: [{ ok: false, category: "identity", evidence: "The visible person differs from the requested identity", problem: "wrong visible person" }] } : art();
     },
   });
-  assert.ok(criticalCalls <= C.REVIEW_REQUESTS);
+  assert.ok(criticalCalls <= C.REVIEW_REQUESTS * C.DRAW_ATTEMPTS);
   assert.equal(critical.gen!.remotion!.scenes.b1[0].build?.status, "failed");
   assert.ok(critical.gen!.remotion!.assets[critical.gen!.remotion!.scenes.b1[0].composition!.assetKey].svg.includes('id="person"'));
   validateRemotionSpec(compileRemotionStory(critical, analysis, { durations: [12] }).spec);

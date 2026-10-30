@@ -1054,8 +1054,8 @@ import { createBatchContinuityContext, createPromptCharacterCards, createScopedV
 import { LicenseService } from "../services/licenseService.js";
 import { MUSIC_PLANNING as MUSIC_PLAN } from "../../constants/musicPlanning.js";
 import { validMusicEditorialReview, musicReviewOrder } from "../../lib/musicPlanning.js";
-import { musicPlanReporter } from "../services/musicPlanProgress.js";
-import { reviewMusicSongBatch } from "../services/musicSongReviewService.js";
+import { musicPlanReporter } from "../../features/music/server/services/musicPlanProgress.js";
+import { reviewMusicSongBatch } from "../../features/music/server/services/musicSongReviewService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
 import {
   createMusicDownloadCheckpointKey,
@@ -1070,16 +1070,16 @@ import {
   writeMusicEvaluationWav,
   type MusicDownloadCheckpoint,
   type MusicDownloadSelection,
-} from "../services/musicDownloadCheckpointService.js";
+} from "../../features/music/server/services/musicDownloadCheckpointService.js";
 import { deleteProfile, getProfiles, launchLoginBrowser } from "../services/profileManagerService.js";
 import { renderQueueService } from "../services/renderQueueService.js";
 import { ResponseContractName, assertResponseContract } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
 import { getRoomOnlyScriptError } from "../services/roomOnlyErrorService.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
-import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistSongIds, launchSunoLoginBrowser } from "../services/sunoAutomationService.js";
-import { sunoCreationReporter } from "../services/sunoCreationProgress.js";
-import { musicDownloadReporter } from "../services/musicDownloadProgress.js";
+import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistSongIds, launchSunoLoginBrowser } from "../../features/music/server/services/sunoAutomationService.js";
+import { sunoCreationReporter } from "../../features/music/server/services/sunoCreationProgress.js";
+import { musicDownloadReporter } from "../../features/music/server/services/musicDownloadProgress.js";
 import type { MusicDownloadProgress, MusicUploadProgress } from "../../types/musicDownloadProgress.js";
 import { AiTaskCapability } from "../services/taskRouterService.js";
 import { readVisualQaAssets } from "../services/visualQaMediaService.js";

@@ -1,4 +1,6 @@
 import { StudioHeader, StudioPage, StudioCanvas, StudioCard, StudioInput, StudioSelect, StudioTextarea } from "../../../components/ui/Studio.js";
+import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
+import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { recordWorkflowActivity } from "../../../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../../../constants/workflowActivity";
 import {
@@ -382,14 +384,11 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
   const [saving, setSaving] = useState(false);
   const [importError, setImportError] = useState("");
   const [deleteProfile, setDeleteProfile] = useState<ProxyProfile | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const { copiedKey, copyText } = useClipboardFeedback({ duration: CLIPBOARD_FEEDBACK.SHORT_DURATION_MS, language: currentLang });
   const [filterTab, setFilterTab] = useState<"all" | "ok" | "open" | "issues">(SOURCE_TEXT_ALL);
   const refreshSequence = useRef(0);
   const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    toast.success(t.copied);
-    setTimeout(() => setCopiedKey(null), 1800);
+    void copyText(text, key, t.copied);
   };
   const refresh = useCallback(async () => {
     const sequence = ++refreshSequence.current;

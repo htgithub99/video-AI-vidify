@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { motionCaptchaPageReady } from "../src/server/services/motionStoryService.js";
+import { motionCaptchaPageReady } from "../src/features/motion/server/services/motionStoryService.js";
 const gemini = "gemini-chat";
 assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/library", "Your library", false), true);
 assert.equal(motionCaptchaPageReady(gemini, "https://gemini.google.com/library?view=all", "Your library", false), true);

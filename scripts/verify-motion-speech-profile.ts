@@ -8,9 +8,9 @@ import { MOTION_STORY_CONFIG as C } from "../src/constants/motionVideo.js";
 delete process.env.APP_DATA_DIR;
 const root = path.resolve(T.ROOT + randomUUID());
 process.env.VIDIFY_STORAGE_DIR = root;
-const { motionVoiceLibraryFile } = await import("../src/server/services/motionVoiceLibraryService.js");
-const { getMotionRootDirectory } = await import("../src/server/services/motionLibraryService.js");
-const { motionSpeechRate, motionSpeechRateProfile, recordSpeechRate } = await import("../src/server/services/motionSpeechRateService.js");
+const { motionVoiceLibraryFile } = await import("../src/features/motion/server/services/motionVoiceLibraryService.js");
+const { getMotionRootDirectory } = await import("../src/features/motion/server/services/motionLibraryService.js");
+const { motionSpeechRate, motionSpeechRateProfile, recordSpeechRate } = await import("../src/features/motion/server/services/motionSpeechRateService.js");
 const write = (file: string, value: unknown) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(value));

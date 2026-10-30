@@ -1,3 +1,5 @@
+import * as COMMON_RUNTIME from "../constants/sourceText.js";
+import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { parseJson } from "./jsonStringify.js";
@@ -5,7 +7,7 @@ import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
 import type { MotionVectorAsset } from "../types/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
 const tags = new Set([RT_SHARED.SVG, RT_CORE.G, RT_CORE.PATH, RT_CORE.RECT, RT_CORE.CIRCLE, RT_CORE.ELLIPSE, RT_CORE.POLYGON, RT_CORE.POLYLINE, RT_CORE.LINE, RT_CORE.DEFS, RT_CORE.LINEARGRADIENT, RT_CORE.RADIALGRADIENT, RT_CORE.STOP, RT_CORE.CLIPPATH, RT_CORE.MASK, RT_SHARED.TITLE, RT_SHARED.DESC] as string[]);
-export const parseRemotionAssetReply = (text: string): unknown => {
+const parseVectorReply = (text: string): unknown => {
   const start = text.indexOf(RT_CORE.SYMBOL_021FB5);
   if (start < 0) return undefined;
   const stack: string[] = [];
@@ -35,6 +37,77 @@ export const parseRemotionAssetReply = (text: string): unknown => {
   }
   return undefined;
 };
+export const parseRemotionAssetReply = (text: string): unknown => {
+  const parsed = parseVectorReply(text);
+  if (parsed !== undefined) return parsed;
+  const candidate = text.replace(/(<\/svg>|\\u003c\/svg>)(?=\s*\}\s*(?:```)?\s*$)/i, RUNTIME_VALUES.VALUE_2093DF4A);
+  let quoted = false,
+    escaped = false,
+    repaired = "";
+  for (const ch of candidate) {
+    if (quoted && !escaped && /[\n\r\t]/.test(ch)) {
+      repaired += ch === COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_56 ? COMMON_RUNTIME.SOURCE_TEXT_N : ch === RUNTIME_VALUES.VALUE_9D1E0E2D ? COMMON_RUNTIME.SOURCE_TEXT_R_2 : COMMON_RUNTIME.SOURCE_TEXT_T_3;
+      continue;
+    }
+    repaired += ch;
+    if (escaped) escaped = false;
+    else if (quoted && ch === COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_22) escaped = true;
+    else if (ch === COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_3) quoted = !quoted;
+  }
+  return parseVectorReply(repaired);
+};
+export const closeMotionSvgTags = (svg: string): string => {
+  const stack: string[] = [];
+  const closable = new Set([COMMON_RUNTIME.SOURCE_TEXT_SVG, RUNTIME_VALUES.G_CD0AA985, COMMON_RUNTIME.SOURCE_TEXT_PATH, RUNTIME_VALUES.RECT_0A473EBE, RUNTIME_VALUES.CIRCLE_8A39178D, RUNTIME_VALUES.ELLIPSE_C613C768, RUNTIME_VALUES.POLYGON_2B3B1812, RUNTIME_VALUES.POLYLINE_D2920224, RUNTIME_VALUES.LINE_38A9C1E7] as string[]);
+  const shapes = new Set([COMMON_RUNTIME.SOURCE_TEXT_PATH, RUNTIME_VALUES.RECT_0A473EBE, RUNTIME_VALUES.CIRCLE_8A39178D, RUNTIME_VALUES.ELLIPSE_C613C768, RUNTIME_VALUES.POLYGON_2B3B1812, RUNTIME_VALUES.POLYLINE_D2920224, RUNTIME_VALUES.LINE_38A9C1E7] as string[]);
+  let offset = 0,
+    inserted = 0,
+    repaired = "";
+  for (const match of svg.matchAll(/<(?:[^<>"']|"[^"<]*"|'[^'<]*')*>/g)) {
+    const between = svg.slice(offset, match.index);
+    if (/[<>]/.test(between)) return svg;
+    const tag = match[0].match(/^<(\/?)([\w:-]+)([\s\S]*?)(\/?)>$/);
+    if (!tag) return svg;
+    const [, close, name, attributes, selfClose] = tag;
+    repaired += between;
+    if (close) {
+      const index = stack.lastIndexOf(name);
+      if (index < 0 || attributes.trim() || selfClose) return svg;
+      while (stack.length - 1 > index) {
+        if (!closable.has(stack.at(-1)!) || ++inserted > 32) return svg;
+        repaired += `${RUNTIME_VALUES.VALUE_2A535776}${stack.pop()}${RUNTIME_VALUES.VALUE_62B67E1F}`;
+      }
+      stack.pop();
+    } else {
+      if (!stack.length && (name !== COMMON_RUNTIME.SOURCE_TEXT_SVG || offset > 0)) return svg;
+      if (shapes.has(stack.at(-1)!) && name !== COMMON_RUNTIME.SOURCE_TEXT_TITLE && name !== COMMON_RUNTIME.SOURCE_TEXT_DESC) return svg;
+      if (!selfClose) stack.push(name);
+    }
+    repaired += match[0];
+    offset = match.index! + match[0].length;
+  }
+  const tail = svg.slice(offset);
+  if (/[<>]/.test(tail) || (stack.length && tail.trim()) || stack.some((name) => !closable.has(name)) || inserted + stack.length > 32) return svg;
+  return (
+    repaired +
+    tail +
+    stack
+      .reverse()
+      .map((name) => `${RUNTIME_VALUES.VALUE_2A535776}${name}${RUNTIME_VALUES.VALUE_62B67E1F}`)
+      .join("")
+  );
+};
+export const dedupeMotionSvgAttributes = (svg: string): string =>
+  svg.replace(C.MARKUP_TAG, (tag: string, name: string, attributes: string, end: string) => {
+    const list = [...attributes.matchAll(C.MARKUP_ATTRIBUTE)];
+    const last = new Map(list.map((attribute, index) => [attribute[1], index]));
+    if (last.size === list.length) return tag;
+    return `${RUNTIME_VALUES.VALUE_DABD3AFF}${name}${list
+      .filter((attribute, index) => last.get(attribute[1]) === index)
+      .map((attribute) => `${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52}${attribute[1]}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_33}${attribute[2]}`)
+      .join("")}${end}${RUNTIME_VALUES.VALUE_62B67E1F}`;
+  });
+export const repairMotionSvgMarkup = (svg: string): string => closeMotionSvgTags(dedupeMotionSvgAttributes(svg));
 const xmlIssue = (svg: string): string | undefined => {
   const stack: string[] = [];
   let offset = 0;
@@ -98,6 +171,8 @@ export const normalizeMotionVector = (raw: unknown, key: string, inputKey: strin
   if (svg.length > limit) fail(V.SVG_REASONS.EMPTY);
   if (unsafe) fail(V.SVG_REASONS.UNSAFE);
   if (!/^<svg\b/.test(svg)) fail(V.SVG_REASONS.XML);
+  if (composition) svg = repairMotionSvgMarkup(svg);
+  if (svg.length > limit) fail(V.SVG_REASONS.EMPTY);
   const issue = xmlIssue(svg);
   if (issue) fail(issue);
   if (!vb || !vb.slice(1).every((value) => Number.isFinite(Number(value))) || Number(vb[3]) < 1 || Number(vb[4]) < 1 || Number(vb[3]) > 4096 || Number(vb[4]) > 4096) fail(V.SVG_REASONS.DIMENSIONS);

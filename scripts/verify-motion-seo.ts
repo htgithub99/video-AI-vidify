@@ -28,7 +28,7 @@ try {
   });
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, bundled.outputFiles[0].text);
-  const service: typeof import("../src/server/services/motionSeoService.ts") & typeof import("../src/lib/motionSeo.ts") = await import(pathToFileURL(output).href);
+  const service: typeof import("../src/features/motion/server/services/motionSeoService.ts") & typeof import("../src/lib/motionSeo.ts") = await import(pathToFileURL(output).href);
   const chapters = V.CHAPTER_IDS.map((id, i) => ({ id, title: V.CHAPTER_TITLE(i), summary: V.NARRATION }));
   const analysis = { title: V.REWRITTEN_TITLE, logline: V.NARRATION, chapters, facts: [], cast: [], places: [] } as MotionStoryAnalysis;
   const script: MotionStoryScript = { title: V.REWRITTEN_TITLE, language: V.VI, beats: chapters.map((chapter, i) => ({ id: V.BEAT_ID(i), chapterId: chapter.id, narration: V.NARRATION, visual: V.NARRATION })) };
@@ -87,7 +87,7 @@ try {
   assert.equal(longPack.options[0].title, V.LONG_TITLE.slice(0, MOTION_SEO.TITLE_MAX_CHARACTERS));
   assert.equal(service.motionSeoSourceTitle({ title: V.SOURCE_TITLE + V.SOURCE_SUFFIX }), V.SOURCE_TITLE);
   assert.equal(service.motionSeoSourceTitle({ title: 42 } as any), "");
-  let draft: import("../src/server/services/motionSeoService.ts").MotionSeoDraft | undefined;
+  let draft: import("../src/features/motion/server/services/motionSeoService.ts").MotionSeoDraft | undefined;
   let calls = 0;
   const controller = new AbortController();
   const incomplete = { ...alternatives[1], tags: [] };

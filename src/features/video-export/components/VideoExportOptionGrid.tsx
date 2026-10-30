@@ -1,3 +1,4 @@
+import { VideoExportOptionTone } from "../../../constants/runtime/enums.js";
 import { RUNTIME_TEXT as RT_VIDEO_EXPORT } from "../constants/runtimeText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import {
@@ -20,11 +21,7 @@ import { Button } from "../../../components/ui/Button.js";
 import { cn } from "../../../lib/utils.js";
 export type VideoExportOptionItem<T extends string | number> = { value: T; label: string; icon?: LucideIcon };
 export type VideoExportOptionSection<T extends string | number> = { key: string; label: string; options: VideoExportOptionItem<T>[] };
-export enum VideoExportOptionTone {
-  PURPLE = "purple",
-  INDIGO = "indigo",
-  AMBER = "amber",
-}
+export { VideoExportOptionTone };
 type VideoExportOptionGridProps<T extends string | number> = { label?: string; hint?: string; options?: VideoExportOptionItem<T>[]; sections?: VideoExportOptionSection<T>[]; value: T; columns?: 2 | 3 | 4; tone?: VideoExportOptionTone; disabled?: boolean; scrollableClassName?: string; onChange: (value: T) => void };
 const TONE_CLASSNAMES: Record<VideoExportOptionTone, { active: string; idle: string; hint: string }> = {
   [VideoExportOptionTone.PURPLE]: { active: VIDEO_EXPORT_TEXT_BG_PURPLE_600_DARK_BG_PURPLE, idle: VIDEO_EXPORT_TEXT_BG_WHITE_DARK_BG_SLATE_950, hint: VIDEO_EXPORT_TEXT_TEXT_PURPLE_600_DARK_TEXT_PURPLE },

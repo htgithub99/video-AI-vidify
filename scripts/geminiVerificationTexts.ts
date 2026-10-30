@@ -61,7 +61,7 @@ export const GEMINI_VERIFICATION_TEXTS = {
   PRESERVE_LEGACY_DEEP_THINK_WITHOUT_CONFLICTING_NUMERIC_LEVELS: "Preserve legacy Deep Think without conflicting numeric levels",
   SELECT: "select",
   OTHER_PROVIDERS_DO_NOT_SHOW_GEMINI_THINKING_CONTROLS: "Other providers do not show Gemini thinking controls",
-  SRC_SERVER_SERVICES_MOTIONSTORYSERVICE_TS: "src/server/services/motionStoryService.ts",
+  SRC_SERVER_SERVICES_MOTIONSTORYSERVICE_TS: "src/features/motion/server/services/motionStoryService.ts",
   NODE: "node",
   ESM: "esm",
   EXTERNAL: "external",

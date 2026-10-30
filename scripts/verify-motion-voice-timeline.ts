@@ -1,7 +1,7 @@
 import { MOTION_VERIFICATION_TEXTS as VT, MOTION_VERIFICATION_FORMATS as VF } from "./motionVerificationTexts.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
+import { compileStorySpec } from "../src/features/motion/server/services/motionDirectorService.ts";
 import { prepareMotionGen, stageBeats } from "../src/server/services/motionGenService.ts";
 import type { MotionVoiceTiming, MotionVoiceTrack } from "../src/types/motionVideo.ts";
 const fixture = JSON.parse(fs.readFileSync(VT.MOTION_ENGINE_DEMO_EDITORIAL_QA_JSON, VT.UTF8));

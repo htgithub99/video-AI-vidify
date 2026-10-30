@@ -14,7 +14,7 @@ export const MOTION_SEO_VERIFICATION = {
   EN: "en",
   URL: "https://www.youtube.com/watch?v=fixture",
   LONG_TITLE: "A".repeat(120),
-  ENTRY: 'export * from "./src/server/services/motionSeoService.ts"; export * from "./src/lib/motionSeo.ts";',
+  ENTRY: 'export * from "./src/features/motion/server/services/motionSeoService.ts"; export * from "./src/lib/motionSeo.ts";',
   SERVICE_IMPORT: /(?:^|\/)motionStoryService\.js$/,
   STUB: 'export const runMotionAi = () => { throw new Error("Unexpected live AI call in SEO verification"); };',
   PLUGIN: "motion-seo-offline-ai",

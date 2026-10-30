@@ -2,16 +2,15 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-
 delete process.env.APP_DATA_DIR;
 const directory = path.resolve("scratch/reference-cadence-check-" + randomUUID());
 process.env.VIDIFY_STORAGE_DIR = directory;
-const { buildMotionVoiceTrack, readMotionVoiceTrack } = await import("../src/server/services/motionAudioService.ts");
-const { motionWavHeader } = await import("../src/server/services/motionSoundMixService.ts");
-const { motionVoiceLibraryFile, updateVoiceMeta } = await import("../src/server/services/motionVoiceLibraryService.ts");
-const { inspectVoiceCadence, referenceCadenceProfile } = await import("../src/server/services/motionVoiceCadenceService.ts");
-const { getMotionAudioDirectory } = await import("../src/server/services/motionLibraryService.ts");
-const { voicePauses } = await import("../src/server/services/motionVoicePaceService.ts");
+const { buildMotionVoiceTrack, readMotionVoiceTrack } = await import("../src/features/motion/server/services/motionAudioService.ts");
+const { motionWavHeader } = await import("../src/features/motion/server/services/motionSoundMixService.ts");
+const { motionVoiceLibraryFile, updateVoiceMeta } = await import("../src/features/motion/server/services/motionVoiceLibraryService.ts");
+const { inspectVoiceCadence, referenceCadenceProfile } = await import("../src/features/motion/server/services/motionVoiceCadenceService.ts");
+const { getMotionAudioDirectory } = await import("../src/features/motion/server/services/motionLibraryService.ts");
+const { voicePauses } = await import("../src/features/motion/server/services/motionVoicePaceService.ts");
 const voiceId = "reference-cadence-test";
 const target = { rate: 3.633, rateBasis: "text", pauses: { clause: 0.46, sentence: 0.58, suspense: 0.67, beat: 0.77, articulation: 5.18 }, speechRatio: 0.702 };
 const texts = ["Tôi đi qua sân, thấy anh vẫn đứng ở đó, rồi quay vào trong nhà.", "Tôi nhìn quanh sân. Tôi nghe tiếng chân ngoài cửa, rồi vội trở vào nhà.", "Tôi đứng ngoài sân chờ anh trở về nhà giữa một đêm mưa lạnh.", "Đêm xuống."];
@@ -28,7 +27,6 @@ function speech(text: string, rate: number) {
       const envelope = Math.sin((Math.PI * i) / (48000 * duration));
       samples.push(Math.round(envelope * (6000 * Math.sin((2 * Math.PI * 220 * i) / 48000) + 2300 * Math.sin((2 * Math.PI * 870 * i) / 48000))));
     }
-    // All punctuation is shorter than the old 300ms detector; one natural breath is unmarked.
     quiet(word.endsWith(",") ? 0.18 : word.endsWith(".") ? 0.22 : word === "nghe" ? 0.18 : 0.025);
   }
   quiet(0.8);
@@ -64,7 +62,10 @@ try {
   assert.equal(calls, texts.length, "Một lượt TTS cho mỗi câu; không gọi lại để cân nhịp");
   assert.equal(fs.readFileSync(settingsFile, "utf8"), settingsBefore, "Không học lại chuẩn từ đoạn đọc hoặc khoảng lặng");
   const measured = track.clips!.slice(0, 3);
-  assert.ok(measured.every((clip) => clip.cadence && !clip.cadence.limited), JSON.stringify(measured.map(clip => clip.cadence)));
+  assert.ok(
+    measured.every((clip) => clip.cadence && !clip.cadence.limited),
+    JSON.stringify(measured.map((clip) => clip.cadence)),
+  );
   for (const clip of measured) {
     const wav = fs.readFileSync(path.join(getMotionAudioDirectory(), clip.audioId));
     const measured = inspectVoiceCadence(wav, clip.text)!;
@@ -74,7 +75,7 @@ try {
   }
   assert.ok(measured[0].cadence!.tempo > 1 && measured[1].cadence!.tempo < 1, "Phải điều chỉnh cả đoạn chậm lẫn đoạn nhanh");
   assert.equal(track.clips![3].cadence, undefined, "Câu quá ngắn dùng tốc độ dự phòng");
-  const { decodeVoicePcm } = await import("../src/server/services/motionVoicePaceService.ts");
+  const { decodeVoicePcm } = await import("../src/features/motion/server/services/motionVoicePaceService.ts");
   const decoded = await decodeVoicePcm(path.join(getMotionAudioDirectory(), measured[0].audioId));
   const pauses = voicePauses(decoded, 0.3).pauses.filter((p) => p.at > 0 && p.at + p.d < decoded.length / 16000 - 0.01);
   assert.equal(pauses.length, 2);
@@ -83,10 +84,19 @@ try {
     "Đổi tốc độ phát âm không làm ngắn dấu phẩy",
   );
   const mixed = await decodeVoicePcm(path.join(getMotionAudioDirectory(), measured[1].audioId));
-  const mixedPauses = voicePauses(mixed, 0.12).pauses.filter(p => p.at > 0 && p.at + p.d < mixed.length / 16000 - .01);
-  assert.ok(mixedPauses.some(p => Math.abs(p.d - target.pauses.sentence) < .06), "Short sentence pause must be restored to the sentence target");
-  assert.ok(mixedPauses.some(p => Math.abs(p.d - target.pauses.clause) < .06), "Comma has its own shorter target");
-  assert.ok(mixedPauses.some(p => p.d < .3), "Unmarked breaths remain natural, not converted into punctuation");
+  const mixedPauses = voicePauses(mixed, 0.12).pauses.filter((p) => p.at > 0 && p.at + p.d < mixed.length / 16000 - 0.01);
+  assert.ok(
+    mixedPauses.some((p) => Math.abs(p.d - target.pauses.sentence) < 0.06),
+    "Short sentence pause must be restored to the sentence target",
+  );
+  assert.ok(
+    mixedPauses.some((p) => Math.abs(p.d - target.pauses.clause) < 0.06),
+    "Comma has its own shorter target",
+  );
+  assert.ok(
+    mixedPauses.some((p) => p.d < 0.3),
+    "Unmarked breaths remain natural, not converted into punctuation",
+  );
   assert.equal(measured[1].cadence!.pausesMatched, 2);
   await buildMotionVoiceTrack(script, { genre: "truyện ma", cast: [] } as any, options, deps);
   assert.equal(calls, texts.length, "Dùng lại audio đã đạt");

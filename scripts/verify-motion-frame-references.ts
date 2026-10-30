@@ -7,13 +7,13 @@ import { FRAME_REFERENCES_QA as T } from "./motionFrameReferencesVerificationTex
 import { PUPPET as P, PUPPET_TYPES } from "../src/constants/motionPuppet.js";
 import { MOTION_VISUAL_CONTRACT as V } from "../src/constants/motionVisualContract.js";
 import { puppetKeyOf } from "../src/lib/motionPuppetValues.js";
-import { normalizePuppetFrame, fitPuppetRead, composePuppetLines } from "../src/server/services/puppet/director.js";
-import { normalizePuppetVisualState } from "../src/server/services/puppet/visualContract.js";
-import { normalizePuppetFrameContinuity } from "../src/server/services/puppet/frameContinuity.js";
-import { repairPuppetFrameReferences } from "../src/server/services/puppet/frameReferences.js";
-import { layoutPuppetFrame } from "../src/server/services/puppet/layout.js";
-import { puppetLayoutFrames } from "../src/server/services/puppet/compilePuppet.js";
-import { readPuppet, writePuppet } from "../src/server/services/puppet/kitLibrary.js";
+import { normalizePuppetFrame, fitPuppetRead, composePuppetLines } from "../src/features/motion/server/services/puppet/director.js";
+import { normalizePuppetVisualState } from "../src/features/motion/server/services/puppet/visualContract.js";
+import { normalizePuppetFrameContinuity } from "../src/features/motion/server/services/puppet/frameContinuity.js";
+import { repairPuppetFrameReferences } from "../src/features/motion/server/services/puppet/frameReferences.js";
+import { layoutPuppetFrame } from "../src/features/motion/server/services/puppet/layout.js";
+import { puppetLayoutFrames } from "../src/features/motion/server/services/puppet/compilePuppet.js";
+import { readPuppet, writePuppet } from "../src/features/motion/server/services/puppet/kitLibrary.js";
 import type { PuppetLine } from "../src/lib/motionPuppet.js";
 import type { PuppetFrame, PuppetGen, PuppetPlace, PuppetRead, PuppetSet, PuppetStylePack } from "../src/types/motionPuppet.js";
 for (const key of [...T.KEYS, ...T.HASHES.map((hash) => T.BASE + V.VARIANT_SEPARATOR + hash), T.LONG_BASE + V.VARIANT_SEPARATOR + T.HASHES[0]]) {

@@ -11,7 +11,7 @@ fs.mkdirSync(path.join(libraryDir, VT.ITEMS), { recursive: true });
 fs.writeFileSync(path.join(libraryDir, VT.ITEMS, VT.CHR_LEGACY0001_JSON), JSON.stringify(legacyDesign));
 fs.writeFileSync(path.join(libraryDir, VT.INDEX_JSON), JSON.stringify({ version: 1, items: [{ id: VT.CHR_LEGACY0001, kind: VT.CHARACTER, styleKey: VT.SHARED_3D, type: VT.ELDER, gender: VT.FEMALE, name: legacyName, description: VT.EMPTY_2, tags: [], uses: 0, createdAt: 1 }] }));
 const lib = await import("../src/server/services/motionSceneLibraryService.ts");
-const { normalizeAnalysis } = await import("../src/server/services/motionStoryService.ts");
+const { normalizeAnalysis } = await import("../src/features/motion/server/services/motionStoryService.ts");
 const design = (color: string) => ({ parts: [{ id: VT.BODY, pos: [0, 0, 0], nodes: [{ shape: VT.BOX, size: [0.4, 1, 0.3], mat: { color } }] }] });
 const room = (w: number) => ({ stage: { center: [0, 0], size: [w, w] }, camera: { pos: [0, 2, 5], target: [0, 1, 0] }, nodes: [] });
 const shared2d = lib.sharedStyleKeyOf(VT.VALUE_2D);

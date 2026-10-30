@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 process.env.VIDIFY_STORAGE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), VT.MOTION_VOICE_CAST));
 const { selectMotionVoiceRoles, motionVoiceCast } = await import("../src/lib/motionVoice.ts");
-const { directMotionVoice } = await import("../src/server/services/motionVoiceDirectionService.ts");
+const { directMotionVoice } = await import("../src/features/motion/server/services/motionVoiceDirectionService.ts");
 const { prepareMotionGen } = await import("../src/server/services/motionGenService.ts");
 const { motionCarryGen } = await import("../src/lib/motionParts.ts");
 const { MOTION_VOICE } = await import("../src/constants/motionVoice.ts");

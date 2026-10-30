@@ -10,9 +10,9 @@ import { MOTION_ILLUSTRATION_PROFILES, MOTION_ILLUSTRATION_COMMON } from "../src
 import { MOTION_HISTORY_MAP_CRAFT_EXAMPLE, MOTION_MAP_TIMELINE_CRAFT_EXAMPLE } from "../src/constants/motionCompositionStyleExamples.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { motionVisualCapability } from "../src/lib/motionVisual.js";
-import { buildRemotionScenes } from "../src/server/services/remotion/scenePipeline.js";
-import { remotionStoryBuildCurrent } from "../src/server/services/remotion/sceneKeys.js";
-import { compileRemotionStory } from "../src/server/services/remotion/storyCompiler.js";
+import { buildRemotionScenes } from "../src/features/motion/server/services/remotion/scenePipeline.js";
+import { remotionStoryBuildCurrent } from "../src/features/motion/server/services/remotion/sceneKeys.js";
+import { compileRemotionStory } from "../src/features/motion/server/services/remotion/storyCompiler.js";
 import { validateRemotionSpec } from "../src/lib/motionRemotion.js";
 import { puppetBeatLines } from "../src/lib/motionPuppet.js";
 import type { MotionRemotionProfile } from "../src/types/motionVisual.js";

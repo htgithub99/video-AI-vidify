@@ -135,7 +135,6 @@ export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voi
   let narratorVoice: MotionVoicePreset | undefined;
   const narratorKey = motionNarratorCastKey(analysis);
   const narratorMember = analysis?.cast.find((member) => member.key === narratorKey);
-  // Style instructions may mention several people. They are not narrator identity evidence.
   const cast = [{ ...narratorMember, key: C.NARRATOR, name: C.NARRATOR, description: narratorMember?.description || MR.MOTION_TEXT_EMPTY, role: narratorMember?.role || MR.MOTION_TEXT_EMPTY, look: narratorMember?.look || MR.MOTION_TEXT_EMPTY }, ...(analysis?.cast || [])];
   const kept: Record<string, string> = Object.fromEntries(Object.entries(fixed).filter(([key, id]) => cast.some((member) => member.key === key) && !!existing(id) && !(key === C.NARRATOR && channel && channel.narratorVoiceId !== id)));
   const reserved = new Set<string>([...(channel ? [channel.narratorVoiceId, ...Object.values(channel.roleVoices || {})].filter((id): id is string => !!id && !!existing(id)) : []), ...Object.values(kept), ...Object.values(manual)]);
@@ -158,7 +157,7 @@ export const selectMotionVoiceRoles = (analysis: MotionStoryAnalysis | null, voi
     const compatible = (voice: MotionVoicePreset | undefined): voice is MotionVoicePreset => !!voice && (!gender || voice.gender === gender);
     const fresh = (voice: MotionVoicePreset | undefined): voice is MotionVoicePreset => compatible(voice) && !used.has(voice.id) && !reserved.has(voice.id);
     const lockedId = !channel ? undefined : member.key === C.NARRATOR ? channel.narratorVoiceId : channel.roleVoices?.[motionVoiceGroup(gender, wantedAge)];
-    const locked = lockedId && (member.key === C.NARRATOR || !used.has(lockedId) && !Object.entries(kept).some(([key, id]) => key !== member.key && id === lockedId)) ? [existing(lockedId)].find((voice) => member.key === C.NARRATOR ? !!voice : compatible(voice)) : undefined;
+    const locked = lockedId && (member.key === C.NARRATOR || (!used.has(lockedId) && !Object.entries(kept).some(([key, id]) => key !== member.key && id === lockedId))) ? [existing(lockedId)].find((voice) => (member.key === C.NARRATOR ? !!voice : compatible(voice))) : undefined;
     const ageOk = (voice: MotionVoicePreset) => motionVoiceAge(voice) === wantedAge;
     const own = kept[member.key] && (!lockedId || kept[member.key] === lockedId) ? existing(kept[member.key]) : undefined;
     if (((member as Partial<MotionCastMember>).narrator || member.key === narratorKey) && narratorVoice) return { speaker: member.key, name: member.name, voiceId: narratorVoice.id, gender: narratorVoice.gender, age, shared: true };

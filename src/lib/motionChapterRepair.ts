@@ -10,12 +10,12 @@ import { motionResponseIssues, motionResponseShape, type MotionResponseIssue } f
 import { motionSpeechResponseIssues } from "./motionSpeechResponse.js";
 import { MOTION_VOICE } from "../constants/motionVoice.js";
 import { normalizeMotionChapterMetadata } from "./motionEditorialMetadata.js";
-export const motionChapterResponseIssues = (rows: Record<string, any>[], cast: string[], places: string[], closed: boolean): { id: string; issues: MotionResponseIssue[] }[] => {
+export const motionChapterResponseIssues = (rows: Record<string, any>[], cast: string[], places: string[], closed: boolean, multiVoice = true): { id: string; issues: MotionResponseIssue[] }[] => {
   const schema = MOTION_RESPONSE_SCHEMAS[RT_CORE.MOTION_STORY_CHAPTER].properties!.beats.items!;
   return normalizeMotionChapterMetadata(rows).flatMap((row) => {
     const issues = motionResponseIssues(row, { ...schema, properties: Object.fromEntries(Object.entries(schema.properties!).filter(([key]) => !([RT_CORE.SCENEPLAN, RT_SHARED.UTTERANCES] as string[]).includes(key))) });
-    if (Array.isArray(row.utterances) && row.utterances.length) issues.push(...motionSpeechResponseIssues(row.utterances, [RT_CORE.NARRATOR, ...cast] as string[], typeof row.narration === "string" ? row.narration : ""));
-    else if (row.utterances !== undefined && !Array.isArray(row.utterances)) issues.push({ path: RT_SHARED.UTTERANCES, expected: RT_CORE.ARRAY_OF_UTTERANCES, actual: typeof row.utterances, value: R.VALUE(row.utterances) });
+    if (multiVoice && Array.isArray(row.utterances) && row.utterances.length) issues.push(...motionSpeechResponseIssues(row.utterances, [RT_CORE.NARRATOR, ...cast] as string[], typeof row.narration === "string" ? row.narration : ""));
+    else if (multiVoice && row.utterances !== undefined && !Array.isArray(row.utterances)) issues.push({ path: RT_SHARED.UTTERANCES, expected: RT_CORE.ARRAY_OF_UTTERANCES, actual: typeof row.utterances, value: R.VALUE(row.utterances) });
     if (Array.isArray(row.cast) && row.cast.some((key) => !cast.includes(key))) issues.push({ path: RT_CORE.CAST, expected: stringifyJson(cast), actual: RT_CORE.UNKNOWN_CAST_KEY, value: R.VALUE(row.cast) });
     if (typeof row.place === "string" && !places.includes(row.place)) issues.push({ path: RT_SHARED.PLACE, expected: stringifyJson(places), actual: RT_CORE.UNKNOWN_PLACE_KEY, value: R.VALUE(row.place) });
     if (closed && row.visual !== RT_SHARED.SCENE) issues.push({ path: RT_CORE.VISUAL, expected: RT_SHARED.SCENE, actual: String(row.visual), value: R.VALUE(row.visual) });
@@ -80,12 +80,12 @@ export const mergeMotionChapterDraft = (raw: any, chapter: string, before?: Moti
     return pending && patch && counts.get(row.id) === 1 ? mergeMotionRepair(row, patch, pending.fields) : structuredClone(row);
   });
 };
-export const motionChapterPending = (rows: Record<string, any>[], expectedUnits?: number, tolerance?: number, spreadExpansion = false): MotionChapterDraft["pending"] => {
+export const motionChapterPending = (rows: Record<string, any>[], expectedUnits?: number, tolerance?: number, spreadExpansion = false, multiVoice = true): MotionChapterDraft["pending"] => {
   const missing = rows.filter((row) => !units(row.narration)).map((row) => ({ id: row.id, fields: [...C.FIELDS] }));
   if (missing.length) return missing;
   const tokens = (text: string) => (text.toLowerCase().normalize(RT_SHARED.NFC).match(C.WORDS) || []).join(RT_SHARED.SYMBOL_36A9E7);
   const spoken = rows.filter((row) => Array.isArray(row.utterances) && row.utterances.length && tokens(row.utterances.map((line: any) => String(line?.text || "")).join(RT_SHARED.SYMBOL_36A9E7)) !== tokens(row.narration)).map((row) => ({ id: row.id, fields: [RT_SHARED.UTTERANCES] as string[] }));
-  if (spoken.length) return spoken;
+  if (multiVoice && spoken.length) return spoken;
   if (!expectedUnits) return [];
   const total = rows.reduce((sum, row) => sum + units(row.narration), 0);
   if (total >= expectedUnits * (tolerance ? 1 - tolerance : C.MIN_RATIO) && total <= expectedUnits * (tolerance ? 1 + tolerance : C.MAX_RATIO)) return [];

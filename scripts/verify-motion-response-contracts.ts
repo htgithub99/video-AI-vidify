@@ -56,10 +56,10 @@ try {
   assert.ok(motionSpeechResponseIssues([{ speaker: "unknown", text: V.NARRATION[0] }], ["narrator", "nam"], V.NARRATION[0]).some((issue) => issue.path.endsWith("speaker")));
   assert.ok(motionSpeechResponseIssues([{ speaker: "nam", text: "Tôi đi." }], ["narrator", "nam"], V.NARRATION[0]).some((issue) => issue.path === "utterances"));
   for (const artifact of Object.keys(MOTION_RESPONSE_SCHEMAS)) assert.ok(motionResponsePrompt(artifact).length < 7500, artifact);
-  const { analyzeStory, parseStorySource, writeChapterBeats } = await import("../src/server/services/motionStoryService.js");
-  const { directMotionVoice } = await import("../src/server/services/motionVoiceDirectionService.js");
+  const { analyzeStory, parseStorySource, writeChapterBeats } = await import("../src/features/motion/server/services/motionStoryService.js");
+  const { directMotionVoice } = await import("../src/features/motion/server/services/motionVoiceDirectionService.js");
   const source = parseStorySource(V.SOURCE);
-  let saved: import("../src/server/services/motionStoryService.js").MotionAnalysisDraft | undefined;
+  let saved: import("../src/features/motion/server/services/motionStoryService.js").MotionAnalysisDraft | undefined;
   let analysisCalls = 0;
   const settings = { language: "vi", length: MotionStoryLength.ONE, exec: {} as any };
   const analysis = await analyzeStory(source, {

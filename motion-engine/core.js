@@ -7,6 +7,7 @@
   ME.version = MT.VALUE_1_0_0;
   const U = (ME.util = {});
   U.stringifyJson = (value, replacer, space) => JSON.stringify(value, replacer, space);
+  U.parseJson = (value, reviver) => JSON.parse(value, reviver);
   U.clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
   U.lerp = (a, b, k) => a + (b - a) * k;
   U.inv = (a, b, v) => (b === a ? 0 : (v - a) / (b - a));
@@ -266,7 +267,7 @@
     return from.set === to.set && from.light === to.light ? MT.PUPPET.SAME_SCENE_TRANSITION : MT.PUPPET.TRANSITION;
   };
   ME.createRenderer = (canvas, specIn, opts = {}) => {
-    const spec = ME.normalizeSpec(JSON.parse(U.stringifyJson(specIn || {})));
+    const spec = ME.normalizeSpec(U.parseJson(U.stringifyJson(specIn || {})));
     const q = Object.assign({}, ME.QUALITY.standard, typeof opts.quality === MT.STRING ? ME.QUALITY[opts.quality] : opts.quality || {});
     const W = opts.width || spec.width,
       H = opts.height || spec.height;

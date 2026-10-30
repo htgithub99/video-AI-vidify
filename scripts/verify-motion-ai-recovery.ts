@@ -1,4 +1,4 @@
-import { MotionProviderRecovery } from "../src/server/services/motionProviderRecovery.js";
+import { MotionProviderRecovery } from "../src/features/motion/server/services/motionProviderRecovery.js";
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.js";
 import assert from "node:assert/strict";
 import { build } from "esbuild";

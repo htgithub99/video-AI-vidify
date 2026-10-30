@@ -1,9 +1,9 @@
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.js";
 import assert from "node:assert/strict";
 import { POSTURE_QA as V } from "./motionPostureContinuityVerificationTexts.js";
-import { normalizePuppetReadContinuity } from "../src/server/services/puppet/readContinuity.js";
-import { fitPuppetRead } from "../src/server/services/puppet/director.js";
-import { puppetStatePose, puppetSupportAssignments } from "../src/server/services/puppet/layout.js";
+import { normalizePuppetReadContinuity } from "../src/features/motion/server/services/puppet/readContinuity.js";
+import { fitPuppetRead } from "../src/features/motion/server/services/puppet/director.js";
+import { puppetStatePose, puppetSupportAssignments } from "../src/features/motion/server/services/puppet/layout.js";
 const reads = normalizePuppetReadContinuity(V.LINES, structuredClone(V.READS));
 const stable = structuredClone(V.READS);
 stable.rest.states = [{ char: "a", action: "stand", posture: "lie", support: "bed", transition: false }];

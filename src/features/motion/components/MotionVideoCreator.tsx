@@ -1,3 +1,5 @@
+import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
+import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
@@ -819,7 +821,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           {state.series && <MotionPartsCard series={state.series} text={text} lang={currentLang} busy={studio.busy} ready={!!state.script?.beats?.length} className={cardCls} onContinue={() => void studio.continuePart()} />}
           <StudioCard className={cardCls}>
             <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
-            {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? "preparingSingle" : "preparing"]}</p> : null}
+            {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? RUNTIME_VALUES.PREPARINGSINGLE_21F3001B : RUNTIME_VALUES.PREPARING_D932D92A]}</p> : null}
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {state.autoExport ? (
@@ -1284,7 +1286,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
         }
       if (confirm === true || failed.length < confirm.length) toast.success(MOTION_TEMPLATE_JOIN_SPACE(text.RESULTS_FREED, formatBytes(freed)));
       if (failed.length) {
-        const message = [text.RESULTS_DELETE_FAILED.replace("{count}", String(failed.length)), firstError].filter(Boolean).join(" ");
+        const message = [text.RESULTS_DELETE_FAILED.replace(COMMON_RUNTIME.SOURCE_TEXT_COUNT, String(failed.length)), firstError].filter(Boolean).join(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52);
         setConfirm(failed);
         setDeleteError(message);
         toast.error(message);
@@ -1327,15 +1329,17 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
         </div>
         <div className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP_ML_AUTO_MY_AUTO}>
           {selected.length > 0 && (
-            <span className={MOTION_STYLES.RESULT_SELECTION_COUNT} aria-live="polite">
-              {text.RESULTS_SELECTED} {selected.length}/{studio.results.length}
+            <span className={MOTION_STYLES.RESULT_SELECTION_COUNT} aria-live={COMMON_RUNTIME.SOURCE_TEXT_POLITE}>
+              {text.RESULTS_SELECTED} {selected.length}
+              {COMMON_RUNTIME.SOURCE_TEXT_SYMBOL}
+              {studio.results.length}
             </span>
           )}
           <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete(selected)} disabled={busy || studio.renderBusy || selected.length === 0} className={MR.MOTION_TEXT_H_8_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_2_5_ROUNDED_LG_TEXT_XS_FO}>
             <Trash2 className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_ROSE_600_DARK_TEXT_ROSE_400} />
             <span>
               {text.RESULTS_DELETE_SELECTED}
-              {selected.length > 0 ? ` (${selected.length})` : ""}
+              {selected.length > 0 ? `${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_11}${selected.length}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_12}` : ""}
             </span>
           </Button>
           {junkButton}
@@ -1350,11 +1354,11 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
           <StudioCard key={r.id} className={cn(cardCls, MR.MOTION_TEXT_P_4_SPACE_Y_3_BG_WHITE_95_DARK_BG_SLATE_900_80_BORDER_BORDER_SLAT, picked.has(r.id) && MOTION_STYLES.RESULT_SELECTED)}>
             <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD}>
               <video src={r.videoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD_BLOCK} />
-              <label className={MOTION_STYLES.RESULT_SELECT} title={`${text.RESULTS_SELECT_VIDEO}: ${r.title}`}>
+              <label className={MOTION_STYLES.RESULT_SELECT} title={`${text.RESULTS_SELECT_VIDEO}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`}>
                 <StudioInput
                   type={MOTION_TEXT_CHECKBOX}
                   className={MR.MOTION_TEXT_W_4_H_4}
-                  aria-label={`${text.RESULTS_SELECT_VIDEO}: ${r.title}`}
+                  aria-label={`${text.RESULTS_SELECT_VIDEO}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`}
                   checked={picked.has(r.id)}
                   disabled={busy}
                   onChange={(event) => {
@@ -1373,7 +1377,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
                   <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300_GROUP_HOVER_TEXT_WHITE} />
                   <span>{text.SAVE_AS}</span>
                 </Button>
-                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete([r])} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE} aria-label={`${text.RESULTS_DELETE}: ${r.title}`} className={MR.MOTION_TEXT_P_1_5_ROUNDED_LG_BG_TRANSPARENT_HOVER_BG_TRANSPARENT_TEXT_SLATE_4}>
+                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete([r])} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE} aria-label={`${text.RESULTS_DELETE}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`} className={MR.MOTION_TEXT_P_1_5_ROUNDED_LG_BG_TRANSPARENT_HOVER_BG_TRANSPARENT_TEXT_SLATE_4}>
                   <Trash2 className={MR.MOTION_TEXT_W_4_H_4} />
                 </Button>
               </div>
@@ -1422,9 +1426,9 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
               ))}
             </ul>
           )}
-          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED}>{confirm === true ? text.RESULTS_CONFIRM_ALL : confirm?.length === 1 ? text.RESULTS_CONFIRM_ONE : text.RESULTS_CONFIRM_SELECTED.replace("{count}", String(confirm?.length || 0))}</p>
+          <p className={MOTION_STYLES.TEXT_XS_SM_TEXT_SM_TEXT_SLATE_700_DARK_TEXT_SLATE_300_LEADING_RELAXED}>{confirm === true ? text.RESULTS_CONFIRM_ALL : confirm?.length === 1 ? text.RESULTS_CONFIRM_ONE : text.RESULTS_CONFIRM_SELECTED.replace(COMMON_RUNTIME.SOURCE_TEXT_COUNT, String(confirm?.length || 0))}</p>
           {deleteError && (
-            <p role="alert" className={MOTION_STYLES.TEXT_11PX_TEXT_PURPLE_300}>
+            <p role={COMMON_RUNTIME.SOURCE_TEXT_ALERT} className={MOTION_STYLES.TEXT_11PX_TEXT_PURPLE_300}>
               {deleteError}
             </p>
           )}

@@ -218,7 +218,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CHATGPT_RESPONSE_CONTENT_SELECTOR: '[data-markdown-text-style="assistant-message"], .markdown',
   CHATGPT_RESPONSE_ID_ATTRIBUTE: "data-chatgpt-search-message-ids",
   CHATGPT_USAGE_NOTICE_SELECTOR: 'aside[role="status"], [role="alert"], [data-testid="usage-limit-banner"]',
-  CHATGPT_RATE_LIMIT_PATTERN: /(?:quick check to keep ChatGPT|kiểm tra nhanh để ChatGPT).{0,100}(?:try again (?:later|after|at)|thử lại sau)|(?:you(?:'|’)?ve (?:reached|hit)|you have reached).{0,60}(?:usage|message|free).{0,30}limit|(?:usage|message) limit.{0,60}(?:try again|resets)|đã (?:đạt|hết).{0,40}giới hạn.{0,80}(?:thử lại|đặt lại)/i,
+  CHATGPT_RATE_LIMIT_PATTERN: /(?:quick check to keep ChatGPT|kiểm tra nhanh để ChatGPT)[\s\S]{0,160}(?:try again (?:later|after|at|in)|thử lại (?:sau|trong|lúc))|(?:you(?:'|’)?ve (?:reached|hit)|you have reached).{0,60}(?:usage|message|free).{0,30}limit|(?:usage|message) limit.{0,60}(?:try again|resets)|đã (?:đạt|hết).{0,40}giới hạn.{0,80}(?:thử lại|đặt lại)/i,
   CHATGPT_RATE_LIMIT_ERROR: "chatgpt_rate_limited – ChatGPT đang giới hạn gửi tin nhắn. Hãy chờ thời điểm giao diện cho phép hoặc chọn nguồn AI khác.",
   CHATGPT_SEND_SELECTOR: 'button[data-testid="send-button"], button[aria-label*="Send" i], button[aria-label*="Gửi" i]',
   CHATGPT_BUSY_SELECTOR: 'button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Dừng" i]',

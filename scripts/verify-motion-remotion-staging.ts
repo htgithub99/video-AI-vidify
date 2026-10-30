@@ -9,7 +9,7 @@ import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
 import { MOTION_REMOTION_STAGING as S } from "../src/constants/motionRemotionStaging.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { remotionObjectCatalog, resolveRemotionContinuity } from "./legacy-motion-remotion/sceneContinuity.js";
-import { motionInputKey } from "../src/server/services/motionFileUtils.js";
+import { motionInputKey } from "../src/features/motion/server/services/motionFileUtils.js";
 import type { MotionRemotionNode, MotionRemotionScene, MotionVectorAsset } from "../src/types/motionVisual.js";
 const vector = (key: string, w: number, h: number, extra: Partial<MotionVectorAsset> = {}): MotionVectorAsset => ({
   ...normalizeMotionVector(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}"><path d="M${w * 0.1} ${h * 0.1}H${w * 0.9}V${h * 0.9}H${w * 0.1}Z" fill="#796555"/></svg>`, key, key, key),

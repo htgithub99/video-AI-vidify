@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { compileMotionStory, serveMotionSfx } from "../src/features/motion/server/controllers/motionVideoController.ts";
-import { getMotionAudioDirectory, getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
-import { runMotionAudioProcess } from "../src/server/services/motionSoundMixService.ts";
-import { startMotionRender, getMotionJob } from "../src/server/services/motionRenderService.ts";
+import { getMotionAudioDirectory, getMotionRootDirectory } from "../src/features/motion/server/services/motionLibraryService.ts";
+import { runMotionAudioProcess } from "../src/features/motion/server/services/motionSoundMixService.ts";
+import { startMotionRender, getMotionJob } from "../src/features/motion/server/services/motionRenderService.ts";
 import { MotionAspect, MotionEncoderPreference, MotionQuality, MotionJobStatus } from "../src/types/motionVideo.ts";
 const voiceId = VT.VERIFY_MOTION_SOUND_FLOW_VOICE_WAV,
   audioDirectory = getMotionAudioDirectory();

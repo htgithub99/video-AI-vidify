@@ -1,5 +1,5 @@
-import { recoverMotionProductions } from "./src/server/services/motionProductionService.js";
-import { recoverMotionRenderPublications } from "./src/server/services/motionRenderPublication.js";
+import { recoverMotionProductions } from "./src/features/motion/server/services/motionProductionService.js";
+import { recoverMotionRenderPublications } from "./src/features/motion/server/services/motionRenderPublication.js";
 import { exec } from "child_process";
 import cors from "cors";
 import "dotenv/config";

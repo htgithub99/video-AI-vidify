@@ -1,3 +1,4 @@
+import { RUNTIME_VALUES } from "../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
@@ -6,6 +7,7 @@ import { MOTION_AI_RECOVERY as AIR } from "../../constants/motionAiRecovery.js";
 import { MOTION_VISUAL } from "../../constants/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION } from "../../constants/motionSceneComposition.js";
 import { parseRemotionAssetReply } from "../../lib/motionVectorAsset.js";
+import { chatResponseIdentity } from "./chatResponseIdentity.js";
 import { isFinalChatResponseError, uncertainChatSubmission, type ChatPlanningSubmission, type ChatPendingSubmission } from "./chatSubmissionRecovery.js";
 import { observeGeminiGeneration } from "./geminiGenerationObserver.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
@@ -121,7 +123,7 @@ import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import _ from "lodash";
 import type { BrowserContext, Locator, Page } from "playwright";
-import { waitForMusicMixerUploads } from "./musicMixerUploadReadiness.js";
+import { waitForMusicMixerUploads } from "../../features/music-mixer/server/services/musicMixerUploadReadiness.js";
 import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity, SecurityConstants } from "../../constants/index.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEXT_ALERT, MOTION_TEXT_RESPONSE, MOTION_TEXT_ROOMPAGE, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_35, MOTION_TEXT_SYMBOL_36, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
@@ -780,6 +782,13 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
       .filter({ visible: true })
       .allTextContents()
       .catch(() => []);
+    const composerNotices = await page
+      .locator(RUNTIME_VALUES.MAIN_0D6E4079)
+      .getByText(/^(?:Chúng tôi đang kiểm tra nhanh để ChatGPT|We(?:'|’)?re (?:doing |running )?a quick check to keep ChatGPT)/i)
+      .filter({ visible: true })
+      .allTextContents()
+      .catch(() => []);
+    notices.push(...composerNotices);
     if (notices.some((notice) => CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RATE_LIMIT_PATTERN.test(notice))) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RATE_LIMIT_ERROR);
     return;
   }
@@ -816,6 +825,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
   let activityDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS;
   const initialResponseSet = new Set(_.map(initialResponseSnapshots, (snapshot) => _.trim(snapshot.text)));
   const initialResponseIdentitySet = new Set(_.compact(_.map(initialResponseSnapshots, SOURCE_TEXT_IDENTITY)));
+  const initialRequestIds = new Set(initialResponseSnapshots.map((snapshot) => normalizeCinematicArtifactIdentity(chatResponseIdentity(snapshot.text).requestId)).filter(Boolean));
   let previousText: string = MR.MOTION_TEXT_EMPTY;
   let stablePolls = 0;
   let lastResponseCount = initialCount;
@@ -862,8 +872,12 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       _.filter(responseSnapshots, (snapshot) => !_.isEmpty(snapshot.identity) && !initialResponseIdentitySet.has(snapshot.identity)),
       SOURCE_TEXT_TEXT,
     );
-    const responseCandidates = _.uniq(_.compact([...responsesWithNewIdentity, ...newResponseTexts, ...responsesNotPresentBeforeSubmission, changedLastResponse]));
+    const freshResponses = newResponseTexts.length ? newResponseTexts : responsesWithNewIdentity.length ? responsesWithNewIdentity : [...responsesNotPresentBeforeSubmission, changedLastResponse];
     const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
+    const responseCandidates = _.uniq(_.compact(freshResponses)).filter((candidate) => {
+      const identity = normalizeCinematicArtifactIdentity(chatResponseIdentity(candidate).requestId);
+      return !identity || identity === normalizedExpectedRequestId || !initialRequestIds.has(identity);
+    });
     const matchingJsonResponse = _.findLast(responseCandidates, (candidate) => {
       const parsedCandidate = parseStrictRoomJson(candidate, artifactType);
       if (_.isUndefined(parsedCandidate)) return false;
@@ -871,12 +885,13 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       const returnedRequestId = normalizeCinematicArtifactIdentity(_.get(parsedCandidate, SOURCE_TEXT_REQUESTID));
       return (_.isEmpty(artifactType) || _.isEqual(returnedArtifactType, artifactType)) && (_.isEmpty(normalizedExpectedRequestId) || _.isEqual(returnedRequestId, normalizedExpectedRequestId));
     });
-    const parseableJsonResponse = _.maxBy(
-      _.filter(responseCandidates, (candidate) => !_.isUndefined(parseStrictRoomJson(candidate, artifactType))),
-      (candidate) => candidate.length,
-    );
-    if (parseableJsonResponse) lastJsonCandidate = parseableJsonResponse;
-    const selectedResponse = matchingJsonResponse || parseableJsonResponse || _.maxBy(responseCandidates, (candidate) => candidate.length) || MR.MOTION_TEXT_EMPTY;
+    const matchingRawResponse = _.findLast(responseCandidates, (candidate) => {
+      const identity = chatResponseIdentity(candidate);
+      return !!normalizedExpectedRequestId && normalizeCinematicArtifactIdentity(identity.requestId) === normalizedExpectedRequestId && (!artifactType || identity.artifactType === artifactType);
+    });
+    const parseableJsonResponse = _.findLast(responseCandidates, (candidate) => !_.isUndefined(parseStrictRoomJson(candidate, artifactType)));
+    const selectedResponse = matchingJsonResponse || matchingRawResponse || _.last(responseCandidates) || MR.MOTION_TEXT_EMPTY;
+    if (matchingJsonResponse || (!normalizedExpectedRequestId && parseableJsonResponse)) lastJsonCandidate = matchingJsonResponse || parseableJsonResponse!;
     const latestText = selectedResponse;
     const isBusy = await page
       .locator(busySelector)

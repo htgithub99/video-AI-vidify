@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { creativeBlueprintErrors, normalizeCreativeBlueprint } from "../src/lib/motionCreativeBlueprint.ts";
 import { productionPreamble } from "../src/lib/motionDirection.ts";
 import { MOTION_GEN_ANALYSIS_PROMPT } from "../src/constants/motionGenPrompts.ts";
-import { analyzeStory, normalizeAnalysis, parseStorySource, resolveTargetSeconds } from "../src/server/services/motionStoryService.ts";
+import { analyzeStory, normalizeAnalysis, parseStorySource, resolveTargetSeconds } from "../src/features/motion/server/services/motionStoryService.ts";
 import { stageBeats, emptyGen, prepareMotionGen, designBible, designLocation } from "../src/server/services/motionGenService.ts";
 import { planMotionCoverage } from "../src/lib/motionCoverage.ts";
 import { MotionStoryLength } from "../src/types/motionVideo.ts";

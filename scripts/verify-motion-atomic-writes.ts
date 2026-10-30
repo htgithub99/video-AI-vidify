@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { writeMotionJsonAtomic } from "../src/server/services/motionFileUtils.js";
+import { writeMotionJsonAtomic } from "../src/features/motion/server/services/motionFileUtils.js";
 import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { PRODUCTION_QA as Q } from "./motionProductionVerificationTexts.js";
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "motion-atomic-"));

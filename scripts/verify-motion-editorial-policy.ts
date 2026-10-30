@@ -17,7 +17,7 @@ const directory = fs.mkdtempSync(path.join(os.tmpdir(), "motion-editorial-policy
 const previousStorage = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = directory;
 try {
-  const { analyzeStory, parseStorySource, writeChapterBeats } = await import("../src/server/services/motionStoryService.js");
+  const { analyzeStory, parseStorySource, writeChapterBeats } = await import("../src/features/motion/server/services/motionStoryService.js");
   const dna: any = {
     intent: "Explain the event",
     audience: "Vietnamese adults",

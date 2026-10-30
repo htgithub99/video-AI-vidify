@@ -4,8 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 process.env.VIDIFY_STORAGE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), VT.MOTION_VOICE_CASTING));
-const { saveVoiceChannel, voiceChannelRef } = await import("../src/server/services/motionVoiceLibraryService.ts");
-const { directMotionVoice } = await import("../src/server/services/motionVoiceDirectionService.ts");
+const { saveVoiceChannel, voiceChannelRef } = await import("../src/features/motion/server/services/motionVoiceLibraryService.ts");
+const { directMotionVoice } = await import("../src/features/motion/server/services/motionVoiceDirectionService.ts");
 const { MOTION_VOICE } = await import("../src/constants/motionVoice.ts");
 const voices: any[] = [
   { id: VT.HAI_DANG, name: VT.HAI_DANG, gender: VT.MALE },

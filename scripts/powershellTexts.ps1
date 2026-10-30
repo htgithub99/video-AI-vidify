@@ -1,4 +1,9 @@
 $WORKSPACE_SCRIPT_TEXT = @{
+  DOWNLOAD_FFMPEG = 'Downloading FFmpeg from {0} ...'
+  PYTHON_EMBED_URL = 'https://www.python.org/ftp/python/{0}/python-{0}-embed-amd64.zip'
+  ROBOCOPY_WARNING = 'Robocopy warning code: {0}'
+  RELEASE_EXECUTABLE = ' Executable: {0}\Video Workspace.exe'
+  RELEASE_ARCHIVE = ' Portable ZIP: {0}'
   HTTPS_GITHUB_COM_BTBN_FFMPEG_BUILDS_RELEASES_DOWNLOAD_LATEST_FFMP = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip'
   FFMPEG_ZIP = 'ffmpeg.zip'
   EXTRACTING_FFMPEG = 'Extracting FFmpeg ...'

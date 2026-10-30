@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 process.env.APP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), VT.MOTION_SCENE_FIT));
 const lib = await import("../src/server/services/motionSceneLibraryService.ts");
-const { normalizeBeats } = await import("../src/server/services/motionStoryService.ts");
+const { normalizeBeats } = await import("../src/features/motion/server/services/motionStoryService.ts");
 const { prepareMotionGen, stageBeats, withBeatPlaces } = await import("../src/server/services/motionGenService.ts");
 const quiet = () => {};
 const analysis: any = {

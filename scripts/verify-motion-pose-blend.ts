@@ -2,7 +2,7 @@ import { MOTION_VERIFICATION_TEXTS as VT, MOTION_VERIFICATION_FORMATS as VF } fr
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
-import { buildMotionRenderHtml } from "../src/server/services/motionEngineService.ts";
+import { buildMotionRenderHtml } from "../src/features/motion/server/services/motionEngineService.ts";
 import { motionProceduralPose } from "../src/lib/motionPoses.ts";
 const box = (pos: number[], size: number[]) => ({ shape: VT.BOX, pos, size, mat: { color: VT.C08060 } });
 const design: any = {

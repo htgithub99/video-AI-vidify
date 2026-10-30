@@ -13,8 +13,8 @@ import { getClaudeComposerScope, waitForClaudeUploads } from "../src/server/serv
 import { assertGeminiSessionAvailable, geminiUploadPolicy } from "../src/server/services/geminiUploadReadiness.ts";
 const scratch = await fs.mkdtemp(path.join(os.tmpdir(), "vidify-playlist-upload-"));
 process.env.VIDIFY_STORAGE_DIR = scratch;
-const { addSongsToPlaylist, ensureSunoPlaylistMembers, openSunoPlaylistDialog, playlistClipIds } = await import("../src/server/services/sunoAutomationService.ts");
-const { readSunoPlaylistCheckpoint } = await import("../src/server/services/sunoPlaylistCheckpointService.ts");
+const { addSongsToPlaylist, ensureSunoPlaylistMembers, openSunoPlaylistDialog, playlistClipIds } = await import("../src/features/music/server/services/sunoAutomationService.ts");
+const { readSunoPlaylistCheckpoint } = await import("../src/features/music/server/services/sunoPlaylistCheckpointService.ts");
 const { musicUploadDetails, writeMusicDiagnostic } = await import("../src/server/services/musicDiagnosticService.ts");
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext();

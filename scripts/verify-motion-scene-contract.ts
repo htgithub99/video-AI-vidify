@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { buriedSurfaceErrors, productionLocationErrors, productionStagingErrors } from "../src/lib/motionProductionDesign.ts";
 import { emptyGen, stageBeats } from "../src/server/services/motionGenService.ts";
 import { MOTION_GEN_CONFIG } from "../src/constants/motionGenPrompts.ts";
-import { validateGenStaging } from "../src/server/services/motionEngineService.ts";
+import { validateGenStaging } from "../src/features/motion/server/services/motionEngineService.ts";
 const room = { interior: true, stage: { center: [0, 0], size: [5, 5] }, camera: { pos: [0, 2, 4], target: [0, 1, 0] }, defs: { dial: [{ shape: VT.SPHERE }] }, nodes: [] as any[] };
 assert.ok(productionLocationErrors(room).some((e) => e.includes(VT.NEVER_PLACED)));
 assert.ok(productionLocationErrors(room).some((e) => e.includes(VT.NO_MOTIVATED_LIGHTS)));

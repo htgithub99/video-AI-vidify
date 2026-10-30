@@ -1,3 +1,5 @@
+import * as COMMON_RUNTIME from "../../../../constants/sourceText.js";
+import { RUNTIME_VALUES } from "../../../../constants/runtime/values.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import * as MR from "../../../../constants/motionRuntime.js";
 import _ from "lodash";
@@ -5,7 +7,7 @@ import { motionVideoGenrePackaging } from "../../../../constants/motionGenre.js"
 import { AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine, PromptInputMethod } from "../../../../types.js";
 import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis } from "../../../../types/motionVideo.js";
 import { generateImageWithPlaywright } from "../../../../server/services/imageGeneratorService.js";
-import { runMotionAi } from "../../../../server/services/motionStoryService.js";
+import { runMotionAi } from "./motionStoryService.js";
 import { MOTION_THUMBNAIL_SCHEMA } from "../../../../constants/motionResponseContract.js";
 import { motionResponseIssues, motionResponsePrompt, motionResponseRepair } from "../../../../lib/motionResponseContract.js";
 import { randomUUID } from "node:crypto";
@@ -79,7 +81,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       prompt = fallbackPrompt(analysis, title, portrait);
       opts.log?.(MR.MOTION_TEXT_THUMBNAIL_DUNG_PROMPT_DUNG_TU_VIDEO_DNA);
     }
-    prompt = [prompt, T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, `Selected video title (data): ${stringifyJson(title)}. Language: ${brief.language}. Show only people, objects and events supported by this video's story.`].join("\n");
+    prompt = [prompt, T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, `${RUNTIME_VALUES.SELECTED_VIDEO_TITLE_DATA_2DDABCE0}${stringifyJson(title)}${RUNTIME_VALUES.LANGUAGE_B8D8F45B}${brief.language}${RUNTIME_VALUES.SHOW_ONLY_PEOPLE_OBJECTS_AND_EVENTS_SUPPORTED_BY_THIS_VIDEO_S_ST_D6CCE9FF}`].join(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_56);
     let warning: string = MR.MOTION_TEXT_EMPTY;
     for (let attempt = 0; attempt < IMAGE_ATTEMPTS; attempt++) {
       opts.signal?.throwIfAborted();
@@ -99,11 +101,11 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
             generationMode: ImageGenerationMode.GeminiChat,
             promptInputMethod: PromptInputMethod.Paste,
             referenceImages: references,
-            referenceImageNames: references.map((_, index) => `scene-style-${index + 1}`),
+            referenceImageNames: references.map((_, index) => `${RUNTIME_VALUES.SCENE_STYLE_EF8E618C}${index + 1}`),
           },
         } as any);
         const base64 = _.toString(result?.base64).replace(/^data:image\/[^;]+;base64,/u, "");
-        if (base64 && references.some((reference) => reference.split(",")[1] === base64.replace(/^data:image\/[^;]+;base64,/u, ""))) throw new Error(T.REFERENCE_RETURNED);
+        if (base64 && references.some((reference) => reference.split(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_4)[1] === base64.replace(/^data:image\/[^;]+;base64,/u, ""))) throw new Error(T.REFERENCE_RETURNED);
         if (result?.success && base64.length >= MIN_IMAGE_CHARS) {
           const mime = base64.startsWith(MR.MOTION_TEXT_9J) ? MR.MOTION_TEXT_IMAGE_JPEG : MR.MOTION_TEXT_IMAGE_PNG;
           opts.log?.(MR.MOTION_TEXT_THUMBNAIL_XONG);

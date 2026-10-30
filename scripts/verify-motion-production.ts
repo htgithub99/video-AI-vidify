@@ -9,8 +9,8 @@ import { MOTION_PRODUCTION as P } from "../src/constants/motionProduction.js";
 import { MotionJobStatus as S, MotionStoryJobKind as K } from "../src/types/motionVideo.js";
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR ||= path.resolve(T.ROOT + randomUUID());
-const { startStoryJob, cancelStoryJob } = await import("../src/server/services/motionStoryJobService.js");
-const { saveMotionStoryCheckpoint, readMotionStoryCheckpoint } = await import("../src/server/services/motionStoryCheckpointService.js");
+const { startStoryJob, cancelStoryJob } = await import("../src/features/motion/server/services/motionStoryJobService.js");
+const { saveMotionStoryCheckpoint, readMotionStoryCheckpoint } = await import("../src/features/motion/server/services/motionStoryCheckpointService.js");
 const child = process.argv.find((arg) => arg.startsWith(T.CHILD))?.slice(T.CHILD.length);
 const script: any = { title: T.TITLE, language: "vi", beats: [T.BEAT] };
 if (child === T.READ) {
@@ -31,7 +31,7 @@ if (child === T.READ) {
 } else {
   const { assertMotionScriptComplete, missingMotionChapters } = await import("../src/lib/motionProduction.js");
   const { motionSourceChunks } = await import("../src/lib/motionSourceChunks.js");
-  const { motionEditorialContext } = await import("../src/server/services/motionEditorialContextService.js");
+  const { motionEditorialContext } = await import("../src/features/motion/server/services/motionEditorialContextService.js");
   const analysis: any = { chapters: T.CHAPTERS, places: [], cast: [] };
   const root = path.resolve(process.env.VIDIFY_STORAGE_DIR);
   const file = path.resolve("scripts/verify-motion-production.ts");

@@ -1,17 +1,6 @@
+import { ConfigIssueSeverity, ConfigIssueCode } from "../constants/runtime/enums.js";
 import _ from "lodash";
 import { GenerateType, ImageGenerationMode, ImageGeneratorEngine, TextInImageMode, VisualConfig } from "../types";
-enum ConfigIssueSeverity {
-  Warning = "warning",
-  Blocking = "blocking",
-}
-enum ConfigIssueCode {
-  CharacterConsistencyDisabled = "character_consistency_disabled",
-  ImageModeVideoSettingsRemoved = "image_mode_video_settings_removed",
-  ImageModeVideoEngineReplaced = "image_mode_video_engine_replaced",
-  NoTextConstraintApplied = "no_text_constraint_applied",
-  VideoModeImageEngineUnsupported = "video_mode_image_engine_unsupported",
-  VideoModeRoutedThroughGemini = "video_mode_routed_through_gemini",
-}
 interface ConfigIssue {
   code: ConfigIssueCode;
   severity: ConfigIssueSeverity;

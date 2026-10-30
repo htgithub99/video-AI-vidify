@@ -10,7 +10,7 @@ export const MOTION_VIDEO_GENRE_ERROR = { CHANGED: "Thể loại đã đổi so 
 export const MOTION_VIDEO_GENRE_TEXT = {
   vi: {
     LABEL: "Thể loại",
-    HINT: "Định hướng cách viết, nhịp kể và âm thanh; kiểu hình chọn riêng. POV: viết lại mọi nguồn thành trải nghiệm ngôi thứ hai, thì hiện tại (\"Bạn 19 tuổi…\"), người xem là nhân vật chính, giữ đúng sự kiện nguồn. Người trong cuộc kể lại: kể lại mọi nguồn bằng lời một người trong cuộc xưng \"tôi\", câu ngắn, giọng quê quen tai như Kỳ truyện, giữ đúng sự kiện nguồn. Toàn bộ lịch sử trong N phút: mở bằng một cảnh cao trào về sau, rồi kể theo từng thời kỳ có tên chương, mốc ngày giờ và con số của nguồn, cuối cùng quay lại cảnh mở đầu. Câu hỏi lớn – cân từng giả thuyết: đặt một câu hỏi gây tranh cãi từ nguồn, cân lần lượt từng ứng viên bằng một hình ảnh ẩn dụ cố định (cán cân, con dấu…), chấm nhãn sau mỗi chương rồi đưa ra phán quyết.",
+    HINT: 'Định hướng cách viết, nhịp kể và âm thanh; kiểu hình chọn riêng. POV: viết lại mọi nguồn thành trải nghiệm ngôi thứ hai, thì hiện tại ("Bạn 19 tuổi…"), người xem là nhân vật chính, giữ đúng sự kiện nguồn. Người trong cuộc kể lại: kể lại mọi nguồn bằng lời một người trong cuộc xưng "tôi", câu ngắn, giọng quê quen tai như Kỳ truyện, giữ đúng sự kiện nguồn. Toàn bộ lịch sử trong N phút: mở bằng một cảnh cao trào về sau, rồi kể theo từng thời kỳ có tên chương, mốc ngày giờ và con số của nguồn, cuối cùng quay lại cảnh mở đầu. Câu hỏi lớn – cân từng giả thuyết: đặt một câu hỏi gây tranh cãi từ nguồn, cân lần lượt từng ứng viên bằng một hình ảnh ẩn dụ cố định (cán cân, con dấu…), chấm nhãn sau mỗi chương rồi đưa ra phán quyết.',
     OPTIONS: { pov: "POV – Nhập vai (bạn là nhân vật)", witness: "Người trong cuộc kể lại (kiểu Kỳ truyện)", chronicle: "Toàn bộ lịch sử trong N phút (biên niên)", verdict: "Câu hỏi lớn – cân từng giả thuyết (phán quyết)" },
   },
   en: {
@@ -19,7 +19,7 @@ export const MOTION_VIDEO_GENRE_TEXT = {
     OPTIONS: { pov: "POV – You are the character", witness: "Witness recollection (first-person)", chronicle: "Entire history in N minutes (chronicle)", verdict: "Big question – weigh every candidate (verdict)" },
   },
 } as const;
-const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
+const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string; TIMELINE: string; SIGNATURE: string }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
 const GENRE_TEXT = {
   PACKAGING: "VIDEO GENRE (chosen by the user, follow it): ",
   DIRECTIVE: "VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ",
@@ -32,13 +32,13 @@ export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.include
 export const motionVideoGenrePackaging = (value: unknown): string => GENRE_TEXT.PACKAGING + PROFILES[motionVideoGenre(value)].PACKAGING;
 export const motionVideoGenreWritingProfile = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
-  return profile.PROFILE + GENRE_TEXT.CHECK + profile.CHECK;
+  return profile.PROFILE + " " + profile.TIMELINE + GENRE_TEXT.CHECK + profile.CHECK;
 };
 export const motionVideoGenreDirective = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
-  return GENRE_TEXT.DIRECTIVE + profile.PROFILE + " " + profile.PLAN + GENRE_TEXT.CAST;
+  return GENRE_TEXT.DIRECTIVE + profile.PROFILE + " " + profile.PLAN + " " + profile.TIMELINE + " " + profile.SIGNATURE + GENRE_TEXT.CAST;
 };
 export const motionVideoGenreStyleGuide = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
-  return GENRE_TEXT.STYLE + profile.PROFILE + GENRE_TEXT.SAMPLE + profile.SAMPLE + GENRE_TEXT.CHECK + profile.CHECK;
+  return GENRE_TEXT.STYLE + profile.PROFILE + " " + profile.TIMELINE + GENRE_TEXT.SAMPLE + profile.SAMPLE + GENRE_TEXT.CHECK + profile.CHECK;
 };

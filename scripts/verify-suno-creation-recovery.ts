@@ -4,11 +4,11 @@ import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import express from "express";
-import { openSunoCreationCheckpoint, saveSunoCreationCheckpoint, runSunoCreationCheckpoint, creationSongIds, sunoCreationKey, type SunoCreationInput } from "../src/server/services/sunoCreationCheckpointService.js";
-import { sunoCreationReporter } from "../src/server/services/sunoCreationProgress.js";
+import { openSunoCreationCheckpoint, saveSunoCreationCheckpoint, runSunoCreationCheckpoint, creationSongIds, sunoCreationKey, type SunoCreationInput } from "../src/features/music/server/services/sunoCreationCheckpointService.js";
+import { sunoCreationReporter } from "../src/features/music/server/services/sunoCreationProgress.js";
 import { readSunoCreationResponse, formatSunoCreationProgress } from "../src/features/music/lib/sunoCreationProgress.js";
 import { WORKFLOW_ACTIVITY_EVENT, WORKFLOW_ACTIVITY_TEXT } from "../src/constants/workflowActivity.js";
-import { settleSunoBrowserClose } from "../src/server/services/sunoBrowserCleanup.js";
+import { settleSunoBrowserClose } from "../src/features/music/server/services/sunoBrowserCleanup.js";
 const scratch = await fs.mkdtemp(path.join(os.tmpdir(), "vidify-suno-recovery-"));
 let cleanupCompleted = false;
 await settleSunoBrowserClose(async () => {

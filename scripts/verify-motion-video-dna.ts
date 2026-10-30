@@ -9,11 +9,11 @@ import { MotionStoryLength } from "../src/types/motionVideo.ts";
 import { MOTION_TEXT_TRANSCRIPT_2 } from "../src/constants/motionRuntime.ts";
 import { bindVideoDnaSettings, sceneExecutionKey, normalizeScenePlan, scenePlanErrors, scenePlanStagingErrors, videoDnaErrors, videoDnaSourceKey } from "../src/lib/motionVideoDna.ts";
 import { productionPreamble } from "../src/lib/motionDirection.ts";
-import { analyzeStory, parseStorySource, resolveTargetSeconds, writeChapterBeats } from "../src/server/services/motionStoryService.ts";
+import { analyzeStory, parseStorySource, resolveTargetSeconds, writeChapterBeats } from "../src/features/motion/server/services/motionStoryService.ts";
 import { beatPreviewSpec, prepareMotionGen, previewBeats, stageBeats } from "../src/server/services/motionGenService.ts";
-import { compileStorySpec } from "../src/server/services/motionDirectorService.ts";
-import { openStillSession } from "../src/server/services/motionRenderService.ts";
-import { getMotionRootDirectory } from "../src/server/services/motionLibraryService.ts";
+import { compileStorySpec } from "../src/features/motion/server/services/motionDirectorService.ts";
+import { openStillSession } from "../src/features/motion/server/services/motionRenderService.ts";
+import { getMotionRootDirectory } from "../src/features/motion/server/services/motionLibraryService.ts";
 import { normalizeMotionAnalysisResponse } from "../src/lib/motionAnalysisResponse.ts";
 const rawDna = (style: string) => ({
   intent: VT.EXPLAIN + style,

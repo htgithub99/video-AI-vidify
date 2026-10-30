@@ -7,8 +7,8 @@ import { MotionJobStatus as S } from "../src/types/motionVideo.js";
 const storage = fs.mkdtempSync(path.join(os.tmpdir(), "motion-publication-faults-"));
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = storage;
-const { getMotionRootDirectory, listMotionResults } = await import("../src/server/services/motionLibraryService.js");
-const { recoverMotionRenderPublications } = await import("../src/server/services/motionRenderPublication.js");
+const { getMotionRootDirectory, listMotionResults } = await import("../src/features/motion/server/services/motionLibraryService.js");
+const { recoverMotionRenderPublications } = await import("../src/features/motion/server/services/motionRenderPublication.js");
 const root = getMotionRootDirectory(),
   folder = path.join(root, V.CHECKPOINT_FOLDER);
 fs.mkdirSync(folder, { recursive: true });

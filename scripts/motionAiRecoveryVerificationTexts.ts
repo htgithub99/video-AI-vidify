@@ -1,6 +1,6 @@
 export const MOTION_AI_RECOVERY_VERIFICATION = {
   ENTRY:
-    'export * from "./src/server/services/motionStoryService.ts"; export * from "./src/server/services/motionStoryJobService.ts"; export { MOTION_CAPTCHA } from "./src/constants/motionCaptcha.ts"; export { MOTION_AI_RECOVERY } from "./src/constants/motionAiRecovery.ts"; export { MOTION_STORY_CONFIG } from "./src/constants/motionVideo.ts"; export { drawPuppetCharacters, drawPuppetSets, drawPuppetProps } from "./src/server/services/puppet/kitDraw.ts"; export { readPuppetLines } from "./src/server/services/puppet/director.ts"; export { readPuppet } from "./src/server/services/puppet/kitLibrary.ts";',
+    'export * from "./src/features/motion/server/services/motionStoryService.ts"; export * from "./src/features/motion/server/services/motionStoryJobService.ts"; export { MOTION_CAPTCHA } from "./src/constants/motionCaptcha.ts"; export { MOTION_AI_RECOVERY } from "./src/constants/motionAiRecovery.ts"; export { MOTION_STORY_CONFIG } from "./src/constants/motionVideo.ts"; export { drawPuppetCharacters, drawPuppetSets, drawPuppetProps } from "./src/features/motion/server/services/puppet/kitDraw.ts"; export { readPuppetLines } from "./src/features/motion/server/services/puppet/director.ts"; export { readPuppet } from "./src/features/motion/server/services/puppet/kitLibrary.ts";',
   CHAT_IMPORT: /chatUiPlanningService\.js$/,
   GEMINI_IMPORT: /geminiService\.js$/,
   ALL: /.*/,

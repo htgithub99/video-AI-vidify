@@ -10,9 +10,9 @@ import { MotionResourceError } from "../src/lib/motionResourceFailure.js";
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "motion-resource-writes-"));
 delete process.env.APP_DATA_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
-const { writePuppet, readPuppet, puppetLibDir } = await import("../src/server/services/puppet/kitLibrary.js");
+const { writePuppet, readPuppet, puppetLibDir } = await import("../src/features/motion/server/services/puppet/kitLibrary.js");
 const { renamePuppetKit } = await import("../src/features/motion/server/services/puppet/kitAdmin.js");
-const { runWithPuppetPack } = await import("../src/server/services/puppet/packPolicy.js");
+const { runWithPuppetPack } = await import("../src/features/motion/server/services/puppet/packPolicy.js");
 const { MOTION_PACK: K } = await import("../src/constants/motionPack.js");
 const library = path.resolve("storage/output/motion-video/kit-library");
 const all = (type: string) =>

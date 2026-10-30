@@ -51,6 +51,7 @@ export interface MotionRemotionNode {
   id: string;
   kind: "character" | "prop" | "label";
   entityId?: string;
+  anonymous?: boolean;
   description: string;
   pose: string;
   representation?: "full" | "bust" | "detail";
@@ -108,7 +109,7 @@ export interface MotionRemotionScene {
   continuityDraft?: { nodes: MotionRemotionNode[]; resolvedKey: string };
   removedObjects?: string[];
   composition?: MotionSceneComposition;
-  build?: { inputKey: string; status: "accepted" | "failed"; review: boolean; error?: string };
+  build?: { inputKey: string; status: "accepted" | "failed"; review: boolean; error?: string; attempts?: number };
   drawingNote?: string;
   requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
@@ -117,6 +118,7 @@ export interface MotionSceneLayer {
   id: string;
   kind: "background" | "character" | "prop" | "effect";
   entityId?: string;
+  anonymous?: boolean;
   description?: string;
 }
 export interface MotionSceneAnimation {
@@ -153,6 +155,7 @@ export interface MotionRemotionState {
   inputKeys: Record<string, string>;
   failures: Record<string, string>;
   drafts?: Record<string, unknown[]>;
+  planRecoveryRevision?: number;
   notes?: Record<string, string>;
   updatedAt?: number;
   profileRevision?: number;

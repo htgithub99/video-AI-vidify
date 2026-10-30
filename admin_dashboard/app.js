@@ -611,7 +611,7 @@ function openDeviceModal(id) {
   const container = el(DOMIds.DEVICE_LIST_CONTAINER);
   let deviceIdStr = AdminTemplates.DEVICE_EMPTY(AdminMessages.EMPTY_DEVICE_MSG);
   try {
-    const parsedDevices = JSON.parse(_.get(user, ApiFields.DEVICE_ID, AdminMessages.ARRAY_EMPTY_JSON));
+    const parsedDevices = AdminJson.parseJson(_.get(user, ApiFields.DEVICE_ID, AdminMessages.ARRAY_EMPTY_JSON));
     if (_.isArray(parsedDevices) && !_.isEmpty(parsedDevices)) {
       deviceIdStr = _.join(
         _.map(parsedDevices, (d) => AdminTemplates.DEVICE_CARD(d, AdminMessages.DEVICE_CONNECTED)),

@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { chromium } from "playwright";
 import { motionCameraFrame, type MotionCameraMode } from "../src/lib/motionCamera.js";
-import { getMotionEngineClientScript } from "../src/server/services/motionEngineService.js";
+import { getMotionEngineClientScript } from "../src/features/motion/server/services/motionEngineService.js";
 const modes: MotionCameraMode[] = ["push", "pull", "left", "right", "up", "down"];
 let samples = 0;
 for (const [width, height] of [
@@ -41,13 +41,11 @@ for (const [width, height] of [
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
-  // Load the actual shipped engine, including serialization of the shared math.
   await page.addScriptTag({ content: getMotionEngineClientScript() });
   const results = await page.evaluate((modes) => modes.map((mode) => (window as any).MotionEngine.cameraFrame({ enabled: true, seconds: 8, start: 0, end: 12, width: 1280, height: 720, seed: "test", mode })), modes);
   for (const [index, mode] of modes.entries()) assert.deepEqual(results[index], motionCameraFrame({ enabled: true, seconds: 8, start: 0, end: 12, width: 1280, height: 720, seed: "test", mode }));
-  // Optional evidence: saved artwork only, never AI/TTS requests.
   if (process.argv.includes("--render")) {
-    const { renderRemotionStill } = await import("../src/server/services/motionRemotionRenderService.js");
+    const { renderRemotionStill } = await import("../src/features/motion/server/services/motionRemotionRenderService.js");
     const production = JSON.parse(await fs.readFile("storage/output/motion-video/productions/0171ab25909369c6e9f2ca0dec29ff64.json", "utf8"));
     const document = production.result?.compiled?.spec || production.compiled?.spec;
     assert.ok(document?.scenes?.length, "stored compiled document required");

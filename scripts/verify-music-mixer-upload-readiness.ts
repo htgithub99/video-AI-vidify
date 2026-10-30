@@ -75,7 +75,7 @@ import * as MR from "../src/constants/motionRuntime.ts";
 import { MOTION_TEMPLATE_SYMBOL_26 } from "../src/constants/motionRuntime.ts";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.ts";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../src/constants/messages.ts";
-import { waitForMusicMixerUploads } from "../src/server/services/musicMixerUploadReadiness.ts";
+import { waitForMusicMixerUploads } from "../src/features/music-mixer/server/services/musicMixerUploadReadiness.ts";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../src/constants/deepseekChat.ts";
 const source = await readFile(SOURCE_TEXT_SRC_SERVER_SERVICES_CHATUIPLANNINGSERVICE_TS, SOURCE_TEXT_UTF8);
 const start = source.indexOf(SOURCE_TEXT_CONST_GETCOMPOSERREADINGS);

@@ -5,7 +5,7 @@ import { normalizeRemotionPlacement } from "../../src/lib/motionRemotion.js";
 import { assignRemotionStaging, prepareRemotionScene } from "../../src/lib/motionRemotionStaging.js";
 import type { MotionStoryAnalysis, MotionStoryScript } from "../../src/types/motionVideo.js";
 import type { MotionRemotionNode, MotionRemotionScene } from "../../src/types/motionVisual.js";
-import { motionInputKey } from "../../src/server/services/motionFileUtils.js";
+import { motionInputKey } from "../../src/features/motion/server/services/motionFileUtils.js";
 import { assignRemotionSpace, normalizeRemotionSpacePose } from "./space.js";
 export const remotionObjectCatalog = (analysis: MotionStoryAnalysis, script?: MotionStoryScript, place?: string) => {
   const catalog = new Map(

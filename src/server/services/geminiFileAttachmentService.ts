@@ -1,3 +1,4 @@
+import * as COMMON_RUNTIME from "../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
@@ -33,7 +34,7 @@ export const reconcileGeminiQueuedFiles = async (page: Page, input: Locator, com
     await chip.locator(RT_SERVER.BUTTON_ARIA_LABEL_CLOSE_I_BUTTON_ARIA_LABEL_REMOVE_ATTACHMENT).first().click({ timeout: ACTION_TIMEOUT });
   }
   if (missing.length)
-    await page.locator('input[type="file"]').evaluateAll((nodes) =>
+    await page.locator(COMMON_RUNTIME.SOURCE_TEXT_INPUT_TYPE_FILE).evaluateAll((nodes) =>
       nodes.forEach((node) => {
         (node as HTMLInputElement).value = "";
       }),

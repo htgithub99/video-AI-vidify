@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import FIXTURE from "./fixtures/motion-read-scene-20261026.json";
 import { READ_SCENE_QA as Q } from "./motionReadSceneVerificationTexts.js";
-import { assessPuppetVisualContract, cleanPuppetVisualContract } from "../src/server/services/puppet/visualContract.js";
-import { readPuppetLines } from "../src/server/services/puppet/director.js";
+import { assessPuppetVisualContract, cleanPuppetVisualContract } from "../src/features/motion/server/services/puppet/visualContract.js";
+import { readPuppetLines } from "../src/features/motion/server/services/puppet/director.js";
 import { MOTION_VISUAL_CONTRACT as V } from "../src/constants/motionVisualContract.js";
 import { MOTION_PACK as PACK } from "../src/constants/motionPack.js";
 import { MOTION_PACK_SELECTION as S } from "../src/constants/motionPackSelection.js";
