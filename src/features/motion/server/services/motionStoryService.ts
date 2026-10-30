@@ -425,6 +425,7 @@ interface MotionAiRun {
   pending: Set<Promise<unknown>>;
   counts: Record<string, number>;
   workers: Map<string, MotionAiWorkerPool>;
+  scenePreparations: Map<string, Promise<void>>;
   roomRecoveries: Map<string, number>;
   roomRefreshes: Set<string>;
   roomGenerations: Map<string, number>;
@@ -452,6 +453,7 @@ const editorialSessions = new Map<string, RetainedEditorialSession>();
 const closeMotionAiRun = async (run: MotionAiRun): Promise<void> => {
   await Promise.allSettled(_.map(_.values(AiPlanningFallbackProvider), (provider) => closeChatPlanningRoomsForProject({ provider, projectId: run.projectId }, false)));
   run.rooms.clear();
+  run.scenePreparations.clear();
 };
 export const releaseMotionEditorialSession = async (id: string): Promise<void> => {
   const session = editorialSessions.get(id);
@@ -539,7 +541,7 @@ export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T
   }
   const projectId = retained?.projectId || MR.MOTION_TEMPLATE_SYMBOL_287(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, runId);
   const planningRun = beginChatPlanningRun(projectId, Date.now(), runId);
-  const shared: MotionAiRun = retained?.run || { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: retained?.controller.signal || planningRun.signal, rooms: new Map(), pending: new Set(), counts: {}, workers: new Map(), roomRecoveries: new Map(), roomRefreshes: new Set(), roomGenerations: new Map(), halt: {} };
+  const shared: MotionAiRun = retained?.run || { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: retained?.controller.signal || planningRun.signal, rooms: new Map(), pending: new Set(), counts: {}, workers: new Map(), scenePreparations: new Map(), roomRecoveries: new Map(), roomRefreshes: new Set(), roomGenerations: new Map(), halt: {} };
   if (editorial && retained) {
     shared.editorial ||= { context: editorial.context };
     if (!editorial.worker) shared.editorial.context = editorial.context;
@@ -582,7 +584,7 @@ export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T
   if (failed) throw failure;
   return result;
 };
-export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>, limit: number = MOTION_STORY_CONFIG.AI_PARALLEL): Promise<R[]> => {
+export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>, limit: number = MOTION_STORY_CONFIG.AI_PARALLEL, role?: MotionAiExecution["role"]): Promise<R[]> => {
   const results: R[] = new Array(items.length);
   const parent = motionAiRunStore.getStore();
   let next = 0;
@@ -597,8 +599,9 @@ export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index:
       }
     }
   };
-  const lanes = Math.max(1, Math.min(limit, items.length, parent?.editorial ? MOTION_STORY_CONFIG.WORKER_IDS.length - 1 : MOTION_STORY_CONFIG.WORKER_IDS.length));
-  await Promise.all(_.times(lanes, (laneIndex) => (parent ? motionAiRunStore.run({ ...parent, workerMode: !!parent.editorial || parent.workerMode, workerId: MOTION_STORY_CONFIG.WORKER_IDS[laneIndex] }, lane) : lane())));
+  const workerIds = role === MOTION_AI_ROLE.DRAW ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : parent?.editorial ? MOTION_STORY_CONFIG.WORKER_IDS.slice(1) : MOTION_STORY_CONFIG.WORKER_IDS;
+  const lanes = Math.max(1, Math.min(limit, items.length, workerIds.length));
+  await Promise.all(_.times(lanes, (laneIndex) => (parent ? motionAiRunStore.run({ ...parent, workerMode: !!parent.editorial || parent.workerMode, workerId: workerIds[laneIndex] }, lane) : lane())));
   if (failure !== undefined) throw failure;
   return results;
 };
@@ -606,11 +609,13 @@ const blockedRoomProviders = new Map<string, number>();
 const blockedRoomModels = new Map<string, number>();
 const providerRecoveries = new MotionProviderRecovery();
 const providerGates = new Map<string, MotionAiWorkerPool>();
-const acquireProviderGate = async (provider: string, signal?: AbortSignal): Promise<() => void> => {
-  const limit = MOTION_STORY_CONFIG.PROVIDER_PARALLEL[provider];
+const acquireProviderGate = async (provider: string, signal?: AbortSignal, role?: MotionAiExecution["role"]): Promise<() => void> => {
+  const drawing = role === MOTION_AI_ROLE.DRAW;
+  const limit = drawing ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length : MOTION_STORY_CONFIG.PROVIDER_PARALLEL[provider];
   if (!limit) return _.noop;
-  const gate = providerGates.get(provider) || new MotionAiWorkerPool(MOTION_STORY_CONFIG.WORKER_IDS.slice(0, limit));
-  providerGates.set(provider, gate);
+  const key = drawing ? MOTION_EDITORIAL.SCENES + provider : provider;
+  const gate = providerGates.get(key) || new MotionAiWorkerPool((drawing ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : MOTION_STORY_CONFIG.WORKER_IDS).slice(0, limit));
+  providerGates.set(key, gate);
   return (await gate.acquire(signal)).release;
 };
 export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
@@ -736,11 +741,51 @@ export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => 
   );
   return [primary, ...rest];
 };
+export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
+  const run = motionAiRunStore.getStore();
+  if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
+  const key = AIR.MODEL_KEY(String(exec.provider), exec.model);
+  const linked = AbortSignal.any(_.compact([signal, run.signal]));
+  if (!run.scenePreparations.has(key)) {
+    const preparation = (async () => {
+      const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
+      releaseMotionBrowser ||= retainGlobalBrowser();
+      try {
+        log?.(MOTION_STORY_CONFIG.SCENE_ROOMS_PREPARING);
+        const results = await Promise.allSettled(
+          MOTION_STORY_CONFIG.SCENE_WORKER_IDS.map(async (workerId) => {
+            linked.throwIfAborted();
+            if (run.rooms.get(workerId) === exec.provider) return;
+            if (run.rooms.has(workerId)) await closeMotionAiRoom(run, workerId);
+            const readySignal = AbortSignal.any([linked, AbortSignal.timeout(AIR.READINESS_TIMEOUT_MS)]);
+            await waitForMotionBrowser(
+              Promise.resolve().then(() => prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true })),
+              readySignal,
+            );
+          }),
+        );
+        linked.throwIfAborted();
+        results.forEach((result, index) => {
+          if (result.status === RT_SERVER.REJECTED) log?.(MOTION_STORY_CONFIG.SCENE_ROOM_PENDING(index + 1));
+        });
+        log?.(MOTION_STORY_CONFIG.SCENE_ROOMS_READY(results.filter((result) => result.status !== RT_SERVER.REJECTED).length, results.length));
+      } finally {
+        releaseSession();
+      }
+    })().catch((error) => {
+      run.scenePreparations.delete(key);
+      throw error;
+    });
+    run.scenePreparations.set(key, preparation);
+  }
+  await waitForMotionBrowser(run.scenePreparations.get(key)!, linked);
+};
 export const runMotionAi = async (prompt: string, artifactType: string, exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog, images?: MotionAiImage[], attempt = 0, contract?: MotionAiResponseContract): Promise<any> => {
   const run = motionAiRunStore.getStore();
   if (!run) return runInMotionAiSession(randomUUID(), () => runMotionAi(prompt, artifactType, exec, signal, log, images, attempt, contract), log, true, signal);
-  const poolKey = run.editorial ? (run.workerMode ? MOTION_EDITORIAL.HELPERS : MOTION_EDITORIAL.MAIN) : MOTION_EDITORIAL.SHARED;
-  const workerIds = run.editorial ? (run.workerMode ? MOTION_STORY_CONFIG.WORKER_IDS.slice(1) : MOTION_STORY_CONFIG.WORKER_IDS.slice(0, 1)) : MOTION_STORY_CONFIG.WORKER_IDS;
+  const drawing = exec.role === MOTION_AI_ROLE.DRAW;
+  const poolKey = drawing ? MOTION_EDITORIAL.SCENES : run.editorial ? (run.workerMode ? MOTION_EDITORIAL.HELPERS : MOTION_EDITORIAL.MAIN) : MOTION_EDITORIAL.SHARED;
+  const workerIds = drawing ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : run.editorial ? (run.workerMode ? MOTION_STORY_CONFIG.WORKER_IDS.slice(1) : MOTION_STORY_CONFIG.WORKER_IDS.slice(0, 1)) : MOTION_STORY_CONFIG.WORKER_IDS;
   const workers = run.workers.get(poolKey) || new MotionAiWorkerPool(workerIds);
   run.workers.set(poolKey, workers);
   const pending = (async () => {
@@ -924,7 +969,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       if (providerRecoveries.waiting(recoveryKey, requestId)) log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
       await providerRecoveries.wait(recoveryKey, requestId, roomCtrl.signal);
       epoch = captchaEpochs.get(provider) || 0;
-      releaseGate = await acquireProviderGate(provider, roomCtrl.signal);
+      releaseGate = await acquireProviderGate(provider, roomCtrl.signal, exec.role);
       log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.READY });
       watchdog = setTimeout(() => {
         timedOut = true;
@@ -1483,7 +1528,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           ...(m.appearanceOf ? { appearanceOf: slugKey(m.appearanceOf) } : {}),
           role: _.truncate(_.toString(m.role || MR.MOTION_TEXT_EMPTY), { length: 60 }),
           description: _.truncate(_.toString(m.description || MR.MOTION_TEXT_EMPTY), { length: 200 }),
-          look: _.truncate(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY), { length: 240 }),
+          look: _.truncate(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY), { length: 320 }),
           gender,
           ...(_.includes(MOTION_AUDIO_DIRECTION.AGES, m.age) ? { age: m.age } : {}),
           ...(m.narrator === true ? { narrator: true } : {}),

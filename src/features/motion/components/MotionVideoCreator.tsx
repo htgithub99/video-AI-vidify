@@ -826,8 +826,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {state.autoExport ? (
-              rj?.result ? (
-                <video src={rj.result.videoUrl} controls className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
+              studio.renderedVideoUrl ? (
+                <video src={studio.renderedVideoUrl} controls className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
               ) : (
                 <div className={MOTION_STYLES.SPACE_Y_3}>
                   <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{studio.renderBusy ? text.AUTO_EXPORT_RENDERING : text.AUTO_EXPORT_WAITING}</p>
@@ -853,7 +853,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES} badge={sceneTotal ? MOTION_TEMPLATE_SYMBOL_4(String(builtCount), String(sceneTotal)) : undefined} />
               <div className={MOTION_STYLES.SPACE_Y_3}>
                 <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{remotionMode ? visualText.sceneHint : text.SCENES_HINT}</p>
-                <StudioInput value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.storyBusy} />
+                <StudioInput value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.busy} />
                 {busyKind === MOTION_TEXT_SCENES ? (
                   <div className={MOTION_STYLES.SPACE_Y_3}>
                     <div className={MOTION_STYLES.PY_6_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_3}>
@@ -871,12 +871,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 ) : (
                   <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
-                    <ActionBtn icon={Wand2} className={MOTION_STYLES.FLEX_1} onClick={() => void studio.buildScenes({ note: sceneNote || undefined })} disabled={studio.storyBusy}>
+                    <ActionBtn icon={Wand2} className={MOTION_STYLES.FLEX_1} onClick={() => void studio.buildScenes({ note: sceneNote || undefined })} disabled={studio.busy}>
                       {builtCount ? text.SCENES_CONTINUE : text.SCENES_BTN}
                     </ActionBtn>
                     {!!builtCount && (
                       <>
-                        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.buildScenes({ restart: true, note: sceneNote || undefined })} disabled={studio.storyBusy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
+                        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.buildScenes({ restart: true, note: sceneNote || undefined })} disabled={studio.busy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
                           <RefreshCw className={MOTION_STYLES.W_3_H_3} />
                           {MR.MOTION_TEXT_SYMBOL_13}
                           {text.SCENES_RESTART}
@@ -892,7 +892,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       renderBehavior={state.renderBehavior}
                       language={currentLang}
                       onRedo={(scene) => void studio.buildScenes({ scenes: [scene.id], note: sceneNote || undefined })}
-                      busy={(busyKind === MotionStoryJobKind.SCENES || busyKind === MotionStoryJobKind.PRODUCTION) && !storyStopping}
+                      busy={studio.renderBusy || ((busyKind === MotionStoryJobKind.SCENES || busyKind === MotionStoryJobKind.PRODUCTION) && !storyStopping)}
                       onOpen={(scene, preview, index) => setPreviewModal({ type: RT_MOTION.BEAT, id: scene.id, title: visualText.scene(index + 1), imageUrl: "", remotion: preview, narration: scene.text, beats: [scene.beatId] })}
                     />
                   </Suspense>
@@ -903,7 +903,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       script={state.script}
                       analysis={state.analysis}
                       spec={isRemotionSpec(studio.compiled?.spec) ? undefined : studio.compiled?.spec}
-                      busy={studio.storyBusy}
+                      busy={studio.busy}
                       onFrames={(frames) => state.script?.gen?.puppet && patch({ script: { ...state.script, gen: { ...state.script.gen, puppet: { ...state.script.gen.puppet, frames } } } })}
                       onRedoBeats={(beats) => void studio.buildScenes({ beats, note: sceneNote || undefined })}
                       onCompile={async () => {

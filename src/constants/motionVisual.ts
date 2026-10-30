@@ -31,7 +31,7 @@ export const MOTION_VISUAL = {
       vi: "Lịch sử",
       en: "History — illustrated",
       direction:
-        "Modern 2D animated history story in a clean web-cartoon look: every person has a large pure white round head with a thick near-black outline, two big round white eyes with black pupils, expressive short brows and a simple line mouth, no nose or ears, a short black neck and a slim fully clothed body about 4.3 head diameters tall with sleeve tubes, solid black mitten hands, trousers or skirt and boots; hairstyle, headwear, clothing, colors and expression are designed per character and stay consistent for each recurring person. Anonymous background extras may be simple stick figures or greyed figures. Backgrounds are richly drawn period places with clean dark outlines, flat colors with soft cel shading, atmospheric depth and dramatic light (sky gradients, smoke columns, light shafts in dark rooms). Shots alternate wide establishing views with many small people, waist-up two-shots, chest-up reactions, action mediums and occasional multi-panel montages. No glossy 3D, photorealism, horror vignette, captions or logos; adapt everything to the actual period, region and event and never copy reference characters or scenes.",
+        "Modern 2D animated history story in a clean web-cartoon look: every person has a large pure white round head with a thick near-black outline, two big round white eyes with black pupils, expressive short brows and a simple line mouth, no nose or ears, a short black neck and a slim fully clothed body about 4.3 head diameters tall with sleeve tubes, solid black mitten hands and feet on one sole line; hairstyle, headwear, clothing, lower-body garment, footwear, colors and expression are designed per character from the source era and region and stay consistent for each recurring person. Anonymous background extras may be simple stick figures or greyed figures. Backgrounds are richly drawn period places with clean dark outlines, flat colors with soft cel shading, atmospheric depth and dramatic light (sky gradients, smoke columns, light shafts in dark rooms). Shots alternate wide establishing views with many small people, waist-up two-shots, chest-up reactions, action mediums and occasional multi-panel montages. No glossy 3D, photorealism, horror vignette, captions or logos; adapt everything to the actual period, region and event and never copy reference characters or scenes.",
       paper: "#ffffff",
       ink: "#1b1b1b",
       muted: "#879277",
@@ -102,6 +102,7 @@ export const MOTION_VISUAL = {
   },
   INVALID: "Cấu hình phương thức dựng video không hợp lệ hoặc không được hỗ trợ.",
   BUSY: "Hãy dừng tác vụ hiện tại trước khi đổi phương thức dựng video.",
+  RENDER_BUSY: "Hãy dừng xuất video trước khi dựng lại cảnh.",
   SETTINGS_CHANGED: "Phương thức dựng hình đã thay đổi; hãy dựng lại cảnh theo cấu hình đã chọn.",
   SCENES_REQUIRED: "Cảnh Remotion chưa hoàn tất; hãy dựng tiếp các cảnh còn thiếu.",
   INVALID_SPEC: "Dữ liệu cảnh Remotion không hợp lệ; giữ phần đã đạt để dựng tiếp.",

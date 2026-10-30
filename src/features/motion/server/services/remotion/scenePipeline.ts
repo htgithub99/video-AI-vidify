@@ -26,7 +26,7 @@ import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { motionCastIdentity, motionSceneStaging } from "../../../../../lib/motionCastIdentity.js";
 import { motionStoryEventLedger } from "../../../../../lib/motionStoryContinuity.js";
-import { runMotionAi, motionAiRoutes, mapMotionAiPool, writeMotionAiDebug, motionCaptchaError } from "../motionStoryService.js";
+import { runMotionAi, motionAiRoutes, mapMotionAiPool, prepareMotionSceneRooms, writeMotionAiDebug, motionCaptchaError } from "../motionStoryService.js";
 import { recoverMotionAiContractState, requestMotionAiContract, type MotionAiResponseContract } from "../motionAiContractService.js";
 import { isTerminalMotionAiError } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { motionInputKey } from "../motionFileUtils.js";
@@ -111,6 +111,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const drawing = artifact === C.ARTIFACT;
       const single = drawing && !opts.review;
       const selectedExec = drawing ? opts.exec : opts.mainExec || opts.exec;
+      if (drawing && !opts.ai) await prepareMotionSceneRooms(selectedExec, opts.signal, opts.log);
       const exec = { ...selectedExec, role: drawing ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN, ...(single ? { singleResponse: true, ...(selectedExec.allowFallback === true ? {} : { strictProvider: true }) } : {}) };
       if (single) requests[key] = { rejected: 0, errors: [] };
       const contract: MotionAiResponseContract = {
@@ -293,7 +294,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             era: analysis.era,
             place: analysis.places.find((place) => place.key === beat.place),
             scene: { purpose: scene.purpose, text: scene.text, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, nodes: scene.nodes },
-            cast: motionCastIdentity(analysis.cast, settings.profileId).filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
+            cast: motionCastIdentity(analysis.cast, settings.profileId, analysis.era).filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
             dialogueSpeakers: speakers,
             staging: motionSceneStaging(scene.nodes, motionNarratorCastKey(analysis), speakers),
             continuity: previousAsset ? { text: previous.text, layers: previous.composition!.layers, design: previous.composition!.design, notes: previous.composition!.continuityNotes, svg: continuitySvg } : undefined,
@@ -467,7 +468,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         if (!retry) opts.progress?.((0.9 * processed.size) / progressTotal(), C.PROGRESS_CONTINUE(allScenes.indexOf(scene) + 1, allScenes.length));
       }
     };
-    const drawingSlots = new MotionAiWorkerPool(MOTION_STORY_CONFIG.WORKER_IDS);
+    const drawingSlots = new MotionAiWorkerPool(MOTION_STORY_CONFIG.SCENE_WORKER_IDS);
     const draw = async (scene: (typeof allScenes)[number], anchor?: (typeof allScenes)[number], retry = false) => {
       const slot = await drawingSlots.acquire(opts.signal);
       try {
@@ -477,32 +478,37 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       }
     };
     const anchors = new Map<string, Promise<(typeof allScenes)[number] | undefined>>();
-    await mapMotionAiPool(selectedGroups, async (group) => {
-      await planGroup(group);
-      planned.add(group.id);
-      allScenes = planGroups.flatMap((group) => state.scenes[group.id] || []);
-      if (state.failures[group.id]) return;
-      const candidates = (state.scenes[group.id] || []).filter((scene) => !opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id));
-      if (!candidates.length) return;
-      const location = candidates[0].locationKey || candidates[0].place || group.id;
-      if (!anchors.has(location)) {
-        const existing = allScenes.find((scene) => (scene.locationKey || scene.place || scene.beatId) === location && !opts.onlyScenes?.includes(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && scene.composition && scene.aspect === aspect && remotionSceneReadiness(scene, state).preview);
-        anchors.set(
-          location,
-          existing
-            ? Promise.resolve(existing)
-            : (async () => {
-                const first = candidates.shift()!;
-                await draw(first);
-                return first.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && first.composition ? first : undefined;
-              })(),
-        );
-      }
-      const anchor = await anchors.get(location);
-      const results = await Promise.allSettled(candidates.map((scene) => draw(scene, anchor)));
-      const failure = results.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
-      if (failure?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw failure.reason;
-    });
+    await mapMotionAiPool(
+      selectedGroups,
+      async (group) => {
+        await planGroup(group);
+        planned.add(group.id);
+        allScenes = planGroups.flatMap((group) => state.scenes[group.id] || []);
+        if (state.failures[group.id]) return;
+        const candidates = (state.scenes[group.id] || []).filter((scene) => !opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id));
+        if (!candidates.length) return;
+        const location = candidates[0].locationKey || candidates[0].place || group.id;
+        if (!anchors.has(location)) {
+          const existing = allScenes.find((scene) => (scene.locationKey || scene.place || scene.beatId) === location && !opts.onlyScenes?.includes(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && scene.composition && scene.aspect === aspect && remotionSceneReadiness(scene, state).preview);
+          anchors.set(
+            location,
+            existing
+              ? Promise.resolve(existing)
+              : (async () => {
+                  const first = candidates.shift()!;
+                  await draw(first);
+                  return first.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && first.composition ? first : undefined;
+                })(),
+          );
+        }
+        const anchor = await anchors.get(location);
+        const results = await Promise.allSettled(candidates.map((scene) => draw(scene, anchor)));
+        const failure = results.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
+        if (failure?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw failure.reason;
+      },
+      MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length,
+      MOTION_AI_ROLE.DRAW,
+    );
     const failed = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED && (scene.build.attempts ?? 1) < C.DRAW_ATTEMPTS);
     if (failed.length) {
       opts.log(C.LOG_RECOVERY(failed.length));

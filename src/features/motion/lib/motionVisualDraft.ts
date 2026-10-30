@@ -69,6 +69,10 @@ export const captureMotionVisualDraft = (state: VisualDraftContext, runtime: Pic
   renderSignature: state.renderSignature,
   ...runtime,
 });
+export const invalidateMotionVisualDraftOutput = (state: VisualDraftContext) => {
+  const output = { lastRenderJobId: null, renderSignature: undefined };
+  return { ...output, visualDrafts: { ...state.visualDrafts, [motionVisualDraftKey(state.visualSettings)]: captureMotionVisualDraft({ ...state, ...output }, { compiled: null, renderJob: null }) } };
+};
 export const motionVisualDraftRuntime = (state: VisualDraftContext, draft?: MotionVisualDraft) => {
   const compiled = draft?.contextKey === motionVisualDraftContextKey(state) && draft.compiled?.compilationKey === motionCompileStateKey(state) ? draft.compiled : null;
   return { compiled, renderJob: compiled && draft?.renderSignature === motionRenderStateKey(state) ? draft.renderJob || null : null };

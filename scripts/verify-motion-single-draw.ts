@@ -119,6 +119,11 @@ try {
   const resumed = await buildRemotionScenes(generated, analysis, opts);
   assert.equal(calls.length, beforeResume);
   assert.equal(resumed.gen!.remotion!.scenes.b1[1].build!.status, "failed");
+  const restarted = await buildRemotionScenes(generated, analysis, { ...opts, restart: true });
+  assert.equal(calls.slice(beforeResume).filter((call) => call.artifact === V.ARTIFACT_SCENE).length, 1, "Restart must discard the saved scene plan");
+  assert.equal(calls.slice(beforeResume).filter((call) => call.artifact === C.ARTIFACT).length, 5, "Restart must redraw all four scenes including the deferred retry");
+  assert.notEqual(restarted.gen!.remotion!.scenes, generated.gen!.remotion!.scenes);
+  assert.deepEqual(restarted.beats, generated.beats, "Restart must preserve the narrative");
   const switched = await buildRemotionScenes(generated, analysis, {
     ...opts,
     onlyBeats: ["b1"],

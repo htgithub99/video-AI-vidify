@@ -547,6 +547,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
         if (set) await ensureSetVariant(set, want, drawOptions, style);
       },
       puppetLanes(o.exec),
+      MOTION_AI_ROLE.DRAW,
     );
   };
   const drawProps = async (todoReads: PuppetRead[]): Promise<void> => {
@@ -578,6 +579,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
         emit();
       },
       puppetLanes(o.exec),
+      MOTION_AI_ROLE.DRAW,
     );
   };
   const drawSprites = async (): Promise<void> => {
@@ -594,7 +596,7 @@ const buildScenesPuppetImpl = async (script: MotionStoryScript, analysis: Motion
     const todo = _.compact(_.map(posed, (k) => has<PuppetCharacter>(PUPPET_TYPES.CHARACTER, pg.characters[k]))).filter((c) => !_.size(c.sprites) && !!c.head?.front);
     if (!todo.length) return;
     o.log(P.LOG_SPRITES(_.map(todo, (c) => c.name)));
-    await mapMotionAiPool(todo, (c) => drawPuppetSprites(style, c, drawOptions), puppetLanes(o.exec));
+    await mapMotionAiPool(todo, (c) => drawPuppetSprites(style, c, drawOptions), puppetLanes(o.exec), MOTION_AI_ROLE.DRAW);
   };
   const castExtras = (todoReads: PuppetRead[]): void => {
     if (mode === LM.FRESH) return;

@@ -10,11 +10,12 @@ import { PA } from "../../../../../constants/motionPuppetAssets.js";
 import { preferredPuppetProps, puppetAssetName, puppetObjectClass, puppetPropAllowed, puppetPropFits } from "../../../../../lib/motionPuppetAssets.js";
 import { PUPPET as P, PUPPET_PROMPTS as PR, PUPPET_TYPES } from "../../../../../constants/motionPuppet.js";
 import { MOTION_GEN_CONFIG } from "../../../../../constants/motionGenPrompts.js";
+import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
 import { PUPPET_SEED_GROUP, PUPPET_SEED_TAG } from "../../../../../constants/motionPuppetSeed.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import type { MotionAiExecution, MotionCastMember } from "../../../../../types/motionVideo.js";
 import type { PuppetCharacter, PuppetLight, PuppetObject, PuppetPlace, PuppetProp, PuppetSet, PuppetSprite, PuppetStylePack, PuppetViews } from "../../../../../types/motionPuppet.js";
-import { mapMotionAiPool, runMotionAi, type MotionAiImage } from "../motionStoryService.js";
+import { mapMotionAiPool, runMotionAi, prepareMotionSceneRooms, type MotionAiImage } from "../motionStoryService.js";
 import { listPuppets, newPuppetId, puppetHash, readPuppet, writePuppet, writePuppetDiagnostic } from "./kitLibrary.js";
 import { assertPuppetDrawingAllowed, puppetPackActive } from "./packPolicy.js";
 import { MOTION_PACK as PACK } from "../../../../../constants/motionPack.js";
@@ -24,9 +25,14 @@ import { characterSheetSvg, cleanPuppetSvg, puppetImages, puppetReviewBoard, svg
 import { cleanPuppetSpots } from "./layout.js";
 import { cleanPuppetCompositions } from "./blocking.js";
 import { puppetStyleImages, puppetStyleText, type PuppetRunOptions } from "./stylePack.js";
-export const puppetLanes = (exec: MotionAiExecution): number => (_.includes(MOTION_GEN_CONFIG.SERIAL_PROVIDERS, exec.provider) ? 1 : Math.min(P.LANES, MOTION_STORY_CONFIG.PROVIDER_PARALLEL[String(exec.provider)] || P.LANES));
+export const puppetLanes = (exec: MotionAiExecution): number => (exec.role === MOTION_AI_ROLE.DRAW ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length : _.includes(MOTION_GEN_CONFIG.SERIAL_PROVIDERS, exec.provider) ? 1 : Math.min(P.LANES, MOTION_STORY_CONFIG.PROVIDER_PARALLEL[String(exec.provider)] || P.LANES));
 const hex = (v: unknown): string | undefined => (_.isString(v) && P.HEX_RE.test(v) ? v.toLowerCase() : undefined);
-const ask = (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> => (o.ai || runMotionAi)(prompt, artifact, ([P.ARTIFACT_CHAR_CHECK, P.ARTIFACT_SET_CHECK, P.ARTIFACT_CAST_MATCH, P.ARTIFACT_LIB_MATCH] as string[]).includes(artifact) ? o.mainExec || o.exec : o.exec, o.signal, o.log, images && images.length ? images : undefined);
+const ask = async (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> => {
+  const checking = ([P.ARTIFACT_CHAR_CHECK, P.ARTIFACT_SET_CHECK, P.ARTIFACT_CAST_MATCH, P.ARTIFACT_LIB_MATCH] as string[]).includes(artifact);
+  const exec = { ...(checking ? o.mainExec || o.exec : o.exec), role: checking ? MOTION_AI_ROLE.MAIN : MOTION_AI_ROLE.DRAW };
+  if (!checking && !o.ai) await prepareMotionSceneRooms(exec, o.signal, o.log);
+  return (o.ai || runMotionAi)(prompt, artifact, exec, o.signal, o.log, images && images.length ? images : undefined);
+};
 const quiet = (o: PuppetRunOptions, prompt: string, artifact: string, images?: MotionAiImage[]): Promise<any> =>
   ask(o, prompt, artifact, images).catch((e: any) => {
     if (isTerminalMotionAiError(e, o.signal)) throw e;
@@ -58,7 +64,7 @@ const drawChecked = async <T>(keys: string[], draft: (key: string, why: string, 
       }
     }
   };
-  await mapMotionAiPool(keys, (k) => run(k, false), puppetLanes(o.exec));
+  await mapMotionAiPool(keys, (k) => run(k, false), MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length, MOTION_AI_ROLE.DRAW);
   const checkable = _.filter(keys, (k) => !!out[k]);
   const bad = checkable.length ? await review(_.map(checkable, (k) => ({ key: k, item: out[k] }))) : {};
   const rejected = _.filter(checkable, (k) => !!bad[k]);
@@ -68,7 +74,7 @@ const drawChecked = async <T>(keys: string[], draft: (key: string, why: string, 
     delete out[k];
   }
   const redo = rejected.filter((key) => (tries[key] || 0) < P.DRAW_TRIES);
-  await mapMotionAiPool(redo, (k) => run(k, true), puppetLanes(o.exec));
+  await mapMotionAiPool(redo, (k) => run(k, true), MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length, MOTION_AI_ROLE.DRAW);
   const redrawn = redo.filter((key) => !!out[key]);
   const stillBad = redrawn.length ? await review(redrawn.map((key) => ({ key, item: out[key] }))) : {};
   for (const key of redrawn.filter((key) => !!stillBad[key])) {

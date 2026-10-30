@@ -3,7 +3,7 @@ import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { MOTION_CAST_IDENTITY as I } from "../constants/motionCastIdentity.js";
 import type { MotionRemotionNode } from "../types/motionVisual.js";
 const seed = (key: string): number => [...key].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 7);
-export const motionCastIdentity = <T extends { key: string; look?: string; gender?: string }>(cast: T[], profileId: string): T[] => {
+export const motionCastIdentity = <T extends { key: string; look?: string; gender?: string }>(cast: T[], profileId: string, era?: string): T[] => {
   if (!I.HAIR_PROFILES.includes(profileId)) return cast;
   const used = new Set<string>();
   return cast.map((member) => {
@@ -12,7 +12,7 @@ export const motionCastIdentity = <T extends { key: string; look?: string; gende
     const start = seed(member.key) % pool.length;
     const hair = pool.map((_, index) => pool[(start + index) % pool.length]).find((option) => !used.has(option)) || pool[start];
     used.add(hair);
-    return { ...member, look: I.LOOK(member.look || "", hair) };
+    return { ...member, look: I.LOOK(member.look || "", hair, era?.trim() || I.ERA_FALLBACK) };
   });
 };
 export const motionSceneStaging = (nodes: MotionRemotionNode[], narrator?: string, speakers: string[] = []): string => {
