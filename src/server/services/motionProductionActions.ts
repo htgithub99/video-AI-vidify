@@ -18,7 +18,7 @@ import { buildMotionSoundTrack, mixMotionSoundAudio } from "./motionSoundMixServ
 import { normalizeMotionReferences } from "../../lib/motionReference.js";
 import * as MR from "../../constants/motionRuntime.js";
 import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../lib/motionVideoDna.js";
-import { motionVideoGenre } from "../../constants/motionGenre.js";
+import { MOTION_VIDEO_GENRE_ERROR, motionVideoGenre } from "../../constants/motionGenre.js";
 import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../constants/motionMusic.js";
 import _ from "lodash";
@@ -151,6 +151,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
   const visualSettings = motionVisualSettingsFor(body);
   if (analysis) analysis = { ...analysis, visualSettings, stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined };
   if (!source?.segments?.length || !analysis?.chapters?.length) throw new Error(MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC);
+  if (body?.videoGenre !== undefined && analysis.videoGenre !== motionVideoGenre(body.videoGenre)) throw new Error(MOTION_VIDEO_GENRE_ERROR.CHANGED);
   const language = storyLanguage(body?.language);
   if (analysis.videoDna) {
     const errors = videoDnaErrors(analysis.videoDna);

@@ -816,6 +816,7 @@ export function useMotionStudio() {
             {
               source: now.source,
               analysis,
+              videoGenre: motionVideoGenre(now.videoGenre),
               ...motionVisualRequest(now),
               language: now.language,
               length: now.length,

@@ -6,6 +6,7 @@ import { MOTION_VERDICT_STORY as VERDICT } from "./motionVerdictStory.js";
 export const MOTION_VIDEO_GENRES = { POV: "pov", WITNESS: "witness", CHRONICLE: "chronicle", VERDICT: "verdict" } as const;
 export type MotionVideoGenre = (typeof MOTION_VIDEO_GENRES)[keyof typeof MOTION_VIDEO_GENRES];
 export const MOTION_VIDEO_GENRE_DEFAULT: MotionVideoGenre = MOTION_VIDEO_GENRES.POV;
+export const MOTION_VIDEO_GENRE_ERROR = { CHANGED: "Thể loại đã đổi so với lần phân tích. Hãy bấm Phân tích lại trước khi viết kịch bản." } as const;
 export const MOTION_VIDEO_GENRE_TEXT = {
   vi: {
     LABEL: "Thể loại",
