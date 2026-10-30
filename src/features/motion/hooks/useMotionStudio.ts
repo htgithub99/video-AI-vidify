@@ -383,7 +383,7 @@ export function useMotionStudio() {
     (async () => {
       const saved = await jsonUtils.getAsyncItem<Partial<PersistedState>>(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {});
       if (!mounted.current) return;
-      const restored = { ...DEFAULTS, ...(saved as Partial<PersistedState>), multiVoice: saved.multiVoice ?? saved.script?.voiceSettings?.multiVoice ?? true, sceneAiHeadless: saved.sceneAiHeadless ?? saved.aiHeadless ?? DEFAULTS.sceneAiHeadless };
+      const restored = { ...DEFAULTS, ...(saved as Partial<PersistedState>), length: saved.length === MotionStoryLength.SHORT ? MotionStoryLength.ONE : (saved.length ?? DEFAULTS.length), multiVoice: saved.multiVoice ?? saved.script?.voiceSettings?.multiVoice ?? true, sceneAiHeadless: saved.sceneAiHeadless ?? saved.aiHeadless ?? DEFAULTS.sceneAiHeadless };
       try {
         restored.visualSettings = normalizeMotionVisualSettings(saved.visualSettings, restored.stylePreset);
         if (restored.visualSettings.mode === RT_SHARED.REMOTION) restored.remotionProfile = restored.visualSettings.profileId;
@@ -1071,7 +1071,13 @@ export function useMotionStudio() {
       return;
     }
     if (!hydrated || flowCount > 0 || sceneBuildPending.current || state.visualSettingsError || state.autoExport || (state.activeStoryJobId && state.activeStoryJobId === state.productionId)) return;
-    if (state.visualSettings.mode === RT_SHARED.REMOTION && (!state.script.gen?.remotion || (state.script.gen.remotion.pacingRevision === MOTION_SCENE_PACING.REVISION ? motionVisualBeatGroups(state.script, state.script.gen.remotion.groupingRevision, state.analysis?.visualSettings?.pacing || state.script.visualSettings?.pacing).some((group) => !state.script!.gen?.remotion?.scenes[group.id]?.length) : state.script.beats.some((beat) => !state.script!.gen?.remotion?.scenes[beat.id]?.length)))) {
+    if (
+      state.visualSettings.mode === RT_SHARED.REMOTION &&
+      (!state.script.gen?.remotion ||
+        (state.script.gen.remotion.pacingRevision === MOTION_SCENE_PACING.REVISION
+          ? motionVisualBeatGroups(state.script, state.script.gen.remotion.groupingRevision, state.analysis?.visualSettings?.pacing || state.script.visualSettings?.pacing).some((group) => !state.script!.gen?.remotion?.scenes[group.id]?.length)
+          : state.script.beats.some((beat) => !state.script!.gen?.remotion?.scenes[beat.id]?.length)))
+    ) {
       setCompiled(null);
       setCompileError(MR.MOTION_TEXT_EMPTY);
       return;
