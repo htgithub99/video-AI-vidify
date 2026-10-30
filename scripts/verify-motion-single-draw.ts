@@ -215,8 +215,13 @@ try {
   await buildRemotionScenes(withSound, analysis, soundOpts);
   await buildRemotionScenes(withSound, analysis, { ...soundOpts, sfx: false });
   assert.equal(soundCalls, 1, "SFX cache and off both avoid additional AI calls");
-  for (const result of [undefined, {}, { svg: "" }, { ...art(), svg: art().svg.replace("</svg>", "<script>alert(1)</script></svg>") }, { ...art(), svg: art().svg.replace("</svg>", '<image href="https://example.com/x.png"/></svg>') }]) {
+  for (const result of [undefined, {}, { svg: "" }]) {
     assert.throws(() => normalizeFirstSceneComposition(result, "bad", "bad", "", [node], new Set(["guest"]), 1280, 720));
+  }
+  for (const injection of ["<script>alert(1)</script>", '<image href="https://example.com/x.png"/>']) {
+    const safe = normalizeFirstSceneComposition({ ...art(), svg: art().svg.replace("</svg>", injection + "</svg>") }, "sanitized", "sanitized", "", [node], new Set(["guest"]), 1280, 720);
+    assert.doesNotMatch(safe.asset.svg, /<script\b|<image\b|\bhref\s*=/i);
+    assert.ok(safe.asset.svg.includes('id="person"'));
   }
   const metadata = normalizeFirstSceneComposition({ ...art(), layers: [], design: { camera: {} }, animations: [{ target: "person", attribute: "onclick" }] }, "accepted", "accepted", "", [node], new Set(["guest"]), 1280, 720);
   assert.equal(metadata.composition.animations.length, 0);
@@ -397,6 +402,7 @@ try {
           if (purpose === "shot1" && count === 1) throw new Error("Transient drawing failure");
           const result = art();
           if (purpose === "shot0") result.svg = result.svg.replace(/<\/g><\/svg>$/, "</svg>");
+          if (purpose === "shot2") result.svg = result.svg.replace("</svg>", "</g></svg>");
           return result;
         },
       },
@@ -405,6 +411,7 @@ try {
     assert.deepEqual(recovered.gen!.failed, []);
     assert.equal(remotionStoryBuildStatus(recovered, { ...analysis, visualSettings: scopedSettings }), "ready");
     assert.ok(logs.includes(C.LOG_LOCAL_REPAIR(1, 4)), "A locally repaired scene must be logged with its scene index");
+    assert.ok(logs.includes(C.LOG_LOCAL_REPAIR(3, 4)), "A redundant trailing group close must be fixed without another AI request");
     assert.ok(logs.some((message) => message.includes("bắt đầu phục hồi 1 cảnh lỗi")));
     const prior = [...counts];
     await buildRemotionScenes(

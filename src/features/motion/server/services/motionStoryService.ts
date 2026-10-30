@@ -29,7 +29,7 @@ import { motionSourceChunks } from "../../../../lib/motionSourceChunks.js";
 import { compactMotionSourceLedger, parseMotionSourceLedgerPart, type MotionSourceLedgerDraft, type MotionSourceLedgerNode } from "../../../../lib/motionSourceLedger.js";
 import { MOTION_EDITORIAL } from "../../../../constants/motionEditorial.js";
 import { motionStoryLanguageGuide } from "../../../../constants/motionStoryLanguage.js";
-import { MotionProviderRecovery } from "./motionProviderRecovery.js";
+import { MotionProviderRecovery, waitMotionProviderCooldown } from "./motionProviderRecovery.js";
 import { requestMotionAiContract, recoverMotionAiContractState, type MotionAiResponseContract } from "./motionAiContractService.js";
 import { MOTION_CAPTCHA_PROBE } from "../../../../constants/motionStoryFields.js";
 import { expandInitialCastNames, fullCastNames } from "../../../../lib/motionCastNames.js";
@@ -874,17 +874,21 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
   const request = async (route: MotionAiExecution, retry = 0) => {
     const run = motionAiRunStore.getStore();
     const linked = AbortSignal.any(_.compact([signal, run?.signal]));
-    const blocked = motionRoomBlockedMs(String(route.provider), route.model);
-    if (blocked && mode !== AiPlanningExecutionMode.ApiOnly) {
-      log?.(AIR.WAIT(String(route.provider), blocked), { workerId: run!.workerId, provider: String(route.provider), model: String(route.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
-      await motionServiceDelay(blocked, linked);
+    if (mode !== AiPlanningExecutionMode.ApiOnly) {
+      const waited = await waitMotionProviderCooldown(
+        () => motionRoomBlockedMs(String(route.provider), route.model),
+        (ms) => motionServiceDelay(ms, linked),
+        (ms) => log?.(AIR.WAIT(String(route.provider), ms), { workerId: run!.workerId, provider: String(route.provider), model: String(route.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PROVIDER }),
+        linked,
+      );
+      if (waited) log?.(AIR.SERVICE_RESUMED(String(route.provider)), { workerId: run!.workerId, provider: String(route.provider), model: String(route.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PRIMARY });
     }
     try {
       return await requestMotionAiContract(prompt, route, (question) => runMotionAiOnce(question, artifactType, route, signal, log, images, retry, undefined, !!contract), contract, linked);
     } catch (error: any) {
       if (!linked.aborted && (isChatAttachmentError(error) || (AIR.REPLAYABLE_ARTIFACT.test(artifactType) && error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR))) {
         if (!motionRoomBlockedMs(String(route.provider), route.model)) {
-          blockedRoomModels.set(AIR.MODEL_KEY(String(route.provider), route.model), Date.now() + AIR.PROVIDER_ERROR_COOLDOWN_MS);
+          blockedRoomModels.set(AIR.MODEL_KEY(String(route.provider), route.model), Date.now() + (isChatAttachmentError(error) ? AIR.ATTACHMENT_ERROR_COOLDOWN_MS : AIR.PROVIDER_ERROR_COOLDOWN_MS));
           log?.(isChatAttachmentError(error) ? AIR.ATTACHMENT_COOLDOWN(String(route.provider)) : AIR.PROVIDER_COOLDOWN(String(route.provider)));
         }
       }
@@ -997,7 +1001,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     try {
       log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: captchaHolds.has(provider) ? AIR.PHASE.CAPTCHA : AIR.PHASE.PROVIDER });
       await waitForMotionBrowser(holdForCaptcha(provider, log), roomCtrl.signal);
-      if (providerRecoveries.waiting(recoveryKey, requestId)) log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
+      if (providerRecoveries.waiting(recoveryKey, requestId)) log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PROVIDER });
       await providerRecoveries.wait(recoveryKey, requestId, roomCtrl.signal);
       epoch = captchaEpochs.get(provider) || 0;
       releaseGate = await acquireProviderGate(provider, roomCtrl.signal, exec.role);
@@ -1172,7 +1176,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         clearTimeout(watchdog);
         releaseGate();
         releaseGate = _.noop;
-        log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
+        log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PROVIDER });
         await providerRecoveries.wait(recoveryKey, requestId, AbortSignal.any(_.compact([signal, run?.signal])));
       }
       const noInput = !limited && !captcha && currentError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
@@ -1479,7 +1483,20 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     const established = opts.focusIds && ledger.length > TIMELINE.EDITOR.LEDGER_CHARS ? ledger.slice(-TIMELINE.EDITOR.LEDGER_CHARS) : ledger;
     return withMotionResponsePrompt(
       MOTION_STORY_EDIT_ARTIFACT,
-      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true), styleFocus.length ? MOTION_GENRE_STYLE.FOCUS(styleFocus) : "", overlapFocus.length ? TIMELINE.OVERLAP.FOCUS(overlapFocus) : "", repeatFocus.length ? TIMELINE.REPEAT.FOCUS(repeatFocus) : "", stageFocus.length ? MOTION_GENRE_STAGE.FOCUS(stageFocus) : "", echoFocus.length ? MOTION_GENRE_STAGE.ECHO.FOCUS(echoFocus) : "", motifs.length ? MOTION_GENRE_STAGE.MOTIF.KEEP(motifs) : "", TIMELINE.EDITOR.SCOPE, established ? TIMELINE.EDITOR.LEDGER + RT_SHARED.SYMBOL_01BA47 + established : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      [
+        MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit),
+        motionStoryLanguageGuide(opts.language, true, true),
+        styleFocus.length ? MOTION_GENRE_STYLE.FOCUS(styleFocus) : "",
+        overlapFocus.length ? TIMELINE.OVERLAP.FOCUS(overlapFocus) : "",
+        repeatFocus.length ? TIMELINE.REPEAT.FOCUS(repeatFocus) : "",
+        stageFocus.length ? MOTION_GENRE_STAGE.FOCUS(stageFocus) : "",
+        echoFocus.length ? MOTION_GENRE_STAGE.ECHO.FOCUS(echoFocus) : "",
+        motifs.length ? MOTION_GENRE_STAGE.MOTIF.KEEP(motifs) : "",
+        TIMELINE.EDITOR.SCOPE,
+        established ? TIMELINE.EDITOR.LEDGER + RT_SHARED.SYMBOL_01BA47 + established : "",
+      ]
+        .filter(Boolean)
+        .join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
   const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, opts.focusIds]);
@@ -1553,8 +1570,21 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
   const declaredNeeds = Array.isArray(raw?.illustrationNeeds) ? raw.illustrationNeeds : undefined;
   const stageIds = motionVideoGenreStages(videoGenre);
   const stageOrder = Object.keys(stageIds);
-  const chapterStages = (value: unknown): string[] => _.sortBy(_.uniq(_.flatMap(_.castArray(value ?? []), (item) => _.toString(item).split(MOTION_GENRE_STAGE.SPLIT)).map((id) => _.snakeCase(id))).filter((id) => Object.hasOwn(stageIds, id)), (id) => stageOrder.indexOf(id));
-  const motifs = _.take(_.uniq(_.compact(_.castArray(raw?.motifs || []).map((motif: unknown) => _.trim(_.toString(motif))).filter((motif: string) => motif.length <= MOTION_GENRE_STAGE.MOTIF.CHARS))), MOTION_GENRE_STAGE.MOTIF.MAX);
+  const chapterStages = (value: unknown): string[] =>
+    _.sortBy(
+      _.uniq(_.flatMap(_.castArray(value ?? []), (item) => _.toString(item).split(MOTION_GENRE_STAGE.SPLIT)).map((id) => _.snakeCase(id))).filter((id) => Object.hasOwn(stageIds, id)),
+      (id) => stageOrder.indexOf(id),
+    );
+  const motifs = _.take(
+    _.uniq(
+      _.compact(
+        _.castArray(raw?.motifs || [])
+          .map((motif: unknown) => _.trim(_.toString(motif)))
+          .filter((motif: string) => motif.length <= MOTION_GENRE_STAGE.MOTIF.CHARS),
+      ),
+    ),
+    MOTION_GENRE_STAGE.MOTIF.MAX,
+  );
   const rawChapters = _.castArray(raw?.chapters || []);
   const chapterIds = new Map<string, string>(rawChapters.map((chapter: any, index: number) => [_.toString(chapter?.id || MOTION_TEMPLATE_C_2(String(index + 1))), MOTION_TEMPLATE_C_2(String(index + 1))]));
   let chapters: MotionChapter[] = _.map(_.castArray(raw?.chapters || []), (c: any, i: number) => ({

@@ -1,5 +1,3 @@
-import * as COMMON_RUNTIME from "../../../../constants/sourceText.js";
-import { RUNTIME_VALUES } from "../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";

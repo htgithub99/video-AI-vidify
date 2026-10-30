@@ -332,7 +332,7 @@ export const MOTION_STYLES = {
 } as const;
 export const MOTION_REMOTION_STYLES = {
   RETRY: "m-2 px-2 py-1 text-[11px] rounded border border-slate-600 text-purple-300 hover:bg-slate-800 disabled:opacity-40",
-  FAILURE: "px-2 py-1 text-[10px] leading-4 text-amber-300 line-clamp-2 break-words",
+  FAILURE: "mx-2 my-1 min-w-0 max-h-8 text-[10px] leading-4 text-amber-300 line-clamp-2 [overflow-wrap:anywhere]",
   PANEL: "space-y-2 min-w-0 font-sans not-italic",
   COUNT: "text-xs text-slate-400",
   GRID: "grid grid-cols-1 sm:grid-cols-3 gap-2",

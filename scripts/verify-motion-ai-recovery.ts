@@ -1,4 +1,4 @@
-import { MotionProviderRecovery } from "../src/features/motion/server/services/motionProviderRecovery.js";
+import { MotionProviderRecovery, waitMotionProviderCooldown } from "../src/features/motion/server/services/motionProviderRecovery.js";
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.js";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -40,6 +40,51 @@ const deferred = () => {
   return { done, finish };
 };
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+assert.equal(R.PROVIDER_ERROR_COOLDOWN_MS, 120000);
+assert.equal(R.ATTACHMENT_ERROR_COOLDOWN_MS, 600000);
+const cooldownProgress: number[] = [];
+let cooldownRemaining = R.PROVIDER_ERROR_COOLDOWN_MS;
+assert.equal(
+  await waitMotionProviderCooldown(
+    () => cooldownRemaining,
+    async (ms) => {
+      cooldownRemaining -= ms;
+    },
+    (ms) => cooldownProgress.push(ms),
+  ),
+  true,
+);
+assert.deepEqual(cooldownProgress, [120000, 90000, 60000, 30000]);
+assert.equal(
+  await waitMotionProviderCooldown(
+    () => 0,
+    async () => assert.fail("Ready provider must not wait"),
+    () => assert.fail("Ready provider must not log a delay"),
+  ),
+  false,
+);
+const cancelCooldown = new AbortController();
+await assert.rejects(
+  waitMotionProviderCooldown(
+    () => 120000,
+    async () => {
+      cancelCooldown.abort();
+    },
+    () => {},
+    cancelCooldown.signal,
+  ),
+);
+let extendedRemaining = 60000;
+let extendedWaits = 0;
+await waitMotionProviderCooldown(
+  () => extendedRemaining,
+  async (ms) => {
+    extendedRemaining -= ms;
+    if (++extendedWaits === 1) extendedRemaining = 90000;
+  },
+  () => {},
+);
+assert.equal(extendedWaits, 4, "Recheck a changed cooldown deadline rather than sending while still blocked");
 const within = async <T>(work: Promise<T>): Promise<T> => {
   let timer: ReturnType<typeof setTimeout>;
   try {
@@ -219,7 +264,7 @@ try {
       [P.DeepSeekChat],
     );
     const now = Date.now;
-    const expired = now() + R.PROVIDER_ERROR_COOLDOWN_MS + 1;
+    const expired = now() + R.ATTACHMENT_ERROR_COOLDOWN_MS + 1;
     try {
       Date.now = () => expired;
       fixture.send = async (request) => ready(request);
@@ -513,6 +558,7 @@ try {
     await call();
     assert.equal(fixture.sent.filter((request) => request.provider === P.GeminiChat).length, R.ROOM_RETRIES + 1);
     assert.ok(service.motionRoomBlockedMs(P.GeminiChat, model) > 0);
+    assert.ok(service.motionRoomBlockedMs(P.GeminiChat, model) <= R.PROVIDER_ERROR_COOLDOWN_MS);
     fixture.sent = [];
     await call();
     assert.ok(fixture.sent.every((request) => request.provider === P.DeepSeekChat));
@@ -520,11 +566,15 @@ try {
   assert.ok(service.motionRoomBlockedMs(P.GeminiChat, model) > 0);
   fixture.sent = [];
   const cooldownStop = new AbortController();
-  const waitingForProvider = call({ ...exec, strictProvider: true }, cooldownStop.signal);
+  const providerWaitPhases: string[] = [];
+  const waitingForProvider = call({ ...exec, strictProvider: true }, cooldownStop.signal, (_line: string, active: any) => {
+    if (active) providerWaitPhases.push(active.phase);
+  });
   await tick();
   cooldownStop.abort();
   await assert.rejects(waitingForProvider);
   assert.equal(fixture.sent.length, 0);
+  assert.ok(providerWaitPhases.includes(R.PHASE.PROVIDER));
   reset();
   fixture.send = async (request) => {
     recoveryOrder.push([fixture.reloaded.length, fixture.closed.length]);

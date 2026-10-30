@@ -54,12 +54,7 @@ export const MOTION_SCENE_COMPOSITION = {
     BAD_URL_ATTR: /\s[\w:-]+\s*=\s*(["'])[^"']*url\(\s*(?!["']?#)[^"']*\1/gi,
     LOG: (tags: string[]) => `Hình SVG: tự bỏ/thay thẻ không hỗ trợ (${tags.join(", ")}) thay vì đánh lỗi cảnh.`,
   },
-  TEXT_STRIP: {
-    ELEMENT: /<text\b[^>]*?(?:\/>|>([\s\S]*?)<\/text>)/gi,
-    INNER_TAG: /<[^>]+>/g,
-    WORD: /[\p{L}\p{N}]+/gu,
-    LABEL_KIND: "label",
-  },
+  TEXT_STRIP: { ELEMENT: /<text\b[^>]*?(?:\/>|>([\s\S]*?)<\/text>)/gi, INNER_TAG: /<[^>]+>/g, WORD: /[\p{L}\p{N}]+/gu, LABEL_KIND: "label" },
   CONTRAST: {
     SPLIT: /[;,:]|\bbut\b|\band\b/iu,
     WORD: /[\p{L}\p{N}-]+/gu,
@@ -76,7 +71,7 @@ export const MOTION_SCENE_COMPOSITION = {
     WIDE: "wide",
     PROP: "prop",
     BUST: "bust",
-    PLAN: " NO CLOSE-UP INSERTS IN THIS STYLE: when a hand, token, letter or other small object matters, plan a chest-up shot (view wide, the owner with representation bust) of the person holding or showing it, and write the purpose as \"chest-up shot of <person> holding <object> ...\"; never write \"close on\", \"insert\", \"macro\" or a crop filled with armor, cloth or texture, and never use representation detail.",
+    PLAN: ' NO CLOSE-UP INSERTS IN THIS STYLE: when a hand, token, letter or other small object matters, plan a chest-up shot (view wide, the owner with representation bust) of the person holding or showing it, and write the purpose as "chest-up shot of <person> holding <object> ..."; never write "close on", "insert", "macro" or a crop filled with armor, cloth or texture, and never use representation detail.',
     LOG: (count: number) => `Lập phân cảnh: đổi ${count} cận cảnh không cần thiết thành trung cảnh để tránh hình mảng vân khó hiểu.`,
   },
   BRIEF: {
@@ -139,6 +134,8 @@ export const MOTION_SCENE_COMPOSITION = {
   CHANNELS: ["actor", "effect", "speech"],
   MARKUP_TAG: /<([\w:-]+)((?:\s+[\w:-]+\s*=\s*(?:"[^"<]*"|'[^'<]*'))+)(\s*\/?)>/g,
   MARKUP_ATTRIBUTE: /\s+([\w:-]+)\s*=\s*("[^"<]*"|'[^'<]*')/g,
+  MARKUP_REPAIR_LIMIT: 32,
+  MARKUP_TRAILING_GROUPS: /^(?:\s*<\/g>)*\s*<\/svg>\s*$/,
   SOFT: {
     FILTER_ID: "mv_soft_edge",
     OPACITY_LIMIT: 0.8,
@@ -165,7 +162,7 @@ export const MOTION_SCENE_COMPOSITION = {
   LOG_CONTINUE: (id: string, reason: string) => `Cảnh ${id} cần tạo lại: ${reason}. Tiếp tục các cảnh còn lại.`,
   PROGRESS_CONTINUE: (index: number, total: number) => `Cảnh ${index}/${total} gặp lỗi; đang tiếp tục các cảnh còn lại.`,
   LOG_RECOVERY: (count: number) => `Dựng cảnh: lượt đầu đã xong; bắt đầu phục hồi ${count} cảnh lỗi.`,
-  LOG_LOCAL_REPAIR: (index: number, total: number) => `Cảnh ${index}/${total}: đã sửa cấu trúc SVG bằng code (thẻ đóng thiếu, thuộc tính trùng); không gọi thêm AI.`,
+  LOG_LOCAL_REPAIR: (index: number, total: number) => `Cảnh ${index}/${total}: đã sửa cấu trúc SVG bằng code (thẻ đóng thiếu/thừa, thuộc tính trùng); không gọi thêm AI.`,
   LOG_RETRY: (index: number, total: number, scene: number, scenes: number) => `Phục hồi cảnh ${scene}/${scenes} · ${index}/${total} cảnh lỗi.`,
   LOG_SUMMARY: (ready: number, total: number) => `Dựng cảnh: ${ready}/${total} cảnh đạt${ready < total ? `, còn ${total - ready} cảnh lỗi; có thể tạo lại riêng từng cảnh.` : "."}`,
   PLACEHOLDER: placeholderText,

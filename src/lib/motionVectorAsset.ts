@@ -72,9 +72,14 @@ export const closeMotionSvgTags = (svg: string): string => {
     repaired += between;
     if (close) {
       const index = stack.lastIndexOf(name);
+      if (index < 0 && !attributes.trim() && !selfClose && name === RUNTIME_VALUES.G_CD0AA985 && stack.length === 1 && stack[0] === COMMON_RUNTIME.SOURCE_TEXT_SVG && C.MARKUP_TRAILING_GROUPS.test(svg.slice(match.index! + match[0].length))) {
+        if (++inserted > C.MARKUP_REPAIR_LIMIT) return svg;
+        offset = match.index! + match[0].length;
+        continue;
+      }
       if (index < 0 || attributes.trim() || selfClose) return svg;
       while (stack.length - 1 > index) {
-        if (!closable.has(stack.at(-1)!) || ++inserted > 32) return svg;
+        if (!closable.has(stack.at(-1)!) || ++inserted > C.MARKUP_REPAIR_LIMIT) return svg;
         repaired += `${RUNTIME_VALUES.VALUE_2A535776}${stack.pop()}${RUNTIME_VALUES.VALUE_62B67E1F}`;
       }
       stack.pop();
@@ -87,7 +92,7 @@ export const closeMotionSvgTags = (svg: string): string => {
     offset = match.index! + match[0].length;
   }
   const tail = svg.slice(offset);
-  if (/[<>]/.test(tail) || (stack.length && tail.trim()) || stack.some((name) => !closable.has(name)) || inserted + stack.length > 32) return svg;
+  if (/[<>]/.test(tail) || (stack.length && tail.trim()) || stack.some((name) => !closable.has(name)) || inserted + stack.length > C.MARKUP_REPAIR_LIMIT) return svg;
   return (
     repaired +
     tail +

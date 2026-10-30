@@ -1,6 +1,17 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { MOTION_AI_RECOVERY as R } from "../../../../constants/motionAiRecovery.js";
 type Recovery = { owner: string; done: Promise<{ error?: unknown }>; finish: (result: { error?: unknown }) => void; expires: number; finished: boolean };
+export const waitMotionProviderCooldown = async (remaining: () => number, wait: (ms: number) => Promise<void>, progress: (ms: number) => void, signal?: AbortSignal): Promise<boolean> => {
+  let waited = false;
+  for (;;) {
+    signal?.throwIfAborted();
+    const ms = remaining();
+    if (ms <= 0) return waited;
+    waited = true;
+    progress(ms);
+    await wait(Math.min(ms, R.WAIT_LOG_MS));
+  }
+};
 export class MotionProviderRecovery {
   private entries = new Map<string, Recovery>();
   private current(key: string): Recovery | undefined {
