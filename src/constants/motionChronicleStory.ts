@@ -16,5 +16,6 @@ export const MOTION_CHRONICLE_STORY = {
     era: { RULE: "one named era: short spoken era title and date-and-place stamp, one concrete scene told in four to six beats with a physical detail and a consequence, the recurring motif, and a time-jump bridge to the next era", SOLO: true },
     finale: { RULE: "the final era: it returns to the cold-open moment so that moment gains a new meaning, states what survives today and ends with one line pointing to a related story", SOLO: true },
   } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MOTIFS: "the recurring motif that links the eras (one or two short phrases)",
   MERGE: false,
 } as const;

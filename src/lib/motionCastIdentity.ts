@@ -32,6 +32,20 @@ export const motionCastIdentity = <T extends { key: string; look?: string; gende
     return { ...member, look: I.LOOK(look, hair, era?.trim() || I.ERA_FALLBACK) };
   });
 };
+export const motionIdentityContrast = (members: { key: string; name: string; look?: string }[], contrast: { SPLIT: RegExp; WORD: RegExp; SHARE: number; PHRASE_SHARE: number; KEY: RegExp; MAX_TRAITS: number; MIN_WORDS: number; SKIP: RegExp }): { entityId: string; name: string; traits: string[] }[] => {
+  const words = (text: string) => new Set((text.toLowerCase().match(contrast.WORD) || []) as string[]);
+  const people = members.filter((member) => member.look?.trim()).map((member) => ({ member, all: words(member.look!), phrases: member.look!.split(contrast.SPLIT).map((phrase) => phrase.trim()).filter((phrase) => (phrase.match(contrast.WORD) || []).length >= contrast.MIN_WORDS && !contrast.SKIP.test(phrase)) }));
+  const overlap = (a: Set<string>, b: Set<string>) => [...a].filter((word) => b.has(word)).length / Math.max(1, Math.min(a.size, b.size));
+  const similar = people.filter((person) => people.some((other) => other !== person && overlap(person.all, other.all) >= contrast.SHARE));
+  if (similar.length < 2) return [];
+  return similar.map((person) => {
+    const others = similar.filter((other) => other !== person).flatMap((other) => other.phrases.map(words));
+    const same = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every((word) => b.has(word));
+    const own = person.phrases.filter((phrase) => (contrast.KEY.test(phrase) ? !others.some((set) => same(words(phrase), set)) : !others.some((set) => overlap(words(phrase), set) >= contrast.PHRASE_SHARE)));
+    const traits = [...own.filter((phrase) => contrast.KEY.test(phrase)), ...own.filter((phrase) => !contrast.KEY.test(phrase))].slice(0, contrast.MAX_TRAITS);
+    return { entityId: person.member.key, name: person.member.name, traits };
+  }).filter((entry) => entry.traits.length);
+};
 export const motionSceneStaging = (nodes: MotionRemotionNode[], narrator?: string, speakers: string[] = []): string => {
   const people = nodes.filter((node) => node.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE && node.representation !== RUNTIME_VALUES.DETAIL_9C0211C5);
   const named = people.filter((node) => !node.anonymous && node.entityId);

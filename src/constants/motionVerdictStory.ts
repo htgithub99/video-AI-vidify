@@ -16,5 +16,6 @@ export const MOTION_VERDICT_STORY = {
     candidate: { RULE: "exactly one candidate: date-and-place stamp, the episode step by step with source numbers and one memorable detail, the competing explanations, the direct chapter question, a fair short answer with the fixed verdict label, then a bridge to the next candidate", SOLO: true },
     verdict: { RULE: "the verdict: every candidate recapped with its label, the final choice reasoned with source numbers, a verdict per side when they differ, the alternative views, the human cost, the viewers' choice and the closing line tied to the metaphor device", SOLO: true },
   } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MOTIFS: "the fixed metaphor device and every fixed verdict label as they will be spoken",
   MERGE: false,
 } as const;

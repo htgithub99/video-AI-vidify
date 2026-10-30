@@ -14,6 +14,13 @@ import { normalizeMotionRenderBehavior } from "./motionRenderBehavior.js";
 import { MOTION_ASPECT_BASE } from "../constants/motionVideo.js";
 import { MOTION_REMOTION_SPACE as SPACE } from "../constants/motionRemotionSpace.js";
 import { validateSceneComposition } from "./motionSceneComposition.js";
+import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
+export const remotionIncompleteScenes = (scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>): string[] => scenes.filter((scene) => scene.build?.status === RT_SHARED.FAILED || (scene.composition && C.PLACEHOLDER_RE.test(assets[scene.composition.assetKey]?.svg || ""))).map((scene) => scene.id);
+export const assertRemotionExportable = (spec: MotionRemotionSpec): void => {
+  const missing = remotionIncompleteScenes(spec.scenes, spec.assets);
+  if (missing.length) throw new Error(C.INCOMPLETE(missing));
+};
+export const remotionStateMissingScenes = (state: MotionRemotionState): string[] => [...new Set([...Object.keys(state.failures || {}), ...remotionIncompleteScenes(Object.values(state.scenes || {}).flat(), state.assets || {})])];
 export const remotionAssetAnchors = (raw: unknown, required: string[] = []): MotionVectorAsset["anchors"] => {
   const value = raw && typeof raw === "object" ? (raw as Record<string, any>) : {};
   const entries = Object.entries(value)

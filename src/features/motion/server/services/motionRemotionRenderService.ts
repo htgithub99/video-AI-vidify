@@ -6,7 +6,7 @@ import os from "node:os";
 import { createHash } from "node:crypto";
 import type { openBrowser, makeCancelSignal } from "@remotion/renderer";
 import { MOTION_VISUAL as V } from "../../../../constants/motionVisual.js";
-import { validateRemotionSpec } from "../../../../lib/motionRemotion.js";
+import { validateRemotionSpec, assertRemotionExportable } from "../../../../lib/motionRemotion.js";
 import type { MotionRemotionSpec } from "../../../../types/motionVisual.js";
 import { getStaticResourcePath, getTempDirectory } from "../../../../server/utils/paths.js";
 import { findNativeChrome } from "../../../../server/services/nativeProxyBrowser.js";
@@ -83,6 +83,7 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
 };
 export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: string, options: { width: number; height: number; crf: number; signal: AbortSignal; onProgress: (frames: number, total: number) => void }): Promise<void> => {
   validateRemotionSpec(spec);
+  assertRemotionExportable(spec);
   await checkRemotionCutoutLayers(spec, options.signal);
   const { selectComposition, renderMedia } = await import("@remotion/renderer");
   await withRemotionBrowser(options.signal, async (browser, serveUrl, cancelSignal) => {

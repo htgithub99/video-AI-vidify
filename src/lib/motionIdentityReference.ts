@@ -15,7 +15,7 @@ export const motionSvgGroup = (svg: string, id: string): string | undefined => {
   }
   return undefined;
 };
-const simplify = (svg: string): string => svg.replace(R.DECIMAL, (value) => String(Math.round(Number(value)))).replace(R.STYLE_ATTRS, "").replace(R.NO_FILL, "");
+const simplify = (svg: string): string => svg.replace(R.DECIMAL, (value) => String(Math.abs(Number(value)) < R.FINE_LIMIT ? Math.round(Number(value) * 10) / 10 : Math.round(Number(value)))).replace(R.STYLE_ATTRS, "").replace(R.NO_FILL, "");
 const without = (svg: string, composition: MotionSceneComposition, kinds: readonly string[]): string =>
   composition.layers.filter((layer) => kinds.includes(layer.kind)).reduce((text, layer) => {
     const group = motionSvgGroup(text, layer.id);
@@ -30,6 +30,7 @@ export const motionPlaceReference = (asset: MotionVectorAsset, composition: Moti
 const usable = (node?: MotionRemotionNode): boolean => !!node && node.representation !== RUNTIME_VALUES.DETAIL_9C0211C5 && !R.BACK.test(`${node.pose || ""} ${node.description || ""}`);
 export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>): { entityId: string; svg: string }[] => {
   const wanted = [...new Set(scene.nodes.filter((node) => node.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE && !node.anonymous && node.entityId).map((node) => node.entityId!))].slice(0, R.MAX_PEOPLE);
+  let total = 0;
   return wanted.flatMap((entityId) => {
     for (const other of scenes) {
       if (other.id === scene.id || other.build?.status !== RUNTIME_VALUES.ACCEPTED_070C160A || !other.composition) continue;
@@ -37,8 +38,11 @@ export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: Mot
       if (!asset) continue;
       const layer = other.composition.layers.find((item) => item.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE && item.entityId === entityId && usable(other.nodes.find((node) => node.id === item.id)));
       if (!layer) continue;
-      const group = motionSvgGroup(asset.svg, layer.id);
+      const raw = motionSvgGroup(asset.svg, layer.id);
+      const group = raw && simplify(raw);
       if (!group || group.length > R.MAX_CHARS) continue;
+      if (total + group.length > R.TOTAL_MAX) return [];
+      total += group.length;
       return [{ entityId, svg: R.WRAP(asset.width, asset.height, group) }];
     }
     return [];

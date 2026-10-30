@@ -118,6 +118,8 @@ try {
   let remotionPreflight = 0;
   let remotionScenes = 0;
   let remotionTargetSeconds = 2;
+  let remotionFailed = false;
+  let remotionCompiles = 0;
   const remotionSettings = { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1 };
   const remotionService = createMotionProductionService(
     {
@@ -138,9 +140,18 @@ try {
         remotionScenes++;
         const beat = body.script.beats[0];
         const key = remotionBeatKey(beat, body.analysis);
-        return start(K.SCENES, { ...body.script, visualSettings: remotionSettings, gen: { ...body.script.gen, remotion: { settings: remotionSettings, profileRevision: V.PROFILES.history.revision, layoutRevision: L.REVISION, scenes: { [beat.id]: [{ sourceKey: key, sceneRevision: L.SCENE_REVISION }] }, inputKeys: { [beat.id]: key } } } }, 2);
+        return start(
+          K.SCENES,
+          {
+            ...body.script,
+            visualSettings: remotionSettings,
+            gen: { ...body.script.gen, remotion: { settings: remotionSettings, profileRevision: V.PROFILES.history.revision, layoutRevision: L.REVISION, scenes: { [beat.id]: [{ id: "failed-scene", sourceKey: key, sceneRevision: L.SCENE_REVISION, ...(remotionFailed ? { build: { status: "failed", attempts: 2 } } : {}) }] }, inputKeys: { [beat.id]: key } } },
+          },
+          2,
+        );
       },
       compileMotionStoryInput: async (body: any) => {
+        remotionCompiles++;
         assert.deepEqual(body.visualSettings, remotionSettings);
         return { spec: { engine: "remotion", duration: 2, fps: 24 }, missing: [], voiceStale: false };
       },
@@ -182,6 +193,36 @@ try {
   assert.equal(counts[K.SCENES], durationCounts[K.SCENES] + 1);
   assert.ok(remotionDurationJob.log.some((line) => line.includes("timeline") && line.includes("100")));
   remotionTargetSeconds = 2;
+  remotionFailed = true;
+  const beforePartial = { ...counts };
+  const beforePartialCompiles = remotionCompiles;
+  const beforePartialScenes = remotionScenes;
+  remotionService.startMotionProduction({ ...input, productionId: "remotion-partial", visualSettings: remotionSettings, seo: false });
+  const settlePartial = async () => {
+    for (let i = 0; i < 500; i++) {
+      const state = remotionService.getMotionProduction("remotion-partial")!;
+      if ([S.ERROR, S.COMPLETED].includes(state.status)) return state;
+      await delay(2);
+    }
+    throw new Error("Partial production did not settle");
+  };
+  const partial = await settlePartial();
+  assert.equal(partial.status, S.ERROR);
+  assert.match(partial.error!, /Chưa đủ hình/);
+  assert.ok((partial.result as any).voice.audioId);
+  assert.equal(partial.stepStates?.[P.STAGES.SCENES]?.status, S.ERROR);
+  assert.equal(remotionCompiles, beforePartialCompiles);
+  assert.equal(counts.render, beforePartial.render);
+  const afterPartial = { ...counts };
+  remotionFailed = false;
+  remotionService.resumeMotionProduction("remotion-partial");
+  assert.equal((await settlePartial()).status, S.COMPLETED);
+  assert.equal(remotionScenes, beforePartialScenes + 2);
+  assert.equal(counts[K.ANALYZE], afterPartial[K.ANALYZE]);
+  assert.equal(counts[K.SCRIPT], afterPartial[K.SCRIPT]);
+  assert.equal(counts[K.VOICE], afterPartial[K.VOICE]);
+  assert.equal(remotionCompiles, beforePartialCompiles + 1);
+  assert.equal(counts.render, beforePartial.render + 1);
   failedVoice = true;
   service.startMotionProduction({ ...input, productionId: "voice_failure" });
   const voiceFailure = await until("voice_failure");

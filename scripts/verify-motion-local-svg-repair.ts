@@ -15,6 +15,9 @@ const multiline = { ...reply, svg: svg.replace("<g", "\n<g") };
 assert.deepEqual(parseRemotionAssetReply(JSON.stringify(multiline).replace("\\n", "\n")), multiline);
 assert.deepEqual(chatResponseIdentity('{"nested":{"requestId":"wrong"},"artifactType":"drawing","requestId":"right","svg":"broken'), { artifactType: "drawing", requestId: "right" });
 assert.equal(closeMotionSvgTags(svg), svg);
+const patterned = svg.replace('<g id="room">', '<defs><pattern id="tiles" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0L8 8" stroke="#303030"/></pattern></defs><g id="room">').replace('fill="#202327"', 'fill="url(#tiles)"');
+assert.equal(normalizeMotionVector(patterned, "scene", "input", "local pattern", true).svg.includes('<pattern id="tiles"'), true);
+for (const injected of ['<image href="https://example.com/tile.png"/>', "<script>alert(1)</script>", '<rect onload="alert(1)"/>', '<rect fill="url(https://example.com/tile.svg)"/>']) assert.throws(() => normalizeMotionVector(patterned.replace("</pattern>", injected + "</pattern>"), "scene", "input", "unsafe pattern", true));
 for (const broken of [svg.replace(/<\/g><\/svg>$/, "</svg>"), svg.replace(/<\/g><\/svg>$/, ""), svg.replace("/><\/g></svg>", "></g></svg>")]) {
   const fixed = normalizeMotionVector(broken, "scene", "input", "local repair", true);
   assert.ok(fixed.svg.includes('id="person"'));
@@ -35,4 +38,4 @@ for (const broken of [
   assert.throws(() => normalizeMotionVector(broken, "bad", "bad", "unsafe or incomplete", true));
 assert.equal(parseRemotionAssetReply('{"svg":"unterminated'), undefined);
 assert.equal(parseRemotionAssetReply('{"artifactType":"drawing","svg":"<svg><path d=\\"M0'), undefined);
-console.log("Local recovery: terminal JSON quote, raw whitespace, escaped SVG, missing closing tags, identity, idempotence, truncated markup and security checks passed; no live AI.");
+process.stdout.write("Local recovery: terminal JSON quote, raw whitespace, escaped SVG, missing closing tags, identity, idempotence, truncated markup and security checks passed; no live AI.\n");

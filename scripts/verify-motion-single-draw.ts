@@ -14,7 +14,9 @@ const { remotionStoryBuildStatus } = await import("../src/features/motion/server
 const { remotionStoryRecoveryPending } = await import("../src/features/motion/server/services/remotion/sceneKeys.js");
 const { remotionSceneProgress } = await import("../src/features/motion/lib/motionRemotionProgress.js");
 const { normalizeFirstSceneComposition } = await import("../src/lib/motionSceneComposition.js");
-const { validateRemotionSpec } = await import("../src/lib/motionRemotion.js");
+const { validateRemotionSpec, assertRemotionExportable } = await import("../src/lib/motionRemotion.js");
+const { renderRemotionVideo } = await import("../src/features/motion/server/services/motionRemotionRenderService.js");
+const { startMotionVideoRenderInput } = await import("../src/features/motion/server/services/motionProductionActions.js");
 const { puppetBeatLines } = await import("../src/lib/motionPuppet.js");
 const { MOTION_SCENE_COMPOSITION: C } = await import("../src/constants/motionSceneComposition.js");
 const { MOTION_VISUAL: V } = await import("../src/constants/motionVisual.js");
@@ -47,13 +49,14 @@ try {
   let peak = 0;
   let anchorFinished = false;
   let geometryCalls = 0;
+  const drawingLogs: string[] = [];
   const opts: any = {
     scope: "single-draw",
     exec: { provider: "drawing-ai" },
     mainExec: { provider: "content-ai" },
     review: false,
     renderBehavior: { version: 1, actors: "simple", sceneEffects: "gentle", camera: "fixed" },
-    log: () => {},
+    log: (message: string) => drawingLogs.push(message),
     geometry: {
       check: async () => {
         geometryCalls++;
@@ -73,10 +76,10 @@ try {
       assert.ok(prompt.includes("design, svg, layers, animations"));
       assert.equal(data.renderBehavior.actors, "simple");
       const purpose = data.scene.purpose;
-      calls.push({ artifact, exec, purpose, reference: data.continuity?.svg });
+      calls.push({ artifact, exec, purpose, reference: data.continuity?.placeSvg });
       if (purpose !== "shot0") {
         assert.equal(anchorFinished, true);
-        assert.ok(data.continuity?.svg);
+        assert.ok(data.continuity?.placeSvg);
       }
       active++;
       peak = Math.max(peak, active);
@@ -87,7 +90,7 @@ try {
     },
   };
   const generated = await buildRemotionScenes(script, analysis, opts);
-  assert.equal(calls.filter((call) => call.artifact === C.ARTIFACT).length, 5);
+  assert.equal(calls.filter((call) => call.artifact === C.ARTIFACT).length, 5, drawingLogs.join("\n"));
   assert.equal(calls.filter((call) => call.artifact === V.ARTIFACT_SCENE).length, 1);
   assert.equal(calls[0].exec.provider, "content-ai");
   assert.equal(geometryCalls, 0);
@@ -100,7 +103,7 @@ try {
   assert.equal(remotionStoryBuildStatus(generated, analysis), "partial");
   assert.deepEqual(generated.gen!.failed, [scenes[1].id]);
   assert.equal(scenes[1].build?.attempts, 2);
-  assert.equal(remotionStoryRecoveryPending(generated), false);
+  assert.equal(remotionStoryRecoveryPending(generated), true, "Exhausted scenes still require recovery before export");
   const legacyFailed = structuredClone(generated);
   delete legacyFailed.gen!.remotion!.scenes.b1[1].build!.attempts;
   assert.equal(remotionStoryRecoveryPending(legacyFailed), true, "Old failed scenes receive their deferred recovery on resume");
@@ -109,16 +112,39 @@ try {
   assert.equal(progress.total, 4);
   assert.equal(progress.entries[1].status, "failed");
   assert.ok(progress.entries[1].preview);
-  const compiled = compileRemotionStory(generated, analysis, { durations: [12], fps: 30 });
+  assert.throws(() => compileRemotionStory(generated, analysis, { durations: [12], fps: 30 }), /Chưa đủ hình/);
+  const compiled = compileRemotionStory(generated, analysis, { durations: [12], fps: 30, review: true });
+  assert.deepEqual(compiled.missing, [scenes[1].id]);
   assert.equal(compiled.spec.scenes.length, 4);
   assert.equal(compiled.spec.scenes.at(-1)!.endFrame, Math.ceil(compiled.spec.duration * 30));
   assert.ok(compiled.spec.assets[scenes[1].composition!.assetKey].svg.includes(C.PLACEHOLDER));
   validateRemotionSpec(compiled.spec);
+  assert.throws(() => assertRemotionExportable(compiled.spec), /Chưa đủ hình/);
+  assert.throws(() => startMotionVideoRenderInput({ spec: compiled.spec }), /Chưa đủ hình/);
+  await assert.rejects(renderRemotionVideo(compiled.spec, path.join(root, "never.mp4"), { width: 1280, height: 720, crf: 23, signal: new AbortController().signal, onProgress: () => assert.fail("Incomplete scene must never start rendering") }), /Chưa đủ hình/);
+  const stripped = structuredClone(compiled.spec);
+  delete stripped.scenes[1].build;
+  assert.throws(() => assertRemotionExportable(stripped), /Chưa đủ hình/, "Cached placeholders cannot bypass export by dropping build metadata");
   assert.equal(Object.keys(generated.gen!.remotion!.failures).length, 0);
   const beforeResume = calls.length;
   const resumed = await buildRemotionScenes(generated, analysis, opts);
   assert.equal(calls.length, beforeResume);
   assert.equal(resumed.gen!.remotion!.scenes.b1[1].build!.status, "failed");
+  let resumedDraws = 0;
+  const recoveredOnContinue = await buildRemotionScenes(resumed, analysis, {
+    ...opts,
+    retryFailed: true,
+    ai: async (prompt: string, artifact: string) => {
+      assert.equal(artifact, C.ARTIFACT);
+      assert.equal(context(prompt).scene.purpose, "shot1");
+      resumedDraws++;
+      return art();
+    },
+  });
+  assert.equal(resumedDraws, 1, "Continue retries exhausted failures without redrawing accepted scenes");
+  assert.equal(remotionStoryBuildStatus(recoveredOnContinue, analysis), "ready");
+  assertRemotionExportable(compileRemotionStory(recoveredOnContinue, analysis, { durations: [12] }).spec);
+  for (const index of [0, 2, 3]) assert.deepEqual(recoveredOnContinue.gen!.remotion!.scenes.b1[index], resumed.gen!.remotion!.scenes.b1[index]);
   const restarted = await buildRemotionScenes(generated, analysis, { ...opts, restart: true });
   assert.equal(calls.slice(beforeResume).filter((call) => call.artifact === V.ARTIFACT_SCENE).length, 1, "Restart must discard the saved scene plan");
   assert.equal(calls.slice(beforeResume).filter((call) => call.artifact === C.ARTIFACT).length, 5, "Restart must redraw all four scenes including the deferred retry");
@@ -288,7 +314,8 @@ try {
     assert.equal(drawings, failure === "anchor" ? 5 : 8);
     assert.equal(remotionStoryBuildStatus(continued, analysis), "partial");
     assert.equal(remotionSceneProgress(continued).ready, failure === "anchor" ? 3 : 0);
-    validateRemotionSpec(compileRemotionStory(continued, analysis, { durations: [12] }).spec);
+    assert.throws(() => compileRemotionStory(continued, analysis, { durations: [12] }), /Chưa đủ hình/);
+    validateRemotionSpec(compileRemotionStory(continued, analysis, { durations: [12], review: true }).spec);
   }
   for (const profileId of ["horror", "history", "explainer"] as const) {
     for (const review of [false, true]) {
@@ -429,11 +456,12 @@ try {
   assert.ok(criticalCalls <= C.REVIEW_REQUESTS * C.DRAW_ATTEMPTS);
   assert.equal(critical.gen!.remotion!.scenes.b1[0].build?.status, "failed");
   assert.ok(critical.gen!.remotion!.assets[critical.gen!.remotion!.scenes.b1[0].composition!.assetKey].svg.includes('id="person"'));
-  validateRemotionSpec(compileRemotionStory(critical, analysis, { durations: [12] }).spec);
+  assert.throws(() => compileRemotionStory(critical, analysis, { durations: [12] }), /Chưa đủ hình/);
+  validateRemotionSpec(compileRemotionStory(critical, analysis, { durations: [12], review: true }).spec);
   const aborted = new AbortController();
   aborted.abort(new Error("cancelled"));
   await assert.rejects(() => buildRemotionScenes(script, analysis, { ...opts, signal: aborted.signal }), /cancelled/);
-  console.log("Single drawing: one response, no review/repair when off, shared anchor concurrency, isolated failures, safe placeholder compilation, zero-request resume, scene-only regeneration and optional review passed; no live AI or video render.");
+  process.stdout.write("Single drawing: deferred recovery, explicit continuation, optional review, three profiles, preview-only placeholders and strict compile/API/render export gates passed; no live AI or video render.\n");
 } finally {
   if (priorStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
   else process.env.VIDIFY_STORAGE_DIR = priorStorage;

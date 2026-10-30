@@ -121,12 +121,22 @@ export const normalizeSceneComposition = (raw: any, key: string, inputKey: strin
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
 };
+const stripUnlabeledText = (svg: string, nodes: MotionRemotionNode[]): string => {
+  const X = C.TEXT_STRIP;
+  const words = (text: string) => new Set((text.toLowerCase().match(X.WORD) || []) as string[]);
+  const labels = nodes.filter((node) => node.kind === X.LABEL_KIND).map((node) => words([node.description, node.evidence].filter(Boolean).join(" ")));
+  return svg.replace(X.ELEMENT, (whole, inner?: string) => {
+    const spoken = [...words((inner || "").replace(X.INNER_TAG, " "))];
+    return spoken.length && labels.some((label) => spoken.every((word) => label.has(word))) ? whole : "";
+  });
+};
 export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number) => {
   let asset = normalizeMotionVector(raw?.svg, key, inputKey, description, true);
   if (asset.width !== width || asset.height !== height || !/^0[\s,]+0[\s,]/.test(asset.svg.match(/\bviewBox\s*=\s*["']([^"']+)["']/)?.[1]?.trim() || "")) {
     const fitted = asset.svg.replace(/^<svg\b[^>]*>/, (root) => `${root.replace(/\s(?:width|height|x|y|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "").slice(0, -1)}${RUNTIME_VALUES.WIDTH_100_HEIGHT_100_X_0_Y_0_PRESERVEASPECTRATIO_XMIDYMID_MEET_0F54C243}`);
     asset = normalizeMotionVector(`${RUNTIME_VALUES.SVG_VIEWBOX_0_0_73441421}${width}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52}${height}${RUNTIME_VALUES.VALUE_AB2CD774}${fitted}${RUNTIME_VALUES.SVG_01CF38A5}`, key, inputKey, description, true);
   }
+  if (!C.PLACEHOLDER_RE.test(asset.svg)) asset = { ...asset, svg: stripUnlabeledText(asset.svg, nodes) };
   const elements = compositionElements(asset.svg);
   let background = RUNTIME_VALUES.SCENE_CANVAS_0E8DB923;
   while (elements.has(background)) background += COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_25;

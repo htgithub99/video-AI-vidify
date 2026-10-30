@@ -22,5 +22,6 @@ export const MOTION_WITNESS_STORY = {
     price: { RULE: "the price paid, stated plainly without lament" },
     coda: { RULE: "the time-jump coda: where each family member is now, one small lingering detail and a concrete present action of the narrator, left unexplained", SOLO: true },
   } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MOTIFS: "each rule the knowing person sets (one short phrase per rule) and the one small lingering detail kept for the coda",
   MERGE: true,
 } as const;

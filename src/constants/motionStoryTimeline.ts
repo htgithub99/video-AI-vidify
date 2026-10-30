@@ -21,6 +21,8 @@ export const MOTION_STORY_TIMELINE = {
     LEDGER: "ESTABLISHED STORY (lines already written before these):",
     LOG_FOCUS: (count: number, total: number) => `Biên tập viên: chỉ đọc ${count}/${total} câu cần xem (giọng kể, trùng sự kiện, câu lặp, câu nối chương).`,
     LOG_SKIP: "Biên tập viên: không có câu cần sửa, bỏ qua lượt biên tập.",
+    SOURCE_CHARS: 2400,
+    LEDGER_CHARS: 1600,
   },
   CONTENT: {
     SOURCE_WORDS_PER_BEAT: 7,

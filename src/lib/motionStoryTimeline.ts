@@ -88,8 +88,9 @@ export const motionChapterContentBeats = (sourceText: string, keyPoints: number,
   const content = Math.max(T.CONTENT.MIN_BEATS, Math.ceil(words / T.CONTENT.SOURCE_WORDS_PER_BEAT), keyPoints * T.CONTENT.POINT_BEATS);
   return Math.min(wanted, content);
 };
-export const motionRepetitionFindings = (beats: MotionBeat[], language: string): MotionStoryTimelineFinding[] => {
+export const motionRepetitionFindings = (beats: MotionBeat[], language: string, motifs: string[] = []): MotionStoryTimelineFinding[] => {
   const size = T.REPEAT.SIZE[T.REPEAT.VI.test(language.trim()) ? "vi" : "en"];
+  const motifWords = motifs.map((motif) => new Set((motif.toLowerCase().match(T.REPEAT.WORD) || []) as string[]));
   const seen = new Map<string, { index: number; chapter: string }[]>();
   const findings: MotionStoryTimelineFinding[] = [];
   beats.forEach((beat, index) => {
@@ -97,6 +98,7 @@ export const motionRepetitionFindings = (beats: MotionBeat[], language: string):
     const grams = new Set<string>();
     for (let at = 0; at + size <= words.length; at++) {
       const gram = words.slice(at, at + size);
+      if (motifWords.some((set) => gram.every((word) => set.has(word) || T.REPEAT.STOP.test(word)))) continue;
       if (gram.filter((word) => !T.REPEAT.STOP.test(word)).length >= T.REPEAT.CONTENT_WORDS) grams.add(gram.join(" "));
     }
     let flagged = false;

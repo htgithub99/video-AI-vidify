@@ -6,7 +6,8 @@ import { MOTION_CHAPTER_REPAIR } from "../../../../constants/motionChapterRepair
 import { MOTION_PRODUCTION } from "../../../../constants/motionProduction.js";
 import { motionVisualSettingsFor, isRemotionSpec } from "../../../../lib/motionVisual.js";
 import { applyMotionRenderBehavior, motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
-import { validateRemotionSpec } from "../../../../lib/motionRemotion.js";
+import { validateRemotionSpec, assertRemotionExportable, remotionStateMissingScenes } from "../../../../lib/motionRemotion.js";
+import { MOTION_SCENE_COMPOSITION as C } from "../../../../constants/motionSceneComposition.js";
 import type { MotionRenderSpec } from "../../../../types/motionVisual.js";
 import { buildRemotionScenes } from "./remotion/scenePipeline.js";
 import { compileRemotionStory } from "./remotion/storyCompiler.js";
@@ -20,10 +21,9 @@ import * as MR from "../../../../constants/motionRuntime.js";
 import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../../../lib/motionVideoDna.js";
 import { MOTION_VIDEO_GENRE_ERROR, motionVideoGenre } from "../../../../constants/motionGenre.js";
 import { MOTION_GENRE_STYLE } from "../../../../constants/motionGenreStyle.js";
-import { motionGenreStyleFindings } from "../../../../lib/motionGenreStyle.js";
-import { motionChapterRanges, motionChapterKeyPoints, motionChapterOverlapFindings, motionRepetitionFindings } from "../../../../lib/motionStoryTimeline.js";
+import { motionChapterRanges, motionChapterKeyPoints } from "../../../../lib/motionStoryTimeline.js";
 import { MOTION_STORY_TIMELINE } from "../../../../constants/motionStoryTimeline.js";
-import { motionGenreStageFindings } from "../../../../lib/motionGenreStage.js";
+import { motionScriptFindings } from "../../../../lib/motionScriptFindings.js";
 import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../../../constants/motionMusic.js";
@@ -92,6 +92,7 @@ export const validateSpec = (raw: unknown): MotionRenderSpec => {
 };
 export const startMotionVideoRenderInput = (body: Record<string, any>) => {
   const spec = validateSpec(body?.spec);
+  if (isRemotionSpec(spec)) assertRemotionExportable(spec);
   const o = body?.options || {};
   const job = startMotionRender(spec, {
     quality: _.includes(_.values(MotionQuality), o.quality) ? o.quality : MotionQuality.STANDARD,
@@ -256,12 +257,14 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = !failed.length && !Object.keys(chapterDrafts).length && _.every(chapters, (c) => byChapter[c.id]?.length);
-      const styleFindings = complete ? motionGenreStyleFindings(beats, language, analysis.videoGenre) : [];
-      const overlapFindings = complete && chapters.length > 1 ? motionChapterOverlapFindings(beats, analysis) : [];
-      const repeats = complete ? motionRepetitionFindings(beats, language) : [];
-      const stageFindings = complete ? motionGenreStageFindings(beats, analysis) : [];
+      const findings = complete ? motionScriptFindings(beats, analysis, language) : undefined;
+      const styleFindings = findings?.style || [];
+      const overlapFindings = findings?.overlap || [];
+      const repeats = findings?.repeat || [];
+      const stageFindings = findings?.stage || [];
+      const echoFindings = findings?.echo || [];
       const handoffs = complete ? chapters.slice(1).flatMap((chapter) => (byChapter[chapter.id]?.[0] ? [byChapter[chapter.id][0].id] : [])) : [];
-      const focusIds = [...new Set([...styleFindings, ...overlapFindings, ...repeats, ...stageFindings].map((finding) => finding.id).concat(handoffs))];
+      const focusIds = [...new Set([...styleFindings, ...overlapFindings, ...repeats, ...stageFindings, ...echoFindings].map((finding) => finding.id).concat(handoffs))];
       const editorial = complete && body?.editorPass !== false && !(only?.length && body?.resume !== true) && focusIds.length > 0;
       if (complete && !focusIds.length) ctx.log(MOTION_STORY_TIMELINE.EDITOR.LOG_SKIP);
       if (editorial) {
@@ -269,6 +272,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         if (overlapFindings.length) ctx.log(MOTION_STORY_TIMELINE.OVERLAP.LOG(overlapFindings.length));
         if (repeats.length) ctx.log(MOTION_STORY_TIMELINE.REPEAT.LOG(repeats.length));
         if (stageFindings.length) ctx.log(MOTION_GENRE_STAGE.LOG(stageFindings.length));
+        if (echoFindings.length) ctx.log(MOTION_GENRE_STAGE.ECHO.LOG(echoFindings.length));
         ctx.log(MOTION_STORY_TIMELINE.EDITOR.LOG_FOCUS(focusIds.length, beats.length));
         try {
           const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId, focusIds });
@@ -329,8 +333,8 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
       body,
       body?.keepBrowser === true,
       MotionStoryJobKind.SCENES,
-      (ctx) =>
-        buildRemotionScenes({ ...script, visualSettings }, analysis, {
+      async (ctx) => {
+        const result = await buildRemotionScenes({ ...script, visualSettings }, analysis, {
           exec,
           mainExec,
           signal: ctx.signal,
@@ -343,11 +347,18 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
           sfx: body.sfx !== false,
           review: body.review !== false,
           restart: body.restart === true,
+          retryFailed: true,
           onlyBeats,
           onlyScenes: _.map(_.castArray(body?.scenes || []), _.toString),
           onlyLocations,
           note: note || undefined,
-        }),
+        });
+        ctx.partial(result);
+        const selectedScenes = _.map(_.castArray(body?.scenes || []), _.toString);
+        const missing = remotionStateMissingScenes(result.gen!.remotion!).filter((id) => !selectedScenes.length || selectedScenes.includes(id));
+        if (missing.length) throw new Error(C.INCOMPLETE(missing));
+        return result;
+      },
       (() => {
         const session = editorialSession(body, body.source, mainExec);
         return session ? { ...session, worker: true } : undefined;

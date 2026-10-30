@@ -140,10 +140,66 @@ const xmlIssue = (svg: string): string | undefined => {
   if (roots !== 1 || svg.slice(offset).trim()) return V.SVG_REASONS.XML;
   return undefined;
 };
+const SAN = C.SANITIZE;
+const elementEnd = (svg: string, tag: string, from: number): { inner: string; end: number } | undefined => {
+  const pattern = SAN.SAME_TAG(tag);
+  pattern.lastIndex = from;
+  let depth = 1;
+  for (let match = pattern.exec(svg); match; match = pattern.exec(svg)) {
+    if (match[2]) continue;
+    depth += match[1] ? -1 : 1;
+    if (!depth) return { inner: svg.slice(from, match.index), end: match.index + match[0].length };
+  }
+  return undefined;
+};
+const expandMotionSvgUses = (svg: string): string => {
+  let text = svg;
+  for (let pass = 0; pass < SAN.PASSES && SAN.USE.test(text); pass++) {
+    const source = text;
+    text = source.replace(new RegExp(SAN.USE.source, "gi"), (_whole, attrs: string) => {
+      const href = attrs.match(SAN.HREF)?.[1];
+      const open = href ? SAN.ID_OPEN(href).exec(source) : null;
+      if (!open) return "";
+      const tag = open[1];
+      const closed = open[3] ? undefined : elementEnd(source, tag, open.index + open[0].length);
+      if (!open[3] && !closed) return "";
+      const body = (tag.toLowerCase() === SAN.SYMBOL ? closed!.inner : open[0].replace(SAN.ID_ATTR, "") + (closed ? closed.inner + `</${tag}>` : "")).replace(new RegExp(SAN.ID_ATTR.source, "g"), "");
+      const value = (name: string) => attrs.match(SAN.ATTR(name))?.[2];
+      const shift = value("x") || value("y") ? `translate(${Number(value("x")) || 0} ${Number(value("y")) || 0}) ` : "";
+      const transform = `${shift}${value("transform") || ""}`.trim();
+      const copied = SAN.COPY_ATTRS.map((name) => (value(name) ? ` ${name}="${value(name)}"` : "")).join("");
+      return `<g${transform ? ` transform="${transform}"` : ""}${copied}>${body}</g>`;
+    });
+  }
+  return text.replace(new RegExp(SAN.USE.source, "gi"), "");
+};
+export const sanitizeMotionCompositionSvg = (svg: string, allowed: Set<string>): string => {
+  const text = expandMotionSvgUses(svg);
+  let out = "";
+  let skip = 0;
+  let last = 0;
+  for (const match of text.matchAll(SAN.TAG)) {
+    if (!skip) out += text.slice(last, match.index);
+    last = match.index! + match[0].length;
+    if (!match[2]) continue;
+    const [, close, name, , self] = match;
+    if (skip) {
+      if (!self) skip += close ? -1 : 1;
+      continue;
+    }
+    if (!allowed.has(name.toLowerCase())) {
+      if (!close && !self) skip = 1;
+      continue;
+    }
+    out += match[0];
+  }
+  if (!skip) out += text.slice(last);
+  return out.replace(SAN.BAD_ATTRS, "").replace(SAN.BAD_URL_ATTR, "");
+};
 export const normalizeMotionVector = (raw: unknown, key: string, inputKey: string, description: string, composition = false): MotionVectorAsset => {
   let svg = typeof raw === "string" ? raw.trim() : "";
   const limit = composition ? C.LIMIT : V.ASSET_LIMIT;
-  const allowed = composition ? new Set([...tags, ...C.FILTER_TAGS]) : tags;
+  const allowed = composition ? new Set([...tags, ...C.FILTER_TAGS, C.PATTERN_TAG]) : tags;
   const fail = (reason: string): never => {
     throw new Error(V.SVG_ERROR(reason));
   };
@@ -156,6 +212,7 @@ export const normalizeMotionVector = (raw: unknown, key: string, inputKey: strin
     .replace(/\/>>+(?=\s*<)/g, RT_CORE.SYMBOL_CC80A2)
     .replace(/(<(?:path|rect|circle|ellipse|polygon|polyline|line|stop)\b[^<>]*["']\s*\/)(?=<)/gi, RT_CORE.VALUE_1_A27769)
     .trim();
+  if (composition) svg = sanitizeMotionCompositionSvg(svg, allowed).trim();
   const root = svg.match(/^<svg\b[^>]*>/i)?.[0] || "";
   if (!/\bviewBox\s*=/.test(root)) {
     const dimension = (name: string) => root.match(new RegExp(`${RT_SHARED.B}${name}${RT_CORE.S_S_D_PX}`, RT_SHARED.I))?.[1];

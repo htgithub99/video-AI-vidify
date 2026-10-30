@@ -39,7 +39,11 @@ const castFor = (beat: MotionBeat, analysis: MotionStoryAnalysis) => {
 const grouped = (state?: MotionRemotionState): boolean => state?.groupingRevision === PACING.GROUPING;
 const withoutPacing = <T extends object | undefined>(settings: T): T => (settings ? (Object.fromEntries(Object.entries(settings).filter(([key]) => key !== PACING.FIELD)) as T) : settings);
 const keySettings = (analysis: MotionStoryAnalysis, state?: MotionRemotionState) => (grouped(state) ? withoutPacing(analysis.visualSettings) : analysis.visualSettings);
-const groupCount = (beats: MotionBeat[], analysis: MotionStoryAnalysis): number => motionScenePacingCount(analysis.visualSettings, beats.reduce((sum, beat) => sum + motionBeatVisualSeconds(beat, analysis.videoDna?.audienceProfile?.language), 0));
+const groupCount = (beats: MotionBeat[], analysis: MotionStoryAnalysis): number =>
+  motionScenePacingCount(
+    analysis.visualSettings,
+    beats.reduce((sum, beat) => sum + motionBeatVisualSeconds(beat, analysis.videoDna?.audienceProfile?.language), 0),
+  );
 export const remotionPlanGroups = (script: MotionStoryScript, analysis: MotionStoryAnalysis, state?: MotionRemotionState) => motionVisualBeatGroups(script, state?.groupingRevision, motionScenePacing(analysis.visualSettings || script.visualSettings));
 const legacyBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis, note: string = "") => motionInputKey([V.VERSION, L.SCENE_REVISION, analysis.visualSettings, analysis.visualSettings?.mode === RT_SHARED.REMOTION ? V.PROFILES[analysis.visualSettings.profileId].revision : undefined, analysis.era, analysis.cast, analysis.places, beat, note]);
 export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis, note: string = "", state?: MotionRemotionState) =>
@@ -75,9 +79,7 @@ export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis,
 export const remotionBeatPlanCurrent = (beat: MotionBeat, analysis: MotionStoryAnalysis, state?: MotionRemotionState, note = state?.notes?.[beat.id] || "") =>
   !!state?.scenes[beat.id]?.length && [remotionBeatKey(beat, analysis), legacyBeatKey(beat, analysis)].includes(state.inputKeys[beat.id]) && state.scenes[beat.id].every((scene) => scene.sceneRevision === L.SCENE_REVISION && [remotionBeatKey(beat, analysis, note), legacyBeatKey(beat, analysis, note)].includes(scene.sourceKey!));
 export const remotionGroupKey = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) =>
-  grouped(state)
-    ? motionInputKey([PACING.GROUPING, groupCount(beats, analysis), beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? "", state))])
-    : motionInputKey([PACING.REVISION, beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))]);
+  grouped(state) ? motionInputKey([PACING.GROUPING, groupCount(beats, analysis), beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? "", state))]) : motionInputKey([PACING.REVISION, beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))]);
 export const remotionGroupPlanCurrent = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) => {
   const scenes = state?.scenes[beats[0]?.id];
   if (!scenes?.length || !beats.every((beat) => [remotionBeatKey(beat, analysis, "", state), legacyBeatKey(beat, analysis)].includes(state?.inputKeys[beat.id] || ""))) return false;
@@ -154,8 +156,8 @@ export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: Mo
   return Object.keys(state.failures).length ? RT_SERVER.INVALID : pending ? RT_SERVER.PENDING : failed ? COMMON_RUNTIME.SOURCE_TEXT_PARTIAL : RT_SHARED.READY;
 };
 export const remotionStoryBuildCurrent = (script: MotionStoryScript, analysis: MotionStoryAnalysis) => remotionStoryBuildStatus(script, analysis) === RT_SHARED.READY;
-export const remotionStoryRenderable = (script: MotionStoryScript, analysis: MotionStoryAnalysis) => ([RT_SHARED.READY, COMMON_RUNTIME.SOURCE_TEXT_PARTIAL] as string[]).includes(remotionStoryBuildStatus(script, analysis));
+export const remotionStoryRenderable = remotionStoryBuildCurrent;
 export const remotionStoryRecoveryPending = (script: MotionStoryScript) =>
   Object.values(script.gen?.remotion?.scenes || {})
     .flat()
-    .some((scene) => scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED && (scene.build.attempts ?? 1) < C.DRAW_ATTEMPTS);
+    .some((scene) => scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED);

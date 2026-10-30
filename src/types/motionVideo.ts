@@ -368,6 +368,7 @@ export interface MotionStorySpine {
   clues: { detail: string; setupChapterId: string; payoffChapterId: string; payoff: string }[];
 }
 export interface MotionStoryAnalysis {
+  motifs?: string[];
   visualSettings?: import("./motionVisual.js").MotionVisualSettings;
   topicId?: string;
   topicEvidence?: { chapterId: string; quote: string }[];

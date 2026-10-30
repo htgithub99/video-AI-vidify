@@ -40,7 +40,9 @@ import { MOTION_VISUAL as VISUAL } from "../../../../constants/motionVisual.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
 import { MOTION_RENDER_BEHAVIOR as B } from "../../../../constants/motionRenderBehavior.js";
 import { checkRemotionRuntime } from "./motionRemotionRenderService.js";
-import { remotionStoryRenderable, remotionStoryBuildStatus, remotionStoryRecoveryPending } from "./remotion/sceneKeys.js";
+import { remotionStoryRenderable, remotionStoryBuildStatus } from "./remotion/sceneKeys.js";
+import { remotionStateMissingScenes } from "../../../../lib/motionRemotion.js";
+import { MOTION_SCENE_COMPOSITION as C } from "../../../../constants/motionSceneComposition.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../constants/motionRemotionLayout.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../../constants/motionScenePacing.js";
 interface ProductionRecord {
@@ -281,6 +283,14 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
                 throw new Error(P.STEP_FAILED(name, state.error || P.INTERRUPTED));
               }
               receive(state.result as T);
+              if (media === RT_SHARED.SCENES && result.script?.gen?.remotion) {
+                const missing = remotionStateMissingScenes(result.script.gen.remotion);
+                if (missing.length) {
+                  saved.status = S.ERROR;
+                  saved.error = C.INCOMPLETE(missing);
+                  throw new Error(saved.error);
+                }
+              }
               saved.done = true;
               running.delete(name);
               activities.delete(name);
@@ -297,7 +307,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (record.input.visualSettings || record.input.analysis?.visualSettings || record.input.script?.visualSettings) Object.assign(base, motionVisualRequest(record.input));
       const visualSettings = motionVisualSettingsFor(base);
       const buildStatus = visualSettings.mode === RT_SHARED.REMOTION && result.script && result.analysis ? remotionStoryBuildStatus(result.script, result.analysis) : RT_SHARED.READY;
-      if (result.script && ((buildStatus !== RT_SHARED.READY && buildStatus !== COMMON_RUNTIME.SOURCE_TEXT_PARTIAL) || (buildStatus === COMMON_RUNTIME.SOURCE_TEXT_PARTIAL && remotionStoryRecoveryPending(result.script)))) {
+      if (result.script && buildStatus !== RT_SHARED.READY) {
         for (const name of Object.keys(record.steps)) if (name === P.STAGES.SCENES || name.startsWith(P.STAGES.SCENES + RT_SHARED.SYMBOL_588DA4) || name === P.STAGES.RENDER) delete record.steps[name];
         delete result.compiled;
         delete result.rendered;
@@ -536,13 +546,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       signal.throwIfAborted();
       record.job.status = S.COMPLETED;
       record.job.progress = 1;
-      const failedScenes = result.script?.gen?.remotion
-        ? Object.values(result.script.gen.remotion.scenes)
-            .flat()
-            .filter((scene) => scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED).length
-        : 0;
-      record.job.stage = (result.rendered ? P.STAGES.DONE : P.PREVIEW_DONE) + (failedScenes ? `${RUNTIME_VALUES.CON_8DEBC8BA}${failedScenes}${RUNTIME_VALUES.CANH_LOI_CO_THE_TAO_LAI_RIENG_21C9AE12}` : "");
-      if (failedScenes) log(record, record.job.stage);
+      record.job.stage = result.rendered ? P.STAGES.DONE : P.PREVIEW_DONE;
     } catch (error) {
       record.job.status = signal.aborted ? S.CANCELLED : S.ERROR;
       record.job.error = signal.aborted ? undefined : String((error as Error).message);
@@ -648,7 +652,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     if (!previous && store.exists(id)) throw new Error(P.SNAPSHOT_INVALID);
     if (previous) {
       if (previous.inputKey !== key) throw new Error(P.INVALID_RUN);
-      const outdatedRemotion = previous.result.script && previous.result.analysis && motionVisualSettingsFor({ script: previous.result.script, analysis: previous.result.analysis }).mode === RT_SHARED.REMOTION && (!remotionStoryRenderable(previous.result.script, previous.result.analysis) || remotionStoryRecoveryPending(previous.result.script));
+      const outdatedRemotion = previous.result.script && previous.result.analysis && motionVisualSettingsFor({ script: previous.result.script, analysis: previous.result.analysis }).mode === RT_SHARED.REMOTION && !remotionStoryRenderable(previous.result.script, previous.result.analysis);
       const seoOnly = previous.job.status === S.COMPLETED && !outdatedRemotion;
       if (!resume || (seoOnly && (previous.input.seo === false || seoMatches(previous.result.seo, previous.result.script)))) return publicJob(previous);
       const seo = previous.steps[P.STAGES.SEO];

@@ -24,7 +24,7 @@ export interface MotionVideoGenreStage {
   RULE: string;
   SOLO?: boolean;
 }
-const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string; TIMELINE: string; SIGNATURE: string; STAGES: Record<string, MotionVideoGenreStage>; MERGE: boolean }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
+const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string; TIMELINE: string; SIGNATURE: string; STAGES: Record<string, MotionVideoGenreStage>; MOTIFS: string; MERGE: boolean }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
 const GENRE_TEXT = {
   PACKAGING: "VIDEO GENRE (chosen by the user, follow it): ",
   DIRECTIVE: "VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ",
@@ -41,14 +41,20 @@ export const motionVideoGenreWritingProfile = (value: unknown): string => {
 };
 export const motionVideoGenreDirective = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
-  return GENRE_TEXT.DIRECTIVE + profile.PROFILE + " " + profile.PLAN + STAGE.PLAN(Object.keys(profile.STAGES), Object.keys(profile.STAGES).filter((id) => profile.STAGES[id].SOLO)) + " " + profile.TIMELINE + " " + profile.SIGNATURE + GENRE_TEXT.CAST;
+  return GENRE_TEXT.DIRECTIVE + profile.PROFILE + " " + profile.PLAN + STAGE.PLAN(Object.keys(profile.STAGES), Object.keys(profile.STAGES).filter((id) => profile.STAGES[id].SOLO)) + STAGE.MOTIF.PLAN(profile.MOTIFS) + " " + profile.TIMELINE + " " + profile.SIGNATURE + GENRE_TEXT.CAST;
 };
 export const motionVideoGenreStages = (value: unknown): Record<string, MotionVideoGenreStage> => PROFILES[motionVideoGenre(value)].STAGES;
 export const motionVideoGenreMerges = (value: unknown): boolean => PROFILES[motionVideoGenre(value)].MERGE;
 export const motionVideoGenreStageRule = (value: unknown, stages?: string[]): string => {
   const known = PROFILES[motionVideoGenre(value)].STAGES;
-  const items = (stages || []).filter((id) => Object.hasOwn(known, id)).map((id) => STAGE.ITEM(id, known[id].RULE));
-  return items.length ? STAGE.RULE(items) : "";
+  const ids = (stages || []).filter((id) => Object.hasOwn(known, id));
+  const items = ids.map((id) => STAGE.ITEM(id, known[id].RULE));
+  const solo = ids.filter((id) => known[id].SOLO);
+  return items.length ? STAGE.RULE(items) + (ids.length > 1 && solo.length ? STAGE.SOLO_TAIL(solo) : "") : "";
+};
+export const motionVideoGenreEditorProfile = (value: unknown): string => {
+  const profile = PROFILES[motionVideoGenre(value)];
+  return profile.TIMELINE + GENRE_TEXT.CHECK + profile.CHECK;
 };
 export const motionVideoGenreStyleGuide = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];

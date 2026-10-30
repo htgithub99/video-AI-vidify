@@ -24,7 +24,7 @@ import { createCompositionGeometryInspector } from "./compositionGeometryInspect
 import { remotionSceneReadiness } from "../../../../../lib/motionRemotion.js";
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
-import { motionCastIdentity, motionSceneStaging } from "../../../../../lib/motionCastIdentity.js";
+import { motionCastIdentity, motionIdentityContrast, motionSceneStaging } from "../../../../../lib/motionCastIdentity.js";
 import { motionIdentityReferences, motionPlaceReference } from "../../../../../lib/motionIdentityReference.js";
 import { motionStoryEventLedger } from "../../../../../lib/motionStoryContinuity.js";
 import { runMotionAi, motionAiRoutes, mapMotionAiPool, prepareMotionSceneRooms, writeMotionAiDebug, motionCaptchaError } from "../motionStoryService.js";
@@ -47,6 +47,7 @@ import type { MotionAiExecution, MotionAiLog, MotionStoryAnalysis, MotionStorySc
 import type { MotionAiContractState } from "../../../../../types/motionAiContract.js";
 import type { MotionRemotionState, MotionRenderBehavior } from "../../../../../types/motionVisual.js";
 export interface RemotionSceneOptions {
+  retryFailed?: boolean;
   exec: MotionAiExecution;
   mainExec?: MotionAiExecution;
   signal?: AbortSignal;
@@ -186,7 +187,14 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             artDirection: { id: direction.id, revision: direction.revision, rules: direction.rules, staging: MOTION_ILLUSTRATION_PROFILES[settings.profileId].staging || MOTION_ILLUSTRATION_COMMON.STAGING },
             era: analysis.era,
             beat: { id: beat.id, shot: beat.shot },
-            beats: group.beats.map((member) => ({ id: member.id, ...(groupPlaces.length > 1 ? { place: member.place } : {}), scenePlan: member.scenePlan && { subject: member.scenePlan.subject, composition: member.scenePlan.composition, spatialRelations: member.scenePlan.spatialRelations, requiredProps: member.scenePlan.requiredProps, continuity: member.scenePlan.continuity }, action: member.action, time: member.time, weather: member.weather })),
+            beats: group.beats.map((member) => ({
+              id: member.id,
+              ...(groupPlaces.length > 1 ? { place: member.place } : {}),
+              scenePlan: member.scenePlan && { subject: member.scenePlan.subject, composition: member.scenePlan.composition, spatialRelations: member.scenePlan.spatialRelations, requiredProps: member.scenePlan.requiredProps, continuity: member.scenePlan.continuity },
+              action: member.action,
+              time: member.time,
+              weather: member.weather,
+            })),
             pacing: motionScenePacingRule(settings, group.seconds, groupPlaces.length),
             lines: lines.map((line) => ({ id: line.key, text: line.text })),
             cast: analysis.cast.map(({ key, name, alias, role, appearanceOf }) => ({ key, name, alias, role, appearanceOf })),
@@ -198,7 +206,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           const draft = await ask(
             `${RT_SERVER.PLAN}${inputKey}`,
             V.ARTIFACT_SCENE,
-            P.SCENE(context) + RT_SHARED.SYMBOL_01BA47 + C.PLAN_POLICY,
+            P.SCENE(context) + RT_SHARED.SYMBOL_01BA47 + C.PLAN_POLICY + (C.DETAIL.PROFILES.includes(settings.profileId) ? "" : C.DETAIL.PLAN),
             (raw) => {
               const checked = mergeRemotionSceneDraft(raw, state.drafts![inputKey] || [], lines, cast);
               state.drafts![inputKey] = checked.drafts;
@@ -222,6 +230,17 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
               if (dominant) scene.place = dominant;
             }
           }
+          let flattened = 0;
+          for (const scene of state.scenes[beat.id]) {
+            if (scene.view !== C.DETAIL.VIEW || C.DETAIL.PROFILES.includes(settings.profileId)) continue;
+            const focus = scene.nodes.filter((node) => scene.focus?.includes(node.id));
+            if (focus.length && focus.every((node) => node.kind === C.DETAIL.PROP && node.essential)) continue;
+            scene.view = C.DETAIL.WIDE;
+            delete scene.focus;
+            for (const node of scene.nodes) if (node.representation === C.DETAIL.VIEW) node.representation = C.DETAIL.BUST;
+            flattened++;
+          }
+          if (flattened) opts.log(C.DETAIL.LOG(flattened));
           const suggested = motionScenePacingCount(settings, group.seconds);
           if (state.scenes[beat.id].length > Math.ceil(suggested * PACING.OVER_RATIO)) opts.log(PACING.OVER_LOG(planGroups.indexOf(group) + 1, state.scenes[beat.id].length, suggested, PACING.TEXT.vi[motionScenePacing(settings)]));
           for (const member of group.beats) {
@@ -268,7 +287,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const inputKey = remotionCompositionKey(scene, analysis, width, height, scene.drawingNote ?? state.notes![beat.id], state);
       const legacyInputKey = motionInputKey([C.REVISION, scene.sourceKey, scene.purpose, scene.environment, scene.nodes, scene.text, settings, V.PROFILES[settings.profileId].revision, width, height, state.notes![beat.id], legacyPreviousKeys.get(scene.id)]);
       const key = `${RT_SERVER.COMPOSITION}${inputKey}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_16}${scene.id}`;
-      const targeted = !!opts.onlyScenes?.includes(scene.id) && !retry;
+      const targeted = !retry && (!!opts.onlyScenes?.includes(scene.id) || (opts.retryFailed === true && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED));
       const attempts = targeted || scene.build?.inputKey !== inputKey ? 0 : (scene.build?.attempts ?? (scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED ? 1 : 0));
       let drawingRequested = false;
       const requestBudget = opts.review ? { remaining: C.REVIEW_REQUESTS } : undefined;
@@ -279,6 +298,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       };
       opts.log(C.LOG_DRAW(allScenes.indexOf(scene) + 1, allScenes.length, scene.purpose));
       try {
+        const savedDraft = targeted && opts.retryFailed && !opts.onlyScenes?.includes(scene.id) && scene.build?.inputKey === inputKey ? compositions[key] : undefined;
         if (targeted || retry) {
           for (const requestKey of scene.requestKeys || []) {
             delete requests[requestKey];
@@ -288,6 +308,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           delete scene.reviewKey;
           delete compositions[key];
           delete requests[key];
+          if (savedDraft) compositions[key] = savedDraft;
         }
         const existingReady = remotionSceneReadiness(scene, state).preview;
         if (!retry && !targeted && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED && scene.build.inputKey === inputKey && existingReady) {
@@ -312,6 +333,11 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             cast: motionCastIdentity(analysis.cast, settings.profileId, analysis.era).filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
             dialogueSpeakers: speakers,
             staging: motionSceneStaging(scene.nodes, motionNarratorCastKey(analysis), speakers),
+            identityContrast: (() => {
+              const present = motionCastIdentity(analysis.cast, settings.profileId, analysis.era).filter((member) => scene.nodes.some((node) => node.entityId === member.key && !node.anonymous && node.representation !== C.DETAIL.VIEW));
+              const contrast = motionIdentityContrast(present, C.CONTRAST);
+              return contrast.length ? contrast : undefined;
+            })(),
             groups: scene.nodes.some((node) => node.anonymous) ? analysis.groups : undefined,
             previousShot: allScenes[allScenes.indexOf(scene) - 1] ? { view: allScenes[allScenes.indexOf(scene) - 1].view, purpose: allScenes[allScenes.indexOf(scene) - 1].purpose } : undefined,
             continuity: previousAsset ? { text: previous.text, layers: previous.composition!.layers, design: previous.composition!.design, notes: previous.composition!.continuityNotes, placeSvg: motionPlaceReference(previousAsset, previous.composition!) } : undefined,
@@ -336,7 +362,14 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           const recovered = compositions[key] && (await assess(compositions[key]));
           if (recovered?.errors.length) (requests[key] ||= { rejected: 0, errors: [] }).errors = recovered.errors;
           drawingRequested = !(recovered && !recovered.errors.length);
-          const built = !drawingRequested ? recovered!.value : await request(key, C.ARTIFACT, C.PROMPT(context), assess, undefined, context);
+          const brief = C.BRIEF.TEXT(
+            scene.purpose,
+            scene.nodes.map((node) => `${node.id} = ${[node.description, node.pose].filter(Boolean).join(", ").slice(0, C.BRIEF.ITEM_CHARS)}`),
+            context.identityContrast?.length
+              ? context.identityContrast.map((entry) => `${entry.name} = ${entry.traits.join(", ")}`)
+              : context.cast.filter((member) => member.look).map((member) => `${member.name} = ${member.look!.slice(0, C.BRIEF.LOOK_CHARS)}`),
+          );
+          const built = !drawingRequested ? recovered!.value : await request(key, C.ARTIFACT, brief + C.PROMPT(context), assess, undefined, context);
           state.assets[key] = built.asset;
           delete compositions[key];
           scene.composition = built.composition;
@@ -556,7 +589,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       if (interrupted?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw interrupted.reason;
     }
     opts.log(C.LOG_SUMMARY(readyCount(), allScenes.length));
-    opts.progress?.(1, C.LOG_SUMMARY(readyCount(), allScenes.length));
+    opts.progress?.(readyCount() / Math.max(1, allScenes.length), C.LOG_SUMMARY(readyCount(), allScenes.length));
     state.compositionRevision = C.REVISION;
     state.profileRevision = V.PROFILES[settings.profileId].revision;
     if (!Object.keys(state.failures).length && planGroups.every((group) => remotionGroupPlanCurrent(group.beats, analysis, state))) {

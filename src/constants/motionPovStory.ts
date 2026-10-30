@@ -23,5 +23,6 @@ export const MOTION_POV_STORY = {
     end: { RULE: "the end of the conflict and the return to an ordinary life that no longer fits; the plans of the opening set against what remains" },
     coda: { RULE: "the single closing time jump: years later, one quiet scene that pays off the token and reinterprets the refrain, ending on a concrete chosen action", SOLO: true },
   } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MOTIFS: "the personal token (a short noun phrase naming the object) and the refrain phrase tied to it",
   MERGE: true,
 } as const;

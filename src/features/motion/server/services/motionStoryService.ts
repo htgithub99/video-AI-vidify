@@ -2,8 +2,9 @@ import * as COMMON_RUNTIME from "../../../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { motionStoryEventLedger } from "../../../../lib/motionStoryContinuity.js";
-import { motionChapterRanges, motionChapterKeyPoints, motionChapterOverlapFindings, motionChapterContentBeats, motionRepetitionFindings, motionMergeShortChapters } from "../../../../lib/motionStoryTimeline.js";
-import { motionGenreStageFindings } from "../../../../lib/motionGenreStage.js";
+import { motionChapterRanges, motionChapterKeyPoints, motionChapterContentBeats, motionMergeShortChapters } from "../../../../lib/motionStoryTimeline.js";
+import { motionMotifsLost } from "../../../../lib/motionGenreStage.js";
+import { motionScriptFindings } from "../../../../lib/motionScriptFindings.js";
 import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { MOTION_STORY_TIMELINE as TIMELINE } from "../../../../constants/motionStoryTimeline.js";
 import { motionCleanLook, motionAnalysisGroups } from "../../../../lib/motionCastIdentity.js";
@@ -54,10 +55,9 @@ import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import { normalizeMotionHud } from "../../../../lib/motionHistory.js";
-import { motionVideoGenre, motionVideoGenreDirective, motionVideoGenreStageRule, motionVideoGenreStages, motionVideoGenreStyleGuide, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../../../constants/motionGenre.js";
+import { motionVideoGenreEditorProfile, motionVideoGenre, motionVideoGenreDirective, motionVideoGenreStageRule, motionVideoGenreStages, motionVideoGenreStyleGuide, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../../../constants/motionGenre.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../../../constants/motionMusic.js";
 import { MOTION_GENRE_STYLE } from "../../../../constants/motionGenreStyle.js";
-import { motionGenreStyleFindings } from "../../../../lib/motionGenreStyle.js";
 import _ from "lodash";
 import { puppetPackPlanningCapabilities, puppetPackChapterCapabilities } from "./puppet/packCatalog.js";
 import path from "path";
@@ -1442,23 +1442,31 @@ export const analyzeStory = async (
 };
 export const editScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }): Promise<{ beats: MotionBeat[]; edit: { reviewed: number; rewritten: number; notes: string[] } }> => {
   const dna = analysis.videoDna;
-  const writingProfile = motionVideoGenreWritingProfile(analysis.videoGenre);
+  const writingProfile = opts.focusIds ? motionVideoGenreEditorProfile(analysis.videoGenre) : motionVideoGenreWritingProfile(analysis.videoGenre);
+  const motifs = analysis.motifs || [];
+  let motifKept = 0;
   const brief = stringifyJson({ writingProfile, audience: dna?.audienceProfile, narrativeVoice: dna?.narrativeDna?.narrativeVoice || dna?.narrative.voice, callbacks: dna?.narrativeDna?.callbacks, mustPreserve: dna?.mustPreserve, mustNotCopy: dna?.mustNotCopy });
   const byId = new Map(beats.map((b) => [b.id, b]));
   const notes: string[] = [];
   let rewritten = 0;
   const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;
-  const styleFindings = motionGenreStyleFindings(beats, opts.language, analysis.videoGenre);
-  const overlapFindings = analysis.chapters.length > 1 ? motionChapterOverlapFindings(beats, analysis) : [];
-  const repeatFindings = motionRepetitionFindings(beats, opts.language);
-  const stageFindings = motionGenreStageFindings(beats, analysis);
-  const styleIds = new Set([...styleFindings, ...overlapFindings, ...repeatFindings, ...stageFindings].map((finding) => finding.id));
+  const findings = motionScriptFindings(beats, analysis, opts.language);
+  const { style: styleFindings, overlap: overlapFindings, repeat: repeatFindings, stage: stageFindings, echo: echoFindings } = findings;
+  const styleIds = new Set(findings.ids);
+  const sourceWindow = (chapter: MotionChapter, lines: MotionBeat[]): string => {
+    const text = sourceSlice(source, chapter.from, chapter.to);
+    if (!opts.focusIds || text.length <= TIMELINE.EDITOR.SOURCE_CHARS) return text;
+    const own = beats.filter((beat) => beat.chapterId === chapter.id);
+    const ratio = _.mean(lines.filter((line) => line.chapterId === chapter.id).map((line) => (own.indexOf(line) + 0.5) / Math.max(1, own.length)));
+    const start = _.clamp(Math.round(ratio * text.length - TIMELINE.EDITOR.SOURCE_CHARS / 2), 0, text.length - TIMELINE.EDITOR.SOURCE_CHARS);
+    return text.slice(start, start + TIMELINE.EDITOR.SOURCE_CHARS);
+  };
   const editLimit = (lines: MotionBeat[]): number => Math.max(2, Math.ceil(lines.length * 0.15), lines.filter((line) => styleIds.has(line.id)).length);
   const editorPrompt = (lines: MotionBeat[]): string => {
     const chapterIds = new Set(lines.map((line) => line.chapterId));
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
     const previous = stringifyJson(beats.slice(Math.max(0, beats.indexOf(lines[0]) - 2), beats.indexOf(lines[0])).map((beat) => beat.narration));
-    const model = chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceSlice(source, chapter.from, chapter.to))).join(MR.MOTION_TEXT_SYMBOL_27);
+    const model = chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceWindow(chapter, lines))).join(MR.MOTION_TEXT_SYMBOL_27);
     const language = opts.language === MOTION_TEXT_EN ? MOTION_TEXT_ENGLISH : MOTION_TEXT_VIETNAMESE;
     const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
     const limit = editLimit(lines);
@@ -1466,10 +1474,12 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     const overlapFocus = overlapFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const repeatFocus = repeatFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const stageFocus = stageFindings.filter((finding) => lines.some((line) => line.id === finding.id));
-    const established = motionStoryEventLedger(beats.slice(0, beats.indexOf(lines[0])));
+    const echoFocus = echoFindings.filter((finding) => lines.some((line) => line.id === finding.id));
+    const ledger = motionStoryEventLedger(beats.slice(0, beats.indexOf(lines[0])));
+    const established = opts.focusIds && ledger.length > TIMELINE.EDITOR.LEDGER_CHARS ? ledger.slice(-TIMELINE.EDITOR.LEDGER_CHARS) : ledger;
     return withMotionResponsePrompt(
       MOTION_STORY_EDIT_ARTIFACT,
-      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true), styleFocus.length ? MOTION_GENRE_STYLE.FOCUS(styleFocus) : "", overlapFocus.length ? TIMELINE.OVERLAP.FOCUS(overlapFocus) : "", repeatFocus.length ? TIMELINE.REPEAT.FOCUS(repeatFocus) : "", stageFocus.length ? MOTION_GENRE_STAGE.FOCUS(stageFocus) : "", TIMELINE.EDITOR.SCOPE, established ? TIMELINE.EDITOR.LEDGER + RT_SHARED.SYMBOL_01BA47 + established : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true), styleFocus.length ? MOTION_GENRE_STYLE.FOCUS(styleFocus) : "", overlapFocus.length ? TIMELINE.OVERLAP.FOCUS(overlapFocus) : "", repeatFocus.length ? TIMELINE.REPEAT.FOCUS(repeatFocus) : "", stageFocus.length ? MOTION_GENRE_STAGE.FOCUS(stageFocus) : "", echoFocus.length ? MOTION_GENRE_STAGE.ECHO.FOCUS(echoFocus) : "", motifs.length ? MOTION_GENRE_STAGE.MOTIF.KEEP(motifs) : "", TIMELINE.EDITOR.SCOPE, established ? TIMELINE.EDITOR.LEDGER + RT_SHARED.SYMBOL_01BA47 + established : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
   const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, opts.focusIds]);
@@ -1502,6 +1512,10 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
         if (beat.utterances?.length && _.some(beat.utterances, (u) => _.includes(MOTION_STORY_CONFIG.EDIT_KEEP_ROLES, u.role))) continue;
         const ratio = narration.split(MP.WHITESPACE).length / Math.max(1, beat.narration.split(MP.WHITESPACE).length);
         if (ratio < MOTION_STORY_CONFIG.EDIT_RATIO_MIN || ratio > MOTION_STORY_CONFIG.EDIT_RATIO_MAX) continue;
+        if (motionMotifsLost(beat.narration, narration, motifs).length) {
+          motifKept++;
+          continue;
+        }
         apply(beat, narration, e?.reason ? _.toString(e.reason) : undefined);
       }
       for (const beat of group) {
@@ -1514,6 +1528,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
       opts.log?.(MR.MOTION_TEMPLATE_BIEN_TAP_NHOM_CHUONG_BO_QUA(gi + 1, getMotionErrorMessage(error, 100)));
     }
   });
+  if (motifKept) opts.log?.(MOTION_GENRE_STAGE.ECHO.MOTIF_LOG(motifKept));
   opts.log?.(MR.MOTION_TEMPLATE_BIEN_TAP_VIEN_DOC_CAU_SUA_CAU(targets.length, rewritten));
   return { beats: beats.map((b) => byId.get(b.id) || b), edit: { reviewed: targets.length, rewritten, notes: _.take(notes, 40) } };
 };
@@ -1537,7 +1552,9 @@ const OPENING_STYLES = [MR.MOTION_TEXT_A_CONCRETE_MOMENT_OR_IMAGE, MR.MOTION_TEX
 export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number, videoGenre?: unknown): MotionStoryAnalysis => {
   const declaredNeeds = Array.isArray(raw?.illustrationNeeds) ? raw.illustrationNeeds : undefined;
   const stageIds = motionVideoGenreStages(videoGenre);
-  const chapterStages = (value: unknown): string[] => _.uniq(_.flatMap(_.castArray(value ?? []), (item) => _.toString(item).split(MOTION_GENRE_STAGE.SPLIT)).map((id) => _.snakeCase(id))).filter((id) => Object.hasOwn(stageIds, id));
+  const stageOrder = Object.keys(stageIds);
+  const chapterStages = (value: unknown): string[] => _.sortBy(_.uniq(_.flatMap(_.castArray(value ?? []), (item) => _.toString(item).split(MOTION_GENRE_STAGE.SPLIT)).map((id) => _.snakeCase(id))).filter((id) => Object.hasOwn(stageIds, id)), (id) => stageOrder.indexOf(id));
+  const motifs = _.take(_.uniq(_.compact(_.castArray(raw?.motifs || []).map((motif: unknown) => _.trim(_.toString(motif))).filter((motif: string) => motif.length <= MOTION_GENRE_STAGE.MOTIF.CHARS))), MOTION_GENRE_STAGE.MOTIF.MAX);
   const rawChapters = _.castArray(raw?.chapters || []);
   const chapterIds = new Map<string, string>(rawChapters.map((chapter: any, index: number) => [_.toString(chapter?.id || MOTION_TEMPLATE_C_2(String(index + 1))), MOTION_TEMPLATE_C_2(String(index + 1))]));
   let chapters: MotionChapter[] = _.map(_.castArray(raw?.chapters || []), (c: any, i: number) => ({
@@ -1622,6 +1639,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           })),
         }
       : {}),
+    ...(motifs.length ? { motifs } : {}),
     title: _.truncate(_.toString(raw?.title || source.title), { length: 120 }),
     logline: _.truncate(_.toString(raw?.logline || MR.MOTION_TEXT_EMPTY), { length: 300 }),
     genre,
@@ -1707,7 +1725,13 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
   const completed: MotionBeat[] = [];
   for (const [index, part] of parts.entries()) {
     opts.signal?.throwIfAborted();
-    const section = PROMPT.CHAPTER_PART(index, parts.length, part.points, parts[index - 1]?.points.at(-1), parts[index + 1]?.points[0]);
+    const written = completed.map((beat) => beat.narration.trim()).filter(Boolean);
+    const recent: string[] = [];
+    for (const line of [...written].reverse()) {
+      if (recent.join(" ").length + line.length > PROMPT.CHAPTER_PART_WRITTEN_CHARS) break;
+      recent.unshift(line);
+    }
+    const section = [PROMPT.CHAPTER_PART(index, parts.length, part.points, written.at(-1), parts[index + 1]?.points[0]), recent.length ? PROMPT.CHAPTER_PART_WRITTEN(recent) : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
     const partChapter = { ...chapter, targetSeconds: part.seconds };
     const partSource = { ...source, text: part.source, segments: [{ t: chapter.from || 0, text: part.source }] };
     const result = await writeChapterBeatsPart(partSource, analysis, partChapter, {
@@ -1741,13 +1765,13 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   const prompt = MOTION_GEN_CHAPTER_PROMPT({
     preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), SOURCE_READING_RULES),
     role: PROMPT.CHAPTER_ROLE,
-    outline: opts.section || chapterOutline(analysis, chapter),
+    outline: [chapterOutline(analysis, chapter), opts.section].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     genre: motionVideoGenreStyleGuide(analysis.videoGenre),
     title: analysis.title,
     logline: analysis.logline,
     chapterId: chapter.id,
     chapterTitle: chapter.title,
-    chapterSummary: opts.section ? MR.MOTION_TEXT_EMPTY : chapter.summary,
+    chapterSummary: chapter.summary,
     languageNote: [MR.MOTION_TEMPLATE_WRITE_NATURAL((analysis.videoDna || analysis.creativeBlueprint)?.narrative.voice || MR.MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT, language), motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     language,
     units,

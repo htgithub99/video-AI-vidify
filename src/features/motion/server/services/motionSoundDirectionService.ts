@@ -75,7 +75,7 @@ export const directMotionSound = async (script: MotionStoryScript, analysis: Mot
       promptOf,
       MOTION_SOUND_CONFIG.DIRECTION_ITEMS,
       undefined,
-      (before, next) => before.chapterId !== next.chapterId || before.place !== next.place,
+      (before, next) => before.chapterId !== next.chapterId,
     );
     await mapMotionAiPool(
       groups,

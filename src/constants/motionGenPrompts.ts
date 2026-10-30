@@ -97,7 +97,7 @@ Requirements:
 
 JSON format:
 {"title":"…","logline":"…","genre":"","genre2":"","factual":true,"videoDna":{…},"look":"clean","accent":"#ffb070","era":"…",
- "sfxMood":"history","chapters":[{"id":"c1","title":"…","summary":"…","from":0,"to":95,"weight":3,"mustKeep":false,"hook":"…","keyPoints":["(01:12) …"],"handoff":"…","stage":"…"}],
+ "sfxMood":"history","chapters":[{"id":"c1","title":"…","summary":"…","from":0,"to":95,"weight":3,"mustKeep":false,"hook":"…","keyPoints":["(01:12) …"],"handoff":"…","stage":"…"}],"motifs":["…"],
  "cast":[],
  "groups":[{"key":"…","name":"…","look":"…"}],
  "places":[{"key":"main_space","name":"…","description":"…","interior":false,"time":"day"}],

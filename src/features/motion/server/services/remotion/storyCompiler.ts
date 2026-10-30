@@ -3,7 +3,8 @@ import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemotionLayout.js";
 import { motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
-import { layoutRemotionNodes, validateRemotionSpec } from "../../../../../lib/motionRemotion.js";
+import { layoutRemotionNodes, validateRemotionSpec, remotionStateMissingScenes } from "../../../../../lib/motionRemotion.js";
+import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSceneComposition.js";
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_ASPECT_BASE } from "../../../../../constants/motionVideo.js";
@@ -11,7 +12,8 @@ import type { MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from ".
 import type { MotionRemotionSpec, MotionRemotionTimedScene, MotionRenderBehavior } from "../../../../../types/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBehavior.js";
 import { buildSubtitles, computeBeatTimeline, estimateBeatSeconds } from "../motionDirectorService.js";
-import { remotionStoryRenderable } from "./sceneKeys.js";
+import { remotionStoryRenderable, remotionPlanGroups } from "./sceneKeys.js";
+import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionScenePacing.js";
 import { compileRemotionSound } from "./soundCompiler.js";
 import { motionMusicMood, motionMusicSegments } from "../motionMusicService.js";
 import type { PuppetLine } from "../../../../../lib/motionPuppet.js";
@@ -20,7 +22,9 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   const settings = motionVisualSettingsFor({ analysis, script });
   const state = script.gen?.remotion;
   if (settings.mode !== RT_SHARED.REMOTION || !state || stringifyJson(settings) !== stringifyJson(state.settings)) throw new Error(V.SETTINGS_CHANGED);
-  if (!opts.review && Object.keys(state.failures).length) throw new Error(V.SCENES_REQUIRED);
+  const owners = state.pacingRevision === PACING.REVISION ? (analysis ? remotionPlanGroups(script, analysis, state).map((group) => group.id) : Object.keys(state.scenes)) : script.beats.map((beat) => beat.id);
+  const missing = [...new Set([...owners.filter((id) => !state.scenes[id]?.length), ...remotionStateMissingScenes(state)])];
+  if (!opts.review && missing.length) throw new Error(C.INCOMPLETE(missing));
   if (!opts.review && analysis && !remotionStoryRenderable(script, analysis)) throw new Error(V.SCENES_REQUIRED);
   const aspect = opts.aspect || RT_SHARED.VALUE_16_9;
   const dimensions = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE[RT_SHARED.VALUE_16_9];
@@ -107,5 +111,5 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     subtitles,
     music: { mood: motionMusicMood(analysis), cues: [], segments: motionMusicSegments(analysis, script.beats, timeline.starts) },
   };
-  return { spec: validateRemotionSpec(spec), starts: timeline.starts, sfxCues: compileRemotionSound(spec, script, timeline.starts, timeline.ends, opts.voiceTrack), missing: [] as string[] };
+  return { spec: validateRemotionSpec(spec), starts: timeline.starts, sfxCues: compileRemotionSound(spec, script, timeline.starts, timeline.ends, opts.voiceTrack), missing };
 };
