@@ -12,4 +12,16 @@ export const MOTION_POV_STORY = {
     "TIMELINE (POV): the story is lived forward in one present-tense line. Each chapter narrates only the events it owns (its keyPoints and its source range) and continues from the moment the previous chapter stopped; an event owned by another chapter is never narrated again, not even as a recap. Hindsight ('sau này bạn nghe kể…') may name a later outcome only once in the whole video. A single closing time jump ('Nhiều năm sau…') is allowed only in the final chapter. Every promise, token or callback that is mentioned later is first shown happening on screen.",
   SIGNATURE:
     "VISUAL SIGNATURE: the protagonist's look states at least two fixed visual traits that no extra of the same side shares (for example a headgear colour or crest, a hair shape, a unique accessory or mark, one clothing colour detail); each invented companion gets one such trait; real people keep their historically iconic traits. These traits are written into each cast look so every scene can repeat them. Every cast look also states hair colour, length and style plus one face trait (beard, scar, freckles, eyebrow shape) and the person's gender as drawn, because headgear comes off; a signature made only of headgear or a tiny accessory is not enough.",
+  STAGES: {
+    ordinary: { RULE: "ordinary life before the change: exact age, place and moment, small sensory details and modest plans, kept brisk; it ends on the object, message or event that ends that life" },
+    summons: { RULE: "the summons or change: the order arrives, the body reacts, a short leave-taking; the personal token and its phrase are given here unless already given" },
+    preparation: { RULE: "preparation compressed into fast lists of what you take, learn and endure; each companion is introduced by one habit, object or line" },
+    waiting: { RULE: "the journey or the waiting: slow down; dread grows because nothing happens; small concrete details, companions' habits and dry humour; the token is touched once" },
+    ordeal: { RULE: "the central ordeal told almost in real time: countdowns and the source's exact numbers of days, minutes, steps or distances; very short sentences; one-line paragraphs at the turns" },
+    grind: { RULE: "the long grind told as a rhythm of verbs and repeated days; one morally ambiguous moment left unresolved; the token is touched in fear" },
+    loss: { RULE: "the loss of a companion: sudden, unheroic and unexplained; the small promise between you matters now" },
+    end: { RULE: "the end of the conflict and the return to an ordinary life that no longer fits; the plans of the opening set against what remains" },
+    coda: { RULE: "the single closing time jump: years later, one quiet scene that pays off the token and reinterprets the refrain, ending on a concrete chosen action", SOLO: true },
+  } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MERGE: true,
 } as const;

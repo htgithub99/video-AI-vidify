@@ -2,8 +2,11 @@ import * as COMMON_RUNTIME from "../../../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { motionStoryEventLedger } from "../../../../lib/motionStoryContinuity.js";
-import { motionChapterRanges, motionChapterOverlapFindings } from "../../../../lib/motionStoryTimeline.js";
+import { motionChapterRanges, motionChapterKeyPoints, motionChapterOverlapFindings, motionChapterContentBeats, motionRepetitionFindings, motionMergeShortChapters } from "../../../../lib/motionStoryTimeline.js";
+import { motionGenreStageFindings } from "../../../../lib/motionGenreStage.js";
+import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { MOTION_STORY_TIMELINE as TIMELINE } from "../../../../constants/motionStoryTimeline.js";
+import { motionCleanLook, motionAnalysisGroups } from "../../../../lib/motionCastIdentity.js";
 import { closeMotionJsonContainers } from "../../../../lib/motionJsonRecovery.js";
 import { parseRemotionAssetReply } from "../../../../lib/motionVectorAsset.js";
 import { MOTION_PRODUCTION } from "../../../../constants/motionProduction.js";
@@ -51,7 +54,7 @@ import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import { normalizeMotionHud } from "../../../../lib/motionHistory.js";
-import { motionVideoGenre, motionVideoGenreDirective, motionVideoGenreStyleGuide, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../../../constants/motionGenre.js";
+import { motionVideoGenre, motionVideoGenreDirective, motionVideoGenreStageRule, motionVideoGenreStages, motionVideoGenreStyleGuide, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../../../constants/motionGenre.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../../../constants/motionMusic.js";
 import { MOTION_GENRE_STYLE } from "../../../../constants/motionGenreStyle.js";
 import { motionGenreStyleFindings } from "../../../../lib/motionGenreStyle.js";
@@ -172,6 +175,7 @@ import type { MotionAiLog } from "../../../../types/motionVideo.js";
 import { generateContentWithRetry } from "../../../../server/services/geminiService.js";
 import { cancelGlobalBrowserCleanup, retainGlobalBrowser } from "../../../../server/services/imageGeneratorService.js";
 import { MotionAiWorkerPool } from "./motionAiWorkerPool.js";
+import { MotionAiRoomPool } from "./motionAiRoomPool.js";
 import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_NOT_RELEASED_ERROR } from "../../../../constants/browserLifecycle.js";
 import { MotionBrowserLifecycle, waitForMotionBrowser } from "../../../../lib/motionBrowserLifecycle.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
@@ -422,6 +426,7 @@ interface MotionAiRun {
   lastWorkerId?: string;
   signal: AbortSignal;
   rooms: Map<string, AiPlanningFallbackProvider>;
+  contextRooms: Set<string>;
   pending: Set<Promise<unknown>>;
   counts: Record<string, number>;
   workers: Map<string, MotionAiWorkerPool>;
@@ -450,9 +455,12 @@ interface RetainedEditorialSession {
   active: Set<Promise<void>>;
 }
 const editorialSessions = new Map<string, RetainedEditorialSession>();
+const motionRooms = new MotionAiRoomPool((identity) => closeChatPlanningRoom({ ...identity, provider: identity.provider as AiPlanningFallbackProvider }, true));
 const closeMotionAiRun = async (run: MotionAiRun): Promise<void> => {
+  await motionRooms.closeProject(run.projectId);
   await Promise.allSettled(_.map(_.values(AiPlanningFallbackProvider), (provider) => closeChatPlanningRoomsForProject({ provider, projectId: run.projectId }, false)));
   run.rooms.clear();
+  run.contextRooms.clear();
   run.scenePreparations.clear();
 };
 export const releaseMotionEditorialSession = async (id: string): Promise<void> => {
@@ -514,10 +522,21 @@ export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (li
 const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<void> => {
   const provider = run.rooms.get(workerId);
   if (!provider) return;
-  run.rooms.delete(workerId);
-  run.roomRefreshes.delete(workerId);
-  run.roomRecoveries.delete(workerId);
-  await closeChatPlanningRoom({ provider, projectId: run.projectId, workerId }).catch(_.noop);
+  await motionRooms.close({ provider, projectId: run.projectId, workerId });
+};
+const acquireMotionAiRoom = async (run: MotionAiRun, workerId: string, provider: AiPlanningFallbackProvider, signal?: AbortSignal): Promise<() => void> => {
+  const release = await motionRooms.acquire(
+    { provider, projectId: run.projectId, workerId },
+    () => {
+      run.rooms.delete(workerId);
+      run.contextRooms.delete(workerId);
+      run.roomRefreshes.delete(workerId);
+      run.roomRecoveries.delete(workerId);
+    },
+    signal,
+  );
+  run.rooms.set(workerId, provider);
+  return release;
 };
 export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T>, log?: MotionAiLog, _keepBrowser = false, signal?: AbortSignal, editorial?: MotionEditorialSession): Promise<T> => {
   let retained: RetainedEditorialSession | undefined;
@@ -541,7 +560,7 @@ export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T
   }
   const projectId = retained?.projectId || MR.MOTION_TEMPLATE_SYMBOL_287(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, runId);
   const planningRun = beginChatPlanningRun(projectId, Date.now(), runId);
-  const shared: MotionAiRun = retained?.run || { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: retained?.controller.signal || planningRun.signal, rooms: new Map(), pending: new Set(), counts: {}, workers: new Map(), scenePreparations: new Map(), roomRecoveries: new Map(), roomRefreshes: new Set(), roomGenerations: new Map(), halt: {} };
+  const shared: MotionAiRun = retained?.run || { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: retained?.controller.signal || planningRun.signal, rooms: new Map(), contextRooms: new Set(), pending: new Set(), counts: {}, workers: new Map(), scenePreparations: new Map(), roomRecoveries: new Map(), roomRefreshes: new Set(), roomGenerations: new Map(), halt: {} };
   if (editorial && retained) {
     shared.editorial ||= { context: editorial.context };
     if (!editorial.worker) shared.editorial.context = editorial.context;
@@ -576,7 +595,7 @@ export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T
     finish();
     unlock?.();
     if (editorial && retained && editorialSessions.get(editorial.id) === retained && !retained.active.size) {
-      retained.timer = setTimeout(() => void releaseMotionEditorialSession(editorial.id), run.halt.error || retained.controller.signal.aborted ? 0 : MOTION_EDITORIAL.IDLE_MS);
+      retained.timer = setTimeout(() => void releaseMotionEditorialSession(editorial.id).catch(_.noop), run.halt.error || retained.controller.signal.aborted ? 0 : MOTION_EDITORIAL.IDLE_MS);
       retained.timer.unref();
     }
   }
@@ -599,7 +618,7 @@ export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index:
       }
     }
   };
-  const workerIds = role === MOTION_AI_ROLE.DRAW ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : parent?.editorial ? MOTION_STORY_CONFIG.WORKER_IDS.slice(1) : MOTION_STORY_CONFIG.WORKER_IDS;
+  const workerIds = role === MOTION_AI_ROLE.DRAW ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : MOTION_STORY_CONFIG.WORKER_IDS;
   const lanes = Math.max(1, Math.min(limit, items.length, workerIds.length));
   await Promise.all(_.times(lanes, (laneIndex) => (parent ? motionAiRunStore.run({ ...parent, workerMode: !!parent.editorial || parent.workerMode, workerId: workerIds[laneIndex] }, lane) : lane())));
   if (failure !== undefined) throw failure;
@@ -661,47 +680,47 @@ const captchaPageText = async (page: any): Promise<string> => {
 export const motionCaptchaPageReady = (provider: string, url: string, text: string, hasInput: boolean): boolean => !!text.trim() && !MOTION_CAPTCHA.PATTERN.test(url + MR.MOTION_TEXT_SYMBOL_27 + text) && (hasInput || (provider === RT_SERVER.GEMINI_CHAT && MOTION_CAPTCHA.VERIFIED_GEMINI_LANDING.test(url)));
 const solveMotionCaptcha = async (provider: string, model: string, page: any, headless: boolean, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
   const C = MOTION_CAPTCHA;
-  const projectId = C.PROJECT(provider);
+  const run = motionAiRunStore.getStore()!;
   const started = Date.now();
   let reminded = started;
   let stable = 0;
   let openFails = 0;
   const sourceUrl = page && !page.isClosed?.() ? page.url() : undefined;
   let view = headless ? undefined : page;
-  const recoveryRoom = { provider: provider as AiPlanningFallbackProvider, projectId };
+  const recoveryRoom = { provider: provider as AiPlanningFallbackProvider, projectId: run.projectId, workerId: run.workerId };
   log?.(C.LOG_WAIT(provider));
-  try {
-    for (;;) {
-      if (Date.now() - started > C.WAIT_MS) throw markCaptcha(new Error(C.ERR_TIMEOUT(provider, Math.round(C.WAIT_MS / 60000))));
-      if (!view || view.isClosed?.()) {
-        try {
-          await prepareChatPlanningRoom({ ...recoveryRoom, model: model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, chromeHeadless: false, signal, allowDefaultGeminiModel: true });
-          view = getChatPlanningRoom(recoveryRoom);
-          if (view && sourceUrl && view.url() !== sourceUrl) await view.goto(sourceUrl, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
-        } catch (error) {
-          if (signal?.aborted) throw error;
-          view = _.get(error, MOTION_TEXT_ROOMPAGE);
-          if (!view && ++openFails >= C.OPEN_FAILS_MAX) throw markCaptcha(error instanceof Error ? error : new Error(String(error)));
-        }
-      } else {
-        await view.bringToFront().catch(_.noop);
-        const text = await captchaPageText(view);
-        const hasInput = !!(await view
-          .locator(C.READY_SELECTOR)
-          .filter({ visible: true })
-          .count()
-          .catch(() => 0));
-        if (!motionCaptchaPageReady(provider, view.url(), text, hasInput)) stable = 0;
-        else if (++stable >= C.STABLE_POLLS) break;
+  if (headless) {
+    await closeChatPlanningRoom(recoveryRoom, true);
+    run.contextRooms.delete(run.workerId);
+  }
+  for (;;) {
+    if (Date.now() - started > C.WAIT_MS) throw markCaptcha(new Error(C.ERR_TIMEOUT(provider, Math.round(C.WAIT_MS / 60000))));
+    if (!view || view.isClosed?.()) {
+      try {
+        await prepareChatPlanningRoom({ ...recoveryRoom, model: model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, chromeHeadless: false, signal, allowDefaultGeminiModel: true });
+        view = getChatPlanningRoom(recoveryRoom);
+        if (view && sourceUrl && view.url() !== sourceUrl) await view.goto(sourceUrl, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        view = _.get(error, MOTION_TEXT_ROOMPAGE);
+        if (!view && ++openFails >= C.OPEN_FAILS_MAX) throw markCaptcha(error instanceof Error ? error : new Error(String(error)));
       }
-      if (Date.now() - reminded >= C.REMIND_MS) {
-        reminded = Date.now();
-        log?.(C.LOG_REMIND(provider, Math.round((reminded - started) / 60000)));
-      }
-      await motionServiceDelay(C.POLL_MS, signal);
+    } else {
+      await view.bringToFront().catch(_.noop);
+      const text = await captchaPageText(view);
+      const hasInput = !!(await view
+        .locator(C.READY_SELECTOR)
+        .filter({ visible: true })
+        .count()
+        .catch(() => 0));
+      if (!motionCaptchaPageReady(provider, view.url(), text, hasInput)) stable = 0;
+      else if (++stable >= C.STABLE_POLLS) break;
     }
-  } finally {
-    await closeChatPlanningRoom({ provider: provider as AiPlanningFallbackProvider, projectId }).catch(_.noop);
+    if (Date.now() - reminded >= C.REMIND_MS) {
+      reminded = Date.now();
+      log?.(C.LOG_REMIND(provider, Math.round((reminded - started) / 60000)));
+    }
+    await motionServiceDelay(C.POLL_MS, signal);
   }
   log?.(C.LOG_SOLVED(provider));
 };
@@ -755,13 +774,17 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
         const results = await Promise.allSettled(
           MOTION_STORY_CONFIG.SCENE_WORKER_IDS.map(async (workerId) => {
             linked.throwIfAborted();
-            if (run.rooms.get(workerId) === exec.provider) return;
-            if (run.rooms.has(workerId)) await closeMotionAiRoom(run, workerId);
+            const release = await acquireMotionAiRoom(run, workerId, exec.provider as AiPlanningFallbackProvider, linked);
             const readySignal = AbortSignal.any([linked, AbortSignal.timeout(AIR.READINESS_TIMEOUT_MS)]);
-            await waitForMotionBrowser(
-              Promise.resolve().then(() => prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true })),
-              readySignal,
-            );
+            try {
+              await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true });
+              readySignal.throwIfAborted();
+            } catch (error) {
+              await closeMotionAiRoom(run, workerId);
+              throw error;
+            } finally {
+              release();
+            }
           }),
         );
         linked.throwIfAborted();
@@ -777,6 +800,9 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
       throw error;
     });
     run.scenePreparations.set(key, preparation);
+    run.pending.add(preparation);
+    const settled = () => run.pending.delete(preparation);
+    void preparation.then(settled, settled);
   }
   await waitForMotionBrowser(run.scenePreparations.get(key)!, linked);
 };
@@ -784,8 +810,8 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const run = motionAiRunStore.getStore();
   if (!run) return runInMotionAiSession(randomUUID(), () => runMotionAi(prompt, artifactType, exec, signal, log, images, attempt, contract), log, true, signal);
   const drawing = exec.role === MOTION_AI_ROLE.DRAW;
-  const poolKey = drawing ? MOTION_EDITORIAL.SCENES : run.editorial ? (run.workerMode ? MOTION_EDITORIAL.HELPERS : MOTION_EDITORIAL.MAIN) : MOTION_EDITORIAL.SHARED;
-  const workerIds = drawing ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : run.editorial ? (run.workerMode ? MOTION_STORY_CONFIG.WORKER_IDS.slice(1) : MOTION_STORY_CONFIG.WORKER_IDS.slice(0, 1)) : MOTION_STORY_CONFIG.WORKER_IDS;
+  const poolKey = drawing ? MOTION_EDITORIAL.SCENES : MOTION_EDITORIAL.CONTENT;
+  const workerIds = drawing ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : MOTION_STORY_CONFIG.WORKER_IDS;
   const workers = run.workers.get(poolKey) || new MotionAiWorkerPool(workerIds);
   run.workers.set(poolKey, workers);
   const pending = (async () => {
@@ -914,20 +940,23 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   const { requestId, submission } = state;
   const identity = MOTION_TEMPLATE_ARTIFACTTYPE_REQUESTID(String(artifactType), String(requestId));
   const currentRun = motionAiRunStore.getStore();
-  const restoreContext = currentRun?.editorial && (currentRun.rooms.get(currentRun.workerId) !== provider || currentRun.roomRefreshes.has(currentRun.workerId) || attempt > 0);
-  const editorialContext = restoreContext ? motionPromptEditorialContext(artifactType, currentRun.editorial!.context) : MR.MOTION_TEXT_EMPTY;
-  const basePrompt = editorialContext + prompt;
-  const singleMessage = motionPromptSingleMessage(artifactType);
-  const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
-  const fullPrompt = singleMessage ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity)) : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity));
-  log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
-  const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")), singleMessage);
-  if (measurement.overflow) log?.(singleMessage ? PROMPT.SINGLE_MESSAGE_LOG(artifactType, measurement.finalChars) : PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
-  try {
-    fs.appendFileSync(path.join(getLogsDirectory(), PROMPT.DIAGNOSTIC_FILE), stringifyJson({ at: new Date().toISOString(), artifact: artifactType, provider: exec.provider, model: exec.model, ...measurement }) + PROMPT.SEPARATOR);
-  } catch {
-    _.noop();
-  }
+  const requestPrompt = () => {
+    const restoreContext = currentRun?.editorial && (!currentRun.contextRooms.has(currentRun.workerId) || currentRun.roomRefreshes.has(currentRun.workerId) || attempt > 0);
+    const editorialContext = restoreContext ? motionPromptEditorialContext(artifactType, currentRun.editorial!.context) : MR.MOTION_TEXT_EMPTY;
+    const basePrompt = editorialContext + prompt;
+    const singleMessage = motionPromptSingleMessage(artifactType);
+    const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
+    const fullPrompt = singleMessage ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity)) : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity));
+    log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
+    const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")), singleMessage);
+    if (measurement.overflow) log?.(singleMessage ? PROMPT.SINGLE_MESSAGE_LOG(artifactType, measurement.finalChars) : PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
+    try {
+      fs.appendFileSync(path.join(getLogsDirectory(), PROMPT.DIAGNOSTIC_FILE), stringifyJson({ at: new Date().toISOString(), artifact: artifactType, provider: exec.provider, model: exec.model, ...measurement }) + PROMPT.SEPARATOR);
+    } catch {
+      _.noop();
+    }
+    return { fullPrompt, measurement };
+  };
   const runGeminiFallback = () => runMotionAiOnce(prompt, artifactType, { ...exec, provider: AiPlanningFallbackProvider.GeminiChat, model: AiPlanningChatModel.GeminiFlash }, signal, log, images, 0, undefined, contentRepair);
   const switchTo = MOTION_STORY_CONFIG.ROOM_SWITCH[provider];
   const limitTo = switchTo || MOTION_STORY_CONFIG.LIMIT_SWITCH[provider];
@@ -959,6 +988,8 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     let replaceRoom = false;
     let roomOk = false;
     let releaseGate: () => void = _.noop;
+    let releaseRoom: () => void = _.noop;
+    let fullPrompt: string = MR.MOTION_TEXT_EMPTY;
     let captchaRetry = false;
     let epoch = captchaEpochs.get(provider) || 0;
     const recoveryKey = AIR.MODEL_KEY(provider, exec.model);
@@ -970,6 +1001,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       await providerRecoveries.wait(recoveryKey, requestId, roomCtrl.signal);
       epoch = captchaEpochs.get(provider) || 0;
       releaseGate = await acquireProviderGate(provider, roomCtrl.signal, exec.role);
+      if (run) releaseRoom = await acquireMotionAiRoom(run, workerId!, provider, roomCtrl.signal);
+      const preparedPrompt = requestPrompt();
+      fullPrompt = preparedPrompt.fullPrompt;
+      const measurement = preparedPrompt.measurement;
       log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.READY });
       watchdog = setTimeout(() => {
         timedOut = true;
@@ -1011,7 +1046,6 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
               : provider === AiPlanningFallbackProvider.GrokChat
                 ? (_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: exec.model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined)
                 : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
-      if (run && run.rooms.has(workerId!) && run.rooms.get(workerId!) !== provider) await closeMotionAiRoom(run, workerId!);
       if (run?.roomRefreshes.delete(workerId!)) {
         const repairs = run.roomRecoveries.get(workerId!) || 0;
         if (repairs < AIR.ROOM_RELOADS) {
@@ -1019,15 +1053,17 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
         } else {
           run.roomRecoveries.delete(workerId!);
-          await closeMotionAiRoom(run, workerId!);
+          await closeChatPlanningRoom({ provider, projectId, workerId }, true);
+          run.contextRooms.delete(workerId!);
         }
       }
-      if (run && (!run.rooms.has(workerId!) || attempt > 0)) {
-        if (!run.rooms.has(workerId!)) run.roomGenerations.set(workerId!, (run.roomGenerations.get(workerId!) || 0) + 1);
+      if (run && (!run.contextRooms.has(workerId!) || attempt > 0)) {
+        if (!run.contextRooms.has(workerId!)) run.roomGenerations.set(workerId!, (run.roomGenerations.get(workerId!) || 0) + 1);
         log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.READY });
         run.rooms.set(workerId!, provider);
         await prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true });
       }
+      run?.contextRooms.add(workerId!);
       countMotionRequest(provider, log);
       const r = await generatePlanningWithChatUi({
         provider,
@@ -1182,18 +1218,22 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       signal?.removeEventListener(MOTION_TEXT_ABORT, relay);
       run?.signal.removeEventListener(MOTION_TEXT_ABORT, relay);
       if (!retryRoom && !captchaRetry) providerRecoveries.finish(recoveryKey, requestId, roomOk || signal?.aborted || run?.signal.aborted ? undefined : terminalError);
-      if (run) {
-        if (!roomOk && !retryRoom && !captchaRetry) await closeMotionAiRoom(run, workerId!);
-      } else {
-        await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
+      try {
+        if (run) {
+          if (retryRoom) {
+            if (!replaceRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
+            else await closeMotionAiRoom(run, workerId!);
+          } else if (!roomOk && !captchaRetry) await closeMotionAiRoom(run, workerId!);
+        } else {
+          await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
+        }
+        cancelGlobalBrowserCleanup();
+      } finally {
+        releaseRoom();
       }
-      cancelGlobalBrowserCleanup();
     }
     if (captchaRetry) return runMotionAiOnce(prompt, artifactType, exec, signal, log, images, attempt, state, contentRepair);
     if (retryRoom) {
-      if (!replaceRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
-      else if (run) await closeMotionAiRoom(run, workerId!);
-      else await closeChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
       submission.attempted = false;
       submission.completed = false;
       submission.abandoned = false;
@@ -1206,6 +1246,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   }
   log?.(MOTION_TEXT_GOI_AI_QUA_API);
   countMotionRequest(MOTION_STORY_CONFIG.API_PROVIDER, log);
+  const { fullPrompt } = requestPrompt();
   const contents = images?.length ? [{ role: MOTION_TEXT_USER, parts: [{ text: fullPrompt }, ..._.map(images, (im) => ({ inlineData: { mimeType: im.mimeType, data: fs.readFileSync(im.path).toString(MOTION_TEXT_BASE64) } }))] }] : fullPrompt;
   const response = await generateContentWithRetry({ contents, task: { capability: AiTaskCapability.ScriptWriting }, config: { responseMimeType: MOTION_TEXT_APPLICATION_JSON } });
   const text = _.isString(response) ? response : response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || MR.MOTION_TEXT_EMPTY;
@@ -1397,7 +1438,7 @@ export const analyzeStory = async (
   const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
   const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
   opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
-  return complete(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target), raw)));
+  return complete(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target, opts.videoGenre), raw)));
 };
 export const editScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }): Promise<{ beats: MotionBeat[]; edit: { reviewed: number; rewritten: number; notes: string[] } }> => {
   const dna = analysis.videoDna;
@@ -1409,7 +1450,9 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
   const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;
   const styleFindings = motionGenreStyleFindings(beats, opts.language, analysis.videoGenre);
   const overlapFindings = analysis.chapters.length > 1 ? motionChapterOverlapFindings(beats, analysis) : [];
-  const styleIds = new Set([...styleFindings, ...overlapFindings].map((finding) => finding.id));
+  const repeatFindings = motionRepetitionFindings(beats, opts.language);
+  const stageFindings = motionGenreStageFindings(beats, analysis);
+  const styleIds = new Set([...styleFindings, ...overlapFindings, ...repeatFindings, ...stageFindings].map((finding) => finding.id));
   const editLimit = (lines: MotionBeat[]): number => Math.max(2, Math.ceil(lines.length * 0.15), lines.filter((line) => styleIds.has(line.id)).length);
   const editorPrompt = (lines: MotionBeat[]): string => {
     const chapterIds = new Set(lines.map((line) => line.chapterId));
@@ -1421,9 +1464,12 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     const limit = editLimit(lines);
     const styleFocus = styleFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const overlapFocus = overlapFindings.filter((finding) => lines.some((line) => line.id === finding.id));
+    const repeatFocus = repeatFindings.filter((finding) => lines.some((line) => line.id === finding.id));
+    const stageFocus = stageFindings.filter((finding) => lines.some((line) => line.id === finding.id));
+    const established = motionStoryEventLedger(beats.slice(0, beats.indexOf(lines[0])));
     return withMotionResponsePrompt(
       MOTION_STORY_EDIT_ARTIFACT,
-      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true), styleFocus.length ? MOTION_GENRE_STYLE.FOCUS(styleFocus) : "", overlapFocus.length ? TIMELINE.OVERLAP.FOCUS(overlapFocus) : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      [MR.MOTION_TEMPLATE_ROLE_EDITOR_IN_CHIEF_OF_THIS_VIDEO_REVIEWING_THE_NARRATION_LIKE_A(brief, language, previous, review, model, limit), motionStoryLanguageGuide(opts.language, true, true), styleFocus.length ? MOTION_GENRE_STYLE.FOCUS(styleFocus) : "", overlapFocus.length ? TIMELINE.OVERLAP.FOCUS(overlapFocus) : "", repeatFocus.length ? TIMELINE.REPEAT.FOCUS(repeatFocus) : "", stageFocus.length ? MOTION_GENRE_STAGE.FOCUS(stageFocus) : "", TIMELINE.EDITOR.SCOPE, established ? TIMELINE.EDITOR.LEDGER + RT_SHARED.SYMBOL_01BA47 + established : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
   const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, opts.focusIds]);
@@ -1440,7 +1486,7 @@ export const editScript = async (source: MotionStorySource, analysis: MotionStor
     editorPrompt,
     PROMPT.EDITOR_ITEMS,
     undefined,
-    (before, next) => before.chapterId !== next.chapterId,
+    opts.focusIds ? undefined : (before, next) => before.chapterId !== next.chapterId,
   );
   await mapMotionAiPool(groups, async (group, gi) => {
     try {
@@ -1488,8 +1534,10 @@ const foldAdultChapters = (chapters: MotionChapter[]): MotionChapter[] => {
   return _.map(out, (c, i) => ({ ...c, id: MOTION_TEMPLATE_C_2(String(i + 1)) }));
 };
 const OPENING_STYLES = [MR.MOTION_TEXT_A_CONCRETE_MOMENT_OR_IMAGE, MR.MOTION_TEXT_A_SURPRISING_FACT_OR_NUMBER, MR.MOTION_TEXT_A_CONTRAST_OR_A_TURN, MR.MOTION_TEXT_THE_REPORTED_WORDS_OR_ACTION_OF_A_PERSON_FROM_THE_SOURCE, MR.MOTION_TEXT_A_CALM_STATEMENT_THAT_CONTINUES_THE_PREVIOUS_THOUGHT, MR.MOTION_TEXT_A_QUESTION_ONLY_IF_IT_SOUNDS_NATURAL];
-export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number): MotionStoryAnalysis => {
+export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number, videoGenre?: unknown): MotionStoryAnalysis => {
   const declaredNeeds = Array.isArray(raw?.illustrationNeeds) ? raw.illustrationNeeds : undefined;
+  const stageIds = motionVideoGenreStages(videoGenre);
+  const chapterStages = (value: unknown): string[] => _.uniq(_.flatMap(_.castArray(value ?? []), (item) => _.toString(item).split(MOTION_GENRE_STAGE.SPLIT)).map((id) => _.snakeCase(id))).filter((id) => Object.hasOwn(stageIds, id));
   const rawChapters = _.castArray(raw?.chapters || []);
   const chapterIds = new Map<string, string>(rawChapters.map((chapter: any, index: number) => [_.toString(chapter?.id || MOTION_TEMPLATE_C_2(String(index + 1))), MOTION_TEMPLATE_C_2(String(index + 1))]));
   let chapters: MotionChapter[] = _.map(_.castArray(raw?.chapters || []), (c: any, i: number) => ({
@@ -1503,16 +1551,18 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
     ...(_.trim(_.toString(c?.hook)) ? { hook: _.truncate(_.toString(c.hook), { length: 240 }) } : {}),
     ...(_.isArray(c?.keyPoints) && c.keyPoints.length ? { keyPoints: declaredNeeds?.length ? _.compact(_.map(c.keyPoints, (k: unknown) => _.toString(k))) : _.take(_.compact(_.map(c.keyPoints, (k: unknown) => _.truncate(_.toString(k), { length: 200 }))), 8) } : {}),
     ...(_.trim(_.toString(c?.handoff)) ? { handoff: _.truncate(_.toString(c.handoff), { length: 240 }) } : {}),
+    ...(chapterStages(c?.stage ?? c?.stages).length ? { stages: chapterStages(c?.stage ?? c?.stages) } : {}),
   }));
   if (!declaredNeeds?.length) chapters = foldAdultChapters(chapters);
   if (_.isEmpty(chapters)) chapters = [{ id: MOTION_TEXT_C1, title: source.title, summary: MR.MOTION_TEXT_EMPTY, from: 0, to: source.sourceSeconds }];
-  chapters = motionChapterRanges(chapters, source.sourceSeconds);
+  chapters = motionChapterKeyPoints(motionChapterRanges(chapters, source.sourceSeconds), source.sourceSeconds).chapters;
   const spans = _.map(chapters, (c, i) => Math.max(10, (c.to ?? chapters[i + 1]?.from ?? source.sourceSeconds) - (c.from ?? 0)));
   const meanSpan = _.mean(spans) || 1;
   const weighted = _.some(chapters, (c) => c.weight);
   const shares = _.map(chapters, (c, i) => (weighted ? (c.weight ?? 3) * (0.6 + 0.4 * Math.min(2.5, spans[i] / meanSpan)) : spans[i] / meanSpan));
   const total = _.sum(shares);
   chapters = _.map(chapters, (c, i) => ({ ...c, targetSeconds: Math.max(c.mustKeep ? 25 : 15, Math.round((shares[i] / total) * target)) }));
+  if (!declaredNeeds?.length) chapters = motionMergeShortChapters(chapters, videoGenre);
   const used = new Set<string>();
   const cast: MotionCastMember[] = expandInitialCastNames(
     _.compact(
@@ -1528,7 +1578,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           ...(m.appearanceOf ? { appearanceOf: slugKey(m.appearanceOf) } : {}),
           role: _.truncate(_.toString(m.role || MR.MOTION_TEXT_EMPTY), { length: 60 }),
           description: _.truncate(_.toString(m.description || MR.MOTION_TEXT_EMPTY), { length: 200 }),
-          look: _.truncate(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY), { length: 320 }),
+          look: _.truncate(motionCleanLook(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY)), { length: 320 }),
           gender,
           ...(_.includes(MOTION_AUDIO_DIRECTION.AGES, m.age) ? { age: m.age } : {}),
           ...(m.narrator === true ? { narrator: true } : {}),
@@ -1587,6 +1637,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
     era: _.truncate(_.toString(raw?.era || MR.MOTION_TEXT_EMPTY), { length: 120 }),
     chapters,
     cast,
+    ...(motionAnalysisGroups(raw?.groups) ? { groups: motionAnalysisGroups(raw?.groups) } : {}),
     places,
     facts: _.take(
       _.map(_.castArray(raw?.facts || []), (f: any) => ({ claim: _.toString(f?.claim), status: pickEnum([MOTION_TEXT_OK, MOTION_TEXT_UNCERTAIN, MOTION_TEXT_WRONG] as const as any, f?.status, MOTION_TEXT_UNCERTAIN), note: _.toString(f?.note || MR.MOTION_TEXT_EMPTY) })),
@@ -1621,6 +1672,7 @@ interface MotionChapterWriteOptions {
   signal?: AbortSignal;
   log?: MotionAiLog;
   previous?: MotionBeat[];
+  history?: MotionBeat[];
   previousSummary?: string;
   isFirst: boolean;
   isLast: boolean;
@@ -1637,7 +1689,7 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
   opts.signal?.throwIfAborted();
   const expectedUnits = (chapter.targetSeconds || 120) * (opts.speechRate || (opts.language !== MOTION_TEXT_EN ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND));
   const sourceText = sourceSlice(source, chapter.from, chapter.to);
-  const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.previousSummary, opts.isFirst, opts.isLast]);
+  const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.history, opts.previousSummary, opts.isFirst, opts.isLast]);
   const continuing = opts.draft?.inputKey === inputKey;
   const parts = continuing && opts.draft?.partition ? opts.draft.partition : motionChapterParts(chapter, analysis, sourceText, expectedUnits, continuing && opts.draft?.parts ? PROMPT.CHAPTER_OUTPUT_UNITS : undefined);
   if (!parts.length || opts.durationRepair || (opts.draft && !opts.draft.parts)) return writeChapterBeatsPart(source, analysis, chapter, opts);
@@ -1664,6 +1716,7 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
       isFirst: opts.isFirst && index === 0,
       isLast: opts.isLast && index === parts.length - 1,
       previous: [...(opts.previous || []), ...completed],
+      history: [...(opts.history || opts.previous || []), ...completed],
       draft: drafts[String(index)],
       onDraft: (draft) => {
         drafts[String(index)] = draft;
@@ -1678,7 +1731,10 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   const isVi = opts.language !== MOTION_TEXT_EN;
   const seconds = chapter.targetSeconds || 120;
   const units = Math.round(seconds * (opts.speechRate || (isVi ? MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND : MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND)) * MOTION_STORY_CONFIG.LENGTH_SAFETY);
-  const beatsWanted = Math.max(2, Math.round(seconds / MOTION_STORY_CONFIG.TARGET_BEAT_SECONDS));
+  const timeBeats = Math.max(2, Math.round(seconds / MOTION_STORY_CONFIG.TARGET_BEAT_SECONDS));
+  const beatsWanted = motionChapterContentBeats(sourceSlice(source, chapter.from, chapter.to), chapter.keyPoints?.length || 0, timeBeats);
+  const thinSource = beatsWanted < timeBeats * TIMELINE.CONTENT.THIN_RATIO;
+  if (thinSource && !opts.durationRepair) opts.log?.(TIMELINE.CONTENT.LOG(chapter.id, beatsWanted, timeBeats));
   const language = isVi ? MOTION_TEXT_VIETNAMESE : MOTION_TEXT_ENGLISH;
   const unitName = isVi ? MOTION_TEXT_VIETNAMESE_SYLLABLES_WORDS : MOTION_TEXT_WORDS;
   const prev = opts.previous?.length ? _.map(_.takeRight(opts.previous, PROMPT.CHAPTER_PREVIOUS_BEATS), (b) => MOTION_TEMPLATE_SYMBOL_53(String(b.narration))).join(MOTION_TEXT_SYMBOL_27) : opts.previousSummary ? MOTION_TEMPLATE_SYMBOL_53(String(opts.previousSummary)) : MR.MOTION_TEXT_EMPTY;
@@ -1698,7 +1754,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     unitName,
     seconds,
     beats: beatsWanted,
-    perBeat: Math.max(8, Math.round(units / beatsWanted)),
+    perBeat: Math.max(8, Math.round(units / timeBeats)),
     firstNote: opts.isFirst ? (analysis.series?.previous ? MOTION_SERIES_PROMPT.FIRST(analysis.series.index + 1, analysis.series.count, analysis.series.previous) : MR.MOTION_TEXT_OPEN_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY) : MR.MOTION_TEXT_EMPTY,
     lastNote: opts.isLast ? (analysis.series?.next ? MOTION_SERIES_PROMPT.LAST(analysis.series.index + 1, analysis.series.count, analysis.series.next) : MR.MOTION_TEXT_END_ACCORDING_TO_THE_PROJECT_S_NARRATIVE_STRUCTURE_NO_COMPULSORY_) : MR.MOTION_TEXT_EMPTY,
     previous: prev ? MOTION_TEMPLATE_CONTINUE_NATURALLY_FROM_THE_PREVIOUS_CHAPTER_WHICH_ENDED_2(String(prev)) : MR.MOTION_TEXT_EMPTY,
@@ -1706,7 +1762,10 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       analysis.visualSettings?.mode === RT_SHARED.REMOTION || closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_SCENES : MOTION_GEN_STORYBOARD_RULES(language),
       MOTION_CAST_NAMES.RULE,
       opts.multiVoice === false ? PROMPT.CHAPTER_SINGLE_VOICE : PROMPT.CHAPTER_VOICE,
-      motionStoryEventLedger(opts.previous),
+      motionStoryEventLedger(opts.history || opts.previous),
+      TIMELINE.KEYPOINT.SOURCE_PRIORITY,
+      motionVideoGenreStageRule(analysis.videoGenre, chapter.stages) || null,
+      thinSource ? TIMELINE.CONTENT.RULE(beatsWanted) : null,
       MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
       analysis.visualSettings?.mode !== RT_SHARED.REMOTION && analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + stringifyJson(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id).map(({ evidence, place, states, objects, features }) => ({ evidence, place, states, objects, features }))) : null,
       analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
@@ -1726,7 +1785,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   const durationScope = opts.durationRepairScope ? [CHAPTER_REPAIR.DURATION_REVISION, opts.durationRepairScope].join(PROMPT.SEPARATOR) : CHAPTER_REPAIR.DURATION_REVISION;
   const durationRevision = opts.durationRepair ? [durationScope] : [];
   const inputKey = motionInputKey([request, expectedUnits, ...durationRevision]);
-  const perBeat = Math.max(8, Math.round(units / beatsWanted));
+  const perBeat = Math.max(8, Math.round(units / timeBeats));
   const voiceRule = opts.multiVoice === false ? PROMPT.CHAPTER_SINGLE_VOICE : PROMPT.CHAPTER_VOICE;
   const alternateRequest = request.replace(voiceRule, opts.multiVoice === false ? PROMPT.CHAPTER_VOICE : PROMPT.CHAPTER_SINGLE_VOICE);
   const compatibleKeys = [request, alternateRequest].flatMap((question) => [question, question.replace(QA.CHAPTER_LENGTH_RULE(units, unitName, seconds, beatsWanted, perBeat), QA.LEGACY_CHAPTER_LENGTH_RULE(units, unitName, seconds, beatsWanted, perBeat))]).map((question) => motionInputKey([question, expectedUnits, ...durationRevision]));
@@ -1807,7 +1866,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
           language: opts.language,
           chapter: opts.durationRepair ? { id: chapter.id, title: chapter.title } : chapter,
           previous: prev,
-          eventLedger: motionStoryEventLedger(opts.previous),
+          eventLedger: motionStoryEventLedger(opts.history || opts.previous),
           next: analysis.chapters[analysis.chapters.findIndex((item) => item.id === chapter.id) + 1],
           cast: analysis.cast.map((item) => _.pick(item, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.ROLE, RT_SHARED.GENDER, RT_SHARED.AGE])),
           places: analysis.places.map((item) => _.pick(item, [RT_SHARED.KEY, RT_SHARED.NAME, RT_SERVER.DESCRIPTION])),

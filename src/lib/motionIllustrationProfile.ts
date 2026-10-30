@@ -12,7 +12,7 @@ export const motionIllustrationDirection = (id: MotionRemotionProfile, stage: Mo
   storyContract: MOTION_ILLUSTRATION_COMMON.STORY_CONTRACT,
   rules: MOTION_ILLUSTRATION_PROFILES[id][stage],
   ...(stage === RT_SHARED.DRAWING
-    ? { identity: MOTION_ILLUSTRATION_COMMON.IDENTITY, staging: MOTION_ILLUSTRATION_PROFILES[id].staging || MOTION_ILLUSTRATION_COMMON.STAGING, anatomy: MOTION_ILLUSTRATION_PROFILES[id].anatomy || MOTION_ILLUSTRATION_COMMON.ANATOMY, motion: MOTION_ILLUSTRATION_PROFILES[id].motion, ...(MOTION_ILLUSTRATION_PROFILES[id].layouts ? { layouts: MOTION_ILLUSTRATION_PROFILES[id].layouts } : {}) }
+    ? { identity: MOTION_ILLUSTRATION_COMMON.IDENTITY, closeUps: MOTION_ILLUSTRATION_COMMON.DETAIL, text: MOTION_ILLUSTRATION_COMMON.TEXT, staging: MOTION_ILLUSTRATION_PROFILES[id].staging || MOTION_ILLUSTRATION_COMMON.STAGING, anatomy: MOTION_ILLUSTRATION_PROFILES[id].anatomy || MOTION_ILLUSTRATION_COMMON.ANATOMY, motion: MOTION_ILLUSTRATION_PROFILES[id].motion, ...(MOTION_ILLUSTRATION_PROFILES[id].layouts ? { layouts: MOTION_ILLUSTRATION_PROFILES[id].layouts } : {}) }
     : {}),
 });
 export const motionCompositionReference = (id: MotionRemotionProfile, design?: MotionSceneDesign): string => {

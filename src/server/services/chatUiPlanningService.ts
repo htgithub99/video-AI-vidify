@@ -360,14 +360,15 @@ export const closeChatBrowserIfIdle = async (log?: (line: string) => void): Prom
   if (!closed) log?.(MOTION_BROWSER_HANDOFF.SHARED_BUSY);
   return closed;
 };
-export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity): Promise<void> => {
+export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, requireClosed = false): Promise<void> => {
   const rooms = getProviderRooms(request.provider);
   if (!rooms) return;
   const roomKey = getPlanningRoomKey(request);
   const page = rooms.get(roomKey);
+  if (requireClosed && page && !page.isClosed()) await page.close();
   rooms.delete(roomKey);
   pendingRoomResponses.delete(roomKey);
-  if (page && !page.isClosed()) await page.close().catch(() => undefined);
+  if (!requireClosed && page && !page.isClosed()) await page.close().catch(() => undefined);
   if (!hasActiveChatRooms()) scheduleChatBrowserCleanup();
 };
 export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">, closeBrowser = true): Promise<void> => {
@@ -697,8 +698,9 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
     return page;
   } catch (error) {
     if (!signal?.aborted && url === EXTERNAL_URLS.GEMINI_CHAT && (await geminiSessionInterruption(page))) return page;
-    rooms.delete(projectId);
     if (!page.isClosed()) await page.close().catch(() => undefined);
+    if (page.isClosed()) rooms.delete(projectId);
+    else rooms.set(projectId, page);
     throw error;
   }
 };

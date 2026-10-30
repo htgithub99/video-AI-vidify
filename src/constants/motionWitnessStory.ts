@@ -12,4 +12,15 @@ export const MOTION_WITNESS_STORY = {
     "TIMELINE (witness recollection): the narrator remembers in order. Each chapter retells only the events it owns; one short foreshadowing sentence ('Sau này tôi mới biết…') may come before an event, and the event itself is then told once, in its own chapter. Never retell an earlier chapter's events at length; a marked memory flashback is used only when the source has one. Every promise, token or callback pays off only after it has been set up.",
   SIGNATURE:
     "VISUAL SIGNATURE: the narrator and every renamed character get at least two fixed visual traits in their cast look (headgear or hair, a unique accessory or mark, a clothing colour) that extras never share, so the same person is recognisable in every scene. Every cast look also states hair colour, length and style plus one face trait (beard, scar, freckles, eyebrow shape) and the person's gender as drawn, because headgear comes off; a signature made only of headgear or a tiny accessory is not enough.",
+  STAGES: {
+    losses: { RULE: "stark opening on the narrator's own family: a bare fact or number, its consequence and one more remark, then the first losses" },
+    signs: { RULE: "strange signs or pressures that grow by progressive repetition: the same thing returns, closer each time; fear shown through the body and ordinary things going wrong" },
+    rules: { RULE: "someone who knows explains and sets the rules in short spoken lines; every rule set here has a consequence later" },
+    remedy: { RULE: "the attempted remedy and the relief it brings; daily life compressed" },
+    broken_rule: { RULE: "the choice that breaks a rule, told slowly: what was decided, by whom and why" },
+    climax: { RULE: "the climax told step by step in short sentences, slowing down at each discovery" },
+    price: { RULE: "the price paid, stated plainly without lament" },
+    coda: { RULE: "the time-jump coda: where each family member is now, one small lingering detail and a concrete present action of the narrator, left unexplained", SOLO: true },
+  } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MERGE: true,
 } as const;

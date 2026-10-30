@@ -3,6 +3,7 @@ import { MOTION_POV_STORY as POV } from "./motionPovStory.js";
 import { MOTION_WITNESS_STORY as WITNESS } from "./motionWitnessStory.js";
 import { MOTION_CHRONICLE_STORY as CHRONICLE } from "./motionChronicleStory.js";
 import { MOTION_VERDICT_STORY as VERDICT } from "./motionVerdictStory.js";
+import { MOTION_GENRE_STAGE as STAGE } from "./motionGenreStage.js";
 export const MOTION_VIDEO_GENRES = { POV: "pov", WITNESS: "witness", CHRONICLE: "chronicle", VERDICT: "verdict" } as const;
 export type MotionVideoGenre = (typeof MOTION_VIDEO_GENRES)[keyof typeof MOTION_VIDEO_GENRES];
 export const MOTION_VIDEO_GENRE_DEFAULT: MotionVideoGenre = MOTION_VIDEO_GENRES.POV;
@@ -19,7 +20,11 @@ export const MOTION_VIDEO_GENRE_TEXT = {
     OPTIONS: { pov: "POV – You are the character", witness: "Witness recollection (first-person)", chronicle: "Entire history in N minutes (chronicle)", verdict: "Big question – weigh every candidate (verdict)" },
   },
 } as const;
-const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string; TIMELINE: string; SIGNATURE: string }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
+export interface MotionVideoGenreStage {
+  RULE: string;
+  SOLO?: boolean;
+}
+const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string; TIMELINE: string; SIGNATURE: string; STAGES: Record<string, MotionVideoGenreStage>; MERGE: boolean }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
 const GENRE_TEXT = {
   PACKAGING: "VIDEO GENRE (chosen by the user, follow it): ",
   DIRECTIVE: "VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ",
@@ -36,7 +41,14 @@ export const motionVideoGenreWritingProfile = (value: unknown): string => {
 };
 export const motionVideoGenreDirective = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
-  return GENRE_TEXT.DIRECTIVE + profile.PROFILE + " " + profile.PLAN + " " + profile.TIMELINE + " " + profile.SIGNATURE + GENRE_TEXT.CAST;
+  return GENRE_TEXT.DIRECTIVE + profile.PROFILE + " " + profile.PLAN + STAGE.PLAN(Object.keys(profile.STAGES), Object.keys(profile.STAGES).filter((id) => profile.STAGES[id].SOLO)) + " " + profile.TIMELINE + " " + profile.SIGNATURE + GENRE_TEXT.CAST;
+};
+export const motionVideoGenreStages = (value: unknown): Record<string, MotionVideoGenreStage> => PROFILES[motionVideoGenre(value)].STAGES;
+export const motionVideoGenreMerges = (value: unknown): boolean => PROFILES[motionVideoGenre(value)].MERGE;
+export const motionVideoGenreStageRule = (value: unknown, stages?: string[]): string => {
+  const known = PROFILES[motionVideoGenre(value)].STAGES;
+  const items = (stages || []).filter((id) => Object.hasOwn(known, id)).map((id) => STAGE.ITEM(id, known[id].RULE));
+  return items.length ? STAGE.RULE(items) : "";
 };
 export const motionVideoGenreStyleGuide = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];

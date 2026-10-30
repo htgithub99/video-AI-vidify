@@ -1,5 +1,51 @@
 export const MOTION_STORY_TIMELINE = {
   RANGE: { STAMP: /\((?:(\d+):)?(\d{1,2}):(\d{2})\)/, TOLERANCE: 2, MIN_SPAN: 10, LOG: (count: number) => `Chia chương: sửa mốc thời gian của ${count} chương cho khớp nguồn và các mốc chính, không gọi thêm AI.` },
+  MERGE: {
+    MIN_SECONDS: 90,
+    MAX_POINTS: 8,
+    SUMMARY_JOIN: " ",
+    ID: (index: number) => `c${index + 1}`,
+  },
+  KEYPOINT: {
+    PREFIX: /^\s*\((?:\d+:)?\d{1,2}:\d{2}\)\s*/,
+    WORD: /[\p{L}\p{N}]+/gu,
+    SIMILAR: 0.6,
+    MIN_WORDS: 3,
+    LOG: (moved: number, invented: number) => `Dàn ý: bỏ ${moved} điểm chính bị giao trùng cho nhiều chương và ${invented} mốc thời gian vượt độ dài nguồn; không gọi thêm AI.`,
+    SOURCE_PRIORITY:
+      "SOURCE PRIORITY: the transcript lines are authoritative for every fact, order, cause and outcome. If an outline keyPoint, summary or handoff contradicts the transcript, follow the transcript and keep the outline only for pacing. Never narrate an event assigned to another chapter's keyPoints.",
+  },
+  EDITOR: {
+    SCOPE:
+      "STORY STATE IS FIXED: never change who holds or gave an object, who is alive, wounded or absent, where people are, or the order of events. The ESTABLISHED STORY below (built from the lines already written) wins over the outline, Video DNA callbacks and summaries; if a line agrees with the established story, keep its facts even when the outline says otherwise. Fix a state contradiction only when the line contradicts the established story itself.",
+    LEDGER: "ESTABLISHED STORY (lines already written before these):",
+    LOG_FOCUS: (count: number, total: number) => `Biên tập viên: chỉ đọc ${count}/${total} câu cần xem (giọng kể, trùng sự kiện, câu lặp, câu nối chương).`,
+    LOG_SKIP: "Biên tập viên: không có câu cần sửa, bỏ qua lượt biên tập.",
+  },
+  CONTENT: {
+    SOURCE_WORDS_PER_BEAT: 7,
+    POINT_BEATS: 2,
+    MIN_BEATS: 3,
+    THIN_RATIO: 0.7,
+    STAMP: /\((?:\d+:)?\d{1,2}:\d{2}\)/g,
+    WORD: /[\p{L}\p{N}']+/gu,
+    RULE: (beats: number) =>
+      `THIN SOURCE: this chapter's transcript holds only enough events for about ${beats} beats. Write about ${beats} beats; never pad with repeated images, refrains, restated orders or a second telling of the same event. Being shorter than the requested length is acceptable here.`,
+    LOG: (chapter: string, beats: number, wanted: number) => `Chương ${chapter}: nguồn chỉ đủ khoảng ${beats} nhịp (thời lượng gợi ý ${wanted}); không độn câu, thời lượng chỉ ghi nhận.`,
+  },
+  REPEAT: {
+    WORD: /[\p{L}\p{N}']+/gu,
+    SIZE: { vi: 5, en: 4 } as Record<string, number>,
+    VI: /^vi/i,
+    STOP: /^(?:the|a|an|and|or|of|to|in|on|at|is|it|you|your|he|she|his|her|they|them|that|this|then|but|not|was|are|be|for|with|as|by|from|one|có|là|và|của|một|những|các|bạn|tôi|nó|đã|đang|sẽ|không|thì|mà|cho|với|trong|trên|rồi|cũng|lại)$/iu,
+    CONTENT_WORDS: 2,
+    NEAR: 3,
+    MAX: 12,
+    ISSUE: (phrase: string) => `repeats the phrase "${phrase}" already used shortly before or more than once; vary it or cut the repetition while keeping this line's facts and length`,
+    FOCUS: (items: { id: string; issue: string }[]): string =>
+      "REPETITION FOCUS: these lines reuse a phrase or image already used; rewrite each as described: " + items.map((item) => item.id + " (" + item.issue + ")").join("; ") + ".",
+    LOG: (count: number): string => `Biên tập viên: ${count} câu lặp cụm từ/hình ảnh, sửa trong lượt biên tập sẵn có.`,
+  },
   OVERLAP: {
     SENTENCE: /[^.!?…]+[.!?…]*/gu,
     NARRATOR_NAME: /^(?:bạn|tôi|you|i|me)$/iu,

@@ -144,6 +144,29 @@ try {
   await service.reloadChatPlanningRoom(current);
   await service.generatePlanningWithChatUi(transportRequest());
   assert.equal(await page.evaluate(() => (window as any).sendCount), 3);
+  await service.closeChatPlanningRoom(current, true);
+  assert.equal(page.isClosed(), true);
+  assert.equal(service.geminiRooms.has(service.getPlanningRoomKey(current)), false);
+  const failedRoom = {
+    isClosed: () => false,
+    close: async () => {
+      throw new Error("room close failed");
+    },
+  };
+  service.geminiRooms.set(service.getPlanningRoomKey(current), failedRoom);
+  await assert.rejects(service.closeChatPlanningRoom(current, true), /room close failed/);
+  assert.equal(service.geminiRooms.get(service.getPlanningRoomKey(current)), failedRoom);
+  service.geminiRooms.delete(service.getPlanningRoomKey(current));
+  const failedNavigation = {
+    ...failedRoom,
+    goto: async () => {
+      throw new Error("room navigation failed");
+    },
+  };
+  const failedContext = { newPage: async () => failedNavigation };
+  await assert.rejects(service.createRoom(failedContext, V.URL(port, V.WORKERS[0]), service.geminiRooms, service.getPlanningRoomKey(current)), /room navigation failed/);
+  assert.equal(service.geminiRooms.get(service.getPlanningRoomKey(current)), failedNavigation);
+  service.geminiRooms.delete(service.getPlanningRoomKey(current));
   process.stdout.write(V.PASSED);
 } catch (error) {
   throw new Error(error instanceof Error ? error.stack : String(error));

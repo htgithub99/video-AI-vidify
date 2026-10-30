@@ -11,4 +11,10 @@ export const MOTION_VERDICT_STORY = {
   TIMELINE: "TIMELINE (verdict): the opening may pose the question and tease the answer, and the final chapter restates the verdict; between them evidence is ordered by argument, but each event or piece of evidence is narrated once, in the chapter that owns it. Later chapters refer back to it in one short clause and never retell it.",
   SIGNATURE:
     "VISUAL SIGNATURE: every candidate, suspect or key figure gets at least two fixed visual traits in its cast look (headgear or hair, a unique accessory, a clothing colour) kept in every scene so comparisons stay readable; extras never share them. Every cast look also states hair colour, length and style plus one face trait (beard, scar, freckles, eyebrow shape) and the person's gender as drawn, because headgear comes off; a signature made only of headgear or a tiny accessory is not enough.",
+  STAGES: {
+    opening: { RULE: "the opening: a vivid source moment with date and place ending on a surprising fact, the question with its precise distinction, the candidates, the criteria, the fixed metaphor device and labels, the starting balance and the core race", SOLO: true },
+    candidate: { RULE: "exactly one candidate: date-and-place stamp, the episode step by step with source numbers and one memorable detail, the competing explanations, the direct chapter question, a fair short answer with the fixed verdict label, then a bridge to the next candidate", SOLO: true },
+    verdict: { RULE: "the verdict: every candidate recapped with its label, the final choice reasoned with source numbers, a verdict per side when they differ, the alternative views, the human cost, the viewers' choice and the closing line tied to the metaphor device", SOLO: true },
+  } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MERGE: false,
 } as const;

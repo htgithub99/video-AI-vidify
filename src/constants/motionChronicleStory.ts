@@ -11,4 +11,10 @@ export const MOTION_CHRONICLE_STORY = {
   TIMELINE: "TIMELINE (chronicle): strictly chronological. Each chapter owns one continuous period of the source and opens with its date or era marker; never step back into an earlier chapter's events and never anticipate a later chapter's events, except one closing legacy line in the final chapter. Each event, battle, death or coronation is told exactly once.",
   SIGNATURE:
     "VISUAL SIGNATURE: every recurring real figure gets at least two fixed iconic traits in its cast look (headgear or hair, an emblem or accessory, a signature clothing colour) so viewers recognise them across eras and scenes; generic soldiers and crowds never carry these traits. Every cast look also states hair colour, length and style plus one face trait (beard, scar, freckles, eyebrow shape) and the person's gender as drawn, because headgear comes off; a signature made only of headgear or a tiny accessory is not enough.",
+  STAGES: {
+    opening: { RULE: "the cold open: three to five very short present-tense sentences at a later dramatic moment, starting with month, year and place; then the thesis line; then back to the origin and its first era", SOLO: true },
+    era: { RULE: "one named era: short spoken era title and date-and-place stamp, one concrete scene told in four to six beats with a physical detail and a consequence, the recurring motif, and a time-jump bridge to the next era", SOLO: true },
+    finale: { RULE: "the final era: it returns to the cold-open moment so that moment gains a new meaning, states what survives today and ends with one line pointing to a related story", SOLO: true },
+  } as Record<string, { RULE: string; SOLO?: boolean }>,
+  MERGE: false,
 } as const;

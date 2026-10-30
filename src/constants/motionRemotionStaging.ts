@@ -45,6 +45,6 @@ export const MOTION_REMOTION_STAGING = {
   FACT_POLICY:
     "Preserve established causal facts from the event ledger, including object location, disposal method, owner, alive/dead state and completed actions. Do not later claim a discarded/scattered object was previously buried, or undo a completed event without an explicit intervening cause. Develop only the next events; keep kinship and identity coherent. Rewrite the new passage when needed, preserving the accepted previous story. Event ledger:",
   FACT_BUDGET: 3200,
-  EVENT_VERBS: /chôn|rải|đổ|ném|đốt|chết|mất|giết|đào|cất|giấu|trao|nhận|vứt|\b(?:bury|buried|scatter|burn|kill|dead|discard|hide|gave|received)\b/iu,
+  EVENT_VERBS: /chôn|rải|đổ|ném|đốt|chết|mất|giết|đào|cất|giấu|trao|nhận|vứt|đưa|giữ|trả lại|cầm|đặt vào|lấy|tặng|đánh rơi|bỏ lại|biến mất|bị thương|trở về|\b(?:bury|buried|scatter|burn|kill|dead|discard|hide|gave|received|give|gives|giving|hand(?:s|ed)?|pass(?:es|ed)?|place[sd]?|keep|keeps|kept|return(?:s|ed)?|lose|loses|lost|take|takes|took|taken|drop(?:s|ped)?|wounded|vanish(?:es|ed)?|left behind|never came back|did not come back)\b/iu,
   VISIBLE_CHANGE: /lem tro|dính máu|mặt tái|da xám|mặt xám|trắng bệch|mắt đen kịt|\b(?:ash-stained|bloodstained|wounded|ghostly|translucent)\b/giu,
 } as const;

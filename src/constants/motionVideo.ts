@@ -130,7 +130,7 @@ export const MOTION_STORY_CONFIG = {
   CANNED_REFUSAL_RE: /(I can'?t help|I'?m (not able|unable) to help|I can'?t assist|I'?m (just )?a language model|tôi không được (?:thiết kế|lập trình) để|tôi không thể (giúp|hỗ trợ|thực hiện)|mình không thể (giúp|hỗ trợ)|tôi chỉ là một mô hình ngôn ngữ)/i,
   CANNED_REFUSAL_LOG: (provider: string, artifact: string, chars: number): string => `AI ${provider} trả lời từ chối mẫu cho bước ${artifact} (prompt ${chars} ký tự) – thường do prompt quá dài hoặc bị bộ lọc chặn.`,
   AI_PARALLEL: 3,
-  WORKER_IDS: ["motion-primary", "motion-second", "motion-third"],
+  WORKER_IDS: ["motion-primary", "motion-second"],
   SCENE_WORKER_IDS: ["motion-scene-first", "motion-scene-second", "motion-scene-third"],
   SCENE_ROOMS_PREPARING: "[Dựng cảnh] Đang mở 3 room AI dựng cảnh riêng.",
   SCENE_ROOMS_READY: (ready: number, total: number): string => `[Dựng cảnh] Đã sẵn sàng ${ready}/${total} room AI dựng cảnh.`,

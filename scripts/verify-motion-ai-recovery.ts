@@ -149,7 +149,7 @@ try {
     }
     throw new Error(C.PROVIDER_ERROR_RESPONSE_ERROR);
   };
-  await within(service.runInMotionAiSession(V.RUN, () => service.mapMotionAiPool([0, 1, 2], () => call(exec, undefined, (line: string) => sharedLogs.push(line)), 3)));
+  await within(service.runInMotionAiSession(V.RUN, () => service.mapMotionAiPool([0, 1, 2], () => call(exec, undefined, (line: string) => sharedLogs.push(line)), 3, MOTION_AI_ROLE.DRAW)));
   assert.equal(providerFailureCalls, 3 + R.ROOM_RETRIES);
   assert.equal(fixture.reloaded.length, R.ROOM_RELOADS);
   assert.equal(new Set(fixture.reloaded.map((request) => request.workerId)).size, 1);
@@ -234,7 +234,7 @@ try {
     }
   });
   reset();
-  const editorialCall = () => service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, storyExec);
+  const editorialCall = () => service.runMotionAi(V.PROMPT, V.ARTIFACT, storyExec);
   const editorialStage = (id: string, fn: () => Promise<any> = editorialCall, session: { id: string; revision: string; context: string } = V.EDITORIAL) => within(service.runInMotionAiSession(id, fn, undefined, true, undefined, session));
   await editorialStage(V.RUN);
   let inFlight = 0,
@@ -247,11 +247,11 @@ try {
   };
   await editorialStage(V.OTHER, () => Promise.all([editorialCall(), service.mapMotionAiPool([0, 1, 2], () => Promise.all([editorialCall(), editorialCall()]))]));
   await editorialStage(V.STORY_ARTIFACT);
-  assert.equal(peak, 3);
-  assert.equal(fixture.prepared.length, 3);
+  assert.equal(peak, 2);
+  assert.equal(fixture.prepared.length, 2);
   assert.equal(fixture.closedProjects.length, 0);
   assert.equal(new Set(fixture.sent.map((request) => request.projectId)).size, 1);
-  assert.equal(new Set(fixture.sent.map((request) => request.workerId)).size, 3);
+  assert.equal(new Set(fixture.sent.map((request) => request.workerId)).size, 2);
   assert.ok(fixture.sent[0].prompt.includes(V.EDITORIAL.context));
   assert.ok(!fixture.sent[1].prompt.includes(V.EDITORIAL.context));
   const held = deferred(),
@@ -457,7 +457,7 @@ try {
     await within(captchaRun);
     assert.equal(captchaSolved, true);
     assert.equal(fixture.sent.length, 3);
-    assert.equal(fixture.prepared.length, independentPrepared);
+    assert.equal(fixture.prepared.length, independentPrepared + 1);
     assert.equal(fixture.prepared[1].chromeHeadless, false);
   } finally {
     captchaConfig.POLL_MS = originalCaptchaPoll;
@@ -470,7 +470,7 @@ try {
     await preparationRelease.done;
   };
   await service.runInMotionAiSession(V.RUN, async () => {
-    const work = service.mapMotionAiPool([0, 1, 2], () => call(), 3);
+    const work = service.mapMotionAiPool([0, 1, 2], () => call(), 3, MOTION_AI_ROLE.DRAW);
     try {
       await within(preparationStarted.done);
       assert.equal(fixture.sent.length, 0);
@@ -490,10 +490,10 @@ try {
     return ready(request);
   };
   await service.runInMotionAiSession(V.RUN, async () => {
-    const first = service.mapMotionAiPool([0], () => call(), 1);
+    const first = service.mapMotionAiPool([0], () => call(), 1, MOTION_AI_ROLE.DRAW);
     await within(firstRoomStarted.done);
     try {
-      await within(service.mapMotionAiPool([1, 2, 3, 4], () => call(), 2));
+      await within(service.mapMotionAiPool([1, 2, 3, 4], () => call(), 2, MOTION_AI_ROLE.DRAW));
       assert.equal(fixture.sent.length, 5);
       assert.equal(fixture.closed.length, 0);
       assert.ok(fixture.sent.slice(1).every((request) => request.workerId !== fixture.sent[0].workerId));
@@ -581,7 +581,7 @@ try {
     return ready(request);
   };
   await service.runInMotionAiSession(V.RUN, async () => {
-    const active = service.mapMotionAiPool([0, 1, 2], () => call(), 3);
+    const active = service.mapMotionAiPool([0, 1, 2], () => call(), 3, MOTION_AI_ROLE.DRAW);
     try {
       await within(occupiedStarted.done);
       const stop = new AbortController();
@@ -672,7 +672,7 @@ try {
     return ready(request);
   };
   await service.runInMotionAiSession(V.RUN, async () => {
-    const work = service.mapMotionAiPool([0, 1, 2], () => call(), 3);
+    const work = service.mapMotionAiPool([0, 1, 2], () => call(), 3, MOTION_AI_ROLE.DRAW);
     await parallelReady.done;
     assert.equal(fixture.sent.length, 4);
     assert.ok(fixture.closed.every((request) => request.workerId === repairedWorker));
@@ -819,7 +819,7 @@ try {
   assert.equal((await call()).ready, true);
   assert.equal(fixture.sent.length, 1);
   assert.equal(fixture.resumed.length, 2);
-  assert.equal(fixture.closed.length, 0);
+  assert.equal(fixture.closed.length, 1);
   reset();
   fixture.send = async (request) => {
     if (fixture.sent.length === 1) {
@@ -836,7 +836,7 @@ try {
   assert.equal(fixture.sent[0].provider, P.GeminiChat);
   assert.equal(fixture.sent[1].provider, P.GeminiChat);
   assert.equal(fixture.sent[0].requestId, fixture.sent[1].requestId);
-  assert.equal(fixture.closed.length, 1);
+  assert.equal(fixture.closed.length, 2);
   reset();
   fixture.send = async (request) => {
     request.submission.attempted = true;
@@ -924,7 +924,7 @@ try {
   assert.equal(Object.keys(readRecovered.reads).length, 2);
   assert.equal(fixture.sent.length, VISUAL.READ_ATTEMPTS);
   assert.equal(fixture.prepared.length, 1);
-  assert.equal(fixture.closed.length, 0);
+  assert.equal(fixture.closed.length, 1);
   assert.equal(fixture.reloaded.length, 0);
   assert.ok(fixture.sent.at(-1).prompt.includes(VISUAL.READ_ACCEPTED));
   reset();

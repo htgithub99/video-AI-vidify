@@ -11,4 +11,9 @@ export const MOTION_CAST_IDENTITY = {
   STAGING: (foreground: string[], secondary: string[], groups: string[]): string =>
     [foreground.length ? `Foreground, full size: ${foreground.join(", ")}.` : "", secondary.length ? `Mid-ground, clearly smaller than the foreground people: ${secondary.join(", ")}.` : "", groups.length ? `Unnamed groups and extras, smaller and behind the named people, never covering their faces or torsos: ${groups.join(", ")}.` : ""].filter(Boolean).join(" "),
   FOREGROUND_LIMIT: 4,
+  CONSTRUCTION: /(?:,\s*|;\s*|\b)(?:solid\s+)?(?:black\s+)?mitten\s+hands?|(?:,\s*|;\s*|\b)(?:pure\s+)?white\s+round\s+head|(?:,\s*|;\s*|\b)big\s+round\s+(?:white\s+)?eyes(?:\s+with\s+(?:black\s+)?pupils)?|(?:,\s*|;\s*|\b)short\s+black\s+neck|(?:,\s*|;\s*|\b)(?:character\s+)?template\b/giu,
+  TIDY: [/\s*,\s*(?=,|;|\.|$)/gu, /^\s*[,;]\s*/u, /\s{2,}/gu] as readonly RegExp[],
+  GROUP_LIMIT: 12,
+  GROUP_KEY: { INVALID: /[^a-z0-9]+/g, TRIM: /^_+|_+$/g, SEPARATOR: "_", FALLBACK: "group", SUFFIX: "_2" },
+  GROUP_TEXT: { NAME: 60, LOOK: 220 },
 } as const;

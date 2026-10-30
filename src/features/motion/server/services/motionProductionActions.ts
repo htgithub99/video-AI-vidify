@@ -21,8 +21,10 @@ import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../.
 import { MOTION_VIDEO_GENRE_ERROR, motionVideoGenre } from "../../../../constants/motionGenre.js";
 import { MOTION_GENRE_STYLE } from "../../../../constants/motionGenreStyle.js";
 import { motionGenreStyleFindings } from "../../../../lib/motionGenreStyle.js";
-import { motionChapterRanges, motionChapterOverlapFindings } from "../../../../lib/motionStoryTimeline.js";
+import { motionChapterRanges, motionChapterKeyPoints, motionChapterOverlapFindings, motionRepetitionFindings } from "../../../../lib/motionStoryTimeline.js";
 import { MOTION_STORY_TIMELINE } from "../../../../constants/motionStoryTimeline.js";
+import { motionGenreStageFindings } from "../../../../lib/motionGenreStage.js";
+import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../../../constants/motionMusic.js";
 import _ from "lodash";
@@ -67,7 +69,7 @@ import { MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
 import { startMotionRender } from "./motionRenderService.js";
 import { startStoryJob, type StoryJobContext } from "./motionStoryJobService.js";
 import { motionInputKey } from "./motionFileUtils.js";
-import { analyzeStory, editScript, mapMotionAiPool, parseStorySource, writeChapterBeats, type MotionEditorialSession, type MotionAnalysisDraft } from "./motionStoryService.js";
+import { analyzeStory, editScript, parseStorySource, writeChapterBeats, type MotionEditorialSession, type MotionAnalysisDraft } from "./motionStoryService.js";
 import { isTerminalMotionAiError } from "../../../../server/services/chatSubmissionRecovery.js";
 import { MOTION_EDITORIAL } from "../../../../constants/motionEditorial.js";
 import { generateMotionSeo, seoScriptKey, type MotionSeoDraft } from "./motionSeoService.js";
@@ -166,6 +168,8 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
   const rangedChapters = motionChapterRanges(analysis.chapters, source.sourceSeconds);
   const rangeFixes = rangedChapters.filter((chapter, index) => chapter.from !== analysis.chapters[index].from || chapter.to !== analysis.chapters[index].to).length;
   if (rangeFixes) analysis = { ...analysis, chapters: rangedChapters };
+  const pointFix = motionChapterKeyPoints(analysis.chapters, source.sourceSeconds);
+  if (pointFix.moved || pointFix.invented) analysis = { ...analysis, chapters: pointFix.chapters };
   const language = storyLanguage(body?.language);
   if (analysis.videoDna) {
     const errors = videoDnaErrors(analysis.videoDna);
@@ -192,6 +196,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         ),
       );
       if (rangeFixes) ctx.log(MOTION_STORY_TIMELINE.RANGE.LOG(rangeFixes));
+      if (pointFix.moved || pointFix.invented) ctx.log(MOTION_STORY_TIMELINE.KEYPOINT.LOG(pointFix.moved, pointFix.invented));
       const chapters = analysis.chapters;
       const carried = body?.carryGen ? ({ ...emptyGen(), ...body.carryGen } as MotionStoryScript["gen"]) : undefined;
       const keepGen = ((body?.resume === true || !_.isEmpty(only)) && (body?.gen as MotionStoryScript["gen"])) || carried;
@@ -209,6 +214,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         ctx.log(MOTION_TEMPLATE_VIET_LOI_DAN_PHAN_CANH_CHUONG(String(idx + 1), String(chapters.length), String(chapter.title)));
         const prevChapter = idx > 0 ? chapters[idx - 1] : undefined;
         const previous = prevChapter ? byChapter[prevChapter.id] : undefined;
+        const history = _.flatMap(chapters.slice(0, idx), (item) => byChapter[item.id] || []);
         try {
           byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, {
             language,
@@ -217,6 +223,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             signal: ctx.signal,
             log: ctx.log,
             previous,
+            history,
             previousSummary: prevChapter?.summary,
             isFirst: idx === 0,
             isLast: idx === chapters.length - 1,
@@ -244,20 +251,27 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         ctx.log(MOTION_TEMPLATE_BEAT(String(byChapter[chapter.id].length)));
         checkpoint();
       };
-      await mapMotionAiPool(todo, writeOne);
+      for (const chapter of todo) await writeOne(chapter);
       if (failed.length) ctx.log(MR.MOTION_TEMPLATE_CON_CHUONG_CHUA_VIET_DUOC_CAC_CHUONG_KHAC_VAN_DUOC_GIU_BAM_VIET_T(failed.length, _.map(failed, MR.MOTION_TEXT_TITLE).join(MR.MOTION_TEXT_SYMBOL_14)));
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = !failed.length && !Object.keys(chapterDrafts).length && _.every(chapters, (c) => byChapter[c.id]?.length);
       const styleFindings = complete ? motionGenreStyleFindings(beats, language, analysis.videoGenre) : [];
-      const editorial = complete && body?.editorPass !== false && !(only?.length && body?.resume !== true) && (chapters.length > 1 || styleFindings.length > 0);
+      const overlapFindings = complete && chapters.length > 1 ? motionChapterOverlapFindings(beats, analysis) : [];
+      const repeats = complete ? motionRepetitionFindings(beats, language) : [];
+      const stageFindings = complete ? motionGenreStageFindings(beats, analysis) : [];
+      const handoffs = complete ? chapters.slice(1).flatMap((chapter) => (byChapter[chapter.id]?.[0] ? [byChapter[chapter.id][0].id] : [])) : [];
+      const focusIds = [...new Set([...styleFindings, ...overlapFindings, ...repeats, ...stageFindings].map((finding) => finding.id).concat(handoffs))];
+      const editorial = complete && body?.editorPass !== false && !(only?.length && body?.resume !== true) && focusIds.length > 0;
+      if (complete && !focusIds.length) ctx.log(MOTION_STORY_TIMELINE.EDITOR.LOG_SKIP);
       if (editorial) {
         if (styleFindings.length) ctx.log(MOTION_GENRE_STYLE.LOG(styleFindings.length));
-        const overlaps = chapters.length > 1 ? motionChapterOverlapFindings(beats, analysis).length : 0;
-        if (overlaps) ctx.log(MOTION_STORY_TIMELINE.OVERLAP.LOG(overlaps));
-        ctx.log(MR.MOTION_TEXT_BIEN_TAP_VIEN_DOC_LAI_TOAN_BO_LOI_DAN);
+        if (overlapFindings.length) ctx.log(MOTION_STORY_TIMELINE.OVERLAP.LOG(overlapFindings.length));
+        if (repeats.length) ctx.log(MOTION_STORY_TIMELINE.REPEAT.LOG(repeats.length));
+        if (stageFindings.length) ctx.log(MOTION_GENRE_STAGE.LOG(stageFindings.length));
+        ctx.log(MOTION_STORY_TIMELINE.EDITOR.LOG_FOCUS(focusIds.length, beats.length));
         try {
-          const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId, ...(chapters.length > 1 ? {} : { focusIds: [...new Set(styleFindings.map((finding) => finding.id))] }) });
+          const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId, focusIds });
           beats = r.beats;
           edit = r.edit;
         } catch (error) {

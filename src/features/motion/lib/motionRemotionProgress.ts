@@ -9,7 +9,7 @@ import { MOTION_SCENE_PACING as PACING } from "../../../constants/motionScenePac
 export const remotionSceneProgress = (script: MotionStoryScript, busy = false, language: string = RT_SHARED.VI) => {
   const text = V.TEXT[language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
   const state = script.gen?.remotion;
-  const groups = state?.pacingRevision === PACING.REVISION ? motionVisualBeatGroups(script) : script.beats.map((beat) => ({ id: beat.id, beats: [beat] }));
+  const groups = state?.pacingRevision === PACING.REVISION ? motionVisualBeatGroups(script, state.groupingRevision) : script.beats.map((beat) => ({ id: beat.id, beats: [beat] }));
   const entries = groups.flatMap((group) => {
     const beat = group.beats[0];
     const stored = state?.scenes[beat.id];

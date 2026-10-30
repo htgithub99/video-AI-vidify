@@ -12,7 +12,6 @@ export const MOTION_CAPTCHA = {
   REMIND_MS: 60 * 1000,
   WAIT_MS: 30 * 60 * 1000,
   OPEN_FAILS_MAX: 3,
-  PROJECT: (provider: string): string => `captcha-${provider}`,
   LOG_WAIT: (provider: string): string => `${MARKER} ${provider} đang yêu cầu xác minh "không phải robot". Tool đã mở Chrome – hãy tự bấm xác minh trong cửa sổ đó. Xác minh xong tool tự chạy tiếp bằng ${provider}, không chuyển sang AI khác.`,
   LOG_REMIND: (provider: string, minutes: number): string => `${MARKER} Vẫn đang chờ bạn xác minh ${provider} (${minutes} phút)…`,
   LOG_SOLVED: (provider: string): string => `Đã xác minh xong ${provider} – gửi lại yêu cầu bằng ${provider}.`,

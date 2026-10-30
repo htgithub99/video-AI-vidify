@@ -167,6 +167,7 @@ export interface MotionRemotionState {
   spaceBuildRevision?: number;
   compositionRevision?: number;
   pacingRevision?: number;
+  groupingRevision?: number;
 }
 export interface MotionRemotionPlacedNode extends MotionRemotionNode {
   x: number;

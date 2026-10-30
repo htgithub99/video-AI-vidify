@@ -10,7 +10,7 @@ import type { MotionRemotionState, MotionRemotionScene } from "../../../../../ty
 import { motionInputKey } from "../motionFileUtils.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSceneComposition.js";
 import { validateSceneComposition, motionCompositionMissingChannels } from "../../../../../lib/motionSceneComposition.js";
-import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js";
+import { motionVisualBeatGroups, motionBeatVisualSeconds, motionScenePacing, motionScenePacingCount } from "../../../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionScenePacing.js";
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
@@ -36,13 +36,18 @@ const castFor = (beat: MotionBeat, analysis: MotionStoryAnalysis) => {
   const keys = new Set([...(beat.cast || []), ...(beat.utterances || []).map((line) => line.speaker)]);
   return analysis.cast.filter((member) => keys.has(member.key) || [member.name, member.alias].some((name) => name && beat.narration.includes(name))).sort((a, b) => a.key.localeCompare(b.key));
 };
+const grouped = (state?: MotionRemotionState): boolean => state?.groupingRevision === PACING.GROUPING;
+const withoutPacing = <T extends object | undefined>(settings: T): T => (settings ? (Object.fromEntries(Object.entries(settings).filter(([key]) => key !== PACING.FIELD)) as T) : settings);
+const keySettings = (analysis: MotionStoryAnalysis, state?: MotionRemotionState) => (grouped(state) ? withoutPacing(analysis.visualSettings) : analysis.visualSettings);
+const groupCount = (beats: MotionBeat[], analysis: MotionStoryAnalysis): number => motionScenePacingCount(analysis.visualSettings, beats.reduce((sum, beat) => sum + motionBeatVisualSeconds(beat, analysis.videoDna?.audienceProfile?.language), 0));
+export const remotionPlanGroups = (script: MotionStoryScript, analysis: MotionStoryAnalysis, state?: MotionRemotionState) => motionVisualBeatGroups(script, state?.groupingRevision, motionScenePacing(analysis.visualSettings || script.visualSettings));
 const legacyBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis, note: string = "") => motionInputKey([V.VERSION, L.SCENE_REVISION, analysis.visualSettings, analysis.visualSettings?.mode === RT_SHARED.REMOTION ? V.PROFILES[analysis.visualSettings.profileId].revision : undefined, analysis.era, analysis.cast, analysis.places, beat, note]);
-export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis, note: string = "") =>
+export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis, note: string = "", state?: MotionRemotionState) =>
   motionInputKey(
     normalized([
       V.VERSION,
       L.SCENE_REVISION,
-      analysis.visualSettings,
+      keySettings(analysis, state),
       analysis.visualSettings?.mode === RT_SHARED.REMOTION ? V.PROFILES[analysis.visualSettings.profileId].revision : undefined,
       analysis.era,
       castFor(beat, analysis),
@@ -69,10 +74,13 @@ export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis,
   );
 export const remotionBeatPlanCurrent = (beat: MotionBeat, analysis: MotionStoryAnalysis, state?: MotionRemotionState, note = state?.notes?.[beat.id] || "") =>
   !!state?.scenes[beat.id]?.length && [remotionBeatKey(beat, analysis), legacyBeatKey(beat, analysis)].includes(state.inputKeys[beat.id]) && state.scenes[beat.id].every((scene) => scene.sceneRevision === L.SCENE_REVISION && [remotionBeatKey(beat, analysis, note), legacyBeatKey(beat, analysis, note)].includes(scene.sourceKey!));
-export const remotionGroupKey = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) => motionInputKey([PACING.REVISION, beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))]);
+export const remotionGroupKey = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) =>
+  grouped(state)
+    ? motionInputKey([PACING.GROUPING, groupCount(beats, analysis), beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? "", state))])
+    : motionInputKey([PACING.REVISION, beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))]);
 export const remotionGroupPlanCurrent = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) => {
   const scenes = state?.scenes[beats[0]?.id];
-  if (!scenes?.length || !beats.every((beat) => [remotionBeatKey(beat, analysis), legacyBeatKey(beat, analysis)].includes(state?.inputKeys[beat.id] || ""))) return false;
+  if (!scenes?.length || !beats.every((beat) => [remotionBeatKey(beat, analysis, "", state), legacyBeatKey(beat, analysis)].includes(state?.inputKeys[beat.id] || ""))) return false;
   const keys = [remotionGroupKey(beats, analysis, state, note), motionInputKey([PACING.REVISION, beats.map((beat) => legacyBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))])];
   const lines = beats.flatMap((beat) => puppetBeatLines(beat, motionNarratorCastKey(analysis)));
   let cursor = 0;
@@ -85,8 +93,8 @@ export const remotionGroupPlanCurrent = (beats: MotionBeat[], analysis: MotionSt
   return cursor === lines.length;
 };
 export const remotionStoryPlanCurrent = (script: MotionStoryScript, analysis: MotionStoryAnalysis) =>
-  script.beats.length > 0 && (script.gen?.remotion?.pacingRevision === PACING.REVISION ? motionVisualBeatGroups(script).every((group) => remotionGroupPlanCurrent(group.beats, analysis, script.gen?.remotion)) : script.beats.every((beat) => remotionBeatPlanCurrent(beat, analysis, script.gen?.remotion)));
-export const remotionCompositionKey = (scene: MotionRemotionScene, analysis: MotionStoryAnalysis, width: number, height: number, note?: string) =>
+  script.beats.length > 0 && (script.gen?.remotion?.pacingRevision === PACING.REVISION ? remotionPlanGroups(script, analysis, script.gen?.remotion).every((group) => remotionGroupPlanCurrent(group.beats, analysis, script.gen?.remotion)) : script.beats.every((beat) => remotionBeatPlanCurrent(beat, analysis, script.gen?.remotion)));
+export const remotionCompositionKey = (scene: MotionRemotionScene, analysis: MotionStoryAnalysis, width: number, height: number, note?: string, state?: MotionRemotionState) =>
   motionInputKey(
     normalized([
       C.REVISION,
@@ -98,7 +106,7 @@ export const remotionCompositionKey = (scene: MotionRemotionScene, analysis: Mot
       scene.weather,
       scene.view,
       scene.effects,
-      analysis.visualSettings,
+      keySettings(analysis, state),
       analysis.visualSettings?.mode === RT_SHARED.REMOTION ? V.PROFILES[analysis.visualSettings.profileId].revision : undefined,
       analysis.era,
       analysis.places.find((place) => place.key === scene.place),
@@ -113,7 +121,7 @@ export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: Mo
   if (!state) return RT_SERVER.PENDING;
   if (
     state.settings.mode !== RT_SHARED.REMOTION ||
-    stringifyJson(normalized(state.settings)) !== stringifyJson(normalized(analysis.visualSettings || script.visualSettings || state.settings)) ||
+    stringifyJson(normalized(grouped(state) ? withoutPacing(state.settings) : state.settings)) !== stringifyJson(normalized(grouped(state) ? withoutPacing(analysis.visualSettings || script.visualSettings || state.settings) : analysis.visualSettings || script.visualSettings || state.settings)) ||
     state.version !== V.VERSION ||
     (state.compositionRevision !== undefined && state.compositionRevision !== C.REVISION) ||
     (state.profileRevision !== undefined && state.profileRevision !== V.PROFILES[state.settings.profileId].revision) ||
@@ -122,7 +130,7 @@ export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: Mo
     return RT_SERVER.OUTDATED;
   let pending = !script.beats.length;
   let failed = false;
-  const groups = state.pacingRevision === PACING.REVISION ? motionVisualBeatGroups(script).map((group) => group.beats) : script.beats.map((beat) => [beat]);
+  const groups = state.pacingRevision === PACING.REVISION ? remotionPlanGroups(script, analysis, state).map((group) => group.beats) : script.beats.map((beat) => [beat]);
   for (const beats of groups) {
     if (!state.scenes[beats[0].id]?.length) {
       pending = true;

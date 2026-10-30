@@ -335,6 +335,7 @@ export interface MotionChapter {
   hook?: string;
   keyPoints?: string[];
   handoff?: string;
+  stages?: string[];
   musicMood?: string;
 }
 export interface MotionFact {
@@ -394,6 +395,7 @@ export interface MotionStoryAnalysis {
   series?: MotionSeriesInfo;
   chapters: MotionChapter[];
   cast: MotionCastMember[];
+  groups?: { key: string; name: string; look: string }[];
   places: MotionPlace[];
   facts: MotionFact[];
 }

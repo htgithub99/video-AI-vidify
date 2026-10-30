@@ -25,6 +25,7 @@ import { remotionSceneReadiness } from "../../../../../lib/motionRemotion.js";
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { motionCastIdentity, motionSceneStaging } from "../../../../../lib/motionCastIdentity.js";
+import { motionIdentityReferences, motionPlaceReference } from "../../../../../lib/motionIdentityReference.js";
 import { motionStoryEventLedger } from "../../../../../lib/motionStoryContinuity.js";
 import { runMotionAi, motionAiRoutes, mapMotionAiPool, prepareMotionSceneRooms, writeMotionAiDebug, motionCaptchaError } from "../motionStoryService.js";
 import { recoverMotionAiContractState, requestMotionAiContract, type MotionAiResponseContract } from "../motionAiContractService.js";
@@ -33,8 +34,8 @@ import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
 import { emptyGen } from "../puppet/genState.js";
 import { mergeRemotionSceneDraft, remotionScenesFromDraft } from "./sceneContract.js";
-import { remotionBeatKey, remotionGroupKey, remotionGroupPlanCurrent, remotionCompositionKey } from "./sceneKeys.js";
-import { motionVisualBeatGroups, motionScenePacingRule, motionScenePacing } from "../../../../../lib/motionScenePacing.js";
+import { remotionBeatKey, remotionGroupKey, remotionGroupPlanCurrent, remotionCompositionKey, remotionPlanGroups } from "./sceneKeys.js";
+import { motionScenePacingRule, motionScenePacing, motionScenePacingCount } from "../../../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionScenePacing.js";
 import { renderRemotionStill } from "../motionRemotionRenderService.js";
 import { getMotionWorkDirectory } from "../motionLibraryService.js";
@@ -151,7 +152,8 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         )
       : undefined;
     const beats = script.beats.filter((beat) => (!selectedSceneOwners || selectedSceneOwners.has(beat.id)) && (!opts.onlyBeats?.length || opts.onlyBeats.includes(beat.id)) && (!opts.onlyLocations?.length || opts.onlyLocations.includes(beat.place || "")));
-    const planGroups = motionVisualBeatGroups(script);
+    if (state.groupingRevision === undefined && !Object.values(state.scenes).some((scenes) => scenes?.length)) state.groupingRevision = PACING.GROUPING;
+    const planGroups = remotionPlanGroups(script, analysis, state);
     const selectedIds = new Set(beats.map((beat) => beat.id));
     const selectedGroups = planGroups.filter((group) => group.beats.some((beat) => selectedIds.has(beat.id)));
     state.pacingRevision = PACING.REVISION;
@@ -177,17 +179,19 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         for (const member of group.beats) delete state.failures[member.id];
         if (!remotionGroupPlanCurrent(group.beats, analysis, state, opts.onlyScenes?.length ? undefined : opts.note)) {
           const lines = group.beats.flatMap((member) => puppetBeatLines(member, motionNarratorCastKey(analysis)));
+          const groupPlaces = [...new Set(group.beats.map((member) => member.place).filter((place): place is string => !!place))];
           const direction = motionIllustrationDirection(settings.profileId, RT_SERVER.PLANNING);
           const context = {
             profile: settings.profileId,
             artDirection: { id: direction.id, revision: direction.revision, rules: direction.rules, staging: MOTION_ILLUSTRATION_PROFILES[settings.profileId].staging || MOTION_ILLUSTRATION_COMMON.STAGING },
             era: analysis.era,
             beat: { id: beat.id, shot: beat.shot },
-            beats: group.beats.map((member) => ({ id: member.id, scenePlan: member.scenePlan && { subject: member.scenePlan.subject, composition: member.scenePlan.composition, spatialRelations: member.scenePlan.spatialRelations, requiredProps: member.scenePlan.requiredProps, continuity: member.scenePlan.continuity }, action: member.action, time: member.time, weather: member.weather })),
-            pacing: motionScenePacingRule(settings, group.seconds),
+            beats: group.beats.map((member) => ({ id: member.id, ...(groupPlaces.length > 1 ? { place: member.place } : {}), scenePlan: member.scenePlan && { subject: member.scenePlan.subject, composition: member.scenePlan.composition, spatialRelations: member.scenePlan.spatialRelations, requiredProps: member.scenePlan.requiredProps, continuity: member.scenePlan.continuity }, action: member.action, time: member.time, weather: member.weather })),
+            pacing: motionScenePacingRule(settings, group.seconds, groupPlaces.length),
             lines: lines.map((line) => ({ id: line.key, text: line.text })),
             cast: analysis.cast.map(({ key, name, alias, role, appearanceOf }) => ({ key, name, alias, role, appearanceOf })),
             place: analysis.places.find((place) => place.key === beat.place),
+            ...(groupPlaces.length > 1 ? { places: analysis.places.filter((place) => groupPlaces.includes(place.key)) } : {}),
             priorFacts: motionStoryEventLedger(script.beats.slice(0, script.beats.indexOf(beat))),
             note,
           };
@@ -208,9 +212,20 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             const from = lines.findIndex((line) => line.key === scene.fromLineId),
               to = lines.findIndex((line) => line.key === scene.toLineId);
             scene.sourceBeatIds = [...new Set(lines.slice(from, to + 1).map((line) => line.beatId))];
+            if (groupPlaces.length > 1) {
+              const weight = new Map<string, number>();
+              for (const line of lines.slice(from, to + 1)) {
+                const place = group.beats.find((member) => member.id === line.beatId)?.place;
+                if (place) weight.set(place, (weight.get(place) || 0) + 1);
+              }
+              const dominant = [...weight.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+              if (dominant) scene.place = dominant;
+            }
           }
+          const suggested = motionScenePacingCount(settings, group.seconds);
+          if (state.scenes[beat.id].length > Math.ceil(suggested * PACING.OVER_RATIO)) opts.log(PACING.OVER_LOG(planGroups.indexOf(group) + 1, state.scenes[beat.id].length, suggested, PACING.TEXT.vi[motionScenePacing(settings)]));
           for (const member of group.beats) {
-            state.inputKeys[member.id] = remotionBeatKey(member, analysis);
+            state.inputKeys[member.id] = remotionBeatKey(member, analysis, undefined, state);
             if (opts.note !== undefined) state.notes![member.id] = opts.note;
             if (member.id !== group.id) delete state.scenes[member.id];
           }
@@ -250,7 +265,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const beat = script.beats.find((beat) => beat.id === scene.beatId)!;
       const previousAsset = previous?.composition && state.assets[previous.composition.assetKey];
       if (opts.onlyScenes?.includes(scene.id) && opts.note !== undefined) scene.drawingNote = opts.note;
-      const inputKey = remotionCompositionKey(scene, analysis, width, height, scene.drawingNote ?? state.notes![beat.id]);
+      const inputKey = remotionCompositionKey(scene, analysis, width, height, scene.drawingNote ?? state.notes![beat.id], state);
       const legacyInputKey = motionInputKey([C.REVISION, scene.sourceKey, scene.purpose, scene.environment, scene.nodes, scene.text, settings, V.PROFILES[settings.profileId].revision, width, height, state.notes![beat.id], legacyPreviousKeys.get(scene.id)]);
       const key = `${RT_SERVER.COMPOSITION}${inputKey}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_16}${scene.id}`;
       const targeted = !!opts.onlyScenes?.includes(scene.id) && !retry;
@@ -281,7 +296,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         }
         if (opts.review && !targeted && !existingReady && scene.composition && state.assets[scene.composition.assetKey]) compositions[key] ||= { svg: state.assets[scene.composition.assetKey].svg, layers: scene.composition.layers, animations: scene.composition.animations, design: scene.composition.design, continuityNotes: scene.composition.continuityNotes };
         if (targeted || retry || ![inputKey, legacyInputKey].includes(scene.composition?.inputKey || "") || !existingReady) {
-          const continuitySvg = previousAsset && previousAsset.svg.length <= C.CONTINUITY_SVG_LIMIT ? previousAsset.svg : undefined;
+          const identityReferences = motionIdentityReferences(scene, allScenes, state.assets);
           const speakers = [...new Set(script.beats.filter((member) => (scene.sourceBeatIds || [scene.beatId]).includes(member.id)).flatMap((member) => member.utterances?.filter((line) => line.role === RT_SERVER.DIALOGUE).map((line) => line.speaker) || []))] as string[];
           const context = {
             width,
@@ -289,15 +304,18 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             viewBox: `${RT_SHARED.VALUE_0_0}${width}${RT_SHARED.SYMBOL_36A9E7}${height}`,
             profile: V.PROFILES[settings.profileId].direction,
             artDirection: motionIllustrationDirection(settings.profileId, RT_SHARED.DRAWING),
-            drawingReference: continuitySvg ? undefined : motionCompositionReference(settings.profileId, previous?.composition?.design),
+            drawingReference: motionCompositionReference(settings.profileId, previous?.composition?.design),
             renderBehavior: state.renderBehavior,
             era: analysis.era,
-            place: analysis.places.find((place) => place.key === beat.place),
+            place: analysis.places.find((place) => place.key === (scene.place || beat.place)),
             scene: { purpose: scene.purpose, text: scene.text, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, nodes: scene.nodes },
             cast: motionCastIdentity(analysis.cast, settings.profileId, analysis.era).filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
             dialogueSpeakers: speakers,
             staging: motionSceneStaging(scene.nodes, motionNarratorCastKey(analysis), speakers),
-            continuity: previousAsset ? { text: previous.text, layers: previous.composition!.layers, design: previous.composition!.design, notes: previous.composition!.continuityNotes, svg: continuitySvg } : undefined,
+            groups: scene.nodes.some((node) => node.anonymous) ? analysis.groups : undefined,
+            previousShot: allScenes[allScenes.indexOf(scene) - 1] ? { view: allScenes[allScenes.indexOf(scene) - 1].view, purpose: allScenes[allScenes.indexOf(scene) - 1].purpose } : undefined,
+            continuity: previousAsset ? { text: previous.text, layers: previous.composition!.layers, design: previous.composition!.design, notes: previous.composition!.continuityNotes, placeSvg: motionPlaceReference(previousAsset, previous.composition!) } : undefined,
+            identityReferences: identityReferences.length ? identityReferences : undefined,
             note: scene.drawingNote ?? state.notes![beat.id],
           };
           const assess = (raw: unknown) => {
@@ -478,6 +496,8 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       }
     };
     const anchors = new Map<string, Promise<(typeof allScenes)[number] | undefined>>();
+    const drawing: Promise<void>[] = [];
+    let drawingFailure: { error: unknown } | undefined;
     await mapMotionAiPool(
       selectedGroups,
       async (group) => {
@@ -501,14 +521,23 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
                 })(),
           );
         }
-        const anchor = await anchors.get(location);
-        const results = await Promise.allSettled(candidates.map((scene) => draw(scene, anchor)));
-        const failure = results.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
-        if (failure?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw failure.reason;
+        const anchorReady = anchors.get(location)!;
+        drawing.push(
+          (async () => {
+            const anchor = await anchorReady;
+            const results = await Promise.allSettled(candidates.map((scene) => draw(scene, anchor)));
+            const failure = results.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
+            if (failure?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw failure.reason;
+          })().catch((error: unknown) => {
+            drawingFailure ??= { error };
+          }),
+        );
       },
       MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length,
       MOTION_AI_ROLE.DRAW,
     );
+    await Promise.all(drawing);
+    if (drawingFailure) throw drawingFailure.error;
     const failed = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED && (scene.build.attempts ?? 1) < C.DRAW_ATTEMPTS);
     if (failed.length) {
       opts.log(C.LOG_RECOVERY(failed.length));
@@ -533,7 +562,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     if (!Object.keys(state.failures).length && planGroups.every((group) => remotionGroupPlanCurrent(group.beats, analysis, state))) {
       for (const group of planGroups) {
         const key = remotionGroupKey(group.beats, analysis, state);
-        for (const beat of group.beats) state.inputKeys[beat.id] = remotionBeatKey(beat, analysis);
+        for (const beat of group.beats) state.inputKeys[beat.id] = remotionBeatKey(beat, analysis, undefined, state);
         for (const scene of state.scenes[group.id] || []) scene.sourceKey = key;
       }
       const owners = new Set(planGroups.map((group) => group.id));
