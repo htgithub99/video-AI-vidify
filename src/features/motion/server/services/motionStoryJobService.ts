@@ -7,7 +7,7 @@ import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../../../constants/motionAiRecovery.js";
 import { logger } from "../../../../lib/logger.js";
 import { MotionJobStatus, MotionStoryJobKind, type MotionStoryJobState, type MotionAiLog } from "../../../../types/motionVideo.js";
-import { runInMotionAiSession, type MotionEditorialSession } from "./motionStoryService.js";
+import { closeMotionStandaloneBrowser, runInMotionAiSession, type MotionEditorialSession } from "./motionStoryService.js";
 import { saveMotionStoryCheckpoint, readMotionStoryCheckpoint } from "./motionStoryCheckpointService.js";
 import { MOTION_PRODUCTION as PRODUCTION } from "../../../../constants/motionProduction.js";
 import { motionStoryLogs } from "./motionLogStore.js";
@@ -122,6 +122,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
       job.activeAi = {};
       safeSave();
       setTimeout(() => jobs.delete(job.id), MOTION_VIDEO_CONSTANTS.JOB_TTL_MS).unref();
+      if (kind === MotionStoryJobKind.THUMBNAIL && !keepBrowser && !editorial && ![...jobs.values()].some((other) => other !== job && _.includes(ACTIVE, other.status))) await closeMotionStandaloneBrowser().catch(_.noop);
     }
   })();
   return publicJob(job);

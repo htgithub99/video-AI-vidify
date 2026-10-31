@@ -55,12 +55,3 @@ export const motionAlertBeep = (): void => {
       .catch(() => undefined);
   } catch {}
 };
-export const createMotionCaptchaAlert = (notify: () => void = motionAlertBeep): ((id: string, lines: string[] | undefined) => void) => {
-  const seen = new Map<string, Set<string>>();
-  return (id, lines) => {
-    const alerts = (lines || []).filter((line) => line.includes(MOTION_CAPTCHA.MARKER));
-    const previous = seen.get(id);
-    if (alerts.some((line) => !previous?.has(line))) notify();
-    seen.set(id, new Set(alerts));
-  };
-};

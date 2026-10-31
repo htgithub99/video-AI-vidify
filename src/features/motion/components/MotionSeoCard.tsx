@@ -10,7 +10,12 @@ import { chapterLines, renderSeoDescription, renderSeoOptionText } from "../../.
 import { cn } from "../../../lib/utils";
 import type { MotionSeoOption, MotionSeoPack, MotionThumbnail } from "../../../types/motionVideo";
 import { Button } from "../../../components/ui/Button";
+import { MotionLoadingIcon } from "./MotionControls.js";
+import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { Modal } from "../../../components/ui/Modal";
+import { toast } from "sonner";
+import { saveBlobWithDialog } from "../../../lib/fileUtils";
+import { MOTION_SEO } from "../../../constants/motionSeo.js";
 interface MotionSeoCardProps {
   seo: MotionSeoPack | null;
   busy: boolean;
@@ -21,8 +26,9 @@ interface MotionSeoCardProps {
   thumbnail?: MotionThumbnail | null;
   thumbnails?: Record<number, MotionThumbnail>;
   onThumbnail?: (optionIndex: number) => void;
+  thumbnailBusy?: number | null;
 }
-export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail }) => {
+export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail, thumbnailBusy }) => {
   const { copiedKey, copyText: handleCopy } = useClipboardFeedback();
   const [zoomModal, setZoomModal] = useState<{ image: string; prompt: string; optionIndex?: number } | null>(null);
   const t = lang === MR.MOTION_TEXT_EN ? MOTION_SEO_TEXTS.en : MOTION_SEO_TEXTS.vi;
@@ -41,6 +47,15 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
     return items;
   }, [thumbnails, thumbnail, seo]);
   const all = seo ? seo.options.map((option, index) => renderSeoOptionText(option, seo, index, t)).join(MR.MOTION_TEXT_SYMBOL_4) : "";
+  const handleExportText = async () => {
+    if (!all) return;
+    try {
+      const saved = await saveBlobWithDialog(new Blob([MOTION_SEO.EXPORT_TEXT(t.exportTitle, all)], { type: MOTION_SEO.EXPORT_MIME }), MOTION_SEO.EXPORT_FILE_NAME);
+      if (saved) toast.success(t.exportTxtDone);
+    } catch (error) {
+      if ((error as Error)?.name !== MOTION_SEO.EXPORT_ABORT) toast.error(t.exportFail);
+    }
+  };
   const handleCopyFullOption = (option: MotionSeoOption, index: number) => {
     if (seo) handleCopy(renderSeoOptionText(option, seo, index, t), MR.MOTION_TEMPLATE_SEO_FULL(index), t.copied);
   };
@@ -74,6 +89,10 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
               <span className={MR.MOTION_TEXT_TEXT_11PX_FONT_MONO_FONT_BOLD_TEXT_A21CAF_DARK_TEXT_FUCHSIA_300_B}>
                 {seo.options.length} {t.option.toLowerCase()}
               </span>
+              <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} onClick={() => void handleExportText()} title={t.exportTxtTip} className={cn(MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1, MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_HOVER_FROM_PURPLE_50)}>
+                <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0_TEXT_WHITE} />
+                <span>{t.exportTxt}</span>
+              </Button>
               <Button
                 variant={MR.MOTION_TEXT_UNSTYLED}
                 type={MR.MOTION_TEXT_BUTTON}
@@ -106,7 +125,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
             </span>
             {!seo && (
               <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} disabled={busy} onClick={() => onThumbnail(0)} className={MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_3}>
-                <ImageIcon className={MR.MOTION_TEXT_W_3_5_H_3_5} />
+                {thumbnailBusy === 0 ? <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_SHRINK_0} /> : <ImageIcon className={MR.MOTION_TEXT_W_3_5_H_3_5} />}
                 <span>{t.thumbMake}</span>
               </Button>
             )}
@@ -214,7 +233,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
                           onClick={() => onThumbnail(i)}
                           title={hasThumb ? t.regenerateCover : t.thumbMake}
                           className={cn(MR.MOTION_TEXT_H_7_PX_2_5_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP, hasThumb ? MR.MOTION_TEXT_BG_EMERALD_500_15_BORDER_BORDER_EMERALD_500_30_TEXT_EMERALD_700_D : MR.MOTION_TEXT_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_TEXT_PURPLE_700_DARK)}>
-                          <ImageIcon className={MR.MOTION_TEXT_W_3_H_3} />
+                          {thumbnailBusy === i ? <MotionLoadingIcon className={MOTION_STYLES.W_3_H_3_ANIMATE_SPIN_SHRINK_0} /> : <ImageIcon className={MR.MOTION_TEXT_W_3_H_3} />}
                           <span>{hasThumb ? t.regenerateCover : t.thumbMake}</span>
                         </Button>
                       )}

@@ -6,6 +6,8 @@ import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../../constants/cinema
 import type { MusicUploadProgress } from "../../types/musicDownloadProgress.js";
 import { throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
 import { ChatUploadError } from "./chatUploadRecovery.js";
+import { reportCaptchaAlert } from "./captchaAlertService.js";
+import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
 export const geminiSessionInterruption = async (page: Page): Promise<"verification" | "login" | undefined> => {
   if (page.isClosed()) return;
   const url = new URL(page.url());
@@ -32,6 +34,7 @@ export const waitForGeminiSession = async (page: Page, options: SessionWaitOptio
   throwIfPlanningCancelled(options.signal);
   const interruption = await geminiSessionInterruption(page);
   if (!interruption) return 0;
+  if (interruption === RT_SERVER.VERIFICATION) reportCaptchaAlert(CAPTCHA_ALERT.SOURCE.GEMINI_CHAT);
   const started = Date.now();
   const releaseBrowser = options.retainBrowser();
   let lastNotice = 0;

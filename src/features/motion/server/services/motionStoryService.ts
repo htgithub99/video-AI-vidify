@@ -46,6 +46,8 @@ import { normalizeMotionSceneMood, normalizeMotionUtterances, normalizeMotionNar
 import { motionAudioDirection } from "../../../../lib/motionAudioDirection.js";
 import { MOTION_AI_FALLBACK, MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
 import { MOTION_CAPTCHA } from "../../../../constants/motionCaptcha.js";
+import { CAPTCHA_ALERT } from "../../../../constants/captchaAlert.js";
+import { reportCaptchaAlert } from "../../../../server/services/captchaAlertService.js";
 import { SOURCE_TEXT_DOMCONTENTLOADED } from "../../../../constants/sourceText.js";
 import { puppetTags } from "../../../../lib/motionPuppet.js";
 import { cleanCharacterColors } from "../../../../lib/motionCharacterVariant.js";
@@ -489,6 +491,14 @@ export const runInMotionAiWorkerSession = <T>(runId: string, fn: () => Promise<T
 };
 const motionBrowserLifecycle = new MotionBrowserLifecycle();
 let releaseMotionBrowser: (() => void) | undefined;
+export const closeMotionStandaloneBrowser = async (): Promise<boolean> => {
+  const sessions = [...editorialSessions.entries()];
+  if (sessions.some(([, session]) => session.active.size)) return false;
+  for (const [id] of sessions) await releaseMotionEditorialSession(id);
+  releaseMotionBrowser?.();
+  releaseMotionBrowser = undefined;
+  return closeChatBrowserIfIdle();
+};
 export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (line: string) => void, owner?: string): Promise<(() => void) & { shared?: boolean }> => {
   if (owner) await releaseMotionEditorialSession(owner);
   if (editorialSessions.size) {
@@ -693,6 +703,7 @@ const solveMotionCaptcha = async (provider: string, model: string, page: any, he
   const sourceUrl = page && !page.isClosed?.() ? page.url() : undefined;
   let view = headless ? undefined : page;
   const recoveryRoom = { provider: provider as AiPlanningFallbackProvider, projectId: run.projectId, workerId: run.workerId };
+  reportCaptchaAlert(CAPTCHA_ALERT.SOURCE.MOTION);
   log?.(C.LOG_WAIT(provider));
   if (headless) {
     await closeChatPlanningRoom(recoveryRoom, true);
@@ -723,6 +734,7 @@ const solveMotionCaptcha = async (provider: string, model: string, page: any, he
     }
     if (Date.now() - reminded >= C.REMIND_MS) {
       reminded = Date.now();
+      reportCaptchaAlert(CAPTCHA_ALERT.SOURCE.MOTION);
       log?.(C.LOG_REMIND(provider, Math.round((reminded - started) / 60000)));
     }
     await motionServiceDelay(C.POLL_MS, signal);

@@ -793,7 +793,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               </div>
             </StudioCard>
           ) : null}
-          {state.script?.beats?.length ? <MotionSeoCard seo={state.seo} busy={studio.storyBusy} seoBusy={studio.seoBusy} canGenerate={!!state.analysis} onGenerate={() => void studio.generateSeo()} lang={currentLang} thumbnail={state.thumbnail} thumbnails={state.thumbnails} onThumbnail={(i) => void studio.generateThumbnail(i)} /> : null}
+          {state.script?.beats?.length ? <MotionSeoCard seo={state.seo} busy={studio.storyBusy} seoBusy={studio.seoBusy} canGenerate={!!state.analysis} onGenerate={() => void studio.generateSeo()} lang={currentLang} thumbnail={state.thumbnail} thumbnails={state.thumbnails} onThumbnail={(i) => void studio.generateThumbnail(i)} thumbnailBusy={studio.thumbnailBusy} /> : null}
         </div>
         <div className={MOTION_STYLES.STUDIO_RIGHT_COLUMN}>
           {state.series && <MotionPartsCard series={state.series} text={text} lang={currentLang} busy={studio.busy} ready={!!state.script?.beats?.length} className={cardCls} onContinue={() => void studio.continuePart()} />}

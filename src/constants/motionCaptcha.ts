@@ -20,5 +20,5 @@ export const MOTION_CAPTCHA = {
   AUDIO_RUNNING: "running",
   AUDIO_CLOSED: "closed",
   UNLOCK_EVENTS: ["pointerdown", "keydown"],
-  BEEP: { FREQ: 880, ON_MS: 200, GAP_MS: 140, COUNT: 5, GAIN: 0.3, TYPE: "square" as OscillatorType },
+  BEEP: { FREQ: 880, ON_MS: 200, GAP_MS: 140, COUNT: 10, GAIN: 0.3, TYPE: "square" as OscillatorType },
 } as const;

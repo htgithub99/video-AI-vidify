@@ -150,6 +150,8 @@ import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
 import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
+import { reportCaptchaAlert } from "./captchaAlertService.js";
+import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
 interface ChatRoomAttachment {
   name: string;
   mimeType: string;
@@ -1724,6 +1726,7 @@ const ensureGrokReady = async (page: Page, request: ChatPlanningRequest): Promis
       stableReadyPolls = 0;
       previousReadyUrl = MR.MOTION_TEXT_EMPTY;
       challengeWasVisible = true;
+      if (!challengeActiveLastPoll) reportCaptchaAlert(CAPTCHA_ALERT.SOURCE.GROK);
       if (request.chromeHeadless !== false) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.ERROR_GROK_SECURITY_HEADLESS);
       if (!challengeActiveLastPoll) {
         appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLOUDFLARE_CHALLENGE_NOTICE);

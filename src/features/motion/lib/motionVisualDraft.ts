@@ -7,8 +7,9 @@ import { normalizeMotionVisualSettings } from "../../../lib/motionVisual.js";
 import { motionRenderBehaviorFor } from "../../../lib/motionRenderBehavior.js";
 import { motionVoiceSignature } from "../../../lib/motionVoice.js";
 import { MOTION_CAMERA_REVISION } from "../../../lib/motionCamera.js";
-import { MotionJobStatus, type MotionStoryAnalysis, type MotionStoryScript, type MotionCompiledPreview, type MotionJobState, type MotionThumbnail, type MotionProductionResult } from "../../../types/motionVideo.js";
+import { MotionJobStatus, type MotionStoryAnalysis, type MotionStoryScript, type MotionCompiledPreview, type MotionJobState, type MotionThumbnail, type MotionProductionResult, type MotionResultItem } from "../../../types/motionVideo.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
+import { isMotionJobTerminal } from "./motionJob.js";
 export interface MotionVisualDraft {
   contextKey: string;
   analysis: MotionStoryAnalysis | null;
@@ -52,9 +53,11 @@ export const motionRenderStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
   return stringifyJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, fields.encoder, fields.musicMood, fields.musicVolume]);
 };
-export const motionRenderedPreview = (state: { lastRenderJobId?: string | null; renderSignature?: string }, job?: MotionJobState | null) => {
+export const motionRenderedPreview = (state: { lastRenderJobId?: string | null; renderSignature?: string }, job?: MotionJobState | null, saved: readonly MotionResultItem[] = []) => {
   const result = job?.status === MotionJobStatus.COMPLETED ? job.result : undefined;
-  const videoUrl = result?.videoUrl && state.lastRenderJobId !== null && (!state.lastRenderJobId || state.lastRenderJobId === result.id) ? result.videoUrl : undefined;
+  const current = result?.videoUrl && state.lastRenderJobId !== null && (!state.lastRenderJobId || state.lastRenderJobId === result.id) ? result.videoUrl : undefined;
+  const stored = !current && (!job || isMotionJobTerminal(job.status)) && state.lastRenderJobId ? saved.find((item) => item.id === state.lastRenderJobId) : undefined;
+  const videoUrl = current || stored?.videoUrl;
   return { videoUrl, stale: !!videoUrl && (!state.renderSignature || state.renderSignature !== motionRenderStateKey(state)) };
 };
 export const motionVisualDraftContextKey = (state: Pick<VisualDraftContext, "analysis" | "script">) => {
@@ -75,7 +78,7 @@ export const captureMotionVisualDraft = (state: VisualDraftContext, runtime: Pic
   ...runtime,
 });
 export const invalidateMotionVisualDraftOutput = (state: VisualDraftContext) => {
-  const output = { lastRenderJobId: null, renderSignature: undefined };
+  const output = { renderSignature: undefined };
   return { ...output, visualDrafts: { ...state.visualDrafts, [motionVisualDraftKey(state.visualSettings)]: captureMotionVisualDraft({ ...state, ...output }, { compiled: null, renderJob: null }) } };
 };
 export const motionVisualDraftRuntime = (state: VisualDraftContext, draft?: MotionVisualDraft) => {
@@ -106,12 +109,11 @@ export const switchMotionVisualDraft = <T extends VisualDraftContext>(state: T, 
     activeStoryRunId: undefined,
     activeStoryJobId: MOTION_TEXT_EMPTY,
     activeRenderJobId: MOTION_TEXT_EMPTY,
-    lastRenderJobId: target?.lastRenderJobId || null,
-    renderSignature: target?.renderSignature,
+    lastRenderJobId: target?.lastRenderJobId || state.lastRenderJobId || null,
+    renderSignature: target?.lastRenderJobId ? target.renderSignature : state.renderSignature,
     automationPaused: true,
   } as T;
   const restored = motionVisualDraftRuntime(next, target);
-  if (!restored.renderJob) next.lastRenderJobId = null;
   return { state: next, ...restored };
 };
 export const recoverMotionVisualDraft = <T extends VisualDraftContext>(state: T, result: MotionProductionResult) => {

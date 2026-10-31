@@ -2,6 +2,7 @@ export const API_ROUTES = {
   BASE_API: "/api",
   PIPELINE: "/api/pipeline",
   VOICES: "/api/voices",
+  CAPTCHA_ALERT: "/api/captcha-alert",
   PROJECTS: "/api/projects",
   PRESETS: "/api/presets",
   LICENSE: "/api/license",
@@ -192,7 +193,7 @@ export const VOICES_DIR_NAME = "voices";
 export const THUMBNAILS_DIR_NAME = "thumbnails";
 export const VIDEOS_DIR_NAME = "videos";
 export const API_HEADERS = { CONTENT_TYPE: "Content-Type", ACCESS_CONTROL_ALLOW_ORIGIN: "Access-Control-Allow-Origin", AI33_API_KEY: "x-ai33-api-key", GEMINI_API_KEY: "x-gemini-api-key", CEREBRAS_API_KEY: "x-cerebras-api-key", GROQ_API_KEY: "x-groq-api-key", LICENSE_KEY: "x-license-key" } as const;
-export const SERVER_ROUTES = { PROJECTS: "/projects", PROJECTS_ID: "/projects/:id", PRESETS: "/presets", PRESETS_ID: "/presets/:id", VOICES: "/voices", SETTINGS: "/settings", SHORTS: "/shorts", VIDEO_EXPORT: "/video-export", MOTION_VIDEO: "/motion-video" } as const;
+export const SERVER_ROUTES = { PROJECTS: "/projects", PROJECTS_ID: "/projects/:id", PRESETS: "/presets", PRESETS_ID: "/presets/:id", VOICES: "/voices", CAPTCHA_ALERT: "/captcha-alert", SETTINGS: "/settings", SHORTS: "/shorts", VIDEO_EXPORT: "/video-export", MOTION_VIDEO: "/motion-video" } as const;
 export const SHORTS_API_PATHS = { BASE: "/shorts", METADATA: "/metadata", GENERATE: "/generate", EXPORT_ZIP: "/export-zip", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", BUILD_ZIP: "/build-zip", STREAM_SOURCE: "/stream-source" } as const;
 export const VIDEO_EXPORT_API_PATHS = { BASE: "/video-export", SELECT_SOURCE: "/select-source", MEDIA: "/media/:token/:kind/:index", PREVIEW: "/preview", RENDER: "/render", STATUS: "/status/:jobId", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", CAPCUT_CATALOG: "/capcut-catalog", CAPCUT_PROJECT: "/capcut-project" } as const;
 export const MOTION_VIDEO_API_PATHS = {

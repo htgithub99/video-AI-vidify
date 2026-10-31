@@ -301,6 +301,8 @@ import { getDownloadedImageMimeType } from "../utils/imageMedia.js";
 import { removeConflictingStyleTerms } from "../../services/styleReferenceService.js";
 import { distributeItemsByContinuity } from "../../services/imageGenerationContinuityService.js";
 import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
+import { reportCaptchaAlert } from "./captchaAlertService.js";
+import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
 chromium.use(stealthPlugin());
 interface BrowserSession {
   context: BrowserContext;
@@ -3076,6 +3078,7 @@ const waitForGeminiReadyOrCaptchaSolved = async (page: Page, tabIndex?: number):
     const isCaptcha = await isCaptchaOrChallengeActive(page);
     if (isCaptcha && !warnedCaptcha) {
       warnedCaptcha = true;
+      reportCaptchaAlert(CAPTCHA_ALERT.SOURCE.GEMINI_IMAGE);
       appLog(BACKEND_MESSAGES.GEMINI_CAPTCHA_DETECTED.replace(SOURCE_TEXT_0_2, tabLabel));
     }
     await delayAsync(GEMINI_CHAT_RECOVERY_CONFIG.CAPTCHA_POLL_INTERVAL_MS);

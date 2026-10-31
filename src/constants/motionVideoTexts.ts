@@ -464,6 +464,11 @@ export const MOTION_SEO_TEXTS = {
     prompt: "Prompt ảnh",
     close: "Đóng",
     regenerateCover: "Tạo lại ảnh bìa",
+    exportTxt: "Xuất TXT",
+    exportTxtTip: "Xuất toàn bộ SEO ra file văn bản",
+    exportTxtDone: "Đã xuất file SEO.",
+    exportTitle: "SEO YOUTUBE CHO VIDEO",
+    exportFail: "Không thể mở hộp thoại hoặc lưu tệp.",
   },
   en: {
     title: "YouTube SEO",
@@ -493,6 +498,11 @@ export const MOTION_SEO_TEXTS = {
     prompt: "Image prompt",
     close: "Close",
     regenerateCover: "Regenerate cover",
+    exportTxt: "Export TXT",
+    exportTxtTip: "Export all SEO content to a text file",
+    exportTxtDone: "SEO text file exported.",
+    exportTitle: "YOUTUBE SEO FOR THE VIDEO",
+    exportFail: "Could not open the save dialog or save the file.",
   },
 } as const;
 export type MotionSeoTexts = { readonly [Key in keyof (typeof MOTION_SEO_TEXTS)["vi"]]: string };

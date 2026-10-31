@@ -17,7 +17,6 @@ import { MOTION_EFFECTS } from "../../../constants/motionEffects.js";
 import { collectPuppetLines, puppetVisualInputKey } from "../../../lib/motionPuppet.js";
 import { puppetStoryboardCovers, puppetStoryboardInputKey } from "../../../lib/motionStoryboard.js";
 import { motionNarratorCastKey } from "../../../lib/motionVoice.js";
-import { createMotionCaptchaAlert, initMotionAlertAudio } from "../lib/motionAlertBeep.js";
 import { MOTION_SOUND_CONFIG } from "../../../constants/motionSound.js";
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../../../constants/motionVoice.js";
 import { motionVoiceCast, motionVoiceSignature, voiceChannelRef, withMotionVoiceMode } from "../../../lib/motionVoice.js";
@@ -199,7 +198,7 @@ const DEFAULTS: PersistedState = {
   seo: null,
   thumbnail: null,
 };
-const analyzedState = (analysis: MotionStoryAnalysis, look: string): Partial<PersistedState> => ({ analysis, script: null, voice: null, uploadedAudio: null, seo: null, thumbnail: null, thumbnails: {}, soundOverrides: {}, look: analysis.look || look, activeRenderJobId: MR.MOTION_TEXT_EMPTY, lastRenderJobId: null });
+const analyzedState = (analysis: MotionStoryAnalysis, look: string): Partial<PersistedState> => ({ analysis, script: null, voice: null, uploadedAudio: null, seo: null, thumbnail: null, thumbnails: {}, soundOverrides: {}, look: analysis.look || look, activeRenderJobId: MR.MOTION_TEXT_EMPTY });
 const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, language: string, look: string): Partial<PersistedState> => {
   const started = motionSeriesStart(full, parts || MOTION_PARTS.DEFAULT, language);
   return { ...analyzedState(started.analysis, look), series: started.series };
@@ -242,14 +241,13 @@ export function useMotionStudio() {
   const [compileError, setCompileError] = useState<string>(MR.MOTION_TEXT_EMPTY);
   const [flowCount, setFlowCount] = useState(0);
   const [seoRequestBusy, setSeoRequestBusy] = useState(false);
+  const [thumbnailBusy, setThumbnailBusy] = useState<number | null>(null);
   const flowDepth = useRef(0);
   const [logHistory, setLogHistory] = useState<MotionLogEntry[]>([]);
   const logHistoryRef = useRef<MotionLogEntry[]>([]);
   const logCursors = useRef(new Map<string, { cursor: number; loading: boolean; queued: boolean; lines: string[] }>());
   const settledSeoJobs = useRef(new Set<string>());
-  const alertCaptcha = useRef(createMotionCaptchaAlert());
   const trackLog = useCallback((id: string, kind: string, lines: string[] | undefined, startedAt?: number, job?: Pick<MotionLogEntry, "status" | "stage" | "error" | "stepStates">) => {
-    alertCaptcha.current(id, lines);
     const next = mergeMotionLogHistory(logHistoryRef.current, id, kind, lines, startedAt, job && { status: job.status, stage: job.stage, error: job.error, stepStates: job.stepStates });
     if (next !== logHistoryRef.current) {
       logHistoryRef.current = next;
@@ -380,7 +378,6 @@ export function useMotionStudio() {
   }, [patch]);
   useEffect(() => {
     mounted.current = true;
-    const disposeAlertAudio = initMotionAlertAudio();
     (async () => {
       const saved = await jsonUtils.getAsyncItem<Partial<PersistedState>>(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {});
       if (!mounted.current) return;
@@ -426,7 +423,6 @@ export function useMotionStudio() {
       .catch(_.noop);
     return () => {
       mounted.current = false;
-      disposeAlertAudio();
       pollAbort.current?.abort();
       renderPollAbort.current?.abort();
     };
@@ -685,7 +681,7 @@ export function useMotionStudio() {
       if (text !== stateRef.current.rawText) {
         renderPollAbort.current?.abort();
         setRenderJob(null);
-        patch({ activeRenderJobId: MR.MOTION_TEXT_EMPTY, lastRenderJobId: null, source: null });
+        patch({ activeRenderJobId: MR.MOTION_TEXT_EMPTY, source: null });
       }
       patch({ rawText: text });
       await sourceReader.load(text);
@@ -712,7 +708,6 @@ export function useMotionStudio() {
             logCursors.current.clear();
             settledSeoJobs.current.clear();
             visualRecoveryAttempts.current.clear();
-            alertCaptcha.current = createMotionCaptchaAlert();
             voiceRequested.current = MR.MOTION_TEXT_EMPTY;
             voicePending.current = null;
             voiceAttempt.current = { signature: MR.MOTION_TEXT_EMPTY, count: 0 };
@@ -904,6 +899,7 @@ export function useMotionStudio() {
       }
       if (!now.analysis) return;
       resumeAutomation();
+      setThumbnailBusy(optionIndex);
       await inFlow(async () => {
         try {
           const result = (await runStoryJob(API_ROUTES.MOTION_STORY_THUMBNAIL, { analysis: now.analysis, script: now.script, ...motionVisualRequest(now), seo: now.seo?.options?.[optionIndex], language: now.language, aspect: now.aspect, aiExecution: motionMainAiExecution(now) })) as { thumbnail: string; prompt: string };
@@ -911,6 +907,8 @@ export function useMotionStudio() {
           patch({ thumbnail: newThumb, thumbnails: { ...(stateRef.current.thumbnails || {}), [optionIndex]: newThumb } });
         } catch (e: any) {
           reportStoryError(e);
+        } finally {
+          setThumbnailBusy(null);
         }
       });
     },
@@ -1336,7 +1334,7 @@ export function useMotionStudio() {
   }, [state.aspect]);
   const storyJobBusy = !!storyJob && !isMotionJobTerminal(storyJob.status);
   const renderBusy = !!renderJob && !isMotionJobTerminal(renderJob.status);
-  const renderedPreview = motionRenderedPreview(state, renderJob);
+  const renderedPreview = motionRenderedPreview(state, renderJob, results);
   const storyBusy = storyJobBusy || flowCount > 0 || (!!state.activeStoryJobId && (!storyJob || storyJob.id !== state.activeStoryJobId));
   const seoStep = logHistory.find((entry) => entry.id === state.productionId)?.stepStates?.[MOTION_PRODUCTION.STAGES.SEO] || storyJob?.stepStates?.[MOTION_PRODUCTION.STAGES.SEO];
   const seoBusy = seoRequestBusy || isMotionStageBusy(storyJob, MotionStoryJobKind.SEO, MOTION_PRODUCTION.STAGES.SEO) || (!!state.seoJobId && !settledSeoJobs.current.has(state.seoJobId) && (!seoStep || (seoStep.id === state.seoJobId && !isMotionJobTerminal(seoStep.status))));
@@ -1374,6 +1372,7 @@ export function useMotionStudio() {
     storyJob,
     storyBusy,
     seoBusy,
+    thumbnailBusy,
     storyJobBusy,
     busy,
     logHistory,

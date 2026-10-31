@@ -34,6 +34,7 @@ import { appError, setLogLanguage } from "./lib/logger.js";
 import { delayAsync, generateRandomString } from "./lib/shared-utils.js";
 import { storageUtils } from "./lib/storage";
 import { cn } from "./lib/utils";
+import { useCaptchaAlert } from "./hooks/useCaptchaAlert.js";
 import { AgeGroup, AspectRatio, AssetsMode, AudioType, Gender, GenerateType, HookPosition, ImageGenerationMode, ImageGeneratorEngine, ProjectInputType, ProjectKind, ProjectLanguage, PromptInputMethod, VideoProject } from "./types.js";
 const INVALID_CACHE_VALUES = [COMMON_STRINGS.UNDEFINED, COMMON_STRINGS.NULL];
 const getProjectKindForTab = (tab: string): ProjectKind | undefined => {
@@ -76,6 +77,7 @@ const createProjectRecord = async (project: VideoProject): Promise<VideoProject>
   return savedProject;
 };
 export default function App() {
+  useCaptchaAlert();
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(() => {

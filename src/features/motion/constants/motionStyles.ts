@@ -252,6 +252,8 @@ export const MOTION_STYLES = {
   W_4_H_4_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0: "w-4 h-4 animate-spin text-white shrink-0",
   W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0: "w-4 h-4 animate-spin text-purple-400 shrink-0",
   W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE_SHRINK_0: "w-3.5 h-3.5 animate-spin text-white shrink-0",
+  W_3_5_H_3_5_ANIMATE_SPIN_SHRINK_0: "w-3.5 h-3.5 animate-spin shrink-0",
+  W_3_H_3_ANIMATE_SPIN_SHRINK_0: "w-3 h-3 animate-spin shrink-0",
   W_3_5_H_3_5_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0: "w-3.5 h-3.5 animate-spin text-purple-400 shrink-0",
   W_5_H_5_TEXT_PURPLE_400_ANIMATE_SPIN_SHRINK_0: "w-5 h-5 text-purple-400 animate-spin shrink-0",
   W_4_H_4_SHRINK_0: "w-4 h-4 shrink-0",

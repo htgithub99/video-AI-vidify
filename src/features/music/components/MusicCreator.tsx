@@ -121,7 +121,7 @@ import {
   SOURCE_TEXT_VI,
   SOURCE_TEXT_WAV,
 } from "../../../constants/sourceText";
-import { readBlobAsDataUrl } from "../../../lib/fileUtils";
+import { readBlobAsDataUrl, saveBlobWithDialog as saveMusicBlobWithDialog } from "../../../lib/fileUtils";
 import { DestructiveActionNotice } from "../../../components/common/DestructiveActionNotice";
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, Music2, WandSparkles, Sparkles, Copy, Check, Disc3, SlidersHorizontal, Flame, FileText, Search, Save, Trash2, Pencil, X, Columns, Clock, AlertTriangle, Upload, Image as ImageIcon, Download, RefreshCw, ExternalLink, Link2, Globe, Users, Lock } from "lucide-react";
@@ -157,13 +157,6 @@ import {
 } from "../../../constants";
 import { cn } from "../../../lib/utils";
 import { jsonUtils } from "../../../lib/json";
-const saveMusicBlobWithDialog = async (blob: Blob, suggestedName: string): Promise<boolean> => {
-  const dataUrl = await readBlobAsDataUrl(blob);
-  const response = await fetch(API_ROUTES.PIPELINE_SAVE_FILE, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ suggestedName, dataUrl }) });
-  const result = await response.json();
-  if (!response.ok || !result.success) throw new Error(result.error || SUNO_AUTOMATION_TEXTS.SAVE_FILE_FAILED_ERR);
-  return !result.cancelled;
-};
 const openMusicMediaDb = (): Promise<IDBDatabase> =>
   openIndexedDatabase(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_DB_NAME, 1, (database) => {
     if (!database.objectStoreNames.contains(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME)) database.createObjectStore(SUNO_AUTOMATION_CONFIG.MUSIC_MEDIA_STORE_NAME);
