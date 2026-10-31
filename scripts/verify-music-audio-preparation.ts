@@ -5,6 +5,10 @@ import { transform } from "esbuild";
 import * as ST from "../src/constants/sourceText.ts";
 import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_TEXTS } from "../src/constants/sunoAutomation.ts";
 import { AsyncTaskLimiter } from "../src/lib/asyncTaskLimiter.ts";
+import { RUNTIME_TEXT as RT_SERVER } from "../src/constants/runtime/server.ts";
+import { RUNTIME_TEXT as RT_SHARED } from "../src/constants/runtime/shared.ts";
+import { RUNTIME_TEXT as RT_MUSIC } from "../src/features/music/constants/runtimeText.ts";
+import type { MusicDownloadProgress } from "../src/types/musicDownloadProgress.ts";
 const source = await fs.readFile("src/server/controllers/pipelineController.ts", "utf8");
 const compile = async (code: string, bindings: Record<string, unknown>, result: string) => {
   const executable = (await transform(`(async () => { ${code}\nreturn ${result}; })()`, { loader: "ts", format: "esm" })).code;
@@ -61,73 +65,120 @@ const abort = new AbortController();
 abort.abort();
 await assert.rejects(download(["cancelled"], "fixture", abort.signal));
 assert.equal(downloads, 7);
-const groupsByChunk = Array.from({ length: 5 }, (_, chunk) => Array.from({ length: 5 }, (_, song) => ({ title: `${chunk}-${song}`, candidates: [`${chunk}-${song}-a`, `${chunk}-${song}-b`] })));
-const events: string[] = [];
-let evaluationActive = 0,
-  evaluationPeak = 0;
-let allEvaluating!: () => void;
-const concurrentEvaluation = new Promise<void>((resolve) => {
-  allEvaluating = resolve;
-});
-const chunks = source.slice(source.indexOf("      const chunkPreparationSlots ="), source.indexOf("      const rejectedEvaluation ="));
-const results = await compile(
-  chunks,
-  {
-    ...ST,
-    _,
-    AsyncTaskLimiter,
-    groupsByChunk,
-    evaluationRunId: "offline",
-    audioCacheKey: "fixture",
-    planningRun: { signal: new AbortController().signal },
-    evaluationProjectId: "offline",
-    evaluationWorkerIds: ["room1", "room2", "room3", "room4", "room5"],
-    req: { body: { aiExecution: {}, style: "Bolero" } },
-    AiPlanningFallbackProvider: { GeminiChat: "gemini-chat" },
-    C: { EMPTY: "" },
-    SUNO_AUTOMATION_CONFIG,
-    writeSunoCuratedLog: async () => {},
-    musicErrorDetails: () => ({}),
-    report: { progress: () => {} },
-    closeChatPlanningRoom: async () => {},
-    downloadSunoEvaluationAudio: async (ids: string[]) => {
-      assert.equal(ids.length, 10, "Each evaluation batch retains ten audio files");
-      const chunk = ids[0][0];
-      events.push(`prepare-${chunk}`);
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      events.push(`prepared-${chunk}`);
-      return new Map(ids.map((id) => [id, cached]));
+const groupsByChunk = Array.from({ length: 5 }, (_, chunk) => Array.from({ length: 5 }, (_, song) => ({ title: chunk + "-" + song, candidates: [chunk + "-" + song + "-a", chunk + "-" + song + "-b"] })));
+const tracks = _.flatMap(groupsByChunk, (groups) => _.flatMap(groups, (group) => group.candidates.map((songId) => ({ songId }))));
+const chunks = source.slice(source.indexOf("      report.progress({ phase: RT_SERVER.PREPARING, expected: tracks.length, ready: 0"), source.indexOf("      const rejectedEvaluation ="));
+assert.ok(chunks.includes("const evaluationAudio = await downloadSunoEvaluationAudio"));
+const runScenario = async (failure?: "audio" | "cancel" | "room") => {
+  const events: string[] = [];
+  const progress: MusicDownloadProgress[] = [];
+  const controller = new AbortController();
+  let entered!: () => void, release!: () => void, allEvaluating!: () => void;
+  const enteredDownload = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const downloadGate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const concurrentEvaluation = new Promise<void>((resolve) => {
+    allEvaluating = resolve;
+  });
+  let active = 0,
+    peak = 0;
+  const outcome = compile(
+    chunks,
+    {
+      ...ST,
+      _,
+      AsyncTaskLimiter,
+      groupsByChunk,
+      tracks,
+      evaluationRunId: "offline",
+      audioCacheKey: "fixture",
+      planningRun: { signal: controller.signal },
+      evaluationProjectId: "offline",
+      evaluationWorkerIds: ["room1", "room2", "room3", "room4", "room5"],
+      req: { body: { aiExecution: {}, style: "Bolero" } },
+      AiPlanningFallbackProvider: { GeminiChat: "gemini-chat" },
+      C: { EMPTY: "" },
+      SUNO_AUTOMATION_CONFIG,
+      RT_SERVER,
+      RT_SHARED,
+      RT_MUSIC,
+      writeSunoCuratedLog: async () => {},
+      musicErrorDetails: () => ({}),
+      report: { progress: (value: MusicDownloadProgress) => progress.push(value) },
+      closeChatPlanningRoom: async () => {},
+      downloadSunoEvaluationAudio: async (ids: string[], _key: string, signal: AbortSignal, preview: boolean, onPrepared: (ready: number) => void) => {
+        assert.equal(signal, controller.signal);
+        assert.equal(ids.length, 50, "Prepare audio for every candidate before opening a room");
+        assert.equal(preview, true);
+        events.push("download-start");
+        onPrepared(20);
+        entered();
+        await downloadGate;
+        if (failure === "audio") throw new Error("Audio download failed");
+        events.push("download-complete");
+        onPrepared(50);
+        if (failure === "cancel") controller.abort();
+        return new Map(ids.map((id) => [id, cached]));
+      },
+      prepareChatPlanningRoom: async (request: { workerId: string }) => {
+        events.push("open-" + request.workerId);
+        if (failure === "room" && request.workerId === "room1") throw new Error("gemini_model_ui_not_ready");
+      },
+      selectProfessionalSunoTracks: async (groups: (typeof groupsByChunk)[number], _style: string, _room: unknown, audio: Map<string, Buffer>) => {
+        assert.equal(audio.size, 50);
+        const ids = _.flatMap(groups, (group) => group.candidates);
+        assert.equal(ids.length, 10, "Each room still receives five song pairs");
+        assert.ok(ids.every((id) => audio.has(id)));
+        events.push("evaluate-" + ids[0][0]);
+        active++;
+        peak = Math.max(peak, active);
+        if (active === (failure === "room" ? 4 : 5)) allEvaluating();
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            concurrentEvaluation,
+            new Promise<never>((_resolve, reject) => {
+              timer = setTimeout(() => reject(new Error("Rooms did not evaluate concurrently")), 2000);
+            }),
+          ]);
+          return [];
+        } finally {
+          clearTimeout(timer);
+          active--;
+        }
+      },
     },
-    prepareChatPlanningRoom: async (request: { workerId: string }) => {
-      events.push(`open-${request.workerId}`);
-    },
-    selectProfessionalSunoTracks: async (groups: (typeof groupsByChunk)[number]) => {
-      events.push(`evaluate-${groups[0].candidates[0][0]}`);
-      evaluationActive++;
-      evaluationPeak = Math.max(evaluationPeak, evaluationActive);
-      if (evaluationActive === 5) allEvaluating();
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        await Promise.race([
-          concurrentEvaluation,
-          new Promise<never>((_resolve, reject) => {
-            timer = setTimeout(() => reject(new Error("Five rooms did not evaluate concurrently")), 2000);
-          }),
-        ]);
-        return [];
-      } finally {
-        clearTimeout(timer);
-        evaluationActive--;
-      }
-    },
-  },
-  "evaluationResults",
-);
-assert.ok((await results).every((result: PromiseSettledResult<unknown>) => result.status === "fulfilled"));
-assert.ok(events.indexOf("evaluate-0") < events.indexOf("prepared-1"), "First evaluation must start before remaining audio is ready");
-assert.equal(evaluationPeak, 5, "All five rooms evaluate before any room finishes");
-assert.ok(
-  [1, 2, 3, 4, 5].every((room) => events.indexOf(`open-room${room}`) >= 0 && events.indexOf(`open-room${room}`) < events.indexOf("prepared-0")),
-  "Open all five rooms before the first MP3 batch finishes preparing",
-);
-console.log("PASS: real audio preparation reuses cached MP3 without WAV, shares two slots, keeps WAV export, stops cancellation; real chunk orchestration opens five rooms upfront, evaluates all five concurrently, and keeps ten files per batch. No live AI/Suno calls.");
+    "evaluationResults",
+  ).then(
+    (result) => ({ result, error: undefined }),
+    (error) => ({ result: undefined, error }),
+  );
+  await enteredDownload;
+  assert.deepEqual(events, ["download-start"], "No Chrome room may open while any audio is still preparing");
+  assert.ok(progress.some((value) => value.phase === "preparing" && value.ready === 20 && value.expected === 50));
+  release();
+  const result = await outcome;
+  if (failure === "audio" || failure === "cancel") {
+    assert.ok(result.error);
+    assert.ok(!events.some((value) => value.startsWith("open-")), "Failed or cancelled audio preparation must not open Chrome");
+    return;
+  }
+  assert.equal(result.error, undefined);
+  assert.ok(events.filter((value) => value.startsWith("open-")).length === 5);
+  assert.ok(events.indexOf("download-complete") < events.findIndex((value) => value.startsWith("open-")), "All audio must be ready before the first room opens");
+  assert.equal(peak, failure === "room" ? 4 : 5);
+  const settled = result.result as PromiseSettledResult<unknown>[];
+  assert.equal(settled.filter((value) => value.status === "rejected").length, failure === "room" ? 1 : 0);
+  if (failure === "room") {
+    assert.ok(progress.some((value) => value.room === 1 && value.phase === "evaluation-failed"));
+    assert.ok(!progress.some((value) => value.phase === "failed"), "Room startup errors must not be labelled as upload failures");
+  }
+};
+await runScenario();
+await runScenario("audio");
+await runScenario("cancel");
+await runScenario("room");
+process.stdout.write("PASS: audio cache, two preparation slots and WAV export preserved; all audio finishes before five concurrent Gemini rooms; download failure/cancel opens no rooms; room errors are not upload errors. No live AI/Suno calls.\n");

@@ -96,7 +96,6 @@ export const RUNTIME_TEXT = {
   BAN_NHAC: " bản nhạc",
   DANG_CHO_LUOT_MO_PHONG_DANH_GIA: "Đang chờ lượt mở phòng đánh giá",
   PREPARING: "preparing",
-  DANG_MO_PHONG_VA_CHUAN_BI_MP3_DU_THOI_LUONG: "Đang mở phòng và chuẩn bị MP3 đủ thời lượng",
   REJECTED: SOURCE_TEXT_REJECTED,
   REQUEST: SOURCE_TEXT_REQUEST,
   FRAMENAVIGATED: "framenavigated",

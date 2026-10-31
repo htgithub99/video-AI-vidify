@@ -1,6 +1,9 @@
 import { MOTION_TEXT_S } from "../../../constants/motionRuntime.js";
 import { SOURCE_TEXT_ABORTERROR } from "../../../constants/sourceText.js";
 export const RUNTIME_TEXT = {
+  PREPARING_ALL_AUDIO: "Đang tải và chuẩn bị toàn bộ âm thanh trước khi mở Gemini",
+  ALL_AUDIO_READY: "Đã chuẩn bị đủ âm thanh, bắt đầu mở các phòng Gemini",
+  OPENING_EVALUATION_ROOM: "Đang mở phòng Gemini để upload và đánh giá nhạc",
   LUONG_TAI_VA_DANH_GIA_NHAC_BI_NGAT_TRUOC_KHI: "Luồng tải và đánh giá nhạc bị ngắt trước khi hoàn tất. Các file đã tải vẫn được giữ; hãy thử lại để tiếp tục.",
   ROOM: "Room ",
   LAN: "Lần",
