@@ -96,7 +96,7 @@ export const CLAUDE_VERIFICATION_TEXTS = {
   FIXTURE_BROWSER: "fixture-browser",
   FIXTURE: "fixture",
   BROWSER_SERVICE_FIXTURE:
-    "\n        export const getOrLaunchGlobalBrowser = async () => globalThis.__claudeFixture;\n        export const getOrLaunchGrokBrowser = getOrLaunchGlobalBrowser;\n        export const scheduleGlobalBrowserCleanup = () => {};\n        export const closeAppBrowserAfterTask = async () => true;\n        export const closeIdleSharedChrome = async () => true;\n        export const closeOwnedGrokBrowserIfIdle = async () => true;\n        export class SimpleMutex { tail = Promise.resolve(); async acquire() { const previous = this.tail; let release; this.tail = new Promise(resolve => release = resolve); await previous; return release; } }\n      ",
+    "\n        export const getOrLaunchGlobalBrowser = async () => globalThis.__claudeFixture;\n        export const getOrLaunchGrokBrowser = getOrLaunchGlobalBrowser;\n        export const scheduleGlobalBrowserCleanup = () => {};\n        export const retainGlobalBrowser = () => () => {};\n        export const closeAppBrowserAfterTask = async () => true;\n        export const closeIdleSharedChrome = async () => true;\n        export const closeOwnedGrokBrowserIfIdle = async () => true;\n        export class SimpleMutex { tail = Promise.resolve(); async acquire() { const previous = this.tail; let release; this.tail = new Promise(resolve => release = resolve); await previous; return release; } }\n      ",
   JS: "js",
   UTF8: "utf8",
   CONFIG_NUMBER_PATTERN: (value0: unknown): string => `\\b${value0}: \\d+`,
@@ -104,7 +104,7 @@ export const CLAUDE_VERIFICATION_TEXTS = {
   TS: "ts",
   FIXTURE_DIAGNOSTICS: "fixture-diagnostics",
   DIAGNOSTICS: "diagnostics",
-  DIAGNOSTICS_SERVICE_FIXTURE: "export const writeMusicDiagnostic = async () => {}; export const musicErrorDetails = () => ({});",
+  DIAGNOSTICS_SERVICE_FIXTURE: "export const writeMusicDiagnostic = async () => {}; export const musicErrorDetails = () => ({}); export const musicUploadDetails = () => ({});",
   SERVICE_BUNDLE_PATH: (value0: unknown): string => `node_modules/.cache/verify-claude-service-${value0}.mjs`,
   FORMAT_RUN: (value0: unknown): string => `?run=${value0}`,
   CLAUDE_TEST: "claude_test",
@@ -185,7 +185,8 @@ export const CLAUDE_VERIFICATION_TEXTS = {
   CLAUDE_SONNET_5_5_UNKNOWN: "claude-sonnet-5-5::unknown",
   CLAUDE_SONNET_5_5_LOW_MAX: "claude-sonnet-5-5::low::max",
   CLAUDE_SONNET_4_6_XHIGH: "claude-sonnet-4-6::xhigh",
-  MODEL_MENU_FIXTURE: (models: string, mode: string): string => `<button data-testid="model-selector-dropdown">Sonnet 5.5 Medium</button><div id="menus"></div><script>(()=>{
+  EFFORT_MENU_LABELS: ["Effort level", "Effort", "Mức độ nỗ lực", "Mức nỗ lực"],
+  MODEL_MENU_FIXTURE: (models: string, mode: string, effortMenu = "Effort level", effortIds = true): string => `<button data-testid="model-selector-dropdown">Sonnet 5.5 Medium</button><div id="menus"></div><script>(()=>{
   const models = ${models};
   window.current = 'claude-sonnet-5-5'; window.effort = 'medium'; window.modelClicks = 0; window.upgradeClicks = 0;
   const host = document.querySelector('#menus'); const picker = document.querySelector('button');
@@ -203,8 +204,8 @@ export const CLAUDE_VERIFICATION_TEXTS = {
     for(const m of models.slice(0,4))main.append(modelItem(m));
     const more=document.createElement('div');more.setAttribute('role','menuitem');more.setAttribute('aria-haspopup','menu');more.setAttribute('aria-expanded','false');more.tabIndex=0;more.textContent='More models';
     more.onmouseenter=()=>{more.setAttribute('aria-expanded','true');if(host.querySelector('#other'))return;const sub=document.createElement('div');sub.id='other';sub.setAttribute('role','menu');for(const m of models.slice(4))if(!(${mode}==='missing'&&m.value==='claude-sonnet-5'))sub.append(modelItem(m));host.append(sub);};main.append(more);
-    const effort=document.createElement('div');effort.setAttribute('role','menuitem');effort.setAttribute('aria-haspopup','menu');effort.setAttribute('aria-expanded','false');effort.tabIndex=0;effort.textContent='Effort level';
-    effort.onmouseenter=()=>{effort.setAttribute('aria-expanded','true');if(host.querySelector('#efforts'))return;const sub=document.createElement('div');sub.id='efforts';sub.setAttribute('role','menu');for(const e of models.find(m=>m.value===window.current).efforts){const item=document.createElement('div');item.setAttribute('role','menuitemradio');item.dataset.effortId=e;item.setAttribute('aria-checked',String(window.effort===e));item.textContent=({low:'Low',medium:'Medium',high:'High',xhigh:'Higher',max:'Max'})[e];item.onclick=()=>{if(${mode}!=='ignore-effort')window.effort=e;update();host.replaceChildren();};sub.append(item);}host.append(sub);};main.append(effort);
+    const effort=document.createElement('div');effort.setAttribute('role','menuitem');effort.setAttribute('aria-haspopup','menu');effort.setAttribute('aria-expanded','false');effort.tabIndex=0;effort.innerHTML='<span>'+${JSON.stringify(effortMenu)}+'</span> <span>'+window.effort+'</span>';
+    effort.onmouseenter=()=>{effort.setAttribute('aria-expanded','true');if(host.querySelector('#efforts'))return;const sub=document.createElement('div');sub.id='efforts';sub.setAttribute('role','menu');for(const e of models.find(m=>m.value===window.current).efforts){if(${mode}==='missing-effort'&&e==='low')continue;const item=document.createElement('div');item.setAttribute('role','menuitemradio');if(${effortIds})item.dataset.effortId=e;item.setAttribute('aria-checked',String(window.effort===e));item.textContent=(${JSON.stringify(effortMenu)}.startsWith('Mức')?{low:'Thấp',medium:'Trung bình Được đề xuất',high:'Cao',xhigh:'Cao hơn',max:'Tối đa Mức sử dụng gấp 5× trở lên'}:{low:'Low',medium:'Medium Recommended',high:'High',xhigh:'Higher',max:'Max Usage 5×'})[e];if(e==='low'&&${mode}==='disabled-effort')item.setAttribute('data-disabled','');if(e==='low'&&${mode}==='aria-disabled-effort')item.setAttribute('aria-disabled','true');item.onclick=()=>{if(${mode}!=='ignore-effort')window.effort=e;update();host.replaceChildren();};sub.append(item);}host.append(sub);};if(${mode}!=='missing-effort-menu')main.append(effort);
   }
   picker.onclick=menu; document.addEventListener('keydown',e=>{if(e.key==='Escape')host.replaceChildren();});
   })();</script>`,
@@ -214,8 +215,12 @@ export const CLAUDE_VERIFICATION_TEXTS = {
   MISSING: "missing",
   IGNORE_MODEL: "ignore-model",
   IGNORE_EFFORT: "ignore-effort",
+  MISSING_EFFORT_MENU: "missing-effort-menu",
+  MISSING_EFFORT: "missing-effort",
+  DISABLED_EFFORT: "disabled-effort",
+  ARIA_DISABLED_EFFORT: "aria-disabled-effort",
   ROLE_MENU: '[role="menu"]',
   ALWAYS_DISMISS_MODEL_MENUS_ON_FAILURE: "Always dismiss model menus on failure",
   NEVER_CLICK_UPGRADE_INSTEAD_OF_SELECTING_A_MODEL: "Never click upgrade instead of selecting a model",
-  CLAUDE_MODELS_ALL_13_MODEL_SELECTIONS_SUPPORTED_EFFORT_LEVELS_EXACT_VERSION: "Claude models: all 13 model selections, supported effort levels, exact version matching, legacy submenu, project persistence, locked/disabled/missing models, ignored selections and cancellation passed.\n",
+  CLAUDE_MODELS_ALL_13_MODEL_SELECTIONS_SUPPORTED_EFFORT_LEVELS_EXACT_VERSION: "Claude models: all 13 models, effort levels, both Vietnamese menu labels and English labels, data IDs/name fallback, exact versions, project persistence, locked/disabled/missing options, ignored selections and cancellation passed.\n",
 } as const;

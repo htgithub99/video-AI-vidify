@@ -14,6 +14,8 @@ import { MUSIC_CREATOR_TEXTS } from "../src/constants/texts.ts";
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../src/constants/cinematicConstants.ts";
 import { AiPlanningFallbackProvider } from "../src/types.ts";
 import { GEMINI_MODEL_ENCODING } from "../src/constants/geminiChatModels.ts";
+import { CHAT_PLANNING_RUNTIME as CHAT_RUNTIME } from "../src/constants/chatPlanningRuntime.ts";
+import { MUSIC_CREATION_OPTIONS as MUSIC_OPTIONS } from "../src/features/music/constants/musicCreationOptions.ts";
 import { musicErrorDetails } from "../src/server/services/musicDiagnosticService.ts";
 import { compactMusicSongs, musicReviewOrder, readMusicPlanResponse, validMusicEditorialReview } from "../src/lib/musicPlanning.ts";
 import { musicPlanReporter } from "../src/features/music/server/services/musicPlanProgress.ts";
@@ -82,7 +84,7 @@ assert.equal(SUNO_AUTOMATION_TEXTS.MUSIC_ROOM_NON_RETRYABLE_ERROR.test(selection
 const route = code.slice(code.indexOf("router.post(ROUTER_PATHS.MUSIC_PLAN,"), code.indexOf("router.post(ROUTER_PATHS.MUSIC_SEO_REGENERATE,"));
 const executable = (await transform(route, { loader: "ts", format: "cjs" })).code;
 const checkpoints = new Map();
-async function run(streaming: boolean, rankingFails = false, seoFails = false, failBatch = false, cancelRanking = false, cancelSeo = false, legacy = false, smallerBatch = 0, unavailable = false, songCount = 10) {
+async function run(streaming: boolean, rankingFails = false, seoFails = false, failBatch = false, cancelRanking = false, cancelSeo = false, legacy = false, smallerBatch = 0, unavailable = false, songCount = 10, styleError?: Error, sourceStyle = false) {
   let handler: any;
   const requested = songs.slice(0, songCount).map((song) => structuredClone(song));
   const requestId = `test-${streaming}-${rankingFails}-${seoFails}-${failBatch}-${cancelRanking}-${cancelSeo}-${legacy}-${smallerBatch}-${unavailable}-${songCount}`;
@@ -96,6 +98,7 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
   mockReq.body = { streamProgress: streaming };
   const response: any = new EventEmitter();
   const events: any[] = [];
+  const diagnostics: string[] = [];
   response.setHeader = () => {};
   response.flushHeaders = () => {};
   response.write = (value: string) => {
@@ -128,6 +131,7 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
     CINEMATIC_CHAT_PLANNING_CONFIG,
     AiPlanningFallbackProvider,
     MUSIC_PLAN: P,
+    MUSIC_OPTIONS,
     musicPlanReporter,
     validMusicEditorialReview,
     musicReviewOrder,
@@ -149,8 +153,10 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
     musicPlanCheckpoints: checkpoints,
     activeMusicPlanCleanup: new Map(),
     activeMusicPlanRuns: 0,
-    parseAndValidateMusicPlanRequest: () => ({ isValid: true, payload: { requestedSongCount: requested.length, style: "Bolero", referenceSongs: [], projectId: requestId, requestId, sunoInspo: "", execution: { provider: AiPlanningFallbackProvider.GeminiChat } } }),
-    writeMusicDiagnostic: async () => {},
+    parseAndValidateMusicPlanRequest: () => ({ isValid: true, payload: { requestedSongCount: requested.length, style: "Bolero", analyzeStyleFromSource: sourceStyle, referenceSongs: sourceStyle ? ["Source reference for musical style analysis"] : [], projectId: requestId, requestId, sunoInspo: "", execution: { provider: AiPlanningFallbackProvider.GeminiChat } } }),
+    writeMusicDiagnostic: async (event: string) => {
+      diagnostics.push(event);
+    },
     musicErrorDetails: () => ({}),
     logger: { warn() {}, error() {} },
     createAppError: (message: string) => new Error(message),
@@ -175,8 +181,10 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
       calls.push(request);
       controller.signal.throwIfAborted();
       const answer: any = { artifactType: request.artifactType, requestId: request.requestId };
-      if (request.artifactType === SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS) Object.assign(answer, profile);
-      else if (request.artifactType === MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE) {
+      if (request.artifactType === SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS) {
+        if (styleError) throw styleError;
+        Object.assign(answer, profile);
+      } else if (request.artifactType === MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE) {
         const start = Number(request.requestId.match(/_batch_(\d+)/)[1]);
         const range = request.prompt.match(/songs (\d+)-(\d+)/)!;
         const count = Number(range[2]) - Number(range[1]) + 1;
@@ -209,7 +217,12 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
   new Function(...Object.keys(context), executable)(...Object.values(context));
   await handler(mockReq, response);
   const result = streaming ? events.find((event) => event.type === "result")?.result : response.result;
-  if (failBatch || cancelRanking || cancelSeo || unavailable) {
+  if (styleError) {
+    assert.equal(result.success, false);
+    assert.ok(result.error.includes(styleError.message));
+    assert.equal(calls.length, 1, "An invalid Claude setting must stop at its first attempt without sending repair prompts");
+    assert.ok(!diagnostics.includes(ST.SOURCE_TEXT_PLAN_CONTRACT_FAILED), "A model-selection failure must not be reported as malformed JSON");
+  } else if (failBatch || cancelRanking || cancelSeo || unavailable) {
     assert.equal(result.success, false);
     const partial = events.filter((event) => event.data?.songs?.length).at(-1);
     assert.ok(partial?.data.songs.length > 0, "Failures must retain completed songs");
@@ -252,6 +265,18 @@ async function run(streaming: boolean, rankingFails = false, seoFails = false, f
   return { result, calls, events, requestId, preparedRooms, maxActiveCompositions };
 }
 const normal = await run(true);
+const sourceStyleRun = await run(true, false, false, false, false, false, false, 0, false, 3, undefined, true);
+const sourceAnalyses = sourceStyleRun.calls.filter((call) => call.artifactType === SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS);
+assert.equal(sourceAnalyses.length, 1, "Saving the analyzed style must not require another AI request");
+assert.ok(sourceAnalyses[0].prompt.includes(MUSIC_OPTIONS.SOURCE_STYLE_GUIDANCE));
+assert.ok(sourceAnalyses[0].prompt.includes("Source reference for musical style analysis"));
+assert.ok(!sourceAnalyses[0].prompt.includes("USER GLOBAL GUIDANCE:\nBolero"), "Source analysis must ignore the previously selected preset");
+const validatorSource = code.slice(code.indexOf("const parseAndValidateMusicPlanRequest ="), code.indexOf("const generateMusicThumbnailAsset ="));
+const validatorCode = (await transform(validatorSource, { loader: "ts", format: "cjs" })).code;
+const validatorContext = { _, ...ST, MUSIC_CREATOR_CONSTANTS, MUSIC_CREATOR_TEXTS, SUNO_AUTOMATION_CONFIG, MUSIC_OPTIONS };
+const validateRequest = new Function(...Object.keys(validatorContext), validatorCode + ";return parseAndValidateMusicPlanRequest;")(...Object.values(validatorContext));
+assert.equal(validateRequest({ body: { requestedSongCount: MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS[0], projectId: "source-mode", analyzeStyleFromSource: true } }).error, MUSIC_OPTIONS.TEXT.vi.sourceRequired);
+assert.equal(validateRequest({ body: { requestedSongCount: MUSIC_CREATOR_CONSTANTS.ALLOWED_SONG_COUNTS[0], projectId: "source-mode", analyzeStyleFromSource: true, referenceSongs: ["Sample source"] } }).payload.analyzeStyleFromSource, true);
 const batchCalls = normal.calls.filter((call) => call.artifactType === MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE);
 assert.equal(batchCalls.length, 4);
 assert.deepEqual(normal.preparedRooms, [SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_THIRD_ROOM_WORKER_TYPE]);
@@ -281,9 +306,13 @@ for (const limit of [2, 1]) {
   assert.ok(sizes.includes(3) && sizes.includes(2) && sizes.includes(limit));
 }
 await run(true, false, false, false, false, false, false, 0, true);
+for (const error of [CHAT_RUNTIME.MODEL_UNAVAILABLE("Sonnet 5.5"), CHAT_RUNTIME.EFFORT_UNAVAILABLE("Sonnet 5.5 · Thấp")]) {
+  assert.equal(SUNO_AUTOMATION_TEXTS.MUSIC_ROOM_NON_RETRYABLE_ERROR.test(error), true);
+  await run(true, false, false, false, false, false, false, 0, false, 10, new Error(error));
+}
 await assert.rejects(
   readMusicPlanResponse(new Response('{"type":"progress","progress":{"stage":"writing"}}\n', { headers: { "content-type": P.STREAM_TYPE } }), () => {}),
   { message: P.STREAM_ENDED },
 );
-console.log("Music planning passed: three songs per room, three concurrent rooms, 1/3/6/9/10/30-song coverage, 3→2→1 batch recovery, unavailable model stops once with its actual cause, 30-song bounded prompts, streaming partial lyrics/UTF-8, JSON compatibility, ranking fallback, optional SEO failure, cancellation and receipt/partial review recovery. No live AI or Suno requests.");
-console.log(JSON.stringify(Object.fromEntries(Object.entries(prompts).map(([name, prompt]) => [name, prompt.length]))));
+process.stdout.write("Music planning passed: three concurrent rooms, adaptive batches, streaming checkpoints, cancellation, Gemini/Claude model and effort errors stop once with their actual cause and no false JSON diagnostics. No live AI or Suno requests.\n");
+process.stdout.write(JSON.stringify(Object.fromEntries(Object.entries(prompts).map(([name, prompt]) => [name, prompt.length]))) + "\n");

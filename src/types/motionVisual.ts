@@ -54,6 +54,8 @@ export interface MotionRemotionNode {
   anonymous?: boolean;
   description: string;
   pose: string;
+  posture?: string;
+  support?: string;
   representation?: "full" | "bust" | "detail";
   slot: "left" | "center" | "right";
   relation?: "beside" | "behind" | "on" | "inside" | "heldBy";

@@ -9,7 +9,24 @@ import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemo
 import { motionResponseErrors } from "../../../../../lib/motionResponseContract.js";
 import { normalizeRemotionRelations } from "../../../../../lib/motionRemotionStaging.js";
 import type { MotionRemotionNode, MotionRemotionScene } from "../../../../../types/motionVisual.js";
-export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { key: string; text: string }[], cast: Set<string>) => {
+const castKey = (value: string): string => value.normalize(P.CAST_KEY.FORM).replace(P.CAST_KEY.MARKS, "").replace(P.CAST_KEY.D_STROKE, P.CAST_KEY.D_PLAIN).toLowerCase().replace(P.CAST_KEY.OTHER, "");
+const addImpliedHolders = (nodes: MotionRemotionNode[]): MotionRemotionNode[] => {
+  const H = P.HOLDER;
+  const added: MotionRemotionNode[] = [];
+  for (const node of nodes) {
+    if (node.kind === H.KIND || (node.relation === H.RELATION && nodes.some((other) => other.id === node.target))) continue;
+    const match = H.IMPLIED.exec(`${node.pose || ""} ${node.description || ""}`);
+    const who = match?.[1] || match?.[2];
+    if (!who || nodes.some((other) => other.kind === H.KIND && `${other.id} ${other.description}`.toLowerCase().includes(who.toLowerCase()))) continue;
+    const id = H.ID(node.id);
+    if (nodes.some((other) => other.id === id)) continue;
+    added.push({ id, kind: H.KIND, anonymous: true, description: H.DESCRIPTION(who, node.id), pose: H.POSE, slot: node.slot, evidence: node.evidence } as MotionRemotionNode);
+    node.relation = H.RELATION as MotionRemotionNode["relation"];
+    node.target = id;
+  }
+  return [...nodes, ...added];
+};
+export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { key: string; text: string }[], cast: Set<string>, impliedHolders = false) => {
   const schema = MOTION_REMOTION_SCHEMAS[V.ARTIFACT_SCENE].properties!.scenes.items!;
   const drafts = new Map<string, any>();
   const incoming = Array.isArray(raw?.scenes) ? raw.scenes : [];
@@ -54,6 +71,10 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
         if (!node || typeof node !== "object") continue;
         for (const key of [RUNTIME_VALUES.ENTITYID_556EB4FE, RUNTIME_VALUES.RELATION_FC8FBB48, RUNTIME_VALUES.TARGET_34A04005, COMMON_RUNTIME.SOURCE_TEXT_EVIDENCE, RUNTIME_VALUES.ESSENTIAL_A55751CE, RUNTIME_VALUES.APPEARANCECHANGED_C145E98D, RUNTIME_VALUES.POSEESSENTIAL_6DEE91EC] as string[]) if (node[key] === null || node[key] === "") delete node[key];
         node.pose ||= RT_SHARED.STANDING;
+        for (const field of P.SOFT_NODE_FIELDS) {
+          if (typeof node[field] === "string" && node[field].trim()) node[field] = node[field].trim().slice(0, P.SOFT_NODE_CHARS);
+          else delete node[field];
+        }
         if (node.kind === RT_SHARED.CHARACTER) {
           if (!node.entityId && cast.has(node.id)) node.entityId = node.id;
           if (cast.has(node.entityId)) delete node.anonymous;
@@ -79,10 +100,11 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
       .slice(from, to + 1)
       .map((line) => line.text)
       .join(RT_SHARED.SYMBOL_36A9E7);
+    item.nodes = (item.nodes as MotionRemotionNode[]).filter((node, index, all) => all.findIndex((other) => other.id === node.id) === index);
+    if (impliedHolders) item.nodes = addImpliedHolders(item.nodes);
     const ids = new Set(item.nodes.map((node: MotionRemotionNode) => node.id));
     if (item.focus) item.focus = [...new Set((item.focus as string[]).filter((id) => ids.has(id)))];
     const nodeErrors: string[] = [];
-    const report = (node: MotionRemotionNode, field: string) => nodeErrors.push(P.NODE_ISSUE(item.fromLineId, node.id, field));
     for (const node of item.nodes as MotionRemotionNode[]) {
       node.evidence ||= source;
       if (node.kind === RT_SHARED.CHARACTER && node.relation === RT_SHARED.ON && node.essential === false && !node.poseEssential) {
@@ -90,15 +112,26 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
         node.pose = RT_SHARED.STANDING;
         node.contact = RT_SHARED.BASE;
       }
-      if (ids.size !== item.nodes.length) report(node, P.DUPLICATE_NODE);
-      if (node.kind === RT_SHARED.CHARACTER && !node.anonymous && (!node.entityId || !cast.has(node.entityId))) report(node, P.UNKNOWN_CHARACTER);
-      if (node.target && (!ids.has(node.target) || node.target === node.id)) report(node, P.INVALID_TARGET);
-      if (!!node.relation !== !!node.target) report(node, P.RELATION_TARGET);
+      if (node.kind === RT_SHARED.CHARACTER && !node.anonymous && (!node.entityId || !cast.has(node.entityId))) {
+        const known = [...cast].find((key) => [node.entityId, node.id].some((value) => value && castKey(value) === castKey(key)));
+        if (known) node.entityId = known;
+        else {
+          node.anonymous = true;
+          delete node.entityId;
+        }
+      }
+      if ((node.target && (!ids.has(node.target) || node.target === node.id)) || !!node.relation !== !!node.target) {
+        delete node.relation;
+        delete node.target;
+      }
       const seen = new Set<string>();
       let current: MotionRemotionNode | undefined = node;
       while (current?.target && ([RUNTIME_VALUES.ON_B8D31E85, RUNTIME_VALUES.INSIDE_106B0862, RUNTIME_VALUES.HELDBY_F9249A57] as string[]).includes(current.relation || "")) {
         if (seen.has(current.id)) {
-          report(node, P.CYCLIC_TARGET);
+          if (current.id === node.id) {
+            delete node.relation;
+            delete node.target;
+          }
           break;
         }
         seen.add(current.id);
@@ -109,6 +142,24 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
     if (!nodeErrors.length) scenes.push(item);
   }
   scenes.sort((a, b) => lines.findIndex((line) => line.key === a.fromLineId) - lines.findIndex((line) => line.key === b.fromLineId));
+  if (scenes.length && scenes.length === drafts.size) {
+    const at = (key: string) => lines.findIndex((line) => line.key === key);
+    for (let changed = true; changed; ) {
+      changed = false;
+      scenes[0].fromLineId = lines[0]?.key ?? scenes[0].fromLineId;
+      scenes.forEach((scene, index) => {
+        const end = index + 1 < scenes.length ? at(scenes[index + 1].fromLineId) - 1 : lines.length - 1;
+        if (end >= 0 && lines[end]) scene.toLineId = lines[end].key;
+      });
+      const empty = scenes.findIndex((scene) => at(scene.toLineId) < at(scene.fromLineId));
+      if (empty >= 0) {
+        scenes.splice(empty, 1);
+        changed = scenes.length > 0;
+      }
+    }
+    drafts.clear();
+    for (const scene of scenes) drafts.set(scene.fromLineId, scene);
+  }
   let cursor = 0;
   const ranges = [...drafts.values()].sort((a, b) => lines.findIndex((line) => line.key === a.fromLineId) - lines.findIndex((line) => line.key === b.fromLineId));
   for (const item of ranges) {

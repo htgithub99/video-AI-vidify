@@ -24,4 +24,10 @@ export const CHAT_PLANNING_STYLES = {
   MODEL_ICON: "w-3.5 h-3.5 text-purple-400 mr-2 shrink-0",
   CHROME_ICON: "w-3.5 h-3.5 text-sky-400 mr-2 shrink-0",
   EXTRA_FIELD: "studio-planning-extra-field justify-between",
+  TOGGLE_BUTTON: "w-full min-w-0 h-full flex items-center justify-between gap-2 text-xs font-semibold text-slate-200 cursor-pointer disabled:opacity-40 disabled:cursor-default",
+  TOGGLE_LABEL: "flex items-center gap-2 min-w-0 flex-1",
+  TOGGLE_TEXT: "truncate",
+  TOGGLE_ICON: "w-3.5 h-3.5 shrink-0",
+  TOGGLE_ICON_ON: "text-purple-400",
+  TOGGLE_ICON_OFF: "text-slate-400",
 } as const;

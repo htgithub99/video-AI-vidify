@@ -117,7 +117,7 @@ export const normalizeSceneComposition = (raw: any, key: string, inputKey: strin
   const elements = compositionElements(asset.svg);
   const required = new Set(nodes.filter((node) => node.kind !== RT_SHARED.LABEL).map((node) => node.id));
   const layers = Array.isArray(raw?.layers) ? raw.layers.filter((layer: MotionSceneLayer) => !layer || typeof layer.id !== "string" || required.has(layer.id) || elements.has(layer.id)) : raw?.layers;
-  const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, layers, animations: raw?.animations || [], ...(raw?.design ? { design: normalizeMotionSceneDesign(raw.design, nodes) } : {}), ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
+  const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, layers, animations: raw?.animations || [], ...(raw?.design ? { design: normalizeMotionSceneDesign(raw.design, nodes, { width, height }) } : {}), ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
 };
@@ -130,7 +130,24 @@ const stripUnlabeledText = (svg: string, nodes: MotionRemotionNode[]): string =>
     return spoken.length && labels.some((label) => spoken.every((word) => label.has(word))) ? whole : "";
   });
 };
-export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number) => {
+const groundUnderlay = (svg: string, design: MotionSceneComposition["design"], width: number, height: number): string => {
+  const G = C.GROUND;
+  const horizon = design?.floor?.horizon;
+  if (!design || (design.format && design.format !== G.FORMAT) || typeof horizon !== "number" || horizon <= 0 || horizon >= 1) return svg;
+  const sky = G.CANVAS_RECT(width, height).exec(svg);
+  if (!sky || G.DRAWN.test(svg.slice(0, sky.index).replace(G.DEFS, ""))) return svg;
+  const edge = G.EDGE(height);
+  const fill = [...svg.matchAll(G.SHAPE)]
+    .map((match) => match[0])
+    .filter((tag) => tag !== sky[0] && !G.SEE_THROUGH.test(tag) && edge.test(G.GEOMETRY.exec(tag)?.[1] || ""))
+    .map((tag) => G.FILL.exec(tag)?.[1])
+    .filter((value): value is string => !!value && value !== G.NONE)
+    .at(-1);
+  if (!fill) return svg;
+  const top = Math.round(horizon * height);
+  return svg.replace(sky[0], sky[0] + G.RECT(top, width, height - top, fill));
+};
+export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number, options: { groundUnderlay?: boolean } = {}) => {
   let asset = normalizeMotionVector(raw?.svg, key, inputKey, description, true);
   if (asset.width !== width || asset.height !== height || !/^0[\s,]+0[\s,]/.test(asset.svg.match(/\bviewBox\s*=\s*["']([^"']+)["']/)?.[1]?.trim() || "")) {
     const fitted = asset.svg.replace(/^<svg\b[^>]*>/, (root) => `${root.replace(/\s(?:width|height|x|y|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "").slice(0, -1)}${RUNTIME_VALUES.WIDTH_100_HEIGHT_100_X_0_Y_0_PRESERVEASPECTRATIO_XMIDYMID_MEET_0F54C243}`);
@@ -149,10 +166,11 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
   }
   const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, unchecked: true, layers, animations: [], ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
   try {
-    if (raw?.design) composition.design = normalizeMotionSceneDesign(raw.design, nodes);
+    if (raw?.design) composition.design = normalizeMotionSceneDesign(raw.design, nodes, { width, height });
   } catch {
     composition.design = undefined;
   }
+  if (options.groundUnderlay) asset = { ...asset, svg: groundUnderlay(asset.svg, composition.design, width, height) };
   for (const animation of Array.isArray(raw?.animations) ? raw.animations.slice(0, C.ANIMATIONS) : []) {
     try {
       validateSceneComposition({ ...composition, animations: [...composition.animations, animation] }, asset, nodes, cast);

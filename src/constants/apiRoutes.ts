@@ -33,6 +33,7 @@ export const API_ROUTES = {
   PIPELINE_REPAIR_VIDEO_PROMPT: "/api/pipeline/repair-video-prompt",
   PIPELINE_REPAIR_VISUAL_PROMPT: "/api/pipeline/repair-visual-prompt",
   PIPELINE_MUSIC_PLAN: "/api/pipeline/music-plan",
+  PIPELINE_MUSIC_STYLE_ANALYZE: "/api/pipeline/music-style-analyze",
   PIPELINE_MUSIC_SEO_REGENERATE: "/api/pipeline/music-seo-regenerate",
   PIPELINE_MUSIC_MIXER_SELECT_SOURCE: "/api/pipeline/music-mixer/select-source",
   PIPELINE_MUSIC_MIXER_SOURCE_FILE: "/api/pipeline/music-mixer/source-file",

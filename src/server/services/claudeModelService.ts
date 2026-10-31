@@ -25,8 +25,8 @@ const waitUntil = async (page: Page, test: () => Promise<boolean>, signal?: Abor
   }
   return false;
 };
-const unavailable = (label: string) => new Error(C.MODEL_UNAVAILABLE(label));
-const openSubmenu = async (page: Page, name: RegExp) => {
+const unavailable = (label: string, phase: string = C.MODEL_PHASE) => Object.assign(new Error(phase === C.EFFORT_PHASE ? C.EFFORT_UNAVAILABLE(label) : C.MODEL_UNAVAILABLE(label)), { code: phase === C.EFFORT_PHASE ? C.CLAUDE_EFFORT_UNAVAILABLE_CODE : C.CLAUDE_MODEL_UNAVAILABLE_CODE, diagnostics: { phase } });
+const openSubmenu = async (page: Page, name: RegExp, signal?: AbortSignal) => {
   const trigger = page.getByRole(ST.SOURCE_TEXT_MENUITEM, { name }).filter({ visible: true }).first();
   if (
     !(await trigger
@@ -41,12 +41,12 @@ const openSubmenu = async (page: Page, name: RegExp) => {
     await trigger.focus();
     await page.keyboard.press(ST.SOURCE_TEXT_ARROWRIGHT);
   }
-  return true;
+  return waitUntil(page, async () => (await trigger.getAttribute(C.ARIA_EXPANDED).catch(() => null)) === ST.SOURCE_TEXT_TRUE, signal);
 };
-const optionForModel = async (page: Page, id: string, label: string): Promise<Locator> => {
+const optionForModel = async (page: Page, id: string, label: string, signal?: AbortSignal): Promise<Locator> => {
   const exact = page.locator(C.MODEL_SELECTOR(id)).filter({ visible: true }).first();
   if (await exact.count()) return exact;
-  await openSubmenu(page, C.MORE_MODELS_PATTERN);
+  await openSubmenu(page, C.MORE_MODELS_PATTERN, signal);
   const name = modelLabelPattern(label);
   return exact.or(page.getByRole(ST.SOURCE_TEXT_MENUITEMRADIO, { name })).filter({ visible: true }).first();
 };
@@ -58,11 +58,12 @@ export const selectClaudeChatModel = async (page: Page, model?: AiPlanningChatMo
   const button = page.locator(CONFIG.CLAUDE_MODEL_BUTTON_SELECTOR).filter({ visible: true }).last();
   checkCancelled(signal);
   if (!(await waitUntil(page, () => button.isVisible().catch(() => false), signal))) throw unavailable(spec.label);
+  let phase: string = C.MODEL_PHASE;
   try {
     const label = modelLabelPattern(spec.label);
     if (!label.test((await button.innerText()).trim())) {
       await openPicker(page, button);
-      const option = await optionForModel(page, spec.value, spec.label);
+      const option = await optionForModel(page, spec.value, spec.label, signal);
       if (!(await waitUntil(page, () => option.isVisible().catch(() => false), signal))) throw unavailable(spec.label);
       const text = await option.innerText();
       if (!(await option.isEnabled()) || (await option.getAttribute(ST.SOURCE_TEXT_ARIA_DISABLED)) === ST.SOURCE_TEXT_TRUE || (await option.getAttribute(C.DATA_DISABLED)) !== null || C.UPGRADE_PATTERN.test(text)) throw unavailable(spec.label);
@@ -71,28 +72,30 @@ export const selectClaudeChatModel = async (page: Page, model?: AiPlanningChatMo
     }
     if (!(await waitUntil(page, async () => label.test((await button.innerText()).trim()), signal))) throw unavailable(spec.label);
     if (effort) {
-      await openPicker(page, button);
-      if (!(await openSubmenu(page, C.EFFORT_MENU_PATTERN))) throw unavailable(C.MODEL_EFFORT_LABEL(spec.label, effort));
+      phase = C.EFFORT_PHASE;
       const setting = CLAUDE_EFFORT_OPTIONS.find((entry) => entry.value === effort)!;
+      const effortLabel = C.MODEL_EFFORT_LABEL(spec.label, setting.label);
+      await openPicker(page, button);
+      if (!(await openSubmenu(page, C.EFFORT_MENU_PATTERN, signal))) throw unavailable(effortLabel, phase);
       const option = page
         .locator(C.EFFORT_SELECTOR(effort))
         .or(page.getByRole(ST.SOURCE_TEXT_MENUITEMRADIO, { name: setting.pattern }))
         .filter({ visible: true })
         .last();
-      if (!(await waitUntil(page, () => option.isVisible().catch(() => false), signal)) || !(await option.isEnabled()) || (await option.getAttribute(C.DATA_DISABLED)) !== null) throw unavailable(C.MODEL_EFFORT_LABEL(spec.label, setting.label));
+      if (!(await waitUntil(page, () => option.isVisible().catch(() => false), signal)) || !(await option.isEnabled()) || (await option.getAttribute(ST.SOURCE_TEXT_ARIA_DISABLED)) === ST.SOURCE_TEXT_TRUE || (await option.getAttribute(C.DATA_DISABLED)) !== null) throw unavailable(effortLabel, phase);
       if ((await option.getAttribute(ST.SOURCE_BROWSER_TEXT_ARIA_CHECKED)) !== ST.SOURCE_TEXT_TRUE) {
         await option.click();
         await closeMenu(page);
         await openPicker(page, button);
-        await openSubmenu(page, C.EFFORT_MENU_PATTERN);
-        if (!(await waitUntil(page, async () => (await option.getAttribute(ST.SOURCE_BROWSER_TEXT_ARIA_CHECKED).catch(() => null)) === ST.SOURCE_TEXT_TRUE, signal))) throw unavailable(C.MODEL_EFFORT_LABEL(spec.label, setting.label));
+        if (!(await openSubmenu(page, C.EFFORT_MENU_PATTERN, signal))) throw unavailable(effortLabel, phase);
+        if (!(await waitUntil(page, async () => (await option.getAttribute(ST.SOURCE_BROWSER_TEXT_ARIA_CHECKED).catch(() => null)) === ST.SOURCE_TEXT_TRUE, signal))) throw unavailable(effortLabel, phase);
       }
     }
     checkCancelled(signal);
   } catch (error) {
     checkCancelled(signal);
-    if (error instanceof Error && error.message.includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) throw error;
-    throw new Error(unavailable(spec.label).message, { cause: error });
+    if (error instanceof Error && (error.message.includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE) || error.message.includes(C.CLAUDE_EFFORT_UNAVAILABLE_CODE))) throw error;
+    throw Object.assign(unavailable(effort && phase === C.EFFORT_PHASE ? C.MODEL_EFFORT_LABEL(spec.label, CLAUDE_EFFORT_OPTIONS.find((entry) => entry.value === effort)!.label) : spec.label, phase), { cause: error });
   } finally {
     if (!page.isClosed()) await closeMenu(page).catch(() => undefined);
   }

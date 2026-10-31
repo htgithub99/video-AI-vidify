@@ -70,6 +70,17 @@ export const MOTION_REMOTION_SCHEMAS: Record<string, MotionResponseSchema> = {
   [V.ARTIFACT_REVIEW]: { type: "object", properties: { ok: { type: "boolean" }, issues: { type: "array", items: text, maxItems: 8 } }, required: ["ok", "issues"] },
 };
 export const MOTION_REMOTION_PROMPTS = {
+  SOFT_NODE_FIELDS: ["posture", "support"] as readonly string[],
+  SOFT_NODE_CHARS: 60,
+  HOLDER: {
+    IMPLIED: /\b(?:to|in|by|on|at)\s+(?:a|an|the)\s+([a-z]+)'s\s+(?:lips|mouth|hands?|shoulders?|arms?)\b|\bheld\s+(?:up\s+)?by\s+(?:a|an|the)\s+([a-z]+)\b/i,
+    ID: (prop: string) => `${prop}_holder`,
+    DESCRIPTION: (who: string, prop: string) => `${who}, anonymous background extra holding the ${prop}`,
+    POSE: "holding it",
+    RELATION: "heldBy",
+    KIND: "character",
+  },
+  CAST_KEY: { FORM: "NFD", MARKS: /[\u0300-\u036f]/g, D_STROKE: /đ/gi, D_PLAIN: "d", OTHER: /[^a-z0-9]/g },
   PLAN_RECOVERY_REVISION: 2,
   LOG_PENDING_PLANS: (remaining: number) => (remaining > 0 ? ` Còn ${remaining} nhóm đang phân cảnh; tổng số cảnh sẽ cập nhật khi phân cảnh xong.` : ""),
   ANONYMOUS_CHARACTER: /\b(?:crowd|extras?|bystanders?|villagers?|soldiers?|troops?|infantry|archers?|cavalry|legionaries|spearmen|slingers|artillery crews?|passengers?|customers?|visitors?|guards?|workers?)\b|đám đông|quần chúng|dân làng|quân lính|binh lính|bộ binh|kỵ binh|cung thủ|hành khách|khách hàng|người qua đường/iu,

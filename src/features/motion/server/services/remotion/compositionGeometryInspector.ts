@@ -5,9 +5,9 @@ import { chromium, type Browser, type Page } from "playwright";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSceneComposition.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
-import { motionCompositionGeometryErrors } from "../../../../../lib/motionCompositionGeometry.js";
+import { motionCompositionGeometryErrors, motionCompositionPostureNotes } from "../../../../../lib/motionCompositionGeometry.js";
 import { normalizeMotionVector } from "../../../../../lib/motionVectorAsset.js";
-import type { MotionSceneComposition, MotionVectorAsset } from "../../../../../types/motionVisual.js";
+import type { MotionRemotionNode, MotionSceneComposition, MotionVectorAsset } from "../../../../../types/motionVisual.js";
 export class MotionCompositionMeasurementError extends Error {
   constructor(cause: unknown) {
     super(C.GEOMETRY_UNAVAILABLE, { cause });
@@ -18,14 +18,15 @@ export const createCompositionGeometryInspector = (signal?: AbortSignal) => {
   let page: Promise<Page> | undefined;
   let queue: Promise<unknown> = Promise.resolve();
   const measured = new Map<string, Promise<string[]>>();
-  const check = (asset: MotionVectorAsset, composition: MotionSceneComposition): Promise<string[]> => {
-    const key = stringifyJson([asset.svg, composition.design]);
+  const check = (asset: MotionVectorAsset, composition: MotionSceneComposition, nodes: MotionRemotionNode[] = []): Promise<string[]> => {
+    const key = stringifyJson([asset.svg, composition.design, nodes.map((node) => [node.id, node.posture, node.support, node.pose])]);
+    const ids = [...new Set([...(composition.design?.placements || []).map((item) => item.id), ...composition.layers.filter((layer) => layer.kind === RT_SHARED.CHARACTER).map((layer) => layer.id)])].slice(0, C.GEOMETRY.MAX_MEASUREMENTS);
     if (measured.has(key)) return measured.get(key)!;
     const task = queue
       .catch(() => undefined)
       .then(async () => {
         signal?.throwIfAborted();
-        if (!composition.design?.placements.length) return [];
+        if (!ids.length) return [];
         const safeAsset = normalizeMotionVector(asset.svg, asset.key, asset.inputKey, asset.description, true);
         browser ||= chromium.launch({ executablePath: findNativeChrome(), headless: true });
         page ||= browser.then(async (instance) => {
@@ -69,10 +70,10 @@ export const createCompositionGeometryInspector = (signal?: AbortSignal) => {
             }
             return result;
           },
-          { value: { svg: safeAsset.svg, ids: composition.design.placements.map((item) => item.id).slice(0, C.GEOMETRY.MAX_MEASUREMENTS), width: safeAsset.width, height: safeAsset.height }, texts: { RT_SERVER: { IMAGE_SVG_XML: RT_SERVER.IMAGE_SVG_XML }, RT_SHARED: { WIDTH: RT_SHARED.WIDTH, HEIGHT: RT_SHARED.HEIGHT } } },
+          { value: { svg: safeAsset.svg, ids, width: safeAsset.width, height: safeAsset.height }, texts: { RT_SERVER: { IMAGE_SVG_XML: RT_SERVER.IMAGE_SVG_XML }, RT_SHARED: { WIDTH: RT_SHARED.WIDTH, HEIGHT: RT_SHARED.HEIGHT } } },
         );
         signal?.throwIfAborted();
-        return motionCompositionGeometryErrors(composition, bounds);
+        return [...motionCompositionGeometryErrors(composition, bounds), ...motionCompositionPostureNotes(composition, nodes, bounds, safeAsset.width / safeAsset.height)];
       })
       .catch((error) => {
         if (signal?.aborted) throw error;

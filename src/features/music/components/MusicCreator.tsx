@@ -2,6 +2,11 @@ import { openIndexedDatabase } from "../../../lib/indexedDatabase.js";
 import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
 import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { readMusicPlanResponse } from "../../../lib/musicPlanning.js";
+import type { MusicStyleAnalysis, SavedMusicStyle } from "../../../types/musicPlanning.js";
+import { MUSIC_CREATION_OPTIONS as MUSIC_OPTIONS } from "../constants/musicCreationOptions.js";
+import { createAnalyzedMusicStyle, mergeAnalyzedMusicStyle, normalizeAnalyzedMusicStyleContent } from "../lib/musicStyleLibrary.js";
+import { PlanningToggleField } from "../../../components/common/PlanningToggleField.js";
+import { useMusicStyleAnalysis } from "../hooks/useMusicStyleAnalysis.js";
 import { readMusicDownloadResponse } from "../lib/musicDownloadProgress.js";
 import { readSunoCreationResponse, formatSunoCreationProgress } from "../lib/sunoCreationProgress.js";
 import { recordMusicDownloadProgressActivity } from "../services/musicDownloadActivity.js";
@@ -180,10 +185,6 @@ const writeMusicMedia = async (key: string, value: string): Promise<void> => {
     transaction.onerror = () => reject(transaction.error);
   });
 };
-interface SavedMusicStyle {
-  title: string;
-  content: string;
-}
 type SavedMusicInspo = SavedMusicStyle;
 const readSavedInspos = (): SavedMusicInspo[] => {
   const items = jsonUtils.getItem<SavedMusicInspo[]>(SUNO_AUTOMATION_CONFIG.MUSIC_INSPO_LIBRARY_KEY, []);
@@ -191,7 +192,7 @@ const readSavedInspos = (): SavedMusicInspo[] => {
 };
 const readSavedStyles = (): SavedMusicStyle[] => {
   const items = jsonUtils.getItem<any[]>(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, []);
-  return _.compact(_.map(items, (item) => (_.isString(item) ? { title: _.split(item, SOURCE_TEXT_SYMBOL_4)[0], content: item } : item?.title && item?.content ? item : undefined)));
+  return _.compact(_.map(items, (item) => (_.isString(item) ? { title: _.split(item, SOURCE_TEXT_SYMBOL_4)[0], content: item } : item?.title && item?.content ? { ...item, content: normalizeAnalyzedMusicStyleContent(item.content) } : undefined)));
 };
 interface SongSeoOption {
   title: string;
@@ -209,19 +210,6 @@ interface GeneratedSong {
   tempoBpm: number;
   structure: string[];
   originalityNotes: string[];
-}
-interface MusicStyleAnalysis {
-  market: { country: string; region: string; language: string; dialect: string; audienceAge: string; lyricalCharacterAge: string; contentSuitability: string; confidence: number };
-  era: { songwritingEra: string; productionEra: string };
-  genre: { primary: string; secondary: string[]; influences: string[] };
-  musicalDna: { tempoRange: string; rhythm: string; harmony: string; melodicLanguage: string; hookPlacement: string; songForms: string[]; instrumentation: string[]; vocalCharacter: string; listeningContext: string };
-  lyricalDna: { themes: string[]; narrativeVoice: string; vocabulary: string; imagery: string[]; rhymeBehavior: string };
-  historicalInfluences: Array<{ name: string; role: string; relevance: string }>;
-  creativeProfile: { role: string; strengths: string[]; writingPrinciples: string[]; productionPrinciples: string[] };
-  mustPreserve: string[];
-  mustVary: string[];
-  mustNotCopy: string[];
-  uncertainties: string[];
 }
 const formatStyleAnalysisItems = (items: unknown[]): string =>
   _.chain(items)
@@ -347,6 +335,8 @@ const getSeoTrackOrder = (description: string): string =>
   ).join(SOURCE_TEXT_SYMBOL_2);
 interface PersistedMusicCreatorState {
   style?: string;
+  analyzeStyleFromSource?: boolean;
+  autoCreateImages?: boolean;
   outputCount?: number;
   referenceSongs?: string;
   provider?: AiPlanningFallbackProvider;
@@ -650,14 +640,27 @@ const PlaylistSeoCard: React.FC<PlaylistSeoCardProps> = ({ seoOptions, texts, pl
 };
 export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCreatorProps) {
   const texts = MUSIC_CREATOR_TEXTS[currentLang] || MUSIC_CREATOR_TEXTS.vi;
+  const optionTexts = MUSIC_OPTIONS.TEXT[currentLang] || MUSIC_OPTIONS.TEXT.vi;
   const [initialState] = useState<PersistedMusicCreatorState>(readMusicCreatorState);
   const [initialSavedStyles] = useState<SavedMusicStyle[]>(readSavedStyles);
-  const [style, setStyle] = useState(() => initialState.style || MUSIC_CREATOR_RUNTIME.EMPTY);
+  const [style, setStyle] = useState(() => normalizeAnalyzedMusicStyleContent(initialState.style || MUSIC_CREATOR_RUNTIME.EMPTY));
+  const [analyzeStyleFromSource, setAnalyzeStyleFromSource] = useState(initialState.analyzeStyleFromSource === true);
+  const [autoCreateImages, setAutoCreateImages] = useState(initialState.autoCreateImages ?? true);
   const [styleDraft, setStyleDraft] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [savedStyles, setSavedStyles] = useState<SavedMusicStyle[]>(initialSavedStyles);
   const [styleName, setStyleName] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [editingStyleIndex, setEditingStyleIndex] = useState<number | null>(null);
   const [styleToDelete, setStyleToDelete] = useState<SavedMusicStyle | null>(null);
+  const styleRequest = useMusicStyleAnalysis();
+  useEffect(() => {
+    const previous = jsonUtils.getItem<SavedMusicStyle[]>(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, []);
+    const next = readSavedStyles();
+    if (!_.isEqual(previous, next)) {
+      jsonUtils.setItem(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, next);
+      setSavedStyles(next);
+    }
+    setStyle((value) => normalizeAnalyzedMusicStyleContent(value));
+  }, []);
   const { copiedKey: copiedStyleIndex, copyText: copyStyle } = useClipboardFeedback<number>({ language: currentLang });
   const { copiedKey: copiedInspoIndex, copyText: copyInspiration } = useClipboardFeedback<number>({ language: currentLang });
   const [outputCount, setOutputCount] = useState<number>(initialState.outputCount || MUSIC_CREATOR_CONSTANTS.DEFAULT_SONG_COUNT);
@@ -751,6 +754,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const saveState = _.debounce(() => {
       jsonUtils.setItem(SUNO_AUTOMATION_CONFIG.MUSIC_CREATOR_STATE_KEY, {
         style,
+        analyzeStyleFromSource,
+        autoCreateImages,
         outputCount,
         referenceSongs,
         provider,
@@ -789,6 +794,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     return () => saveState.cancel();
   }, [
     style,
+    analyzeStyleFromSource,
+    autoCreateImages,
     outputCount,
     referenceSongs,
     provider,
@@ -824,8 +831,34 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     setSavedStyles(nextStyles);
     jsonUtils.setItem(SUNO_AUTOMATION_CONFIG.MUSIC_STYLE_LIBRARY_KEY, nextStyles);
   };
+  const handleReanalyzeStyle = async (savedStyle: SavedMusicStyle) => {
+    if (styleRequest.pending) {
+      if (styleRequest.pending === savedStyle) styleRequest.cancel();
+      return;
+    }
+    if (isBusy) return;
+    const source = _.trim(referenceSongs);
+    if (!source) {
+      toast.error(optionTexts.sourceRequired);
+      return;
+    }
+    try {
+      const result = await styleRequest.analyze(savedStyle, source, { provider, model, chromeHeadless }, optionTexts.reanalyzeError);
+      if (!result) return;
+      const latest = readSavedStyles();
+      const index = latest.findIndex((item) => item.title === savedStyle.title && item.content === savedStyle.content);
+      if (index < 0) return;
+      persistStyles(latest.map((item, itemIndex) => (itemIndex === index ? { ...item, content: result.content } : item)));
+      if (style === savedStyle.content || editingStyleIndex === index) setStyle(result.content);
+      if (editingStyleIndex === index) setStyleDraft(result.content);
+      toast.success(optionTexts.reanalyzeDone);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : optionTexts.reanalyzeError);
+    }
+  };
   const handleEditStyle = (index: number) => {
     if (!savedStyles[index]) return;
+    setAnalyzeStyleFromSource(false);
     setEditingStyleIndex(index);
     setStyle(savedStyles[index].content);
     setStyleDraft(savedStyles[index].content);
@@ -840,13 +873,14 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     setStyleName(MUSIC_CREATOR_RUNTIME.EMPTY);
   };
   const handleSaveStyle = () => {
-    const nextContent = _.trim(styleDraft);
+    const nextContent = normalizeAnalyzedMusicStyleContent(_.trim(styleDraft));
     if (_.isEmpty(nextContent)) return;
     const nextTitle = _.trim(styleName) || _.truncate(_.split(nextContent, SUNO_AUTOMATION_PATTERNS.STYLE_SPLIT_SEPARATORS)[0], { length: 32 });
     const nextItem = { title: nextTitle, content: nextContent };
     const nextStyles = editingStyleIndex === null ? [...savedStyles, nextItem] : _.map(savedStyles, (item, index) => (index === editingStyleIndex ? nextItem : item));
     persistStyles(nextStyles);
     setStyle(nextContent);
+    setAnalyzeStyleFromSource(false);
     setEditingStyleIndex(null);
     setStyleDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
     setStyleName(MUSIC_CREATOR_RUNTIME.EMPTY);
@@ -899,6 +933,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     toast.success(texts.QUICK_FILL_LABEL);
   };
   const handleTrySampleTemplate = () => {
+    setAnalyzeStyleFromSource(false);
     setStyle(MUSIC_CREATOR_CONSTANTS.PRESET_STYLES[0]);
     setReferenceSongs(_.join(MUSIC_CREATOR_CONSTANTS.SAMPLE_REFERENCES, SRT.SOURCE_TEXT_SYMBOL_56));
     setOutputCount(MUSIC_CREATOR_CONSTANTS.DEFAULT_SONG_COUNT);
@@ -920,11 +955,15 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   };
   const handleGenerate = async () => {
     if (isBusy) return;
+    if (analyzeStyleFromSource && !_.trim(referenceSongs)) {
+      toast.error(optionTexts.sourceRequired);
+      return;
+    }
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanStart, outputCount);
     musicStoppedByUserRef.current = false;
     thumbnailStoppedRef.current = false;
     setGenerationError(MUSIC_CREATOR_RUNTIME.EMPTY);
-    const trimmedStyle = _.trim(style);
+    const trimmedStyle = analyzeStyleFromSource ? MUSIC_OPTIONS.SOURCE_STYLE_GUIDANCE : _.trim(style);
     const referenceSource = _.trim(referenceSongs);
     const previousSongs = songs;
     const previousStyleAnalysis = styleAnalysis;
@@ -948,12 +987,24 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     const abortController = new AbortController();
     musicAbortControllerRef.current = abortController;
     let receivedSongs = false;
+    let savedAnalyzedStyle = false;
+    const saveAnalyzedStyle = (analysis?: MusicStyleAnalysis) => {
+      if (!analyzeStyleFromSource || savedAnalyzedStyle) return;
+      const item = createAnalyzedMusicStyle(analysis);
+      if (!item) return;
+      savedAnalyzedStyle = true;
+      setStyle(item.content);
+      const previous = readSavedStyles();
+      const next = mergeAnalyzedMusicStyle(previous, item);
+      persistStyles(next);
+      if (next !== previous) toast.success(optionTexts.styleSaved);
+    };
     const planningWarnings = new Set<string>();
     try {
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_PLAN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ requestedSongCount: outputCount, streamProgress: true, style: trimmedStyle, referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource], projectId: runId, requestId: runId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo, aiExecution: { provider, model, executionMode, chromeHeadless } }),
+        body: jsonUtils.safeStringify({ requestedSongCount: outputCount, streamProgress: true, style: trimmedStyle, analyzeStyleFromSource, referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource], projectId: runId, requestId: runId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo, aiExecution: { provider, model, executionMode, chromeHeadless } }),
         signal: abortController.signal,
       });
       const result = await readMusicPlanResponse(response, ({ progress, data }) => {
@@ -962,7 +1013,10 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
           planningWarnings.add(progress.warning);
           toast.warning(progress.warning);
         }
-        if (data?.styleAnalysis) setStyleAnalysis(data.styleAnalysis);
+        if (data?.styleAnalysis) {
+          setStyleAnalysis(data.styleAnalysis);
+          saveAnalyzedStyle(data.styleAnalysis);
+        }
         if (data?.songs?.length) {
           if (!receivedSongs) {
             receivedSongs = true;
@@ -987,6 +1041,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       }
       const generatedSongs = _.get(result, SOURCE_TEXT_DATA_SONGS, []) as GeneratedSong[];
       const generatedStyleAnalysis = _.get(result, SOURCE_TEXT_DATA_STYLEANALYSIS) as MusicStyleAnalysis;
+      saveAnalyzedStyle(generatedStyleAnalysis);
       const generatedPlaylistSeo = _.get(result, SOURCE_TEXT_DATA_PLAYLISTSEOOPTIONS, []) as SongSeoOption[];
       const seoWarning = _.toString(_.get(result, SOURCE_TEXT_DATA_SEOWARNING, MUSIC_CREATOR_RUNTIME.EMPTY));
       setSunoSettings(_.get(result, SOURCE_TEXT_DATA_SUNOSETTINGS) as SunoSettings);
@@ -1009,7 +1064,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       toast.success(texts.formatGenerateBtn(generatedSongs.length));
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicPlanDone, generatedSongs.length);
       if (seoWarning && _.isEmpty(generatedPlaylistSeo)) toast.error(seoWarning);
-      if (thumbnailStoppedRef.current) {
+      if (!autoCreateImages || thumbnailStoppedRef.current) {
         setIsGeneratingThumbnail(false);
       } else
         void (async () => {
@@ -1022,7 +1077,19 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             const thumbnailResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-              body: jsonUtils.safeStringify({ songs: generatedSongs, style: trimmedStyle, styleAnalysis: generatedStyleAnalysis, sourceContext: referenceSource, playlistSeoOptions: generatedPlaylistSeo, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless, aiExecution: { provider, model }, imageRunId }),
+              body: jsonUtils.safeStringify({
+                songs: generatedSongs,
+                style: analyzeStyleFromSource ? createAnalyzedMusicStyle(generatedStyleAnalysis)?.content || trimmedStyle : trimmedStyle,
+                styleAnalysis: generatedStyleAnalysis,
+                sourceContext: referenceSource,
+                playlistSeoOptions: generatedPlaylistSeo,
+                thumbnailDescription,
+                thumbnailReference,
+                thumbnailReferenceName,
+                chromeHeadless,
+                aiExecution: { provider, model },
+                imageRunId,
+              }),
               signal: imageAbortController.signal,
             });
             const thumbnailResult = await thumbnailResponse.json();
@@ -1475,8 +1542,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       if (_.get(error, SOURCE_TEXT_NAME) !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
     }
   };
-  const isFormValid = true;
-  const isBusy = isLoading || isStopping || isRegeneratingSeo || isCreatingSuno || isDownloadingSuno || isGeneratingThumbnail || isNormalizingThumbnailNote || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote;
+  const isFormValid = !analyzeStyleFromSource || !!_.trim(referenceSongs);
+  const isBusy = isLoading || isStopping || !!styleRequest.pending || isRegeneratingSeo || isCreatingSuno || isDownloadingSuno || isGeneratingThumbnail || isNormalizingThumbnailNote || isGeneratingVideoBackground || isNormalizingVideoBackgroundNote;
   const isTrackListUnavailable = isBusy || _.isEmpty(downloadedMusicTracks);
   return (
     <StudioPage aria-busy={isBusy}>
@@ -1484,7 +1551,18 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
         <MusicCreatorHeader texts={texts} isAiConfigOpen={isAiConfigOpen} onToggleAiConfig={() => setIsAiConfigOpen(!isAiConfigOpen)} isLoading={isBusy} />
         {isAiConfigOpen && (
           <StudioFieldset disabled={isBusy} className={cn(SRT.SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG)}>
-            <ChatPlanningSettingsBlock provider={provider} model={model} executionMode={executionMode} chromeHeadless={chromeHeadless} onProviderChange={setProvider} onModelChange={setModel} onExecutionModeChange={setExecutionMode} onChromeHeadlessChange={setChromeHeadless} currentLang={currentLang} />
+            <ChatPlanningSettingsBlock
+              provider={provider}
+              model={model}
+              executionMode={executionMode}
+              chromeHeadless={chromeHeadless}
+              onProviderChange={setProvider}
+              onModelChange={setModel}
+              onExecutionModeChange={setExecutionMode}
+              onChromeHeadlessChange={setChromeHeadless}
+              currentLang={currentLang}
+              extraControl={<PlanningToggleField checked={autoCreateImages} label={optionTexts.autoImages} text={autoCreateImages ? optionTexts.autoImages : optionTexts.manualImages} title={optionTexts.autoImagesHint} icon={ImageIcon} onChange={setAutoCreateImages} />}
+            />
           </StudioFieldset>
         )}
         <div className={cn(SRT.SOURCE_TEXT_GRID_GRID_COLS_1_LG_GRID_COLS_2)}>
@@ -1521,6 +1599,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     value={styleDraft}
                     onChange={(e) => {
                       setStyleDraft(e.target.value);
+                      setAnalyzeStyleFromSource(false);
                       if (editingStyleIndex === null) setStyle(e.target.value);
                     }}
                     placeholder={texts.STYLE_PLACEHOLDER}
@@ -1535,8 +1614,27 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   <span>{texts.STYLE_YOUR_STYLES}</span>
                 </div>
                 <div className={cn(MCS.FLEX_FLEX_WRAP_GAP_1_5_MAX_H_28_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_P_0_5)}>
+                  <div className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, analyzeStyleFromSource ? MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S : MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX)}>
+                    <Tooltip content={optionTexts.analysisHint} align={SOURCE_TEXT_START}>
+                      <Button
+                        variant={SOURCE_TEXT_UNSTYLED}
+                        type={SOURCE_TEXT_BUTTON}
+                        aria-pressed={analyzeStyleFromSource}
+                        onClick={() => {
+                          setAnalyzeStyleFromSource(!analyzeStyleFromSource);
+                          handleCancelStyleEdit();
+                        }}
+                        disabled={isBusy}
+                        title={optionTexts.analysisHint}
+                        className={cn(MCS.TEXT_11PX_FONT_BLACK_TRUNCATE_MAX_W_120PX_CURSOR_POINTER_TEXT_LEFT_FLEX_ITE)}>
+                        <span className={cn(MCS.W_1_5_H_1_5_ROUNDED_FULL_SHRINK_0_TRANSITION_ALL, analyzeStyleFromSource ? MCS.BG_WHITE_RING_2_RING_WHITE_40_SHADOW_XS : MCS.BG_SLATE_400_DARK_BG_SLATE_500_GROUP_HOVER_BG_PURPLE_400)} />
+                        <span className={cn(MCS.TRUNCATE_FONT_BLACK_TEXT_11PX_LEADING_NONE_TRANSITION_COLORS, analyzeStyleFromSource ? MCS.TEXT_WHITE : MCS.TEXT_1E1B4B_GROUP_HOVER_TEXT_6B21A8_DARK_TEXT_SLATE_200_DARK_GROUP_HOVER_TE)}>{optionTexts.analyze}</span>
+                      </Button>
+                    </Tooltip>
+                  </div>
                   {_.map(savedStyles, (savedStyle, styleIndex) => {
-                    const isSelected = _.isEqual(style, savedStyle.content);
+                    const isSelected = !analyzeStyleFromSource && _.isEqual(style, savedStyle.content);
+                    const isReanalyzing = styleRequest.pending === savedStyle;
                     return (
                       <div key={SOURCE_TEMPLATE_SYMBOL_5(String(styleIndex), String(savedStyle.title))} className={cn(MCS.GROUP_RELATIVE_INLINE_FLEX_ITEMS_CENTER_PL_2_5_PR_1_5_ROUNDED_XL_BORDER_TRA, { [MCS.BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_BORDER_PURPLE_400_TEXT_WHITE_S]: isSelected, [MCS.BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_SLATE_200_DARK_BORDER_SLATE_800_TEX]: !isSelected })}>
                         <Tooltip content={savedStyle.content} align={SOURCE_TEXT_START}>
@@ -1544,7 +1642,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                             variant={SOURCE_TEXT_UNSTYLED}
                             type={SOURCE_TEXT_BUTTON}
                             onClick={() => {
-                              const shouldClear = _.isEqual(style, savedStyle.content);
+                              const shouldClear = !analyzeStyleFromSource && _.isEqual(style, savedStyle.content);
+                              setAnalyzeStyleFromSource(false);
                               setStyle(shouldClear ? MUSIC_CREATOR_RUNTIME.EMPTY : savedStyle.content);
                               setEditingStyleIndex(null);
                               setStyleDraft(MUSIC_CREATOR_RUNTIME.EMPTY);
@@ -1558,6 +1657,21 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                           </Button>
                         </Tooltip>
                         <div className={cn(MCS.FLEX_ITEMS_CENTER_GAP_1_ML_1_5_SHRINK_0_SELF_CENTER)}>
+                          <Tooltip content={isReanalyzing ? optionTexts.reanalyzeStop : optionTexts.reanalyzeHint} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
+                            <Button
+                              variant={SOURCE_TEXT_UNSTYLED}
+                              type={SOURCE_TEXT_BUTTON}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void handleReanalyzeStyle(savedStyle);
+                              }}
+                              disabled={isBusy && !isReanalyzing}
+                              title={isReanalyzing ? optionTexts.reanalyzeStop : optionTexts.reanalyzeHint}
+                              aria-label={isReanalyzing ? optionTexts.reanalyzeStop : optionTexts.reanalyze}
+                              className={cn(MCS.BTN_ICON_TINY_W_20PX_H_20PX_MIN_W_20PX_MIN_H_20PX_MAX_W_20PX_MAX_H_20PX_P_0, isSelected ? MCS.BG_WHITE_20_HOVER_BG_WHITE_30_BORDER_BORDER_WHITE_30_TEXT_WHITE : MCS.BG_PURPLE_500_15_HOVER_BG_PURPLE_500_25_BORDER_BORDER_PURPLE_500_40_TEXT_7E)}>
+                              <RefreshCw className={cn(MCS.W_2_5_H_2_5_SHRINK_0, isReanalyzing && SRT.SOURCE_TEXT_ANIMATE_SPIN)} />
+                            </Button>
+                          </Tooltip>
                           <Tooltip content={texts.COPY_STYLE_BTN} align={SOURCE_TEXT_CENTER} className={cn(MCS.W_5_H_5_MIN_W_5_MIN_H_5_MAX_W_5_MAX_H_5_SHRINK_0_SELF_CENTER_P_0_FLEX_ITEMS)}>
                             <Button
                               variant={SOURCE_TEXT_UNSTYLED}
@@ -1606,6 +1720,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                   })}
                   {_.isEmpty(savedStyles) && <span className={cn(MCS.TEXT_11PX_TEXT_SLATE_500_ITALIC_PY_1)}>{texts.STYLE_EMPTY_HINT}</span>}
                 </div>
+                {analyzeStyleFromSource && <p className={cn(MCS.TEXT_11PX_TEXT_SLATE_300_LEADING_RELAXED)}>{_.trim(referenceSongs) ? optionTexts.analysisHint : optionTexts.sourceRequired}</p>}
               </div>
               <div className={cn(MCS.SPACE_Y_2_5_RELATIVE_Z_10_BORDER_T_BORDER_SLATE_800_60_PT_3)}>
                 <div className={cn(MCS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_FLEX_WRAP)}>

@@ -3,20 +3,9 @@ import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_STYLES as S } from "../constants/motionStyles.js";
 import { cn } from "../../../lib/utils.js";
 import { Button } from "../../../components/ui/Button.js";
-export interface MotionToggleIndicatorProps {
-  checked: boolean;
-  trackClassName?: string;
-  activeTrackClassName?: string;
-  inactiveTrackClassName?: string;
-  thumbClassName?: string;
-  activeThumbClassName?: string;
-  inactiveThumbClassName?: string;
-}
-export const MotionToggleIndicator = ({ checked, trackClassName = S.TOGGLE_SWITCH_BASE, activeTrackClassName = S.TOGGLE_SWITCH_ACTIVE, inactiveTrackClassName = S.TOGGLE_SWITCH_INACTIVE, thumbClassName = S.TOGGLE_THUMB_BASE, activeThumbClassName = S.TOGGLE_THUMB_ACTIVE, inactiveThumbClassName = S.TOGGLE_THUMB_INACTIVE }: MotionToggleIndicatorProps) => (
-  <span aria-hidden={MR.MOTION_TEXT_TRUE} className={cn(trackClassName, checked ? activeTrackClassName : inactiveTrackClassName)}>
-    <span className={cn(thumbClassName, checked ? activeThumbClassName : inactiveThumbClassName)} />
-  </span>
-);
+import { ToggleIndicator as MotionToggleIndicator } from "../../../components/common/ToggleIndicator.js";
+export { MotionToggleIndicator };
+export type { ToggleIndicatorProps as MotionToggleIndicatorProps } from "../../../components/common/ToggleIndicator.js";
 export interface MotionToggleProps {
   checked: boolean;
   label: string;

@@ -15,20 +15,29 @@ export const motionSvgGroup = (svg: string, id: string): string | undefined => {
   }
   return undefined;
 };
-const simplify = (svg: string): string => svg.replace(R.DECIMAL, (value) => String(Math.abs(Number(value)) < R.FINE_LIMIT ? Math.round(Number(value) * 10) / 10 : Math.round(Number(value)))).replace(R.STYLE_ATTRS, "").replace(R.NO_FILL, "");
+const lite = (svg: string): string => svg.replace(R.DECIMAL, (value) => String(Math.abs(Number(value)) < R.FINE_LIMIT ? Math.round(Number(value) * 10) / 10 : Math.round(Number(value)))).replace(R.LITE_ATTRS, "");
+const simplify = (svg: string): string => lite(svg).replace(R.STYLE_ATTRS, "").replace(R.NO_FILL, "");
+const fit = (svg: string, max: number): string | undefined => [lite(svg), simplify(svg)].find((text) => text.length <= max);
+const strip = (svg: string): string => svg.replace(R.DECIMAL, (value) => String(Math.abs(Number(value)) < R.FINE_LIMIT ? Math.round(Number(value) * 10) / 10 : Math.round(Number(value)))).replace(R.STYLE_ATTRS, "").replace(R.NO_FILL, "");
 const without = (svg: string, composition: MotionSceneComposition, kinds: readonly string[]): string =>
   composition.layers.filter((layer) => kinds.includes(layer.kind)).reduce((text, layer) => {
     const group = motionSvgGroup(text, layer.id);
     return group ? text.replace(group, "") : text;
   }, svg);
-export const motionPlaceReference = (asset: MotionVectorAsset, composition: MotionSceneComposition): string | undefined => {
-  const place = simplify(without(asset.svg, composition, R.PLACE_DROP));
-  if (place.length <= R.PLACE_MAX) return place;
-  const bare = simplify(without(asset.svg, composition, [...R.PLACE_DROP, ...R.PLACE_DROP_MORE]));
-  return bare.length <= R.PLACE_MAX ? bare : undefined;
+const headOnly = (svg: string, id: string): string | undefined => {
+  const person = motionSvgGroup(svg, id);
+  const headId = person && [...person.matchAll(new RegExp(R.HEAD_ID.source, R.HEAD_FLAGS))].map((match) => match[1]).find((name) => name !== id);
+  const head = headId && motionSvgGroup(person, headId);
+  return head ? R.OPEN(id).exec(person)![0] + head + R.GROUP_CLOSE : undefined;
+};
+export const motionPlaceReference = (asset: MotionVectorAsset, composition: MotionSceneComposition, keepStrokes = false): string | undefined => {
+  const place = without(asset.svg, composition, R.PLACE_DROP);
+  const bare = without(asset.svg, composition, [...R.PLACE_DROP, ...R.PLACE_DROP_MORE]);
+  if (!keepStrokes) return [strip(place), strip(bare)].find((text) => text.length <= R.PLACE_MAX_STRIPPED);
+  return [lite(place), simplify(place), lite(bare), simplify(bare)].find((text) => text.length <= R.PLACE_MAX);
 };
 const usable = (node?: MotionRemotionNode): boolean => !!node && node.representation !== RUNTIME_VALUES.DETAIL_9C0211C5 && !R.BACK.test(`${node.pose || ""} ${node.description || ""}`);
-export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>): { entityId: string; svg: string }[] => {
+export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>, headOnlyReferences = false): { entityId: string; svg: string }[] => {
   const wanted = [...new Set(scene.nodes.filter((node) => node.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE && !node.anonymous && node.entityId).map((node) => node.entityId!))].slice(0, R.MAX_PEOPLE);
   let total = 0;
   return wanted.flatMap((entityId) => {
@@ -38,10 +47,17 @@ export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: Mot
       if (!asset) continue;
       const layer = other.composition.layers.find((item) => item.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE && item.entityId === entityId && usable(other.nodes.find((node) => node.id === item.id)));
       if (!layer) continue;
-      const raw = motionSvgGroup(asset.svg, layer.id);
-      const group = raw && simplify(raw);
-      if (!group || group.length > R.MAX_CHARS) continue;
-      if (total + group.length > R.TOTAL_MAX) return [];
+      if (!headOnlyReferences) {
+        const raw = motionSvgGroup(asset.svg, layer.id);
+        const group = raw && strip(raw);
+        if (!group || group.length > R.MAX_CHARS) continue;
+        if (total + group.length > R.TOTAL_MAX) return [];
+        total += group.length;
+        return [{ entityId, svg: R.WRAP(asset.width, asset.height, group) }];
+      }
+      const raw = headOnly(asset.svg, layer.id);
+      const group = raw && fit(raw, Math.min(R.MAX_CHARS, R.TOTAL_MAX - total));
+      if (!group) continue;
       total += group.length;
       return [{ entityId, svg: R.WRAP(asset.width, asset.height, group) }];
     }

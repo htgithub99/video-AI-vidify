@@ -37,6 +37,29 @@ const parseVectorReply = (text: string): unknown => {
   }
   return undefined;
 };
+export const quoteBareJsonKeys = (text: string): string => {
+  const K = C.JSON_KEY;
+  let out = "",
+    quoted = false,
+    escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    out += ch;
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (ch === K.ESCAPE) escaped = true;
+      else if (ch === K.QUOTE) quoted = false;
+      continue;
+    }
+    if (ch === K.QUOTE) quoted = true;
+    if (!K.OPENER.test(ch)) continue;
+    const bare = K.BARE.exec(text.slice(i + 1, i + 1 + K.LOOKAHEAD));
+    if (!bare) continue;
+    out += `${bare[1]}${K.QUOTE}${bare[2]}${K.QUOTE}${bare[3]}`;
+    i += bare[0].length;
+  }
+  return out;
+};
 export const parseRemotionAssetReply = (text: string): unknown => {
   const parsed = parseVectorReply(text);
   if (parsed !== undefined) return parsed;
@@ -54,7 +77,7 @@ export const parseRemotionAssetReply = (text: string): unknown => {
     else if (quoted && ch === COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_22) escaped = true;
     else if (ch === COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_3) quoted = !quoted;
   }
-  return parseVectorReply(repaired);
+  return parseVectorReply(repaired) ?? parseVectorReply(quoteBareJsonKeys(repaired));
 };
 export const closeMotionSvgTags = (svg: string): string => {
   const stack: string[] = [];

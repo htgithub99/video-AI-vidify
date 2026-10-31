@@ -1,6 +1,6 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
-import type { MotionSceneComposition, MotionVisualRect } from "../types/motionVisual.js";
+import type { MotionRemotionNode, MotionSceneComposition, MotionVisualRect } from "../types/motionVisual.js";
 export const motionCompositionGeometryErrors = (composition: MotionSceneComposition, measured: Record<string, MotionVisualRect | null>): string[] => {
   const errors: string[] = [];
   for (const placement of composition.design?.placements || []) {
@@ -19,4 +19,17 @@ export const motionCompositionGeometryErrors = (composition: MotionSceneComposit
     if ((area >= C.GEOMETRY.COVERAGE && expected < C.GEOMETRY.EXPECTED_COVERAGE) || (area > expected * C.GEOMETRY.OVERSIZE && distance > C.GEOMETRY.CENTER_DISTANCE) || intersection < area * (1 - C.GEOMETRY.OUTSIDE_SHARE)) errors.push(C.GEOMETRY_ERROR(placement.id));
   }
   return errors;
+};
+export const motionCompositionPostureNotes = (composition: MotionSceneComposition, nodes: MotionRemotionNode[], measured: Record<string, MotionVisualRect | null>, aspect: number): string[] => {
+  const X = C.POSTURE_CHECK;
+  return nodes.flatMap((node) => {
+    if (node.kind !== RT_SHARED.CHARACTER) return [];
+    const said = [node.posture, node.pose].filter(Boolean).join(X.JOIN);
+    const box = measured[node.id];
+    const notes: string[] = [];
+    if (box && box.height > 0 && X.LYING.test(said) && (box.width * aspect) / box.height < X.LYING_MIN_RATIO) notes.push(X.LYING_NOTE(node.id));
+    const placement = composition.design?.placements.find((item) => item.id === node.id);
+    if (placement?.supportId === X.WATER && !X.WATER_OK.test([said, node.support, node.description].filter(Boolean).join(X.JOIN))) notes.push(X.WATER_NOTE(node.id));
+    return notes;
+  });
 };

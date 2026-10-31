@@ -9,7 +9,7 @@ import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { MOTION_STORY_TIMELINE as TIMELINE } from "../../../../constants/motionStoryTimeline.js";
 import { motionCleanLook, motionAnalysisGroups } from "../../../../lib/motionCastIdentity.js";
 import { closeMotionJsonContainers } from "../../../../lib/motionJsonRecovery.js";
-import { parseRemotionAssetReply } from "../../../../lib/motionVectorAsset.js";
+import { parseRemotionAssetReply, quoteBareJsonKeys } from "../../../../lib/motionVectorAsset.js";
 import { MOTION_PRODUCTION } from "../../../../constants/motionProduction.js";
 import { MOTION_QA as QA } from "../../../../constants/motionQa.js";
 import { MOTION_EDITORIAL_POLICY as EDITORIAL_POLICY } from "../../../../constants/motionEditorialPolicy.js";
@@ -262,6 +262,11 @@ export const extractJson = (raw: string): any => {
       if (repaired == null) continue;
       try {
         return parseJson(repaired);
+      } catch {}
+    }
+    if (a >= 0 && b > a) {
+      try {
+        return parseJson(quoteBareJsonKeys(text.slice(a, b + 1)));
       } catch {}
     }
     throw new Error(MOTION_TEXT_AI_KHONG_TRA_VE_JSON_HOP_LE);

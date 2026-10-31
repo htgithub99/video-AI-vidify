@@ -1053,6 +1053,8 @@ import { cancelAllActiveMediaGeneration, closeAllBatchPages, ensureFlowCharacter
 import { createBatchContinuityContext, createPromptCharacterCards, createScopedVisualBibleContext, createVisualPlanningPayload, getVisualShotPlanIssues } from "../services/imagePromptPlanningService.js";
 import { LicenseService } from "../services/licenseService.js";
 import { MUSIC_PLANNING as MUSIC_PLAN } from "../../constants/musicPlanning.js";
+import { MUSIC_CREATION_OPTIONS as MUSIC_OPTIONS } from "../../features/music/constants/musicCreationOptions.js";
+import { musicStyleRouter } from "../../features/music/server/routes/musicStyleRouter.js";
 import { validMusicEditorialReview, musicReviewOrder } from "../../lib/musicPlanning.js";
 import { musicPlanReporter } from "../../features/music/server/services/musicPlanProgress.js";
 import { reviewMusicSongBatch } from "../../features/music/server/services/musicSongReviewService.js";
@@ -1162,6 +1164,7 @@ const ensureHookLanguage = async (content: unknown, isVietnamese: boolean): Prom
   }
 };
 const router = express.Router();
+router.use(musicStyleRouter);
 async function incrementFeatureUsage(req: Request, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT) {
   const licenseKey = getResolvedLicenseKey(req);
   if (!_.isEmpty(licenseKey)) {
@@ -1194,6 +1197,7 @@ const requireSingleVisualLicense = (req: Request, res: Response, next: NextFunct
 };
 interface MusicPlanRequestPayload {
   requestedSongCount: number;
+  analyzeStyleFromSource: boolean;
   style: string;
   referenceSongs: string[];
   projectId: string;
@@ -1210,6 +1214,7 @@ const musicPlanCheckpoints = new Map<string, { signature: string; updatedAt: num
 const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; payload?: MusicPlanRequestPayload; error?: string } => {
   const requestedSongCount = _.toNumber(req.body?.requestedSongCount);
   const style = _.trim(_.toString(req.body?.style));
+  const analyzeStyleFromSource = req.body?.analyzeStyleFromSource === true;
   const referenceSongs = _.compact(_.map(_.castArray(req.body?.referenceSongs || []), (song) => _.trim(_.toString(song))));
   const projectId = _.toString(req.body?.projectId || SOURCE_TEMPLATE_SYMBOL_75(`${MUSIC_CREATOR_CONSTANTS.PROJECT_ID_PREFIX}`, `${Date.now()}`));
   const execution = req.body?.aiExecution || {};
@@ -1222,7 +1227,8 @@ const parseAndValidateMusicPlanRequest = (req: Request): { isValid: boolean; pay
   if (!isValidCount) {
     return { isValid: false, error: MUSIC_CREATOR_TEXTS.vi.SERVER_VALIDATION_ERROR };
   }
-  return { isValid: true, payload: { requestedSongCount, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo } };
+  if (analyzeStyleFromSource && _.isEmpty(referenceSongs)) return { isValid: false, error: MUSIC_OPTIONS.TEXT.vi.sourceRequired };
+  return { isValid: true, payload: { requestedSongCount, analyzeStyleFromSource, style, referenceSongs, projectId, execution, requestId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo } };
 };
 const generateMusicThumbnailAsset = async (input: {
   songs: any[];
@@ -1585,8 +1591,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     await writeMusicDiagnostic(SOURCE_TEXT_PLAN_VALIDATION_FAILED, { stage: SOURCE_TEXT_VALIDATION, code: SOURCE_TEXT_INVALID_REQUEST });
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: validation.error });
   }
-  const { requestedSongCount, style, referenceSongs, projectId, execution, requestId, sunoInspo } = validation.payload;
-  const creativeStyle = style || (_.isEmpty(referenceSongs) ? MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE : MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE);
+  const { requestedSongCount, analyzeStyleFromSource, style, referenceSongs, projectId, execution, requestId, sunoInspo } = validation.payload;
+  const creativeStyle = analyzeStyleFromSource ? MUSIC_OPTIONS.SOURCE_STYLE_GUIDANCE : style || (_.isEmpty(referenceSongs) ? MUSIC_CREATOR_TEXTS.vi.DEFAULT_CREATIVE_STYLE : MUSIC_CREATOR_TEXTS.en.DEFAULT_CREATIVE_STYLE);
   const checkpointSignature = jsonUtils.safeStringify([requestedSongCount, creativeStyle, referenceSongs, sunoInspo, execution.provider, execution.model]);
   const checkpointNow = Date.now();
   for (const [key, value] of musicPlanCheckpoints) {
