@@ -5,10 +5,11 @@ import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLa
 import { MOTION_RENDER_BEHAVIOR as B } from "../../../constants/motionRenderBehavior.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import { motionCameraFrame } from "../../../lib/motionCamera.js";
+import { MOTION_PROFILE_MOTION } from "../../../constants/motionProfileMotion.js";
 import { motionSceneCameraDirection, motionSceneSubjectPoint } from "../../../lib/motionSceneCamera.js";
 import { remotionPoint, remotionVisibleRect } from "../../../lib/motionRemotionGeometry.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
-import type { MotionRemotionScene, MotionRemotionNode, MotionRemotionPlacedNode, MotionVectorAsset, MotionRemotionTimedScene, MotionRenderBehavior, MotionVisualRect } from "../../../types/motionVisual.js";
+import type { MotionRemotionProfile, MotionRemotionScene, MotionRemotionNode, MotionRemotionPlacedNode, MotionVectorAsset, MotionRemotionTimedScene, MotionRenderBehavior, MotionVisualRect } from "../../../types/motionVisual.js";
 export const motionFrameSeconds = (frame: number, fps: number) => Math.max(0, frame) / Math.max(1, fps);
 export const motionStableSeed = (value: string): number => {
   let seed = 2166136261;
@@ -73,7 +74,8 @@ export const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined,
   while (last < scenes.length - 1 && scenes[last].endFrame === scenes[last + 1].startFrame && key(scenes[last + 1]) === shotKey) last++;
   return { startFrame: scenes[first].startFrame, endFrame: scenes[last].endFrame, id: scenes[first].id };
 };
-export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: number, scene: MotionRemotionTimedScene | undefined, width: number, height: number, fps = 30, scenes: MotionRemotionTimedScene[] = [], assets: Record<string, MotionVectorAsset> = {}) => {
+export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: number, scene: MotionRemotionTimedScene | undefined, width: number, height: number, fps = 30, scenes: MotionRemotionTimedScene[] = [], assets: Record<string, MotionVectorAsset> = {}, profile?: MotionRemotionProfile) => {
+  const camera = profile ? MOTION_PROFILE_MOTION[profile].camera : undefined;
   if (behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED) return { scale: 1, x: 0, y: 0, mode: scene?.composition?.design?.cameraMotion?.mode || "hold" };
   const view = remotionSceneView(scene, width, height, assets);
   const range = remotionCameraRange(scene, scenes);
@@ -100,8 +102,8 @@ export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: 
         return { x: rect.x * view.scale + view.x, y: rect.y * view.scale + view.y, width: rect.width * view.scale, height: rect.height * view.scale };
       });
   const asset = scene?.composition && assets[scene.composition.assetKey];
-  const direction = scene && asset ? motionSceneCameraDirection(scene, asset, Math.max(0, seconds - scene.startFrame / fps), (scene.endFrame - scene.startFrame) / fps) : { mode: "hold" as const };
-  return motionCameraFrame({ enabled: behavior.actors === RT_SHARED.SIMPLE && behavior.camera === RT_SHARED.GENTLE, seconds, start: (range?.startFrame || 0) / fps, end: range ? range.endFrame / fps : 12, width, height, seed: range?.id || scene?.id || "", protectedRects, ...direction });
+  const direction = scene && asset ? motionSceneCameraDirection(scene, asset, Math.max(0, seconds - scene.startFrame / fps), (scene.endFrame - scene.startFrame) / fps, camera) : { mode: "hold" as const };
+  return motionCameraFrame({ enabled: behavior.actors === RT_SHARED.SIMPLE && behavior.camera === RT_SHARED.GENTLE, seconds, start: (range?.startFrame || 0) / fps, end: range ? range.endFrame / fps : 12, width, height, seed: range?.id || scene?.id || "", protectedRects, ...direction }, camera);
 };
 export const remotionSceneEffects = (scene: MotionRemotionScene): NonNullable<MotionRemotionScene["effects"]> => {
   if (scene.effects)

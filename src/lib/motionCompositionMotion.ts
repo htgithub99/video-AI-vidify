@@ -3,6 +3,7 @@ import { motionAnonymousLayer } from "./motionActorTracks.js";
 import { motionSemanticText } from "./motionResourceSemantics.js";
 import { motionEffectKind, motionEffectDeclaration } from "./motionEffectIdentity.js";
 import { MOTION_COMPOSITION_MOTION } from "../constants/motionCompositionMotion.js";
+import { MOTION_PROFILE_MOTION } from "../constants/motionProfileMotion.js";
 import type { MotionRemotionEffect, MotionRemotionNode, MotionRemotionProfile, MotionRenderBehavior, MotionSceneAnimation, MotionSceneComposition, MotionVectorAsset } from "../types/motionVisual.js";
 const validTrack = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, track: MotionSceneAnimation): boolean => {
   try {
@@ -12,9 +13,10 @@ const validTrack = (composition: MotionSceneComposition, asset: MotionVectorAsse
     return false;
   }
 };
-export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, _profile: MotionRemotionProfile): { composition: MotionSceneComposition; added: number; removed: number } => {
+export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile): { composition: MotionSceneComposition; added: number; removed: number } => {
   if (behavior?.actors === "fixed") return { composition, added: 0, removed: 0 };
   const policy = MOTION_COMPOSITION_MOTION;
+  const style = MOTION_PROFILE_MOTION[profile];
   const elements = compositionElements(asset.svg);
   const contains = (parent: string, child: string) => parent === child || !!elements.get(child)?.ancestors.includes(parent);
   const characters = composition.layers.filter((layer) => layer.kind === "character");
@@ -30,7 +32,7 @@ export const compositionActorMotion = (composition: MotionSceneComposition, asse
       if (local) {
         const descendants = [...elements.keys()].filter((id) => contains(track.target, id));
         const contact = descendants.some((id) => /(?:^|_)(?:pelvis|hip|leg|foot|feet|knee|seat|base)(?:_|$)/i.test(id));
-        const isolated = /(?:^|_)(?:arm|eye|eyelids?|brows?|mouth|breath|chest)(?:_|$)/i.test(track.target) || (!!travel && /(?:^|_)(?:leg|foot|feet|knee)(?:_|$)/i.test(track.target));
+        const isolated = /(?:^|_)(?:arm|eye|eyelids?|brows?|mouth|breath|chest)(?:_|$)/i.test(track.target) || !!style.freeParts?.test(track.target) || (!!travel && /(?:^|_)(?:leg|foot|feet|knee)(?:_|$)/i.test(track.target));
         const chestHasAttachments = /(?:^|_)(?:breath|chest)(?:_|$)/i.test(track.target) && descendants.some((id) => /(?:^|_)(?:head|neck|hand|arm)(?:_|$)/i.test(id));
         const foreign = composition.layers.some((other) => other.id !== layer.id && other.kind === "character" && contains(track.target, other.id));
         if (isolated && (!contact || travel) && !foreign && !chestHasAttachments) return false;
@@ -46,31 +48,41 @@ export const compositionActorMotion = (composition: MotionSceneComposition, asse
   if (behavior?.actors !== "simple") return { composition: result, added, removed };
   for (const layer of characters) {
     if (motionAnonymousLayer(layer) || nodes.some((node) => node.id === layer.id && node.representation === "detail") || result.animations.some((track) => track.channel === "actor" && (contains(layer.id, track.target) || contains(track.target, layer.id)))) continue;
-    const target = policy.chestSuffixes.map((suffix) => layer.id + suffix).find((id) => elements.has(id) && contains(layer.id, id));
+    const chest = policy.chestSuffixes.map((suffix) => layer.id + suffix).find((id) => elements.has(id) && contains(layer.id, id));
+    const head = chest ? undefined : style.headSuffixes.map((suffix) => layer.id + suffix).find((id) => elements.has(id) && contains(layer.id, id));
+    const target = chest || head;
     if (!target || result.animations.some((track) => track.target === target && track.attribute === "transform")) continue;
     const foreignSubject = composition.layers.some((other) => other.id !== layer.id && contains(target, other.id));
-    const contactPart = [...elements.keys()].some((id) => contains(target, id) && /(?:^|_)(?:head|neck|hand|arm|pelvis|hip|leg|foot|feet|knee|seat|base)(?:_|$)/i.test(id));
+    const contactPart = [...elements.keys()].some((id) => contains(target, id) && (chest ? /(?:^|_)(?:head|neck|hand|arm|pelvis|hip|leg|foot|feet|knee|seat|base)(?:_|$)/i : /(?:^|_)(?:hand|arm|pelvis|hip|leg|foot|feet|knee|seat|base)(?:_|$)/i).test(id));
     if (foreignSubject || contactPart) continue;
+    const bob = Number((asset.height * style.headBob).toFixed(2));
     const track: MotionSceneAnimation = {
       target,
       channel: "actor",
       attribute: "transform",
       period: policy.breathSeconds,
-      keyframes: [
-        { at: 0, value: "scale(1 1)" },
-        { at: policy.breathSeconds / 2, value: `scale(1 ${policy.breathScale})` },
-        { at: policy.breathSeconds, value: "scale(1 1)" },
-      ],
+      keyframes: chest
+        ? [
+            { at: 0, value: "scale(1 1)" },
+            { at: policy.breathSeconds / 2, value: `scale(1 ${style.breathScale})` },
+            { at: policy.breathSeconds, value: "scale(1 1)" },
+          ]
+        : [
+            { at: 0, value: "translate(0 0)" },
+            { at: policy.breathSeconds / 2, value: `translate(0 ${-bob})` },
+            { at: policy.breathSeconds, value: "translate(0 0)" },
+          ],
     };
-    if (!validTrack(result, asset, nodes, cast, track)) continue;
+    if ((!chest && !bob) || !validTrack(result, asset, nodes, cast, track)) continue;
     result = { ...result, animations: [...result.animations, track] };
     added++;
   }
   return { composition: result, added, removed };
 };
-export const compositionEffectMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, _profile: MotionRemotionProfile, effects: MotionRemotionEffect[] = []): { composition: MotionSceneComposition; added: number } => {
+export const compositionEffectMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile, effects: MotionRemotionEffect[] = []): { composition: MotionSceneComposition; added: number } => {
   if (behavior?.actors === "fixed" || behavior?.sceneEffects !== "gentle") return { composition, added: 0 };
   const policy = MOTION_COMPOSITION_MOTION;
+  const style = MOTION_PROFILE_MOTION[profile];
   const elements = compositionElements(asset.svg);
   const contains = (parent: string, child: string) => parent === child || !!elements.get(child)?.ancestors.includes(parent);
   let result = composition;
@@ -95,13 +107,13 @@ export const compositionEffectMotion = (composition: MotionSceneComposition, ass
         period,
         keyframes: [
           { at: 0, value: opacity },
-          { at: period / 2, value: Number((opacity * policy.effectOpacity).toFixed(4)) },
+          { at: period / 2, value: Number((opacity * style.effectOpacity).toFixed(4)) },
           { at: period, value: opacity },
         ],
       },
     ];
     if (kind === "rain") {
-      const dy = Number((asset.height * policy.rainTravel).toFixed(2));
+      const dy = Number((asset.height * style.effectTravel).toFixed(2));
       tracks[0].keyframes = [
         { at: 0, value: opacity },
         { at: period * 0.1, value: opacity },
@@ -121,7 +133,7 @@ export const compositionEffectMotion = (composition: MotionSceneComposition, ass
         ],
       });
     } else if (kind === "smoke" || kind === "steam" || kind === "fog") {
-      const distance = Number((asset.height * policy.rainTravel * 0.65).toFixed(2));
+      const distance = Number((asset.height * style.effectTravel * 0.65).toFixed(2));
       const dx = declared?.direction === "left" ? -distance : declared?.direction === "right" ? distance : 0;
       const dy = dx || declared?.direction === "ground" ? 0 : -distance;
       tracks.push({

@@ -2,6 +2,7 @@ import { MOTION_CAMERA as C } from "../constants/motionCamera.js";
 import { compositionElements, motionSceneAnimationValue } from "./motionSceneComposition.js";
 import { motionActorTracks } from "./motionActorTracks.js";
 import { stringifyJson } from "./jsonStringify.js";
+import type { MotionProfileCamera } from "../constants/motionProfileMotion.js";
 import type { MotionSceneComposition, MotionVectorAsset, MotionRemotionTimedScene } from "../types/motionVisual.js";
 type Point = { x: number; y: number };
 type Matrix = [number, number, number, number, number, number];
@@ -59,7 +60,7 @@ export const motionSceneSubjectPoint = (composition: MotionSceneComposition, ass
   const current = point(transform(seconds), point(original, initial));
   return [current.x, current.y].every(Number.isFinite) ? current : initial;
 };
-export const motionSceneCameraDirection = (scene: MotionRemotionTimedScene, asset: MotionVectorAsset, seconds: number, duration: number) => {
+export const motionSceneCameraDirection = (scene: MotionRemotionTimedScene, asset: MotionVectorAsset, seconds: number, duration: number, camera?: MotionProfileCamera) => {
   const composition = scene.composition!,
     context = contextFor(composition, asset),
     plan = composition.design?.cameraMotion;
@@ -67,22 +68,33 @@ export const motionSceneCameraDirection = (scene: MotionRemotionTimedScene, asse
   if (plan?.subjectId && !eligible(plan.subjectId)) return { mode: "hold" as const };
   const traveling = context.tracks.find((track) => !track.period && eligible(track.target) && /translate|matrix/.test(String(track.keyframes[0]?.value)));
   const subject = eligible(plan?.subjectId) || eligible(scene.focus?.[0]) || eligible(traveling?.target);
-  const mode = plan?.mode || (traveling && subject?.id === traveling.target ? "follow" : "hold");
+  const planned = plan?.mode || (traveling && subject?.id === traveling.target ? "follow" : "hold");
+  const mode = planned === "hold" && camera ? camera.HOLD_SUBJECT : planned;
   if (mode === "hold" || !subject) return { mode: "hold" as const };
   const placement = composition.design?.placements.find((item) => item.id === subject.id)?.box;
   const origin = plan?.focus ? { x: plan.focus.x * asset.width, y: plan.focus.y * asset.height } : placement ? { x: (placement.x + placement.width / 2) * asset.width, y: (placement.y + placement.height / 2) * asset.height } : { x: asset.width / 2, y: asset.height / 2 };
-  if (mode !== "follow") return { mode, origin, focus: origin };
-  const key = stringifyJson([subject.id, origin, duration]);
+  if (mode !== "follow" && !camera?.TRACK) return { mode, origin, focus: origin };
+  const parts = camera?.PART_WEIGHT ? context.tracks.filter((track) => track.target !== subject.id && !!context.elements.get(track.target)?.ancestors.includes(subject.id)).map((track) => track.target) : [];
+  const live = (at: number): Point => {
+    const main = motionSceneSubjectPoint(composition, asset, subject.id, origin, at);
+    if (!parts.length || !camera) return main;
+    const moved = parts.map((id) => motionSceneSubjectPoint(composition, asset, id, origin, at));
+    const shift = { x: moved.reduce((sum, p) => sum + p.x - main.x, 0) / moved.length, y: moved.reduce((sum, p) => sum + p.y - main.y, 0) / moved.length };
+    return { x: main.x + shift.x * camera.PART_WEIGHT, y: main.y + shift.y * camera.PART_WEIGHT };
+  };
+  const key = stringifyJson([subject.id, origin, duration, camera || null]);
   let path = context.paths.get(key);
   if (!path) {
     path = [origin];
     const step = 1 / C.SAMPLE_FPS,
-      dx = asset.width * C.FOLLOW_SPEED * step,
-      dy = asset.height * C.FOLLOW_SPEED * step;
+      speed = camera?.FOLLOW_SPEED ?? C.FOLLOW_SPEED,
+      smooth = camera?.SMOOTH ?? 1,
+      dx = asset.width * speed * step,
+      dy = asset.height * speed * step;
     for (let at = 1; at <= Math.ceil(duration * C.SAMPLE_FPS); at++) {
-      const target = motionSceneSubjectPoint(composition, asset, subject.id, origin, at * step),
+      const target = live(at * step),
         before = path[at - 1];
-      path.push({ x: before.x + Math.max(-dx, Math.min(dx, target.x - before.x)), y: before.y + Math.max(-dy, Math.min(dy, target.y - before.y)) });
+      path.push({ x: before.x + Math.max(-dx, Math.min(dx, (target.x - before.x) * smooth)), y: before.y + Math.max(-dy, Math.min(dy, (target.y - before.y) * smooth)) });
     }
     context.paths.set(key, path);
   }

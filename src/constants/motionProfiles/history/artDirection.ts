@@ -1,5 +1,6 @@
 import { OUTLINED_CHARACTERS } from "../outlinedCharacters.js";
 import { SCENE_DIRECTION as S } from "../sceneDirection.js";
+import { MOTION_PROFILE_MOTION } from "../../motionProfileMotion.js";
 import type { MotionIllustrationProfile } from "../types.js";
 export const HISTORY_ART_DIRECTION: MotionIllustrationProfile = {
   grammar: OUTLINED_CHARACTERS,
@@ -13,6 +14,6 @@ export const HISTORY_ART_DIRECTION: MotionIllustrationProfile = {
   identity: S.identity,
   closeUps: "Choose framing for the story; a small held object normally remains visible with its owner. Use an insert when the narration needs that detail.",
   text: S.text,
-  motion: S.motion,
+  motion: [S.motion, MOTION_PROFILE_MOTION.history.prompt].join("\n"),
   review: S.review,
 };

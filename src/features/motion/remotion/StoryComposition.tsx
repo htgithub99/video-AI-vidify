@@ -26,7 +26,7 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
   const t = motionFrameSeconds(frame, document.fps),
     behavior = normalizeMotionRenderBehavior(document.renderBehavior, document.motion);
   const subtitle = document.subtitles.find((item) => t >= item.start && t < item.end);
-  const camera = motionSceneCameraFrame(behavior, t, sourceScene, document.width, document.height, document.fps, document.scenes, document.assets),
+  const camera = motionSceneCameraFrame(behavior, t, sourceScene, document.width, document.height, document.fps, document.scenes, document.assets, document.profileId),
     w = document.width,
     h = document.height;
   const view = remotionSceneView(scene, w, h, document.assets);

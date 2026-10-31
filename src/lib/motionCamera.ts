@@ -1,5 +1,6 @@
 import { MOTION_CAMERA as C } from "../constants/motionCamera.js";
 import { stringifyJson } from "./jsonStringify.js";
+import type { MotionProfileCamera } from "../constants/motionProfileMotion.js";
 export type MotionCameraMode = (typeof C.MODES)[number];
 export interface MotionCameraInput {
   enabled: boolean;
@@ -14,8 +15,9 @@ export interface MotionCameraInput {
   origin?: { x: number; y: number };
   protectedRects?: { x: number; y: number; width: number; height: number }[];
 }
-export const MOTION_CAMERA_REVISION = 3;
-function cameraFrame(input: MotionCameraInput, modes: readonly MotionCameraMode[], pace: Pick<typeof C, "MAX_ZOOM" | "SPEED">) {
+export const MOTION_CAMERA_REVISION = 4;
+type CameraPace = { MAX_ZOOM: number; SPEED: number } & Partial<Pick<MotionProfileCamera, "MIN_ZOOM" | "TRACK" | "RAMP">>;
+function cameraFrame(input: MotionCameraInput, modes: readonly MotionCameraMode[], pace: CameraPace) {
   const [pushMode, leftMode, rightMode, upMode, downMode, pullMode, followMode, holdMode] = modes;
   const mode = input.mode || holdMode;
   const duration = Math.max(0, input.end - input.start);
@@ -38,13 +40,14 @@ function cameraFrame(input: MotionCameraInput, modes: readonly MotionCameraMode[
     top = Math.min(top, t);
     bottom = Math.max(bottom, b);
   }
-  const amount = Math.max(0, Math.min(pace.MAX_ZOOM, duration * pace.SPEED, right > left ? input.width / (right - left) - 1 : 1, bottom > top ? input.height / (bottom - top) - 1 : 1));
+  const fit = Math.min(right > left ? input.width / (right - left) - 1 : 1, bottom > top ? input.height / (bottom - top) - 1 : 1);
+  const amount = Math.max(0, Math.min(fit, Math.max(Math.min(pace.MIN_ZOOM || 0, pace.MAX_ZOOM), Math.min(pace.MAX_ZOOM, duration * pace.SPEED))));
   if (input.focus && [input.focus.x, input.focus.y, input.origin?.x ?? 0, input.origin?.y ?? 0].every(Number.isFinite) && (mode === followMode || mode === pushMode || mode === pullMode)) {
-    const delta = amount * (mode === pushMode ? progress : mode === pullMode ? 1 - progress : 1),
+    const delta = amount * (mode === pushMode ? progress : mode === pullMode ? 1 - progress : pace.RAMP ? pace.RAMP + (1 - pace.RAMP) * progress : 1),
       scale = 1 + delta;
     const origin = input.origin || input.focus;
-    const desiredX = (input.width / 2 - origin.x) * delta - (mode === followMode ? (input.focus.x - origin.x) * scale : 0);
-    const desiredY = (input.height / 2 - origin.y) * delta - (mode === followMode ? (input.focus.y - origin.y) * scale : 0);
+    const desiredX = (input.width / 2 - origin.x) * delta - (mode === followMode || pace.TRACK ? (input.focus.x - origin.x) * scale : 0);
+    const desiredY = (input.height / 2 - origin.y) * delta - (mode === followMode || pace.TRACK ? (input.focus.y - origin.y) * scale : 0);
     const mx = (delta * input.width) / 2,
       my = (delta * input.height) / 2;
     const minX = Math.max(-mx, right > left ? -left - (left - input.width / 2) * delta : -mx),
@@ -68,5 +71,5 @@ function cameraFrame(input: MotionCameraInput, modes: readonly MotionCameraMode[
   }
   return { scale: endpoints[0].scale + (endpoints[1].scale - endpoints[0].scale) * progress, x: endpoints[0].x + (endpoints[1].x - endpoints[0].x) * progress, y: endpoints[0].y + (endpoints[1].y - endpoints[0].y) * progress, mode };
 }
-export const motionCameraFrame = (input: MotionCameraInput) => cameraFrame(input, C.MODES, C);
+export const motionCameraFrame = (input: MotionCameraInput, pace: CameraPace = C) => cameraFrame(input, C.MODES, pace);
 export const motionCameraBrowserSource = (): string => C.BROWSER_SOURCE(cameraFrame.toString(), stringifyJson(C.MODES), stringifyJson({ MAX_ZOOM: C.MAX_ZOOM, SPEED: C.SPEED }));
