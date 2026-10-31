@@ -2,7 +2,14 @@ import { AiPlanningChatModel } from "../types.js";
 export const GEMINI_MODEL_UI = {
   POLL_MS: 100,
   READY_POLLS: 3,
-  COLLAPSED_INPUT_SELECTOR: 'rich-textarea.simplified-input [role="textbox"][contenteditable="true"]',
+  COLLAPSED_COMPOSER_SELECTOR: "rich-textarea.simplified-input",
+  PRIMARY_MODEL_SELECTOR: 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"]',
+  EDITABLE_INPUT_SELECTOR: "textarea, input, [contenteditable]:not(.ql-clipboard)",
+  PRIMARY_INPUT_SELECTOR: "rich-textarea [contenteditable]:not(.ql-clipboard), rich-textarea textarea, rich-textarea input",
+  FOCUS_ATTEMPTS: 3,
+  FOCUS_RETRY_MS: 1000,
+  FOCUS_TIMEOUT_MS: 1000,
+  READINESS_KEYS: { inputVisible: "selectionInputVisible", inputEditable: "selectionInputEditable", modelVisible: "selectionModelVisible", modelEnabled: "selectionModelEnabled", modelLabel: "selectionModelLabel", stablePolls: "selectionStablePolls", focusAttempts: "selectionFocusAttempts", elapsedMs: "selectionElapsedMs", pageClosed: "selectionPageClosed" },
   SELECTION_ATTEMPTS: 2,
   PHASE: { READY: "page_ready", BASE: "base_model", BASE_VERIFY: "base_model_verify", LEVEL: "thinking_level", LEVEL_VERIFY: "thinking_level_verify" },
   ESCAPE: "Escape",
@@ -37,6 +44,7 @@ export const GEMINI_MODEL_ENCODING = {
   UI_NOT_READY: (phase: string) => `gemini_model_ui_not_ready: Giao diện Gemini chưa sẵn sàng hoặc chưa xác nhận được lựa chọn (${phase}).`,
   DIAGNOSTICS: "geminiSelection",
   DIAGNOSTIC_PHASE: "selectionPhase",
+  READINESS: "readiness",
 } as const;
 export const GEMINI_CHAT_BASE_MODEL_OPTIONS = [
   { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },

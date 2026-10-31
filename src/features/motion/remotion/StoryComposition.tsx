@@ -12,7 +12,6 @@ import { motionVectorSource } from "../../../lib/motionVectorAsset.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import { motionActorLocked, motionNodeFrame, motionSceneCameraFrame, motionFrameSeconds, motionPropAngle, remotionSceneView } from "../lib/motionRemotionEffects.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
-import { horrorCharacterFrame } from "../lib/motionHorrorCharacter.js";
 import { remotionDetailNodes } from "../../../lib/motionRemotionVisibility.js";
 import { compositionFrameSvg } from "../../../lib/motionSceneComposition.js";
 import { SceneEffects } from "./SceneEffects.js";
@@ -41,7 +40,7 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
       <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.SCALE_0E0502}${width / w}${RT_SHARED.SYMBOL_D03502}${height / h}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
         <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RUNTIME_VALUES.TRANSLATE_59C8632A}${camera.x}${RUNTIME_VALUES.PX_2AFF6F79}${camera.y}${RUNTIME_VALUES.PX_SCALE_02D041CE}${camera.scale}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_12}`, transformOrigin: RT_MOTION.CENTER_CENTER }}>
           <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.TRANSLATE}${view.x}${RT_MOTION.PX}${view.y}${RT_MOTION.PX_SCALE}${view.scale}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
-            {compositionAsset && scene?.composition && <Img src={motionVectorSource(compositionFrameSvg(compositionAsset, scene.composition, (frame - scene.startFrame) / document.fps, behavior, speakers))} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}
+            {compositionAsset && scene?.composition && <Img src={motionVectorSource(compositionFrameSvg(compositionAsset, scene.composition, (frame - scene.startFrame) / document.fps, behavior, speakers, document.profileId))} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}
             {!scene?.composition && scene?.backgroundKey && document.assets[scene.backgroundKey] && <Img src={motionVectorSource(document.assets[scene.backgroundKey].svg, true)} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}
             {!scene?.composition && scene && <SceneEffects document={document} scene={scene} frame={frame} behind />}
             {!scene?.composition &&
@@ -62,7 +61,7 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
                 return (
                   <Fragment key={node.id}>
                     <Img
-                      src={motionVectorSource(horrorCharacterFrame(asset, t, node.kind === RT_SHARED.CHARACTER && behavior.actors === RT_SHARED.SIMPLE, node.entityId || node.id), !!document.assets[scene.backgroundKey || ""]?.space && (node.role === RT_SHARED.FIXTURE || (node.kind === RT_SHARED.PROP && S.MAT.test(node.description))))}
+                      src={motionVectorSource(asset.svg, !!document.assets[scene.backgroundKey || ""]?.space && (node.role === RT_SHARED.FIXTURE || (node.kind === RT_SHARED.PROP && S.MAT.test(node.description))))}
                       style={{ position: RT_MOTION.ABSOLUTE, left: node.x, top: moving.y, width: node.width, height: moving.height, transform: `${RT_MOTION.ROTATE}${angle}${RT_MOTION.DEG}`, transformOrigin: `${pivot.x * 100}${RT_MOTION.SYMBOL_84EE9A}${pivot.y * 100}${RT_SHARED.SYMBOL}` }}
                     />
                     <SceneEffects document={document} scene={scene} frame={frame} sourceId={node.id} />

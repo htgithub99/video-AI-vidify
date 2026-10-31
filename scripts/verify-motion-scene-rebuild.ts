@@ -163,7 +163,8 @@ try {
     assert.equal(await count(auto, A.MOTION_VIDEO_RENDER), 1);
     assert.equal(await auto.evaluate((url: string) => (window as any).motionDraftFixture.requests.find((r: any) => r.url === url).body.spec.title, A.MOTION_VIDEO_RENDER), "new-scenes");
     await auto.evaluate(() => (window as any).motionDraftStudio.patch({ quality: "draft" }));
-    await auto.waitForFunction(() => !(window as any).motionDraftStudio.renderedVideoUrl);
+    await auto.waitForFunction(() => (window as any).motionDraftStudio.renderedVideoStale);
+    assert.equal(await auto.getByTestId("video").textContent(), "/new-output.mp4", "Settings edits retain the exported MP4 with a stale notice");
     await auto.close();
     const manual = await mount(mode, false);
     await start(manual, { scenes: ["selected-scene"] });

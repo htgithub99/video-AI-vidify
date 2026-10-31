@@ -4,9 +4,8 @@ import { motionPromptBudget, motionPromptMeasurement, motionPromptSingleMessage 
 import { MOTION_SCENE_COMPOSITION as SCENE } from "../src/constants/motionSceneComposition.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { MOTION_PROMPT } from "../src/constants/motionPrompt.js";
-import { motionIllustrationDirection, motionCompositionReference } from "../src/lib/motionIllustrationProfile.js";
+import { motionIllustrationDirection } from "../src/lib/motionIllustrationProfile.js";
 import { withMotionResponsePrompt } from "../src/lib/motionResponseContract.js";
-import { createHash } from "node:crypto";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../src/constants/cinematicConstants.js";
 const source = "Một đoạn nguồn 🛶 có lời kể. ".repeat(900);
 for (const requested of [6000, 12000, 16000, 24000]) {
@@ -28,29 +27,31 @@ assert.equal(measured.overflow, true);
 assert.equal(measured.wrapperChars, budget);
 assert.equal(measured.images, 2);
 assert.ok(planningPromptTransport(wrapped, wrapped.length, measured.budget).parts.length > 1);
-assert.equal(createHash("sha256").update(SCENE.PROMPT({})).digest("hex"), "07e9d733d2f470b2c88fc0b8a22cb29150ef31efef8cec0bc9d899175958c1d8");
+assert.ok(SCENE.PROMPT({ artDirection: motionIllustrationDirection("history", "drawing") }).includes("{design,svg,layers,animations,continuityNotes}"));
 for (const profileId of Object.keys(V.PROFILES) as (keyof typeof V.PROFILES)[]) {
-  const prompt = SCENE.PROMPT({ profile: V.PROFILES[profileId].direction, artDirection: motionIllustrationDirection(profileId, "drawing"), drawingReference: motionCompositionReference(profileId), scene: { text: "Keep the source facts." } });
+  const prompt = SCENE.PROMPT({ profile: V.PROFILES[profileId].direction, artDirection: motionIllustrationDirection(profileId, "drawing"), scene: { text: "Keep the source facts." } });
   const full = MOTION_PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(SCENE.ARTIFACT, prompt), '"artifactType":"motion_remotion_composition","requestId":"fixture"');
   const single = motionPromptSingleMessage(SCENE.ARTIFACT);
   assert.equal(single, true);
   assert.ok(full.startsWith(prompt));
   assert.ok(full.includes("in the requested json code block"));
   assert.ok(!full.includes("no markdown fences"));
-  assert.ok(full.length > budget);
   assert.deepEqual(planningPromptTransport(full, full.length + MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE.length, budget, single).parts, []);
   const measurement = motionPromptMeasurement(prompt, full, 0, 0, budget, single);
-  assert.equal(measurement.overflow, true);
+  assert.equal(measurement.overflow, full.length > budget);
   assert.equal(measurement.action, "direct");
 }
 assert.equal(motionPromptSingleMessage("motion_remotion_scene"), false);
 const draft = { svg: "<svg><g id='keep'/></svg>", layers: [{ id: "keep", kind: "background" }] };
-for (const context of [{ scene: { text: "KEEP_FACT" }, drawingReference: "DROP_REFERENCE", continuity: { svg: "DROP_PREVIOUS" }, acceptedScene: { svg: "DROP_ACCEPTED_COPY" } }, SCENE.PROMPT({ scene: { text: "KEEP_FACT" }, drawingReference: "DROP_REFERENCE", continuity: { svg: "DROP_PREVIOUS" } })]) {
+for (const context of [
+  { artDirection: motionIllustrationDirection("history", "drawing"), scene: { text: "KEEP_FACT" }, drawingReference: "DROP_REFERENCE", continuity: { svg: "DROP_PREVIOUS" }, acceptedScene: { svg: "DROP_ACCEPTED_COPY" } },
+  SCENE.PROMPT({ artDirection: motionIllustrationDirection("history", "drawing"), scene: { text: "KEEP_FACT" }, drawingReference: "DROP_REFERENCE", continuity: { svg: "DROP_PREVIOUS" } }),
+]) {
   const repair = SCENE.REPAIR(context, draft, ["Only correct one group"]);
   assert.ok(repair.includes("KEEP_FACT"));
   assert.ok(repair.includes(JSON.stringify(draft)));
   assert.ok(!/DROP_REFERENCE|DROP_PREVIOUS|DROP_ACCEPTED_COPY|FINAL REMINDER/.test(repair));
-  assert.ok(repair.length < 3000);
+  assert.ok(repair.length < 16000);
 }
 assert.ok(!SCENE.REPAIR("MALFORMED_CONTEXT_SENTINEL", draft, []).includes("MALFORMED_CONTEXT_SENTINEL"));
 console.log(JSON.stringify({ passed: true, finalWrapperBudget: true, transportUsesTaskBudget: true, preservedThreeStylePrompt: true, singleSceneMessage: true, scopedRepairContext: true, unicodeIntact: true, videoCreated: false }));

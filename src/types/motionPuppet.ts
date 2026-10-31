@@ -357,7 +357,7 @@ export interface PuppetFrame {
   set2?: string;
   light2?: string;
   overlays?: string[];
-  camera?: { move: string };
+  camera?: { move: string; subject?: string };
   speaker?: string | null;
   shot2?: PuppetFrame | null;
   why?: string;

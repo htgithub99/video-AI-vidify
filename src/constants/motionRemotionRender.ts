@@ -1,0 +1,1 @@
+export const MOTION_REMOTION_RENDER = { MAX_WORKERS: 2, BYTES_PER_WORKER: 1073741824, START: (workers: number, frames: number) => `Remotion: ${workers} luồng render thực tế · ${frames} frame · mã hóa CPU libx264.`, COMPLETE: (seconds: number) => `Remotion đã dựng hình trong ${seconds.toFixed(1)} giây; đang kiểm video và ghép âm thanh.` } as const;

@@ -1,7 +1,7 @@
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import _ from "lodash";
-import { GEMINI_MODEL_ENCODING } from "../../constants/geminiChatModels.js";
+import { GEMINI_MODEL_ENCODING, GEMINI_MODEL_UI } from "../../constants/geminiChatModels.js";
 import {
   SOURCE_TEMPLATE_MUSICDIAGNOSTICS_LOG_WRITE_FAILED,
   SOURCE_TEXT_ACTUALCHARS,
@@ -61,6 +61,7 @@ import { ANSI_ESCAPE_SEQUENCE_REGEX } from "../../constants/regexes.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
 const logPath = path.join(getLogsDirectory(), SOURCE_TEXT_MUSIC_WORKFLOW_JSONL);
 const safeKeys = new Set([
+  ...Object.values(GEMINI_MODEL_UI.READINESS_KEYS),
   GEMINI_MODEL_ENCODING.DIAGNOSTIC_PHASE,
   RT_SERVER.PROMPTREVISION,
   RT_SERVER.UPLOADPENDING,
@@ -127,10 +128,17 @@ const sanitizeText = (value: unknown): string =>
     .replace(/\/[\w./-]+\.(?:mp3|wav|png|jpg)/gi, SOURCE_TEXT_PATH_2)
     .replace(/(["'`]).{80,}?\1/g, SOURCE_TEXT_LONG_QUOTED_TEXT)
     .slice(0, 400);
-export const musicErrorDetails = (error: unknown): Record<string, string> => {
+export const musicErrorDetails = (error: unknown): Record<string, string | number | boolean> => {
   const source = error instanceof Error ? error : new Error(String(error));
   const phase = _.get(error, [GEMINI_MODEL_ENCODING.DIAGNOSTICS, RT_SERVER.PHASE] as string[]);
-  return { errorName: sanitizeText(source.name), errorMessage: sanitizeText(source.message), ...(typeof phase === "string" ? { [GEMINI_MODEL_ENCODING.DIAGNOSTIC_PHASE]: sanitizeText(phase) } : {}) };
+  const readiness = _.get(error, [GEMINI_MODEL_ENCODING.DIAGNOSTICS, GEMINI_MODEL_ENCODING.READINESS] as string[]);
+  const details: Record<string, string | number | boolean> = {};
+  for (const [key, field] of Object.entries(GEMINI_MODEL_UI.READINESS_KEYS)) {
+    const value = readiness?.[key];
+    if (typeof value === "boolean" || typeof value === "number") details[field] = value;
+    else if (typeof value === "string") details[field] = sanitizeText(value);
+  }
+  return { errorName: sanitizeText(source.name), errorMessage: sanitizeText(source.message), ...(typeof phase === "string" ? { [GEMINI_MODEL_ENCODING.DIAGNOSTIC_PHASE]: sanitizeText(phase) } : {}), ...details };
 };
 export const musicUploadDetails = (upload?: { pending: number; failed: boolean; lastFailure?: { url: string; status?: number; errorText?: string } }): Record<string, unknown> => {
   let uploadHost: string | undefined;

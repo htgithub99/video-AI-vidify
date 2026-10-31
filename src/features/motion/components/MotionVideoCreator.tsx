@@ -32,7 +32,6 @@ import { isRemotionSpec } from "../../../lib/motionVisual.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
 import type { MotionRemotionSpec } from "../../../types/motionVisual.js";
 import { MOTION_VISUAL } from "../../../constants/motionVisual.js";
-import { MOTION_RENDER_BEHAVIOR } from "../../../constants/motionRenderBehavior.js";
 import { MOTION_SCENE_PACING } from "../../../constants/motionScenePacing.js";
 import type { MotionScenePacing } from "../../../types/motionVisual.js";
 import { applyMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
@@ -257,7 +256,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const gen = state.script?.gen;
   const remotionMode = state.visualSettings.mode === RT_SHARED.REMOTION;
   const visualText = MOTION_VISUAL.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
-  const behaviorText = MOTION_RENDER_BEHAVIOR.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
   const sceneBeats = useMemo(() => _.filter(state.script?.beats || [], (b) => remotionMode || b.visual === MOTION_TEXT_SCENE), [state.script, remotionMode]);
   const remotionProgress = remotionMode && state.script ? remotionSceneProgress(state.script) : undefined;
   const builtCount = remotionMode ? remotionProgress?.ready || 0 : gen?.puppet ? _.size(_.filter(sceneBeats, (b) => _.some(puppetBeatVisualLines(b, gen.puppet), (l) => !!gen.puppet?.frames[l.key]))) : 0;
@@ -504,30 +502,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
                 </div>
                 <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{behaviorText.effects}</span>
-                  <MotionToggle
-                    checked={state.renderBehavior.sceneEffects === RT_SHARED.GENTLE}
-                    label={behaviorText.effects}
-                    icon={Sparkles}
-                    text={state.renderBehavior.sceneEffects === RT_SHARED.GENTLE ? behaviorText.effectsOn : behaviorText.effectsOff}
-                    title={behaviorText.effectsHint}
-                    disabled={studio.storyBusy}
-                    onClick={() => patch({ renderBehavior: { ...state.renderBehavior, sceneEffects: state.renderBehavior.sceneEffects === RT_SHARED.GENTLE ? RT_SHARED.OFF : RT_SHARED.GENTLE } })}
-                  />
-                </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{behaviorText.camera}</span>
-                  <MotionToggle
-                    checked={state.renderBehavior.camera === RT_SHARED.GENTLE}
-                    label={behaviorText.camera}
-                    icon={Monitor}
-                    text={state.renderBehavior.camera === RT_SHARED.GENTLE ? behaviorText.cameraOn : behaviorText.cameraOff}
-                    title={behaviorText.cameraHint}
-                    disabled={studio.storyBusy}
-                    onClick={() => patch({ renderBehavior: { ...state.renderBehavior, camera: state.renderBehavior.camera === RT_SHARED.GENTLE ? RT_SHARED.FIXED : RT_SHARED.GENTLE } })}
-                  />
-                </div>
                 <MotionSelectField label={genreText.LABEL} value={motionVideoGenre(state.videoGenre)} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
                   {_.map(MOTION_VIDEO_GENRES, (genre) => (
                     <option key={genre} value={genre}>
@@ -819,24 +793,25 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               </div>
             </StudioCard>
           ) : null}
-          {state.script?.beats?.length ? <MotionSeoCard seo={state.seo} busy={studio.storyBusy} canGenerate={!!state.analysis} onGenerate={() => void studio.generateSeo()} lang={currentLang} thumbnail={state.thumbnail} thumbnails={state.thumbnails} onThumbnail={(i) => void studio.generateThumbnail(i)} /> : null}
+          {state.script?.beats?.length ? <MotionSeoCard seo={state.seo} busy={studio.storyBusy} seoBusy={studio.seoBusy} canGenerate={!!state.analysis} onGenerate={() => void studio.generateSeo()} lang={currentLang} thumbnail={state.thumbnail} thumbnails={state.thumbnails} onThumbnail={(i) => void studio.generateThumbnail(i)} /> : null}
         </div>
         <div className={MOTION_STYLES.STUDIO_RIGHT_COLUMN}>
           {state.series && <MotionPartsCard series={state.series} text={text} lang={currentLang} busy={studio.busy} ready={!!state.script?.beats?.length} className={cardCls} onContinue={() => void studio.continuePart()} />}
           <StudioCard className={cardCls}>
-            <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={text.PREVIEW_BADGE} />
+            <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={studio.renderedVideoUrl ? text.EXPORTED_VIDEO_BADGE : remotionMode ? text.PREVIEW_REMOTION_BADGE : text.PREVIEW_BADGE} />
             {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? RUNTIME_VALUES.PREPARINGSINGLE_21F3001B : RUNTIME_VALUES.PREPARING_D932D92A]}</p> : null}
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
-            {state.autoExport ? (
-              studio.renderedVideoUrl ? (
-                <video src={studio.renderedVideoUrl} controls className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
-              ) : (
-                <div className={MOTION_STYLES.SPACE_Y_3}>
-                  <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{studio.renderBusy ? text.AUTO_EXPORT_RENDERING : text.AUTO_EXPORT_WAITING}</p>
-                  {studio.renderBusy && <MotionProgressBar progress={rj?.progress} minimum={4} className={MOTION_STYLES.H_2} animated={false} />}
-                </div>
-              )
+            {studio.renderedVideoUrl ? (
+              <div className={MOTION_STYLES.SPACE_Y_3}>
+                {studio.renderedVideoStale && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.EXPORTED_VIDEO_STALE}</p>}
+                <video src={studio.renderedVideoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
+              </div>
+            ) : state.autoExport ? (
+              <div className={MOTION_STYLES.SPACE_Y_3}>
+                <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{studio.renderBusy ? text.AUTO_EXPORT_RENDERING : text.AUTO_EXPORT_WAITING}</p>
+                {studio.renderBusy && <MotionProgressBar progress={rj?.progress} minimum={4} className={MOTION_STYLES.H_2} animated={false} />}
+              </div>
             ) : isRemotionSpec(previewSpec) ? (
               <Suspense fallback={<p>{visualText.loading}</p>}>
                 <MotionRemotionPlayer spec={previewSpec} videoUrl={studio.previewVideoUrl} audioUrl={motionAudioUrl(studio.previewAudioId)} />

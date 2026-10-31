@@ -52,7 +52,7 @@ import {
 } from "../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_VIDEO_CONSTANTS } from "../../../constants/motionVideo.js";
 import { jsonUtils } from "../../../lib/json.js";
-import { isMotionJobTerminal } from "../lib/motionJob.js";
+import { isMotionJobTerminal, isMotionStageBusy } from "../lib/motionJob.js";
 import { getMotionErrorMessage } from "../../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import {
@@ -84,7 +84,7 @@ import { MOTION_VISUAL } from "../../../constants/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import type { MotionVisualSettings, MotionRemotionProfile, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { StorageCleanResult, StorageJunkReport } from "../../../types/storage.js";
-import { captureMotionVisualDraft, forgetMotionVisualDraftResults, hasMotionVisualDraft, invalidateMotionVisualDraftOutput, motionCompileStateKey, motionRenderStateKey, motionVisualDraftContextKey, motionVisualDraftKey, motionVisualDraftRuntime, recoverMotionVisualDraft, switchMotionVisualDraft, type MotionVisualDraft } from "../lib/motionVisualDraft.js";
+import { captureMotionVisualDraft, forgetMotionVisualDraftResults, hasMotionVisualDraft, invalidateMotionVisualDraftOutput, motionCompileStateKey, motionRenderStateKey, motionRenderedPreview, motionVisualDraftContextKey, motionVisualDraftKey, motionVisualDraftRuntime, recoverMotionVisualDraft, switchMotionVisualDraft, type MotionVisualDraft } from "../lib/motionVisualDraft.js";
 import { motionVisualBeatGroups } from "../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING } from "../../../constants/motionScenePacing.js";
 import { createMotionSourceReader } from "../lib/motionSourceReader.js";
@@ -241,6 +241,7 @@ export function useMotionStudio() {
   const [voiceError, setVoiceError] = useState<string>(MR.MOTION_TEXT_EMPTY);
   const [compileError, setCompileError] = useState<string>(MR.MOTION_TEXT_EMPTY);
   const [flowCount, setFlowCount] = useState(0);
+  const [seoRequestBusy, setSeoRequestBusy] = useState(false);
   const flowDepth = useRef(0);
   const [logHistory, setLogHistory] = useState<MotionLogEntry[]>([]);
   const logHistoryRef = useRef<MotionLogEntry[]>([]);
@@ -861,15 +862,20 @@ export function useMotionStudio() {
       if (!script?.beats?.length || !analysis) return;
       const voiceMatches = !scriptOverride && state.voice && state.voice.durations?.length === script.beats.length;
       resumeAutomation();
-      await inFlow(async () => {
-        try {
-          const seo = (await runStoryJob(API_ROUTES.MOTION_STORY_SEO, { analysis, script, source: stateRef.current.source, language: state.language, aiExecution, keepBrowser: quiet, durations: voiceMatches ? state.voice!.durations : undefined })) as MotionSeoPack;
-          patch({ seo });
-        } catch (e: any) {
-          if (quiet) toast.warning(MR.MOTION_TEMPLATE_SEO(getMotionErrorMessage(e)));
-          else reportStoryError(e);
-        }
-      });
+      setSeoRequestBusy(true);
+      try {
+        await inFlow(async () => {
+          try {
+            const seo = (await runStoryJob(API_ROUTES.MOTION_STORY_SEO, { analysis, script, source: stateRef.current.source, language: state.language, aiExecution, keepBrowser: quiet, durations: voiceMatches ? state.voice!.durations : undefined })) as MotionSeoPack;
+            patch({ seo });
+          } catch (e: any) {
+            if (quiet) toast.warning(MR.MOTION_TEMPLATE_SEO(getMotionErrorMessage(e)));
+            else reportStoryError(e);
+          }
+        });
+      } finally {
+        if (mounted.current) setSeoRequestBusy(false);
+      }
     },
     [inFlow, state.script, state.analysis, state.language, state.voice, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch, resumeAutomation],
   );
@@ -1330,7 +1336,10 @@ export function useMotionStudio() {
   }, [state.aspect]);
   const storyJobBusy = !!storyJob && !isMotionJobTerminal(storyJob.status);
   const renderBusy = !!renderJob && !isMotionJobTerminal(renderJob.status);
+  const renderedPreview = motionRenderedPreview(state, renderJob);
   const storyBusy = storyJobBusy || flowCount > 0 || (!!state.activeStoryJobId && (!storyJob || storyJob.id !== state.activeStoryJobId));
+  const seoStep = logHistory.find((entry) => entry.id === state.productionId)?.stepStates?.[MOTION_PRODUCTION.STAGES.SEO] || storyJob?.stepStates?.[MOTION_PRODUCTION.STAGES.SEO];
+  const seoBusy = seoRequestBusy || isMotionStageBusy(storyJob, MotionStoryJobKind.SEO, MOTION_PRODUCTION.STAGES.SEO) || (!!state.seoJobId && !settledSeoJobs.current.has(state.seoJobId) && (!seoStep || (seoStep.id === state.seoJobId && !isMotionJobTerminal(seoStep.status))));
   const busy = storyBusy || renderBusy;
   const voiceAttempt = useRef<{ signature: string; count: number }>({ signature: MR.MOTION_TEXT_EMPTY, count: 0 });
   useEffect(() => {
@@ -1364,6 +1373,7 @@ export function useMotionStudio() {
     engineError,
     storyJob,
     storyBusy,
+    seoBusy,
     storyJobBusy,
     busy,
     logHistory,
@@ -1376,7 +1386,8 @@ export function useMotionStudio() {
     voiceError: voiceError || compileError,
     audioPreparing: !state.automationPaused && !!state.script?.beats.length && ((!state.uploadedAudio && !voiceValid) || compiled?.compilationKey !== compileStateKey(state) || !compiled?.audioPreviewId) && !voiceError && !compileError,
     previewVideoUrl: renderJob?.status === MotionJobStatus.COMPLETED && compiled?.compilationKey === compileStateKey(state) && state.renderSignature === motionRenderStateKey(state) ? renderJob.result?.videoUrl : undefined,
-    renderedVideoUrl: renderJob?.status === MotionJobStatus.COMPLETED && (!state.renderSignature || state.renderSignature === motionRenderStateKey(state)) ? renderJob.result?.videoUrl : undefined,
+    renderedVideoUrl: renderedPreview.videoUrl,
+    renderedVideoStale: renderedPreview.stale,
     audioId,
     previewAudioId: compiled?.compilationKey === compileStateKey(state) ? (compiled.voiceStale ? undefined : compiled.audioPreviewId || audioId) : audioId,
     parseSource,

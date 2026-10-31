@@ -52,6 +52,11 @@ export const motionRenderStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
   return stringifyJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, fields.encoder, fields.musicMood, fields.musicVolume]);
 };
+export const motionRenderedPreview = (state: { lastRenderJobId?: string | null; renderSignature?: string }, job?: MotionJobState | null) => {
+  const result = job?.status === MotionJobStatus.COMPLETED ? job.result : undefined;
+  const videoUrl = result?.videoUrl && state.lastRenderJobId !== null && (!state.lastRenderJobId || state.lastRenderJobId === result.id) ? result.videoUrl : undefined;
+  return { videoUrl, stale: !!videoUrl && (!state.renderSignature || state.renderSignature !== motionRenderStateKey(state)) };
+};
 export const motionVisualDraftContextKey = (state: Pick<VisualDraftContext, "analysis" | "script">) => {
   const analysis = state.analysis && { ...state.analysis, visualSettings: undefined, stylePreset: undefined, illustrationNeeds: undefined, illustrationCoverage: undefined };
   return stringifyJson([analysis, state.script && { title: state.script.title, language: state.script.language, beats: state.script.beats }]);
@@ -74,8 +79,11 @@ export const invalidateMotionVisualDraftOutput = (state: VisualDraftContext) => 
   return { ...output, visualDrafts: { ...state.visualDrafts, [motionVisualDraftKey(state.visualSettings)]: captureMotionVisualDraft({ ...state, ...output }, { compiled: null, renderJob: null }) } };
 };
 export const motionVisualDraftRuntime = (state: VisualDraftContext, draft?: MotionVisualDraft) => {
-  const compiled = draft?.contextKey === motionVisualDraftContextKey(state) && draft.compiled?.compilationKey === motionCompileStateKey(state) ? draft.compiled : null;
-  return { compiled, renderJob: compiled && draft?.renderSignature === motionRenderStateKey(state) ? draft.renderJob || null : null };
+  const sameContext = draft?.contextKey === motionVisualDraftContextKey(state);
+  const compiled = sameContext && draft.compiled?.compilationKey === motionCompileStateKey(state) ? draft.compiled : null;
+  const savedJob = sameContext ? draft.renderJob : null;
+  const exported = motionRenderedPreview(state, savedJob).videoUrl;
+  return { compiled, renderJob: exported || (compiled && draft?.renderSignature === motionRenderStateKey(state)) ? savedJob || null : null };
 };
 export const forgetMotionVisualDraftResults = (drafts: Record<string, MotionVisualDraft> | undefined, id?: string) => Object.fromEntries(Object.entries(drafts || {}).map(([key, draft]) => [key, !id || draft.lastRenderJobId === id || draft.renderJob?.id === id || draft.renderJob?.result?.id === id ? { ...draft, renderJob: null, lastRenderJobId: null, renderSignature: undefined } : draft]));
 export const switchMotionVisualDraft = <T extends VisualDraftContext>(state: T, requested: MotionVisualSettings, runtime: Pick<MotionVisualDraft, "compiled" | "renderJob"> = {}) => {

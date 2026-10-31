@@ -67,7 +67,7 @@ await assert.rejects(download(["cancelled"], "fixture", abort.signal));
 assert.equal(downloads, 7);
 const groupsByChunk = Array.from({ length: 5 }, (_, chunk) => Array.from({ length: 5 }, (_, song) => ({ title: chunk + "-" + song, candidates: [chunk + "-" + song + "-a", chunk + "-" + song + "-b"] })));
 const tracks = _.flatMap(groupsByChunk, (groups) => _.flatMap(groups, (group) => group.candidates.map((songId) => ({ songId }))));
-const chunks = source.slice(source.indexOf("      report.progress({ phase: RT_SERVER.PREPARING, expected: tracks.length, ready: 0"), source.indexOf("      const rejectedEvaluation ="));
+const chunks = source.slice(source.indexOf("      report.progress({ phase: RT_SERVER.PREPARING, expected: pendingTrackCount, ready: 0"), source.indexOf("      const rejectedEvaluation ="));
 assert.ok(chunks.includes("const evaluationAudio = await downloadSunoEvaluationAudio"));
 const runScenario = async (failure?: "audio" | "cancel" | "room") => {
   const events: string[] = [];
@@ -92,6 +92,13 @@ const runScenario = async (failure?: "audio" | "cancel" | "room") => {
       _,
       AsyncTaskLimiter,
       groupsByChunk,
+      pendingGroupsByChunk: groupsByChunk,
+      pendingTrackCount: tracks.length,
+      cachedTrackChunks: [],
+      checkpointKey: "fixture",
+      candidateIds: tracks.map((track) => track.songId),
+      saveMusicEvaluationSelections: async () => {},
+      MUSIC_RECOVERY: {},
       tracks,
       evaluationRunId: "offline",
       audioCacheKey: "fixture",
@@ -123,7 +130,7 @@ const runScenario = async (failure?: "audio" | "cancel" | "room") => {
         if (failure === "cancel") controller.abort();
         return new Map(ids.map((id) => [id, cached]));
       },
-      prepareChatPlanningRoom: async (request: { workerId: string }) => {
+      prepareMusicEvaluationRoom: async (request: { workerId: string }) => {
         events.push("open-" + request.workerId);
         if (failure === "room" && request.workerId === "room1") throw new Error("gemini_model_ui_not_ready");
       },

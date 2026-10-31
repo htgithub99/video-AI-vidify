@@ -11,6 +11,7 @@ import type { MotionRemotionSpec } from "../../../../types/motionVisual.js";
 import { getStaticResourcePath, getTempDirectory } from "../../../../server/utils/paths.js";
 import { findNativeChrome } from "../../../../server/services/nativeProxyBrowser.js";
 import { motionRemotionWebpack } from "./remotion/bundleConfig.js";
+import { motionRemotionRenderConcurrency } from "../../../../lib/motionRemotionPerformance.js";
 import { checkRemotionCutoutLayers } from "./remotion/vectorCutoutInspector.js";
 let cached: { key: string; promise: Promise<string> } | undefined;
 export const motionRemotionSourceFingerprint = (entryPoints: string[]): string => {
@@ -81,7 +82,7 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
     await browser?.close({ silent: true });
   }
 };
-export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: string, options: { width: number; height: number; crf: number; signal: AbortSignal; onProgress: (frames: number, total: number) => void }): Promise<void> => {
+export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: string, options: { width: number; height: number; crf: number; signal: AbortSignal; concurrency?: number; onProgress: (frames: number, total: number) => void }): Promise<void> => {
   validateRemotionSpec(spec);
   assertRemotionExportable(spec);
   await checkRemotionCutoutLayers(spec, options.signal);
@@ -100,7 +101,7 @@ export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: stri
       muted: true,
       crf: options.crf,
       pixelFormat: RT_SERVER.YUV420P,
-      concurrency: Math.max(1, Math.min(2, Math.floor(os.freemem() / 1073741824), os.cpus().length)),
+      concurrency: options.concurrency ?? motionRemotionRenderConcurrency(os.cpus().length, os.freemem()),
       puppeteerInstance: browser,
       cancelSignal,
       logLevel: RT_SHARED.ERROR,

@@ -49,10 +49,10 @@ export const MOTION_REFERENCE_TEXTS = {
     limit: "Chỉ được upload tối đa 4 ảnh phong cách.",
     invalid: "Ảnh không hợp lệ. Hãy chọn PNG, JPG hoặc WebP.",
     size: "Ảnh quá lớn. Vui lòng chọn ảnh dưới 20 MB.",
-    motion: "Chuyển động nhân vật",
-    motionHint: "Bật để nhân vật cử động và di chuyển theo phân cảnh; tắt để giữ tư thế cố định.",
+    motion: "Chuyển động cảnh",
+    motionHint: "Bật chuyển động theo nội dung cảnh mới và camera chậm theo hành động chính: bám chủ thể, tiến nhẹ vào điểm nhấn hoặc lùi để mở cảnh. Tắt để toàn cảnh đứng yên, gồm nhân vật, hiệu ứng và camera.",
     on: "Có chuyển động",
-    off: "Giữ tư thế",
+    off: "Toàn cảnh tĩnh",
     loading: "Đang xử lý ảnh…",
     failed: "Không đọc được ảnh phong cách.",
   },
@@ -64,10 +64,10 @@ export const MOTION_REFERENCE_TEXTS = {
     limit: "Upload at most 4 style images.",
     invalid: "Invalid image. Choose PNG, JPG or WebP.",
     size: "Image too large. Choose an image under 20 MB.",
-    motion: "Character motion",
-    motionHint: "Enable character gestures and movement within scenes; disable to keep fixed poses.",
+    motion: "Scene motion",
+    motionHint: "Enable story-based scene motion and slow action-led camera: follow the main subject, push toward a key moment or pull for a reveal. Disable to freeze characters, effects and camera.",
     on: "Motion enabled",
-    off: "Fixed poses",
+    off: "Static scene",
     loading: "Processing images…",
     failed: "Could not read the style image.",
   },
@@ -105,8 +105,8 @@ ${flat ? "For this flat 2D reference, use shallow front-facing XY geometry with 
   PROFILE: (profile: unknown): string =>
     `PROJECT STYLE KIT (from the user's reference images – AUTHORITATIVE for how everything looks; it overrides generic style wording elsewhere, including genre moods, presets and example materials): ${stringifyJson(profile)}. Apply it consistently: kit.character to every character (proportions, eyes, mouth, hands, expressions), kit.animals to animals, kit.background and kit.render to sets, kit.fx to weather/light, kit.typography to visible text. images[].details describe the reference pictures themselves: match a character or place to the image whose subjects name it and follow that description closely (shapes, colours, clothing, materials).`,
   MOTION_ON:
-    "AUTHORITATIVE CHARACTER MOTION: enabled. Author character-specific pose transforms and motion keyframes on freely designed parts. Preserve reference proportions; if no reference images exist, derive the design from the story. For clear unobstructed walking paths use moveTo:[x,z], moveStart:0..0.95, moveEnd:0..1, and optional then/thenAt. Movement must stay on the ground, inside the stage and away from furniture. Choose authored seated poses for seated characters. Avoid complex contact actions; use camera inserts for detailed object interactions.",
-  MOTION_OFF: "AUTHORITATIVE CHARACTER MOTION: disabled. Keep characters planted in fixed poses and numeric facing; omit moveTo, then, moveStart, moveEnd and thenAt. Cameras, weather and objects may still move.",
+    "AUTHORITATIVE SCENE MOTION: enabled, including slow camera direction motivated by the main visible action. Follow the main traveling subject, push toward a key gesture/expression, pull for a reveal or hold for a quiet moment; never select random pan directions. Animate only visible story-supported motion: people or horses running, wind in cloth/leaves, flowing river ripples and local weather. Author connected pose transforms and motion keyframes on freely designed parts. Preserve reference proportions; if no reference images exist, derive the design from the story. For clear unobstructed walking paths use moveTo:[x,z], moveStart:0..0.95, moveEnd:0..1, and optional then/thenAt. Movement must stay on the ground, inside the stage and away from furniture. Choose authored seated poses for seated characters. Avoid complex contact actions; use camera inserts for detailed object interactions.",
+  MOTION_OFF: "AUTHORITATIVE SCENE MOTION: disabled. Freeze the entire scene: people, animals, props, weather, water, effects and camera. Omit all movement/animation instructions; depict the story action as one static illustrated moment.",
   QA: "QA is advisory for aesthetics, detail, exact style similarity and storytelling. Approve readable, renderable scenes even if imperfect. Only flag as critical a broken/blank render or missing required character geometry. Return concise improvement notes without demanding photorealism or perfection.",
 } as const;
 export const MOTION_QA_MESSAGES = { ADVISORY: (issues: string[]): string => `Góp ý cảnh (không chặn xuất video): ${issues.slice(0, 4).join("; ")}`, RETAINED: "Đã giữ bản dựng hợp lệ; góp ý thẩm mỹ không chặn hoàn thành video.", RENDER_FAILURE: /render error|\[motion\] (init|draw) failed/i } as const;

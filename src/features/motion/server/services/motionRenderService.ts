@@ -18,6 +18,8 @@ import { MOTION_VISUAL as VISUAL } from "../../../../constants/motionVisual.js";
 import { renderRemotionVideo, renderRemotionStill } from "./motionRemotionRenderService.js";
 import { validateRemotionSpec } from "../../../../lib/motionRemotion.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
+import { motionRemotionRenderConcurrency } from "../../../../lib/motionRemotionPerformance.js";
+import { MOTION_REMOTION_RENDER } from "../../../../constants/motionRemotionRender.js";
 import { MOTION_SOUND_CONFIG } from "../../../../constants/motionSound.js";
 import * as MR from "../../../../constants/motionRuntime.js";
 import { execFile, spawn } from "child_process";
@@ -450,26 +452,33 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       job.encoder = encoder;
       job.browser = VISUAL.MODES.REMOTION;
       job.framesTotal = totalFrames;
-      job.workers = Math.max(1, Math.min(2, Math.floor(os.freemem() / 1073741824), os.cpus().length));
+      job.workers = motionRemotionRenderConcurrency(os.cpus().length, os.freemem());
       job.status = MotionJobStatus.RENDERING;
       job.stage = VISUAL.LOG_RENDER;
       pushLog(job, VISUAL.LOG_RENDER);
+      pushLog(job, MOTION_REMOTION_RENDER.START(job.workers, totalFrames));
       if (options.requireAudio) {
         const speech = options.audioId && path.join(getMotionAudioDirectory(), path.basename(options.audioId));
         if (!speech || !fs.existsSync(speech)) throw new Error(PRODUCTION.AUDIO_REQUIRED);
         await assertMotionSpeechAudio(speech, duration, signal);
       }
+      const renderStarted = Date.now();
       await renderRemotionVideo(spec, silent, {
         width,
         height,
         crf: preset.crf,
+        concurrency: job.workers,
         signal,
         onProgress: (frames, total) => {
           job.framesDone = frames;
           job.progress = Math.min(0.94, (frames / total) * 0.94);
+          const seconds = (Date.now() - renderStarted) / 1000;
+          job.fpsRender = seconds > 0 ? frames / seconds : 0;
+          job.etaSeconds = job.fpsRender ? Math.max(0, (total - frames) / job.fpsRender) : undefined;
           persistRenderJob(job);
         },
       });
+      pushLog(job, MOTION_REMOTION_RENDER.COMPLETE((Date.now() - renderStarted) / 1000));
       await validateMotionMedia(silent, { seconds: duration, width, height, fps, frames: totalFrames }, signal);
       job.status = MotionJobStatus.ENCODING;
       job.stage = MOTION_TEXT_MUX;

@@ -31,7 +31,7 @@ const waitForOutput = (value: string) => page.waitForFunction(({ selector, value
 const originalTimeout = CONFIG.MODEL_PICKER_TIMEOUT_MS;
 const originalReadyTimeout = CONFIG.PAGE_READY_TIMEOUT_MS;
 (CONFIG as unknown as { MODEL_PICKER_TIMEOUT_MS: number }).MODEL_PICKER_TIMEOUT_MS = 350;
-(CONFIG as unknown as { PAGE_READY_TIMEOUT_MS: number }).PAGE_READY_TIMEOUT_MS = 600;
+(CONFIG as unknown as { PAGE_READY_TIMEOUT_MS: number }).PAGE_READY_TIMEOUT_MS = 1500;
 const resetPicker = async (mode: string = T.READY, english = false, materialMenu = false) => {
   await page.setContent(F.PICKER_HTML(JSON.stringify(mode), JSON.stringify(GEMINI_CHAT_BASE_MODEL_OPTIONS.slice(0, 4)), JSON.stringify(GEMINI_THINKING_LEVEL_OPTIONS.map((option) => ({ ...option, label: english ? option.labelEn : option.label }))), JSON.stringify(materialMenu), english ? T.THINKING_LEVEL : T.THINKING_LABEL, english ? T.SELECTED : T.DA_CHON));
 };

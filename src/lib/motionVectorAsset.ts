@@ -2,7 +2,7 @@ import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
-import { parseJson } from "./jsonStringify.js";
+import { parseJson, normalizeJsonWhitespace } from "./jsonStringify.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
 import type { MotionVectorAsset } from "../types/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
@@ -61,6 +61,7 @@ export const quoteBareJsonKeys = (text: string): string => {
   return out;
 };
 export const parseRemotionAssetReply = (text: string): unknown => {
+  text = normalizeJsonWhitespace(text);
   const parsed = parseVectorReply(text);
   if (parsed !== undefined) return parsed;
   const candidate = text.replace(/(<\/svg>|\\u003c\/svg>)(?=\s*\}\s*(?:```)?\s*$)/i, RUNTIME_VALUES.VALUE_2093DF4A);
@@ -222,7 +223,15 @@ export const sanitizeMotionCompositionSvg = (svg: string, allowed: Set<string>):
     out += match[0];
   }
   if (!skip) out += text.slice(last);
-  return out.replace(SAN.BAD_ATTRS, "").replace(SAN.BAD_URL_ATTR, "");
+  out = out.replace(SAN.BAD_ATTRS, "").replace(SAN.BAD_URL_ATTR, "");
+  const emptyFilters = new Set<string>();
+  out = out.replace(SAN.FILTER, (whole, attrs: string, body?: string) => {
+    if (body && SAN.FILTER_PRIMITIVE.test(body)) return whole;
+    const id = attrs.match(SAN.ATTR("id"))?.[2];
+    if (id) emptyFilters.add(id);
+    return "";
+  });
+  return out.replace(SAN.FILTER_ATTRIBUTE, (whole, _quote: string, value: string) => (emptyFilters.has(value.match(SAN.FILTER_REFERENCE)?.[1] || "") ? "" : whole));
 };
 export const normalizeMotionVector = (raw: unknown, key: string, inputKey: string, description: string, composition = false): MotionVectorAsset => {
   let svg = typeof raw === "string" ? raw.trim() : "";

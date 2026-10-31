@@ -5,10 +5,7 @@ import path from "node:path";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../src/constants/motionSceneComposition.js";
 import { MOTION_REMOTION_PROMPTS as P } from "../src/constants/motionRemotionPrompts.js";
-import { MOTION_COMPOSITION_EXAMPLES } from "../src/constants/motionCompositionExamples.js";
-import { MOTION_ILLUSTRATION_PROFILES, MOTION_ILLUSTRATION_COMMON } from "../src/constants/motionIllustrationProfiles.js";
-import { MOTION_HISTORY_MAP_CRAFT_EXAMPLE, MOTION_MAP_TIMELINE_CRAFT_EXAMPLE } from "../src/constants/motionCompositionStyleExamples.js";
-import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
+import { MOTION_ILLUSTRATION_PROFILES } from "../src/constants/motionIllustrationProfiles.js";
 import { motionVisualCapability } from "../src/lib/motionVisual.js";
 import { buildRemotionScenes } from "../src/features/motion/server/services/remotion/scenePipeline.js";
 import { remotionStoryBuildCurrent } from "../src/features/motion/server/services/remotion/sceneKeys.js";
@@ -21,16 +18,11 @@ const oldStorage = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = taskRoot;
 const profiles = Object.keys(V.PROFILES) as MotionRemotionProfile[];
 const behavior = { version: 1 as const, actors: "fixed" as const, sceneEffects: "off" as const, camera: "fixed" as const };
-const globalPrompts = [C.PROMPT({}), P.SCENE({})].join("\n");
+const globalPrompts = [P.SCENE({})].join("\n");
 assert.ok(!/coffin|ghost|oil lamp|funeral/i.test(globalPrompts));
 try {
   for (const id of profiles) {
     for (const format of (id === "horror" ? ["illustration"] : id === "history" ? ["illustration", "map", "timeline", "comparison", "process", "cutaway"] : ["illustration", "diagram", "comparison", "process", "cutaway", "map"]) as import("../src/types/motionVisual.js").MotionSceneDesign["format"][]) {
-      const example = MOTION_COMPOSITION_EXAMPLES[id];
-      const svg = example.slice(example.indexOf("<svg"));
-      assert.ok(normalizeMotionVector(svg, id, id, id, true).svg);
-      assert.ok(example.includes("current story"));
-      if (id !== "horror") assert.ok(!/hbBodyPath|ghostMatGlow|coffin/i.test(example));
       const settings = { version: 1 as const, mode: "remotion" as const, engine: "remotion" as const, profileId: id, componentRevision: 1 };
       assert.ok(motionVisualCapability(settings).includes(MOTION_ILLUSTRATION_PROFILES[id].planning));
       const diagram = format !== "illustration";
@@ -91,7 +83,7 @@ try {
         contexts.push(context);
         assert.equal(context.artDirection.id, id);
         assert.equal(context.artDirection.revision, V.PROFILES[id].revision);
-        assert.equal(context.artDirection.grammar, MOTION_ILLUSTRATION_COMMON.GRAMMAR);
+        assert.equal(context.artDirection.grammar, artifact === V.ARTIFACT_SCENE ? undefined : MOTION_ILLUSTRATION_PROFILES[id].grammar);
         if (artifact === V.ARTIFACT_SCENE) {
           assert.equal(context.artDirection.rules, MOTION_ILLUSTRATION_PROFILES[id].planning);
           const lines = puppetBeatLines(script.beats[0]);
@@ -109,9 +101,11 @@ try {
         }
         assert.equal(artifact, C.ARTIFACT);
         assert.equal(context.artDirection.rules, MOTION_ILLUSTRATION_PROFILES[id].drawing);
-        assert.equal(context.artDirection.anatomy, MOTION_ILLUSTRATION_PROFILES[id].anatomy || MOTION_ILLUSTRATION_COMMON.ANATOMY);
+        assert.equal(context.artDirection.anatomy, MOTION_ILLUSTRATION_PROFILES[id].anatomy);
         assert.equal(context.artDirection.motion, MOTION_ILLUSTRATION_PROFILES[id].motion);
-        assert.equal(context.drawingReference, example);
+        assert.equal(context.drawingReference, undefined);
+        assert.equal(context.poseConstruction, undefined);
+        assert.equal(context.artDirection.grammar, MOTION_ILLUSTRATION_PROFILES[id].grammar);
         if (!invalidSent) {
           invalidSent = true;
           return { ...artwork, layers: [] };
@@ -131,7 +125,7 @@ try {
         },
       };
       const built = await buildRemotionScenes(script, analysis, opts);
-      assert.ok(remotionStoryBuildCurrent(built, analysis));
+      assert.ok(remotionStoryBuildCurrent(built, analysis), `${id}/${format}: ${logs.slice(-8).join("; ")}`);
       const scene = built.gen!.remotion!.scenes.beat[0];
       assert.equal(counts[C.ARTIFACT], 2);
       assert.deepEqual(scene.composition!.design, design);
@@ -159,7 +153,7 @@ try {
       }
     }
   }
-  console.log("Illustration profiles: all 3 styles and narrative/map/timeline/comparison/process/cutaway formats across planning/design/drawing/review/repair, distinct safe references, abstract diagrams without people/floor, bounded repair prompts, cache resume and profile revision invalidation passed. No live AI/TTS/video.");
+  process.stdout.write("Illustration profiles: all 3 styles and narrative/map/timeline/comparison/process/cutaway formats across planning/design/drawing/review/repair, text-only shared outlined construction and isolated horror, abstract diagrams without people/floor, bounded repair prompts, cache resume and profile revision invalidation passed. No live AI/TTS/video.\n");
 } finally {
   if (oldStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
   else process.env.VIDIFY_STORAGE_DIR = oldStorage;

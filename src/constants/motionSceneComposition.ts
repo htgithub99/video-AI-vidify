@@ -1,6 +1,7 @@
 import { parseJson, stringifyJson } from "../lib/jsonStringify.js";
 import type { MotionResponseSchema } from "./motionResponseContract.js";
 import { MOTION_SCENE_DESIGN_SCHEMA } from "./motionSceneDesign.js";
+import { motionProfileScenePrompt } from "./motionProfiles/scenePrompts.js";
 const placeholderText = "Cảnh chưa dựng được · Cần tạo lại";
 const repairContext = (input: unknown): unknown => {
   try {
@@ -18,32 +19,10 @@ export const MOTION_SCENE_COMPOSITION = {
   ARTIFACT: "motion_remotion_composition",
   LIMIT: 150000,
   LAYERS: 96,
+  LAYER_DESCRIPTION_LIMIT: 240,
   ANIMATIONS: 96,
   KEYFRAMES: 20,
   MAX_SECONDS: 3600,
-  CONTINUITY_SVG_LIMIT: 24000,
-  IDENTITY_REF: {
-    MAX_PEOPLE: 3,
-    MAX_CHARS: 8000,
-    TOTAL_MAX: 12000,
-    BACK: /\b(?:from behind|back view|seen from the back|back to the viewer|backs? turned)\b|quay lưng|từ phía sau/iu,
-    OPEN: (id: string) => new RegExp(`<g\\b[^<>]*\\bid\\s*=\\s*(["'])${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\1[^<>]*>`),
-    GROUP_TAG: /<(\/?)g\b[^<>]*?(\/?)>/g,
-    GROUP_CLOSE: "</g>",
-    PLACE_MAX: 12000,
-    PLACE_MAX_STRIPPED: 7000,
-    ESTABLISHING_EXCLUDE: ["bust", "detail"] as readonly string[],
-    PLACE_DROP: ["character", "effect"] as readonly string[],
-    PLACE_DROP_MORE: ["prop"] as readonly string[],
-    DECIMAL: /-?\d+\.\d+/g,
-    FINE_LIMIT: 10,
-    HEAD_ID: /<g\b[^<>]*\bid\s*=\s*["']([^"']*head(?!wear|band|dress)[^"']*)["']/i,
-    HEAD_FLAGS: "gi",
-    LITE_ATTRS: /\s(?:stroke-linejoin|stroke-linecap|stroke-miterlimit)\s*=\s*(["'])[^"']*\1/g,
-    STYLE_ATTRS: /\s(?:stroke-linejoin|stroke-linecap|stroke-opacity|stroke-width|stroke-dasharray|stroke)\s*=\s*(["'])[^"']*\1/g,
-    NO_FILL: /<(?:path|circle|ellipse|line|polyline|rect|polygon)\b[^<>]*\bfill\s*=\s*(["'])none\1[^<>]*\/>/g,
-    WRAP: (width: number, height: number, group: string) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}'>${group}</svg>`,
-  },
   SANITIZE: {
     TAG: /<!--[\s\S]*?-->|<(\/?)([\w:-]+)\b((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g,
     USE: /<use\b((?:[^>"']|"[^"]*"|'[^']*')*?)(?:\/>|>\s*<\/use>)/i,
@@ -57,9 +36,12 @@ export const MOTION_SCENE_COMPOSITION = {
     PASSES: 3,
     BAD_ATTRS: /\s(?:on[a-z]+|xmlns:[\w-]+|xlink:[\w-]+|href|src)\s*=\s*(?:"[^"]*"|'[^']*')/gi,
     BAD_URL_ATTR: /\s[\w:-]+\s*=\s*(["'])[^"']*url\(\s*(?!["']?#)[^"']*\1/gi,
+    FILTER: /<filter\b((?:[^>"']|"[^"]*"|'[^']*')*?)(?:\/>|>([\s\S]*?)<\/filter\s*>)/gi,
+    FILTER_PRIMITIVE: /<fe[\w-]+\b/i,
+    FILTER_ATTRIBUTE: /\sfilter\s*=\s*(["'])(.*?)\1/gi,
+    FILTER_REFERENCE: /^\s*url\(\s*["']?#([\w.:-]+)["']?\s*\)\s*$/i,
     LOG: (tags: string[]) => `Hình SVG: tự bỏ/thay thẻ không hỗ trợ (${tags.join(", ")}) thay vì đánh lỗi cảnh.`,
   },
-  TEXT_STRIP: { ELEMENT: /<text\b[^>]*?(?:\/>|>([\s\S]*?)<\/text>)/gi, INNER_TAG: /<[^>]+>/g, WORD: /[\p{L}\p{N}]+/gu, LABEL_KIND: "label" },
   CONTRAST: {
     SPLIT: /[;,:]|\bbut\b|\band\b/iu,
     WORD: /[\p{L}\p{N}-]+/gu,
@@ -70,47 +52,14 @@ export const MOTION_SCENE_COMPOSITION = {
     SKIP: /whenever headgear|same face shape|^\s*fixed hair/iu,
     MIN_WORDS: 2,
   },
-  DETAIL: {
-    PROFILES: ["horror"] as readonly string[],
-    VIEW: "detail",
-    WIDE: "wide",
-    PROP: "prop",
-    BUST: "bust",
-    PLAN: ' NO CLOSE-UP INSERTS IN THIS STYLE: when a hand, token, letter or other small object matters, plan a chest-up shot (view wide, the owner with representation bust) of the person holding or showing it, and write the purpose as "chest-up shot of <person> holding <object> ..."; never write "close on", "insert", "macro" or a crop filled with armor, cloth or texture, and never use representation detail.',
-    LOG: (count: number) => `Lập phân cảnh: đổi ${count} cận cảnh không cần thiết thành trung cảnh để tránh hình mảng vân khó hiểu.`,
-  },
-  BRIEF: {
-    ITEM_CHARS: 180,
-    LOOK_CHARS: 220,
-    STANCE: (posture?: string, support?: string): string => [posture, support && `on ${support}`].filter(Boolean).join(" "),
-    TEXT: (shot: string, items: string[], identity: string[]): string =>
-      [
-        "SCENE BRIEF (read this first; then follow every instruction after it):",
-        `SHOT: ${shot}`,
-        `MUST SHOW, each as its own named group: ${items.join("; ")}.`,
-        identity.length ? `IDENTITY: ${identity.join("; ")}.` : "",
-        "HARD CHECKS BEFORE ANSWERING: every person, animal and object is whole and rests on the ground, its seat or its support (riders sit on their mounts); nobody floats; no letters or words anywhere unless a label node asks for them; only the listed groups plus the background; valid JSON with single-quoted SVG attributes.",
-        "",
-        "",
-      ]
-        .filter((line, index, all) => line || index >= all.length - 2)
-        .join("\n"),
-  },
   CONTINUITY_TEXT_LIMIT: 2400,
-  DRAW_NODE_OMIT: ["slot", "layoutX", "layoutY", "layoutHeight", "layoutDepth", "layoutSocket", "groundTargets"] as readonly string[],
-  GROUND: {
-    FORMAT: "illustration",
-    NONE: "none",
-    CANVAS_RECT: (width: number, height: number) => new RegExp(`<rect\\b(?=[^>]*\\bwidth\\s*=\\s*['"]${width}['"])(?=[^>]*\\bheight\\s*=\\s*['"]${height}['"])(?![^>]*opacity)[^>]*\\/>`),
-    SHAPE: /<(?:path|rect|polygon)\b[^>]*>/g,
-    DRAWN: /<(?:path|rect|circle|ellipse|polygon|polyline|line)\b/,
-    DEFS: /<defs\b[\s\S]*?<\/defs>/g,
-    SEE_THROUGH: /opacity\s*=\s*['"]0?\.\d/,
-    GEOMETRY: /\b(?:d|points)\s*=\s*['"]([^'"]+)['"]/,
-    EDGE: (height: number) => new RegExp(`(?:^|[\\s,A-Za-z])${height}(?![\\d.])`),
-    FILL: /\bfill\s*=\s*['"]([^'"]+)['"]/,
-    RECT: (y: number, width: number, height: number, fill: string) => `<rect x='0' y='${y}' width='${width}' height='${height}' fill='${fill}'/>`,
+  IDENTITY_MEMORY_LIMIT: 8000,
+  IDENTITY_MEMORY: {
+    SEPARATORS: /[;,\n]+|\.\s+/u,
+    DYNAMIC:
+      /\b(?:stand(?:ing|s)?(?![- ]collar)|sit(?:ting|s)?|seated|kneel(?:ing|s)?|lying|lies|reclin(?:ing|es)|sleep(?:ing|s)?|walk(?:ing|s)?|run(?:ning|s)?|lean(?:ing|s)?|bow(?:ing|s|ed)|hold(?:ing|s)?|rais(?:ing|es|ed)|point(?:ing|s)?|speak(?:ing|s)?|listen(?:ing|s)?|fac(?:ing|es)|look(?:ing|s)|arms? (?:down|up|at|by)|hands? (?:on|at|by)|(?:left|right|front|back) (?:of|side)|foreground|middleground|background)\b|(?:^|\s)(?:đứng|ngồi|quỳ|nằm|ngủ|đi bộ|chạy|cúi|nghiêng|cầm|giơ|chỉ tay|đang nói|lắng nghe|quay về|hướng về|bên trái|bên phải|tiền cảnh|trung cảnh|hậu cảnh)(?=\s|$)/iu,
   },
+  DRAW_NODE_OMIT: ["slot", "x", "y", "width", "height", "depth", "layoutX", "layoutY", "layoutHeight", "layoutDepth", "layoutSocket", "groundTargets"] as readonly string[],
   JSON_KEY: { QUOTE: '"', ESCAPE: "\\", OPENER: /[{,]/, BARE: /^(\s*)([A-Za-z_$][\w$]*)(\s*:)/, LOOKAHEAD: 80 },
   GEOMETRY_REVISION: 1,
   GEOMETRY: { COVERAGE: 0.8, EXPECTED_COVERAGE: 0.4, OVERSIZE: 4, CENTER_DISTANCE: 0.5, OUTSIDE_SHARE: 0.9, MAX_MEASUREMENTS: 96 },
@@ -127,14 +76,10 @@ export const MOTION_SCENE_COMPOSITION = {
   GEOMETRY_UNAVAILABLE: "Chưa đo được vùng hình SVG; giữ dữ liệu cảnh để kiểm tra tiếp.",
   GUARD: {
     ATTEMPTS: 1,
-    BOB: 0.007,
     TRAVEL_MIN: 0.008,
     TRAVEL_MAX: 0.05,
     TRAVEL_SECONDS: 5,
     TRANSLATE: /^\s*translate\(\s*(-?[\d.]+(?:e-?\d+)?)(?:[\s,]+(-?[\d.]+(?:e-?\d+)?))?\s*\)\s*$/i,
-    BOB_SECONDS: 3.4,
-    BOB_STEP: 0.35,
-    BOB_VALUE: (y: number) => `translate(0 ${y})`,
     ESCAPED_TAG: /\\u003c/gi,
     SEPARATORS: /[\s,]+/g,
     IDENTITY: "translate(0 0)",
@@ -146,7 +91,9 @@ export const MOTION_SCENE_COMPOSITION = {
     SCALE: /scale\(\s*([-+.\deE]+)(?:[\s,]+([-+.\deE]+))?/,
     SHAPE: "#",
     TRANSLATE_VALUE: (x: number, y: number) => `translate(${x} ${y})`,
-    LOG_MOTION: (id: string, count: number) => `Cảnh ${id}: thêm chuyển động thở nhẹ cho ${count} nhân vật chưa có chuyển động.`,
+    LOG_MOTION: (id: string, count: number) => `Cảnh ${id}: thêm chuyển động nhẹ vào ${count} chi tiết ngực; giữ cố định người và điểm tựa.`,
+    LOG_SUPPORT: (id: string, count: number) => `Cảnh ${id}: bỏ ${count} chuyển động toàn thân làm lệch điểm tựa; giữ hình và tiếp tục.`,
+    LOG_EFFECTS: (id: string, count: number) => `Cảnh ${id}: thêm chuyển động nhẹ cho ${count} nhóm hiệu ứng đã có trong hình.`,
     LOG_ATTACHMENT: (id: string, count: number) => `Cảnh ${id}: giữ tĩnh ${count} chuyển động để đồ vật không rời tay; giữ hình và tiếp tục.`,
   },
   REVIEW_PASSES: 3,
@@ -160,31 +107,12 @@ export const MOTION_SCENE_COMPOSITION = {
   GEOMETRY_ADVISORY: (issues: string[]) => `Góp ý vùng hình: ${issues.join("; ")}. Giữ hình và để duyệt ảnh kiểm tra nội dung chính khi được bật.`,
   ID: /^[A-Za-z_][\w.-]*$/,
   NUMBER: /[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g,
-  FILTER_TAGS: ["filter", "fegaussianblur", "fecolormatrix", "femerge", "femergenode", "feoffset", "feflood", "fecomposite", "feblend", "fecomponenttransfer", "fefunca", "fefuncr", "fefuncg", "fefuncb", "text", "tspan"],
+  FILTER_TAGS: ["filter", "fedropshadow", "fegaussianblur", "fecolormatrix", "femerge", "femergenode", "feoffset", "feflood", "fecomposite", "feblend", "fecomponenttransfer", "fefunca", "fefuncr", "fefuncg", "fefuncb", "text", "tspan"],
   CHANNELS: ["actor", "effect", "speech"],
   MARKUP_TAG: /<([\w:-]+)((?:\s+[\w:-]+\s*=\s*(?:"[^"<]*"|'[^'<]*'))+)(\s*\/?)>/g,
   MARKUP_ATTRIBUTE: /\s+([\w:-]+)\s*=\s*("[^"<]*"|'[^'<]*')/g,
   MARKUP_REPAIR_LIMIT: 32,
   MARKUP_TRAILING_GROUPS: /^(?:\s*<\/g>)*\s*<\/svg>\s*$/,
-  SOFT: {
-    FILTER_ID: "mv_soft_edge",
-    OPACITY_LIMIT: 0.8,
-    SHARE: 0.6,
-    BLUR: 0.012,
-    SHAPE: /<(path|rect|circle|ellipse|polygon|polyline|line)\b[^<>]*>/g,
-    GROUP: /<g\b[^<>]*>/g,
-    GROUP_TAG: /<(\/?)g\b[^<>]*?(\/?)>/g,
-    ANY_TAG: /<(\/?)[\w:-]+\b[^<>]*?(\/?)>/g,
-    GROUP_CLOSE: "</g>",
-    OPACITY: /\b(?:fill-)?opacity\s*=\s*["']\s*([\d.]+)\s*["']/g,
-    NO_FILL: /\bfill\s*=\s*["']none["']/,
-    STROKE_ONLY: ["line", "polyline"] as readonly string[],
-    HAS_FILTER: /\bfilter\s*=/,
-    OPEN: (id: string) => new RegExp(`<g\\b[^<>]*\\bid\\s*=\\s*(["'])${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\1[^<>]*>`),
-    ROOT: /^(<svg\b[^>]*>)/,
-    APPLY: (tag: string, id: string) => tag.replace(/^<g\b/, `<g filter='url(#${id})'`),
-    DEFS: (id: string, deviation: number) => `$1<defs><filter id='${id}' x='-25%' y='-25%' width='150%' height='150%'><feGaussianBlur stdDeviation='${deviation}'/></filter></defs>`,
-  },
   ATTRIBUTES: ["transform", "d", "opacity"],
   KINDS: ["background", "character", "prop", "effect"],
   LOG: "Remotion: AI thiết kế trọn cảnh; giữ nguyên bố cục và các lớp hình AI đã dựng.",
@@ -211,13 +139,7 @@ export const MOTION_SCENE_COMPOSITION = {
   MOTION: "Chuyển động phải có đích hợp lệ, keyframe tăng dần và cùng cấu trúc số; chỉ cho nhân vật có thoại cử động miệng.",
   REPAIR: (context: unknown, draft: unknown, errors: string[]) =>
     `Repair only rejected fields of ONE AI-authored illustration. Return one JSON object in a json code block. Keep accepted artwork, spatial design, support contacts, identities and story facts. Context:\n${stringifyJson(repairContext(context))}\nYou may return groupPatches:[{id,svg}] to replace existing named SVG groups, retaining the group's exact id and all unrelated artwork. Omit svg when using groupPatches or correcting only metadata. If a required group is missing from SVG, draw it in a complete corrected svg or patch an existing parent containing it; changing layers metadata alone cannot create artwork. Do not return an earlier shot in place of the requested scene. When correcting layers/animations, return the COMPLETE corrected list for that array. SVG must be self-contained, with requested viewBox, explicit attributes and local references only; no HTML, scripts, external images, CSS or SMIL. Use single-quoted SVG attributes and plain tag characters inside the JSON string. Animation channels are actor/effect/speech, attributes transform/d/opacity. Opacity values must be numbers in [0,1]. Times start at 0 and increase; path/transform values retain identical command structure; loops end at the exact starting value. Transform deltas use local joints/emitters for scale/rotation; do not move the support contact. Only direct dialogue may have speech motion. Draft: ${stringifyJson(draft)}\nErrors: ${stringifyJson(errors)}`,
-  PROMPT: (
-    context: unknown,
-  ) => `CODING TASK, TEXT ANSWER ONLY: reply with one JSON object inside ONE \`\`\`json fenced code block; its "svg" field is hand-written SVG vector markup. Never call an image-generation, canvas or artifact tool and never return a picture. Inside the svg string write every SVG attribute with single quotes (x='0') so the JSON needs no escaped double quotes, write the tag characters < > / as plain characters (never \\u003c, \\u003e or &lt; escapes), close every opened element with its own closing tag such as </g>, and give every element id a unique value. Write the SVG source code of ONE complete finished 2D scene, like an authored animation scene. You are the art director: decide perspective, composition, anatomy, scale, depth, floor contacts, architecture, furniture, people and object details TOGETHER in one shared coordinate system. The renderer preserves your design exactly; there is no later automatic placement or separate drawing of each object. Follow the selected artDirection for finished illustration or a clear explanatory diagram. Use recognizable connected anatomy where people appear; abstract symbols and simple geometry are valid for diagrams. Avoid accidental crude dolls and unreadable clutter. Keep the scene sparse and readable. Simple static illustrative poses are enough; incidental walking, opening doors or gestures can be shown standing beside the relevant place. Preserve essential stated identity, count, color, object construction and spatial relationships. Story facts override reference artwork: learn its drawing quality without importing unrelated objects. Preserve the recognizable construction and function of each requested object. Physical subjects follow their actual support plane; abstract diagrams need no floor, furniture or compulsory people.
-Return ONE JSON object containing design, svg, layers, animations and continuityNotes, with no commentary. Design and draw together in this response; do not ask for another planning or drawing turn. design is compact {format:illustration|diagram|comparison|map|timeline|process|cutaway,camera:string,palette?:string[],floor?:{horizon,outline:[{x,y}]},placements:[{id,box:{x,y,width,height},depth,supportId?,contact?:{x,y},construction:string}]}. Use normalized full-canvas coordinates and every supplied non-label node ID once. Larger depth paints later. supportId references another placement or floor/wall/ceiling/water. Keep descriptions short. svg is ONE complete self-contained SVG with xmlns and the EXACT requested viewBox, including the selected profile's backdrop and all requested people/props/diagram elements. Draw everything directly, no JavaScript, HTML, URLs, images, foreignObject, CSS classes/style elements or SVG/SMIL animations. Use explicit fill/stroke attributes, groups, paths, local gradients and modest local filters. No UI, LIVE badges, timestamps, logos, subtitles or narration overlays. Requested diagram labels may be drawn as SVG text. Every <g>, defs, gradient and svg must close. Local url(#id) references only.
-layers lists named SVG groups: {id,kind:background|character|prop|effect,entityId?,description?}. Use each supplied visible node id as its main group id, with its exact entityId for people; include every required node once. Detailed props can nest in their supporting furniture group; keep the proper named groups. Draw whole coherent bodies, with head/hair/neck/torso connected. Retain each subject's requested identity, clothing color, hair and expression; follow context.staging for who is foreground, mid-ground or background. context.continuity.placeSvg (when present) is a simplified skeleton of this same location as already drawn (sky, terrain, horizon, buildings and large fixed objects, no people): keep that architecture, terrain, horizon and palette consistent while choosing your own camera framing and crop. context.identityReferences holds SVG groups of recurring named people exactly as they were already drawn earlier in this video: keep their head, hair, headgear, clothing colors, armor and accessories identical (re-pose, re-scale and re-position them freely; never copy their old position or the old scene). identityContrast (when present) lists people in this scene who wear similar clothing and the traits that tell them apart: draw each person with exactly their own listed traits and never give one person's trait (a crest, plume, beard, scarf, earring, color) to another; if an identityReference disagrees with identityContrast or the cast look, identityContrast and the cast look win. Every standing, kneeling, sitting or lying person has legs or folded legs touching the ground or the supporting object; nobody floats or ends at the waist unless the frame edge crops them. Never draw letters, words, numbers or inscriptions on objects, armor, banners or signs; only supplied label nodes may become text. A detail view shows the object held in a hand or resting on a recognizable surface with the hand or surface visible, the object filling at most half the frame; never fill the frame with a repeating texture such as scales, mail, cloth or bricks. Write every shape directly: no use, symbol, image, style, foreignObject, external links or xlink attributes. Unnamed people wear the era-correct look of their group in context.groups when one matches their side or role. If context.previousShot has the same view and the same main subject as this scene, choose a clearly different camera distance, angle or staging (over the shoulder, low angle, three-quarter view, two people turned toward each other or toward the action) while keeping identities and place. Draw source-supported labels/arrows only when appropriate to this profile; do not invent names, dates or causal claims. No character should have an open mouth at rest unless artDirection defines a fixed mask mouth. When artDirection defines a stylized puppet construction, follow it over the generic anatomy wording here. Preserve continuity references: recurring faces, clothes, architecture, furniture positions and perspective; crop/framing changes must preserve that world. The continuity reference fixes identities, costumes and the place, never the composition: do not copy its framing, layout or character positions. Reference SVG is a continuity source, not a request to copy its shot when the narration changes.
-Your design describes the actual SVG you draw in this same response. If repairing an accepted scene, preserve its supplied design except the rejected fields. For a diagram, use its hierarchy/relative positions and omit physical ground constraints when not relevant. Convert its normalized coordinates to SVG canvas units and follow its camera, floor, silhouette boxes, paint depths and support/contact points. For physical scenes draw support surfaces at the actual contact and keep reclining bodies in that support perspective. Where people appear, connect head/neck/shoulders and hands/sleeves. Do not turn this layout into a collection of boxes: build recognizable curved silhouettes and objects with visible top/front/side construction. The static frame must work before animation. For any scale or rotation, use a local joint/emitter group so the animation cannot move the whole subject away from its support. In repairOnly mode preserve accepted groups; return groupPatches:[{id,svg}] for only the groups that must change, with complete layers/animations arrays only if those arrays change. The code merges the patches into the accepted SVG and never repositions subjects itself.
-Include simple actor and effect animations in this same response for the enabled renderBehavior channels when suitable; never defer them to a later request. The renderer applies the playback toggles independently: actors=fixed means no actor or speech tracks; sceneEffects=off means no effect tracks. Never enable movement from the style alone or bake camera movement into the SVG; code handles camera according to renderBehavior.camera. animations may be [] for scenes with no suitable motion. For ambient motion add subtle smoke/flame/rain/fog at the actual source. Never loop a character or group translation back and forth to fake walking, running or charging: draw the stride or charge pose and give it at most one one-way actor track without period (translate(0 0) at 0 s to translate(±20 0) at 5 s); a formation or crowd never bobs as one block. Each entry is {target:SVG id,channel:actor|effect|speech,attribute:transform|d|opacity,period?:seconds,keyframes:[{at:seconds,value:string|number}]}. target is a named SVG element inside the matching layer. Frames start at 0, times increase, values use identical path/transform command structure. Opacity keyframe values must be numbers from 0 to 1 inclusive. Use explicit translate/rotate/scale transform values as DELTAS appended to the target's original transform, starting at identity. Translate distances use SVG viewBox units; scale values are unitless ratios near 1, never pixel values; rotation uses degrees around the local joint. A looping animation must end with the EXACT same value as its first frame, with last at <= period. Keep actor motion minimal; fixed feet/floor contacts. Add speech ONLY on a mouth path element inside a visible speaking character, first frame closed, with subtle open/closed path keyframes and period about 0.45 seconds; the renderer gates it to real dialogue timing. Never animate a narrator's mouth. Animations should be original to the scene and physically plausible; omit complex gestures if they cannot be drawn cleanly. All subjects must remain inside the requested safe frame. Include continuityNotes (max 2400 characters): succinct recurring face/clothing palette, room geometry and furniture positions in your drawing. Keep SVG under 150000 characters; sufficient deliberate paths for readable faces, hands, clothing and object construction where present; clear hierarchy and legible labels for diagrams. Context:\n${stringifyJson(context)}\nFINAL REMINDER: this is a text coding task. Answer only with the \`\`\`json code block containing the SVG markup as text. Do not create, generate or attach an image.`,
+  PROMPT: motionProfileScenePrompt,
 } as const;
 const text: MotionResponseSchema = { type: "string", minLength: 1 };
 export const MOTION_COMPOSITION_SCHEMA: MotionResponseSchema = {
@@ -226,7 +148,16 @@ export const MOTION_COMPOSITION_SCHEMA: MotionResponseSchema = {
     svg: text,
     design: MOTION_SCENE_DESIGN_SCHEMA,
     continuityNotes: { type: "string", maxLength: MOTION_SCENE_COMPOSITION.CONTINUITY_TEXT_LIMIT },
-    layers: { type: "array", minItems: 1, maxItems: MOTION_SCENE_COMPOSITION.LAYERS, items: { type: "object", properties: { id: text, kind: { type: "string", enum: MOTION_SCENE_COMPOSITION.KINDS }, entityId: text, description: text }, required: ["id", "kind"] } },
+    layers: {
+      type: "array",
+      minItems: 1,
+      maxItems: MOTION_SCENE_COMPOSITION.LAYERS,
+      items: {
+        type: "object",
+        properties: { id: text, kind: { type: "string", enum: MOTION_SCENE_COMPOSITION.KINDS }, entityId: text, anonymous: { type: "boolean" }, description: text, appearance: { type: "string", maxLength: MOTION_SCENE_COMPOSITION.LAYER_DESCRIPTION_LIMIT }, effectKind: { type: "string", enum: ["rain", "smoke", "steam", "flame", "fog", "sway", "highlight"] }, sourceId: text },
+        required: ["id", "kind"],
+      },
+    },
     animations: {
       type: "array",
       maxItems: MOTION_SCENE_COMPOSITION.ANIMATIONS,

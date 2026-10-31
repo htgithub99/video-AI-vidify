@@ -175,7 +175,7 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   "motion-audio-casting": object({ audioDirection: object(texts("mode", "narrationStyle", "soundStyle")), roles: array(object({ ...texts("speaker", "voiceId"), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["speaker", "voiceId"]), 1) }),
   "motion-puppet-storyboard": object({ units: array(object({ id: text, from: object({ line: integer, cue: text, occurrence: integer }, ["line"]), ...texts("scene", "show"), purpose: choice("establish", "action", "clue", "reaction", "explanation", "transition"), read: { ...read, required: read.required!.filter((key) => key !== "i") } }, ["from", "scene", "purpose", "show"]), 1) }),
   "motion-puppet-read": object({ lines: array(read, 1) }),
-  "motion-puppet-compose": object({ frames: array(object({ i: integer, shot: text, form: text, anchor: nullable(text), actors: array(object(texts("char", "spot", "pose", "expr", "face"))), camera: object({ move: text }), shot2: nullable(object({})) }, ["i", "shot", "actors"]), 1) }),
+  "motion-puppet-compose": object({ frames: array(object({ i: integer, shot: text, form: text, anchor: nullable(text), actors: array(object(texts("char", "spot", "pose", "expr", "face"))), camera: object({ move: text, subject: text }, ["move"]), shot2: nullable(object({})) }, ["i", "shot", "actors"]), 1) }),
   "motion-puppet-qa": object({ checks: array(object({ i: integer, ok: boolean, category: choice(...Q.REVIEW_CATEGORIES), evidence: plainText, problem: plainText, fix: plainText, replan: boolean }, ["i", "ok"])) }),
   "motion-sound-direction": object({
     beats: array(

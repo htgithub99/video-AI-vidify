@@ -1060,17 +1060,23 @@ import { musicPlanReporter } from "../../features/music/server/services/musicPla
 import { reviewMusicSongBatch } from "../../features/music/server/services/musicSongReviewService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
 import { RUNTIME_TEXT as RT_MUSIC } from "../../features/music/constants/runtimeText.js";
+import { MUSIC_DOWNLOAD_RECOVERY as MUSIC_RECOVERY } from "../../features/music/constants/musicDownloadRecovery.js";
+import { prepareMusicEvaluationRoom } from "../../features/music/server/services/musicEvaluationRoomService.js";
 import {
   createMusicDownloadCheckpointKey,
   createMusicEvaluationAudioCacheKey,
   deleteMusicDownloadCheckpoint,
   deleteMusicEvaluationAudio,
+  deleteMusicEvaluationCheckpoint,
+  getMusicEvaluationChunkSelections,
   readMusicDownloadCheckpoint,
   readMusicEvaluationAudio,
+  readMusicEvaluationCheckpoint,
   readMusicEvaluationWav,
   writeMusicDownloadCheckpoint,
   writeMusicEvaluationAudio,
   writeMusicEvaluationWav,
+  saveMusicEvaluationSelections,
   type MusicDownloadCheckpoint,
   type MusicDownloadSelection,
 } from "../../features/music/server/services/musicDownloadCheckpointService.js";
@@ -2295,7 +2301,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       throw createAppError(SUNO_AUTOMATION_TEXTS.DOWNLOAD_FOLDER_INVALID_ERR);
     }
     const downloadFolder = path.resolve(requestedFolder);
-    const checkpointKey = createMusicDownloadCheckpointKey(_.toString(req.body?.playlistUrl), candidateIds, _.toString(req.body?.style), _.toString(req.body?.aiExecution?.model));
+    const checkpointKey = createMusicDownloadCheckpointKey(_.toString(req.body?.playlistUrl), candidateIds, _.toString(req.body?.style), _.toString(req.body?.aiExecution?.model), req.body?.styleAnalysis);
     const finishCuratedDownload = async (checkpoint: MusicDownloadCheckpoint): Promise<Response> => {
       report.progress({ phase: RT_SERVER.EXPORTING, expected: checkpoint.selectedTracks.length, message: RT_SERVER.DANG_CHUAN_BI_VA_XUAT_AM_THANH_GOC });
       if (checkpoint.folderPath !== downloadFolder || checkpoint.format !== downloadFormat) {
@@ -2345,6 +2351,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       });
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_REQUEST_COMPLETED, { evaluationRunId, expectedDownloadCount: checkpoint.selectedTracks.length, downloadedCount: downloadedPaths.length, curatedTracks, success: true });
       await deleteMusicDownloadCheckpoint(checkpoint.key);
+      await deleteMusicEvaluationCheckpoint(checkpoint.key);
       await deleteMusicEvaluationAudio(audioCacheKey).catch(() => undefined);
       await deleteMusicEvaluationAudio(checkpoint.key).catch(() => undefined);
       return report.finish({ success: true, downloadedPaths, curatedTracks, downloadedTracks: curatedTracks });
@@ -2368,24 +2375,34 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       evaluationWorkerIds = _.map(pairChunks, (_pairChunk, chunkIndex) => SOURCE_TEMPLATE_CHUNK(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.TRACK_EVALUATION_WORKER_ID}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkIndex + 1}`)));
       await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_TRACKS_READY, { evaluationRunId, trackCount: tracks.length, songCount: trackPairs.length, chunkCount: pairChunks.length });
       const groupsByChunk = _.map(pairChunks, (pairChunk) => _.map(pairChunk, (pair) => ({ title: _.trim(pair[0].title.replace(SUNO_AUTOMATION_PATTERNS.TRACK_VARIANT_SUFFIX, C.EMPTY)), candidates: _.map(pair, SOURCE_TEXT_SONGID) })));
-      await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_PREPARATION_STARTED, { evaluationRunId, chunkCount: groupsByChunk.length, trackCount: tracks.length });
-      report.progress({ phase: RT_SERVER.PREPARING, expected: tracks.length, ready: 0, message: RT_MUSIC.PREPARING_ALL_AUDIO });
+      const savedEvaluation = await readMusicEvaluationCheckpoint(checkpointKey, candidateIds);
+      const cachedTrackChunks = groupsByChunk.map((groups) => getMusicEvaluationChunkSelections(groups, savedEvaluation));
+      const pendingGroupsByChunk = groupsByChunk.filter((_groups, index) => !cachedTrackChunks[index]);
+      const pendingTrackCount = _.sumBy(pendingGroupsByChunk, (groups) => _.sumBy(groups, (group) => group.candidates.length));
+      await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_PREPARATION_STARTED, { evaluationRunId, chunkCount: pendingGroupsByChunk.length, trackCount: pendingTrackCount });
+      report.progress({ phase: RT_SERVER.PREPARING, expected: pendingTrackCount, ready: 0, message: pendingTrackCount ? RT_MUSIC.PREPARING_ALL_AUDIO : MUSIC_RECOVERY.ALL_SELECTIONS_READY });
       const preparationStarted = Date.now();
       const evaluationAudio = await downloadSunoEvaluationAudio(
-        _.flatMap(groupsByChunk, (groups) => _.flatMap(groups, SOURCE_TEXT_CANDIDATES)),
+        _.flatMap(pendingGroupsByChunk, (groups) => _.flatMap(groups, SOURCE_TEXT_CANDIDATES)),
         audioCacheKey,
         planningRun.signal,
         true,
-        (ready) => report.progress({ phase: RT_SERVER.PREPARING, expected: tracks.length, ready, message: RT_MUSIC.PREPARING_ALL_AUDIO }),
+        (ready) => report.progress({ phase: RT_SERVER.PREPARING, expected: pendingTrackCount, ready, message: RT_MUSIC.PREPARING_ALL_AUDIO }),
       );
       planningRun.signal.throwIfAborted();
       await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_READY, { evaluationRunId, trackCount: evaluationAudio.size, elapsedMs: Date.now() - preparationStarted });
-      report.progress({ phase: RT_SERVER.PREPARING, expected: tracks.length, ready: evaluationAudio.size, message: RT_MUSIC.ALL_AUDIO_READY });
+      report.progress({ phase: RT_SERVER.PREPARING, expected: pendingTrackCount, ready: evaluationAudio.size, message: pendingTrackCount ? RT_MUSIC.ALL_AUDIO_READY : MUSIC_RECOVERY.ALL_SELECTIONS_READY });
       const evaluationSlots = new AsyncTaskLimiter(SUNO_AUTOMATION_CONFIG.EVALUATION_ROOM_CONCURRENCY);
       const evaluationResults = await Promise.allSettled(
         _.map(groupsByChunk, async (groups, chunkIndex) => {
           const roomProgress = (progress: Omit<MusicDownloadProgress, "room" | "rooms">) => report.progress({ ...progress, room: chunkIndex + 1, rooms: groupsByChunk.length });
           const expected = _.sumBy(groups, (group) => group.candidates.length);
+          const cachedTracks = cachedTrackChunks[chunkIndex];
+          if (cachedTracks) {
+            roomProgress({ phase: RT_SHARED.EVALUATED, expected, message: MUSIC_RECOVERY.SELECTION_RESUMED });
+            await writeSunoCuratedLog(MUSIC_RECOVERY.SELECTION_RESUMED_EVENT, { evaluationRunId, chunk: chunkIndex + 1, selectedTrackCount: cachedTracks.length });
+            return cachedTracks;
+          }
           roomProgress({ phase: RT_SHARED.QUEUED, expected, message: RT_SERVER.DANG_CHO_LUOT_MO_PHONG_DANH_GIA });
           const releaseEvaluation = await evaluationSlots.acquire(planningRun.signal);
           let evaluationStarted = false;
@@ -2393,11 +2410,19 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
           try {
             planningRun.signal.throwIfAborted();
             roomProgress({ phase: RT_SERVER.PREPARING, expected, message: RT_MUSIC.OPENING_EVALUATION_ROOM });
-            await prepareChatPlanningRoom({ provider: AiPlanningFallbackProvider.GeminiChat, model: req.body?.aiExecution?.model, prompt: C.EMPTY, projectId: evaluationProjectId, workerId: evaluationWorkerIds[chunkIndex], chromeHeadless: false, signal: planningRun.signal, allowDefaultGeminiModel: true, onUploadProgress: (progress) => roomProgress({ ...progress, expected }) });
+            await prepareMusicEvaluationRoom(
+              { provider: AiPlanningFallbackProvider.GeminiChat, model: req.body?.aiExecution?.model, prompt: C.EMPTY, projectId: evaluationProjectId, workerId: evaluationWorkerIds[chunkIndex], chromeHeadless: false, signal: planningRun.signal, allowDefaultGeminiModel: true, onUploadProgress: (progress) => roomProgress({ ...progress, expected }) },
+              async (error, attempt) => {
+                roomProgress({ phase: MUSIC_RECOVERY.RETRY_PHASE, expected, attempt, message: MUSIC_RECOVERY.ROOM_RETRY });
+                await writeSunoCuratedLog(MUSIC_RECOVERY.ROOM_RETRY_EVENT, { evaluationRunId, chunk: chunkIndex + 1, attempt, ...musicErrorDetails(error) });
+              },
+            );
             await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_ROOM_READY, { evaluationRunId, chunk: chunkIndex + 1, workerId: evaluationWorkerIds[chunkIndex] });
             await writeSunoCuratedLog(SUNO_AUTOMATION_CONFIG.EVENT_CHUNK_EVAL_STARTED, { evaluationRunId, chunk: chunkIndex + 1, songs: groups.length, candidateTracks: expected });
             evaluationStarted = true;
             selectedTracks = await selectProfessionalSunoTracks(groups, _.trim(_.toString(req.body?.style)), { projectId: evaluationProjectId, workerId: evaluationWorkerIds[chunkIndex], model: req.body?.aiExecution?.model, signal: planningRun.signal, onUploadProgress: roomProgress }, evaluationAudio, req.body?.styleAnalysis);
+            await saveMusicEvaluationSelections(checkpointKey, candidateIds, selectedTracks);
+            await writeSunoCuratedLog(MUSIC_RECOVERY.SELECTION_SAVED_EVENT, { evaluationRunId, chunk: chunkIndex + 1, selectedTrackCount: selectedTracks.length });
           } catch (error) {
             roomProgress({ phase: RT_SHARED.EVALUATION_FAILED, expected, message: error instanceof Error ? error.message : String(error) });
             if (!evaluationStarted) await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_ROOM_FAILED, { evaluationRunId, chunk: chunkIndex + 1, ...musicErrorDetails(error) });

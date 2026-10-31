@@ -3,9 +3,8 @@ import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
-import { compositionElements, validateSceneComposition } from "./motionSceneComposition.js";
-import { motionAnonymousLayer } from "./motionActorTracks.js";
-import type { MotionRemotionNode, MotionRenderBehavior, MotionSceneAnimation, MotionSceneComposition, MotionVectorAsset } from "../types/motionVisual.js";
+import { compositionElements } from "./motionSceneComposition.js";
+import type { MotionRemotionNode, MotionSceneAnimation, MotionSceneComposition, MotionVectorAsset } from "../types/motionVisual.js";
 export const compositionMissingNodes = (composition: MotionSceneComposition, nodes: MotionRemotionNode[]): string[] => nodes.filter((node) => node.kind !== RT_SHARED.LABEL && !composition.layers.some((layer) => layer.id === node.id)).map((node) => node.id);
 export const compositionAttachedMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[]) => {
   const elements = compositionElements(asset.svg);
@@ -20,53 +19,6 @@ export const compositionAttachedMotion = (composition: MotionSceneComposition, a
     });
   });
   return { composition: animations.length === composition.animations.length ? composition : { ...composition, animations }, removed: composition.animations.length - animations.length };
-};
-export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior?: MotionRenderBehavior): { composition: MotionSceneComposition; added: number } => {
-  if (behavior?.actors !== RT_SHARED.SIMPLE || !asset) return { composition, added: 0 };
-  const elements = compositionElements(asset.svg);
-  const characters = composition.layers.filter(
-    (layer) =>
-      layer.kind === RT_SHARED.CHARACTER && !motionAnonymousLayer(layer) && !nodes.some((node) => node.id === layer.id && node.representation === RUNTIME_VALUES.DETAIL_9C0211C5) && !nodes.some((node) => node.relation === RUNTIME_VALUES.HELDBY_F9249A57 && (node.target === layer.id || (!!layer.entityId && node.target === layer.entityId)) && !elements.get(node.id)?.ancestors.includes(layer.id)),
-  );
-  const moving = new Set<string>();
-  for (const animation of composition.animations) {
-    if (animation.channel !== RT_CORE.ACTOR) continue;
-    const ancestors = [animation.target, ...(elements.get(animation.target)?.ancestors || [])];
-    for (const layer of characters) if (ancestors.includes(layer.id)) moving.add(layer.id);
-  }
-  const taken = new Set(composition.animations.map((animation) => `${animation.target}${RT_SHARED.SYMBOL_E7AC07}${animation.attribute}`));
-  const extra: MotionSceneAnimation[] = [];
-  let added = 0;
-  characters
-    .filter((layer) => !moving.has(layer.id))
-    .forEach((layer, index) => {
-      const period = Number((C.GUARD.BOB_SECONDS + index * C.GUARD.BOB_STEP).toFixed(2));
-      const lift = Number((-asset.height * C.GUARD.BOB).toFixed(2));
-      const tracks: MotionSceneAnimation[] = [];
-      if (!taken.has(`${layer.id}${RT_SHARED.SYMBOL_E7AC07}${RT_CORE.TRANSFORM}`))
-        tracks.push({
-          target: layer.id,
-          channel: RT_CORE.ACTOR,
-          attribute: RT_CORE.TRANSFORM,
-          period,
-          keyframes: [
-            { at: 0, value: C.GUARD.BOB_VALUE(0) },
-            { at: period / 2, value: C.GUARD.BOB_VALUE(lift) },
-            { at: period, value: C.GUARD.BOB_VALUE(0) },
-          ],
-        });
-      const accepted = tracks.filter((track) => {
-        try {
-          validateSceneComposition({ ...composition, unchecked: true, animations: [...composition.animations, ...extra, track] }, asset, nodes, cast);
-          return true;
-        } catch {
-          return false;
-        }
-      });
-      if (accepted.length) added++;
-      extra.push(...accepted);
-    });
-  return extra.length ? { composition: { ...composition, animations: [...composition.animations, ...extra] }, added } : { composition, added: 0 };
 };
 const compositionClosingTags = (svg: string): string => {
   if (svg.includes(C.GUARD.CLOSE_MARK)) return svg;

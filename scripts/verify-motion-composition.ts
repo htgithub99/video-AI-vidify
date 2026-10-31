@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { MOTION_SCENE_COMPOSITION as C } from "../src/constants/motionSceneComposition.js";
 import { normalizeMotionSceneDesign } from "../src/lib/motionSceneDesign.js";
+import { motionIllustrationDirection } from "../src/lib/motionIllustrationProfile.js";
 import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { normalizeSceneComposition, compositionFrameSvg, mergeSceneCompositionDraft, validateSceneComposition } from "../src/lib/motionSceneComposition.js";
 import { normalizeMotionVector } from "../src/lib/motionVectorAsset.js";
@@ -83,19 +84,16 @@ try {
   assert.ok(normalizeSceneComposition(illustration(), "art", "input", "room", [node, { id: "smoke", kind: "prop", description: "incense smoke" } as any], new Set(["uncle"]), 1280, 720));
   assert.equal(mergeSceneCompositionDraft(illustration(), { layers: [] }).svg, illustration().svg);
   assert.deepEqual(mergeSceneCompositionDraft(illustration(), { animations: [] }).animations, []);
-  const repairPrompt = C.REPAIR(C.PROMPT({ design: design(), scene: { text: "Keep this story fact" }, drawingReference: "UNNEEDED_REFERENCE", continuity: { svg: "UNNEEDED_PREVIOUS_SVG" } }), illustration(), ["Fix opacity"]);
+  const repairPrompt = C.REPAIR(C.PROMPT({ artDirection: motionIllustrationDirection("horror", "drawing"), design: design(), scene: { text: "Keep this story fact" }, drawingReference: "UNNEEDED_REFERENCE", continuity: { svg: "UNNEEDED_PREVIOUS_SVG" } }), illustration(), ["Fix opacity"]);
   assert.ok(repairPrompt.includes("Keep this story fact"));
   assert.ok(repairPrompt.includes(JSON.stringify(design())));
   assert.ok(!repairPrompt.includes("UNNEEDED_REFERENCE"));
   assert.ok(!repairPrompt.includes("UNNEEDED_PREVIOUS_SVG"));
   assert.deepEqual(normalizeMotionSceneDesign(design(), [node]), design());
-  for (const invalid of [
-    { ...design(), placements: [] },
-    { ...design(), placements: [{ ...design().placements[0], supportId: "missing" }] },
-    { ...design(), placements: [{ ...design().placements[0], supportId: "person" }] },
-    { ...design(), placements: [{ ...design().placements[0], box: { x: 0, y: 0, width: Infinity, height: 1 } }] },
-  ])
-    assert.throws(() => normalizeMotionSceneDesign(invalid, [node]));
+  for (const invalid of [null, []]) assert.throws(() => normalizeMotionSceneDesign(invalid, [node]));
+  assert.deepEqual(normalizeMotionSceneDesign({ camera: "wide" }, [node]).placements, []);
+  assert.deepEqual(normalizeMotionSceneDesign({ ...design(), placements: [{ ...design().placements[0], box: { x: 0, y: 0, width: Infinity, height: 1 } }] }, [node]).placements, []);
+  for (const supportId of ["missing", "person"]) assert.equal(normalizeMotionSceneDesign({ ...design(), placements: [{ ...design().placements[0], supportId }] }, [node]).placements[0].supportId, undefined, "Invalid support metadata is dropped without rejecting otherwise valid artwork");
   const replacement = '<g id="person"><path id="mouth" d="M0 0L1 1"/></g>';
   const patchedSvg = mergeSceneCompositionDraft(illustration(), { groupPatches: [{ id: "person", svg: replacement }] }).svg as string;
   assert.ok(patchedSvg.includes(replacement));
@@ -106,7 +104,6 @@ try {
     [{ id: "absent", svg: replacement }],
     [{ id: "person", svg: '<g id="another"/>' }],
     [{ id: "person", svg: replacement + '<g id="extra"/>' }],
-    [{ id: "person", svg: '<g id="person" onload="alert(1)"/>' }],
     [
       { id: "person", svg: replacement },
       { id: "person", svg: replacement },
@@ -114,6 +111,7 @@ try {
     [{ id: "person", svg: '<g id="person"><g id="room"/></g>' }],
   ])
     assert.throws(() => mergeSceneCompositionDraft(illustration(), { groupPatches }));
+  assert.ok(!String(mergeSceneCompositionDraft(illustration(), { groupPatches: [{ id: "person", svg: '<g id="person" onload="alert(1)"/>' }] }).svg).includes("onload="), "Safe local sanitization must be retained in the merged SVG");
   assert.throws(() =>
     mergeSceneCompositionDraft(
       { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720"><g id="parent"><g id="child"/></g></svg>' },
@@ -133,10 +131,11 @@ try {
   assert.ok(talking.includes('id="mouth" d="M10 20Q20 24 30 20"'));
   const fixed = compositionFrameSvg(built.asset, built.composition, 4, { ...behavior, actors: "fixed" }, new Set(["uncle"]));
   assert.ok(fixed.includes('transform="translate(400 200)"'));
-  assert.ok(fixed.includes('d="M600 300Q610 250 600 200"'));
+  assert.equal(fixed, built.asset.svg, "Scene motion off also freezes smoke and speech");
   assert.equal(compositionFrameSvg(built.asset, built.composition, 4, { ...behavior, actors: "fixed", sceneEffects: "off" }, new Set()), built.asset.svg);
   assert.ok(compositionFrameSvg(built.asset, built.composition, 4, behavior, new Set()).includes('transform="translate(400 200) translate(0 -1)"'));
-  for (const badSvg of [built.asset.svg.replace('<g id="room">', '<g id="room" onload="alert(1)">'), built.asset.svg.replace("</svg>", "<script>alert(1)</script></svg>"), built.asset.svg.replace("</svg>", '<image href="https://example.com/x.png"/></svg>')]) assert.throws(() => normalizeSceneComposition({ ...illustration(), svg: badSvg }, "bad", "bad", "", [node], new Set(["uncle"]), 1280, 720));
+  for (const badSvg of [built.asset.svg.replace('<g id="room">', '<g id="room" onload="alert(1)">'), built.asset.svg.replace("</svg>", "<script>alert(1)</script></svg>"), built.asset.svg.replace("</svg>", '<image href="https://example.com/x.png"/></svg>')])
+    assert.ok(!/onload=|<script\b|<image\b/.test(normalizeSceneComposition({ ...illustration(), svg: badSvg }, "bad", "bad", "", [node], new Set(["uncle"]), 1280, 720).asset.svg));
   assert.throws(() => normalizeSceneComposition({ ...illustration(), layers: [{ id: "room", kind: "background" }] }, "bad", "bad", "", [node], new Set(["uncle"]), 1280, 720));
   assert.throws(() => normalizeSceneComposition(illustration(), "bad", "bad", "", [node], new Set(["uncle"]), 720, 1280));
   assert.throws(() => normalizeSceneComposition({ ...illustration(), animations: [{ ...illustration().animations[0], target: "absent" }] }, "bad", "bad", "", [node], new Set(["uncle"]), 1280, 720));
@@ -190,7 +189,7 @@ try {
   assert.equal(calls["motion_remotion_design"], undefined);
   assert.equal(generated.gen!.remotion!.scenes.beat.length, 1);
   assert.ok(remotionSceneReadiness(generated.gen!.remotion!.scenes.beat[0], generated.gen!.remotion).preview);
-  const progress = remotionSceneProgress({ ...generated, beats: [...generated.beats, { ...script.beats[0], id: "future", place: "outside" }] }, true);
+  const progress = remotionSceneProgress({ ...generated, beats: [...generated.beats, { ...script.beats[0], id: "future", chapterId: "future-chapter", place: "outside" }] }, true);
   assert.equal(progress.ready, 1);
   assert.equal(progress.total, 2);
   assert.equal(progress.entries[1].status, "waiting");
@@ -246,7 +245,7 @@ try {
     },
   });
   assert.equal(designAttempts, 1);
-  assert.equal(patchedDesign.gen!.remotion!.scenes.beat[0].composition!.design, undefined);
+  assert.equal(patchedDesign.gen!.remotion!.scenes.beat[0].composition!.design?.camera, "", "Malformed optional camera metadata is normalized without another drawing request");
   let reviews = 0;
   const reviewed = await buildRemotionScenes(generated, analysis, {
     ...opts,
@@ -269,7 +268,7 @@ try {
     ...script,
     beats: [
       { ...script.beats[0], id: "bad" },
-      { ...script.beats[0], id: "good", place: "outside" },
+      { ...script.beats[0], id: "good", chapterId: "other-chapter", place: "outside" },
     ],
   };
   let multiPartial: any;

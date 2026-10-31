@@ -52,6 +52,7 @@ export interface MotionRemotionNode {
   kind: "character" | "prop" | "label";
   entityId?: string;
   anonymous?: boolean;
+  crowd?: { groupKey?: string; faction?: string; appearance?: string; depth: "foreground" | "midground" | "background"; rows?: number; facing?: string; count?: number };
   description: string;
   pose: string;
   posture?: string;
@@ -82,6 +83,7 @@ export interface MotionRemotionNode {
   groundTargets?: string[];
 }
 export interface MotionRemotionScene {
+  format?: MotionSceneDesign["format"];
   id: string;
   beatId: string;
   sourceBeatIds?: string[];
@@ -122,6 +124,9 @@ export interface MotionSceneLayer {
   entityId?: string;
   anonymous?: boolean;
   description?: string;
+  appearance?: string;
+  effectKind?: MotionRemotionEffect["kind"] | "highlight" | "wind" | "water";
+  sourceId?: string;
 }
 export interface MotionSceneAnimation {
   target: string;
@@ -131,6 +136,8 @@ export interface MotionSceneAnimation {
   keyframes: { at: number; value: string | number }[];
 }
 export interface MotionSceneComposition {
+  profileId?: MotionRemotionProfile;
+  profileRevision?: number;
   unchecked?: boolean;
   geometryRevision?: number;
   revision: number;
@@ -144,6 +151,7 @@ export interface MotionSceneComposition {
 export interface MotionSceneDesign {
   format?: "illustration" | "diagram" | "comparison" | "map" | "timeline" | "process" | "cutaway";
   camera: string;
+  cameraMotion?: { mode: "follow" | "push" | "pull" | "hold"; subjectId?: string; focus?: { x: number; y: number } };
   palette?: string[];
   floor?: { horizon: number; outline: { x: number; y: number }[] };
   placements: { id: string; box: { x: number; y: number; width: number; height: number }; depth: number; supportId?: string; contact?: { x: number; y: number }; construction: string }[];

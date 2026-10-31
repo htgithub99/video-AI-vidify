@@ -1447,7 +1447,22 @@
     target.clearRect(0, 0, W, H);
     drawFrameContent(target, Object.assign({}, ctx, { ox: 0 }), S, F, t);
     const move = F.camera && F.camera.move;
-    const camera = ME.cameraFrame({ enabled: true, seconds: t, start: F.visualStart ?? F.start, end: F.visualEnd ?? F.end, width: W, height: H, seed: String(F.id ?? F.visualStart ?? F.start ?? 0), mode: K.CAMERA_MODES[move], protectedRects: S.cameraRects });
+    const subject = F.camera && F.camera.subject;
+    const focus = subject && (S.emitters[subject] || S.targets[subject]);
+    let origin = focus;
+    if (focus && move === K.CAMERA_MODES.follow) {
+      const origins = S.cameraOrigins || (S.cameraOrigins = new WeakMap());
+      let saved = origins.get(F);
+      if (!saved || saved.width !== W || saved.height !== H) {
+        const reference = ME.makeCanvas(W, H),
+          referenceState = Object.assign({}, S);
+        drawFrameContent(reference.getContext(K.CTX2D), Object.assign({}, ctx, { ox: 0 }), referenceState, F, F.visualStart ?? F.start);
+        saved = { width: W, height: H, point: referenceState.emitters[subject] || referenceState.targets[subject] || focus };
+        origins.set(F, saved);
+      }
+      origin = saved.point;
+    }
+    const camera = ME.cameraFrame({ enabled: true, seconds: t, start: F.visualStart ?? F.start, end: F.visualEnd ?? F.end, width: W, height: H, seed: String(F.id ?? F.visualStart ?? F.start ?? 0), mode: focus || move !== K.CAMERA_MODES.follow ? K.CAMERA_MODES[move] : K.CAMERA_MODES.none, focus, origin, protectedRects: S.cameraRects });
     g.save();
     g.beginPath();
     g.rect(ctx.ox || 0, 0, W, H);

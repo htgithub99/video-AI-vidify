@@ -26,6 +26,7 @@ export const MOTION_REMOTION_SCHEMAS: Record<string, MotionResponseSchema> = {
             weather: text,
             removedObjects: { type: "array", items: text, maxItems: V.MAX_NODES },
             view: { type: "string", enum: ["wide", "detail"] },
+            format: { type: "string", enum: ["illustration", "diagram", "comparison", "map", "timeline", "process", "cutaway"] },
             focus: { type: "array", maxItems: V.MAX_NODES, items: text },
             effects: { type: "array", maxItems: 12, items: { type: "object", properties: { id: text, kind: { type: "string", enum: [...L.EFFECTS] }, source: text, anchor: text, region: text, essential: { type: "boolean" }, direction: { type: "string", enum: ["up", "ground", "left", "right"] }, intensity: { type: "number" } }, required: ["id", "kind"] } },
             nodes: {
@@ -38,6 +39,7 @@ export const MOTION_REMOTION_SCHEMAS: Record<string, MotionResponseSchema> = {
                   kind: { type: "string", enum: ["character", "prop", "label"] },
                   entityId: text,
                   anonymous: { type: "boolean" },
+                  crowd: { type: "object", properties: { groupKey: text, faction: text, appearance: text, depth: { type: "string", enum: ["foreground", "midground", "background"] }, rows: { type: "number", minimum: 1, maximum: 8 }, facing: text, count: { type: "number", minimum: 1 } }, required: ["depth"] },
                   description: text,
                   pose: text,
                   representation: { type: "string", enum: ["full", "bust", "detail"] },
@@ -72,14 +74,7 @@ export const MOTION_REMOTION_SCHEMAS: Record<string, MotionResponseSchema> = {
 export const MOTION_REMOTION_PROMPTS = {
   SOFT_NODE_FIELDS: ["posture", "support"] as readonly string[],
   SOFT_NODE_CHARS: 60,
-  HOLDER: {
-    IMPLIED: /\b(?:to|in|by|on|at)\s+(?:a|an|the)\s+([a-z]+)'s\s+(?:lips|mouth|hands?|shoulders?|arms?)\b|\bheld\s+(?:up\s+)?by\s+(?:a|an|the)\s+([a-z]+)\b/i,
-    ID: (prop: string) => `${prop}_holder`,
-    DESCRIPTION: (who: string, prop: string) => `${who}, anonymous background extra holding the ${prop}`,
-    POSE: "holding it",
-    RELATION: "heldBy",
-    KIND: "character",
-  },
+  HOLDER: { IMPLIED: /\b(?:to|in|by|on|at)\s+(?:a|an|the)\s+([a-z]+)'s\s+(?:lips|mouth|hands?|shoulders?|arms?)\b|\bheld\s+(?:up\s+)?by\s+(?:a|an|the)\s+([a-z]+)\b/i, ID: (prop: string) => `${prop}_holder`, DESCRIPTION: (who: string, prop: string) => `${who}, anonymous background extra holding the ${prop}`, POSE: "holding it", RELATION: "heldBy", KIND: "character" },
   CAST_KEY: { FORM: "NFD", MARKS: /[\u0300-\u036f]/g, D_STROKE: /đ/gi, D_PLAIN: "d", OTHER: /[^a-z0-9]/g },
   PLAN_RECOVERY_REVISION: 2,
   LOG_PENDING_PLANS: (remaining: number) => (remaining > 0 ? ` Còn ${remaining} nhóm đang phân cảnh; tổng số cảnh sẽ cập nhật khi phân cảnh xong.` : ""),

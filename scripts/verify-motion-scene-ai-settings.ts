@@ -36,6 +36,7 @@ try {
     const url = new URL(route.request().url());
     if (url.pathname === RT.EMPTY_3) return route.fulfill({ contentType: RT.TEXT_HTML, body: RF.SCENE_SETTINGS_DOCUMENT(css, bundle.outputFiles[0].text) });
     if (url.pathname === MOTION_VOICE_LIBRARY.CHANNELS_URL) return route.fulfill({ json: { channels: [] } });
+    if (url.pathname === API_ROUTES.MOTION_STORY_COMPILE) return route.fulfill({ status: 400, json: { error: "Fixture has no generated scene artwork" } });
     if (url.pathname === API_ROUTES.MOTION_VIDEO_RESULTS) return route.fulfill({ json: { items: [] } });
     if (url.pathname === API_ROUTES.MOTION_STORY_SCENES) {
       requests.push(route.request().postDataJSON());

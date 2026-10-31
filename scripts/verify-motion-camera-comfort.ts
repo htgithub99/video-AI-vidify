@@ -51,20 +51,25 @@ try {
     assert.ok(document?.scenes?.length, "stored compiled document required");
     const scene = document.scenes.find((s: any) => s.composition);
     assert.ok(scene);
+    const subject = scene.composition.layers.find((layer: any) => layer.kind === "character" || layer.kind === "prop");
+    assert.ok(subject, "Camera test requires a visible subject");
+    scene.composition = { ...scene.composition, animations: [], design: { camera: "wide", placements: [], cameraMotion: { mode: "push", subjectId: subject.id, focus: { x: 0.5, y: 0.5 } } } };
+    document.scenes = [scene];
+    document.subtitles = [];
     const out = "scratch/motion-camera-20261029";
     await fs.mkdir(out, { recursive: true });
     for (const camera of ["fixed", "gentle"]) {
       const hashes: string[] = [];
       for (const frame of [scene.startFrame, scene.endFrame - 1]) {
         const file = `${out}/${camera}-${frame}.png`;
-        await renderRemotionStill({ ...document, renderBehavior: { version: 1, actors: "fixed", sceneEffects: "off", camera } }, file, frame);
+        await renderRemotionStill({ ...document, renderBehavior: { version: 1, actors: camera === "gentle" ? "simple" : "fixed", sceneEffects: camera === "gentle" ? "gentle" : "off", camera } }, file, frame);
         hashes.push(
           createHash("sha256")
             .update(await fs.readFile(file))
             .digest("hex"),
         );
       }
-      assert.equal(hashes[0] === hashes[1], camera === "fixed", "real Remotion output obeys Camera independently of actors/effects");
+      assert.equal(hashes[0] === hashes[1], camera === "fixed", "real Remotion output obeys the scene-motion master");
     }
     process.stdout.write(`Saved real Remotion frame pairs to ${out}`);
   }

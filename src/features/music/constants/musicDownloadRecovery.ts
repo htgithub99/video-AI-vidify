@@ -1,0 +1,15 @@
+export const MUSIC_DOWNLOAD_RECOVERY = {
+  ROOM_ATTEMPTS: 3,
+  STARTUP_CONCURRENCY: 1,
+  RETRY_PHASE: "retrying",
+  TIMEOUT_ERROR_NAME: "TimeoutError",
+  SELECTION_SUFFIX: ".evaluation",
+  ROOM_RETRY_EVENT: "evaluation_room_retry",
+  SELECTION_SAVED_EVENT: "evaluation_chunk_checkpoint_saved",
+  SELECTION_RESUMED_EVENT: "evaluation_chunk_checkpoint_resumed",
+  ROOM_RETRY: "Giao diện Gemini chưa sẵn sàng; đang khôi phục riêng phòng này.",
+  SELECTION_RESUMED: "Đã khôi phục kết quả đánh giá đã lưu; không gửi lại AI.",
+  ALL_SELECTIONS_READY: "Đã có đủ kết quả đánh giá đã lưu; đang chuẩn bị xuất nhạc.",
+  INVALID_SELECTION: "Không thể lưu kết quả đánh giá nhạc: lựa chọn không khớp các cặp bài hoặc điểm không hợp lệ.",
+  STARTUP_RETRY_PATTERN: /gemini_model_ui_not_ready|ERR_CONNECTION_RESET|ERR_CONNECTION_CLOSED|ERR_NETWORK_CHANGED|ERR_INTERNET_DISCONNECTED|ERR_TIMED_OUT|net::ERR_|target page, context or browser has been closed|page has been closed|browser.*closed/i,
+} as const;

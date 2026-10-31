@@ -53,11 +53,7 @@ export const normalizeRemotionRelations = (nodes: MotionRemotionNode[]): MotionR
     if (node.kind === RT_SHARED.PROP && node.relation === RT_SHARED.HELDBY && !node.stateEvidence && /cầm|nhận|bưng|mang|đưa|lấy|\b(?:hold|holding|carry|carrying|take|takes|pick|give|gave)\b/iu.test(node.evidence)) node.stateEvidence = node.evidence;
     return node;
   });
-export const prepareRemotionScene = (scene: MotionRemotionScene, profileId?: string): void => {
-  if (profileId === RT_CORE.HORROR) {
-    const labels = new Set(scene.nodes.filter((node) => node.kind === RT_SHARED.LABEL).map((node) => node.id));
-    scene.nodes = scene.nodes.filter((node) => !labels.has(node.id)).map((node) => (node.target && labels.has(node.target) ? { ...node, relation: undefined, target: undefined } : node));
-  }
+export const prepareRemotionScene = (scene: MotionRemotionScene, _profileId?: string): void => {
   scene.nodes = normalizeRemotionRelations(scene.nodes);
   const worn = new Map<string, string>();
   for (const node of scene.nodes) {

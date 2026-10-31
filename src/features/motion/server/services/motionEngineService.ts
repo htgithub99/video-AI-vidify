@@ -32,6 +32,7 @@ import {
 import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
 import { motionCameraBrowserSource, MOTION_CAMERA_REVISION } from "../../../../lib/motionCamera.js";
+import { applyMotionRenderBehavior, motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
 import { MOTION_CAMERA } from "../../../../constants/motionCamera.js";
 import type { MotionSpec } from "../../../../types/motionVideo.js";
 import { getStaticResourcePath } from "../../../../server/utils/paths.js";
@@ -100,6 +101,7 @@ export const getMotionEngineClientScript = (): string => {
 };
 const FONT_PROBES = [MOTION_TEXT_400_24PX_BE_VIETNAM_PRO, MOTION_TEXT_600_24PX_BE_VIETNAM_PRO, MOTION_TEXT_700_24PX_BE_VIETNAM_PRO, MOTION_TEXT_800_24PX_BE_VIETNAM_PRO, MOTION_TEXT_500_24PX_OSWALD, MOTION_TEXT_700_24PX_OSWALD, MOTION_TEXT_700_24PX_PLAYFAIR_DISPLAY, MOTION_TEXT_ITALIC_600_24PX_PLAYFAIR_DISPLAY, MOTION_TEXT_ITALIC_700_24PX_PLAYFAIR_DISPLAY];
 export const buildMotionRenderHtml = (spec: MotionSpec): string => {
+  spec = applyMotionRenderBehavior(spec, motionRenderBehaviorFor(spec));
   const engine = loadMotionEngine();
   const safeJson = (value: unknown) => stringifyJson(value).replace(MP.HTML_TAG_OPEN, MOTION_TEXT_U003C);
   return MOTION_TEMPLATE_DOCTYPE_HTML_HTML_HEAD_META_CHARSET_UTF_8_2(String(engine.fontCss), String(engine.script), String(safeJson(spec)), String(stringifyJson([...FONT_PROBES, ...MOTION_STYLE_FONT_PROBES])));

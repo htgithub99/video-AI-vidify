@@ -5,6 +5,7 @@ import { MOTION_REMOTION_LAYOUT as L } from "../../../constants/motionRemotionLa
 import { MOTION_RENDER_BEHAVIOR as B } from "../../../constants/motionRenderBehavior.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import { motionCameraFrame } from "../../../lib/motionCamera.js";
+import { motionSceneCameraDirection, motionSceneSubjectPoint } from "../../../lib/motionSceneCamera.js";
 import { remotionPoint, remotionVisibleRect } from "../../../lib/motionRemotionGeometry.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
 import type { MotionRemotionScene, MotionRemotionNode, MotionRemotionPlacedNode, MotionVectorAsset, MotionRemotionTimedScene, MotionRenderBehavior, MotionVisualRect } from "../../../types/motionVisual.js";
@@ -64,7 +65,7 @@ export const remotionSceneView = (scene: MotionRemotionTimedScene | undefined, w
 export const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined, scenes: MotionRemotionTimedScene[]) => {
   const index = scene ? scenes.indexOf(scene) : -1;
   if (!scene || index < 0) return scene;
-  const key = (item: MotionRemotionTimedScene) => stringifyJson([item.composition?.assetKey || item.id, item.view || RT_MOTION.WIDE, [...(item.focus || [])].sort()]);
+  const key = (item: MotionRemotionTimedScene) => stringifyJson([item.composition?.assetKey || item.id, item.composition?.design?.cameraMotion, item.view || RT_MOTION.WIDE, [...(item.focus || [])].sort()]);
   const shotKey = key(scene);
   let first = index,
     last = index;
@@ -73,16 +74,34 @@ export const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined,
   return { startFrame: scenes[first].startFrame, endFrame: scenes[last].endFrame, id: scenes[first].id };
 };
 export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: number, scene: MotionRemotionTimedScene | undefined, width: number, height: number, fps = 30, scenes: MotionRemotionTimedScene[] = [], assets: Record<string, MotionVectorAsset> = {}) => {
+  if (behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED) return { scale: 1, x: 0, y: 0, mode: scene?.composition?.design?.cameraMotion?.mode || "hold" };
   const view = remotionSceneView(scene, width, height, assets);
   const range = remotionCameraRange(scene, scenes);
   const selected = (scene?.nodes || []).filter((node) => node.essential || node.kind === RT_SHARED.CHARACTER || scene?.focus?.includes(node.id));
   const protectedRects = scene?.composition
-    ? (scene.composition.design?.placements || []).filter((placement) => selected.some((node) => node.id === placement.id)).map(({ box }) => ({ x: box.x * width, y: box.y * height, width: box.width * width, height: box.height * height }))
+    ? (scene.composition.design?.placements || [])
+        .filter((placement) => selected.some((node) => node.id === placement.id))
+        .map(({ id, box }) => {
+          const asset = assets[scene.composition!.assetKey],
+            rect = { x: box.x * width, y: box.y * height, width: box.width * width, height: box.height * height };
+          if (!asset || behavior.actors === RT_SHARED.FIXED) return rect;
+          const points = [
+            [rect.x, rect.y],
+            [rect.x + rect.width, rect.y],
+            [rect.x, rect.y + rect.height],
+            [rect.x + rect.width, rect.y + rect.height],
+          ].map(([x, y]) => motionSceneSubjectPoint(scene.composition!, asset, id, { x, y }, Math.max(0, seconds - scene.startFrame / fps)));
+          const x = Math.min(...points.map((p) => p.x)),
+            y = Math.min(...points.map((p) => p.y));
+          return { x, y, width: Math.max(...points.map((p) => p.x)) - x, height: Math.max(...points.map((p) => p.y)) - y };
+        })
     : selected.map((node) => {
         const rect = remotionVisibleRect(node, assets[node.assetKey || ""]);
         return { x: rect.x * view.scale + view.x, y: rect.y * view.scale + view.y, width: rect.width * view.scale, height: rect.height * view.scale };
       });
-  return motionCameraFrame({ enabled: behavior.camera === RT_SHARED.GENTLE, seconds, start: (range?.startFrame || 0) / fps, end: range ? range.endFrame / fps : 12, width, height, seed: range?.id || scene?.id || "", protectedRects });
+  const asset = scene?.composition && assets[scene.composition.assetKey];
+  const direction = scene && asset ? motionSceneCameraDirection(scene, asset, Math.max(0, seconds - scene.startFrame / fps), (scene.endFrame - scene.startFrame) / fps) : { mode: "hold" as const };
+  return motionCameraFrame({ enabled: behavior.actors === RT_SHARED.SIMPLE && behavior.camera === RT_SHARED.GENTLE, seconds, start: (range?.startFrame || 0) / fps, end: range ? range.endFrame / fps : 12, width, height, seed: range?.id || scene?.id || "", protectedRects, ...direction });
 };
 export const remotionSceneEffects = (scene: MotionRemotionScene): NonNullable<MotionRemotionScene["effects"]> => {
   if (scene.effects)

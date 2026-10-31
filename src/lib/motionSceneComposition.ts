@@ -6,18 +6,17 @@ import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneCompositi
 import { normalizeMotionVector } from "./motionVectorAsset.js";
 import { normalizeMotionSceneDesign } from "./motionSceneDesign.js";
 import { motionActorTracks } from "./motionActorTracks.js";
-import { motionSoftEffectsSvg } from "./motionSoftEffects.js";
 import { MOTION_SCENE_DESIGN as D } from "../constants/motionSceneDesign.js";
 import type { MotionSceneAnimation, MotionSceneComposition, MotionSceneLayer, MotionRemotionNode, MotionRenderBehavior, MotionVectorAsset, MotionRemotionScene } from "../types/motionVisual.js";
 export const motionCompositionMissingChannels = (scene: MotionRemotionScene, behavior?: MotionRenderBehavior): ("actor" | "effect")[] =>
   ([RT_CORE.ACTOR, RT_CORE.EFFECT] as const).filter(
     (channel) => (channel === RT_CORE.ACTOR ? behavior?.actors === RT_SHARED.SIMPLE && scene.nodes.some((node) => node.kind === RT_SHARED.CHARACTER) : behavior?.sceneEffects === RT_SHARED.GENTLE && (!!scene.effects?.length || !!scene.composition?.layers.some((layer) => layer.kind === RT_CORE.EFFECT))) && !scene.composition?.animations.some((animation) => animation.channel === channel),
   );
-type Element = { tag: string; attributes: Record<string, string>; ancestors: string[] };
+type Element = { tag: string; attributes: Record<string, string>; ancestors: string[]; lineage: { id?: string; transform?: string }[] };
 const attributes = (tag: string) => Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*("([^"]*)"|'([^']*)')/g)].map((m) => [m[1], m[3] ?? m[4]]));
 export const compositionElements = (svg: string): Map<string, Element> => {
   const elements = new Map<string, Element>();
-  const stack: (string | undefined)[] = [];
+  const stack: { id?: string; transform?: string }[] = [];
   for (const match of svg.matchAll(/<(\/?)([\w:-]+)\b[^<>]*>/g)) {
     if (match[1]) {
       stack.pop();
@@ -26,9 +25,9 @@ export const compositionElements = (svg: string): Map<string, Element> => {
     const attrs = attributes(match[0]);
     if (attrs.id) {
       if (!C.ID.test(attrs.id) || elements.has(attrs.id)) throw new Error(C.ERROR(attrs.id, C.IDS));
-      elements.set(attrs.id, { tag: match[2], attributes: attrs, ancestors: stack.filter((id): id is string => !!id) });
+      elements.set(attrs.id, { tag: match[2], attributes: attrs, ancestors: stack.flatMap((entry) => (entry.id ? [entry.id] : [])), lineage: [...stack, { id: attrs.id, transform: attrs.transform }] });
     }
-    if (!/\/\s*>$/.test(match[0])) stack.push(attrs.id);
+    if (!/\/\s*>$/.test(match[0])) stack.push({ id: attrs.id, transform: attrs.transform });
   }
   return elements;
 };
@@ -90,7 +89,7 @@ export const validateSceneComposition = (composition: MotionSceneComposition, as
       !Array.isArray(animation.keyframes) ||
       animation.keyframes.length < 2 ||
       animation.keyframes.length > C.KEYFRAMES ||
-      (animation.channel === RT_CORE.EFFECT ? layer.kind === RT_SHARED.CHARACTER : layer.kind !== RT_SHARED.CHARACTER) ||
+      (animation.channel === RT_CORE.EFFECT ? layer.kind === RT_SHARED.CHARACTER : animation.channel === RT_CORE.SPEECH ? layer.kind !== RT_SHARED.CHARACTER : layer.kind !== RT_SHARED.CHARACTER && layer.kind !== RT_SHARED.PROP) ||
       (animation.channel === RT_CORE.SPEECH && (!layer.entityId || animation.attribute !== RT_CORE.D || animation.target === layer.id))
     )
       throw new Error(C.ERROR(animation?.target || RT_CORE.ANIMATIONS, C.MOTION));
@@ -121,39 +120,12 @@ export const normalizeSceneComposition = (raw: any, key: string, inputKey: strin
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
 };
-const stripUnlabeledText = (svg: string, nodes: MotionRemotionNode[]): string => {
-  const X = C.TEXT_STRIP;
-  const words = (text: string) => new Set((text.toLowerCase().match(X.WORD) || []) as string[]);
-  const labels = nodes.filter((node) => node.kind === X.LABEL_KIND).map((node) => words([node.description, node.evidence].filter(Boolean).join(" ")));
-  return svg.replace(X.ELEMENT, (whole, inner?: string) => {
-    const spoken = [...words((inner || "").replace(X.INNER_TAG, " "))];
-    return spoken.length && labels.some((label) => spoken.every((word) => label.has(word))) ? whole : "";
-  });
-};
-const groundUnderlay = (svg: string, design: MotionSceneComposition["design"], width: number, height: number): string => {
-  const G = C.GROUND;
-  const horizon = design?.floor?.horizon;
-  if (!design || (design.format && design.format !== G.FORMAT) || typeof horizon !== "number" || horizon <= 0 || horizon >= 1) return svg;
-  const sky = G.CANVAS_RECT(width, height).exec(svg);
-  if (!sky || G.DRAWN.test(svg.slice(0, sky.index).replace(G.DEFS, ""))) return svg;
-  const edge = G.EDGE(height);
-  const fill = [...svg.matchAll(G.SHAPE)]
-    .map((match) => match[0])
-    .filter((tag) => tag !== sky[0] && !G.SEE_THROUGH.test(tag) && edge.test(G.GEOMETRY.exec(tag)?.[1] || ""))
-    .map((tag) => G.FILL.exec(tag)?.[1])
-    .filter((value): value is string => !!value && value !== G.NONE)
-    .at(-1);
-  if (!fill) return svg;
-  const top = Math.round(horizon * height);
-  return svg.replace(sky[0], sky[0] + G.RECT(top, width, height - top, fill));
-};
-export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number, options: { groundUnderlay?: boolean } = {}) => {
+export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number) => {
   let asset = normalizeMotionVector(raw?.svg, key, inputKey, description, true);
   if (asset.width !== width || asset.height !== height || !/^0[\s,]+0[\s,]/.test(asset.svg.match(/\bviewBox\s*=\s*["']([^"']+)["']/)?.[1]?.trim() || "")) {
     const fitted = asset.svg.replace(/^<svg\b[^>]*>/, (root) => `${root.replace(/\s(?:width|height|x|y|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "").slice(0, -1)}${RUNTIME_VALUES.WIDTH_100_HEIGHT_100_X_0_Y_0_PRESERVEASPECTRATIO_XMIDYMID_MEET_0F54C243}`);
     asset = normalizeMotionVector(`${RUNTIME_VALUES.SVG_VIEWBOX_0_0_73441421}${width}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52}${height}${RUNTIME_VALUES.VALUE_AB2CD774}${fitted}${RUNTIME_VALUES.SVG_01CF38A5}`, key, inputKey, description, true);
   }
-  if (!C.PLACEHOLDER_RE.test(asset.svg)) asset = { ...asset, svg: stripUnlabeledText(asset.svg, nodes) };
   const elements = compositionElements(asset.svg);
   let background = RUNTIME_VALUES.SCENE_CANVAS_0E8DB923;
   while (elements.has(background)) background += COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_25;
@@ -162,7 +134,15 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
   for (const layer of [...(Array.isArray(raw?.layers) ? raw.layers : []), ...nodes]) {
     const anonymous = layer?.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE && nodes.some((node) => node.id === layer.id && node.anonymous === true && !node.entityId);
     if (!layer || !C.ID.test(layer.id) || elements.get(layer.id)?.tag !== RUNTIME_VALUES.G_CD0AA985 || !(C.KINDS as readonly string[]).includes(layer.kind) || layers.some((other) => other.id === layer.id) || (layer.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE && !anonymous && !cast.has(layer.entityId)) || layers.length >= C.LAYERS) continue;
-    layers.push({ id: layer.id, kind: layer.kind, ...(layer.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE ? (anonymous ? { anonymous: true } : { entityId: layer.entityId }) : {}) });
+    layers.push({
+      id: layer.id,
+      kind: layer.kind,
+      ...(layer.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE ? (anonymous ? { anonymous: true } : { entityId: layer.entityId }) : {}),
+      ...(typeof layer.description === "string" ? { description: layer.description.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
+      ...(layer.kind === "character" && typeof layer.appearance === "string" ? { appearance: layer.appearance.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
+      ...(layer.kind === "effect" && ["rain", "smoke", "steam", "flame", "fog", "sway", "highlight", "wind", "water"].includes(layer.effectKind) ? { effectKind: layer.effectKind } : {}),
+      ...(layer.kind === "effect" && typeof layer.sourceId === "string" && C.ID.test(layer.sourceId) ? { sourceId: layer.sourceId } : {}),
+    });
   }
   const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, unchecked: true, layers, animations: [], ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
   try {
@@ -170,7 +150,6 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
   } catch {
     composition.design = undefined;
   }
-  if (options.groundUnderlay) asset = { ...asset, svg: groundUnderlay(asset.svg, composition.design, width, height) };
   for (const animation of Array.isArray(raw?.animations) ? raw.animations.slice(0, C.ANIMATIONS) : []) {
     try {
       validateSceneComposition({ ...composition, animations: [...composition.animations, animation] }, asset, nodes, cast);
@@ -222,12 +201,12 @@ export const mergeSceneCompositionDraft = (previous: unknown, raw: unknown): Rec
     }
     for (const patch of replacements.sort((a, b) => b.start - a.start)) merged.svg = merged.svg.slice(0, patch.start) + patch.svg + merged.svg.slice(patch.end);
     delete merged.groupPatches;
-    normalizeMotionVector(merged.svg, RT_CORE.PATCH, RT_CORE.PATCH, "", true);
+    merged.svg = normalizeMotionVector(merged.svg, RT_CORE.PATCH, RT_CORE.PATCH, "", true).svg;
     compositionElements(merged.svg);
   }
   return merged;
 };
-const interpolate = (animation: MotionSceneAnimation, seconds: number): string => {
+export const motionSceneAnimationValue = (animation: MotionSceneAnimation, seconds: number): string => {
   const frames = animation.keyframes;
   const t = animation.period ? Math.max(0, seconds) % animation.period : Math.max(0, seconds);
   const next = frames.findIndex((frame) => frame.at > t);
@@ -247,7 +226,8 @@ const interpolate = (animation: MotionSceneAnimation, seconds: number): string =
   });
 };
 const indices = new WeakMap<MotionVectorAsset, Map<string, Element>>();
-export const compositionFrameSvg = (asset: MotionVectorAsset, composition: MotionSceneComposition, seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>): string => {
+export const compositionFrameSvg = (asset: MotionVectorAsset, composition: MotionSceneComposition, seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>, _profile?: import("../types/motionVisual.js").MotionRemotionProfile): string => {
+  if (behavior.actors === RT_SHARED.FIXED) return asset.svg;
   let elements = indices.get(asset);
   if (!elements) {
     elements = compositionElements(asset.svg);
@@ -255,16 +235,16 @@ export const compositionFrameSvg = (asset: MotionVectorAsset, composition: Motio
   }
   const changes = new Map<string, Record<string, string>>();
   for (const animation of motionActorTracks(composition, asset.height)) {
-    if (animation.channel === RT_CORE.EFFECT ? behavior.sceneEffects === RT_SHARED.OFF : behavior.actors === RT_SHARED.FIXED) continue;
+    if (animation.channel === RT_CORE.EFFECT && behavior.sceneEffects === RT_SHARED.OFF) continue;
     const layer = owner(animation.target, elements, composition.layers);
     if (animation.channel === RT_CORE.SPEECH && !speakers.has(layer?.entityId || "")) continue;
     const original = elements.get(animation.target)?.attributes[animation.attribute];
-    const value = interpolate(animation, seconds);
+    const value = motionSceneAnimationValue(animation, seconds);
     const attrs = changes.get(animation.target) || {};
     attrs[animation.attribute] = animation.attribute === RT_CORE.TRANSFORM && original ? `${original}${RT_SHARED.SYMBOL_36A9E7}${value}` : value;
     changes.set(animation.target, attrs);
   }
-  const base = motionSoftEffectsSvg(asset, composition);
+  const base = asset.svg;
   if (!changes.size) return base;
   return base.replace(/<([\w:-]+)\b[^<>]*>/g, (tag) => {
     const patch = changes.get(attributes(tag).id);

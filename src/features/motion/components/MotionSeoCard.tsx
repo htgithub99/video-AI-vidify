@@ -14,6 +14,7 @@ import { Modal } from "../../../components/ui/Modal";
 interface MotionSeoCardProps {
   seo: MotionSeoPack | null;
   busy: boolean;
+  seoBusy: boolean;
   canGenerate: boolean;
   onGenerate: () => void;
   lang?: string;
@@ -21,7 +22,7 @@ interface MotionSeoCardProps {
   thumbnails?: Record<number, MotionThumbnail>;
   onThumbnail?: (optionIndex: number) => void;
 }
-export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail }) => {
+export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canGenerate, onGenerate, lang, thumbnail, thumbnails, onThumbnail }) => {
   const { copiedKey, copyText: handleCopy } = useClipboardFeedback();
   const [zoomModal, setZoomModal] = useState<{ image: string; prompt: string; optionIndex?: number } | null>(null);
   const t = lang === MR.MOTION_TEXT_EN ? MOTION_SEO_TEXTS.en : MOTION_SEO_TEXTS.vi;
@@ -84,7 +85,7 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, canGenerate, 
             </>
           )}
           <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} disabled={busy || !canGenerate} onClick={onGenerate} className={MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1_2}>
-            <RefreshCw className={cn(MR.MOTION_TEXT_W_3_5_H_3_5, busy && MR.MOTION_TEXT_ANIMATE_SPIN)} />
+            <RefreshCw className={cn(MR.MOTION_TEXT_W_3_5_H_3_5, seoBusy && MR.MOTION_TEXT_ANIMATE_SPIN)} />
             <span>{seo ? t.regenerate : t.generate}</span>
           </Button>
         </div>

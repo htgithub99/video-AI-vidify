@@ -8,8 +8,8 @@
     "dev": "cross-env NODE_OPTIONS=--dns-result-order=ipv4first tsx watch --ignore \"database.db*\" --ignore \"projects.json\" --ignore \"suno_chrome_profile/**\" --ignore \"vite.config.ts.timestamp-*\" --ignore \"builds/**\" --ignore \"release/**\" --ignore \"dist/**\" server.ts",
     "build": "vite build && npm run motion:bundle-remotion && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --outfile=dist/server.cjs && javascript-obfuscator dist/server.cjs --output dist/server.cjs --compact true --self-defending false --simplify true --string-array true --string-array-encoding base64 --string-array-threshold 0.8 && bytenode --compile dist/server.cjs && node -e \"require('fs').unlinkSync('dist/server.cjs')\"",
     "motion:bundle-remotion": "tsx scripts/build-motion-remotion.ts",
-    "test:motion-remotion": "tsx scripts/verify-motion-remotion.ts && tsx scripts/verify-motion-illustration-profiles.ts && tsx scripts/verify-motion-remotion-geometry.ts && tsx scripts/verify-motion-remotion-staging.ts && tsx scripts/verify-motion-remotion-qa.ts && tsx scripts/verify-motion-remotion-cutouts.ts && tsx scripts/verify-motion-horror-characters.ts && tsx scripts/verify-motion-remotion-space.ts",
-    "test:motion-behavior": "tsx scripts/verify-motion-render-behavior.ts",
+    "test:motion-remotion": "tsx scripts/verify-motion-remotion.ts && tsx scripts/verify-motion-illustration-profiles.ts && tsx scripts/verify-motion-remotion-geometry.ts && tsx scripts/verify-motion-remotion-staging.ts && tsx scripts/verify-motion-remotion-qa.ts && tsx scripts/verify-motion-remotion-cutouts.ts && tsx scripts/verify-motion-remotion-space.ts",
+    "test:motion-behavior": "tsx scripts/verify-motion-render-behavior.ts && tsx scripts/verify-motion-scene-motion.ts && tsx scripts/verify-motion-action-camera.ts",
     "test:motion-narrator-recovery": "tsx scripts/verify-motion-narrator-recovery.ts",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
@@ -44,6 +44,7 @@
     "test:suno-recovery": "tsx scripts/verify-suno-creation-recovery.ts && tsx scripts/verify-suno-bulk-scroll.ts",
     "test:music-seo": "tsx scripts/verify-music-seo-standards.ts",
     "test:music-curation-export": "tsx scripts/verify-music-curation-and-export.ts",
+    "test:music-download-recovery": "tsx scripts/verify-music-download-recovery.ts && tsx scripts/verify-gemini-readiness-recovery.ts && tsx scripts/verify-music-audio-preparation.ts && tsx scripts/verify-music-download-resume.ts",
     "test:music-composition": "tsx scripts/verify-music-source-composition.ts",
     "test:music-planning": "tsx scripts/verify-music-planning-recovery.ts && tsx scripts/verify-music-planning-ui.ts",
     "test:music-transfer": "tsx scripts/verify-music-playlist-upload.ts && tsx scripts/verify-music-audio-preparation.ts && tsx scripts/verify-chat-upload-readiness.ts && tsx scripts/verify-gemini-music-upload.ts && tsx scripts/verify-gemini-session-wait.ts && tsx scripts/verify-music-upload-progress.ts",
@@ -68,6 +69,7 @@
     "test:motion-root-offline": "tsx scripts/verify-motion-prompt-resume.ts && tsx scripts/verify-motion-persistence-integrity.ts && tsx scripts/verify-motion-production-runner.ts && tsx scripts/verify-motion-atomic-writes.ts",
     "test:motion-audit-fixes": "tsx scripts/verify-motion-audit-fixes.ts",
     "test:motion-single-draw": "tsx scripts/verify-motion-single-draw.ts && tsx scripts/verify-motion-composition.ts",
+    "test:motion-profile-isolation": "tsx scripts/verify-motion-profile-prompts.ts && tsx scripts/verify-motion-illustration-profiles.ts && tsx scripts/verify-motion-single-draw.ts && tsx scripts/verify-motion-scene-consistency.ts && tsx scripts/verify-motion-prompt-transport.ts",
     "test:motion-local-recovery": "tsx scripts/verify-motion-local-svg-repair.ts && tsx scripts/verify-motion-single-draw.ts && tsx scripts/verify-chat-response-snapshots.ts",
     "test:motion-scene-plan-recovery": "tsx scripts/verify-motion-scene-plan-recovery.ts && tsx scripts/verify-motion-remotion-qa.ts && tsx scripts/verify-chat-usage-limits.ts",
     "test:motion-scene-consistency": "tsx scripts/verify-motion-scene-consistency.ts && tsx scripts/verify-motion-sfx-ui.ts",
@@ -103,7 +105,8 @@
     "audit:source": "tsx scripts/audit-maintenance.ts --check",
     "audit:unused": "tsx scripts/audit-unused-code.ts",
     "test:clipboard": "tsx scripts/verify-clipboard-feedback.ts",
-    "check:refactor": "tsc --noEmit && npm run lint:source && npm run audit:source && npm run format:check && npm run format:python:check && npm run format:powershell:check && npm run test:code-maintenance && npm run test:feature-boundaries && npm run test:feature-workspaces && npm run test:clipboard"
+    "check:refactor": "tsc --noEmit && npm run lint:source && npm run audit:source && npm run format:check && npm run format:python:check && npm run format:powershell:check && npm run test:code-maintenance && npm run test:feature-boundaries && npm run test:feature-workspaces && npm run test:clipboard",
+    "test:motion-profile-risks": "tsx scripts/verify-motion-profile-prompts.ts && tsx scripts/verify-motion-scene-consistency.ts"
   },
   "dependencies": {
     "@google/genai": "latest",

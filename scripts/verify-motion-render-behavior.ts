@@ -15,10 +15,12 @@ import { findNativeChrome } from "../src/server/services/nativeProxyBrowser.js";
 import type { MotionRemotionNode, MotionRemotionSpec, MotionVectorAsset, MotionRenderBehavior } from "../src/types/motionVisual.js";
 const output = path.resolve("scratch/motion-behavior-20261027");
 fs.mkdirSync(output, { recursive: true });
-const combinations: MotionRenderBehavior[] = [];
-for (const actors of ["fixed", "simple"] as const) for (const sceneEffects of ["off", "gentle"] as const) for (const camera of ["fixed", "gentle"] as const) combinations.push({ version: 1, actors, sceneEffects, camera });
+const combinations: MotionRenderBehavior[] = [
+  { version: 1, actors: "fixed", sceneEffects: "off", camera: "fixed" },
+  { version: 1, actors: "simple", sceneEffects: "gentle", camera: "gentle" },
+];
 assert.equal(normalizeMotionRenderBehavior(undefined, true).actors, "simple");
-assert.equal(normalizeMotionRenderBehavior(undefined, true).camera, "fixed");
+assert.equal(normalizeMotionRenderBehavior(undefined, true).camera, "gentle");
 for (const fps of [24, 30, 60]) assert.equal(motionFrameSeconds(fps * 4, fps), 4);
 assert.throws(() => normalizeMotionRenderBehavior({ version: 9 }));
 const vector = (id: string, w: number, h: number, shape: string, anchors: MotionVectorAsset["anchors"] = { base: { x: 0.5, y: 0.98 } }): MotionVectorAsset => ({ ...normalizeMotionVector(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${shape}</svg>`, id, id, id), anchors });
@@ -102,7 +104,7 @@ const fixture: MotionRemotionSpec = {
   ],
 };
 validateRemotionSpec(fixture);
-const fx = remotionEffectGeometry(fixture.scenes[0], assets, 800, 450);
+const fx = remotionEffectGeometry(fixture.scenes[0], assets, 800, 450, combinations[1]);
 const source = fixture.scenes[0].nodes.find((n) => n.id === "incense")!;
 assert.equal(fx.find((e) => e.kind === "smoke")!.x, source.x + source.width * 0.5);
 assert.equal(fx.find((e) => e.kind === "smoke")!.y, source.y + source.height * 0.1);
@@ -158,22 +160,22 @@ assert.equal(correctedEffects[2].anchor, "grip");
 assert.deepEqual(remotionSceneEffects({ ...fixture.scenes[0], effects: correctedEffects }), correctedEffects);
 for (const fps of [24, 30, 60]) {
   const lateScene = { ...fixture.scenes[0], id: "camera-shot", nodes: [], startFrame: fps * 120, endFrame: fps * 156 };
-  const start = motionSceneCameraFrame(combinations[7], 120, lateScene, 800, 450, fps);
-  const end = motionSceneCameraFrame(combinations[7], 156, lateScene, 800, 450, fps);
-  assert.notDeepEqual(start, end);
+  const start = motionSceneCameraFrame(combinations[1], 120, lateScene, 800, 450, fps);
+  const end = motionSceneCameraFrame(combinations[1], 156, lateScene, 800, 450, fps);
+  assert.deepEqual(start, end, "Hold without a main subject or authored camera direction");
   assert.ok(end.scale <= 1.045);
   assert.deepEqual(motionSceneCameraFrame(combinations[0], 155, lateScene, 800, 450, fps), { scale: 1, x: 0, y: 0, mode: end.mode });
   const next = { ...lateScene, id: "next-shot", startFrame: fps * 156, endFrame: fps * 192 };
-  assert.deepEqual(motionSceneCameraFrame(combinations[7], 156, next, 800, 450, fps, [lateScene, next]), motionSceneCameraFrame(combinations[7], 156, next, 800, 450, fps));
+  assert.deepEqual(motionSceneCameraFrame(combinations[1], 156, next, 800, 450, fps, [lateScene, next]), motionSceneCameraFrame(combinations[1], 156, next, 800, 450, fps));
   const first = { ...lateScene, composition: { assetKey: "reused" } } as any;
   const reused = { ...next, composition: { assetKey: "reused" } } as any;
-  assert.deepEqual(motionSceneCameraFrame(combinations[7], 156, first, 800, 450, fps, [first, reused]), motionSceneCameraFrame(combinations[7], 156, reused, 800, 450, fps, [first, reused]));
+  assert.deepEqual(motionSceneCameraFrame(combinations[1], 156, first, 800, 450, fps, [first, reused]), motionSceneCameraFrame(combinations[1], 156, reused, 800, 450, fps, [first, reused]));
 }
 const emittingActor = { ...fixture.scenes[0], nodes: [{ ...fixture.scenes[0].nodes.find((n) => n.id === "person")!, relation: undefined, target: undefined }], effects: [{ id: "actor-smoke", kind: "smoke" as const, source: "person", anchor: "grip" }] };
-const emitter = remotionEffectGeometry(emittingActor, assets, 800, 450, combinations[6], 2)[0];
+const emitter = remotionEffectGeometry(emittingActor, assets, 800, 450, combinations[1], 2)[0];
 const actor = emittingActor.nodes[0],
   actorBaseY = actor.y + actor.height * 0.98;
-assert.ok(Math.abs(emitter.y - (actorBaseY + (actor.y + actor.height * 0.55 - actorBaseY) * motionActorScale(combinations[6], 2, "person"))) < 1e-6);
+assert.ok(Math.abs(emitter.y - (actorBaseY + (actor.y + actor.height * 0.55 - actorBaseY) * motionActorScale(combinations[1], 2, "person"))) < 1e-6);
 const scene = (id: string, nodes: MotionRemotionNode[], extra = {}) => ({ ...fixture.scenes[0], id, beatId: id, nodes, startFrame: undefined, endFrame: undefined, time: undefined, weather: undefined, ...extra });
 const pot = node("pot", "prop", "tray", { objectId: "pot", state: "full", description: "full clay pot", persistent: true, slot: "left" });
 const continuity: any = {
@@ -271,7 +273,7 @@ try {
       results = [];
     for (const behavior of combinations) {
       const kit = { renderBehavior: behavior, motion: false, sets: { room: { svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><rect width="1920" height="1080" fill="#555f6a"/><rect x="200" y="100" width="300" height="700" fill="#141c24"/><path d="M0 820H1920V1080H0Z" fill="#6d5341"/></svg>', floorY: 820 } }, characters: { person: { top: "#75533c", skin: "#ddd1b8" } } };
-      const frame = { start: 0, end: 12, set: "room", shot: "wide", actors: [{ char: "person", pose: "idle", face: "front", x: 0.65 }], overlays: ["rain"], camera: { move: "push" } };
+      const frame = { start: 0, end: 12, set: "room", shot: "wide", actors: [{ char: "person", pose: "idle", face: "front", x: 0.65 }], overlays: ["rain"], camera: { move: "follow", subject: "person" } };
       const ctx: any = { spec: { kit }, params: { frames: [frame] }, W: 640, H: 360, abs: 1 };
       ctx.state = me.PUPPET2D.init(ctx);
       await me.PUPPET_PRELOAD(ctx.spec);
@@ -329,4 +331,4 @@ if (process.argv.includes("--lighting")) {
   assert.equal(hashes["0-day"], hashes["0-night"]);
   assert.notEqual(hashes["2-day"], hashes["2-night"]);
 }
-process.stdout.write("Behavior QA passed: 8 combinations in both adapters, real Canvas frames, deterministic seek, fps, seated/held contacts, mounted fixtures across 4 aspects, source-bound effects, static core clues, ordered continuity and idempotent reload. No live AI/TTS or production video.");
+process.stdout.write("Behavior QA passed: 2 master-motion states in both adapters, real Canvas frames, deterministic seek, fps, seated/held contacts, mounted fixtures across 4 aspects, source-bound effects, static core clues, ordered continuity and idempotent reload. No live AI/TTS or production video.");

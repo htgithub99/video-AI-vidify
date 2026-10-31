@@ -43,7 +43,7 @@ const fixture = {
       case VT.BUILDMOTIONVOICETRACK:
         return Promise.resolve(track);
       case "buildRemotionScenes":
-        return Promise.resolve(structuredClone(script));
+        return Promise.resolve({ ...structuredClone(script), gen: { ...structuredClone(script.gen), remotion: { failures: {}, scenes: {}, assets: {} } } });
       case VT.SEEDPUPPETKIT:
         return Promise.resolve({ sets: 0, props: 0 });
       case VT.RECORDSPEECHRATE:

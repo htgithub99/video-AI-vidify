@@ -1,3 +1,6 @@
+import { HISTORY_METADATA } from "./motionProfiles/history/metadata.js";
+import { HORROR_METADATA } from "./motionProfiles/horror/metadata.js";
+import { EXPLAINER_METADATA } from "./motionProfiles/explainer/metadata.js";
 export const MOTION_VISUAL = {
   VERSION: 1,
   COMPONENT_REVISION: 1,
@@ -25,37 +28,7 @@ export const MOTION_VISUAL = {
   APPEARANCE_MARKERS: /\b(?:white|black|red|blue|green|yellow|purple|brown|grey|gray|bloody|bloodstained|transparent|translucent|wounded|pregnant|child|baby|elderly|uniform|robe|dress|shirt|armor|armour)\b/gi,
   REQUIRED_POSE: /\b(?:lying|lie|reclining|unconscious|dead|kneeling)\b/i,
   MODES: { LIBRARY: "library", REMOTION: "remotion" },
-  PROFILES: {
-    history: {
-      revision: 6,
-      vi: "Lịch sử",
-      en: "History — illustrated",
-      direction:
-        "Modern 2D animated history story in a clean web-cartoon look: every person has a large pure white round head with a thick near-black outline, two big round white eyes with black pupils, expressive short brows and a simple line mouth, no nose or ears, a short black neck and a slim fully clothed body about 4.3 head diameters tall with sleeve tubes, solid black mitten hands and feet on one sole line; hairstyle, headwear, clothing, lower-body garment, footwear, colors and expression are designed per character from the source era and region and stay consistent for each recurring person. Anonymous background extras may be simple stick figures or greyed figures. Backgrounds are richly drawn period places with clean dark outlines, flat colors with soft cel shading, atmospheric depth and dramatic light (sky gradients, smoke columns, light shafts in dark rooms). Shots alternate wide establishing views with many small people, waist-up two-shots, chest-up reactions, action mediums and occasional multi-panel montages. No glossy 3D, photorealism, horror vignette, captions or logos; adapt everything to the actual period, region and event and never copy reference characters or scenes.",
-      paper: "#ffffff",
-      ink: "#1b1b1b",
-      muted: "#879277",
-    },
-    horror: {
-      revision: 13,
-      vi: "Truyện ma",
-      en: "Horror — atmospheric illustration",
-      direction:
-        "Vietnamese 2D Flash folk horror in the 'Than trung' narrated-story look. Every person is a faceless mask puppet: a large perfectly round white head (#e8eef0) with a thick near-black outline, two tall solid black oval eyes set close together in the upper half, one small solid black vertical oval mouth, no nose, ears, hair, brows, pupils or neck; directly below the head (touching it, never tucked under it) stands a tombstone body: a round arch top, near-vertical sides about 1.15 head diameters wide widening to about 1.25 at the flat base, about 1.7 head diameters tall, so the whole puppet is about 2.7 head diameters tall, with a flat muted base clothing color and simple source-required garment patterns or accessories, with short rounded arm nubs at the shoulders and, when gesturing, one long smooth curved noodle arm in the body color. The front-view mask is a base example: back views omit the face, detail crops show only the requested body part, seated figures meet their support, and resting arms are the default; speech alone never requires a raised hand. Children are the same puppet at about two thirds size; ghosts are the same puppet with a pale gray-white translucent body and a faded base. Backgrounds show the actual place of each scene as flat unshaded shapes with thin dark edges only on architecture, furniture and objects, in muted cold colors (gray-blue day sky, dark olive polygon foliage, beige plaster or plank walls, dark brown wood, red-brown tiles, terracotta or earth ground, dark navy nights). A strong dark gradient vignette darkens the bottom of every frame. Big readable subjects and few details; no texture noise, no realistic anatomy, no glossy 3D, no logos, UI or text.",
-      paper: "#202327",
-      ink: "#eee8da",
-      muted: "#697474",
-    },
-    explainer: {
-      revision: 4,
-      vi: "Giải thích",
-      en: "Explainer — diagrams",
-      direction: "Clear flat 2D educational illustration, readable distinct silhouettes and simple shapes, muted blue/cream palette, generous negative space. Use short source-supported SVG labels and arrows only where they clarify the explanation. Adapt each person and object to the actual subject; no compulsory military imagery.",
-      paper: "#ecf0ec",
-      ink: "#20354a",
-      muted: "#527995",
-    },
-  },
+  PROFILES: { history: HISTORY_METADATA, horror: HORROR_METADATA, explainer: EXPLAINER_METADATA },
   TEXT: {
     vi: {
       title: "Cách dựng",

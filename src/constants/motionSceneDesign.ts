@@ -9,10 +9,11 @@ export const MOTION_SCENE_DESIGN_SCHEMA: MotionResponseSchema = {
   properties: {
     format: { type: "string", enum: ["illustration", "diagram", "comparison", "map", "timeline", "process", "cutaway"] },
     camera: text,
+    cameraMotion: { type: "object", properties: { mode: { type: "string", enum: ["follow", "push", "pull", "hold"] }, subjectId: text, focus: point }, required: ["mode"] },
     palette: { type: "array", maxItems: 12, items: text },
     floor: { type: "object", properties: { horizon: number, outline: { type: "array", minItems: 3, maxItems: 8, items: point } }, required: ["horizon", "outline"] },
-    placements: { type: "array", maxItems: 96, items: { type: "object", properties: { id: text, box: { type: "object", properties: { x: number, y: number, width: number, height: number }, required: ["x", "y", "width", "height"] }, depth: number, supportId: text, contact: point, construction: text }, required: ["id", "box", "depth", "construction"] } },
+    placements: { type: "array", maxItems: 96, items: { type: "object", properties: { id: text, box: { type: "object", properties: { x: number, y: number, width: number, height: number }, required: ["x", "y", "width", "height"] }, depth: number, supportId: text, contact: point, construction: text }, required: ["id", "box"] } },
     continuityNotes: { type: "string", maxLength: 2400 },
   },
-  required: ["camera", "placements"],
+  required: ["camera"],
 };

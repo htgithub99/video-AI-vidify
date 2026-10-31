@@ -71,6 +71,18 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
         if (!node || typeof node !== "object") continue;
         for (const key of [RUNTIME_VALUES.ENTITYID_556EB4FE, RUNTIME_VALUES.RELATION_FC8FBB48, RUNTIME_VALUES.TARGET_34A04005, COMMON_RUNTIME.SOURCE_TEXT_EVIDENCE, RUNTIME_VALUES.ESSENTIAL_A55751CE, RUNTIME_VALUES.APPEARANCECHANGED_C145E98D, RUNTIME_VALUES.POSEESSENTIAL_6DEE91EC] as string[]) if (node[key] === null || node[key] === "") delete node[key];
         node.pose ||= RT_SHARED.STANDING;
+        if (node.crowd && typeof node.crowd === "object") {
+          if (node.kind !== "character" || !["foreground", "midground", "background"].includes(node.crowd.depth)) delete node.crowd;
+          else {
+            for (const field of ["groupKey", "faction", "appearance", "facing"]) if (typeof node.crowd[field] !== "string" || !node.crowd[field].trim()) delete node.crowd[field];
+            for (const field of ["rows", "count"]) if (!Number.isFinite(node.crowd[field]) || node.crowd[field] < 1) delete node.crowd[field];
+            if (node.crowd.rows) node.crowd.rows = Math.min(8, Math.round(node.crowd.rows));
+            if (!cast.has(node.entityId)) {
+              node.anonymous = true;
+              delete node.entityId;
+            }
+          }
+        } else delete node.crowd;
         for (const field of P.SOFT_NODE_FIELDS) {
           if (typeof node[field] === "string" && node[field].trim()) node[field] = node[field].trim().slice(0, P.SOFT_NODE_CHARS);
           else delete node[field];
@@ -171,7 +183,7 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
   return { value: { scenes: errors.length ? [...drafts.values()] : scenes }, errors: [...new Set(errors)], accepted: scenes, drafts: [...drafts.values()] };
 };
 export const mergeEquivalentRemotionDrafts = (scenes: any[]) => {
-  const signature = (scene: any) => stringifyJson([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node)]);
+  const signature = (scene: any) => stringifyJson([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.format, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node)]);
   const merged: any[] = [];
   for (const scene of scenes) {
     const previous = merged.at(-1);

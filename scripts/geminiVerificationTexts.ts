@@ -110,7 +110,7 @@ export const GEMINI_VERIFICATION_FORMATS = {
       window.prematureOpens = 0; window.menuAttempts = 0;
       if (mode === 'delayed-page' || mode === 'late-page' || mode === 'not-ready') {
         composer.disabled = true;
-        if (mode !== 'not-ready') setTimeout(() => { composer.disabled = false; }, mode === 'late-page' ? 900 : 200);
+        if (mode !== 'not-ready') setTimeout(() => { composer.disabled = false; }, mode === 'late-page' ? 2000 : 200);
       }
       const menu = document.getElementById('menu'), levels = document.getElementById('levels');
       const materialMenu = ${materialMenu};

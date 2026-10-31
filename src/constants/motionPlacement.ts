@@ -5,7 +5,8 @@ export const MOTION_PLACEMENT = {
     { pattern: /\b(?:door[ _-]+step|doorstep|doorway|threshold)\b/g, value: "door" },
   ],
   NIGHT_LIGHT_RE: /night|lamp/,
-  CAMERA_PROMPT: "Use camera.move none by default. Keep illustrations steady and comfortable for bedtime listening. A deliberate push, pull or pan is exceptional and must remain extremely slow; never alternate zoom directions for variety or add a second shot just to animate a sentence.",
+  CAMERA_PROMPT:
+    "Scene motion includes camera. When enabled, set camera:{move:'follow|push|pull|none',subject:'main actor cast key'} from the main visible action: follow travel, push toward a key gesture/expression, pull for a reveal, none for quiet shots or no clear subject. Keep movement very slow, protect all essential people and retain composition depth. When scene motion is disabled use none. Never alternate zoom directions for variety or add a second shot just to animate a sentence.",
   RELATIONS: { under: ["under", "beneath", "below"], behind: ["behind", "back"], before: ["before", "front"], beside: ["beside", "side"], inside: ["inside", "in"], outside: ["outside"], on: ["on", "top"] } as Record<string, string[]>,
   SIDES: ["left", "right", "head", "foot"] as string[],
   MATERIALS: ["wooden", "wood", "bamboo", "stone", "metal", "iron"] as string[],

@@ -144,7 +144,7 @@ import { selectClaudeChatModel } from "./claudeModelService.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { selectDeepSeekChatModel } from "./deepseekModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
-import { selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
+import { getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
@@ -1587,7 +1587,7 @@ const waitForRoomIdle = async (page: Page, busySelector: string, responseSelecto
 const waitForSelectedModelLabel = async (page: Page, buttonSelector: string, modelLabel: RegExp): Promise<boolean> => {
   const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    const button = page.locator(buttonSelector).filter({ visible: true }).last();
+    const button = buttonSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR ? await getGeminiModelButton(page) : page.locator(buttonSelector).filter({ visible: true }).last();
     if (modelLabel.test(_.trim(await button.innerText().catch(() => MR.MOTION_TEXT_EMPTY)))) return true;
     await page.waitForTimeout(100);
   }
@@ -1620,7 +1620,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   const requestedModelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
   const baseModelLabel = GEMINI_CHAT_BASE_MODEL_LABELS[model];
   if (!baseModelLabel) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_UNAVAILABLE);
-  let modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS).catch(() => undefined);
+  let modelButton = await getGeminiModelButton(page).catch(() => undefined);
   if (!modelButton) {
     appWarn(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_PICKER_NOT_FOUND);
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTION_FAILED, { provider: AiPlanningFallbackProvider.GeminiChat, model, stage: SOURCE_TEXT_MODEL_PICKER, code: SOURCE_TEXT_PICKER_NOT_FOUND });
@@ -1646,7 +1646,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
     throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_UNAVAILABLE);
   }
   await page.keyboard.press(SOURCE_TEXT_ESCAPE).catch(() => undefined);
-  modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS);
+  modelButton = await getGeminiModelButton(page);
   const fallbackCurrentModelLabel = _.trim(await modelButton.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
   if (!baseModelLabel.test(fallbackCurrentModelLabel)) {
     await clickPlanningControl(modelButton, signal);
@@ -1658,7 +1658,7 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
       throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_BASE_MODEL_UNAVAILABLE);
     }
   }
-  modelButton = await getLastVisibleLocator(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, CINEMATIC_CHAT_PLANNING_CONFIG.MODEL_PICKER_TIMEOUT_MS);
+  modelButton = await getGeminiModelButton(page);
   await clickPlanningControl(modelButton, signal);
   const thinkingLevelTrigger = page
     .getByRole(SOURCE_TEXT_MENUITEM, { name: CINEMATIC_CHAT_PLANNING_CONFIG.THINKING_LEVEL_NAME_PATTERN })

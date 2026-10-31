@@ -73,13 +73,14 @@ try {
       assert.equal(exec.strictProvider, true);
       assert.equal(exec.provider, "drawing-ai");
       const data = context(prompt);
-      assert.ok(prompt.includes("design, svg, layers, animations"));
+      assert.ok(/design\s*,\s*svg\s*,\s*layers\s*,\s*animations/.test(prompt));
       assert.equal(data.renderBehavior.actors, "simple");
       const purpose = data.scene.purpose;
-      calls.push({ artifact, exec, purpose, reference: data.continuity?.placeSvg });
+      calls.push({ artifact, exec, purpose, reference: data.continuity?.environment });
       if (purpose !== "shot0") {
         assert.equal(anchorFinished, true);
-        assert.ok(data.continuity?.placeSvg);
+        assert.equal(data.continuity?.environment, "old house");
+        assert.equal(data.continuity?.placeSvg, undefined);
       }
       active++;
       peak = Math.max(peak, active);
@@ -225,7 +226,7 @@ try {
   }
   const metadata = normalizeFirstSceneComposition({ ...art(), layers: [], design: { camera: {} }, animations: [{ target: "person", attribute: "onclick" }] }, "accepted", "accepted", "", [node], new Set(["guest"]), 1280, 720);
   assert.equal(metadata.composition.animations.length, 0);
-  assert.equal(metadata.composition.design, undefined);
+  assert.deepEqual(metadata.composition.design, { camera: "", placements: [] });
   assert.ok(metadata.asset.svg.includes('fill="#605d76"'));
   const fitted = normalizeFirstSceneComposition({ ...art(), svg: art().svg.replace("0 0 1280 720", "10 20 640 360") }, "fit", "fit", "", [node], new Set(["guest"]), 1280, 720);
   assert.equal(fitted.asset.width, 1280);
@@ -297,7 +298,7 @@ try {
   });
   assert.equal(patches, 0);
   for (const scene of moving.gen!.remotion!.scenes.b1) {
-    assert.equal(scene.composition!.animations.length, 1);
+    assert.equal(scene.composition!.animations.length, 0, "No whole-character bob when the artwork has no isolated chest detail");
     const old = repaired.gen!.remotion!.scenes.b1.find((item) => item.id === scene.id)!;
     assert.equal(moving.gen!.remotion!.assets[scene.composition!.assetKey].svg, repaired.gen!.remotion!.assets[old.composition!.assetKey].svg);
   }
@@ -373,7 +374,7 @@ try {
       assert.equal(reviews, review ? 1 : 0);
       const scene = accepted.gen!.remotion!.scenes.b1[0];
       assert.equal(scene.build?.status, "accepted");
-      assert.equal(scene.composition!.design, undefined);
+      assert.deepEqual(scene.composition!.design?.placements[0]?.box, { x: 0.3, y: 0.2, width: 0.1, height: 0.5 });
       assert.equal(scene.composition!.animations.length, 0);
       validateRemotionSpec(compileRemotionStory(accepted, { ...analysis, visualSettings: scopedSettings }, { durations: [12] }).spec);
     }

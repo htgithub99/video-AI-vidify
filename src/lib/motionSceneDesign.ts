@@ -3,6 +3,7 @@ import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_SCENE_DESIGN as D, MOTION_SCENE_PLACEMENT_SCHEMA } from "../constants/motionSceneDesign.js";
 import { motionResponseErrors } from "./motionResponseContract.js";
 import type { MotionSceneDesign, MotionRemotionNode } from "../types/motionVisual.js";
+import { MOTION_CAMERA } from "../constants/motionCamera.js";
 const toCanvasShare = (design: MotionSceneDesign, size?: { width: number; height: number }): MotionSceneDesign => {
   if (!size?.width || !size.height) return design;
   const points = [...design.placements.flatMap((item) => [item?.box, item?.contact]), ...(Array.isArray(design.floor?.outline) ? design.floor.outline : [])].filter((point) => point && typeof point === "object");
@@ -17,19 +18,19 @@ const toCanvasShare = (design: MotionSceneDesign, size?: { width: number; height
   if (design.floor && typeof design.floor.horizon === "number" && Math.abs(design.floor.horizon) > D.PIXEL_LIMIT) design.floor.horizon /= size.height;
   return design;
 };
-export const normalizeMotionSceneDesign = (raw: unknown, nodes: MotionRemotionNode[], size?: { width: number; height: number }): MotionSceneDesign => {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw) || !Array.isArray((raw as MotionSceneDesign).placements)) throw new Error(D.INVALID);
-  const design = toCanvasShare(structuredClone(raw) as MotionSceneDesign, size);
+export const normalizeMotionSceneDesign = (raw: unknown, _nodes: MotionRemotionNode[], size?: { width: number; height: number }): MotionSceneDesign => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error(D.INVALID);
+  const input = structuredClone(raw) as MotionSceneDesign;
+  if (!Array.isArray(input.placements)) input.placements = [];
+  const design = toCanvasShare(input, size);
   const finite = (value: unknown) => typeof value === "number" && Number.isFinite(value);
   const point = (value: { x: number; y: number }) => finite(value?.x) && finite(value?.y) && Math.abs(value.x) <= 2 && Math.abs(value.y) <= 2;
-  const wanted = new Set(nodes.filter((node) => node.kind !== RT_SHARED.LABEL).map((node) => node.id));
   const seen = new Set<string>();
   design.placements = design.placements.filter((item) => {
     if (motionResponseErrors(item, MOTION_SCENE_PLACEMENT_SCHEMA).length || seen.has(item.id) || !point(item.box) || !finite(item.box.width) || !finite(item.box.height) || item.box.width <= 0 || item.box.height <= 0 || item.box.width > 2 || item.box.height > 2) return false;
     seen.add(item.id);
     return true;
   });
-  if (!design.placements.length || (wanted.size && !design.placements.some((item) => wanted.has(item.id)))) throw new Error(D.INVALID);
   for (const item of design.placements) {
     if (!finite(item.depth)) item.depth = 0;
     if (typeof item.construction !== "string") item.construction = "";
@@ -37,6 +38,13 @@ export const normalizeMotionSceneDesign = (raw: unknown, nodes: MotionRemotionNo
     if (item.supportId && ((!seen.has(item.supportId) && !([RT_SHARED.FLOOR, RT_CORE.WALL, RT_CORE.CEILING, RT_SHARED.WATER] as string[]).includes(item.supportId)) || item.supportId === item.id)) delete item.supportId;
   }
   if (typeof design.camera !== "string") design.camera = "";
+  const camera = design.cameraMotion;
+  if (!camera || typeof camera !== "object" || !(MOTION_CAMERA.DIRECTION_MODES as readonly string[]).includes(camera.mode)) delete design.cameraMotion;
+  else {
+    design.cameraMotion = { mode: camera.mode };
+    if (typeof camera.subjectId === "string" && /^[a-zA-Z_][\w.-]*$/.test(camera.subjectId)) design.cameraMotion.subjectId = camera.subjectId;
+    if (camera.focus && finite(camera.focus.x) && finite(camera.focus.y) && camera.focus.x >= 0 && camera.focus.x <= 1 && camera.focus.y >= 0 && camera.focus.y <= 1) design.cameraMotion.focus = { x: camera.focus.x, y: camera.focus.y };
+  }
   if (design.floor && (!finite(design.floor.horizon) || !Array.isArray(design.floor.outline) || !design.floor.outline.every(point))) delete design.floor;
   return design;
 };

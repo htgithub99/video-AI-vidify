@@ -25,6 +25,23 @@ for (const extra of ["</g>", "</g></g>", "\n</g>\n</g>\n"]) {
 for (const broken of [svg.replace("</svg>", "</path></svg>"), svg.replace('<g id="person">', '</g><g id="person">'), svg.replace("</svg>", "</g>".repeat(33) + "</svg>")]) assert.equal(closeMotionSvgTags(broken), broken, "Ambiguous markup and excessive repairs must remain rejected");
 const patterned = svg.replace('<g id="room">', '<defs><pattern id="tiles" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0L8 8" stroke="#303030"/></pattern></defs><g id="room">').replace('fill="#202327"', 'fill="url(#tiles)"');
 assert.equal(normalizeMotionVector(patterned, "scene", "input", "local pattern", true).svg.includes('<pattern id="tiles"'), true);
+const filtered = (filter: string, reference = "url(#shadow)") => svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ').replace('<g id="room">', `<defs>${filter}</defs><g id="room">`).replace('<g id="person">', `<g id="person" filter="${reference}">`);
+const shadow = '<filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#1f2b17" flood-opacity="0.25"/></filter>';
+const shadowSvg = filtered(shadow);
+assert.equal(normalizeMotionVector(shadowSvg, "scene", "input", "drop shadow", true).svg, shadowSvg, "Safe drop shadows and their subject must remain unchanged");
+for (const filter of ['<filter id="shadow"/>', '<filter id="shadow"></filter>', '<filter id="shadow"><feImage href="https://example.com/a.png"/></filter>', '<filter id="shadow"><script>alert(1)</script></filter>']) {
+  const safe = normalizeMotionVector(filtered(filter), "scene", "input", "empty filter", true).svg;
+  assert.doesNotMatch(safe, /<filter\b|\sfilter\s*=|<feImage\b|<script\b|https:/i);
+  assert.ok(safe.includes('<g id="person"><path d="M0 0L40 0L40 200Z"/>'), "Removing an unusable filter preserves the original subject geometry");
+  assert.equal(normalizeMotionVector(safe, "scene", "input", "idempotent filter recovery", true).svg, safe);
+}
+const mixedFilters = filtered('<filter id="empty"/>' + shadow).replace('<g id="room">', '<g id="room" filter="url(#empty)">');
+const mixedSafe = normalizeMotionVector(mixedFilters, "scene", "input", "independent filters", true).svg;
+assert.ok(mixedSafe.includes(shadow));
+assert.ok(mixedSafe.includes('<g id="person" filter="url(#shadow)">'));
+assert.ok(mixedSafe.includes('<g id="room">'));
+const blurSvg = filtered('<filter id="shadow"><feGaussianBlur stdDeviation="2"/></filter>');
+assert.equal(normalizeMotionVector(blurSvg, "scene", "input", "existing blur", true).svg, blurSvg);
 const assertSafeOrRejected = (input: string) => {
   let safe: string;
   try {

@@ -1,8 +1,9 @@
+import { compositionActorMotion } from "../src/lib/motionCompositionMotion.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { compositionActorMotion, compositionAttachedMotion } from "../src/lib/motionHorrorComposition.js";
+import { compositionAttachedMotion } from "../src/lib/motionCompositionRepair.js";
 import { normalizeFirstSceneComposition, compositionFrameSvg } from "../src/lib/motionSceneComposition.js";
 import { normalizeRemotionRelations } from "../src/lib/motionRemotionStaging.js";
 import { motionNarratedSoundEvents } from "../src/lib/motionSound.js";
@@ -52,21 +53,20 @@ assert.deepEqual(
   safe.composition.animations.map((a) => a.channel),
   ["effect"],
 );
-assert.equal(compositionActorMotion(safe.composition, detached.asset, [person, cup], cast, behavior).added, 0);
-assert.equal(compositionActorMotion(safe.composition, detached.asset, [person, { ...cup, target: "host" }], cast, behavior).added, 0, "Entity aliases also preserve held ownership");
+assert.equal(compositionActorMotion(safe.composition, detached.asset, [person, cup], cast, behavior, "horror").added, 0);
+assert.equal(compositionActorMotion(safe.composition, detached.asset, [person, { ...cup, target: "host" }], cast, behavior, "horror").added, 0, "Entity aliases also preserve held ownership");
 const still = { ...nested.composition, animations: [] };
-const breathing = compositionActorMotion(still, nested.asset, [person], cast, behavior);
-assert.equal(breathing.added, 1);
+const breathing = compositionActorMotion(still, nested.asset, [person], cast, behavior, "horror");
+assert.equal(breathing.added, 0, "Do not invent whole-character breathing without an isolated chest detail");
 assert.deepEqual(
   breathing.composition.animations.map((a) => a.target),
-  ["actor"],
-  "Never invent a wave from an arm ID",
+  [],
+  "Never invent a wave or whole-character bob from an arm ID",
 );
-assert.equal(compositionActorMotion(still, nested.asset, [{ ...person, representation: "detail" }], cast, behavior).added, 0);
-assert.equal(compositionActorMotion(still, nested.asset, [person], cast, { ...behavior, actors: "fixed" }).added, 0);
+assert.equal(compositionActorMotion(still, nested.asset, [{ ...person, representation: "detail" }], cast, behavior, "horror").added, 0);
+assert.equal(compositionActorMotion(still, nested.asset, [person], cast, { ...behavior, actors: "fixed" }, "horror").added, 0);
 const rainOnly = compositionFrameSvg(nested.asset, nested.composition, 2, { ...behavior, actors: "fixed" }, new Set());
-assert.ok(rainOnly.includes('id="drop"') && rainOnly.includes("translate(0 -2)"));
-assert.ok(!rainOnly.includes('id="actor" transform='), "Fixed actors do not disable rain");
+assert.equal(rainOnly, nested.asset.svg, "Scene motion off freezes rain and characters together");
 assert.equal(compositionFrameSvg(nested.asset, nested.composition, 2, { ...behavior, actors: "fixed", sceneEffects: "off" }, new Set()), nested.asset.svg);
 assert.equal(normalizeRemotionRelations([{ ...person, description: "Bàn tay của người kể đặt cạnh chén" }])[0].representation, "detail");
 assert.equal(normalizeRemotionRelations([{ ...person, description: "Người đàn ông cầm chén trong bàn tay" }])[0].representation, undefined);
@@ -171,7 +171,7 @@ try {
   const aborted = new AbortController();
   aborted.abort();
   await assert.rejects(() => directMotionSound(make(), {} as any, { ...opts, signal: aborted.signal }));
-  console.log("Scene consistency passed: attached props, no forced waves, body detail, independent motion switches, possession identities, shared cached SFX, narration fallback and intentional silence; no live AI or video.");
+  console.log("Scene consistency passed: attached props, no forced waves, body detail, scene master motion switch, possession identities, shared cached SFX, narration fallback and intentional silence; no live AI or video.");
 } finally {
   for (const [key, value] of [
     ["APP_DATA_DIR", beforeEnv.data],
