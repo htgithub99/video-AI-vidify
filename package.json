@@ -18,6 +18,7 @@
     "test:proxy": "tsx scripts/verify-proxy-manager.ts && tsx scripts/verify-native-proxy-browser.ts",
     "test:activity": "tsx scripts/verify-workflow-activity.ts",
     "test:chat-responses": "tsx scripts/verify-chat-response-snapshots.ts && tsx scripts/verify-chat-composer-validation.ts",
+    "test:chat-cleanup": "tsx scripts/verify-chat-history-cleanup.ts && tsx scripts/verify-gemini-activity-cleanup.ts",
     "test:claude": "tsx scripts/verify-claude-models.ts && tsx scripts/verify-claude-chat.ts",
     "test:gemini-thinking": "tsx scripts/verify-gemini-thinking.ts",
     "test:motion-recovery": "tsx scripts/verify-motion-scene-contract.ts && tsx scripts/verify-motion-recovery.ts && tsx scripts/verify-chat-response-snapshots.ts",

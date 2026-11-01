@@ -1,3 +1,5 @@
+import { deleteProviderConversationHistory } from "./chatHistoryCleanupService.js";
+import { CHAT_HISTORY_CLEANUP } from "../../constants/chatHistoryCleanup.js";
 import { RUNTIME_VALUES } from "../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
@@ -25,8 +27,6 @@ import {
   SOURCE_TEMPLATE_SYMBOL_86,
   SOURCE_TEXT_ABORT,
   SOURCE_TEXT_0_2,
-  SOURCE_TEXT_A,
-  SOURCE_TEXT_ALERTDIALOG,
   SOURCE_TEXT_ALREADY_SELECTED,
   SOURCE_TEXT_ARIA_DISABLED,
   SOURCE_TEXT_ARTIFACTTYPE,
@@ -65,7 +65,6 @@ import {
   SOURCE_TEXT_CODE,
   SOURCE_TEXT_COMPLETIONMARKER,
   SOURCE_TEXT_CONFIRMED,
-  SOURCE_TEXT_DIALOG,
   SOURCE_TEXT_DISABLED,
   SOURCE_TEXT_DOMCONTENTLOADED,
   SOURCE_TEXT_ESCAPE,
@@ -77,10 +76,8 @@ import {
   SOURCE_TEXT_GROK_COM,
   SOURCE_TEXT_GROK_COM_2,
   SOURCE_TEXT_GROK_SECURITY_VERIFICATION_TIMEOUT,
-  SOURCE_TEXT_HEADING,
   SOURCE_TEXT_HEX,
   SOURCE_TEXT_HIDDEN,
-  SOURCE_TEXT_HREF,
   SOURCE_TEXT_ID,
   SOURCE_TEXT_IDENTITY,
   SOURCE_TEXT_INPUT_TYPE_FILE,
@@ -101,14 +98,11 @@ import {
   SOURCE_TEXT_REQUESTID,
   SOURCE_TEXT_ROLE_ALERT,
   SOURCE_TEXT_ROLE_LISTBOX_ROLE_OPTION_ROLE_MENU,
-  SOURCE_TEXT_ROLE_MENU_ROLE_LISTBOX_ROLE_DIALOG,
-  SOURCE_TEXT_ROLE_MENU_ROLE_MENUITEM,
   SOURCE_TEXT_SCENES,
   SOURCE_TEXT_SELECTED,
   SOURCE_TEXT_SELECTED_WITH_THINKING_LEVEL,
   SOURCE_TEXT_SHA256,
   SOURCE_TEXT_SYMBOL_16,
-  SOURCE_TEXT_SYMBOL_34,
   SOURCE_TEXT_SYMBOL_4,
   SOURCE_TEXT_TEXT,
   SOURCE_TEXT_THINKING_LEVEL_UNAVAILABLE,
@@ -116,8 +110,6 @@ import {
   SOURCE_TEXT_UNAVAILABLE,
   SOURCE_TEXT_UNCONFIRMED,
   SOURCE_TEXT_VISIBLE,
-  SOURCE_TEXT_XPATH,
-  SOURCE_TEXT_XPATH_2,
 } from "../../constants/sourceText.js";
 import { parseJson } from "../../lib/jsonStringify.js";
 import { createHash } from "crypto";
@@ -357,7 +349,7 @@ const getProviderRooms = (provider: AiPlanningFallbackProvider): Map<string, Pag
 };
 const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
 export const closeChatBrowserIfIdle = async (log?: (line: string) => void): Promise<boolean> => {
-  if (hasActiveChatRooms()) {
+  if (manualCleanupFlights.size || hasActiveChatRooms()) {
     log?.(MOTION_BROWSER_HANDOFF.ACTIVE_ROOMS(_.flatMap([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => [...rooms.values()].filter((page) => !page.isClosed()).map((page) => page.url())).join(BROWSER_LIFECYCLE_TEXTS.urlSeparator)));
     return false;
   }
@@ -404,260 +396,29 @@ export const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity):
   if (!page || page.isClosed()) throw new Error(SOURCE_TEXT_CHAT_PLANNING_ROOM_UNAVAILABLE_FOR_RELOAD);
   await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
 };
-const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { item: string; action: string; ready: string; sidebarOpen: string; sidebarReady: string; url: string } | undefined => {
-  if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat))
-    return {
-      item: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CONVERSATION_ITEM_SELECTOR,
-      action: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_CONVERSATION_ACTION_SELECTOR,
-      ready: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
-      sidebarOpen: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SIDEBAR_OPEN_SELECTOR,
-      sidebarReady: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SIDEBAR_READY_SELECTOR,
-      url: EXTERNAL_URLS.GEMINI_CHAT,
-    };
-  if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat))
-    return { item: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CONVERSATION_ITEM_SELECTOR, action: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_CONVERSATION_ACTION_SELECTOR, ready: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_INPUT_SELECTOR, sidebarOpen: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_SIDEBAR_OPEN_SELECTOR, sidebarReady: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_SIDEBAR_READY_SELECTOR, url: EXTERNAL_URLS.GROK_CHAT };
-  if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi))
-    return {
-      item: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_CONVERSATION_ITEM_SELECTOR,
-      action: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_CONVERSATION_ACTION_SELECTOR,
-      ready: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_INPUT_SELECTOR,
-      sidebarOpen: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SIDEBAR_OPEN_SELECTOR,
-      sidebarReady: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SIDEBAR_READY_SELECTOR,
-      url: EXTERNAL_URLS.CHATGPT,
-    };
+const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { url: string } | undefined => {
+  if (provider === AiPlanningFallbackProvider.GeminiChat) return { url: EXTERNAL_URLS.GEMINI_CHAT };
+  if (provider === AiPlanningFallbackProvider.GrokChat) return { url: EXTERNAL_URLS.GROK_CHAT };
+  if (provider === AiPlanningFallbackProvider.ChatGptUi) return { url: EXTERNAL_URLS.CHATGPT };
   return undefined;
 };
-const getConversationIdentity = async (item: ReturnType<Page["locator"]>): Promise<string> =>
-  (await item.getAttribute(SOURCE_TEXT_HREF).catch(() => null)) ||
-  (await item
-    .locator(SOURCE_TEXT_A)
-    .first()
-    .getAttribute(SOURCE_TEXT_HREF)
-    .catch(() => null)) ||
-  (await item.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
-const waitForConversationIdentityChange = async (page: Page, itemSelector: string, previousIdentity: string): Promise<boolean> => {
-  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_VERIFY_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const items = page.locator(itemSelector);
-    if (_.isEqual(await items.count().catch(() => 0), 0)) return true;
-    if (!_.isEqual(await getConversationIdentity(items.first()), previousIdentity)) return true;
-    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_VERIFY_POLL_MS);
-  }
-  return false;
+const manualCleanupFlights = new Map<AiPlanningFallbackProvider, Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }>>();
+export const clearChatPlanningRooms = (provider: AiPlanningFallbackProvider): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }> => {
+  const pending = manualCleanupFlights.get(provider);
+  if (pending) return pending;
+  const releaseBrowser = retainGlobalBrowser();
+  const flight = executeClearChatPlanningRooms(provider).finally(async () => {
+    manualCleanupFlights.delete(provider);
+    releaseBrowser();
+    await closeChatBrowserIfIdle();
+  });
+  manualCleanupFlights.set(provider, flight);
+  return flight;
 };
-const deleteFirstProviderConversation = async (page: Page, provider: AiPlanningFallbackProvider, itemSelector: string, actionSelector: string): Promise<boolean> => {
-  const item = page.locator(itemSelector).first();
-  const previousIdentity = await getConversationIdentity(item);
-  for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ITEM_ATTEMPTS; attempt++) {
-    appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_DELETING_ATTEMPT(provider, _.add(attempt, 1)));
-    await item.scrollIntoViewIfNeeded({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => undefined);
-    await item.hover({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => undefined);
-    const directActionButton = item.locator(actionSelector).last();
-    const parentActionButton = item.locator(SOURCE_TEXT_XPATH).locator(actionSelector).last();
-    const containerActionButton = item.locator(SOURCE_TEXT_XPATH_2).locator(actionSelector).last();
-    const actionButton = _.gt(await directActionButton.count().catch(() => 0), 0) ? directActionButton : _.gt(await parentActionButton.count().catch(() => 0), 0) ? parentActionButton : containerActionButton;
-    const actionCount = await actionButton.count().catch(() => 0);
-    if (_.isEqual(actionCount, 0)) {
-      appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_OPTION_BUTTON_NOT_FOUND(provider));
-      continue;
-    }
-    const actionVisible = await actionButton
-      .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
-      .then(() => true)
-      .catch(() => false);
-    const actionClicked = actionVisible
-      ? await actionButton
-          .click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
-          .then(() => true)
-          .catch(() => false)
-      : await actionButton
-          .evaluate((element: HTMLElement) => element.click())
-          .then(() => true)
-          .catch(() => false);
-    appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_OPTION_BUTTON_STAT(provider, actionCount, actionVisible, actionClicked));
-    const deleteMenuItem = page
-      .getByRole(SOURCE_TEXT_MENUITEM, { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN })
-      .or(page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN }))
-      .or(page.locator(SOURCE_TEXT_ROLE_MENU_ROLE_MENUITEM).filter({ hasText: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN }))
-      .filter({ visible: true })
-      .last();
-    const deleteVisible = await deleteMenuItem
-      .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
-      .then(() => true)
-      .catch(() => false);
-    if (!deleteVisible) {
-      const visibleMenuText = _.join(
-        _.compact(
-          _.map(
-            await page
-              .locator(SOURCE_TEXT_ROLE_MENU_ROLE_LISTBOX_ROLE_DIALOG)
-              .allTextContents()
-              .catch(() => []),
-            (value) => _.trim(value),
-          ),
-        ),
-        SOURCE_TEXT_SYMBOL_34,
-      );
-      appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_DELETE_COMMAND_NOT_FOUND(provider, visibleMenuText));
-      continue;
-    }
-    await deleteMenuItem.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-    const dialog = page.getByRole(SOURCE_TEXT_DIALOG).or(page.getByRole(SOURCE_TEXT_ALERTDIALOG)).filter({ visible: true }).last();
-    const hasDialog = await dialog
-      .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_CONFIRM_TIMEOUT_MS })
-      .then(() => true)
-      .catch(() => false);
-    appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_DIALOG_VISIBILITY(provider, hasDialog));
-    if (hasDialog) {
-      const confirmButton = dialog
-        .getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_PATTERN })
-        .or(dialog.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.CONVERSATION_DELETE_FALLBACK_PATTERN }))
-        .filter({ visible: true })
-        .last();
-      const confirmCount = await confirmButton.count().catch(() => 0);
-      const confirmClicked = await confirmButton
-        .click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS })
-        .then(() => true)
-        .catch(() => false);
-      appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_CONFIRM_STAT(provider, confirmCount, confirmClicked));
-    }
-    if (await waitForConversationIdentityChange(page, itemSelector, previousIdentity)) return true;
-  }
-  appWarn(
-    CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_FAILED(
-      provider,
-      previousIdentity,
-      await page
-        .locator(itemSelector)
-        .count()
-        .catch(() => 0),
-      await getConversationIdentity(page.locator(itemSelector).first()),
-    ),
-  );
-  return false;
-};
-const deleteAllGeminiActivity = async (page: Page, detectedConversationCount: number): Promise<number> => {
-  await page.goto(EXTERNAL_URLS.GEMINI_ACTIVITY, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
-  const deleteActivityButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_DELETE_PATTERN, exact: true }).filter({ visible: true }).first();
-  await deleteActivityButton.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  await deleteActivityButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  const allTimeOption = page.getByRole(SOURCE_TEXT_MENUITEM, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_ALL_TIME_PATTERN }).filter({ visible: true }).first();
-  await allTimeOption.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  await allTimeOption.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  const confirmDialog = page
-    .getByRole(SOURCE_TEXT_DIALOG)
-    .filter({ has: page.getByRole(SOURCE_TEXT_HEADING, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_CONFIRM_HEADING_PATTERN }) })
-    .filter({ visible: true })
-    .last();
-  await confirmDialog.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  const confirmButton = confirmDialog.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ACTIVITY_DELETE_PATTERN, exact: true }).filter({ visible: true }).last();
-  await confirmButton.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  await confirmButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  await confirmDialog.waitFor({ state: SOURCE_TEXT_HIDDEN, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(AiPlanningFallbackProvider.GeminiChat));
-  return detectedConversationCount;
-};
-const deleteAllChatGptConversations = async (page: Page, detectedConversationCount: number): Promise<number> => {
-  await page.goto(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DATA_CONTROLS_URL, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
-  const settingsDialog = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_SETTINGS_DIALOG_SELECTOR).filter({ visible: true }).last();
-  await settingsDialog.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  await settingsDialog.getByText(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DATA_CONTROLS_HEADING_PATTERN, { exact: true }).first().waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  const deleteAllButton = settingsDialog
-    .getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CHATS_PATTERN })
-    .or(settingsDialog.locator(SOURCE_TEXT_BUTTON).filter({ hasText: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CHATS_PATTERN }))
-    .filter({ visible: true })
-    .last();
-  await deleteAllButton.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  await deleteAllButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  const confirmationDialog = page
-    .getByRole(SOURCE_TEXT_DIALOG)
-    .or(page.getByRole(SOURCE_TEXT_ALERTDIALOG))
-    .filter({ has: page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CONFIRM_PATTERN }) })
-    .filter({ visible: true })
-    .last();
-  await confirmationDialog.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_CONFIRM_TIMEOUT_MS });
-  const confirmButton = confirmationDialog.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_DELETE_ALL_CONFIRM_PATTERN }).filter({ visible: true }).last();
-  await confirmButton.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  await confirmButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  await confirmationDialog.waitFor({ state: SOURCE_TEXT_HIDDEN, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(AiPlanningFallbackProvider.ChatGptUi));
-  return detectedConversationCount;
-};
-const deleteAllGrokConversations = async (page: Page, detectedConversationCount: number): Promise<number> => {
-  const bulkButton = page
-    .getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN })
-    .or(page.getByRole(SOURCE_TEXT_MENUITEM, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN }))
-    .filter({ visible: true })
-    .last();
-  await bulkButton.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  await bulkButton.click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-  const confirmation = page
-    .getByRole(SOURCE_TEXT_DIALOG)
-    .or(page.getByRole(SOURCE_TEXT_ALERTDIALOG))
-    .filter({ has: page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN }) })
-    .filter({ visible: true })
-    .last();
-  if (await confirmation.isVisible().catch(() => false)) {
-    await confirmation.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_DELETE_ALL_PATTERN }).filter({ visible: true }).last().click({ timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS });
-    await confirmation.waitFor({ state: SOURCE_TEXT_HIDDEN, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  }
-  appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(AiPlanningFallbackProvider.GrokChat));
-  return detectedConversationCount;
-};
-const deleteProviderConversationHistory = async (page: Page, provider: AiPlanningFallbackProvider): Promise<number> => {
-  const selectors = getProviderConversationSelectors(provider);
-  if (!selectors) return 0;
-  if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi)) return deleteAllChatGptConversations(page, 0);
-  if (!_.includes(page.url(), new URL(selectors.url).hostname)) {
-    await page.goto(selectors.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
-  }
-  await page.locator(selectors.ready).last().waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  const sidebarReady = page.locator(selectors.sidebarReady).filter({ visible: true }).first();
-  const sidebarOpenButton = page.locator(selectors.sidebarOpen).filter({ visible: true }).first();
-  if (!(await sidebarReady.isVisible().catch(() => false)) && (await sidebarOpenButton.isVisible().catch(() => false))) {
-    await sidebarOpenButton.click({ force: true, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_ACTION_TIMEOUT_MS }).catch(() => sidebarOpenButton.evaluate((element: HTMLElement) => element.click()));
-  }
-  const sidebarLoaded = await sidebarReady
-    .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS })
-    .then(() => true)
-    .catch(() => false);
-  if (
-    !sidebarLoaded &&
-    _.isEqual(
-      await page
-        .locator(selectors.item)
-        .count()
-        .catch(() => 0),
-      0,
-    )
-  ) {
-    appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_NO_CONVERSATIONS(provider));
-    return 0;
-  }
-  if (!sidebarLoaded) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-  await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
-  const initialConversationCount = await page.locator(selectors.item).count();
-  appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_CONVERSATIONS_FOUND(provider, initialConversationCount));
-  if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return _.isEqual(initialConversationCount, 0) ? 0 : deleteAllGeminiActivity(page, initialConversationCount);
-  if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat)) return _.isEqual(initialConversationCount, 0) ? 0 : deleteAllGrokConversations(page, initialConversationCount);
-  let deletedCount = 0;
-  for (let attempt = 0; attempt < CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_MAX_CONVERSATIONS; attempt++) {
-    const items = page.locator(selectors.item);
-    if (_.isEqual(await items.count(), 0)) break;
-    const deleted = await deleteFirstProviderConversation(page, provider, selectors.item, selectors.action);
-    if (!deleted) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-    deletedCount++;
-  }
-  const remainingConversationCount = await page.locator(selectors.item).count();
-  if (_.gt(remainingConversationCount, 0) || (_.gt(initialConversationCount, 0) && _.isEqual(deletedCount, 0))) {
-    throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR);
-  }
-  return deletedCount;
-};
-export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvider): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }> => {
+const executeClearChatPlanningRooms = async (provider: AiPlanningFallbackProvider): Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }> => {
   const rooms = getProviderRooms(provider);
   const selectors = getProviderConversationSelectors(provider);
-  if (!rooms || !selectors) return { closedRoomCount: 0, deletedConversationCount: 0, deletedAll: false };
+  if (!rooms || !selectors) throw new Error(CHAT_HISTORY_CLEANUP.UNSUPPORTED);
   const pages = [...rooms.values()];
   _.forEach([...activePlanningControllers.entries()], ([runId, runControllers]) => {
     _.forEach([...runControllers.entries()], ([workerId, record]) => {
@@ -671,14 +432,18 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
   _.forEach([...planningMutexes.keys()], (roomKey) => {
     if (_.startsWith(roomKey, mutexPrefix)) planningMutexes.delete(roomKey);
   });
+  _.forEach([...pendingRoomResponses.keys()], (roomKey) => {
+    if (_.startsWith(roomKey, mutexPrefix)) pendingRoomResponses.delete(roomKey);
+  });
   await Promise.allSettled(_.map(pages, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
   let cleanupPage: Page | undefined;
   try {
-    const browser = await getOrLaunchGlobalBrowser(true, true);
+    const browser = provider === AiPlanningFallbackProvider.GrokChat ? await getOrLaunchGrokBrowser(false) : await getOrLaunchGlobalBrowser(false, true);
     cleanupPage = await browser.context.newPage();
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
-    return { closedRoomCount: pages.length, deletedConversationCount, deletedAll: _.includes([AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat], provider) };
+    appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(provider));
+    return { closedRoomCount: pages.length, deletedConversationCount, deletedAll: true };
   } catch (error) {
     appWarn(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ERROR(provider, _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error))));
     throw error;
@@ -686,7 +451,6 @@ export const clearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
     rooms.clear();
     const pagesToClose = _.uniq(_.compact([...pages, cleanupPage]));
     await Promise.allSettled(_.map(pagesToClose, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
-    await closeChatBrowserIfIdle();
   }
 };
 const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefined => {
@@ -696,6 +460,8 @@ const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefi
   return undefined;
 };
 const createRoom = async (context: BrowserContext, url: string, rooms: Map<string, Page>, projectId: string, signal?: AbortSignal): Promise<Page> => {
+  const provider = _.find([...manualCleanupFlights.keys()], (candidate) => _.startsWith(projectId, `${candidate}${CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_KEY_SEPARATOR}`));
+  if (provider) await manualCleanupFlights.get(provider);
   throwIfPlanningCancelled(signal);
   const existingRoom = getLiveRoom(rooms, projectId);
   if (existingRoom) return existingRoom;
@@ -1933,6 +1699,7 @@ const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<str
 };
 export const getChatPlanningRoom = (request: ChatPlanningRoomIdentity): Page | undefined => getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
 export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Promise<void> => {
+  await manualCleanupFlights.get(request.provider);
   throwIfPlanningCancelled(request.signal);
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.DeepSeekChat)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
@@ -2048,6 +1815,8 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
 };
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
+  throwIfPlanningCancelled(request.signal);
+  await manualCleanupFlights.get(request.provider);
   throwIfPlanningCancelled(request.signal);
   const roomKey = getPlanningRoomKey(request);
   const planningMutex = planningMutexes.get(roomKey) || new SimpleMutex();
