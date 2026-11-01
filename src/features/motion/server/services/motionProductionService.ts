@@ -520,6 +520,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
               spec: result.compiled!.spec,
               options: {
                 editorialSessionId: record.job.id,
+                clearGeminiChatsBeforeExport: base.clearGeminiChatsBeforeExport === true,
                 quality: base.quality,
                 aspect: base.aspect,
                 fps: base.fps,
@@ -700,9 +701,21 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return publicJob(record);
   };
-  const resumeMotionProduction = (id: string): MotionStoryJobState => {
-    const record = read(id);
+  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean): MotionStoryJobState => {
+    let record = read(id);
     if (!record) throw new Error(P.INVALID_RUN);
+    if (typeof clearGeminiChatsBeforeExport === "boolean" && !active.has(id) && record.input.clearGeminiChatsBeforeExport !== clearGeminiChatsBeforeExport) {
+      const owner = store.acquire(id);
+      try {
+        record = read(id);
+        if (!record) throw new Error(P.INVALID_RUN);
+        record.input.clearGeminiChatsBeforeExport = clearGeminiChatsBeforeExport;
+        record.inputKey = motionInputKey(record.input);
+        store.save(id, record, owner);
+      } finally {
+        store.release(id, owner);
+      }
+    }
     return startMotionProduction(record.input, true);
   };
   const cancelMotionProduction = (id: string): boolean => {

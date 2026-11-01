@@ -525,6 +525,18 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.AUTO_EXPORT}</span>
                     <MotionToggle checked={state.autoExport === true} label={text.AUTO_EXPORT} icon={Rocket} text={state.autoExport ? text.AUTO_EXPORT_ON : text.AUTO_EXPORT_OFF} title={text.AUTO_EXPORT_HINT} disabled={studio.busy} onClick={() => patch({ autoExport: state.autoExport !== true })} />
                   </div>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.CLEAR_GEMINI_CHATS}</span>
+                    <MotionToggle
+                      checked={state.clearGeminiChatsBeforeExport === true}
+                      label={text.CLEAR_GEMINI_CHATS}
+                      icon={Trash2}
+                      text={state.clearGeminiChatsBeforeExport === true ? text.CLEAR_GEMINI_CHATS_ON : text.CLEAR_GEMINI_CHATS_OFF}
+                      title={text.CLEAR_GEMINI_CHATS_HINT}
+                      disabled={studio.busy}
+                      onClick={() => patch({ clearGeminiChatsBeforeExport: state.clearGeminiChatsBeforeExport !== true })}
+                    />
+                  </div>
                 </MotionSettingsGroup>
               </div>
               {!remotionMode && <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />}

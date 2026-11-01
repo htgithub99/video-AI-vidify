@@ -2,6 +2,7 @@ import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { BROWSER_LIFECYCLE_TEXTS, isDisposableChatBrowserUrl } from "../../constants/browserLifecycle.js";
+import { acquireGeminiActivityUse, closeAfterGeminiActivityCleanup, waitForGeminiBrowserClose } from "./geminiActivityCleanupService.js";
 import {
   SOURCE_BROWSER_TEXT_2D,
   SOURCE_BROWSER_TEXT_ARIA_BUSY,
@@ -1826,7 +1827,15 @@ const waitForSharedChromeExit = async (): Promise<boolean> => {
   }
   return false;
 };
-export async function closeActiveBrowser() {
+export async function closeActiveBrowser(skipActivityCleanup = false) {
+  if (activeBrowserInstance && !skipActivityCleanup) {
+    const session = activeBrowserInstance;
+    await closeAfterGeminiActivityCleanup(session.context, async () => {
+      await closeActiveBrowser(true);
+      return activeBrowserInstance !== session;
+    });
+    return;
+  }
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
     activeBrowserTimeout = null;
@@ -1863,7 +1872,7 @@ export async function closeActiveBrowser() {
   }
   activeBrowserHeadless = undefined;
 }
-export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = false): Promise<boolean> {
+export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = false, skipActivityCleanup = false): Promise<boolean> {
   if (browserRetainers.size) return false;
   if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise.catch(() => undefined);
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) {
@@ -1872,12 +1881,13 @@ export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = fa
   }
   const session = activeBrowserInstance || (sharedChromeLaunchedByApp ? await connectToSharedChromeBrowser(false) : null);
   if (!session) return !(await isSharedChromeRunning());
+  if (!skipActivityCleanup) return closeAfterGeminiActivityCleanup(session.context, () => closeAppBrowserAfterTask(closeOrphanChatTabs, true));
   if (session.preserveExternalPages) {
     const isChatOrBlankPage = (page: Page): boolean => isDisposableChatBrowserUrl(page.url());
     const openPages = _.filter(session.context.pages(), (page) => !page.isClosed());
     const canCloseAttachedChatBrowser = closeOrphanChatTabs && openPages.length > 0 && _.every(openPages, isChatOrBlankPage);
     if (!sharedChromeLaunchedByApp && !canCloseAttachedChatBrowser) {
-      await closeActiveBrowser();
+      await closeActiveBrowser(true);
       return false;
     }
     const otherPages = _.filter(session.context.pages(), (page) => !page.isClosed() && page !== session.page);
@@ -1916,13 +1926,18 @@ export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = fa
       return false;
     }
   }
-  await closeActiveBrowser();
+  await closeActiveBrowser(true);
   return true;
 }
-export async function closeIdleSharedChrome(): Promise<boolean> {
+export async function closeIdleSharedChrome(skipActivityCleanup = false): Promise<boolean> {
   if (browserRetainers.size) return false;
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) return false;
   if (!(await isSharedChromeRunning())) return true;
+  if (!skipActivityCleanup) {
+    const session = await getExistingGlobalBrowser();
+    if (!session) return false;
+    return closeAfterGeminiActivityCleanup(session.context, () => closeIdleSharedChrome(true));
+  }
   const isIdlePage = (page: Page): boolean => isDisposableChatBrowserUrl(page.url());
   try {
     const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
@@ -1970,7 +1985,14 @@ export function scheduleGlobalBrowserCleanup() {
     await closeAppBrowserAfterTask();
   }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
+export const getExistingGlobalBrowser = async (): Promise<BrowserSession | null> => {
+  if (activeBrowserInstance) return activeBrowserInstance;
+  const existing = await connectToSharedChromeBrowser(false);
+  if (existing) activeBrowserInstance = existing;
+  return existing;
+};
 export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
+  await waitForGeminiBrowserClose();
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
     activeBrowserTimeout = null;
@@ -3289,6 +3311,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   let browserInstance: BrowserSession | null = null;
   let activePage: Page | null = null;
   let ownsActivePage = false;
+  let releaseActivity: (() => void) | undefined;
   let terminalWarning = BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING;
   try {
     while (roomAttempts < maxRoomAttempts && !success && !isMediaGenerationCancelled(generationRevision)) {
@@ -3308,6 +3331,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       try {
         if (!browserInstance) {
           browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
+          releaseActivity = await acquireGeminiActivityUse(browserInstance.context);
           if (options.forceNewPage) {
             activePage = await browserInstance.context.newPage();
             ownsActivePage = true;
@@ -3342,6 +3366,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
       } catch (error: unknown) {
         appError(BACKEND_MESSAGES.GEMINI_CHAT_INIT_FAILED.replace(SOURCE_TEXT_0_2, getErrorMessage(error)));
         if (browserInstance) {
+          releaseActivity?.();
+          releaseActivity = undefined;
           await closeActiveBrowser();
           browserInstance = null;
           activePage = null;
@@ -3422,6 +3448,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace(SOURCE_TEXT_0_2, failureReason));
   } finally {
     if (ownsActivePage && activePage && !activePage.isClosed()) await activePage.close().catch(() => undefined);
+    releaseActivity?.();
     if (browserInstance) {
       if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
       else {
@@ -3587,9 +3614,11 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
   const results: BatchImageResult[] = [];
   let browserInstance: BrowserSession | null = null;
   let batchWorkerPages: Page[] = [];
+  let releaseActivity: (() => void) | undefined;
   try {
     if (isMediaGenerationCancelled(generationRevision)) return results;
     browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
+    releaseActivity = await acquireGeminiActivityUse(browserInstance.context);
     const context = browserInstance.context;
     const reusablePages = _.uniq(_.filter(_.concat(globalBatchPages, context.pages()), (page) => (!retainBrowserSession || page !== browserInstance!.page) && !page.isClosed() && !_.includes(page.url(), SOURCE_TEXT_GROK_COM) && (_.isEqual(page.url(), SOURCE_TEXT_ABOUT_BLANK) || _.includes(page.url(), SOURCE_TEXT_GEMINI_GOOGLE_COM))));
     const candidates = _.take(reusablePages, maxTabs);
@@ -3812,6 +3841,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
       }
     });
   } finally {
+    releaseActivity?.();
     if (browserInstance) {
       if (retainBrowserSession) {
         await Promise.allSettled(_.map(batchWorkerPages, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
@@ -3821,10 +3851,9 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
         await Promise.allSettled(_.map(batchWorkerPages, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
         globalBatchPages = _.filter(globalBatchPages, (page) => !page.isClosed());
         if (!browserInstance.page.isClosed() && !_.includes(browserInstance.page.url(), SOURCE_TEXT_GROK_COM)) await browserInstance.page.close().catch(() => {});
-        activeBrowserInstance = null;
-        activeBrowserHeadless = undefined;
+        await closeActiveBrowser();
       } else {
-        await browserInstance.context.close().catch(() => {});
+        await closeActiveBrowser();
       }
     }
     release();

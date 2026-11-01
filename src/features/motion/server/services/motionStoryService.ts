@@ -183,7 +183,9 @@ import { exhaustedMotionRoom, isChatAttachmentError, isFinalChatResponseError, i
 import { MOTION_AI_RECOVERY as AIR } from "../../../../constants/motionAiRecovery.js";
 import type { MotionAiLog } from "../../../../types/motionVideo.js";
 import { generateContentWithRetry } from "../../../../server/services/geminiService.js";
-import { cancelGlobalBrowserCleanup, retainGlobalBrowser } from "../../../../server/services/imageGeneratorService.js";
+import { cancelGlobalBrowserCleanup, retainGlobalBrowser, getExistingGlobalBrowser } from "../../../../server/services/imageGeneratorService.js";
+import { requestGeminiActivityCleanup, hasPendingGeminiActivityCleanup } from "../../../../server/services/geminiActivityCleanupService.js";
+import { GEMINI_ACTIVITY_CLEANUP } from "../../../../constants/geminiActivityCleanup.js";
 import { MotionAiWorkerPool } from "./motionAiWorkerPool.js";
 import { MotionAiRoomPool } from "./motionAiRoomPool.js";
 import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_NOT_RELEASED_ERROR } from "../../../../constants/browserLifecycle.js";
@@ -509,39 +511,58 @@ export const closeMotionStandaloneBrowser = async (): Promise<boolean> => {
   releaseMotionBrowser = undefined;
   return closeChatBrowserIfIdle();
 };
-export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (line: string) => void, owner?: string): Promise<(() => void) & { shared?: boolean }> => {
-  if (owner) await releaseMotionEditorialSession(owner);
-  if (editorialSessions.size) {
-    log?.(MOTION_BROWSER_HANDOFF.SHARED_OWNER);
-    signal?.throwIfAborted();
-    return Object.assign(() => {}, { shared: true });
-  }
-  const release = await motionBrowserLifecycle.acquireRender(signal, (count) => log?.(MOTION_BROWSER_HANDOFF.WAITING(count)));
+export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (line: string) => void, owner?: string, clearGeminiChatsBeforeExport = false): Promise<(() => void) & { shared?: boolean }> => {
+  signal?.throwIfAborted();
+  const releaseCleanupBrowser = retainGlobalBrowser();
+  let session = await getExistingGlobalBrowser().catch(() => null);
+  if (session && clearGeminiChatsBeforeExport) requestGeminiActivityCleanup(session.context, owner, signal, log);
   try {
+    if (owner) await releaseMotionEditorialSession(owner);
     if (editorialSessions.size) {
-      release();
+      if (session && clearGeminiChatsBeforeExport) log?.(GEMINI_ACTIVITY_CLEANUP.DEFERRED);
       log?.(MOTION_BROWSER_HANDOFF.SHARED_OWNER);
+      signal?.throwIfAborted();
       return Object.assign(() => {}, { shared: true });
     }
-    releaseMotionBrowser?.();
-    releaseMotionBrowser = undefined;
-    cancelGlobalBrowserCleanup();
-    for (let attempt = 0; attempt < MOTION_BROWSER_HANDOFF.CLOSE_ATTEMPTS; attempt++) {
-      signal?.throwIfAborted();
-      if (await closeChatBrowserIfIdle(log)) {
-        cancelGlobalBrowserCleanup();
+    const release = await motionBrowserLifecycle.acquireRender(signal, (count) => log?.(MOTION_BROWSER_HANDOFF.WAITING(count)));
+    try {
+      if (editorialSessions.size) {
+        release();
+        log?.(MOTION_BROWSER_HANDOFF.SHARED_OWNER);
+        return Object.assign(() => {}, { shared: true });
+      }
+      const currentSession = await getExistingGlobalBrowser().catch(() => null);
+      if (currentSession && currentSession.context !== session?.context) {
+        session = currentSession;
+        if (clearGeminiChatsBeforeExport) requestGeminiActivityCleanup(session.context, owner, signal, log);
+      }
+      releaseMotionBrowser?.();
+      releaseMotionBrowser = undefined;
+      cancelGlobalBrowserCleanup();
+      releaseCleanupBrowser();
+      for (let attempt = 0; attempt < MOTION_BROWSER_HANDOFF.CLOSE_ATTEMPTS; attempt++) {
         signal?.throwIfAborted();
-        return release;
+        if (await closeChatBrowserIfIdle(log)) {
+          cancelGlobalBrowserCleanup();
+          signal?.throwIfAborted();
+          return release;
+        }
+        if (session && hasPendingGeminiActivityCleanup(session.context)) {
+          release();
+          return Object.assign(() => {}, { shared: true });
+        }
+        if (attempt + 1 < MOTION_BROWSER_HANDOFF.CLOSE_ATTEMPTS) {
+          log?.(MOTION_BROWSER_HANDOFF.RETRY(attempt + 2));
+          await waitForMotionBrowser(new Promise<void>((resolve) => setTimeout(resolve, MOTION_BROWSER_HANDOFF.RETRY_MS)), signal);
+        }
       }
-      if (attempt + 1 < MOTION_BROWSER_HANDOFF.CLOSE_ATTEMPTS) {
-        log?.(MOTION_BROWSER_HANDOFF.RETRY(attempt + 2));
-        await waitForMotionBrowser(new Promise<void>((resolve) => setTimeout(resolve, MOTION_BROWSER_HANDOFF.RETRY_MS)), signal);
-      }
+      throw new Error(MOTION_BROWSER_NOT_RELEASED_ERROR);
+    } catch (error) {
+      release();
+      throw error;
     }
-    throw new Error(MOTION_BROWSER_NOT_RELEASED_ERROR);
-  } catch (error) {
-    release();
-    throw error;
+  } finally {
+    releaseCleanupBrowser();
   }
 };
 const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<void> => {

@@ -434,7 +434,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
   try {
     job.status = MotionJobStatus.PREPARING;
     job.stage = MOTION_BROWSER_HANDOFF.PREPARING;
-    releaseBrowser = await acquireMotionRenderBrowser(signal, (line) => pushLog(job, line), options.editorialSessionId);
+    releaseBrowser = await acquireMotionRenderBrowser(signal, (line) => pushLog(job, line), options.editorialSessionId, options.clearGeminiChatsBeforeExport === true);
     if (!(releaseBrowser as { shared?: boolean }).shared) pushLog(job, MOTION_BROWSER_RELEASED_LOG);
     job.stage = MOTION_TEXT_PREPARE;
     if (signal.aborted) throw new Error(ABORTED);

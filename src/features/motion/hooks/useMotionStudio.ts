@@ -138,6 +138,7 @@ interface PersistedState extends MotionSceneAiChoice, MotionAiChoice {
   logHistory?: MotionLogEntry[];
   autoContinue: boolean;
   autoExport?: boolean;
+  clearGeminiChatsBeforeExport?: boolean;
   autoRun?: boolean;
   automationPaused?: boolean;
   parts?: number;
@@ -189,6 +190,7 @@ const DEFAULTS: PersistedState = {
   activeStoryJobId: MR.MOTION_TEXT_EMPTY,
   autoContinue: true,
   autoExport: false,
+  clearGeminiChatsBeforeExport: false,
   autoRun: false,
   parts: MOTION_PARTS.DEFAULT,
   series: null,
@@ -751,7 +753,7 @@ export function useMotionStudio() {
             if (now.activeRenderJobId) await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: now.activeRenderJobId });
           } else patch({ autoRun: true, productionId: id, editorialSessionId: id });
           const body = resumeId
-            ? { productionId: resumeId }
+            ? { productionId: resumeId, clearGeminiChatsBeforeExport: now.clearGeminiChatsBeforeExport === true }
             : {
                 source: now.source,
                 productionId: id,
@@ -779,6 +781,7 @@ export function useMotionStudio() {
                 musicMood: now.musicMood,
                 musicVolume: now.musicVolume,
                 autoExport: now.autoExport === true,
+                clearGeminiChatsBeforeExport: now.clearGeminiChatsBeforeExport === true,
                 ...overrides,
               };
           const final = await runStoryJob(resumeId ? API_ROUTES.MOTION_PRODUCTION_RESUME : API_ROUTES.MOTION_PRODUCTION, body, (result) => applyProduction({ id, productionId: id, kind: MotionStoryJobKind.PRODUCTION, result } as MotionStoryJobState));
@@ -1239,6 +1242,7 @@ export function useMotionStudio() {
           const { job } = await motionRequest<{ job: MotionJobState }>(API_ROUTES.MOTION_VIDEO_RENDER, {
             spec: isRemotionSpec(c.spec) ? c.spec : { ...c.spec, gen: c.spec.gen ? { ...c.spec.gen, characterMotion: exportState.characterMotion } : undefined },
             options: {
+              clearGeminiChatsBeforeExport: exportState.clearGeminiChatsBeforeExport === true,
               quality: exportState.quality,
               aspect: exportState.aspect,
               fps: exportState.fps,

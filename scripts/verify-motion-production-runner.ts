@@ -19,6 +19,7 @@ try {
   const jobs = new Map<string, any>();
   const counts: Record<string, number> = {};
   const events: string[] = [];
+  const cleanupOptions: boolean[] = [];
   let failedScene = true;
   let failedVoice = false;
   let waitRender = false;
@@ -75,6 +76,8 @@ try {
     startMotionVideoRenderInput: (input: any) => {
       assert.equal(input.options.requireAudio, true);
       assert.equal(input.options.audioId, voice.audioId);
+      assert.equal(typeof input.options.clearGeminiChatsBeforeExport, "boolean");
+      cleanupOptions.push(input.options.clearGeminiChatsBeforeExport);
       return start("render", { id: "output", videoUrl: "/output.mp4" }, waitRender ? -1 : 5);
     },
     seoMotionStoryInput: () => {
@@ -104,7 +107,7 @@ try {
   assert.ok(events.indexOf(K.VOICE + ":start") < events.indexOf(K.SCENES + ":end"));
   assert.equal((failed.result as any).voice.audioId, voice.audioId);
   assert.ok(failed.progress < 0.6);
-  service.resumeMotionProduction(input.productionId);
+  service.resumeMotionProduction(input.productionId, true);
   const completed = await until(input.productionId);
   assert.equal(completed.status, S.COMPLETED);
   assert.equal(counts[K.ANALYZE], 1);
@@ -112,9 +115,15 @@ try {
   assert.equal(counts[K.VOICE], 1);
   assert.equal(counts[K.SCENES], 2);
   assert.equal((completed.result as any).rendered.id, "output");
+  assert.deepEqual(cleanupOptions, [true]);
+  const savedRun = new MotionProductionStore<any>(directory).read(input.productionId)!;
+  assert.equal(savedRun.input.clearGeminiChatsBeforeExport, true);
   assert.ok(completed.log.some((line) => line.includes("optional SEO unavailable")));
   const restored = createMotionProductionService(deps, directory, 1);
   assert.deepEqual(restored.getMotionProduction(input.productionId), completed);
+  service.startMotionProduction({ ...input, productionId: "cleanup-default-off" });
+  assert.equal((await until("cleanup-default-off")).status, S.COMPLETED);
+  assert.deepEqual(cleanupOptions, [true, false]);
   let remotionPreflight = 0;
   let remotionScenes = 0;
   let remotionTargetSeconds = 2;

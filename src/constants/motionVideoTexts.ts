@@ -154,6 +154,10 @@ export const MOTION_VIDEO_TEXTS = {
     PARTS_ONE: "1 video",
     AUTO_EXPORT: "Xuất video",
     AUTO_EXPORT_ON: "Tự động",
+    CLEAR_GEMINI_CHATS: "Tự xóa chat Gemini",
+    CLEAR_GEMINI_CHATS_ON: "Xóa chat",
+    CLEAR_GEMINI_CHATS_OFF: "Giữ chat",
+    CLEAR_GEMINI_CHATS_HINT: "Bật: trước khi đóng Chrome AI để xuất video, xóa toàn bộ hoạt động Gemini trong Một ngày qua của tài khoản đang dùng. Tắt: giữ lại lịch sử chat. Mặc định tắt.",
     AUTO_EXPORT_OFF: "Xem trước",
     AUTO_EXPORT_HINT: "Bật: dựng cảnh xong sẽ tự xuất video, không tạo ảnh xem trước từng cảnh và không chạy trình xem trước. Video xuất xong hiện ở khung Xem trước.",
     AUTO_EXPORT_WAITING: "Tự động xuất video đang bật – video sẽ hiện ở đây khi xuất xong.",
@@ -373,6 +377,10 @@ export const MOTION_VIDEO_TEXTS = {
     PARTS_ONE: "1 video",
     AUTO_EXPORT: "Export",
     AUTO_EXPORT_ON: "Automatic",
+    CLEAR_GEMINI_CHATS: "Auto-clear Gemini chats",
+    CLEAR_GEMINI_CHATS_ON: "Clear chats",
+    CLEAR_GEMINI_CHATS_OFF: "Keep chats",
+    CLEAR_GEMINI_CHATS_HINT: "On: before closing AI Chrome for export, delete all Gemini activity from the last day for the signed-in account. Off: keep chat history. Off by default.",
     AUTO_EXPORT_OFF: "Preview",
     AUTO_EXPORT_HINT: "On: after scenes are built the video is exported automatically, without scene preview images or the live preview player. The exported video appears in the Preview panel.",
     AUTO_EXPORT_WAITING: "Automatic export is on – the video will appear here once exported.",
@@ -438,12 +446,7 @@ export const MOTION_VIDEO_TEXTS = {
     LOG_VOICE_DEFAULT: "Synthesizing voice audio...",
   },
 } as const;
-export const MOTION_SCRIPT_COPY = {
-  KEY: "motion-script",
-  CHAPTER: (index: number, title: string): string => `${index}. ${title}`,
-  LINE_SEPARATOR: "\n\n",
-  CHAPTER_SEPARATOR: "\n\n\n",
-} as const;
+export const MOTION_SCRIPT_COPY = { KEY: "motion-script", CHAPTER: (index: number, title: string): string => `${index}. ${title}`, LINE_SEPARATOR: "\n\n", CHAPTER_SEPARATOR: "\n\n\n" } as const;
 export type MotionVideoTexts = { readonly [Key in keyof (typeof MOTION_VIDEO_TEXTS)["vi"]]: string };
 export const MOTION_SEO_TEXTS = {
   vi: {

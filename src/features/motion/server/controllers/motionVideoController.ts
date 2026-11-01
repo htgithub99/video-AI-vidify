@@ -379,7 +379,7 @@ export const registerMotionVoice = async (req: Request, res: Response): Promise<
 };
 export const compileMotionStory = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, compileMotionStoryInput);
 export const createMotionProduction = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, job: startMotionProduction(body) }));
-export const continueMotionProduction = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, job: resumeMotionProduction(String(body.productionId)) }));
+export const continueMotionProduction = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, job: resumeMotionProduction(String(body.productionId), body.clearGeminiChatsBeforeExport) }));
 export const getMotionStoryStatus = (req: Request, res: Response): void => {
   const job = getMotionProduction(_.toString(req.params.jobId)) || getStoryJob(_.toString(req.params.jobId));
   if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH);

@@ -2,13 +2,14 @@ import { parseJson, stringifyJson } from "../lib/jsonStringify.js";
 import type { MotionResponseSchema } from "./motionResponseContract.js";
 import { MOTION_SCENE_DESIGN_SCHEMA } from "./motionSceneDesign.js";
 import { motionProfileScenePrompt } from "./motionProfiles/scenePrompts.js";
+import { motionHorrorSceneContext } from "../lib/motionHorrorIdentity.js";
 const placeholderText = "Cảnh chưa dựng được · Cần tạo lại";
 const repairContext = (input: unknown): unknown => {
   try {
     const marker = "Context:\n";
     const context = typeof input === "string" ? parseJson(input.slice(input.lastIndexOf(marker) + marker.length).split("\n")[0]) : input;
     const { drawingReference, continuity, acceptedScene, ...needed } = context;
-    return needed;
+    return needed.artDirection?.id === "horror" ? motionHorrorSceneContext(needed) : needed;
   } catch {
     return {};
   }

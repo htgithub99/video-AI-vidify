@@ -1,4 +1,5 @@
 import { MOTION_SCENE_COMPOSITION as C } from "../motionSceneComposition.js";
+import { motionHorrorSceneContext } from "../../lib/motionHorrorIdentity.js";
 const obsolete = new Set(["profile", "drawingReference", "poseConstruction", "handlingReference", "crowdStaging", "identityReferences", "placeLayout", "placeLayouts", "staging"]);
 export const motionScenePromptContext = (context: unknown): Record<string, any> => {
   const input = context && typeof context === "object" ? (context as Record<string, any>) : {};
@@ -12,5 +13,5 @@ export const motionScenePromptContext = (context: unknown): Record<string, any> 
     const { layouts, reference, ...direction } = cleaned.artDirection;
     cleaned.artDirection = direction;
   }
-  return cleaned;
+  return cleaned.artDirection?.id === "horror" ? motionHorrorSceneContext(cleaned) : cleaned;
 };

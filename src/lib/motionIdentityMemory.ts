@@ -1,6 +1,7 @@
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
 import type { MotionRemotionProfile, MotionRemotionScene } from "../types/motionVisual.js";
+import { motionHorrorAppearance } from "./motionHorrorIdentity.js";
 export const motionStaticAppearance = (value: unknown): string =>
   typeof value === "string"
     ? value
@@ -21,7 +22,8 @@ export const motionIdentityMemory = (scene: MotionRemotionScene, scenes: MotionR
       if (other.id === scene.id || other.build?.status !== "accepted" || composition?.profileId !== profileId || composition.profileRevision !== V.PROFILES[profileId].revision) continue;
       const layer = composition.layers.find((item) => item.kind === "character" && item.entityId === entityId);
       if (remaining > 0 && layer) {
-        const appearance = motionStaticAppearance(layer.appearance ?? layer.description).slice(0, remaining);
+        const staticAppearance = motionStaticAppearance(layer.appearance ?? layer.description);
+        const appearance = (profileId === "horror" ? motionHorrorAppearance(staticAppearance) : staticAppearance).slice(0, remaining);
         remaining -= appearance.length;
         return appearance ? [{ entityId, appearance }] : [];
       }

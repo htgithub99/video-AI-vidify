@@ -1,5 +1,8 @@
 import { STUDIO_VERIFICATION_TEXTS as AUT } from "./studioVerificationTexts.js";
 import { MOTION_BROWSER_VERIFICATION as V } from "./motionBrowserVerificationTexts.js";
+import { GEMINI_ACTIVITY_FIXTURE as F } from "./geminiActivityCleanupVerificationTexts.js";
+import { GEMINI_ACTIVITY_CLEANUP as C } from "../src/constants/geminiActivityCleanup.js";
+import { EXTERNAL_URLS } from "../src/constants/apiRoutes.js";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -69,10 +72,18 @@ const previousStorage = process.env.VIDIFY_STORAGE_DIR;
 const storage = path.resolve(AUT.FORMAT_SCRATCH_MOTION_BROWSER_RELEASE(process.pid));
 process.env.VIDIFY_STORAGE_DIR = storage;
 const contexts: BrowserContext[] = [];
+const activityEvents: string[] = [];
+let activityVisits = 0;
+let activityMode: string = F.MODE.CONFIRM;
 const launch = async () => {
   const context = await chromium.launchPersistentContext(profile, { channel: AUT.CHROME, headless: true, args: [AUT.FORMAT_REMOTE_DEBUGGING_PORT(port)] });
   contexts.push(context);
   await context.route(AUT.HTTPS, (route) => route.fulfill({ contentType: AUT.TEXT_HTML_CHARSET_UTF_8, body: AUT.RAW_BROWSER_FIXTURE }));
+  await context.exposeFunction("record", (events: string[]) => activityEvents.push(...events));
+  await context.route(EXTERNAL_URLS.GEMINI_ACTIVITY, (route) => {
+    activityVisits++;
+    return route.fulfill({ contentType: AUT.TEXT_HTML_CHARSET_UTF_8, body: F.HTML(activityMode) });
+  });
   return context;
 };
 let service: any;
@@ -110,6 +121,11 @@ try {
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, bundled.outputFiles[0].text);
   service = await import(pathToFileURL(output).href);
+  const defaultOff = await launch();
+  const defaultRelease = await service.acquireMotionRenderBrowser();
+  assert.equal(defaultOff.browser()!.isConnected(), false);
+  assert.equal(activityVisits, 0, "Missing cleanup option must not open or delete Gemini activity");
+  defaultRelease();
   const context = await launch();
   const browser = context.browser()!;
   const response = await service.runInMotionAiSession(V.RUN, () => service.runMotionAi(AUT.RETURN_READINESS_JSON, AUT.BROWSER_CLOSE_TEST, { provider: AiPlanningFallbackProvider.DeepSeekChat, model: AiPlanningChatModel.DeepSeekAuto, mode: AiPlanningExecutionMode.RoomOnly, strictProvider: true, chromeHeadless: false }));
@@ -118,7 +134,8 @@ try {
   assert.equal(await service.closeAppBrowserAfterTask(true), false, V.RETAIN);
   assert.equal(browser.isConnected(), true, V.RETAIN);
   const roomReady = deferred();
-  (globalThis as any).__motionBrowserPending = () => finishTask.done.then(() => ({ ready: true }));
+  let nextStarted = false;
+  (globalThis as any).__motionBrowserPending = (prompt: string) => (prompt === V.NEXT ? ((nextStarted = true), Promise.resolve({ ready: true })) : finishTask.done.then(() => ({ ready: true })));
   const finalTask = service.runInMotionAiSession(V.RUN, async () => {
     try {
       await service.prepareChatPlanningRoom({ provider: AiPlanningFallbackProvider.DeepSeekChat, model: AiPlanningChatModel.DeepSeekAuto, projectId: V.PROJECT, workerId: V.WORKER, prompt: AUT.EMPTY, chromeHeadless: false });
@@ -135,15 +152,15 @@ try {
   const logs: string[] = [];
   let closed = false;
   const closing = service
-    .acquireMotionRenderBrowser(undefined, (line: string) => logs.push(line))
+    .acquireMotionRenderBrowser(undefined, (line: string) => logs.push(line), undefined, true)
     .then((release: () => void) => {
       closed = true;
       releaseBoundary = release;
     });
-  let nextStarted = false;
-  const next = service.runInMotionAiSession(V.NEXT, async () => {
-    nextStarted = true;
-  });
+  const waitingDeadline = Date.now() + V.DEADLINE_MS;
+  while (!logs.includes(MOTION_BROWSER_HANDOFF.WAITING(1)) && Date.now() < waitingDeadline) await tick();
+  assert.ok(logs.includes(MOTION_BROWSER_HANDOFF.WAITING(1)));
+  const next = service.runInMotionAiSession(V.NEXT, () => service.runMotionAi(V.NEXT, AUT.BROWSER_CLOSE_TEST, {}));
   await tick();
   assert.equal(closed, false, V.WAIT_TASK);
   assert.equal(browser.isConnected(), true, V.WAIT_TASK);
@@ -151,14 +168,16 @@ try {
   assert.ok(logs.includes(MOTION_BROWSER_HANDOFF.WAITING(1)));
   finishTask.finish();
   await finalTask;
-  delete (globalThis as any).__motionBrowserPending;
   assert.equal(room.isClosed(), true, V.CLEANUP);
   await closing;
   assert.equal(browser.isConnected(), false);
+  assert.deepEqual(activityEvents, ["open", "day", "confirm", "deleted"]);
+  assert.ok(logs.includes(C.COMPLETE));
   assert.equal(nextStarted, false, V.WAIT_RENDER);
   releaseBoundary!();
   releaseBoundary = undefined;
   await next;
+  delete (globalThis as any).__motionBrowserPending;
   const second = await launch();
   const unrelated = await second.newPage();
   await unrelated.goto(AUT.HTTPS_EXAMPLE_TEST_WORK);
@@ -171,7 +190,7 @@ try {
   assert.equal(afterFailure, true, V.FAILED_RELEASE);
   await unrelated.close();
   const spec = { title: AUT.BROWSER_RELEASE_REGRESSION, duration: 0.5, fps: 6, aspect: AUT.VALUE_16_9, shots: [{ id: AUT.OPENING, template: AUT.TITLE, start: 0, duration: 0.5, params: { title: AUT.VIDIFY } }] };
-  const job = service.startMotionRender(spec, { quality: MotionQuality.DRAFT, encoder: MotionEncoderPreference.CPU, fps: 6 });
+  const job = service.startMotionRender(spec, { quality: MotionQuality.DRAFT, encoder: MotionEncoderPreference.CPU, fps: 6, clearGeminiChatsBeforeExport: true });
   const deadline = Date.now() + V.DEADLINE_MS;
   while (service.getMotionJob(job.id).status !== MotionJobStatus.ERROR && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, V.POLL_MS));
   const final = service.getMotionJob(job.id);
@@ -180,6 +199,18 @@ try {
   assert.ok(final.log.some((line: string) => line.includes(MOTION_BROWSER_RELEASED_LOG)));
   assert.equal(second.browser()!.isConnected(), false);
   await service.runInMotionAiSession(V.NEXT, async () => undefined);
+  activityMode = F.MODE.STUCK;
+  const failedContext = await launch();
+  const failedLogs: string[] = [];
+  const sharedRender = await service.acquireMotionRenderBrowser(undefined, (line: string) => failedLogs.push(line), undefined, true);
+  assert.equal(sharedRender.shared, true);
+  sharedRender();
+  assert.equal(failedContext.browser()!.isConnected(), true);
+  assert.ok(failedLogs.some((line) => line.includes("Giữ Chrome AI mở")));
+  const beforeIdle = activityEvents.length;
+  assert.equal(await service.closeAppBrowserAfterTask(true), false);
+  assert.equal(activityEvents.length, beforeIdle);
+  assert.equal(failedContext.browser()!.isConnected(), true);
 } finally {
   delete (globalThis as any).__motionBrowserPending;
   finishTask.finish();

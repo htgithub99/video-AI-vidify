@@ -99,6 +99,7 @@ export const startMotionVideoRenderInput = (body: Record<string, any>) => {
     encoder: _.includes(_.values(MotionEncoderPreference), o.encoder) ? o.encoder : MotionEncoderPreference.AUTO,
     title: _.truncate(_.toString(o.title || spec.title || MR.MOTION_TEXT_EMPTY), { length: 120 }),
     requireAudio: o.requireAudio === true,
+    clearGeminiChatsBeforeExport: o.clearGeminiChatsBeforeExport === true,
     editorialSessionId: MOTION_EDITORIAL.ID_PATTERN.test(o.editorialSessionId || body.editorialSessionId || body.productionId || MR.MOTION_TEXT_EMPTY) ? o.editorialSessionId || body.editorialSessionId || body.productionId : undefined,
     speechRanges: Array.isArray(o.speechRanges) ? o.speechRanges.filter((range: any) => Number.isFinite(range?.start) && Number.isFinite(range?.end) && range.end > range.start).map((range: any) => ({ start: range.start, end: range.end })) : undefined,
     audioId: o.audioId ? path.basename(_.toString(o.audioId)) : undefined,

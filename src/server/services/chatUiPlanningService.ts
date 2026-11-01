@@ -150,6 +150,7 @@ import { getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi }
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
+import { acquireGeminiActivityUse } from "./geminiActivityCleanupService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
 import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
@@ -1547,12 +1548,13 @@ export const resumeChatPlanningResponse = async (request: ChatPlanningRequest): 
     await prepareChatPlanningRoom(request);
     page = getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
     if (!page) throw uncertainChatSubmission(request.provider);
-    await page.goto(pending.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
   }
-  if (request.reloadPendingResponse && !wasClosed) await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
-  pending.page = page;
-  pending.url = page.url();
+  const releaseActivity = request.provider === AiPlanningFallbackProvider.GeminiChat ? await acquireGeminiActivityUse(page.context(), request.signal) : _.noop;
   try {
+    if (wasClosed) await page.goto(pending.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
+    if (request.reloadPendingResponse && !wasClosed) await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+    pending.page = page;
+    pending.url = page.url();
     const text = await waitForStableResponse(page, pending.responseSelector, pending.busySelector, pending.initialCount, pending.expectedSceneIds, pending.initialResponseSnapshots, pending.completionMarker, pending.artifactType, pending.requestId, request.signal, pending.prompt);
     submission.completed = true;
     pendingRoomResponses.delete(getPlanningRoomKey(request));
@@ -1560,6 +1562,8 @@ export const resumeChatPlanningResponse = async (request: ChatPlanningRequest): 
   } catch (error) {
     if (isFinalChatResponseError(error)) submission.completed = true;
     throw error;
+  } finally {
+    releaseActivity();
   }
 };
 const getChatModelOption = (page: Page, modelLabel: RegExp) =>
@@ -1817,36 +1821,41 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
-  const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
-  await withGeminiSession(
-    room,
-    async () => {
-      await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
-      await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-      await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel, request.signal);
-    },
-    { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser },
-  );
-  const response = await submitPrompt(
-    room,
-    getPlanningRoomKey(request),
-    request.prompt,
-    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
-    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SEND_SELECTOR,
-    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR,
-    CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
-    request.expectedSceneIds || [],
-    request.attachments || [],
-    request.completionMarker,
-    request.artifactType,
-    request.requestId,
-    request.signal,
-    request.submission,
-    request.promptMessageLimit,
-    request.onUploadProgress,
-  );
-  scheduleChatBrowserCleanup();
-  return response;
+  const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
+  try {
+    const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
+    await withGeminiSession(
+      room,
+      async () => {
+        await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
+        await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
+        await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel, request.signal);
+      },
+      { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser },
+    );
+    const response = await submitPrompt(
+      room,
+      getPlanningRoomKey(request),
+      request.prompt,
+      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
+      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_SEND_SELECTOR,
+      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR,
+      CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_BUSY_SELECTOR,
+      request.expectedSceneIds || [],
+      request.attachments || [],
+      request.completionMarker,
+      request.artifactType,
+      request.requestId,
+      request.signal,
+      request.submission,
+      request.promptMessageLimit,
+      request.onUploadProgress,
+    );
+    scheduleChatBrowserCleanup();
+    return response;
+  } finally {
+    releaseActivity();
+  }
 };
 const ensureDeepSeekReady = async (room: Page, request: ChatPlanningRequest): Promise<void> => {
   const input = room.locator(D.INPUT).filter({ visible: true }).last();
@@ -1939,9 +1948,14 @@ export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Pro
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
-    const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
-    await withGeminiSession(room, () => waitForGeminiModelUi(room, request.signal), { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
-    return;
+    const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
+    try {
+      const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
+      await withGeminiSession(room, () => waitForGeminiModelUi(room, request.signal), { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
+      return;
+    } finally {
+      releaseActivity();
+    }
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);

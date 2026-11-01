@@ -39,7 +39,7 @@ for (const id of Object.keys(profiles) as MotionRemotionProfile[]) {
   assert.equal(prompt.split(MOTION_CHARACTER_FRAMES[id]).length, 2, "Include one frame per drawing request");
   assert.match(prompt, /Keep any INNER normalization transform exactly/);
   assert.match(prompt, /Do not force baldness, identical faces or gray uniforms/);
-  assert.match(prompt, /every character's exposed skin \(face, hands, arms and legs\) is flat white #ffffff/);
+  assert.match(prompt, id === "horror" ? /every character's exposed skin \(face, hands and arms\) is flat white #ffffff/ : /every character's exposed skin \(face, hands, arms and legs\) is flat white #ffffff/);
   assert.match(prompt, /overrides skin-tone descriptions in cast or identityMemory/);
   assert.ok(MOTION_CHARACTER_FRAMES[id].includes('fill="#ffffff"'));
   assert.ok(prompt.length < 16000);

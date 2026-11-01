@@ -225,6 +225,7 @@ export interface MotionCompiledPreview {
   voiceStale?: boolean;
 }
 export interface MotionRenderOptions {
+  clearGeminiChatsBeforeExport?: boolean;
   editorialSessionId?: string;
   speechRanges?: { start: number; end: number }[];
   requireAudio?: boolean;
