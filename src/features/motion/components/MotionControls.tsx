@@ -90,12 +90,12 @@ const MotionLogSectionCard: FC<{ section: MotionLogSection; lang: "vi" | "en"; i
   const Icon = open ? ChevronDown : ChevronRight;
   return (
     <section className={LOG.UI.SECTION} data-motion-log-section={section.key} data-state={section.state}>
-      <button type={RT_SHARED.BUTTON} className={LOG.UI.HEADER} aria-expanded={open} aria-controls={bodyId} onClick={() => setExpanded(!open)}>
+      <Button variant={MR.MOTION_TEXT_UNSTYLED} type={RT_SHARED.BUTTON} className={LOG.UI.HEADER} aria-expanded={open} aria-controls={bodyId} onClick={() => setExpanded(!open)}>
         <span className={LOG.UI.NUMBER}>{index + 1}</span>
         <span className={LOG.UI.TITLE}>{LOG.LABELS[lang][section.key as keyof typeof LOG.LABELS.vi]}</span>
         <span className={cn(LOG.UI.BADGE, LOG.UI.STATES[section.state])}>{text[section.state as "waiting" | "active" | "done" | "error" | "previous_error" | "cancelled" | "recorded"]}</span>
         <Icon className={LOG.UI.CHEVRON} aria-hidden={true} />
-      </button>
+      </Button>
       <p className={LOG.UI.SUMMARY} data-motion-log-summary>
         <span className={LOG.UI.SUMMARY_TEXT}>{section.summary}</span>
       </p>

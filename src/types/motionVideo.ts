@@ -323,7 +323,24 @@ export interface MotionPlace {
   traits?: MotionTraits;
   redress?: boolean;
 }
+export interface MotionWritingPlan {
+  question: string;
+  criterion: string;
+  device: string;
+  labels: string[];
+}
+export interface MotionWritingChapter {
+  purpose: string;
+  startState: string;
+  endState: string;
+  events: { id: string; point: string; quote?: string }[];
+  candidate?: string;
+  verdictLabel?: string;
+  evidence?: string;
+  limitation?: string;
+}
 export interface MotionChapter {
+  writing?: MotionWritingChapter;
   id: string;
   title: string;
   summary: string;
@@ -368,6 +385,7 @@ export interface MotionStorySpine {
   clues: { detail: string; setupChapterId: string; payoffChapterId: string; payoff: string }[];
 }
 export interface MotionStoryAnalysis {
+  writingPlan?: MotionWritingPlan;
   motifs?: string[];
   visualSettings?: import("./motionVisual.js").MotionVisualSettings;
   topicId?: string;
@@ -698,7 +716,7 @@ export interface MotionStoryScript {
   language: string;
   beats: MotionBeat[];
   gen?: MotionGenState;
-  edit?: { reviewed: number; rewritten: number; notes: string[] };
+  edit?: { reviewed: number; rewritten: number; notes: string[]; requests?: number; extraRequests?: number; remaining?: { id: string; issue: string }[]; dropped?: number };
 }
 export interface MotionChapterDraft {
   partition?: { points: string[]; source: string; seconds: number }[];

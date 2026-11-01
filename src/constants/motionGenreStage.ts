@@ -4,6 +4,7 @@ export const MOTION_GENRE_STAGE = {
     (solo.length ? ` These stages always get chapters of their own and never share a chapter with another stage: ${solo.join(", ")}.` : ""),
   SPLIT: /[,;|+/]/,
   SOLO_TAIL: (ids: string[]): string => ` The ${ids.join(", ")} stage takes only the last three or four lines of this chapter, after everything else.`,
+  SOLO_HEAD: (ids: string[]): string => ` The ${ids.join(", ")} stage takes only the first four to six lines of this chapter, before everything else.`,
   MOTIF: {
     PLAN: (rule: string): string => ` MOTIFS: also return "motifs", an array of 1 to 6 short strings with the exact spoken words of ${rule}. Every later line that uses them repeats these words unchanged.`,
     WORD: /[\p{L}\p{N}]+/gu,
@@ -12,8 +13,8 @@ export const MOTION_GENRE_STAGE = {
     MAX: 6,
     CHARS: 80,
     KEEP: (motifs: string[]): string => `MOTIF WORDS ARE FIXED: if a line contains one of these motifs, keep its exact words unchanged in your rewrite: ${motifs.map((motif) => `"${motif}"`).join(", ")}.`,
-    FINAL_GENRES: ["pov", "witness"] as readonly string[],
-    FINAL_ISSUE: (motifs: string[]) => `the story must close on its motif: in this final line name the token or speak the refrain with its exact words (${motifs.map((motif) => `"${motif}"`).join(" / ")})`,
+    FINAL_GENRES: ["pov", "witness", "verdict"] as readonly string[],
+    FINAL_ISSUE: (motifs: string[], genre: string) => (genre === "verdict" ? `the closing line must return to the metaphor device or a verdict label with its exact words (${motifs.map((motif) => `"${motif}"`).join(" / ")}) in one short witty line` : `the story must close on its motif: in this final line name the token or speak the refrain with its exact words (${motifs.map((motif) => `"${motif}"`).join(" / ")})`),
     STAGE_GENRES: { verdict: "candidate" } as Record<string, string>,
     STAGE_ISSUE: (motifs: string[]) => `this candidate chapter never stamps its fixed verdict label; end it with one of the exact labels (${motifs.map((motif) => `"${motif}"`).join(" / ")})`,
   },

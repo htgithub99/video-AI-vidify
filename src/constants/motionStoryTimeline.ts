@@ -1,19 +1,13 @@
 export const MOTION_STORY_TIMELINE = {
   RANGE: { STAMP: /\((?:(\d+):)?(\d{1,2}):(\d{2})\)/, TOLERANCE: 2, MIN_SPAN: 10, LOG: (count: number) => `Chia chương: sửa mốc thời gian của ${count} chương cho khớp nguồn và các mốc chính, không gọi thêm AI.` },
-  MERGE: {
-    MIN_SECONDS: 90,
-    MAX_POINTS: 8,
-    SUMMARY_JOIN: " ",
-    ID: (index: number) => `c${index + 1}`,
-  },
+  MERGE: { MIN_SECONDS: 90, MAX_POINTS: 8, SUMMARY_JOIN: " ", ID: (index: number) => `c${index + 1}` },
   KEYPOINT: {
     PREFIX: /^\s*\((?:\d+:)?\d{1,2}:\d{2}\)\s*/,
     WORD: /[\p{L}\p{N}]+/gu,
     SIMILAR: 0.6,
     MIN_WORDS: 3,
     LOG: (moved: number, invented: number) => `Dàn ý: bỏ ${moved} điểm chính bị giao trùng cho nhiều chương và ${invented} mốc thời gian vượt độ dài nguồn; không gọi thêm AI.`,
-    SOURCE_PRIORITY:
-      "SOURCE PRIORITY: the transcript lines are authoritative for every fact, order, cause and outcome. If an outline keyPoint, summary or handoff contradicts the transcript, follow the transcript and keep the outline only for pacing. Never narrate an event assigned to another chapter's keyPoints.",
+    SOURCE_PRIORITY: "SOURCE PRIORITY: the transcript lines are authoritative for every fact, order, cause and outcome. If an outline keyPoint, summary or handoff contradicts the transcript, follow the transcript and keep the outline only for pacing. Never narrate an event assigned to another chapter's keyPoints.",
   },
   EDITOR: {
     SCOPE:
@@ -31,8 +25,7 @@ export const MOTION_STORY_TIMELINE = {
     THIN_RATIO: 0.7,
     STAMP: /\((?:\d+:)?\d{1,2}:\d{2}\)/g,
     WORD: /[\p{L}\p{N}']+/gu,
-    RULE: (beats: number) =>
-      `THIN SOURCE: this chapter's transcript holds only enough events for about ${beats} beats. Write about ${beats} beats; never pad with repeated images, refrains, restated orders or a second telling of the same event. Being shorter than the requested length is acceptable here.`,
+    RULE: (beats: number) => `THIN SOURCE: this chapter's transcript holds only enough events for about ${beats} beats. Write about ${beats} beats; never pad with repeated images, refrains, restated orders or a second telling of the same event. Being shorter than the requested length is acceptable here.`,
     LOG: (chapter: string, beats: number, wanted: number) => `Chương ${chapter}: nguồn chỉ đủ khoảng ${beats} nhịp (thời lượng gợi ý ${wanted}); không độn câu, thời lượng chỉ ghi nhận.`,
   },
   REPEAT: {
@@ -44,11 +37,12 @@ export const MOTION_STORY_TIMELINE = {
     NEAR: 3,
     MAX: 12,
     ISSUE: (phrase: string) => `repeats the phrase "${phrase}" already used shortly before or more than once; vary it or cut the repetition while keeping this line's facts and length`,
-    FOCUS: (items: { id: string; issue: string }[]): string =>
-      "REPETITION FOCUS: these lines reuse a phrase or image already used; rewrite each as described: " + items.map((item) => item.id + " (" + item.issue + ")").join("; ") + ".",
+    FOCUS: (items: { id: string; issue: string }[]): string => "REPETITION FOCUS: these lines reuse a phrase or image already used; rewrite each as described: " + items.map((item) => item.id + " (" + item.issue + ")").join("; ") + ".",
     LOG: (count: number): string => `Biên tập viên: ${count} câu lặp cụm từ/hình ảnh, sửa trong lượt biên tập sẵn có.`,
   },
   OVERLAP: {
+    TEASER: { GENRES: ["chronicle", "verdict"], STAGE: "opening", BEATS: 3 },
+    RECAP_STAGE: { verdict: "verdict" } as Record<string, string>,
     SENTENCE: /[^.!?…]+[.!?…]*/gu,
     NARRATOR_NAME: /^(?:bạn|tôi|you|i|me)$/iu,
     SPACE: /\s+/u,

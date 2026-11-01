@@ -1,0 +1,1 @@
+export const MOTION_SETTINGS_TEXT = { vi: { CONTENT: "Nội dung & kịch bản", AUDIO: "Giọng đọc & âm thanh", VISUAL: "Hình ảnh & xuất video" }, en: { CONTENT: "Content & script", AUDIO: "Voice & audio", VISUAL: "Visuals & export" } } as const;

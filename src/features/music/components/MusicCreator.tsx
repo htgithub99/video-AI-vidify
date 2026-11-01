@@ -2563,7 +2563,8 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                             <div className={cn(MCS.FLEX_ITEMS_START_JUSTIFY_BETWEEN_GAP_1_5)}>
                               <span className={cn(MCS.TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_SLATE_400_SHRIN)}>{item.label}</span>
                               {SOURCE_TEXT_SETTINGKEY in item && item.settingKey ? (
-                                <button
+                                <Button
+                                  variant={SOURCE_TEXT_UNSTYLED}
                                   type={SOURCE_TEXT_BUTTON}
                                   role={SOURCE_TEXT_SWITCH}
                                   aria-checked={item.enabled}
@@ -2573,7 +2574,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                                   onClick={() => setSunoSettings((current) => (current ? { ...current, [item.settingKey]: !current[item.settingKey] } : current))}
                                   className={cn(MCS.TOGGLE_SWITCH_SELECT_NONE_FOCUS_OUTLINE_NONE_FOCUS_VISIBLE_RING_2_FOCUS_VIS, item.enabled ? MCS.BG_EMERALD_500_BORDER_BORDER_EMERALD_400_60_SHADOW_SM_SHADOW_EMERALD_500_30 : SRT.SOURCE_TEXT_BG_SLATE_800_BORDER_BORDER_SLATE_700)}>
                                   <span aria-hidden={SOURCE_TEXT_TRUE} className={cn(MCS.TOGGLE_SWITCH_THUMB_SHADOW_MD, item.enabled ? SRT.SOURCE_TEXT_TRANSLATE_X_20PX_BG_WHITE : SRT.SOURCE_TEXT_TRANSLATE_X_0_BG_SLATE_300)} />
-                                </button>
+                                </Button>
                               ) : (
                                 <span className={cn(MCS.TEXT_11PX_FONT_BOLD_BORDER_PX_2_PY_0_5_ROUNDED_MD_SHRINK_0, item.badgeClass)}>{item.value}</span>
                               )}

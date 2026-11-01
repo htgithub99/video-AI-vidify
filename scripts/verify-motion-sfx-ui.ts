@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { build } from "esbuild";
 import { chromium } from "playwright";
 import { API_ROUTES } from "../src/constants/apiRoutes.js";
+import { MOTION_VIDEO_GENRES } from "../src/constants/motionGenre.js";
 import { MOTION_DRAFT_VERIFICATION as D } from "./motionDraftVerificationTexts.js";
 const bundle = await build({
   stdin: { contents: 'import React from "react"; import { createRoot } from "react-dom/client"; import Creator from "./src/features/motion/components/MotionVideoCreator.tsx"; createRoot(document.getElementById("root")).render(<Creator currentLang="vi" />);', loader: "tsx", resolveDir: process.cwd() },
@@ -99,9 +100,9 @@ try {
       language: "en",
       length: "2min",
       parts: 1,
-      videoGenre: "ghost_tale",
+      videoGenre: MOTION_VIDEO_GENRES.WITNESS,
       characterMotion: false,
-      renderBehavior: { version: 1, actors: "fixed", sceneEffects: "gentle", camera: "fixed" },
+      renderBehavior: { version: 1, actors: "fixed", sceneEffects: "off", camera: "fixed" },
       multiVoice: false,
       aiReview: false,
       asrCheck: false,

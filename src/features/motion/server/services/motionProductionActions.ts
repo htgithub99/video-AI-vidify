@@ -1,3 +1,4 @@
+import { runMotionScriptEditorial } from "../../../../lib/motionScriptEditorial.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -20,11 +21,8 @@ import { normalizeMotionReferences } from "../../../../lib/motionReference.js";
 import * as MR from "../../../../constants/motionRuntime.js";
 import { bindVideoDnaSettings, videoDnaErrors, videoDnaSourceKey } from "../../../../lib/motionVideoDna.js";
 import { MOTION_VIDEO_GENRE_ERROR, motionVideoGenre } from "../../../../constants/motionGenre.js";
-import { MOTION_GENRE_STYLE } from "../../../../constants/motionGenreStyle.js";
 import { motionChapterRanges, motionChapterKeyPoints } from "../../../../lib/motionStoryTimeline.js";
 import { MOTION_STORY_TIMELINE } from "../../../../constants/motionStoryTimeline.js";
-import { motionScriptFindings } from "../../../../lib/motionScriptFindings.js";
-import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../../../constants/motionMusic.js";
 import _ from "lodash";
@@ -257,27 +255,11 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = !failed.length && !Object.keys(chapterDrafts).length && _.every(chapters, (c) => byChapter[c.id]?.length);
-      const findings = complete ? motionScriptFindings(beats, analysis, language) : undefined;
-      const styleFindings = findings?.style || [];
-      const overlapFindings = findings?.overlap || [];
-      const repeats = findings?.repeat || [];
-      const stageFindings = findings?.stage || [];
-      const echoFindings = findings?.echo || [];
-      const handoffs = complete ? chapters.slice(1).flatMap((chapter) => (byChapter[chapter.id]?.[0] ? [byChapter[chapter.id][0].id] : [])) : [];
-      const focusIds = [...new Set([...styleFindings, ...overlapFindings, ...repeats, ...stageFindings, ...echoFindings].map((finding) => finding.id).concat(handoffs))];
-      const editorial = complete && body?.editorPass !== false && !(only?.length && body?.resume !== true) && focusIds.length > 0;
-      if (complete && !focusIds.length) ctx.log(MOTION_STORY_TIMELINE.EDITOR.LOG_SKIP);
-      if (editorial) {
-        if (styleFindings.length) ctx.log(MOTION_GENRE_STYLE.LOG(styleFindings.length));
-        if (overlapFindings.length) ctx.log(MOTION_STORY_TIMELINE.OVERLAP.LOG(overlapFindings.length));
-        if (repeats.length) ctx.log(MOTION_STORY_TIMELINE.REPEAT.LOG(repeats.length));
-        if (stageFindings.length) ctx.log(MOTION_GENRE_STAGE.LOG(stageFindings.length));
-        if (echoFindings.length) ctx.log(MOTION_GENRE_STAGE.ECHO.LOG(echoFindings.length));
-        ctx.log(MOTION_STORY_TIMELINE.EDITOR.LOG_FOCUS(focusIds.length, beats.length));
+      if (complete && (body?.editorPass !== false || body?.durationRepair === true)) {
         try {
-          const r = await editScript(source, analysis, beats, { language, exec, signal: ctx.signal, log: ctx.log, scope: body.productionId || body.editorialSessionId, focusIds });
-          beats = r.beats;
-          edit = r.edit;
+          const result = await runMotionScriptEditorial(beats, analysis, language, source.text, (current, focusIds, supplemental) => editScript(source, analysis, current, { language, exec, signal: ctx.signal, log: ctx.log, scope: (body.productionId || body.editorialSessionId || ctx.signal.toString()) + (supplemental ? ":supplemental" : ""), focusIds, supplemental }), ctx.log);
+          beats = result.beats;
+          edit = result.edit;
         } catch (error) {
           if (isTerminalMotionAiError(error, ctx.signal)) throw error;
           ctx.log(MR.MOTION_TEMPLATE_BO_QUA_BUOC_BIEN_TAP(_.truncate(_.toString((error as Error)?.message || error), { length: 120 })));

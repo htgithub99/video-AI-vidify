@@ -6,6 +6,8 @@ import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
 import { motionProgressLabel } from "../../../lib/motionProgressLabel.js";
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioTextarea, StudioInput } from "../../../components/ui/Studio.js";
 import { MotionToggle } from "./MotionToggle.js";
+import { MotionSettingsGroup } from "./MotionSettingsGroup.js";
+import { MOTION_SETTINGS_TEXT } from "../constants/motionSettings.js";
 import { MotionPartsCard } from "./MotionPartsCard.js";
 import { MOTION_PARTS, MOTION_PARTS_TEXT } from "../../../constants/motionParts.js";
 import { MOTION_STORY_LENGTH_SECONDS } from "../../../constants/motionVideo.js";
@@ -402,122 +404,128 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   {state.visualSettingsError}
                 </p>
               )}
-              <div className={MOTION_STYLES.STEP1_SETTINGS_ROW}>
-                <MotionSelectField label={text.LENGTH} value={state.length} onChange={(e) => patch({ length: e.target.value as MotionStoryLength })} disabled={studio.storyBusy} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                  {_.map(
-                    [
-                      [MotionStoryLength.FULL, text.LENGTH_FULL],
-                      [MotionStoryLength.ONE, text.LENGTH_1],
-                      [MotionStoryLength.TWO, text.LENGTH_2],
-                      [MotionStoryLength.THREE, text.LENGTH_3],
-                      [MotionStoryLength.FOUR, text.LENGTH_4],
-                      [MotionStoryLength.FIVE, text.LENGTH_5],
-                      [MotionStoryLength.TEN, text.LENGTH_10],
-                      [MotionStoryLength.TWELVE, text.LENGTH_12],
-                      [MotionStoryLength.FIFTEEN, text.LENGTH_15],
-                      [MotionStoryLength.TWENTY, text.LENGTH_20],
-                      [MotionStoryLength.TWENTY_FIVE, text.LENGTH_25],
-                      [MotionStoryLength.THIRTY, text.LENGTH_30],
-                      [MotionStoryLength.THIRTY_FIVE, text.LENGTH_35],
-                      [MotionStoryLength.FORTY, text.LENGTH_40],
-                      [MotionStoryLength.FORTY_FIVE, text.LENGTH_45],
-                      [MotionStoryLength.FIFTY, text.LENGTH_50],
-                      [MotionStoryLength.SIXTY, text.LENGTH_60],
-                      [MotionStoryLength.SEVENTY_FIVE, text.LENGTH_75],
-                      [MotionStoryLength.NINETY, text.LENGTH_90],
-                      [MotionStoryLength.ONE_HUNDRED_FIVE, text.LENGTH_105],
-                    ],
-                    ([id, label]) => (
-                      <option key={id} value={id}>
+              <div className={MOTION_STYLES.SETTINGS_GROUPS}>
+                <MotionSettingsGroup title={MOTION_SETTINGS_TEXT[currentLang].CONTENT}>
+                  <MotionSelectField label={genreText.LABEL} value={motionVideoGenre(state.videoGenre)} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {_.map(MOTION_VIDEO_GENRES, (genre) => (
+                      <option key={genre} value={genre}>
+                        {genreText.OPTIONS[genre]}
+                      </option>
+                    ))}
+                  </MotionSelectField>
+                  <MotionSelectField label={text.LENGTH} value={state.length} onChange={(e) => patch({ length: e.target.value as MotionStoryLength })} disabled={studio.storyBusy} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {_.map(
+                      [
+                        [MotionStoryLength.FULL, text.LENGTH_FULL],
+                        [MotionStoryLength.ONE, text.LENGTH_1],
+                        [MotionStoryLength.TWO, text.LENGTH_2],
+                        [MotionStoryLength.THREE, text.LENGTH_3],
+                        [MotionStoryLength.FOUR, text.LENGTH_4],
+                        [MotionStoryLength.FIVE, text.LENGTH_5],
+                        [MotionStoryLength.TEN, text.LENGTH_10],
+                        [MotionStoryLength.TWELVE, text.LENGTH_12],
+                        [MotionStoryLength.FIFTEEN, text.LENGTH_15],
+                        [MotionStoryLength.TWENTY, text.LENGTH_20],
+                        [MotionStoryLength.TWENTY_FIVE, text.LENGTH_25],
+                        [MotionStoryLength.THIRTY, text.LENGTH_30],
+                        [MotionStoryLength.THIRTY_FIVE, text.LENGTH_35],
+                        [MotionStoryLength.FORTY, text.LENGTH_40],
+                        [MotionStoryLength.FORTY_FIVE, text.LENGTH_45],
+                        [MotionStoryLength.FIFTY, text.LENGTH_50],
+                        [MotionStoryLength.SIXTY, text.LENGTH_60],
+                        [MotionStoryLength.SEVENTY_FIVE, text.LENGTH_75],
+                        [MotionStoryLength.NINETY, text.LENGTH_90],
+                        [MotionStoryLength.ONE_HUNDRED_FIVE, text.LENGTH_105],
+                      ],
+                      ([id, label]) => (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      ),
+                    )}
+                  </MotionSelectField>
+                  <MotionSelectField label={text.PARTS} value={String(state.parts || MOTION_PARTS.DEFAULT)} onChange={(e) => studio.setParts(Number(e.target.value))} disabled={studio.storyBusy || (!!state.series && state.series.index > 0)} title={text.PARTS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {_.map(MOTION_PARTS.OPTIONS, (count) => (
+                      <option key={count} value={count}>
+                        {count === 1 ? text.PARTS_ONE : partsText.OPTION(count, motionPartMinutes(MOTION_STORY_LENGTH_SECONDS[state.length] || state.source?.sourceSeconds, count))}
+                      </option>
+                    ))}
+                  </MotionSelectField>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.LANGUAGE}</span>
+                    <MotionToggle checked={state.language === MOTION_TEXT_VI} label={text.LANGUAGE} icon={Languages} text={state.language === MOTION_TEXT_VI ? text.LANG_VI : text.LANG_EN} title={text.LANGUAGE} disabled={studio.storyBusy} onClick={() => patch({ language: state.language === MOTION_TEXT_VI ? MOTION_TEXT_EN : MOTION_TEXT_VI })} />
+                  </div>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_AUTO_PIPELINE : MR.MOTION_TEXT_TU_DONG_KICH_BAN}</span>
+                    <MotionToggle
+                      checked={state.autoContinue !== false}
+                      label={text.AUTO_CONTINUE}
+                      icon={Wand2}
+                      text={state.autoContinue !== false ? (currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_AUTO_WRITE : MR.MOTION_TEXT_TU_VIET_KICH_BAN) : currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_MANUAL : MR.MOTION_TEXT_THU_CONG}
+                      title={text.AUTO_CONTINUE}
+                      disabled={studio.storyBusy}
+                      onClick={() => patch({ autoContinue: state.autoContinue === false })}
+                    />
+                  </div>
+                </MotionSettingsGroup>
+                <MotionSettingsGroup title={MOTION_SETTINGS_TEXT[currentLang].AUDIO}>
+                  <MotionSelectField label={voiceText.PICK_CHANNEL} value={state.voiceChannelId ?? studio.voiceChannels.defaultId ?? MR.MOTION_TEXT_EMPTY} onChange={(e) => patch({ voiceChannelId: e.target.value })} disabled={studio.storyBusy} title={voiceText.CHANNELS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    <option value={MR.MOTION_TEXT_EMPTY}>{voiceText.NO_CHANNEL}</option>
+                    {_.map(studio.voiceChannels.channels, (channel) => (
+                      <option key={channel.id} value={channel.id}>
+                        {channel.name}
+                      </option>
+                    ))}
+                  </MotionSelectField>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{voiceText.MULTI_VOICE}</span>
+                    <MotionToggle checked={state.multiVoice !== false} label={voiceText.MULTI_VOICE} icon={Users} text={state.multiVoice !== false ? voiceText.MULTI_VOICE_ON : voiceText.MULTI_VOICE_OFF} title={voiceText.MULTI_VOICE_HINT} disabled={studio.busy} onClick={() => patch({ multiVoice: state.multiVoice === false })} />
+                  </div>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{asrText.LABEL}</span>
+                    <MotionToggle checked={state.asrCheck === true} label={asrText.LABEL} icon={ScanSearch} text={state.asrCheck ? asrText.ON : asrText.OFF} title={asrText.HINT} disabled={studio.storyBusy} onClick={() => patch({ asrCheck: state.asrCheck !== true })} />
+                  </div>
+                  <MotionSelectField label={musicText.LABEL} value={state.musicMood || MOTION_MUSIC.AUTO} onChange={(e) => patch({ musicMood: e.target.value })} title={musicText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {_.map(musicText.MOODS, (label, mood) => (
+                      <option key={mood} value={mood}>
                         {label}
                       </option>
-                    ),
-                  )}
-                </MotionSelectField>
-                <MotionSelectField label={text.PARTS} value={String(state.parts || MOTION_PARTS.DEFAULT)} onChange={(e) => studio.setParts(Number(e.target.value))} disabled={studio.storyBusy || (!!state.series && state.series.index > 0)} title={text.PARTS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                  {_.map(MOTION_PARTS.OPTIONS, (count) => (
-                    <option key={count} value={count}>
-                      {count === 1 ? text.PARTS_ONE : partsText.OPTION(count, motionPartMinutes(MOTION_STORY_LENGTH_SECONDS[state.length] || state.source?.sourceSeconds, count))}
-                    </option>
-                  ))}
-                </MotionSelectField>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.LANGUAGE}</span>
-                  <MotionToggle checked={state.language === MOTION_TEXT_VI} label={text.LANGUAGE} icon={Languages} text={state.language === MOTION_TEXT_VI ? text.LANG_VI : text.LANG_EN} title={text.LANGUAGE} disabled={studio.storyBusy} onClick={() => patch({ language: state.language === MOTION_TEXT_VI ? MOTION_TEXT_EN : MOTION_TEXT_VI })} />
-                </div>
-                <MotionSelectField label={voiceText.PICK_CHANNEL} value={state.voiceChannelId ?? studio.voiceChannels.defaultId ?? MR.MOTION_TEXT_EMPTY} onChange={(e) => patch({ voiceChannelId: e.target.value })} disabled={studio.storyBusy} title={voiceText.CHANNELS_HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                  <option value={MR.MOTION_TEXT_EMPTY}>{voiceText.NO_CHANNEL}</option>
-                  {_.map(studio.voiceChannels.channels, (channel) => (
-                    <option key={channel.id} value={channel.id}>
-                      {channel.name}
-                    </option>
-                  ))}
-                </MotionSelectField>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{voiceText.MULTI_VOICE}</span>
-                  <MotionToggle checked={state.multiVoice !== false} label={voiceText.MULTI_VOICE} icon={Users} text={state.multiVoice !== false ? voiceText.MULTI_VOICE_ON : voiceText.MULTI_VOICE_OFF} title={voiceText.MULTI_VOICE_HINT} disabled={studio.busy} onClick={() => patch({ multiVoice: state.multiVoice === false })} />
-                </div>
-                <MotionSelectField label={musicText.LABEL} value={state.musicMood || MOTION_MUSIC.AUTO} onChange={(e) => patch({ musicMood: e.target.value })} title={musicText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                  {_.map(musicText.MOODS, (label, mood) => (
-                    <option key={mood} value={mood}>
-                      {label}
-                    </option>
-                  ))}
-                  <option value={MOTION_MUSIC.OFF}>{musicText.OFF}</option>
-                </MotionSelectField>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SFX}</span>
-                  <MotionToggle checked={state.sfx} label={text.SFX} icon={Volume2} text={!state.sfx ? text.SFX_OFF : studio.compiled && !studio.busy && !studio.compiled.sfxCues?.length ? text.SFX_EMPTY : text.SFX_ON} title={text.SFX_HINT} disabled={studio.busy} onClick={() => patch({ sfx: !state.sfx })} />
-                </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{asrText.LABEL}</span>
-                  <MotionToggle checked={state.asrCheck === true} label={asrText.LABEL} icon={ScanSearch} text={state.asrCheck ? asrText.ON : asrText.OFF} title={asrText.HINT} disabled={studio.storyBusy} onClick={() => patch({ asrCheck: state.asrCheck !== true })} />
-                </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SUBTITLES_MODE}</span>
-                  <MotionToggle checked={state.subtitles !== false} label={text.SUBTITLES_MODE} icon={Captions} text={state.subtitles !== false ? text.SUBTITLES_ON : text.SUBTITLES_OFF} title={text.SUBTITLES_HINT} onClick={() => patch({ subtitles: state.subtitles === false })} />
-                </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_AUTO_PIPELINE : MR.MOTION_TEXT_TU_DONG_KICH_BAN}</span>
-                  <MotionToggle
-                    checked={state.autoContinue !== false}
-                    label={text.AUTO_CONTINUE}
-                    icon={Wand2}
-                    text={state.autoContinue !== false ? (currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_AUTO_WRITE : MR.MOTION_TEXT_TU_VIET_KICH_BAN) : currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_MANUAL : MR.MOTION_TEXT_THU_CONG}
-                    title={text.AUTO_CONTINUE}
-                    disabled={studio.storyBusy}
-                    onClick={() => patch({ autoContinue: state.autoContinue === false })}
-                  />
-                </div>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.AUTO_EXPORT}</span>
-                  <MotionToggle checked={state.autoExport === true} label={text.AUTO_EXPORT} icon={Rocket} text={state.autoExport ? text.AUTO_EXPORT_ON : text.AUTO_EXPORT_OFF} title={text.AUTO_EXPORT_HINT} disabled={studio.busy} onClick={() => patch({ autoExport: state.autoExport !== true })} />
-                </div>
-                <MotionSelectField
-                  label={MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI].label}
-                  value={state.visualSettings.pacing || MOTION_SCENE_PACING.DEFAULT}
-                  onChange={(event) => patch({ visualSettings: { ...state.visualSettings, pacing: event.target.value as MotionScenePacing } })}
-                  disabled={studio.storyBusy || studio.renderBusy}
-                  title={MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI].hint}
-                  className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                  {Object.keys(MOTION_SCENE_PACING.SECONDS).map((key) => (
-                    <option key={key} value={key}>
-                      {MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI][key as MotionScenePacing]}
-                    </option>
-                  ))}
-                </MotionSelectField>
-                <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
-                  <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
-                </div>
-                <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />
-                <MotionSelectField label={genreText.LABEL} value={motionVideoGenre(state.videoGenre)} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                  {_.map(MOTION_VIDEO_GENRES, (genre) => (
-                    <option key={genre} value={genre}>
-                      {genreText.OPTIONS[genre]}
-                    </option>
-                  ))}
-                </MotionSelectField>
+                    ))}
+                    <option value={MOTION_MUSIC.OFF}>{musicText.OFF}</option>
+                  </MotionSelectField>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SFX}</span>
+                    <MotionToggle checked={state.sfx} label={text.SFX} icon={Volume2} text={!state.sfx ? text.SFX_OFF : studio.compiled && !studio.busy && !studio.compiled.sfxCues?.length ? text.SFX_EMPTY : text.SFX_ON} title={text.SFX_HINT} disabled={studio.busy} onClick={() => patch({ sfx: !state.sfx })} />
+                  </div>
+                </MotionSettingsGroup>
+                <MotionSettingsGroup title={MOTION_SETTINGS_TEXT[currentLang].VISUAL}>
+                  <MotionSelectField
+                    label={MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI].label}
+                    value={state.visualSettings.pacing || MOTION_SCENE_PACING.DEFAULT}
+                    onChange={(event) => patch({ visualSettings: { ...state.visualSettings, pacing: event.target.value as MotionScenePacing } })}
+                    disabled={studio.storyBusy || studio.renderBusy}
+                    title={MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI].hint}
+                    className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {Object.keys(MOTION_SCENE_PACING.SECONDS).map((key) => (
+                      <option key={key} value={key}>
+                        {MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI][key as MotionScenePacing]}
+                      </option>
+                    ))}
+                  </MotionSelectField>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
+                    <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
+                  </div>
+                  <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SUBTITLES_MODE}</span>
+                    <MotionToggle checked={state.subtitles !== false} label={text.SUBTITLES_MODE} icon={Captions} text={state.subtitles !== false ? text.SUBTITLES_ON : text.SUBTITLES_OFF} title={text.SUBTITLES_HINT} onClick={() => patch({ subtitles: state.subtitles === false })} />
+                  </div>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.AUTO_EXPORT}</span>
+                    <MotionToggle checked={state.autoExport === true} label={text.AUTO_EXPORT} icon={Rocket} text={state.autoExport ? text.AUTO_EXPORT_ON : text.AUTO_EXPORT_OFF} title={text.AUTO_EXPORT_HINT} disabled={studio.busy} onClick={() => patch({ autoExport: state.autoExport !== true })} />
+                  </div>
+                </MotionSettingsGroup>
               </div>
               {!remotionMode && <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />}
               <div className={MOTION_STYLES.FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP}>
@@ -738,7 +746,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       {MR.MOTION_TEXT_SYMBOL_13}
                       {!studio.voiceValid && !state.uploadedAudio ? MOTION_TEMPLATE_SYMBOL_2(String(text.ESTIMATED)) : MR.MOTION_TEXT_EMPTY}
                     </span>
-                    <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} onClick={() => void copyScript(scriptText(), MOTION_SCRIPT_COPY.KEY, text.SCRIPT_COPIED)} title={text.SCRIPT_COPY} className={cn(MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1, scriptCopied === MOTION_SCRIPT_COPY.KEY ? MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_EMERALD_600_TO_TEAL_600_HOVER_FROM_EMERALD_ : MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_HOVER_FROM_PURPLE_50)}>
+                    <Button
+                      variant={MR.MOTION_TEXT_UNSTYLED}
+                      type={MR.MOTION_TEXT_BUTTON}
+                      onClick={() => void copyScript(scriptText(), MOTION_SCRIPT_COPY.KEY, text.SCRIPT_COPIED)}
+                      title={text.SCRIPT_COPY}
+                      className={cn(MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1, scriptCopied === MOTION_SCRIPT_COPY.KEY ? MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_EMERALD_600_TO_TEAL_600_HOVER_FROM_EMERALD_ : MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_HOVER_FROM_PURPLE_50)}>
                       {scriptCopied === MOTION_SCRIPT_COPY.KEY ? <Check className={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0_TEXT_WHITE} /> : <Copy className={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0_TEXT_WHITE} />}
                       <span>{scriptCopied === MOTION_SCRIPT_COPY.KEY ? text.SCRIPT_COPIED : text.SCRIPT_COPY}</span>
                     </Button>

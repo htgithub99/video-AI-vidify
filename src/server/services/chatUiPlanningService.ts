@@ -7,6 +7,8 @@ import { MOTION_AI_RECOVERY as AIR } from "../../constants/motionAiRecovery.js";
 import { MOTION_VISUAL } from "../../constants/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION } from "../../constants/motionSceneComposition.js";
 import { parseRemotionAssetReply } from "../../lib/motionVectorAsset.js";
+import { parseMotionChapterReply } from "../../lib/motionChapterJson.js";
+import { MOTION_WRITING as MOTION_WRITING_JSON } from "../../constants/motionWriting.js";
 import { chatResponseIdentity } from "./chatResponseIdentity.js";
 import { isFinalChatResponseError, uncertainChatSubmission, type ChatPlanningSubmission, type ChatPendingSubmission } from "./chatSubmissionRecovery.js";
 import { observeGeminiGeneration } from "./geminiGenerationObserver.js";
@@ -316,6 +318,10 @@ const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
     const end = trimmed.lastIndexOf(MOTION_TEXT_SYMBOL_36);
     if (start < 0 || end <= start) return undefined;
     const candidate = trimmed.slice(start, end + 1);
+    if (artifactType === MOTION_WRITING_JSON.JSON.ARTIFACT) {
+      const chapter = parseMotionChapterReply(candidate);
+      if (chapter !== undefined) return chapter;
+    }
     try {
       return parseJson(candidate);
     } catch {

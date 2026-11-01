@@ -1109,7 +1109,8 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
               </div>
               <div className={SOURCE_TEXT_FLEX_ITEMS_CENTER_SHRINK_0}>
                 <StudioInput type={SOURCE_TEXT_CHECKBOX} className={SOURCE_TEXT_SR_ONLY} checked={Boolean(form.clearPassword)} onChange={(e) => setForm({ ...form, clearPassword: e.target.checked, password: "" })} tabIndex={-1} />
-                <button
+                <Button
+                  variant={SOURCE_TEXT_UNSTYLED}
                   type={SOURCE_TEXT_BUTTON}
                   role={SOURCE_TEXT_SWITCH}
                   aria-checked={Boolean(form.clearPassword)}
@@ -1120,7 +1121,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
                   }}
                   className={cn(SOURCE_TEXT_TOGGLE_SWITCH_SELECT_NONE_FOCUS_OUTLINE_NONE, form.clearPassword ? SOURCE_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600 : SOURCE_TEXT_BG_SLATE_800_BORDER_BORDER_SLATE_700)}>
                   <span aria-hidden={true} className={cn(SOURCE_TEXT_TOGGLE_SWITCH_THUMB_SHADOW_MD_TRANSITION_TRANSFORM, form.clearPassword ? SOURCE_TEXT_TRANSLATE_X_20PX_BG_WHITE : SOURCE_TEXT_TRANSLATE_X_0_BG_SLATE_300)} />
-                </button>
+                </Button>
               </div>
             </div>
           )}

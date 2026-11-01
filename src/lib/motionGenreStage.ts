@@ -70,7 +70,7 @@ export const motionGenreStageFindings = (beats: MotionBeat[], analysis: Pick<Mot
     const motifStage = M.STAGE_GENRES[genre];
     const motifChapter = staged ? chapter.stages!.includes(motifStage) : index > 0 && index < last;
     if (motifs.length && motifStage && motifChapter && !lines.some((beat) => motifs.some((motif) => motionHasMotif(beat.narration, motif)))) add(lines.at(-1)!.id, M.STAGE_ISSUE(motifs));
-    if (motifs.length && index === last && M.FINAL_GENRES.includes(genre) && !lines.slice(-C.STAMP_BEATS * 2).some((beat) => motifs.some((motif) => motionHasMotif(beat.narration, motif)))) add(lines.at(-1)!.id, M.FINAL_ISSUE(motifs));
+    if (motifs.length && index === last && M.FINAL_GENRES.includes(genre) && !lines.slice(-C.STAMP_BEATS * 2).some((beat) => motifs.some((motif) => motionHasMotif(beat.narration, motif)))) add(lines.at(-1)!.id, M.FINAL_ISSUE(motifs, genre));
   });
   const P = S.COMPANION;
   const closing = beats.filter((beat) => beat.chapterId === chapters[last]?.id && beat.narration?.trim());

@@ -1,6 +1,8 @@
 export const MOTION_STORY_LANGUAGE = {
   VI_RE: /^(?:vi(?:[-_][a-z]+)*|vietnamese|tiếng việt)$/iu,
   EMPTY: "",
+  EN_RE: /^(?:en(?:[-_][a-z]+)*|english)$/iu,
+  EN: "ENGLISH NARRATION: write natural, idiomatic English. Keep the possessive 's after names and nouns (Caesar's army, the enemy's flank). When the transcript is a machine translation or garbled, write fluent English from its meaning, never word for word.",
   SEPARATOR: "\n",
   COMPACT:
     "Dùng từ quen tai, động từ cụ thể và câu ngắn/vừa nối thành mạch kể; nghe một lần hiểu ai làm gì, ở đâu, vì sao. Giữ câu ngắn nhấn ý và lặp có tiến triển; một beat có thể có nhiều câu. Tránh câu dịch máy, danh từ hóa, từ Hán Việt nặng, triết lý dài, nhắc lại nỗi sợ và lạm dụng rồi/bỗng/ba chấm. Giữ từ tín ngưỡng cần thiết và giải thích qua ngữ cảnh. Thoại tự nhiên, xưng hô nhất quán theo tuổi, quan hệ, vùng và thời đại; không trộn ba/má với bố/mẹ hay dùng tiếng lóng hiện đại trong truyện xưa. Giữ nguyên sự kiện, góc kể, đại từ rõ nghĩa, thứ tự lộ manh mối và lời trích thật. Học cách kể của mẫu, không chép câu/tình tiết hay lỗi chép lời. Không đọc timestamp/nhãn nhạc. Tự đọc thầm và sửa câu gượng trước khi trả kết quả.",
@@ -24,4 +26,4 @@ export const MOTION_STORY_LANGUAGE = {
     "Khi biên tập tiếng Việt, câu dịch máy, từ cầu kỳ không hợp cảnh, đại từ mơ hồ, xưng hô sai vùng/vai vế và câu bị chặt vụn làm tối nghĩa cũng là lỗi cần sửa. Giữ câu ngắn nhấn ý và lặp có tiến triển; không gộp thành câu dài chỉ vì chúng ngắn. Chỉ sửa câu có vấn đề rõ ràng, giữ sự kiện, góc nhìn, manh mối, mức độ hé lộ, cảnh minh họa và độ dài tương đương; không coi từ tín ngưỡng quen dùng là lỗi chỉ vì đó là từ Hán Việt.",
 } as const;
 export const motionStoryLanguageGuide = (language: string, review = false, compact = false): string =>
-  MOTION_STORY_LANGUAGE.VI_RE.test(language.trim()) ? [...(compact ? [MOTION_STORY_LANGUAGE.RULES[0], MOTION_STORY_LANGUAGE.COMPACT] : [...MOTION_STORY_LANGUAGE.RULES, MOTION_STORY_LANGUAGE.EXAMPLE_NOTE, ...MOTION_STORY_LANGUAGE.EXAMPLES.map(MOTION_STORY_LANGUAGE.EXAMPLE)]), ...(review ? [MOTION_STORY_LANGUAGE.REVIEW] : [])].join(MOTION_STORY_LANGUAGE.SEPARATOR) : MOTION_STORY_LANGUAGE.EMPTY;
+  MOTION_STORY_LANGUAGE.VI_RE.test(language.trim()) ? [...(compact ? [MOTION_STORY_LANGUAGE.RULES[0], MOTION_STORY_LANGUAGE.COMPACT] : [...MOTION_STORY_LANGUAGE.RULES, MOTION_STORY_LANGUAGE.EXAMPLE_NOTE, ...MOTION_STORY_LANGUAGE.EXAMPLES.map(MOTION_STORY_LANGUAGE.EXAMPLE)]), ...(review ? [MOTION_STORY_LANGUAGE.REVIEW] : [])].join(MOTION_STORY_LANGUAGE.SEPARATOR) : MOTION_STORY_LANGUAGE.EN_RE.test(language.trim()) ? MOTION_STORY_LANGUAGE.EN : MOTION_STORY_LANGUAGE.EMPTY;

@@ -4,10 +4,11 @@ import { useState, type FC } from "react";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_STORY_CONFIG } from "../../../constants/motionVideo.js";
 import { MOTION_REMOTION_STYLES as S } from "../constants/motionStyles.js";
-import { STUDIO_PAGINATION, STUDIO_PAGINATION_TEXT } from "../../../constants/studioTheme.js";
+import { STUDIO_UI, STUDIO_PAGINATION, STUDIO_PAGINATION_TEXT } from "../../../constants/studioTheme.js";
 import { getPagination } from "../../../lib/pagination.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
 import { Pagination } from "../../../components/ui/Pagination.js";
+import { Button } from "../../../components/ui/Button.js";
 import { MotionRemotionStill } from "./MotionRemotionStill.js";
 import type { MotionRemotionSpec, MotionRemotionScene, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { MotionStoryScript } from "../../../types/motionVideo.js";
@@ -28,9 +29,9 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
           return (
             <div key={entry.key} className={S.CARD}>
               {entry.preview && entry.scene ? (
-                <button type={RT_SHARED.BUTTON} className={S.OPEN} aria-label={title} onClick={() => onOpen?.(entry.scene!, entry.preview!, index)}>
+                <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.OPEN} aria-label={title} onClick={() => onOpen?.(entry.scene!, entry.preview!, index)}>
                   <MotionRemotionStill document={entry.preview} />
-                </button>
+                </Button>
               ) : (
                 <div className={S.PENDING}>
                   <div className={S.PENDING_CONTENT}>
@@ -54,9 +55,9 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
                 {entry.narration || entry.scene?.purpose}
               </p>
               {entry.scene && onRedo && (
-                <button type={RT_SHARED.BUTTON} className={S.RETRY} disabled={busy} onClick={() => onRedo(entry.scene!)}>
+                <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.RETRY} disabled={busy} onClick={() => onRedo(entry.scene!)}>
                   {text.retryScene}
-                </button>
+                </Button>
               )}
             </div>
           );

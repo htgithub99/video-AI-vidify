@@ -99,7 +99,7 @@ export const motionRepetitionFindings = (beats: MotionBeat[], language: string, 
     for (let at = 0; at + size <= words.length; at++) {
       const gram = words.slice(at, at + size);
       if (motifWords.some((set) => gram.every((word) => set.has(word) || T.REPEAT.STOP.test(word)))) continue;
-      if (gram.filter((word) => !T.REPEAT.STOP.test(word)).length >= T.REPEAT.CONTENT_WORDS) grams.add(gram.join(" "));
+      if (gram.filter((word) => !T.REPEAT.STOP.test(word) && !motifWords.some((set) => set.has(word))).length >= T.REPEAT.CONTENT_WORDS) grams.add(gram.join(" "));
     }
     let flagged = false;
     for (const gram of grams) {
@@ -124,6 +124,7 @@ export const motionMergeShortChapters = (chapters: MotionChapter[], genre?: unkn
     const midHook = a.hook && b.hook && b.hook !== a.hook ? STAGE.MID_HOOK(b.hook) : "";
     return {
       ...a,
+      ...(a.writing || b.writing ? { writing: { ...a.writing, ...b.writing, purpose: [a.writing?.purpose, b.writing?.purpose].filter(Boolean).join(" "), startState: a.writing?.startState || b.writing?.startState || "", endState: b.writing?.endState || a.writing?.endState || "", events: [...(a.writing?.events || []), ...(b.writing?.events || [])] } } : {}),
       from: Math.min(a.from ?? b.from ?? 0, b.from ?? a.from ?? 0),
       to: Math.max(a.to ?? b.to ?? 0, b.to ?? a.to ?? 0),
       summary: [a.summary, midHook, b.summary].filter(Boolean).join(T.MERGE.SUMMARY_JOIN),
@@ -145,6 +146,18 @@ export const motionMergeShortChapters = (chapters: MotionChapter[], genre?: unkn
   }
   return out.length === chapters.length ? chapters : out.map((chapter, index) => ({ ...chapter, id: T.MERGE.ID(index) }));
 };
+export const motionOpeningTeaserIds = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters" | "videoGenre">): Set<string> => {
+  const rule = T.OVERLAP.TEASER;
+  const first = analysis.chapters[0];
+  return new Set(
+    rule.GENRES.some((genre) => genre === motionVideoGenre(analysis.videoGenre)) && first?.stages?.includes(rule.STAGE)
+      ? beats
+          .filter((beat) => beat.chapterId === first.id && beat.narration?.trim())
+          .slice(0, rule.BEATS)
+          .map((beat) => beat.id)
+      : [],
+  );
+};
 export const motionChapterOverlapFindings = (beats: MotionBeat[], analysis: MotionStoryAnalysis): MotionStoryTimelineFinding[] => {
   const genre = motionVideoGenre(analysis.videoGenre);
   const narrator = motionNarratorCastKey(analysis);
@@ -163,11 +176,13 @@ export const motionChapterOverlapFindings = (beats: MotionBeat[], analysis: Moti
   const told = new Map<string, { chapter: string; quote: string }>();
   const findings: MotionStoryTimelineFinding[] = [];
   const spoken = beats.filter((beat) => beat.narration?.trim());
+  const teasers = motionOpeningTeaserIds(beats, analysis);
   const last = spoken.at(-1);
   for (const beat of spoken) {
+    if (teasers.has(beat.id)) continue;
     const keys = events(beat.narration);
     const repeated = keys.map((key) => told.get(key)).find((entry) => entry && entry.chapter !== beat.chapterId);
-    const exempt = T.OVERLAP.EXEMPT_FINAL[genre] && beat === last;
+    const exempt = (T.OVERLAP.EXEMPT_FINAL[genre] && beat === last) || !!analysis.chapters.find((chapter) => chapter.id === beat.chapterId)?.stages?.includes(T.OVERLAP.RECAP_STAGE[genre]);
     if (repeated && !exempt) findings.push({ id: beat.id, issue: T.OVERLAP.ISSUE[genre](repeated.chapter, repeated.quote) });
     for (const key of keys) if (!told.has(key)) told.set(key, { chapter: beat.chapterId, quote: beat.narration.trim().slice(0, T.OVERLAP.QUOTE_LIMIT) });
   }

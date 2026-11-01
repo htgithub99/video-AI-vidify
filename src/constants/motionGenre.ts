@@ -49,8 +49,9 @@ export const motionVideoGenreStageRule = (value: unknown, stages?: string[]): st
   const known = PROFILES[motionVideoGenre(value)].STAGES;
   const ids = (stages || []).filter((id) => Object.hasOwn(known, id));
   const items = ids.map((id) => STAGE.ITEM(id, known[id].RULE));
-  const solo = ids.filter((id) => known[id].SOLO);
-  return items.length ? STAGE.RULE(items) + (ids.length > 1 && solo.length ? STAGE.SOLO_TAIL(solo) : "") : "";
+  const head = ids.length > 1 && known[ids[0]].SOLO ? [ids[0]] : [];
+  const tail = ids.length > 1 ? ids.slice(1).filter((id) => known[id].SOLO) : [];
+  return items.length ? STAGE.RULE(items) + (head.length ? STAGE.SOLO_HEAD(head) : "") + (tail.length ? STAGE.SOLO_TAIL(tail) : "") : "";
 };
 export const motionVideoGenreEditorProfile = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];

@@ -6,7 +6,7 @@ export const MOTION_PROMPT = {
   ROUTE_BUDGETS: { "gemini-chat": 16000, "deepseek-chat": 16000, "chatgpt-ui": 16000, "claude-chat": 16000, "grok-chat": 16000 } as Record<string, number>,
   MODEL_BUDGETS: {} as Record<string, number>,
   ARTIFACT_BUDGETS: {} as Record<string, number>,
-  SELF_CONTAINED_ARTIFACTS: ["motion-story-chapter", "motion_remotion_scene", "motion_remotion_composition"] as readonly string[],
+  SELF_CONTAINED_ARTIFACTS: ["motion-story-chapter", "motion-story-edit", "motion_remotion_scene", "motion_remotion_composition"] as readonly string[],
   SINGLE_MESSAGE_ARTIFACTS: ["motion_remotion_composition"] as readonly string[],
   SINGLE_MESSAGE_LOG: (artifact: string, chars: number): string => `Prompt ${artifact}: giữ trọn ${chars.toLocaleString("vi-VN")} ký tự trong một tin dựng cảnh, không chia lượt nạp ngữ cảnh.`,
   SCENE_OUTPUT: (prompt: string, identity: string): string => `${prompt}\n\nReturn one complete JSON object in the requested json code block. Begin the object with these exact fields: {${identity}, ...the requested result fields...}. Keep SVG markup as text with single-quoted attributes, as instructed above.`,
@@ -54,8 +54,7 @@ export const MOTION_PROMPT = {
   CHAPTER_SENTENCES: /(?<=[.!?。！？])\s+(?=[\p{L}\p{N}\p{P}])/u,
   CHAPTER_PART_STAMP: /\((?:(\d+):)?(\d{1,2}):(\d{2})\)/g,
   CHAPTER_PART_WRITTEN_CHARS: 3200,
-  CHAPTER_PART_WRITTEN: (lines: string[]): string =>
-    `ALREADY NARRATED IN THIS CHAPTER (these lines are final and already spoken; never repeat their events, images, numbers or reactions, and continue from the last one): ${stringifyJson(lines)}`,
+  CHAPTER_PART_WRITTEN: (lines: string[]): string => `ALREADY NARRATED IN THIS CHAPTER (these lines are final and already spoken; never repeat their events, images, numbers or reactions, and continue from the last one): ${stringifyJson(lines)}`,
   CHAPTER_PART: (index: number, total: number, points: string[], before?: string, after?: string): string =>
     `Write only consecutive event section ${index + 1}/${total} of this chapter. Required events: ${points.length ? stringifyJson(points) : "the events of this section's transcript lines only"}. ${index ? `This section continues directly after the last narrated line: ${before || "see ALREADY NARRATED"}; it is NOT the chapter opening.` : "This section opens the chapter."} ${index < total - 1 ? `The next section starts with: ${after || "the next transcript lines"}; stop before it and do not write the chapter handoff.` : "This section ends the chapter with its planned handoff."} Keep causal clues/identities and the approved global ending. Do not recap earlier events, cover the next section, restart the story or add a new ending. This is one uninterrupted chapter; section labels are not spoken.`,
   CHAPTER_PART_LOG: (chapter: string, count: number): string => `Chương ${chapter}: viết theo ${count} cụm sự kiện liên tiếp; giữ chung cốt truyện và bản nháp từng cụm.`,
