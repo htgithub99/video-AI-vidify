@@ -13,7 +13,7 @@ import { normalizeMotionChapterMetadata } from "./motionEditorialMetadata.js";
 export const motionChapterResponseIssues = (rows: Record<string, any>[], cast: string[], places: string[], closed: boolean, multiVoice = true): { id: string; issues: MotionResponseIssue[] }[] => {
   const schema = MOTION_RESPONSE_SCHEMAS[RT_CORE.MOTION_STORY_CHAPTER].properties!.beats.items!;
   return normalizeMotionChapterMetadata(rows).flatMap((row) => {
-    const issues = motionResponseIssues(row, { ...schema, properties: Object.fromEntries(Object.entries(schema.properties!).filter(([key]) => !([RT_CORE.SCENEPLAN, RT_SHARED.UTTERANCES] as string[]).includes(key))) });
+    const issues = motionResponseIssues(row, { ...schema, properties: Object.fromEntries(Object.entries(schema.properties!).filter(([key]) => key !== RT_SHARED.UTTERANCES)) });
     if (multiVoice && Array.isArray(row.utterances) && row.utterances.length) issues.push(...motionSpeechResponseIssues(row.utterances, [RT_CORE.NARRATOR, ...cast] as string[], typeof row.narration === "string" ? row.narration : ""));
     else if (multiVoice && row.utterances !== undefined && !Array.isArray(row.utterances)) issues.push({ path: RT_SHARED.UTTERANCES, expected: RT_CORE.ARRAY_OF_UTTERANCES, actual: typeof row.utterances, value: R.VALUE(row.utterances) });
     if (Array.isArray(row.cast) && row.cast.some((key) => !cast.includes(key))) issues.push({ path: RT_CORE.CAST, expected: stringifyJson(cast), actual: RT_CORE.UNKNOWN_CAST_KEY, value: R.VALUE(row.cast) });

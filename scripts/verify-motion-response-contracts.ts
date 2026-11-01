@@ -2,11 +2,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { build } from "esbuild";
 import { RESPONSE_QA as V } from "./motionResponseContractVerificationTexts.js";
 import { MOTION_RESPONSE_SCHEMAS, MOTION_DNA_CORE_SCHEMA, MOTION_THUMBNAIL_SCHEMA } from "../src/constants/motionResponseContract.js";
 import { MOTION_THUMBNAIL } from "../src/constants/motionThumbnail.js";
+import { requestMotionAiContract } from "../src/features/motion/server/services/motionAiContractService.js";
 import { motionResponsePrompt, motionResponseIssues, withMotionResponsePrompt } from "../src/lib/motionResponseContract.js";
 import { normalizeMotionDnaResponse, videoDnaErrors } from "../src/lib/motionVideoDna.js";
 import { motionDnaRepairDraft, motionDnaRepairPrompt } from "../src/lib/motionDnaRepair.js";
@@ -196,46 +195,23 @@ try {
   assert.equal(edited.edits[0].narration, V.NARRATION[0]);
   assert.equal(edited.edits[1].narration, V.NARRATION[1]);
   let thumbnailCalls = 0;
-  (globalThis as any).__responseContractAi = async (prompt: string) => {
-    thumbnailCalls++;
-    if (thumbnailCalls === 1) return { imagePrompt: [V.THUMBNAIL] };
-    assert.equal(thumbnailCalls, 2);
-    assert.ok(prompt.includes('"actual":"array"'));
-    assert.ok(prompt.includes('"path":"imagePrompt"'));
-    return { imagePrompt: V.THUMBNAIL };
-  };
-  const bundled = await build({
-    stdin: { contents: V.THUMB_ENTRY, loader: "ts", resolveDir: process.cwd() },
-    bundle: true,
-    platform: "node",
-    format: "esm",
-    packages: "external",
-    write: false,
-    plugins: [
-      {
-        name: V.STUB_NAMESPACE,
-        setup(builder) {
-          builder.onResolve({ filter: V.STORY_IMPORT }, () => ({ path: "story", namespace: V.STUB_NAMESPACE }));
-          builder.onResolve({ filter: V.IMAGE_IMPORT }, () => ({ path: "image", namespace: V.STUB_NAMESPACE }));
-          builder.onLoad({ filter: /.*/, namespace: V.STUB_NAMESPACE }, (args) => ({ loader: "js", contents: args.path === "story" ? V.STORY_STUB : V.IMAGE_STUB }));
-        },
-      },
-    ],
-  });
-  const bundlePath = path.resolve("scratch", `${V.ROOT}${process.pid}.mjs`);
-  fs.mkdirSync(path.dirname(bundlePath), { recursive: true });
-  try {
-    fs.writeFileSync(bundlePath, bundled.outputFiles[0].text);
-    const service = await import(pathToFileURL(bundlePath).href);
-    const result = await service.generateMotionThumbnail(analysis, undefined, { language: "vi", exec: {} });
-    assert.ok(result.prompt.startsWith(V.THUMBNAIL + "\n"));
-    assert.ok(result.prompt.includes(MOTION_THUMBNAIL.LAYOUT));
-    assert.ok(result.prompt.includes(MOTION_THUMBNAIL.STYLE_RULE));
-    assert.equal(thumbnailCalls, 2);
-  } finally {
-    fs.rmSync(bundlePath, { force: true });
-    delete (globalThis as any).__responseContractAi;
-  }
+  const thumbnailSchema = MOTION_RESPONSE_SCHEMAS[MOTION_THUMBNAIL.ARTIFACT];
+  const svg = "<svg viewBox='0 0 1280 720'><rect width='1280' height='720' fill='#222222'/></svg>";
+  const result = await requestMotionAiContract(
+    "Thumbnail source",
+    {},
+    async (prompt) => {
+      thumbnailCalls++;
+      if (thumbnailCalls === 1) return { svg: [svg] };
+      assert.equal(thumbnailCalls, 2);
+      assert.ok(prompt.includes('"actual":"array"'));
+      assert.ok(prompt.includes('"path":"svg"'));
+      return { svg };
+    },
+    { schema: thumbnailSchema, attempts: 2, assess: (raw) => ({ value: raw, errors: motionResponseIssues(raw, thumbnailSchema).map((issue) => JSON.stringify(issue)) }), repair: (_prompt, _value, errors) => errors.join("\n"), failure: (errors) => new Error(errors.join("; ")) },
+  );
+  assert.equal(result.svg, svg);
+  assert.equal(thumbnailCalls, 2);
   process.stdout.write(V.PASSED);
 } finally {
   if (previousStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;

@@ -4,7 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright";
 import { attachGeminiLocalFiles, reconcileGeminiQueuedFiles } from "../src/server/services/geminiFileAttachmentService.js";
-import { geminiUploadPolicy, verifyGeminiSubmittedFiles } from "../src/server/services/geminiUploadReadiness.js";
+import { geminiUploadPolicy, verifyGeminiSubmittedFiles, withGeminiUploadIdentityRecovery } from "../src/server/services/geminiUploadReadiness.js";
+import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../src/constants/cinematicConstants.js";
 import { readClaudeUploadState, waitForClaudeUploads } from "../src/server/services/claudeUploadReadiness.js";
 import { ChatUploadError } from "../src/server/services/chatUploadRecovery.js";
 import { AsyncTaskLimiter } from "../src/lib/asyncTaskLimiter.js";
@@ -25,7 +26,7 @@ try {
   const pages = await Promise.all(Array.from({ length: 5 }, () => context.newPage()));
   const fixture = `<style>input-area-v2,uploader-file-preview{display:block}.close{display:none}</style>
     <input-area-v2><button aria-label="Nội dung tải lên và công cụ" onclick="setTimeout(()=>document.querySelector('#menu').hidden=false,250)">+</button>
-    <div id="menu" role="menu" hidden><div role="menuitem" aria-label="Tải tệp lên. Tài liệu, dữ liệu, tệp mã nguồn" onclick="document.querySelector('#menu').hidden=true;const input=document.createElement('input');input.type='file';input.multiple=true;input.accept='audio/*';input.onchange=e=>{window.selectedAt=Date.now();for(const f of e.target.files){const node=document.createElement('uploader-file-preview');const id='tip-'+f.name;node.innerHTML='<div aria-describedby=&quot;'+id+'&quot;><span>'+f.name.slice(0,8)+'...'+f.name.slice(-10)+'</span><button class=close aria-label=&quot;close '+f.name.slice(0,8)+'...&quot;>x</button><div role=progressbar></div></div>';document.querySelector('input-area-v2').prepend(node);const tip=document.createElement('div');tip.id=id;tip.hidden=true;tip.textContent=f.name;document.body.append(tip);}setTimeout(()=>{document.querySelectorAll('[role=progressbar]').forEach(n=>{n.outerHTML='<span class=gem-attachment-content>MP3</span>'});window.readyAt=Date.now()},1800)};input.click()">Tải tệp lên</div></div>
+    <div id="menu" role="menu" hidden><div role="menuitem" aria-label="Tải tệp lên. Tài liệu, dữ liệu, tệp mã nguồn" onclick="document.querySelector('#menu').hidden=true;const input=document.createElement('input');input.type='file';input.multiple=true;input.accept='audio/*';input.onchange=e=>{window.selectedAt=Date.now();for(const f of e.target.files){const node=document.createElement('uploader-file-preview');const id='tip-'+f.name;node.innerHTML='<div aria-describedby=&quot;'+id+'&quot;><span>'+f.name.slice(0,8)+'...'+f.name.slice(-10)+'</span><button class=close aria-label=&quot;close '+f.name.slice(0,8)+'...&quot;>x</button><div role=progressbar></div></div>';document.querySelector('input-area-v2').prepend(node);const tip=document.createElement('div');tip.id=id;tip.hidden=true;tip.textContent=f.name;document.body.append(tip);}window.completeUploads=()=>{document.querySelectorAll('[role=progressbar]').forEach(n=>{n.outerHTML='<span class=gem-attachment-content>MP3</span>'});window.readyAt=Date.now()};if(window.uploadsReleased)setTimeout(window.completeUploads,100)};input.click()">Tải tệp lên</div></div>
     <div id="input" contenteditable="true">Evaluate</div><button aria-label="Send message">Send</button></input-area-v2>`;
   await Promise.all(pages.map((page) => page.setContent(fixture)));
   const states: Array<{ phase: string; at: number; room: number }> = [];
@@ -38,7 +39,16 @@ try {
       assert.equal(state.labels.length, 10, "Hidden close buttons must not hide file identities");
       assert.equal(state.readyCount, 0, "Selected chips with a spinner are not uploaded");
       states.push({ phase: "selected", at: Date.now(), room });
-      await waitForClaudeUploads(page.locator("#input"), files, 5000, undefined, undefined, 100, true, geminiUploadPolicy);
+      if (states.filter((state) => state.phase === "selected").length === pages.length)
+        await Promise.all(
+          pages.map((current) =>
+            current.evaluate(() => {
+              (window as any).uploadsReleased = true;
+              (window as any).completeUploads();
+            }),
+          ),
+        );
+      await waitForClaudeUploads(page.locator("#input"), files, 15000, undefined, undefined, 100, true, geminiUploadPolicy);
       states.push({ phase: "ready", at: Date.now(), room });
     }),
   );
@@ -106,6 +116,88 @@ try {
     ),
   );
   assert.equal(peak, 5);
+  const imageFiles = await Promise.all(
+    [0, 1].map(async (index) => {
+      const name = `thumbnail-request-a-${index}.png`;
+      const filePath = path.join(dir, name);
+      await fs.writeFile(filePath, "fixture");
+      return { name, path: filePath, mimeType: "image/png" };
+    }),
+  );
+  const imageChip = (name: string) => `<uploader-file-preview><div aria-describedby="tip-${name}"><span class="gem-attachment-content">attachment</span><span class="gem-attachment-close-button"><button aria-label="đóng tệp đính kèm" onclick="this.closest('uploader-file-preview').remove()">x</button></span></div></uploader-file-preview><div id="tip-${name}" hidden>${name}</div>`;
+  await page.setContent(
+    `<style>input-area-v2,uploader-file-preview{display:block}.gem-attachment-close-button button{display:none}uploader-file-preview:hover button{display:block}</style><input-area-v2><input type="file" accept="image/*" multiple hidden>${imageChip("thumbnail-request-a-0_e61ce2.png")}${imageChip(imageFiles[1].name)}<div id="input" contenteditable="true">keep prompt</div><button aria-label="Send message">Send</button></input-area-v2>`,
+  );
+  await page.locator('input[type="file"]').evaluate((node) =>
+    node.addEventListener("change", () => {
+      const scope = document.querySelector("input-area-v2")!;
+      for (const file of Array.from((node as HTMLInputElement).files || [])) {
+        const chip = document.createElement("uploader-file-preview");
+        chip.innerHTML = `<span class="gem-attachment-content" title="${file.name}">attachment</span><span class="gem-attachment-close-button"><button aria-label="đóng tệp đính kèm" onclick="this.closest('uploader-file-preview').remove()">x</button></span>`;
+        scope.prepend(chip);
+      }
+    }),
+  );
+  const imageInput = page.locator("#input");
+  const healthyChip = await page.locator("uploader-file-preview").nth(1).elementHandle();
+  const waitImages = (observation?: any) => waitForClaudeUploads(imageInput, imageFiles, 1000, undefined, observation, 0, true, geminiUploadPolicy);
+  await assert.rejects(waitImages(), { message: CONFIG.GEMINI_UPLOAD_IDENTITY_ERROR });
+  await assert.rejects(waitForClaudeUploads(imageInput, imageFiles, 40, undefined, { state: () => ({ pending: 1, failed: false }) }, 0, true, geminiUploadPolicy), { message: geminiUploadPolicy.notReadyError }, "Do not repair image identities while network uploads are still pending");
+  let imageRepairs = 0;
+  await withGeminiUploadIdentityRecovery(
+    imageFiles,
+    () => waitImages(),
+    async () => {
+      imageRepairs++;
+      const missingImages = await reconcileGeminiQueuedFiles(page, imageInput, page.locator("input-area-v2"), imageFiles);
+      assert.deepEqual(missingImages, [imageFiles[0]], "Only the renamed mismatching image is uploaded again");
+      await attachGeminiLocalFiles(page, page.locator("input-area-v2"), missingImages);
+    },
+  );
+  assert.equal(imageRepairs, 1);
+  assert.equal(await healthyChip!.evaluate((node) => node.isConnected), true, "Preserve the healthy reference in the same room");
+  assert.equal(await imageInput.innerText(), "keep prompt");
+  const mismatch = new ChatUploadError(CONFIG.GEMINI_UPLOAD_IDENTITY_ERROR, true);
+  let boundedRepairs = 0;
+  await assert.rejects(
+    withGeminiUploadIdentityRecovery(
+      imageFiles,
+      async () => {
+        throw mismatch;
+      },
+      async () => {
+        boundedRepairs++;
+      },
+    ),
+    (error) => error === mismatch,
+  );
+  assert.equal(boundedRepairs, CONFIG.GEMINI_UPLOAD_IDENTITY_REPAIRS, "Identity repair cannot loop indefinitely");
+  await assert.rejects(
+    withGeminiUploadIdentityRecovery(
+      files,
+      async () => {
+        throw mismatch;
+      },
+      async () => {
+        assert.fail("Audio identity handling must remain unchanged");
+      },
+    ),
+    (error) => error === mismatch,
+  );
+  const cancelled = new AbortController();
+  cancelled.abort();
+  await assert.rejects(
+    withGeminiUploadIdentityRecovery(
+      imageFiles,
+      async () => {
+        throw mismatch;
+      },
+      async () => {
+        assert.fail("Cancelled uploads cannot be repaired");
+      },
+      cancelled.signal,
+    ),
+  );
   console.log("PASS: delayed Gemini menu, ten full tooltip names with hidden close buttons, positive ready state, five overlapping uploads, missing/error files, exact submitted message, terminal UI failure and chooser cleanup.");
 } finally {
   await browser.close();

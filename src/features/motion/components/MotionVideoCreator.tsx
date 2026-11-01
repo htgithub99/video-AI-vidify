@@ -826,7 +826,20 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
         <div className={MOTION_STYLES.STUDIO_RIGHT_COLUMN}>
           {state.series && <MotionPartsCard series={state.series} text={text} lang={currentLang} busy={studio.busy} ready={!!state.script?.beats?.length} className={cardCls} onContinue={() => void studio.continuePart()} />}
           <StudioCard className={cardCls}>
-            <StepHeader n={MOTION_TEXT_SYMBOL_11} icon={PlayCircle} title={text.PREVIEW} badge={studio.renderedVideoUrl ? text.EXPORTED_VIDEO_BADGE : remotionMode ? text.PREVIEW_REMOTION_BADGE : text.PREVIEW_BADGE} />
+            <StepHeader
+              n={MOTION_TEXT_SYMBOL_11}
+              icon={PlayCircle}
+              title={text.PREVIEW}
+              badge={studio.renderedVideoUrl ? text.EXPORTED_VIDEO_BADGE : remotionMode ? text.PREVIEW_REMOTION_BADGE : text.PREVIEW_BADGE}
+              right={
+                studio.renderedVideoResult && (
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => studio.renderedVideoResult && void studio.saveResult(studio.renderedVideoResult)} title={text.SAVE_AS} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
+                    <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300_GROUP_HOVER_TEXT_WHITE} />
+                    <span>{text.SAVE_AS}</span>
+                  </Button>
+                )
+              }
+            />
             {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? RUNTIME_VALUES.PREPARINGSINGLE_21F3001B : RUNTIME_VALUES.PREPARING_D932D92A]}</p> : null}
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}

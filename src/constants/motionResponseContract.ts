@@ -204,6 +204,7 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   }),
   "motion-story-seo": object({ seoOptions: array(MOTION_SEO_OPTION_SCHEMA, 1), chapterTitles: array(object(texts("id", "title"))) }, ["seoOptions"]),
   "motion-story-thumbnail-prompt": MOTION_THUMBNAIL_SCHEMA,
+  motion_remotion_thumbnail: object({ svg: text }),
   "motion-illustration-coverage": object({ chapterId: text, checked: boolean, needs }),
   "motion-illustration-need-repair": object({ need }),
   "motion-illustration-plan-repair": object({ cast: array(object({ key: text, gender: choice("male", "female") })), places: array(object(texts("key", "optionId", "name", "description"))) }),

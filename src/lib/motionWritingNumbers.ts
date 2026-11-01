@@ -6,6 +6,7 @@ const scales = new Map<string, number>([...N.SCALES.en.map((word, index) => [wor
 const normalize = (text: string): string =>
   text
     .toLowerCase()
+    .replace(/\b(?:a|an)(?=\s+(?:hundred|thousand|million|billion)\b)/gu, N.EN[1])
     .replace(/\band\b/gu, " ")
     .replace(/ngàn/gu, "nghìn")
     .replace(/linh/gu, N.ZERO_VI)
@@ -13,7 +14,7 @@ const normalize = (text: string): string =>
     .trim();
 const words = [...new Set([...small.keys(), ...scales.keys(), N.HUNDRED.en, N.HUNDRED.vi, N.TENS_VI, N.ZERO_VI, "linh", "and"])].filter(Boolean).sort((a, b) => b.length - a.length);
 const atom = "(?:\\d+(?:[,.]\\d+)*|" + words.join("|") + ")";
-const pattern = new RegExp("(?<![\\p{L}\\p{N}_])" + atom + "(?:[ -]+" + atom + ")*(?![\\p{L}\\p{N}_])", "giu");
+const pattern = new RegExp("(?<![\\p{L}\\p{N}_])(?:(?:a|an)[ ]+(?=hundred\\b|thousand\\b|million\\b|billion\\b))?" + atom + "(?:[ -]+" + atom + ")*(?![\\p{L}\\p{N}_])", "giu");
 type Quantity = { value: number; raw: string; start: number; end: number };
 export const motionWritingQuantities = (text: string): Quantity[] =>
   [...text.matchAll(pattern)].flatMap((match) => {

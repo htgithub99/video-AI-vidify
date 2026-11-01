@@ -33,8 +33,8 @@ try {
   const references = V.GEMINI_NAMES.map((name) => ({ name, mimeType: V.GEMINI_MIME }));
   const waitGemini = (items = references, timeout = 1000, observation?: any) => waitForClaudeUploads(geminiInput, items, timeout, undefined, observation, 0, true, gemini);
   await waitGemini();
-  await assert.rejects(waitGemini([references[0], references[0]], 30), { message: gemini.notReadyError });
-  await assert.rejects(waitGemini([{ ...references[0], name: V.GEMINI_WRONG_NAME }, references[1]], 30), { message: gemini.notReadyError });
+  await assert.rejects(waitGemini([references[0], references[0]], 30), { message: C.GEMINI_UPLOAD_IDENTITY_ERROR });
+  await assert.rejects(waitGemini([{ ...references[0], name: V.GEMINI_WRONG_NAME }, references[1]], 30), { message: C.GEMINI_UPLOAD_IDENTITY_ERROR });
   await assert.rejects(waitGemini([references[0]], 30), { message: gemini.notReadyError });
   await assert.rejects(waitGemini(references, 30, { state: () => ({ pending: 1, failed: false }) }), { message: gemini.notReadyError });
   const chip = page.locator(gemini.attachment).first();

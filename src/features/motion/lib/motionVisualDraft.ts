@@ -58,7 +58,7 @@ export const motionRenderedPreview = (state: { lastRenderJobId?: string | null; 
   const current = result?.videoUrl && state.lastRenderJobId !== null && (!state.lastRenderJobId || state.lastRenderJobId === result.id) ? result.videoUrl : undefined;
   const stored = !current && (!job || isMotionJobTerminal(job.status)) && state.lastRenderJobId ? saved.find((item) => item.id === state.lastRenderJobId) : undefined;
   const videoUrl = current || stored?.videoUrl;
-  return { videoUrl, stale: !!videoUrl && (!state.renderSignature || state.renderSignature !== motionRenderStateKey(state)) };
+  return { videoUrl, result: videoUrl ? (current ? result : stored) : undefined, stale: !!videoUrl && (!state.renderSignature || state.renderSignature !== motionRenderStateKey(state)) };
 };
 export const motionVisualDraftContextKey = (state: Pick<VisualDraftContext, "analysis" | "script">) => {
   const analysis = state.analysis && { ...state.analysis, visualSettings: undefined, stylePreset: undefined, illustrationNeeds: undefined, illustrationCoverage: undefined };

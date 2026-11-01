@@ -4,11 +4,14 @@ import { captureMotionVisualDraft, forgetMotionVisualDraftResults, invalidateMot
 const state: any = { ...F.input, analysis: F.result.analysis, script: F.result.script, lastRenderJobId: F.result.rendered.id, quality: "standard", encoder: "cpu", musicMood: "off" };
 state.renderSignature = motionRenderStateKey(state);
 const job: any = { id: F.result.rendered.id, status: "completed", progress: 1, log: [], result: F.result.rendered };
-assert.deepEqual(motionRenderedPreview(state, job), { videoUrl: F.result.rendered.videoUrl, stale: false });
+assert.deepEqual(motionRenderedPreview(state, job), { videoUrl: F.result.rendered.videoUrl, result: F.result.rendered, stale: false });
 const changed = { ...state, quality: "draft" };
-assert.deepEqual(motionRenderedPreview(changed, job), { videoUrl: F.result.rendered.videoUrl, stale: true }, "Settings changes must not hide an existing MP4");
+assert.deepEqual(motionRenderedPreview(changed, job), { videoUrl: F.result.rendered.videoUrl, result: F.result.rendered, stale: true }, "Settings changes must not hide an existing MP4");
 const oldCamera = { ...state, renderSignature: state.renderSignature.replace(/^\[\d+,/, "[0,") };
-assert.deepEqual(motionRenderedPreview(oldCamera, job), { videoUrl: F.result.rendered.videoUrl, stale: true }, "Camera revision migration must not hide an exported MP4");
+assert.deepEqual(motionRenderedPreview(oldCamera, job), { videoUrl: F.result.rendered.videoUrl, result: F.result.rendered, stale: true }, "Camera revision migration must not hide an exported MP4");
+assert.equal(motionRenderedPreview(state, null, [F.result.rendered]).result, F.result.rendered, "Reloaded preview saves the displayed library result");
+assert.equal(motionRenderedPreview({ ...state, lastRenderJobId: null }, job, [F.result.rendered]).result, undefined, "Deleted output cannot be saved from preview");
+assert.equal(motionRenderedPreview({ ...state, lastRenderJobId: "another-output" }, job, [F.result.rendered]).result, undefined, "Save must not select another output");
 assert.equal(motionRenderedPreview({ ...state, renderSignature: undefined }, job).stale, true, "Unknown export settings must not be called current");
 assert.equal(motionRenderedPreview({ ...state, lastRenderJobId: null }, job).videoUrl, undefined, "Deleted/rebuilt video cannot reappear");
 assert.equal(motionRenderedPreview({ ...state, lastRenderJobId: "another-output" }, job).videoUrl, undefined, "Reject a different output ID");

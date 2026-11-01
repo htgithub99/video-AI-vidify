@@ -51,7 +51,7 @@ export const MOTION_STORY_TIMELINE = {
     EVENTS: {
       death: /chết|tử trận|tử nạn|qua đời|bị giết|thiệt mạng|hy sinh|\b(?:die[sd]?|killed|drown(?:ed|s)?|slain)\b/iu,
       flee: /bỏ chạy|bỏ trốn|tháo chạy|chạy trốn|rút chạy|\b(?:fle[de]|flees|escaped)\b/iu,
-      crown: /lên ngôi|đăng quang|xưng vương|xưng đế|\b(?:crowned|throne|enthroned)\b/iu,
+      crown: /lên ngôi|đăng quang|xưng vương|xưng đế|\b(?:crowned|enthroned|ascend(?:ed|s)? (?:the )?throne|install(?:ed|s)?[^.!?]{0,60}on the throne)\b/iu,
       capture: /bị bắt|đầu hàng|bị bắt sống|\b(?:captured|surrender(?:ed|s)?)\b/iu,
       victory: /chiến thắng|thắng trận|đại thắng|\b(?:victor(?:y|ious)|won the battle)\b/iu,
       marriage: /cưới|kết hôn|thành hôn|\b(?:married|wedding)\b/iu,

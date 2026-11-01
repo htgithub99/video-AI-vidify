@@ -5,7 +5,7 @@ import type { Page } from "playwright";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
 import { attachmentNamesMatch } from "./claudeUploadReadiness.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../../constants/cinematicConstants.js";
-import { SOURCE_TEXT_POST } from "../../constants/sourceText.js";
+import { SOURCE_TEXT_IMAGE_2, SOURCE_TEXT_POST } from "../../constants/sourceText.js";
 import { observeChatUploads } from "./chatUploadObserver.js";
 import type { ChatUploadPolicy } from "./claudeUploadReadiness.js";
 import { ChatUploadError } from "./chatUploadRecovery.js";
@@ -33,6 +33,19 @@ export const geminiUploadPolicy: ChatUploadPolicy = {
   matchImageNames: true,
   omitImageExtension: true,
   omitAudioExtension: true,
+  imageIdentityError: CONFIG.GEMINI_UPLOAD_IDENTITY_ERROR,
+};
+export const withGeminiUploadIdentityRecovery = async <T>(files: Array<{ mimeType: string }>, wait: () => Promise<T>, repair: () => Promise<void>, signal?: AbortSignal): Promise<T> => {
+  for (let attempt = 0; ; attempt++) {
+    signal?.throwIfAborted();
+    try {
+      return await wait();
+    } catch (error) {
+      signal?.throwIfAborted();
+      if (!(error instanceof ChatUploadError) || error.message !== CONFIG.GEMINI_UPLOAD_IDENTITY_ERROR || !files.length || !files.every((file) => file.mimeType.startsWith(SOURCE_TEXT_IMAGE_2)) || attempt >= CONFIG.GEMINI_UPLOAD_IDENTITY_REPAIRS) throw error;
+      await repair();
+    }
+  }
 };
 export const observeGeminiUploads = (page: Page) =>
   observeChatUploads(page, (request) => {

@@ -18,67 +18,122 @@ try {
   const library: any = { version: 1, mode: "library", engine: "canvas", packId: "minimal_mask" };
   const script: any = { title: analysis.title, language: "vi", beats: [{ id: "b1", narration: analysis.logline, place: "well", visual: "scene" }], gen: { previews: {} } };
   const snapshot = JSON.stringify({ analysis, script });
-  for (const visualSettings of [remotion, library]) {
-    let plans = 0,
-      drawings = 0;
-    const service = createMotionThumbnailService({
-      prepareMotionThumbnailReferences: async (_analysis, _script, settings) => {
-        assert.deepEqual(settings, visualSettings);
-        return [reference];
-      },
-      runMotionAi: async (prompt, _artifact, execution) => {
-        plans++;
-        assert.deepEqual(execution, { provider: "content-ai" });
-        assert.ok(prompt.includes(T.LAYOUT) && prompt.includes(T.REFERENCE_RULE));
-        assert.ok(prompt.includes(seo.description));
-        assert.ok(!prompt.includes(analysis.look), "Do not let old inferred style override the selected scene profile");
-        return { imagePrompt: "Draw the sister in her blue clothes beside the old well, in the video's flat cartoon drawing style. Use a separate large left headline and one right-hand subject." };
-      },
-      generateImageWithPlaywright: async (options: any) => {
-        drawings++;
-        assert.deepEqual(options.visualConfig.referenceImages, [reference]);
-        assert.equal(options.visualConfig.referenceImageNames.length, 1);
-        assert.equal(options.visualConfig.chromeHeadless, false);
-        assert.equal(options.visualConfig.aspectRatio, "9:16");
-        assert.ok(options.prompt.includes(T.STYLE_RULE) && options.prompt.includes(T.LAYOUT));
-        assert.equal(options.style, motionThumbnailStyle(analysis, script, visualSettings));
-        return { success: true, base64: Buffer.from("new-thumbnail-" + drawings + "x".repeat(9000)).toString("base64") } as any;
-      },
-    });
-    const options = { language: "vi", visualSettings, script, aspect: "9:16", chromeHeadless: false, exec: { provider: "content-ai" } as any };
-    const first = await service(analysis, seo, options);
-    const second = await service(analysis, seo, options);
-    assert.equal(plans, 2);
-    assert.equal(drawings, 2, "Every click must generate new artwork in both modes");
-    assert.notEqual(first.thumbnail, second.thumbnail);
-    assert.notEqual(first.thumbnail, reference);
+  const { rasterizeMotionSvgs } = await import("../src/features/motion/server/services/motionRenderService.js");
+  const { motionAiRoutes } = await import("../src/features/motion/server/services/motionStoryService.js");
+  const { AiPlanningFallbackProvider, AiPlanningChatModel } = await import("../src/types.js");
+  const { readBase64ImageDimensions } = await import("../src/server/utils/imageAspectRatio.js");
+  const svg = (width: number, height: number, color = "#192d46") => `<svg viewBox='0 0 ${width} ${height}'><rect width='${width}' height='${height}' fill='${color}'/><circle cx='${width * 0.75}' cy='${height * 0.5}' r='80' fill='white'/><text x='40' y='160' fill='white' font-size='50'>NEW THUMBNAIL</text></svg>`;
+  const fixtures = new Map<string, Buffer>();
+  for (const [width, height] of [
+    [1280, 720],
+    [720, 1280],
+  ]) {
+    const file = path.join(directory, `${width}.png`);
+    assert.deepEqual(await rasterizeMotionSvgs([{ svg: svg(width, height), width, height, file }]), [file]);
+    fixtures.set(`${width}x${height}`, fs.readFileSync(file));
   }
-  let fallbackCalls = 0;
-  const fallback = createMotionThumbnailService({
+  const providers = [
+    { provider: AiPlanningFallbackProvider.GeminiChat, model: "gemini-flash::low" },
+    { provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto },
+    { provider: AiPlanningFallbackProvider.DeepSeekChat, model: AiPlanningChatModel.DeepSeekStandard },
+  ];
+  for (const visualSettings of [remotion, library])
+    for (const selected of providers)
+      for (const allowFallback of [false, true]) {
+        let drawings = 0,
+          renders = 0;
+        const referencePaths: string[] = [];
+        const service = createMotionThumbnailService({
+          prepareMotionThumbnailReferences: async (_analysis, _script, settings) => {
+            assert.deepEqual(settings, visualSettings);
+            return [reference];
+          },
+          runMotionAi: async (prompt, artifact, execution, _signal, _log, images) => {
+            drawings++;
+            assert.equal(artifact, T.ARTIFACT);
+            assert.equal(execution.provider, selected.provider);
+            assert.equal(execution.model, selected.model);
+            assert.equal(execution.mode, "room-only");
+            assert.equal(execution.chromeHeadless, false);
+            assert.equal(execution.allowFallback, allowFallback);
+            assert.equal(execution.role, "draw");
+            assert.equal(motionAiRoutes(execution).length > 1, allowFallback);
+            assert.ok(prompt.includes(T.DRAW_TASK) && prompt.includes(T.LAYOUT) && prompt.includes(T.REFERENCE_RULE));
+            assert.ok(prompt.includes(seo.description));
+            assert.ok(!prompt.includes(analysis.look));
+            assert.equal(images?.length, 1);
+            assert.deepEqual(fs.readFileSync(images![0].path), png);
+            referencePaths.push(images![0].path);
+            return { svg: svg(720, 1280) };
+          },
+          rasterizeMotionSvgs: async (jobs) => {
+            renders++;
+            for (const job of jobs) fs.writeFileSync(job.file, fixtures.get(`${job.width}x${job.height}`)!);
+            return jobs.map((job) => job.file);
+          },
+        });
+        const options = { language: "vi", visualSettings, script, aspect: "9:16", exec: { ...selected, chromeHeadless: false, allowFallback } };
+        const first = await service(analysis, seo, options);
+        const second = await service(analysis, seo, options);
+        assert.equal(drawings, 2, "One drawing request per click, no separate prompt-planning stage");
+        assert.equal(renders, 2);
+        assert.match(first.thumbnail, /^data:image\/png;base64,/);
+        assert.deepEqual(readBase64ImageDimensions(first.thumbnail), { width: 720, height: 1280 });
+        assert.notEqual(first.thumbnail, reference);
+        assert.notEqual(first.prompt, second.prompt, "Every click has a new request identity");
+        assert.equal(new Set(referencePaths.map((file) => path.basename(file))).size, referencePaths.length, "Reference filenames must be unique between thumbnail requests");
+        assert.ok(
+          referencePaths.every((file) => !fs.existsSync(file)),
+          "Temporary reference files are cleaned after the response",
+        );
+      }
+  let repairs = 0,
+    repairRenders = 0;
+  const repair = createMotionThumbnailService({
+    prepareMotionThumbnailReferences: async () => [],
+    runMotionAi: async (prompt) => {
+      repairs++;
+      if (repairs === 1) return { svg: [] };
+      assert.ok(prompt.includes("svg: expected string"));
+      return { svg: svg(1280, 720) };
+    },
+    rasterizeMotionSvgs: async (jobs) => {
+      repairRenders++;
+      if (repairRenders === 1) throw new Error("Transient renderer failure");
+      for (const job of jobs) fs.writeFileSync(job.file, fixtures.get("1280x720")!);
+      return jobs.map((job) => job.file);
+    },
+  });
+  const repaired = await repair(analysis, seo, { language: "en", visualSettings: { ...remotion, profileId: "history" }, exec: { ...providers[0], allowFallback: false } });
+  assert.equal(repairs, 2, "Malformed SVG response gets a bounded structural repair");
+  assert.equal(repairRenders, 2, "A PNG export failure retries the accepted drawing without another AI call");
+  assert.deepEqual(readBase64ImageDimensions(repaired.thumbnail), { width: 1280, height: 720 });
+  let failedRequests = 0,
+    failedRenders = 0;
+  const failed = createMotionThumbnailService({
     prepareMotionThumbnailReferences: async () => [],
     runMotionAi: async () => {
-      throw new Error("planning unavailable");
+      failedRequests++;
+      throw Object.assign(new Error("Uncertain response"), { motionSubmissionUncertain: true });
     },
-    generateImageWithPlaywright: async (options: any) => {
-      fallbackCalls++;
-      assert.ok(options.prompt.includes(T.LAYOUT) && options.prompt.includes(V.PROFILES.history.direction));
-      assert.ok(!options.style.includes(analysis.look));
-      return { success: true, base64: "A".repeat(12000) } as any;
-    },
-  });
-  await fallback(analysis, seo, { language: "en", visualSettings: { ...remotion, profileId: "history" }, exec: {} });
-  assert.equal(fallbackCalls, 1, "Fallback must still draw a new image in the selected style");
-  let duplicateCalls = 0;
-  const duplicate = createMotionThumbnailService({
-    prepareMotionThumbnailReferences: async () => ["data:image/png;base64," + "A".repeat(12000)],
-    runMotionAi: async () => ({ imagePrompt: "New flat illustrated thumbnail with one character in blue on the right and the story title in large letters at the left. Keep the source palette and proportions." }),
-    generateImageWithPlaywright: async () => {
-      duplicateCalls++;
-      return { success: true, base64: "A".repeat(12000) } as any;
+    rasterizeMotionSvgs: async () => {
+      failedRenders++;
+      return [];
     },
   });
-  await assert.rejects(duplicate(analysis, seo, { language: "vi", visualSettings: remotion, exec: {} }), /ảnh tham chiếu/u);
-  assert.equal(duplicateCalls, 3, "Never return a reference frame as a newly generated cover");
+  await assert.rejects(failed(analysis, seo, { language: "en", visualSettings: remotion, exec: { ...providers[0], allowFallback: false } }), /Uncertain response/);
+  assert.equal(failedRequests, 1);
+  assert.equal(failedRenders, 0, "A failed AI task must not continue to an unrelated renderer and falsely report success");
+  const { startStoryJob, getStoryJob } = await import("../src/features/motion/server/services/motionStoryJobService.js");
+  const { MotionStoryJobKind } = await import("../src/types/motionVideo.js");
+  const job = startStoryJob(true, MotionStoryJobKind.THUMBNAIL, async () => repaired);
+  const deadline = Date.now() + 10000;
+  while (getStoryJob(job.id)?.status !== "completed" && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 25));
+  const completed = getStoryJob(job.id)!;
+  assert.equal(completed.status, "completed");
+  assert.equal((completed.result as any).thumbnail, repaired.thumbnail);
+  const saved = JSON.parse(fs.readFileSync(path.join(directory, "output", "motion-video", "story-jobs", `${job.id}.json`), "utf8"));
+  assert.equal(saved.job.result.thumbnail, repaired.thumbnail, "A successful PNG reaches the completed job and persisted result");
   assert.equal(JSON.stringify({ analysis, script }), snapshot);
   const makeScene = (id: string, text: string, status = "accepted") => ({ id, text, purpose: text, nodes: [], composition: { assetKey: id }, build: { status } });
   const sceneScript: any = {
@@ -127,7 +182,7 @@ try {
   const endpoint = sourceFile.slice(sourceFile.indexOf("export const thumbnailMotionStory"), sourceFile.indexOf("export const scenesMotionStory"));
   assert.ok(endpoint.includes("generateMotionThumbnail(analysis, seo"));
   assert.ok(!endpoint.includes("renderRemotionStill") && !endpoint.includes("spec.subtitles"), "The API must not bypass fresh generation for Remotion");
-  console.log("Motion thumbnails passed: fresh generation for both modes, scene style references, SEO-specific left-text/right-subject layout, language/aspect/headless settings, fallback style, duplicate-frame rejection and reference cleanup. No live AI/TTS/video.");
+  console.log("Motion thumbnails passed: fresh generation for both modes, scene style references, SEO-specific left-text/right-subject layout, language/aspect/headless settings, selected scene provider/model/fallback, bounded SVG repair, PNG retry, completed-job persistence and reference cleanup. No live AI/TTS/video.");
 } finally {
   if (previousStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
   else process.env.VIDIFY_STORAGE_DIR = previousStorage;

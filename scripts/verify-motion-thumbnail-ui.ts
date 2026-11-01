@@ -67,6 +67,13 @@ try {
         script: { title: "Newly built scenes", language: "vi", beats: [{ id: "new-scene", narration: "Latest words", visual: "scene" }], gen: { previews: { "new-scene": { file: "latest.jpg" } } } },
         seo: { options: [{ title: "First option" }, { title: "Second option" }] },
         thumbnails: { 0: { image: "keep-first", prompt: "old" } },
+        aiProvider: "deepseek-chat",
+        aiModel: "deepseek-standard",
+        aiHeadless: true,
+        sceneAiProvider: "gemini-chat",
+        sceneAiModel: "gemini-flash::low",
+        sceneAiHeadless: false,
+        sceneAiFallback: false,
       });
     });
     await page.waitForFunction(() => (window as any).motionDraftStudio.state.script?.title === "Newly built scenes");
@@ -76,6 +83,7 @@ try {
     assert.equal(result.requests[0].script.gen.previews["new-scene"].file, "latest.jpg", "Even a previously bound click handler must read the latest built scenes");
     assert.equal(result.requests[0].visualSettings.mode, mode);
     assert.equal(result.requests[0].seo.title, "Second option");
+    assert.deepEqual(result.requests[0].aiExecution, { provider: "gemini-chat", model: "gemini-flash::low", mode: "room-only", chromeHeadless: false, allowFallback: false });
     assert.equal(result.thumbnails[0].image, "keep-first");
     assert.equal(result.thumbnails[1].image, "thumbnail-1");
     assert.deepEqual(errors, []);

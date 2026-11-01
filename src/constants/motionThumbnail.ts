@@ -1,4 +1,18 @@
 export const MOTION_THUMBNAIL = {
+  ARTIFACT: "motion_remotion_thumbnail",
+  DRAW_ATTEMPTS: 3,
+  RENDER_ATTEMPTS: 2,
+  OUTPUT_WIDTH: 1280,
+  OUTPUT_HEIGHT: 720,
+  PNG_HEADER_BYTES: 24,
+  FILE_PREFIX: "thumbnail-",
+  DRAW_TASK:
+    'VECTOR PROGRAMMING TASK: produce a NEW finished thumbnail as self-contained static SVG source in the JSON response. Do not invoke image generation, canvas, an image artifact or any external tool. The application renders your SVG to a downloadable PNG. Return {"svg":"complete SVG source"}. Use single-quoted SVG attributes and encode every less-than character as the literal JSON escape \\u003c. Include a root viewBox matching the exact requested output size, all closing tags, opaque background, simple vector geometry, and SVG text/tspan for the headline with system fonts. No scripts, external URLs, embedded raster images, foreignObject, animation or references to unavailable assets. Draw new artwork from the story and selected scene style; never return an attached reference frame. Keep the headline in the supplied narration language, with correct accents.',
+  VIEWBOX_ERROR: "Ảnh bìa: kích thước SVG không khớp khung hình đã chọn.",
+  RENDER_ERROR: "Ảnh bìa đã có bản vẽ nhưng chưa xuất được PNG hợp lệ; bản SVG được giữ lại để phục hồi.",
+  RENDER_LOG: "Ảnh bìa: đã nhận bản vẽ, đang lưu ảnh PNG về tool.",
+  RENDER_RETRY: "Ảnh bìa: thử xuất lại PNG từ bản vẽ đã đạt, không gửi thêm yêu cầu AI.",
+  CLEANUP_WARNING: "Ảnh bìa: chưa dọn được tệp tham chiếu tạm; giữ nguyên kết quả đã tạo.",
   REFERENCES: 2,
   WIDTH: 960,
   HEIGHT: 540,
@@ -10,5 +24,4 @@ export const MOTION_THUMBNAIL = {
   LOG_REFERENCE: (count: number) => `Ảnh bìa: dùng ${count} hình cảnh để tham chiếu phong cách; vẽ ảnh bìa mới.`,
   LOG_PROFILE: "Ảnh bìa: chưa có hình cảnh phù hợp; dùng phong cách của cách dựng/gói đã chọn để vẽ mới.",
   LOG_REFERENCE_ERROR: "Ảnh bìa: chưa đọc được hình tham chiếu; tiếp tục theo phong cách đã chọn.",
-  REFERENCE_RETURNED: "AI trả lại nguyên ảnh tham chiếu; cần vẽ ảnh bìa mới theo bố cục đã yêu cầu.",
 } as const;

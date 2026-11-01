@@ -9,7 +9,7 @@ import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../../constants/cinema
 import { uploadFailure } from "./chatUploadRecovery.js";
 type Attachment = { name: string; mimeType: string; path?: string };
 export type UploadState = { count: number; labels: string[]; files: Array<{ label: string; busy: boolean; failed: boolean; ready: boolean }>; busy: boolean; failed: boolean; sendReady: boolean; readyCount: number; busyCount: number; failedCount: number; errorMessage?: string };
-export type ChatUploadPolicy = { scope: string; send: string; remove: string; attachment: string; busy: string; failure: RegExp; failedError: string; notReadyError: string; composerAncestor?: string; errorSelector?: string; ready?: string; matchImageNames?: boolean; omitImageExtension?: boolean; omitAudioExtension?: boolean };
+export type ChatUploadPolicy = { scope: string; send: string; remove: string; attachment: string; busy: string; failure: RegExp; failedError: string; notReadyError: string; composerAncestor?: string; errorSelector?: string; ready?: string; matchImageNames?: boolean; omitImageExtension?: boolean; omitAudioExtension?: boolean; imageIdentityError?: string };
 const claudePolicy: ChatUploadPolicy = {
   scope: CONFIG.CLAUDE_UPLOAD_SCOPE_SELECTOR,
   send: CONFIG.CLAUDE_SEND_SELECTOR,
@@ -167,16 +167,21 @@ export const waitForClaudeUploads = async (
 ): Promise<void> => {
   let deadline = Date.now() + timeoutMs;
   let readySince = 0;
+  let mismatchSince = 0;
   while (Date.now() < deadline) {
     signal?.throwIfAborted();
     const pausedMs = (await waitForSession?.()) || 0;
     deadline += pausedMs;
-    if (pausedMs) readySince = 0;
+    if (pausedMs) readySince = mismatchSince = 0;
     const state = await readClaudeUploadState(input, policy);
     const network = observation?.state();
     const namesMatch = attachmentNamesMatch(state.labels, attachments, policy);
     onProgress?.({ ...state, namesMatch, pending: network?.pending || 0 });
     if (state.failed || network?.failed) throw uploadFailure(policy.failedError, network, state.errorMessage);
+    if (policy.imageIdentityError && attachments.length && attachments.every((item) => item.mimeType.startsWith(ST.SOURCE_TEXT_IMAGE_2)) && state.count === attachments.length && state.readyCount === attachments.length && !state.busy && !network?.pending && !namesMatch) {
+      if (!mismatchSince) mismatchSince = Date.now();
+      if (Date.now() - mismatchSince >= stableMs) throw uploadFailure(policy.imageIdentityError, network);
+    } else mismatchSince = 0;
     if (state.count === attachments.length && namesMatch && (!policy.ready || state.readyCount === attachments.length) && !state.busy && (!requireSendReady || state.sendReady) && !network?.pending) {
       if (!readySince) readySince = Date.now();
       if (Date.now() - readySince >= stableMs) {

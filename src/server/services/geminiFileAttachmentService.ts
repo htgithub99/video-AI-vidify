@@ -31,7 +31,7 @@ export const reconcileGeminiQueuedFiles = async (page: Page, input: Locator, com
   for (const index of remove.reverse()) {
     const chip = composer.locator(geminiUploadPolicy.attachment).nth(index);
     await chip.hover({ timeout: ACTION_TIMEOUT });
-    await chip.locator(RT_SERVER.BUTTON_ARIA_LABEL_CLOSE_I_BUTTON_ARIA_LABEL_REMOVE_ATTACHMENT).first().click({ timeout: ACTION_TIMEOUT });
+    await chip.locator(CONFIG.GEMINI_ATTACHMENT_CLOSE_SELECTOR).first().click({ timeout: ACTION_TIMEOUT });
   }
   if (missing.length)
     await page.locator(COMMON_RUNTIME.SOURCE_TEXT_INPUT_TYPE_FILE).evaluateAll((nodes) =>

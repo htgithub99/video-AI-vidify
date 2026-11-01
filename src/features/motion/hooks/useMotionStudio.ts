@@ -902,7 +902,7 @@ export function useMotionStudio() {
       setThumbnailBusy(optionIndex);
       await inFlow(async () => {
         try {
-          const result = (await runStoryJob(API_ROUTES.MOTION_STORY_THUMBNAIL, { analysis: now.analysis, script: now.script, ...motionVisualRequest(now), seo: now.seo?.options?.[optionIndex], language: now.language, aspect: now.aspect, aiExecution: motionMainAiExecution(now) })) as { thumbnail: string; prompt: string };
+          const result = (await runStoryJob(API_ROUTES.MOTION_STORY_THUMBNAIL, { analysis: now.analysis, script: now.script, ...motionVisualRequest(now), seo: now.seo?.options?.[optionIndex], language: now.language, aspect: now.aspect, aiExecution: motionSceneAiExecution(now) })) as { thumbnail: string; prompt: string };
           const newThumb: MotionThumbnail = { image: result.thumbnail, prompt: result.prompt, optionIndex };
           patch({ thumbnail: newThumb, thumbnails: { ...(stateRef.current.thumbnails || {}), [optionIndex]: newThumb } });
         } catch (e: any) {
@@ -1386,6 +1386,7 @@ export function useMotionStudio() {
     audioPreparing: !state.automationPaused && !!state.script?.beats.length && ((!state.uploadedAudio && !voiceValid) || compiled?.compilationKey !== compileStateKey(state) || !compiled?.audioPreviewId) && !voiceError && !compileError,
     previewVideoUrl: renderJob?.status === MotionJobStatus.COMPLETED && compiled?.compilationKey === compileStateKey(state) && state.renderSignature === motionRenderStateKey(state) ? renderJob.result?.videoUrl : undefined,
     renderedVideoUrl: renderedPreview.videoUrl,
+    renderedVideoResult: renderedPreview.result,
     renderedVideoStale: renderedPreview.stale,
     audioId,
     previewAudioId: compiled?.compilationKey === compileStateKey(state) ? (compiled.voiceStale ? undefined : compiled.audioPreviewId || audioId) : audioId,

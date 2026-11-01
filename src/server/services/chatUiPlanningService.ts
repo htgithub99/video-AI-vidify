@@ -140,7 +140,7 @@ import { ChatUploadError, uploadFailure } from "./chatUploadRecovery.js";
 import { AsyncTaskLimiter } from "../../lib/asyncTaskLimiter.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../constants/sunoAutomation.js";
 import { assertChatGptUploadsAvailable, chatGptUploadPolicy, observeChatGptUploads } from "./chatGptUploadReadiness.js";
-import { geminiUploadPolicy, observeGeminiUploads, verifyGeminiSubmittedFiles } from "./geminiUploadReadiness.js";
+import { geminiUploadPolicy, observeGeminiUploads, verifyGeminiSubmittedFiles, withGeminiUploadIdentityRecovery } from "./geminiUploadReadiness.js";
 import { geminiSessionInterruption, waitForGeminiSession, withGeminiSession } from "./geminiSessionService.js";
 import { selectClaudeChatModel } from "./claudeModelService.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
@@ -1388,18 +1388,33 @@ const submitPrompt = async (
             } else if (isClaude) {
               await waitForClaudeUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation);
             } else if (uploadPolicy) {
-              await waitForClaudeUploads(
-                input,
-                attachments,
-                CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS,
-                signal,
-                uploadObservation,
-                CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_STABLE_MS,
-                false,
-                uploadPolicy,
-                isGemini ? (state) => publishUpload({ phase: RT_SHARED.UPLOADING, expected: attachments.length, selected: state.count, ready: state.readyCount, processing: state.busyCount, failed: state.failedCount, namesMatch: state.namesMatch, pending: state.pending }) : undefined,
-                waitForSession,
-              );
+              const waitForUploads = () =>
+                waitForClaudeUploads(
+                  input,
+                  attachments,
+                  CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS,
+                  signal,
+                  uploadObservation,
+                  CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_STABLE_MS,
+                  false,
+                  uploadPolicy,
+                  isGemini ? (state) => publishUpload({ phase: RT_SHARED.UPLOADING, expected: attachments.length, selected: state.count, ready: state.readyCount, processing: state.busyCount, failed: state.failedCount, namesMatch: state.namesMatch, pending: state.pending }) : undefined,
+                  waitForSession,
+                );
+              if (isGemini)
+                await withGeminiUploadIdentityRecovery(
+                  attachments,
+                  waitForUploads,
+                  async () => {
+                    publishUpload({ phase: RT_SHARED.SELECTING, expected: attachments.length });
+                    const missing = await reconcileGeminiQueuedFiles(page, input, scopedComposer!, attachments as Array<ChatRoomAttachment & { path: string }>);
+                    if (!missing.length) throw new ChatUploadError(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_UPLOAD_IDENTITY_ERROR, true);
+                    await attachRoomFiles(page, missing, artifactType, scopedComposer, removeSelector, signal);
+                    publishUpload({ phase: RT_SHARED.SELECTED, expected: attachments.length });
+                  },
+                  signal,
+                );
+              else await waitForUploads();
             } else if (artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING) {
               await waitForMusicMixerUploads(input, attachments, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal);
             } else await delayAsync(Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_MAX_MS, CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SETTLE_PER_FILE_MS * attachments.length));

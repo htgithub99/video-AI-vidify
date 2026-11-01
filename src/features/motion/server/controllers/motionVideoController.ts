@@ -206,7 +206,7 @@ export const thumbnailMotionStory = (req: Request, res: Response): void => {
     const analysis = req.body?.analysis as MotionStoryAnalysis;
     if (!analysis?.chapters?.length) throw new Error(MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC);
     const seo = _.isPlainObject(req.body?.seo) ? (req.body.seo as MotionSeoOption) : undefined;
-    const exec = aiExec(req.body?.aiExecution);
+    const exec = drawExec(req.body?.sceneAiExecution || req.body?.aiExecution);
     const licenseKey = getResolvedLicenseKey(req);
     const job = startStoryJob(req.body?.keepBrowser === true, MotionStoryJobKind.THUMBNAIL, async (ctx) => {
       const result = await generateMotionThumbnail(analysis, seo, {
