@@ -175,6 +175,7 @@ import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvide
 import { parseClaudeChatModel } from "../../../../constants/claudeChatModels.js";
 import { GEMINI_MODEL_ENCODING, parseGeminiChatModel } from "../../../../constants/geminiChatModels.js";
 import { DEEPSEEK_CHAT_CONFIG, DEEPSEEK_CHAT_MODES } from "../../../../constants/deepseekChat.js";
+import { isDeepSeekAccountUnavailable } from "../../../../server/services/deepseekAccountService.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../../../constants/messages.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDnaSettings } from "../../../../types/motionVideo.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, getChatPlanningRoom, prepareChatPlanningRoom, reloadChatPlanningRoom, resumeChatPlanningResponse } from "../../../../server/services/chatUiPlanningService.js";
@@ -649,6 +650,13 @@ export const mapMotionAiPool = async <T, R>(items: T[], worker: (item: T, index:
   return results;
 };
 const blockedRoomProviders = new Map<string, number>();
+const unavailableRoomProviders = new Map<string, { error: Error; until: number }>();
+const unavailableRoomProvider = (provider: string) => {
+  const state = unavailableRoomProviders.get(provider);
+  if (state && state.until > Date.now()) return state;
+  unavailableRoomProviders.delete(provider);
+  return undefined;
+};
 const blockedRoomModels = new Map<string, number>();
 const providerRecoveries = new MotionProviderRecovery();
 const providerGates = new Map<string, MotionAiWorkerPool>();
@@ -661,7 +669,7 @@ const acquireProviderGate = async (provider: string, signal?: AbortSignal, role?
   providerGates.set(key, gate);
   return (await gate.acquire(signal)).release;
 };
-export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
+export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
 export const resetMotionAiRoom = async (): Promise<void> => {
   const run = motionAiRunStore.getStore();
   if (!run) return;
@@ -901,6 +909,8 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     const run = motionAiRunStore.getStore();
     const linked = AbortSignal.any(_.compact([signal, run?.signal]));
     if (mode !== AiPlanningExecutionMode.ApiOnly) {
+      const unavailable = unavailableRoomProvider(String(route.provider));
+      if (unavailable) throw unavailable.error;
       const waited = await waitMotionProviderCooldown(
         () => motionRoomBlockedMs(String(route.provider), route.model),
         (ms) => motionServiceDelay(ms, linked),
@@ -912,6 +922,7 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     try {
       return await requestMotionAiContract(prompt, route, (question) => runMotionAiOnce(question, artifactType, route, signal, log, images, retry, undefined, !!contract), contract, linked);
     } catch (error: any) {
+      if (isDeepSeekAccountUnavailable(error)) unavailableRoomProviders.set(String(route.provider), { error, until: Number(error.retryAt) > Date.now() ? Number(error.retryAt) : Date.now() + DEEPSEEK_CHAT_CONFIG.ACCOUNT_RECHECK_MS });
       if (!linked.aborted && (isChatAttachmentError(error) || (AIR.REPLAYABLE_ARTIFACT.test(artifactType) && error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR))) {
         if (!motionRoomBlockedMs(String(route.provider), route.model)) {
           blockedRoomModels.set(AIR.MODEL_KEY(String(route.provider), route.model), Date.now() + (isChatAttachmentError(error) ? AIR.ATTACHMENT_ERROR_COOLDOWN_MS : AIR.PROVIDER_ERROR_COOLDOWN_MS));
@@ -928,7 +939,7 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     return request(exec, attempt);
   }
   const configured = motionAiRoutes(exec);
-  const routes = editorial?.route && exec.role !== MOTION_AI_ROLE.DRAW ? [editorial.route, ...configured.filter((route) => route.provider !== editorial.route!.provider || route.model !== editorial.route!.model)] : configured;
+  const routes = exec.allowFallback !== false && editorial?.route && exec.role !== MOTION_AI_ROLE.DRAW ? [editorial.route, ...configured.filter((route) => route.provider !== editorial.route!.provider || route.model !== editorial.route!.model)] : configured;
   let failure: unknown = null;
   for (let i = 0; i < routes.length; i++) {
     signal?.throwIfAborted();
@@ -1119,6 +1130,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       let caught = error;
       terminalError = error;
       if (signal?.aborted || run?.signal.aborted) throw caught;
+      if (isDeepSeekAccountUnavailable(caught)) throw caught;
       const geminiSelection = _.get(caught, GEMINI_MODEL_ENCODING.DIAGNOSTICS);
       const unusable = _.toString(caught?.message).includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE) || (!switchTo && _.toString(caught?.message).includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) || _.toString(caught?.message).includes(XRT.DEEPSEEK_MODEL_UNAVAILABLE_CODE);
       if (unusable) {

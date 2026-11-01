@@ -149,6 +149,7 @@ import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
+import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
 import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
@@ -803,6 +804,7 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
     return;
   }
   if (busySelector === D.BUSY) {
+    await throwIfDeepSeekAccountUnavailable(page);
     const alerts = await page
       .locator(D.ALERT)
       .filter({ visible: true })
@@ -1121,6 +1123,7 @@ const waitForSubmissionConfirmation = async (input: Locator, page: Page, respons
   const initialResponseIds = new Set(_.compact(_.map(initialResponseSnapshots, SOURCE_TEXT_IDENTITY)));
   while (Date.now() - startedAt < timeoutMs) {
     throwIfPlanningCancelled(signal);
+    if (responseSelector === D.RESPONSE) await throwIfDeepSeekAccountUnavailable(page);
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector).catch(() => []);
     if (responseSnapshots.length > initialResponseSnapshots.length || _.some(responseSnapshots, (snapshot) => (!_.isEmpty(snapshot.identity) && !initialResponseIds.has(snapshot.identity)) || (!_.isEmpty(_.trim(snapshot.text)) && !initialResponseTexts.has(_.trim(snapshot.text))))) return true;
     if (!(await input.isVisible().catch(() => false))) {
@@ -1847,20 +1850,21 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
 };
 const ensureDeepSeekReady = async (room: Page, request: ChatPlanningRequest): Promise<void> => {
   const input = room.locator(D.INPUT).filter({ visible: true }).last();
-  const ready = await input
-    .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS })
-    .then(() => true)
-    .catch(() => false);
-  throwIfPlanningCancelled(request.signal);
-  if (ready) return;
-  if (request.chromeHeadless !== false) throw new Error(D.LOGIN_ERROR);
-  appWarn(D.LOGIN_WAIT_LOG);
-  const deadline = Date.now() + D.LOGIN_TIMEOUT_MS;
+  const startedAt = Date.now();
+  const readyDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS;
+  const deadline = request.chromeHeadless === false ? readyDeadline + D.LOGIN_TIMEOUT_MS : readyDeadline;
+  let loginLogged = false;
   while (Date.now() < deadline && !room.isClosed()) {
     throwIfPlanningCancelled(request.signal);
+    await throwIfDeepSeekAccountUnavailable(room);
     if (await input.isVisible().catch(() => false)) return;
+    if (!loginLogged && Date.now() >= readyDeadline) {
+      appWarn(D.LOGIN_WAIT_LOG);
+      loginLogged = true;
+    }
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
+  throwIfPlanningCancelled(request.signal);
   throw new Error(D.LOGIN_ERROR);
 };
 const generateWithDeepSeekChat = async (request: ChatPlanningRequest): Promise<string> => {

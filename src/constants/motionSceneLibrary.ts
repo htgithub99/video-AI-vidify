@@ -9,6 +9,7 @@ export const MOTION_AI_SETTINGS_TEXT = {
     FALLBACK_LABEL: "Tự chuyển AI dự phòng",
     FALLBACK_ON: "Tự chuyển AI dự phòng",
     FALLBACK_OFF: "Chỉ dùng AI đã chọn",
+    MAIN_FALLBACK_HINT: "Bật: khi AI hỗ trợ nội dung gặp lỗi, thử AI dự phòng. Tắt: chỉ dùng đúng AI và model đã chọn; báo lỗi nếu không thể hoàn tất. Không thay đổi AI dựng cảnh.",
     FALLBACK_HINT: "Bật: khi AI dựng cảnh gặp lỗi, thử AI dự phòng. Tắt: giữ đúng AI và model đã chọn; cảnh lỗi có thể tạo lại riêng. Không thay đổi AI hỗ trợ nội dung.",
   },
   en: {
@@ -19,6 +20,7 @@ export const MOTION_AI_SETTINGS_TEXT = {
     FALLBACK_LABEL: "Automatic AI fallback",
     FALLBACK_ON: "Automatic AI fallback",
     FALLBACK_OFF: "Use selected AI only",
+    MAIN_FALLBACK_HINT: "On: try a fallback AI when content generation fails. Off: use only the selected AI and model; report an error if the request cannot finish. Scene AI is unchanged.",
     FALLBACK_HINT: "On: try a fallback AI when scene generation fails. Off: keep the selected AI and model; failed scenes can be regenerated separately. Content AI is unchanged.",
   },
 } as const;

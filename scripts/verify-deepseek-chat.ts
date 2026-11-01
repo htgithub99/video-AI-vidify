@@ -6,6 +6,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { DEEPSEEK_CHAT_MODES } from "../src/constants/deepseekChat.ts";
+import { DEEPSEEK_CHAT_CONFIG as D } from "../src/constants/deepseekChat.ts";
+import { throwIfDeepSeekAccountUnavailable } from "../src/server/services/deepseekAccountService.ts";
+import { DEEPSEEK_ACCOUNT_VERIFICATION as S } from "./deepseekAccountVerificationTexts.ts";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../src/types.ts";
 import { resolvePipelineAiExecution } from "../src/services/pipelineAiExecutionService.ts";
 import { resolveFlowVideoPlanningModel } from "../src/services/flowVideoPlanningModel.ts";
@@ -17,13 +20,17 @@ for (const mode of DEEPSEEK_CHAT_MODES) {
 }
 assert.equal(resolvePipelineAiExecution({ planningFallbackProvider: provider, planningChatModel: AiPlanningChatModel.ClaudeSonnet55 }, null, true).model, AiPlanningChatModel.DeepSeekAuto);
 assert.equal(resolveFlowVideoPlanningModel(provider, AiPlanningChatModel.GeminiFlash), AiPlanningChatModel.DeepSeekAuto);
-type FixtureMode = "ready" | "login" | "limited" | "message-limited" | "pending" | "upload-failed" | "missing-preview" | "wrong-filename" | "invalid" | "stuck-mode" | "retry" | "retry-always";
+type FixtureMode = "ready" | "login" | "limited" | "message-limited" | "pending" | "upload-failed" | "missing-preview" | "wrong-filename" | "invalid" | "stuck-mode" | "retry" | "retry-always" | "suspended" | "suspended-after-send";
 let mode: FixtureMode = AUT.READY;
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext();
 const pages: import("playwright").Page[] = [];
 const uploads: { body: Buffer; finished: boolean }[] = [];
-const fixture = (current: FixtureMode) => AUT.CHAT_BROWSER_FIXTURE(current === AUT.LIMITED ? AUT.DIV_ROLE_ALERT_SERVER_BUSY_PLEASE_TRY_AGAIN_LATER_DIV : AUT.EMPTY, current === AUT.LOGIN ? AUT.DIV_LOG_IN_TO_DEEPSEEK_DIV : AUT.DIV_ID_COMPOSER_DIV_ID_CHIPS_DIV_DIV_ID_CONTROLS_TEXTAREA_PLACEHOLDER_MESSAGE_DEEPSE, JSON.stringify(current));
+const fixture = (current: FixtureMode) =>
+  AUT.CHAT_BROWSER_FIXTURE(current === S.SUSPENDED ? S.BANNER : current === AUT.LIMITED ? AUT.DIV_ROLE_ALERT_SERVER_BUSY_PLEASE_TRY_AGAIN_LATER_DIV : AUT.EMPTY, current === S.SUSPENDED ? AUT.EMPTY : current === AUT.LOGIN ? AUT.DIV_LOG_IN_TO_DEEPSEEK_DIV : AUT.DIV_ID_COMPOSER_DIV_ID_CHIPS_DIV_DIV_ID_CONTROLS_TEXTAREA_PLACEHOLDER_MESSAGE_DEEPSE, JSON.stringify(current)).replace(
+    S.RESPOND_BRANCH,
+    S.APPEND_BANNER,
+  );
 await context.route(AUT.HTTPS_CHAT_DEEPSEEK_COM, async (route) => {
   if (route.request().url().includes(AUT.FILE)) {
     const upload = { body: route.request().postDataBuffer() || Buffer.alloc(0), finished: false };
@@ -207,6 +214,29 @@ try {
     if (current !== AUT.LOGIN && current !== AUT.INVALID) assert.equal(await pages.at(-1)!.evaluate(() => (window as any).sent), 0, current);
     await service.closeChatPlanningRoom({ provider, projectId: current });
   }
+  for (const current of [S.SUSPENDED, S.SUSPENDED_AFTER_SEND] as const) {
+    mode = current;
+    const submission = { attempted: false, completed: false };
+    const started = Date.now();
+    await assert.rejects(service.generatePlanningWithChatUi({ ...request(current), submission }), { message: D.ACCOUNT_UNAVAILABLE_ERROR });
+    assert.ok(Date.now() - started < 1500, S.NO_RETRY);
+    assert.equal(await pages.at(-1)!.evaluate(() => (window as any).sent), current === S.SUSPENDED ? 0 : 1);
+    assert.equal(submission.completed, current === S.SUSPENDED_AFTER_SEND);
+    await service.closeChatPlanningRoom({ provider, projectId: current });
+  }
+  const noticePage = await context.newPage();
+  await noticePage.setContent(S.CONTENT);
+  await noticePage.locator(S.CONTENT_NODES).evaluateAll(
+    (elements, text) =>
+      elements.forEach((element) => {
+        element.textContent = text;
+      }),
+    S.NOTICE,
+  );
+  await throwIfDeepSeekAccountUnavailable(noticePage);
+  await noticePage.setContent(S.BANNER);
+  await assert.rejects(throwIfDeepSeekAccountUnavailable(noticePage), (error: any) => error.message === D.ACCOUNT_UNAVAILABLE_ERROR && error.retryAt > Date.now());
+  await noticePage.close();
   mode = AUT.PENDING;
   const abort = new AbortController();
   const cancelPageCreated = context.waitForEvent(AUT.PAGE);

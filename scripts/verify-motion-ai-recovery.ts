@@ -14,6 +14,7 @@ import { AiPlanningChatModel as M, AiPlanningExecutionMode as E, AiPlanningFallb
 import { MotionJobStatus, MotionStoryJobKind } from "../src/types/motionVideo.ts";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../src/constants/cinematicConstants.ts";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../src/constants/deepseekChat.ts";
+import { DEEPSEEK_ACCOUNT_VERIFICATION as S } from "./deepseekAccountVerificationTexts.ts";
 import { PUPPET as PU, PUPPET_STYLE_PRESETS, PUPPET_TYPES } from "../src/constants/motionPuppet.ts";
 import { exhaustedMotionRoom } from "../src/server/services/chatSubmissionRecovery.ts";
 import { closeMotionJsonContainers } from "../src/lib/motionJsonRecovery.ts";
@@ -213,6 +214,38 @@ try {
     service.motionAiRoutes({ ...exec, provider: P.ChatGptUi, model: M.ChatGptAuto }).map((route: any) => route.provider),
     [P.ChatGptUi, P.GeminiChat, P.DeepSeekChat, P.GrokChat],
   );
+  const suspendedExec = { ...storyExec, provider: P.DeepSeekChat, model: M.DeepSeekStandard };
+  for (const stage of ["prepare", "send"] as const) {
+    reset();
+    fixture[stage] = async (request) => {
+      if (request.provider !== P.DeepSeekChat) return stage === "send" ? ready(request) : undefined;
+      if (request.submission) request.submission.attempted = true;
+      throw new Error(D.ACCOUNT_UNAVAILABLE_ERROR);
+    };
+    await within(call(suspendedExec));
+    assert.equal(fixture.prepared.filter((request) => request.provider === P.DeepSeekChat).length, 1);
+    assert.equal(fixture.sent.at(-1).provider, P.GeminiChat);
+    assert.equal(fixture.reloaded.length, 0, S.NO_RETRY);
+    assert.equal(fixture.resumed.length, 0, S.NO_RETRY);
+    const sentBefore = fixture.sent.length;
+    await within(assert.rejects(call({ ...suspendedExec, allowFallback: false }), { message: D.ACCOUNT_UNAVAILABLE_ERROR }));
+    assert.equal(fixture.sent.length, sentBefore, S.NO_WAIT);
+    await within(call(suspendedExec));
+    assert.equal(fixture.prepared.filter((request) => request.provider === P.DeepSeekChat).length, 1);
+    assert.equal(fixture.sent.at(-1).provider, P.GeminiChat);
+  }
+  for (const options of [{ allowFallback: false }, { strictProvider: true }]) {
+    reset();
+    fixture.send = async () => {
+      throw new Error(D.ACCOUNT_UNAVAILABLE_ERROR);
+    };
+    await within(assert.rejects(call({ ...suspendedExec, ...options }), { message: D.ACCOUNT_UNAVAILABLE_ERROR }));
+    assert.deepEqual(
+      fixture.sent.map((request) => request.provider),
+      [P.DeepSeekChat],
+    );
+    assert.equal(fixture.reloaded.length, 0, S.NO_RETRY);
+  }
   for (const message of [
     V.NETWORK_SUSPENDED,
     V.DNS_UNAVAILABLE,

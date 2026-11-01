@@ -30,7 +30,7 @@ export const isChatAttachmentError = (error: unknown): boolean => {
 };
 export const isFinalChatResponseError = (error: unknown): boolean => {
   const message = error instanceof Error ? error.message : String(error);
-  return [C.REFUSAL_RESPONSE_ERROR, C.INVALID_JSON_RESPONSE_ERROR, C.PROVIDER_ERROR_RESPONSE_ERROR, C.PROMPT_LIMIT_RESPONSE_ERROR, C.CHATGPT_UPLOAD_UNAVAILABLE_ERROR, C.CHATGPT_RATE_LIMIT_ERROR, C.CLAUDE_RATE_LIMIT_ERROR, C.GROK_RATE_LIMIT_ERROR, D.RATE_LIMIT_ERROR].some((code) => message === code);
+  return [C.REFUSAL_RESPONSE_ERROR, C.INVALID_JSON_RESPONSE_ERROR, C.PROVIDER_ERROR_RESPONSE_ERROR, C.PROMPT_LIMIT_RESPONSE_ERROR, C.CHATGPT_UPLOAD_UNAVAILABLE_ERROR, C.CHATGPT_RATE_LIMIT_ERROR, C.CLAUDE_RATE_LIMIT_ERROR, C.GROK_RATE_LIMIT_ERROR, D.RATE_LIMIT_ERROR, D.ACCOUNT_UNAVAILABLE_ERROR].some((code) => message === code);
 };
 export const isMotionContentResponseError = (error: unknown): boolean => error instanceof Error && error.message === C.INVALID_JSON_RESPONSE_ERROR;
 export const exhaustedMotionRoom = (provider: string): Error => Object.assign(new Error(R.EXHAUSTED(provider)), { [R.EXHAUSTED_FLAG]: true });

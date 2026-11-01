@@ -30,6 +30,7 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onChromeHeadlessChange={(value) => patch({ aiHeadless: value })}
           currentLang={currentLang}
           allowHybrid
+          extraControl={<MotionToggle checked={state.aiFallback !== false} label={text.FALLBACK_LABEL} title={text.MAIN_FALLBACK_HINT} text={state.aiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ aiFallback: state.aiFallback === false })} />}
         />
       </section>
       <section aria-label={text.DRAW_TITLE}>

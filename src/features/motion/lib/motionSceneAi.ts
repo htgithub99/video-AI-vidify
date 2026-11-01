@@ -7,6 +7,7 @@ export interface MotionAiChoice {
   aiModel: AiPlanningChatModel;
   aiMode: AiPlanningExecutionMode;
   aiHeadless: boolean;
+  aiFallback?: boolean;
 }
 export interface MotionSceneAiChoice {
   sceneAiProvider: AiPlanningFallbackProvider;
@@ -14,7 +15,7 @@ export interface MotionSceneAiChoice {
   sceneAiHeadless: boolean;
   sceneAiFallback?: boolean;
 }
-export const motionMainAiExecution = (state: MotionAiChoice) => ({ provider: state.aiProvider, model: state.aiModel, mode: state.aiMode, chromeHeadless: state.aiHeadless });
+export const motionMainAiExecution = (state: MotionAiChoice) => ({ provider: state.aiProvider, model: state.aiModel, mode: state.aiMode, chromeHeadless: state.aiHeadless, allowFallback: state.aiFallback !== false });
 export const resolveMotionSceneExecution = (exec: MotionAiExecution) => {
   const provider = exec.provider && exec.provider !== AiPlanningFallbackProvider.Disabled && Object.hasOwn(CINEMATIC_CHAT_MODEL_OPTIONS, exec.provider) ? (exec.provider as AiPlanningFallbackProvider) : MOTION_SCENE_AI.PRIMARY_PROVIDER;
   const model = CINEMATIC_CHAT_MODEL_OPTIONS[provider].find((option) => option.value === exec.model)?.value || CINEMATIC_CHAT_DEFAULT_MODELS[provider];

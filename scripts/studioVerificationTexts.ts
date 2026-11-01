@@ -70,10 +70,10 @@ send.onclick=()=>{
   BROWSER: "browser",
   FIXTURE: "fixture",
   EXPORT_CONST_GETORLAUNCHGLOBALBROWSER_ASYNC_GLOBALTHIS_DEEPSEEKFIXTURE_EXPORT_CONST:
-    "\n        export const getOrLaunchGlobalBrowser=async()=>globalThis.__deepseekFixture;export const getOrLaunchGrokBrowser=getOrLaunchGlobalBrowser;\n        export const scheduleGlobalBrowserCleanup=()=>{};export const closeAppBrowserAfterTask=async()=>true;export const closeIdleSharedChrome=async()=>true;export const closeOwnedGrokBrowserIfIdle=async()=>true;\n        export class SimpleMutex{tail=Promise.resolve();async acquire(){const prior=this.tail;let release;this.tail=new Promise(r=>release=r);await prior;return release;}}",
+    "\n        export const getOrLaunchGlobalBrowser=async()=>globalThis.__deepseekFixture;export const getOrLaunchGrokBrowser=getOrLaunchGlobalBrowser;\n        export const scheduleGlobalBrowserCleanup=()=>{};export const retainGlobalBrowser=()=>()=>{};export const closeAppBrowserAfterTask=async()=>true;export const closeIdleSharedChrome=async()=>true;export const closeOwnedGrokBrowserIfIdle=async()=>true;\n        export class SimpleMutex{tail=Promise.resolve();async acquire(){const prior=this.tail;let release;this.tail=new Promise(r=>release=r);await prior;return release;}}",
   JS: "js",
   DIAGNOSTICS: "diagnostics",
-  EXPORT_CONST_WRITEMUSICDIAGNOSTIC_ASYNC_EXPORT_CONST_MUSICERRORDETAILS: "export const writeMusicDiagnostic=async()=>{};export const musicErrorDetails=()=>({});",
+  EXPORT_CONST_WRITEMUSICDIAGNOSTIC_ASYNC_EXPORT_CONST_MUSICERRORDETAILS: "export const writeMusicDiagnostic=async()=>{};export const musicErrorDetails=()=>({});export const musicUploadDetails=()=>({});",
   UTF8: "utf8",
   FORMAT_B_D: (value0: unknown): string => `\\b${value0}: \\d+`,
   FORMAT_SYMBOL: (value0: unknown, value1: unknown): string => `${value0}: ${value1}`,

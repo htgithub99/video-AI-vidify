@@ -6,6 +6,7 @@ import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
 import _ from "lodash";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
+import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
 export const getDeepSeekComposerScope = async (input: Locator): Promise<Locator> => {
   const scope = input.locator(D.COMPOSER);
   if (!(await scope.count())) throw new Error(D.UPLOAD_NOT_READY);
@@ -49,6 +50,7 @@ export const waitForDeepSeekUploads = async (input: Locator, attachments: Attach
   const normalize = (value: string) => value.normalize(SRT.SOURCE_TEXT_NFC).toLowerCase();
   while (Date.now() < deadline) {
     throwIfPlanningCancelled(signal);
+    await throwIfDeepSeekAccountUnavailable(input.page());
     const state = await readDeepSeekUploadState(input);
     const network = observation?.state();
     if (state.failed || network?.failed) throw new Error(D.UPLOAD_FAILED);

@@ -76,7 +76,7 @@ import {
 import { retimeSeoPack } from "../../../lib/motionSeo.js";
 import { MOTION_PARTS } from "../../../constants/motionParts.js";
 import { motionCarryGen, motionPartAnalysis, motionSeriesStart } from "../../../lib/motionParts.js";
-import { motionMainAiExecution, motionSceneAiExecution, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
+import { motionMainAiExecution, motionSceneAiExecution, type MotionAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
 import { MOTION_SCENE_AI } from "../../../constants/motionSceneLibrary.js";
 import { motionVisualRequest, normalizeMotionVisualSettings, isRemotionSpec } from "../../../lib/motionVisual.js";
 import { MOTION_VISUAL } from "../../../constants/motionVisual.js";
@@ -93,7 +93,7 @@ const reportStoryError = (error: unknown): void => {
   if (message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
   else toast.error(message);
 };
-interface PersistedState extends MotionSceneAiChoice {
+interface PersistedState extends MotionSceneAiChoice, MotionAiChoice {
   visualDrafts?: Record<string, MotionVisualDraft>;
   visualSettings: MotionVisualSettings;
   renderBehavior: MotionRenderBehavior;
@@ -121,10 +121,6 @@ interface PersistedState extends MotionSceneAiChoice {
   subtitles?: boolean;
   sfxVolume: number;
   soundOverrides: Record<string, MotionSoundOverride>;
-  aiProvider: AiPlanningFallbackProvider;
-  aiModel: AiPlanningChatModel;
-  aiMode: AiPlanningExecutionMode;
-  aiHeadless: boolean;
   aiReview: boolean;
   videoGenre?: MotionVideoGenre;
   stylePreset?: string;
@@ -177,6 +173,7 @@ const DEFAULTS: PersistedState = {
   aiModel: AiPlanningChatModel.GeminiFlash,
   aiMode: AiPlanningExecutionMode.RoomOnly,
   aiHeadless: true,
+  aiFallback: true,
   sceneAiProvider: MOTION_SCENE_AI.PRIMARY_PROVIDER,
   sceneAiModel: MOTION_SCENE_AI.PRIMARY_MODEL,
   sceneAiHeadless: true,
@@ -848,7 +845,7 @@ export function useMotionStudio() {
         }
       });
     },
-    [inFlow, state.source, state.analysis, state.language, state.length, state.autoContinue, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch, resumeAutomation, pauseAutomation],
+    [inFlow, state.source, state.analysis, state.language, state.length, state.autoContinue, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, runStoryJob, patch, resumeAutomation, pauseAutomation],
   );
   const generateSeo = useCallback(
     async (scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis, quiet = false) => {
@@ -872,7 +869,7 @@ export function useMotionStudio() {
         if (mounted.current) setSeoRequestBusy(false);
       }
     },
-    [inFlow, state.script, state.analysis, state.language, state.voice, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, runStoryJob, patch, resumeAutomation],
+    [inFlow, state.script, state.analysis, state.language, state.voice, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, runStoryJob, patch, resumeAutomation],
   );
   const seedKit = useCallback(
     async (styleId: string): Promise<{ sets: number; variants: number; props: number } | null> => {
@@ -973,7 +970,7 @@ export function useMotionStudio() {
       if (result && !failed && automaticExport && exportOn(stateRef.current) && !flowCancelled.current) await exportBuiltScenes.current?.();
       return result;
     },
-    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
+    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
   const voicePending = useRef<{ signature: string; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
   const generateVoice = useCallback(
