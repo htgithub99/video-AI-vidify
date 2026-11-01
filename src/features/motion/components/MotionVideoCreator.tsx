@@ -26,7 +26,7 @@ import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, motionVideoGenre, type MotionVideoGenre } from "../../../constants/motionGenre.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { isRemotionSpec } from "../../../lib/motionVisual.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
@@ -120,7 +120,8 @@ import {
   MOTION_TEXT_XOA,
 } from "../../../constants/motionRuntime.js";
 import { MOTION_STYLES } from "../constants/motionStyles.js";
-import { MOTION_VIDEO_TEXTS, type MotionVideoTexts } from "../../../constants/motionVideoTexts.js";
+import { MOTION_SCRIPT_COPY, MOTION_VIDEO_TEXTS, type MotionVideoTexts } from "../../../constants/motionVideoTexts.js";
+import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
 import { MOTION_STORY_CONFIG } from "../../../constants/motionVideo.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../../../lib/lang.js";
@@ -245,6 +246,14 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const renderStopping = studio.renderJob?.stage === MOTION_TEXT_STOPPING;
   const stopAi = <StopBtn onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />;
   const beatsByChapter = useMemo(() => _.groupBy(state.script?.beats || [], MOTION_TEXT_CHAPTERID), [state.script]);
+  const { copiedKey: scriptCopied, copyText: copyScript } = useClipboardFeedback();
+  const scriptText = () =>
+    _.compact(
+      _.map(state.analysis?.chapters || [], (chapter, ci) => {
+        const lines = _.compact(_.map(beatsByChapter[chapter.id] || [], (beat) => _.trim(beat.narration)));
+        return lines.length ? [MOTION_SCRIPT_COPY.CHAPTER(ci + 1, chapter.title), ...lines].join(MOTION_SCRIPT_COPY.LINE_SEPARATOR) : undefined;
+      }),
+    ).join(MOTION_SCRIPT_COPY.CHAPTER_SEPARATOR);
   const missingChapterIds = useMemo(
     () =>
       _.map(
@@ -723,11 +732,17 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 title={text.STEP_SCRIPT}
                 badge={MOTION_TEMPLATE_BEATS(String(state.script.beats.length))}
                 right={
-                  <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_400}>
-                    {formatSeconds(estimateTotal)}
-                    {MR.MOTION_TEXT_SYMBOL_13}
-                    {!studio.voiceValid && !state.uploadedAudio ? MOTION_TEMPLATE_SYMBOL_2(String(text.ESTIMATED)) : MR.MOTION_TEXT_EMPTY}
-                  </span>
+                  <>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_TEXT_SLATE_400}>
+                      {formatSeconds(estimateTotal)}
+                      {MR.MOTION_TEXT_SYMBOL_13}
+                      {!studio.voiceValid && !state.uploadedAudio ? MOTION_TEMPLATE_SYMBOL_2(String(text.ESTIMATED)) : MR.MOTION_TEXT_EMPTY}
+                    </span>
+                    <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} onClick={() => void copyScript(scriptText(), MOTION_SCRIPT_COPY.KEY, text.SCRIPT_COPIED)} title={text.SCRIPT_COPY} className={cn(MR.MOTION_TEXT_H_8_PX_3_ROUNDED_LG_INLINE_FLEX_ITEMS_CENTER_JUSTIFY_CENTER_GAP_1, scriptCopied === MOTION_SCRIPT_COPY.KEY ? MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_EMERALD_600_TO_TEAL_600_HOVER_FROM_EMERALD_ : MR.MOTION_TEXT_BG_GRADIENT_TO_R_FROM_PURPLE_600_TO_PINK_600_HOVER_FROM_PURPLE_50)}>
+                      {scriptCopied === MOTION_SCRIPT_COPY.KEY ? <Check className={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0_TEXT_WHITE} /> : <Copy className={MR.MOTION_TEXT_W_3_5_H_3_5_SHRINK_0_TEXT_WHITE} />}
+                      <span>{scriptCopied === MOTION_SCRIPT_COPY.KEY ? text.SCRIPT_COPIED : text.SCRIPT_COPY}</span>
+                    </Button>
+                  </>
                 }
               />
               <div className={MOTION_STYLES.SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>

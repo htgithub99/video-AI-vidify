@@ -81,6 +81,8 @@ export const MOTION_VIDEO_TEXTS = {
     FACT_WRONG: "Sai",
     SCRIPT_BTN: "Tạo kịch bản",
     SCRIPT_REGEN_CHAPTER: "Viết lại chương",
+    SCRIPT_COPY: "Sao chép kịch bản",
+    SCRIPT_COPIED: "Đã sao chép kịch bản",
     SCRIPT_RESUME: "Viết tiếp",
     ESTIMATED: "Ước tính",
     VOICE_PICK: "Chọn giọng AI",
@@ -298,6 +300,8 @@ export const MOTION_VIDEO_TEXTS = {
     FACT_WRONG: "Incorrect",
     SCRIPT_BTN: "Generate Script",
     SCRIPT_REGEN_CHAPTER: "Rewrite Chapter",
+    SCRIPT_COPY: "Copy script",
+    SCRIPT_COPIED: "Script copied",
     SCRIPT_RESUME: "Continue",
     ESTIMATED: "Estimated",
     VOICE_PICK: "Pick AI Voice",
@@ -433,6 +437,12 @@ export const MOTION_VIDEO_TEXTS = {
     LOG_SCRIPT_DEFAULT: "Structuring beats, visual cues, and details...",
     LOG_VOICE_DEFAULT: "Synthesizing voice audio...",
   },
+} as const;
+export const MOTION_SCRIPT_COPY = {
+  KEY: "motion-script",
+  CHAPTER: (index: number, title: string): string => `${index}. ${title}`,
+  LINE_SEPARATOR: "\n\n",
+  CHAPTER_SEPARATOR: "\n\n\n",
 } as const;
 export type MotionVideoTexts = { readonly [Key in keyof (typeof MOTION_VIDEO_TEXTS)["vi"]]: string };
 export const MOTION_SEO_TEXTS = {
