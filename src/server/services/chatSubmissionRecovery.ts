@@ -19,6 +19,7 @@ export interface ChatPendingSubmission {
 export interface ChatPlanningSubmission {
   onAttempt?: () => void;
   onContextProgress?: () => void;
+  onContextRetry?: (part: number, total: number, attempt: number, max: number) => void;
   attempted: boolean;
   completed: boolean;
   abandoned?: boolean;

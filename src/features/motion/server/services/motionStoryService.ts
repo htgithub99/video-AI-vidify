@@ -81,7 +81,7 @@ import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_PROMPT, MOTION_GEN_LOOKS
 import { motionAnalysisResponseErrors, motionAnalysisRepairDraft, motionAnalysisRepairPrompt, normalizeMotionAnalysisResponse } from "../../../../lib/motionAnalysisResponse.js";
 import { withMotionResponsePrompt } from "../../../../lib/motionResponseContract.js";
 import { MOTION_RESPONSE_SCHEMAS, MOTION_RESPONSE_TEXT, MOTION_RESPONSE_VALUES } from "../../../../constants/motionResponseContract.js";
-import { requestMotionEditorResponse } from "../../../../lib/motionEditorResponse.js";
+import { motionEditorSpeechIssues, requestMotionEditorResponse } from "../../../../lib/motionEditorResponse.js";
 import {
   MOTION_TEMPLATE_2_2,
   MOTION_TEMPLATE_AI_TRA_LOI_KHONG_PHAI_JSON,
@@ -1080,6 +1080,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           roomCtrl.abort(AIR.READINESS_TIMEOUT_REASON);
         }, roomTimeout);
       };
+      submission.onContextRetry = (part, total, attempt, max) => log?.(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_RETRY_LOG(part, total, attempt, max), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
       submission.onAttempt = () => {
         clearTimeout(watchdog);
         log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RESPONSE });
@@ -1279,6 +1280,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       clearTimeout(watchdog);
       submission.onAttempt = undefined;
       submission.onContextProgress = undefined;
+      submission.onContextRetry = undefined;
       signal?.removeEventListener(MOTION_TEXT_ABORT, relay);
       run?.signal.removeEventListener(MOTION_TEXT_ABORT, relay);
       if (!retryRoom && !captchaRetry) providerRecoveries.finish(recoveryKey, requestId, roomOk || signal?.aborted || run?.signal.aborted ? undefined : terminalError);
@@ -1509,8 +1511,7 @@ export const analyzeStory = async (
     repair: question,
     failure: (errors) => new Error(MOTION_RESPONSE_TEXT.ANALYSIS_FAILED(errors)),
   };
-  let raw =
-    lastRaw && !analysisErrors(lastRaw).length ? lastRaw : opts.ai ? await requestMotionAiContract(fullRequest, opts.exec, (prompt) => opts.ai!(prompt, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(fullRequest, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log, undefined, 0, contract);
+  let raw = lastRaw && !analysisErrors(lastRaw).length ? lastRaw : opts.ai ? await requestMotionAiContract(fullRequest, opts.exec, (prompt) => opts.ai!(prompt, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log), contract, opts.signal) : await runMotionAi(fullRequest, MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, opts.exec, opts.signal, opts.log, undefined, 0, contract);
   checkpoint();
   opts.log?.(EDITORIAL_POLICY.PROFILE_LOG);
   const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
@@ -1595,8 +1596,15 @@ export const editScript = async (
         .join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
-  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string; dropped?: boolean; action?: string; scenePlan?: MotionBeat["scenePlan"]; picture?: Partial<Pick<MotionBeat, "visual" | "shot" | "subject" | "frame">> }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [analysis, source, opts.language, opts.exec, opts.focusIds]);
+  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string; dropped?: boolean; action?: string; scenePlan?: MotionBeat["scenePlan"]; picture?: Partial<Pick<MotionBeat, "visual" | "shot" | "subject" | "frame">> }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [
+    analysis,
+    source,
+    opts.language,
+    opts.exec,
+    opts.focusIds,
+  ]);
   const saved = recovery.read() || {};
+  const speakers = [MOTION_VOICE.NARRATOR, ...analysis.cast.map((member) => member.key)];
   const keys = new Map(beats.map((beat) => [beat.id, motionInputKey([editorPrompt([beat]), beat.utterances])]));
   const apply = (beat: MotionBeat, narration: string, reason?: string, utterances?: MotionBeat["utterances"], visualPatch?: Partial<Pick<MotionBeat, "action" | "scenePlan" | "visual" | "shot" | "subject" | "frame">>): void => {
     const spoken = normalizeMotionSpokenBeat(
@@ -1616,6 +1624,10 @@ export const editScript = async (
   };
   for (const beat of targets) {
     if (saved[beat.id]?.inputKey !== keys.get(beat.id)) continue;
+    if (!saved[beat.id].dropped && saved[beat.id].narration && motionEditorSpeechIssues(beat, saved[beat.id], speakers).length) {
+      delete saved[beat.id];
+      continue;
+    }
     if (saved[beat.id].dropped && droppable(beat)) drop(beat, saved[beat.id].reason);
     else if (saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances, { ...(saved[beat.id].action !== undefined ? { action: saved[beat.id].action } : {}), ...(saved[beat.id].scenePlan ? { scenePlan: saved[beat.id].scenePlan } : {}), ...(saved[beat.id].picture || {}) });
   }
@@ -1633,7 +1645,7 @@ export const editScript = async (
       const raw = await requestMotionEditorResponse(
         editorPrompt(group),
         group,
-        [MOTION_VOICE.NARRATOR, ...analysis.cast.map((member) => member.key)],
+        speakers,
         true,
         (question) => {
           requests++;
@@ -1660,7 +1672,14 @@ export const editScript = async (
           motifKept++;
           continue;
         }
-        apply(beat, narration, e?.reason ? _.toString(e.reason) : undefined, e.utterances, { ...(typeof e.action === "string" ? { action: e.action } : {}), ...(e.scenePlan ? { scenePlan: normalizeScenePlan(e.scenePlan) } : {}), ...(_.includes(VISUALS, e.visual) ? { visual: e.visual } : {}), ...(_.includes(SHOTS, e.shot) ? { shot: e.shot } : {}), ...(typeof e.subject === "string" && e.subject.trim() ? { subject: _.truncate(e.subject.trim(), { length: 120 }) } : {}), ...(_.includes(FRAMES, e.frame) ? { frame: e.frame } : {}) });
+        apply(beat, narration, e?.reason ? _.toString(e.reason) : undefined, e.utterances, {
+          ...(typeof e.action === "string" ? { action: e.action } : {}),
+          ...(e.scenePlan ? { scenePlan: normalizeScenePlan(e.scenePlan) } : {}),
+          ...(_.includes(VISUALS, e.visual) ? { visual: e.visual } : {}),
+          ...(_.includes(SHOTS, e.shot) ? { shot: e.shot } : {}),
+          ...(typeof e.subject === "string" && e.subject.trim() ? { subject: _.truncate(e.subject.trim(), { length: 120 }) } : {}),
+          ...(_.includes(FRAMES, e.frame) ? { frame: e.frame } : {}),
+        });
       }
       for (const beat of group) {
         const changed = byId.get(beat.id)!;

@@ -21,7 +21,10 @@ try {
       {
         name: "cleanup-fixture",
         setup(builder) {
-          builder.onLoad({ filter: /constants[\\/]geminiActivityCleanup\.ts$/ }, async (args) => ({ contents: (await readFile(args.path, "utf8")).replace("ACTION_TIMEOUT_MS: 8000", "ACTION_TIMEOUT_MS: 300").replace("TIMEOUT_MS: 60000", "TIMEOUT_MS: 2000").replace("POLL_MS: 200", "POLL_MS: 5").replace("RETRY_MS: 500", "RETRY_MS: 5"), loader: "ts" }));
+          builder.onLoad({ filter: /constants[\\/]geminiActivityCleanup\.ts$/ }, async (args) => ({
+            contents: (await readFile(args.path, "utf8")).replace("ACTION_TIMEOUT_MS: 8000", "ACTION_TIMEOUT_MS: 300").replace("RESULT_TIMEOUT_MS: 30000", "RESULT_TIMEOUT_MS: 1200").replace("TIMEOUT_MS: 60000", "TIMEOUT_MS: 2000").replace("POLL_MS: 200", "POLL_MS: 5").replace("RETRY_MS: 500", "RETRY_MS: 5"),
+            loader: "ts",
+          }));
           builder.onResolve({ filter: /musicDiagnosticService\.js$/ }, () => ({ path: "diagnostics", namespace: "fixture" }));
           builder.onLoad({ filter: /.*/, namespace: "fixture" }, () => ({ contents: "export const writeMusicDiagnostic=async()=>{};", loader: "js" }));
         },
@@ -58,23 +61,23 @@ try {
     return { context, close, pages, events, visits: () => visits, closed: () => closed };
   };
   for (const language of ["vi", "en"])
-    for (const mode of [F.MODE.CONFIRM, F.MODE.DIRECT, F.MODE.EMPTY]) {
+    for (const mode of [F.MODE.CONFIRM, F.MODE.DIRECT, F.MODE.EMPTY, F.MODE.EMPTY_ONLY, F.MODE.DELAYED, F.MODE.EXPANDED]) {
       const f = await fixture(mode, language);
       const logs: string[] = [];
       service.requestGeminiActivityCleanup(f.context, "video-test", undefined, (line: string) => logs.push(line));
       assert.equal(await service.closeAfterGeminiActivityCleanup(f.context, f.close), true);
       assert.equal(f.closed(), 1);
       assert.equal(service.hasPendingGeminiActivityCleanup(f.context), false);
-      assert.ok(logs.includes(mode === F.MODE.EMPTY ? C.NO_ACTIVITY : C.COMPLETE));
+      assert.ok(logs.includes(mode.startsWith("empty") ? C.NO_ACTIVITY : C.COMPLETE));
       assert.equal(f.visits(), 1);
-      assert.deepEqual(f.events.flat(), mode === F.MODE.EMPTY ? ["close"] : mode === F.MODE.DIRECT ? ["open", "day", "deleted", "close"] : ["open", "day", "confirm", "deleted", "close"]);
+      assert.deepEqual(f.events.flat(), mode.startsWith("empty") ? ["close"] : mode === F.MODE.DIRECT ? ["open", "day", "deleted", "close"] : ["open", "day", "confirm", "deleted", "close"]);
       service.requestGeminiActivityCleanup(f.context, "video-test");
       assert.equal(await service.closeAfterGeminiActivityCleanup(f.context, f.close), true);
       assert.equal(f.visits(), 1, "Repeated export without new Gemini work must not delete again");
       assert.ok(!f.events.flat().some((event) => ["all", "hour"].includes(event)));
       await f.context.close();
     }
-  for (const mode of [F.MODE.WRONG, F.MODE.STUCK]) {
+  for (const mode of [F.MODE.WRONG, F.MODE.STUCK, F.MODE.UNCONFIRMED]) {
     const f = await fixture(mode);
     service.requestGeminiActivityCleanup(f.context, mode);
     assert.equal(await service.closeAfterGeminiActivityCleanup(f.context, f.close), false);

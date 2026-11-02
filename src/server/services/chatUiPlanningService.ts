@@ -1018,7 +1018,19 @@ const submitPrompt = async (
       if (receipts.has(index + 1)) continue;
       const id = CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_PART_ID(request, index + 1);
       submission?.onContextProgress?.();
-      await confirmChatContextPart(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_PART(id, request, index + 1, parts.length, parts[index]), id, index + 1, async (question) => parseStrictRoomJson(await submitPrompt(page, roomKey, question, inputSelector, sendSelector, responseSelector, busySelector, [], [], undefined, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT, id, signal, undefined, limit)), signal);
+      await confirmChatContextPart(
+        CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_PART(id, request, index + 1, parts.length, parts[index]),
+        id,
+        index + 1,
+        async (question) => parseStrictRoomJson(await submitPrompt(page, roomKey, question, inputSelector, sendSelector, responseSelector, busySelector, [], [], undefined, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT, id, signal, undefined, limit)),
+        signal,
+        async (attempt) => {
+          submission?.onContextProgress?.();
+          submission?.onContextRetry?.(index + 1, parts.length, attempt, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_REPAIRS);
+          appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_RETRY_LOG(index + 1, parts.length, attempt, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_REPAIRS));
+          await writeMusicDiagnostic(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_RETRY_DIAGNOSTIC, { runId: request, stage: artifactType, part: index + 1, totalParts: parts.length, attempt, maxRetries: CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_REPAIRS });
+        },
+      );
       submission?.onContextProgress?.();
       if (!receipts.matches(receiptKey)) {
         if (++generationChanges > CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_REPAIRS) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_ERROR);

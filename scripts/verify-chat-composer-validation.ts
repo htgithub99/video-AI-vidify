@@ -51,4 +51,51 @@ await assert.rejects(
   { message: C.UI_READ_TIMEOUT_ERROR },
 );
 assert.equal(failedServices, 1);
+const receiptRetries: number[] = [];
+const refusalQuestions: string[] = [];
+await confirmChatContextPart(
+  expected,
+  partId,
+  part,
+  async (question) => {
+    refusalQuestions.push(question);
+    if (refusalQuestions.length <= C.CONTEXT_ACK_REPAIRS) throw new Error(C.REFUSAL_RESPONSE_ERROR);
+    return { artifactType: C.CONTEXT_ARTIFACT, requestId: partId, receivedPart: part };
+  },
+  undefined,
+  (attempt) => {
+    receiptRetries.push(attempt);
+  },
+);
+assert.deepEqual(receiptRetries, [1, 2]);
+assert.deepEqual(refusalQuestions, [expected, C.CONTEXT_ACK_REPAIR(partId, part), C.CONTEXT_ACK_REPAIR(partId, part)]);
+let refusals = 0;
+const refusal = new Error(C.REFUSAL_RESPONSE_ERROR);
+await assert.rejects(
+  confirmChatContextPart(expected, partId, part, async () => {
+    refusals++;
+    throw refusal;
+  }),
+  (error: Error) => error.message === C.CONTEXT_ACK_ERROR && error.cause === refusal,
+);
+assert.equal(refusals, C.CONTEXT_ACK_REPAIRS + 1);
+const stopRetry = new AbortController();
+let cancelledReceipts = 0;
+await assert.rejects(
+  confirmChatContextPart(
+    expected,
+    partId,
+    part,
+    async () => {
+      cancelledReceipts++;
+      throw refusal;
+    },
+    stopRetry.signal,
+    () => {
+      stopRetry.abort(new Error(C.CANCELLED_ERROR));
+    },
+  ),
+  { message: C.CANCELLED_ERROR },
+);
+assert.equal(cancelledReceipts, 1);
 process.stdout.write("Gemini, ChatGPT and Grok composer validation passed.\n");

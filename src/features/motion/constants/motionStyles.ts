@@ -1,5 +1,8 @@
 export const MOTION_PLAYER_PROGRESS_PROPERTY = "--motion-player-progress";
 export const MOTION_STYLES = {
+  ELAPSED_ROW: "flex min-w-0 items-center gap-2 text-xs font-medium text-purple-400",
+  ELAPSED_LABEL: "block min-w-0 flex-1 truncate",
+  ELAPSED_TIME: "shrink-0 whitespace-nowrap font-mono text-slate-400 tabular-nums",
   PRODUCTION_ACTIONS: "flex w-full min-w-0 items-center justify-end gap-2",
   PRODUCTION_ACTION_BUTTON: "min-w-0 max-w-full flex-1 sm:flex-none sm:max-w-[calc(100%-7rem)]",
   ACTION_TEXT: "block min-w-0 truncate",

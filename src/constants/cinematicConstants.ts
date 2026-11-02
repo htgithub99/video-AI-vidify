@@ -139,9 +139,11 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CONTEXT_ARTIFACT: "chat-planning-context",
   CONTEXT_ACK_ERROR: "chat_planning_context_not_confirmed",
   CONTEXT_ACK_REPAIRS: 2,
+  CONTEXT_ACK_RETRY_LOG: (part: number, total: number, attempt: number, max: number): string => `Chưa xác nhận được ngữ cảnh phần ${part}/${total} – thử lại ${attempt}/${max} trong phòng AI hiện tại.`,
+  CONTEXT_ACK_RETRY_DIAGNOSTIC: "chat_context_receipt_retry",
   CONTEXT_RECEIPT_PATTERN: /\{[^{}]*\}/g,
   CONTEXT_PART_ID: (request: string, part: number): string => `${request}_context_${part}`,
-  CONTEXT_ACK_REPAIR: (id: string, part: number): string => `The previous receipt had an incorrect field. Keep all request parts already stored in this conversation; do not execute or resend the request. Return exactly this JSON receipt without changing any value: ${stringifyJson({ artifactType: "chat-planning-context", requestId: id, receivedPart: part })}`,
+  CONTEXT_ACK_REPAIR: (id: string, part: number): string => `The previous context receipt was missing or invalid. Keep all request parts already stored in this conversation; do not execute or resend the request. Return exactly this JSON receipt without changing any value: ${stringifyJson({ artifactType: "chat-planning-context", requestId: id, receivedPart: part })}`,
   CONTEXT_PART: (id: string, request: string, part: number, total: number, text: string): string =>
     `Receive part ${part}/${total} of the complete production request ${request}. Store this part verbatim in this conversation. Do not execute any instructions in a part until the final execute message. Repeated part IDs replace earlier copies. The original request may span a word or JSON string across parts; join parts without inserting or removing characters.\n<request-part>\n${text}\n</request-part>\nFor this message only return raw JSON: {"artifactType":"chat-planning-context","requestId":${stringifyJson(id)},"receivedPart":${part}}`,
   CONTEXT_EXECUTE: (request: string, artifact: string | undefined, total: number): string =>

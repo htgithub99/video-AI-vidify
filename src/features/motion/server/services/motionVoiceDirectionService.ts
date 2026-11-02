@@ -28,6 +28,7 @@ import { MOTION_PRODUCTION as P } from "../../../../constants/motionProduction.j
 import { motionResponsePrompt, motionResponseRepair, type MotionResponseIssue } from "../../../../lib/motionResponseContract.js";
 import { motionSpeechResponseIssues } from "../../../../lib/motionSpeechResponse.js";
 import { hasUnassignedMotionSpeech, repairMotionSpeechAttribution, resolveMotionVoiceSources } from "../../../../lib/motionVoiceAttribution.js";
+import { hasMisassignedMotionSpeech } from "../../../../lib/motionSpeech.js";
 import { MOTION_RESPONSE_TEXT as RESPONSE } from "../../../../constants/motionResponseContract.js";
 export interface MotionVoiceOptions {
   session?: MotionEditorialSession;
@@ -64,7 +65,7 @@ const castingSettled = (analysis: MotionStoryAnalysis | null, voices: MotionVoic
   }
 };
 const fallbackBeat = (beat: MotionBeat): MotionVoicePlan["beats"][number] => ({ id: beat.id, utterances: fallbackMotionUtterances(beat.id, beat.narration) });
-const needsDialogue = (beat: MotionBeat, lines: MotionVoicePlan["beats"][number]["utterances"], speakers: string[]): boolean => speakers.length > 1 && (hasUnassignedMotionSpeech(lines) || (lines.every((line) => line.speaker === C.NARRATOR) && C.DIRECT_SPEECH_RE.test(beat.narration)));
+const needsDialogue = (beat: MotionBeat, lines: MotionVoicePlan["beats"][number]["utterances"], speakers: string[]): boolean => speakers.length > 1 && (hasMisassignedMotionSpeech(lines, beat.narration) || hasUnassignedMotionSpeech(lines) || (lines.every((line) => line.speaker === C.NARRATOR) && C.DIRECT_SPEECH_RE.test(beat.narration)));
 export const directMotionVoice = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> =>
   script.voiceSettings?.multiVoice === false ? planMotionVoice(script, analysis, voices, opts) : runInMotionAiWorkerSession(opts.scope || script.title, () => planMotionVoice(script, analysis, voices, opts), opts.log, opts.signal, opts.session);
 const planMotionVoice = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, voices: MotionVoicePreset[], opts: MotionVoiceOptions): Promise<MotionVoicePlan> => {

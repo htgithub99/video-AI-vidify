@@ -10,6 +10,7 @@ import { MOTION_ILLUSTRATION as I } from "../src/constants/motionIllustration.js
 import { motionLogSections } from "../src/features/motion/lib/motionLogSections.js";
 import { MOTION_LOG_SECTIONS as S } from "../src/features/motion/constants/motionLogSections.js";
 import { MOTION_LOG_SECTION_TEST as T } from "./motionLogSectionsVerificationTexts.js";
+import { MOTION_STYLES } from "../src/features/motion/constants/motionStyles.js";
 import { MotionJobStatus, MotionStoryJobKind } from "../src/types/motionVideo.js";
 import type { MotionLogEntry, MotionStoryJobState } from "../src/types/motionVideo.js";
 const entries = T.ENTRIES as unknown as MotionLogEntry[];
@@ -59,9 +60,9 @@ assert.equal(staleStage.find((section) => section.key === "scenes")?.state, "act
 const assembly = motionLogSections([{ id: "assembly", kind: "production", lines: [P.SCOPE(P.STAGE.ASSEMBLE, I.ASSEMBLY_START)] }], "vi", { ...job, id: "assembly", stage: P.STAGE.ASSEMBLE });
 assert.equal(assembly.find((section) => section.key === "scenes")?.state, "active");
 assert.ok(assembly.find((section) => section.key === "scenes")?.summary.includes(P.STAGE.ASSEMBLE));
-const bundle = await build({ stdin: { contents: `const DATA=${JSON.stringify({ entries, job, longError: T.LONG_ERROR })};` + T.ENTRY, loader: "tsx", resolveDir: process.cwd() }, bundle: true, platform: "browser", format: "esm", write: false });
+const bundle = await build({ stdin: { contents: `const DATA=${JSON.stringify({ entries, job, longError: T.LONG_ERROR, elapsedLabel: T.ELAPSED_LABEL })};` + T.ENTRY, loader: "tsx", resolveDir: process.cwd() }, bundle: true, platform: "browser", format: "esm", write: false });
 const compiler = await compile(await readFile("src/index.css", "utf8"), { base: path.resolve("src"), onDependency: () => {} });
-const css = compiler.build(Object.values(S.UI).flatMap((value) => (typeof value === "string" ? [value] : Object.values(value)).flatMap((classes) => classes.split(/\s+/u))));
+const css = compiler.build([...Object.values(MOTION_STYLES), ...Object.values(S.UI).flatMap((value) => (typeof value === "string" ? [value] : Object.values(value)))].flatMap((classes) => classes.split(/\s+/u)));
 const server = createServer((req, res) => {
   res.setHeader("Content-Type", req.url === "/fixture.js" ? "text/javascript; charset=utf-8" : req.url === "/fixture.css" ? "text/css; charset=utf-8" : "text/html; charset=utf-8");
   res.end(req.url === "/fixture.js" ? bundle.outputFiles[0].text : req.url === "/fixture.css" ? css : T.HTML);
@@ -73,6 +74,28 @@ try {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${(server.address() as any).port}`);
+  for (const width of [360, 527, 900]) {
+    await page.setViewportSize({ width, height: 1150 });
+    const label = page.locator("[data-elapsed-fixture] span[title]");
+    assert.equal(await label.getAttribute("title"), T.ELAPSED_LABEL);
+    const size = await label.evaluate((node) => ({ height: node.clientHeight, width: node.clientWidth, scrollWidth: node.scrollWidth, lineHeight: parseFloat(getComputedStyle(node).lineHeight), whiteSpace: getComputedStyle(node).whiteSpace, overflow: getComputedStyle(node).overflow, ellipsis: getComputedStyle(node).textOverflow }));
+    assert.equal(size.whiteSpace, "nowrap");
+    assert.equal(size.overflow, "hidden");
+    assert.equal(size.ellipsis, "ellipsis");
+    assert.ok(size.height <= size.lineHeight + 1 && size.scrollWidth > size.width && size.width > 0, JSON.stringify(size));
+    const time = await page
+      .locator("[data-elapsed-fixture] span")
+      .last()
+      .evaluate((node) => ({ width: node.clientWidth, scrollWidth: node.scrollWidth, whiteSpace: getComputedStyle(node).whiteSpace, shrink: getComputedStyle(node).flexShrink, right: node.getBoundingClientRect().right }));
+    assert.equal(time.whiteSpace, "nowrap");
+    assert.equal(time.shrink, "0");
+    assert.ok(time.width >= time.scrollWidth && time.right <= width, JSON.stringify(time));
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    if (width === 527) {
+      await mkdir("scratch", { recursive: true });
+      await page.locator("[data-elapsed-fixture]").screenshot({ path: T.ELAPSED_SCREENSHOT });
+    }
+  }
   const scene = page.locator('[data-motion-log-section="scenes"]');
   const rows = scene.locator("[data-motion-log-rows]");
   assert.equal(await page.locator("[data-motion-log-section]").count(), 6);

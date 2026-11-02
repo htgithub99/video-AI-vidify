@@ -31,6 +31,7 @@ import { collectPuppetLines } from "../../../../lib/motionPuppet.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionStorytellingPreset, motionStorytellingSilent } from "../../../../lib/motionStorytelling.js";
 import { motionLanguage, motionLanguageRate } from "../../../../lib/motionLanguage.js";
+import { hasMisassignedMotionSpeech } from "../../../../lib/motionSpeech.js";
 import type { MotionStorytellingSilent } from "../../../../constants/motionStorytelling.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
 const voiceTrackSpeedKey = (plan: MotionVoicePlan): string => hash([PACE.VERSION, cadenceProfile(), readVoiceSpeedSettings().target?.pauses, _.uniq(plan.roles.map((role) => role.voiceId)).map((voiceId) => [voiceId, voiceSpeedKey(voiceId), knownVoiceTempoFactor(voiceId)])]);
@@ -53,7 +54,7 @@ const voiceTextPassed = (result: { error: number; errorRun: number }): boolean =
 const voiceClipRateLimit = (line: MotionUtterance, language: unknown): number | undefined => {
   const target = readVoiceSpeedSettings().target;
   const reference = target?.rateBasis === MOTION_VOICE_SPEED.BASIS.TEXT ? target.rate * PACE.REFERENCE_RATE_MARGIN : undefined;
-  const dialogue = line.role !== MR.MOTION_TEXT_NARRATION ? PACE.DIALOGUE_RATE[motionLanguageCode(language)] ?? motionLanguageRate(language, true) : undefined;
+  const dialogue = line.role !== MR.MOTION_TEXT_NARRATION ? (PACE.DIALOGUE_RATE[motionLanguageCode(language)] ?? motionLanguageRate(language, true)) : undefined;
   return reference && dialogue ? Math.min(reference, dialogue) : reference || dialogue;
 };
 type ClipWords = [number, number][];
@@ -547,6 +548,7 @@ export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, ana
 };
 export const motionVoiceTrackFilesValid = (track: MotionVoiceTrack, script: MotionStoryScript): boolean => {
   try {
+    if (script.voiceSettings?.multiVoice !== false && track.plan?.beats.some((beat) => !script.voiceSettings?.utterances?.[beat.id] && hasMisassignedMotionSpeech(beat.utterances, script.beats.find((row) => row.id === beat.id)?.narration))) return false;
     if (!P.VOICE_TRACK.test(track.audioId) || !Number.isFinite(track.totalSeconds) || track.totalSeconds <= 0 || track.durations?.length !== script.beats.length || track.durations.some((value) => !Number.isFinite(value) || value <= 0) || !track.clips?.length) return false;
     const file = motionWavFileInfo(path.join(getMotionAudioDirectory(), track.audioId));
     if (file.sampleRate !== C.SAMPLE_RATE || file.channels !== 2 || Math.abs(file.duration - track.totalSeconds) > 0.1) return false;

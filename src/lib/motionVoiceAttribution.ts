@@ -1,16 +1,54 @@
 import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { soundText } from "./motionSound.js";
+import { MOTION_SPEECH_ATTRIBUTION as A } from "../constants/motionSpeech.js";
+import { motionCharacterAttribution, motionSpeechQuoteEnd } from "./motionSpeech.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionUtterance, MotionVoicePlan } from "../types/motionVideo.js";
 const normalized = (value: string) =>
   soundText(value)
     .replace(/[^\p{L}\p{N}]+/gu, COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52)
     .trim();
 const containsName = (text: string, name: string) => !!name && `${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52}${normalized(text)}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52}`.includes(`${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52}${normalized(name)}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52}`);
-const attribution = /(?:^|[.!?…]\s+)([^.!?…:：]{0,140}?(?:nói|hỏi|đáp|dặn|bảo|thì thào|quát|kêu|said|asked|replied|whispered)\s*[:：]\s*)/giu;
+const attribution = /(?:^|[.!?…]\s+)([^.!?…:：]{0,140}?(?:nói|hỏi|đáp|dặn|bảo|thì thào|quát|kêu|rít lên|gào|hét|said|says|asked|replied|whispered|shouted|screamed)\s*[:：]\s*)/giu;
 export const hasUnassignedMotionSpeech = (lines: MotionUtterance[]) => lines.some((line) => line.speaker === RUNTIME_VALUES.NARRATOR_663EE49C && [...line.text.matchAll(attribution)].some((match) => line.text.slice(match.index! + match[0].length).trim()));
+const separateMotionNarratorAttribution = (lines: MotionUtterance[], beat: MotionBeat, analysis: MotionStoryAnalysis | null): MotionUtterance[] => {
+  const ids = new Set(lines.map((line) => line.id).filter(Boolean));
+  const idFor = (base: string): string => {
+    let id = base;
+    while (ids.has(id)) id += COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_25;
+    ids.add(id);
+    return id;
+  };
+  return lines.flatMap((line, index) => {
+    const match = motionCharacterAttribution(line, beat.narration);
+    if (!match) return [line];
+    const member = analysis?.cast.find((member) => member.key === line.speaker);
+    const label = normalized(match[1]);
+    if (!member || (!A.THIRD_PERSON.test(label) && ![member.name, member.alias, member.key.replaceAll(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_25, COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52)].some((name) => name && label.startsWith(normalized(name) + COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52)))) return [line];
+    const tail = line.text.slice(match[0].length);
+    let end = tail.length;
+    const quoted = A.OPEN_QUOTE.exec(tail);
+    if (quoted) {
+      const close = motionSpeechQuoteEnd(tail);
+      if (close === undefined) return [line];
+      end = close;
+    } else {
+      const resume = A.RESUME.exec(tail);
+      const sentence = A.SENTENCE_END.exec(tail);
+      if (resume) end = resume.index;
+      else if (sentence && tail.slice(sentence.index + sentence[0].length).trim()) return [line];
+    }
+    const base = line.id || beat.id + COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_25 + index;
+    const narrator = (text: string, suffix: string, pauseBefore: number, pauseAfter: number): MotionUtterance => ({ id: idFor(base + suffix), speaker: RUNTIME_VALUES.NARRATOR_663EE49C, role: RUNTIME_VALUES.NARRATION_59AD8FF3, text: text.trim(), emotion: A.NARRATOR_EMOTION, intensity: A.NARRATOR_INTENSITY, speed: 1, pauseBefore, pauseAfter, emphasis: [] });
+    const spoken = tail.slice(0, end).trim();
+    const trailing = tail.slice(end).trim();
+    return [narrator(line.text.slice(0, match[0].length), RUNTIME_VALUES.LEAD_C481E8EF, line.pauseBefore, spoken || trailing ? 0 : line.pauseAfter), ...(spoken ? [{ ...line, id: line.id || idFor(base), text: spoken, pauseBefore: 0, pauseAfter: trailing ? 0 : line.pauseAfter }] : []), ...(trailing ? [narrator(trailing, RUNTIME_VALUES.TAIL_06614391, 0, line.pauseAfter)] : [])];
+  });
+};
 export const repairMotionSpeechAttribution = (lines: MotionUtterance[], beat: MotionBeat, analysis: MotionStoryAnalysis | null): MotionUtterance[] => {
   const cast = analysis?.cast || [];
+  const original = lines;
+  lines = separateMotionNarratorAttribution(lines, beat, analysis);
   const repaired = lines.flatMap((line, index): MotionUtterance[] => {
     if (line.speaker !== RUNTIME_VALUES.NARRATOR_663EE49C || line.role !== RUNTIME_VALUES.NARRATION_59AD8FF3) return [line];
     const match = [...line.text.matchAll(attribution)].at(-1);
@@ -36,7 +74,6 @@ export const repairMotionSpeechAttribution = (lines: MotionUtterance[], beat: Mo
     } else {
       const resume = /(?<=[.!?…])\s+(?:Nói xong|Hỏi xong|Dứt lời|Having said that|After saying that)\b/iu.exec(tail);
       if (resume) end = resume.index;
-      // Unquoted speech with no attributed continuation has an uncertain endpoint.
       else if (!following || following.speaker !== speaker || following.role !== RUNTIME_VALUES.DIALOGUE_ABE0BA24) return [line];
     }
     const leading = line.text.slice(0, split).trim();
@@ -45,7 +82,7 @@ export const repairMotionSpeechAttribution = (lines: MotionUtterance[], beat: Mo
     return [{ ...line, id: line.id + RUNTIME_VALUES.LEAD_C481E8EF, text: leading, pauseAfter: 0 }, { ...line, id: line.id + RUNTIME_VALUES.SPEECH_BEC58EFF, speaker, role: RUNTIME_VALUES.DIALOGUE_ABE0BA24, text: spoken, pauseBefore: 0, pauseAfter: trailing ? 0 : line.pauseAfter }, ...(trailing ? [{ ...line, id: line.id + RUNTIME_VALUES.TAIL_06614391, text: trailing, pauseBefore: 0 }] : [])];
   });
   const words = (rows: MotionUtterance[]) => normalized(rows.map((row) => row.text).join(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52));
-  return words(repaired) === normalized(beat.narration) ? repaired : lines;
+  return words(repaired) === normalized(beat.narration) ? repaired : original;
 };
 const borrowed = /\b(?:bi (?:ma|vong|quy)(?: [\p{L}]+){0,3} nhap|(?:ma|vong|quy|co hon)(?: [\p{L}]+){0,3} muon giong|giong khong phai cua|khong phai (?:la )?giong|possessed|borrowed voice|speaking through)\b/u;
 const restored = /\b(?:giong(?: [\p{L}]+){0,4} (?:tro lai|binh thuong)|het bi nhap|tinh lai|voice returned|no longer possessed)\b/u;

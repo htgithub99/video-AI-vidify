@@ -62,6 +62,8 @@ holdRender();
 (await lifecycle.acquireSession())();
 for (const url of [AUT.ABOUT_BLANK, AUT.CHROME_NEWTAB, AUT.CHROME_NEW_TAB_PAGE, AUT.CHROME_SEARCH_LOCAL_NTP_LOCAL_NTP_HTML, AUT.HTTPS_CLAUDE_AI_CHAT_TEST, AUT.HTTPS_CHAT_DEEPSEEK_COM_A_CHAT_S_TEST, AUT.HTTPS_GEMINI_GOOGLE_COM_APP, AUT.HTTPS_CHATGPT_COM, AUT.HTTPS_GROK_COM, AUT.HTTPS_LABS_GOOGLE]) assert.ok(isDisposableChatBrowserUrl(url), url);
 for (const url of [AUT.HTTPS_CLAUDE_AI_EXAMPLE_TEST_WORK, AUT.HTTPS_EXAMPLE_TEST_WORK, AUT.CHROME_SETTINGS, AUT.HTTPS_LABS_GOOGLE_FX_TOOLS_FLOW_PROJECT_ACTIVE]) assert.equal(isDisposableChatBrowserUrl(url), false, url);
+for (const url of [EXTERNAL_URLS.GEMINI_ACTIVITY, `${EXTERNAL_URLS.GEMINI_ACTIVITY}?hl=vi`]) assert.equal(isDisposableChatBrowserUrl(url), true, url);
+for (const url of V.PROTECTED_ACTIVITY_URLS) assert.equal(isDisposableChatBrowserUrl(url), false, url);
 const reserve = createServer();
 await new Promise<void>((resolve) => reserve.listen(0, AUT.VALUE_127_0_0_1, resolve));
 const port = (reserve.address() as import("node:net").AddressInfo).port;
@@ -102,6 +104,7 @@ try {
       {
         name: AUT.ISOLATED_BROWSER_PORTS,
         setup(builder) {
+          builder.onLoad({ filter: V.ACTIVITY_FILE }, async (args) => ({ contents: (await readFile(args.path, AUT.UTF8)).replace("RESULT_TIMEOUT_MS: 30000", "RESULT_TIMEOUT_MS: 1200"), loader: AUT.TS }));
           builder.onLoad({ filter: V.PORT_FILES }, async (args) => ({ contents: (await readFile(args.path, AUT.UTF8)).replaceAll(AUT.VALUE_127_0_0_1_9222, AUT.FORMAT_127_0_0_1(port)).replace(AUT.SHARED_CHROME_DEBUG_PORT_9222, AUT.FORMAT_SHARED_CHROME_DEBUG_PORT(port)).replace(AUT.HTTP_127_0_0_1_9333, AUT.HTTP_127_0_0_1_1), loader: AUT.TS, resolveDir: path.dirname(args.path) }));
           builder.onLoad({ filter: V.RENDER_FILE }, async (args) => {
             const source = await readFile(args.path, AUT.UTF8);
@@ -168,8 +171,8 @@ try {
   assert.ok(logs.includes(MOTION_BROWSER_HANDOFF.WAITING(1)));
   finishTask.finish();
   await finalTask;
-  assert.equal(room.isClosed(), true, V.CLEANUP);
   await closing;
+  assert.equal(room.isClosed(), true, V.CLEANUP);
   assert.equal(browser.isConnected(), false);
   assert.deepEqual(activityEvents, ["open", "day", "confirm", "deleted"]);
   assert.ok(logs.includes(C.COMPLETE));
@@ -179,6 +182,8 @@ try {
   await next;
   delete (globalThis as any).__motionBrowserPending;
   const second = await launch();
+  const leftoverActivity = await second.newPage();
+  await leftoverActivity.goto(EXTERNAL_URLS.GEMINI_ACTIVITY);
   const unrelated = await second.newPage();
   await unrelated.goto(AUT.HTTPS_EXAMPLE_TEST_WORK);
   await assert.rejects(service.acquireMotionRenderBrowser(), { message: MOTION_BROWSER_NOT_RELEASED_ERROR });
@@ -198,6 +203,7 @@ try {
   assert.equal(final.framesDone, 0);
   assert.ok(final.log.some((line: string) => line.includes(MOTION_BROWSER_RELEASED_LOG)));
   assert.equal(second.browser()!.isConnected(), false);
+  assert.equal(leftoverActivity.isClosed(), true);
   await service.runInMotionAiSession(V.NEXT, async () => undefined);
   activityMode = F.MODE.STUCK;
   const failedContext = await launch();

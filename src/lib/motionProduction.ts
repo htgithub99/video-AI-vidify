@@ -18,7 +18,7 @@ export const assertMotionScriptComplete = (script: MotionStoryScript, analysis: 
   for (const beat of script.beats || []) {
     if (!beat?.id || ids.has(beat.id) || !beat.narration?.trim() || (chapters.size && !chapters.has(beat.chapterId))) errors.push(beat?.id || P.STAGES.SCRIPT);
     ids.add(beat?.id);
-    if (motionChapterPending([beat]).length || beat.utterances?.some((line) => typeof line?.text !== "string" || !line.text.trim() || !cast.has(line.speaker))) errors.push(beat.id);
+    if (motionChapterPending([beat], undefined, undefined, false, script.voiceSettings?.multiVoice !== false).length || beat.utterances?.some((line) => typeof line?.text !== "string" || !line.text.trim() || !cast.has(line.speaker))) errors.push(beat.id);
   }
   const pending = (draft: MotionChapterDraft): boolean => !!draft.pending?.length || Object.values(draft.parts || {}).some(pending);
   for (const [chapter, draft] of Object.entries(script.chapterDrafts || {})) if (!draft || pending(draft)) errors.push(chapter);

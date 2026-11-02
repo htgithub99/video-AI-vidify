@@ -155,13 +155,13 @@ export const ElapsedLine: FC<{ since: number; label: string; suffix: string }> =
     return () => clearInterval(id);
   }, []);
   return (
-    <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_TEXT_XS_FONT_MEDIUM_TEXT_PURPLE_400}>
+    <div className={MOTION_STYLES.ELAPSED_ROW}>
       <MotionLoadingIcon className={MOTION_STYLES.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} />
-      <span>
+      <span className={MOTION_STYLES.ELAPSED_LABEL} title={label}>
         {label}
         {MOTION_TEXT_SYMBOL}
       </span>
-      <span className={MOTION_STYLES.FONT_MONO_TEXT_SLATE_400}>
+      <span className={MOTION_STYLES.ELAPSED_TIME}>
         {suffix} {formatSeconds((now - since) / 1000)}
       </span>
     </div>

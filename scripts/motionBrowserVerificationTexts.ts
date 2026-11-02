@@ -7,6 +7,8 @@ export const MOTION_BROWSER_VERIFICATION = {
   PORT_FILES: /(?:apiRoutes|refactor)\.ts$/,
   RENDER_FILE: /[\\/]motionRenderService\.ts$/,
   STORY_FILE: /motionStoryService\.ts$/,
+  ACTIVITY_FILE: /constants[\\/]geminiActivityCleanup\.ts$/,
+  PROTECTED_ACTIVITY_URLS: ["https://myactivity.google.com/myactivity", "https://myactivity.google.com/product/gemini/other", "https://accounts.google.com/"],
   TASK_ANCHOR: "const runMotionAiTask = async",
   TASK_BODY: "  const mode = pickEnum",
   TASK_HOOK: "  if (globalThis.__motionBrowserPending) return await globalThis.__motionBrowserPending(prompt);\n  const mode = pickEnum",

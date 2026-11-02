@@ -5,7 +5,8 @@ import { MOTION_VOICE as C, MOTION_VOICE_RANK as RANK, MOTION_VOICE_DELIVERY as 
 import { soundText } from "./motionSound.js";
 import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirection.js";
 import { MOTION_SPEECH } from "../constants/motionSpeech.js";
-import { motionQuotedSpeech } from "./motionSpeech.js";
+import { hasMisassignedMotionSpeech, motionQuotedSpeech } from "./motionSpeech.js";
+import { MOTION_SPEECH_ATTRIBUTION } from "../constants/motionSpeech.js";
 import type { MotionSceneMood, MotionVoiceDelivery, MotionStoryScript, MotionUtterance, MotionVoicePreset, MotionVoicePlan, MotionStoryAnalysis, MotionAudioDirection, MotionVoiceChannel, MotionVoiceGroup, MotionCastMember } from "../types/motionVideo.js";
 export const motionVoiceCastContext = (analysis: MotionStoryAnalysis | null) => analysis?.cast.map((member) => ({ key: member.key, name: member.name, alias: member.alias, role: member.role, description: member.description, narrator: member.narrator, appearanceOf: member.appearanceOf, ...motionSpeakerTraits(member) }));
 export const withMotionVoiceMode = (script: MotionStoryScript, multiVoice: boolean): MotionStoryScript => {
@@ -15,7 +16,22 @@ export const withMotionVoiceMode = (script: MotionStoryScript, multiVoice: boole
   return { ...script, voiceSettings, voiceTrack: undefined };
 };
 export const motionVoiceSignature = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null = null, channelVersion = script?.voiceChannel): string =>
-  stringifyJson([C.VERSION, C.TRACK_VERSION, C.PLAN_VERSION, C.ASR.VERSION, FX.VERSION, C.TEMPO, PACE, script?.language, script?.beats.map((beat) => [beat.id, beat.narration, beat.utterances, beat.sceneMood]), script?.voiceSettings, motionVoiceCastContext(analysis), motionAudioDirection(script, analysis), channelVersion || MR.MOTION_TEXT_EMPTY]);
+  stringifyJson([
+    C.VERSION,
+    C.TRACK_VERSION,
+    C.PLAN_VERSION,
+    C.ASR.VERSION,
+    FX.VERSION,
+    C.TEMPO,
+    PACE,
+    script?.language,
+    script?.beats.map((beat) => [beat.id, beat.narration, beat.utterances, beat.sceneMood]),
+    script?.voiceSettings,
+    motionVoiceCastContext(analysis),
+    motionAudioDirection(script, analysis),
+    channelVersion || MR.MOTION_TEXT_EMPTY,
+    ...(script?.voiceSettings?.multiVoice !== false && script?.beats.some((beat) => !script.voiceSettings?.utterances?.[beat.id] && hasMisassignedMotionSpeech(beat.utterances || [], beat.narration)) ? [MOTION_SPEECH_ATTRIBUTION.REVISION] : []),
+  ]);
 export const voiceChannelRef = (channel?: Pick<MotionVoiceChannel, "id" | "updatedAt"> | null): string => (channel ? channel.id + MOTION_VOICE_LIBRARY.REF_SEPARATOR + channel.updatedAt : MR.MOTION_TEXT_EMPTY);
 export const motionLanguageCode = (value: unknown): string => {
   const raw = String(value ?? MR.MOTION_TEXT_EMPTY)

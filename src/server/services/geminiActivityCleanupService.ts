@@ -51,7 +51,10 @@ export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSigna
         if (!committed) {
           await page.goto(EXTERNAL_URLS.GEMINI_ACTIVITY, { waitUntil: "domcontentloaded", timeout: C.ACTION_TIMEOUT_MS });
           const remove = visible(page.getByRole("button", { name: C.DELETE, exact: true }));
-          await remove.waitFor({ state: "visible", timeout: C.ACTION_TIMEOUT_MS });
+          await remove
+            .or(visible(page.getByText(C.EMPTY, { exact: true })))
+            .first()
+            .waitFor({ state: "visible", timeout: C.ACTION_TIMEOUT_MS });
           if (await visible(page.getByText(C.EMPTY, { exact: true })).count()) return "empty";
           check();
           await remove.click({ timeout: C.ACTION_TIMEOUT_MS });
@@ -67,17 +70,17 @@ export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSigna
           await day.click({ timeout: C.ACTION_TIMEOUT_MS });
         }
         let confirmed = false;
-        const deadline = Date.now() + C.ACTION_TIMEOUT_MS;
+        const deadline = Date.now() + C.RESULT_TIMEOUT_MS;
         while (Date.now() < deadline) {
           check();
-          const success = visible(page.getByText(C.SUCCESS, { exact: true }));
-          if (await success.count()) return "deleted";
           const dialog = visible(
             page
               .getByRole("dialog")
               .or(page.getByRole("alertdialog"))
               .filter({ has: page.getByRole("heading", { name: C.CONFIRM_HEADING }) }),
           );
+          const success = visible(page.getByRole("heading", { name: C.SUCCESS_HEADING }).or(page.getByText(C.SUCCESS, { exact: true })));
+          if (!(await dialog.count()) && (await success.count())) return "deleted";
           if (!confirmed && (await dialog.count())) {
             const confirm = visible(dialog.getByRole("button", { name: C.DELETE, exact: true }));
             check();

@@ -2,10 +2,15 @@ import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_RESPONSE_SCHEMAS, MOTION_RESPONSE_TEXT as C } from "../constants/motionResponseContract.js";
-import { MotionRepairLedger } from "./motionAiRepair.js";
+import { MotionRepairLedger, type MotionFieldIssue } from "./motionAiRepair.js";
 import { motionResponseIssues } from "./motionResponseContract.js";
 import { motionSpeechResponseIssues } from "./motionSpeechResponse.js";
 import type { MotionBeat } from "../types/motionVideo.js";
+export const motionEditorSpeechIssues = (original: MotionBeat, edit: { narration?: string; utterances?: MotionBeat["utterances"] }, speakers: string[], preserveSpeech = true): MotionFieldIssue[] => {
+  const speech = edit.utterances;
+  const changedRoles = preserveSpeech && original.utterances?.length && (!Array.isArray(speech) || speech.length !== original.utterances.length || speech.some((entry, index) => entry?.speaker !== original.utterances![index]?.speaker || entry?.role !== original.utterances![index]?.role));
+  return changedRoles || (speech !== undefined && motionSpeechResponseIssues(speech, speakers, typeof edit.narration === "string" ? edit.narration : "").length) ? [{ path: RT_SHARED.UTTERANCES, reason: C.EDIT_SPEECH }] : [];
+};
 export const requestMotionEditorResponse = async (prompt: string, originals: MotionBeat[], speakers: string[], preserveSpeech: boolean, request: (question: string) => Promise<any>, signal?: AbortSignal, repairContext: string = "", attempts: number = C.REPAIR_ATTEMPTS, requiredVisualIds: string[] = []): Promise<any> => {
   const first = await request(prompt);
   if (!Array.isArray(first?.edits) || !first.edits.length) return first;
@@ -18,10 +23,7 @@ export const requestMotionEditorResponse = async (prompt: string, originals: Mot
       if (line.action && (typeof edit.action !== "string" || !edit.action.trim())) issues.push({ path: "action", reason: C.EDIT_VISUAL });
       if (line.scenePlan && !edit.scenePlan) issues.push({ path: "scenePlan", reason: C.EDIT_VISUAL });
     }
-    if (preserveSpeech && line.utterances?.length) {
-      const speech = edit.utterances;
-      if (!Array.isArray(speech) || speech.length !== line.utterances.length || speech.some((entry, index) => entry?.speaker !== line.utterances![index]?.speaker || entry?.role !== line.utterances![index]?.role) || motionSpeechResponseIssues(speech, speakers, typeof edit.narration === "string" ? edit.narration : "").length) issues.push({ path: RT_SHARED.UTTERANCES, reason: C.EDIT_SPEECH });
-    }
+    issues.push(...motionEditorSpeechIssues(line, edit, speakers, preserveSpeech));
     return issues;
   });
   ledger.submit(first.edits.map((edit: any) => ({ id: edit?.id, value: edit })));

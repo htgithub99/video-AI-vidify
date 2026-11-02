@@ -58,19 +58,23 @@ export const observeChatContextReceipts = (page: Page): ChatContextReceipts => {
   page.on(RT_SERVER.CLOSE, () => receipts.invalidate());
   return receipts;
 };
-export const confirmChatContextPart = async (prompt: string, id: string, part: number, send: (prompt: string) => Promise<unknown>, signal?: AbortSignal): Promise<void> => {
+export const confirmChatContextPart = async (prompt: string, id: string, part: number, send: (prompt: string) => Promise<unknown>, signal?: AbortSignal, onRetry?: (attempt: number) => void | Promise<void>): Promise<void> => {
+  let lastError: unknown;
   for (let attempt = 0; attempt <= C.CONTEXT_ACK_REPAIRS; attempt++) {
+    signal?.throwIfAborted();
+    if (attempt) await onRetry?.(attempt);
     signal?.throwIfAborted();
     let response: { artifactType?: unknown; requestId?: unknown; receivedPart?: unknown } | null;
     try {
       response = (await send(attempt ? C.CONTEXT_ACK_REPAIR(id, part) : prompt)) as typeof response;
     } catch (error) {
       signal?.throwIfAborted();
-      if (!(error instanceof Error) || (error.message !== C.INVALID_JSON_RESPONSE_ERROR && error.message !== C.INVALID_RESPONSE_ERROR)) throw error;
+      if (!(error instanceof Error) || ![C.INVALID_JSON_RESPONSE_ERROR, C.INVALID_RESPONSE_ERROR, C.REFUSAL_RESPONSE_ERROR].some((code) => error.message === code)) throw error;
+      lastError = error;
       continue;
     }
     signal?.throwIfAborted();
     if (response?.artifactType === C.CONTEXT_ARTIFACT && response.requestId === id && response.receivedPart === part) return;
   }
-  throw new Error(C.CONTEXT_ACK_ERROR);
+  throw new Error(C.CONTEXT_ACK_ERROR, { cause: lastError });
 };
