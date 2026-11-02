@@ -226,15 +226,47 @@ export const motionSceneAnimationValue = (animation: MotionSceneAnimation, secon
   });
 };
 const indices = new WeakMap<MotionVectorAsset, Map<string, Element>>();
+const frameCache = new WeakMap<MotionSceneComposition, Map<string, string>>();
+const fineTracks = new WeakMap<MotionSceneComposition, boolean>();
+const compositionFrameStep = (composition: MotionSceneComposition, tracks: MotionSceneAnimation[]): number => {
+  let fine = fineTracks.get(composition);
+  if (fine === undefined) {
+    fine = tracks.some((animation) => animation.channel === RT_CORE.SPEECH || (animation.channel === RT_CORE.ACTOR && animation.attribute === RT_CORE.TRANSFORM && animation.keyframes.some((frame) => C.GUARD.TRANSLATE_START.test(String(frame.value).trim()))));
+    fineTracks.set(composition, fine);
+  }
+  return fine ? C.FRAME_STEP.FINE : C.FRAME_STEP.LOOP;
+};
+export const motionCompositionFrameTime = (composition: MotionSceneComposition, height: number, seconds: number): number => {
+  const step = compositionFrameStep(composition, motionActorTracks(composition, height));
+  return Math.round(seconds / step) * step;
+};
 export const compositionFrameSvg = (asset: MotionVectorAsset, composition: MotionSceneComposition, seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>, _profile?: import("../types/motionVisual.js").MotionRemotionProfile): string => {
   if (behavior.actors === RT_SHARED.FIXED) return asset.svg;
+  const tracks = motionActorTracks(composition, asset.height);
+  if (!tracks.length) return asset.svg;
+  const step = compositionFrameStep(composition, tracks);
+  const time = Math.round(seconds / step) * step;
+  const cacheKey = [time.toFixed(4), behavior.sceneEffects, [...speakers].sort().join(RT_SHARED.SYMBOL_D03502)].join(RT_SHARED.SYMBOL_01BA47);
+  let cached = frameCache.get(composition);
+  if (!cached) {
+    cached = new Map();
+    frameCache.set(composition, cached);
+  }
+  const known = cached.get(cacheKey);
+  if (known !== undefined) return known;
+  const rendered = compositionFrameSvgAt(asset, composition, tracks, time, behavior, speakers);
+  if (cached.size >= C.FRAME_CACHE) cached.clear();
+  cached.set(cacheKey, rendered);
+  return rendered;
+};
+const compositionFrameSvgAt = (asset: MotionVectorAsset, composition: MotionSceneComposition, tracks: MotionSceneAnimation[], seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>): string => {
   let elements = indices.get(asset);
   if (!elements) {
     elements = compositionElements(asset.svg);
     indices.set(asset, elements);
   }
   const changes = new Map<string, Record<string, string>>();
-  for (const animation of motionActorTracks(composition, asset.height)) {
+  for (const animation of tracks) {
     if (animation.channel === RT_CORE.EFFECT && behavior.sceneEffects === RT_SHARED.OFF) continue;
     const layer = owner(animation.target, elements, composition.layers);
     if (animation.channel === RT_CORE.SPEECH && !speakers.has(layer?.entityId || "")) continue;

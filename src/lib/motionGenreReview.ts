@@ -3,7 +3,10 @@ import { MOTION_WRITING as W } from "../constants/motionWriting.js";
 import { motionOpeningTeaserIds } from "./motionStoryTimeline.js";
 import { motionUnsupportedFigures } from "./motionWritingNumbers.js";
 import { motionWritingReviewAnchors } from "./motionWriting.js";
-import { motionVideoGenre } from "../constants/motionGenre.js";
+import { motionGenreSpec } from "../constants/motionGenre.js";
+import { motionLanguage } from "./motionLanguage.js";
+import { MOTION_LANGUAGE_UNITS as U } from "../constants/motionLanguages/index.js";
+import { MOTION_SPOKEN_NUMBERS as N } from "../constants/motionSpokenNumbers.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../types/motionVideo.js";
 export interface MotionGenreReviewFinding {
   id: string;
@@ -16,7 +19,7 @@ const tokenizer = (language: string, motifs: string[]) => {
   const min = R.RETELL.MIN_LENGTH[vi ? "vi" : "en"];
   const motifWords = new Set(motifs.flatMap((motif) => motif.toLowerCase().match(R.WORD) || []));
   return (text: string): Set<string> => {
-    const list = (text.replace(R.QUOTE, " ").toLowerCase().match(R.WORD) || []).filter((word) => word.length >= min && !motifWords.has(word) && !R.STOP.test(word) && !R.MONTH.test(word) && !R.DIGIT.test(word));
+    const list = (text.replace(R.QUOTE, " ").replace(U.CJK, " $& ").toLowerCase().match(R.WORD) || []).filter((word) => word.length >= min && !motifWords.has(word) && !R.STOP.test(word) && !R.MONTH.test(word) && !R.DIGIT.test(word));
     return new Set(vi ? list.slice(1).map((word, index) => list[index] + " " + word) : list.map((word) => word.slice(0, R.RETELL.STEM)));
   };
 };
@@ -32,7 +35,7 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
   const findings: MotionGenreReviewFinding[] = [];
   const dropIds = new Set<string>();
   const dropRefs = new Map<string, string>();
-  const checks = R.CHECKS[motionVideoGenre(analysis.videoGenre)] || R.DEFAULT;
+  const checks = motionGenreSpec(analysis.videoGenre).REVIEW;
   const vi = R.VI.test(language.trim());
   const add = (id: string, issue: string, ref?: string, kind: MotionGenreReviewFinding["kind"] = "retell") => {
     const known = findings.find((finding) => finding.id === id);
@@ -83,7 +86,7 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
       );
       if (earlier >= 0) add(beat.id, R.ISSUE.CROSS(spoken[earlier].id, quote(spoken[earlier])), duplicate(spoken[earlier]));
     }
-    if (checks.digits && R.DIGIT.test(beat.narration.replace(R.QUOTE, " "))) add(beat.id, R.ISSUE.DIGITS(vi), undefined, "speech");
+    if (checks.digits && motionLanguage(language).numbers === N.SPOKEN && R.DIGIT.test(beat.narration.replace(R.QUOTE, " "))) add(beat.id, R.ISSUE.DIGITS(vi), undefined, "speech");
     if (checks.commentary && R.COMMENTARY.test(beat.narration)) add(beat.id, R.ISSUE.COMMENTARY);
     if (checks.experts && sourceText && R.EXPERTS.test(beat.narration) && !R.EXPERTS.test(sourceText)) add(beat.id, R.ISSUE.EXPERTS, undefined, "source");
     if ((analysis as MotionStoryAnalysis).factual && sourceText) for (const figure of motionUnsupportedFigures(beat.narration, sourceText)) add(beat.id, W.FIGURES.ISSUE(figure), undefined, "source");

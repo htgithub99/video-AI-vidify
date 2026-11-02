@@ -26,7 +26,11 @@ import { MOTION_STORY_TIMELINE } from "../../../../constants/motionStoryTimeline
 import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../../../constants/motionMusic.js";
 import _ from "lodash";
-import { motionSpeechRate, speechUnits } from "./motionSpeechRateService.js";
+import { motionSpeechRate, motionSpeechRateMeasured, speechUnits } from "./motionSpeechRateService.js";
+import { motionLanguageCode } from "../../../../lib/motionLanguage.js";
+import { motionStorytelling, motionStorytellingExpansion, motionStorytellingSilent, motionStorytellingText } from "../../../../lib/motionStorytelling.js";
+import { motionSourceCapacitySeconds } from "../../../../lib/motionStoryTimeline.js";
+import { sourceSlice } from "./motionStoryService.js";
 import { recordVoiceSpeedFeedback, voicesUseAutoSpeed } from "./motionVoiceSpeedService.js";
 import path from "path";
 import {
@@ -47,10 +51,8 @@ import {
   MOTION_TEXT_CHUA_CO_KICH_BAN,
   MOTION_TEXT_CHUA_CO_NOI_DUNG_CAU_CHUYEN,
   MOTION_TEXT_DARK,
-  MOTION_TEXT_EN,
   MOTION_TEXT_KICH_BAN_DUNG_SPEC_CHUA_CO_CANH_NAO,
   MOTION_TEXT_QUA_NHIEU_CANH_TRONG_MOT_VIDEO,
-  MOTION_TEXT_VI,
 } from "../../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG } from "../../../../constants/motionVideo.js";
 import { parseJson } from "../../../../lib/jsonStringify.js";
@@ -112,7 +114,7 @@ export const startMotionVideoRenderInput = (body: Record<string, any>) => {
   });
   return { success: true, job };
 };
-export const storyLanguage = (v: unknown): string => (v === MOTION_TEXT_EN ? MOTION_TEXT_EN : MOTION_TEXT_VI);
+export const storyLanguage = (v: unknown): string => motionLanguageCode(v);
 export const storyLength = (v: unknown): MotionStoryLength => (_.includes(_.values(MotionStoryLength), v) ? (v as MotionStoryLength) : MotionStoryLength.FULL);
 export const aiExec = (v: any): MotionAiExecution => ({
   provider: _.toString(v?.provider || MR.MOTION_TEXT_EMPTY),
@@ -147,10 +149,18 @@ export const analyzeMotionStoryInput = async (body: Record<string, any>) => {
     async (ctx) => {
       ctx.progress(0.1, MOTION_TEXT_ANALYZE);
       ctx.log(MOTION_TEMPLATE_PHAN_TICH_CAU_CHUYEN_TU_PHUT(String(Number.isFinite(source.words) ? source.words : speechUnits(source.text)), String(Math.round(source.sourceSeconds / 60))));
-      const options = { language, length, visualSettings, styleReferences: visualSettings.mode === RT_SHARED.REMOTION ? [] : styleReferences, videoGenre: motionVideoGenre(body?.videoGenre), stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined, characterMotion: body?.characterMotion === true, aspect: _.toString(body?.aspect || MR.MOTION_TEXT_16_9), exec };
+      const options = { language, length, visualSettings, styleReferences: visualSettings.mode === RT_SHARED.REMOTION ? [] : styleReferences, videoGenre: motionVideoGenre(body?.videoGenre), stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined, characterMotion: body?.characterMotion === true, aspect: _.toString(body?.aspect || MR.MOTION_TEXT_16_9), exec, storytelling: motionStorytelling(body?.storytelling), renameEntities: body?.renameEntities === true };
       const recovery = motionTaskCheckpoint<MotionAnalysisDraft>(body.productionId || body.editorialSessionId, MotionStoryJobKind.ANALYZE, [source, options]);
       const analysis = await analyzeStory(source, { ...options, signal: ctx.signal, log: ctx.log, draft: recovery.read(), onDraft: recovery.save });
       ctx.log(MOTION_TEMPLATE_AI_CHIA_CHUONG_NHAN_VAT_BOI_CANH_DIEM(String(analysis.chapters.length), String(analysis.cast.length), String(analysis.places.length), String(analysis.facts.length)));
+      const chosenSeconds = _.sumBy(analysis.chapters, (chapter) => chapter.targetSeconds || 0);
+      const expansion = motionStorytellingExpansion(analysis.storytelling, analysis.videoGenre);
+      const capacity = motionSourceCapacitySeconds(
+        analysis.chapters.map((chapter) => ({ text: sourceSlice(source, chapter.from, chapter.to), keyPoints: chapter.keyPoints?.length || 0, seconds: chapter.targetSeconds || 0 })),
+        MOTION_STORY_CONFIG.TARGET_BEAT_SECONDS,
+        1,
+      );
+      if (chosenSeconds > 0 && capacity > 0) ctx.log(motionStorytellingText(language).CAPACITY(Math.round(capacity / 60), Math.round(chosenSeconds / 60), Math.min(expansion, chosenSeconds / capacity), motionStorytellingText(language).OPTIONS[motionStorytelling(analysis.storytelling)]));
       return analysis;
     },
     editorialSession(body, source, exec),
@@ -176,12 +186,13 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
     if (errors.length) throw new Error(MR.MOTION_TEMPLATE_INVALID_VIDEO_DNA(errors.slice(0, 5).join(MR.MOTION_TEXT_SYMBOL_41)));
     if (analysis.videoDna.sourceKey !== videoDnaSourceKey(source)) throw new Error(MR.MOTION_TEXT_INPUT_CHANGED_ANALYZE_VIDEO_DNA_AGAIN_BEFORE_WRITING_SCENES);
     if (body?.length && analysis.videoDna.settings.length !== storyLength(body.length)) throw new Error(MR.MOTION_TEXT_VIDEO_LENGTH_CHANGED_ANALYZE_VIDEO_DNA_AGAIN);
-    analysis = bindVideoDnaSettings(analysis, { language: language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, aspect: _.toString(body?.aspect || analysis.videoDna.settings.aspect), drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN });
+    analysis = bindVideoDnaSettings(analysis, { language: motionLanguageCode(language), aspect: _.toString(body?.aspect || analysis.videoDna.settings.aspect), drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN });
   }
   const exec = aiExec(body?.aiExecution);
   const only: string[] = _.map(_.castArray(body?.chapterIds || []), _.toString);
   const existing: MotionBeat[] = _.castArray(body?.beats || []);
   const speechRate = body?.durationRepair && Number(body?.speechRate) > 0 ? Number(body.speechRate) : motionSpeechRate(body?.voiceChannel, language);
+  const speechRateMeasured = (body?.durationRepair && Number(body?.speechRate) > 0) || motionSpeechRateMeasured(body?.voiceChannel, language);
   const multiVoice = body?.multiVoice ?? body?.voiceSettings?.multiVoice ?? true;
   const voiceScript = (script: MotionStoryScript): MotionStoryScript => withMotionVoiceMode({ ...script, voiceSettings: body?.voiceSettings }, multiVoice);
   const job = startInputJob(
@@ -228,6 +239,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             isFirst: idx === 0,
             isLast: idx === chapters.length - 1,
             speechRate,
+            speechRateMeasured,
             draft: chapterDrafts[chapter.id],
             durationRepair: body?.durationRepair === true,
             durationRepairScope: body?.durationRepairScope,
@@ -249,6 +261,9 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         done++;
         ctx.progress(done / todo.length, chapter.id);
         ctx.log(MOTION_TEMPLATE_BEAT(String(byChapter[chapter.id].length)));
+        const silent = motionStorytellingSilent(analysis.storytelling);
+        const wantedUnits = Math.round(Math.max(15, (chapter.targetSeconds || 0) - (silent ? silent.chapterCard + silent.chapterEnd : 0)) * speechRate * (speechRateMeasured ? MOTION_STORY_CONFIG.LENGTH_SAFETY_MEASURED : MOTION_STORY_CONFIG.LENGTH_SAFETY));
+        if (wantedUnits > 0) ctx.log(motionStorytellingText(language).CHAPTER(chapter.id, _.sumBy(byChapter[chapter.id], (beat) => speechUnits(beat.narration)), wantedUnits));
         checkpoint();
       };
       for (const chapter of todo) await writeOne(chapter);
@@ -267,6 +282,12 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         }
       }
       const script = voiceScript({ title: analysis.title, visualSettings, language, beats, gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, ...(edit ? { edit } : {}) });
+      const chosenTotal = _.sumBy(analysis.chapters, (chapter) => chapter.targetSeconds || 0);
+      const silentTotal = (() => {
+        const silent = motionStorytellingSilent(analysis.storytelling);
+        return silent ? analysis.chapters.length * (silent.chapterCard + silent.chapterEnd) + silent.videoEnd : 0;
+      })();
+      if (complete && chosenTotal > 0) ctx.log(motionStorytellingText(language).ESTIMATE(_.sumBy(beats, (beat) => speechUnits(beat.narration)) / speechRate + silentTotal, chosenTotal));
       ctx.partial(script);
       assertMotionScriptComplete(script, analysis);
       return script;

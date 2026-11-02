@@ -1,9 +1,8 @@
 import _ from "lodash";
-import { MOTION_POV_STORY as POV } from "./motionPovStory.js";
-import { MOTION_WITNESS_STORY as WITNESS } from "./motionWitnessStory.js";
-import { MOTION_CHRONICLE_STORY as CHRONICLE } from "./motionChronicleStory.js";
-import { MOTION_VERDICT_STORY as VERDICT } from "./motionVerdictStory.js";
+import { MOTION_GENRE_SPECS } from "./motionGenres/index.js";
+import type { MotionGenreSpec } from "./motionGenres/types.js";
 import { MOTION_GENRE_STAGE as STAGE } from "./motionGenreStage.js";
+import { MOTION_GENRE_GRAMMAR as GRAMMAR } from "./motionGenreGrammar.js";
 export const MOTION_VIDEO_GENRES = { POV: "pov", WITNESS: "witness", CHRONICLE: "chronicle", VERDICT: "verdict" } as const;
 export type MotionVideoGenre = (typeof MOTION_VIDEO_GENRES)[keyof typeof MOTION_VIDEO_GENRES];
 export const MOTION_VIDEO_GENRE_DEFAULT: MotionVideoGenre = MOTION_VIDEO_GENRES.POV;
@@ -24,7 +23,7 @@ export interface MotionVideoGenreStage {
   RULE: string;
   SOLO?: boolean;
 }
-const PROFILES: Record<MotionVideoGenre, { PROFILE: string; PACKAGING: string; PLAN: string; SAMPLE: string; CHECK: string; TIMELINE: string; SIGNATURE: string; STAGES: Record<string, MotionVideoGenreStage>; MOTIFS: string; MERGE: boolean }> = { pov: POV, witness: WITNESS, chronicle: CHRONICLE, verdict: VERDICT };
+const PROFILES = MOTION_GENRE_SPECS as Record<MotionVideoGenre, MotionGenreSpec>;
 const GENRE_TEXT = {
   PACKAGING: "VIDEO GENRE (chosen by the user, follow it): ",
   DIRECTIVE: "VIDEO GENRE (chosen by the user, authoritative over any genre or format you would infer; the source content still decides the facts): ",
@@ -34,6 +33,7 @@ const GENRE_TEXT = {
   CHECK: " BEFORE ANSWERING, CHECK EVERY LINE: ",
 } as const;
 export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.includes(_.values(MOTION_VIDEO_GENRES), value) ? (value as MotionVideoGenre) : MOTION_VIDEO_GENRE_DEFAULT);
+export const motionGenreSpec = (value: unknown): MotionGenreSpec => PROFILES[motionVideoGenre(value)];
 export const motionVideoGenrePackaging = (value: unknown): string => GENRE_TEXT.PACKAGING + PROFILES[motionVideoGenre(value)].PACKAGING;
 export const motionVideoGenreWritingProfile = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
@@ -60,4 +60,16 @@ export const motionVideoGenreEditorProfile = (value: unknown): string => {
 export const motionVideoGenreStyleGuide = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
   return GENRE_TEXT.STYLE + profile.PROFILE + " " + profile.TIMELINE + GENRE_TEXT.SAMPLE + profile.SAMPLE + GENRE_TEXT.CHECK + profile.CHECK;
+};
+export const motionVideoGenreGrammar = (value: unknown, position: { first: boolean; last: boolean; hooks?: boolean }): string => {
+  const profile = PROFILES[motionVideoGenre(value)];
+  return [
+    profile.GRAMMAR.rule,
+    GRAMMAR.SHOTS(profile.GRAMMAR.shots, profile.GRAMMAR.visuals),
+    profile.VOICE.frames.length ? GRAMMAR.FRAMES(profile.VOICE.frames) : "",
+    position.hooks ? GRAMMAR.HOOKS : "",
+    GRAMMAR.SAMPLE + profile.GRAMMAR.sample,
+    position.first ? GRAMMAR.OPENING(profile.OPENING.kinds, profile.OPENING.maxBeats) : "",
+    position.last ? GRAMMAR.CLOSING(profile.CLOSING.kinds, profile.CLOSING.maxBeats) : "",
+  ].join("");
 };

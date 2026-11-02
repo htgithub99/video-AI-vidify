@@ -3,6 +3,7 @@ import * as MR from "../constants/motionRuntime.js";
 import { MOTION_PATTERNS as MP } from "../constants/motionPatterns.js";
 import { MOTION_SEO } from "../constants/motionSeo.js";
 import { normalizeMotionText } from "./motionUtils.js";
+import { motionLanguageRate, motionSpeechUnits } from "./motionLanguage.js";
 import type { MotionSeoTexts } from "../constants/motionVideoTexts.js";
 import type { MotionBeat, MotionChapter, MotionSeoOption, MotionSeoPack, MotionStorySource } from "../types/motionVideo.js";
 export const SEO_CHAPTERS_TOKEN = MR.MOTION_TEXT_CHAPTERS_2;
@@ -12,16 +13,13 @@ export const motionSeoSourceTitle = (source?: Pick<MotionStorySource, "title"> |
   if (!title || title === MR.MOTION_TEXT_CAU_CHUYEN || MP.URL_START.test(title)) return MR.MOTION_TEXT_EMPTY;
   return normalizeMotionText(title, MOTION_SEO.TITLE_MAX_CHARACTERS, MR.MOTION_TEXT_EMPTY);
 };
-const estimateBeatSeconds = (beat: MotionBeat, vi: boolean): number => {
-  const units = beat.narration.split(/\s+/).filter(Boolean).length;
-  return units / (vi ? 4.3 : 2.6) + 0.35;
-};
-export const chapterStarts = (beats: MotionBeat[], chapters: Pick<MotionChapter, "id">[], vi: boolean, durations?: number[]): Record<string, number> => {
+const estimateBeatSeconds = (beat: MotionBeat, language: string): number => motionSpeechUnits(beat.narration) / (motionLanguageRate(language) * MOTION_SEO.ESTIMATE_RATE_SCALE) + MOTION_SEO.ESTIMATE_TAIL;
+export const chapterStarts = (beats: MotionBeat[], chapters: Pick<MotionChapter, "id">[], language: string, durations?: number[]): Record<string, number> => {
   const starts: Record<string, number> = {};
   let t = 0;
   beats.forEach((beat, i) => {
     if (starts[beat.chapterId] === undefined) starts[beat.chapterId] = t;
-    t += durations && Number.isFinite(durations[i]) ? durations[i] : estimateBeatSeconds(beat, vi);
+    t += durations && Number.isFinite(durations[i]) ? durations[i] : estimateBeatSeconds(beat, language);
   });
   for (const c of chapters) if (starts[c.id] === undefined) starts[c.id] = t;
   return starts;
@@ -50,7 +48,7 @@ export const renderSeoDescription = (option: MotionSeoOption, pack: Pick<MotionS
 };
 export const renderSeoOptionText = (option: MotionSeoOption, pack: Pick<MotionSeoPack, "chapters">, index: number, text: MotionSeoTexts): string =>
   MR.MOTION_TEMPLATE_SYMBOL_43(text.option, index + 1, text.score, option.seoScore, text.titleL, option.title, text.descL, renderSeoDescription(option, pack), text.hashL, option.hashtags.join(RT_SHARED.SYMBOL_36A9E7), text.tagL, option.tags.join(MR.MOTION_TEXT_SYMBOL_14));
-export const retimeSeoPack = (pack: MotionSeoPack, beats: MotionBeat[], chapters: Pick<MotionChapter, "id">[], vi: boolean, durations?: number[]): MotionSeoPack => {
-  const starts = chapterStarts(beats, chapters, vi, durations);
+export const retimeSeoPack = (pack: MotionSeoPack, beats: MotionBeat[], chapters: Pick<MotionChapter, "id">[], language: string, durations?: number[]): MotionSeoPack => {
+  const starts = chapterStarts(beats, chapters, language, durations);
   return { ...pack, timingFrom: durations?.length ? MR.MOTION_TEXT_VOICE : MR.MOTION_TEXT_ESTIMATE, chapters: pack.chapters.map((c) => ({ ...c, t: starts[c.id] ?? c.t })) };
 };

@@ -2,6 +2,7 @@ import { MOTION_WRITING as W } from "../constants/motionWriting.js";
 import { MOTION_SPOKEN_NUMBERS as N } from "../constants/motionSpokenNumbers.js";
 import { stringifyJson } from "./jsonStringify.js";
 import { motionVideoGenre } from "../constants/motionGenre.js";
+import { motionGenreChapterWriting, motionGenreWritingPlan } from "./motionGenres/autofix.js";
 import type { MotionBeat, MotionChapter, MotionStoryAnalysis, MotionWritingChapter, MotionWritingPlan } from "../types/motionVideo.js";
 export const motionWritingChapterCount = (seconds: number, genre: unknown): number => Math.max(W.CHAPTERS.GENRE_MIN[motionVideoGenre(genre)] || W.CHAPTERS.MIN, Math.min(W.CHAPTERS.MAX, Math.round(seconds / W.CHAPTERS.SECONDS)));
 export const motionWritingReviewAnchors = (analysis: Partial<Pick<MotionStoryAnalysis, "motifs" | "cast" | "places">>): string[] => [
@@ -49,7 +50,7 @@ export const motionWritingChapterPrompt = (analysis: MotionStoryAnalysis, chapte
     W.BOOKENDS,
     analysis.factual ? W.FACTUAL : "",
     W.NUMBERS,
-    analysis.writingPlan || chapter.writing ? W.CHAPTER + stringifyJson({ plan: analysis.writingPlan, chapter: chapter.writing, otherEvents: analysis.chapters.filter((item) => item.id !== chapter.id).map((item) => ({ chapter: item.id, events: item.writing?.events.map(({ id, point }) => ({ id, point })) })) }) : "",
+    analysis.writingPlan || chapter.writing ? W.CHAPTER + stringifyJson({ plan: motionGenreWritingPlan(analysis), chapter: motionGenreChapterWriting(analysis, chapter.writing), otherEvents: analysis.chapters.filter((item) => item.id !== chapter.id).map((item) => ({ chapter: item.id, events: item.writing?.events.map(({ id, point }) => ({ id, point })) })) }) : "",
     motionVideoGenre(analysis.videoGenre) === "verdict" ? W.LABELS : "",
   ]
     .filter(Boolean)

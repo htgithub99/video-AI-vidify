@@ -12,6 +12,7 @@ import { getStaticResourcePath, getTempDirectory } from "../../../../server/util
 import { findNativeChrome } from "../../../../server/services/nativeProxyBrowser.js";
 import { motionRemotionWebpack } from "./remotion/bundleConfig.js";
 import { motionRemotionRenderConcurrency } from "../../../../lib/motionRemotionPerformance.js";
+import { MOTION_REMOTION_RENDER as R } from "../../../../constants/motionRemotionRender.js";
 import { checkRemotionCutoutLayers } from "./remotion/vectorCutoutInspector.js";
 let cached: { key: string; promise: Promise<string> } | undefined;
 export const motionRemotionSourceFingerprint = (entryPoints: string[]): string => {
@@ -74,7 +75,11 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
   signal?.addEventListener(RT_SHARED.ABORT, abort, { once: true });
   let browser: Awaited<ReturnType<typeof openBrowser>> | undefined;
   try {
-    browser = await openBrowser(RT_SERVER.CHROME, { browserExecutable: findNativeChrome(), chromiumOptions: { headless: true }, logLevel: RT_SHARED.ERROR });
+    const executable = findNativeChrome();
+    browser = await openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless: true, gl: R.GL }, logLevel: RT_SHARED.ERROR }).catch(async () => {
+      console.warn(R.GL_FALLBACK);
+      return openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless: true }, logLevel: RT_SHARED.ERROR });
+    });
     signal?.throwIfAborted();
     return await run(browser, serveUrl, cancelSignal);
   } finally {

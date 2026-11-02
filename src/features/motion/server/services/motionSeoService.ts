@@ -1,3 +1,4 @@
+import { motionLanguage } from "../../../../lib/motionLanguage.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -16,6 +17,9 @@ import { runMotionAi } from "./motionStoryService.js";
 import { motionVideoGenrePackaging } from "../../../../constants/motionGenre.js";
 import { MOTION_SEO_OPTION_SCHEMA } from "../../../../constants/motionResponseContract.js";
 import { motionResponseIssues, motionResponsePrompt } from "../../../../lib/motionResponseContract.js";
+import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
+import { motionRenameFilterTerms, motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
+import type { MotionRenameEntry } from "../../../../types/motionVideo.js";
 const ARTIFACT = MR.MOTION_TEXT_MOTION_STORY_SEO;
 export interface MotionSeoDraft {
   inputKey: string;
@@ -27,16 +31,17 @@ export interface MotionSeoDraft {
 const text = (v: unknown, n: number) => normalizeMotionText(v, n, MR.MOTION_TEXT_EMPTY);
 export const seoScriptKey = (script: MotionStoryScript): string => motionInputKey({ title: script.title, language: script.language, beats: script.beats.map(({ id, chapterId, narration, utterances }) => ({ id, chapterId, narration, utterances })) });
 export const retimeMotionSeo = (seo: MotionSeoPack, script: MotionStoryScript, analysis: MotionStoryAnalysis, durations: number[]): MotionSeoPack => {
-  const starts = chapterStarts(script.beats, analysis.chapters, script.language !== MR.MOTION_TEXT_EN, durations);
+  const starts = chapterStarts(script.beats, analysis.chapters, script.language, durations);
   return { ...seo, timingFrom: MR.MOTION_TEXT_VOICE, chapters: seo.chapters.map((chapter) => ({ ...chapter, t: Math.round(starts[chapter.id] || 0) })) };
 };
-const optionsFrom = (raw: any): MotionSeoOption[] =>
+const optionsFrom = (raw: any, renameMap: MotionRenameEntry[] = []): MotionSeoOption[] =>
   _.take(
     _.compact(
       _.map(_.castArray(raw?.seoOptions || []), (o: any) => {
         const title = text(o?.title, MOTION_SEO.TITLE_MAX_CHARACTERS);
         const description = text(o?.description, 4500);
         if (!title || !description) return null;
+        if (renameMap.length && (motionRenameLeaks(title, renameMap).length || motionRenameLeaks(description, renameMap).length)) return null;
         const hashtags = _.take(
           _.uniq(
             _.compact(
@@ -49,22 +54,22 @@ const optionsFrom = (raw: any): MotionSeoOption[] =>
           15,
         );
         const tags = _.take(_.uniq(_.compact(_.map(_.castArray(o?.tags || []), (t) => text(t, 60)))), 20);
-        return { title, description, hashtags, tags, seoScore: _.clamp(Math.round(_.toNumber(o?.seoScore) || 0), 0, 100) };
+        return { title, description, hashtags: motionRenameFilterTerms(hashtags, renameMap).kept, tags: motionRenameFilterTerms(tags, renameMap).kept, seoScore: _.clamp(Math.round(_.toNumber(o?.seoScore) || 0), 0, 100) };
       }),
     ),
     SEO_OPTION_COUNT,
   );
 export const generateMotionSeo = async (analysis: MotionStoryAnalysis, script: MotionStoryScript, opts: { language: string; exec: MotionAiExecution; source?: Pick<MotionStorySource, "title"> | null; durations?: number[]; signal?: AbortSignal; log?: (s: string) => void; ai?: typeof runMotionAi; draft?: MotionSeoDraft; onDraft?: (draft: MotionSeoDraft) => void }): Promise<MotionSeoPack> => {
-  const vi = opts.language !== MR.MOTION_TEXT_EN;
-  const sourceTitle = motionSeoSourceTitle(opts.source);
-  const starts = chapterStarts(script.beats, analysis.chapters, vi, opts.durations);
+  const renameMap = motionRenameMapActive(analysis);
+  const sourceTitle = renameMap.length ? undefined : motionSeoSourceTitle(opts.source);
+  const starts = chapterStarts(script.beats, analysis.chapters, opts.language, opts.durations);
   const dna = analysis.videoDna;
   const total = analysis.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0);
   const brief = {
     title: script.title || analysis.title,
     sourceTitle: sourceTitle || undefined,
     logline: analysis.logline,
-    language: vi ? MR.MOTION_TEXT_VIETNAMESE : MR.MOTION_TEXT_ENGLISH,
+    language: motionLanguage(opts.language).promptName,
     audience: dna?.audienceProfile,
     format: dna?.format,
     narrativeVoice: dna?.narrativeDna?.narrativeVoice || dna?.narrative.voice,
@@ -79,7 +84,7 @@ export const generateMotionSeo = async (analysis: MotionStoryAnalysis, script: M
     seoOptions: _.times(SEO_OPTION_COUNT, (i) => ({ title: i === 0 && sourceTitle ? sourceTitle : MR.MOTION_TEMPLATE_TITLE_OPTION(i + 1), description: MR.MOTION_TEMPLATE_HOOK_PARAGRAPH_CLOSING_LINE(SEO_CHAPTERS_TOKEN), hashtags: [MR.MOTION_TEXT_TAGONE, MR.MOTION_TEXT_TAGTWO], tags: [MR.MOTION_TEXT_TAG_ONE, MR.MOTION_TEXT_TAG_TWO], seoScore: 85 + i })),
     chapterTitles: [{ id: MR.MOTION_TEXT_C1, title: MR.MOTION_TEXT_SYMBOL }],
   };
-  const prompt = ([MR.MOTION_TEMPLATE_ACT_AS_AN_EXCELLENT_YOUTUBE_SEO_COPYWRITER_AND_CHANNEL_EDITOR_FOR(SEO_OPTION_COUNT, stringifyJson(brief), brief.language, SEO_CHAPTERS_TOKEN, brief.language, stringifyJson(example)), motionResponsePrompt(ARTIFACT), ...(sourceTitle ? [MOTION_SEO.SOURCE_TITLE_RULE] : [])] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
+  const prompt = ([MR.MOTION_TEMPLATE_ACT_AS_AN_EXCELLENT_YOUTUBE_SEO_COPYWRITER_AND_CHANNEL_EDITOR_FOR(SEO_OPTION_COUNT, stringifyJson(brief), brief.language, SEO_CHAPTERS_TOKEN, brief.language, stringifyJson(example)), motionResponsePrompt(ARTIFACT), ...(sourceTitle ? [MOTION_SEO.SOURCE_TITLE_RULE] : []), ...(renameMap.length ? [RENAME.PROMPT.SEO] : [])] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
   const ledger = new MotionRepairLedger<Record<string, any>>(
     Array.from({ length: SEO_OPTION_COUNT }, (_, index) => MOTION_SEO.OPTION_ID(index)),
     (value) => motionResponseIssues(value, { ...MOTION_SEO_OPTION_SCHEMA, properties: _.pick(MOTION_SEO_OPTION_SCHEMA.properties, [RT_SHARED.TITLE, RT_SERVER.DESCRIPTION, RT_SERVER.HASHTAGS, RT_SERVER.TAGS] as string[]) }).map((issue) => ({ path: issue.path.split(/[.\[]/)[0], reason: stringifyJson(issue) })),
@@ -87,7 +92,7 @@ export const generateMotionSeo = async (analysis: MotionStoryAnalysis, script: M
   const inputKey = motionInputKey([brief, opts.exec, seoScriptKey(script)]);
   const draft: MotionSeoDraft = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft) : { inputKey, rejected: 0, rows: [], chapterTitles: {}, note: MR.MOTION_TEXT_EMPTY };
   ledger.submit(draft.rows);
-  let options = optionsFrom({ seoOptions: ledger.accepted().map((row) => row.value) });
+  let options = optionsFrom({ seoOptions: ledger.accepted().map((row) => row.value) }, renameMap);
   const chapterTitles = draft.chapterTitles;
   let note = draft.note;
   const checkpoint = () => {
@@ -107,7 +112,11 @@ export const generateMotionSeo = async (analysis: MotionStoryAnalysis, script: M
           return typeof id === "string" && value && typeof value === "object" ? [{ id, value }] : [];
         }),
       );
-      options = optionsFrom({ seoOptions: ledger.accepted().map((row) => row.value) });
+      options = optionsFrom({ seoOptions: ledger.accepted().map((row) => row.value) }, renameMap);
+      if (renameMap.length) {
+        const removed = _.sumBy(ledger.accepted(), (row: { value: Record<string, any> }) => motionRenameFilterTerms([..._.castArray(row.value?.hashtags || []), ..._.castArray(row.value?.tags || [])].map(String), renameMap).removed);
+        if (removed) opts.log?.(RENAME.LOG.SEO_FILTERED(removed));
+      }
       for (const c of _.castArray(raw?.chapterTitles || [])) if (c?.id && analysis.chapters.some((chapter) => chapter.id === c.id) && !chapterTitles[_.toString(c.id)] && text(c?.title, 60)) chapterTitles[_.toString(c.id)] = text(c.title, 60);
       note = MR.MOTION_TEMPLATE_OPTIONS(options.length, SEO_OPTION_COUNT);
       if (options.length < SEO_OPTION_COUNT) draft.rejected++;

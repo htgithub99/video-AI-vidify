@@ -13,8 +13,18 @@ const validTrack = (composition: MotionSceneComposition, asset: MotionVectorAsse
     return false;
   }
 };
-export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile): { composition: MotionSceneComposition; added: number; removed: number } => {
-  if (behavior?.actors === "fixed") return { composition, added: 0, removed: 0 };
+const boostRotation = (track: MotionSceneAnimation, minRotate: number): MotionSceneAnimation | undefined => {
+  if (!minRotate || track.channel !== "actor" || track.attribute !== "transform") return undefined;
+  const values = track.keyframes.map((frame) => String(frame.value));
+  const angles = values.flatMap((value) => [...value.matchAll(MOTION_COMPOSITION_MOTION.ROTATE)].map((match) => Math.abs(Number(match[1]))));
+  if (!angles.length || values.some((value) => !/^\s*rotate\([^)]*\)\s*$/.test(value))) return undefined;
+  const peak = Math.max(...angles);
+  if (!(peak > 0) || peak >= minRotate) return undefined;
+  const factor = minRotate / peak;
+  return { ...track, keyframes: track.keyframes.map((frame) => ({ ...frame, value: String(frame.value).replace(MOTION_COMPOSITION_MOTION.ROTATE, (_match, angle: string, rest: string) => `rotate(${Number((Number(angle) * factor).toFixed(2))}${rest})`) })) };
+};
+export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile): { composition: MotionSceneComposition; added: number; removed: number; boosted: number } => {
+  if (behavior?.actors === "fixed") return { composition, added: 0, removed: 0, boosted: 0 };
   const policy = MOTION_COMPOSITION_MOTION;
   const style = MOTION_PROFILE_MOTION[profile];
   const elements = compositionElements(asset.svg);
@@ -43,18 +53,35 @@ export const compositionActorMotion = (composition: MotionSceneComposition, asse
     });
   });
   const removed = composition.animations.length - animations.length;
-  let result = removed ? { ...composition, animations } : composition;
+  let boosted = 0;
+  const lively = animations.map((track) => {
+    const next = boostRotation(track, style.minRotate);
+    if (next) boosted++;
+    return next || track;
+  });
+  let result = removed || boosted ? { ...composition, animations: lively } : composition;
   let added = 0;
-  if (behavior?.actors !== "simple") return { composition: result, added, removed };
+  if (behavior?.actors !== "simple") return { composition: result, added, removed, boosted };
+  const inside = (layerId: string) => [...elements.keys()].filter((id) => id !== layerId && contains(layerId, id) && !composition.layers.some((other) => other.id !== layerId && other.kind !== "background" && contains(layerId, other.id) && contains(other.id, id)));
   for (const layer of characters) {
-    if (motionAnonymousLayer(layer) || nodes.some((node) => node.id === layer.id && node.representation === "detail") || result.animations.some((track) => track.channel === "actor" && (contains(layer.id, track.target) || contains(track.target, layer.id)))) continue;
-    const chest = policy.chestSuffixes.map((suffix) => layer.id + suffix).find((id) => elements.has(id) && contains(layer.id, id));
-    const head = chest ? undefined : style.headSuffixes.map((suffix) => layer.id + suffix).find((id) => elements.has(id) && contains(layer.id, id));
+    if (motionAnonymousLayer(layer) || nodes.some((node) => node.id === layer.id && node.representation === "detail")) continue;
+    const parts = inside(layer.id);
+    const bodyMoving = result.animations.some((track) => track.channel === "actor" && track.attribute === "transform" && (track.target === layer.id || (contains(layer.id, track.target) && policy.BODY_PART.test(track.target))));
+    const anyMoving = result.animations.some((track) => track.channel === "actor" && (contains(layer.id, track.target) || contains(track.target, layer.id)));
+    if (bodyMoving || (anyMoving && !style.bodyFallback)) continue;
+    const exactChest = policy.chestSuffixes.map((suffix) => layer.id + suffix).find((id) => elements.has(id) && contains(layer.id, id));
+    const exactHead = style.headSuffixes.map((suffix) => layer.id + suffix).find((id) => elements.has(id) && contains(layer.id, id));
+    const chestCandidate = exactChest || (style.bodyFallback ? parts.find((id) => policy.CHEST_PART.test(id) && !parts.some((child) => child !== id && contains(id, child) && policy.ATTACHED_TO_CHEST.test(child))) : undefined);
+    const headCandidate = exactHead || (style.bodyFallback && style.headBob ? parts.find((id) => policy.HEAD_PART.test(id)) : undefined);
+    const usable = (candidate: string | undefined, isChest: boolean): boolean =>
+      !!candidate &&
+      !result.animations.some((track) => track.target === candidate && track.attribute === "transform") &&
+      !composition.layers.some((other) => other.id !== layer.id && contains(candidate, other.id)) &&
+      ![...elements.keys()].some((id) => contains(candidate, id) && (isChest ? /(?:^|_)(?:head|neck|hand|arm|pelvis|hip|leg|foot|feet|knee|seat|base)(?:_|$)/i : policy.CONTACT_PART).test(id));
+    const chest = usable(chestCandidate, true) ? chestCandidate : undefined;
+    const head = chest ? undefined : usable(headCandidate, false) ? headCandidate : undefined;
     const target = chest || head;
-    if (!target || result.animations.some((track) => track.target === target && track.attribute === "transform")) continue;
-    const foreignSubject = composition.layers.some((other) => other.id !== layer.id && contains(target, other.id));
-    const contactPart = [...elements.keys()].some((id) => contains(target, id) && (chest ? /(?:^|_)(?:head|neck|hand|arm|pelvis|hip|leg|foot|feet|knee|seat|base)(?:_|$)/i : /(?:^|_)(?:hand|arm|pelvis|hip|leg|foot|feet|knee|seat|base)(?:_|$)/i).test(id));
-    if (foreignSubject || contactPart) continue;
+    if (!target) continue;
     const bob = Number((asset.height * style.headBob).toFixed(2));
     const track: MotionSceneAnimation = {
       target,
@@ -77,7 +104,7 @@ export const compositionActorMotion = (composition: MotionSceneComposition, asse
     result = { ...result, animations: [...result.animations, track] };
     added++;
   }
-  return { composition: result, added, removed };
+  return { composition: result, added, removed, boosted };
 };
 export const compositionEffectMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile, effects: MotionRemotionEffect[] = []): { composition: MotionSceneComposition; added: number } => {
   if (behavior?.actors === "fixed" || behavior?.sceneEffects !== "gentle") return { composition, added: 0 };
@@ -98,7 +125,7 @@ export const compositionEffectMotion = (composition: MotionSceneComposition, ass
     const base = elements.get(layer.id)!.attributes;
     const opacity = base.opacity === undefined ? 1 : Number(base.opacity);
     if (!Number.isFinite(opacity) || opacity <= 0 || opacity > 1) continue;
-    const period = policy.effectSeconds;
+    const period = style.effectSeconds ?? policy.effectSeconds;
     const tracks: MotionSceneAnimation[] = [
       {
         target: layer.id,

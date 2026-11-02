@@ -1,5 +1,6 @@
 import { MOTION_SPOKEN_NUMBERS as N } from "../constants/motionSpokenNumbers.js";
 import type { MotionBeat } from "../types/motionVideo.js";
+import { motionLanguage } from "./motionLanguage.js";
 const groupEn = (n: number): string => (n < 20 ? N.EN[n] : n < 100 ? [N.TENS[Math.floor(n / 10)], n % 10 ? N.EN[n % 10] : ""].filter(Boolean).join(" ") : [N.EN[Math.floor(n / 100)], N.HUNDRED.en, n % 100 ? groupEn(n % 100) : ""].filter(Boolean).join(" "));
 const groupVi = (n: number, padded = false): string => {
   const h = Math.floor(n / 100),
@@ -24,6 +25,7 @@ export const motionSpokenInteger = (value: string, language: string): string => 
   return parts.join(" ");
 };
 export const normalizeMotionSpokenText = (value: string, language: string, knownNames: string[] = []): string => {
+  if (motionLanguage(language).numbers !== N.SPOKEN) return value;
   const protectedValues: string[] = [];
   let result = /^vi/i.test(language) ? value : value.replace(/\b\d{1,3}(?:,\d{3})+\b/g, (match) => motionSpokenInteger(match.replaceAll(",", ""), language));
   if (!/^vi/i.test(language))

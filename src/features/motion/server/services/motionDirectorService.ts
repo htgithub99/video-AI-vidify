@@ -26,7 +26,6 @@ import {
   MOTION_TEXT_CUT,
   MOTION_TEXT_DIP,
   MOTION_TEXT_DOCUMENTARY,
-  MOTION_TEXT_EN,
   MOTION_TEXT_ENDING,
   MOTION_TEXT_FADE,
   MOTION_TEXT_FFB070,
@@ -43,12 +42,13 @@ import {
   MOTION_TEXT_TITLE,
 } from "../../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_DIRECTOR_PATTERNS as P } from "../../../../constants/motionVideo.js";
+import { motionLanguage, motionLanguageRate, motionSpeechUnits } from "../../../../lib/motionLanguage.js";
 import type { MotionBeat, MotionGenState, MotionShot, MotionSpec, MotionStoryAnalysis, MotionStoryScript, MotionVoiceClip, MotionVoiceTrack } from "../../../../types/motionVideo.js";
 const NON_SCENE_TRANSITION_IN = 0.55;
 const GRAPHIC_HOLD = [MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_STATS, MOTION_TEXT_COUNTER, MOTION_TEXT_MAP, MOTION_TEXT_TIMELINE, MR.MOTION_TEXT_STARMAP, MR.MOTION_TEXT_BITMAP, MOTION_TEXT_HEADLINE, MOTION_HISTORY.GEOMAP, MOTION_HISTORY.ICONS, MOTION_HISTORY.VERDICT, MOTION_HISTORY.SCOREBOARD];
-const countUnits = (text: string): number => _.size(_.compact(_.toString(text).split(P.WORDS)));
+const countUnits = (text: string): number => motionSpeechUnits(text);
 export const estimateBeatSeconds = (beat: MotionBeat, language: string): number => {
-  const rate = language === MOTION_TEXT_EN ? MOTION_STORY_CONFIG.EN_WORDS_PER_SECOND : MOTION_STORY_CONFIG.VI_SYLLABLES_PER_SECOND;
+  const rate = motionLanguageRate(language);
   const pauses = (beat.narration.match(P.PUNCTUATION) || []).length * 0.18;
   return Math.max(1.2, countUnits(beat.narration) / rate + pauses);
 };
@@ -96,10 +96,10 @@ const splitSubtitle = (text: string, max: number): string[] => {
       if (line.trim()) out.push(line.trim());
     }
   }
-  return out;
+  return out.flatMap((piece) => (piece.length > max && P.SPACELESS.test(piece) ? (piece.match(new RegExp(`.{1,${max}}`, "gu")) || [piece]) : [piece]));
 };
-export const buildSubtitles = (beat: MotionBeat, start: number, end: number): { start: number; end: number; text: string }[] => {
-  const pieces = splitSubtitle(beat.narration, MOTION_STORY_CONFIG.SUBTITLE_MAX_CHARS);
+export const buildSubtitles = (beat: MotionBeat, start: number, end: number, language?: string): { start: number; end: number; text: string }[] => {
+  const pieces = splitSubtitle(beat.narration, language ? motionLanguage(language).subtitle.maxChars : MOTION_STORY_CONFIG.SUBTITLE_MAX_CHARS);
   const weights = _.map(pieces, (p) => countUnits(p) + (P.SENTENCE_END.test(p) ? 0.8 : 0));
   const total = _.sum(weights) || 1;
   let t = start;
@@ -294,9 +294,9 @@ export const compileStorySpec = (script: MotionStoryScript, analysis: MotionStor
       for (const clip of lines) {
         const lineBeat = { ...beat, narration: clip.text };
         const spoken = spokenClip(beat, clip, [PUPPET_C.DIALOGUE]);
-        subtitles.push(..._.map(buildSubtitles(lineBeat, clip.start, clip.end), (sub) => (spoken ? { ...sub, dialogue: true } : sub)));
+        subtitles.push(..._.map(buildSubtitles(lineBeat, clip.start, clip.end, script.language), (sub) => (spoken ? { ...sub, dialogue: true } : sub)));
       }
-    } else if (!_.includes([MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_ENDING, MOTION_TEXT_HEADLINE], beat.visual)) subtitles.push(...buildSubtitles(beat, starts[i], ends[i]));
+    } else if (!_.includes([MOTION_TEXT_TITLE, MOTION_TEXT_QUOTE, MOTION_TEXT_ENDING, MOTION_TEXT_HEADLINE], beat.visual)) subtitles.push(...buildSubtitles(beat, starts[i], ends[i], script.language));
   });
   for (let i = 1; i < shots.length; i++) if (shots[i].start < shots[i - 1].end) shots[i - 1].end = shots[i].start;
   linkPuppetVisualFrames(shots);

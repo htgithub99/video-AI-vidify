@@ -9,6 +9,7 @@ import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { runMotionAudioProcess, motionWavHeader } from "./motionSoundMixService.js";
 import { motionAudioHash as hash } from "./motionAudioUtils.js";
 import { motionMusicMoodKey } from "../../../../lib/motionMusic.js";
+import { motionStorytellingPreset } from "../../../../lib/motionStorytelling.js";
 interface MotionStereoAudio {
   left: Float32Array;
   right: Float32Array;
@@ -17,16 +18,21 @@ interface MotionStereoAudio {
 export const motionMusicMood = (analysis: MotionStoryAnalysis | null | undefined, wanted?: string): string => {
   return motionMusicMoodKey(wanted) || motionMusicMoodKey(analysis?.musicMood) || M.GENRE_MOOD[_.toString(analysis?.videoGenre)] || M.SFX_MOOD[_.toString(analysis?.sfxMood)] || M.DEFAULT_MOOD;
 };
+const stageMood = (analysis: MotionStoryAnalysis | null | undefined, chapter: { musicMood?: string; stages?: string[] }): string | undefined => {
+  if (!analysis || !motionStorytellingPreset(analysis.storytelling).dramaticAudio) return undefined;
+  const stage = (chapter.stages || []).find((item) => M.STAGE_MOOD[item]);
+  return stage ? M.STAGE_MOOD[stage] : undefined;
+};
 export const motionMusicSegments = (analysis: MotionStoryAnalysis | null | undefined, beats: { chapterId: string }[], starts: number[]): MotionMusicSegment[] => {
   const base = motionMusicMood(analysis);
   const out: MotionMusicSegment[] = [{ start: 0, mood: base }];
   for (const chapter of analysis?.chapters || []) {
     const index = _.findIndex(beats, (beat) => beat.chapterId === chapter.id);
     if (index < 0) continue;
-    const mood = motionMusicMoodKey(chapter.musicMood) || base;
+    const mood = motionMusicMoodKey(chapter.musicMood) || stageMood(analysis, chapter) || base;
     const at = index === 0 ? 0 : +starts[index].toFixed(2);
     if (at === 0) out[0].mood = mood;
-    else if (_.last(out)!.mood !== mood) out.push({ start: at, mood });
+    else if (_.last(out)!.mood !== mood && at - _.last(out)!.start >= M.STAGE_MIN_SECONDS) out.push({ start: at, mood });
   }
   return out;
 };

@@ -463,6 +463,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
         await assertMotionSpeechAudio(speech, duration, signal);
       }
       const renderStarted = Date.now();
+      let loggedPercent = 0;
       await renderRemotionVideo(spec, silent, {
         width,
         height,
@@ -475,6 +476,11 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
           const seconds = (Date.now() - renderStarted) / 1000;
           job.fpsRender = seconds > 0 ? frames / seconds : 0;
           job.etaSeconds = job.fpsRender ? Math.max(0, (total - frames) / job.fpsRender) : undefined;
+          const percent = Math.floor((frames / total) * 100 / MOTION_REMOTION_RENDER.PROGRESS_STEP) * MOTION_REMOTION_RENDER.PROGRESS_STEP;
+          if (percent > loggedPercent && percent < 100) {
+            loggedPercent = percent;
+            pushLog(job, MOTION_REMOTION_RENDER.PROGRESS(percent, job.fpsRender));
+          }
           persistRenderJob(job);
         },
       });

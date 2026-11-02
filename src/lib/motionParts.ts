@@ -1,3 +1,4 @@
+import { motionLanguage } from "./motionLanguage.js";
 import _ from "lodash";
 import { MOTION_PARTS as P } from "../constants/motionParts.js";
 import type { MotionChapter, MotionGenState, MotionSeriesPart, MotionSeriesState, MotionStoryAnalysis } from "../types/motionVideo.js";
@@ -34,7 +35,7 @@ export const motionPartAnalysis = (full: MotionStoryAnalysis, parts: MotionSerie
   const after = _.filter(full.chapters, (c) => _.includes(parts[index + 1]?.chapterIds || [], c.id));
   const lastBefore = _.last(before),
     firstAfter = _.first(after);
-  const title = (language === P.EN ? P.TITLE.en : P.TITLE.vi)(full.title, index + 1, parts.length);
+  const title = motionLanguage(language).partTitle(full.title, index + 1, parts.length);
   return { ...full, title, chapters, series: _.omitBy({ index, count: parts.length, previous: lastBefore ? lastBefore.handoff || lastBefore.summary : undefined, next: firstAfter ? _.compact([firstAfter.title, firstAfter.hook || firstAfter.summary]).join(P.NEXT_JOIN) : undefined }, _.isUndefined) as MotionStoryAnalysis["series"] };
 };
 export const motionCarryGen = (gen?: MotionGenState): Partial<MotionGenState> | undefined => (gen ? ({ ..._.pick(gen, P.CARRY_KEYS), ...(gen.remotion ? { remotion: { ...gen.remotion, scenes: {}, inputKeys: {}, failures: {}, drafts: {}, notes: {} } } : {}) } as Partial<MotionGenState>) : undefined);

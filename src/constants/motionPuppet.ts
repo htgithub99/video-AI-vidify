@@ -34,7 +34,7 @@ export const PUPPET = {
   LANES: 3,
   NFC: "NFC",
   NORM_STRIP_RE: /[^\p{L}\p{N}]+/gu,
-  SENTENCE_RE: /[^.!?…]+[.!?…]+["”']?|[^.!?…]+$/g,
+  SENTENCE_RE: /[^.!?…。！？]+[.!?…。！？]+["”'』」]?|[^.!?…。！？]+$/g,
   DIALOGUE: "dialogue",
   PACING_LABEL: "pacing: ",
   LIGHT_LABEL: "light: ",

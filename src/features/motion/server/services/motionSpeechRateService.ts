@@ -6,6 +6,7 @@ import path from "path";
 import { createHash } from "crypto";
 import * as MR from "../../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG as C } from "../../../../constants/motionVideo.js";
+import { motionLanguageCode, motionLanguageRate, motionSpeechUnits } from "../../../../lib/motionLanguage.js";
 import { MOTION_VOICE_LIBRARY, MOTION_VOICE_SPEED as V, MOTION_VOICE, MOTION_VOICE_PACING } from "../../../../constants/motionVoice.js";
 import type { MotionStoryScript, MotionVoiceSpeedSettings } from "../../../../types/motionVideo.js";
 import { findVoiceChannel, readVoiceLibrary, readMotionVoiceLibraryJson } from "./motionVoiceLibraryService.js";
@@ -26,13 +27,10 @@ const readStore = (): SpeechRateStore => {
     return { global: {}, channels: {}, profiles: {} };
   }
 };
-const languageOf = (value: unknown): string => (value === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI);
+const languageOf = (value: unknown): string => motionLanguageCode(value);
 const channelOf = (ref: unknown): string => _.toString(ref).split(MOTION_VOICE_LIBRARY.REF_SEPARATOR)[0] || GLOBAL_KEY;
-export const speechUnits = (text: unknown): number =>
-  _.toString(text)
-    .split(/\s+/)
-    .filter((word) => /[\p{L}\p{N}]/u.test(word)).length;
-export const defaultSpeechRate = (language: unknown): number => (languageOf(language) === MR.MOTION_TEXT_EN ? C.EN_WORDS_PER_SECOND : C.VI_SYLLABLES_PER_SECOND);
+export const speechUnits = (text: unknown): number => motionSpeechUnits(text);
+export const defaultSpeechRate = (language: unknown): number => motionLanguageRate(language);
 const speechProfile = (channelRef: unknown) => {
   const channel = findVoiceChannel(_.toString(channelRef));
   const settings = readMotionVoiceLibraryJson<Partial<MotionVoiceSpeedSettings>>(V.FILE, {});
@@ -57,6 +55,12 @@ const speechProfile = (channelRef: unknown) => {
   return { key, referenceRate, legacy: !channel && !target };
 };
 export const motionSpeechRateProfile = (channelRef: unknown): string => speechProfile(channelRef).key;
+export const motionSpeechRateMeasured = (channelRef: unknown, language: unknown): boolean => {
+  const store = readStore();
+  const lang = languageOf(language);
+  const profile = speechProfile(channelRef);
+  return !!(store.profiles[profile.key]?.[lang] || profile.referenceRate || (profile.legacy && (store.channels[channelOf(channelRef)]?.[lang] || store.global[lang])));
+};
 export const motionSpeechRate = (channelRef: unknown, language: unknown): number => {
   const store = readStore();
   const lang = languageOf(language);

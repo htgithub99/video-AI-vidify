@@ -26,9 +26,14 @@ import { motionDisplayedJob } from "../lib/motionDisplayedJob.js";
 import { MOTION_REFERENCE_TEXTS } from "../../../constants/motionReference.js";
 import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, motionVideoGenre, type MotionVideoGenre } from "../../../constants/motionGenre.js";
+import { MOTION_STORYTELLING_MODES, type MotionStorytellingMode } from "../../../constants/motionStorytelling.js";
+import { motionStorytelling, motionStorytellingText } from "../../../lib/motionStorytelling.js";
+import { MOTION_RENAME } from "../../../constants/motionRename.js";
+import { MOTION_LANGUAGES, MOTION_LANGUAGE_CODES } from "../../../constants/motionLanguages/index.js";
+import { motionLanguageCode } from "../../../lib/motionLanguage.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Languages, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, ShieldCheck, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { isRemotionSpec } from "../../../lib/motionVisual.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
@@ -71,7 +76,6 @@ import {
   MOTION_TEXT_COLOR,
   MOTION_TEXT_DA_DOC_NGUON,
   MOTION_TEXT_DOAN,
-  MOTION_TEXT_EN,
   MOTION_TEXT_END,
   MOTION_TEXT_ENTITIES_CAST,
   MOTION_TEXT_FACTS,
@@ -231,6 +235,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
       .catch(_.noop);
   }, [state.stylePreset, state.styleReferences?.length]);
   const genreText = MOTION_VIDEO_GENRE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
+  const storytellingText = motionStorytellingText(currentLang);
+  const renameText = MOTION_RENAME.TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const [previewModal, setPreviewModal] = useState<MotionPreviewModalData | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const previewText = ASSET_PREVIEW.LABEL[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
@@ -451,10 +457,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       </option>
                     ))}
                   </MotionSelectField>
-                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.LANGUAGE}</span>
-                    <MotionToggle checked={state.language === MOTION_TEXT_VI} label={text.LANGUAGE} icon={Languages} text={state.language === MOTION_TEXT_VI ? text.LANG_VI : text.LANG_EN} title={text.LANGUAGE} disabled={studio.storyBusy} onClick={() => patch({ language: state.language === MOTION_TEXT_VI ? MOTION_TEXT_EN : MOTION_TEXT_VI })} />
-                  </div>
+                  <MotionSelectField label={text.LANGUAGE} value={motionLanguageCode(state.language)} onChange={(e) => patch({ language: motionLanguageCode(e.target.value) })} disabled={studio.storyBusy} title={text.LANGUAGE} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {MOTION_LANGUAGE_CODES.map((code) => (
+                      <option key={code} value={code}>
+                        {MOTION_LANGUAGES[code].label[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI]}
+                      </option>
+                    ))}
+                  </MotionSelectField>
                   <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                     <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_AUTO_PIPELINE : MR.MOTION_TEXT_TU_DONG_KICH_BAN}</span>
                     <MotionToggle
@@ -466,6 +475,17 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       disabled={studio.storyBusy}
                       onClick={() => patch({ autoContinue: state.autoContinue === false })}
                     />
+                  </div>
+                  <MotionSelectField label={storytellingText.LABEL} value={motionStorytelling(state.storytelling)} onChange={(e) => patch({ storytelling: e.target.value as MotionStorytellingMode })} disabled={studio.storyBusy} title={storytellingText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
+                    {_.map(MOTION_STORYTELLING_MODES, (mode) => (
+                      <option key={mode} value={mode}>
+                        {storytellingText.OPTIONS[mode]}
+                      </option>
+                    ))}
+                  </MotionSelectField>
+                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
+                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{renameText.LABEL}</span>
+                    <MotionToggle checked={state.renameEntities === true} label={renameText.LABEL} icon={ShieldCheck} text={state.renameEntities ? renameText.ON : renameText.OFF} title={renameText.HINT} disabled={studio.storyBusy} onClick={() => patch({ renameEntities: state.renameEntities !== true })} />
                   </div>
                 </MotionSettingsGroup>
                 <MotionSettingsGroup title={MOTION_SETTINGS_TEXT[currentLang].AUDIO}>
@@ -501,7 +521,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 <MotionSettingsGroup title={MOTION_SETTINGS_TEXT[currentLang].VISUAL}>
                   <MotionSelectField
                     label={MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI].label}
-                    value={state.visualSettings.pacing || MOTION_SCENE_PACING.DEFAULT}
+                    value={state.visualSettings.pacing || MOTION_SCENE_PACING.GENRE_DEFAULT[motionVideoGenre(state.videoGenre)] || MOTION_SCENE_PACING.DEFAULT}
                     onChange={(event) => patch({ visualSettings: { ...state.visualSettings, pacing: event.target.value as MotionScenePacing } })}
                     disabled={studio.storyBusy || studio.renderBusy}
                     title={MOTION_SCENE_PACING.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI].hint}

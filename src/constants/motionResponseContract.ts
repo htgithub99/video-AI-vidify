@@ -3,6 +3,8 @@ import { MOTION_QA as Q } from "./motionQa.js";
 import { MOTION_APPEARANCE as APPEARANCE } from "./motionAppearance.js";
 import { MOTION_REMOTION_SCHEMAS } from "./motionRemotionPrompts.js";
 import { MOTION_EDITORIAL_POLICY } from "./motionEditorialPolicy.js";
+import { MOTION_RENAME } from "./motionRename.js";
+import { MOTION_GENRE_FRAME_LIST, MOTION_GENRE_HOOK_LIST, MOTION_GENRE_SHOT_LIST } from "./motionGenres/vocabulary.js";
 export interface MotionResponseSchema {
   type?: "object" | "array" | "string" | "number" | "integer" | "boolean" | "null";
   properties?: Record<string, MotionResponseSchema>;
@@ -21,7 +23,9 @@ export const MOTION_RESPONSE_LIMITS = { TOPIC_CHARS: 100, MEANING_CHARS: 500, EV
 export const MOTION_RESPONSE_VALUES = {
   TIMES: ["day", "dusk", "night", "dawn", "overcast", "interior", "interior_dark"],
   WEATHERS: ["none", "rain", "snow", "fog"],
-  SHOTS: ["wide", "medium", "close", "over_shoulder", "low", "high", "aerial", "insert"],
+  SHOTS: MOTION_GENRE_SHOT_LIST,
+  FRAMES: MOTION_GENRE_FRAME_LIST,
+  HOOKS: MOTION_GENRE_HOOK_LIST,
   VISUALS: ["scene", "title", "chapter", "quote", "stats", "counter", "map", "timeline", "starmap", "bitmap", "headline", "ending", "geomap", "icons", "verdict", "scoreboard"],
 };
 const text: MotionResponseSchema = { type: "string", minLength: 1 };
@@ -133,7 +137,7 @@ const read = object({ i: integer, focus: text, who: strings(), place: text, acti
   "states",
   "visual",
 ]);
-const beat = object({ id: text, narration: text, visual: choice(...MOTION_RESPONSE_VALUES.VISUALS), place: text, cast: strings(), action: text, time: choice(...MOTION_RESPONSE_VALUES.TIMES), weather: choice(...MOTION_RESPONSE_VALUES.WEATHERS), shot: choice(...MOTION_RESPONSE_VALUES.SHOTS), scenePlan: MOTION_SCENE_PLAN_SCHEMA, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }, [
+const beat = object({ id: text, narration: text, visual: choice(...MOTION_RESPONSE_VALUES.VISUALS), place: text, cast: strings(), action: text, time: choice(...MOTION_RESPONSE_VALUES.TIMES), weather: choice(...MOTION_RESPONSE_VALUES.WEATHERS), shot: choice(...MOTION_RESPONSE_VALUES.SHOTS), subject: text, frame: choice(...MOTION_RESPONSE_VALUES.FRAMES), hook: choice(...MOTION_RESPONSE_VALUES.HOOKS), scenePlan: MOTION_SCENE_PLAN_SCHEMA, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }, [
   "narration",
   "visual",
 ]);
@@ -164,8 +168,9 @@ export const MOTION_ANALYSIS_SCHEMA = object({
   cast: array(object({ ...texts("key", "name", "role", "look", "description"), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["key", "name"])),
   places: array(object({ ...texts("key", "name", "description"), interior: boolean, time: choice(...MOTION_RESPONSE_VALUES.TIMES) }, ["key", "name", "description"])),
   chapters: array(object({ ...texts("id", "title", "summary"), writing, keyPoints: strings(), hook: plainText, handoff: plainText, from: number, to: number, weight: number, mustKeep: boolean }, ["id", "title", "summary"]), 1),
+  renameMap: array(object({ ...texts("source", "renamed"), kind: choice(...MOTION_RENAME.KINDS) }, ["source", "renamed"])),
 });
-for (const schema of [story, MOTION_ANALYSIS_SCHEMA]) schema.required = schema.required?.filter((key) => key !== "writingPlan");
+for (const schema of [story, MOTION_ANALYSIS_SCHEMA]) schema.required = schema.required?.filter((key) => key !== "writingPlan" && key !== MOTION_RENAME.MAP_FIELD);
 export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   ...MOTION_REMOTION_SCHEMAS,
   "motion-story-analysis": MOTION_ANALYSIS_SCHEMA,
@@ -175,7 +180,7 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   "motion-folk-source-topic": object({ name: { ...text, maxLength: MOTION_RESPONSE_LIMITS.TOPIC_CHARS }, meaning: { ...text, maxLength: MOTION_RESPONSE_LIMITS.MEANING_CHARS }, aliases: { ...array({ ...text, maxLength: MOTION_RESPONSE_LIMITS.TOPIC_CHARS }, 1), maxItems: MOTION_RESPONSE_LIMITS.ALIASES_MAX }, evidence: { ...text, maxLength: MOTION_RESPONSE_LIMITS.EVIDENCE_CHARS } }),
   "motion-story-doctor": story,
   "motion-story-chapter": object({ chapterId: text, beats: array(beat, 1) }),
-  "motion-story-edit": object({ edits: array(object({ ...texts("id", "narration", "reason"), utterances: array(MOTION_UTTERANCE_SCHEMA, 1), action: plainText, scenePlan: MOTION_SCENE_PLAN_SCHEMA, drop: boolean }, ["id", "narration", "reason"])) }),
+  "motion-story-edit": object({ edits: array(object({ ...texts("id", "narration", "reason"), utterances: array(MOTION_UTTERANCE_SCHEMA, 1), action: plainText, scenePlan: MOTION_SCENE_PLAN_SCHEMA, visual: choice(...MOTION_RESPONSE_VALUES.VISUALS), shot: choice(...MOTION_RESPONSE_VALUES.SHOTS), subject: plainText, frame: choice(...MOTION_RESPONSE_VALUES.FRAMES), drop: boolean }, ["id", "narration", "reason"])) }),
   "motion-voice-direction": object({ beats: array(object({ id: text, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }), 1) }),
   "motion-audio-casting": object({ audioDirection: object(texts("mode", "narrationStyle", "soundStyle")), roles: array(object({ ...texts("speaker", "voiceId"), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["speaker", "voiceId"]), 1) }),
   "motion-puppet-storyboard": object({ units: array(object({ id: text, from: object({ line: integer, cue: text, occurrence: integer }, ["line"]), ...texts("scene", "show"), purpose: choice("establish", "action", "clue", "reaction", "explanation", "transition"), read: { ...read, required: read.required!.filter((key) => key !== "i") } }, ["from", "scene", "purpose", "show"]), 1) }),

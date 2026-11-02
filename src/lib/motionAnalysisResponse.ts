@@ -18,9 +18,10 @@ export const normalizeMotionAnalysisResponse = (value: any): any => {
   return { ...value, ...restored, videoDna: normalizeMotionDnaResponse(dna) };
 };
 export const motionAnalysisResponseErrors = (raw: any): string[] => motionResponseErrors(normalizeMotionAnalysisResponse(raw), validationSchema);
-export const motionAnalysisRepairPrompt = (draft: any, errors: string[], sourceContext?: string): string => {
-  if (errors.every((error) => error.startsWith(RT_CORE.VIDEODNA))) return motionDnaRepairPrompt(draft, errors);
-  const issues = motionResponseIssues(draft, validationSchema);
+export const motionAnalysisRepairPrompt = (draft: any, errors: string[], sourceContext?: string, extraIssues: { path: string; expected: string; actual: string; value: string }[] = []): string => {
+  if (errors.length && errors.every((error) => error.startsWith(RT_CORE.VIDEODNA))) return motionDnaRepairPrompt(draft, errors);
+  const schemaIssues = motionResponseIssues(draft, validationSchema);
+  const issues = schemaIssues.length ? schemaIssues : extraIssues;
   const fields = [...new Set(issues.map((issue) => issue.path.split(/[.\[]/)[0]))];
   return (
     R.ANALYSIS_REPAIR +

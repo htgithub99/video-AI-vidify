@@ -90,6 +90,8 @@ export const MOTION_MUSIC = {
   },
   MIX_OUT: "[out]",
   GENRE_MOOD: { pov: "tense", witness: "tense", chronicle: "tense", verdict: "tense" } as Record<string, string>,
+  STAGE_MOOD: { losses: "sad", signs: "tense", rules: "eerie", remedy: "warm", broken_rule: "tense", climax: "eerie", price: "sad", coda: "warm", ordinary: "warm", summons: "tense", preparation: "epic", waiting: "tense", ordeal: "tense", grind: "sad", loss: "sad", end: "warm", opening: "epic", era: "tense", finale: "epic", candidate: "tense", verdict: "epic" } as Record<string, string>,
+  STAGE_MIN_SECONDS: 60,
   SFX_MOOD: { dark: "tense", horror: "eerie", sad: "sad", warm: "warm", epic: "epic", playful: "playful", tense: "tense" } as Record<string, string>,
   CUE_TEMPLATES: ["title", "chapter", "verdict", "ending", "scoreboard"],
   LOG: { BUILT: (mood: string): string => `Đã soạn nhạc nền (${mood})` },

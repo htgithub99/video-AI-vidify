@@ -1,3 +1,4 @@
+import { motionLanguage } from "../../../../lib/motionLanguage.js";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -20,6 +21,8 @@ import { getMotionWorkDirectory } from "./motionLibraryService.js";
 import { genPreviewDir } from "./puppet/genState.js";
 import { motionThumbnailStyle, prepareMotionThumbnailReferences } from "./motionThumbnailReferences.js";
 import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis, MotionStoryScript } from "../../../../types/motionVideo.js";
+import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
+import { motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
 const dependencies = { runMotionAi, rasterizeMotionSvgs, prepareMotionThumbnailReferences };
 export const createMotionThumbnailService = (overrides: Partial<typeof dependencies> = {}) => {
@@ -53,7 +56,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         requestId,
         videoTitle: title,
         logline: analysis.logline,
-        language: opts.language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_ENGLISH : MR.MOTION_TEXT_VIETNAMESE,
+        language: motionLanguage(opts.language).promptName,
         width,
         height,
         audience: analysis.videoDna?.audienceProfile,
@@ -65,6 +68,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         keyMoments: analysis.chapters.slice(0, 6).map((chapter) => chapter.hook || chapter.title),
         genre: motionVideoGenrePackaging(analysis.videoGenre),
         userNote: opts.note || "",
+        ...(motionRenameMapActive(analysis).length ? { renaming: RENAME.PROMPT.THUMBNAIL } : {}),
       };
       const prompt = withMotionResponsePrompt(T.ARTIFACT, [T.DRAW_TASK, T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, stringifyJson(brief)].join("\n"));
       const contract: MotionAiResponseContract = {
@@ -88,6 +92,11 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       };
       const vector = overrides.runMotionAi ? await requestMotionAiContract(prompt, exec, (question) => deps.runMotionAi(question, T.ARTIFACT, exec, opts.signal, opts.log, images), contract, opts.signal) : await deps.runMotionAi(prompt, T.ARTIFACT, exec, opts.signal, opts.log, images, 0, contract);
       opts.signal?.throwIfAborted();
+      const renameMap = motionRenameMapActive(analysis);
+      if (renameMap.length) {
+        const leaked = [...new Set([...vector.svg.matchAll(RENAME.SVG_TEXT)].flatMap((match) => motionRenameLeaks(match[1], renameMap)))];
+        if (leaked.length) opts.log?.(RENAME.LOG.THUMBNAIL_LEAK(leaked));
+      }
       const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}.png`);
       await fs.promises.writeFile(file.replace(/\.png$/u, ".svg"), vector.svg);
       opts.log?.(T.RENDER_LOG);

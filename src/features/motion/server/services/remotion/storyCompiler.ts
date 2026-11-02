@@ -1,3 +1,4 @@
+import { motionLanguage } from "../../../../../lib/motionLanguage.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
@@ -65,8 +66,8 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
       timedLines.push({ line, start: startAt(lineIndex), end: clip ? clip.start + ((clip.end - clip.start) * after) / chars : lineIndex + 1 < lines.length ? startAt(lineIndex + 1) : beatEnd / fps });
     });
     if (opts.subtitles !== false) {
-      if (clips.length) for (const clip of clips) subtitles.push(...buildSubtitles({ ...beat, narration: clip.text }, clip.start, clip.end));
-      else subtitles.push(...buildSubtitles(beat, timeline.starts[index], timeline.ends[index]));
+      if (clips.length) for (const clip of clips) subtitles.push(...buildSubtitles({ ...beat, narration: clip.text }, clip.start, clip.end, script.language));
+      else subtitles.push(...buildSubtitles(beat, timeline.starts[index], timeline.ends[index], script.language));
     }
   });
   const positions = new Map(timedLines.map((item, index) => [item.line.key, index]));
@@ -109,6 +110,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),
     scenes,
     subtitles,
+    fontFamily: motionLanguage(script.language).subtitle.fontFamily,
     music: { mood: motionMusicMood(analysis), cues: [], segments: motionMusicSegments(analysis, script.beats, timeline.starts) },
   };
   return { spec: validateRemotionSpec(spec), starts: timeline.starts, sfxCues: compileRemotionSound(spec, script, timeline.starts, timeline.ends, opts.voiceTrack), missing };

@@ -7,6 +7,7 @@ import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior
 import { motionCameraFrame } from "../../../lib/motionCamera.js";
 import { MOTION_PROFILE_MOTION } from "../../../constants/motionProfileMotion.js";
 import { motionSceneCameraDirection, motionSceneSubjectPoint } from "../../../lib/motionSceneCamera.js";
+import { motionSceneCropFrame } from "../../../lib/motionSceneCrop.js";
 import { remotionPoint, remotionVisibleRect } from "../../../lib/motionRemotionGeometry.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
 import type { MotionRemotionProfile, MotionRemotionScene, MotionRemotionNode, MotionRemotionPlacedNode, MotionVectorAsset, MotionRemotionTimedScene, MotionRenderBehavior, MotionVisualRect } from "../../../types/motionVisual.js";
@@ -76,6 +77,11 @@ export const remotionCameraRange = (scene: MotionRemotionTimedScene | undefined,
 };
 export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: number, scene: MotionRemotionTimedScene | undefined, width: number, height: number, fps = 30, scenes: MotionRemotionTimedScene[] = [], assets: Record<string, MotionVectorAsset> = {}, profile?: MotionRemotionProfile) => {
   const camera = profile ? MOTION_PROFILE_MOTION[profile].camera : undefined;
+  if (scene?.crop) {
+    const still = behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED;
+    const progress = still ? 0 : (seconds - scene.startFrame / fps) / Math.max(1 / fps, (scene.endFrame - scene.startFrame) / fps);
+    return { ...motionSceneCropFrame(scene.crop, width, height, progress), mode: "push" as const };
+  }
   if (behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED) return { scale: 1, x: 0, y: 0, mode: scene?.composition?.design?.cameraMotion?.mode || "hold" };
   const view = remotionSceneView(scene, width, height, assets);
   const range = remotionCameraRange(scene, scenes);

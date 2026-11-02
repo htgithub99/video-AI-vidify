@@ -22,7 +22,7 @@ export const MOTION_STORY_LENGTH_SECONDS: Partial<Record<MotionStoryLength, numb
   [MotionStoryLength.ONE_HUNDRED_FIVE]: 6300,
   [MotionStoryLength.SHORT]: 75,
 };
-export const MOTION_DIRECTOR_PATTERNS = { WORDS: /\s+/, PUNCTUATION: /[,.;:!?…]/g, SENTENCES: /[^.!?…]+[.!?…]*["”»)]*/g, CLAUSES: /(?<=[,;:–—])\s+/, SENTENCE_END: /[,.;:!?…]$/, BITMAP: /[^01#.* ]/g } as const;
+export const MOTION_DIRECTOR_PATTERNS = { WORDS: /\s+/, PUNCTUATION: /[,.;:!?…、，。！？；：]/g, SENTENCES: /[^.!?…。！？]+[.!?…。！？]*["”»)』」]*/g, CLAUSES: /(?<=[,;:–—])\s+|(?<=[、，；：])/, SENTENCE_END: /[,.;:!?…。！？、，]$/, SPACELESS: /^\S+$/, BITMAP: /[^01#.* ]/g } as const;
 export interface MotionQualityPreset {
   id: MotionQuality;
   scale: number;
@@ -102,6 +102,7 @@ export const MOTION_STORY_CONFIG = {
   EN_WORDS_PER_SECOND: 2.4,
   TARGET_BEAT_SECONDS: 7,
   LENGTH_SAFETY: 0.92,
+  LENGTH_SAFETY_MEASURED: 1,
   SPEECH_RATE_FILE: "speech-rate-v2.json",
   SPEECH_RATE_PROFILES_MAX: 64,
   SPEECH_RATE_WEIGHT: 0.6,

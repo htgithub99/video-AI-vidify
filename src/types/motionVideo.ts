@@ -1,6 +1,8 @@
+import type { MotionLanguageCode } from "../constants/motionLanguages/index.js";
 import type { PuppetActorState, PuppetGen, PuppetKitSpec, PuppetObject } from "./motionPuppet.js";
 import type { MotionStyleFinish } from "../constants/motionStyleFinish.js";
 import type { MotionCostume } from "../constants/motionCostume.js";
+import type { MotionRenameKind } from "../constants/motionRename.js";
 import type { MotionTraits } from "../constants/motionSceneTraits.js";
 export interface MotionMusicSegment {
   start: number;
@@ -385,6 +387,11 @@ export interface MotionStorySpine {
   steps: { chapterId: string; cause: string; event: string; consequence: string }[];
   clues: { detail: string; setupChapterId: string; payoffChapterId: string; payoff: string }[];
 }
+export interface MotionRenameEntry {
+  source: string;
+  renamed: string;
+  kind: MotionRenameKind;
+}
 export interface MotionStoryAnalysis {
   writingPlan?: MotionWritingPlan;
   motifs?: string[];
@@ -401,6 +408,9 @@ export interface MotionStoryAnalysis {
   logline: string;
   genre?: string;
   videoGenre?: string;
+  storytelling?: string;
+  renameEntities?: boolean;
+  renameMap?: MotionRenameEntry[];
   stylePreset?: string;
   musicMood?: string;
   genre2?: string;
@@ -444,6 +454,9 @@ export interface MotionBeat {
   time?: string;
   weather?: string;
   shot?: string;
+  subject?: string;
+  frame?: string;
+  hook?: string;
   cast?: string[];
   action?: string;
   label?: string;
@@ -457,7 +470,7 @@ export interface MotionBeat {
 export interface MotionVideoDnaSettings {
   length: MotionStoryLength;
   targetSeconds: number;
-  language: "vi" | "en";
+  language: MotionLanguageCode;
   aspect: string;
   drawingMode: MotionDrawingMode;
   characterMode: "drawn";

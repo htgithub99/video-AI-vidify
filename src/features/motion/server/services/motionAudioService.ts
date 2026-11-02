@@ -29,6 +29,9 @@ import { motionVoiceSignal, trimMotionVoiceEdges, motionVoiceBoundaryPadding, co
 import { puppetStoryboardInputKey, puppetStoryboardCovers } from "../../../../lib/motionStoryboard.js";
 import { collectPuppetLines } from "../../../../lib/motionPuppet.js";
 import { speechUnits } from "./motionSpeechRateService.js";
+import { motionStorytellingPreset, motionStorytellingSilent } from "../../../../lib/motionStorytelling.js";
+import { motionLanguage, motionLanguageRate } from "../../../../lib/motionLanguage.js";
+import type { MotionStorytellingSilent } from "../../../../constants/motionStorytelling.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
 const voiceTrackSpeedKey = (plan: MotionVoicePlan): string => hash([PACE.VERSION, cadenceProfile(), readVoiceSpeedSettings().target?.pauses, _.uniq(plan.roles.map((role) => role.voiceId)).map((voiceId) => [voiceId, voiceSpeedKey(voiceId), knownVoiceTempoFactor(voiceId)])]);
 const cadenceProfile = () => referenceCadenceProfile(readVoiceSpeedSettings().target, readVoiceSpeedSettings().correction);
@@ -50,7 +53,7 @@ const voiceTextPassed = (result: { error: number; errorRun: number }): boolean =
 const voiceClipRateLimit = (line: MotionUtterance, language: unknown): number | undefined => {
   const target = readVoiceSpeedSettings().target;
   const reference = target?.rateBasis === MOTION_VOICE_SPEED.BASIS.TEXT ? target.rate * PACE.REFERENCE_RATE_MARGIN : undefined;
-  const dialogue = line.role !== MR.MOTION_TEXT_NARRATION ? PACE.DIALOGUE_RATE[motionLanguageCode(language)] : undefined;
+  const dialogue = line.role !== MR.MOTION_TEXT_NARRATION ? PACE.DIALOGUE_RATE[motionLanguageCode(language)] ?? motionLanguageRate(language, true) : undefined;
   return reference && dialogue ? Math.min(reference, dialogue) : reference || dialogue;
 };
 type ClipWords = [number, number][];
@@ -66,7 +69,7 @@ interface SpeechClipAudio {
 }
 const checkClip = async (file: string, line: MotionUtterance, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<{ error: number; errorRun: number; heard: string; words: ClipWords } | null> => {
   try {
-    const recognized = await (deps.transcribe || transcribeVieneuAudio)(file, language === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI, opts.signal, opts.log);
+    const recognized = await (deps.transcribe || transcribeVieneuAudio)(file, motionLanguage(language).asrCode, opts.signal, opts.log);
     const result = motionSupportedTranscript(await fs.promises.readFile(file), recognized);
     if (recognized.words.length && !result.words.length) throw new Error(RUNTIME_VALUES.NHAN_DANG_CHI_CO_TU_NAM_NGOAI_TIENG_NOI_CAN_NGHE_LAI_KHONG_COI_L_B4231C91);
     return { ...compareMotionVoiceText(line.text, result.text), heard: result.text, words: _.map(result.words, (word) => [word.s, word.e] as [number, number]) };
@@ -311,7 +314,7 @@ export const motionVoiceSemanticGap = (line: MotionUtterance, next: MotionUttera
   if (!PACE.SENTENCE_END_RE.test(text)) return pacing.clauseGap * PACE.CONTINUATION_SHARE;
   return pacing.sentenceGap * (next.speaker === line.speaker ? 1 : PACE.RESPONSE_SHARE);
 };
-const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScript, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, pacing: Pacing | null = null): Promise<{ local: VoiceClipLayout; durations: number[] }> => {
+const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScript, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, pacing: Pacing | null = null, silent?: MotionStorytellingSilent): Promise<{ local: VoiceClipLayout; durations: number[] }> => {
   const local: VoiceClipLayout = [],
     durations: number[] = [];
   const totalLines = plan.beats.reduce((sum, beat) => sum + beat.utterances.length, 0);
@@ -346,10 +349,14 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
           pacing,
           !next ? C.PAUSE.BEAT_END : next.speaker === line.speaker ? C.PAUSE.SAME_SPEAKER : C.PAUSE.SPEAKER_CHANGE,
         );
-        if (pacing) {
-          const chapter = script.beats.find((item) => item.id === beat.id)?.chapterId;
-          const nextChapter = nextEntry && script.beats.find((item) => item.id === nextEntry.beat.id)?.chapterId;
-          gapAfter = Math.max(motionVoiceSemanticGap(line, next, pacing, !!nextEntry && chapter !== nextChapter), Math.min(Math.max(line.pauseAfter, next?.pauseBefore || 0) * paced.pause, pacing.gaps.BEAT_END[1]));
+        const chapter = script.beats.find((item) => item.id === beat.id)?.chapterId;
+        const nextBeat = nextEntry && script.beats.find((item) => item.id === nextEntry.beat.id);
+        const chapterChanged = !!nextEntry && chapter !== nextBeat?.chapterId;
+        if (pacing) gapAfter = Math.max(motionVoiceSemanticGap(line, next, pacing, chapterChanged), Math.min(Math.max(line.pauseAfter, next?.pauseBefore || 0) * paced.pause, pacing.gaps.BEAT_END[1]));
+        if (silent) {
+          if (chapterChanged) gapAfter = Math.max(gapAfter, silent.chapterEnd + silent.chapterCard);
+          else if (nextBeat?.emphasis && nextBeat.id !== beat.id) gapAfter += silent.emphasis;
+          if (!nextEntry) gapAfter = Math.max(gapAfter, silent.videoEnd);
         }
         return { beatId: beat.id, voiceId, paced, narration, pieces, gapBefore, gapAfter };
       }),
@@ -437,7 +444,8 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
     if (running) return running;
     const task = (async (): Promise<MotionVoiceTrack> => {
       opts.log?.(C.GENERATING);
-      const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, pacing);
+      const silent = analysis && motionStorytellingPreset(analysis.storytelling).dramaticAudio ? motionStorytellingSilent(analysis.storytelling) : undefined;
+      const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, pacing, silent);
       const puppet = script.gen?.puppet;
       const sources = puppet?.storyboard ? collectPuppetLines(script, MR.MOTION_TEXT_SCENE, motionNarratorCastKey(analysis)) : [];
       const visualReady = !puppet ? !!Object.keys(script.gen?.staging || {}).length : !!analysis && !!puppet.storyboard && puppet.storyboard.inputKey === puppetStoryboardInputKey(sources, analysis) && puppetStoryboardCovers(puppet.storyboard, sources) && puppet.storyboard.units.every((unit) => !!puppet.frames[unit.key]);

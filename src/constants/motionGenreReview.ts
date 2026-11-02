@@ -12,7 +12,6 @@ export interface MotionGenreReviewChecks {
 }
 const NONE: MotionGenreReviewChecks = { retell: false, crossChapter: false, digits: true, timeJump: false, hindsight: false, commentary: false, refrain: false, ordeal: false, experts: false, labels: false };
 export const MOTION_GENRE_REVIEW = {
-  CHECKS: { pov: { ...NONE, retell: true, timeJump: true, hindsight: true, commentary: true, refrain: true, ordeal: true, experts: true }, verdict: { ...NONE, retell: true, crossChapter: true, experts: true, labels: true }, chronicle: { ...NONE, retell: true, crossChapter: true, experts: true }, witness: { ...NONE, retell: true } } as Record<string, MotionGenreReviewChecks>,
   DEFAULT: NONE,
   VI: /^vi/i,
   WORD: /[\p{L}\p{N}']+/gu,

@@ -25,6 +25,8 @@ import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../serv
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../../../constants/workflowActivity";
 import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRE_DEFAULT, motionVideoGenre, type MotionVideoGenre } from "../../../constants/motionGenre.js";
+import { MOTION_STORYTELLING, type MotionStorytellingMode } from "../../../constants/motionStorytelling.js";
+import { motionStorytelling } from "../../../lib/motionStorytelling.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -123,6 +125,8 @@ interface PersistedState extends MotionSceneAiChoice, MotionAiChoice {
   soundOverrides: Record<string, MotionSoundOverride>;
   aiReview: boolean;
   videoGenre?: MotionVideoGenre;
+  storytelling?: MotionStorytellingMode;
+  renameEntities?: boolean;
   stylePreset?: string;
   asrCheck?: boolean;
   musicMood?: string;
@@ -181,6 +185,8 @@ const DEFAULTS: PersistedState = {
   sceneAiFallback: true,
   aiReview: true,
   videoGenre: MOTION_VIDEO_GENRE_DEFAULT,
+  storytelling: MOTION_STORYTELLING.DEFAULT,
+  renameEntities: false,
   stylePreset: PUPPET_STYLE_DEFAULT,
   asrCheck: true,
   multiVoice: true,
@@ -766,6 +772,8 @@ export function useMotionStudio() {
                 aiExecution: motionMainAiExecution(now),
                 sceneAiExecution: motionSceneAiExecution(now),
                 videoGenre: motionVideoGenre(now.videoGenre),
+                storytelling: motionStorytelling(now.storytelling),
+                renameEntities: now.renameEntities === true,
                 ...motionVisualRequest(now),
                 voiceChannel: selectedChannelRef(now, channelsRef.current),
                 multiVoice: now.multiVoice !== false,
@@ -815,6 +823,7 @@ export function useMotionStudio() {
               source: now.source,
               analysis,
               videoGenre: motionVideoGenre(now.videoGenre),
+              storytelling: motionStorytelling(now.storytelling),
               ...motionVisualRequest(now),
               language: now.language,
               length: now.length,
@@ -993,7 +1002,7 @@ export function useMotionStudio() {
           const current = stateRef.current;
           const voiceCast = track.plan?.roles && current.script?.gen ? motionVoiceCast(current.script.gen.voiceCast, track.plan.roles) : undefined;
           const withCast = voiceCast && current.script?.gen ? { script: { ...current.script, gen: { ...current.script.gen, voiceCast } } } : {};
-          const next = { ...current, ...withCast, voice: { ...track, signature }, uploadedAudio: null, ...(current.seo && current.analysis && track.durations?.length === script.beats.length ? { seo: retimeSeoPack(current.seo, script.beats, current.analysis.chapters, current.language !== MR.MOTION_TEXT_EN, track.durations) } : {}) };
+          const next = { ...current, ...withCast, voice: { ...track, signature }, uploadedAudio: null, ...(current.seo && current.analysis && track.durations?.length === script.beats.length ? { seo: retimeSeoPack(current.seo, script.beats, current.analysis.chapters, current.language, track.durations) } : {}) };
           stateRef.current = next;
           setState(next);
           setCompiled(null);

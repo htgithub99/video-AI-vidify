@@ -82,12 +82,17 @@ export const motionChapterKeyPoints = (chapters: MotionChapter[], sourceSeconds?
   });
   return { chapters: moved || invented ? next : chapters, moved, invented };
 };
-export const motionChapterContentBeats = (sourceText: string, keyPoints: number, wanted: number): number => {
+export const motionChapterContentBeats = (sourceText: string, keyPoints: number, wanted: number, expansion = 1): number => {
   const words = (sourceText.replace(T.CONTENT.STAMP, " ").match(T.CONTENT.WORD) || []).length;
   if (!words) return wanted;
-  const content = Math.max(T.CONTENT.MIN_BEATS, Math.ceil(words / T.CONTENT.SOURCE_WORDS_PER_BEAT), keyPoints * T.CONTENT.POINT_BEATS);
+  const content = Math.max(T.CONTENT.MIN_BEATS, Math.ceil((words * Math.max(1, expansion)) / T.CONTENT.SOURCE_WORDS_PER_BEAT), keyPoints * T.CONTENT.POINT_BEATS);
   return Math.min(wanted, content);
 };
+export const motionSourceCapacitySeconds = (slices: { text: string; keyPoints: number; seconds: number }[], beatSeconds: number, expansion = 1): number =>
+  slices.reduce((sum, slice) => {
+    const wanted = Math.max(2, Math.round(slice.seconds / beatSeconds));
+    return sum + motionChapterContentBeats(slice.text, slice.keyPoints, wanted, expansion) * beatSeconds;
+  }, 0);
 export const motionRepetitionFindings = (beats: MotionBeat[], language: string, motifs: string[] = []): MotionStoryTimelineFinding[] => {
   const size = T.REPEAT.SIZE[T.REPEAT.VI.test(language.trim()) ? "vi" : "en"];
   const motifWords = motifs.map((motif) => new Set((motif.toLowerCase().match(T.REPEAT.WORD) || []) as string[]));

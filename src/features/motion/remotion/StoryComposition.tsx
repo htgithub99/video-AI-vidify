@@ -36,7 +36,7 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
   const compositionAsset = scene?.composition && document.assets[scene.composition.assetKey];
   const speakers = new Set(scene?.speaking?.filter((span) => frame >= span.startFrame && frame < span.endFrame).map((span) => span.entityId));
   return (
-    <AbsoluteFill style={{ backgroundColor: palette.paper, color: palette.ink, fontFamily: RT_MOTION.ARIAL_SANS_SERIF, overflow: RT_SHARED.HIDDEN }}>
+    <AbsoluteFill style={{ backgroundColor: palette.paper, color: palette.ink, fontFamily: document.fontFamily || RT_MOTION.ARIAL_SANS_SERIF, overflow: RT_SHARED.HIDDEN }}>
       <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.SCALE_0E0502}${width / w}${RT_SHARED.SYMBOL_D03502}${height / h}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
         <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RUNTIME_VALUES.TRANSLATE_59C8632A}${camera.x}${RUNTIME_VALUES.PX_2AFF6F79}${camera.y}${RUNTIME_VALUES.PX_SCALE_02D041CE}${camera.scale}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_12}`, transformOrigin: RT_MOTION.CENTER_CENTER }}>
           <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.TRANSLATE}${view.x}${RT_MOTION.PX}${view.y}${RT_MOTION.PX_SCALE}${view.scale}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>

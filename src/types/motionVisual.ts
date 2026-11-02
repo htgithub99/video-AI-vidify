@@ -1,4 +1,5 @@
 import type { MotionSpec } from "./motionVideo.js";
+import type { MotionSceneFormat, MotionSceneView } from "../constants/motionProfiles/framing.js";
 export type MotionVisualMode = "library" | "remotion";
 export type MotionRemotionProfile = "history" | "horror" | "explainer";
 export type MotionScenePacing = "few" | "medium" | "many";
@@ -82,6 +83,12 @@ export interface MotionRemotionNode {
   layoutSocket?: string;
   groundTargets?: string[];
 }
+export interface MotionSceneCrop {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 export interface MotionRemotionScene {
   format?: MotionSceneDesign["format"];
   id: string;
@@ -105,7 +112,9 @@ export interface MotionRemotionScene {
   declaredTime?: string;
   declaredWeather?: string;
   locationKey?: string;
-  view?: "wide" | "detail";
+  view?: MotionSceneView;
+  crop?: MotionSceneCrop;
+  cropFrom?: { sceneId: string; nodeId: string };
   focus?: string[];
   layoutRevision?: number;
   sceneRevision?: number;
@@ -149,7 +158,7 @@ export interface MotionSceneComposition {
   design?: MotionSceneDesign;
 }
 export interface MotionSceneDesign {
-  format?: "illustration" | "diagram" | "comparison" | "map" | "timeline" | "process" | "cutaway";
+  format?: MotionSceneFormat;
   camera: string;
   cameraMotion?: { mode: "follow" | "push" | "pull" | "hold"; subjectId?: string; focus?: { x: number; y: number } };
   palette?: string[];
@@ -205,6 +214,7 @@ export interface MotionRemotionSpec {
   assets: Record<string, MotionVectorAsset>;
   scenes: MotionRemotionTimedScene[];
   subtitles: NonNullable<MotionSpec["subtitles"]>;
+  fontFamily?: string;
   music?: MotionSpec["music"];
   renderBehavior?: MotionRenderBehavior;
   resolvedSettings?: { layoutRevision: number; effectRevision: number; sceneRevision?: number; behavior: MotionRenderBehavior };
