@@ -3,12 +3,36 @@ import { MOTION_GENRE_REVIEW as R } from "../../constants/motionGenreReview.js";
 import { MOTION_GENRE_VOCABULARY as X } from "../../constants/motionGenres/vocabulary.js";
 import { MOTION_VIDEO_GENRES, motionGenreSpec, motionVideoGenre } from "../../constants/motionGenre.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../../types/motionVideo.js";
+import { motionNarratorCastKey } from "../motionVoice.js";
 export interface MotionGenreGrammarFinding {
   id: string;
   issue: string;
 }
 const V = X.VISUALS;
 const S = X.SHOTS;
+export const motionDialogueFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters" | "videoGenre" | "cast" | "videoDna">): MotionGenreGrammarFinding[] => {
+  const minLines = G.DIALOGUE.MIN_LINES[motionVideoGenre(analysis.videoGenre)];
+  if (!minLines) return [];
+  const narrator = motionNarratorCastKey(analysis as MotionStoryAnalysis);
+  const findings: MotionGenreGrammarFinding[] = [];
+  for (const chapter of analysis.chapters) {
+    const own = beats.filter((beat) => beat.chapterId === chapter.id && beat.narration?.trim());
+    for (const member of analysis.cast) {
+      if (member.key === narrator || member.narrator) continue;
+      const present = own.filter((beat) => (beat.cast || []).includes(member.key) || beat.narration.includes(member.name));
+      if (present.length < G.DIALOGUE.MIN_PRESENT_BEATS) continue;
+      const spoken = own.filter((beat) => (beat.utterances || []).some((line) => line.role !== "narration" && line.speaker === member.key)).length;
+      if (spoken >= minLines) continue;
+      const candidate = present.find((beat) => G.DIALOGUE.SPEECH_VERB.test(beat.narration) && !(beat.utterances || []).some((line) => line.role !== "narration")) || present.find((beat) => !(beat.utterances || []).some((line) => line.role !== "narration"));
+      if (candidate && !findings.some((finding) => finding.id === candidate.id)) findings.push({ id: candidate.id, issue: G.DIALOGUE.ISSUE(member.name, member.key) });
+    }
+  }
+  return findings;
+};
+export const motionDialogueSummary = (beats: MotionBeat[]): string => {
+  const lines = beats.flatMap((beat) => (beat.utterances || []).filter((line) => line.role !== "narration"));
+  return G.DIALOGUE.LOG(lines.length, new Set(lines.map((line) => line.speaker)).size);
+};
 export const motionGenreGrammarFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters" | "videoGenre" | "writingPlan">): MotionGenreGrammarFinding[] => {
   const genre = motionVideoGenre(analysis.videoGenre);
   const spec = motionGenreSpec(genre);

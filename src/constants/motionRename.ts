@@ -17,13 +17,15 @@ export const MOTION_RENAME = {
   FLAGS: "giu",
   UPPER: /^\p{Lu}/u,
   SVG_TEXT: />([^<>]+)</g,
+  HONORIFIC: /^(?:anh|chị|ông|bà|cô|chú|bác|cậu|dì|thầy|cụ|lão|em|the|a|an|mr|mrs|ms|old|young)\s+/iu,
+  MIN_ECHO_CHARS: 4,
   TEXT: {
     vi: { LABEL: "Đổi tên tránh bản quyền", ON: "Đổi toàn bộ tên", OFF: "Giữ tên gốc", HINT: "Bật để đặt tên mới cho mọi nhân vật, gia đình, địa danh, tổ chức và vật có tên riêng trong nguồn, dùng thống nhất cho kịch bản, SEO, ảnh bìa và phụ đề. Sự kiện, mốc thời gian và con số giữ nguyên." },
     en: { LABEL: "Rename to avoid copyright", ON: "Rename everything", OFF: "Keep source names", HINT: "Rename every person, family, place, organisation and named object of the source and use the new names consistently in the script, SEO, thumbnail and subtitles. Events, dates and numbers stay unchanged." },
   },
   PROMPT: {
     ANALYSIS:
-      "RENAMING (copyright-safe retelling, selected by the user): give every person, family, clan, village, hamlet, river, temple, shop, organisation and distinctive named object of the source ONE new everyday name that fits the region and era; never reuse, abbreviate, reorder or echo a source name or nickname (no anagrams, homophones or translations of it). Use the new names everywhere: cast, places, title, logline, chapter titles, summaries, keyPoints, hooks and videoDna text. Keep events, their order, causes, rules, beliefs, dates, numbers and the ending unchanged. Return renameMap: one entry per renamed name { source, renamed, kind: person|family|place|organisation|object }, listing every source spelling or nickname that was replaced.",
+      "RENAMING (copyright-safe retelling, selected by the user): give every person, family, clan, village, hamlet, river, temple, shop, organisation and distinctive named object of the source ONE new everyday name that fits the region and era; never reuse, abbreviate, reorder or echo a source name or nickname (no anagrams, homophones or translations of it). Use the new names everywhere: cast, places, title, logline, chapter titles, summaries, keyPoints, hooks and videoDna text. Keep events, their order, causes, rules, beliefs, dates, numbers and the ending unchanged. Return renameMap: one entry per renamed name { source, renamed, kind: person|family|place|organisation|object }, listing every source spelling or nickname that was replaced. People the source only calls by trade, kinship or description (anh bán dầu, bà lão, thầy cúng, the old fisherman) also receive a proper given name fitting the region (anh Tư bán dầu, bà Sáu, thầy Hai); a renamed value must never contain the source's trade or descriptive phrase.",
     CHAPTER: (pairs: string): string => `RENAMING IS ON: only the names in cast and places exist in this video. Never write a source name or nickname (renamed: ${pairs}); never quote a sentence, simile, catchphrase or distinctive image of the source.`,
     EDITOR: "RENAMING IS ON: replace any source name or nickname with the renamed name from the analysis; keep everything else of the line.",
     SEO: "RENAMING IS ON: titles, descriptions, tags and hashtags use only the renamed people and places; never the source's names, the source video title or the channel name.",
@@ -33,6 +35,7 @@ export const MOTION_RENAME = {
     LEAK: (sources: string[]): string => `source name leaked while renaming is on: ${sources.join(", ")}; use the renamed name instead`,
     MAP_MISSING: "renameMap: expected at least one { source, renamed, kind } entry because renaming is on; received none",
     EXPECTED: (source: string): string => `a renamed name, not the source name "${source}"`,
+    ECHO: (source: string, renamed: string): string => `renameMap entry "${source}" → "${renamed}" still echoes the source; give a proper given name that does not contain the source phrase`,
   },
   LOG: {
     MAP: (count: number): string => `Đổi tên tránh bản quyền: ${count} tên gốc đã được thay bằng tên mới.`,

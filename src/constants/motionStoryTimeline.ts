@@ -17,6 +17,8 @@ export const MOTION_STORY_TIMELINE = {
     LOG_SKIP: "Biên tập viên: không có câu cần sửa, bỏ qua lượt biên tập.",
     SOURCE_CHARS: 2400,
     LEDGER_CHARS: 1600,
+    LEDGER_STYLE_CHARS: 600,
+    SOURCE_OMITTED: "(omitted for these voice-only edits: keep every fact, name, number and event of each line exactly as written; only reshape the sentences)",
   },
   CONTENT: {
     SOURCE_WORDS_PER_BEAT: 7,

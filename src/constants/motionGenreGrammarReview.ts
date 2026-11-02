@@ -8,5 +8,12 @@ export const MOTION_GENRE_GRAMMAR_REVIEW = {
   OBJECT_MIN_PER_CHAPTER: 2,
   OBJECT_ISSUE: "this chapter has no insert picture of a household or taboo object; make this beat shot \"insert\" with subject naming the object the narrator mentions",
   SUBJECT_MIN_CHARS: 3,
+  DIALOGUE: {
+    MIN_PRESENT_BEATS: 3,
+    MIN_LINES: { witness: 1, pov: 1 } as Record<string, number>,
+    SPEECH_VERB: /\b(?:said|says|asked|asks|replied|answered|shouted|whispered|told|warned|muttered|insisted|begged)\b|bảo|nói|hỏi|đáp|gắt|quát|thì thầm|dặn|khuyên|kêu lên|xua tay|van xin|cãi/iu,
+    ISSUE: (name: string, key: string): string => `${name} is present in this chapter but never speaks aloud; turn the reported words of this line into one short direct utterance (role "dialogue", speaker "${key}") faithful to the source, keeping attribution and the narrator's own words as narration`,
+    LOG: (lines: number, speakers: number): string => `Thoại: ${lines} câu thoại trực tiếp cho ${speakers} nhân vật nói ngoài người kể.`,
+  },
   OPENING_LOG: (genre: string, beats: number, max: number): string => `Mở đầu ${genre}: ${beats} nhịp trước sự kiện đầu tiên (gợi ý tối đa ${max}); chỉ ghi nhận.`,
 } as const;

@@ -18,7 +18,7 @@ export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStor
 export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string, edit: (beats: MotionBeat[], ids: string[], supplemental: boolean) => Promise<MotionEditorialResult>, log?: (line: string) => void): Promise<MotionEditorialResult> => {
   const names = analysis.cast.map((member) => member.name);
   const fixed = motionGenreAutofix(beats, analysis, language);
-  if (fixed.dropped.length || fixed.visuals || fixed.shots) log?.(A.LOG(fixed.dropped.length, fixed.visuals, fixed.shots));
+  if (fixed.dropped.length || fixed.visuals || fixed.shots || fixed.speech) log?.(A.LOG(fixed.dropped.length, fixed.visuals, fixed.shots, fixed.speech));
   if (motionGenreShotMixOff(fixed.beats, analysis.videoGenre)) log?.(A.MIX_LOG(motionVideoGenre(analysis.videoGenre), motionGenreShotMix(fixed.beats, analysis.videoGenre)));
   const renamed = motionRenameAutofix(fixed.beats, analysis);
   if (renamed.replaced) log?.(N.LOG.AUTOFIX(renamed.replaced));

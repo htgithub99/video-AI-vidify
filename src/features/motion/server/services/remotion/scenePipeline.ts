@@ -357,8 +357,13 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         }
         if (opts.review && !targeted && !existingReady && scene.composition && state.assets[scene.composition.assetKey]) compositions[key] ||= { svg: state.assets[scene.composition.assetKey].svg, layers: scene.composition.layers, animations: scene.composition.animations, design: scene.composition.design, continuityNotes: scene.composition.continuityNotes };
         if (targeted || retry || ![inputKey, legacyInputKey].includes(scene.composition?.inputKey || "") || !existingReady) {
+          const identity = motionIdentityReferences(scene, allScenes, settings.profileId, state.assets, analysis.cast);
+          const referenceCharacters = identity.references;
+          if (identity.changed.length) {
+            for (const node of scene.nodes) if (node.entityId && identity.changed.includes(node.entityId)) node.appearanceChanged = true;
+            opts.log(MOTION_IDENTITY_REFERENCE.LOG_CHANGED(allScenes.indexOf(scene) + 1, allScenes.length, identity.changed.map((entityId) => analysis.cast.find((member) => member.key === entityId)?.name || entityId)));
+          }
           const identityMemory = motionIdentityMemory(scene, allScenes, settings.profileId);
-          const referenceCharacters = motionIdentityReferences(scene, allScenes, settings.profileId, state.assets, analysis.cast);
           if (referenceCharacters.length) opts.log(MOTION_IDENTITY_REFERENCE.LOG_REFERENCES(allScenes.indexOf(scene) + 1, allScenes.length, referenceCharacters.length));
           const speakers = [...new Set(script.beats.filter((member) => (scene.sourceBeatIds || [scene.beatId]).includes(member.id)).flatMap((member) => member.utterances?.filter((line) => line.role === RT_SERVER.DIALOGUE).map((line) => line.speaker) || []))] as string[];
           const context = {

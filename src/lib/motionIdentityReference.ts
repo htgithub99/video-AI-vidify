@@ -1,5 +1,7 @@
 import { MOTION_IDENTITY_REFERENCE as I } from "../constants/motionIdentityReference.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
+import { MOTION_REMOTION_STAGING as S } from "../constants/motionRemotionStaging.js";
+import { motionStaticAppearance } from "./motionIdentityMemory.js";
 import type { MotionRemotionProfile, MotionRemotionScene, MotionVectorAsset } from "../types/motionVisual.js";
 export type MotionIdentityReference = { entityId: string; sceneId: string; svg: string };
 const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -18,6 +20,34 @@ export const motionLayerSvg = (svg: string, id: string): string | undefined => {
   return undefined;
 };
 export const motionCompactSvg = (svg: string): string => svg.replace(I.STRIP, "").replace(I.WHITESPACE, I.TAG_JOIN).trim().replace(I.ROOT_TRANSFORM, "$1");
+const idPattern = /<[\w:-]+\b[^<>]*\bid\s*=\s*(["'])([^"']+)\1/g;
+export const motionStripSubLayers = (svg: string, exclude: ReadonlySet<string>): string => {
+  let next = svg;
+  for (let guard = 0; guard < 64; guard++) {
+    const inner = next.slice(next.indexOf(">") + 1);
+    const match = [...inner.matchAll(idPattern)].find((entry) => exclude.has(entry[2]) || I.PROP_PART.test(entry[2]));
+    if (!match) break;
+    const part = motionLayerSvg(next, match[2]);
+    if (!part) break;
+    next = next.replace(part, "");
+  }
+  return next;
+};
+export const motionAppearanceChanged = (description: string | undefined, reference: string | undefined): boolean => {
+  if (!description) return false;
+  const known = (reference || "").toLowerCase();
+  for (const clause of description.split(I.CLAUSE)) {
+    const text = clause.trim();
+    if (!text) continue;
+    if (I.STATE.test(text)) return true;
+    if (!S.CLOTHING.test(text) && !S.WORN.test(text)) continue;
+    const tokens = text.toLowerCase().match(I.TOKEN) || [];
+    if (!tokens.length) continue;
+    const shared = tokens.filter((token) => known.includes(token)).length / tokens.length;
+    if (shared < I.CLOTHING_SHARE) return true;
+  }
+  return false;
+};
 const expandHex = (hex: string): string => (hex.length === I.HEX_SHORT ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` : hex.slice(0, 7)).toLowerCase();
 export const motionSvgPalette = (svg: string): string[] => {
   const counts = new Map<string, number>();
@@ -33,7 +63,8 @@ export const motionSvgPalette = (svg: string): string[] => {
 const channel = (hex: string, offset: number) => parseInt(hex.slice(offset, offset + 2), 16);
 const near = (a: string, b: string) => Math.max(Math.abs(channel(a, 1) - channel(b, 1)), Math.abs(channel(a, 3) - channel(b, 3)), Math.abs(channel(a, 5) - channel(b, 5))) <= I.COLOR_TOLERANCE;
 export const motionPaletteDistance = (reference: string[], current: string[]): number => (reference.length ? reference.filter((hex) => !current.some((other) => near(hex, other))).length / reference.length : 0);
-export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: MotionRemotionScene[], profileId: MotionRemotionProfile, assets: Record<string, MotionVectorAsset>, cast: { key: string; narrator?: boolean }[] = []): MotionIdentityReference[] => {
+export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: MotionRemotionScene[], profileId: MotionRemotionProfile, assets: Record<string, MotionVectorAsset>, cast: { key: string; narrator?: boolean }[] = []): { references: MotionIdentityReference[]; changed: string[] } => {
+  const changed: string[] = [];
   const nodes = scene.nodes.filter((node) => node.kind === "character" && !node.anonymous && !node.appearanceChanged && node.entityId && node.representation !== "detail");
   const rank = (entityId: string, representation?: string): number => {
     const index = cast.findIndex((member) => member.key === entityId);
@@ -51,15 +82,21 @@ export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: Mot
       const layer = composition.layers.find((item) => item.kind === "character" && item.entityId === entityId);
       const asset = assets[composition.assetKey];
       if (!layer || !asset) continue;
+      const node = nodes.find((item) => item.entityId === entityId);
+      if (motionAppearanceChanged(node?.description, motionStaticAppearance(layer.appearance ?? layer.description))) {
+        changed.push(entityId);
+        break;
+      }
       const extracted = motionLayerSvg(asset.svg, layer.id);
       if (!extracted) continue;
-      const svg = motionCompactSvg(extracted);
+      const others = new Set(composition.layers.filter((item) => item.id !== layer.id && item.kind !== "character").map((item) => item.id));
+      const svg = motionCompactSvg(motionStripSubLayers(extracted, others));
       if (svg.length > I.SVG_LIMIT) continue;
       references.push({ entityId, sceneId: other.id, svg });
       break;
     }
   }
-  return references;
+  return { references, changed };
 };
 export const motionIdentityDrift = (references: MotionIdentityReference[], svg: string, layers: { id: string; kind: string; entityId?: string }[]): string[] =>
   references.flatMap((reference) => {

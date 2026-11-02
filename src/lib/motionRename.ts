@@ -43,6 +43,11 @@ export const motionRenameAnalysisIssues = (draft: any): MotionRenameIssue[] => {
   const map = normalizeMotionRenameMap(draft?.renameMap);
   if (!map.length) return [{ path: N.MAP_FIELD, expected: N.ISSUE.MAP_MISSING, actual: String(Array.isArray(draft?.renameMap) ? draft.renameMap.length : typeof draft?.renameMap), value: "" }];
   const issues: MotionRenameIssue[] = [];
+  const stem = (value: string) => motionRenameNormalize(value).replace(N.HONORIFIC, "");
+  map.forEach((entry, index) => {
+    const source = stem(entry.source);
+    if (source.length >= N.MIN_ECHO_CHARS && stem(entry.renamed).includes(source)) issues.push({ path: `renameMap[${index}].renamed`, expected: N.ISSUE.ECHO(entry.source, entry.renamed), actual: entry.renamed, value: entry.renamed });
+  });
   const check = (path: string, text: unknown) => {
     if (typeof text !== "string") return;
     const leaks = motionRenameLeaks(text, map);

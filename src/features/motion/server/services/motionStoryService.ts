@@ -33,7 +33,7 @@ import { motionTaskCheckpoint } from "./motionTaskCheckpoint.js";
 import { motionInputKey } from "./motionFileUtils.js";
 import type { MotionChapterDraft } from "../../../../types/motionVideo.js";
 import { motionSourceChunks } from "../../../../lib/motionSourceChunks.js";
-import { compactMotionSourceLedger, parseMotionSourceLedgerPart, type MotionSourceLedgerDraft, type MotionSourceLedgerNode } from "../../../../lib/motionSourceLedger.js";
+import { compactMotionSourceLedger, motionSourceLedgerPartIssues, parseMotionSourceLedgerPart, type MotionSourceLedgerDraft, type MotionSourceLedgerNode } from "../../../../lib/motionSourceLedger.js";
 import { MOTION_EDITORIAL } from "../../../../constants/motionEditorial.js";
 import { motionStoryLanguageGuide } from "../../../../constants/motionStoryLanguage.js";
 import { MotionProviderRecovery, waitMotionProviderCooldown } from "./motionProviderRecovery.js";
@@ -1327,7 +1327,7 @@ const sourceDirections = (source: MotionStorySource): string => {
   return parts.join(MR.MOTION_TEXT_SYMBOL_27);
 };
 const LEDGER_MIN_CHARS = MOTION_PRODUCTION.LEDGER_MIN_CHARS;
-const readSourceLedger = async (source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi } & MotionAnalysisRecovery): Promise<string> => {
+const readSourceLedger = async (source: MotionStorySource, opts: { exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; targetSeconds?: number } & MotionAnalysisRecovery): Promise<string> => {
   if (source.text.length < LEDGER_MIN_CHARS) return MR.MOTION_TEXT_EMPTY;
   const chunks = motionSourceChunks(source);
   opts.log?.(MR.MOTION_TEMPLATE_NGUON_DAI_K_KY_TU_DOC_THEO_PHAN_ROI_MOI_LAP_DAN_Y(Math.round(source.text.length / 1000), chunks.length));
@@ -1354,7 +1354,7 @@ const readSourceLedger = async (source: MotionStorySource, opts: { exec: MotionA
         assess: (raw) => {
           const value = parseMotionSourceLedgerPart(raw, segments, key);
           if (value) saved.raw = raw;
-          return { value, errors: value ? [] : [PROMPT.LEDGER_INVALID] };
+          return { value, errors: value ? [] : motionSourceLedgerPartIssues(raw, segments).slice(0, PROMPT.LEDGER_ISSUE_LIMIT) };
         },
         repair: (question, _value, errors) => PROMPT.LEDGER_REPAIR(question, errors),
         failure: () => new Error(PROMPT.LEDGER_INVALID),
@@ -1371,13 +1371,16 @@ const readSourceLedger = async (source: MotionStorySource, opts: { exec: MotionA
       return part;
     }
     failedParts++;
+    opts.log?.(PROMPT.LEDGER_PART_FAILED(i + 1, chunks.length, saved.state.errors || []));
     return text;
   });
   opts.log?.(MR.MOTION_TEMPLATE_SO_SU_KIEN_PHAN(chunks.length, failedParts ? MR.MOTION_TEMPLATE_PHAN_DUNG_TRICH_DOAN_GOC(failedParts) : MR.MOTION_TEXT_EMPTY));
   const reductions = opts.draft ? (opts.draft.ledgerReductions ||= {}) : {};
+  const shortTarget = (opts.targetSeconds || 0) > 0 && source.sourceSeconds > 0 && opts.targetSeconds! / source.sourceSeconds < PROMPT.LEDGER_SHORT_RATIO;
   return compactMotionSourceLedger(parts, {
     map: mapMotionAiPool,
     draft: reductions,
+    totalChars: shortTarget ? PROMPT.LEDGER_TOTAL_CHARS_SHORT : PROMPT.LEDGER_TOTAL_CHARS,
     key: motionInputKey,
     signal: opts.signal,
     checkpoint: () => {
@@ -1455,7 +1458,7 @@ export const analyzeStory = async (
   const settings: MotionVideoDnaSettings = { length: opts.length, targetSeconds: target, language: motionLanguageCode(opts.language), aspect: opts.aspect || MR.MOTION_TEXT_16_9, drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN };
   const chapterCount = motionWritingChapterCount(target, opts.videoGenre);
   const language = motionLanguage(opts.language).promptName;
-  const ledger = await buildSourceLedger(source, { ...opts, draft });
+  const ledger = await buildSourceLedger(source, { ...opts, draft, targetSeconds: target });
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
   const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
@@ -1552,7 +1555,6 @@ export const editScript = async (
     const chapterIds = new Set(lines.map((line) => line.chapterId));
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
     const previous = stringifyJson(beats.slice(Math.max(0, beats.indexOf(lines[0]) - 2), beats.indexOf(lines[0])).map((beat) => beat.narration));
-    const model = chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceWindow(chapter, lines))).join(MR.MOTION_TEXT_SYMBOL_27);
     const language = motionLanguage(opts.language).promptName;
     const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(visualIds.has(beat.id) ? { action: beat.action, scenePlan: beat.scenePlan } : {}), ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
     const limit = editLimit(lines);
@@ -1562,8 +1564,11 @@ export const editScript = async (
     const stageFocus = stageFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const echoFocus = echoFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const reviewFocus = reviewFindings.filter((finding) => lines.some((line) => line.id === finding.id));
+    const styleOnly = !!opts.focusIds && !overlapFocus.length && !repeatFocus.length && !stageFocus.length && !echoFocus.length && !reviewFocus.length;
+    const model = styleOnly ? TIMELINE.EDITOR.SOURCE_OMITTED : chapters.map((chapter) => MR.MOTION_TEMPLATE_SOURCE(chapter.id, sourceWindow(chapter, lines))).join(MR.MOTION_TEXT_SYMBOL_27);
     const ledger = motionStoryEventLedger(beats.slice(0, beats.indexOf(lines[0])));
-    const established = opts.focusIds && ledger.length > TIMELINE.EDITOR.LEDGER_CHARS ? ledger.slice(-TIMELINE.EDITOR.LEDGER_CHARS) : ledger;
+    const ledgerLimit = styleOnly ? TIMELINE.EDITOR.LEDGER_STYLE_CHARS : TIMELINE.EDITOR.LEDGER_CHARS;
+    const established = opts.focusIds && ledger.length > ledgerLimit ? ledger.slice(-ledgerLimit) : ledger;
     return withMotionResponsePrompt(
       MOTION_STORY_EDIT_ARTIFACT,
       [
@@ -1618,7 +1623,7 @@ export const editScript = async (
     targets.filter((beat) => saved[beat.id]?.inputKey !== keys.get(beat.id)),
     editorPrompt,
     opts.focusIds ? PROMPT.EDITOR_CHAPTER_ITEMS : PROMPT.EDITOR_ITEMS,
-    undefined,
+    opts.focusIds ? PROMPT.EDITOR_BUDGET_CHARS : undefined,
     (before, next) => before.chapterId !== next.chapterId,
   );
   await mapMotionAiPool(groups, async (group, gi) => {

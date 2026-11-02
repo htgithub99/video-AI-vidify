@@ -36,7 +36,7 @@ const castFor = (beat: MotionBeat, analysis: MotionStoryAnalysis) => {
   const keys = new Set([...(beat.cast || []), ...(beat.utterances || []).map((line) => line.speaker)]);
   return analysis.cast.filter((member) => keys.has(member.key) || [member.name, member.alias].some((name) => name && beat.narration.includes(name))).sort((a, b) => a.key.localeCompare(b.key));
 };
-const grouped = (state?: MotionRemotionState): boolean => state?.groupingRevision === PACING.GROUPING;
+const grouped = (state?: MotionRemotionState): boolean => state?.groupingRevision === PACING.GROUPING || state?.groupingRevision === PACING.GROUPING_TIMED;
 const withoutPacing = <T extends object | undefined>(settings: T): T => (settings ? (Object.fromEntries(Object.entries(settings).filter(([key]) => key !== PACING.FIELD)) as T) : settings);
 const keySettings = (analysis: MotionStoryAnalysis, state?: MotionRemotionState) => (grouped(state) ? withoutPacing(analysis.visualSettings) : analysis.visualSettings);
 const groupCount = (beats: MotionBeat[], analysis: MotionStoryAnalysis): number =>
@@ -81,7 +81,7 @@ export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis,
 export const remotionBeatPlanCurrent = (beat: MotionBeat, analysis: MotionStoryAnalysis, state?: MotionRemotionState, note = state?.notes?.[beat.id] || "") =>
   !!state?.scenes[beat.id]?.length && [remotionBeatKey(beat, analysis), legacyBeatKey(beat, analysis)].includes(state.inputKeys[beat.id]) && state.scenes[beat.id].every((scene) => scene.sceneRevision === L.SCENE_REVISION && [remotionBeatKey(beat, analysis, note), legacyBeatKey(beat, analysis, note)].includes(scene.sourceKey!));
 export const remotionGroupKey = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) =>
-  grouped(state) ? motionInputKey([PACING.GROUPING, groupCount(beats, analysis), beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? "", state))]) : motionInputKey([PACING.REVISION, beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))]);
+  grouped(state) ? motionInputKey([state!.groupingRevision, groupCount(beats, analysis), beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? "", state))]) : motionInputKey([PACING.REVISION, beats.map((beat) => remotionBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))]);
 export const remotionGroupPlanCurrent = (beats: MotionBeat[], analysis: MotionStoryAnalysis, state?: MotionRemotionState, note?: string) => {
   const scenes = state?.scenes[beats[0]?.id];
   if (!scenes?.length || !beats.every((beat) => [remotionBeatKey(beat, analysis, "", state), legacyBeatKey(beat, analysis)].includes(state?.inputKeys[beat.id] || ""))) return false;

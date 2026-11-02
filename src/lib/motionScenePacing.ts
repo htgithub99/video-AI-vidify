@@ -12,7 +12,8 @@ export const motionBeatVisualSeconds = (beat: MotionBeat, language: string = RT_
 export const motionScenePacingCount = (settings: MotionVisualSettings | undefined, seconds: number) => Math.max(1, Math.round(seconds / motionPacingSeconds(settings)));
 export const motionScenePacingRule = (settings: MotionVisualSettings | undefined, seconds: number, places = 1) => P.RULE(motionPacingSeconds(settings), motionScenePacingCount(settings, seconds)) + (places > 1 ? P.BRIEF_PLACES(motionPacingSeconds(settings)) : "");
 export const motionVisualBeatGroups = (script: Pick<MotionStoryScript, "beats" | "language" | "visualSettings">, grouping?: number, pacing: MotionScenePacing = motionScenePacing(script.visualSettings)) => {
-  const level = grouping === P.GROUPING ? P.LEVELS[pacing] : grouping === P.GROUPING_PREVIOUS ? P.LEVELS_PREVIOUS[pacing] : undefined;
+  const level = grouping === P.GROUPING || grouping === P.GROUPING_TIMED ? P.LEVELS[pacing] : grouping === P.GROUPING_PREVIOUS ? P.LEVELS_PREVIOUS[pacing] : undefined;
+  const timeCut = grouping !== P.GROUPING;
   const limits = level ? { seconds: level.groupSeconds, lines: level.groupLines, beats: level.groupBeats, placeHold: level.placeHold } : { seconds: P.GROUP_SECONDS, lines: P.GROUP_LINES, beats: P.GROUP_BEATS, placeHold: 0 };
   const groups: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number }[] = [];
   let time: string | undefined, weather: string | undefined;
@@ -22,7 +23,7 @@ export const motionVisualBeatGroups = (script: Pick<MotionStoryScript, "beats" |
     const seconds = motionBeatVisualSeconds(beat, script.language),
       lineCount = puppetBeatLines(beat).length;
     const placeCut = !!previous && previous.place !== beat.place && (!group || group.seconds >= limits.placeHold);
-    const boundary = !previous || previous.chapterId !== beat.chapterId || placeCut || (!!beat.time && beat.time !== time) || (!!beat.weather && beat.weather !== weather);
+    const boundary = !previous || previous.chapterId !== beat.chapterId || placeCut || (timeCut && ((!!beat.time && beat.time !== time) || (!!beat.weather && beat.weather !== weather)));
     if (!group || boundary || group.seconds + seconds > limits.seconds || group.lineCount + lineCount > limits.lines || group.beats.length >= limits.beats) groups.push({ id: beat.id, beats: [beat], seconds, lineCount });
     else {
       group.beats.push(beat);
