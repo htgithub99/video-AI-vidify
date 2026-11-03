@@ -1,8 +1,8 @@
-export const MOTION_OBJECT_CLASSES = ["mount", "draft", "wheeled", "tracked", "boat", "aircraft", "artillery", "handWeapon", "machine", "fixture", "bird", "smallAnimal"] as const;
+export const MOTION_OBJECT_CLASSES = ["mount", "draft", "wheeled", "tracked", "boat", "aircraft", "artillery", "handWeapon", "machine", "fixture", "handItem", "bird", "smallAnimal"] as const;
 export type MotionObjectClass = (typeof MOTION_OBJECT_CLASSES)[number];
 export const MOTION_OBJECT_SIZES = ["large", "handheld"] as const;
 export type MotionObjectSize = (typeof MOTION_OBJECT_SIZES)[number];
-export const MOTION_OBJECT_HANDHELD_CLASSES: readonly MotionObjectClass[] = ["handWeapon"];
+export const MOTION_OBJECT_HANDHELD_CLASSES: readonly MotionObjectClass[] = ["handWeapon", "handItem"];
 export const MOTION_OBJECT_HANDHELD: MotionObjectSize = "handheld";
 const B = "(?<![\\p{L}\\p{N}])";
 const E = "(?![\\p{L}\\p{N}])";
@@ -31,6 +31,7 @@ export const MOTION_OBJECT_CLASS_NOTES: Record<MotionObjectClass, string> = {
   artillery: "Artillery piece: a barrel on a carriage with two large spoked wheels on the ground and a trail stretching back; the crew stands at its side or behind with hands on the wheel, the breech or the firing lanyard; muzzle flash and smoke start at the muzzle.",
   handWeapon: "Hand weapon: one piece held in the hand with the grip inside the fist, the blade, barrel or shaft continuing in a straight line from it; a rifle has a stock at the shoulder, a barrel in front and the muzzle pointing where it is aimed.",
   machine: "Machine: a solid base on the ground or a table, the working part (wheel, crank, lever, barrel) attached to it, the operator's hands on the crank, lever or keys.",
+  handItem: "Small hand-held item (book, scroll, candle, coins, mirror): drawn at its real small size in or next to the hand that holds it, with its simple recognisable shape.",
   fixture: "Household or ritual object (altar, coffin, well, tomb, bed): a solid shape standing on the ground or floor at its real size next to people, built from simple flat parts with its era and region details.",
   bird: "Bird: a round body with a small head and beak, wings folded along the sides or spread when flying, two thin legs under the body, a tail at the rear.",
   smallAnimal: "Small animal: a body on four short legs, the head at the front with ears and snout as the species needs, tail at the rear; it stands, sits or lies on its support.",
@@ -47,6 +48,7 @@ export const MOTION_OBJECT_CLASS_PARTS: Record<MotionObjectClass, readonly { nam
   handWeapon: [part("grip", "barrel|blade|shaft|stock|grip|handle|bow")],
   machine: [part("base", "base|body|frame")],
   fixture: [part("body", "base|body|frame")],
+  handItem: [part("body", "body|frame|handle")],
   bird: [part("head", "head|beak"), part("wings", "wings?|legs?")],
   smallAnimal: [part("head", "head"), part("legs", "legs?")],
 };
@@ -64,6 +66,7 @@ export const MOTION_OBJECT_CLASS_LABEL: Record<MotionObjectClass, string> = {
   handWeapon: "hand weapon",
   machine: "machine",
   fixture: "household or ritual object",
+  handItem: "hand-held item",
   bird: "bird",
   smallAnimal: "small animal",
 };

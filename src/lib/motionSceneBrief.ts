@@ -5,6 +5,8 @@ import { motionFramePose, motionFrameSvg } from "./motionCharacterFrames.js";
 import { MOTION_PROFILE_SCENES } from "../constants/motionProfiles/scenes.js";
 import { MOTION_OBJECT_HANDHELD_MAX_FRAMES, MOTION_OBJECT_KIND_MAX_FRAMES } from "../constants/motionObjectKinds.js";
 import { motionAnimalLegs, motionObjectKind, motionObjectPartNames } from "./motionObjectKinds.js";
+import { motionUnitTargets } from "./motionUnits.js";
+import { MOTION_UNIT_LABEL, MOTION_UNIT_MAX_FRAMES, MOTION_UNIT_NOTES, MOTION_UNIT_PARTS, type MotionUnit } from "../constants/motionUnits.js";
 import { MOTION_OBJECT_CLASS_LABEL, MOTION_OBJECT_CLASS_LEGS, MOTION_OBJECT_CLASS_NOTES } from "../constants/motionObjectClasses.js";
 import { motionSceneObjects } from "./motionObjects.js";
 import { stringifyJson } from "./jsonStringify.js";
@@ -39,7 +41,7 @@ const HANDS_WITH_OBJECT = "handsWithObject";
 const MOUNTED = "mounted";
 const personPose = (id: MotionRemotionProfile, node: MotionRemotionNode): MotionFramePose => motionFramePose(id, node.stance, node.facing);
 const scenePoses = (id: MotionRemotionProfile, nodes: MotionRemotionNode[]): MotionFramePose[] => {
-  const people = nodes.filter((node) => node.kind === CHARACTER && !node.animal && node.representation !== DETAIL);
+  const people = nodes.filter((node) => node.kind === CHARACTER && !node.animal && node.representation !== DETAIL && !node.unit);
   const counts = new Map<MotionFramePose, number>();
   for (const node of people) {
     const pose = personPose(id, node);
@@ -79,7 +81,8 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
     if (member?.look) lines.push(B.PERSON_LOOK(member.look));
     lines.push(B.PERSON_ACTION(node.description, node.pose, node.posture, node.support));
     const pose = personPose(id, node);
-    if (node.representation !== DETAIL) lines.push(B.PERSON_FRAME(node.stance, extraPoses.includes(pose) ? pose : MOTION_FRAME_STAND));
+    if (node.unit) lines.push(B.UNIT_LINE(MOTION_UNIT_LABEL[node.unit], node.rides || node.uses?.objectId));
+    else if (node.representation !== DETAIL) lines.push(B.PERSON_FRAME(node.stance, extraPoses.includes(pose) ? pose : MOTION_FRAME_STAND));
     if (node.rides) lines.push(B.PERSON_RIDES(node.rides));
     const shown = B.PERSON_SHOWN(node.representation || "");
     if (shown) lines.push(shown);
@@ -90,18 +93,32 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
   sections.push(B.SECTION(B.HEADINGS.PEOPLE, personLines));
   const groupLines = crowds.map((node) => {
     const group = groups.find((item) => item.key === node.crowd?.groupKey);
-    const visible = node.visibleCount || Math.min(node.crowd?.count || B.CROWD_WATCH_MIN, B.CROWD_WATCH_MIN);
+    const visible = node.unit && !node.crowd ? 1 : node.visibleCount || Math.min(node.crowd?.count || B.CROWD_WATCH_MIN, B.CROWD_WATCH_MIN);
     const pose = personPose(id, node);
-    return [B.GROUP(node.id, node.description), B.GROUP_COUNT(visible, node.crowd?.rows, node.crowd?.count), node.stance ? B.PERSON_FRAME(node.stance, extraPoses.includes(pose) ? pose : MOTION_FRAME_STAND) : "", B.GROUP_LOOK(group?.origin, group?.skin, group?.outfit, group?.gear, group?.faction || node.crowd?.faction, group?.look || node.crowd?.appearance), node.crowd?.facing ? B.GROUP_FACING(node.crowd.facing, node.crowd.depth) : "", node.pose ? B.PERSON_ACTION("", node.pose, node.posture, node.support) : ""].filter(Boolean).join(" ");
+    return [B.GROUP(node.id, node.description), node.unit ? B.UNIT_COUNT(visible, node.crowd?.count) : B.GROUP_COUNT(visible, node.crowd?.rows, node.crowd?.count), node.unit ? B.UNIT_LINE(MOTION_UNIT_LABEL[node.unit], node.rides || node.uses?.objectId) : node.stance ? B.PERSON_FRAME(node.stance, extraPoses.includes(pose) ? pose : MOTION_FRAME_STAND) : "", B.GROUP_LOOK(group?.origin, group?.skin, group?.outfit, group?.gear, group?.faction || node.crowd?.faction, group?.look || node.crowd?.appearance), node.crowd?.facing ? B.GROUP_FACING(node.crowd.facing, node.crowd.depth) : "", node.pose ? B.PERSON_ACTION("", node.pose, node.posture, node.support) : ""].filter(Boolean).join(" ");
   });
   sections.push(B.SECTION(B.HEADINGS.GROUPS, groupLines));
   const sheets = context.sheets || [];
   const shown = new Map<string, string>();
   const kindFrames = MOTION_PROFILE_SCENES[id].objects;
   let codeFrames = 0;
+  const unitTargets = motionUnitTargets(scene);
+  const ownerName = (key: string | undefined): string | undefined => {
+    if (!key) return undefined;
+    const member = cast.find((item) => item.key === key);
+    if (member) return member.origin ? `${member.name}, ${member.origin}` : member.name;
+    const group = groups.find((item) => item.key === key);
+    return group ? [group.name, group.faction || group.origin].filter(Boolean).join(", ") : undefined;
+  };
   const objectLines = objects.map((item: MotionSceneObject) => {
     const node = scene.nodes.find((entry) => entry.id === item.id);
     const lines = [B.OBJECT(item.id, MOTION_OBJECT_CLASS_LABEL[item.class], item.description || node?.description || item.class)];
+    const owner = ownerName(item.owner);
+    if (owner) lines.push(B.OBJECT_OWNER(owner));
+    if (unitTargets.has(item.id)) {
+      lines.push(B.OBJECT_IN_UNIT(unitTargets.get(item.id)!));
+      return lines.join(" ");
+    }
     if (node?.pose) lines.push(B.PERSON_ACTION("", node.pose, node.posture, node.support));
     if (node?.gait) lines.push(B.OBJECT_GAIT(node.gait));
     if (node?.relation && node.target) lines.push(B.PERSON_RELATION(node.relation, node.target));
@@ -122,6 +139,8 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
     return lines.join(" ");
   });
   sections.push(B.SECTION(B.HEADINGS.OBJECTS, objectLines));
+  const unitKinds = [...new Set(scene.nodes.flatMap((node) => (node.unit ? [node.unit] : [])))].slice(0, MOTION_UNIT_MAX_FRAMES) as MotionUnit[];
+  sections.push(B.SECTION(B.HEADINGS.UNITS, unitKinds.map((unit) => B.UNIT_BLOCK(MOTION_UNIT_LABEL[unit], MOTION_UNIT_NOTES[unit], MOTION_PROFILE_SCENES[id].units[unit]))));
   let handFrames = 0;
   const propLines = props.map((node) => {
     const line = B.PROP(node.id, node.description, node.relation, node.target, node.state);
@@ -152,12 +171,14 @@ export const motionSceneWatchOuts = (context: MotionSceneBriefContext, objects: 
   for (const node of people) if (node.relation === B.SAME_SCALE_RELATION && node.target && people.some((other) => other.id === node.target)) out.push(B.WATCH.SAME_SCALE(nameOf(node, cast), nameOf(people.find((other) => other.id === node.target)!, cast)));
   if (scene.view === DETAIL && (scene.detailSubject === HANDS_WITH_OBJECT || scene.nodes.some((node) => node.kind === CHARACTER && node.representation === DETAIL))) out.push(B.WATCH.OUTSIDE_CAMERA);
   if (WHOLE_VIEWS.includes(scene.view || "") && people.some((node) => node.representation !== DETAIL && node.representation !== B.BUST)) out.push(MOTION_ILLUSTRATION_PROFILES[context.artDirection.id].brief.legs);
-  for (const node of people) if (node.stance === MOUNTED && node.rides) out.push(B.WATCH.RIDER(nameOf(node, cast), node.rides));
+  for (const node of people) if (node.stance === MOUNTED && node.rides && !node.unit) out.push(B.WATCH.RIDER(nameOf(node, cast), node.rides));
+  for (const node of people) if (node.unit) out.push(B.WATCH.UNIT(nameOf(node, cast), MOTION_UNIT_LABEL[node.unit], node.crowd ? node.visibleCount || 1 : 1));
+  const inUnit = motionUnitTargets(scene);
   if (CLOSE_VIEWS.includes(scene.view || "")) out.push(B.WATCH.NO_CUT);
   if (people.length) out.push(B.WATCH.TOP_ROOM);
   for (const node of people) if (node.uses) out.push(B.WATCH.USES(nameOf(node, cast), node.uses.objectId));
   for (const node of scene.nodes) if (node.kind === PROP && node.relation === "heldBy" && node.target) out.push(B.WATCH.HELD(nameOf(scene.nodes.find((other) => other.id === node.target) || node, cast)));
-  for (const item of objects) {
+  for (const item of objects.filter((entry) => !inUnit.has(entry.id))) {
     const owner = scene.nodes.find((node) => node.id === item.id);
     const legs = owner?.animal ? motionAnimalLegs(owner.animal) : MOTION_OBJECT_CLASS_LEGS[item.class];
     const gait = owner?.gait;
@@ -166,15 +187,17 @@ export const motionSceneWatchOuts = (context: MotionSceneBriefContext, objects: 
   return [...new Set(out)];
 };
 export const motionSceneRequiredIds = (id: MotionRemotionProfile, named: MotionRemotionNode[], people: MotionRemotionNode[], crowds: MotionRemotionNode[], objects: MotionSceneObject[], cast: MotionCastMember[], nodes: MotionRemotionNode[] = []): string[] => {
-  const singles = people.filter((node) => !crowds.includes(node) && node.representation !== DETAIL);
+  const singles = people.filter((node) => !crowds.includes(node) && node.representation !== DETAIL && !node.unit);
   const lines: string[] = [];
   if (singles.length) lines.push(B.IDS_PEOPLE(singles.map((node) => node.id), MOTION_ILLUSTRATION_PROFILES[id].brief.partIds));
   for (const node of named) {
     const marks = cast.find((member) => member.key === node.entityId)?.marks || [];
     if (marks.length && node.representation !== DETAIL) lines.push(B.IDS_MARKS(node.id, marks.length));
   }
-  for (const node of crowds) lines.push(B.IDS_GROUP(node.id));
-  for (const item of objects) lines.push(B.IDS_OBJECT(item.id, motionObjectPartNames(item, B.CLASS_PART_NAMES[item.class] || [], nodes.find((node) => node.id === item.id)?.animal)));
+  for (const node of crowds) lines.push(node.unit ? (node.crowd ? B.IDS_UNIT_GROUP(node.id, MOTION_UNIT_PARTS[node.unit]) : B.IDS_UNIT(node.id, MOTION_UNIT_PARTS[node.unit])) : B.IDS_GROUP(node.id));
+  for (const node of people.filter((item) => item.unit && !crowds.includes(item))) lines.push(B.IDS_UNIT(node.id, MOTION_UNIT_PARTS[node.unit!]));
+  const inUnit = motionUnitTargets({ nodes });
+  for (const item of objects.filter((entry) => !inUnit.has(entry.id))) lines.push(B.IDS_OBJECT(item.id, motionObjectPartNames(item, B.CLASS_PART_NAMES[item.class] || [], nodes.find((node) => node.id === item.id)?.animal)));
   lines.push(B.IDS_EFFECTS);
   return lines;
 };

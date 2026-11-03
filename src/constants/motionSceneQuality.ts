@@ -74,6 +74,7 @@ export const MOTION_SCENE_QUALITY = {
     FEET_OFF: (name: string, support: string): string => `${name} stands on ${support} but the feet do not touch it; place the shoes on its top surface.`,
     HEAD_SHAPE: (name: string): string => `${name}'s head outline is not the frame's head shape; copy the frame's head-base path unchanged and scale the whole person instead of reshaping the head.`,
     HEAD_WIDE: (name: string): string => `${name}'s head with hat or hair is far wider than the face; keep a hat brim at most 1.3 times the head width and add no ear, tuft or sideburn shapes sticking out at the sides.`,
+    UNIT: (name: string, label: string, broken: number, total: number): string => `${name}: ${broken} of ${total} ${label} units are not joined (the person is not seated on or working the animal or thing, or a part is missing); copy the unit reference so each unit is one joined group with its own sub-groups.`,
     MOUNT: (name: string): string => `${name} rides the horse: seat the rider in the saddle on the horse's back with the far leg hidden behind the horse, never standing beside or in front of it.`,
   },
   LOG_FIX: (scene: number, total: number, moved: number, opacity: number): string => `Cảnh ${scene}/${total}: tự sửa lớp hình – ${moved} lớp sương/khói dời xuống dưới nhân vật, ${opacity} nhân vật bị mờ được đặt lại rõ nét.`,

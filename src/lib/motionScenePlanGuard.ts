@@ -3,6 +3,8 @@ import { MOTION_ANIMALS, MOTION_POSTURES, MOTION_SCENE_SPEC as SPEC, type Motion
 import { MOTION_SCENE_VIEWS } from "../constants/motionProfiles/framing.js";
 import type { MotionRemotionNode, MotionRemotionScene } from "../types/motionVisual.js";
 import { motionSceneObjects } from "./motionObjects.js";
+import { motionNodeUnit } from "./motionUnits.js";
+import { MOTION_UNIT_VISIBLE } from "../constants/motionUnits.js";
 import { MOTION_OBJECT_ANIMAL_CLASSES, MOTION_OBJECT_HANDHELD, MOTION_OBJECT_HANDHELD_CLASSES } from "../constants/motionObjectClasses.js";
 import type { MotionSceneObject } from "../types/motionVisual.js";
 export const motionNodeStance = (node: Pick<MotionRemotionNode, "posture" | "pose" | "support" | "description">): MotionPosture => {
@@ -76,6 +78,16 @@ export const motionScenePlanGuard = (scenes: MotionRemotionScene[], opts: { cast
       else delete node.rides;
     }
     for (const node of scene.nodes) if (node.rides && node.stance !== G.MOUNTED) delete node.rides;
+    for (const node of scene.nodes) {
+      const unit = motionNodeUnit(node, scene);
+      if (!unit) {
+        delete node.unit;
+        continue;
+      }
+      node.unit = unit;
+      const cap = MOTION_UNIT_VISIBLE[scene.view || G.WIDE] || G.VISIBLE_MIN;
+      if (node.crowd) node.visibleCount = Math.max(1, Math.min(node.visibleCount || cap, cap));
+    }
     const people = scene.nodes.filter((node) => node.kind === G.CHARACTER && !node.anonymous && !node.animal);
     if (scene.view && !(MOTION_SCENE_VIEWS as readonly string[]).includes(scene.view)) scene.view = people.length ? G.CLOSE : G.DETAIL;
     if (scene.view === G.DETAIL) {

@@ -27,6 +27,7 @@ export interface MotionProfileScene {
   animalNotes: Record<MotionAnimal, string>;
   ghostOpacity: boolean;
   objects: Record<import("../motionObjectKinds.js").MotionObjectKind, string>;
+  units: Record<import("../motionUnits.js").MotionUnit, string>;
   legs: "required" | "forbidden";
   hatWidth?: number;
 }

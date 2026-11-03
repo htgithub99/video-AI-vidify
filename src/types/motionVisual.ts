@@ -65,6 +65,7 @@ export interface MotionRemotionNode {
   facing?: import("../constants/motionProfiles/sceneSpec.js").MotionFacing;
   distance?: import("../constants/motionProfiles/sceneSpec.js").MotionDepth;
   rides?: string;
+  unit?: import("../constants/motionUnits.js").MotionUnit;
   gait?: import("../constants/motionProfiles/sceneSpec.js").MotionGait;
   animal?: import("../constants/motionProfiles/sceneSpec.js").MotionAnimal;
   outfitChange?: boolean;
@@ -106,6 +107,7 @@ export interface MotionSceneObject {
   description: string;
   term?: string;
   kind?: import("../constants/motionObjectKinds.js").MotionObjectKind;
+  owner?: string;
   size?: import("../constants/motionObjectClasses.js").MotionObjectSize;
 }
 export interface MotionSceneCrop {

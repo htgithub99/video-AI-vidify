@@ -7,6 +7,12 @@ import { motionNodeAnimalOf, motionNodeStanceOf } from "./motionScenePoses.js";
 import type { MotionRemotionEffect, MotionRemotionNode, MotionSceneComposition, MotionSceneObject, MotionVisualRect } from "../types/motionVisual.js";
 import { MOTION_OBJECT_PART_CHECK_CLASSES } from "../constants/motionObjectClasses.js";
 import { motionObjectPartChecks } from "./motionObjectKinds.js";
+import { motionUnitPart, motionUnitTargets } from "./motionUnits.js";
+import { MOTION_UNIT_CREW, MOTION_UNIT_LABEL, MOTION_UNIT_PARTS, MOTION_UNIT_SEAT, MOTION_UNIT_SEAT_DEPTH, MOTION_UNIT_TOUCH } from "../constants/motionUnits.js";
+const unitContainers = (svg: string, node: MotionRemotionNode): string[] => {
+  const subs = node.anonymous || node.crowd ? motionLayerParts(svg, node.id, Q.SUB_PERSON) : [];
+  return subs.length ? subs : [node.id];
+};
 import { MOTION_CHARACTER_FRAMES } from "../constants/motionProfiles/characterFrames/index.js";
 import type { MotionRemotionProfile } from "../types/motionVisual.js";
 type ShapeElement = { tag: string; attributes: Record<string, string> };
@@ -143,6 +149,10 @@ export const motionQualityIds = (svg: string, composition: MotionSceneCompositio
     if (!composition.layers.some((layer) => layer.id === node.id)) continue;
     if (node.kind === "character" || motionNodeAnimalOf(node, cast)) ids.add(node.id);
     if (motionNodeAnimalOf(node, cast)) for (const part of [motionLayerPart(svg, node.id, Q.ANIMAL_TAIL), motionLayerPart(svg, node.id, Q.ANIMAL_HEAD)]) if (part) ids.add(part);
+    if (node.kind === "character" && node.unit) for (const container of unitContainers(svg, node)) for (const part of MOTION_UNIT_PARTS[node.unit]) {
+      const found = motionLayerPart(svg, container, motionUnitPart(part));
+      if (found) ids.add(found);
+    }
     if (node.kind === "character") {
       const head = motionLayerPart(svg, node.id, spec.headPart);
       if (head) ids.add(head);
@@ -189,7 +199,42 @@ export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[
     if (spec.lowPostures.includes(stance) && (lowDrawn === false || tooTall) && node.representation !== "bust") issues.push(Q.ISSUE.LOW(names(node), stance));
     if (stance === "lie" && box.height > 0 && (box.width * aspect) / box.height < Q.LIE_ASPECT) issues.push(Q.ISSUE.LIE(names(node)));
     const horse = (node.rides && nodes.find((item) => item.id === node.rides && measured[item.id])) || defaultHorse;
-    if (stance === Q.MOUNTED && horse) {
+    let unitChecked = false;
+    if (node.unit) {
+      const seat = MOTION_UNIT_SEAT[node.unit];
+      const crew = MOTION_UNIT_CREW[node.unit];
+      const containers = unitContainers(svg, node);
+      const results = containers.map((container): boolean | undefined => {
+        const box = (part: string) => {
+          const found = motionLayerPart(svg, container, motionUnitPart(part));
+          return found ? measured[found] || undefined : undefined;
+        };
+        const named = MOTION_UNIT_PARTS[node.unit!].filter((part) => motionLayerPart(svg, container, motionUnitPart(part)));
+        if (!named.length) return undefined;
+        if (seat) {
+          const person = box(seat.person),
+            carrier = box(seat.carrier);
+          if (!person || !carrier) return true;
+          const center = person.x + person.width / 2;
+          const bottom = person.y + person.height;
+          return center < carrier.x || center > carrier.x + carrier.width || bottom < carrier.y || bottom > carrier.y + carrier.height * MOTION_UNIT_SEAT_DEPTH;
+        }
+        if (crew) {
+          const object = box(crew.object);
+          if (!object) return true;
+          return !crew.people.some((part) => {
+            const person = box(part);
+            return !!person && person.x < object.x + object.width + MOTION_UNIT_TOUCH && person.x + person.width > object.x - MOTION_UNIT_TOUCH && person.y < object.y + object.height + MOTION_UNIT_TOUCH && person.y + person.height > object.y - MOTION_UNIT_TOUCH;
+          });
+        }
+        return MOTION_UNIT_PARTS[node.unit!].some((part) => !box(part));
+      });
+      const evaluated = results.filter((entry) => entry !== undefined);
+      const broken = evaluated.filter(Boolean).length;
+      unitChecked = evaluated.length > 0;
+      if (broken && broken * 2 > evaluated.length) issues.push(Q.ISSUE.UNIT(names(node), MOTION_UNIT_LABEL[node.unit], broken, evaluated.length));
+    }
+    if (stance === Q.MOUNTED && horse && !unitChecked) {
       const mount = measured[horse.id]!;
       const overlap = Math.max(0, Math.min(box.x + box.width, mount.x + mount.width) - Math.max(box.x, mount.x)) / Math.max(1e-6, box.width);
       if (overlap < Q.MOUNT_OVERLAP || box.y + box.height > mount.y + mount.height - Q.MOUNT_BOTTOM * mount.height) issues.push(Q.ISSUE.MOUNT(names(node)));
@@ -238,7 +283,9 @@ export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[
       b = measured[other.id]!.height;
     if (a > 0 && b > 0 && Math.abs(a - b) / Math.max(a, b) > Q.SCALE_GAP) issues.push(Q.ISSUE.SCALE(names(node), names(other)));
   }
+  const inUnit = motionUnitTargets({ nodes });
   for (const item of extra.objects || []) {
+    if (inUnit.has(item.id)) continue;
     if (!MOTION_OBJECT_PART_CHECK_CLASSES.includes(item.class) || !nodes.some((node) => node.id === item.id) || !motionLayerSvg(svg, item.id)) continue;
     const missing = motionObjectPartChecks(item, nodes.find((node) => node.id === item.id)?.animal).filter((entry) => !motionLayerParts(svg, item.id, entry.match).length);
     if (missing.length) issues.push(Q.ISSUE.OBJECT_PARTS(item.id, missing.map((entry) => entry.name)));
