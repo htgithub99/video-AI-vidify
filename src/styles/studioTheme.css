@@ -85,6 +85,14 @@
     color 160ms,
     box-shadow 160ms;
 }
+:root:is(.light, .dark) .studio-pagination-button[aria-current="page"] {
+  min-width: 44px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 10px !important;
+}
 :root:is(.light, .dark) .studio-button[data-variant="primary"],
 :root:is(.light, .dark) .studio-button[data-variant="purple"],
 :root:is(.light, .dark) .studio-button[data-variant="info"],

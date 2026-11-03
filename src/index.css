@@ -222,7 +222,7 @@ html.light .advanced-config-icon {
   border: 1px solid rgba(220, 210, 195, 0.8) !important;
   color: #334155 !important;
 }
-button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not([data-close-button]):not(.toggle-switch):not(.studio-segment):not([role="switch"]) {
+button:not(.btn-icon-tiny):not(.btn-tag):not(.header-action-btn):not(.btn-lang-item):not(.header-control-item):not(.header-control-container *):not(.toast-close-btn):not([data-close-button]):not(.toggle-switch):not(.studio-segment):not(.studio-pagination-button):not([role="switch"]) {
   min-height: 40px !important;
 }
 .toggle-switch,

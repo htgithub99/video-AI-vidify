@@ -7,14 +7,13 @@ export const Pagination = ({ page, pageSize, total, onChange, texts, disabled = 
   const { page: currentPage, pageCount, start, end, pages } = getPagination(total, page, pageSize);
   return (
     <nav className={S.ROOT} aria-label={texts.LABEL}>
-      <p className={S.SUMMARY} aria-live={STUDIO_UI.POLITE_LIVE}>
-        {texts.SUMMARY(start + 1, end, total)}
+      <p className={S.SUMMARY} aria-live={STUDIO_UI.POLITE_LIVE} aria-label={texts.SUMMARY(start + 1, end, total)} title={texts.SUMMARY(start + 1, end, total)}>
+        {texts.RANGE(start + 1, end, total)}
       </p>
       <div className={S.CONTROLS}>
         {(!hideUnavailableNavigation || currentPage > S.FIRST_PAGE) && (
-          <Button type={STUDIO_UI.BUTTON_TYPE} variant={STUDIO_UI.UNSTYLED} className={S.BUTTON} disabled={disabled || currentPage <= S.FIRST_PAGE} onClick={() => onChange(currentPage - 1)} title={texts.PREVIOUS}>
+          <Button type={STUDIO_UI.BUTTON_TYPE} variant={STUDIO_UI.UNSTYLED} className={S.BUTTON} disabled={disabled || currentPage <= S.FIRST_PAGE} onClick={() => onChange(currentPage - 1)} title={texts.PREVIOUS} aria-label={texts.PREVIOUS}>
             <ChevronLeft className={S.ICON} />
-            <span>{texts.PREVIOUS}</span>
           </Button>
         )}
         {pages.map((value) => (
@@ -23,8 +22,7 @@ export const Pagination = ({ page, pageSize, total, onChange, texts, disabled = 
           </Button>
         ))}
         {(!hideUnavailableNavigation || currentPage < pageCount) && (
-          <Button type={STUDIO_UI.BUTTON_TYPE} variant={STUDIO_UI.UNSTYLED} className={S.BUTTON} disabled={disabled || currentPage >= pageCount} onClick={() => onChange(currentPage + 1)} title={texts.NEXT}>
-            <span>{texts.NEXT}</span>
+          <Button type={STUDIO_UI.BUTTON_TYPE} variant={STUDIO_UI.UNSTYLED} className={S.BUTTON} disabled={disabled || currentPage >= pageCount} onClick={() => onChange(currentPage + 1)} title={texts.NEXT} aria-label={texts.NEXT}>
             <ChevronRight className={S.ICON} />
           </Button>
         )}

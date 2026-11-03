@@ -49,10 +49,10 @@ export const STUDIO_UI = {
   APP_HEADER_ACTIONS: "studio-app-header-actions flex items-center justify-end gap-1.5 sm:gap-2 shrink-0",
   MENU_BUTTON: "studio-menu-button header-control-item w-8 min-w-[32px] p-0 rounded-xl flex items-center justify-center lg:hidden",
 } as const;
-export const STUDIO_PAGINATION = { FIRST_PAGE: 1, VISIBLE_PAGES: 5, ROOT: "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4", SUMMARY: "text-xs text-slate-400", CONTROLS: "flex items-center gap-1 flex-wrap", BUTTON: "px-3 py-2 text-xs font-bold inline-flex items-center justify-center gap-1 rounded-xl", ICON: "w-4 h-4 shrink-0" } as const;
+export const STUDIO_PAGINATION = { FIRST_PAGE: 1, VISIBLE_PAGES: 5, ROOT: "flex min-w-0 flex-nowrap items-center justify-between gap-2 pt-4", SUMMARY: "min-w-0 truncate text-xs text-slate-400", CONTROLS: "flex shrink-0 flex-nowrap items-center gap-0.5", BUTTON: "studio-pagination-button !h-8 !min-h-8 !max-h-8 min-w-8 !px-1 shrink-0 whitespace-nowrap text-xs font-bold inline-flex items-center justify-center rounded-lg", ICON: "w-4 h-4 shrink-0" } as const;
 export const STUDIO_PAGINATION_TEXT = {
-  vi: { LABEL: "Phân trang", PREVIOUS: "Trang trước", NEXT: "Trang sau", PAGE: (page: number, total: number): string => `Trang ${page} / ${total}`, SUMMARY: (start: number, end: number, total: number): string => `Hiển thị ${start}–${end} / ${total} mục` },
-  en: { LABEL: "Pagination", PREVIOUS: "Previous page", NEXT: "Next page", PAGE: (page: number, total: number): string => `Page ${page} / ${total}`, SUMMARY: (start: number, end: number, total: number): string => `Showing ${start}–${end} of ${total} items` },
+  vi: { LABEL: "Phân trang", PREVIOUS: "Trang trước", NEXT: "Trang sau", PAGE: (page: number, total: number): string => `Trang ${page} / ${total}`, RANGE: (start: number, end: number, total: number): string => `${start}–${end} / ${total}`, SUMMARY: (start: number, end: number, total: number): string => `Hiển thị ${start}–${end} / ${total} mục` },
+  en: { LABEL: "Pagination", PREVIOUS: "Previous page", NEXT: "Next page", PAGE: (page: number, total: number): string => `Page ${page} / ${total}`, RANGE: (start: number, end: number, total: number): string => `${start}–${end} / ${total}`, SUMMARY: (start: number, end: number, total: number): string => `Showing ${start}–${end} of ${total} items` },
 } as const;
 export const STUDIO_TEXTS = {
   vi: { AUTO_TITLE: "Tạo video tự động", AUTO_DESCRIPTION: "Từ ý tưởng đến kịch bản, hình ảnh, giọng đọc và video.", CINEMATIC_TITLE: "Sản xuất phim AI", CINEMATIC_DESCRIPTION: "Xây dựng câu chuyện, nhân vật và các cảnh phim trong một quy trình.", OPEN_MENU: "Mở menu", CLOSE_MENU: "Đóng menu" },
