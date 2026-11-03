@@ -2,6 +2,12 @@ export const MOTION_POSTURES = ["stand", "sit", "sit_ground", "kneel", "crouch",
 export type MotionPosture = (typeof MOTION_POSTURES)[number];
 export const MOTION_ANIMALS = ["horse", "ox", "dog", "cat", "bird", "pig", "goat"] as const;
 export type MotionAnimal = (typeof MOTION_ANIMALS)[number];
+export const MOTION_FACINGS = ["front", "side", "back"] as const;
+export type MotionFacing = (typeof MOTION_FACINGS)[number];
+export const MOTION_GAITS = ["stand", "walk", "run", "gallop", "lie", "fly"] as const;
+export type MotionGait = (typeof MOTION_GAITS)[number];
+export const MOTION_DETAIL_SUBJECTS = ["face", "handsWithObject", "object", "document", "map", "bodyPart"] as const;
+export type MotionDetailSubject = (typeof MOTION_DETAIL_SUBJECTS)[number];
 export const MOTION_SHOT_SIZES = ["close", "medium_close", "medium"] as const;
 export type MotionShotSize = (typeof MOTION_SHOT_SIZES)[number];
 export interface MotionShotFrame {
@@ -18,8 +24,10 @@ export interface MotionProfileScene {
   animals: Record<MotionAnimal, string>;
   animalNotes: Record<MotionAnimal, string>;
   ghostOpacity: boolean;
+  legs: "required" | "forbidden";
+  hatWidth?: number;
 }
-const B = "(?<![\\p{L}\\p{N}])";
+const B = "(?<![\\p{L}\\p{N}-])";
 const E = "(?![\\p{L}\\p{N}])";
 const word = (body: string): RegExp => new RegExp(`${B}(?:${body})${E}`, "iu");
 export const MOTION_SCENE_SPEC = {

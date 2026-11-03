@@ -1,5 +1,9 @@
 export const MOTION_OBJECT_CLASSES = ["mount", "draft", "wheeled", "tracked", "boat", "aircraft", "artillery", "handWeapon", "machine", "bird", "smallAnimal"] as const;
 export type MotionObjectClass = (typeof MOTION_OBJECT_CLASSES)[number];
+export const MOTION_OBJECT_SIZES = ["large", "handheld"] as const;
+export type MotionObjectSize = (typeof MOTION_OBJECT_SIZES)[number];
+export const MOTION_OBJECT_HANDHELD_CLASSES: readonly MotionObjectClass[] = ["handWeapon"];
+export const MOTION_OBJECT_HANDHELD: MotionObjectSize = "handheld";
 const B = "(?<![\\p{L}\\p{N}])";
 const E = "(?![\\p{L}\\p{N}])";
 const word = (body: string): RegExp => new RegExp(`${B}(?:${body})${E}`, "iu");
@@ -29,7 +33,7 @@ export const MOTION_OBJECT_CLASS_NOTES: Record<MotionObjectClass, string> = {
   bird: "Bird: a round body with a small head and beak, wings folded along the sides or spread when flying, two thin legs under the body, a tail at the rear.",
   smallAnimal: "Small animal: a body on four short legs, the head at the front with ears and snout as the species needs, tail at the rear; it stands, sits or lies on its support.",
 };
-const part = (name: string, body: string): { name: string; match: RegExp } => ({ name, match: new RegExp(`(?:^|[_-])(?:${body})(?:[_-]|$)`, "i") });
+const part = (name: string, body: string): { name: string; match: RegExp } => ({ name, match: new RegExp(`(?:^|[_-])(?:${body})s?(?:[_-]|$)`, "i") });
 export const MOTION_OBJECT_CLASS_PARTS: Record<MotionObjectClass, readonly { name: string; match: RegExp }[]> = {
   mount: [part("head", "head|neck"), part("legs", "legs?")],
   draft: [part("head", "head|neck"), part("legs", "legs?")],
@@ -37,7 +41,7 @@ export const MOTION_OBJECT_CLASS_PARTS: Record<MotionObjectClass, readonly { nam
   tracked: [part("tracks", "tracks?|treads?"), part("hull", "hull|body"), part("turret", "turret|gun|barrel")],
   boat: [part("hull", "hull")],
   aircraft: [part("fuselage", "fuselage|body"), part("wings", "wings?")],
-  artillery: [part("barrel", "barrel|gun|tube"), part("wheels", "wheels?")],
+  artillery: [part("barrel", "barrel|gun|tube|muzzle|cannon"), part("wheels", "wheels?")],
   handWeapon: [part("grip", "barrel|blade|shaft|stock|grip|handle|bow")],
   machine: [part("base", "base|body|frame")],
   bird: [part("head", "head|beak"), part("wings", "wings?|legs?")],

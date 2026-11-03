@@ -29,6 +29,10 @@ export const cleanTranscriptInput = (raw: string): { text: string; report: Sourc
   return { text, report };
 };
 export const SOURCE_READING_RULES = MR.MOTION_TEMPLATE_SOURCE_READING_RULES_BRACKETED_NAMES_SUCH_AS_CARL_SAGAN_MARK_RECO(MISSING_QUOTE_MARK);
+export const motionSourceReadingRules = (text: string): string =>
+  SOURCE_READING_RULES.split(RT_SHARED.SYMBOL_01BA47)
+    .filter((_line, index) => (index === MR.MOTION_SOURCE_RULE_BRACKET_LINE ? MR.MOTION_SOURCE_BRACKET_NAME.test(text) : index === MR.MOTION_SOURCE_RULE_QUOTE_LINE ? text.includes(MISSING_QUOTE_MARK) : true))
+    .join(RT_SHARED.SYMBOL_01BA47);
 const words = (s: string): string[] =>
   s
     .toLowerCase()

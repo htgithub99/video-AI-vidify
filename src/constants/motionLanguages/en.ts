@@ -1,6 +1,8 @@
 import type { MotionLanguageProfile } from "./types.js";
+import { EN_GENRE_SAMPLES } from "./genreSamples.en.js";
 export const EN_LANGUAGE: MotionLanguageProfile = {
   code: "en",
+  genreSamples: EN_GENRE_SAMPLES,
   label: { vi: "Tiếng Anh", en: "English" },
   promptName: "English",
   unit: { promptName: "words" },

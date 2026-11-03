@@ -5,15 +5,9 @@ const field = (value: unknown, max: number): string | undefined => {
   const text = typeof value === "string" ? value.trim().slice(0, max) : "";
   return text || undefined;
 };
-export const motionCastMarks = (marks: unknown, look?: string): string[] => {
+export const motionCastMarks = (marks: unknown): string[] => {
   const listed = (Array.isArray(marks) ? marks : []).filter((item): item is string => typeof item === "string" && !!item.trim()).map((item) => item.trim().replace(I.MARK_TRIM, "").slice(0, I.MARK_CHARS));
-  if (listed.length) return listed.slice(0, I.MARKS_MAX);
-  return (look || "")
-    .split(I.MARK_SPLIT)
-    .map((part) => part.trim())
-    .filter((part) => part && I.MARK_WORDS.test(part) && !I.MARK_SKIP.test(part))
-    .map((part) => part.replace(I.MARK_TRIM, "").slice(0, I.MARK_CHARS))
-    .slice(0, I.MARKS_MAX);
+  return listed.slice(0, I.MARKS_MAX);
 };
 export const motionCastSkin = (skin: unknown, look?: string): string | undefined => field(skin, I.FIELD_CHARS) || (look || "").match(I.SKIN_WORDS)?.[1]?.trim();
 export const motionAnalysisGroups = (raw: unknown): MotionAnalysisGroup[] | undefined => {

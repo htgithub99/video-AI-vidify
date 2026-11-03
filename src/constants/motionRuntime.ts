@@ -697,6 +697,9 @@ export const MOTION_TEMPLATE_SOURCE_READING_RULES_BRACKETED_NAMES_SUCH_AS_CARL_S
 - The transcript is someone else's script: retell it in a new structure and your own words; never translate it line by line or reuse its jokes verbatim.
 - Separate the author's opinions from facts; present opinions as opinions.`;
 export const MOTION_TEXT_NFKD = "NFKD" as const;
+export const MOTION_SOURCE_RULE_BRACKET_LINE = 1;
+export const MOTION_SOURCE_RULE_QUOTE_LINE = 2;
+export const MOTION_SOURCE_BRACKET_NAME = /\[[^\]\n]{2,60}\]/u;
 export const MOTION_TEMPLATE_BEAT_THE_QUOTE_BY_IS_NOT_IN_THE_TRANSCRIPT_AUDIO_ONLY_NARRATE_IT_ = (value0: unknown, value1: unknown): string => `beat ${value0}: the quote by ${value1} is not in the transcript (audio only); narrate it as reported speech in a scene beat instead`;
 export const MOTION_TEMPLATE_BEAT_QUOTE_CARD_BY_NEEDS_DATA_SOURCEQUOTE_WITH_THE_EXACT_TRANSCRI = (value0: unknown, value1: unknown): string => `beat ${value0}: quote card by ${value1} needs data.sourceQuote with the exact transcript words (5+ words); if the transcript has no exact words, use reported speech in a scene beat`;
 export const MOTION_TEMPLATE_BEAT_DATA_SOURCEQUOTE_BY_IS_NOT_FOUND_IN_THE_TRANSCRIPT_NEVER_INV = (value0: unknown, value1: unknown, value2: unknown): string => `beat ${value0}: data.sourceQuote by ${value1} ("${value2}") is not found in the transcript; never invent or paraphrase inside quotation marks – copy the exact words or use reported speech in a scene beat`;

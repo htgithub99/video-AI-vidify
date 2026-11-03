@@ -39,4 +39,6 @@ export const OUTLINED_SCENE: MotionProfileScene = {
     goat: "Goat: slim body, thin legs, horns curving back, small beard.",
   },
   ghostOpacity: false,
+  legs: "required",
+  hatWidth: 1.45,
 };

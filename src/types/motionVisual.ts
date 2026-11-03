@@ -55,12 +55,16 @@ export interface MotionRemotionNode {
   anonymous?: boolean;
   crowd?: { groupKey?: string; faction?: string; appearance?: string; depth: "foreground" | "midground" | "background"; rows?: number; facing?: string; count?: number };
   visibleCount?: number;
+  groupKey?: string;
   uses?: { objectId: string; how: string };
   description: string;
   pose: string;
   posture?: string;
   support?: string;
   stance?: import("../constants/motionProfiles/sceneSpec.js").MotionPosture;
+  facing?: import("../constants/motionProfiles/sceneSpec.js").MotionFacing;
+  rides?: string;
+  gait?: import("../constants/motionProfiles/sceneSpec.js").MotionGait;
   animal?: import("../constants/motionProfiles/sceneSpec.js").MotionAnimal;
   outfitChange?: boolean;
   representation?: "full" | "bust" | "detail";
@@ -99,6 +103,8 @@ export interface MotionSceneObject {
   id: string;
   class: import("../constants/motionObjectClasses.js").MotionObjectClass;
   description: string;
+  term?: string;
+  size?: import("../constants/motionObjectClasses.js").MotionObjectSize;
 }
 export interface MotionSceneCrop {
   x: number;
@@ -132,6 +138,7 @@ export interface MotionRemotionScene {
   view?: MotionSceneView;
   camera?: string;
   lead?: string;
+  detailSubject?: import("../constants/motionProfiles/sceneSpec.js").MotionDetailSubject;
   objects?: MotionSceneObject[];
   crop?: MotionSceneCrop;
   qualityNote?: string;

@@ -1,6 +1,8 @@
 import type { MotionLanguageProfile } from "./types.js";
+import { EN_GENRE_SAMPLES } from "./genreSamples.en.js";
 export const KO_LANGUAGE: MotionLanguageProfile = {
   code: "ko",
+  genreSamples: EN_GENRE_SAMPLES,
   label: { vi: "Tiếng Hàn", en: "Korean" },
   promptName: "Korean",
   unit: { promptName: "Korean syllables (Hangul blocks)" },

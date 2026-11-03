@@ -260,7 +260,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
               return lines.slice(Math.max(0, from), to < 0 ? undefined : to + 1).map((line) => line.text).join(RT_SHARED.SYMBOL_36A9E7);
             },
           });
-          if (guard.stripped || guard.details || guard.animals) opts.log(MOTION_SCENE_PLAN_GUARD.LOG(guard.stripped, guard.details, guard.animals));
+          if (guard.stripped || guard.details || guard.animals || guard.guessed || guard.bodies || guard.objects) opts.log(MOTION_SCENE_PLAN_GUARD.LOG(guard.stripped, guard.details, guard.animals, guard.guessed, guard.bodies, guard.objects));
           for (const scene of state.scenes[beat.id]) {
             const from = lines.findIndex((line) => line.key === scene.fromLineId),
               to = lines.findIndex((line) => line.key === scene.toLineId);
@@ -312,6 +312,13 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const planned = new Set<string>();
     const readyCount = () => allScenes.filter((scene) => ready.has(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED).length;
     const progressTotal = () => Math.max(1, allScenes.length + selectedGroups.length - planned.size);
+    const phase = { from: 0, span: C.PHASE_SPAN.FIRST, done: 0, total: 0 };
+    const setPhase = (from: number, span: number, total: number) => Object.assign(phase, { from, span, done: 0, total: Math.max(1, total) });
+    const stepProgress = (message: string, retry: boolean) => {
+      if (!retry) return opts.progress?.((C.PHASE_SPAN.FIRST * processed.size) / progressTotal(), message);
+      phase.done++;
+      opts.progress?.(phase.from + (phase.span * Math.min(phase.done, phase.total)) / phase.total, message);
+    };
     const sceneSpec = MOTION_PROFILE_SCENES[settings.profileId];
     const noteOutcome = (scene: (typeof allScenes)[number], failed: boolean) => {
       if (!failed) {
@@ -386,7 +393,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             renderBehavior: state.renderBehavior,
             era: analysis.era,
             place: analysis.places.find((place) => place.key === (scene.place || beat.place)),
-            scene: { purpose: scene.purpose, text: scene.text, format: scene.format, effects: scene.effects, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, camera: scene.camera, lead: scene.lead, objects: scene.objects, nodes: drawingNodes(scene.nodes) as MotionRemotionNode[] },
+            scene: { purpose: scene.purpose, text: scene.text, format: scene.format, effects: scene.effects, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, camera: scene.camera, lead: scene.lead, detailSubject: scene.detailSubject, objects: scene.objects, nodes: drawingNodes(scene.nodes) as MotionRemotionNode[] },
             cast: motionCastIdentity(analysis.cast).filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
             dialogueSpeakers: speakers,
             groups: scene.nodes.some((node) => node.anonymous || node.crowd) ? analysis.groups : undefined,
@@ -453,15 +460,15 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             if (opts.signal?.aborted) throw error;
             opts.log(QUALITY.LOG_UNMEASURED(scene.id));
           }
-          if (drawingRequested && measuredBoxes && (scene.qualityRedraws || 0) < QUALITY.MAX_REDRAWS) {
+          if (drawingRequested && measuredBoxes) {
             const issues = [
-              ...motionSceneQualityIssues(asset.svg, scene.nodes, scene.view, measuredBoxes, sceneSpec, cast, (node) => analysis.cast.find((member) => member.key === node.entityId)?.name || node.description, width / height, { marks: (node) => analysis.cast.find((member) => member.key === node.entityId)?.marks || [], objects: scene.objects }),
+              ...motionSceneQualityIssues(asset.svg, scene.nodes, scene.view, measuredBoxes, sceneSpec, cast, (node) => analysis.cast.find((member) => member.key === node.entityId)?.name || node.description, width / height, { marks: (node) => analysis.cast.find((member) => member.key === node.entityId)?.marks || [], objects: scene.objects, profile: settings.profileId }),
               ...driftedNames.map((name) => QUALITY.ISSUE.DRIFT(name)),
             ];
             if (issues.length) {
               scene.qualityNote = issues.join(RT_SHARED.SYMBOL_36A9E7);
               scene.qualityRedraws = (scene.qualityRedraws || 0) + 1;
-              opts.log(QUALITY.LOG_ISSUE(allScenes.indexOf(scene) + 1, allScenes.length, issues));
+              opts.log((scene.qualityRedraws > QUALITY.MAX_REDRAWS ? QUALITY.LOG_LEFT : QUALITY.LOG_ISSUE)(allScenes.indexOf(scene) + 1, allScenes.length, issues));
             } else delete scene.qualityNote;
           }
         }
@@ -596,12 +603,12 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           );
         ready.add(scene.id);
         scene.build = { inputKey, status: RUNTIME_VALUES.ACCEPTED_070C160A, review: !!opts.review && scene.reviewKey === motionInputKey([scene.composition, scene.text, settings]), attempts: attempts + (drawingRequested ? 1 : 0) };
-        noteOutcome(scene, !!(drawingRequested && scene.qualityNote));
+        noteOutcome(scene, !!(drawingRequested && scene.qualityNote && (scene.qualityRedraws || 0) <= QUALITY.MAX_REDRAWS));
         processed.add(scene.id);
         save();
-        const message = V.LOG_READY(readyCount(), allScenes.length) + P.LOG_PENDING_PLANS(selectedGroups.length - planned.size);
+        const message = retry ? C.LOG_REDRAWN(allScenes.indexOf(scene) + 1, allScenes.length, !!scene.qualityNote, Math.max(0, phase.total - phase.done - 1)) : V.LOG_READY(readyCount(), allScenes.length) + P.LOG_PENDING_PLANS(selectedGroups.length - planned.size);
         opts.log(message);
-        if (!retry) opts.progress?.((0.9 * processed.size) / progressTotal(), message);
+        stepProgress(message, retry);
       } catch (error) {
         if (opts.signal?.aborted || motionCaptchaError(error)) throw error;
         ready.delete(scene.id);
@@ -617,7 +624,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         processed.add(scene.id);
         save();
         opts.log(C.LOG_CONTINUE(scene.id, reason));
-        if (!retry) opts.progress?.((0.9 * processed.size) / progressTotal(), C.PROGRESS_CONTINUE(allScenes.indexOf(scene) + 1, allScenes.length));
+        stepProgress(C.PROGRESS_CONTINUE(allScenes.indexOf(scene) + 1, allScenes.length), retry);
       }
     };
     let sheetRequests = 0;
@@ -710,10 +717,11 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     await Promise.all(drawing);
     if (drawingFailure) throw drawingFailure.error;
     for (let round = 1; round <= QUALITY.ROUNDS; round++) {
-      const pending = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.qualityNote && !scene.deferred && scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A);
+      const pending = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.qualityNote && (scene.qualityRedraws || 0) <= QUALITY.MAX_REDRAWS && !scene.deferred && scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A);
       if (!pending.length) break;
       opts.signal?.throwIfAborted();
-      opts.log(QUALITY.LOG_ROUND(round, pending.length));
+      setPhase(C.PHASE_SPAN.FIRST + ((round - 1) * C.PHASE_SPAN.REDRAW) / QUALITY.ROUNDS, C.PHASE_SPAN.REDRAW / QUALITY.ROUNDS, pending.length);
+      opts.log(QUALITY.LOG_ROUND(round, pending.length, readyCount(), allScenes.length));
       const outcomes = await Promise.allSettled(
         pending.map(async (scene) => {
           const snapshot = { composition: scene.composition, asset: scene.composition && state.assets[scene.composition.assetKey], build: scene.build, crop: scene.crop, focus: scene.focus, note: scene.qualityNote, redraws: scene.qualityRedraws };
@@ -748,7 +756,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       }
       opts.signal?.throwIfAborted();
       opts.log(round === 1 ? C.LOG_RECOVERY(failed.length) : C.LOG_RECOVERY_ROUND(round, C.RECOVERY_ROUNDS, failed.length));
-      let retried = 0;
+      setPhase(C.PHASE_SPAN.FIRST + C.PHASE_SPAN.REDRAW + ((round - 1) * C.PHASE_SPAN.RECOVERY) / C.RECOVERY_ROUNDS, C.PHASE_SPAN.RECOVERY / C.RECOVERY_ROUNDS, failed.length);
       const retries = await Promise.allSettled(
         failed.map(async (scene, index) => {
           scene.drawingNote = [state.notes![scene.beatId], C.RECOVERY_STRATEGY[round]].filter(Boolean).join(RT_SHARED.SYMBOL_01BA47);
@@ -760,8 +768,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           const anchor = allScenes.find((candidate) => candidate.id !== scene.id && (candidate.locationKey || candidate.place || candidate.beatId) === location && candidate.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A && candidate.composition && candidate.aspect === aspect && remotionSceneReadiness(candidate, state).preview);
           opts.log(C.LOG_RETRY(index + 1, failed.length, allScenes.indexOf(scene) + 1, allScenes.length));
           await draw(scene, anchor, true);
-          retried++;
-          opts.progress?.(0.9 + (0.1 * retried) / failed.length, C.LOG_SUMMARY(readyCount(), allScenes.length));
         }),
       );
       const interrupted = retries.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
@@ -772,6 +778,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       if (!deferred.length) break;
       opts.signal?.throwIfAborted();
       opts.log(C.LOG_DEFER_ROUND(round, C.DEFER_ROUNDS, deferred.length));
+      setPhase(1 - C.PHASE_SPAN.DEFER + ((round - 1) * C.PHASE_SPAN.DEFER) / C.DEFER_ROUNDS, C.PHASE_SPAN.DEFER / C.DEFER_ROUNDS, deferred.length * C.DEFER_ATTEMPTS);
       const outcomes = await Promise.allSettled(
         deferred.map(async (scene) => {
           for (let attempt = 0; attempt < C.DEFER_ATTEMPTS; attempt++) {
@@ -781,7 +788,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             scene.drawingNote = [state.notes![scene.beatId], C.RECOVERY_STRATEGY[Math.min(round + attempt, C.RECOVERY_STRATEGY.length - 1)]].filter(Boolean).join(RT_SHARED.SYMBOL_01BA47);
             delete scene.qualityNote;
             await draw(scene, undefined, true);
-            if (scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A && !scene.qualityNote) return;
+            if (scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A && (!scene.qualityNote || (scene.qualityRedraws || 0) > QUALITY.MAX_REDRAWS)) return;
             if (scene.build?.status !== RUNTIME_VALUES.ACCEPTED_070C160A && snapshot.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A && snapshot.composition && snapshot.asset) {
               scene.composition = snapshot.composition;
               state.assets[snapshot.composition.assetKey] = snapshot.asset;
@@ -797,8 +804,10 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       if (stopped?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw stopped.reason;
       opts.log(C.LOG_DEFER_DONE(allScenes.filter((scene) => scene.deferred).length));
     }
-    opts.log(C.LOG_SUMMARY(readyCount(), allScenes.length));
-    opts.progress?.(readyCount() / Math.max(1, allScenes.length), C.LOG_SUMMARY(readyCount(), allScenes.length));
+    const noted = allScenes.filter((scene) => ready.has(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && scene.qualityNote).map((scene) => allScenes.indexOf(scene) + 1);
+    const summary = C.LOG_SUMMARY(readyCount(), readyCount() - noted.length, allScenes.length, noted);
+    opts.log(summary);
+    opts.progress?.(readyCount() / Math.max(1, allScenes.length), summary);
     state.compositionRevision = C.REVISION;
     state.profileRevision = V.PROFILES[settings.profileId].revision;
     if (!Object.keys(state.failures).length && planGroups.every((group) => remotionGroupPlanCurrent(group.beats, analysis, state))) {

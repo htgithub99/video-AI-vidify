@@ -1,6 +1,8 @@
 import type { MotionLanguageProfile } from "./types.js";
+import { EN_GENRE_SAMPLES } from "./genreSamples.en.js";
 export const JA_LANGUAGE: MotionLanguageProfile = {
   code: "ja",
+  genreSamples: EN_GENRE_SAMPLES,
   label: { vi: "Tiếng Nhật", en: "Japanese" },
   promptName: "Japanese",
   unit: { promptName: "Japanese characters (kana and kanji, about one mora each)" },

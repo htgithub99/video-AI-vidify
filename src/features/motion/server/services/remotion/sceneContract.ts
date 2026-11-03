@@ -71,7 +71,8 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
       if (typeof item[field] === "string" && item[field].trim()) item[field] = item[field].trim().slice(0, P.SCENE_TEXT_CHARS);
       else delete item[field];
     }
-    if (Array.isArray(item.objects)) item.objects = item.objects.filter((entry: any) => entry && typeof entry === "object" && typeof entry.id === "string" && entry.id.trim() && (MOTION_OBJECT_CLASSES as readonly string[]).includes(entry.class)).map((entry: any) => ({ id: entry.id.trim(), class: entry.class, description: typeof entry.description === "string" ? entry.description.trim().slice(0, P.SCENE_TEXT_CHARS) : "" }));
+    for (const [field, values] of Object.entries(P.SCENE_ENUMS)) if (!values.includes(item[field])) delete item[field];
+    if (Array.isArray(item.objects)) item.objects = item.objects.filter((entry: any) => entry && typeof entry === "object" && typeof entry.id === "string" && entry.id.trim() && (MOTION_OBJECT_CLASSES as readonly string[]).includes(entry.class)).map((entry: any) => ({ id: entry.id.trim(), class: entry.class, description: typeof entry.description === "string" ? entry.description.trim().slice(0, P.SCENE_TEXT_CHARS) : "", ...(typeof entry.term === "string" && entry.term.trim() ? { term: entry.term.trim().toLowerCase().slice(0, P.TERM_CHARS) } : {}), ...(P.OBJECT_SIZES.includes(entry.size) ? { size: entry.size } : {}) }));
     else delete item.objects;
     if (Array.isArray(item.nodes))
       for (const node of item.nodes) {
@@ -90,6 +91,11 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
             }
           }
         } else delete node.crowd;
+        for (const [field, values] of Object.entries(P.NODE_ENUMS)) if (!values.includes(node[field])) delete node[field];
+        if (typeof node.rides !== "string" || !node.rides.trim()) delete node.rides;
+        else node.rides = node.rides.trim();
+        if (typeof node.groupKey !== "string" || !node.groupKey.trim()) delete node.groupKey;
+        else node.groupKey = node.groupKey.trim();
         if (!Number.isFinite(node.visibleCount) || node.visibleCount < 1) delete node.visibleCount;
         else node.visibleCount = Math.min(P.VISIBLE_MAX, Math.round(node.visibleCount));
         if (!node.uses || typeof node.uses !== "object" || typeof node.uses.objectId !== "string" || typeof node.uses.how !== "string" || !node.uses.how.trim()) delete node.uses;

@@ -101,7 +101,7 @@ export const MOTION_STORY_CONFIG = {
   BIBLE_KEY: (generation: number, key: string): string => `${generation}|${key}`,
   BIBLE_WRAP: (bible: string): string => `${bible}\n`,
   CONTRACT: (contract: { voice: string; opening: string; spine: string; devices: string; closing: string }): string =>
-    `GENRE CONTRACT (techniques of the reference style for this genre; follow them, never copy a sentence of any reference): VOICE ${contract.voice}. OPENING ${contract.opening}. SPINE ${contract.spine}. DEVICES ${contract.devices}. CLOSING ${contract.closing}.`,
+    `GENRE CONTRACT (techniques of the reference style for this genre; follow them, never copy a sentence of any reference): OPENING ${contract.opening}. SPINE ${contract.spine}. DEVICES ${contract.devices}. CLOSING ${contract.closing}.`,
   CHAPTER_RETRY_NOTE: (problems: string, spoken: number, target: number): string =>
     `PREVIOUS ATTEMPT WAS REJECTED: ${problems} Your previous narration had ${spoken} units in total; the whole chapter must total about ${target} units (count every spoken syllable/word across all beats). ${spoken > target ? "Cut descriptive filler and merge beats; keep only the events that move the story." : "Add concrete events and sensory detail from the source."}`,
   VI_SYLLABLES_PER_SECOND: 3.4,

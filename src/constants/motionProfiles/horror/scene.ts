@@ -31,4 +31,5 @@ export const HORROR_SCENE: MotionProfileScene = {
   animals: HORROR_ANIMAL_FRAMES,
   animalNotes: OUTLINED_SCENE.animalNotes,
   ghostOpacity: true,
+  legs: "forbidden",
 };

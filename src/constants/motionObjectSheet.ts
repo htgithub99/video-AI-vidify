@@ -1,6 +1,10 @@
 export const MOTION_OBJECT_SHEET = {
   ARTIFACT: "motion_remotion_sheet",
-  PLURAL: /(?:e?s)$/u,
+  SINGULAR: [
+    [/(?<=[^aeiou])ies$/u, "y"],
+    [/(?<=(?:x|z|ch|sh))es$/u, ""],
+    [/(?<=[^su])s$/u, ""],
+  ] as readonly (readonly [RegExp, string])[],
   KEY_INVALID: /[^a-z0-9]+/g,
   KEY_SEPARATOR: "_",
   MAX_SVG: 3000,

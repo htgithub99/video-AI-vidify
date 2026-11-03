@@ -1,7 +1,6 @@
 import type { MotionSceneView } from "./motionProfiles/framing.js";
 export const MOTION_SCENE_BRIEF = {
   TASK: "TEXT CODING TASK: draw ONE complete 2D scene as SVG source from the SCENE BRIEF below, in the character style whose frame and rules follow. The brief says what must be in the picture and what it must get right; you design the setting, poses, placement and layout yourself. No image tools, no reference-image upload. Return only the JSON described at the end.",
-  FRAME: "CHARACTER SVG FRAME: the small SVG below is this style's character construction and proportions, not the scene canvas. Build every visible person from it: same head shape, torso, limb and shoe construction, same outline weight. Re-articulate the limbs for the pose of the scene (bend knees to sit or kneel, raise an arm to point) instead of pasting the standing pose. Copy it into a uniquely prefixed group per person and place the whole person once with an outer translate(x y) scale(s), uniform scale only. Clothing, hair, headgear and held things come from the brief.",
   OUTPUT: `OUTPUT: one fenced JSON object {design,svg,layers,animations,continuityNotes}.
 design={format,camera,cameraMotion?}: brief descriptive fields only; the SVG holds the real layout in the exact viewBox.
 svg: self-contained SVG with xmlns='http://www.w3.org/2000/svg', closed tags, unique ids, explicit fills and strokes, single-quoted attributes inside the JSON string; local defs/gradients allowed; no scripts, CSS, SMIL, external URLs or text except label nodes; max 150000 characters.
@@ -47,6 +46,12 @@ Before returning check: every brief node present, limbs connected, hands on held
   PERSON_LOOK: (look: string): string => `Wears: ${look.replace(/[.\s]+$/u, "")}.`,
   PERSON_ACTION: (description: string, pose: string | undefined, posture: string | undefined, support: string | undefined): string => [description ? `Doing: ${description}.` : "", pose ? `Pose: ${pose}.` : "", posture ? `Posture: ${posture}.` : "", support ? `Support: ${support}.` : ""].filter(Boolean).join(" "),
   PERSON_SHOWN: (representation: string): string => (representation === "bust" ? "Shown from the chest up." : representation === "detail" ? "Only the part named above is shown." : ""),
+  PERSON_FRAME: (stance: string | undefined, pose: string): string => `${stance ? `Body position: ${stance.replace("_", " ")}. ` : ""}Frame: ${pose.toUpperCase()}.${pose === "back" ? " Seen from behind: the back of the head is covered by hair or headgear and shows no eyes, nose or mouth; the collar and shoulders face away." : ""}`,
+  PERSON_RIDES: (mount: string): string => `Rides ${mount}.`,
+  OBJECT_GAIT: (gait: string): string => `Gait: ${gait}.`,
+  FRAME_BLOCK: (pose: string, svg: string): string => `${pose.toUpperCase()} FRAME:\n${svg}`,
+  FRAME_END: "END CHARACTER SVG FRAMES",
+  BUST: "bust",
   PERSON_RELATION: (relation: string, target: string): string => `Position: ${relation} ${target}.`,
   PERSON_USES: (objectId: string, how: string): string => `Uses ${objectId}: ${how}.`,
   PERSON_ANIMAL: (animal: string): string => `This is an animal (${animal}), drawn with animal anatomy.`,
@@ -65,12 +70,13 @@ Before returning check: every brief node present, limbs connected, hands on held
   WATCH: {
     CROWD: (id: string, visible: number): string => `${id} is a crowd: ${visible} people must be individually visible, not three figures standing for thirty.`,
     SAME_SCALE: (a: string, b: string): string => `${a} and ${b} stand beside each other at the same distance from the camera: draw them the same size.`,
-    OUTSIDE_CAMERA: "This is a detail of hands: the camera stands outside the body and sees the hands from the side; no sleeve or arm enters from the bottom edge, no view down the owner's own body.",
+    OUTSIDE_CAMERA: "This is a detail of hands with an object: the camera stands outside the body and sees them from the side; the hands and forearms enter from the left or right edge and hold or use the object; no sleeve or arm enters from the bottom edge, no view down the owner's own body, no half figure.",
     NO_CUT: "Nothing important is cut: the whole head with hat, both hands and the held object stay inside the frame.",
     USES: (name: string, objectId: string): string => `${name} is using ${objectId}: the hands touch it and the body is placed where a user of that thing stands or sits.`,
     HELD: (name: string): string => `What ${name} holds sits inside the hand, not floating beside it.`,
     TOP_ROOM: "Leave empty space above every head and hat; no head touches the top edge.",
-    ANIMAL_LEGS: (id: string, legs: number): string => `${id} has ${legs} legs that all reach the ground, with the head at the front of the body.`,
+    ANIMAL_LEGS: (id: string, legs: number, gait: string | undefined): string => `${id} has ${legs} legs and the head at the front of the body; ${gait === "run" || gait === "gallop" ? "the legs stretch forward and back in the stride with the body level" : gait === "lie" ? "the legs fold under the body" : gait === "fly" ? "the wings spread and the legs tuck under the body" : "the feet or hooves stand on the ground"}.`,
+    RIDER: (name: string, mount: string): string => `${name} sits on ${mount}: hips on its back over the saddle, the near leg along its flank, the far leg hidden by its body; paint ${name} after ${mount} and never beside or in front of it.`,
     OBJECT_PARTS: (id: string, note: string): string => `${id}: ${note}`,
   },
   IDS_PEOPLE: (ids: string[], parts: readonly string[]): string => `Each person group ${ids.join(", ")} contains the sub-groups ${parts.map((part) => `<id>_${part}`).join(", ")}; the hat or hair sits inside <id>_head.`,
@@ -82,8 +88,6 @@ Before returning check: every brief node present, limbs connected, hands on held
   MAX_SHEET_CHARS: 3000,
   MAX_SHEETS: 2,
   MAX_PLACE_CHARS: 300,
-  OUTLINED_PART_IDS: ["head", "torso", "arm_left", "arm_right", "hand_left", "hand_right", "legs"] as readonly string[],
-  HORROR_PART_IDS: ["head", "torso", "arm_left", "arm_right", "hand_left", "hand_right"] as readonly string[],
   CLASS_PART_NAMES: {
     mount: ["head", "legs", "tail"],
     draft: ["head", "legs"],
@@ -92,13 +96,11 @@ Before returning check: every brief node present, limbs connected, hands on held
     boat: ["hull"],
     aircraft: ["fuselage", "wings"],
     artillery: ["barrel", "wheels", "trail"],
-    handWeapon: ["barrel_or_blade", "grip"],
     machine: ["base", "working_part"],
     bird: ["head", "wings", "legs"],
     smallAnimal: ["head", "legs"],
   } as Record<string, readonly string[]>,
   SAME_SCALE_RELATION: "beside",
-  HAND_WORDS: /\b(?:hands?|palms?|fingers?|thumbs?|fists?|boots?|feet)\b|bàn tay|ngón tay|bàn chân/iu,
   CROWD_WATCH_MIN: 4,
   JOIN: "\n",
   BLANK: "\n\n",

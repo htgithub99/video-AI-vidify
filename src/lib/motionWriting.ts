@@ -45,12 +45,10 @@ export const normalizeMotionWritingChapter = (raw: any): MotionWritingChapter | 
     : undefined;
 export const motionWritingBiblePrompt = (analysis: MotionStoryAnalysis): string =>
   [
-    W.TEXT_TASK,
-    W.BOUNDARY,
-    W.BOOKENDS,
+    W.BIBLE_LIMITS,
     analysis.factual ? W.FACTUAL : "",
     W.NUMBERS,
-    analysis.writingPlan || analysis.chapters.some((item) => item.writing) ? W.CHAPTER + stringifyJson({ plan: motionGenreWritingPlan(analysis), chapterEvents: analysis.chapters.map((item) => ({ chapter: item.id, events: item.writing?.events.map(({ id, point }) => ({ id, point })) })) }) : "",
+    analysis.writingPlan ? W.CHAPTER + stringifyJson({ plan: motionGenreWritingPlan(analysis) }) : "",
     motionVideoGenre(analysis.videoGenre) === "verdict" ? W.LABELS : "",
   ]
     .filter(Boolean)

@@ -23,14 +23,14 @@ export const storyDirectionPrompt = (analysis?: MotionDirection | null, chapter 
     P.STORY_DIRECTION +
     stringifyJson({
       ...(chapter ? {} : { intent: dna.intent, audience: dna.audience }),
-      narrative: dna.narrative,
+      narrative: chapter && dna.narrative ? { ...dna.narrative, voice: undefined } : dna.narrative,
       creativeProfile: chapter ? { writingPrinciples: dna.creativeProfile?.writingPrinciples } : { role: dna.creativeProfile?.role, writingPrinciples: dna.creativeProfile?.writingPrinciples, strengths: dna.creativeProfile?.strengths },
       mustPreserve: dna.mustPreserve,
       mustVary: dna.mustVary,
       mustNotCopy: dna.mustNotCopy,
       ...(analysis?.videoDna
         ? chapter
-          ? { audience: { dialect: analysis.videoDna.audienceProfile?.dialect, suitability: analysis.videoDna.audienceProfile?.suitability }, vocabulary: analysis.videoDna.narrativeDna?.vocabulary, callbacks: analysis.videoDna.narrativeDna?.callbacks, factual: analysis.videoDna.format?.factual, era: analysis.videoDna.era?.storyPeriod }
+          ? { audience: { dialect: analysis.videoDna.audienceProfile?.dialect, suitability: analysis.videoDna.audienceProfile?.suitability }, vocabulary: analysis.videoDna.narrativeDna?.vocabulary === dna.narrative?.voice ? undefined : analysis.videoDna.narrativeDna?.vocabulary, callbacks: analysis.videoDna.narrativeDna?.callbacks?.length ? analysis.videoDna.narrativeDna.callbacks : undefined, factual: analysis.videoDna.format?.factual, era: analysis.videoDna.era?.storyPeriod }
           : { audienceProfile: analysis.videoDna.audienceProfile, narrativeDna: analysis.videoDna.narrativeDna, format: analysis.videoDna.format, era: analysis.videoDna.era, narration: analysis.videoDna.audioText?.narration }
         : {}),
     })

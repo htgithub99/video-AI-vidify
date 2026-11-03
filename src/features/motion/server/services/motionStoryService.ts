@@ -173,7 +173,7 @@ import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
 import { productionPreamble } from "../../../../lib/motionDirection.js";
 import { normalizeCreativeBlueprint } from "../../../../lib/motionCreativeBlueprint.js";
 import { normalizeScenePlan, normalizeVideoDna, scenePlanErrors, videoDnaSourceKey } from "../../../../lib/motionVideoDna.js";
-import { quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifiedQuotes } from "../../../../lib/motionSourceClean.js";
+import { motionSourceReadingRules, quoteErrors, SOURCE_READING_RULES, transcriptIndex, unattributeUnverifiedQuotes } from "../../../../lib/motionSourceClean.js";
 import { getMotionErrorMessage, normalizeMotionText } from "../../../../lib/motionUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../../types.js";
 import { parseClaudeChatModel } from "../../../../constants/claudeChatModels.js";
@@ -1803,7 +1803,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           role: _.truncate(_.toString(m.role || MR.MOTION_TEXT_EMPTY), { length: 60 }),
           description: _.truncate(_.toString(m.description || MR.MOTION_TEXT_EMPTY), { length: 200 }),
           look: _.truncate(motionCleanLook(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY)), { length: 320 }),
-          ...((marks) => (marks.length ? { marks } : {}))(motionCastMarks(m.marks, _.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY))),
+          ...((marks) => (marks.length ? { marks } : {}))(motionCastMarks(m.marks)),
           ...((skin) => (skin ? { skin } : {}))(motionCastSkin(m.skin, _.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY))),
           ...(_.isString(m.origin) && m.origin.trim() ? { origin: _.truncate(m.origin.trim(), { length: 60 }) } : {}),
           gender,
@@ -2000,7 +2000,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     silent ? STORYTELLING.PROMPT.SILENT : null,
     hookRule,
     texture ? STORYTELLING.PROMPT.TEXTURE(texture, genreSpec.TEXTURE) : null,
-    MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
+    opts.multiVoice === false ? null : MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
     analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
   ] as string[]);
   const chapterRules = _.compact([
@@ -2014,13 +2014,13 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     analysis.visualSettings?.mode !== RT_SHARED.REMOTION && analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + stringifyJson(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id).map(({ evidence, place, states, objects, features }) => ({ evidence, place, states, objects, features }))) : null,
   ] as string[]);
   const bibleParts = {
-    preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), SOURCE_READING_RULES),
+    preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), motionSourceReadingRules(sourceSlice(source))),
     role: PROMPT.CHAPTER_ROLE,
     title: analysis.title,
     logline: analysis.logline,
     languageNote: [MR.MOTION_TEMPLATE_WRITE_NATURAL((analysis.videoDna || analysis.creativeBlueprint)?.narrative.voice || MR.MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT, language), motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     language,
-    genre: motionVideoGenreStyleBrief(analysis.videoGenre),
+    genre: motionVideoGenreStyleBrief(analysis.videoGenre, languageProfile.genreSamples),
     contract: MOTION_STORY_CONFIG.CONTRACT(genreSpec.CONTRACT),
     rules: bibleRules.join(MR.MOTION_TEXT_SYMBOL_27),
     outline: analysis.chapters.map((item) => MR.MOTION_TEMPLATE_SYMBOL_312(item.id, item.title, [item.summary, ...(item.keyPoints || [])].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_56))).join(MR.MOTION_TEXT_SYMBOL_27),

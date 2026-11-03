@@ -145,7 +145,9 @@ export const MOTION_SCENE_COMPOSITION = {
   LOG_RECOVERY: (count: number) => `Dựng cảnh: lượt đầu đã xong; bắt đầu phục hồi ${count} cảnh lỗi.`,
   LOG_LOCAL_REPAIR: (index: number, total: number) => `Cảnh ${index}/${total}: đã sửa cấu trúc SVG bằng code (thẻ đóng thiếu/thừa, thuộc tính trùng); không gọi thêm AI.`,
   LOG_RETRY: (index: number, total: number, scene: number, scenes: number) => `Phục hồi cảnh ${scene}/${scenes} · ${index}/${total} cảnh lỗi.`,
-  LOG_SUMMARY: (ready: number, total: number) => `Dựng cảnh: ${ready}/${total} cảnh đạt${ready < total ? `, còn ${total - ready} cảnh lỗi; có thể tạo lại riêng từng cảnh.` : "."}`,
+  LOG_SUMMARY: (ready: number, passed: number, total: number, noted: number[]) => `Dựng cảnh: ${ready}/${total} cảnh có hình, ${passed} cảnh qua kiểm tra${noted.length ? `, ${noted.length} cảnh còn lưu ý sau các vòng vẽ lại (${noted.join(", ")})` : ""}${ready < total ? `, còn ${total - ready} cảnh lỗi; có thể tạo lại riêng từng cảnh.` : "."}`,
+  LOG_REDRAWN: (index: number, total: number, noted: boolean, left: number) => `Vẽ lại cảnh ${index}/${total} xong${noted ? " – vẫn còn lưu ý" : " – đạt kiểm tra"}${left ? `; còn ${left} cảnh đang vẽ lại` : ""}.`,
+  PHASE_SPAN: { FIRST: 0.8, REDRAW: 0.1, RECOVERY: 0.05, DEFER: 0.05 },
   PLACEHOLDER: placeholderText,
   PLACEHOLDER_SVG: (width: number, height: number) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}"><g id="pending_scene"><rect width="${width}" height="${height}" fill="#171b24"/><text x="${width / 2}" y="${height / 2}" text-anchor="middle" font-family="sans-serif" font-size="${Math.min(width, height) / 28}" fill="#cbd5e1">${placeholderText}</text></g></svg>`,
   PLAN_POLICY:

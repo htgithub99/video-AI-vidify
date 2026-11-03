@@ -12,5 +12,6 @@ export interface MotionLanguageProfile {
   genreMaxUnits: Record<string, number>;
   asrCode: string;
   aliases: readonly string[];
+  genreSamples?: Record<string, string>;
   partTitle: (title: string, index: number, count: number) => string;
 }
