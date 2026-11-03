@@ -5,7 +5,8 @@ import { compositionElements } from "./motionSceneComposition.js";
 import { motionLayerSvg } from "./motionIdentityReference.js";
 import { motionNodeAnimalOf, motionNodeStanceOf } from "./motionScenePoses.js";
 import type { MotionRemotionEffect, MotionRemotionNode, MotionSceneComposition, MotionSceneObject, MotionVisualRect } from "../types/motionVisual.js";
-import { MOTION_OBJECT_CLASS_PARTS, MOTION_OBJECT_PART_CHECK_CLASSES } from "../constants/motionObjectClasses.js";
+import { MOTION_OBJECT_PART_CHECK_CLASSES } from "../constants/motionObjectClasses.js";
+import { motionObjectPartChecks } from "./motionObjectKinds.js";
 import { MOTION_CHARACTER_FRAMES } from "../constants/motionProfiles/characterFrames/index.js";
 import type { MotionRemotionProfile } from "../types/motionVisual.js";
 type ShapeElement = { tag: string; attributes: Record<string, string> };
@@ -150,6 +151,7 @@ export const motionQualityIds = (svg: string, composition: MotionSceneCompositio
         const subHead = motionLayerPart(svg, sub, spec.headPart);
         if (subHead) ids.add(subHead);
       }
+      if (!motionNodeAnimalOf(node, cast) && spec.legs === "required" && spec.lowPostures.includes(motionNodeStanceOf(node))) for (const part of [...motionLayerParts(svg, node.id, Q.LEG_PART), ...motionLayerParts(svg, node.id, Q.TORSO_PART)]) ids.add(part);
       if (!motionNodeAnimalOf(node, cast) && spec.legs === "required" && Q.LEG_VIEWS.includes(view || "")) {
         for (const part of [...motionLayerParts(svg, node.id, Q.LEG_PART), ...motionLayerParts(svg, node.id, Q.TORSO_PART)]) ids.add(part);
         if (node.relation === Q.ON && node.target && composition.layers.some((layer) => layer.id === node.target)) ids.add(node.target);
@@ -169,16 +171,22 @@ export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[
     const box = measured[node.id]!;
     const stance = motionNodeStanceOf(node);
     const lowBody = (id: string, body: MotionVisualRect): boolean | undefined => {
+      const legs = union(motionLayerParts(svg, id, Q.LEG_PART).map((part) => measured[part]));
+      const torso = union(motionLayerParts(svg, id, Q.TORSO_PART).map((part) => measured[part]));
+      if (spec.legs === "required" && legs && torso && legs.height > 0 && torso.height > 0) return (legs.width * aspect) / legs.height >= Q.BENT_ASPECT || legs.height / torso.height < Q.BENT_SHORT;
       const headId = motionLayerPart(svg, id, spec.headPart);
       const headBox = headId ? measured[headId] : undefined;
       return headBox && body.height > 0 ? headBox.height / body.height >= spec.standingHeadRatio * Q.LOW_POSTURE_MARGIN : undefined;
     };
     const subs = node.anonymous && !node.crowd ? motionLayerParts(svg, node.id, Q.SUB_PERSON).map((sub) => (measured[sub] ? lowBody(sub, measured[sub]!) : undefined)).filter((entry): entry is boolean => entry !== undefined) : [];
     const lowDrawn = subs.length ? subs.filter(Boolean).length * 2 >= subs.length : lowBody(node.id, box);
-    const upright = Q.LOW_REL_VIEWS.includes(view || "") && !node.crowd && node.representation !== "bust" && spec.lowPostures.includes(stance) ? people.filter((other) => other !== node && !other.crowd && other.representation !== "bust" && other.representation !== "detail" && Q.UPRIGHT_STANCES.includes(motionNodeStanceOf(other)) && measured[other.id]!.height > 0) : [];
-    const tallest = subs.length ? Math.max(...motionLayerParts(svg, node.id, Q.SUB_PERSON).map((sub) => measured[sub]?.height || 0)) : box.height;
-    const relativeHigh = upright.length > 0 && tallest > Q.LOW_REL_RATIO * Math.min(...upright.map((other) => measured[other.id]!.height));
-    if (spec.lowPostures.includes(stance) && (lowDrawn === false || relativeHigh) && node.representation !== "bust") issues.push(Q.ISSUE.LOW(names(node), stance));
+    const depthOf = (item: MotionRemotionNode) => item.distance || item.crowd?.depth;
+    const peers = depthOf(node) && spec.lowPostures.includes(stance) && node.representation !== "bust" ? people.filter((other) => other !== node && depthOf(other) === depthOf(node) && other.representation !== "bust" && other.representation !== "detail" && Q.UPRIGHT_STANCES.includes(motionNodeStanceOf(other)) && !(other.anonymous && !other.crowd && motionLayerParts(svg, other.id, Q.SUB_PERSON).length)) : [];
+    const ownHeights = node.anonymous && !node.crowd && motionLayerParts(svg, node.id, Q.SUB_PERSON).length ? motionLayerParts(svg, node.id, Q.SUB_PERSON).map((sub) => measured[sub]?.height || 0).filter((value) => value > 0) : [box.height];
+    const ownHeight = ownHeights.length ? ownHeights.sort((a, b) => a - b)[Math.floor(ownHeights.length / 2)] : 0;
+    const peerHeight = peers.length && !peers.some((other) => other.crowd) ? Math.max(...peers.map((other) => measured[other.id]!.height)) : 0;
+    const tooTall = peerHeight > 0 && ownHeight > peerHeight * Q.LOW_PEER_RATIO;
+    if (spec.lowPostures.includes(stance) && (lowDrawn === false || tooTall) && node.representation !== "bust") issues.push(Q.ISSUE.LOW(names(node), stance));
     if (stance === "lie" && box.height > 0 && (box.width * aspect) / box.height < Q.LIE_ASPECT) issues.push(Q.ISSUE.LIE(names(node)));
     const horse = (node.rides && nodes.find((item) => item.id === node.rides && measured[item.id])) || defaultHorse;
     if (stance === Q.MOUNTED && horse) {
@@ -232,7 +240,7 @@ export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[
   }
   for (const item of extra.objects || []) {
     if (!MOTION_OBJECT_PART_CHECK_CLASSES.includes(item.class) || !nodes.some((node) => node.id === item.id) || !motionLayerSvg(svg, item.id)) continue;
-    const missing = (MOTION_OBJECT_CLASS_PARTS[item.class] || []).filter((entry) => !motionLayerParts(svg, item.id, entry.match).length);
+    const missing = motionObjectPartChecks(item, nodes.find((node) => node.id === item.id)?.animal).filter((entry) => !motionLayerParts(svg, item.id, entry.match).length);
     if (missing.length) issues.push(Q.ISSUE.OBJECT_PARTS(item.id, missing.map((entry) => entry.name)));
   }
   const singles = people.filter((node) => !node.anonymous && !node.crowd && node.representation !== "detail" && node.representation !== "bust");

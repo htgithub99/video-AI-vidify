@@ -632,7 +632,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const ensureSheet = async () => {
       if (sheetPending) return sheetPending;
       if (sheetRequests >= SHEET.MAX_REQUESTS) return;
-      const items = motionSheetCandidates(state, allScenes);
+      const items = motionSheetCandidates(state, allScenes, settings.profileId);
       if (!items.length) {
         if (!sheetRequests) opts.log(SHEET.LOG_SKIP);
         return;

@@ -1,9 +1,11 @@
 export const MOTION_POSTURES = ["stand", "sit", "sit_ground", "kneel", "crouch", "slump", "lie", "mounted", "dismount", "lead", "carry", "aim", "walk", "run", "hand_over", "fall", "back"] as const;
 export type MotionPosture = (typeof MOTION_POSTURES)[number];
-export const MOTION_ANIMALS = ["horse", "ox", "dog", "cat", "bird", "pig", "goat"] as const;
+export const MOTION_ANIMALS = ["horse", "ox", "dog", "cat", "bird", "pig", "goat", "elephant", "camel", "donkey", "buffalo", "cow", "sheep", "deer", "wolf", "tiger", "lion", "bear", "monkey", "rabbit", "rat", "snake", "chicken", "duck", "eagle", "fish", "crocodile", "turtle"] as const;
 export type MotionAnimal = (typeof MOTION_ANIMALS)[number];
 export const MOTION_FACINGS = ["front", "side", "back"] as const;
 export type MotionFacing = (typeof MOTION_FACINGS)[number];
+export const MOTION_DEPTHS = ["foreground", "midground", "background"] as const;
+export type MotionDepth = (typeof MOTION_DEPTHS)[number];
 export const MOTION_GAITS = ["stand", "walk", "run", "gallop", "lie", "fly"] as const;
 export type MotionGait = (typeof MOTION_GAITS)[number];
 export const MOTION_DETAIL_SUBJECTS = ["face", "handsWithObject", "object", "document", "map", "bodyPart"] as const;
@@ -24,6 +26,7 @@ export interface MotionProfileScene {
   animals: Record<MotionAnimal, string>;
   animalNotes: Record<MotionAnimal, string>;
   ghostOpacity: boolean;
+  objects: Record<import("../motionObjectKinds.js").MotionObjectKind, string>;
   legs: "required" | "forbidden";
   hatWidth?: number;
 }
@@ -50,8 +53,29 @@ export const MOTION_SCENE_SPEC = {
     ["back", word("from behind|back to (?:the )?camera|seen from behind|turn(?:s|ing)? (?:his|her|their) back|quay lưng")],
   ] as const,
   ANIMAL_MATCH: [
+    ["elephant", word("elephants?|voi")],
+    ["camel", word("camels?|dromedar(?:y|ies)|lạc đà")],
+    ["donkey", word("donkeys?|mules?|asses|burros?|con lừa|con la")],
+    ["buffalo", word("water buffalo(?:es)?|buffalo(?:es)?|trâu")],
+    ["cow", word("cows?|cattle|calf|calves|heifers?|bò sữa")],
+    ["sheep", word("sheep|lambs?|rams?|ewes?|cừu")],
+    ["deer", word("deer|stags?|does|fawns?|antelopes?|gazelles?|hươu|nai")],
+    ["wolf", word("wolf|wolves|jackals?|foxes|fox|chó sói|sói|con cáo")],
+    ["tiger", word("tigers?|leopards?|panthers?|hổ|cọp|con báo")],
+    ["lion", word("lions?|lionesses?|sư tử")],
+    ["bear", word("bears?|gấu")],
+    ["monkey", word("monkeys?|apes?|macaques?|gibbons?|khỉ|vượn")],
+    ["rabbit", word("rabbits?|hares?|bunn(?:y|ies)|thỏ")],
+    ["rat", word("rats?|mice|mouse|chuột")],
+    ["snake", word("snakes?|serpents?|cobras?|vipers?|pythons?|con rắn")],
+    ["chicken", word("chickens?|hens?|roosters?|cocks?|gà")],
+    ["duck", word("ducks?|geese|goose|swans?|vịt|ngỗng")],
+    ["eagle", word("eagles?|hawks?|falcons?|vultures?|đại bàng|diều hâu|chim ưng")],
+    ["fish", word("fish(?:es)?|carp|salmon|con cá|cá chép|cá vàng")],
+    ["crocodile", word("crocodiles?|alligators?|cá sấu")],
+    ["turtle", word("turtles?|tortoises?|rùa")],
     ["horse", word("horses?|stallions?|mares?|pon(?:y|ies)|steeds?|mounts?|ngựa")],
-    ["ox", word("ox|oxen|cattle|cows?|bulls?|buffalo\\w*|trâu|bò")],
+    ["ox", word("ox|oxen|bulls?|bò")],
     ["dog", word("dogs?|hounds?|pupp(?:y|ies)|chó")],
     ["cat", word("cats?|kittens?|mèo")],
     ["goat", word("goats?|dê")],
@@ -62,6 +86,9 @@ export const MOTION_SCENE_SPEC = {
   EFFECT_LAYERS: "Atmospheric effect layers (fog, mist, smoke, steam, haze) sit behind the character layers in the SVG; only rain or snow may cross in front of people. People are fully opaque unless the scene node is a ghost or spirit.",
   MAX_POSE_NOTES: 3,
   MAX_ANIMAL_FRAMES: 2,
+  ANIMAL_LEGS: { bird: 2, chicken: 2, duck: 2, eagle: 2, snake: 0, fish: 0 } as Partial<Record<MotionAnimal, number>>,
+  ANIMAL_LEGS_DEFAULT: 4,
+  LEGS_PART: "legs",
   POSE_PROMPT: "poseNotes describe how this style's character construction usually shows the actions in this scene; adapt them freely to the scene and compose the picture yourself.",
   ANIMAL_PROMPT: "animalFrames are construction references for the animals in this scene: keep their anatomy (joint directions, neck and leg proportions, head shape) and the style's line and fill treatment; change pose, gait, head direction, coat color and size freely to fit the scene.",
 } as const;

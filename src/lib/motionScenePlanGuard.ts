@@ -23,12 +23,9 @@ export const motionStripClothing = (description: string): string => {
   return next.length >= 3 ? next : description;
 };
 export const motionObjectAnimal = (item: Pick<MotionSceneObject, "class" | "term" | "description">): MotionAnimal | undefined => {
-  const fixed = G.CLASS_ANIMAL[item.class];
-  if (fixed) return fixed;
   if (!MOTION_OBJECT_ANIMAL_CLASSES.includes(item.class)) return undefined;
-  const text = `${item.term || ""} ${item.description || ""}`;
-  for (const [animal, pattern] of SPEC.ANIMAL_MATCH) if (pattern.test(text)) return animal;
-  return undefined;
+  for (const text of [item.term || "", item.description || ""]) for (const [animal, pattern] of SPEC.ANIMAL_MATCH) if (pattern.test(text)) return animal;
+  return G.CLASS_ANIMAL[item.class];
 };
 export const motionScenePlanGuard = (scenes: MotionRemotionScene[], opts: { cast: ReadonlySet<string>; lineText: (scene: MotionRemotionScene) => string; outfit: RegExp }): { stripped: number; details: number; animals: number; guessed: number; bodies: number; objects: number } => {
   let stripped = 0,

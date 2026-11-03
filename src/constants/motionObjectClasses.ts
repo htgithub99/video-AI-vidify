@@ -1,4 +1,4 @@
-export const MOTION_OBJECT_CLASSES = ["mount", "draft", "wheeled", "tracked", "boat", "aircraft", "artillery", "handWeapon", "machine", "bird", "smallAnimal"] as const;
+export const MOTION_OBJECT_CLASSES = ["mount", "draft", "wheeled", "tracked", "boat", "aircraft", "artillery", "handWeapon", "machine", "fixture", "bird", "smallAnimal"] as const;
 export type MotionObjectClass = (typeof MOTION_OBJECT_CLASSES)[number];
 export const MOTION_OBJECT_SIZES = ["large", "handheld"] as const;
 export type MotionObjectSize = (typeof MOTION_OBJECT_SIZES)[number];
@@ -10,13 +10,14 @@ const word = (body: string): RegExp => new RegExp(`${B}(?:${body})${E}`, "iu");
 export const MOTION_OBJECT_CLASS_MATCH: readonly (readonly [MotionObjectClass, RegExp])[] = [
   ["tracked", word("tanks?|panzers?|tigers?|shermans?|t-?34s?|armou?red (?:vehicles?|cars?)|half-?tracks?|tracked|xe tăng|thiết giáp|xe bọc thép")],
   ["artillery", word("cannons?|guns? (?:crew|battery|carriage)|field guns?|howitzers?|mortars?|artillery|gatlings?|machine ?guns?|\\d+-?pounders?|pháo|đại bác|súng máy|súng thần công")],
-  ["aircraft", word("planes?|aircraft|aeroplanes?|airplanes?|bombers?|fighters?|biplanes?|helicopters?|zeppelins?|balloons?|gliders?|máy bay|khinh khí cầu|trực thăng")],
+  ["aircraft", word("planes?|aircraft|aeroplanes?|airplanes?|bombers?|fighters?|biplanes?|helicopters?|rockets?|zeppelins?|balloons?|gliders?|máy bay|khinh khí cầu|trực thăng")],
   ["boat", word("boats?|ships?|galleys?|canoes?|rafts?|barges?|junks?|sampans?|frigates?|landing craft|vessels?|thuyền|tàu|ghe|bè|xuồng")],
   ["wheeled", word("wagons?|carts?|carriages?|chariots?|coaches?|jeeps?|trucks?|lorr(?:y|ies)|cars?|automobiles?|bicycles?|motorcycles?|wheelbarrows?|limbers?|caissons?|xe ngựa|xe bò|xe kéo|xe đạp|xe máy|xe tải|ô tô|xe jeep")],
   ["draft", word("oxen|ox|mules?|donkeys?|buffalo(?:es)?|camels?|elephants?|reindeer|yaks?|trâu|bò kéo|la|lừa|lạc đà|voi")],
   ["mount", word("horses?|stallions?|mares?|ponies|pony|steeds?|chargers?|mounts?|ngựa")],
+  ["fixture", word("coffins?|caskets?|altars?|shrines?|incense burners?|censers?|(?:a|the|old|stone|village) wells?|tombs?|graves?|gravestones?|temple bells?|bamboo cots?|quan tài|bàn thờ|lư hương|bát hương|giếng|ngôi mộ|nấm mồ|chõng tre|chuông chùa")],
   ["handWeapon", word("rifles?|muskets?|carbines?|pistols?|revolvers?|swords?|sabres?|sabers?|spears?|assegais?|lances?|bows?|crossbows?|axes?|daggers?|bayonets?|shields?|súng trường|súng lục|gươm|kiếm|giáo|mác|cung|nỏ|rìu|dao|khiên|lưỡi lê")],
-  ["machine", word("engines?|looms?|presses?|pumps?|turbines?|generators?|cranes?|winches?|mills?|forges?|anvils?|telegraphs?|radios?|typewriters?|computers?|máy|cối xay|lò rèn|máy in|điện tín")],
+  ["machine", word("engines?|looms?|presses?|pumps?|turbines?|generators?|cranes?|winches?|mills?|forges?|anvils?|telegraphs?|radios?|typewriters?|computers?|laptops?|smartphones?|microscopes?|satellites?|light ?bulbs?|máy|cối xay|lò rèn|máy in|điện tín")],
   ["bird", word("birds?|chickens?|hens?|roosters?|ducks?|geese|goose|crows?|ravens?|herons?|owls?|eagles?|hawks?|pigeons?|doves?|sparrows?|gulls?|gà|vịt|chim|ngỗng|cò|quạ|đại bàng|diều hâu|bồ câu")],
   ["smallAnimal", word("dogs?|hounds?|pupp(?:y|ies)|cats?|kittens?|pigs?|boars?|hogs?|goats?|sheep|lambs?|rabbits?|hares?|rats?|mice|mouse|snakes?|monkeys?|chó|mèo|lợn|heo|dê|cừu|thỏ|chuột|rắn|khỉ")],
 ];
@@ -30,6 +31,7 @@ export const MOTION_OBJECT_CLASS_NOTES: Record<MotionObjectClass, string> = {
   artillery: "Artillery piece: a barrel on a carriage with two large spoked wheels on the ground and a trail stretching back; the crew stands at its side or behind with hands on the wheel, the breech or the firing lanyard; muzzle flash and smoke start at the muzzle.",
   handWeapon: "Hand weapon: one piece held in the hand with the grip inside the fist, the blade, barrel or shaft continuing in a straight line from it; a rifle has a stock at the shoulder, a barrel in front and the muzzle pointing where it is aimed.",
   machine: "Machine: a solid base on the ground or a table, the working part (wheel, crank, lever, barrel) attached to it, the operator's hands on the crank, lever or keys.",
+  fixture: "Household or ritual object (altar, coffin, well, tomb, bed): a solid shape standing on the ground or floor at its real size next to people, built from simple flat parts with its era and region details.",
   bird: "Bird: a round body with a small head and beak, wings folded along the sides or spread when flying, two thin legs under the body, a tail at the rear.",
   smallAnimal: "Small animal: a body on four short legs, the head at the front with ears and snout as the species needs, tail at the rear; it stands, sits or lies on its support.",
 };
@@ -44,6 +46,7 @@ export const MOTION_OBJECT_CLASS_PARTS: Record<MotionObjectClass, readonly { nam
   artillery: [part("barrel", "barrel|gun|tube|muzzle|cannon"), part("wheels", "wheels?")],
   handWeapon: [part("grip", "barrel|blade|shaft|stock|grip|handle|bow")],
   machine: [part("base", "base|body|frame")],
+  fixture: [part("body", "base|body|frame")],
   bird: [part("head", "head|beak"), part("wings", "wings?|legs?")],
   smallAnimal: [part("head", "head"), part("legs", "legs?")],
 };
@@ -60,6 +63,7 @@ export const MOTION_OBJECT_CLASS_LABEL: Record<MotionObjectClass, string> = {
   artillery: "artillery piece",
   handWeapon: "hand weapon",
   machine: "machine",
+  fixture: "household or ritual object",
   bird: "bird",
   smallAnimal: "small animal",
 };

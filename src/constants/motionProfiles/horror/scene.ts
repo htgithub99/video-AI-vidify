@@ -1,5 +1,6 @@
 import type { MotionProfileScene } from "../sceneSpec.js";
 import { HORROR_ANIMAL_FRAMES } from "../animalFrames/horror.js";
+import { HORROR_OBJECT_FRAMES } from "../objectFrames/horror.js";
 import { OUTLINED_SCENE } from "../outlinedScene.js";
 export const HORROR_SCENE: MotionProfileScene = {
   identityParts: /(?:^|[_-])(?:heads?|mask|faces?|hair|hat|non|cap|helmet|hood|veil|scarf|khan|headband|headscarf|bun|braid|eyes?|mouth|beard|brows?|scar|earrings?)(?:[_-]|$)/i,
@@ -29,6 +30,7 @@ export const HORROR_SCENE: MotionProfileScene = {
     medium: { head: [0.06, 0.5], top: 0.03 },
   },
   animals: HORROR_ANIMAL_FRAMES,
+  objects: HORROR_OBJECT_FRAMES,
   animalNotes: OUTLINED_SCENE.animalNotes,
   ghostOpacity: true,
   legs: "forbidden",

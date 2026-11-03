@@ -3,6 +3,8 @@ import { MOTION_OBJECT_CLASS_LABEL, MOTION_OBJECT_CLASS_PARTS } from "../../../.
 import { MOTION_ILLUSTRATION_PROFILES } from "../../../../../constants/motionIllustrationProfiles.js";
 import { MOTION_CHARACTER_FRAMES } from "../../../../../constants/motionProfiles/characterFrames/index.js";
 import { motionSceneObjects } from "../../../../../lib/motionObjects.js";
+import { motionObjectKind } from "../../../../../lib/motionObjectKinds.js";
+import { MOTION_PROFILE_SCENES } from "../../../../../constants/motionProfiles/scenes.js";
 import { motionObjectSheetKey, motionObjectSheetMatch, motionObjectTerm } from "../../../../../lib/motionObjectSheet.js";
 import { motionLayerParts } from "../../../../../lib/motionSceneQuality.js";
 import { motionLayerSvg } from "../../../../../lib/motionIdentityReference.js";
@@ -17,12 +19,16 @@ export interface MotionSheetItem {
   parts: readonly string[];
   names: string[];
 }
-export const motionSheetCandidates = (state: Pick<MotionRemotionState, "sheet">, scenes: MotionRemotionScene[]): MotionSheetItem[] => {
+export const motionSheetCandidates = (state: Pick<MotionRemotionState, "sheet">, scenes: MotionRemotionScene[], profileId: MotionRemotionProfile): MotionSheetItem[] => {
+  const frames = MOTION_PROFILE_SCENES[profileId];
   const seen = new Map<string, MotionSheetItem & { scenes: Set<string>; used: boolean }>();
   for (const scene of scenes) {
     const uses = new Set(scene.nodes.flatMap((node) => (node.uses ? [node.uses.objectId] : [])));
     for (const item of motionSceneObjects(scene)) {
       if (Object.values(state.sheet || {}).some((entry) => motionObjectSheetMatch(entry, item))) continue;
+      const animal = scene.nodes.find((node) => node.id === item.id)?.animal;
+      const kind = motionObjectKind(item);
+      if ((animal && frames.animals[animal]) || (kind && frames.objects[kind])) continue;
       const key = motionObjectSheetKey(item);
       const entry = seen.get(key) || { key, term: motionObjectTerm(item), class: item.class, label: MOTION_OBJECT_CLASS_LABEL[item.class], description: item.description, parts: MOTION_OBJECT_CLASS_PARTS[item.class].map((part) => part.name), names: [], scenes: new Set<string>(), used: false };
       entry.scenes.add(scene.id);

@@ -12,7 +12,7 @@ export const CHAT_HISTORY_CLEANUP = {
   DELETE: /^(?:Delete|Xóa|Xoá)$/i,
   ALL_TIME: /^(?:Từ trước đến nay|All time)$/i,
   GEMINI_CONFIRM_HEADING: /(?:Xác nhận.*xóa|Xác nhận.*xoá|Confirm.*delet)/i,
-  GEMINI_SUCCESS: /^(?:Deletion complete\.?|Deleted successfully\.?|Activity deleted\.?|Đã xóa(?: xong| hoạt động)?\.?|Đã xoá(?: xong| hoạt động)?\.?|Xóa xong\.?|Xoá xong\.?|Đã hoàn tất việc xóa\.?|Hoàn tất việc xóa\.?)$/i,
+  GEMINI_SUCCESS: /^\s*(?:Deletion complete|Deleted successfully|Activity deleted|Your activity (?:was|has been) deleted|Đã xóa|Đã xoá|Xóa xong|Xoá xong|Đã hoàn tất việc xóa|Hoàn tất việc xóa)/i,
   GEMINI_EMPTY: /^(?:Không có hoạt động nào\.?|No activity\.?)$/i,
   CONVERSATION_PATH: /\/(?:conversations?|chats?)(?:\/(?:delete[-_]?all|all|delete|clear))?\/?$/i,
   DELETE_PATH: /(?:delete|remove|clear)/i,

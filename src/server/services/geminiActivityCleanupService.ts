@@ -35,6 +35,15 @@ const audit = async (state: CleanupState, status: string, error?: string): Promi
   await writeMusicDiagnostic(C.LOG_STAGE, { runId: state.pending?.owner, status, revision: state.revision, errorMessage: error }).catch(() => undefined);
 };
 const visible = (locator: Locator) => locator.filter({ visible: true }).first();
+const verifyDeleted = async (page: Page): Promise<boolean> => {
+  await page.reload({ waitUntil: "domcontentloaded", timeout: C.ACTION_TIMEOUT_MS });
+  await visible(page.getByRole("button", { name: C.DELETE, exact: true }))
+    .or(visible(page.getByText(C.EMPTY, { exact: true })))
+    .first()
+    .waitFor({ state: "visible", timeout: C.ACTION_TIMEOUT_MS });
+  if (await visible(page.getByText(C.EMPTY, { exact: true })).count()) return true;
+  return !(await visible(page.getByText(C.TODAY, { exact: true })).count());
+};
 export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSignal): Promise<"deleted" | "empty"> => {
   let committed = false;
   const check = () => {
@@ -70,6 +79,7 @@ export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSigna
           await day.click({ timeout: C.ACTION_TIMEOUT_MS });
         }
         let confirmed = false;
+        let settledAt = 0;
         const deadline = Date.now() + C.RESULT_TIMEOUT_MS;
         while (Date.now() < deadline) {
           check();
@@ -79,8 +89,11 @@ export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSigna
               .or(page.getByRole("alertdialog"))
               .filter({ has: page.getByRole("heading", { name: C.CONFIRM_HEADING }) }),
           );
-          const success = visible(page.getByRole("heading", { name: C.SUCCESS_HEADING }).or(page.getByText(C.SUCCESS, { exact: true })));
-          if (!(await dialog.count()) && (await success.count())) return "deleted";
+          const success = visible(page.getByRole("heading", { name: C.SUCCESS_HEADING }).or(page.getByText(C.SUCCESS, { exact: true })).or(page.getByText(C.SUCCESS_TEXT)));
+          if (!(await dialog.count()) && (await success.count())) {
+            await visible(page.getByRole("button", { name: C.DISMISS })).click({ timeout: C.POLL_MS * 5 }).catch(() => undefined);
+            return "deleted";
+          }
           if (!confirmed && (await dialog.count())) {
             const confirm = visible(dialog.getByRole("button", { name: C.DELETE, exact: true }));
             check();
@@ -88,6 +101,10 @@ export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSigna
             await confirm.click({ timeout: C.ACTION_TIMEOUT_MS });
           }
           if (confirmed && (await visible(page.getByText(C.EMPTY, { exact: true })).count()) && !(await dialog.count())) return "deleted";
+          const settled = confirmed && !(await dialog.count()) && !(await visible(page.getByText(C.PROGRESS)).count());
+          if (!settled) settledAt = 0;
+          else if (!settledAt) settledAt = Date.now();
+          else if (Date.now() - settledAt >= C.SETTLE_MS && (await verifyDeleted(page))) return "deleted";
           await new Promise<void>((resolve) => setTimeout(resolve, C.POLL_MS));
         }
         throw new Error(C.ERROR);
@@ -154,10 +171,10 @@ export const closeAfterGeminiActivityCleanup = async (context: BrowserContext, c
         await audit(state, C.SUCCESS_STATUS);
         state.pending = undefined;
       } catch (error) {
-        state.failed = true;
         emit(state, pending.signal?.aborted ? C.CANCELLED : C.FAILED(String((error as Error)?.message || error)));
         await audit(state, C.FAILURE_STATUS, String((error as Error)?.message || error));
-        return false;
+        state.pending = undefined;
+        state.cleaned = state.revision;
       } finally {
         await page?.close().catch(() => undefined);
       }

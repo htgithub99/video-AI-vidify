@@ -72,7 +72,7 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
       else delete item[field];
     }
     for (const [field, values] of Object.entries(P.SCENE_ENUMS)) if (!values.includes(item[field])) delete item[field];
-    if (Array.isArray(item.objects)) item.objects = item.objects.filter((entry: any) => entry && typeof entry === "object" && typeof entry.id === "string" && entry.id.trim() && (MOTION_OBJECT_CLASSES as readonly string[]).includes(entry.class)).map((entry: any) => ({ id: entry.id.trim(), class: entry.class, description: typeof entry.description === "string" ? entry.description.trim().slice(0, P.SCENE_TEXT_CHARS) : "", ...(typeof entry.term === "string" && entry.term.trim() ? { term: entry.term.trim().toLowerCase().slice(0, P.TERM_CHARS) } : {}), ...(P.OBJECT_SIZES.includes(entry.size) ? { size: entry.size } : {}) }));
+    if (Array.isArray(item.objects)) item.objects = item.objects.filter((entry: any) => entry && typeof entry === "object" && typeof entry.id === "string" && entry.id.trim() && (MOTION_OBJECT_CLASSES as readonly string[]).includes(entry.class)).map((entry: any) => ({ id: entry.id.trim(), class: entry.class, description: typeof entry.description === "string" ? entry.description.trim().slice(0, P.SCENE_TEXT_CHARS) : "", ...(typeof entry.term === "string" && entry.term.trim() ? { term: entry.term.trim().toLowerCase().slice(0, P.TERM_CHARS) } : {}), ...(P.OBJECT_KINDS.includes(entry.kind) ? { kind: entry.kind } : {}), ...(P.OBJECT_SIZES.includes(entry.size) ? { size: entry.size } : {}) }));
     else delete item.objects;
     if (Array.isArray(item.nodes))
       for (const node of item.nodes) {

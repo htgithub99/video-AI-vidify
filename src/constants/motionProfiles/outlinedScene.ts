@@ -1,5 +1,7 @@
-import type { MotionProfileScene } from "./sceneSpec.js";
+import type { MotionAnimal, MotionProfileScene } from "./sceneSpec.js";
 import { OUTLINED_ANIMAL_FRAMES } from "./animalFrames/outlined.js";
+import { OUTLINED_OBJECT_FRAMES } from "./objectFrames/outlined.js";
+import { MOTION_MORE_ANIMAL_NOTES } from "./animalNotes.js";
 export const OUTLINED_SCENE: MotionProfileScene = {
   identityParts: /(?:^|[_-])(?:heads?|faces?|hair|hat|cap|helmet|turban|hood|veil|beard|moustache|mustache|brows?|eyes?|scar|earrings?|crown|wig|bun|ponytail|braid|headband|headscarf)(?:[_-]|$)/i,
   headPart: /(?:^|[_-])heads?(?:[_-]|$)/i,
@@ -29,7 +31,9 @@ export const OUTLINED_SCENE: MotionProfileScene = {
     medium: { head: [0.06, 0.5], top: 0.03 },
   },
   animals: OUTLINED_ANIMAL_FRAMES,
+  objects: OUTLINED_OBJECT_FRAMES,
   animalNotes: {
+    ...(MOTION_MORE_ANIMAL_NOTES as Record<MotionAnimal, string>),
     horse: "Horse: the neck is about half the body length and rises from the chest; front knees bend forward, hind hocks bend backward; long head with ears up; a rider sits on saddle_anchor.",
     ox: "Ox or buffalo: heavy barrel body, short thick legs, low head with horns, tail with a tuft.",
     dog: "Dog: walks on its toes, front legs straight, hind legs angled at the hock, tail continues the spine.",

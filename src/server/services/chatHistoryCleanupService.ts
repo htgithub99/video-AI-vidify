@@ -53,7 +53,7 @@ const deleteAllGeminiActivity = async (page: Page): Promise<void> => {
   await click(visible(dialog.getByRole("button", { name: C.DELETE, exact: true })));
   const deadline = Date.now() + C.VERIFY_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    if (!(await dialog.count()) && ((await visible(page.getByText(C.GEMINI_SUCCESS, { exact: true })).count()) || (await visible(page.getByText(C.GEMINI_EMPTY, { exact: true })).count()))) return;
+    if (!(await dialog.count()) && ((await visible(page.getByText(C.GEMINI_SUCCESS)).count()) || (await visible(page.getByText(C.GEMINI_EMPTY, { exact: true })).count()))) return;
     await new Promise<void>((resolve) => setTimeout(resolve, C.POLL_MS));
   }
   throw new Error(C.ERROR);
