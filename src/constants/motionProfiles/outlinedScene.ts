@@ -24,9 +24,9 @@ export const OUTLINED_SCENE: MotionProfileScene = {
   standingHeadRatio: 0.41,
   lowPostures: ["sit", "sit_ground", "kneel", "crouch", "slump"],
   shotSizes: {
-    close: { body: "one outlined person from the top of the head and hat down to the belt; the shoulders and the whole upper torso inside the frame; the frame bottom crosses the body at the belt or the hem of the jacket, and the hands are either raised fully into the frame or kept below it; emotion carried by brows, mouth and head angle; flat background tone from the place.", head: [0.4, 0.55], top: [0.05, 0.14] },
-    medium_close: { body: "one or two outlined people seen almost whole, from the top of the head and hat down to the shins, the main person filling about four fifths of the frame height; both arms and hands fully inside the frame; any cut at the bottom crosses the lower legs between knee and ankle; a little of the place shows at both sides.", head: [0.28, 0.42], top: [0.05, 0.15] },
-    medium: { body: "one to three outlined people seen whole, the main person about half to two thirds of the frame height; the setting simplified to what sits directly behind and beside them.", head: [0.12, 0.3], top: [0.06, 0.4] },
+    close: { head: [0.2, 0.7], top: 0.03 },
+    medium_close: { head: [0.12, 0.75], top: 0.03 },
+    medium: { head: [0.06, 0.5], top: 0.03 },
   },
   animals: OUTLINED_ANIMAL_FRAMES,
   animalNotes: {

@@ -4,9 +4,10 @@ import type { MotionGenreSpec } from "../types.js";
 const S = X.SHOTS;
 const V = X.VISUALS;
 const F = X.FRAMES;
-export const WITNESS_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS" | "DIALOGUE" | "TEXTURE" | "CONTRACT"> = {
+export const WITNESS_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS" | "DIALOGUE" | "TEXTURE" | "STYLE_BRIEF" | "CONTRACT"> = {
   DIALOGUE: { minLines: 1, skipProtagonist: true, needsSourceQuotes: false },
-  TEXTURE: "the narrator's own body and fear, an ordinary household detail of that day, a small sign that something is off, what the neighbours whispered",
+  TEXTURE: "1) the narrator's own body and fear; 2) an ordinary household chore or object of that day; 3) a small sign that something is off (a sound, a smell, a light); 4) what a neighbour or elder whispered, with who said it; 5) the hour and the weather around the house; 6) a short question-and-answer between two people",
+  STYLE_BRIEF: "WITNESS: the narrator is an ordinary person inside the events, speaking as \"tôi/I\" in plain village words, sentences of five to fourteen syllables. Fear is shown through the narrator's body and the house: a sound, a smell, an object out of place. Elders set a rule or taboo early and it has a consequence later. Short question-and-answer exchanges. What the narrator only heard is told as hearsay with who told it. No sermon, no summary of the moral.",
   CONTRACT: {
     voice: "first person (t\u00f4i / I); the narrator is the one who loses and is inside every event; plain spoken words; sentences of five to fourteen syllables, one idea each",
     opening: "a bare fact or number about the narrator's own family, then its consequence",
@@ -29,6 +30,7 @@ export const WITNESS_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING
     devices: ["household object", "taboo object", "lingering detail"],
     rule:
       "PICTURE GRAMMAR (witness): each beat names in subject the one thing the viewer sees for that sentence. A change of place or hour opens with an establishing beat without people. Fear, a taboo being spoken or a loss is a close beat on one face. A household or taboo object (bowl, well bucket, bead string, oil jar, lamp) gets its own insert beat when the narrator names it. Two people talking use medium or over_shoulder. Wide only for a whole village, river or crowd. A frame=told beat shows the people of that older tale in the third person; the narrator is never drawn into a tale they only heard. Each chapter has at least two insert or object-centred beats.",
+    picture: "the narrator is an ordinary villager seen from outside; fear sits in faces and hands, the taboo object is shown alone in lamp or moon light, places are shown empty before something happens",
     sample:
       '{"narration":"Bà tôi bảo: \\"Từ giờ đến rằm, đừng ai kéo nước sau giờ Dậu.\\"","frame":"lived","shot":"close","subject":"bà tôi nói, mắt nhìn ra giếng","visual":"scene"} {"narration":"Đêm thứ hai, tôi nghe tiếng gàu chạm thành giếng.","frame":"lived","shot":"insert","subject":"cái gàu tre treo trên thành giếng trong bóng tối","visual":"scene"} {"narration":"Các cụ kể, năm ấy có hai anh em ngoài cồn hoang.","frame":"told","shot":"establishing","subject":"cồn đất giữa sình lầy, cây cầu tre","visual":"scene"}',
   },

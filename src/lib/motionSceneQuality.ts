@@ -4,7 +4,8 @@ import type { MotionProfileScene, MotionShotSize } from "../constants/motionProf
 import { compositionElements } from "./motionSceneComposition.js";
 import { motionLayerSvg } from "./motionIdentityReference.js";
 import { motionNodeAnimalOf, motionNodeStanceOf } from "./motionScenePoses.js";
-import type { MotionRemotionEffect, MotionRemotionNode, MotionSceneComposition, MotionVisualRect } from "../types/motionVisual.js";
+import type { MotionRemotionEffect, MotionRemotionNode, MotionSceneComposition, MotionSceneObject, MotionVisualRect } from "../types/motionVisual.js";
+import { MOTION_OBJECT_CLASS_PARTS, MOTION_OBJECT_PART_CHECK_CLASSES } from "../constants/motionObjectClasses.js";
 export const motionLayerPart = (svg: string, layerId: string, pattern: RegExp): string | undefined => {
   let elements: ReturnType<typeof compositionElements>;
   try {
@@ -99,10 +100,11 @@ export const motionQualityIds = (svg: string, composition: MotionSceneCompositio
       if (head) ids.add(head);
       if (Q.FRAME_VIEWS.includes(view || "") && !motionNodeAnimalOf(node, cast)) for (const part of [...identityParts(svg, node.id, spec), ...motionLayerParts(svg, node.id, Q.HAND_PART)]) ids.add(part);
     }
+    if (view === Q.DETAIL && node.kind !== "label") for (const part of [...motionLayerParts(svg, node.id, Q.HAND_PART), ...motionLayerParts(svg, node.id, Q.ARM_PART)]) ids.add(part);
   }
   return [...ids];
 };
-export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[], view: string | undefined, measured: Record<string, MotionVisualRect | null>, spec: MotionProfileScene, cast: ReadonlySet<string>, names: (node: MotionRemotionNode) => string, aspect: number): string[] => {
+export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[], view: string | undefined, measured: Record<string, MotionVisualRect | null>, spec: MotionProfileScene, cast: ReadonlySet<string>, names: (node: MotionRemotionNode) => string, aspect: number, extra: { marks?: (node: MotionRemotionNode) => string[]; objects?: MotionSceneObject[] } = {}): string[] => {
   const issues: string[] = [];
   const people = nodes.filter((node) => node.kind === "character" && !motionNodeAnimalOf(node, cast) && measured[node.id]);
   const horse = nodes.find((node) => motionNodeAnimalOf(node, cast) === "horse" && measured[node.id]);
@@ -129,11 +131,43 @@ export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[
     const single = people.filter((node) => !node.anonymous && !node.crowd && node.representation !== "detail" && heads.get(node.id));
     const main = single.find((node) => node.entityId && cast.has(node.entityId)) || single[0];
     const head = main && heads.get(main.id);
-    if (main && head) {
-      if (Q.SIZE_VIEWS.includes(view!) && head.height > frame.head[1] + Q.HEAD_SLACK) issues.push(Q.ISSUE.TIGHT(names(main), view!, head.height, frame.head[1]));
-      else if (Q.SIZE_VIEWS.includes(view!) && head.height < frame.head[0] - Q.HEAD_SLACK) issues.push(Q.ISSUE.LOOSE(names(main), view!, head.height, frame.head[0]));
-      if (head.y >= -Q.EDGE && head.y < frame.top[0] * Q.TOP_SLACK) issues.push(Q.ISSUE.TOP(names(main), frame.top[0]));
+    if (main && head && Q.SIZE_VIEWS.includes(view!)) {
+      if (head.height > frame.head[1]) issues.push(Q.ISSUE.TIGHT(names(main), view!, head.height, frame.head[1]));
+      else if (head.height < frame.head[0]) issues.push(Q.ISSUE.LOOSE(names(main), view!, head.height, frame.head[0]));
     }
+    for (const node of single) {
+      const top = heads.get(node.id);
+      if (top && top.y >= -Q.EDGE && top.y < frame.top) issues.push(Q.ISSUE.TOP(names(node)));
+    }
+  }
+  for (const node of people) {
+    const wanted = node.visibleCount || 0;
+    if (!(node.anonymous || node.crowd) || wanted < Q.CROWD_MIN) continue;
+    const drawn = motionLayerParts(svg, node.id, spec.headPart).length;
+    if (drawn < Math.max(Q.CROWD_MIN, Math.ceil(wanted * Q.CROWD_SHARE))) issues.push(Q.ISSUE.CROWD(node.id, drawn, wanted));
+  }
+  for (const node of people) {
+    const marks = extra.marks?.(node) || [];
+    if (!marks.length || node.anonymous || node.representation === "detail") continue;
+    const drawn = motionLayerParts(svg, node.id, Q.MARK_PART).length;
+    if (drawn < marks.length) issues.push(Q.ISSUE.MARKS(names(node), marks.slice(drawn)));
+  }
+  if (view === Q.DETAIL) {
+    const handish = nodes.filter((node) => node.kind !== "label").flatMap((node) => [...motionLayerParts(svg, node.id, Q.HAND_PART), ...motionLayerParts(svg, node.id, Q.ARM_PART)]);
+    if (handish.some((id) => measured[id] && measured[id]!.y + measured[id]!.height > Q.BOTTOM_EDGE)) issues.push(Q.ISSUE.OWN_EYES);
+  }
+  for (const node of people) {
+    if (node.relation !== Q.BESIDE || !node.target) continue;
+    const other = people.find((candidate) => candidate.id === node.target);
+    if (!other || node.representation !== "full" || other.representation !== "full") continue;
+    const a = measured[node.id]!.height,
+      b = measured[other.id]!.height;
+    if (a > 0 && b > 0 && Math.abs(a - b) / Math.max(a, b) > Q.SCALE_GAP) issues.push(Q.ISSUE.SCALE(names(node), names(other)));
+  }
+  for (const item of extra.objects || []) {
+    if (!MOTION_OBJECT_PART_CHECK_CLASSES.includes(item.class) || !nodes.some((node) => node.id === item.id) || !motionLayerSvg(svg, item.id)) continue;
+    const missing = (MOTION_OBJECT_CLASS_PARTS[item.class] || []).filter((entry) => !motionLayerParts(svg, item.id, entry.match).length);
+    if (missing.length) issues.push(Q.ISSUE.OBJECT_PARTS(item.id, missing.map((entry) => entry.name)));
   }
   const named = people.filter((node) => node.entityId && cast.has(node.entityId) && node.representation !== "detail");
   if (view === "medium" && named.length && named.length <= Q.MEDIUM_MAX_NAMED) for (const node of named) if (measured[node.id]!.height < Q.MEDIUM_MIN_HEIGHT) issues.push(Q.ISSUE.SMALL(names(node)));

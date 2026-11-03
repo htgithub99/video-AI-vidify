@@ -19,6 +19,7 @@ export interface MotionGenreGrammarSpec {
   visuals: readonly string[];
   devices: readonly string[];
   rule: string;
+  picture: string;
   sample: string;
 }
 export interface MotionGenreBookendSpec {
@@ -58,5 +59,6 @@ export interface MotionGenreSpec {
   HOOKS: { light: string; full: string };
   DIALOGUE: MotionGenreDialogueSpec;
   TEXTURE: string;
+  STYLE_BRIEF: string;
   CONTRACT: MotionGenreContract;
 }

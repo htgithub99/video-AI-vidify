@@ -2,6 +2,7 @@ import { MOTION_SCENE_PLAN_GUARD as G } from "../constants/motionScenePlanGuard.
 import { MOTION_SCENE_SPEC as SPEC, type MotionAnimal, type MotionPosture } from "../constants/motionProfiles/sceneSpec.js";
 import { MOTION_SCENE_VIEWS } from "../constants/motionProfiles/framing.js";
 import type { MotionRemotionNode, MotionRemotionScene } from "../types/motionVisual.js";
+import { motionSceneObjects } from "./motionObjects.js";
 export const motionNodeStance = (node: Pick<MotionRemotionNode, "posture" | "pose" | "support" | "description">): MotionPosture => {
   for (const text of [[node.posture, node.pose, node.support].filter(Boolean).join(" "), (node.description || "").split(G.STANCE_CUT)[0]]) for (const [stance, pattern] of SPEC.POSTURE_MATCH) if (pattern.test(text)) return stance;
   return "stand";
@@ -47,6 +48,14 @@ export const motionScenePlanGuard = (scenes: MotionRemotionScene[], opts: { cast
       scene.view = G.DETAIL;
       details++;
     }
+    for (const node of scene.nodes) {
+      if (node.crowd && !node.visibleCount) node.visibleCount = Math.max(G.VISIBLE_MIN, Math.min(node.crowd.count || G.VISIBLE_BY_VIEW[scene.view || G.WIDE] || G.VISIBLE_MIN, G.VISIBLE_BY_VIEW[scene.view || G.WIDE] || G.VISIBLE_MIN));
+      if (node.kind === G.CHARACTER && node.representation === G.DETAIL && G.OWN_EYES.test(node.description)) node.description = node.description.replace(G.OWN_EYES_POSSESSIVE, G.OWN_EYES_FIX);
+    }
+    if (scene.view === G.DETAIL && (!scene.camera || G.OWN_EYES.test(scene.camera))) scene.camera = G.DETAIL_CAMERA;
+    if (G.CLOSE_VIEWS.includes(scene.view || "") && !scene.lead) scene.lead = (people.find((node) => node.entityId && opts.cast.has(node.entityId)) || people[0])?.id;
+    const objects = motionSceneObjects(scene);
+    if (objects.length) scene.objects = objects;
   }
   return { stripped, details, animals };
 };

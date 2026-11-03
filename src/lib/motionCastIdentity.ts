@@ -1,6 +1,22 @@
 import { MOTION_CAST_IDENTITY as I } from "../constants/motionCastIdentity.js";
+import type { MotionAnalysisGroup } from "../types/motionVideo.js";
 export const motionCleanLook = (look?: string): string => I.TIDY.reduce((text, pattern, index) => text.replace(pattern, index === 2 ? " " : ""), (look || "").replace(I.CONSTRUCTION, "")).trim();
-export const motionAnalysisGroups = (raw: unknown): { key: string; name: string; look: string }[] | undefined => {
+const field = (value: unknown, max: number): string | undefined => {
+  const text = typeof value === "string" ? value.trim().slice(0, max) : "";
+  return text || undefined;
+};
+export const motionCastMarks = (marks: unknown, look?: string): string[] => {
+  const listed = (Array.isArray(marks) ? marks : []).filter((item): item is string => typeof item === "string" && !!item.trim()).map((item) => item.trim().replace(I.MARK_TRIM, "").slice(0, I.MARK_CHARS));
+  if (listed.length) return listed.slice(0, I.MARKS_MAX);
+  return (look || "")
+    .split(I.MARK_SPLIT)
+    .map((part) => part.trim())
+    .filter((part) => part && I.MARK_WORDS.test(part) && !I.MARK_SKIP.test(part))
+    .map((part) => part.replace(I.MARK_TRIM, "").slice(0, I.MARK_CHARS))
+    .slice(0, I.MARKS_MAX);
+};
+export const motionCastSkin = (skin: unknown, look?: string): string | undefined => field(skin, I.FIELD_CHARS) || (look || "").match(I.SKIN_WORDS)?.[1]?.trim();
+export const motionAnalysisGroups = (raw: unknown): MotionAnalysisGroup[] | undefined => {
   if (!Array.isArray(raw)) return undefined;
   const used = new Set<string>();
   const groups = raw
@@ -15,7 +31,8 @@ export const motionAnalysisGroups = (raw: unknown): { key: string; name: string;
           .replace(I.GROUP_KEY.TRIM, "") || I.GROUP_KEY.FALLBACK;
       while (used.has(key)) key += I.GROUP_KEY.SUFFIX;
       used.add(key);
-      return { key, name, look: motionCleanLook(item.look).slice(0, I.GROUP_TEXT.LOOK) };
+      const extra = Object.fromEntries(I.GROUP_FIELDS.map((name) => [name, field(item[name], I.GROUP_TEXT.FIELD)]).filter(([, value]) => value));
+      return { key, name, look: motionCleanLook(item.look).slice(0, I.GROUP_TEXT.LOOK), ...(extra.skin ? {} : motionCastSkin(undefined, item.look) ? { skin: motionCastSkin(undefined, item.look) } : {}), ...extra };
     });
   return groups.length ? groups : undefined;
 };

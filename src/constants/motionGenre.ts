@@ -57,9 +57,9 @@ export const motionVideoGenreEditorProfile = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
   return profile.TIMELINE + GENRE_TEXT.CHECK + profile.CHECK;
 };
-export const motionVideoGenreStyleGuide = (value: unknown): string => {
+export const motionVideoGenreStyleBrief = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
-  return GENRE_TEXT.STYLE + profile.PROFILE + " " + profile.TIMELINE + GENRE_TEXT.SAMPLE + profile.SAMPLE + GENRE_TEXT.CHECK + profile.CHECK;
+  return GENRE_TEXT.STYLE + profile.STYLE_BRIEF + " " + profile.TIMELINE + GENRE_TEXT.SAMPLE + profile.SAMPLE + GENRE_TEXT.CHECK + profile.CHECK;
 };
 export const motionVideoGenreGrammar = (value: unknown, position: { first: boolean; last: boolean; hooks?: boolean }): string => {
   const profile = PROFILES[motionVideoGenre(value)];

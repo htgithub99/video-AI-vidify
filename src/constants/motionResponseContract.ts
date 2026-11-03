@@ -182,12 +182,13 @@ export const MOTION_ANALYSIS_SCHEMA = object({
   title: text,
   logline: text,
   videoDna: { ...MOTION_DNA_CORE_SCHEMA, properties: { ...MOTION_DNA_CORE_SCHEMA.properties, format: MOTION_DNA_PROFILE_SCHEMA.properties!.format, audienceProfile: MOTION_DNA_PROFILE_SCHEMA.properties!.audienceProfile } },
-  cast: array(object({ ...texts("key", "name", "role", "look", "description"), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["key", "name"])),
+  cast: array(object({ ...texts("key", "name", "role", "look", "description", "skin", "origin"), marks: strings(), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["key", "name"])),
+  groups: array(object(texts("key", "name", "look", "origin", "skin", "outfit", "gear", "faction"), ["key", "name", "look"])),
   places: array(object({ ...texts("key", "name", "description"), interior: boolean, time: choice(...MOTION_RESPONSE_VALUES.TIMES) }, ["key", "name", "description"])),
   chapters: array(object({ ...texts("id", "title", "summary"), writing, keyPoints: strings(), hook: plainText, handoff: plainText, from: number, to: number, weight: number, mustKeep: boolean }, ["id", "title", "summary"]), 1),
   renameMap: array(object({ ...texts("source", "renamed"), kind: choice(...MOTION_RENAME.KINDS) }, ["source", "renamed"])),
 });
-for (const schema of [story, MOTION_ANALYSIS_SCHEMA]) schema.required = schema.required?.filter((key) => key !== "writingPlan" && key !== MOTION_RENAME.MAP_FIELD);
+for (const schema of [story, MOTION_ANALYSIS_SCHEMA]) schema.required = schema.required?.filter((key) => key !== "writingPlan" && key !== "groups" && key !== MOTION_RENAME.MAP_FIELD);
 export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   ...MOTION_REMOTION_SCHEMAS,
   "motion-story-analysis": MOTION_ANALYSIS_SCHEMA,

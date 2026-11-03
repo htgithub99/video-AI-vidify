@@ -223,6 +223,14 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const pipelined = body?.editorPass !== false && body?.durationRepair !== true && todo.length === chapters.length && chapters.length > 1;
       const editScope = body.productionId || body.editorialSessionId || ctx.signal.toString();
       const chapterEdits = new Map<string, Promise<MotionStoryScript["edit"] | undefined>>();
+      const logChapterScore = (chapter: MotionChapter, stage = "") => {
+        const silent = motionStorytellingSilent(analysis.storytelling);
+        const wantedUnits = Math.round(Math.max(15, (chapter.targetSeconds || 0) - (silent ? silent.chapterCard + silent.chapterEnd : 0)) * speechRate * (speechRateMeasured ? MOTION_STORY_CONFIG.LENGTH_SAFETY_MEASURED : MOTION_STORY_CONFIG.LENGTH_SAFETY));
+        const coverage = motionBeatSheetCoverage(byChapter[chapter.id] || [], chapter);
+        const own = byChapter[chapter.id] || [];
+        const viewer = motionGenreSpec(analysis.videoGenre).VOICE.detached ? Math.round((100 * own.filter((beat: MotionBeat) => motionLanguage(language).markers.viewer.test(beat.narration)).length) / Math.max(1, own.length)) : undefined;
+        ctx.log(MOTION_BEAT_SHEET.QUALITY_LOG(chapter.id, wantedUnits > 0 ? Math.round((100 * _.sumBy(own, (beat: MotionBeat) => speechUnits(beat.narration))) / wantedUnits) : 0, viewer, coverage.covered, coverage.events, coverage.texture, stage));
+      };
       const editChapter = (chapter: MotionChapter, idx: number): Promise<MotionStoryScript["edit"] | undefined> =>
         runMotionScriptEditorial(
           _.flatMap(chapters.slice(0, idx + 1), (item: MotionChapter) => byChapter[item.id] || []),
@@ -236,6 +244,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           .then((result) => {
             byChapter[chapter.id] = result.beats.filter((beat) => beat.chapterId === chapter.id);
             checkpoint();
+            logChapterScore(chapter, MOTION_BEAT_SHEET.AFTER_EDIT);
             return result.edit;
           })
           .catch((error) => {
@@ -289,9 +298,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         const silent = motionStorytellingSilent(analysis.storytelling);
         const wantedUnits = Math.round(Math.max(15, (chapter.targetSeconds || 0) - (silent ? silent.chapterCard + silent.chapterEnd : 0)) * speechRate * (speechRateMeasured ? MOTION_STORY_CONFIG.LENGTH_SAFETY_MEASURED : MOTION_STORY_CONFIG.LENGTH_SAFETY));
         if (wantedUnits > 0) ctx.log(motionStorytellingText(language).CHAPTER(chapter.id, _.sumBy(byChapter[chapter.id], (beat) => speechUnits(beat.narration)), wantedUnits));
-        const coverage = motionBeatSheetCoverage(byChapter[chapter.id], chapter);
-        const viewer = motionGenreSpec(analysis.videoGenre).VOICE.detached ? Math.round((100 * byChapter[chapter.id].filter((beat: MotionBeat) => motionLanguage(language).markers.viewer.test(beat.narration)).length) / Math.max(1, byChapter[chapter.id].length)) : undefined;
-        ctx.log(MOTION_BEAT_SHEET.QUALITY_LOG(chapter.id, wantedUnits > 0 ? Math.round((100 * _.sumBy(byChapter[chapter.id], (beat: MotionBeat) => speechUnits(beat.narration))) / wantedUnits) : 0, viewer, coverage.covered, coverage.events, coverage.texture));
+        logChapterScore(chapter);
         checkpoint();
         if (pipelined && idx < chapters.length - 1) chapterEdits.set(chapter.id, editChapter(chapter, idx));
       };

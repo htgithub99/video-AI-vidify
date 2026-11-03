@@ -2,8 +2,10 @@ import { OUTLINED_CHARACTERS } from "../outlinedCharacters.js";
 import { SCENE_DIRECTION as S } from "../sceneDirection.js";
 import { MOTION_PROFILE_MOTION } from "../../motionProfileMotion.js";
 import type { MotionIllustrationProfile } from "../types.js";
+import { OUTLINED_BRIEF } from "../outlinedBrief.js";
 export const EXPLAINER_ART_DIRECTION: MotionIllustrationProfile = {
   grammar: OUTLINED_CHARACTERS,
+  brief: OUTLINED_BRIEF,
   storyContract: S.story,
   planning:
     "Plan clear educational illustrations from the covered lines. People use exactly the history character construction. Use the view each beat asks for; diagram, process, comparison, map, timeline, cutaway and card pictures are drawn when the beat's visual or format asks for them. Labels and arrows convey source-supported information without covering people. Choose one readable moment per picture. Describe posture and support in words; leave drawing coordinates to the drawing AI.",

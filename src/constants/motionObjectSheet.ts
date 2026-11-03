@@ -1,0 +1,21 @@
+export const MOTION_OBJECT_SHEET = {
+  ARTIFACT: "motion_remotion_sheet",
+  PLURAL: /(?:e?s)$/u,
+  KEY_INVALID: /[^a-z0-9]+/g,
+  KEY_SEPARATOR: "_",
+  MAX_SVG: 3000,
+  MAX_PER_SCENE: 2,
+  MIN_SCENES: 2,
+  MAX_ITEMS: 8,
+  MAX_REQUESTS: 2,
+  FRAME_SIZE: 200,
+  PROMPT: (items: { key: string; class: string; label: string; description: string; parts: readonly string[] }[], era: string | undefined, style: { frame: string; rules: readonly string[] }, svgFrame: string): string =>
+    `TEXT CODING TASK: draw a REFERENCE SHEET of ${items.length} things for later scenes of one video, as separate small SVGs in the same drawing style as the character frame below. Each is one subject alone on a transparent background, seen from the side, era-correct${era ? ` for ${era}` : ""}, simplified construction with clear dark contours and flat fills, inside viewBox 0 0 200 200.\n${style.frame}\n${svgFrame}\nEND CHARACTER SVG FRAME\nSTYLE: ${style.rules.join(" ")}\nITEMS:\n${items.map((item) => `- key "${item.key}" (${item.label}): ${item.description}. Required sub-group ids: ${item.parts.map((part) => `${item.key}_${part}`).join(", ")}.`).join("\n")}\nOUTPUT: one fenced JSON object {"sheets":[{"key":"…","svg":"<svg …>…</svg>"}]} with one entry per key; svg is a complete self-contained SVG string with xmlns, single-quoted attributes, a root group id equal to the key, closed tags and no text. Max 2500 characters per svg.`,
+  REPAIR: (errors: string[]): string => `Return the complete {"sheets":[…]} JSON again with every item, fixing these problems: ${errors.join("; ")}. Each svg keeps a root group whose id equals the key and the required sub-group ids.`,
+  LOG_GATHER: (count: number, names: string[]): string => `Bảng mẫu vật và con vật: ${count} mục (${names.join(", ")}).`,
+  LOG_SKIP: "Bảng mẫu vật và con vật: không có vật lặp lại, bỏ qua.",
+  LOG_DONE: (accepted: number, total: number): string => `Bảng mẫu vật và con vật: ${accepted}/${total} mục đạt, lưu cho các cảnh sau.`,
+  LOG_FAILED: (reason: string): string => `Bảng mẫu vật và con vật: không vẽ được (${reason}); các cảnh dùng ghi chú cấu tạo bằng chữ.`,
+  ISSUE_PARTS: (key: string, missing: string[]): string => `${key} thiếu bộ phận ${missing.join(", ")}`,
+  ISSUE_ROOT: (key: string): string => `${key} không có nhóm gốc đúng id`,
+} as const;

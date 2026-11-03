@@ -12,10 +12,6 @@ export const SCENE_FRAMING: Record<MotionSceneView, string> = {
   over_shoulder: "FRAMING over_shoulder: the back of one listener's head and shoulder large and soft at one side of the foreground, the person they face in the middle ground turned toward them.",
 };
 export const SCENE_FRAMING_PLANNING = `VIEWS: ${MOTION_SCENE_VIEWS.join(" | ")}. wide for a whole place or crowd; medium for one to three people interacting; medium_close for one or two people whose hands, gesture and face all matter; close for one face carrying the emotion; detail for an object or hands; establishing for a place without people; over_shoulder for a listener and a speaker. Use the beat's shot as the requested view; one picture may still cover consecutive beats that share the same view and subject.`;
-export const SCENE_SHOT_FRAME = {
-  RULES: "Compose this framing yourself in the drawing; it is never cropped afterwards. The frame edge never cuts through a face, hat, hand, wrist, elbow, knee or ankle; every other person is either fully inside the frame or clearly out of it; the main person sits at the centre or on a third, facing into the open side of the frame.",
-  TEXT: (view: string, body: string, head: readonly [number, number], top: readonly [number, number], rules: string): string => `FRAMING ${view}: ${body} The head together with its hat or hair takes ${Math.round(head[0] * 100)}-${Math.round(head[1] * 100)} percent of the frame height, with ${Math.round(top[0] * 100)}-${Math.round(top[1] * 100)} percent of empty frame above it. ${rules}`,
-} as const;
 export const SCENE_DEVICES: Record<Exclude<MotionSceneFormat, "illustration">, string> = {
   diagram: "DEVICE diagram: a clear schematic of the idea with few labelled parts and a plain reading order; no room, floor or incidental people.",
   comparison: "DEVICE comparison: the recurring weighing device (a scale, a ledger, stamps, a scoreboard) with the compared candidates or cards placed on or beside it; labels are the exact supplied text.",

@@ -5,9 +5,8 @@ export type MotionAnimal = (typeof MOTION_ANIMALS)[number];
 export const MOTION_SHOT_SIZES = ["close", "medium_close", "medium"] as const;
 export type MotionShotSize = (typeof MOTION_SHOT_SIZES)[number];
 export interface MotionShotFrame {
-  body: string;
   head: readonly [number, number];
-  top: readonly [number, number];
+  top: number;
 }
 export interface MotionProfileScene {
   identityParts: RegExp;

@@ -54,6 +54,8 @@ export interface MotionRemotionNode {
   entityId?: string;
   anonymous?: boolean;
   crowd?: { groupKey?: string; faction?: string; appearance?: string; depth: "foreground" | "midground" | "background"; rows?: number; facing?: string; count?: number };
+  visibleCount?: number;
+  uses?: { objectId: string; how: string };
   description: string;
   pose: string;
   posture?: string;
@@ -86,6 +88,18 @@ export interface MotionRemotionNode {
   layoutSocket?: string;
   groundTargets?: string[];
 }
+export interface MotionObjectSheetEntry {
+  class: import("../constants/motionObjectClasses.js").MotionObjectClass;
+  term: string;
+  names: string[];
+  svg: string;
+  parts: string[];
+}
+export interface MotionSceneObject {
+  id: string;
+  class: import("../constants/motionObjectClasses.js").MotionObjectClass;
+  description: string;
+}
 export interface MotionSceneCrop {
   x: number;
   y: number;
@@ -116,6 +130,9 @@ export interface MotionRemotionScene {
   declaredWeather?: string;
   locationKey?: string;
   view?: MotionSceneView;
+  camera?: string;
+  lead?: string;
+  objects?: MotionSceneObject[];
   crop?: MotionSceneCrop;
   qualityNote?: string;
   qualityRedraws?: number;
@@ -127,6 +144,8 @@ export interface MotionRemotionScene {
   removedObjects?: string[];
   composition?: MotionSceneComposition;
   build?: { inputKey: string; status: "accepted" | "failed"; review: boolean; error?: string; attempts?: number };
+  failStreak?: number;
+  deferred?: boolean;
   drawingNote?: string;
   requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
@@ -176,6 +195,8 @@ export interface MotionRemotionState {
   version: number;
   settings: MotionVisualSettings;
   assets: Record<string, MotionVectorAsset>;
+  sheet?: Record<string, MotionObjectSheetEntry>;
+  sheetKey?: string;
   scenes: Record<string, MotionRemotionScene[]>;
   inputKeys: Record<string, string>;
   failures: Record<string, string>;

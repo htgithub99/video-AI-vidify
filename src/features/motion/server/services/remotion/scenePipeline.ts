@@ -63,7 +63,10 @@ import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { MotionAiWorkerPool } from "../motionAiWorkerPool.js";
 import type { MotionAiExecution, MotionAiLog, MotionStoryAnalysis, MotionStoryScript } from "../../../../../types/motionVideo.js";
 import type { MotionAiContractState } from "../../../../../types/motionAiContract.js";
-import type { MotionMeasuredRect, MotionRemotionScene, MotionRemotionState, MotionRenderBehavior } from "../../../../../types/motionVisual.js";
+import type { MotionMeasuredRect, MotionObjectSheetEntry, MotionRemotionNode, MotionRemotionScene, MotionRemotionState, MotionRenderBehavior } from "../../../../../types/motionVisual.js";
+import { motionSceneSheets } from "../../../../../lib/motionObjectSheet.js";
+import { MOTION_OBJECT_SHEET as SHEET } from "../../../../../constants/motionObjectSheet.js";
+import { motionSheetAssess, motionSheetCandidates, motionSheetPrompt } from "./sceneSheet.js";
 const drawingNodes = (nodes: MotionRemotionScene["nodes"]) => nodes.map((node) => Object.fromEntries(Object.entries(node).filter(([key]) => !C.DRAW_NODE_OMIT.includes(key))));
 const establishingScene = (scene: MotionRemotionScene) => (!scene.view || (ESTABLISHING_VIEWS as readonly string[]).includes(scene.view)) && !scene.nodes.some((node) => ["bust", "detail"].includes(node.representation || ""));
 const ESTABLISHING_VIEWS = ["wide", "establishing"] as const;
@@ -155,7 +158,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             }
           : undefined,
         start: !single && artifact === C.ARTIFACT && compositions[key] && requests[key]?.errors.length ? () => C.REPAIR(context, compositions[key], requests[key].errors) : undefined,
-        repair: (_base, draft, errors) => (artifact === C.ARTIFACT ? C.REPAIR(context, draft, errors) : P.REPAIR(context, draft, errors)),
+        repair: (_base, draft, errors) => (artifact === C.ARTIFACT ? C.REPAIR(context, draft, errors) : artifact === SHEET.ARTIFACT ? SHEET.REPAIR(errors) : P.REPAIR(context, draft, errors)),
         rejected: async (raw, draft, errors, route, attempt) => {
           opts.log(V.LOG_REJECTED(artifact, errors));
           await writeMotionAiDebug(`${artifact}${RT_SHARED.SYMBOL_3973E0}${key}${RT_SHARED.SYMBOL_3973E0}${attempt}`, { stage: artifact, provider: route.provider, model: route.model, errors, response: raw, draft });
@@ -310,6 +313,19 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const readyCount = () => allScenes.filter((scene) => ready.has(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED).length;
     const progressTotal = () => Math.max(1, allScenes.length + selectedGroups.length - planned.size);
     const sceneSpec = MOTION_PROFILE_SCENES[settings.profileId];
+    const noteOutcome = (scene: (typeof allScenes)[number], failed: boolean) => {
+      if (!failed) {
+        scene.failStreak = 0;
+        delete scene.deferred;
+        return;
+      }
+      scene.failStreak = (scene.failStreak || 0) + 1;
+      if (scene.failStreak >= C.FAIL_STREAK && !scene.deferred) {
+        scene.deferred = true;
+        delete scene.qualityNote;
+        opts.log(C.LOG_DEFER(allScenes.indexOf(scene) + 1, allScenes.length, scene.failStreak));
+      }
+    };
     const drawScene = async (scene: (typeof allScenes)[number], previous?: (typeof allScenes)[number], retry = false) => {
       if (previous && motionSceneLocation(previous) !== motionSceneLocation(scene)) previous = undefined;
       if (!selected.has(scene.beatId) || (opts.onlyScenes?.length && !opts.onlyScenes.includes(scene.id))) return;
@@ -323,6 +339,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const targeted = !retry && (!!opts.onlyScenes?.includes(scene.id) || (opts.retryFailed === true && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED));
       const attempts = targeted || scene.build?.inputKey !== inputKey ? 0 : (scene.build?.attempts ?? (scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED ? 1 : 0));
       let drawingRequested = false;
+      let driftedNames: string[] = [];
       const requestBudget = opts.review ? { remaining: C.REVIEW_REQUESTS } : undefined;
       const request: typeof ask = async (requestKey, artifact, prompt, assess, images, context) => {
         scene.requestKeys ||= [];
@@ -356,7 +373,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             for (const node of scene.nodes) if (node.entityId && identity.changed.includes(node.entityId)) node.appearanceChanged = true;
             opts.log(MOTION_IDENTITY_REFERENCE.LOG_CHANGED(allScenes.indexOf(scene) + 1, allScenes.length, identity.changed.map((entityId) => analysis.cast.find((member) => member.key === entityId)?.name || entityId)));
           }
-          const identityMemory = motionIdentityMemory(scene, allScenes, settings.profileId);
           if (referenceCharacters.length) opts.log(MOTION_IDENTITY_REFERENCE.LOG_REFERENCES(allScenes.indexOf(scene) + 1, allScenes.length, referenceCharacters.length));
           const speakers = [...new Set(script.beats.filter((member) => (scene.sourceBeatIds || [scene.beatId]).includes(member.id)).flatMap((member) => member.utterances?.filter((line) => line.role === RT_SERVER.DIALOGUE).map((line) => line.speaker) || []))] as string[];
           const poseNotes = motionPoseNotes(settings.profileId, scene.nodes, scene.view, cast);
@@ -370,21 +386,15 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             renderBehavior: state.renderBehavior,
             era: analysis.era,
             place: analysis.places.find((place) => place.key === (scene.place || beat.place)),
-            scene: { purpose: scene.purpose, text: scene.text, format: scene.format, effects: scene.effects, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, nodes: drawingNodes(scene.nodes) },
+            scene: { purpose: scene.purpose, text: scene.text, format: scene.format, effects: scene.effects, environment: scene.environment, time: scene.time || beat.time, weather: scene.weather || beat.weather, view: scene.view, camera: scene.camera, lead: scene.lead, objects: scene.objects, nodes: drawingNodes(scene.nodes) as MotionRemotionNode[] },
             cast: motionCastIdentity(analysis.cast).filter((member) => scene.nodes.some((node) => node.entityId === member.key)),
             dialogueSpeakers: speakers,
-            identityContrast: (() => {
-              const present = motionCastIdentity(analysis.cast).filter((member) => scene.nodes.some((node) => node.entityId === member.key && !node.anonymous && node.representation !== "detail"));
-              const contrast = motionIdentityContrast(present, C.CONTRAST);
-              return contrast.length ? contrast : undefined;
-            })(),
-            groups: scene.nodes.some((node) => node.anonymous) ? analysis.groups : undefined,
-            previousShot: allScenes[allScenes.indexOf(scene) - 1] ? { view: allScenes[allScenes.indexOf(scene) - 1].view, purpose: allScenes[allScenes.indexOf(scene) - 1].purpose } : undefined,
-            continuity: previousAsset && previous.composition?.profileId === settings.profileId && previous.composition?.profileRevision === profileRevision ? { text: previous.text, notes: previous.composition.continuityNotes, environment: previous.environment } : undefined,
-            identityMemory: identityMemory.length ? identityMemory : undefined,
-            referenceCharacters: referenceCharacters.length ? referenceCharacters : undefined,
+            groups: scene.nodes.some((node) => node.anonymous || node.crowd) ? analysis.groups : undefined,
+            placeNotes: previousAsset && previous.composition?.profileId === settings.profileId && previous.composition?.profileRevision === profileRevision ? previous.composition.continuityNotes : undefined,
+            genreLine: motionGenreSpec(analysis.videoGenre).GRAMMAR.picture,
             poseNotes: poseNotes.length ? poseNotes : undefined,
             animalFrames: animalFrames.length ? animalFrames : undefined,
+            sheets: motionSceneSheets(state, scene),
             note: scene.drawingNote ?? state.notes![beat.id],
           };
           const assess = (raw: unknown) => {
@@ -408,7 +418,8 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           const built = !drawingRequested ? recovered!.value : await request(key, C.ARTIFACT, C.PROMPT(context), assess, undefined, context);
           if (drawingRequested && referenceCharacters.length) {
             const drifted = motionIdentityDrift(referenceCharacters, built.asset.svg, built.composition.layers, settings.profileId);
-            if (drifted.length) opts.log(MOTION_IDENTITY_REFERENCE.LOG_DRIFT(allScenes.indexOf(scene) + 1, allScenes.length, drifted.map((entityId) => analysis.cast.find((member) => member.key === entityId)?.name || entityId)));
+            driftedNames = drifted.map((entityId) => analysis.cast.find((member) => member.key === entityId)?.name || entityId);
+            if (drifted.length) opts.log(MOTION_IDENTITY_REFERENCE.LOG_DRIFT(allScenes.indexOf(scene) + 1, allScenes.length, driftedNames));
           }
           if (drawingRequested) {
             const fixed = motionLayerFix(built.asset.svg, built.composition, scene.nodes, scene.effects, sceneSpec);
@@ -443,7 +454,10 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             opts.log(QUALITY.LOG_UNMEASURED(scene.id));
           }
           if (drawingRequested && measuredBoxes && (scene.qualityRedraws || 0) < QUALITY.MAX_REDRAWS) {
-            const issues = motionSceneQualityIssues(asset.svg, scene.nodes, scene.view, measuredBoxes, sceneSpec, cast, (node) => analysis.cast.find((member) => member.key === node.entityId)?.name || node.description, width / height);
+            const issues = [
+              ...motionSceneQualityIssues(asset.svg, scene.nodes, scene.view, measuredBoxes, sceneSpec, cast, (node) => analysis.cast.find((member) => member.key === node.entityId)?.name || node.description, width / height, { marks: (node) => analysis.cast.find((member) => member.key === node.entityId)?.marks || [], objects: scene.objects }),
+              ...driftedNames.map((name) => QUALITY.ISSUE.DRIFT(name)),
+            ];
             if (issues.length) {
               scene.qualityNote = issues.join(RT_SHARED.SYMBOL_36A9E7);
               scene.qualityRedraws = (scene.qualityRedraws || 0) + 1;
@@ -582,6 +596,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           );
         ready.add(scene.id);
         scene.build = { inputKey, status: RUNTIME_VALUES.ACCEPTED_070C160A, review: !!opts.review && scene.reviewKey === motionInputKey([scene.composition, scene.text, settings]), attempts: attempts + (drawingRequested ? 1 : 0) };
+        noteOutcome(scene, !!(drawingRequested && scene.qualityNote));
         processed.add(scene.id);
         save();
         const message = V.LOG_READY(readyCount(), allScenes.length) + P.LOG_PENDING_PLANS(selectedGroups.length - planned.size);
@@ -598,11 +613,40 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           scene.aspect = aspect;
         }
         scene.build = { inputKey, status: COMMON_RUNTIME.SOURCE_TEXT_FAILED, review: !!opts.review, error: reason, attempts: attempts + 1 };
+        noteOutcome(scene, true);
         processed.add(scene.id);
         save();
         opts.log(C.LOG_CONTINUE(scene.id, reason));
         if (!retry) opts.progress?.((0.9 * processed.size) / progressTotal(), C.PROGRESS_CONTINUE(allScenes.indexOf(scene) + 1, allScenes.length));
       }
+    };
+    let sheetRequests = 0;
+    let sheetPending: Promise<void> | undefined;
+    const ensureSheet = async () => {
+      if (sheetPending) return sheetPending;
+      if (sheetRequests >= SHEET.MAX_REQUESTS) return;
+      const items = motionSheetCandidates(state, allScenes);
+      if (!items.length) {
+        if (!sheetRequests) opts.log(SHEET.LOG_SKIP);
+        return;
+      }
+      sheetRequests++;
+      sheetPending = (async () => {
+        opts.log(SHEET.LOG_GATHER(items.length, items.map((item) => item.key)));
+        const key = `${SHEET.ARTIFACT}${RT_SHARED.SYMBOL_3973E0}${sheetRequests}${RT_SHARED.SYMBOL_3973E0}${motionInputKey(items.map((item) => item.key))}`;
+        try {
+          const accepted = (await ask(key, SHEET.ARTIFACT, motionSheetPrompt(items, analysis.era, settings.profileId), (raw) => motionSheetAssess(raw, items))) as Record<string, MotionObjectSheetEntry>;
+          state.sheet = { ...(state.sheet || {}), ...accepted };
+          opts.log(SHEET.LOG_DONE(Object.keys(accepted).length, items.length));
+          save();
+        } catch (error) {
+          if (fatal(error)) throw error;
+          opts.log(SHEET.LOG_FAILED(String((error as Error).message)));
+        } finally {
+          sheetPending = undefined;
+        }
+      })();
+      return sheetPending;
     };
     const drawingSlots = new MotionAiWorkerPool(MOTION_STORY_CONFIG.SCENE_WORKER_IDS);
     const draw = async (scene: (typeof allScenes)[number], anchor?: (typeof allScenes)[number], retry = false) => {
@@ -624,6 +668,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         planned.add(group.id);
         allScenes = planGroups.flatMap((group) => state.scenes[group.id] || []);
         if (state.failures[group.id]) return;
+        await ensureSheet();
         const candidates = (state.scenes[group.id] || []).filter((scene) => !opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id));
         if (!candidates.length) return;
         for (const [location, locationScenes] of motionScenesByLocation(candidates)) {
@@ -665,13 +710,13 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     await Promise.all(drawing);
     if (drawingFailure) throw drawingFailure.error;
     for (let round = 1; round <= QUALITY.ROUNDS; round++) {
-      const pending = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.qualityNote && scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A);
+      const pending = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.qualityNote && !scene.deferred && scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A);
       if (!pending.length) break;
       opts.signal?.throwIfAborted();
       opts.log(QUALITY.LOG_ROUND(round, pending.length));
       const outcomes = await Promise.allSettled(
         pending.map(async (scene) => {
-          const snapshot = { composition: scene.composition, asset: scene.composition && state.assets[scene.composition.assetKey], build: scene.build, crop: scene.crop, focus: scene.focus };
+          const snapshot = { composition: scene.composition, asset: scene.composition && state.assets[scene.composition.assetKey], build: scene.build, crop: scene.crop, focus: scene.focus, note: scene.qualityNote, redraws: scene.qualityRedraws };
           scene.drawingNote = [state.notes![scene.beatId], scene.qualityNote].filter(Boolean).join(RT_SHARED.SYMBOL_01BA47);
           delete scene.qualityNote;
           await draw(scene, undefined, true);
@@ -681,6 +726,10 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             scene.build = snapshot.build;
             scene.crop = snapshot.crop;
             scene.focus = snapshot.focus;
+            if (!scene.deferred) {
+              scene.qualityNote = snapshot.note;
+              scene.qualityRedraws = snapshot.redraws;
+            }
             ready.add(scene.id);
             opts.log(QUALITY.LOG_KEEP(scene.id));
             save();
@@ -690,7 +739,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const stopped = outcomes.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
       if (stopped?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw stopped.reason;
     }
-    const failedScenes = () => allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED && (scene.build.attempts ?? 1) < C.DRAW_ATTEMPTS);
+    const failedScenes = () => allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && !scene.deferred && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED && (scene.build.attempts ?? 1) < C.DRAW_ATTEMPTS);
     for (let round = 1; round <= C.RECOVERY_ROUNDS; round++) {
       const failed = failedScenes();
       if (!failed.length) {
@@ -717,6 +766,36 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       );
       const interrupted = retries.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
       if (interrupted?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw interrupted.reason;
+    }
+    for (let round = 1; round <= C.DEFER_ROUNDS; round++) {
+      const deferred = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.deferred);
+      if (!deferred.length) break;
+      opts.signal?.throwIfAborted();
+      opts.log(C.LOG_DEFER_ROUND(round, C.DEFER_ROUNDS, deferred.length));
+      const outcomes = await Promise.allSettled(
+        deferred.map(async (scene) => {
+          for (let attempt = 0; attempt < C.DEFER_ATTEMPTS; attempt++) {
+            scene.failStreak = 0;
+            delete scene.deferred;
+            const snapshot = { composition: scene.composition, asset: scene.composition && state.assets[scene.composition.assetKey], build: scene.build };
+            scene.drawingNote = [state.notes![scene.beatId], C.RECOVERY_STRATEGY[Math.min(round + attempt, C.RECOVERY_STRATEGY.length - 1)]].filter(Boolean).join(RT_SHARED.SYMBOL_01BA47);
+            delete scene.qualityNote;
+            await draw(scene, undefined, true);
+            if (scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A && !scene.qualityNote) return;
+            if (scene.build?.status !== RUNTIME_VALUES.ACCEPTED_070C160A && snapshot.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A && snapshot.composition && snapshot.asset) {
+              scene.composition = snapshot.composition;
+              state.assets[snapshot.composition.assetKey] = snapshot.asset;
+              scene.build = snapshot.build;
+              ready.add(scene.id);
+              save();
+            }
+          }
+          if (scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A) delete scene.deferred;
+        }),
+      );
+      const stopped = outcomes.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
+      if (stopped?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw stopped.reason;
+      opts.log(C.LOG_DEFER_DONE(allScenes.filter((scene) => scene.deferred).length));
     }
     opts.log(C.LOG_SUMMARY(readyCount(), allScenes.length));
     opts.progress?.(readyCount() / Math.max(1, allScenes.length), C.LOG_SUMMARY(readyCount(), allScenes.length));

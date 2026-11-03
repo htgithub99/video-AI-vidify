@@ -2,6 +2,7 @@ import { parseJson, stringifyJson } from "../lib/jsonStringify.js";
 import type { MotionResponseSchema } from "./motionResponseContract.js";
 import { MOTION_SCENE_DESIGN_SCHEMA } from "./motionSceneDesign.js";
 import { motionProfileScenePrompt } from "./motionProfiles/scenePrompts.js";
+import { motionSceneBrief } from "../lib/motionSceneBrief.js";
 import { motionHorrorSceneContext } from "../lib/motionHorrorIdentity.js";
 const placeholderText = "Cảnh chưa dựng được · Cần tạo lại";
 const repairContext = (input: unknown): unknown => {
@@ -9,6 +10,7 @@ const repairContext = (input: unknown): unknown => {
     const marker = "Context:\n";
     const context = typeof input === "string" ? parseJson(input.slice(input.lastIndexOf(marker) + marker.length).split("\n")[0]) : input;
     const { drawingReference, continuity, acceptedScene, ...needed } = context;
+    if (needed.scene?.nodes && needed.artDirection?.id) return motionSceneBrief(needed);
     return needed.artDirection?.id === "horror" ? motionHorrorSceneContext(needed) : needed;
   } catch {
     return {};
@@ -112,6 +114,12 @@ export const MOTION_SCENE_COMPOSITION = {
     "RECOVERY ROUND 5: last attempt. Same as the previous round; prefer a plain readable picture over any detail.",
   ] as readonly string[],
   RECOVERY_TRIM_ROUND: 3,
+  FAIL_STREAK: 3,
+  DEFER_ROUNDS: 2,
+  DEFER_ATTEMPTS: 2,
+  LOG_DEFER: (index: number, total: number, streak: number) => `Cảnh ${index}/${total}: lỗi ${streak} lần liên tiếp, hoãn; quay lại sau khi xong các cảnh khác.`,
+  LOG_DEFER_ROUND: (round: number, rounds: number, count: number) => `Vẽ lại cảnh đã hoãn: vòng ${round}/${rounds}, ${count} cảnh, đổi phòng.`,
+  LOG_DEFER_DONE: (left: number) => (left ? `Còn ${left} cảnh hoãn chưa vẽ được; giữ hình gần nhất hoặc đánh dấu để tạo lại.` : "Mọi cảnh hoãn đã vẽ xong."),
   LOG_RECOVERY_ROUND: (round: number, rounds: number, count: number) => `Phục hồi vòng ${round}/${rounds}: ${count} cảnh lỗi, đơn giản hoá yêu cầu dần.`,
   LOG_RECOVERY_DONE: (round: number) => `Phục hồi xong ở vòng ${round}: không còn cảnh lỗi.`,
   INCOMPLETE: (ids: string[]) => `Chưa đủ hình để xuất video: còn ${ids.length} cảnh cần dựng lại (${ids.join(", ")}). Đã giữ kịch bản, giọng và các cảnh đạt; nhấn tiếp tục để thử lại các cảnh lỗi.`,
@@ -153,7 +161,7 @@ export const MOTION_SCENE_COMPOSITION = {
   VIEWBOX: "viewBox phải đúng kích thước và tỷ lệ khung hình được yêu cầu.",
   MOTION: "Chuyển động phải có đích hợp lệ, keyframe tăng dần và cùng cấu trúc số; chỉ cho nhân vật có thoại cử động miệng.",
   REPAIR: (context: unknown, draft: unknown, errors: string[]) =>
-    `Repair only rejected fields of ONE AI-authored illustration. Return one JSON object in a json code block. Keep accepted artwork, spatial design, support contacts, identities and story facts. Context:\n${stringifyJson(repairContext(context))}\nYou may return groupPatches:[{id,svg}] to replace existing named SVG groups, retaining the group's exact id and all unrelated artwork. Omit svg when using groupPatches or correcting only metadata. If a required group is missing from SVG, draw it in a complete corrected svg or patch an existing parent containing it; changing layers metadata alone cannot create artwork. Do not return an earlier shot in place of the requested scene. When correcting layers/animations, return the COMPLETE corrected list for that array. SVG must be self-contained, with requested viewBox, explicit attributes and local references only; no HTML, scripts, external images, CSS or SMIL. Use single-quoted SVG attributes and plain tag characters inside the JSON string. Animation channels are actor/effect/speech, attributes transform/d/opacity. Opacity values must be numbers in [0,1]. Times start at 0 and increase; path/transform values retain identical command structure; loops end at the exact starting value. Transform deltas use local joints/emitters for scale/rotation; do not move the support contact. Only direct dialogue may have speech motion. Draft: ${stringifyJson(draft)}\nErrors: ${stringifyJson(errors)}`,
+    `Repair only rejected fields of ONE AI-authored illustration. Return one JSON object in a json code block. Keep accepted artwork, spatial design, support contacts, identities and story facts. Context:\n${((value) => (typeof value === "string" ? value : stringifyJson(value)))(repairContext(context))}\nYou may return groupPatches:[{id,svg}] to replace existing named SVG groups, retaining the group's exact id and all unrelated artwork. Omit svg when using groupPatches or correcting only metadata. If a required group is missing from SVG, draw it in a complete corrected svg or patch an existing parent containing it; changing layers metadata alone cannot create artwork. Do not return an earlier shot in place of the requested scene. When correcting layers/animations, return the COMPLETE corrected list for that array. SVG must be self-contained, with requested viewBox, explicit attributes and local references only; no HTML, scripts, external images, CSS or SMIL. Use single-quoted SVG attributes and plain tag characters inside the JSON string. Animation channels are actor/effect/speech, attributes transform/d/opacity. Opacity values must be numbers in [0,1]. Times start at 0 and increase; path/transform values retain identical command structure; loops end at the exact starting value. Transform deltas use local joints/emitters for scale/rotation; do not move the support contact. Only direct dialogue may have speech motion. Draft: ${stringifyJson(draft)}\nErrors: ${stringifyJson(errors)}`,
   PROMPT: motionProfileScenePrompt,
 } as const;
 const text: MotionResponseSchema = { type: "string", minLength: 1 };

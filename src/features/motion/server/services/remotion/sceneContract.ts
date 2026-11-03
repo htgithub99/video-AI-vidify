@@ -1,4 +1,5 @@
 import * as COMMON_RUNTIME from "../../../../../constants/sourceText.js";
+import { MOTION_OBJECT_CLASSES } from "../../../../../constants/motionObjectClasses.js";
 import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
@@ -66,6 +67,12 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
   const errors: string[] = [];
   const scenes: any[] = [];
   for (const item of drafts.values()) {
+    for (const field of P.SCENE_TEXT_FIELDS) {
+      if (typeof item[field] === "string" && item[field].trim()) item[field] = item[field].trim().slice(0, P.SCENE_TEXT_CHARS);
+      else delete item[field];
+    }
+    if (Array.isArray(item.objects)) item.objects = item.objects.filter((entry: any) => entry && typeof entry === "object" && typeof entry.id === "string" && entry.id.trim() && (MOTION_OBJECT_CLASSES as readonly string[]).includes(entry.class)).map((entry: any) => ({ id: entry.id.trim(), class: entry.class, description: typeof entry.description === "string" ? entry.description.trim().slice(0, P.SCENE_TEXT_CHARS) : "" }));
+    else delete item.objects;
     if (Array.isArray(item.nodes))
       for (const node of item.nodes) {
         if (!node || typeof node !== "object") continue;
@@ -83,6 +90,10 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
             }
           }
         } else delete node.crowd;
+        if (!Number.isFinite(node.visibleCount) || node.visibleCount < 1) delete node.visibleCount;
+        else node.visibleCount = Math.min(P.VISIBLE_MAX, Math.round(node.visibleCount));
+        if (!node.uses || typeof node.uses !== "object" || typeof node.uses.objectId !== "string" || typeof node.uses.how !== "string" || !node.uses.how.trim()) delete node.uses;
+        else node.uses = { objectId: node.uses.objectId.trim(), how: node.uses.how.trim().slice(0, P.SOFT_NODE_CHARS * 2) };
         for (const field of P.SOFT_NODE_FIELDS) {
           if (typeof node[field] === "string" && node[field].trim()) node[field] = node[field].trim().slice(0, P.SOFT_NODE_CHARS);
           else delete node[field];

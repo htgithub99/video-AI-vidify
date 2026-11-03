@@ -24,9 +24,9 @@ export const HORROR_SCENE: MotionProfileScene = {
   standingHeadRatio: 0.39,
   lowPostures: ["sit", "sit_ground", "kneel", "crouch", "slump"],
   shotSizes: {
-    close: { body: "one mask head with its round white face, large black oval eyes and small mouth, and the arch of the garment down to about mid-body; never cut the mask; fear shown by the tilt of the head and the darkness around it; background a few soft shapes from the place.", head: [0.38, 0.52], top: [0.06, 0.15] },
-    medium_close: { body: "one or two mask-head people with almost the whole dome body inside the frame, the main person filling about four fifths of the frame height; both arms and hands inside the frame; the dome base may meet the bottom edge but the mask never touches any edge; a little of the place shows at both sides.", head: [0.28, 0.4], top: [0.06, 0.16] },
-    medium: { body: "one to three mask-head people seen whole with their dome bodies resting on the ground, the main person about half to two thirds of the frame height; the setting simplified to what sits directly behind and beside them.", head: [0.12, 0.3], top: [0.06, 0.4] },
+    close: { head: [0.2, 0.7], top: 0.03 },
+    medium_close: { head: [0.12, 0.75], top: 0.03 },
+    medium: { head: [0.06, 0.5], top: 0.03 },
   },
   animals: HORROR_ANIMAL_FRAMES,
   animalNotes: OUTLINED_SCENE.animalNotes,

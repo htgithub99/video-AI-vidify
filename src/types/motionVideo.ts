@@ -295,6 +295,16 @@ export interface MotionStorySource {
   words: number;
   sourceSeconds: number;
 }
+export interface MotionAnalysisGroup {
+  key: string;
+  name: string;
+  look: string;
+  origin?: string;
+  skin?: string;
+  outfit?: string;
+  gear?: string;
+  faction?: string;
+}
 export interface MotionCastMember {
   appearanceOf?: string;
   key: string;
@@ -303,6 +313,9 @@ export interface MotionCastMember {
   role?: string;
   description?: string;
   look?: string;
+  marks?: string[];
+  skin?: string;
+  origin?: string;
   gender?: "male" | "female";
   age?: "child" | "adult" | "senior";
   narrator?: boolean;
@@ -425,7 +438,7 @@ export interface MotionStoryAnalysis {
   series?: MotionSeriesInfo;
   chapters: MotionChapter[];
   cast: MotionCastMember[];
-  groups?: { key: string; name: string; look: string }[];
+  groups?: MotionAnalysisGroup[];
   places: MotionPlace[];
   facts: MotionFact[];
 }
@@ -938,6 +951,8 @@ export interface MotionAiExecution {
   role?: string;
   chained?: boolean;
   bible?: { key: string; text: string };
+  worker?: string;
+  avoidWorker?: string;
 }
 export interface MotionAiActivity {
   workerId: string;

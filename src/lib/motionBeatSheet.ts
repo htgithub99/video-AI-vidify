@@ -3,9 +3,14 @@ import { motionGenreSpec } from "../constants/motionGenre.js";
 import { motionStorytellingPreset } from "./motionStorytelling.js";
 import type { MotionBeat, MotionChapter, MotionStoryAnalysis } from "../types/motionVideo.js";
 export const motionChapterEvents = (chapter: Pick<MotionChapter, "id" | "keyPoints">): { id: string; point: string }[] => (chapter.keyPoints || []).map((point, index) => ({ id: B.ID(chapter.id, index), point: point.replace(B.TIMESTAMP, "") }));
-export const motionChapterBeatSheet = (analysis: Pick<MotionStoryAnalysis, "storytelling" | "videoGenre">, chapter: Pick<MotionChapter, "id" | "keyPoints">): string => {
+export const motionChapterBeatSheet = (analysis: Pick<MotionStoryAnalysis, "storytelling" | "videoGenre" | "cast">, chapter: Pick<MotionChapter, "id" | "keyPoints">): string => {
   const events = motionChapterEvents(chapter);
-  return events.length ? B.PROMPT(events, motionStorytellingPreset(analysis.storytelling).texture, motionGenreSpec(analysis.videoGenre).CONTRACT.devices) : "";
+  if (!events.length) return "";
+  const spec = motionGenreSpec(analysis.videoGenre);
+  const texture = motionStorytellingPreset(analysis.storytelling).texture;
+  const minimum = events.length + Math.min(events.length, texture * events.length) + (spec.CONTRACT.devices ? B.MIN_DEVICE_BEATS : 0);
+  const speakers = (analysis.cast || []).filter((member) => !member.narrator && !(spec.DIALOGUE.skipProtagonist && member.key === B.PROTAGONIST)).map((member) => member.name);
+  return B.PROMPT(events, texture, spec.CONTRACT.devices, minimum, speakers, spec.DIALOGUE.minLines);
 };
 export const motionBeatSheetFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters">): { id: string; issue: string }[] => {
   const findings: { id: string; issue: string }[] = [];
@@ -25,6 +30,12 @@ export const motionBeatSheetFindings = (beats: MotionBeat[], analysis: Pick<Moti
       if (count > B.MAX_EVENT_BEATS) findings.push({ id: beat.id, issue: B.ISSUE.RETELL(beat.eventId!) });
       else if (latest && known.index < latest.index) findings.push({ id: beat.id, issue: B.ISSUE.ORDER(beat.eventId!, latest.id) });
       if (!latest || known.index > latest.index) latest = { id: beat.eventId!, index: known.index };
+    }
+    const own = beats.filter((item) => item.chapterId === chapter.id);
+    for (const [index, event] of motionChapterEvents(chapter).entries()) {
+      if (!own.length || own.some((item) => item.eventId === event.id)) continue;
+      const before = [...own].reverse().find((item) => item.kind === B.EVENT && item.eventId && (owner.get(item.eventId)?.index ?? -1) < index) || own[0];
+      findings.push({ id: before.id, issue: B.ISSUE.MISSING(event.id, event.point) });
     }
   }
   return findings;

@@ -17,7 +17,7 @@ import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { MOTION_GENRE_REVIEW } from "../../../../constants/motionGenreReview.js";
 import { motionLineSimilarity, type MotionGenreReviewFinding } from "../../../../lib/motionGenreReview.js";
 import { MOTION_STORY_TIMELINE as TIMELINE } from "../../../../constants/motionStoryTimeline.js";
-import { motionCleanLook, motionAnalysisGroups } from "../../../../lib/motionCastIdentity.js";
+import { motionCleanLook, motionAnalysisGroups, motionCastMarks, motionCastSkin } from "../../../../lib/motionCastIdentity.js";
 import { closeMotionJsonContainers } from "../../../../lib/motionJsonRecovery.js";
 import { parseRemotionAssetReply, quoteBareJsonKeys } from "../../../../lib/motionVectorAsset.js";
 import { MOTION_PRODUCTION } from "../../../../constants/motionProduction.js";
@@ -67,7 +67,7 @@ import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import fs from "fs";
 import { normalizeMotionHud } from "../../../../lib/motionHistory.js";
-import { motionGenreSpec, motionVideoGenreEditorProfile, motionVideoGenre, motionVideoGenreDirective, motionVideoGenreGrammar, motionVideoGenreStageRule, motionVideoGenreStages, motionVideoGenreStyleGuide, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../../../constants/motionGenre.js";
+import { motionGenreSpec, motionVideoGenreEditorProfile, motionVideoGenre, motionVideoGenreDirective, motionVideoGenreGrammar, motionVideoGenreStageRule, motionVideoGenreStages, motionVideoGenreStyleBrief, motionVideoGenreWritingProfile, type MotionVideoGenre } from "../../../../constants/motionGenre.js";
 import { MOTION_MUSIC, MOTION_MUSIC_MOODS } from "../../../../constants/motionMusic.js";
 import { MOTION_GENRE_VOICE } from "../../../../constants/motionGenreVoice.js";
 import { motionGenreWritingPlan } from "../../../../lib/motionGenres/autofix.js";
@@ -882,6 +882,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const workerIds = drawing ? MOTION_STORY_CONFIG.SCENE_WORKER_IDS : MOTION_STORY_CONFIG.WORKER_IDS;
   const workers = run.workers.get(poolKey) || new MotionAiWorkerPool(workerIds);
   run.workers.set(poolKey, workers);
+  const seat = { pin: exec.worker && (workerIds as readonly string[]).includes(exec.worker) ? exec.worker : undefined, avoid: exec.avoidWorker && workerIds.length > 1 ? exec.avoidWorker : undefined };
   const pending = (async () => {
     const linked = AbortSignal.any(_.compact([signal, run.signal]));
     const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
@@ -889,7 +890,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
     const queueId = poolKey + randomUUID();
     try {
       log?.(MR.MOTION_TEXT_EMPTY, { workerId: queueId, provider: String(exec.provider), model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.QUEUED });
-      slot = await workers.acquire(linked);
+      slot = await workers.acquire(linked, seat);
     } catch (error) {
       releaseSession();
       throw error;
@@ -1211,7 +1212,9 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         roomOk = true;
         throw caught;
       }
-      if (!captchaRetry && exec.singleResponse) {
+      const earlyError = _.toString(caught?.message);
+      const unsent = !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
+      if (!captchaRetry && exec.singleResponse && !unsent) {
         roomOk = submission.completed;
         throw caught;
       }
@@ -1667,7 +1670,7 @@ export const editScript = async (
         true,
         (question) => {
           requests++;
-          return (opts.ai || runMotionAi)(question, MOTION_STORY_EDIT_ARTIFACT, opts.exec, opts.signal, opts.log);
+          return (opts.ai || runMotionAi)(question, MOTION_STORY_EDIT_ARTIFACT, { ...opts.exec, avoidWorker: MOTION_STORY_CONFIG.WORKER_IDS[0] }, opts.signal, opts.log);
         },
         opts.signal,
         [motionStoryLanguageGuide(opts.language, true, true), brief].join(MR.MOTION_TEXT_SYMBOL_27),
@@ -1800,6 +1803,9 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           role: _.truncate(_.toString(m.role || MR.MOTION_TEXT_EMPTY), { length: 60 }),
           description: _.truncate(_.toString(m.description || MR.MOTION_TEXT_EMPTY), { length: 200 }),
           look: _.truncate(motionCleanLook(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY)), { length: 320 }),
+          ...((marks) => (marks.length ? { marks } : {}))(motionCastMarks(m.marks, _.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY))),
+          ...((skin) => (skin ? { skin } : {}))(motionCastSkin(m.skin, _.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY))),
+          ...(_.isString(m.origin) && m.origin.trim() ? { origin: _.truncate(m.origin.trim(), { length: 60 }) } : {}),
           gender,
           ...(_.includes(MOTION_AUDIO_DIRECTION.AGES, m.age) ? { age: m.age } : {}),
           ...(m.narrator === true ? { narrator: true } : {}),
@@ -2014,7 +2020,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     logline: analysis.logline,
     languageNote: [MR.MOTION_TEMPLATE_WRITE_NATURAL((analysis.videoDna || analysis.creativeBlueprint)?.narrative.voice || MR.MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT, language), motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
     language,
-    genre: motionVideoGenreStyleGuide(analysis.videoGenre),
+    genre: motionVideoGenreStyleBrief(analysis.videoGenre),
     contract: MOTION_STORY_CONFIG.CONTRACT(genreSpec.CONTRACT),
     rules: bibleRules.join(MR.MOTION_TEXT_SYMBOL_27),
     outline: analysis.chapters.map((item) => MR.MOTION_TEMPLATE_SYMBOL_312(item.id, item.title, [item.summary, ...(item.keyPoints || [])].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_56))).join(MR.MOTION_TEXT_SYMBOL_27),
@@ -2191,7 +2197,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       if (opts.durationRepair) await writeMotionAiDebug(randomUUID(), { stage: MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, chapterId: chapter.id, durationRepair: true, pending: draft?.pending, raw });
     },
   };
-  return opts.ai ? requestMotionAiContract(request, opts.exec, (question) => opts.ai!(MOTION_STORY_CONFIG.BIBLE_WRAP(bible) + question, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log), contract, opts.signal) : runMotionAi(request, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, { ...opts.exec, bible: { key: motionInputKey([bible]), text: bible } }, opts.signal, opts.log, undefined, 0, contract);
+  return opts.ai ? requestMotionAiContract(request, opts.exec, (question) => opts.ai!(MOTION_STORY_CONFIG.BIBLE_WRAP(bible) + question, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log), contract, opts.signal) : runMotionAi(request, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, { ...opts.exec, worker: MOTION_STORY_CONFIG.WORKER_IDS[0], bible: { key: motionInputKey([bible]), text: bible } }, opts.signal, opts.log, undefined, 0, contract);
 };
 export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: MotionStoryAnalysis): MotionBeat[] => {
   const castKeys = _.map(analysis.cast, MOTION_TEXT_KEY);

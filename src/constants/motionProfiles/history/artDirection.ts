@@ -2,8 +2,10 @@ import { OUTLINED_CHARACTERS } from "../outlinedCharacters.js";
 import { SCENE_DIRECTION as S } from "../sceneDirection.js";
 import { MOTION_PROFILE_MOTION } from "../../motionProfileMotion.js";
 import type { MotionIllustrationProfile } from "../types.js";
+import { OUTLINED_BRIEF } from "../outlinedBrief.js";
 export const HISTORY_ART_DIRECTION: MotionIllustrationProfile = {
   grammar: OUTLINED_CHARACTERS,
+  brief: OUTLINED_BRIEF,
   storyContract: S.story,
   planning:
     "Plan literal people-centered historical illustrations from the covered lines with source-appropriate era, clothing, objects and locations. Anonymous crowds support the action without invented named identities. Use the view each beat asks for; maps, timelines, comparison devices and cards are drawn when the beat's visual or format asks for them. Choose one readable moment per picture. Describe posture and support in words; leave drawing coordinates to the drawing AI.",
