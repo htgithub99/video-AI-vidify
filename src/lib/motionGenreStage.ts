@@ -43,7 +43,7 @@ export const motionChapterEchoFindings = (beats: MotionBeat[], language: string,
   }
   return findings;
 };
-export const motionGenreStageFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters" | "videoGenre"> & Partial<Pick<MotionStoryAnalysis, "cast" | "motifs" | "videoDna">>): MotionGenreStageFinding[] => {
+export const motionGenreStageFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters" | "videoGenre"> & Partial<Pick<MotionStoryAnalysis, "cast" | "motifs" | "videoDna">>, sourceText = ""): MotionGenreStageFinding[] => {
   const genre = motionVideoGenre(analysis.videoGenre);
   const chapters = analysis.chapters;
   const last = chapters.length - 1;
@@ -79,6 +79,7 @@ export const motionGenreStageFindings = (beats: MotionBeat[], analysis: Pick<Mot
     const chapterIndex = new Map(chapters.map((chapter, index) => [chapter.id, index]));
     const dropped = analysis.cast
       .filter((member) => member.key !== narrator)
+      .filter((member) => !sourceText || ![member.name, member.alias].flatMap((name) => name?.match(P.NAME_TOKEN) || []).filter((word) => word.length >= P.REAL_NAME_MIN).some((word) => P.BOUNDARY(word).test(sourceText)))
       .filter((member) => {
         const names = [member.name, member.alias].filter((name): name is string => !!name?.trim()).flatMap((name) => name.match(P.NAME_TOKEN) || []).map((name) => name.toLowerCase());
         const present = beats.filter((beat) => beat.utterances?.some((line) => line.speaker === member.key) || names.some((name) => P.BOUNDARY(name).test(beat.narration)));

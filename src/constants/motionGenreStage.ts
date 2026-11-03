@@ -21,6 +21,7 @@ export const MOTION_GENRE_STAGE = {
   COMPANION: {
     GENRES: ["pov", "witness"] as readonly string[],
     MIN_LINES: 3,
+    REAL_NAME_MIN: 4,
     BOUNDARY: (name: string) => new RegExp(`(^|[^\\p{L}])${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^\\p{L}])`, "iu"),
     NAME_TOKEN: /[\p{L}'’-]{3,}/gu,
     ISSUE: (names: string[]) => `the story drops ${names.join(", ")} without an ending; add one short clause saying what became of ${names.length > 1 ? "them" : "this person"} (left, died, stayed, or remembered), consistent with the established story`,

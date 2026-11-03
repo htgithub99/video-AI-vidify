@@ -5,7 +5,7 @@ export interface MotionLanguageProfile {
   unit: { promptName: string };
   rate: { narration: number; dialogue: number };
   numbers: "spoken" | "keep";
-  markers: { viewer: RegExp; perception: RegExp };
+  markers: { viewer: RegExp; perception: RegExp; outfit: RegExp };
   styleGuide: readonly string[];
   reviewGuide: string;
   subtitle: { maxChars: number; fontFamily: string };

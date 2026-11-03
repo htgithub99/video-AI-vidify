@@ -4,7 +4,16 @@ import type { MotionGenreSpec } from "../types.js";
 const S = X.SHOTS;
 const V = X.VISUALS;
 const F = X.FRAMES;
-export const WITNESS_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS"> = {
+export const WITNESS_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS" | "DIALOGUE" | "TEXTURE" | "CONTRACT"> = {
+  DIALOGUE: { minLines: 1, skipProtagonist: true, needsSourceQuotes: false },
+  TEXTURE: "the narrator's own body and fear, an ordinary household detail of that day, a small sign that something is off, what the neighbours whispered",
+  CONTRACT: {
+    voice: "first person (t\u00f4i / I); the narrator is the one who loses and is inside every event; plain spoken words; sentences of five to fourteen syllables, one idea each",
+    opening: "a bare fact or number about the narrator's own family, then its consequence",
+    spine: "the loss, signs growing closer, someone who explains and sets a rule, a calm that does not last, the broken rule, the climax, the price, a time jump telling what became of each person",
+    devices: "a rule or taboo set early that has a consequence later; short question-and-answer exchanges; repetition that comes closer each time",
+    closing: "one haunting detail and a concrete action; no lesson",
+  },
   VOICE: {
     frames: [F.LIVED, F.TOLD, F.HINDSIGHT],
     maxUnits: 16,
@@ -14,8 +23,8 @@ export const WITNESS_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING
     longIssue: "split this into short spoken sentences of five to fourteen syllables, one idea each, as the narrator would say them aloud",
   },
   GRAMMAR: {
-    shots: [S.CLOSE, S.MEDIUM, S.INSERT, S.ESTABLISHING, S.WIDE, S.OVER_SHOULDER],
-    mix: { [S.CLOSE]: 30, [S.MEDIUM]: 25, [S.INSERT]: 15, [S.ESTABLISHING]: 15, [S.WIDE]: 15 },
+    shots: [S.CLOSE, S.MEDIUM_CLOSE, S.MEDIUM, S.INSERT, S.ESTABLISHING, S.WIDE, S.OVER_SHOULDER],
+    mix: { [S.CLOSE]: 20, [S.MEDIUM_CLOSE]: 15, [S.MEDIUM]: 20, [S.INSERT]: 15, [S.ESTABLISHING]: 15, [S.WIDE]: 15 },
     visuals: [V.SCENE, V.TITLE, V.QUOTE],
     devices: ["household object", "taboo object", "lingering detail"],
     rule:

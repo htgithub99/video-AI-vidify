@@ -12,14 +12,15 @@ export interface MotionStorytellingPreset {
   shortSource: MotionShortSourceMode;
   hooks: MotionHooksLevel;
   dramaticAudio: boolean;
+  texture: number;
 }
 export const MOTION_STORYTELLING = {
   DEFAULT: MOTION_STORYTELLING_MODES.LIVELY as MotionStorytellingMode,
   FIELD: "storytelling",
   PRESETS: {
-    plain: { shortSource: "strict", hooks: "off", dramaticAudio: false },
-    lively: { shortSource: "genre", hooks: "light", dramaticAudio: true },
-    gripping: { shortSource: "fill", hooks: "full", dramaticAudio: true },
+    plain: { shortSource: "strict", hooks: "off", dramaticAudio: false, texture: 0 },
+    lively: { shortSource: "genre", hooks: "light", dramaticAudio: true, texture: 1 },
+    gripping: { shortSource: "fill", hooks: "full", dramaticAudio: true, texture: 2 },
   } as Record<MotionStorytellingMode, MotionStorytellingPreset>,
   EXPANSION: {
     genre: { pov: 2.5, witness: 2.5, chronicle: 1.2, verdict: 1.5 } as Record<string, number>,
@@ -64,5 +65,6 @@ export const MOTION_STORYTELLING = {
     FLOOR: (ratio: number): string => `LENGTH FLOOR: the source is rich enough for this chapter, so deliver at least ${Math.round(ratio * 100)}% of the requested units. If the first draft runs short, tell the same events more slowly in the genre's own way (senses, objects, reactions, comparisons, weighing); never add an event, number, quote or real person the source does not supply.`,
     EXPANSION: (factor: number, rule: string): string => `SHORT SOURCE, STRETCH ×${factor.toFixed(1)}: the transcript is thinner than the requested length. Reach the requested units by telling each source event across up to four beats in this genre's slow-telling manner: ${rule} Never invent events, numbers, quotes, deaths, ceremonies or real people; repeat nothing word for word.`,
     SILENT: "Pauses, chapter cards and held pictures add to the running time; do not pad speech to fill them.",
+    TEXTURE: (perEvent: number, kinds: string): string => `TEXTURE BEATS: to make the chapter vivid, after a source event you may add up to ${perEvent} short beat${perEvent > 1 ? "s" : ""} of lived texture drawn from: ${kinds}. A texture beat belongs to the moment it follows, stays in the genre's voice and moves the scene forward; it never adds an event, date, number, quote or action of a real person, and the invented people in it are only the protagonist, the narrator or the invented companions.`,
   },
 } as const;

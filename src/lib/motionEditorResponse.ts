@@ -8,7 +8,9 @@ import { motionSpeechResponseIssues } from "./motionSpeechResponse.js";
 import type { MotionBeat } from "../types/motionVideo.js";
 export const motionEditorSpeechIssues = (original: MotionBeat, edit: { narration?: string; utterances?: MotionBeat["utterances"] }, speakers: string[], preserveSpeech = true): MotionFieldIssue[] => {
   const speech = edit.utterances;
-  const changedRoles = preserveSpeech && original.utterances?.length && (!Array.isArray(speech) || speech.length !== original.utterances.length || speech.some((entry, index) => entry?.speaker !== original.utterances![index]?.speaker || entry?.role !== original.utterances![index]?.role));
+  const kept = (original.utterances || []).filter((entry) => entry.role !== RT_SHARED.NARRATION);
+  const edited = Array.isArray(speech) ? speech.filter((entry) => entry?.role !== RT_SHARED.NARRATION) : [];
+  const changedRoles = preserveSpeech && kept.length && (!Array.isArray(speech) || kept.some((entry) => !edited.some((line) => line?.speaker === entry.speaker && line?.role === entry.role)));
   return changedRoles || (speech !== undefined && motionSpeechResponseIssues(speech, speakers, typeof edit.narration === "string" ? edit.narration : "").length) ? [{ path: RT_SHARED.UTTERANCES, reason: C.EDIT_SPEECH }] : [];
 };
 export const requestMotionEditorResponse = async (prompt: string, originals: MotionBeat[], speakers: string[], preserveSpeech: boolean, request: (question: string) => Promise<any>, signal?: AbortSignal, repairContext: string = "", attempts: number = C.REPAIR_ATTEMPTS, requiredVisualIds: string[] = []): Promise<any> => {

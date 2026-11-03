@@ -468,6 +468,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
         width,
         height,
         crf: preset.crf,
+        log: (line) => pushLog(job, line),
         concurrency: job.workers,
         signal,
         onProgress: (frames, total) => {

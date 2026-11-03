@@ -5,7 +5,9 @@ export const MOTION_GENRE_AUTOFIX = {
   OBJECT_ONLY: /^(?:the|a|an|một|cái|chiếc|đôi|cây|con)\s/iu,
   LOG: (dropped: number, visuals: number, shots: number, speech: number): string => `Sửa bằng code: bỏ ${dropped} câu lặp liền kề, chỉnh ${visuals} kiểu hình, ${shots} cỡ cảnh theo thể loại, tách ${speech} câu thoại trực tiếp; không gọi AI.`,
   SPEECH: {
-    PATTERN: /^(?<before>[\s\S]*?\S[^"“”]*?(?:said|says|asked|asks|replied|answered|shouted|whispered|told|warned|muttered|bảo|nói|hỏi|đáp|gắt|quát|thì thầm|dặn|khuyên|kêu lên|xua tay|van xin|cãi)[^:"“”]{0,24}:)\s*[“"](?<quote>[^”"]{3,240})[”"]\s*(?<after>[\s\S]*)$/iu,
+    PATTERN: /^(?<before>[\s\S]*?\S[^"“”]*?[:,.!?])\s*(?:["“](?<double>[^"“”]{3,240})["”]|['‘](?<single>(?:[^'’\n]|['’](?=\p{L})){3,240}?)['’](?=[\s.,!?;]|$))\s*(?<after>[\s\S]*)$/u,
+    SURNAME_MIN: 4,
+    NAME_WORD: /[\p{L}'’-]+/gu,
     MIN_QUOTE_WORDS: 2,
     NARRATION: "narration",
     DIALOGUE: "dialogue",

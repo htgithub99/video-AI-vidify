@@ -4,7 +4,8 @@ import { motionSemanticText } from "./motionResourceSemantics.js";
 import { motionEffectKind, motionEffectDeclaration } from "./motionEffectIdentity.js";
 import { MOTION_COMPOSITION_MOTION } from "../constants/motionCompositionMotion.js";
 import { MOTION_PROFILE_MOTION } from "../constants/motionProfileMotion.js";
-import type { MotionRemotionEffect, MotionRemotionNode, MotionRemotionProfile, MotionRenderBehavior, MotionSceneAnimation, MotionSceneComposition, MotionVectorAsset } from "../types/motionVisual.js";
+import type { MotionMeasuredRect, MotionRemotionEffect, MotionRemotionNode, MotionRemotionProfile, MotionRenderBehavior, MotionSceneAnimation, MotionSceneComposition, MotionVectorAsset } from "../types/motionVisual.js";
+import { motionNodeAnimalOf, motionNodeStanceOf } from "./motionScenePoses.js";
 const validTrack = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, track: MotionSceneAnimation): boolean => {
   try {
     validateSceneComposition({ ...composition, unchecked: true, animations: [...composition.animations, track] }, asset, nodes, cast);
@@ -23,15 +24,15 @@ const boostRotation = (track: MotionSceneAnimation, minRotate: number): MotionSc
   const factor = minRotate / peak;
   return { ...track, keyframes: track.keyframes.map((frame) => ({ ...frame, value: String(frame.value).replace(MOTION_COMPOSITION_MOTION.ROTATE, (_match, angle: string, rest: string) => `rotate(${Number((Number(angle) * factor).toFixed(2))}${rest})`) })) };
 };
-export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile): { composition: MotionSceneComposition; added: number; removed: number; boosted: number } => {
-  if (behavior?.actors === "fixed") return { composition, added: 0, removed: 0, boosted: 0 };
+export const compositionActorMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile, boxes?: Record<string, MotionMeasuredRect | null>): { composition: MotionSceneComposition; added: number; removed: number; boosted: number; swayed: number } => {
+  if (behavior?.actors === "fixed") return { composition, added: 0, removed: 0, boosted: 0, swayed: 0 };
   const policy = MOTION_COMPOSITION_MOTION;
   const style = MOTION_PROFILE_MOTION[profile];
   const elements = compositionElements(asset.svg);
   const contains = (parent: string, child: string) => parent === child || !!elements.get(child)?.ancestors.includes(parent);
   const characters = composition.layers.filter((layer) => layer.kind === "character");
   const animations = composition.animations.filter((track) => {
-    if (track.channel !== "actor" || track.attribute !== "transform") return true;
+    if (track.channel !== "actor" || track.attribute !== "transform" || track.source === "sway") return true;
     return !characters.some((layer) => {
       if (!contains(track.target, layer.id) && !contains(layer.id, track.target)) return false;
       const node = nodes.find((item) => item.id === layer.id || (!!layer.entityId && item.entityId === layer.entityId));
@@ -61,7 +62,7 @@ export const compositionActorMotion = (composition: MotionSceneComposition, asse
   });
   let result = removed || boosted ? { ...composition, animations: lively } : composition;
   let added = 0;
-  if (behavior?.actors !== "simple") return { composition: result, added, removed, boosted };
+  if (behavior?.actors !== "simple") return { composition: result, added, removed, boosted, swayed: 0 };
   const inside = (layerId: string) => [...elements.keys()].filter((id) => id !== layerId && contains(layerId, id) && !composition.layers.some((other) => other.id !== layerId && other.kind !== "background" && contains(layerId, other.id) && contains(other.id, id)));
   for (const layer of characters) {
     if (motionAnonymousLayer(layer) || nodes.some((node) => node.id === layer.id && node.representation === "detail")) continue;
@@ -104,7 +105,64 @@ export const compositionActorMotion = (composition: MotionSceneComposition, asse
     result = { ...result, animations: [...result.animations, track] };
     added++;
   }
-  return { composition: result, added, removed, boosted };
+  const sway = motionCompositionSway(result, asset, nodes, cast, profile, boxes);
+  return { composition: sway.composition, added, removed, boosted, swayed: sway.added };
+};
+const rockTrack = (target: string, cx: number, cy: number, degrees: number, seconds: number): MotionSceneAnimation => {
+  const at = (value: number) => `rotate(${Number(value.toFixed(2))} ${Number(cx.toFixed(2))} ${Number(cy.toFixed(2))})`;
+  return { target, channel: "actor", attribute: "transform", period: seconds, source: "sway", keyframes: [{ at: 0, value: at(0) }, { at: seconds / 4, value: at(degrees) }, { at: seconds / 2, value: at(0) }, { at: (3 * seconds) / 4, value: at(-degrees) }, { at: seconds, value: at(0) }] };
+};
+export const motionCompositionSway = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, profile: MotionRemotionProfile, boxes?: Record<string, MotionMeasuredRect | null>): { composition: MotionSceneComposition; added: number } => {
+  const style = MOTION_PROFILE_MOTION[profile];
+  if (!boxes) return { composition, added: 0 };
+  const policy = MOTION_COMPOSITION_MOTION;
+  let elements: ReturnType<typeof compositionElements>;
+  try {
+    elements = compositionElements(asset.svg);
+  } catch {
+    return { composition, added: 0 };
+  }
+  const contains = (parent: string, child: string) => parent === child || !!elements.get(child)?.ancestors.includes(parent);
+  let result = composition;
+  let added = 0;
+  const has = (target: string) => result.animations.some((track) => track.target === target && track.attribute === "transform");
+  composition.layers.forEach((layer, index) => {
+    const node = nodes.find((item) => item.id === layer.id);
+    const box = boxes[layer.id];
+    if (!node || !box?.local || !elements.has(layer.id)) return;
+    const animal = motionNodeAnimalOf(node, cast);
+    const seconds = (animal ? style.animal.seconds : style.sway.seconds) + index * style.sway.stride;
+    if (layer.kind === "character" && !animal) {
+      if (!style.sway.degrees || box.height > style.sway.maxHeight || policy.SWAY_SKIP.includes(motionNodeStanceOf(node)) || has(layer.id)) return;
+      if (result.animations.some((track) => track.channel === "actor" && contains(layer.id, track.target) && policy.BODY_PART.test(track.target)) && box.height > style.sway.maxHeight) return;
+      result = { ...result, animations: [...result.animations, rockTrack(layer.id, box.local.x + box.local.width / 2, box.local.y + box.local.height, style.sway.degrees, seconds)] };
+      added++;
+      return;
+    }
+    if (!animal || result.animations.some((track) => track.channel === "actor" && contains(layer.id, track.target))) return;
+    const parts = [...elements.keys()].filter((id) => id !== layer.id && contains(layer.id, id));
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const tracks: MotionSceneAnimation[] = [];
+    for (const [pattern, degrees] of [
+      [policy.ANIMAL_TAIL, style.animal.tail],
+      [policy.ANIMAL_HEAD, style.animal.head],
+    ] as const) {
+      const part = parts.find((id) => pattern.test(id) && !parts.some((other) => other !== id && pattern.test(other) && elements.get(id)?.ancestors.includes(other)));
+      const partBox = part ? boxes[part] : undefined;
+      if (!degrees || !part || !partBox?.local) continue;
+      const nearLeft = Math.abs(partBox.x - center.x) < Math.abs(partBox.x + partBox.width - center.x);
+      const pivotX = partBox.local.x + (nearLeft ? 0 : partBox.local.width);
+      const pivotY = pattern === policy.ANIMAL_TAIL ? partBox.local.y : partBox.local.y + partBox.local.height;
+      tracks.push(rockTrack(part, pivotX, pivotY, degrees, seconds));
+    }
+    if (!tracks.length && style.animal.rock) tracks.push(rockTrack(layer.id, box.local.x + box.local.width / 2, box.local.y + box.local.height, style.animal.rock, seconds));
+    for (const track of tracks) {
+      if (has(track.target)) continue;
+      result = { ...result, animations: [...result.animations, track] };
+      added++;
+    }
+  });
+  return { composition: result, added };
 };
 export const compositionEffectMotion = (composition: MotionSceneComposition, asset: MotionVectorAsset, nodes: MotionRemotionNode[], cast: Set<string>, behavior: MotionRenderBehavior | undefined, profile: MotionRemotionProfile, effects: MotionRemotionEffect[] = []): { composition: MotionSceneComposition; added: number } => {
   if (behavior?.actors === "fixed" || behavior?.sceneEffects !== "gentle") return { composition, added: 0 };

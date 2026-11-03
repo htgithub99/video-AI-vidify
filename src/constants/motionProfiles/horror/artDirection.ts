@@ -10,7 +10,6 @@ export const HORROR_ART_DIRECTION: MotionIllustrationProfile = {
   design: S.layout,
   hardRules: ["Keep the mask-head, arch-body, legless character construction and the cast identities.", "Draw exactly the people and objects listed in the scene nodes.", "Follow the framing of the requested view.", "No captions, timestamps or watermarks; text only through label nodes.", "Add no ghost, prop or gesture the covered narration does not name."],
   framing: {
-    close: "FRAMING close: one mask head with its round white face, large black oval eyes and small mouth, the whole head about a third of the frame height with space above it, the arch of the garment visible to mid-chest below it, no legs; never crop the mask; fear shown by the tilt of the head and the darkness around it; background a few soft shapes from the place.",
     detail: "FRAMING detail: the named household or taboo object alone in a small pool of lamp or moon light, the rest of the frame in muted dark tones; hands with the mask-body construction only when the narration has someone hold it.",
     establishing: "FRAMING establishing: no people; the house, yard, river, bridge or lane under the stated hour, lit by one source (lamp, moon, dawn), muted cold tones, main shapes readable.",
   },

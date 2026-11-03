@@ -43,17 +43,18 @@ export const normalizeMotionWritingChapter = (raw: any): MotionWritingChapter | 
         limitation: text(raw.limitation),
       }
     : undefined;
-export const motionWritingChapterPrompt = (analysis: MotionStoryAnalysis, chapter: MotionChapter): string =>
+export const motionWritingBiblePrompt = (analysis: MotionStoryAnalysis): string =>
   [
     W.TEXT_TASK,
     W.BOUNDARY,
     W.BOOKENDS,
     analysis.factual ? W.FACTUAL : "",
     W.NUMBERS,
-    analysis.writingPlan || chapter.writing ? W.CHAPTER + stringifyJson({ plan: motionGenreWritingPlan(analysis), chapter: motionGenreChapterWriting(analysis, chapter.writing), otherEvents: analysis.chapters.filter((item) => item.id !== chapter.id).map((item) => ({ chapter: item.id, events: item.writing?.events.map(({ id, point }) => ({ id, point })) })) }) : "",
+    analysis.writingPlan || analysis.chapters.some((item) => item.writing) ? W.CHAPTER + stringifyJson({ plan: motionGenreWritingPlan(analysis), chapterEvents: analysis.chapters.map((item) => ({ chapter: item.id, events: item.writing?.events.map(({ id, point }) => ({ id, point })) })) }) : "",
     motionVideoGenre(analysis.videoGenre) === "verdict" ? W.LABELS : "",
   ]
     .filter(Boolean)
     .join("\n");
+export const motionWritingChapterLean = (analysis: MotionStoryAnalysis, chapter: MotionChapter): string => (chapter.writing ? W.CHAPTER + stringifyJson({ chapter: motionGenreChapterWriting(analysis, chapter.writing) }) : "");
 export const motionWritingProtectedMotifs = (analysis: MotionStoryAnalysis): string[] => (motionVideoGenre(analysis.videoGenre) === "verdict" ? [] : analysis.motifs || []);
 export const motionWritingState = (beats: MotionBeat[], analysis: MotionStoryAnalysis): string => stringifyJson(analysis.chapters.filter((chapter) => beats.some((beat) => beat.chapterId === chapter.id)).map((chapter) => ({ chapter: chapter.id, state: chapter.writing?.endState, events: chapter.writing?.events })));

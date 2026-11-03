@@ -58,6 +58,9 @@ export interface MotionRemotionNode {
   pose: string;
   posture?: string;
   support?: string;
+  stance?: import("../constants/motionProfiles/sceneSpec.js").MotionPosture;
+  animal?: import("../constants/motionProfiles/sceneSpec.js").MotionAnimal;
+  outfitChange?: boolean;
   representation?: "full" | "bust" | "detail";
   slot: "left" | "center" | "right";
   relation?: "beside" | "behind" | "on" | "inside" | "heldBy";
@@ -114,7 +117,8 @@ export interface MotionRemotionScene {
   locationKey?: string;
   view?: MotionSceneView;
   crop?: MotionSceneCrop;
-  cropFrom?: { sceneId: string; nodeId: string };
+  qualityNote?: string;
+  qualityRedraws?: number;
   focus?: string[];
   layoutRevision?: number;
   sceneRevision?: number;
@@ -143,7 +147,9 @@ export interface MotionSceneAnimation {
   attribute: "transform" | "d" | "opacity";
   period?: number;
   keyframes: { at: number; value: string | number }[];
+  source?: "sway";
 }
+export type MotionMeasuredRect = MotionVisualRect & { local?: MotionVisualRect };
 export interface MotionSceneComposition {
   profileId?: MotionRemotionProfile;
   profileRevision?: number;

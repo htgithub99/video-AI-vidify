@@ -25,6 +25,18 @@ export interface MotionGenreBookendSpec {
   kinds: string;
   maxBeats: number;
 }
+export interface MotionGenreDialogueSpec {
+  minLines: number;
+  skipProtagonist: boolean;
+  needsSourceQuotes: boolean;
+}
+export interface MotionGenreContract {
+  voice: string;
+  opening: string;
+  spine: string;
+  devices: string;
+  closing: string;
+}
 export interface MotionGenreSpec {
   PROFILE: string;
   PACKAGING: string;
@@ -44,4 +56,7 @@ export interface MotionGenreSpec {
   REVIEW: MotionGenreReviewChecks;
   EXPANSION_RULE: string;
   HOOKS: { light: string; full: string };
+  DIALOGUE: MotionGenreDialogueSpec;
+  TEXTURE: string;
+  CONTRACT: MotionGenreContract;
 }

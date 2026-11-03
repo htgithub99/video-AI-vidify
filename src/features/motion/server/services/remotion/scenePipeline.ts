@@ -20,8 +20,6 @@ import { motionGenreSpec, motionVideoGenre } from "../../../../../constants/moti
 import { motionGenreWritingPlan } from "../../../../../lib/motionGenres/autofix.js";
 import { applyMotionSceneIntent } from "../../../../../lib/motionSceneIntent.js";
 import { MOTION_SCENE_INTENT } from "../../../../../constants/motionSceneIntent.js";
-import { MOTION_SCENE_CROP } from "../../../../../constants/motionSceneCrop.js";
-import { motionSceneCropBox, motionSceneCropCandidates } from "../../../../../lib/motionSceneCrop.js";
 import { MOTION_ILLUSTRATION_PROFILES } from "../../../../../constants/motionIllustrationProfiles.js";
 import { MOTION_PRODUCTION } from "../../../../../constants/motionProduction.js";
 import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
@@ -38,6 +36,14 @@ import { motionCastIdentity, motionIdentityContrast } from "../../../../../lib/m
 import { motionIdentityMemory } from "../../../../../lib/motionIdentityMemory.js";
 import { motionIdentityReferences, motionIdentityDrift } from "../../../../../lib/motionIdentityReference.js";
 import { MOTION_IDENTITY_REFERENCE } from "../../../../../constants/motionIdentityReference.js";
+import { motionScenePlanGuard } from "../../../../../lib/motionScenePlanGuard.js";
+import { motionAnimalFrames, motionPoseNotes } from "../../../../../lib/motionScenePoses.js";
+import { motionLayerFix, motionQualityIds, motionSceneQualityIssues } from "../../../../../lib/motionSceneQuality.js";
+import { MOTION_SCENE_QUALITY as QUALITY } from "../../../../../constants/motionSceneQuality.js";
+import { MOTION_PROFILE_SCENES } from "../../../../../constants/motionProfiles/scenes.js";
+import { MOTION_PROFILE_MOTION } from "../../../../../constants/motionProfileMotion.js";
+import { MOTION_SCENE_PLAN_GUARD } from "../../../../../constants/motionScenePlanGuard.js";
+import { motionLanguage } from "../../../../../lib/motionLanguage.js";
 import { motionStoryEventLedger } from "../../../../../lib/motionStoryContinuity.js";
 import { runMotionAi, motionAiRoutes, mapMotionAiPool, prepareMotionSceneRooms, writeMotionAiDebug, motionCaptchaError } from "../motionStoryService.js";
 import { recoverMotionAiContractState, requestMotionAiContract, type MotionAiResponseContract } from "../motionAiContractService.js";
@@ -57,7 +63,7 @@ import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { MotionAiWorkerPool } from "../motionAiWorkerPool.js";
 import type { MotionAiExecution, MotionAiLog, MotionStoryAnalysis, MotionStoryScript } from "../../../../../types/motionVideo.js";
 import type { MotionAiContractState } from "../../../../../types/motionAiContract.js";
-import type { MotionRemotionScene, MotionRemotionState, MotionRenderBehavior } from "../../../../../types/motionVisual.js";
+import type { MotionMeasuredRect, MotionRemotionScene, MotionRemotionState, MotionRenderBehavior } from "../../../../../types/motionVisual.js";
 const drawingNodes = (nodes: MotionRemotionScene["nodes"]) => nodes.map((node) => Object.fromEntries(Object.entries(node).filter(([key]) => !C.DRAW_NODE_OMIT.includes(key))));
 const establishingScene = (scene: MotionRemotionScene) => (!scene.view || (ESTABLISHING_VIEWS as readonly string[]).includes(scene.view)) && !scene.nodes.some((node) => ["bust", "detail"].includes(node.representation || ""));
 const ESTABLISHING_VIEWS = ["wide", "establishing"] as const;
@@ -81,7 +87,7 @@ export interface RemotionSceneOptions {
   note?: string;
   ai?: typeof runMotionAi;
   still?: typeof renderRemotionStill;
-  geometry?: { check: ReturnType<typeof createCompositionGeometryInspector>["check"]; close?: () => Promise<void> };
+  geometry?: { check: ReturnType<typeof createCompositionGeometryInspector>["check"]; measure?: ReturnType<typeof createCompositionGeometryInspector>["measure"]; close?: () => Promise<void> };
 }
 export const buildRemotionScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
   const settings = motionVisualSettingsFor({ analysis, script });
@@ -242,8 +248,16 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           state.scenes[beat.id] = remotionScenesFromDraft(draft, beat.id, beat.place, lines, inputKey);
           const intent = applyMotionSceneIntent(state.scenes[beat.id], group.beats);
           if (intent.views || intent.formats) opts.log(MOTION_SCENE_INTENT.LOG(intent.views, intent.formats));
-          const crops = motionSceneCropCandidates(state.scenes[beat.id]);
-          if (crops) opts.log(MOTION_SCENE_CROP.LOG(crops));
+          const guard = motionScenePlanGuard(state.scenes[beat.id], {
+            cast,
+            outfit: motionLanguage(script.language).markers.outfit,
+            lineText: (scene) => {
+              const from = lines.findIndex((line) => line.key === scene.fromLineId),
+                to = lines.findIndex((line) => line.key === scene.toLineId);
+              return lines.slice(Math.max(0, from), to < 0 ? undefined : to + 1).map((line) => line.text).join(RT_SHARED.SYMBOL_36A9E7);
+            },
+          });
+          if (guard.stripped || guard.details || guard.animals) opts.log(MOTION_SCENE_PLAN_GUARD.LOG(guard.stripped, guard.details, guard.animals));
           for (const scene of state.scenes[beat.id]) {
             const from = lines.findIndex((line) => line.key === scene.fromLineId),
               to = lines.findIndex((line) => line.key === scene.toLineId);
@@ -295,6 +309,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const planned = new Set<string>();
     const readyCount = () => allScenes.filter((scene) => ready.has(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED).length;
     const progressTotal = () => Math.max(1, allScenes.length + selectedGroups.length - planned.size);
+    const sceneSpec = MOTION_PROFILE_SCENES[settings.profileId];
     const drawScene = async (scene: (typeof allScenes)[number], previous?: (typeof allScenes)[number], retry = false) => {
       if (previous && motionSceneLocation(previous) !== motionSceneLocation(scene)) previous = undefined;
       if (!selected.has(scene.beatId) || (opts.onlyScenes?.length && !opts.onlyScenes.includes(scene.id))) return;
@@ -316,28 +331,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       };
       opts.log(C.LOG_DRAW(allScenes.indexOf(scene) + 1, allScenes.length, scene.purpose));
       try {
-        if (scene.cropFrom && !targeted && !retry) {
-          const source = allScenes.find((candidate) => candidate.id === scene.cropFrom!.sceneId);
-          const box = source?.composition && ready.has(source.id) && state.assets[source.composition.assetKey] ? motionSceneCropBox(source.composition, scene.cropFrom.nodeId, scene.view || "", width / height) : undefined;
-          if (source && box) {
-            scene.composition = structuredClone(source.composition);
-            scene.nodes = structuredClone(source.nodes);
-            scene.focus = [scene.cropFrom.nodeId];
-            scene.crop = box;
-            scene.aspect = aspect;
-            scene.build = { inputKey, status: RUNTIME_VALUES.ACCEPTED_070C160A, review: false, attempts: 0 };
-            ready.add(scene.id);
-            processed.add(scene.id);
-            save();
-            const message = V.LOG_READY(readyCount(), allScenes.length) + P.LOG_PENDING_PLANS(selectedGroups.length - planned.size);
-            opts.log(message);
-            opts.progress?.((0.9 * processed.size) / progressTotal(), message);
-            return;
-          }
-          opts.log(MOTION_SCENE_CROP.SKIP_LOG(scene.id));
-          delete scene.cropFrom;
-          delete scene.crop;
-        }
         const savedDraft = targeted && opts.retryFailed && !opts.onlyScenes?.includes(scene.id) && scene.build?.inputKey === inputKey ? compositions[key] : undefined;
         if (targeted || retry) {
           for (const requestKey of scene.requestKeys || []) {
@@ -366,6 +359,8 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           const identityMemory = motionIdentityMemory(scene, allScenes, settings.profileId);
           if (referenceCharacters.length) opts.log(MOTION_IDENTITY_REFERENCE.LOG_REFERENCES(allScenes.indexOf(scene) + 1, allScenes.length, referenceCharacters.length));
           const speakers = [...new Set(script.beats.filter((member) => (scene.sourceBeatIds || [scene.beatId]).includes(member.id)).flatMap((member) => member.utterances?.filter((line) => line.role === RT_SERVER.DIALOGUE).map((line) => line.speaker) || []))] as string[];
+          const poseNotes = motionPoseNotes(settings.profileId, scene.nodes, scene.view, cast);
+          const animalFrames = motionAnimalFrames(settings.profileId, scene.nodes, cast);
           const context = {
             width,
             height,
@@ -388,6 +383,8 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             continuity: previousAsset && previous.composition?.profileId === settings.profileId && previous.composition?.profileRevision === profileRevision ? { text: previous.text, notes: previous.composition.continuityNotes, environment: previous.environment } : undefined,
             identityMemory: identityMemory.length ? identityMemory : undefined,
             referenceCharacters: referenceCharacters.length ? referenceCharacters : undefined,
+            poseNotes: poseNotes.length ? poseNotes : undefined,
+            animalFrames: animalFrames.length ? animalFrames : undefined,
             note: scene.drawingNote ?? state.notes![beat.id],
           };
           const assess = (raw: unknown) => {
@@ -410,12 +407,20 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           drawingRequested = !(recovered && !recovered.errors.length);
           const built = !drawingRequested ? recovered!.value : await request(key, C.ARTIFACT, C.PROMPT(context), assess, undefined, context);
           if (drawingRequested && referenceCharacters.length) {
-            const drifted = motionIdentityDrift(referenceCharacters, built.asset.svg, built.composition.layers);
+            const drifted = motionIdentityDrift(referenceCharacters, built.asset.svg, built.composition.layers, settings.profileId);
             if (drifted.length) opts.log(MOTION_IDENTITY_REFERENCE.LOG_DRIFT(allScenes.indexOf(scene) + 1, allScenes.length, drifted.map((entityId) => analysis.cast.find((member) => member.key === entityId)?.name || entityId)));
+          }
+          if (drawingRequested) {
+            const fixed = motionLayerFix(built.asset.svg, built.composition, scene.nodes, scene.effects, sceneSpec);
+            if (fixed.moved || fixed.opacity) {
+              built.asset = { ...built.asset, svg: fixed.svg };
+              opts.log(QUALITY.LOG_FIX(allScenes.indexOf(scene) + 1, allScenes.length, fixed.moved, fixed.opacity));
+            }
           }
           state.assets[key] = built.asset;
           delete compositions[key];
           scene.composition = built.composition;
+          delete scene.crop;
           scene.aspect = aspect;
           save();
         }
@@ -427,20 +432,40 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           scene.composition.geometryRevision = C.GEOMETRY_REVISION;
           state.assets[scene.composition.assetKey].inputKey = inputKey;
         }
+        let measuredBoxes: Record<string, MotionMeasuredRect | null> | undefined;
+        const swayWanted = !!scene.composition && (MOTION_PROFILE_MOTION[settings.profileId].sway.degrees > 0 || MOTION_PROFILE_MOTION[settings.profileId].animal.rock > 0) && state.renderBehavior?.actors !== "fixed" && !scene.composition.animations.some((track) => track.source === "sway");
+        if ((drawingRequested || swayWanted) && scene.composition && geometry.measure) {
+          const asset = state.assets[scene.composition.assetKey];
+          try {
+            measuredBoxes = await geometry.measure(asset, motionQualityIds(asset.svg, scene.composition, scene.nodes, sceneSpec, cast, scene.view));
+          } catch (error) {
+            if (opts.signal?.aborted) throw error;
+            opts.log(QUALITY.LOG_UNMEASURED(scene.id));
+          }
+          if (drawingRequested && measuredBoxes && (scene.qualityRedraws || 0) < QUALITY.MAX_REDRAWS) {
+            const issues = motionSceneQualityIssues(asset.svg, scene.nodes, scene.view, measuredBoxes, sceneSpec, cast, (node) => analysis.cast.find((member) => member.key === node.entityId)?.name || node.description, width / height);
+            if (issues.length) {
+              scene.qualityNote = issues.join(RT_SHARED.SYMBOL_36A9E7);
+              scene.qualityRedraws = (scene.qualityRedraws || 0) + 1;
+              opts.log(QUALITY.LOG_ISSUE(allScenes.indexOf(scene) + 1, allScenes.length, issues));
+            } else delete scene.qualityNote;
+          }
+        }
         const ensureActorMotion = () => {
           if (!scene.composition) return;
           const reviewed = !!scene.reviewKey && scene.reviewKey === motionInputKey([scene.composition, scene.text, settings]);
           const attached = compositionAttachedMotion(scene.composition, state.assets[scene.composition.assetKey], scene.nodes);
           scene.composition = attached.composition;
           if (attached.removed) opts.log(C.GUARD.LOG_ATTACHMENT(scene.id, attached.removed));
-          const result = compositionActorMotion(scene.composition, state.assets[scene.composition.assetKey], scene.nodes, cast, state.renderBehavior, settings.profileId);
+          const result = compositionActorMotion(scene.composition, state.assets[scene.composition.assetKey], scene.nodes, cast, state.renderBehavior, settings.profileId, measuredBoxes);
           const effects = compositionEffectMotion(result.composition, state.assets[scene.composition.assetKey], scene.nodes, cast, state.renderBehavior, settings.profileId, scene.effects);
-          if (!result.added && !result.removed && !result.boosted && !effects.added && !attached.removed) return;
+          if (!result.added && !result.removed && !result.boosted && !result.swayed && !effects.added && !attached.removed) return;
           scene.composition = effects.composition;
           if (reviewed) scene.reviewKey = motionInputKey([scene.composition, scene.text, settings]);
           if (result.added) opts.log(C.GUARD.LOG_MOTION(scene.id, result.added));
           if (result.removed) opts.log(C.GUARD.LOG_SUPPORT(scene.id, result.removed));
           if (result.boosted) opts.log(MOTION_COMPOSITION_MOTION.BOOST_LOG(scene.id, result.boosted));
+          if (result.swayed) opts.log(MOTION_COMPOSITION_MOTION.SWAY_LOG(scene.id, result.swayed));
           if (effects.added) opts.log(C.GUARD.LOG_EFFECTS(scene.id, effects.added));
           save();
         };
@@ -612,7 +637,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
               existing
                 ? Promise.resolve(existing)
                 : (async () => {
-                    for (const candidate of [...locationScenes].sort((a, b) => Number(establishing(b)) - Number(establishing(a)) || Number(!!a.cropFrom) - Number(!!b.cropFrom))) {
+                    for (const candidate of [...locationScenes].sort((a, b) => Number(establishing(b)) - Number(establishing(a)))) {
                       locationScenes.splice(locationScenes.indexOf(candidate), 1);
                       await draw(candidate);
                       if (candidate.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && candidate.composition) return candidate;
@@ -625,9 +650,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           drawing.push(
             (async () => {
               const anchor = await anchorReady;
-              const direct = await Promise.allSettled(locationScenes.filter((scene) => !scene.cropFrom).map((scene) => draw(scene, anchor)));
-              const cropped = await Promise.allSettled(locationScenes.filter((scene) => scene.cropFrom).map((scene) => draw(scene, anchor)));
-              const results = [...direct, ...cropped];
+              const results = await Promise.allSettled(locationScenes.map((scene) => draw(scene, anchor)));
               const failure = results.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
               if (failure?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw failure.reason;
             })().catch((error: unknown) => {
@@ -641,6 +664,32 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     );
     await Promise.all(drawing);
     if (drawingFailure) throw drawingFailure.error;
+    for (let round = 1; round <= QUALITY.ROUNDS; round++) {
+      const pending = allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.qualityNote && scene.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A);
+      if (!pending.length) break;
+      opts.signal?.throwIfAborted();
+      opts.log(QUALITY.LOG_ROUND(round, pending.length));
+      const outcomes = await Promise.allSettled(
+        pending.map(async (scene) => {
+          const snapshot = { composition: scene.composition, asset: scene.composition && state.assets[scene.composition.assetKey], build: scene.build, crop: scene.crop, focus: scene.focus };
+          scene.drawingNote = [state.notes![scene.beatId], scene.qualityNote].filter(Boolean).join(RT_SHARED.SYMBOL_01BA47);
+          delete scene.qualityNote;
+          await draw(scene, undefined, true);
+          if (scene.build?.status !== RUNTIME_VALUES.ACCEPTED_070C160A && snapshot.composition && snapshot.asset) {
+            scene.composition = snapshot.composition;
+            state.assets[snapshot.composition.assetKey] = snapshot.asset;
+            scene.build = snapshot.build;
+            scene.crop = snapshot.crop;
+            scene.focus = snapshot.focus;
+            ready.add(scene.id);
+            opts.log(QUALITY.LOG_KEEP(scene.id));
+            save();
+          }
+        }),
+      );
+      const stopped = outcomes.find((entry) => entry.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED);
+      if (stopped?.status === COMMON_RUNTIME.SOURCE_TEXT_REJECTED) throw stopped.reason;
+    }
     const failedScenes = () => allScenes.filter((scene) => selected.has(scene.beatId) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && scene.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED && (scene.build.attempts ?? 1) < C.DRAW_ATTEMPTS);
     for (let round = 1; round <= C.RECOVERY_ROUNDS; round++) {
       const failed = failedScenes();
@@ -657,10 +706,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           if (round >= C.RECOVERY_TRIM_ROUND) {
             scene.nodes = scene.nodes.filter((node) => node.kind === RT_SHARED.CHARACTER || node.essential);
             scene.effects = [];
-          }
-          if (scene.cropFrom) {
-            delete scene.cropFrom;
-            delete scene.crop;
           }
           const location = scene.locationKey || scene.place || scene.beatId;
           const anchor = allScenes.find((candidate) => candidate.id !== scene.id && (candidate.locationKey || candidate.place || candidate.beatId) === location && candidate.build?.status === RUNTIME_VALUES.ACCEPTED_070C160A && candidate.composition && candidate.aspect === aspect && remotionSceneReadiness(candidate, state).preview);

@@ -2,6 +2,8 @@ import { MOTION_GENRE_REVIEW as R } from "../constants/motionGenreReview.js";
 import { MOTION_WRITING as W } from "../constants/motionWriting.js";
 import { motionOpeningTeaserIds } from "./motionStoryTimeline.js";
 import { motionUnsupportedFigures } from "./motionWritingNumbers.js";
+import { stringifyJson } from "./jsonStringify.js";
+import { motionGarbledNumbers, motionUnsupportedNames } from "./motionSourceNames.js";
 import { motionWritingReviewAnchors } from "./motionWriting.js";
 import { motionGenreSpec } from "../constants/motionGenre.js";
 import { motionLanguage } from "./motionLanguage.js";
@@ -57,6 +59,7 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
   const dated = (text: string): boolean => R.DIGIT.test(text) || R.MONTH.test(text);
   const quote = (beat: MotionBeat): string => beat.narration.trim().slice(0, 80);
   const chapterIndex = new Map(analysis.chapters.map((chapter, index) => [chapter.id, index]));
+  const known = [sourceText, stringifyJson({ cast: analysis.cast, places: analysis.places, groups: (analysis as MotionStoryAnalysis).groups, title: (analysis as MotionStoryAnalysis).title, logline: (analysis as MotionStoryAnalysis).logline, facts: (analysis as MotionStoryAnalysis).facts, chapters: analysis.chapters.map((chapter) => [chapter.title, chapter.summary, chapter.keyPoints]) })].join(" ");
   spoken.forEach((beat, index) => {
     const previous = spoken[index - 1];
     const duplicate = (other: MotionBeat): string | undefined => (normalize(other.narration) === normalize(beat.narration) ? other.id : undefined);
@@ -90,6 +93,8 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
     if (checks.commentary && R.COMMENTARY.test(beat.narration)) add(beat.id, R.ISSUE.COMMENTARY);
     if (checks.experts && sourceText && R.EXPERTS.test(beat.narration) && !R.EXPERTS.test(sourceText)) add(beat.id, R.ISSUE.EXPERTS, undefined, "source");
     if ((analysis as MotionStoryAnalysis).factual && sourceText) for (const figure of motionUnsupportedFigures(beat.narration, sourceText)) add(beat.id, W.FIGURES.ISSUE(figure), undefined, "source");
+    for (const figure of motionGarbledNumbers(beat.narration)) add(beat.id, W.FIGURES.GARBLED_ISSUE(figure), undefined, "source");
+    if ((analysis as MotionStoryAnalysis).factual && sourceText) for (const name of motionUnsupportedNames(beat.narration.replace(R.QUOTE, " "), known, language)) add(beat.id, W.FIGURES.NAME_ISSUE(name), undefined, "source");
   });
   if (checks.timeJump) {
     const jumps = spoken.filter((beat) => R.TIME_JUMP.test(beat.narration));

@@ -6,6 +6,7 @@ import { MOTION_GENRE_AUTOFIX as A } from "../constants/motionGenreAutofix.js";
 import { motionVideoGenre } from "../constants/motionGenre.js";
 import { motionRenameAutofix } from "./motionRename.js";
 import { MOTION_RENAME as N } from "../constants/motionRename.js";
+import { MOTION_STORY_TIMELINE as T } from "../constants/motionStoryTimeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../types/motionVideo.js";
 export type MotionEditorialResult = { beats: MotionBeat[]; edit: NonNullable<MotionStoryScript["edit"]> };
 export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string) => {
@@ -15,7 +16,7 @@ export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStor
   const unique = sorted.filter((item, index) => sorted.findIndex((other) => other.id === item.id) === index);
   return { findings, ids: unique.map((item) => item.id), remaining: unique.map(({ id, issue }) => ({ id, issue })), concrete: [...new Set([...findings.overlap.map((item) => item.id), ...findings.review.filter((item) => ["source", "label", "handoff"].includes(item.kind || "")).map((item) => item.id)])] };
 };
-export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string, edit: (beats: MotionBeat[], ids: string[], supplemental: boolean) => Promise<MotionEditorialResult>, log?: (line: string) => void): Promise<MotionEditorialResult> => {
+export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string, edit: (beats: MotionBeat[], ids: string[], supplemental: boolean) => Promise<MotionEditorialResult>, log?: (line: string) => void, scope?: ReadonlySet<string>): Promise<MotionEditorialResult> => {
   const names = analysis.cast.map((member) => member.name);
   const fixed = motionGenreAutofix(beats, analysis, language);
   if (fixed.dropped.length || fixed.visuals || fixed.shots || fixed.speech) log?.(A.LOG(fixed.dropped.length, fixed.visuals, fixed.shots, fixed.speech));
@@ -28,12 +29,18 @@ export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: Mo
   let report: NonNullable<MotionStoryScript["edit"]> = { reviewed: 0, rewritten: 0, notes: [], requests: 0, extraRequests: 0, dropped: fixed.dropped.length };
   for (let pass = 0; pass < 2; pass++) {
     const targets = motionEditorialTargets(current, analysis, language, sourceText);
-    const ids = pass ? targets.concrete : targets.ids;
+    const inScope = (id: string): boolean => !scope || scope.has(current.find((beat) => beat.id === id)?.chapterId || "");
+    const ids = (pass ? targets.concrete : targets.ids).filter(inScope);
     if (!ids.length) break;
     log?.(pass ? W.RETRY_LOG(ids.length) : W.REVIEW_LOG(ids.length));
     const result = await edit(current, ids, pass === 1);
     current = motionRenameAutofix(result.beats, analysis).beats.map((beat) => normalizeMotionSpokenBeat(beat, language, names));
+    const stalled = !pass && !result.edit.rewritten && !(result.edit.dropped || 0) && ids.length >= T.EDITOR.ZERO_MIN_FINDINGS;
     report = { reviewed: report.reviewed + result.edit.reviewed, rewritten: report.rewritten + result.edit.rewritten, notes: [...report.notes, ...result.edit.notes], requests: (report.requests || 0) + (result.edit.requests || 0), extraRequests: (report.extraRequests || 0) + (pass ? result.edit.requests || 0 : 0), dropped: (report.dropped || 0) + (result.edit.dropped || 0) };
+    if (stalled) {
+      log?.(T.EDITOR.ZERO_LOG(ids.length));
+      break;
+    }
   }
   const finalTargets = motionEditorialTargets(current, analysis, language, sourceText);
   report.remaining = finalTargets.remaining;

@@ -4,26 +4,31 @@ import { MOTION_GENRE_VOCABULARY as X } from "../../constants/motionGenres/vocab
 import { MOTION_VIDEO_GENRES, motionGenreSpec, motionVideoGenre } from "../../constants/motionGenre.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../../types/motionVideo.js";
 import { motionNarratorCastKey } from "../motionVoice.js";
+import { motionSpeakerNames } from "./autofix.js";
 export interface MotionGenreGrammarFinding {
   id: string;
   issue: string;
 }
 const V = X.VISUALS;
 const S = X.SHOTS;
-export const motionDialogueFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters" | "videoGenre" | "cast" | "videoDna">): MotionGenreGrammarFinding[] => {
-  const minLines = G.DIALOGUE.MIN_LINES[motionVideoGenre(analysis.videoGenre)];
-  if (!minLines) return [];
+const protagonist = (member: { key: string; name: string; alias?: string; role?: string; narrator?: boolean }, narrator?: string): boolean =>
+  member.key === narrator || !!member.narrator || [member.key, member.name, member.alias].some((value) => !!value && G.DIALOGUE.PROTAGONIST.test(value.trim())) || G.DIALOGUE.PROTAGONIST_ROLE.test(member.role || "");
+export const motionDialogueFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "chapters" | "videoGenre" | "cast" | "videoDna">, sourceText = ""): MotionGenreGrammarFinding[] => {
+  const rule = motionGenreSpec(analysis.videoGenre).DIALOGUE;
+  const minLines = rule.minLines;
+  if (!minLines || (rule.needsSourceQuotes && !G.DIALOGUE.SOURCE_QUOTE.test(sourceText))) return [];
   const narrator = motionNarratorCastKey(analysis as MotionStoryAnalysis);
   const findings: MotionGenreGrammarFinding[] = [];
   for (const chapter of analysis.chapters) {
     const own = beats.filter((beat) => beat.chapterId === chapter.id && beat.narration?.trim());
     for (const member of analysis.cast) {
-      if (member.key === narrator || member.narrator) continue;
+      if (rule.skipProtagonist && protagonist(member, narrator)) continue;
       const present = own.filter((beat) => (beat.cast || []).includes(member.key) || beat.narration.includes(member.name));
       if (present.length < G.DIALOGUE.MIN_PRESENT_BEATS) continue;
       const spoken = own.filter((beat) => (beat.utterances || []).some((line) => line.role !== "narration" && line.speaker === member.key)).length;
       if (spoken >= minLines) continue;
-      const candidate = present.find((beat) => G.DIALOGUE.SPEECH_VERB.test(beat.narration) && !(beat.utterances || []).some((line) => line.role !== "narration")) || present.find((beat) => !(beat.utterances || []).some((line) => line.role !== "narration"));
+      const names = motionSpeakerNames(member);
+      const candidate = present.find((beat) => names.some((name) => beat.narration.includes(name)) && (G.DIALOGUE.SPEECH_VERB.test(beat.narration) || G.DIALOGUE.SOURCE_QUOTE.test(beat.narration)) && !(beat.utterances || []).some((line) => line.role !== "narration"));
       if (candidate && !findings.some((finding) => finding.id === candidate.id)) findings.push({ id: candidate.id, issue: G.DIALOGUE.ISSUE(member.name, member.key) });
     }
   }

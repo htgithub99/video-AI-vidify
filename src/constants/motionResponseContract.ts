@@ -151,6 +151,8 @@ const beat = object(
     subject: text,
     frame: choice(...MOTION_RESPONSE_VALUES.FRAMES),
     hook: choice(...MOTION_RESPONSE_VALUES.HOOKS),
+    eventId: text,
+    kind: text,
     scenePlan: MOTION_SCENE_PLAN_SCHEMA,
     utterances: array(MOTION_UTTERANCE_SCHEMA, 1),
   },

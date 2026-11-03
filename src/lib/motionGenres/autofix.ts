@@ -17,21 +17,27 @@ export interface MotionGenreAutofixResult {
   shots: number;
   speech: number;
 }
+export const motionSpeakerNames = (member: { name?: string; alias?: string }): string[] => {
+  const words = (member.name || "").match(A.SPEECH.NAME_WORD) || [];
+  const surname = words.length > 1 && words.at(-1)!.length >= A.SPEECH.SURNAME_MIN ? [words.at(-1)!] : [];
+  return [member.name, member.alias, ...surname].filter((name): name is string => !!name);
+};
 export const motionSplitReportedSpeech = (beat: MotionBeat, analysis: Pick<MotionStoryAnalysis, "cast">): MotionBeat | undefined => {
   if ((beat.utterances || []).some((line) => line.role !== A.SPEECH.NARRATION)) return undefined;
   const match = A.SPEECH.PATTERN.exec(beat.narration || "");
   const groups = match?.groups;
-  if (!groups || (groups.quote.match(/\S+/g) || []).length < A.SPEECH.MIN_QUOTE_WORDS) return undefined;
+  const quote = groups?.double ?? groups?.single ?? "";
+  if (!groups || (quote.match(/\S+/g) || []).length < A.SPEECH.MIN_QUOTE_WORDS) return undefined;
   const narrator = motionNarratorCastKey(analysis as MotionStoryAnalysis);
   const speaker = analysis.cast
     .filter((member) => member.key !== narrator && !member.narrator)
-    .map((member) => ({ key: member.key, at: Math.max(...[member.name, member.alias].filter((name): name is string => !!name).map((name) => groups.before.lastIndexOf(name))) }))
+    .map((member) => ({ key: member.key, at: Math.max(...motionSpeakerNames(member).map((name) => groups.before.lastIndexOf(name))) }))
     .filter((entry) => entry.at >= 0)
     .sort((a, b) => b.at - a.at)[0];
   if (!speaker) return undefined;
   const base = beat.utterances?.[0];
   const line = (index: number, role: MotionUtterance["role"], who: string, text: string): MotionUtterance => ({ id: `${beat.id}_${index}`, speaker: who, role, text, emotion: base?.emotion || A.SPEECH.NEUTRAL, speed: base?.speed ?? A.SPEECH.SPEED, pauseBefore: base?.pauseBefore ?? 0, pauseAfter: base?.pauseAfter ?? 0, emphasis: [] });
-  const utterances = [line(1, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.before.trim()), line(2, A.SPEECH.DIALOGUE, speaker.key, groups.quote.trim()), ...(groups.after.trim() ? [line(3, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.after.trim())] : [])];
+  const utterances = [line(1, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.before.trim()), line(2, A.SPEECH.DIALOGUE, speaker.key, quote.trim()), ...(groups.after.trim() ? [line(3, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.after.trim())] : [])];
   return { ...beat, utterances, cast: (beat.cast || []).includes(speaker.key) ? beat.cast : [...(beat.cast || []), speaker.key] };
 };
 export const motionGenreInferShot = (beat: MotionBeat, allowed: readonly string[]): string => {
@@ -41,6 +47,7 @@ export const motionGenreInferShot = (beat: MotionBeat, allowed: readonly string[
   if (!cast.length && !A.EMOTION.test(text)) return pick(S.ESTABLISHING, S.WIDE, S.MEDIUM);
   if (cast.length >= 3 || A.CROWD.test(text)) return pick(S.WIDE, S.MEDIUM);
   if (cast.length === 1 && A.EMOTION.test(text)) return pick(S.CLOSE, S.MEDIUM);
+  if (cast.length === 1) return pick(S.MEDIUM_CLOSE, S.MEDIUM, S.WIDE);
   return pick(S.MEDIUM, S.WIDE);
 };
 export const motionGenreAutofix = (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string): MotionGenreAutofixResult => {

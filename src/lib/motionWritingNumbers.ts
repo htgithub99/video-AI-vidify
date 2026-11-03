@@ -18,9 +18,11 @@ const pattern = new RegExp("(?<![\\p{L}\\p{N}_])(?:(?:a|an)[ ]+(?=hundred\\b|tho
 type Quantity = { value: number; raw: string; start: number; end: number };
 export const motionWritingQuantities = (text: string): Quantity[] =>
   [...text.matchAll(pattern)].flatMap((match) => {
-    const raw = match[0],
-      start = match.index!,
+    const lead = match[0].match(N.LEAD_AND)?.[0].length || 0;
+    const raw = match[0].slice(lead),
+      start = match.index! + lead,
       end = start + raw.length;
+    if (!raw) return [];
     if (/^\d/u.test(raw) && !raw.includes(" ")) {
       if (!/^\d+$|^\d{1,3}(?:[,.]\d{3})+$/u.test(raw)) return [];
       const value = Number(raw.replace(/[,.]/gu, ""));

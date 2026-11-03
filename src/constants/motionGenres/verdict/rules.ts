@@ -3,15 +3,24 @@ import { MOTION_GENRE_REVIEW as R } from "../../motionGenreReview.js";
 import type { MotionGenreSpec } from "../types.js";
 const S = X.SHOTS;
 const V = X.VISUALS;
-export const VERDICT_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS"> = {
+export const VERDICT_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS" | "DIALOGUE" | "TEXTURE" | "CONTRACT"> = {
+  DIALOGUE: { minLines: 1, skipProtagonist: true, needsSourceQuotes: true },
+  TEXTURE: "a fair counter-argument for the candidate, a concrete piece of evidence already in the source, a one-line question to the viewer about the criterion",
+  CONTRACT: {
+    voice: "a host who asks one question and weighs every candidate fairly on one criterion",
+    opening: "the question and what is at stake in the very first line",
+    spine: "the question, the criterion, at least three candidates each weighed on the criterion, the verdict",
+    devices: "the recurring comparison device (a scale or a scoreboard) in every candidate chapter and the candidate labels",
+    closing: "the verdict and the reason for it",
+  },
   VOICE: {
     frames: [],
     maxUnits: 28,
     longIssue: "split so that each sentence makes one claim or one piece of evidence",
   },
   GRAMMAR: {
-    shots: [S.MEDIUM, S.CLOSE, S.WIDE, S.INSERT, S.ESTABLISHING, S.AERIAL],
-    mix: { [S.MEDIUM]: 30, [V.VERDICT]: 20, [S.CLOSE]: 15, [S.WIDE]: 15, [V.SCOREBOARD]: 10, [V.MAP]: 10 },
+    shots: [S.MEDIUM, S.MEDIUM_CLOSE, S.CLOSE, S.WIDE, S.INSERT, S.ESTABLISHING, S.AERIAL],
+    mix: { [S.MEDIUM]: 25, [S.MEDIUM_CLOSE]: 10, [V.VERDICT]: 20, [S.CLOSE]: 10, [S.WIDE]: 15, [V.SCOREBOARD]: 10, [V.MAP]: 10 },
     visuals: [V.SCENE, V.VERDICT, V.SCOREBOARD, V.MAP, V.QUOTE, V.TITLE],
     devices: ["comparison device", "candidate card", "scoreboard"],
     rule:

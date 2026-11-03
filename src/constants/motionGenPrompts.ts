@@ -121,52 +121,36 @@ export const MOTION_GEN_STORYBOARD_RULES = (language: string): string => `STORYB
 ${MOTION_HISTORY_STORYBOARD}
   All on-screen text (data, label) must be in ${language}.
 - No gore, blood or bodies; suggest violent moments with light and darkness.`;
-export const MOTION_GEN_CHAPTER_PROMPT = (o: {
-  preamble: string;
-  title: string;
-  logline: string;
-  chapterId: string;
-  chapterTitle: string;
-  chapterSummary: string;
-  languageNote: string;
-  language: string;
-  units: number;
-  unitName: string;
-  seconds: number;
-  beats: number;
-  perBeat: number;
-  firstNote: string;
-  lastNote: string;
-  previous: string;
-  outline?: string;
-  rules: string;
-  role: string;
-  genre: string;
-  cast: string;
-  places: string;
-  transcript: string;
-  transcriptLabel?: string;
-}): string => `${o.preamble}
-ROLE: ${o.role}. Write the narration and the shot list (JSON) for one chapter.
+export const MOTION_GEN_CHAPTER_BIBLE = (o: { preamble: string; role: string; title: string; logline: string; languageNote: string; language: string; genre: string; contract: string; rules: string; outline: string; cast: string; places: string }): string => `STORY BIBLE FOR EVERY CHAPTER OF THIS VIDEO. Keep it for all following chapter requests in this chat; each chapter request only adds its own part.
+${o.preamble}
+ROLE: ${o.role}.
 Story: "${o.title}" — ${o.logline}
-CHAPTER ${o.chapterId}: "${o.chapterTitle}" — ${o.chapterSummary}
-
-NARRATION:
-- ${o.languageNote}. The "narration" field MUST be written in ${o.language}.
-- Write original narration according to the project's purpose and voice. Preserve established facts in factual work and the supplied premise in fiction; do not invent real-world claims. Do not translate the source sentence by sentence.
-${MOTION_QA.CHAPTER_LENGTH_RULE(o.units, o.unitName, o.seconds, o.beats, o.perBeat)}
-- Spell out numbers a TTS voice may misread.${o.firstNote}${o.lastNote}
-${o.previous}
-${o.outline || ""}
+NARRATION: ${o.languageNote}. The "narration" field MUST be written in ${o.language}. Write original narration according to the project's purpose and voice. Preserve established facts in factual work and the supplied premise in fiction; do not invent real-world claims. Do not translate the source sentence by sentence. Spell out numbers a TTS voice may misread.
 ${o.genre}
+${o.contract}
 
 ${o.rules}
+
+WHOLE-VIDEO OUTLINE (planned once; every chapter follows it so the chapters read as one continuous story):
+${o.outline}
 
 CAST (keys):
 ${o.cast}
 
 PLACES (keys):
 ${o.places}
+END OF STORY BIBLE.
+
+`;
+export const MOTION_GEN_CHAPTER_LEAN = (o: { chapterId: string; chapterTitle: string; chapterSummary: string; units: number; unitName: string; seconds: number; beats: number; perBeat: number; firstNote: string; lastNote: string; previous: string; outline?: string; continuity: string; sheet: string; rules: string; transcript: string; transcriptLabel?: string }): string => `Write the narration and the shot list (JSON) for ONE chapter, following the STORY BIBLE of this video (rules, genre contract, cast, places and whole outline).
+CHAPTER ${o.chapterId}: "${o.chapterTitle}" — ${o.chapterSummary}
+${MOTION_QA.CHAPTER_LENGTH_RULE(o.units, o.unitName, o.seconds, o.beats, o.perBeat)}${o.firstNote}${o.lastNote}
+${o.previous}
+${o.continuity}
+${o.outline || ""}
+${o.sheet}
+
+${o.rules}
 
 Return {"chapterId":"${o.chapterId}","beats":[...]} using the output schema and exact supplied keys. Describe this chapter's actual speech and representative pictures, never placeholder text.
 

@@ -1,64 +1,24 @@
 import { MOTION_SCENE_CROP as K } from "../constants/motionSceneCrop.js";
-import type { MotionRemotionNode, MotionRemotionScene, MotionSceneComposition, MotionSceneCrop } from "../types/motionVisual.js";
-const DETAIL = "detail";
-const ILLUSTRATION = "illustration";
-const CHARACTER = "character";
-const PROP = "prop";
-const words = (text?: string): Set<string> => new Set((text || "").toLowerCase().match(K.WORD) || []);
-const focusNode = (scene: MotionRemotionScene): MotionRemotionNode | undefined =>
-  scene.view === DETAIL ? scene.nodes.find((node) => node.kind === PROP) : scene.nodes.find((node) => node.kind === CHARACTER && !node.anonymous && node.entityId) || scene.nodes.find((node) => node.kind === CHARACTER && !node.anonymous);
-const matchNode = (focus: MotionRemotionNode, source: MotionRemotionScene): MotionRemotionNode | undefined => {
-  if (focus.kind === CHARACTER) return source.nodes.find((node) => node.kind === CHARACTER && node.entityId && node.entityId === focus.entityId);
-  const target = words(focus.description);
-  return source.nodes.find((node) => node.kind === PROP && (node.id === focus.id || [...words(node.description)].filter((word) => target.has(word)).length >= K.SHARED_WORDS));
-};
-export const motionSceneCropCandidates = (scenes: MotionRemotionScene[]): number => {
-  let count = 0;
-  scenes.forEach((scene, index) => {
-    delete scene.cropFrom;
-    if (!scene.view || !K.VIEWS.includes(scene.view) || (scene.format && scene.format !== ILLUSTRATION)) return;
-    const focus = focusNode(scene);
-    if (!focus) return;
-    for (let distance = 1; distance <= K.NEIGHBOURS; distance++) {
-      for (const source of [scenes[index - distance], scenes[index + distance]]) {
-        if (!source || source.place !== scene.place || !K.SOURCE_VIEWS.includes(source.view || "wide") || source.cropFrom) continue;
-        const match = matchNode(focus, source);
-        if (!match) continue;
-        scene.cropFrom = { sceneId: source.id, nodeId: match.id };
-        count++;
-        return;
-      }
-    }
-  });
-  return count;
-};
-export const motionSceneCropBox = (composition: MotionSceneComposition, nodeId: string, view: string, aspect: number): MotionSceneCrop | undefined => {
-  const box = composition.design?.placements.find((placement) => placement.id === nodeId)?.box;
-  if (!box) return undefined;
-  let x = box.x, y = box.y, width = box.width, height = box.height;
-  if (view === DETAIL) {
-    x -= width * K.DETAIL.PAD;
-    y -= height * K.DETAIL.PAD;
-    width *= 1 + 2 * K.DETAIL.PAD;
-    height *= 1 + 2 * K.DETAIL.PAD;
-  } else {
-    x += width * K.HEAD.DX;
-    y += height * K.HEAD.DY;
-    width *= K.HEAD.WIDTH;
-    height *= K.HEAD.HEIGHT;
-  }
-  const centerX = x + width / 2, centerY = y + height / 2;
-  if (width / height < aspect) width = height * aspect;
-  else height = width / aspect;
-  const scale = Math.min(1 / width, 1 / height);
-  if (scale > K.MAX_SCALE || scale < K.MIN_SCALE) return undefined;
-  x = Math.min(Math.max(0, centerX - width / 2), 1 - width);
-  y = Math.min(Math.max(0, centerY - height / 2), 1 - height);
-  return { x, y, width, height };
-};
-export const motionSceneCropFrame = (crop: MotionSceneCrop, width: number, height: number, progress: number): { scale: number; x: number; y: number } => {
-  const scale = Math.min(1 / crop.width, 1 / crop.height) * (1 + K.PUSH * Math.max(0, Math.min(1, progress)));
-  const centerX = (crop.x + crop.width / 2) * width, centerY = (crop.y + crop.height / 2) * height;
-  const maxX = ((scale - 1) * width) / 2, maxY = ((scale - 1) * height) / 2;
-  return { scale, x: Math.max(-maxX, Math.min(maxX, (width / 2 - centerX) * scale)), y: Math.max(-maxY, Math.min(maxY, (height / 2 - centerY) * scale)) };
+import type { MotionSceneCrop } from "../types/motionVisual.js";
+export const motionSceneCropPush = (progress: number): { scale: number; x: number; y: number } => ({ scale: 1 + K.PUSH * Math.max(0, Math.min(1, progress)), x: 0, y: 0 });
+const cropCache = new Map<string, Map<string, string>>();
+export const motionCropSvg = (svg: string, crop: MotionSceneCrop): string => {
+  const key = `${crop.x}|${crop.y}|${crop.width}|${crop.height}`;
+  const known = cropCache.get(svg)?.get(key);
+  if (known !== undefined) return known;
+  const root = svg.match(K.SVG_ROOT)?.[0];
+  if (!root) return svg;
+  const box = root.match(K.VIEWBOX)?.[2].match(K.NUMBERS)?.map(Number);
+  const width = box?.[2] ?? Number(root.match(K.WIDTH)?.[2]),
+    height = box?.[3] ?? Number(root.match(K.HEIGHT)?.[2]);
+  if (!(width > 0) || !(height > 0)) return svg;
+  const left = (box?.[0] ?? 0) + crop.x * width,
+    top = (box?.[1] ?? 0) + crop.y * height;
+  const viewBox = ` viewBox="${Number(left.toFixed(3))} ${Number(top.toFixed(3))} ${Number((crop.width * width).toFixed(3))} ${Number((crop.height * height).toFixed(3))}" preserveAspectRatio="${K.SLICE}"`;
+  const next = svg.replace(root, root.replace(K.VIEWBOX, "").replace(K.ASPECT, "").replace(K.ROOT_END, `${viewBox}>`));
+  if (cropCache.size >= K.CACHE) cropCache.clear();
+  const entry = cropCache.get(svg) || new Map<string, string>();
+  entry.set(key, next);
+  cropCache.set(svg, entry);
+  return next;
 };

@@ -8,5 +8,9 @@ export const MOTION_COMPOSITION_MOTION = {
   ATTACHED_TO_CHEST: /(?:^|_)(?:head|neck|hand|arm)(?:_|$)/i,
   CONTACT_PART: /(?:^|_)(?:hand|arm|pelvis|hip|leg|foot|feet|knee|seat)(?:_|$)/i,
   ROTATE: /rotate\(\s*([-+]?\d*\.?\d+)((?:[\s,]+[-+]?\d*\.?\d+){0,2})\s*\)/g,
+  SWAY_SKIP: ["lie", "slump", "mounted"] as readonly string[],
+  ANIMAL_TAIL: /(?:^|[_-])tail(?:[_-]|$)/i,
+  ANIMAL_HEAD: /(?:^|[_-])(?:head|neck)(?:[_-]|$)/i,
+  SWAY_LOG: (scene: string, count: number): string => `Cảnh ${scene}: thêm lắc nhẹ tại chỗ cho ${count} nhân vật/con vật (điểm tựa giữ nguyên).`,
   BOOST_LOG: (scene: string, count: number): string => `Cảnh ${scene}: nâng biên độ ${count} chuyển động nhân vật lên mức tối thiểu của kiểu hình.`,
 } as const;

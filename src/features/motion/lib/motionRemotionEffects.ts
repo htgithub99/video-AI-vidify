@@ -7,7 +7,7 @@ import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior
 import { motionCameraFrame } from "../../../lib/motionCamera.js";
 import { MOTION_PROFILE_MOTION } from "../../../constants/motionProfileMotion.js";
 import { motionSceneCameraDirection, motionSceneSubjectPoint } from "../../../lib/motionSceneCamera.js";
-import { motionSceneCropFrame } from "../../../lib/motionSceneCrop.js";
+import { motionSceneCropPush } from "../../../lib/motionSceneCrop.js";
 import { remotionPoint, remotionVisibleRect } from "../../../lib/motionRemotionGeometry.js";
 import { remotionObjectIdentity } from "../../../lib/motionRemotionGeometry.js";
 import type { MotionRemotionProfile, MotionRemotionScene, MotionRemotionNode, MotionRemotionPlacedNode, MotionVectorAsset, MotionRemotionTimedScene, MotionRenderBehavior, MotionVisualRect } from "../../../types/motionVisual.js";
@@ -80,7 +80,7 @@ export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: 
   if (scene?.crop) {
     const still = behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED;
     const progress = still ? 0 : (seconds - scene.startFrame / fps) / Math.max(1 / fps, (scene.endFrame - scene.startFrame) / fps);
-    return { ...motionSceneCropFrame(scene.crop, width, height, progress), mode: "push" as const };
+    return { ...motionSceneCropPush(progress), mode: "push" as const };
   }
   if (behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED) return { scale: 1, x: 0, y: 0, mode: scene?.composition?.design?.cameraMotion?.mode || "hold" };
   const view = remotionSceneView(scene, width, height, assets);

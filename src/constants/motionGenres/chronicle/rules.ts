@@ -3,15 +3,24 @@ import { MOTION_GENRE_REVIEW as R } from "../../motionGenreReview.js";
 import type { MotionGenreSpec } from "../types.js";
 const S = X.SHOTS;
 const V = X.VISUALS;
-export const CHRONICLE_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS"> = {
+export const CHRONICLE_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS" | "DIALOGUE" | "TEXTURE" | "CONTRACT"> = {
+  DIALOGUE: { minLines: 1, skipProtagonist: true, needsSourceQuotes: true },
+  TEXTURE: "everyday life of the era (an object, a price, a street, a job), a plain comparison that makes a number tangible, the place where it happened",
+  CONTRACT: {
+    voice: "a fast overview narrator; one milestone per sentence, dates and names exact",
+    opening: "the promise of the whole sweep and the first milestone",
+    spine: "milestones in time order, a card when the era changes",
+    devices: "year and name cards, maps of the moving front or territory",
+    closing: "the consequence and the last milestone",
+  },
   VOICE: {
     frames: [],
     maxUnits: 26,
     longIssue: "cut into two brisk sentences, each carrying one date, name or number",
   },
   GRAMMAR: {
-    shots: [S.WIDE, S.MEDIUM, S.CLOSE, S.INSERT, S.ESTABLISHING, S.AERIAL],
-    mix: { [S.WIDE]: 30, [S.MEDIUM]: 25, [V.MAP]: 15, [V.TIMELINE]: 15, [S.CLOSE]: 15 },
+    shots: [S.WIDE, S.MEDIUM, S.MEDIUM_CLOSE, S.CLOSE, S.INSERT, S.ESTABLISHING, S.AERIAL],
+    mix: { [S.WIDE]: 30, [S.MEDIUM]: 20, [S.MEDIUM_CLOSE]: 10, [V.MAP]: 15, [V.TIMELINE]: 15, [S.CLOSE]: 10 },
     visuals: [V.SCENE, V.MAP, V.TIMELINE, V.CHAPTER, V.STATS, V.TITLE],
     devices: ["map", "year card", "organisation chart"],
     rule:

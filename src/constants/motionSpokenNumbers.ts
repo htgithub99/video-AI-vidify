@@ -1,5 +1,6 @@
 export const MOTION_SPOKEN_NUMBERS = {
   SPOKEN: "spoken",
+  LEAD_AND: /^(?:and[ -]+)+/i,
   EN: ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"],
   TENS: ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"],
   VI: ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"],

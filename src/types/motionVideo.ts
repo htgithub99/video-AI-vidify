@@ -466,6 +466,8 @@ export interface MotionBeat {
   audioFile?: string;
   scenePlan?: MotionScenePlan;
   hud?: MotionHud;
+  eventId?: string;
+  kind?: "event" | "texture" | "device" | "bookend";
 }
 export interface MotionVideoDnaSettings {
   length: MotionStoryLength;
@@ -935,6 +937,7 @@ export interface MotionAiExecution {
   strictProvider?: boolean;
   role?: string;
   chained?: boolean;
+  bible?: { key: string; text: string };
 }
 export interface MotionAiActivity {
   workerId: string;

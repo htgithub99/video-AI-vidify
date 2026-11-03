@@ -10,6 +10,15 @@ import { motionResponseIssues, motionResponseShape, type MotionResponseIssue } f
 import { motionSpeechResponseIssues } from "./motionSpeechResponse.js";
 import { MOTION_VOICE } from "../constants/motionVoice.js";
 import { normalizeMotionChapterMetadata } from "./motionEditorialMetadata.js";
+const castSlug = (value: string): string => value.toLowerCase().normalize("NFD").replace(C.CAST_MARKS, "").replace(C.CAST_SLUG, "_").replace(C.CAST_TRIM, "");
+export const motionChapterCastRepair = <T extends Record<string, any>>(row: T, cast: { key: string; name?: string; alias?: string }[]): T => {
+  if (!Array.isArray(row?.cast) || row.cast.every((key: unknown) => cast.some((member) => member.key === key))) return row;
+  const resolve = (key: unknown): string | undefined => {
+    const slug = castSlug(String(key));
+    return cast.find((member) => member.key === key || [member.key, member.name, member.alias, ...(member.name || "").split(C.CAST_SPACE).filter((word) => word.length >= C.CAST_SURNAME)].some((value) => !!value && castSlug(value) === slug))?.key;
+  };
+  return { ...row, cast: [...new Set(row.cast.flatMap((key: unknown) => resolve(key) || []))] };
+};
 export const motionChapterResponseIssues = (rows: Record<string, any>[], cast: string[], places: string[], closed: boolean, multiVoice = true): { id: string; issues: MotionResponseIssue[] }[] => {
   const schema = MOTION_RESPONSE_SCHEMAS[RT_CORE.MOTION_STORY_CHAPTER].properties!.beats.items!;
   return normalizeMotionChapterMetadata(rows).flatMap((row) => {

@@ -6,7 +6,7 @@ export const VI_LANGUAGE: MotionLanguageProfile = {
   unit: { promptName: "Vietnamese syllables (words)" },
   rate: { narration: 3.4, dialogue: 3.8 },
   numbers: "spoken",
-  markers: { viewer: /(^|[^\p{L}])bạn([^\p{L}]|$)/iu, perception: /(^|[^\p{L}])tôi (?:thấy|nghe|nhìn thấy|trông thấy|chứng kiến|biết)(?=[^\p{L}]|$)/iu },
+  markers: { viewer: /(^|[^\p{L}])bạn([^\p{L}]|$)/iu, perception: /(^|[^\p{L}])tôi (?:thấy|nghe|nhìn thấy|trông thấy|chứng kiến|biết)(?=[^\p{L}]|$)/iu, outfit: /(?:mặc vào|mặc lên|mặc thêm|thay áo|thay đồ|đổi áo|cởi áo|cởi bỏ|khoác lên|khoác vào|cải trang|đội lên|tháo mũ|bỏ mũ)/iu },
   styleGuide: [],
   reviewGuide: "",
   subtitle: { maxChars: 64, fontFamily: "Arial, sans-serif" },

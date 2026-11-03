@@ -65,7 +65,7 @@ export const checkRemotionRuntime = async (signal?: AbortSignal): Promise<void> 
   await motionRemotionBundle();
   signal?.throwIfAborted();
 };
-const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (browser: Awaited<ReturnType<typeof openBrowser>>, serveUrl: string, cancelSignal: ReturnType<typeof makeCancelSignal>["cancelSignal"]) => Promise<T>): Promise<T> => {
+const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (browser: Awaited<ReturnType<typeof openBrowser>>, serveUrl: string, cancelSignal: ReturnType<typeof makeCancelSignal>["cancelSignal"]) => Promise<T>, log?: (line: string) => void): Promise<T> => {
   signal?.throwIfAborted();
   const serveUrl = await motionRemotionBundle();
   signal?.throwIfAborted();
@@ -77,7 +77,7 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
   try {
     const executable = findNativeChrome();
     browser = await openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless: true, gl: R.GL }, logLevel: RT_SHARED.ERROR }).catch(async () => {
-      console.warn(R.GL_FALLBACK);
+      (log || console.warn)(R.GL_FALLBACK);
       return openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless: true }, logLevel: RT_SHARED.ERROR });
     });
     signal?.throwIfAborted();
@@ -87,12 +87,14 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
     await browser?.close({ silent: true });
   }
 };
-export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: string, options: { width: number; height: number; crf: number; signal: AbortSignal; concurrency?: number; onProgress: (frames: number, total: number) => void }): Promise<void> => {
+export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: string, options: { width: number; height: number; crf: number; signal: AbortSignal; concurrency?: number; onProgress: (frames: number, total: number) => void; log?: (line: string) => void }): Promise<void> => {
   validateRemotionSpec(spec);
   assertRemotionExportable(spec);
   await checkRemotionCutoutLayers(spec, options.signal);
   const { selectComposition, renderMedia } = await import("@remotion/renderer");
-  await withRemotionBrowser(options.signal, async (browser, serveUrl, cancelSignal) => {
+  await withRemotionBrowser(
+    options.signal,
+    async (browser, serveUrl, cancelSignal) => {
     const inputProps = { document: spec };
     const selected = await selectComposition({ serveUrl, id: V.COMPOSITION_ID, inputProps, puppeteerInstance: browser, logLevel: RT_SHARED.ERROR });
     const total = Math.ceil(spec.duration * spec.fps);
@@ -112,7 +114,9 @@ export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: stri
       logLevel: RT_SHARED.ERROR,
       onProgress: ({ renderedFrames }) => options.onProgress(Math.min(total, renderedFrames), total),
     });
-  });
+    },
+    options.log,
+  );
 };
 let stillQueue: Promise<unknown> = Promise.resolve();
 export const renderRemotionStill = (spec: MotionRemotionSpec, output: string, frame = 0, signal?: AbortSignal): Promise<void> => {

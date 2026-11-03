@@ -2,6 +2,11 @@ import { stringifyJson } from "../lib/jsonStringify.js";
 import { MOTION_QA as Q } from "./motionQa.js";
 export const MOTION_CHAPTER_REPAIR = {
   ATTEMPTS: 3,
+  CAST_MARKS: /\p{M}/gu,
+  CAST_SLUG: /[^\p{L}\p{N}]+/gu,
+  CAST_TRIM: /^_+|_+$/g,
+  CAST_SPACE: /\s+/u,
+  CAST_SURNAME: 4,
   DURATION_REVISION: "motion-duration-counted-speech-20261028",
   SPEECH_REVISION: "motion-chapter-speech-alignment-20261030",
   SPEECH_RECOVERY_LOG: (chapter: string): string => `Chương ${chapter}: phục hồi lượt sửa phân vai còn lỗi; giữ nguyên lời dẫn và các phần đã đạt.`,

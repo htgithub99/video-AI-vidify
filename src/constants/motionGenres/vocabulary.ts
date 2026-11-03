@@ -1,5 +1,5 @@
 export const MOTION_GENRE_VOCABULARY = {
-  SHOTS: { WIDE: "wide", MEDIUM: "medium", CLOSE: "close", OVER_SHOULDER: "over_shoulder", LOW: "low", HIGH: "high", AERIAL: "aerial", INSERT: "insert", ESTABLISHING: "establishing", POV: "pov" },
+  SHOTS: { WIDE: "wide", MEDIUM: "medium", MEDIUM_CLOSE: "medium_close", CLOSE: "close", OVER_SHOULDER: "over_shoulder", LOW: "low", HIGH: "high", AERIAL: "aerial", INSERT: "insert", ESTABLISHING: "establishing", POV: "pov" },
   VISUALS: { SCENE: "scene", TITLE: "title", CHAPTER: "chapter", QUOTE: "quote", STATS: "stats", MAP: "map", TIMELINE: "timeline", VERDICT: "verdict", SCOREBOARD: "scoreboard" },
   FRAMES: { LIVED: "lived", TOLD: "told", HINDSIGHT: "hindsight" },
   HOOKS: { OPEN: "open", CLOSE: "close" },

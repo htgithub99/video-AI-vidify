@@ -1,12 +1,16 @@
 import { MOTION_ILLUSTRATION_PROFILES, type MotionIllustrationStage } from "../constants/motionIllustrationProfiles.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
-import { SCENE_DEVICES, SCENE_FRAMING, SCENE_FRAMING_PLANNING, type MotionSceneFormat, type MotionSceneView } from "../constants/motionProfiles/framing.js";
+import { MOTION_PROFILE_SCENES } from "../constants/motionProfiles/scenes.js";
+import type { MotionShotSize } from "../constants/motionProfiles/sceneSpec.js";
+import { SCENE_DEVICES, SCENE_FRAMING, SCENE_FRAMING_PLANNING, SCENE_SHOT_FRAME, type MotionSceneFormat, type MotionSceneView } from "../constants/motionProfiles/framing.js";
 import type { MotionRemotionProfile } from "../types/motionVisual.js";
 const WIDE: MotionSceneView = "wide";
 const ILLUSTRATION: MotionSceneFormat = "illustration";
 export const motionProfileFraming = (id: MotionRemotionProfile, view?: MotionSceneView): string => {
   const profile = MOTION_ILLUSTRATION_PROFILES[id];
   const key = view && Object.hasOwn(SCENE_FRAMING, view) ? view : WIDE;
+  const size = Object.hasOwn(MOTION_PROFILE_SCENES[id].shotSizes, key) ? MOTION_PROFILE_SCENES[id].shotSizes[key as MotionShotSize] : undefined;
+  if (size) return SCENE_SHOT_FRAME.TEXT(key, size.body, size.head, size.top, SCENE_SHOT_FRAME.RULES);
   return profile.framing?.[key] || SCENE_FRAMING[key];
 };
 export const motionProfileDevice = (id: MotionRemotionProfile, format?: MotionSceneFormat): string | undefined => {

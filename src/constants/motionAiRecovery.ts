@@ -28,6 +28,7 @@ export const MOTION_AI_RECOVERY = {
   MODEL_KEY: (provider: string, model?: string): string => `${provider}:${model || ""}`,
   ACTIVE: (provider: string, model: string, artifact: string): string => `AI đang thực hiện: ${provider} · ${model} · ${artifact}`,
   RECOVER: (provider: string, attempt: number, total: number): string => `Phòng ${provider} gặp lỗi – tải lại cuộc trò chuyện hiện tại (${attempt}/${total}), giữ nguyên model và ảnh tham chiếu.`,
+  FRESH: (provider: string): string => `Phòng ${provider} lỗi trước khi gửi yêu cầu – mở ngay phòng mới thay vì tải lại phòng cũ (chưa gửi gì nên không có nguy cơ trùng).`,
   REPLACE: (provider: string): string => `Phòng ${provider} vẫn lỗi sau hai lần tải lại – mở phòng mới, giữ nguyên model và ảnh tham chiếu.`,
   RESUME: (provider: string): string => `Đã có lần gửi tới ${provider} – kiểm tra phản hồi của yêu cầu cũ trước khi tiếp tục.`,
   RESUME_RELOAD: (provider: string, attempt: number, total: number): string => `Tải lại room ${provider} để đọc kết quả yêu cầu cũ (${attempt}/${total}), chưa gửi lại yêu cầu.`,

@@ -6,12 +6,21 @@ import { motionScenePromptContext } from "./sceneContext.js";
 import { MOTION_CHARACTER_FRAMES, MOTION_CHARACTER_FRAME_DIRECTION } from "./characterFrames/index.js";
 import { HORROR_CHARACTER_DIRECTION } from "./horror/characterDirection.js";
 import { MOTION_IDENTITY_REFERENCE } from "../motionIdentityReference.js";
+import { MOTION_SCENE_SPEC } from "./sceneSpec.js";
 export const motionProfileScenePrompt = (context: unknown): string => {
   const cleaned = motionScenePromptContext(context);
   const id = cleaned.artDirection?.id as MotionRemotionProfile;
   if (!id || !Object.hasOwn(MOTION_ILLUSTRATION_PROFILES, id)) throw new Error("Select a valid illustration profile before requesting a scene.");
   const people = !Array.isArray(cleaned.scene?.nodes) || cleaned.scene.nodes.some((node: Record<string, unknown>) => node.kind === "character" && node.representation !== "detail");
   const frame = people ? `${id === "horror" ? HORROR_CHARACTER_DIRECTION.frame : MOTION_CHARACTER_FRAME_DIRECTION}\n${MOTION_CHARACTER_FRAMES[id]}\nEND CHARACTER SVG FRAME\n` : "";
-  const references = Array.isArray(cleaned.referenceCharacters) && cleaned.referenceCharacters.length ? `${MOTION_IDENTITY_REFERENCE.PROMPT}\n` : "";
+  const references = [
+    Array.isArray(cleaned.referenceCharacters) && cleaned.referenceCharacters.length ? MOTION_IDENTITY_REFERENCE.PROMPT : "",
+    Array.isArray(cleaned.poseNotes) && cleaned.poseNotes.length ? MOTION_SCENE_SPEC.POSE_PROMPT : "",
+    Array.isArray(cleaned.animalFrames) && cleaned.animalFrames.length ? MOTION_SCENE_SPEC.ANIMAL_PROMPT : "",
+    MOTION_SCENE_SPEC.EFFECT_LAYERS,
+  ]
+    .filter(Boolean)
+    .map((line) => `${line}\n`)
+    .join("");
   return `TEXT CODING TASK: draw ONE complete scene as SVG source. The selected artDirection locks character construction only; you design the setting, poses and actual layout from current story facts. Use cast and accepted identityMemory to keep recurring people consistent. No image generation tools or reference-image upload.\n${references}${frame}${MOTION_SCENE_OUTPUT_CONTRACT}\nContext:\n${stringifyJson(cleaned)}\nReturn only the finished json code block.`;
 };
