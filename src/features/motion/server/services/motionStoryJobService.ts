@@ -71,7 +71,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
       if (line) {
         const entry = MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), String(line));
         try {
-          logs.append(job.id, entry);
+          logs.append(job.id, entry, activity);
         } catch (error) {
           failedSave(error);
           throw error;

@@ -127,7 +127,7 @@ try {
       session.id,
       async () => {
         await Promise.all([service.prepareMotionSceneRooms(selected), service.prepareMotionSceneRooms(selected)]);
-        assert.equal(preparationPeak, 3);
+        assert.equal(preparationPeak, 5);
         assert.equal(fixture.sent.length, 0, "Opening rooms must never send AI prompts");
         assert.deepEqual(fixture.prepared.map((request) => request.workerId).sort(), [...sceneIds].sort());
         let release!: () => void;
@@ -137,19 +137,19 @@ try {
           const drawing = request.artifactType === C.ARTIFACT;
           peakTotal = Math.max(peakTotal, ++activeTotal);
           if (drawing) peakScenes = Math.max(peakScenes, ++activeScenes);
-          if (activeTotal === 4) release();
+          if (activeTotal === 6) release();
           await held;
           if (drawing) activeScenes--;
           activeTotal--;
           return ready(request);
         };
         try {
-          await Promise.all([service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, { ...selected, role: MOTION_AI_ROLE.MAIN, singleResponse: false }), service.mapMotionAiPool([0, 1, 2, 3, 4, 5, 6], () => service.runMotionAi(V.PROMPT, C.ARTIFACT, selected), 3, MOTION_AI_ROLE.DRAW)]);
+          await Promise.all([service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, { ...selected, role: MOTION_AI_ROLE.MAIN, singleResponse: false }), service.mapMotionAiPool([0, 1, 2, 3, 4, 5, 6], () => service.runMotionAi(V.PROMPT, C.ARTIFACT, selected), 5, MOTION_AI_ROLE.DRAW)]);
         } finally {
           clearTimeout(timer);
         }
-        assert.equal(peakScenes, 3, provider);
-        assert.equal(peakTotal, 4, "Content requests must not occupy any of the three drawing slots");
+        assert.equal(peakScenes, 5, provider);
+        assert.equal(peakTotal, 6, "Content requests must not occupy any of the five drawing slots");
         assert.deepEqual([...new Set(fixture.sent.filter((request) => request.artifactType === C.ARTIFACT).map((request) => request.workerId))].sort(), [...sceneIds].sort());
         assert.ok(fixture.sent.filter((request) => request.artifactType !== C.ARTIFACT).every((request) => !sceneIds.includes(request.workerId)));
       },
@@ -180,7 +180,7 @@ try {
     if (request.artifactType === MOTION_VISUAL.ARTIFACT_SCENE)
       return { text: JSON.stringify({ scenes: lines.map((line, i) => ({ fromLineId: line.key, toLineId: line.key, purpose: `shot${i}`, environment: "old house", nodes: [{ id: "person", kind: "character", entityId: "guest", description: "guest", pose: "standing", slot: "right", evidence: "Người khách đứng cạnh cửa." }] })) }), provider: request.provider };
     assert.equal(request.artifactType, C.ARTIFACT);
-    assert.equal(new Set(fixture.prepared.filter((item) => sceneIds.includes(item.workerId)).map((item) => item.workerId)).size, 3);
+    assert.equal(new Set(fixture.prepared.filter((item) => sceneIds.includes(item.workerId)).map((item) => item.workerId)).size, 5);
     drawings++;
     drawingPeak = Math.max(drawingPeak, ++drawingsActive);
     if (drawings > 1) await new Promise((resolve) => setTimeout(resolve, 20));
@@ -229,9 +229,9 @@ try {
   );
   fixture.prepare = async () => {};
   await service.runInMotionAiSession(warmSession.id, () => service.prepareMotionSceneRooms(drawing), undefined, true, undefined, warmSession);
-  assert.equal(fixture.prepared.length, 6, "A resumed stage must prepare rooms after a cancelled warmup");
+  assert.equal(fixture.prepared.length, 8, "A resumed stage must prepare rooms after a cancelled warmup");
   await service.releaseMotionEditorialSession(warmSession.id);
-  console.log("PASS: scene fallback policies, three dedicated rooms, concurrent room opening without prompts, independent content slot, Gemini/ChatGPT/DeepSeek/Claude and actual Remotion pipeline; no live AI or video render.");
+  console.log("PASS: scene fallback policies, five dedicated rooms, concurrent room opening without prompts, independent content slot, Gemini/ChatGPT/DeepSeek/Claude and actual Remotion pipeline; no live AI or video render.");
 } finally {
   delete (globalThis as any).__motionAiRecovery;
   if (priorStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;

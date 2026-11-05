@@ -39,13 +39,13 @@ const legacy = motionLogSections([{ id: "old", kind: "production", lines: ["09:0
 assert.equal(legacy.find((section) => section.key === "analyze")?.state, "done");
 assert.equal(legacy.find((section) => section.key === "script")?.state, "done");
 assert.equal(legacy.find((section) => section.key === "scenes")?.rows.length, 3);
-assert.equal(legacy.find((section) => section.key === "scenes")?.rows.at(-1)?.message, S.TEXT.vi.objectError);
+assert.equal(legacy.find((section) => section.key === "scenes")?.rows.at(-1)?.message, S.TEXT.vi.objectError + " Lỗi: catalogKey must depict this exact noun phrase");
 assert.equal(legacy.find((section) => section.key === "scenes")?.state, "error");
 const invalid = motionLogSections([{ id: "schema", kind: "script", lines: ["09:00:00 · Lỗi: expected string, received null"] }]);
-assert.equal(invalid.find((section) => section.key === "script")?.summary, S.TEXT.vi.invalidData);
+assert.equal(invalid.find((section) => section.key === "script")?.summary, S.TEXT.vi.invalidData + " Lỗi: expected string, received null");
 assert.equal(invalid.find((section) => section.key === "script")?.state, "error");
 const contextFailure = motionLogSections([{ id: "context", kind: "scenes", lines: ["18:02:53 · Lỗi: chat_planning_context_not_confirmed"] }]);
-assert.equal(contextFailure.find((section) => section.key === "scenes")?.summary, S.TEXT.vi.contextError);
+assert.equal(contextFailure.find((section) => section.key === "scenes")?.summary, S.TEXT.vi.contextError + " Lỗi: chat_planning_context_not_confirmed");
 assert.equal(contextFailure.find((section) => section.key === "scenes")?.rows.at(-1)?.raw, "18:02:53 · Lỗi: chat_planning_context_not_confirmed");
 const stopped = motionLogSections(entries, "vi", { ...job, status: MotionJobStatus.CANCELLED });
 assert.equal(stopped.find((section) => section.key === "scenes")?.state, "cancelled");
@@ -126,7 +126,7 @@ try {
   await page.evaluate(() => (globalThis as any).failLog());
   await page.waitForFunction(() => document.querySelector('[data-motion-log-section="scenes"]')!.getAttribute("data-state") === "error");
   assert.ok((await scene.locator("[data-motion-log-summary]").innerText()).includes("đồ vật"));
-  assert.ok(!(await page.locator("main").innerText()).includes("catalogKey"));
+  assert.ok((await scene.locator("[data-motion-log-summary]").innerText()).includes("catalogKey must depict"));
   await scene.locator("summary").click();
   assert.ok((await scene.innerText()).includes("catalogKey must depict"));
   await scene.locator("summary").click();

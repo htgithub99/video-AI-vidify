@@ -6,7 +6,7 @@ import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
 import type { MotionProductionResult } from "../../../types/motionVideo.js";
 import { createMotionEditorialId } from "../lib/motionEditorial.js";
 import { MOTION_EDITORIAL } from "../../../constants/motionEditorial.js";
-import { mergeMotionLogHistory, motionRestoredStoryJobId } from "../lib/motionLogHistory.js";
+import { mergeMotionLogHistory, mergeMotionCanonicalLog, motionRestoredStoryJobId } from "../lib/motionLogHistory.js";
 import { PUPPET, PUPPET_KIT_API, PUPPET_STYLE_DEFAULT } from "../../../constants/motionPuppet.js";
 import { missingMotionChapters } from "../../../lib/motionProduction.js";
 import { MOTION_VISUAL_CONTRACT } from "../../../constants/motionVisualContract.js";
@@ -250,7 +250,7 @@ export function useMotionStudio() {
   const flowDepth = useRef(0);
   const [logHistory, setLogHistory] = useState<MotionLogEntry[]>([]);
   const logHistoryRef = useRef<MotionLogEntry[]>([]);
-  const logCursors = useRef(new Map<string, { cursor: number; loading: boolean; queued: boolean; lines: string[] }>());
+  const logCursors = useRef(new Map<string, { cursor: number; loading: boolean; queued: boolean; lines: string[]; events: NonNullable<MotionLogEntry["events"]> }>());
   const settledSeoJobs = useRef(new Set<string>());
   const trackLog = useCallback((id: string, kind: string, lines: string[] | undefined, startedAt?: number, job?: Pick<MotionLogEntry, "status" | "stage" | "error" | "stepStates">) => {
     const next = mergeMotionLogHistory(logHistoryRef.current, id, kind, lines, startedAt, job && { status: job.status, stage: job.stage, error: job.error, stepStates: job.stepStates });
@@ -260,7 +260,7 @@ export function useMotionStudio() {
       setLogHistory(next);
     }
     const session = stateRef.current.editorialSessionId;
-    const cursor = logCursors.current.get(id) || { cursor: 0, loading: false, queued: false, lines: [] };
+    const cursor = logCursors.current.get(id) || { cursor: 0, loading: false, queued: false, lines: [], events: [] };
     if (cursor.loading) {
       cursor.queued = true;
       return;
@@ -270,11 +270,13 @@ export function useMotionStudio() {
     void (async () => {
       let after = cursor.cursor;
       const received: string[] = [];
+      const receivedEvents: NonNullable<MotionLogEntry["events"]> = [];
       for (;;) {
         cursor.queued = false;
-        const page = await motionRequest<{ lines: string[]; next: number; total: number }>(API_ROUTES.MOTION_STORY_LOGS + encodeURIComponent(id) + MOTION_EDITORIAL.LOG_CURSOR(after));
+        const page = await motionRequest<{ lines: string[]; events?: MotionLogEntry["events"]; next: number; total: number }>(API_ROUTES.MOTION_STORY_LOGS + encodeURIComponent(id) + MOTION_EDITORIAL.LOG_CURSOR(after));
         if (stateRef.current.editorialSessionId !== session || !mounted.current || logCursors.current.get(id) !== cursor) return;
         received.push(...page.lines);
+        receivedEvents.push(...(page.events || []));
         if ((page.next <= after || page.next >= page.total) && !cursor.queued) {
           after = page.next;
           break;
@@ -284,10 +286,11 @@ export function useMotionStudio() {
       if (!received.length) return;
       const existing = logHistoryRef.current.find((entry) => entry.id === id);
       const canonical = [...cursor.lines, ...received];
-      const entry = { ...existing, id, kind, ...(startedAt || existing?.startedAt ? { startedAt: startedAt || existing?.startedAt } : {}), lines: existing && existing.lines.length > canonical.length ? mergeMotionLogHistory([existing], id, kind, canonical)[0].lines : canonical };
+      const entry = { ...existing, id, kind, ...(startedAt || existing?.startedAt ? { startedAt: startedAt || existing?.startedAt } : {}), events: [...cursor.events, ...receivedEvents], lines: mergeMotionCanonicalLog(existing, canonical) };
       const updated = existing ? logHistoryRef.current.map((item) => (item.id === id ? entry : item)) : [...logHistoryRef.current, entry];
       cursor.cursor = after;
       cursor.lines = canonical;
+      cursor.events = entry.events;
       logHistoryRef.current = updated;
       jsonUtils.setItem(MOTION_EDITORIAL.LOG_STORAGE_KEY, updated);
       setLogHistory(updated);

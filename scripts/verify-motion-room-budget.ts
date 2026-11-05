@@ -37,7 +37,7 @@ let peakRooms = 0;
 const open = (room: MotionAiRoomIdentity) => {
   rooms.set(roomKey(room), room);
   peakRooms = Math.max(peakRooms, rooms.size);
-  assert.ok(rooms.size <= 5, `Too many physical rooms: ${rooms.size}`);
+  assert.ok(rooms.size <= 7, `Too many physical rooms: ${rooms.size}`);
 };
 let failClose = false;
 let closeHold: ReturnType<typeof deferred> | undefined;
@@ -54,23 +54,23 @@ const take = async (room: MotionAiRoomIdentity, signal?: AbortSignal) => {
 };
 const firstRooms = [...CONFIG.SCENE_WORKER_IDS, ...CONFIG.WORKER_IDS].map((worker) => identity(worker));
 const leases = await Promise.all(firstRooms.map((room) => take(room)));
-assert.equal(rooms.size, 5);
+assert.equal(rooms.size, 7);
 const cancelled = new AbortController();
 const waiting = assert.rejects(take(identity(CONFIG.WORKER_IDS[0], "queued"), cancelled.signal), /cancel queued/);
 await tick();
-assert.equal(rooms.size, 5);
+assert.equal(rooms.size, 7);
 cancelled.abort(new Error("cancel queued"));
 await waiting;
 leases.forEach((release) => release());
 failClose = true;
 await assert.rejects(take(identity(CONFIG.WORKER_IDS[0], "pool-first", "fallback")), /close rejected/);
-assert.equal(rooms.size, 5);
+assert.equal(rooms.size, 7);
 failClose = false;
 closeHold = deferred();
 const replacement = take(identity(CONFIG.WORKER_IDS[0], "pool-first", "fallback"));
 await tick();
 let duplicateGranted = false;
-const duplicate = take(firstRooms[3]).then((release) => {
+const duplicate = take(firstRooms[CONFIG.SCENE_WORKER_IDS.length]).then((release) => {
   duplicateGranted = true;
   return release;
 });
@@ -84,7 +84,7 @@ releaseReplacement();
 closeHold = undefined;
 await pool.closeProject("pool-first");
 assert.equal(rooms.size, 0);
-assert.ok(invalidated.length >= 5);
+assert.ok(invalidated.length >= 7);
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "motion-room-budget-"));
 const previousStorage = process.env.VIDIFY_STORAGE_DIR;
 const previousData = process.env.APP_DATA_DIR;
@@ -167,7 +167,7 @@ try {
       peak = Math.max(peak, ++active);
       if (drawing) peakDrawing = Math.max(peakDrawing, ++activeDrawing);
       else peakContent = Math.max(peakContent, ++activeContent);
-      if (active === 5) full.resolve();
+      if (active === 7) full.resolve();
       await release.promise;
       active--;
       if (drawing) activeDrawing--;
@@ -182,15 +182,15 @@ try {
         try {
           await within(full.promise);
           assert.equal(activeContent, 2);
-          assert.equal(activeDrawing, 3);
+          assert.equal(activeDrawing, 5);
         } finally {
           release.resolve();
         }
         await pending;
       }),
     );
-    assert.equal(peak, 5);
-    assert.equal(peakDrawing, 3);
+    assert.equal(peak, 7);
+    assert.equal(peakDrawing, 5);
     assert.equal(peakContent, 2);
     results.push({ id, peakRequests: peak, drawing: peakDrawing, content: peakContent, rooms: rooms.size });
     await service.releaseMotionEditorialSession(id);
@@ -205,12 +205,12 @@ try {
     await Promise.all([0, 1].map(() => service.runMotionAi(V.PROMPT, V.ARTIFACT, content)));
   });
   const firstProject = fixture.sent.at(-1).projectId;
-  assert.equal(rooms.size, 5);
+  assert.equal(rooms.size, 7);
   await session("retained-second", async () => {
     await service.prepareMotionSceneRooms(draw);
     await Promise.all([0, 1].map(() => service.runMotionAi(V.PROMPT, V.ARTIFACT, content)));
   });
-  assert.equal(rooms.size, 5);
+  assert.equal(rooms.size, 7);
   assert.ok([...rooms.values()].every((room) => room.projectId !== firstProject));
   await session("retained-first", () => service.runMotionAi(V.PROMPT, V.ARTIFACT, content));
   assert.ok(fixture.sent.at(-1).prompt.includes(V.EDITORIAL.context), "Evicted room must restore approved context on its next request");
@@ -246,7 +246,7 @@ try {
   let active = 0;
   fixture.send = async (request) => {
     open(request);
-    if (++active === 5) full.resolve();
+    if (++active === 7) full.resolve();
     if (request.artifactType === C.ARTIFACT && !captchaThrown) {
       captchaThrown = true;
       throw Object.assign(new Error(V.CAPTCHA), { roomPage: page });
@@ -257,11 +257,11 @@ try {
   await within(
     session("five-room-captcha", async () => {
       await service.prepareMotionSceneRooms(draw);
-      const pending = Promise.all([...Array.from({ length: 3 }, () => service.runMotionAi(V.PROMPT, C.ARTIFACT, { ...draw, chromeHeadless: true })), ...Array.from({ length: 2 }, () => service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, content))]);
+      const pending = Promise.all([...Array.from({ length: 5 }, () => service.runMotionAi(V.PROMPT, C.ARTIFACT, { ...draw, chromeHeadless: true })), ...Array.from({ length: 2 }, () => service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, content))]);
       try {
         await within(captchaReady.promise);
         await within(full.promise);
-        assert.equal(rooms.size, 5);
+        assert.equal(rooms.size, 7);
         challenged = false;
       } finally {
         held.resolve();
@@ -286,8 +286,8 @@ try {
   const sentBeforeFallback = fixture.sent.length;
   await session("prewarmed-blocked-provider", async () => {
     await service.prepareMotionSceneRooms(draw);
-    await Promise.all([...Array.from({ length: 3 }, () => service.runMotionAi(V.PROMPT, C.ARTIFACT, draw)), ...Array.from({ length: 2 }, () => service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, content))]);
-    assert.equal(rooms.size, 5);
+    await Promise.all([...Array.from({ length: 5 }, () => service.runMotionAi(V.PROMPT, C.ARTIFACT, draw)), ...Array.from({ length: 2 }, () => service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, content))]);
+    assert.equal(rooms.size, 7);
     assert.ok([...rooms.values()].every((room) => room.provider !== P.GeminiChat));
   });
   assert.ok(fixture.sent.slice(sentBeforeFallback).every((request) => request.provider !== P.GeminiChat));
@@ -312,7 +312,7 @@ try {
   assert.equal(fixture.apiCalls, 0);
   results.push({ id: "all-lifecycle-scenarios", peakPhysicalRooms: peakRooms });
   console.log(JSON.stringify(results));
-  console.log("PASS: 3 drawing + 2 shared content rooms; fallback, retained sessions, context restoration, CAPTCHA, close failure, cancellation and delayed warmup. No live AI or video render.");
+  console.log("PASS: 5 drawing + 2 shared content rooms; fallback, retained sessions, context restoration, CAPTCHA, close failure, cancellation and delayed warmup. No live AI or video render.");
 } finally {
   if (service) for (const id of sessions) await service.releaseMotionEditorialSession(id);
   delete (globalThis as any).__motionAiRecovery;

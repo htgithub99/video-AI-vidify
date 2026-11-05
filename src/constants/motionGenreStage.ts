@@ -14,7 +14,8 @@ export const MOTION_GENRE_STAGE = {
     CHARS: 80,
     KEEP: (motifs: string[]): string => `MOTIF WORDS ARE FIXED: if a line contains one of these motifs, keep its exact words unchanged in your rewrite: ${motifs.map((motif) => `"${motif}"`).join(", ")}.`,
     FINAL_GENRES: ["pov", "witness", "verdict"] as readonly string[],
-    FINAL_ISSUE: (motifs: string[], genre: string) => (genre === "verdict" ? `the closing line must return to the metaphor device or a verdict label with its exact words (${motifs.map((motif) => `"${motif}"`).join(" / ")}) in one short witty line` : `the story must close on its motif: in this final line name the token or speak the refrain with its exact words (${motifs.map((motif) => `"${motif}"`).join(" / ")})`),
+    FINAL_ISSUE: (motifs: string[], genre: string) =>
+      genre === "verdict" ? `the closing line must return to the common criterion or a verdict label with its exact words (${motifs.map((motif) => `"${motif}"`).join(" / ")}) in one short witty line` : `the story must close on its motif: in this final line name the token or speak the refrain with its exact words (${motifs.map((motif) => `"${motif}"`).join(" / ")})`,
     STAGE_GENRES: { verdict: "candidate" } as Record<string, string>,
     STAGE_ISSUE: (motifs: string[]) => `this candidate chapter never stamps its fixed verdict label; end it with one of the exact labels (${motifs.map((motif) => `"${motif}"`).join(" / ")})`,
   },
@@ -55,10 +56,7 @@ export const MOTION_GENRE_STAGE = {
     PLAN_STAMP: /\d{3,4}|thế kỷ|\bcentury\b/iu,
     POINT_PREFIX: /^\s*\((?:\d+:)?\d{1,2}:\d{2}\)\s*/,
     STAMP: /\d|nghìn|ngàn|trăm|thế kỷ|tháng|mùa (?:xuân|hạ|thu|đông)|\b(?:hundred|thousand|century|january|february|march|april|may|june|july|august|september|october|november|december|spring|summer|autumn|winter)\b/iu,
-    STAMP_ISSUE: {
-      chronicle: "open this chapter with its short spoken era title and the date-and-place stamp the transcript gives",
-      verdict: "open this chapter with the date-and-place stamp of its moment as the transcript gives it",
-    } as Record<string, string>,
+    STAMP_ISSUE: { chronicle: "open this chapter with its short spoken era title and the date-and-place stamp the transcript gives", verdict: "open this chapter with the date-and-place stamp of its moment as the transcript gives it" } as Record<string, string>,
     QUESTION_GENRES: ["verdict"] as readonly string[],
     QUESTION_STAGE: "candidate",
     QUESTION: /[?？]/u,

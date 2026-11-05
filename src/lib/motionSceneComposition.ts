@@ -7,6 +7,9 @@ import { normalizeMotionVector } from "./motionVectorAsset.js";
 import { normalizeMotionSceneDesign } from "./motionSceneDesign.js";
 import { motionActorTracks } from "./motionActorTracks.js";
 import { MOTION_SCENE_DESIGN as D } from "../constants/motionSceneDesign.js";
+import { MOTION_CLIP } from "../constants/motionClip.js";
+import { MOTION_CLIP_DIRECTOR } from "../constants/motionClipDirector.js";
+import { motionClipFrameSvg } from "./motionClipCompiler.js";
 import type { MotionSceneAnimation, MotionSceneComposition, MotionSceneLayer, MotionRemotionNode, MotionRenderBehavior, MotionVectorAsset, MotionRemotionScene } from "../types/motionVisual.js";
 export const motionCompositionMissingChannels = (scene: MotionRemotionScene, behavior?: MotionRenderBehavior): ("actor" | "effect")[] =>
   ([RT_CORE.ACTOR, RT_CORE.EFFECT] as const).filter(
@@ -240,8 +243,21 @@ export const motionCompositionFrameTime = (composition: MotionSceneComposition, 
   const step = compositionFrameStep(composition, motionActorTracks(composition, height));
   return Math.round(seconds / step) * step;
 };
-export const compositionFrameSvg = (asset: MotionVectorAsset, composition: MotionSceneComposition, seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>, _profile?: import("../types/motionVisual.js").MotionRemotionProfile): string => {
+/** True when AI-directed clips drive this scene (they replace drawn actor/effect keyframes; speech tracks still apply). */
+export const motionCompositionDirected = (composition: MotionSceneComposition): boolean => composition.motion?.revision === MOTION_CLIP_DIRECTOR.REVISION && Array.isArray(composition.motion.clips);
+const speechTracks = new WeakMap<MotionSceneComposition, MotionSceneAnimation[]>();
+const directedTracks = (composition: MotionSceneComposition, height: number): MotionSceneAnimation[] => {
+  let known = speechTracks.get(composition);
+  if (!known) speechTracks.set(composition, (known = motionActorTracks(composition, height).filter((track) => track.channel === RT_CORE.SPEECH)));
+  return known;
+};
+export const compositionFrameSvg = (asset: MotionVectorAsset, composition: MotionSceneComposition, seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>, _profile?: import("../types/motionVisual.js").MotionRemotionProfile, sceneSeconds?: number): string => {
   if (behavior.actors === RT_SHARED.FIXED) return asset.svg;
+  if (motionCompositionDirected(composition)) {
+    const speech = directedTracks(composition, asset.height);
+    const mouths = speech.length && speakers.size ? compositionFrameSvgAt(asset, composition, speech, Math.round(seconds / C.FRAME_STEP.FINE) * C.FRAME_STEP.FINE, behavior, speakers) : asset.svg;
+    return motionClipFrameSvg(composition.motion!, asset.svg, seconds, sceneSeconds ?? composition.motion!.duration ?? MOTION_CLIP.TRAVEL_SECONDS, mouths, behavior.sceneEffects !== RT_SHARED.OFF);
+  }
   const tracks = motionActorTracks(composition, asset.height);
   if (!tracks.length) return asset.svg;
   const step = compositionFrameStep(composition, tracks);

@@ -100,8 +100,7 @@ export const MOTION_STORY_CONFIG = {
   EDIT_SUPPLEMENTAL: ":supplemental",
   BIBLE_KEY: (generation: number, key: string): string => `${generation}|${key}`,
   BIBLE_WRAP: (bible: string): string => `${bible}\n`,
-  CONTRACT: (contract: { voice: string; opening: string; spine: string; devices: string; closing: string }): string =>
-    `GENRE CONTRACT (techniques of the reference style for this genre; follow them, never copy a sentence of any reference): OPENING ${contract.opening}. SPINE ${contract.spine}. DEVICES ${contract.devices}. CLOSING ${contract.closing}.`,
+  CONTRACT: (contract: { voice: string; opening: string; spine: string; devices: string; closing: string }): string => `GENRE CONTRACT (techniques of the reference style for this genre; follow them, never copy a sentence of any reference): OPENING ${contract.opening}. SPINE ${contract.spine}. DEVICES ${contract.devices}. CLOSING ${contract.closing}.`,
   CHAPTER_RETRY_NOTE: (problems: string, spoken: number, target: number): string =>
     `PREVIOUS ATTEMPT WAS REJECTED: ${problems} Your previous narration had ${spoken} units in total; the whole chapter must total about ${target} units (count every spoken syllable/word across all beats). ${spoken > target ? "Cut descriptive filler and merge beats; keep only the events that move the story." : "Add concrete events and sensory detail from the source."}`,
   VI_SYLLABLES_PER_SECOND: 3.4,
@@ -142,8 +141,8 @@ export const MOTION_STORY_CONFIG = {
   CANNED_REFUSAL_LOG: (provider: string, artifact: string, chars: number): string => `AI ${provider} trả lời từ chối mẫu cho bước ${artifact} (prompt ${chars} ký tự) – thường do prompt quá dài hoặc bị bộ lọc chặn.`,
   AI_PARALLEL: 3,
   WORKER_IDS: ["motion-primary", "motion-second"],
-  SCENE_WORKER_IDS: ["motion-scene-first", "motion-scene-second", "motion-scene-third"],
-  SCENE_ROOMS_PREPARING: "[Dựng cảnh] Đang mở 3 room AI dựng cảnh riêng.",
+  SCENE_WORKER_IDS: ["motion-scene-first", "motion-scene-second", "motion-scene-third", "motion-scene-fourth", "motion-scene-fifth"],
+  SCENE_ROOMS_PREPARING: "[Dựng cảnh] Đang mở 5 room AI dựng cảnh riêng.",
   SCENE_ROOMS_READY: (ready: number, total: number): string => `[Dựng cảnh] Đã sẵn sàng ${ready}/${total} room AI dựng cảnh.`,
   SCENE_ROOM_PENDING: (index: number): string => `[Dựng cảnh] Room ${index} chưa sẵn sàng; sẽ phục hồi khi gửi yêu cầu dựng cảnh.`,
   ROOM_UI_ERROR_RE: /locator\.(fill|click|press|type|focus)|Timeout \d+ms exceeded|chat_planning_composer_content_mismatch|chat_planning_send_button_not_ready|chat_planning_submission_not_confirmed/,

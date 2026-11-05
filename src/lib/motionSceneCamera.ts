@@ -1,5 +1,5 @@
 import { MOTION_CAMERA as C } from "../constants/motionCamera.js";
-import { compositionElements, motionSceneAnimationValue } from "./motionSceneComposition.js";
+import { compositionElements, motionCompositionDirected, motionSceneAnimationValue } from "./motionSceneComposition.js";
 import { motionActorTracks } from "./motionActorTracks.js";
 import { stringifyJson } from "./jsonStringify.js";
 import type { MotionProfileCamera } from "../constants/motionProfileMotion.js";
@@ -40,7 +40,8 @@ const cache = new WeakMap<MotionSceneComposition, { asset: MotionVectorAsset; el
 const contextFor = (composition: MotionSceneComposition, asset: MotionVectorAsset) => {
   let context = cache.get(composition);
   if (!context || context.asset !== asset) {
-    context = { asset, elements: compositionElements(asset.svg), tracks: motionActorTracks(composition, asset.height).filter((track) => track.channel === "actor" && track.attribute === "transform"), paths: new Map() };
+    const tracks = motionCompositionDirected(composition) ? [] : motionActorTracks(composition, asset.height).filter((track) => track.channel === "actor" && track.attribute === "transform");
+    context = { asset, elements: compositionElements(asset.svg), tracks, paths: new Map() };
     cache.set(composition, context);
   }
   return context;

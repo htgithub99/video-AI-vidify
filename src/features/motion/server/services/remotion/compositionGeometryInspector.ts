@@ -40,7 +40,7 @@ export const createCompositionGeometryInspector = (signal?: AbortSignal) => {
             root.setAttribute(RT_SHARED.WIDTH, String(width));
             root.setAttribute(RT_SHARED.HEIGHT, String(height));
             document.body.replaceChildren(root);
-            const result: Record<string, { x: number; y: number; width: number; height: number; local: { x: number; y: number; width: number; height: number } } | null> = {};
+            const result: Record<string, { x: number; y: number; width: number; height: number; local: { x: number; y: number; width: number; height: number }; flip?: boolean } | null> = {};
             for (const id of ids) {
               const group = root.getElementById(id) as SVGGraphicsElement | null;
               if (!group) {
@@ -63,7 +63,8 @@ export const createCompositionGeometryInspector = (signal?: AbortSignal) => {
               ].map(([x, y]) => new DOMPoint(x, y).matrixTransform(transform));
               const left = Math.min(...points.map((point) => point.x)),
                 top = Math.min(...points.map((point) => point.y));
-              result[id] = { x: left / width, y: top / height, width: (Math.max(...points.map((point) => point.x)) - left) / width, height: (Math.max(...points.map((point) => point.y)) - top) / height, local: { x: box.x, y: box.y, width: box.width, height: box.height } };
+              const flip = transform.a * transform.d - transform.b * transform.c < 0;
+              result[id] = { x: left / width, y: top / height, width: (Math.max(...points.map((point) => point.x)) - left) / width, height: (Math.max(...points.map((point) => point.y)) - top) / height, local: { x: box.x, y: box.y, width: box.width, height: box.height }, ...(flip ? { flip } : {}) };
             }
             return result;
           },

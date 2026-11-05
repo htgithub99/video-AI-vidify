@@ -1,4 +1,5 @@
 export const MOTION_LOG_SECTIONS = {
+  SEVERITY: { ERROR: "error", WARNING: "warning", INFO: "info" } as const,
   ORDER: ["analyze", "script", "seo", "scenes", "voice", "render", "library", "other"] as const,
   CORE: ["analyze", "script", "seo", "scenes", "voice", "render"] as readonly string[],
   LABELS: {
@@ -62,7 +63,8 @@ export const MOTION_LOG_SECTIONS = {
   OBJECT_ERROR: /catalogKey must depict|catalogKey.*exact noun phrase/iu,
   CONTEXT_ERROR: /chat_planning_context_not_confirmed/iu,
   REPAIR: /phục hồi dữ liệu|expected .*received|utterances\[/iu,
-  FAILURE: /^(?:Lỗi:|Error:|Chưa ghép đủ điểm đặt)|chưa phân tích được|chưa .* sau các lượt/iu,
+  RECOVERY: /thử lại|phục hồi|khôi phục|tải lại|chờ các room|chờ.*(?:dịch vụ|Chrome)|mở.*(?:phòng|room|Chrome).*mới|đóng.*(?:phòng|room).*lỗi/iu,
+  FAILURE: /^(?:Lỗi:|Error:|Phòng chat lỗi:|Chưa ghép đủ điểm đặt)|chưa phân tích được|chưa .* sau các lượt/iu,
   CAPTCHA: /captcha|yêu cầu xác minh|không phải robot/iu,
   COMPLETE: /^(?:Hoàn tất|Xong phần hình|Video đã hoàn thành)(?:[.!\s]|$)/iu,
   COUNTER: /(?:cảnh|nhóm|chương)\s+\d+\s*\/\s*\d+|Đã xong\s+\d+\s*\/\s*\d+|Đã lưu nhịp hình:\s*\d+\s*\/\s*\d+/iu,

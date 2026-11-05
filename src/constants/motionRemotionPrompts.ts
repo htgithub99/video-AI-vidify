@@ -3,6 +3,7 @@ import { MOTION_VISUAL as V } from "./motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "./motionRemotionLayout.js";
 import type { MotionResponseSchema } from "./motionResponseContract.js";
 import { MOTION_COMPOSITION_SCHEMA, MOTION_SCENE_COMPOSITION } from "./motionSceneComposition.js";
+import { MOTION_CLIP_DIRECTOR } from "./motionClipDirector.js";
 import { MOTION_QA as Q } from "./motionQa.js";
 import { MOTION_SCENE_FORMATS, MOTION_SCENE_VIEWS } from "./motionProfiles/framing.js";
 import { MOTION_OBJECT_CLASSES, MOTION_OBJECT_SIZES } from "./motionObjectClasses.js";
@@ -11,6 +12,7 @@ import { MOTION_UNITS } from "./motionUnits.js";
 import { MOTION_ANIMALS, MOTION_DEPTHS, MOTION_DETAIL_SUBJECTS, MOTION_FACINGS, MOTION_GAITS, MOTION_POSTURES } from "./motionProfiles/sceneSpec.js";
 const text: MotionResponseSchema = { type: "string", minLength: 1 };
 export const MOTION_REMOTION_SCHEMAS: Record<string, MotionResponseSchema> = {
+  [MOTION_CLIP_DIRECTOR.ARTIFACT]: MOTION_CLIP_DIRECTOR.SCHEMA,
   [MOTION_SCENE_COMPOSITION.ARTIFACT]: MOTION_COMPOSITION_SCHEMA,
   [V.ARTIFACT_ASSET]: { type: "object", properties: { svg: text, anchors: { type: "object" }, regions: { type: "object" }, bounds: { type: "object" } }, required: ["svg", "anchors"] },
   motion_remotion_sheet: { type: "object", properties: { sheets: { type: "array", minItems: 1, items: { type: "object", properties: { key: text, svg: text }, required: ["key", "svg"] } } }, required: ["sheets"] },

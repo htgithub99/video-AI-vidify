@@ -1085,6 +1085,7 @@ import { renderQueueService } from "../services/renderQueueService.js";
 import { ResponseContractName, assertResponseContract } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
 import { getRoomOnlyScriptError } from "../services/roomOnlyErrorService.js";
+import { CHAT_ROOM_RECOVERY, CHROME_BACKUP } from "../../constants/chromeBackup.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
 import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistSongIds, launchSunoLoginBrowser } from "../../features/music/server/services/sunoAutomationService.js";
 import { sunoCreationReporter } from "../../features/music/server/services/sunoCreationProgress.js";
@@ -1358,6 +1359,7 @@ const generateMusicThumbnailAsset = async (input: {
   return { thumbnail: null, warning: lastWarning };
 };
 const isRetryableMusicRoomError = (error: unknown): boolean => {
+  if (_.get(error, CHAT_ROOM_RECOVERY.COMPLETE) || _.get(error, CHROME_BACKUP.ERROR_FLAG)) return false;
   if (_.isEqual(_.toString(_.get(error, SOURCE_TEXT_CODE)), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE)) return false;
   const message = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
   return !SUNO_AUTOMATION_TEXTS.MUSIC_ROOM_NON_RETRYABLE_ERROR.test(message);
@@ -1627,8 +1629,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     res.once(RT_SERVER.CLOSE, () => {
       if (!res.writableEnded) planningRun.cancel();
     });
-    const generateRoomResponse = (prompt: string, artifactType: string, responseRequestId: string, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE) =>
-      generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId: responseRequestId, signal: planningRun.signal, closeRoomOnComplete: false });
+    const generateRoomResponse = (prompt: string, artifactType: string, responseRequestId: string, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, restoreContext?: () => string) =>
+      generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId: responseRequestId, signal: planningRun.signal, closeRoomOnComplete: false, restoreContext });
     const referenceSource = _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER);
     const analysisRequestId = SOURCE_TEMPLATE_STYLE_ANALYSIS(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
@@ -1642,7 +1644,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       const prompt = attempt === 0 || analysisRoomWasReloaded ? SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, referenceSource, analysisRequestId) : SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisCorrectionPrompt(analysisRequestId, styleAnalysisIssues);
       analysisRoomWasReloaded = false;
       try {
-        const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId);
+        const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId, SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, () => SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, referenceSource, analysisRequestId));
         styleAnalysisParsed = jsonUtils.safeParse(response.text, null);
         await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STYLE_RESPONSE, { runId: requestId, stage: currentStage, attempt: attempt + 1, responseChars: response.text.length, status: styleAnalysisParsed ? SOURCE_TEXT_PARSED : SOURCE_TEXT_INVALID_JSON });
         if (!styleAnalysisParsed) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_STYLE_ANALYSIS_JSON_PARSE_FAILED(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${response.text.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${prompt.length}`)));
@@ -1686,7 +1688,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           attempt === 0 || roomWasReloaded ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE) : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues, styleAnalysisParsed);
         roomWasReloaded = false;
         try {
-          const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, workerId);
+          const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, workerId, () => SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE));
           responseProvider = response.provider;
           batchParsed = jsonUtils.safeParse(response.text, null);
           await writeMusicDiagnostic(SOURCE_TEXT_PLAN_BATCH_RESPONSE, { runId: requestId, stage: currentStage, batch: startIndex, batchSize: batchCount, attempt: attempt + 1, responseChars: response.text.length, status: batchParsed ? SOURCE_TEXT_PARSED : SOURCE_TEXT_INVALID_JSON });

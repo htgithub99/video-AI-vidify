@@ -3,6 +3,7 @@ import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../../constants/cinematicCo
 import { MOTION_AI_RECOVERY as R } from "../../constants/motionAiRecovery.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
+import { CHROME_BACKUP } from "../../constants/chromeBackup.js";
 export interface ChatPendingSubmission {
   page: Page;
   prompt: string;
@@ -35,5 +36,5 @@ export const isFinalChatResponseError = (error: unknown): boolean => {
 };
 export const isMotionContentResponseError = (error: unknown): boolean => error instanceof Error && error.message === C.INVALID_JSON_RESPONSE_ERROR;
 export const exhaustedMotionRoom = (provider: string): Error => Object.assign(new Error(R.EXHAUSTED(provider)), { [R.EXHAUSTED_FLAG]: true });
-export const isTerminalMotionAiError = (error: unknown, signal?: AbortSignal): boolean => !!signal?.aborted || !!(error as Record<string, unknown> | null)?.[R.UNCERTAIN_FLAG] || !!(error as Record<string, unknown> | null)?.[R.EXHAUSTED_FLAG] || !!(error as Record<string, unknown> | null)?.[P.CONTRACT_EXHAUSTED];
+export const isTerminalMotionAiError = (error: unknown, signal?: AbortSignal): boolean => !!signal?.aborted || !!(error as Record<string, unknown> | null)?.[CHROME_BACKUP.ERROR_FLAG] || !!(error as Record<string, unknown> | null)?.[R.UNCERTAIN_FLAG] || !!(error as Record<string, unknown> | null)?.[R.EXHAUSTED_FLAG] || !!(error as Record<string, unknown> | null)?.[P.CONTRACT_EXHAUSTED];
 export const uncertainChatSubmission = (provider: string): Error => Object.assign(new Error(R.UNCERTAIN(provider)), { [R.UNCERTAIN_FLAG]: true });

@@ -1,5 +1,6 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { parseJson } from "../../lib/jsonStringify.js";
+import { CHAT_ROOM_RECOVERY, CHROME_BACKUP } from "../../constants/chromeBackup.js";
 import {
   SOURCE_TEMPLATE_AI_ROOM_COMPLETED_WITHOUT_API_FALLBACK,
   SOURCE_TEMPLATE_REQUIRED_RESPONSE_CONTRACT_RETURN_ONLY_VALID,
@@ -184,6 +185,7 @@ export const generateContentWithRetry = async (params: { contents: string | any;
         roomResponse = candidateResponse;
       } catch (error) {
         lastRoomError = error;
+        if (_.get(error, CHAT_ROOM_RECOVERY.COMPLETE) || _.get(error, CHROME_BACKUP.ERROR_FLAG)) throw error;
         const message = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
         const responseWasInvalid = _.includes([CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR], message) || _.startsWith(message, SOURCE_TEXT_CHAT_PLANNING_SCHEMA_MISMATCH);
         if (!responseWasInvalid) throw error;

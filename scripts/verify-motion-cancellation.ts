@@ -85,7 +85,9 @@ const mount = async (overrides: Record<string, unknown> = {}, pendingStart = fal
       fixture.poll = (url: string, update: (job: unknown) => void, done: (job: any) => boolean) => {
         if (restore.pollError) return Promise.reject(new Error(C.POLL_ERROR));
         const id = url.slice((url.startsWith(routes.MOTION_STORY_STATUS) ? routes.MOTION_STORY_STATUS : routes.MOTION_VIDEO_STATUS).length);
-        const job = fixture.jobs[id] || { id, kind: restore.kind || kinds.SCENES, status: restore.status || statuses.RENDERING, log: [id === C.RENDER_ID ? C.LOG_RENDER : C.LOG_LINE], result: fixture.partial };
+        const historical = fixture.saved.logHistory?.find((entry: any) => entry.id === id);
+        const active = fixture.saved.activeStoryJobId === id || fixture.saved.activeRenderJobId === id;
+        const job = fixture.jobs[id] || { id, kind: restore.kind || historical?.kind || kinds.SCENES, status: restore.status || historical?.status || (historical && !active ? statuses.COMPLETED : statuses.RENDERING), log: historical && !active ? historical.lines : [id === C.RENDER_ID ? C.LOG_RENDER : C.LOG_LINE], result: fixture.partial };
         fixture.jobs[id] = job;
         update(job);
         if (fixture.jobs[id] !== job) {
@@ -169,7 +171,12 @@ try {
   await noRestart(page, C.RETRY_GUARD_DELAY);
   assert.equal(await page.evaluate(() => (window as any).motionDraftFixture.stopped), true, C.STOP_MARKER);
   const persisted = await saved(page);
-  assert.deepEqual(persisted.logHistory, [...oldLogs, { id: C.SCENE_ID, kind: MotionStoryJobKind.SCENES, lines: [C.LOG_LINE] }], C.LOG_RELOAD);
+  assert.deepEqual(
+    persisted.logHistory.map(({ id, kind, lines }: any) => ({ id, kind, lines })),
+    [...oldLogs, { id: C.SCENE_ID, kind: MotionStoryJobKind.SCENES, lines: [C.LOG_LINE] }],
+    C.LOG_RELOAD,
+  );
+  assert.equal(persisted.logHistory.find((entry: any) => entry.id === C.SCENE_ID)?.status, MotionJobStatus.CANCELLED);
   assert.equal(persisted.automationPaused, true, C.RELOAD_PAUSED);
   const restored = await mount(persisted);
   assert.deepEqual(await restored.evaluate(() => (window as any).motionDraftStudio.logHistory), persisted.logHistory, C.LOG_RELOAD);

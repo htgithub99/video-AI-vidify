@@ -43,20 +43,23 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     }
     const declared = scopes.map(motionLogSectionKey).find(Boolean);
     const kind = S.KINDS[row.kind];
-    const inferred = motionLogSectionKey(message);
-    const key = declared || kind || inferred || phase.get(id) || RT_MOTION.OTHER;
+    const artifact = motionLogSectionKey(row.event?.artifact || "");
+    const key = declared || artifact || kind || motionLogSectionKey(message) || phase.get(id) || RT_MOTION.OTHER;
     phase.set(id, key);
     const group = sections.get(key) || sections.get(RT_MOTION.OTHER)!;
     if (sources.has(key) && sources.get(key) !== id) group.state = RT_MOTION.RECORDED;
     sources.set(key, id);
-    const technical = S.TECHNICAL.test(message);
-    const failure = S.FAILURE.test(message);
-    const display = S.CAPTCHA.test(message) ? text.captcha : S.CONTEXT_ERROR.test(message) ? text.contextError : S.OBJECT_ERROR.test(message) ? text.objectError : S.REPAIR.test(message) ? (failure ? text.invalidData : text.repair) : technical && failure ? text.failed : message;
+    const recovering = row.event?.severity !== S.SEVERITY.ERROR && !S.FAILURE.test(message) && (row.event?.severity === S.SEVERITY.WARNING || S.RECOVERY.test(message));
+    const technical = !recovering && S.TECHNICAL.test(message);
+    const failure = row.event?.severity === S.SEVERITY.ERROR || (!recovering && S.FAILURE.test(message));
+    const explanation = S.CAPTCHA.test(message) ? text.captcha : S.CONTEXT_ERROR.test(message) ? text.contextError : S.OBJECT_ERROR.test(message) ? text.objectError : S.REPAIR.test(message) ? (failure ? text.invalidData : text.repair) : undefined;
+    const display = failure ? (explanation ? `${explanation} ${message}` : message) : explanation || message;
     const substage = key === RT_SHARED.SCENES ? scopes.filter((scope) => Object.values(P.STAGE).includes(scope as typeof P.STAGE.PLAN)).at(-1) : undefined;
-    group.rows.push({ key: row.key, time, message: substage ? `${substage}${RT_SHARED.SYMBOL_588DA4}${display}` : display, raw: row.line, technical, visible: !technical || display !== message });
+    group.rows.push({ key: row.key, time, message: substage ? `${substage}${RT_SHARED.SYMBOL_588DA4}${display}` : display, raw: row.line, technical, visible: failure || !technical || display !== message });
     group.lastOrder = order++;
     if (group.state === RT_SHARED.WAITING) group.state = RT_MOTION.RECORDED;
     if (failure) group.state = RT_SHARED.ERROR;
+    else if (recovering) group.state = RT_MOTION.ACTIVE;
     if (S.COMPLETE.test(message)) group.state = RT_MOTION.DONE;
   }
   const completed = (key: string, yes: unknown) => {

@@ -156,7 +156,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
   if (context.genreLine) sections.push(B.SECTION(B.HEADINGS.GRAMMAR, [context.genreLine]));
   if (context.placeNotes) sections.push(B.SECTION(B.HEADINGS.PLACE, [context.placeNotes.slice(0, B.MAX_PLACE_CHARS)]));
   sections.push(B.SECTION(B.HEADINGS.WATCH, motionSceneWatchOuts(context, objects)));
-  sections.push(B.SECTION(B.HEADINGS.IDS, motionSceneRequiredIds(id, named, people, crowds, objects, cast, scene.nodes)));
+  sections.push(B.SECTION(B.HEADINGS.IDS, [...motionSceneRequiredIds(id, named, people, crowds, objects, cast, scene.nodes), ...motionSceneRigLines(context, objects)]));
   sections.push(B.SECTION(B.HEADINGS.STYLE, [...profile.brief.rules, profile.brief.skin]));
   sections.push(B.CONTEXT_LINE(stringifyJson({ viewBox: context.viewBox, width: context.width, height: context.height, renderBehavior: context.renderBehavior })));
   return sections.filter(Boolean);
@@ -200,6 +200,29 @@ export const motionSceneRequiredIds = (id: MotionRemotionProfile, named: MotionR
   for (const item of objects.filter((entry) => !inUnit.has(entry.id))) lines.push(B.IDS_OBJECT(item.id, motionObjectPartNames(item, B.CLASS_PART_NAMES[item.class] || [], nodes.find((node) => node.id === item.id)?.animal)));
   lines.push(B.IDS_EFFECTS);
   return lines;
+};
+const RIG_WHEELED = /^(?:wheeled|artillery)$/;
+const RIG_ROTOR = /^(?:aircraft|boat|machine)$/;
+const RIG_JOURNEY = /(?<![\p{L}\p{N}])(?:ride|riding|rides|gallop\p{L}*|run|running|runs|drive|driving|drives|march\p{L}*|travel\p{L}*|journey|race|racing|flee\p{L}*|chase\p{L}*|phi|chạy|cưỡi|hành quân|lên đường|rong ruổi|đuổi)(?![\p{L}\p{N}])/iu;
+/** Part-separation rules for the motion director; omitted when scene motion is switched off. */
+export const motionSceneRigLines = (context: MotionSceneBriefContext, objects: MotionSceneObject[] = motionSceneObjects(context.scene)): string[] => {
+  if ((context.renderBehavior as { actors?: string } | undefined)?.actors !== "simple") return [];
+  const id = context.artDirection.id;
+  const scene = context.scene;
+  const people = scene.nodes.filter((node) => node.kind === CHARACTER && !node.animal && !node.anonymous && !node.crowd && !node.unit && node.representation !== DETAIL && node.representation !== B.BUST);
+  const lines: string[] = [];
+  if (people.length && MOTION_ILLUSTRATION_PROFILES[id].brief.partIds.includes(B.RIG_LEGS_PART)) lines.push(B.IDS_RIG.LIMBS(people.map((node) => node.id)));
+  const inUnit = motionUnitTargets({ nodes: scene.nodes });
+  for (const item of objects.filter((entry) => !inUnit.has(entry.id))) {
+    const animal = scene.nodes.find((node) => node.id === item.id)?.animal;
+    const legs = animal ? motionAnimalLegs(animal) : MOTION_OBJECT_CLASS_LEGS[item.class] || 0;
+    if (legs) lines.push(B.IDS_RIG.ANIMAL(item.id, legs));
+    else if (RIG_WHEELED.test(item.class)) lines.push(B.IDS_RIG.WHEELS(item.id));
+    else if (RIG_ROTOR.test(item.class)) lines.push(B.IDS_RIG.ROTOR(item.id));
+  }
+  lines.push(B.IDS_RIG.WATER);
+  if (RIG_JOURNEY.test([scene.purpose, scene.text].join(" "))) lines.push(B.IDS_RIG.SCROLL(context.width));
+  return [B.IDS_RIG.HEADING, ...lines];
 };
 export const motionSceneBrief = (context: MotionSceneBriefContext): string => {
   const id = context.artDirection.id;

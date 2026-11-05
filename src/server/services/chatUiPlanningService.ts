@@ -48,8 +48,6 @@ import {
   SOURCE_TEXT_CHAT_PREVIOUS_REQUEST_WAIT_STARTED,
   SOURCE_TEXT_CHAT_PROVIDER_ALERT,
   SOURCE_TEXT_CHAT_PROVIDER_RESPONSE_ERROR,
-  SOURCE_TEXT_CHAT_PROVIDER_RETRY_SAME_ROOM,
-  SOURCE_TEXT_CHAT_PROVIDER_ROOM_RELOAD,
   SOURCE_TEXT_CHAT_REQUEST_FAILED,
   SOURCE_TEXT_CHAT_REQUEST_STARTED,
   SOURCE_TEXT_CHAT_RESPONSE_COMPLETED,
@@ -118,7 +116,7 @@ import { basename } from "node:path";
 import _ from "lodash";
 import type { BrowserContext, Locator, Page } from "playwright";
 import { waitForMusicMixerUploads } from "../../features/music-mixer/server/services/musicMixerUploadReadiness.js";
-import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity, SecurityConstants } from "../../constants/index.js";
+import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity } from "../../constants/index.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEXT_ALERT, MOTION_TEXT_RESPONSE, MOTION_TEXT_ROOMPAGE, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_35, MOTION_TEXT_SYMBOL_36, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
 import { jsonUtils } from "../../lib/json.js";
@@ -138,7 +136,11 @@ import { selectClaudeChatModel } from "./claudeModelService.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { selectDeepSeekChatModel } from "./deepseekModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
-import { getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
+import { assertGeminiFlashQuota, getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
+import { withChromeBackupRecovery, saveChatResponse, isGeminiFlashQuotaError } from "./chromeBackupService.js";
+import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
+import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
@@ -160,6 +162,8 @@ interface ChatResponseSnapshot {
 }
 type PendingRoomResponse = ChatPendingSubmission;
 interface ChatPlanningRequest {
+  onRecovery?: (line: string) => void;
+  restoreContext?: () => string;
   onUploadProgress?: (progress: import("../../types/musicDownloadProgress.js").MusicUploadProgress) => void;
   promptMessageLimit?: number;
   provider: AiPlanningFallbackProvider;
@@ -349,6 +353,7 @@ const getProviderRooms = (provider: AiPlanningFallbackProvider): Map<string, Pag
 };
 const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
 export const closeChatBrowserIfIdle = async (log?: (line: string) => void): Promise<boolean> => {
+  if (sharedChromeTasks.switching) return false;
   if (manualCleanupFlights.size || hasActiveChatRooms()) {
     log?.(MOTION_BROWSER_HANDOFF.ACTIVE_ROOMS(_.flatMap([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => [...rooms.values()].filter((page) => !page.isClosed()).map((page) => page.url())).join(BROWSER_LIFECYCLE_TEXTS.urlSeparator)));
     return false;
@@ -1102,6 +1107,7 @@ const submitPrompt = async (
       let submissionConfirmed = false;
       let initialUserQueries = 0;
       const markPendingSubmission = (): void => {
+        if (sharedChromeTasks.switching) throw new Error(BACKUP.QUOTA);
         pendingRoomResponses.set(roomKey, { page, prompt: submittedPrompt, initialCount, initialResponseSnapshots, expectedSceneIds: _.clone(expectedSceneIds), completionMarker, artifactType, requestId, responseSelector, busySelector, url: page.url() });
         if (submission) {
           submission.attempted = true;
@@ -1312,7 +1318,7 @@ const submitPrompt = async (
     generation?.dispose();
   }
 };
-export const resumeChatPlanningResponse = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+const resumeChatPlanningResponseTask = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   const submission = request.submission;
   const pending = submission?.pending;
   if (!submission || !pending) throw uncertainChatSubmission(request.provider);
@@ -1336,6 +1342,7 @@ export const resumeChatPlanningResponse = async (request: ChatPlanningRequest): 
     const text = await waitForStableResponse(page, pending.responseSelector, pending.busySelector, pending.initialCount, pending.expectedSceneIds, pending.initialResponseSnapshots, pending.completionMarker, pending.artifactType, pending.requestId, request.signal, pending.prompt);
     submission.completed = true;
     pendingRoomResponses.delete(getPlanningRoomKey(request));
+    saveChatResponse({ projectId: request.projectId, workerId: request.workerId, requestId: request.requestId, artifactType: request.artifactType }, text);
     return { text, provider: request.provider };
   } catch (error) {
     if (isFinalChatResponseError(error)) submission.completed = true;
@@ -1419,6 +1426,7 @@ const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefine
 };
 const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | undefined, allowDefaultModel = false, signal?: AbortSignal): Promise<void> => {
   if (!model) return;
+  if (parseGeminiChatModel(model)?.model === AiPlanningChatModel.GeminiFlash) allowDefaultModel = false;
   if (parseGeminiChatModel(model)?.level) {
     await selectGeminiThinkingModel(page, model, signal);
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_SELECTED_WITH_THINKING_LEVEL });
@@ -1437,10 +1445,19 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   }
   const currentModelLabel = _.trim(await modelButton.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
   if (requestedModelLabel.test(currentModelLabel)) {
+    if (parseGeminiChatModel(model)?.model === AiPlanningChatModel.GeminiFlash) {
+      await clickPlanningControl(modelButton, signal);
+      try {
+        await assertGeminiFlashQuota(page, model);
+      } finally {
+        await page.keyboard.press(SOURCE_TEXT_ESCAPE).catch(() => undefined);
+      }
+    }
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_ALREADY_SELECTED });
     return;
   }
   await clickPlanningControl(modelButton, signal);
+  await assertGeminiFlashQuota(page, model);
   if ((await clickChatModelOption(page, requestedModelLabel)) && (await waitForSelectedModelLabel(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, requestedModelLabel))) {
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_SELECTED });
     return;
@@ -1710,7 +1727,7 @@ const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<str
   return response;
 };
 export const getChatPlanningRoom = (request: ChatPlanningRoomIdentity): Page | undefined => getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
-export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Promise<void> => {
+const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promise<void> => {
   await manualCleanupFlights.get(request.provider);
   throwIfPlanningCancelled(request.signal);
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.DeepSeekChat)) {
@@ -1825,7 +1842,7 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
   [AiPlanningFallbackProvider.ClaudeChat]: generateWithClaudeChat,
   [AiPlanningFallbackProvider.DeepSeekChat]: generateWithDeepSeekChat,
 };
-export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
   throwIfPlanningCancelled(request.signal);
   await manualCleanupFlights.get(request.provider);
@@ -1855,45 +1872,73 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     const generator = providerGenerators[request.provider];
     if (!generator) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_UNSUPPORTED);
     let lastError: unknown;
-    const maxRecoveryAttempts = request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 3 : CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
+    const maxRecoveryAttempts = RECOVERY.SAME_ROOM_RETRIES + 1;
     for (let recoveryAttempt = 0; recoveryAttempt <= maxRecoveryAttempts; recoveryAttempt++) {
       try {
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTEMPT_STARTED, { ...diagnosticBase, attempt: recoveryAttempt + 1 });
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS);
         throwIfPlanningCancelled(request.signal);
-        const text = await generator(request);
+        if (sharedChromeTasks.switching && !request.submission?.attempted) throw new Error(BACKUP.QUOTA);
+        const text = request.submission?.attempted && !request.submission.completed ? (await resumeChatPlanningResponseTask({ ...request, reloadPendingResponse: recoveryAttempt > 0 })).text : await generator(request);
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: text.length, elapsedMs: Date.now() - mutexStartedAt });
         providerErrorCounts.delete(roomKey);
+        saveChatResponse({ projectId: request.projectId, workerId: request.workerId, requestId: request.requestId, artifactType: request.artifactType }, text);
         responseCompleted = true;
         return { text, provider: request.provider };
       } catch (error) {
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTEMPT_FAILED, { ...diagnosticBase, attempt: recoveryAttempt + 1, ...musicErrorDetails(error) });
         lastError = error;
         throwIfPlanningCancelled(request.signal);
+        if (isGeminiFlashQuotaError(error) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw error;
         if (request.provider === AiPlanningFallbackProvider.GeminiChat) {
           const interruptedRoom = geminiRooms.get(roomKey);
           if (interruptedRoom) await waitForGeminiSession(interruptedRoom, { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
         }
         const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-        const isRetryableMusicResponseError = request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING && (errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
-        if (isRetryableMusicResponseError) {
-          if (recoveryAttempt < 2) {
-            await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_RETRY_SAME_ROOM, { ...diagnosticBase, attempt: recoveryAttempt + 2 });
-            await delayAsync(1500);
-            continue;
+        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
+        if (!retryable) throw error;
+        if (errorMessage === D.RETRY_EXHAUSTED && request.submission) request.submission.completed = true;
+        const page = getProviderRooms(request.provider)?.get(roomKey);
+        const pending = request.submission?.pending;
+        const snapshots = recoveryAttempt === 0 && pending && page && !page.isClosed() && request.provider !== AiPlanningFallbackProvider.DeepSeekChat ? await getChatResponseSnapshots(page, pending.responseSelector, request.artifactType).catch(() => []) : [];
+        const currentResponse = pending && (snapshots.length > pending.initialCount || snapshots.some((snapshot) => !pending.initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text)));
+        if (recoveryAttempt === 0 && request.provider !== AiPlanningFallbackProvider.DeepSeekChat && pending && currentResponse && page && (await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
+          request.submission.completed = false;
+          request.onRecovery?.(RECOVERY.CLICK_LOG);
+          appLog(RECOVERY.CLICK_LOG);
+          try {
+            const result = await resumeChatPlanningResponseTask(request);
+            responseCompleted = true;
+            return result;
+          } catch (retryError) {
+            throwIfPlanningCancelled(request.signal);
+            if (isGeminiFlashQuotaError(retryError) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
+            if (isFinalChatResponseError(retryError)) request.submission!.completed = true;
+            lastError = retryError;
           }
-          if (recoveryAttempt === 2) {
-            await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ROOM_RELOAD, { ...diagnosticBase, attempt: recoveryAttempt + 2 });
-            await reloadChatPlanningRoom(request);
-            await delayAsync(2000);
-            continue;
-          }
-          throw error;
         }
-        const canRecoverClosedRoom = !request.submission && !(error instanceof ChatUploadError && !error.retryable) && CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_ERROR_PATTERN.test(errorMessage) && recoveryAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
-        if (!canRecoverClosedRoom) throw error;
-        appWarn(_.replace(CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_LOG, SecurityConstants.PLACEHOLDER_0, providerNames[request.provider]));
-        await closeChatPlanningRoom(request);
+        if (recoveryAttempt >= maxRecoveryAttempts) throw Object.assign(lastError instanceof Error ? lastError : new Error(errorMessage), { [RECOVERY.COMPLETE]: true });
+        if (request.submission?.attempted && !request.submission.completed) {
+          if (recoveryAttempt >= RECOVERY.SAME_ROOM_RETRIES) throw Object.assign(uncertainChatSubmission(request.provider), { [RECOVERY.COMPLETE]: true, cause: lastError });
+          request.onRecovery?.(RECOVERY.RETRY_LOG(recoveryAttempt + 1));
+          continue;
+        }
+        if (recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES) {
+          const retryLog = page && !page.isClosed() ? RECOVERY.RETRY_LOG(recoveryAttempt + 1) : RECOVERY.RECONNECT_LOG(recoveryAttempt + 1);
+          request.onRecovery?.(retryLog);
+          appLog(retryLog);
+          try {
+            if (page && !page.isClosed()) await reloadChatPlanningRoom(request);
+          } catch (reloadError) {
+            request.onRecovery?.(RECOVERY.RELOAD_FAILED(String((reloadError as Error).message)));
+          }
+        } else {
+          request.onRecovery?.(RECOVERY.REPLACE_LOG);
+          appLog(RECOVERY.REPLACE_LOG);
+          await closeChatPlanningRoom(request, true);
+        }
+        if (request.restoreContext) request.prompt = request.restoreContext();
+        if (request.submission) Object.assign(request.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
       }
     }
     throw lastError;
@@ -1922,4 +1967,55 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
       }
     }
   }
+};
+export const prepareChatPlanningRoom = (request: ChatPlanningRequest): Promise<void> =>
+  withChromeBackupRecovery(
+    async () => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          return await prepareChatPlanningRoomTask(request);
+        } catch (error) {
+          throwIfPlanningCancelled(request.signal);
+          const message = String((error as Error).message);
+          if (isGeminiFlashQuotaError(error) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG] || !(AIR.TRANSPORT.test(message) || RECOVERY.RETRY_PATTERN.test(message))) throw error;
+          if (attempt >= RECOVERY.SAME_ROOM_RETRIES + 1) throw Object.assign(error as Error, { [RECOVERY.COMPLETE]: true });
+          const page = getChatPlanningRoom(request);
+          const line = attempt >= RECOVERY.SAME_ROOM_RETRIES ? RECOVERY.REPLACE_LOG : page && !page.isClosed() ? RECOVERY.RETRY_LOG(attempt + 1) : RECOVERY.RECONNECT_LOG(attempt + 1);
+          request.onRecovery?.(line);
+          appLog(line);
+          if (attempt >= RECOVERY.SAME_ROOM_RETRIES) await closeChatPlanningRoom(request, true);
+          else if (page && !page.isClosed()) await reloadChatPlanningRoom(request).catch((reloadError) => request.onRecovery?.(RECOVERY.RELOAD_FAILED(String(reloadError))));
+        }
+      }
+    },
+    request.signal,
+    request.onRecovery,
+  );
+const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Promise<T>): Promise<T> => {
+  try {
+    return await work();
+  } finally {
+    sharedChromeTasks.trackResponse(getPlanningRoomKey(request), !!request.submission?.attempted && !request.submission.completed && !request.signal?.aborted);
+  }
+};
+export const resumeChatPlanningResponse = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => sharedChromeTasks.run(() => trackChatResponse(request, () => resumeChatPlanningResponseTask(request)), request.signal);
+export const generatePlanningWithChatUi = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+  if (sharedChromeTasks.switching) request.onRecovery?.(BACKUP.WAIT);
+  const execution = { ...request, submission: request.submission || { attempted: false, completed: false } };
+  let generation = sharedChromeTasks.generation;
+  return withChromeBackupRecovery(
+    () => {
+      const room = getChatPlanningRoom(request);
+      if (generation !== sharedChromeTasks.generation) {
+        generation = sharedChromeTasks.generation;
+        execution.prompt = request.restoreContext?.() || request.prompt;
+        Object.assign(execution.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
+        pendingRoomResponses.delete(getPlanningRoomKey(request));
+        request.onRecovery?.(BACKUP.SWITCHED);
+      } else if (!execution.submission.attempted && (!room || room.isClosed()) && request.restoreContext) execution.prompt = request.restoreContext();
+      return trackChatResponse(execution, () => generatePlanningWithChatUiTask(execution));
+    },
+    request.signal,
+    request.onRecovery,
+  );
 };

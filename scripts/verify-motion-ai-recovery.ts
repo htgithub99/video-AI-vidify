@@ -961,7 +961,7 @@ try {
   };
   await assert.rejects(
     service.runInMotionAiSession(V.RUN, async () => {
-      await service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, exec).catch(() => undefined);
+      await service.runMotionAi(V.PROMPT, "motion-story-analysis", exec).catch(() => undefined);
       await call().catch(() => undefined);
     }),
     (error: any) => error[R.UNCERTAIN_FLAG] === true,

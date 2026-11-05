@@ -95,6 +95,21 @@ Before returning check: every brief node present, limbs connected, hands on held
   IDS_GROUP: (id: string): string => `Group ${id}: every visible person is its own sub-group ${id}_p1, ${id}_p2, … each with its own _head.`,
   IDS_OBJECT: (id: string, parts: readonly string[]): string => `${id} has sub-groups ${parts.map((part) => `${id}_${part}`).join(", ")}.`,
   IDS_EFFECTS: "Effects use their requested ids; atmospheric effects (fog, smoke, dust) are painted behind the people, only rain or snow may cross in front.",
+  /** Rig rules so the motion director can move individual parts after drawing (only when scene motion is on). */
+  IDS_RIG: {
+    HEADING: "MOVING PARTS (a separate motion step animates these groups after drawing; drawing them separately is required, animating them is not):",
+    LIMBS: (ids: string[]): string =>
+      `${ids.join(", ")}: inside <id>_legs draw <id>_leg_left and <id>_leg_right as two separate groups; inside each arm group keep the hand attached. Every limb group hangs from its joint (hip or shoulder at the top of the group) and contains no other body part.`,
+    ANIMAL: (id: string, legs: number): string =>
+      legs >= 4
+        ? `${id}: inside ${id}_legs draw four separate groups ${id}_leg_front_left, ${id}_leg_front_right, ${id}_leg_back_left, ${id}_leg_back_right, each hanging from the body; ${id}_tail, and ${id}_mane when it has one, are their own groups.`
+        : `${id}: each visible leg or wing is its own sub-group of ${id}_legs or ${id}_wings, attached at the body.`,
+    WHEELS: (id: string): string => `${id}: inside ${id}_wheels every wheel is its own round group ${id}_wheel_1, ${id}_wheel_2, … centred on its axle, so it can turn in place.`,
+    ROTOR: (id: string): string => `${id}: a propeller, rotor, sail, oar or mill wheel is its own group ${id}_rotor (or ${id}_oar_1, …) centred on its pivot.`,
+    WATER: "A river, stream, waterfall or sea surface is its own effect layer (effectKind water) covering only the water area; a flag, banner or cloak is its own group fixed at its pole or shoulder.",
+    SCROLL: (width: number): string =>
+      `Only when the narration shows a long journey (riding, running or driving across country): draw the far landscape and the near ground as two groups named <name>_scroll; each repeats seamlessly with the same artwork drawn twice, the second copy translated by exactly ${width} px (total width ${width * 2} px), so the motion step can slide it.`,
+  },
   CONTEXT_LINE: (json: string): string => `Technical context (canvas, behaviour): ${json}`,
   MAX_SHEET_CHARS: 3000,
   MAX_SHEETS: 2,
@@ -114,6 +129,7 @@ Before returning check: every brief node present, limbs connected, hands on held
     smallAnimal: ["head", "legs"],
   } as Record<string, readonly string[]>,
   SAME_SCALE_RELATION: "beside",
+  RIG_LEGS_PART: "legs",
   CROWD_WATCH_MIN: 4,
   JOIN: "\n",
   BLANK: "\n\n",

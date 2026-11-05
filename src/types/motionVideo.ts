@@ -930,7 +930,18 @@ export enum MotionStoryJobKind {
   LIBRARY = "library",
   TRAIN_VOICE = "train_voice",
 }
+export interface MotionLogEvent {
+  sequence: number;
+  timestamp?: number;
+  workerId?: string;
+  provider?: string;
+  model?: string;
+  artifact?: string;
+  phase?: string;
+  severity?: "info" | "warning" | "error";
+}
 export interface MotionLogEntry {
+  events?: MotionLogEvent[];
   stepStates?: Record<string, MotionStepState>;
   startedAt?: number;
   status?: MotionJobStatus;

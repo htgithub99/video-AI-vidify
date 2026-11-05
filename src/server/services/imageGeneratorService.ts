@@ -304,6 +304,10 @@ import { distributeItemsByContinuity } from "../../services/imageGenerationConti
 import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
+import { CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { isBackupChromeActive, registerChromeBackupSwitch, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure } from "./chromeBackupService.js";
+import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
+import { findNativeChrome } from "./nativeProxyBrowser.js";
 chromium.use(stealthPlugin());
 interface BrowserSession {
   context: BrowserContext;
@@ -1193,7 +1197,7 @@ export interface FlowVideoRecoveryOptions {
   chromeHeadless?: boolean;
   retainBrowserSession?: boolean;
 }
-export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions): Promise<ImageGeneratorResult> => {
+const recoverExistingFlowVideoTask = async (options: FlowVideoRecoveryOptions): Promise<ImageGeneratorResult> => {
   const flowProjectId = normalizeFlowProjectId(options.flowProjectId);
   const mediaId = normalizeFlowMediaId(options.mediaId);
   if (_.some([flowProjectId, mediaId], _.isEmpty)) {
@@ -1739,6 +1743,7 @@ const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
   return null;
 };
 export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
+  if (isBackupChromeActive()) return launchBackupChrome(chromeHeadless);
   let attempts = 0;
   const maxAttempts = 3;
   let account: GoogleAccount | null = null;
@@ -1873,6 +1878,7 @@ export async function closeActiveBrowser(skipActivityCleanup = false) {
   activeBrowserHeadless = undefined;
 }
 export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = false, skipActivityCleanup = false): Promise<boolean> {
+  if (sharedChromeTasks.switching) return false;
   if (browserRetainers.size) return false;
   if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise.catch(() => undefined);
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) {
@@ -1930,6 +1936,7 @@ export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = fa
   return true;
 }
 export async function closeIdleSharedChrome(skipActivityCleanup = false): Promise<boolean> {
+  if (sharedChromeTasks.switching) return false;
   if (browserRetainers.size) return false;
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) return false;
   if (!(await isSharedChromeRunning())) return true;
@@ -1972,6 +1979,7 @@ export function cancelGlobalBrowserCleanup() {
   activeBrowserTimeout = null;
 }
 export function scheduleGlobalBrowserCleanup() {
+  if (sharedChromeTasks.switching) return;
   if (activeBrowserTimeout) clearTimeout(activeBrowserTimeout);
   activeBrowserTimeout = null;
   if (browserRetainers.size) return;
@@ -1987,6 +1995,7 @@ export function scheduleGlobalBrowserCleanup() {
 }
 export const getExistingGlobalBrowser = async (): Promise<BrowserSession | null> => {
   if (activeBrowserInstance) return activeBrowserInstance;
+  if (isBackupChromeActive()) return null;
   const existing = await connectToSharedChromeBrowser(false);
   if (existing) activeBrowserInstance = existing;
   return existing;
@@ -2000,14 +2009,14 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
   const requestedHeadless = chromeHeadless !== false;
   if (activeBrowserLaunchPromise) {
     const launchedBrowser = await activeBrowserLaunchPromise;
-    if (preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
+    if (!isBackupChromeActive() && preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
       await closeActiveBrowser();
     } else if (activeBrowserHeadless === requestedHeadless || (activeBrowserHeadless === false && requestedHeadless)) {
       return launchedBrowser;
     }
   }
   if (activeBrowserInstance) {
-    if (preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
+    if (!isBackupChromeActive() && preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
       appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SWITCH_TO_SHARED_CHROME);
       await closeActiveBrowser();
     } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless === true && !requestedHeadless) {
@@ -2015,6 +2024,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
       await closeActiveBrowser();
     } else {
       try {
+        if (activeBrowserInstance.page.isClosed()) throw new Error(BACKUP.CLOSE_FAILED);
         await activeBrowserInstance.page.url();
         appLog(ImageGenMessages.REUSING_GLOBAL_CHROME);
         return activeBrowserInstance;
@@ -2032,7 +2042,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
     try {
       launchedBrowser.context.on(SOURCE_TEXT_CLOSE_2, () => {
         if (!_.isEqual(activeBrowserInstance, launchedBrowser)) return;
-        appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
+        if (!sharedChromeTasks.switching) appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
         activeBrowserInstance = null;
         activeBrowserHeadless = undefined;
       });
@@ -2298,7 +2308,7 @@ const createFlowCharacter = async (page: Page, projectId: string, localProjectId
   }
   throw lastError instanceof Error ? lastError : createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
 };
-export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions): Promise<EnsureFlowCharactersResult> => {
+const ensureFlowCharactersTask = async (options: EnsureFlowCharactersOptions): Promise<EnsureFlowCharactersResult> => {
   const selectedCharacters = options.characters;
   if (_.gt(selectedCharacters.length, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS) || _.uniq(_.map(selectedCharacters, SOURCE_TEXT_ID)).length !== selectedCharacters.length || _.some(selectedCharacters, (character) => _.some([character.id, character.name, character.prompt], (value) => _.isEmpty(_.trim(value))))) {
     throw createAppError(SOURCE_TEXT_INVALID_AI_CHARACTER_ARTIFACT);
@@ -2608,7 +2618,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
     release();
   }
 };
-export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
+async function generateImageWithPlaywrightTask(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
   const { prompt, sandboxConfig = {} } = options;
   const requestedVisualConfig = options.visualConfig;
@@ -3158,7 +3168,7 @@ export const assignFlowVideoBatchMediaIds = (items: FlowVideoPromptBatchItem[], 
   findBestAssignment(SecurityConstants.ZERO, _.range(uniqueCandidates.length), new Map(), SecurityConstants.ZERO);
   return _.map(items, (item) => ({ sceneId: item.sceneId, mediaId: bestAssignments.get(item.sceneId) }));
 };
-export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVideoPromptBatchOptions): Promise<FlowVideoPromptBatchResult[]> {
+async function generateFlowVideoPromptBatchWithPlaywrightTask(options: FlowVideoPromptBatchOptions): Promise<FlowVideoPromptBatchResult[]> {
   const items = options.items;
   if (_.isEmpty(items)) return [];
   if (_.gt(items.length, FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH) || _.some(items, (item) => _.isEmpty(_.trim(item.sceneId)) || _.isEmpty(_.trim(item.prompt))) || _.uniq(_.map(items, SOURCE_TEXT_SCENEID)).length !== items.length) {
@@ -3298,7 +3308,7 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
   }
 }
 const getGeminiWorkspaceUrl = (_generateType?: GenerateType): string => EXTERNAL_URLS.GEMINI_CHAT;
-export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
+async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
   const { prompt, visualConfig } = options;
   const finalPrompt = prompt || XRT.EMPTY;
@@ -3582,7 +3592,7 @@ const prepareGeminiBatchPage = async (page: Page, index: number, generateType: G
     throw error;
   }
 };
-export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[], visualConfig: GeminiVisualConfig, style?: string, onProgress?: (result: BatchImageResult) => void, retainBrowserSession = false): Promise<BatchImageResult[]> {
+async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], visualConfig: GeminiVisualConfig, style?: string, onProgress?: (result: BatchImageResult) => void, retainBrowserSession = false): Promise<BatchImageResult[]> {
   const generationRevision = mediaGenerationRevision;
   if (!items || items.length === 0) return [];
   const requestedSpeed = _.toString(visualConfig?.geminiChatSpeed);
@@ -4646,3 +4656,92 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
   }
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
 }
+let backupSetupContext: BrowserContext | undefined;
+let backupPreparation: Promise<ReturnType<typeof readChromeBackupSettings>> | undefined;
+const backupProfilePath = () => path.join(getDataDirectory(), BACKUP.PROFILE);
+const backupSignedIn = async (context: BrowserContext): Promise<boolean> => {
+  for (const page of context.pages()) {
+    if (!page.isClosed() && page.url().startsWith(EXTERNAL_URLS.GEMINI_CHAT) && !BACKUP.LOGIN_URL.test(page.url()) && (await page.locator(BACKUP.READY_SELECTOR).filter({ visible: true }).count())) return true;
+  }
+  return false;
+};
+const prepareBackupChromeTask = async () => {
+  if (sharedChromeTasks.switching || isBackupChromeActive()) throw backupChromeFailure(BACKUP.PREPARE_BUSY);
+  if (!backupSetupContext) {
+    backupSetupContext = await chromium.launchPersistentContext(backupProfilePath(), { executablePath: findNativeChrome(), headless: false });
+    const context = backupSetupContext;
+    context.on(SOURCE_TEXT_CLOSE_2, () => {
+      if (backupSetupContext === context) backupSetupContext = undefined;
+    });
+    const page = context.pages()[0] || (await context.newPage());
+    await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: BACKUP.READY_MS });
+  }
+  const ready = await backupSignedIn(backupSetupContext);
+  return saveChromeBackupSettings({ ready });
+};
+export const prepareBackupChrome = () => {
+  if (backupPreparation) return backupPreparation;
+  backupPreparation = prepareBackupChromeTask().finally(() => {
+    backupPreparation = undefined;
+  });
+  return backupPreparation;
+};
+export const checkBackupChrome = async () => {
+  if (backupSetupContext) return saveChromeBackupSettings({ ready: await backupSignedIn(backupSetupContext) });
+  return readChromeBackupSettings();
+};
+const launchBackupChrome = async (headless = true): Promise<BrowserSession> => {
+  const context = await chromium.launchPersistentContext(backupProfilePath(), { executablePath: findNativeChrome(), headless });
+  try {
+    const page = context.pages()[0] || (await context.newPage());
+    await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: BACKUP.READY_MS });
+    await page.locator(BACKUP.READY_SELECTOR).filter({ visible: true }).first().waitFor({ timeout: BACKUP.READY_MS });
+    return { context, page, account: { email: BACKUP.PROFILE } as GoogleAccount, ownsContext: true };
+  } catch (cause) {
+    await context.close();
+    saveChromeBackupSettings({ ready: false });
+    throw new Error(BACKUP.NOT_READY, { cause });
+  }
+};
+registerChromeBackupSwitch(async () => {
+  cancelGlobalBrowserCleanup();
+  if (backupPreparation) await backupPreparation;
+  if (backupSetupContext) {
+    if (!(await backupSignedIn(backupSetupContext))) throw backupChromeFailure(BACKUP.NOT_READY);
+    await backupSetupContext.close();
+    backupSetupContext = undefined;
+  }
+  if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise;
+  const session = activeBrowserInstance;
+  const headless = activeBrowserHeadless;
+  if (activeFlowVideoGenerationCount || globalBatchPages.some((page) => !page.isClosed())) throw backupChromeFailure(BACKUP.DRAIN_FAILED);
+  if (session) {
+    if (session.preserveExternalPages) {
+      if (session.context.pages().some((page) => !page.isClosed() && !isDisposableChatBrowserUrl(page.url()))) throw backupChromeFailure(BACKUP.CLOSE_FAILED);
+      const page = session.context.pages().find((page) => !page.isClosed()) || (await session.context.newPage());
+      const cdp = await session.context.newCDPSession(page);
+      await cdp.send(SOURCE_TEXT_BROWSER_CLOSE as any).catch(() => undefined);
+      if (!(await waitForSharedChromeExit())) throw backupChromeFailure(BACKUP.CLOSE_FAILED);
+      sharedChromeLaunchedByApp = false;
+    } else {
+      if (session.ownsContext === false) throw backupChromeFailure(BACKUP.CLOSE_FAILED);
+      await session.context.close();
+    }
+    activeBrowserInstance = null;
+  }
+  activeBrowserInstance = await launchBackupChrome(headless);
+  activeBrowserHeadless = headless;
+  const backup = activeBrowserInstance;
+  backup.context.on(SOURCE_TEXT_CLOSE_2, () => {
+    if (activeBrowserInstance === backup) {
+      activeBrowserInstance = null;
+      activeBrowserHeadless = undefined;
+    }
+  });
+});
+export const recoverExistingFlowVideo = (...args: Parameters<typeof recoverExistingFlowVideoTask>) => sharedChromeTasks.run(() => recoverExistingFlowVideoTask(...args));
+export const ensureFlowCharacters = (...args: Parameters<typeof ensureFlowCharactersTask>) => sharedChromeTasks.run(() => ensureFlowCharactersTask(...args));
+export const generateImageWithPlaywright = (...args: Parameters<typeof generateImageWithPlaywrightTask>) => sharedChromeTasks.run(() => generateImageWithPlaywrightTask(...args));
+export const generateFlowVideoPromptBatchWithPlaywright = (...args: Parameters<typeof generateFlowVideoPromptBatchWithPlaywrightTask>) => sharedChromeTasks.run(() => generateFlowVideoPromptBatchWithPlaywrightTask(...args));
+export const generateImageWithGeminiChat = (...args: Parameters<typeof generateImageWithGeminiChatTask>) => sharedChromeTasks.run(() => generateImageWithGeminiChatTask(...args));
+export const generateBatchImagesWithGeminiChat = (...args: Parameters<typeof generateBatchImagesWithGeminiChatTask>) => sharedChromeTasks.run(() => generateBatchImagesWithGeminiChatTask(...args));

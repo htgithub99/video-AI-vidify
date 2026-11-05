@@ -26,7 +26,10 @@ import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
 import { motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBehavior.js";
 import { compositionAttachedMotion, compositionMissingNodes, compositionRepairDraft } from "../../../../../lib/motionCompositionRepair.js";
-import { normalizeFirstSceneComposition, failedSceneComposition, mergeSceneCompositionDraft, motionCompositionMissingChannels } from "../../../../../lib/motionSceneComposition.js";
+import { normalizeFirstSceneComposition, failedSceneComposition, mergeSceneCompositionDraft, motionCompositionDirected, motionCompositionMissingChannels } from "../../../../../lib/motionSceneComposition.js";
+import { MOTION_CLIP_DIRECTOR as DIRECTOR } from "../../../../../constants/motionClipDirector.js";
+import { assessMotionClips, motionClipContext, motionClipPartIds, motionClipRig } from "../../../../../lib/motionClipDirector.js";
+import type { MotionSceneMotion } from "../../../../../types/motionClip.js";
 import { repairMotionSvgMarkup } from "../../../../../lib/motionVectorAsset.js";
 import { createCompositionGeometryInspector } from "./compositionGeometryInspector.js";
 import { remotionSceneReadiness } from "../../../../../lib/motionRemotion.js";
@@ -158,12 +161,12 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             }
           : undefined,
         start: !single && artifact === C.ARTIFACT && compositions[key] && requests[key]?.errors.length ? () => C.REPAIR(context, compositions[key], requests[key].errors) : undefined,
-        repair: (_base, draft, errors) => (artifact === C.ARTIFACT ? C.REPAIR(context, draft, errors) : artifact === SHEET.ARTIFACT ? SHEET.REPAIR(errors) : P.REPAIR(context, draft, errors)),
+        repair: (_base, draft, errors) => (artifact === C.ARTIFACT ? C.REPAIR(context, draft, errors) : artifact === SHEET.ARTIFACT ? SHEET.REPAIR(errors) : artifact === DIRECTOR.ARTIFACT ? DIRECTOR.REPAIR(context, draft, errors) : P.REPAIR(context, draft, errors)),
         rejected: async (raw, draft, errors, route, attempt) => {
           opts.log(V.LOG_REJECTED(artifact, errors));
           await writeMotionAiDebug(`${artifact}${RT_SHARED.SYMBOL_3973E0}${key}${RT_SHARED.SYMBOL_3973E0}${attempt}`, { stage: artifact, provider: route.provider, model: route.model, errors, response: raw, draft });
         },
-        failure: (errors) => new Error(P.ERROR(key, errors)),
+        failure: (errors) => new Error(artifact === DIRECTOR.ARTIFACT ? DIRECTOR.ERROR(key, errors) : P.ERROR(key, errors)),
       };
       return opts.ai ? requestMotionAiContract(prompt, exec, (question) => opts.ai!(question, artifact, exec, opts.signal, opts.log, images), contract, opts.signal) : runMotionAi(prompt, artifact, exec, opts.signal, opts.log, images, 0, contract);
     };
@@ -333,6 +336,49 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         opts.log(C.LOG_DEFER(allScenes.indexOf(scene) + 1, allScenes.length, scene.failStreak));
       }
     };
+    /** AI motion director: semantic clips from narration + measured rig; code compiles them. Failure keeps the drawn motion. */
+    const directSceneMotion = async (scene: (typeof allScenes)[number], inputKey: string, redraw: boolean, request: typeof ask) => {
+      if (!scene.composition || state.renderBehavior?.actors === RT_SHARED.FIXED) return;
+      const asset = state.assets[scene.composition.assetKey];
+      const key = DIRECTOR.KEY(inputKey, scene.id);
+      if (!asset || (!redraw && ((scene.composition.motion?.key === key && motionCompositionDirected(scene.composition)) || state.motionTried?.[scene.id] === key))) return;
+      (state.motionTried ||= {})[scene.id] = key;
+      const index = allScenes.indexOf(scene) + 1;
+      let boxes: Record<string, MotionMeasuredRect | null>;
+      try {
+        if (!geometry.measure) throw new Error(QUALITY.LOG_UNMEASURED(scene.id));
+        boxes = await geometry.measure(asset, motionClipPartIds(asset.svg));
+      } catch (error) {
+        if (opts.signal?.aborted) throw error;
+        opts.log(DIRECTOR.LOG_UNMEASURED(index, allScenes.length));
+        return;
+      }
+      const rig = motionClipRig(asset, boxes);
+      const lines = script.beats.filter((member) => (scene.sourceBeatIds || [scene.beatId]).includes(member.id));
+      const seconds = Math.max(1, lines.reduce((sum, member) => sum + (member.duration || 0), 0) || scene.text.length / DIRECTOR.CHARS_PER_SECOND);
+      const context = motionClipContext({ composition: scene.composition, rig, narration: scene.text, purpose: scene.purpose, seconds, profile: settings.profileId, genre: motionVideoGenre(analysis.videoGenre), nodes: scene.nodes, bible: state.motionBible });
+      opts.log(DIRECTOR.LOG_DIRECT(index, allScenes.length));
+      let bible: Record<string, string> | undefined;
+      let dropped: string[] | undefined;
+      let answers = 0;
+      try {
+        const motion = (await request(key, DIRECTOR.ARTIFACT, DIRECTOR.PROMPT(context), (raw) => {
+          // The first answer must be fully valid; from the repair onward keep the valid part instead of losing all motion.
+          const checked = assessMotionClips(raw, rig, asset.svg, scene.id, key, answers++ > 0);
+          bible = checked.bible;
+          dropped = checked.dropped;
+          return { value: checked.value, errors: checked.errors };
+        }, undefined, context)) as MotionSceneMotion;
+        scene.composition = { ...scene.composition, motion: { ...motion, intent: scene.purpose } };
+        if (bible && Object.keys(bible).length) state.motionBible = { ...(state.motionBible || {}), ...bible };
+        if (dropped?.length) opts.log(DIRECTOR.LOG_DROPPED(index, allScenes.length, new Set(dropped.map((issue) => issue.match(DIRECTOR.CLIP_INDEX)?.[1])).size, dropped));
+        opts.log(motion.clips.length ? DIRECTOR.LOG_ACCEPTED(index, allScenes.length, motion.clips.length) : DIRECTOR.LOG_STATIC(index, allScenes.length));
+        save();
+      } catch (error) {
+        if (fatal(error)) throw error;
+        opts.log(DIRECTOR.LOG_FAILED(index, allScenes.length, String((error as Error).message)));
+      }
+    };
     const drawScene = async (scene: (typeof allScenes)[number], previous?: (typeof allScenes)[number], retry = false) => {
       if (previous && motionSceneLocation(previous) !== motionSceneLocation(scene)) previous = undefined;
       if (!selected.has(scene.beatId) || (opts.onlyScenes?.length && !opts.onlyScenes.includes(scene.id))) return;
@@ -472,8 +518,9 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             } else delete scene.qualityNote;
           }
         }
+        await directSceneMotion(scene, inputKey, drawingRequested || targeted || retry, request);
         const ensureActorMotion = () => {
-          if (!scene.composition) return;
+          if (!scene.composition || motionCompositionDirected(scene.composition)) return;
           const reviewed = !!scene.reviewKey && scene.reviewKey === motionInputKey([scene.composition, scene.text, settings]);
           const attached = compositionAttachedMotion(scene.composition, state.assets[scene.composition.assetKey], scene.nodes);
           scene.composition = attached.composition;

@@ -147,6 +147,64 @@ try {
   await service.closeChatPlanningRoom(current, true);
   assert.equal(page.isClosed(), true);
   assert.equal(service.geminiRooms.has(service.getPlanningRoomKey(current)), false);
+  for (const artifactType of ["motion_remotion_composition", "cinematic-plan", "music-mixer-ranking"]) {
+    const native = { ...request("native-" + artifactType, 1), artifactType };
+    const recoveries: string[] = [];
+    let generated = 0;
+    service.providerGenerators[P.GeminiChat] = async (item: any) => {
+      generated++;
+      const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
+      await room.setContent('<user-query>Current request</user-query><model-response><div class="answer">Sorry, something went wrong. Please try your request again.</div><button onclick="window.retryClicks=(window.retryClicks||0)+1;document.querySelector(\'.answer\').textContent=JSON.stringify(window.result)">Thử lại</button></model-response>');
+      await room.evaluate(
+        (value: any) => {
+          (window as any).result = value;
+        },
+        { artifactType: item.artifactType, requestId: item.requestId, ready: true },
+      );
+      Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
+      throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR);
+    };
+    const result = await within(service.generatePlanningWithChatUi({ ...native, onRecovery: (line: string) => recoveries.push(line) }));
+    assert.equal(JSON.parse(result.text).ready, true);
+    assert.equal(generated, 1, "A native Retry success must not resend the user request");
+    assert.equal(recoveries.length, 1);
+    assert.match(recoveries[0], /bấm nút/u);
+    assert.equal(await service.geminiRooms.get(service.getPlanningRoomKey(native)).evaluate(() => (window as any).retryClicks), 1);
+    await service.closeChatPlanningRoom(native, true);
+  }
+  const bounded = request("bounded-shared-recovery", 1);
+  const boundedRooms: any[] = [];
+  const recoveryLines: string[] = [];
+  let restored = 0;
+  service.providerGenerators[P.GeminiChat] = async (item: any) => {
+    assert.equal(item.prompt, bounded.prompt, "A new room must receive the full context even when another worker already switched Chrome");
+    const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
+    boundedRooms.push(room);
+    if (boundedRooms.length > 3) return JSON.stringify({ artifactType: item.artifactType, requestId: item.requestId, ready: true });
+    await room.setContent('<user-query>Current request</user-query><model-response><div class="answer">Sorry, something went wrong. Please try your request again.</div><button onclick="window.retryClicks=(window.retryClicks||0)+1">Thử lại</button></model-response>');
+    Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
+    throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR);
+  };
+  await within(
+    service.generatePlanningWithChatUi({
+      ...bounded,
+      prompt: "Correction requiring the previous room context",
+      onRecovery: (line: string) => recoveryLines.push(line),
+      restoreContext: () => {
+        restored++;
+        return bounded.prompt;
+      },
+    }),
+  );
+  assert.equal(boundedRooms.length, 4);
+  assert.equal(new Set(boundedRooms.slice(0, 3)).size, 1, "Both retries must use the original physical room");
+  assert.notEqual(boundedRooms[3], boundedRooms[0]);
+  assert.equal(boundedRooms[0].isClosed(), true);
+  assert.equal(restored, 4);
+  assert.equal(recoveryLines.filter((line) => /bấm nút/u.test(line)).length, 1);
+  assert.equal(recoveryLines.filter((line) => /room hiện tại/u.test(line)).length, 2);
+  assert.equal(recoveryLines.filter((line) => /mở room mới/u.test(line)).length, 1);
+  await service.closeChatPlanningRoom(bounded, true);
   const failedRoom = {
     isClosed: () => false,
     close: async () => {

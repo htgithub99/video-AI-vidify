@@ -110,7 +110,7 @@ export const MOTION_VISUAL = {
   LOG_SCENE: (i: number, total: number, id: string) => `Đọc và dựng cảnh Remotion ${i}/${total}: ${id}`,
   LOG_READY: (i: number, total: number) => `Đã dựng cảnh Remotion ${i}/${total}.`,
   LOG_ASSET: (name: string) => `Dựng hình Remotion: ${name}`,
-  LOG_REJECTED: (artifact: string, errors: string[]) => `${artifact === "motion_remotion_asset" || artifact === "motion_remotion_composition" ? "Hình SVG" : artifact === "motion_remotion_scene" ? "Dữ liệu phân cảnh" : artifact === "motion_remotion_design" ? "Thiết kế phối cảnh" : "Review ảnh"} cần sửa: ${errors.join("; ")}`,
+  LOG_REJECTED: (artifact: string, errors: string[]) => `${artifact === "motion_remotion_asset" || artifact === "motion_remotion_composition" ? "Hình SVG" : artifact === "motion_remotion_scene" ? "Dữ liệu phân cảnh" : artifact === "motion_remotion_design" ? "Thiết kế phối cảnh" : artifact === "motion_remotion_motion" ? "Chuyển động AI" : "Review ảnh"} cần sửa: ${errors.join("; ")}`,
   LOG_REVIEW: (i: number, total: number) => `Review ảnh Remotion ${i}/${total}.`,
   LOG_REPAIR: (id: string) => `Sửa đúng cảnh Remotion ${id} theo kết quả review.`,
   LOG_REVIEW_OFF: "Đã tắt duyệt ảnh: nhận một kết quả vẽ cho mỗi cảnh, không tự yêu cầu sửa; cảnh không render được sẽ đánh dấu để tạo lại riêng.",

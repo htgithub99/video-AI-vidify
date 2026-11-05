@@ -179,8 +179,10 @@ export interface MotionSceneAnimation {
   keyframes: { at: number; value: string | number }[];
   source?: "sway";
 }
-export type MotionMeasuredRect = MotionVisualRect & { local?: MotionVisualRect };
+export type MotionMeasuredRect = MotionVisualRect & { local?: MotionVisualRect; flip?: boolean };
 export interface MotionSceneComposition {
+  /** AI-directed motion clips; when present they replace actor/effect keyframes and code default motion. */
+  motion?: import("./motionClip.js").MotionSceneMotion;
   profileId?: MotionRemotionProfile;
   profileRevision?: number;
   unchecked?: boolean;
@@ -212,6 +214,10 @@ export interface MotionRemotionState {
   inputKeys: Record<string, string>;
   failures: Record<string, string>;
   drafts?: Record<string, unknown[]>;
+  /** Per-subject motion notes written by the AI motion director, reused for consistency across scenes. */
+  motionBible?: Record<string, string>;
+  /** Scene id → motion request key already attempted, so rebuilds never re-ask the director for unchanged scenes. */
+  motionTried?: Record<string, string>;
   planRecoveryRevision?: number;
   notes?: Record<string, string>;
   updatedAt?: number;

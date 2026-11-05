@@ -183,6 +183,8 @@ import { isDeepSeekAccountUnavailable } from "../../../../server/services/deepse
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../../../constants/messages.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDnaSettings } from "../../../../types/motionVideo.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, getChatPlanningRoom, prepareChatPlanningRoom, reloadChatPlanningRoom, resumeChatPlanningResponse } from "../../../../server/services/chatUiPlanningService.js";
+import { sharedChromeTasks } from "../../../../server/services/chromeTaskCoordinator.js";
+import { CHROME_BACKUP, CHAT_ROOM_RECOVERY } from "../../../../constants/chromeBackup.js";
 import { exhaustedMotionRoom, isChatAttachmentError, isFinalChatResponseError, isMotionContentResponseError, isTerminalMotionAiError, uncertainChatSubmission, type ChatPlanningSubmission } from "../../../../server/services/chatSubmissionRecovery.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../../../constants/motionAiRecovery.js";
 import type { MotionAiLog } from "../../../../types/motionVideo.js";
@@ -464,6 +466,7 @@ interface MotionAiRun {
   roomRecoveries: Map<string, number>;
   roomRefreshes: Set<string>;
   roomGenerations: Map<string, number>;
+  browserGenerations: Map<string, number>;
   bibles?: Map<string, string>;
   halt: { error?: Error };
   editorial?: { context: string; route?: MotionAiExecution };
@@ -619,7 +622,22 @@ export const runInMotionAiSession = async <T>(runId: string, fn: () => Promise<T
   }
   const projectId = retained?.projectId || MR.MOTION_TEMPLATE_SYMBOL_287(MOTION_STORY_CONFIG.PROJECT_ID_PREFIX, runId);
   const planningRun = beginChatPlanningRun(projectId, Date.now(), runId);
-  const shared: MotionAiRun = retained?.run || { projectId, workerId: MOTION_STORY_CONFIG.WORKER_IDS[0], signal: retained?.controller.signal || planningRun.signal, rooms: new Map(), contextRooms: new Set(), pending: new Set(), counts: {}, workers: new Map(), scenePreparations: new Map(), roomRecoveries: new Map(), roomRefreshes: new Set(), roomGenerations: new Map(), halt: {} };
+  const shared: MotionAiRun = retained?.run || {
+    projectId,
+    workerId: MOTION_STORY_CONFIG.WORKER_IDS[0],
+    signal: retained?.controller.signal || planningRun.signal,
+    rooms: new Map(),
+    contextRooms: new Set(),
+    pending: new Set(),
+    counts: {},
+    workers: new Map(),
+    scenePreparations: new Map(),
+    roomRecoveries: new Map(),
+    roomRefreshes: new Set(),
+    roomGenerations: new Map(),
+    browserGenerations: new Map(),
+    halt: {},
+  };
   if (editorial && retained) {
     shared.editorial ||= { context: editorial.context };
     if (!editorial.worker) shared.editorial.context = editorial.context;
@@ -845,6 +863,7 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
             const release = await acquireMotionAiRoom(run, workerId, exec.provider as AiPlanningFallbackProvider, linked);
             const readySignal = AbortSignal.any([linked, AbortSignal.timeout(AIR.READINESS_TIMEOUT_MS)]);
             try {
+              readySignal.throwIfAborted();
               await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true });
               readySignal.throwIfAborted();
             } catch (error) {
@@ -995,7 +1014,16 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
       return out;
     } catch (error: any) {
       logMotionAiChain({ ...step, result: motionCaptchaError(error) ? MOTION_AI_FALLBACK.RESULT_CAPTCHA : MOTION_AI_FALLBACK.RESULT_FAIL, reason: _.toString(error?.message) });
-      if (signal?.aborted || motionAiRunStore.getStore()?.signal.aborted || motionCaptchaError(error) || _.get(error, AIR.UNCERTAIN_FLAG) || _.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED) || error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR || (error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !AIR.VECTOR_ARTIFACT.test(artifactType) && !contract))
+      if (
+        signal?.aborted ||
+        motionAiRunStore.getStore()?.signal.aborted ||
+        motionCaptchaError(error) ||
+        _.get(error, CHROME_BACKUP.ERROR_FLAG) ||
+        _.get(error, AIR.UNCERTAIN_FLAG) ||
+        _.get(error, MOTION_PRODUCTION.CONTRACT_EXHAUSTED) ||
+        error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR ||
+        (error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !AIR.VECTOR_ARTIFACT.test(artifactType) && !contract)
+      )
         throw error;
       if (!failure || !_.get(error, MOTION_PRODUCTION.CONTRACT_ROUTE_EXHAUSTED)) failure = error;
       const next = routes[i + 1];
@@ -1018,6 +1046,11 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   const currentRun = motionAiRunStore.getStore();
   const bibleKey = (): string | undefined => (exec.bible && currentRun ? MOTION_STORY_CONFIG.BIBLE_KEY(currentRun.roomGenerations.get(currentRun.workerId) || 0, exec.bible.key) : undefined);
   const requestPrompt = (room = false) => {
+    if (currentRun && currentRun.browserGenerations.get(currentRun.workerId) !== sharedChromeTasks.generation) {
+      currentRun.contextRooms.delete(currentRun.workerId);
+      currentRun.bibles?.delete(currentRun.workerId);
+      currentRun.browserGenerations.set(currentRun.workerId, sharedChromeTasks.generation);
+    }
     const restoreContext = currentRun?.editorial && (!currentRun.contextRooms.has(currentRun.workerId) || currentRun.roomRefreshes.has(currentRun.workerId) || attempt > 0);
     const editorialContext = restoreContext ? motionPromptEditorialContext(artifactType, currentRun.editorial!.context) : MR.MOTION_TEXT_EMPTY;
     const bibleSent = room && !!currentRun && !!bibleKey() && attempt === 0 && currentRun.contextRooms.has(currentRun.workerId) && !currentRun.roomRefreshes.has(currentRun.workerId) && currentRun.bibles?.get(currentRun.workerId) === bibleKey();
@@ -1064,7 +1097,6 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     let watchdog: ReturnType<typeof setTimeout> | undefined;
     let retryRoom = false;
     let replaceRoom = false;
-    let freshRoom = false;
     let roomOk = false;
     let releaseGate: () => void = _.noop;
     let releaseRoom: () => void = _.noop;
@@ -1144,6 +1176,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         await prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true });
       }
       run?.contextRooms.add(workerId!);
+      roomCtrl.signal.throwIfAborted();
       countMotionRequest(provider, log);
       const r = await generatePlanningWithChatUi({
         provider,
@@ -1159,6 +1192,21 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         submission,
+        restoreContext: () => {
+          run?.contextRooms.delete(workerId!);
+          run?.bibles?.delete(workerId!);
+          fullPrompt = requestPrompt(true).fullPrompt;
+          return fullPrompt;
+        },
+        onRecovery: (line) => {
+          log?.(line, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+          clearTimeout(watchdog);
+          if (line !== CHROME_BACKUP.WAIT)
+            watchdog = setTimeout(() => {
+              timedOut = true;
+              roomCtrl.abort(AIR.READINESS_TIMEOUT_REASON);
+            }, roomTimeout);
+        },
         attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
       });
       const result = extractMotionRoomJson(r.text);
@@ -1170,6 +1218,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       let caught = error;
       terminalError = error;
       if (signal?.aborted || run?.signal.aborted) throw caught;
+      if (_.get(caught, CHROME_BACKUP.ERROR_FLAG)) throw caught;
       if (isDeepSeekAccountUnavailable(caught)) throw caught;
       const geminiSelection = _.get(caught, GEMINI_MODEL_ENCODING.DIAGNOSTICS);
       const unusable = _.toString(caught?.message).includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE) || (!switchTo && _.toString(caught?.message).includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE)) || _.toString(caught?.message).includes(XRT.DEEPSEEK_MODEL_UNAVAILABLE_CODE);
@@ -1213,12 +1262,13 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         throw caught;
       }
       const earlyError = _.toString(caught?.message);
-      const unsent = !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
+      const recovered = !!_.get(caught, CHAT_ROOM_RECOVERY.COMPLETE);
+      const unsent = !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
       if (!captchaRetry && exec.singleResponse && !unsent) {
         roomOk = submission.completed;
         throw caught;
       }
-      if (!captchaRetry && submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
+      if (!recovered && !captchaRetry && submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
         clearTimeout(watchdog);
         log?.(AIR.RESUME(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
         const replayable = !!run?.editorial || AIR.REPLAYABLE_ARTIFACT.test(artifactType);
@@ -1262,10 +1312,9 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       const noInput = !limited && !captcha && currentError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
       const transport = (timedOut && !submission.completed && !submission.abandoned) || AIR.TRANSPORT.test(currentError) || currentError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || noInput || currentError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(currentError);
       const retryableResponse = isChatAttachmentError(caught) || _.includes([CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR], _.toString(caught?.message));
-      if (!retryRoom && !captchaRetry && !limited && (!submission.attempted || submission.completed) && (transport || retryableResponse) && attempt < AIR.ROOM_RETRIES) {
+      if (!recovered && !retryRoom && !captchaRetry && !limited && (!submission.attempted || submission.completed) && (transport || retryableResponse) && attempt < AIR.ROOM_RETRIES) {
         retryRoom = true;
-        freshRoom = transport && !submission.attempted;
-        log?.(freshRoom ? AIR.FRESH(provider) : attempt < AIR.ROOM_RELOADS ? AIR.RECOVER(provider, attempt + 1, AIR.ROOM_RELOADS) : AIR.REPLACE(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+        log?.(attempt < AIR.ROOM_RELOADS ? AIR.RECOVER(provider, attempt + 1, AIR.ROOM_RELOADS) : AIR.REPLACE(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
       }
       if (!retryRoom && !captchaRetry && exec.strictProvider) {
         if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
@@ -1307,7 +1356,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       try {
         if (run) {
           if (retryRoom) {
-            if (!replaceRoom && !freshRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
+            if (!replaceRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
             else await closeMotionAiRoom(run, workerId!);
           } else if (!roomOk && !captchaRetry) await closeMotionAiRoom(run, workerId!);
         } else {
@@ -2047,7 +2096,14 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   };
   const bible = MOTION_GEN_CHAPTER_BIBLE(bibleParts);
   const prompt = MOTION_GEN_CHAPTER_LEAN(promptParts);
-  motionPromptSections(MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, { bible: bible.length, ..._.mapValues(bibleParts, (value: unknown) => String(value ?? MR.MOTION_TEXT_EMPTY).length), chapter: prompt.length, ..._.mapValues(promptParts, (value: unknown) => String(value ?? MR.MOTION_TEXT_EMPTY).length), bibleRules: bibleRules.map((rule: string) => rule.length), chapterRules: chapterRules.map((rule: string) => rule.length) });
+  motionPromptSections(MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, {
+    bible: bible.length,
+    ..._.mapValues(bibleParts, (value: unknown) => String(value ?? MR.MOTION_TEXT_EMPTY).length),
+    chapter: prompt.length,
+    ..._.mapValues(promptParts, (value: unknown) => String(value ?? MR.MOTION_TEXT_EMPTY).length),
+    bibleRules: bibleRules.map((rule: string) => rule.length),
+    chapterRules: chapterRules.map((rule: string) => rule.length),
+  });
   const factual = (analysis.videoDna?.format?.factual ?? analysis.factual) !== false && source.kind !== MR.MOTION_TEXT_BRIEF;
   const quotesIndex = factual ? transcriptIndex(source.text) : null;
   const request = prompt;
@@ -2197,7 +2253,9 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       if (opts.durationRepair) await writeMotionAiDebug(randomUUID(), { stage: MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, chapterId: chapter.id, durationRepair: true, pending: draft?.pending, raw });
     },
   };
-  return opts.ai ? requestMotionAiContract(request, opts.exec, (question) => opts.ai!(MOTION_STORY_CONFIG.BIBLE_WRAP(bible) + question, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log), contract, opts.signal) : runMotionAi(request, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, { ...opts.exec, worker: MOTION_STORY_CONFIG.WORKER_IDS[0], bible: { key: motionInputKey([bible]), text: bible } }, opts.signal, opts.log, undefined, 0, contract);
+  return opts.ai
+    ? requestMotionAiContract(request, opts.exec, (question) => opts.ai!(MOTION_STORY_CONFIG.BIBLE_WRAP(bible) + question, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, opts.exec, opts.signal, opts.log), contract, opts.signal)
+    : runMotionAi(request, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER, { ...opts.exec, worker: MOTION_STORY_CONFIG.WORKER_IDS[0], bible: { key: motionInputKey([bible]), text: bible } }, opts.signal, opts.log, undefined, 0, contract);
 };
 export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: MotionStoryAnalysis): MotionBeat[] => {
   const castKeys = _.map(analysis.cast, MOTION_TEXT_KEY);
