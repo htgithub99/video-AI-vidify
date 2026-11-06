@@ -39,7 +39,8 @@ export async function initPlaywright() {
     appLog(SOURCE_TEXT_PLAYWRIGHT_CONNECTING);
     const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
     const ctx = browser.contexts()[0];
-    const page = ctx.pages()[0] || (await ctx.newPage());
+    // This bootstrap navigates to Labs; never take a live Gemini/Flow/user tab.
+    const page = await ctx.newPage();
     await page.addInitScript(SOURCE_TEXT_IF_TYPEOF_WINDOW_UNDEFINED_IF_WINDOW);
     page.on(SOURCE_TEXT_REQUEST, (req) => {
       const auth = req.headers()[SOURCE_TEXT_AUTHORIZATION];

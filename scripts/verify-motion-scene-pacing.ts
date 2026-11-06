@@ -10,7 +10,8 @@ import { MOTION_VISUAL as V } from "../src/constants/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../src/constants/motionSceneComposition.js";
 import { buildRemotionScenes } from "../src/features/motion/server/services/remotion/scenePipeline.js";
 import { compileRemotionStory } from "../src/features/motion/server/services/remotion/storyCompiler.js";
-import { remotionStoryBuildCurrent } from "../src/features/motion/server/services/remotion/sceneKeys.js";
+import { remotionStoryBuildCurrent, remotionGroupKey } from "../src/features/motion/server/services/remotion/sceneKeys.js";
+import { motionOutputSettings } from "../src/lib/motionOutputSettings.js";
 import { mergeEquivalentRemotionDrafts } from "../src/features/motion/server/services/remotion/sceneContract.js";
 import { puppetStoryboardProfile } from "../src/lib/motionStoryboard.js";
 import { computeBeatTimeline } from "../src/features/motion/server/services/motionDirectorService.js";
@@ -19,7 +20,7 @@ const previousStorage = process.env.VIDIFY_STORAGE_DIR;
 process.env.VIDIFY_STORAGE_DIR = root;
 try {
   const settings: any = { version: 1, mode: "remotion", engine: "remotion", profileId: "horror", componentRevision: 1, pacing: "few" };
-  const behavior: any = { version: 1, actors: "simple", sceneEffects: "gentle", camera: "fixed" };
+  const behavior: any = { version: 1, actors: "simple", sceneEffects: "gentle", camera: "gentle" };
   const analysis: any = { title: "Pacing fixture", visualSettings: settings, cast: [{ key: "uncle", name: "Chú" }], places: [{ key: "house", name: "Nhà" }], chapters: [{ id: "chapter", targetSeconds: 24 }] };
   const script: any = {
     title: analysis.title,
@@ -60,8 +61,8 @@ try {
     log: (line: string) => logs.push(line),
     ai: async (prompt: string, artifact: string) => {
       calls.push(artifact);
-      const context = JSON.parse(prompt.split("Context:\n")[1].split("\n")[0]);
       if (artifact === V.ARTIFACT_SCENE) {
+        const context = JSON.parse(prompt.split("Context:\n")[1].split("\n")[0]);
         assert.equal(context.beats.length, 3);
         assert.ok(context.pacing.includes("SOFT"));
         return { scenes: [{ fromLineId: context.lines[0].id, toLineId: context.lines.at(-1).id, purpose: "quiet exchange", environment: "house", nodes: [node] }] };
@@ -93,8 +94,9 @@ try {
   assert.deepEqual(compiled.spec.scenes[0].speaking, [{ entityId: "uncle", startFrame: 240, endFrame: 450 }]);
   assert.ok(compiled.spec.subtitles.some((item) => item.start >= 16));
   assert.equal(compileRemotionStory(built, analysis, { durations: [8, 8, 8], subtitles: false }).spec.subtitles.length, 0);
-  const recoveryState: any = { ...state, analysis, script: built, aspect: "16:9", fps: 30, subtitles: true, renderBehavior: behavior };
-  const recoveryResult: any = { analysis, script: built, compiled, rendered: { id: "saved-output" }, renderSettings: { musicMood: "eerie", musicVolume: 0.1, quality: "high" } };
+  const recoveryConfig = { ...state, aspect: "16:9", fps: 30, subtitles: true, renderBehavior: behavior, characterMotion: true };
+  const recoveryState: any = { ...motionOutputSettings(recoveryConfig), ...recoveryConfig, analysis, script: built };
+  const recoveryResult: any = { analysis, script: built, compiled, rendered: { id: "saved-output" }, renderSettings: { musicMood: "eerie", musicVolume: 0.1, quality: "high" }, outputSettings: motionOutputSettings(recoveryState) };
   assert.ok(recoverMotionVisualDraft(recoveryState, recoveryResult)?.renderJob);
   assert.equal(recoverMotionVisualDraft({ ...recoveryState, musicMood: "off" }, recoveryResult)?.renderJob, null);
   assert.ok(recoverMotionVisualDraft({ ...recoveryState, musicMood: "off" }, recoveryResult)?.compiled);
@@ -127,21 +129,20 @@ try {
   changed.beats[1].narration += " Cửa đã đóng.";
   assert.equal(remotionStoryBuildCurrent(changed, analysis), false);
   const oldPacing = { ...analysis, visualSettings: { ...settings, pacing: "many" } };
-  assert.equal(remotionStoryBuildCurrent({ ...built, visualSettings: oldPacing.visualSettings }, oldPacing), false);
+  assert.equal(remotionStoryBuildCurrent({ ...built, visualSettings: oldPacing.visualSettings }, oldPacing), true, "A short group still calls for one picture at both pacing levels; preserve its accepted drawing");
+  const longGroup = script.beats.map((beat: any) => ({ ...beat, narration: beat.narration.repeat(10) }));
+  assert.notEqual(remotionGroupKey(longGroup, analysis, built.gen!.remotion), remotionGroupKey(longGroup, oldPacing, built.gen!.remotion), "Pacing invalidates planning when the suggested picture count changes");
   const draft = { purpose: "same task", environment: "house", nodes: [node], fromLineId: "a", toLineId: "a" };
   const merged = mergeEquivalentRemotionDrafts([draft, { ...draft, fromLineId: "b", toLineId: "b" }]);
   assert.equal(merged.length, 1);
   assert.equal(merged[0].toLineId, "b");
   assert.equal(mergeEquivalentRemotionDrafts([draft, { ...draft, purpose: "essential reveal", fromLineId: "b", toLineId: "b" }]).length, 2);
   assert.equal(mergeEquivalentRemotionDrafts([draft, { ...draft, nodes: [{ ...node, state: "dead" }], fromLineId: "b", toLineId: "b" }]).length, 2);
-  assert.ok(
-    logs.some((line) => line.includes("thở nhẹ")),
-    "The log describes the actual gentle fallback",
-  );
+  assert.ok(logs.some((line) => line.includes("không QA hoặc tự vẽ lại")), "The current one-response policy is logged");
   assert.deepEqual(
     built.gen!.remotion!.scenes.b0[0].composition!.animations.map((animation) => animation.target),
-    ["person"],
-    "Fallback breathes without inventing a raised arm or speech",
+    [],
+    "An explicitly static AI response remains static; code does not add breathing or choreography",
   );
   console.log("Scene pacing passed: cross-beat planning/drawing, exact voice/dialogue/subtitle timing, semantic boundaries, bounded groups, cache reuse, pacing invalidation, library policy and export music signatures. No live AI/TTS/video.");
 } finally {

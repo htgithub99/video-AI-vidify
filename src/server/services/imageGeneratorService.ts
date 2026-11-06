@@ -1,4 +1,5 @@
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { sharedChromeFlowPage } from "./sharedChromePage.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { BROWSER_LIFECYCLE_TEXTS, isDisposableChatBrowserUrl } from "../../constants/browserLifecycle.js";
@@ -1707,8 +1708,7 @@ const connectToSharedChromeBrowser = async (logConnectionError: boolean = true):
     const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
     const context = _.first(browser.contexts());
     if (!context) return null;
-    const existingPages = context.pages();
-    const page = _.find(existingPages, (candidate) => FLOW_DIRECT_VIDEO_CONFIG.PROJECT_URL_PATTERN.test(candidate.url())) || _.find(existingPages, (candidate) => _.some([EXTERNAL_URLS.GOOGLE_LABS, EXTERNAL_URLS.GOOGLE_ACCOUNTS], (url) => _.startsWith(candidate.url(), url))) || _.first(existingPages) || (await context.newPage());
+    const page = await sharedChromeFlowPage(context);
     appLog(FLOW_AUTOMATION_MESSAGES.FLOW_NO_ROTATING_ACCOUNT_FALLBACK);
     return { context, page, account: { email: SOURCE_TEXT_SHARED_CHROME_SESSION }, ownsContext: false, preserveExternalPages: true };
   } catch (error) {

@@ -3,9 +3,9 @@ import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_TEXT_EMPTY } from "../../../constants/motionRuntime.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
-import { normalizeMotionVisualSettings } from "../../../lib/motionVisual.js";
-import { motionRenderBehaviorFor } from "../../../lib/motionRenderBehavior.js";
-import { motionVoiceSignature } from "../../../lib/motionVoice.js";
+import { normalizeMotionVisualSettings, motionVisualSettingsFor } from "../../../lib/motionVisual.js";
+import { motionVoiceSignature, motionVoiceAsrSatisfied } from "../../../lib/motionVoice.js";
+import { motionEffectiveEncoder } from "../../../lib/motionOutputSettings.js";
 import { MOTION_CAMERA_REVISION } from "../../../lib/motionCamera.js";
 import { MotionJobStatus, type MotionStoryAnalysis, type MotionStoryScript, type MotionCompiledPreview, type MotionJobState, type MotionThumbnail, type MotionProductionResult, type MotionResultItem } from "../../../types/motionVideo.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
@@ -47,11 +47,17 @@ export const hasMotionVisualDraft = (state: VisualDraftContext) => (state.visual
 export const motionVisualDraftKey = (settings: MotionVisualSettings) => stringifyJson(normalizeMotionVisualSettings(settings));
 export const motionCompileStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
-  return stringifyJson(V.DRAFT_COMPILE_FIELDS.map((key) => (key === RT_MOTION.SUBTITLES ? fields[key] !== false : key === RT_MOTION.STYLEPRESET && (fields.visualSettings as MotionVisualSettings)?.mode === RT_SHARED.REMOTION ? undefined : fields[key])));
+  return stringifyJson([...V.DRAFT_COMPILE_FIELDS.map((key) => (key === "visualSettings" ? motionVisualSettingsFor(fields) : key === RT_MOTION.SUBTITLES ? fields[key] !== false : key === RT_MOTION.STYLEPRESET && (fields.visualSettings as MotionVisualSettings)?.mode === RT_SHARED.REMOTION ? undefined : fields[key])), motionVoiceAsrSatisfied(fields.voice as MotionStoryScript["voiceTrack"], fields.asrCheck === true && !fields.uploadedAudio)]);
 };
 export const motionRenderStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
-  return stringifyJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, fields.encoder, fields.musicMood, fields.musicVolume]);
+  return stringifyJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, motionEffectiveEncoder(fields), fields.musicMood, fields.musicVolume]);
+};
+export const motionProductionOutputKeys = (state: object, result: MotionProductionResult) => {
+  if (!result.outputSettings || result.outputSettings.version !== 1) return null;
+  if (!motionVoiceAsrSatisfied(result.voice, result.outputSettings.asrCheck)) return null;
+  const output = { ...state, ...result.outputSettings, analysis: result.analysis || (state as VisualDraftContext).analysis, script: result.script || (state as VisualDraftContext).script, voice: result.voice || null, uploadedAudio: null };
+  return { compilationKey: motionCompileStateKey(output), renderSignature: motionRenderStateKey(output) };
 };
 export const motionRenderedPreview = (state: { lastRenderJobId?: string | null; renderSignature?: string }, job?: MotionJobState | null, saved: readonly MotionResultItem[] = []) => {
   const result = job?.status === MotionJobStatus.COMPLETED ? job.result : undefined;
@@ -125,11 +131,12 @@ export const recoverMotionVisualDraft = <T extends VisualDraftContext>(state: T,
   const next = { ...state, analysis, script: { ...state.script, gen: script.gen, visualSettings: script.visualSettings } };
   const candidate = result.compiled;
   const spec = candidate?.spec;
+  const outputKeys = motionProductionOutputKeys(next, result);
   const audioCompatible = !state.uploadedAudio && state.voice?.audioId === result.voice?.audioId && stringifyJson(state.voice?.durations) === stringifyJson(result.voice?.durations) && state.script.voiceChannel === script.voiceChannel && motionVoiceSignature(state.script, state.analysis) === motionVoiceSignature(script, analysis);
-  const compatible = audioCompatible && spec && spec.aspect === state.aspect && spec.fps === state.fps && !!spec.subtitles?.length === (state.subtitles !== false) && stringifyJson(motionRenderBehaviorFor(spec)) === stringifyJson(motionRenderBehaviorFor(state));
+  const compatible = audioCompatible && spec && outputKeys?.compilationKey === motionCompileStateKey(next);
   const compiled = compatible ? { ...candidate, compilationKey: motionCompileStateKey(next) } : null;
   const item = result.rendered;
-  const renderCompatible = !result.renderSettings || motionRenderStateKey({ ...next, ...result.renderSettings }) === motionRenderStateKey(next);
+  const renderCompatible = outputKeys?.renderSignature === motionRenderStateKey(next);
   const renderJob: MotionJobState | null = compiled && item && renderCompatible ? { id: item.id, status: MotionJobStatus.COMPLETED, progress: 1, framesDone: 0, framesTotal: 0, startedAt: 0, log: [], result: item } : null;
   if (renderJob) {
     next.lastRenderJobId = item!.id;

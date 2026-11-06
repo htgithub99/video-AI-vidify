@@ -14,7 +14,7 @@ export const SCENE_FRAMING: Record<MotionSceneView, string> = {
 export const SCENE_FRAMING_PLANNING = `VIEWS: ${MOTION_SCENE_VIEWS.join(" | ")}. wide for a whole place or crowd; medium for one to three people interacting; medium_close for one or two people whose hands, gesture and face all matter; close for one face carrying the emotion; detail for an object or hands; establishing for a place without people; over_shoulder for a listener and a speaker. Use the beat's shot as the requested view; one picture may still cover consecutive beats that share the same view and subject.`;
 export const SCENE_DEVICES: Record<Exclude<MotionSceneFormat, "illustration">, string> = {
   diagram: "DEVICE diagram: a clear schematic of the idea with few labelled parts and a plain reading order; no room, floor or incidental people.",
-  comparison: "DEVICE comparison: the recurring weighing device (a scale, a ledger, stamps, a scoreboard) with the compared candidates or cards placed on or beside it; labels are the exact supplied text.",
+  comparison: "DEVICE comparison: present the requested candidates or evidence with clear comparable positions; labels use the exact supplied text. Use a physical scale, ledger, stamp or scoreboard only when explicitly requested in the source or visual brief.",
   map: "DEVICE map: a simplified map of the named region with the few places that matter marked and the movement drawn as a route; no people unless a small marker figure is requested.",
   timeline: "DEVICE timeline: a horizontal line or ribbon with the named years or eras as markers and the current one highlighted; short exact labels only.",
   process: "DEVICE process: the steps as a left-to-right sequence of small panels or arrows, each step one readable action.",

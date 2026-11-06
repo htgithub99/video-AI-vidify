@@ -1,5 +1,5 @@
 import { MOTION_CAMERA as C } from "../constants/motionCamera.js";
-import { compositionElements, motionCompositionDirected, motionSceneAnimationValue } from "./motionSceneComposition.js";
+import { compositionElements, motionCompositionDirected, motionSceneAnimationValue, motionAuthoredTime } from "./motionSceneComposition.js";
 import { motionActorTracks } from "./motionActorTracks.js";
 import { stringifyJson } from "./jsonStringify.js";
 import type { MotionProfileCamera } from "../constants/motionProfileMotion.js";
@@ -77,9 +77,10 @@ export const motionSceneCameraDirection = (scene: MotionRemotionTimedScene, asse
   if (mode !== "follow" && !camera?.TRACK) return { mode, origin, focus: origin };
   const parts = camera?.PART_WEIGHT ? context.tracks.filter((track) => track.target !== subject.id && !!context.elements.get(track.target)?.ancestors.includes(subject.id)).map((track) => track.target) : [];
   const live = (at: number): Point => {
-    const main = motionSceneSubjectPoint(composition, asset, subject.id, origin, at);
+    const authored = motionAuthoredTime(composition, at, duration);
+    const main = motionSceneSubjectPoint(composition, asset, subject.id, origin, authored);
     if (!parts.length || !camera) return main;
-    const moved = parts.map((id) => motionSceneSubjectPoint(composition, asset, id, origin, at));
+    const moved = parts.map((id) => motionSceneSubjectPoint(composition, asset, id, origin, authored));
     const shift = { x: moved.reduce((sum, p) => sum + p.x - main.x, 0) / moved.length, y: moved.reduce((sum, p) => sum + p.y - main.y, 0) / moved.length };
     return { x: main.x + shift.x * camera.PART_WEIGHT, y: main.y + shift.y * camera.PART_WEIGHT };
   };

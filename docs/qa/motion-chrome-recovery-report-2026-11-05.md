@@ -1,5 +1,7 @@
 # Kiểm chứng Motion và Chrome dự phòng — 05/11/2026
 
+> Bổ sung sau kiểm tra dự án thực: các test Retry ban đầu chưa phủ nhánh refusal và menu Gemini; prompt chung còn ràng buộc thiết bị phán quyết. Đã có patch và kiểm chứng bổ sung, gồm Gemini live, dữ liệu 27/36 và ảnh trước/sau. Xem [báo cáo dữ liệu thực trên Chrome](motion-real-data-chrome-report-2026-11-05.md) để biết kết quả và giới hạn hiện tại.
+
 ## Kết quả triển khai
 
 | Hạng mục | Kết quả |

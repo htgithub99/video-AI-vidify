@@ -15,10 +15,11 @@ import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_RELEASED_LOG } from "../../../..
 import { isRemotionSpec } from "../../../../lib/motionVisual.js";
 import type { MotionRenderSpec } from "../../../../types/motionVisual.js";
 import { MOTION_VISUAL as VISUAL } from "../../../../constants/motionVisual.js";
-import { renderRemotionVideo, renderRemotionStill } from "./motionRemotionRenderService.js";
+import { motionCachedSegments, motionRemotionSegments, motionSegmentFile, pruneMotionSegments, renderMotionSegmentsToCache } from "./motionRemotionSegmentCache.js";
+import { waitMotionSegmentPrerender } from "./motionSegmentPrerender.js";
 import { validateRemotionSpec } from "../../../../lib/motionRemotion.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
-import { motionRemotionRenderConcurrency } from "../../../../lib/motionRemotionPerformance.js";
+import { motionRemotionRenderConcurrency, motionRemotionRenderLanes } from "../../../../lib/motionRemotionPerformance.js";
 import { MOTION_REMOTION_RENDER } from "../../../../constants/motionRemotionRender.js";
 import { MOTION_SOUND_CONFIG } from "../../../../constants/motionSound.js";
 import * as MR from "../../../../constants/motionRuntime.js";
@@ -464,27 +465,48 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       }
       const renderStarted = Date.now();
       let loggedPercent = 0;
-      await renderRemotionVideo(spec, silent, {
-        width,
-        height,
-        crf: preset.crf,
-        log: (line) => pushLog(job, line),
-        concurrency: job.workers,
+      // Scene-aligned segments: cached per content hash (a redrawn scene re-renders only its segment) and
+      // rendered by several narrow lanes, which measured faster than one wide render. Frames are identical.
+      const encoding = { width, height, crf: preset.crf };
+      const segments = motionRemotionSegments(spec, encoding);
+      pruneMotionSegments();
+      // Segments pre-rendered while scenes were still being drawn are reused here.
+      await waitMotionSegmentPrerender(options.editorialSessionId, signal);
+      const cached = await motionCachedSegments(spec, segments, encoding, signal);
+      const fileOf = motionSegmentFile;
+      const frames = (segment: (typeof segments)[number]) => segment.end - segment.start + 1;
+      const todo = segments.filter((segment) => !cached.has(segment.key));
+      const plan = motionRemotionRenderLanes(os.cpus().length, os.freemem(), todo.length);
+      job.workers = plan.lanes * plan.perLane;
+      pushLog(job, MOTION_REMOTION_RENDER.SEGMENTS(segments.length, segments.length - todo.length, plan.lanes, plan.perLane));
+      const reused = segments.filter((segment) => cached.has(segment.key)).reduce((sum, segment) => sum + frames(segment), 0);
+      let rendered = 0;
+      const report = () => {
+        const done = reused + rendered;
+        job.framesDone = done;
+        job.progress = Math.min(0.94, (done / totalFrames) * 0.94);
+        const seconds = (Date.now() - renderStarted) / 1000;
+        job.fpsRender = seconds > 0 ? (done - reused) / seconds : 0;
+        job.etaSeconds = job.fpsRender ? Math.max(0, (totalFrames - done) / job.fpsRender) : undefined;
+        const percent = Math.floor(((done / totalFrames) * 100) / MOTION_REMOTION_RENDER.PROGRESS_STEP) * MOTION_REMOTION_RENDER.PROGRESS_STEP;
+        if (percent > loggedPercent && percent < 100) {
+          loggedPercent = percent;
+          pushLog(job, MOTION_REMOTION_RENDER.PROGRESS(percent, job.fpsRender));
+        }
+        persistRenderJob(job);
+      };
+      await renderMotionSegmentsToCache(spec, todo, encoding, {
         signal,
-        onProgress: (frames, total) => {
-          job.framesDone = frames;
-          job.progress = Math.min(0.94, (frames / total) * 0.94);
-          const seconds = (Date.now() - renderStarted) / 1000;
-          job.fpsRender = seconds > 0 ? frames / seconds : 0;
-          job.etaSeconds = job.fpsRender ? Math.max(0, (total - frames) / job.fpsRender) : undefined;
-          const percent = Math.floor((frames / total) * 100 / MOTION_REMOTION_RENDER.PROGRESS_STEP) * MOTION_REMOTION_RENDER.PROGRESS_STEP;
-          if (percent > loggedPercent && percent < 100) {
-            loggedPercent = percent;
-            pushLog(job, MOTION_REMOTION_RENDER.PROGRESS(percent, job.fpsRender));
-          }
-          persistRenderJob(job);
+        lanes: plan,
+        log: (line) => pushLog(job, line),
+        onFrames: (value) => {
+          rendered = value;
+          report();
         },
       });
+      const list = path.join(work, MOTION_TEXT_PARTS_TXT);
+      fs.writeFileSync(list, _.map(segments, (segment) => MOTION_TEMPLATE_FILE(String(fileOf(segment).replace(MP.BACKSLASH, MOTION_TEXT_SYMBOL_16).replace(MP.SINGLE_QUOTE, MOTION_TEXT_SYMBOL_38)))).join(MOTION_TEXT_SYMBOL_27));
+      await ffmpegOrThrow([MOTION_TEXT_F, MOTION_TEXT_CONCAT, MOTION_TEXT_SAFE, MOTION_TEXT_0, MOTION_TEXT_I, list, MOTION_TEXT_C, MOTION_TEXT_COPY, silent], signal);
       pushLog(job, MOTION_REMOTION_RENDER.COMPLETE((Date.now() - renderStarted) / 1000));
       await validateMotionMedia(silent, { seconds: duration, width, height, fps, frames: totalFrames }, signal);
       job.status = MotionJobStatus.ENCODING;
@@ -772,13 +794,7 @@ export const cancelMotionJob = (id?: string): boolean => {
 export const checkMotionSpec = async (spec: MotionRenderSpec): Promise<{ duration: number; errors: { t: number; shot: string; error: string }[] }> => {
   if (isRemotionSpec(spec)) {
     validateRemotionSpec(spec);
-    const work = getMotionWorkDirectory(randomUUID());
-    try {
-      for (const frame of [...new Set([0, Math.floor((spec.duration * spec.fps) / 2), Math.ceil(spec.duration * spec.fps) - 1])]) await renderRemotionStill(spec, path.join(work, `${frame}${RT_SERVER.PNG_B98B80}`), frame);
-      return { duration: spec.duration, errors: [] };
-    } finally {
-      await fs.promises.rm(work, { recursive: true, force: true });
-    }
+    return { duration: spec.duration, errors: [] };
   }
   const html = buildMotionRenderHtml(spec);
   const { browser } = await launchBrowser();

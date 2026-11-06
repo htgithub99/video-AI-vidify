@@ -16,6 +16,7 @@ export interface ChatPendingSubmission {
   responseSelector: string;
   busySelector: string;
   url: string;
+  regenerating?: boolean;
 }
 export interface ChatPlanningSubmission {
   onAttempt?: () => void;

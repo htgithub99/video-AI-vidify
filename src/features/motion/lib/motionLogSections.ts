@@ -19,7 +19,17 @@ export interface MotionLogSection {
   state: string;
   summary: string;
   lastOrder: number;
+  /** Wall-clock time of this step (start → last update, or now while running), in ms. */
+  durationMs?: number;
 }
+/** "1 giờ 05 phút", "7 phút 12 giây", "38 giây" — compact h/m/s text for step durations. */
+export const motionDurationText = (ms: number, language: string = RT_SHARED.VI): string => {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const [h, m, s] = [Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60];
+  const unit = language === RT_SHARED.EN ? { h: "h", m: "m", s: "s" } : { h: " giờ", m: " phút", s: " giây" };
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return h ? `${h}${unit.h} ${pad(m)}${unit.m}` : m ? `${m}${unit.m} ${pad(s)}${unit.s}` : `${s}${unit.s}`;
+};
 export const motionLogSectionKey = (text: string): string | undefined => S.MATCH.find(([, pattern]) => pattern.test(text))?.[0];
 const motionLogStageKeys = (stage: string): string[] => S.MATCH.filter(([, pattern]) => pattern.test(stage)).map(([key]) => key);
 export const motionLogSections = (entries: MotionLogEntry[], language: string = RT_SHARED.VI, job?: MotionStoryJobState | null, render?: MotionJobState | null): MotionLogSection[] => {
@@ -126,6 +136,10 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     const ownerStatus = job?.id === source ? job.status : render?.id === source ? render.status : parentStatus;
     const stopped = ([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(ownerStatus);
     group.state = state.status === RT_SHARED.COMPLETED ? RT_MOTION.DONE : state.status === RT_SHARED.ERROR ? RT_SHARED.ERROR : state.status === RT_MOTION.CANCELLED || stopped ? RT_MOTION.CANCELLED : RT_MOTION.ACTIVE;
+    if (state.startedAt) {
+      const end = group.state === RT_MOTION.ACTIVE ? Date.now() : state.updatedAt || state.startedAt;
+      if (end > state.startedAt) group.durationMs = end - state.startedAt;
+    }
     sources.set(key, source);
   }
   for (const [key, source] of sources) {

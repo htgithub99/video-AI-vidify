@@ -104,3 +104,4 @@ package-lock.json
 /docs/video-references/**/*.jpeg
 /docs/video-references/**/*.png
 /docs/video-references/**/*.webp
+.kilo/

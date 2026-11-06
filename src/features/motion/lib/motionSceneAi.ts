@@ -2,6 +2,7 @@ import { MOTION_SCENE_AI } from "../../../constants/motionSceneLibrary.js";
 import { CINEMATIC_CHAT_DEFAULT_MODELS, CINEMATIC_CHAT_MODEL_OPTIONS } from "../../../constants/cinematicConstants.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import type { MotionAiExecution } from "../../../types/motionVideo.js";
+import type { MotionVisualSettings } from "../../../types/motionVisual.js";
 export interface MotionAiChoice {
   aiProvider: AiPlanningFallbackProvider;
   aiModel: AiPlanningChatModel;
@@ -21,5 +22,5 @@ export const resolveMotionSceneExecution = (exec: MotionAiExecution) => {
   const model = CINEMATIC_CHAT_MODEL_OPTIONS[provider].find((option) => option.value === exec.model)?.value || CINEMATIC_CHAT_DEFAULT_MODELS[provider];
   return { provider, model, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: exec.chromeHeadless !== false, allowFallback: exec.allowFallback !== false };
 };
-export const motionSceneAiExecution = (state: MotionAiChoice & Partial<MotionSceneAiChoice>) =>
-  resolveMotionSceneExecution({ provider: state.sceneAiProvider || MOTION_SCENE_AI.PRIMARY_PROVIDER, model: state.sceneAiModel || (state.sceneAiProvider ? undefined : MOTION_SCENE_AI.PRIMARY_MODEL), chromeHeadless: state.sceneAiHeadless ?? state.aiHeadless, allowFallback: state.sceneAiFallback !== false });
+export const motionSceneAiExecution = (state: MotionAiChoice & Partial<MotionSceneAiChoice> & { visualSettings?: MotionVisualSettings }) =>
+  resolveMotionSceneExecution({ provider: state.sceneAiProvider || MOTION_SCENE_AI.PRIMARY_PROVIDER, model: state.sceneAiModel || (state.sceneAiProvider ? undefined : MOTION_SCENE_AI.PRIMARY_MODEL), chromeHeadless: state.sceneAiHeadless ?? state.aiHeadless, allowFallback: state.visualSettings?.mode === "remotion" ? false : state.sceneAiFallback !== false });

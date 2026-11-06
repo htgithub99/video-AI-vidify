@@ -1,30 +1,16 @@
 import type { MotionSceneView } from "./motionProfiles/framing.js";
 export const MOTION_SCENE_BRIEF = {
-  TASK: "TEXT CODING TASK: draw ONE complete 2D scene as SVG source from the SCENE BRIEF below, in the character style whose frame and rules follow. The brief says what must be in the picture and what it must get right; you design the setting, poses, placement and layout yourself. No image tools, no reference-image upload. Return only the JSON described at the end.",
+  TASK: "TEXT CODING TASK: draw ONE complete animated 2D scene as SVG source AND its full animation keyframes in the SAME response, from the SCENE BRIEF below, in the character style whose frame and rules follow. The brief says what must happen and what the picture must get right; design the setting, poses, placement, joints and motion together. This single response is the finished scene; no separate motion director or revision pass follows. No image tools, no reference-image upload. Return only the JSON described at the end.",
   OUTPUT: `OUTPUT: one fenced JSON object {design,svg,layers,animations,continuityNotes}.
 design={format,camera,cameraMotion?}: brief descriptive fields only; the SVG holds the real layout in the exact viewBox.
 svg: self-contained SVG with xmlns='http://www.w3.org/2000/svg', closed tags, unique ids, explicit fills and strokes, single-quoted attributes inside the JSON string; local defs/gradients allowed; no scripts, CSS, SMIL, external URLs or text except label nodes; max 150000 characters.
 layers=[{id,kind:background|character|prop|effect,entityId?,anonymous?,appearance?,effectKind?,sourceId?}] in back-to-front paint order; every id is a real <g id> in the svg; use the node ids from the brief; named people carry their entityId, groups anonymous:true. appearance lists only static traits actually drawn (<=240 chars).
-animations=[{target,channel:actor|effect|speech,attribute:transform|d|opacity,period?,keyframes:[{at,value}]}]: times start at 0 and increase, loops end where they start, transform keyframes are small local deltas appended to the base transform. When actors=fixed return []. When actors=simple give each person who acts, speaks or reacts one small loop on a body part (head turn 4-7 degrees, arm or hand 8-15 degrees about its joint), cloth/hair/flags 8-14 degrees, smoke/dust drift 3-5% of the canvas width; keep feet, seated bodies and garment bases still; riders and held things stay attached to their owner; animate mouths only for dialogueSpeakers. Set design.cameraMotion={mode:follow|push|pull|hold,subjectId,focus:{x,y}} for the main action.
+animations=[{target,channel:actor|effect|speech,attribute:transform|d|opacity,period?,keyframes:[{at,value}]}]: at most 96 tracks and 20 keyframes per track. Times are seconds, start at 0 and increase. Transform values are local deltas appended to the original SVG transform, with identical command structure and parameter count at every keyframe; d keyframes also keep identical command structure. Omit period for one-way actions, progress to the final pose and hold it. Use period only for actual repeating motions, with the last value exactly equal to the first. Opacity values are numbers in [0,1]. When actors=fixed return []. When actors=simple perform the script author's motionIntent for the covered moment, following the chosen visual construction; keep its stated static moments static. Keep seated contacts and held objects attached; animate mouths only for dialogueSpeakers. When sceneEffects=off omit effect tracks. Set design.cameraMotion={mode:follow|push|pull|hold,subjectId,focus:{x,y}} for the main action, respecting camera=fixed.
 continuityNotes: <=600 characters naming the stable landmarks of this place for later scenes; no poses, no people.
 Before returning check: every brief node present, limbs connected, hands on held objects, people on their supports, nothing important cut by the frame edge, JSON and SVG syntax valid.`,
-  HEADINGS: {
-    BRIEF: "SCENE BRIEF",
-    WHEN: "WHEN AND WHERE",
-    STORY: "THIS MOMENT",
-    CAMERA: "VIEW AND CAMERA",
-    PEOPLE: "PEOPLE",
-    GROUPS: "GROUPS",
-    OBJECTS: "OBJECTS AND ANIMALS",
-    UNITS: "UNIT REFERENCE",
-    PROPS: "OTHER THINGS",
-    EFFECTS: "EFFECTS",
-    GRAMMAR: "GENRE",
-    WATCH: "WATCH OUT IN THIS SCENE",
-    IDS: "IDS REQUIRED",
-    STYLE: "STYLE RULES",
-    PLACE: "PLACE SO FAR",
-  },
+  COMPLETE_MOTION: (seconds?: number) =>
+    `COMPLETE MOTION IN THIS DRAWING RESPONSE. ${Number.isFinite(seconds) && seconds! > 0 ? `The scene lasts ${Number(seconds!.toFixed(4))} seconds; author the complete action within this duration.` : "Use the scene brief to time a clear beginning, development and end."} When motion is enabled, design each required action's start, development and end while drawing, following the subject-specific construction above. Start at 0; one-way actions finish and hold within the scene, repeating motions return to their first pose. When motion is off return animations: []. Keep profile detail, identities, counts and continuity. Return every required animation with the full SVG; the renderer executes your keyframes without adding gait or correcting poses.`,
+  HEADINGS: { BRIEF: "SCENE BRIEF", WHEN: "WHEN AND WHERE", STORY: "THIS MOMENT", CAMERA: "VIEW AND CAMERA", PEOPLE: "PEOPLE", GROUPS: "GROUPS", OBJECTS: "OBJECTS AND ANIMALS", UNITS: "UNIT REFERENCE", PROPS: "OTHER THINGS", EFFECTS: "EFFECTS", GRAMMAR: "GENRE", WATCH: "WATCH OUT IN THIS SCENE", IDS: "IDS REQUIRED", STYLE: "STYLE RULES", PLACE: "PLACE SO FAR" },
   VIEWS: {
     wide: "wide view: the whole place with its people; the main action in the middle ground, the setting readable around it",
     medium: "medium view: one to three people seen whole inside their setting, close enough that faces read",
@@ -63,7 +49,8 @@ Before returning check: every brief node present, limbs connected, hands on held
   PERSON_ANIMAL: (animal: string): string => `This is an animal (${animal}), drawn with animal anatomy.`,
   GROUP: (id: string, description: string): string => `- ${id}: ${description}.`,
   GROUP_COUNT: (visible: number, rows: number | undefined, total: number | undefined): string => `Draw at least ${visible} clearly visible people${rows ? ` in ${rows} rows` : ""}, the rear rows smaller and simpler${total && total > visible ? `; the story has about ${total}, so suggest more beyond them with simple shapes` : ""}.`,
-  GROUP_LOOK: (origin: string | undefined, skin: string | undefined, outfit: string | undefined, gear: string | undefined, faction: string | undefined, look: string | undefined): string => [origin ? `People: ${origin}.` : "", skin ? `Skin ${skin}.` : "", outfit ? `Wear: ${outfit.replace(/[.\s]+$/u, "")}.` : look ? `Wear: ${look.replace(/[.\s]+$/u, "")}.` : "", gear ? `Carry: ${gear}.` : "", faction ? `Side: ${faction}.` : ""].filter(Boolean).join(" "),
+  GROUP_LOOK: (origin: string | undefined, skin: string | undefined, outfit: string | undefined, gear: string | undefined, faction: string | undefined, look: string | undefined): string =>
+    [origin ? `People: ${origin}.` : "", skin ? `Skin ${skin}.` : "", outfit ? `Wear: ${outfit.replace(/[.\s]+$/u, "")}.` : look ? `Wear: ${look.replace(/[.\s]+$/u, "")}.` : "", gear ? `Carry: ${gear}.` : "", faction ? `Side: ${faction}.` : ""].filter(Boolean).join(" "),
   GROUP_FACING: (facing: string, depth: string): string => `Facing ${facing}, placed in the ${depth}.`,
   OBJECT: (id: string, label: string, description: string): string => `- ${id} (${label}): ${description}.`,
   OBJECT_NOTE: (note: string): string => `Construction: ${note}`,
@@ -83,7 +70,8 @@ Before returning check: every brief node present, limbs connected, hands on held
     USES: (name: string, objectId: string): string => `${name} is using ${objectId}: the hands touch it and the body is placed where a user of that thing stands or sits.`,
     HELD: (name: string): string => `What ${name} holds sits inside the hand, not floating beside it.`,
     TOP_ROOM: "Leave empty space above every head and hat; no head touches the top edge.",
-    ANIMAL_LEGS: (id: string, legs: number, gait: string | undefined): string => `${id} has ${legs} legs and the head at the front of the body; ${gait === "run" || gait === "gallop" ? "the legs stretch forward and back in the stride with the body level" : gait === "lie" ? "the legs fold under the body" : gait === "fly" ? "the wings spread and the legs tuck under the body" : "the feet or hooves stand on the ground"}.`,
+    ANIMAL_LEGS: (id: string, legs: number, gait: string | undefined): string =>
+      `${id} has ${legs} legs and the head at the front of the body; ${gait === "run" || gait === "gallop" ? "the legs stretch forward and back in the stride with the body level" : gait === "lie" ? "the legs fold under the body" : gait === "fly" ? "the wings spread and the legs tuck under the body" : "the feet or hooves stand on the ground"}.`,
     UNIT: (name: string, label: string, count: number): string => `${name}: ${count > 1 ? `${count} separate ${label} units` : `one ${label} unit`}, each built from the unit reference; never people standing in a row with the animals or things behind them.`,
     RIDER: (name: string, mount: string): string => `${name} sits on ${mount}: hips on its back over the saddle, the near leg along its flank, the far leg hidden by its body; paint ${name} after ${mount} and never beside or in front of it.`,
     OBJECT_PARTS: (id: string, note: string): string => `${id}: ${note}`,
@@ -91,45 +79,19 @@ Before returning check: every brief node present, limbs connected, hands on held
   IDS_PEOPLE: (ids: string[], parts: readonly string[]): string => `Each person group ${ids.join(", ")} contains the sub-groups ${parts.map((part) => `<id>_${part}`).join(", ")}; the hat or hair sits inside <id>_head.`,
   IDS_MARKS: (id: string, count: number): string => `${id} also has one group per fixed identifier: ${Array.from({ length: count }, (_, index) => `${id}_mark_${index + 1}`).join(", ")}, in the order listed.`,
   IDS_UNIT_GROUP: (id: string, parts: readonly string[]): string => `Group ${id}: every visible unit is its own sub-group ${id}_p1, ${id}_p2, … and each unit contains ${parts.map((part) => `${id}_pN_${part}`).join(", ")}.`,
-  IDS_UNIT: (id: string, parts: readonly string[]): string => `${id} is one unit containing ${parts.map((part) => `${id}_${part}`).join(", ")}; each person part has its own _head, _torso, arms, hands and legs inside it.`,
+  IDS_UNIT: (id: string, parts: readonly string[], legless = false): string => `${id} is one unit containing ${parts.map((part) => `${id}_${part}`).join(", ")}; each person part has its own _head, _torso, arms and hands${legless ? ", with one continuous legless garment and no human legs or feet" : " and legs"} inside it.`,
   IDS_GROUP: (id: string): string => `Group ${id}: every visible person is its own sub-group ${id}_p1, ${id}_p2, … each with its own _head.`,
   IDS_OBJECT: (id: string, parts: readonly string[]): string => `${id} has sub-groups ${parts.map((part) => `${id}_${part}`).join(", ")}.`,
   IDS_EFFECTS: "Effects use their requested ids; atmospheric effects (fog, smoke, dust) are painted behind the people, only rain or snow may cross in front.",
-  /** Rig rules so the motion director can move individual parts after drawing (only when scene motion is on). */
-  IDS_RIG: {
-    HEADING: "MOVING PARTS (a separate motion step animates these groups after drawing; drawing them separately is required, animating them is not):",
-    LIMBS: (ids: string[]): string =>
-      `${ids.join(", ")}: inside <id>_legs draw <id>_leg_left and <id>_leg_right as two separate groups; inside each arm group keep the hand attached. Every limb group hangs from its joint (hip or shoulder at the top of the group) and contains no other body part.`,
-    ANIMAL: (id: string, legs: number): string =>
-      legs >= 4
-        ? `${id}: inside ${id}_legs draw four separate groups ${id}_leg_front_left, ${id}_leg_front_right, ${id}_leg_back_left, ${id}_leg_back_right, each hanging from the body; ${id}_tail, and ${id}_mane when it has one, are their own groups.`
-        : `${id}: each visible leg or wing is its own sub-group of ${id}_legs or ${id}_wings, attached at the body.`,
-    WHEELS: (id: string): string => `${id}: inside ${id}_wheels every wheel is its own round group ${id}_wheel_1, ${id}_wheel_2, … centred on its axle, so it can turn in place.`,
-    ROTOR: (id: string): string => `${id}: a propeller, rotor, sail, oar or mill wheel is its own group ${id}_rotor (or ${id}_oar_1, …) centred on its pivot.`,
-    WATER: "A river, stream, waterfall or sea surface is its own effect layer (effectKind water) covering only the water area; a flag, banner or cloak is its own group fixed at its pole or shoulder.",
-    SCROLL: (width: number): string =>
-      `Only when the narration shows a long journey (riding, running or driving across country): draw the far landscape and the near ground as two groups named <name>_scroll; each repeats seamlessly with the same artwork drawn twice, the second copy translated by exactly ${width} px (total width ${width * 2} px), so the motion step can slide it.`,
-  },
   CONTEXT_LINE: (json: string): string => `Technical context (canvas, behaviour): ${json}`,
   MAX_SHEET_CHARS: 3000,
   MAX_SHEETS: 2,
   MAX_PLACE_CHARS: 300,
-  CLASS_PART_NAMES: {
-    mount: ["head", "legs", "tail"],
-    draft: ["head", "legs"],
-    wheeled: ["body", "wheels"],
-    tracked: ["hull", "tracks", "turret"],
-    boat: ["hull"],
-    aircraft: ["fuselage", "wings"],
-    artillery: ["barrel", "wheels", "trail"],
-    machine: ["base", "working_part"],
-    fixture: ["body"],
-    handItem: ["body"],
-    bird: ["head", "wings", "legs"],
-    smallAnimal: ["head", "legs"],
-  } as Record<string, readonly string[]>,
+  CLASS_PART_NAMES: { mount: ["head", "legs", "tail"], draft: ["head", "legs"], wheeled: ["body", "wheels"], tracked: ["hull", "tracks", "turret"], boat: ["hull"], aircraft: ["fuselage", "wings"], artillery: ["barrel", "wheels", "trail"], machine: ["base", "working_part"], fixture: ["body"], handItem: ["body"], bird: ["head", "wings", "legs"], smallAnimal: ["head", "legs"] } as Record<
+    string,
+    readonly string[]
+  >,
   SAME_SCALE_RELATION: "beside",
-  RIG_LEGS_PART: "legs",
   CROWD_WATCH_MIN: 4,
   JOIN: "\n",
   BLANK: "\n\n",

@@ -8,6 +8,8 @@ import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioF
 import { MotionToggle } from "./MotionToggle.js";
 import { MotionSettingsGroup } from "./MotionSettingsGroup.js";
 import { MOTION_SETTINGS_TEXT } from "../constants/motionSettings.js";
+import { MOTION_SETTINGS_COMPATIBILITY } from "../../../constants/motionSettingsCompatibility.js";
+import { motionAnalysisSettingsMessage } from "../../../lib/motionSettingsCompatibility.js";
 import { MotionPartsCard } from "./MotionPartsCard.js";
 import { MOTION_PARTS, MOTION_PARTS_TEXT } from "../../../constants/motionParts.js";
 import { MOTION_STORY_LENGTH_SECONDS } from "../../../constants/motionVideo.js";
@@ -224,6 +226,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const partsText = currentLang === MR.MOTION_TEXT_EN ? MOTION_PARTS_TEXT.en : MOTION_PARTS_TEXT.vi;
   const { state, patch } = studio;
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
+  const settingsText = MOTION_SETTINGS_COMPATIBILITY[currentLang === "en" ? "en" : "vi"];
+  const analysisSettingsMessage = motionAnalysisSettingsMessage(state, currentLang);
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const kitText = PUPPET_TEXTS[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const musicText = MOTION_MUSIC.UI[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
@@ -536,7 +540,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
                     <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
                   </div>
-                  <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />
+                  {state.visualSettings?.mode !== RT_SHARED.REMOTION && <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />}
                   <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                     <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SUBTITLES_MODE}</span>
                     <MotionToggle checked={state.subtitles !== false} label={text.SUBTITLES_MODE} icon={Captions} text={state.subtitles !== false ? text.SUBTITLES_ON : text.SUBTITLES_OFF} title={text.SUBTITLES_HINT} onClick={() => patch({ subtitles: state.subtitles === false })} />
@@ -559,6 +563,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 </MotionSettingsGroup>
               </div>
+              {analysisSettingsMessage && <p role="status" className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>{analysisSettingsMessage}</p>}
+              {state.script && state.script.language !== state.language && <p role="status" className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>{settingsText.language}</p>}
+              {state.script && (state.parts || 1) !== (state.series?.parts.length || 1) && <p role="status" className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>{settingsText.parts}</p>}
+              {state.productionId && <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>{settingsText.resume}</p>}
               {!remotionMode && <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />}
               <div className={MOTION_STYLES.FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP}>
                 {busyKind === MOTION_TEXT_ANALYZE || busyKind === MotionStoryJobKind.PRODUCTION ? (
@@ -943,6 +951,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       renderBehavior={state.renderBehavior}
                       language={currentLang}
                       onRedo={(scene) => void studio.buildScenes({ scenes: [scene.id], note: sceneNote || undefined })}
+                      onRetryFailed={() => void studio.buildScenes({ retryFailed: true })}
                       busy={studio.renderBusy || ((busyKind === MotionStoryJobKind.SCENES || busyKind === MotionStoryJobKind.PRODUCTION) && !storyStopping)}
                       onOpen={(scene, preview, index) => setPreviewModal({ type: RT_MOTION.BEAT, id: scene.id, title: visualText.scene(index + 1), imageUrl: "", remotion: preview, narration: scene.text, beats: [scene.beatId] })}
                     />
@@ -1025,11 +1034,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <option value={MotionEncoderPreference.CPU}>{text.ENCODER_CPU}</option>
                 </MotionSelectField>
               </div>
-              <div className={MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
-                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_5_ROUNDED_XL_TEXT_XS}>
-                  {studio.checking ? <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} /> : <ScanSearch className={MOTION_STYLES.W_4_H_4} />}
-                  <span>{text.CHECK_BTN}</span>
-                </Button>
+              <div className={remotionMode ? "grid grid-cols-1 gap-2 pt-2" : MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
+                {!remotionMode && (
+                  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_5_ROUNDED_XL_TEXT_XS}>
+                    {studio.checking ? <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} /> : <ScanSearch className={MOTION_STYLES.W_4_H_4} />}
+                    <span>{text.CHECK_BTN}</span>
+                  </Button>
+                )}
                 {studio.renderBusy ? (
                   <StopBtn onClick={() => void studio.cancelRender()} label={renderStopping ? text.STOPPING : text.STOP_RENDER} stopping={renderStopping} />
                 ) : (

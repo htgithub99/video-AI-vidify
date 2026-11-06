@@ -472,6 +472,8 @@ export interface MotionBeat {
   hook?: string;
   cast?: string[];
   action?: string;
+  /** Written by the script AI; passed verbatim to the scene drawing prompt. */
+  motionIntent?: string;
   label?: string;
   emphasis?: boolean;
   data?: Record<string, unknown>;
@@ -738,6 +740,7 @@ export interface MotionStoryScript {
   visualSettings?: import("./motionVisual.js").MotionVisualSettings;
   durationRepairStates?: Record<string, { rejected: number; errors: string[] }>;
   chapterDrafts?: Record<string, MotionChapterDraft>;
+  readyChapterIds?: string[];
   voiceTrack?: MotionVoiceTrack;
   voiceSettings?: MotionVoiceSettings;
   voiceChannel?: string;
@@ -775,6 +778,7 @@ export interface MotionSeoPack {
   scriptKey: string;
 }
 export interface MotionVoiceTrack {
+  asr?: { version: number; checked: boolean };
   continuous?: boolean;
   speedKey?: string;
   provider?: "vieneu";
@@ -1002,7 +1006,27 @@ export interface MotionStoryJobState {
   result?: unknown;
   startedAt: number;
 }
+export interface MotionOutputSettings {
+  version: 1;
+  visualSettings: import("./motionVisual.js").MotionVisualSettings;
+  renderBehavior: import("./motionVisual.js").MotionRenderBehavior;
+  characterMotion: boolean;
+  stylePreset?: string;
+  aspect: string;
+  fps: number;
+  subtitles: boolean;
+  sfx: boolean;
+  sfxVolume: number;
+  soundOverrides: Record<string, MotionSoundOverride>;
+  look: string;
+  asrCheck: boolean;
+  quality: MotionQuality;
+  encoder: MotionEncoderPreference;
+  musicMood: string;
+  musicVolume: number;
+}
 export interface MotionProductionResult {
+  outputSettings?: MotionOutputSettings;
   renderSettings?: { quality?: MotionQuality; encoder?: MotionEncoderPreference; musicMood?: string; musicVolume?: number };
   analysis?: MotionStoryAnalysis;
   script?: MotionStoryScript;

@@ -24,6 +24,7 @@ export const requestMotionEditorResponse = async (prompt: string, originals: Mot
     if (requiredVisualIds.includes(id) && edit.drop !== true) {
       if (line.action && (typeof edit.action !== "string" || !edit.action.trim())) issues.push({ path: "action", reason: C.EDIT_VISUAL });
       if (line.scenePlan && !edit.scenePlan) issues.push({ path: "scenePlan", reason: C.EDIT_VISUAL });
+      if (line.motionIntent && (typeof edit.motionIntent !== "string" || !edit.motionIntent.trim())) issues.push({ path: "motionIntent", reason: C.EDIT_VISUAL });
     }
     issues.push(...motionEditorSpeechIssues(line, edit, speakers, preserveSpeech));
     return issues;
@@ -33,7 +34,7 @@ export const requestMotionEditorResponse = async (prompt: string, originals: Mot
     signal?.throwIfAborted();
     const pending = ledger.pending();
     const raw = await request(
-      repairContext + RT_SHARED.SYMBOL_01BA47 + C.EDIT_REPAIR + stringifyJson({ pending, originals: originals.filter((line) => pending.some((row) => row.id === line.id)).map(({ id, narration, utterances, action, scenePlan }) => ({ id, narration, utterances, ...(requiredVisualIds.includes(id) ? { action, scenePlan } : {}) })), acceptedIds: ledger.accepted().map((row) => row.id) }),
+      repairContext + RT_SHARED.SYMBOL_01BA47 + C.EDIT_REPAIR + stringifyJson({ pending, originals: originals.filter((line) => pending.some((row) => row.id === line.id)).map(({ id, narration, utterances, action, scenePlan, motionIntent }) => ({ id, narration, utterances, motionIntent, ...(requiredVisualIds.includes(id) ? { action, scenePlan } : {}) })), acceptedIds: ledger.accepted().map((row) => row.id) }),
     );
     ledger.submit((Array.isArray(raw?.edits) ? raw.edits : []).map((edit: any) => ({ id: edit?.id, value: edit })));
   }

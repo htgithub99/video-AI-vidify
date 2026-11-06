@@ -5,6 +5,7 @@ import { createServer } from "node:http";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
+import { parse, serializeOuter } from "parse5";
 import { CHAT_ROOM_LIFECYCLE_VERIFICATION as V } from "./chatRoomLifecycleVerificationTexts.ts";
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.ts";
 import { AiPlanningFallbackProvider as P } from "../src/types.ts";
@@ -86,7 +87,7 @@ try {
   await assert.rejects(service.waitForRoomIdle(slowPage, V.BUSY_SELECTOR, V.ANSWER_SELECTOR));
   service.config.ROOM_IDLE_WAIT_TIMEOUT_MS = originalIdleWait;
   service.config.ROOM_IDLE_STABLE_POLLS = 1;
-  browser = await chromium.launch({ channel: V.CHROME, headless: true });
+  browser = await chromium.launch({ channel: V.CHROME, headless: process.env.VIDIFY_VERIFY_CHROME_VISIBLE !== "1" });
   const context = await browser.newContext();
   await context.route(V.NETWORK, (route) => (new URL(route.request().url()).hostname === V.HOST ? route.continue() : route.abort()));
   const held = deferred(),
@@ -173,6 +174,64 @@ try {
     await service.closeChatPlanningRoom(native, true);
   }
   const bounded = request("bounded-shared-recovery", 1);
+  if (process.env.VIDIFY_VERIFY_REAL_CASES === "1") {
+    const base = "scratch/motion-real-recovery-20261105/baseline/output/motion-video/ai-debug/";
+    const source: any = parse(await readFile(base + "motion_remotion_composition-a8c3f22c.dom.txt", "utf8"));
+    const find = (node: any, test: (value: any) => boolean): any[] => [...(test(node) ? [node] : []), ...(node.childNodes || []).flatMap((child: any) => find(child, test))];
+    const text = (node: any): string => (node.nodeName === "#text" ? node.value : (node.childNodes || []).map(text).join(""));
+    const turn = find(source, (node) => node.tagName === "model-response").at(-1);
+    const menu = find(source, (node) => node.attrs?.some((entry: any) => entry.name === "role" && entry.value === "menu") && /Thử lại/.test(text(node))).at(-1);
+    assert.ok(turn && menu);
+    const realFailure = JSON.parse(await readFile(base + "motion_remotion_composition-a8c3f22c.json", "utf8"));
+    const native = { ...request("real-refusal-menu", 1), artifactType: "motion_remotion_composition" };
+    const recoveries: string[] = [];
+    let generated = 0;
+    service.providerGenerators[P.GeminiChat] = async (item: any) => {
+      generated++;
+      const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
+      await room.setContent(`<style>model-response{display:block}gem-icon-button{display:inline-block;position:relative;width:40px;height:40px}button{position:static!important}</style><user-query>Actual source request</user-query>${serializeOuter(turn)}`);
+      await room.evaluate(
+        ({ menuHtml, response }: any) => {
+          const trigger = document.querySelector('[data-test-id="regenerate-button"]') as HTMLElement;
+          trigger.onclick = () => {
+            const overlay = document.createElement("div");
+            overlay.className = "cdk-overlay-pane";
+            overlay.innerHTML = menuHtml;
+            overlay.querySelector('[role="menu"]')!.id = trigger.getAttribute("aria-controls")!;
+            document.body.append(overlay);
+            for (const button of overlay.querySelectorAll('button, [role="menuitem"]'))
+              if (button.textContent?.trim().endsWith("Thử lại"))
+                (button as HTMLElement).onclick = () => {
+                  document.querySelector(".model-response-text")!.textContent = JSON.stringify(response);
+                  overlay.remove();
+                };
+          };
+        },
+        { menuHtml: serializeOuter(menu), response: { artifactType: item.artifactType, requestId: item.requestId, ready: true } },
+      );
+      Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".model-response-text", busySelector: ".busy" } });
+      throw Object.assign(new Error(service.config.REFUSAL_RESPONSE_ERROR), { diagnostics: { lastCandidate: realFailure.lastCandidate } });
+    };
+    const result = await within(service.generatePlanningWithChatUi({ ...native, onRecovery: (line: string) => recoveries.push(line) }));
+    assert.equal(JSON.parse(result.text).ready, true);
+    assert.equal(generated, 1, "The actual refusal branch must click native menu Retry without resubmitting the prompt");
+    assert.equal(recoveries.filter((line) => /bấm nút/u.test(line)).length, 1);
+    process.stdout.write(String("PASS: original real refusal and Gemini menu replay through the product recovery branch; one generation, native Retry, no duplicate submit.") + "\n");
+    await service.closeChatPlanningRoom(native, true);
+  }
+  const single = { ...request("single-generation", 1), artifactType: "motion_remotion_composition", oneGeneration: true };
+  let singleCalls = 0;
+  service.providerGenerators[P.GeminiChat] = async (item: any) => {
+    singleCalls++;
+    const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
+    await room.setContent('<user-query>Current request</user-query><model-response><div class="answer">Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó.</div><button onclick="window.retryClicks=(window.retryClicks||0)+1">Thử lại</button></model-response>');
+    Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
+    throw Object.assign(new Error(service.config.REFUSAL_RESPONSE_ERROR), { diagnostics: { lastCandidate: "Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó." } });
+  };
+  await assert.rejects(within(service.generatePlanningWithChatUi(single)), (error: any) => error.message === service.config.REFUSAL_RESPONSE_ERROR);
+  assert.equal(singleCalls, 1, "Single-generation scenes must not regenerate a content refusal");
+  assert.equal(await service.geminiRooms.get(service.getPlanningRoomKey(single)).evaluate(() => (window as any).retryClicks || 0), 0);
+  await service.closeChatPlanningRoom(single, true);
   const boundedRooms: any[] = [];
   const recoveryLines: string[] = [];
   let restored = 0;
@@ -181,7 +240,9 @@ try {
     const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
     boundedRooms.push(room);
     if (boundedRooms.length > 3) return JSON.stringify({ artifactType: item.artifactType, requestId: item.requestId, ready: true });
-    await room.setContent('<user-query>Current request</user-query><model-response><div class="answer">Sorry, something went wrong. Please try your request again.</div><button onclick="window.retryClicks=(window.retryClicks||0)+1">Thử lại</button></model-response>');
+    await room.setContent(
+      "<user-query>Current request</user-query><model-response><div class=\"answer\">Sorry, something went wrong. Please try your request again.</div><button onclick=\"window.retryClicks=(window.retryClicks||0)+1;this.insertAdjacentHTML('afterend','<div class=busy>Generating</div>');setTimeout(()=>document.querySelector('.busy').remove(),50)\">Thử lại</button></model-response>",
+    );
     Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
     throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR);
   };

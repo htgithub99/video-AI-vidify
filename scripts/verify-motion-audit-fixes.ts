@@ -14,9 +14,8 @@ const { getStoryJob } = await import("../src/features/motion/server/services/mot
 const { writeChapterBeats } = await import("../src/features/motion/server/services/motionStoryService.js");
 const { remotionBeatKey, remotionGroupKey, remotionCompositionKey, remotionStoryBuildStatus } = await import("../src/features/motion/server/services/remotion/sceneKeys.js");
 const { buildRemotionScenes } = await import("../src/features/motion/server/services/remotion/scenePipeline.js");
-const { createCompositionGeometryInspector, MotionCompositionMeasurementError } = await import("../src/features/motion/server/services/remotion/compositionGeometryInspector.js");
 const { normalizeSceneComposition, compositionFrameSvg } = await import("../src/lib/motionSceneComposition.js");
-const { motionCompositionGeometryErrors } = await import("../src/lib/motionCompositionGeometry.js");
+const { scoreMotionScene } = await import("../src/lib/motionSceneScore.js");
 const { puppetBeatLines } = await import("../src/lib/motionPuppet.js");
 const { motionInputKey } = await import("../src/features/motion/server/services/motionFileUtils.js");
 const { createMotionProductionService } = await import("../src/features/motion/server/services/motionProductionService.js");
@@ -68,7 +67,6 @@ const animations = [
     ],
   },
 ];
-const geometry = createCompositionGeometryInspector();
 try {
   const directory = path.join(root, "production");
   fs.mkdirSync(directory, { recursive: true });
@@ -217,26 +215,20 @@ try {
   assert.equal(remotionBeatKey(beat, analysis), remotionBeatKey(beat, unrelated));
   assert.equal(remotionBeatKey(beat, analysis), remotionBeatKey({ ...beat, narration: beat.narration + "  ", seconds: 20 }, analysis));
   assert.notEqual(remotionBeatKey(beat, analysis), remotionBeatKey({ ...beat, narration: "Người khách đứng bên bến sông." }, analysis));
+  // Framing is now checked by the local scene score (no browser): in-frame passes, a person pushed off-canvas fails.
   const built = normalizeSceneComposition(art, "art", "input", "room", [node], new Set(["guest"]), 1280, 720);
-  assert.deepEqual(await geometry.check(built.asset, built.composition), []);
-  const wrong = { ...built.asset, svg: built.asset.svg.replace('transform="translate(896 144)"', "").replace('width="128" height="360"', 'width="1280" height="720"') };
-  assert.equal((await geometry.check(wrong, built.composition)).length, 1);
-  assert.equal(motionCompositionGeometryErrors(built.composition, { person: { x: 0.65, y: 0.18, width: 0.2, height: 0.55 } }).length, 0);
-  assert.equal(motionCompositionGeometryErrors(built.composition, { person: { x: 2, y: 0.2, width: 0.1, height: 0.5 } }).length, 1);
-  assert.equal(motionCompositionGeometryErrors(built.composition, { person: null }).length, 1);
+  const frameOf = (svg: string, width = 1280, height = 720) => scoreMotionScene({ svg, layers: built.composition.layers, animations: [], nodes: [node], width, height, motion: false }).criteria.frame;
+  assert.equal(frameOf(built.asset.svg), 1);
+  assert.ok(frameOf(built.asset.svg.replace("translate(896 144)", "translate(1500 144)")) < 1);
   const portrait = normalizeSceneComposition({ ...art, svg: art.svg.replace("0 0 1280 720", "0 0 720 1280").replace("translate(896 144)", "translate(504 256)").replace('width="128" height="360"', 'width="72" height="640"') }, "portrait", "input", "room", [node], new Set(["guest"]), 720, 1280);
-  assert.deepEqual(await geometry.check(portrait.asset, portrait.composition), []);
+  assert.equal(frameOf(portrait.asset.svg, 720, 1280), 1);
   const lines = puppetBeatLines(beat);
   const calls: string[] = [];
   let latest: any;
   const script: any = { title: analysis.title, language: "vi", visualSettings: settings, beats: [beat] };
   const opts: any = {
     exec: {},
-    geometry,
     review: false,
-    still: async (_spec: unknown, file: string) => {
-      fs.writeFileSync(file, "offline fixture");
-    },
     renderBehavior: fixed,
     scope: "cache",
     log: () => {},
@@ -251,30 +243,11 @@ try {
       throw new Error("Unexpected offline artifact: " + artifact);
     },
   };
-  const generated = await buildRemotionScenes(script, analysis, { ...opts, geometry: { check: geometry.check } });
+  const generated = await buildRemotionScenes(script, analysis, opts);
   assert.equal(remotionStoryBuildStatus(generated, analysis), "ready");
   const before = calls.length;
-  await buildRemotionScenes(generated, unrelated, { ...opts, geometry: { check: geometry.check } });
+  await buildRemotionScenes(generated, unrelated, opts);
   assert.equal(calls.length, before);
-  const badCache = structuredClone(generated),
-    badScene = badCache.gen!.remotion!.scenes.b1[0];
-  delete badScene.composition!.geometryRevision;
-  badCache.gen!.remotion!.assets[badScene.composition!.assetKey].svg = wrong.svg;
-  const corrected = await buildRemotionScenes(badCache, analysis, {
-    ...opts,
-    scope: "bad-geometry-cache",
-    review: true,
-    geometry: { check: geometry.check },
-    ai: async (_prompt: string, artifact: string) => {
-      if (artifact === V.ARTIFACT_REVIEW) return { ok: true, issues: [] };
-      assert.equal(artifact, C.ARTIFACT);
-      return { groupPatches: [{ id: "person", svg: '<g id="person" transform="translate(896 144)"><rect width="128" height="360" fill="#605d76"/></g>' }] };
-    },
-  });
-  const correctedScene = corrected.gen!.remotion!.scenes.b1[0],
-    correctedAsset = corrected.gen!.remotion!.assets[correctedScene.composition!.assetKey];
-  assert.deepEqual(await geometry.check(correctedAsset, correctedScene.composition!), []);
-  assert.ok(correctedAsset.svg.includes('<g id="room"><rect width="1280" height="720" fill="#303741"/></g>'));
   const legacy = structuredClone(generated);
   const state = legacy.gen!.remotion!;
   const legacyBeat = motionInputKey([V.VERSION, L.SCENE_REVISION, settings, V.PROFILES.horror.revision, analysis.era, analysis.cast, analysis.places, beat, ""]);
@@ -282,16 +255,16 @@ try {
   state.inputKeys.b1 = legacyBeat;
   state.scenes.b1[0].sourceKey = legacyGroup;
   const scene = state.scenes.b1[0];
-  scene.composition!.inputKey = motionInputKey([C.REVISION, scene.sourceKey, scene.purpose, scene.environment, scene.nodes, scene.text, settings, V.PROFILES.horror.revision, 1280, 720, state.notes!.b1, undefined]);
+  scene.composition!.inputKey = motionInputKey([C.REVISION, scene.sourceKey, scene.purpose, scene.environment, scene.nodes, scene.text, state.settings, V.PROFILES.horror.revision, 1280, 720, state.notes!.b1, undefined]);
   state.assets[scene.composition!.assetKey].inputKey = scene.composition!.inputKey;
-  const migrated = await buildRemotionScenes(legacy, analysis, { ...opts, scope: "legacy-cache", geometry: { check: geometry.check } });
+  const migrated = await buildRemotionScenes(legacy, analysis, { ...opts, scope: "legacy-cache" });
   assert.equal(calls.length, before);
   assert.equal(migrated.gen!.remotion!.inputKeys.b1, remotionBeatKey(beat, analysis));
   assert.equal(migrated.gen!.remotion!.scenes.b1[0].sourceKey, remotionGroupKey([beat], analysis, migrated.gen!.remotion));
   assert.equal(migrated.gen!.remotion!.scenes.b1[0].composition!.inputKey, remotionCompositionKey(scene, unrelated, 1280, 720, state.notes!.b1));
   const multiScript = { ...script, beats: [beat, { ...beat, id: "b2", narration: "Người khách lặng nhìn căn nhà tối." }] };
   const multiLines = multiScript.beats.flatMap((row) => puppetBeatLines(row));
-  const multiOpts = { ...opts, scope: "multi-scenes", geometry: { check: geometry.check }, ai: async (prompt: string, artifact: string) => (artifact === V.ARTIFACT_SCENE ? { scenes: multiLines.map((line, index) => ({ fromLineId: line.key, toLineId: line.key, purpose: "room " + index, environment: "old room", nodes: [node] })) } : opts.ai(prompt, artifact)) };
+  const multiOpts = { ...opts, scope: "multi-scenes", ai: async (prompt: string, artifact: string) => (artifact === V.ARTIFACT_SCENE ? { scenes: multiLines.map((line, index) => ({ fromLineId: line.key, toLineId: line.key, purpose: "room " + index, environment: "old room", nodes: [node] })) } : opts.ai(prompt, artifact)) };
   const multiBuilt = await buildRemotionScenes(multiScript, analysis, multiOpts);
   assert.equal(multiBuilt.gen!.remotion!.scenes.b1.length, 2);
   const multiOld = structuredClone(multiBuilt),
@@ -304,7 +277,7 @@ try {
   let previousKey: string | undefined;
   for (const shot of multiState.scenes.b1) {
     shot.sourceKey = oldGroup;
-    shot.composition!.inputKey = motionInputKey([C.REVISION, oldGroup, shot.purpose, shot.environment, shot.nodes, shot.text, settings, V.PROFILES.horror.revision, 1280, 720, multiState.notes!.b1, previousKey]);
+    shot.composition!.inputKey = motionInputKey([C.REVISION, oldGroup, shot.purpose, shot.environment, shot.nodes, shot.text, multiState.settings, V.PROFILES.horror.revision, 1280, 720, multiState.notes!.b1, previousKey]);
     multiState.assets[shot.composition!.assetKey].inputKey = shot.composition!.inputKey;
     previousKey = shot.composition!.inputKey;
   }
@@ -319,13 +292,13 @@ try {
   assert.deepEqual(calls.slice(beforeEdit), [C.ARTIFACT]);
   assert.deepEqual(repaired.gen!.remotion!.scenes.b1[1].composition, nextComposition);
   const beforeMotion = calls.length;
-  const enabled = await buildRemotionScenes(generated, analysis, { ...opts, scope: "enable-motion", renderBehavior: behavior, geometry: { check: geometry.check } });
+  const enabled = await buildRemotionScenes(generated, analysis, { ...opts, scope: "enable-motion", renderBehavior: behavior });
   assert.deepEqual(calls.slice(beforeMotion), []);
   const animatedScene = enabled.gen!.remotion!.scenes.b1[0],
     animatedAsset = enabled.gen!.remotion!.assets[animatedScene.composition!.assetKey];
   assert.equal(animatedAsset.svg, generated.gen!.remotion!.assets[generated.gen!.remotion!.scenes.b1[0].composition!.assetKey].svg);
   assert.equal(compositionFrameSvg(animatedAsset, animatedScene.composition!, 0, behavior, new Set()), compositionFrameSvg(animatedAsset, animatedScene.composition!, 4, behavior, new Set()));
-  const failedOpts = { ...opts, scope: "missing-motion", renderBehavior: behavior, geometry: { check: geometry.check }, ai: async () => ({ animations: [] }) };
+  const failedOpts = { ...opts, scope: "missing-motion", renderBehavior: behavior, ai: async () => ({ animations: [] }) };
   await buildRemotionScenes(generated, analysis, failedOpts);
   assert.equal(latest.gen.remotion.assets[generated.gen!.remotion!.scenes.b1[0].composition!.assetKey].svg, animatedAsset.svg);
   assert.equal(latest.gen.remotion.scenes.b1[0].build.status, "accepted");
@@ -342,27 +315,8 @@ try {
   const pendingMotion = structuredClone(generated);
   pendingMotion.gen!.renderBehavior = behavior;
   assert.equal(remotionStoryBuildStatus(pendingMotion, analysis), "ready");
-  const infrastructureCalls: string[] = [];
-  const infrastructure = await buildRemotionScenes(script, analysis, {
-    ...opts,
-    review: true,
-    scope: "measurement-failure",
-    ai: async (...args: any[]) => {
-      infrastructureCalls.push(args[1]);
-      return opts.ai(...args);
-    },
-    geometry: {
-      check: async () => {
-        throw new MotionCompositionMeasurementError(new Error("offline browser failure"));
-      },
-    },
-  });
-  assert.equal(infrastructure.gen!.remotion!.scenes.b1[0].build!.status, "failed");
-  assert.equal(remotionStoryBuildStatus(infrastructure, analysis), "ready");
-  assert.equal(infrastructureCalls.filter((artifact) => artifact === C.ARTIFACT).length, 1);
-  console.log("Motion audit B01–B08: lifecycle, source races, resume assets, no-op/partial duration patches, stable/legacy caches, SVG geometry, metadata motion repair and build status passed; no live AI or video render.");
+  console.log("Motion audit B01–B08: lifecycle, source races, resume assets, no-op/partial duration patches, stable/legacy caches, local framing score and build status passed; no live AI or video render.");
 } finally {
-  await geometry.close();
   if (priorStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
   else process.env.VIDIFY_STORAGE_DIR = priorStorage;
   if (priorData === undefined) delete process.env.APP_DATA_DIR;

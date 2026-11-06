@@ -66,6 +66,7 @@ export const remotionBeatKey = (beat: MotionBeat, analysis: MotionStoryAnalysis,
         place: beat.place,
         scenePlan: beat.scenePlan,
         action: beat.action,
+        ...(beat.motionIntent !== undefined ? { motionIntent: beat.motionIntent } : {}),
         time: beat.time,
         weather: beat.weather,
         shot: beat.shot,
@@ -120,6 +121,9 @@ export const remotionCompositionKey = (scene: MotionRemotionScene, analysis: Mot
       width,
       height,
       note,
+      ...(scene.writtenMotionKey ? [{ writtenMotionKey: scene.writtenMotionKey }] : []),
+      ...(scene.motionIntent !== undefined ? [{ sceneMotionIntent: scene.motionIntent }] : []),
+      ...(scene.actionPlan !== undefined ? [{ sceneActionPlan: scene.actionPlan }] : []),
     ]),
   );
 export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: MotionStoryAnalysis): "ready" | "partial" | "pending" | "outdated" | "invalid" => {

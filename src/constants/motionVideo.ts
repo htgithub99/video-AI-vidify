@@ -175,7 +175,7 @@ export const MOTION_STORY_CONFIG = {
   ROOM_LIMIT_LOG: (from: string, to: string): string => `${from} đã hết lượt – các yêu cầu còn lại trong phiên chuyển thẳng sang ${to}`,
   API_PROVIDER: "api",
   REQUEST_COUNT_LOG: (counts: Record<string, number>): string =>
-    `Số request đã gửi: ${Object.entries(counts)
+    `Số yêu cầu AI đã khởi chạy (gồm các bước nội dung/hình/chuyển động, chưa tính retry nội bộ): ${Object.entries(counts)
       .map(([provider, count]) => `${provider} ${count}`)
       .join(", ")}`,
   ROOM_FALLBACK_LOG: (provider: string): string => `Phòng chat ${provider} đang bị chặn (xác minh Cloudflare/đăng nhập) – chuyển sang Gemini để chạy tiếp…`,

@@ -146,6 +146,7 @@ const beat = object(
     cast: strings(),
     action: text,
     time: choice(...MOTION_RESPONSE_VALUES.TIMES),
+    motionIntent: text,
     weather: choice(...MOTION_RESPONSE_VALUES.WEATHERS),
     shot: choice(...MOTION_RESPONSE_VALUES.SHOTS),
     subject: text,
@@ -199,7 +200,7 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   "motion-story-doctor": story,
   "motion-story-chapter": object({ chapterId: text, beats: array(beat, 1) }),
   "motion-story-edit": object({
-    edits: array(object({ ...texts("id", "narration", "reason"), utterances: array(MOTION_UTTERANCE_SCHEMA, 1), action: plainText, scenePlan: MOTION_SCENE_PLAN_SCHEMA, visual: choice(...MOTION_RESPONSE_VALUES.VISUALS), shot: choice(...MOTION_RESPONSE_VALUES.SHOTS), subject: plainText, frame: choice(...MOTION_RESPONSE_VALUES.FRAMES), drop: boolean }, ["id", "narration", "reason"])),
+    edits: array(object({ ...texts("id", "narration", "reason"), utterances: array(MOTION_UTTERANCE_SCHEMA, 1), action: plainText, motionIntent: text, scenePlan: MOTION_SCENE_PLAN_SCHEMA, visual: choice(...MOTION_RESPONSE_VALUES.VISUALS), shot: choice(...MOTION_RESPONSE_VALUES.SHOTS), subject: plainText, frame: choice(...MOTION_RESPONSE_VALUES.FRAMES), drop: boolean }, ["id", "narration", "reason"])),
   }),
   "motion-voice-direction": object({ beats: array(object({ id: text, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }), 1) }),
   "motion-audio-casting": object({ audioDirection: object(texts("mode", "narrationStyle", "soundStyle")), roles: array(object({ ...texts("speaker", "voiceId"), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["speaker", "voiceId"]), 1) }),

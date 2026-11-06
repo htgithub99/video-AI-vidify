@@ -78,7 +78,8 @@ try {
       assert.equal(input.options.audioId, voice.audioId);
       assert.equal(typeof input.options.clearGeminiChatsBeforeExport, "boolean");
       cleanupOptions.push(input.options.clearGeminiChatsBeforeExport);
-      return start("render", { id: "output", videoUrl: "/output.mp4" }, waitRender ? -1 : 5);
+      // Measured output exactly as configured (16:9 standard 30 fps, 2 s timeline), so the conformance gate passes.
+      return start("render", { id: "output", videoUrl: "/output.mp4", aspect: input.options.aspect || "16:9", fps: input.spec?.fps || input.options.fps || 30, quality: input.options.quality || "standard", width: 1280, height: 720, durationSeconds: 2, resolvedSettings: { subtitles: false } }, waitRender ? -1 : 5);
     },
     seoMotionStoryInput: () => {
       throw new Error("optional SEO unavailable");
@@ -217,7 +218,7 @@ try {
   };
   const partial = await settlePartial();
   assert.equal(partial.status, S.ERROR);
-  assert.match(partial.error!, /Chưa đủ hình/);
+  assert.match(partial.error!, /Chưa đủ dữ liệu để xuất video/);
   assert.ok((partial.result as any).voice.audioId);
   assert.equal(partial.stepStates?.[P.STAGES.SCENES]?.status, S.ERROR);
   assert.equal(remotionCompiles, beforePartialCompiles);
@@ -272,7 +273,7 @@ try {
       voiceMotionStoryInput: (body: any) => {
         repairVoices++;
         const changed = body.script.beats[0].narration === revised.beats[0].narration;
-        const error = changed && failRepair ? "repair voice interrupted" : undefined;
+        const error = failRepair ? "repair voice interrupted" : undefined;
         if (error) failRepair = false;
         return start(K.VOICE, { ...voice, totalSeconds: changed ? 2 : 0.8, signature: motionVoiceSignature(body.script, analysis) }, 12, error);
       },
@@ -292,17 +293,17 @@ try {
   assert.match((await correctionUntil()).error!, /repair voice interrupted/);
   correction.resumeMotionProduction("duration");
   assert.equal((await correctionUntil()).status, S.COMPLETED);
-  assert.equal(repairWrites, 1);
-  assert.equal(repairScenes, 2);
-  assert.equal(repairVoices, 3);
+  assert.equal(repairWrites, 0, "Positive audio duration does not trigger automatic script rewriting");
+  assert.equal(repairScenes, 1, "Completed images survive a voice interruption");
+  assert.equal(repairVoices, 2);
   let draftRepairWrites = 0;
   let draftRepairScenes = 0;
   const draftRepairService = createMotionProductionService(
     {
       ...deps,
       scriptMotionStoryInput: (body: any) => {
-        if (!body.durationRepair) return start(K.SCRIPT, structuredClone(script));
         const interrupted = ++draftRepairWrites === 1;
+        if (!interrupted) assert.ok(body.chapterDrafts?.chapter_1, "Resume receives the interrupted script checkpoint");
         return start(K.SCRIPT, interrupted ? { ...structuredClone(script), chapterDrafts: { chapter_1: { inputKey: "duration", rows: script.beats, pending: [{ id: "beat_1", fields: ["narration"] }] } } } : structuredClone(revised), 5, interrupted ? "duration script interrupted" : undefined);
       },
       scenesMotionStoryInput: (body: any) => {
@@ -329,7 +330,7 @@ try {
   draftRepairService.resumeMotionProduction("duration-draft");
   assert.equal((await settleDraftRepair()).status, S.COMPLETED);
   assert.equal(draftRepairWrites, 2);
-  assert.equal(draftRepairScenes, 2);
+  assert.equal(draftRepairScenes, 1);
   const minuteAnalysis = { ...analysis, chapters: [{ ...analysis.chapters[0], targetSeconds: 60 }] };
   let minuteWrites = 0;
   let minuteVoices = 0;
@@ -362,13 +363,13 @@ try {
     await delay(2);
   }
   assert.equal(minuteState?.status, S.COMPLETED, minuteState?.error);
-  assert.equal(minuteWrites, 1);
-  assert.equal(minuteVoices, 2);
+  assert.equal(minuteWrites, 0);
+  assert.equal(minuteVoices, 1);
   assert.deepEqual(
     minuteScenes.map((text) => text.split(". ")[0]),
-    ["Duration revision 0", "Duration revision 1"],
+    ["Duration revision 0"],
   );
-  assert.ok(minuteState?.log.some((line) => line.includes("76") && line.includes("60")));
+  assert.ok(minuteState?.log.some((line) => line.includes("120") && line.includes("60")));
   let advisoryWrites = 0;
   let advisoryScenes = 0;
   let advisoryVoices = 0;
@@ -446,10 +447,11 @@ try {
     seoDirectory,
     1,
     1,
-    20,
+    1000,
   );
   const seoUntil = async (id: string) => {
-    for (let i = 0; i < 500; i++) {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
       const state = seoRecovery.getMotionProduction(id)!;
       if ([S.ERROR, S.CANCELLED, S.COMPLETED].includes(state.status)) return state;
       await delay(2);

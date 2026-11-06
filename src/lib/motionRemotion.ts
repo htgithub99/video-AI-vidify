@@ -39,6 +39,7 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
       validateSceneComposition(scene.composition, asset, scene.nodes);
       const aspect = scene.aspect || RT_SHARED.VALUE_16_9;
       const { w: width, h: height } = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE[RT_SHARED.VALUE_16_9];
+      const previewFrames = scene.composition.animationSource === "ai-complete" && Number.isFinite(scene.composition.duration) && scene.composition.duration! > 0 ? Math.max(1, Math.ceil(scene.composition.duration! * 30)) : 30;
       return {
         preview: {
           engine: RT_SHARED.REMOTION,
@@ -46,14 +47,14 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
           title: scene.purpose,
           aspect,
           fps: 30,
-          duration: 1,
+          duration: previewFrames / 30,
           width,
           height,
           motion: state.renderBehavior?.actors === RT_SHARED.SIMPLE,
           renderBehavior: state.renderBehavior,
           profileId: state.settings.profileId,
           assets: { [asset.key]: asset },
-          scenes: [{ ...scene, nodes: scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width, height, depth })), startFrame: 0, endFrame: 30 }],
+          scenes: [{ ...scene, nodes: scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width, height, depth })), startFrame: 0, endFrame: previewFrames }],
           subtitles: [],
         },
       };

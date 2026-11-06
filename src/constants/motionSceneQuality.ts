@@ -80,7 +80,7 @@ export const MOTION_SCENE_QUALITY = {
   LOG_FIX: (scene: number, total: number, moved: number, opacity: number): string => `Cảnh ${scene}/${total}: tự sửa lớp hình – ${moved} lớp sương/khói dời xuống dưới nhân vật, ${opacity} nhân vật bị mờ được đặt lại rõ nét.`,
   LOG_ISSUE: (scene: number, total: number, issues: string[]): string => `Cảnh ${scene}/${total}: hình chưa đúng (${issues.join(" | ")}); sẽ vẽ lại sau lượt đầu.`,
   LOG_LEFT: (scene: number, total: number, issues: string[]): string => `Cảnh ${scene}/${total}: sau các vòng vẽ lại vẫn còn lưu ý (${issues.join(" | ")}); giữ hình tốt nhất hiện có.`,
-  LOG_ROUND: (round: number, count: number, ready: number, total: number): string => `Lượt đầu đã có hình ${ready}/${total} cảnh; vẽ lại cảnh sai tư thế/khung: vòng ${round}, ${count} cảnh (các room vẫn đang vẽ, chưa xong bước dựng cảnh).`,
+  LOG_ROUND: (round: number, count: number, ready: number, total: number): string => `Đã có hình ${ready}/${total} cảnh; sửa tư thế/khung: vòng ${round}, ${count} cảnh.`,
   LOG_KEEP: (id: string): string => `Cảnh ${id}: vẽ lại chưa thành công, giữ hình đã có.`,
   LOG_UNMEASURED: (id: string): string => `Cảnh ${id}: không đo được hình để kiểm tư thế/khung; giữ hình và tiếp tục.`,
 } as const;

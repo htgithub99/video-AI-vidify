@@ -1,9 +1,7 @@
-import { compositionActorMotion } from "../src/lib/motionCompositionMotion.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { compositionAttachedMotion } from "../src/lib/motionCompositionRepair.js";
 import { normalizeFirstSceneComposition, compositionFrameSvg } from "../src/lib/motionSceneComposition.js";
 import { normalizeRemotionRelations } from "../src/lib/motionRemotionStaging.js";
 import { motionNarratedSoundEvents } from "../src/lib/motionSound.js";
@@ -44,27 +42,12 @@ const art = (nested: boolean) =>
     800,
     450,
   );
+// Code never adds, removes or rewrites AI motion tracks (the attach/breathing repairers were removed with the QA pipeline).
 const nested = art(true);
-assert.equal(compositionAttachedMotion(nested.composition, nested.asset, [person, cup]).removed, 0);
+assert.equal(nested.composition.animations.length, 3, "All authored tracks are kept verbatim");
 const detached = art(false);
-const safe = compositionAttachedMotion(detached.composition, detached.asset, [person, cup]);
-assert.equal(safe.removed, 2, "Owner and arm must not move away from a detached held prop");
-assert.deepEqual(
-  safe.composition.animations.map((a) => a.channel),
-  ["effect"],
-);
-assert.equal(compositionActorMotion(safe.composition, detached.asset, [person, cup], cast, behavior, "horror").added, 0);
-assert.equal(compositionActorMotion(safe.composition, detached.asset, [person, { ...cup, target: "host" }], cast, behavior, "horror").added, 0, "Entity aliases also preserve held ownership");
-const still = { ...nested.composition, animations: [] };
-const breathing = compositionActorMotion(still, nested.asset, [person], cast, behavior, "horror");
-assert.equal(breathing.added, 0, "Do not invent whole-character breathing without an isolated chest detail");
-assert.deepEqual(
-  breathing.composition.animations.map((a) => a.target),
-  [],
-  "Never invent a wave or whole-character bob from an arm ID",
-);
-assert.equal(compositionActorMotion(still, nested.asset, [{ ...person, representation: "detail" }], cast, behavior, "horror").added, 0);
-assert.equal(compositionActorMotion(still, nested.asset, [person], cast, { ...behavior, actors: "fixed" }, "horror").added, 0);
+assert.equal(detached.composition.animations.length, 3, "A detached prop is reported by the scene score, not silently edited");
+void cast;
 const rainOnly = compositionFrameSvg(nested.asset, nested.composition, 2, { ...behavior, actors: "fixed" }, new Set());
 assert.equal(rainOnly, nested.asset.svg, "Scene motion off freezes rain and characters together");
 assert.equal(compositionFrameSvg(nested.asset, nested.composition, 2, { ...behavior, actors: "fixed", sceneEffects: "off" }, new Set()), nested.asset.svg);

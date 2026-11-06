@@ -159,7 +159,7 @@ try {
     }),
     (error: any) => error[C.ERROR_FLAG] && error.message === C.EXHAUSTED,
   );
-  browser = await chromium.launch({ channel: "chrome", headless: true });
+  browser = await chromium.launch({ channel: "chrome", headless: process.env.VIDIFY_VERIFY_CHROME_VISIBLE !== "1" });
   const page = await browser.newPage();
   const picker = (flash: string, pro: string, disabled = false) =>
     `<button data-test-id="bard-mode-menu-button" onclick="document.querySelector('[role=menu]').hidden=false">Flash-Lite</button><rich-textarea><textarea></textarea></rich-textarea><div role="menu" hidden><button role="menuitemradio">3.5 Flash-Lite</button><button role="menuitemradio" ${disabled ? 'aria-disabled="true"' : ""}>3.8 Flash ${flash}</button><button role="menuitemradio">3.1 Pro ${pro}</button></div><script>document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelector('[role=menu]').hidden=true})</script>`;

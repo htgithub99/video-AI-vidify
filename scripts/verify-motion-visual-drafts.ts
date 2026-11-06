@@ -7,9 +7,11 @@ import { MOTION_DRAFT_VERIFICATION as D } from "./motionDraftVerificationTexts.j
 import { MOTION_VISUAL_DRAFT_FIXTURE } from "./motionVisualDraftVerificationFixture.js";
 import { forgetMotionVisualDraftResults, recoverMotionVisualDraft } from "../src/features/motion/lib/motionVisualDraft.js";
 import { withMotionVoiceMode } from "../src/lib/motionVoice.js";
+import { motionOutputSettings } from "../src/lib/motionOutputSettings.js";
 const recordFile = "storage/output/motion-video/productions/53c01d81007bf76dbed7f4ad42f72999.json";
-const saved = fs.existsSync(recordFile) && !process.argv.includes("--fixture") ? JSON.parse(fs.readFileSync(recordFile, "utf8")) : MOTION_VISUAL_DRAFT_FIXTURE;
-const initial = { ...saved.input, analysis: saved.result.analysis, script: saved.result.script, voice: saved.result.voice, autoExport: true, autoRun: false, autoContinue: false, automationPaused: true, activeStoryJobId: "", activeRenderJobId: "", lastRenderJobId: saved.result.rendered.id, productionId: saved.job.id, editorialSessionId: saved.job.id };
+const saved: any = structuredClone(fs.existsSync(recordFile) && !process.argv.includes("--fixture") ? JSON.parse(fs.readFileSync(recordFile, "utf8")) : MOTION_VISUAL_DRAFT_FIXTURE);
+saved.result.outputSettings = motionOutputSettings(saved.input, saved.result);
+const initial = { ...saved.result.outputSettings, ...saved.input, analysis: saved.result.analysis, script: saved.result.script, voice: saved.result.voice, autoExport: true, autoRun: false, autoContinue: false, automationPaused: true, activeStoryJobId: "", activeRenderJobId: "", lastRenderJobId: saved.result.rendered.id, productionId: saved.job.id, editorialSessionId: saved.job.id };
 const changedAudio = recoverMotionVisualDraft({ ...initial, visualSettings: saved.result.script.visualSettings, voice: { ...saved.result.voice, audioId: "changed-voice.wav" } } as any, saved.result);
 assert.ok(changedAudio?.state.script.gen === saved.result.script.gen, "Voice changes must preserve artwork during recovery");
 assert.equal(changedAudio?.compiled, null, "Voice changes must not recover an outdated audio preview");
@@ -72,7 +74,7 @@ const server = createServer((req, res) => {
   res.end(req.url === "/fixture.js" ? bundle.outputFiles[0].text : '<!doctype html><meta charset="utf-8"><div id="root"></div><script type="module" src="/fixture.js"></script>');
 });
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-const browser = await chromium.launch({ channel: "chrome", headless: true });
+const browser = await chromium.launch({ channel: "chrome", headless: false });
 try {
   const page = await browser.newPage();
   const errors: string[] = [];

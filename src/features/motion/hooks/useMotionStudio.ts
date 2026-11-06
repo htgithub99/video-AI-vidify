@@ -19,7 +19,9 @@ import { puppetStoryboardCovers, puppetStoryboardInputKey } from "../../../lib/m
 import { motionNarratorCastKey } from "../../../lib/motionVoice.js";
 import { MOTION_SOUND_CONFIG } from "../../../constants/motionSound.js";
 import { MOTION_VOICE, MOTION_VOICE_LIBRARY } from "../../../constants/motionVoice.js";
-import { motionVoiceCast, motionVoiceSignature, voiceChannelRef, withMotionVoiceMode } from "../../../lib/motionVoice.js";
+import { motionVoiceCast, motionVoiceSignature, voiceChannelRef, withMotionVoiceMode, motionVoiceTrackMatches, motionVoiceAsrSatisfied } from "../../../lib/motionVoice.js";
+import { motionAnalysisSettingsMessage } from "../../../lib/motionSettingsCompatibility.js";
+import { MOTION_SETTINGS_COMPATIBILITY } from "../../../constants/motionSettingsCompatibility.js";
 import type { MotionCompiledPreview, MotionLogEntry, MotionSoundOverride, MotionStyleReference, MotionVoiceChannels } from "../../../types/motionVideo.js";
 import { logMotionActivity, logStoryTerminal, loggedMotionAction } from "../services/motionWorkflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, storyActivityPrefixes, storyActivityRoutes, MOTION_ACTIVITY_PREFIX } from "../../../constants/workflowActivity";
@@ -85,7 +87,7 @@ import { MOTION_VISUAL } from "../../../constants/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import type { MotionVisualSettings, MotionRemotionProfile, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { StorageCleanResult, StorageJunkReport } from "../../../types/storage.js";
-import { captureMotionVisualDraft, forgetMotionVisualDraftResults, hasMotionVisualDraft, invalidateMotionVisualDraftOutput, motionCompileStateKey, motionRenderStateKey, motionRenderedPreview, motionVisualDraftContextKey, motionVisualDraftKey, motionVisualDraftRuntime, recoverMotionVisualDraft, switchMotionVisualDraft, type MotionVisualDraft } from "../lib/motionVisualDraft.js";
+import { captureMotionVisualDraft, forgetMotionVisualDraftResults, hasMotionVisualDraft, invalidateMotionVisualDraftOutput, motionCompileStateKey, motionRenderStateKey, motionProductionOutputKeys, motionRenderedPreview, motionVisualDraftContextKey, motionVisualDraftKey, motionVisualDraftRuntime, recoverMotionVisualDraft, switchMotionVisualDraft, type MotionVisualDraft } from "../lib/motionVisualDraft.js";
 import { motionVisualBeatGroups } from "../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING } from "../../../constants/motionScenePacing.js";
 import { createMotionSourceReader } from "../lib/motionSourceReader.js";
@@ -217,6 +219,8 @@ export interface MotionScenesRequest {
   restart?: boolean;
   restyle?: boolean;
   note?: string;
+  /** Grants failed scenes a fresh 3-request budget; accepted scenes are kept. */
+  retryFailed?: boolean;
 }
 const compileStateKey = motionCompileStateKey;
 export const narrationSignature = motionVoiceSignature;
@@ -616,14 +620,15 @@ export function useMotionStudio() {
         ...(result.seo ? { seo: result.seo } : {}),
         ...(result.seoJobId && !settledSeoJobs.current.has(result.seoJobId) ? { seoJobId: result.seoJobId } : {}),
       });
+      const outputKeys = motionProductionOutputKeys(stateRef.current, result);
       if (result.compiled) {
-        compiledSig.current = compileStateKey(stateRef.current);
-        setCompiled({ ...result.compiled, compilationKey: compiledSig.current });
+        compiledSig.current = outputKeys?.compilationKey || MR.MOTION_TEXT_EMPTY;
+        setCompiled({ ...result.compiled, compilationKey: outputKeys?.compilationKey });
       }
       if (result.rendered) {
         setResults((items) => [result.rendered!, ...items.filter((item) => item.id !== result.rendered!.id)]);
         setRenderJob({ id: result.rendered.id, status: MotionJobStatus.COMPLETED, progress: 1, framesDone: 0, framesTotal: 0, startedAt: job.startedAt, log: [], result: result.rendered });
-        patch({ lastRenderJobId: result.rendered.id, renderSignature: motionRenderStateKey({ ...stateRef.current, ...result.renderSettings }) });
+        patch({ lastRenderJobId: result.rendered.id, renderSignature: outputKeys?.renderSignature });
       }
     },
     [patch],
@@ -817,6 +822,11 @@ export function useMotionStudio() {
         return;
       }
       if (!now.source || !analysis) return;
+      const settingsError = motionAnalysisSettingsMessage({ ...now, analysis });
+      if (settingsError) {
+        toast.error(settingsError);
+        return;
+      }
       resumeAutomation();
       await inFlow(async () => {
         try {
@@ -827,6 +837,7 @@ export function useMotionStudio() {
               analysis,
               videoGenre: motionVideoGenre(now.videoGenre),
               storytelling: motionStorytelling(now.storytelling),
+              renameEntities: now.renameEntities === true,
               ...motionVisualRequest(now),
               language: now.language,
               length: now.length,
@@ -987,14 +998,14 @@ export function useMotionStudio() {
     },
     [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
-  const voicePending = useRef<{ signature: string; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
+  const voicePending = useRef<{ signature: string; asrCheck: boolean; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
   const generateVoice = useCallback(
     async (scriptOverride?: MotionStoryScript): Promise<MotionVoiceTrack | undefined> => {
       const snapshot = stateRef.current,
         script = withVoiceConfig({ ...snapshot, script: scriptOverride || snapshot.script }, channelsRef.current).script;
       if (!script?.beats?.length) return;
       const signature = narrationSignature(script, snapshot.analysis);
-      if (voicePending.current?.signature === signature) return voicePending.current.promise;
+      if (voicePending.current?.signature === signature && (!snapshot.asrCheck || voicePending.current.asrCheck)) return voicePending.current.promise;
       resumeAutomation();
       const promise = inFlow(async () => {
         try {
@@ -1002,6 +1013,7 @@ export function useMotionStudio() {
           if (stateRef.current.voiceHold) patch({ voiceHold: MR.MOTION_TEXT_EMPTY });
           const track = (await runStoryJob(API_ROUTES.MOTION_STORY_VOICE, { script, analysis: snapshot.analysis, aspect: snapshot.aspect, asrCheck: snapshot.asrCheck === true, aiExecution: motionMainAiExecution(snapshot) })) as MotionVoiceTrack;
           if (narrationSignature(stateRef.current.script, stateRef.current.analysis) !== signature || track.signature !== signature) return;
+          if (!motionVoiceAsrSatisfied(track, stateRef.current.asrCheck === true)) throw new Error(MOTION_SETTINGS_COMPATIBILITY.vi.voiceCheck);
           const current = stateRef.current;
           const voiceCast = track.plan?.roles && current.script?.gen ? motionVoiceCast(current.script.gen.voiceCast, track.plan.roles) : undefined;
           const withCast = voiceCast && current.script?.gen ? { script: { ...current.script, gen: { ...current.script.gen, voiceCast } } } : {};
@@ -1016,7 +1028,7 @@ export function useMotionStudio() {
           reportStoryError(e);
         }
       });
-      voicePending.current = { signature, promise };
+      voicePending.current = { signature, asrCheck: snapshot.asrCheck === true, promise };
       try {
         return await promise;
       } finally {
@@ -1033,7 +1045,7 @@ export function useMotionStudio() {
       reportStoryError(error);
     }
   }, [storyJob, pauseAutomation]);
-  const voiceValid = state.voice?.provider === MOTION_VOICE.PROVIDER && state.voice.signature === narrationSignature(state.script, state.analysis);
+  const voiceValid = motionVoiceTrackMatches(state.voice, state.script, state.analysis, state.asrCheck === true);
   useEffect(() => {
     if (voiceValid) setVoiceError(MR.MOTION_TEXT_EMPTY);
   }, [voiceValid]);
@@ -1048,6 +1060,7 @@ export function useMotionStudio() {
       const revision = ++compileRevision.current;
       setCompileError(MR.MOTION_TEXT_EMPTY);
       const currentKey = compileStateKey({ ...snapshot, script });
+      const voiceMatches = motionVoiceTrackMatches(snapshot.voice, script, snapshot.analysis, snapshot.asrCheck === true);
       const r = await motionRequest<MotionCompiledPreview>(API_ROUTES.MOTION_STORY_COMPILE, {
         script,
         analysis: snapshot.analysis,
@@ -1055,15 +1068,16 @@ export function useMotionStudio() {
         fps: snapshot.fps,
         subtitles: snapshot.subtitles,
         aspect: snapshot.aspect,
-        audioId: snapshot.voice?.signature === narrationSignature(script, snapshot.analysis) ? snapshot.voice?.audioId : snapshot.uploadedAudio?.id,
-        voiceTrack: snapshot.voice?.provider === MOTION_VOICE.PROVIDER && snapshot.voice.signature === narrationSignature(script, snapshot.analysis) ? snapshot.voice : undefined,
+        audioId: voiceMatches ? snapshot.voice?.audioId : snapshot.uploadedAudio?.id,
+        voiceTrack: voiceMatches ? snapshot.voice : undefined,
+        asrCheck: snapshot.asrCheck === true,
         characterMotion: snapshot.characterMotion,
         sfx: snapshot.sfx,
         sfxVolume: snapshot.sfxVolume,
         soundOverrides: snapshot.soundOverrides,
         look: snapshot.look || undefined,
-        durations: snapshot.voice?.signature === narrationSignature(script, snapshot.analysis) ? snapshot.voice?.durations : undefined,
-        uploadedAudioSeconds: snapshot.voice?.signature !== narrationSignature(script, snapshot.analysis) && snapshot.uploadedAudio ? snapshot.uploadedAudio.durationSeconds : undefined,
+        durations: voiceMatches ? snapshot.voice?.durations : undefined,
+        uploadedAudioSeconds: !voiceMatches && snapshot.uploadedAudio ? snapshot.uploadedAudio.durationSeconds : undefined,
       });
       if (revision !== compileRevision.current || compileStateKey(stateRef.current) !== currentKey) return null;
       const value = {
@@ -1077,7 +1091,7 @@ export function useMotionStudio() {
       setCompiled(value);
       return value;
     },
-    [state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.renderBehavior, state.subtitles, state.sfx, state.sfxVolume, state.soundOverrides, audioId, voiceValid],
+    [state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.renderBehavior, state.subtitles, state.sfx, state.sfxVolume, state.soundOverrides, state.asrCheck, audioId, voiceValid],
   );
   const compiledSig = useRef<string>(MR.MOTION_TEXT_EMPTY);
   useEffect(() => {
@@ -1237,7 +1251,7 @@ export function useMotionStudio() {
             c = await compile();
           }
           if (!c) return;
-          if (!stateRef.current.uploadedAudio && (c.voiceStale || !stateRef.current.voice || stateRef.current.voice.provider !== MOTION_VOICE.PROVIDER || stateRef.current.voice.signature !== narrationSignature(stateRef.current.script, stateRef.current.analysis))) {
+          if (!stateRef.current.uploadedAudio && (c.voiceStale || !motionVoiceTrackMatches(stateRef.current.voice, stateRef.current.script, stateRef.current.analysis, stateRef.current.asrCheck === true))) {
             if (!(await generateVoice())) return;
             c = await compile();
             if (!c?.audioPreviewId) return;
@@ -1260,7 +1274,7 @@ export function useMotionStudio() {
               fps: exportState.fps,
               encoder: isRemotionSpec(c.spec) ? MotionEncoderPreference.CPU : exportState.encoder,
               title: exportState.analysis?.title || exportState.script?.title || MOTION_TEXT_MOTION,
-              audioId: exportState.voice?.signature === narrationSignature(exportState.script, exportState.analysis) ? exportState.voice.audioId : exportState.uploadedAudio?.id,
+              audioId: motionVoiceTrackMatches(exportState.voice, exportState.script, exportState.analysis, exportState.asrCheck === true) ? exportState.voice?.audioId : exportState.uploadedAudio?.id,
               mixedAudioId: c.audioPreviewId,
               sfxId: exportState.sfx ? c.sfxId : undefined,
               audioVolume: 1,

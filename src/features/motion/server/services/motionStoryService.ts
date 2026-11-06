@@ -1,5 +1,7 @@
 import type { MotionStoryScript } from "../../../../types/motionVideo.js";
+import { MOTION_SCENE_COMPOSITION as SCENE_COMPOSITION } from "../../../../constants/motionSceneComposition.js";
 import { MOTION_WRITING as WRITING } from "../../../../constants/motionWriting.js";
+import { MOTION_ILLUSTRATION_PROFILES } from "../../../../constants/motionIllustrationProfiles.js";
 import { parseMotionChapterReply } from "../../../../lib/motionChapterJson.js";
 import { normalizeMotionWritingPlan, normalizeMotionWritingChapter, motionWritingBiblePrompt, motionWritingChapterLean, motionWritingProtectedMotifs, motionWritingState, motionWritingChapterCount } from "../../../../lib/motionWriting.js";
 import { normalizeMotionSpokenBeat } from "../../../../lib/motionSpokenNumbers.js";
@@ -1189,6 +1191,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         artifactType,
         requestId,
         signal: roomCtrl.signal,
+        oneGeneration: exec.singleResponse === true && artifactType === SCENE_COMPOSITION.ARTIFACT,
         closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         submission,
@@ -1626,7 +1629,7 @@ export const editScript = async (
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
     const previous = stringifyJson(beats.slice(Math.max(0, beats.indexOf(lines[0]) - 2), beats.indexOf(lines[0])).map((beat) => beat.narration));
     const language = motionLanguage(opts.language).promptName;
-    const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(visualIds.has(beat.id) ? { action: beat.action, scenePlan: beat.scenePlan } : {}), ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
+    const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.motionIntent !== undefined ? { motionIntent: beat.motionIntent } : {}), ...(visualIds.has(beat.id) ? { action: beat.action, scenePlan: beat.scenePlan } : {}), ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
     const limit = editLimit(lines);
     const styleFocus = styleFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const overlapFocus = overlapFindings.filter((finding) => lines.some((line) => line.id === finding.id));
@@ -1666,7 +1669,7 @@ export const editScript = async (
         .join(MR.MOTION_TEXT_SYMBOL_27),
     );
   };
-  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string; dropped?: boolean; action?: string; scenePlan?: MotionBeat["scenePlan"]; picture?: Partial<Pick<MotionBeat, "visual" | "shot" | "subject" | "frame">> }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [
+  const recovery = motionTaskCheckpoint<Record<string, { inputKey: string; narration?: string; utterances?: MotionBeat["utterances"]; reason?: string; dropped?: boolean; action?: string; motionIntent?: string; scenePlan?: MotionBeat["scenePlan"]; picture?: Partial<Pick<MotionBeat, "visual" | "shot" | "subject" | "frame">> }>>(opts.scope, MOTION_STORY_EDIT_ARTIFACT, [
     analysis,
     source,
     opts.language,
@@ -1676,7 +1679,7 @@ export const editScript = async (
   const saved = recovery.read() || {};
   const speakers = [MOTION_VOICE.NARRATOR, ...analysis.cast.map((member) => member.key)];
   const keys = new Map(beats.map((beat) => [beat.id, motionInputKey([editorPrompt([beat]), beat.utterances])]));
-  const apply = (beat: MotionBeat, narration: string, reason?: string, utterances?: MotionBeat["utterances"], visualPatch?: Partial<Pick<MotionBeat, "action" | "scenePlan" | "visual" | "shot" | "subject" | "frame">>): void => {
+  const apply = (beat: MotionBeat, narration: string, reason?: string, utterances?: MotionBeat["utterances"], visualPatch?: Partial<Pick<MotionBeat, "action" | "motionIntent" | "scenePlan" | "visual" | "shot" | "subject" | "frame">>): void => {
     const spoken = normalizeMotionSpokenBeat(
       { ...beat, narration, ...(utterances?.length ? { utterances } : {}) },
       opts.language,
@@ -1699,7 +1702,7 @@ export const editScript = async (
       continue;
     }
     if (saved[beat.id].dropped && droppable(beat)) drop(beat, saved[beat.id].reason);
-    else if (saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances, { ...(saved[beat.id].action !== undefined ? { action: saved[beat.id].action } : {}), ...(saved[beat.id].scenePlan ? { scenePlan: saved[beat.id].scenePlan } : {}), ...(saved[beat.id].picture || {}) });
+    else if (saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances, { ...(saved[beat.id].action !== undefined ? { action: saved[beat.id].action } : {}), ...(saved[beat.id].motionIntent !== undefined ? { motionIntent: saved[beat.id].motionIntent } : {}), ...(saved[beat.id].scenePlan ? { scenePlan: saved[beat.id].scenePlan } : {}), ...(saved[beat.id].picture || {}) });
   }
   const groups = motionPromptGroups(
     targets.filter((beat) => saved[beat.id]?.inputKey !== keys.get(beat.id)),
@@ -1744,6 +1747,7 @@ export const editScript = async (
         }
         apply(beat, narration, e?.reason ? _.toString(e.reason) : undefined, e.utterances, {
           ...(typeof e.action === "string" ? { action: e.action } : {}),
+          ...(typeof e.motionIntent === "string" && e.motionIntent.trim() ? { motionIntent: e.motionIntent } : {}),
           ...(e.scenePlan ? { scenePlan: normalizeScenePlan(e.scenePlan) } : {}),
           ...(_.includes(VISUALS, e.visual) ? { visual: e.visual } : {}),
           ...(_.includes(SHOTS, e.shot) ? { shot: e.shot } : {}),
@@ -1757,8 +1761,8 @@ export const editScript = async (
           inputKey: keys.get(beat.id)!,
           ...(dropped.has(beat.id)
             ? { dropped: true }
-            : changed.narration !== beat.narration || changed.action !== beat.action || !_.isEqual(changed.scenePlan, beat.scenePlan) || !_.isEqual(changed.utterances, beat.utterances) || !_.isEqual(_.pick(changed, PICTURE_FIELDS), _.pick(beat, PICTURE_FIELDS))
-              ? { narration: changed.narration, utterances: changed.utterances, action: changed.action, scenePlan: changed.scenePlan, picture: _.pick(changed, PICTURE_FIELDS) }
+            : changed.narration !== beat.narration || changed.action !== beat.action || changed.motionIntent !== beat.motionIntent || !_.isEqual(changed.scenePlan, beat.scenePlan) || !_.isEqual(changed.utterances, beat.utterances) || !_.isEqual(_.pick(changed, PICTURE_FIELDS), _.pick(beat, PICTURE_FIELDS))
+              ? { narration: changed.narration, utterances: changed.utterances, action: changed.action, motionIntent: changed.motionIntent, scenePlan: changed.scenePlan, picture: _.pick(changed, PICTURE_FIELDS) }
               : {}),
         };
       }
@@ -2051,6 +2055,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     texture ? STORYTELLING.PROMPT.TEXTURE(texture, genreSpec.TEXTURE) : null,
     opts.multiVoice === false ? null : MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
     analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
+    analysis.visualSettings?.mode === RT_SHARED.REMOTION ? WRITING.SCENE_MOTION + "\nSELECTED VISUAL CONSTRUCTION (shape reference, not prescribed choreography): " + MOTION_ILLUSTRATION_PROFILES[analysis.visualSettings.profileId].brief.frame : null,
   ] as string[]);
   const chapterRules = _.compact([
     analysis.visualSettings?.mode === RT_SHARED.REMOTION ? motionVideoGenreGrammar(analysis.videoGenre, { first: !!opts.isFirst, last: !!opts.isLast, hooks: hooks !== "off" }) : null,
@@ -2064,7 +2069,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   ] as string[]);
   const bibleParts = {
     preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), motionSourceReadingRules(sourceSlice(source))),
-    role: PROMPT.CHAPTER_ROLE,
+    role: analysis.visualSettings?.mode === RT_SHARED.REMOTION ? "Scriptwriter preserving source facts, spoken voice and continuity, authoring the complete intended scene action alongside narration." : PROMPT.CHAPTER_ROLE,
     title: analysis.title,
     logline: analysis.logline,
     languageNote: [MR.MOTION_TEMPLATE_WRITE_NATURAL((analysis.videoDna || analysis.creativeBlueprint)?.narrative.voice || MR.MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT, language), motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
@@ -2174,6 +2179,15 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       !!closedPuppetPackId(analysis.stylePreset),
       opts.multiVoice,
     );
+    if (analysis.visualSettings?.mode === RT_SHARED.REMOTION && !opts.durationRepair) {
+      for (const row of rawBeats) {
+        if (typeof row.motionIntent === "string" && row.motionIntent.trim()) continue;
+        const issue = { path: "motionIntent", expected: "nonempty scene movement written by the script AI", actual: typeof row.motionIntent, value: MOTION_RESPONSE_TEXT.VALUE(row.motionIntent) };
+        const existing = responseIssues.find((item) => item.id === row.id);
+        if (existing) existing.issues.push(issue);
+        else responseIssues.push({ id: row.id, issues: [issue] });
+      }
+    }
     for (const item of responseIssues) {
       const fields = [...new Set(item.issues.map((issue) => issue.path.split(/[.\[]/)[0]))];
       const existing = pending.find((row) => row.id === item.id);
@@ -2285,6 +2299,7 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
     const v = shots.length ? { ...shots[0], ...b, visual: b.visual || shots[0].visual } : b;
     const visual = pickEnum(VISUALS, v?.visual, MOTION_TEXT_SCENE);
     const beat: MotionBeat = { id, chapterId, narration, visual };
+    if (typeof v?.motionIntent === "string" && v.motionIntent.trim()) beat.motionIntent = v.motionIntent;
     const utterances = motionNarratorLines(normalizeMotionUtterances(b?.utterances, id, [MOTION_VOICE.NARRATOR, ...castKeys], beat.narration), motionNarratorCastKey(analysis), beat.narration);
     if (utterances.length) beat.utterances = _.map(utterances, (u) => ({ ...u, text: fullCastNames(u.text, analysis.cast) }));
     const sceneMood = normalizeMotionSceneMood(b?.sceneMood);

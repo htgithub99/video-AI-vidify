@@ -24,6 +24,7 @@ export const normalizeMotionChapterMetadata = (rows: Record<string, any>[]): Rec
     const normalized = normalizeMotionEditorialMetadata(row, schema);
     if (normalized && row.cast !== undefined) normalized.cast = row.cast;
     if (normalized && row.place !== undefined) normalized.place = row.place;
+    if (normalized && row.motionIntent !== undefined) normalized.motionIntent = row.motionIntent;
     if (normalized && row.scenePlan !== undefined) normalized.scenePlan = row.scenePlan && typeof row.scenePlan === "object" && !Array.isArray(row.scenePlan) && typeof row.scenePlan.acceptance === "string" && row.scenePlan.acceptance.trim() ? { ...row.scenePlan, acceptance: [row.scenePlan.acceptance] } : row.scenePlan;
     return normalized && Array.isArray(row.utterances) ? { ...normalized, utterances: row.utterances.map((line: any) => normalizeMotionEditorialMetadata(line, schema.properties!.utterances.items!)) } : normalized;
   });

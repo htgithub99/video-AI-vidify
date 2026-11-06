@@ -49,3 +49,22 @@ export const motionDurationRepairChapters = (script: MotionStoryScript, analysis
   }
   return analysis.chapters.filter((chapter) => selected.has(chapter.id)).map((chapter) => chapter.id);
 };
+export interface MotionEarlySceneInput {
+  key: string;
+  ready: number;
+  total: number;
+  script: MotionStoryScript;
+  analysis: MotionStoryAnalysis;
+}
+export const motionEarlySceneInput = (script: MotionStoryScript | undefined, analysis: MotionStoryAnalysis | undefined): MotionEarlySceneInput | undefined => {
+  if (!script?.readyChapterIds?.length || !analysis?.chapters?.length) return undefined;
+  const ready = new Set(script.readyChapterIds);
+  const prefix: MotionStoryAnalysis["chapters"] = [];
+  for (const chapter of analysis.chapters) {
+    if (!ready.has(chapter.id) || !script.beats.some((beat) => beat.chapterId === chapter.id && beat.narration?.trim())) break;
+    prefix.push(chapter);
+  }
+  if (!prefix.length || prefix.length >= analysis.chapters.length) return undefined;
+  const ids = new Set(prefix.map((chapter) => chapter.id));
+  return { key: prefix.map((chapter) => chapter.id).join(P.EARLY_SCENES.KEY_SEPARATOR), ready: prefix.length, total: analysis.chapters.length, script: { ...script, readyChapterIds: undefined, chapterDrafts: undefined, beats: script.beats.filter((beat) => ids.has(beat.chapterId)) }, analysis: { ...analysis, chapters: prefix } };
+};

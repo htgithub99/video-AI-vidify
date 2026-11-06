@@ -14,7 +14,7 @@ import { MOTION_STORY_CONFIG } from "../../../../constants/motionVideo.js";
 import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance, MotionVoiceDelivery, MotionVoicePlan, MotionVoiceClipQuality, MotionVoiceCadence } from "../../../../types/motionVideo.js";
 import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
 import { motionSoundSpatial } from "../../../../lib/motionSoundPlan.js";
-import { directedSpeechText, isAi33Voice, motionVoiceFilter, motionVoiceSignature, resolveMotionDelivery, motionLanguageCode, motionNarratorCastKey } from "../../../../lib/motionVoice.js";
+import { directedSpeechText, isAi33Voice, motionVoiceFilter, motionVoiceSignature, resolveMotionDelivery, motionLanguageCode, motionNarratorCastKey, motionVoiceAsrSatisfied } from "../../../../lib/motionVoice.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { directMotionVoice, type MotionVoiceOptions } from "./motionVoiceDirectionService.js";
 import { transcribeVieneuAudio, vieneuRoot, type VieneuDelivery } from "../../../../server/services/vieneuTtsService.js";
@@ -422,7 +422,7 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
   withMotionVoiceSpeedSnapshot(async () => {
     const rateProfile = motionSpeechRateProfile(script.voiceChannel);
     const rememberRate = (track: MotionVoiceTrack): MotionVoiceTrack => {
-      if (!deps.synthesize) {
+      if (!deps.synthesize && !opts.warmup) {
         const measured = recordSpeechRate(script, track.totalSeconds, rateProfile);
         if (measured) opts.log?.(MOTION_STORY_CONFIG.SPEECH_RATE_MEASURED(measured));
       }
@@ -437,7 +437,10 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
       metadata = file + MR.MOTION_TEXT_JSON;
     try {
       const cached = parseJson(fs.readFileSync(metadata, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
-      if (cached.signature === plan.signature && cached.provider === C.PROVIDER && cached.speedKey === speedKey && motionVoiceTrackFilesValid(cached, script) && cached.clips?.every((clip) => !opts.asr || ![Q.STATUS.REVIEW, Q.STATUS.UNAVAILABLE].includes(clip.quality?.status as any) || Date.now() - (clip.quality?.verifiedAt || 0) < C.ASR.RECHECK_MS)) {
+      if (
+        cached.signature === plan.signature && cached.provider === C.PROVIDER && cached.speedKey === speedKey && motionVoiceAsrSatisfied(cached, opts.asr === true) && motionVoiceTrackFilesValid(cached, script) &&
+        cached.clips?.every((clip) => !opts.asr || ![Q.STATUS.REVIEW, Q.STATUS.UNAVAILABLE].includes(clip.quality?.status as any) || Date.now() - (clip.quality?.verifiedAt || 0) < C.ASR.RECHECK_MS)
+      ) {
         return rememberRate(cached);
       }
     } catch {}
@@ -516,7 +519,10 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
       } finally {
         await fs.promises.rm(temporary, { force: true }).catch(() => {});
       }
-      const track: MotionVoiceTrack = { continuous: !!pacing, speedKey: voiceTrackSpeedKey(plan), audioId: id, provider: C.PROVIDER, voiceId: C.MODEL, signature: plan.signature, durations, totalSeconds: timeline.total, plan, clips, subtitles: clips.map((clip) => ({ start: clip.start, end: clip.end, text: clip.text, speaker: clip.speaker })) };
+      const track: MotionVoiceTrack = {
+        asr: { version: C.ASR.VERSION, checked: opts.asr === true }, continuous: !!pacing, speedKey: voiceTrackSpeedKey(plan), audioId: id, provider: C.PROVIDER, voiceId: C.MODEL, signature: plan.signature, durations, totalSeconds: timeline.total, plan, clips,
+        subtitles: clips.map((clip) => ({ start: clip.start, end: clip.end, text: clip.text, speaker: clip.speaker })),
+      };
       writeMotionJsonAtomic(metadata, track);
       await measureVoicePaceFile(file, opts.signal)
         .then((r) => opts.log?.(C.LOG_PACE(r)))
@@ -538,12 +544,12 @@ export const fitUploadedVoice = (beats: MotionBeat[], estimates: number[], audio
   return estimates.map((estimate) => estimate * k);
 };
 export const buildSfxTrack = async (durationSeconds: number, cues: unknown, _mood?: string, signal?: AbortSignal): Promise<string | undefined> => (await buildMotionSoundTrack(durationSeconds, cues, {}, signal)).sfxId;
-export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, analysis: MotionStoryAnalysis | null = null): MotionVoiceTrack | undefined => {
+export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, analysis: MotionStoryAnalysis | null = null, asrCheck = false): MotionVoiceTrack | undefined => {
   if (typeof id !== MR.MOTION_TEXT_STRING || !P.VOICE_TRACK.test(id as string)) return;
   const file = path.join(getMotionAudioDirectory(), id as string);
   try {
     const track = parseJson(fs.readFileSync(file + MR.MOTION_TEXT_JSON, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
-    if (track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis, voiceChannelRef(findVoiceChannel(script.voiceChannel)) || script.voiceChannel) && (!track.plan || track.speedKey === voiceTrackSpeedKey(track.plan)) && track.audioId === id && motionVoiceTrackFilesValid(track, script)) return track;
+    if (track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis, voiceChannelRef(findVoiceChannel(script.voiceChannel)) || script.voiceChannel) && motionVoiceAsrSatisfied(track, asrCheck) && (!track.plan || track.speedKey === voiceTrackSpeedKey(track.plan)) && track.audioId === id && motionVoiceTrackFilesValid(track, script)) return track;
   } catch {}
 };
 export const motionVoiceTrackFilesValid = (track: MotionVoiceTrack, script: MotionStoryScript): boolean => {

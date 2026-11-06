@@ -7,9 +7,11 @@ import { Shuffle } from "lucide-react";
 import { MotionToggle } from "./MotionToggle.js";
 import type { Lang } from "../../../lib/lang.js";
 import { motionSceneAiExecution, resolveMotionSceneExecution, type MotionAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
-export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice>) => void; currentLang: Lang }) {
+import type { MotionVisualSettings } from "../../../types/motionVisual.js";
+export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice & { visualSettings?: MotionVisualSettings }; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice>) => void; currentLang: Lang }) {
   const text = MOTION_AI_SETTINGS_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const scene = motionSceneAiExecution(state);
+  const onePass = state.visualSettings?.mode === "remotion";
   const selectSceneProvider = (provider: MotionSceneAiChoice["sceneAiProvider"]) => {
     const next = resolveMotionSceneExecution({ provider });
     patch({ sceneAiProvider: next.provider, sceneAiModel: next.model });
@@ -36,7 +38,7 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
       <section aria-label={text.DRAW_TITLE}>
         <ChatPlanningSettingsBlock
           title={text.DRAW_TITLE}
-          note={text.DRAW_NOTE}
+          note={onePass ? text.REMOTION_DRAW_NOTE : text.DRAW_NOTE}
           provider={scene.provider}
           model={scene.model}
           executionMode={AiPlanningExecutionMode.RoomOnly}
@@ -47,7 +49,7 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onChromeHeadlessChange={(value) => patch({ sceneAiHeadless: value })}
           currentLang={currentLang}
           roomOnly
-          extraControl={<MotionToggle checked={state.sceneAiFallback !== false} label={text.FALLBACK_LABEL} title={text.FALLBACK_HINT} text={state.sceneAiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ sceneAiFallback: state.sceneAiFallback === false })} />}
+          extraControl={onePass ? undefined : <MotionToggle checked={state.sceneAiFallback !== false} label={text.FALLBACK_LABEL} title={text.FALLBACK_HINT} text={state.sceneAiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ sceneAiFallback: state.sceneAiFallback === false })} />}
         />
       </section>
     </div>

@@ -13,7 +13,7 @@ import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../../components/ui/Button";
 import { formatMotionProgress, formatSeconds } from "./motionApi.js";
-import { motionLogSections, type MotionLogSection } from "../lib/motionLogSections.js";
+import { motionDurationText, motionLogSections, type MotionLogSection } from "../lib/motionLogSections.js";
 import { MOTION_LOG_SECTIONS as LOG } from "../constants/motionLogSections.js";
 export const MotionAiStatusLine: FC<{ activities?: Record<string, MotionAiActivity> }> = ({ activities }) => {
   const groups = new Map<string, { provider: string; model: string; phases: Map<string, number> }>();
@@ -93,6 +93,7 @@ const MotionLogSectionCard: FC<{ section: MotionLogSection; lang: "vi" | "en"; i
       <Button variant={MR.MOTION_TEXT_UNSTYLED} type={RT_SHARED.BUTTON} className={LOG.UI.HEADER} aria-expanded={open} aria-controls={bodyId} onClick={() => setExpanded(!open)}>
         <span className={LOG.UI.NUMBER}>{index + 1}</span>
         <span className={LOG.UI.TITLE}>{LOG.LABELS[lang][section.key as keyof typeof LOG.LABELS.vi]}</span>
+        {section.durationMs !== undefined && <span className={LOG.UI.DURATION}>{text.duration(motionDurationText(section.durationMs, lang))}</span>}
         <span className={cn(LOG.UI.BADGE, LOG.UI.STATES[section.state])}>{text[section.state as "waiting" | "active" | "done" | "error" | "previous_error" | "cancelled" | "recorded"]}</span>
         <Icon className={LOG.UI.CHEVRON} aria-hidden={true} />
       </Button>

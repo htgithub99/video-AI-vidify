@@ -7,7 +7,11 @@ import { motionAudioDirection, motionSpeakerTraits } from "./motionAudioDirectio
 import { MOTION_SPEECH } from "../constants/motionSpeech.js";
 import { hasMisassignedMotionSpeech, motionQuotedSpeech } from "./motionSpeech.js";
 import { MOTION_SPEECH_ATTRIBUTION } from "../constants/motionSpeech.js";
-import type { MotionSceneMood, MotionVoiceDelivery, MotionStoryScript, MotionUtterance, MotionVoicePreset, MotionVoicePlan, MotionStoryAnalysis, MotionAudioDirection, MotionVoiceChannel, MotionVoiceGroup, MotionCastMember } from "../types/motionVideo.js";
+import type { MotionSceneMood, MotionVoiceDelivery, MotionStoryScript, MotionUtterance, MotionVoicePreset, MotionVoicePlan, MotionStoryAnalysis, MotionAudioDirection, MotionVoiceChannel, MotionVoiceGroup, MotionCastMember, MotionVoiceTrack } from "../types/motionVideo.js";
+export const motionVoiceAsrSatisfied = (track: MotionVoiceTrack | null | undefined, required = false): boolean =>
+  !required || !!track && (track.asr ? track.asr.checked && track.asr.version === C.ASR.VERSION : !!track.clips?.length && track.clips.every((clip) => !!clip.quality?.verifiedAt && ["passed", "review", "unavailable"].includes(clip.quality.status)));
+export const motionVoiceTrackMatches = (track: MotionVoiceTrack | null | undefined, script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null, asrCheck = false): boolean =>
+  !!track && track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis) && motionVoiceAsrSatisfied(track, asrCheck);
 export const motionVoiceCastContext = (analysis: MotionStoryAnalysis | null) => analysis?.cast.map((member) => ({ key: member.key, name: member.name, alias: member.alias, role: member.role, description: member.description, narrator: member.narrator, appearanceOf: member.appearanceOf, ...motionSpeakerTraits(member) }));
 export const withMotionVoiceMode = (script: MotionStoryScript, multiVoice: boolean): MotionStoryScript => {
   if ((script.voiceSettings?.multiVoice !== false) === multiVoice) return script;

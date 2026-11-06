@@ -200,7 +200,7 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
   return { value: { scenes: errors.length ? [...drafts.values()] : scenes }, errors: [...new Set(errors)], accepted: scenes, drafts: [...drafts.values()] };
 };
 export const mergeEquivalentRemotionDrafts = (scenes: any[]) => {
-  const signature = (scene: any) => stringifyJson([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.format, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node)]);
+  const signature = (scene: any) => stringifyJson([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.format, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node), ...(scene.motionIntent !== undefined ? [scene.motionIntent] : []), ...(scene.actionPlan !== undefined ? [scene.actionPlan] : [])]);
   const merged: any[] = [];
   for (const scene of scenes) {
     const previous = merged.at(-1);

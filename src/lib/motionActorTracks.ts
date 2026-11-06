@@ -2,6 +2,8 @@ import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
 import type { MotionSceneAnimation, MotionSceneComposition, MotionSceneLayer } from "../types/motionVisual.js";
 const cache = new WeakMap<MotionSceneComposition, MotionSceneAnimation[]>();
+export const motionAnimationTracks = (animations: MotionSceneAnimation[]): MotionSceneAnimation[] =>
+  animations.flatMap((animation) => (animation.targets?.length ? [animation.target, ...animation.targets].map((target) => ({ ...animation, target, targets: undefined })) : [animation]));
 export const motionAnonymousLayer = (layer?: MotionSceneLayer): boolean => layer?.anonymous === true;
 const offsets = (animation: MotionSceneAnimation): { x: number; y: number }[] | undefined => {
   const points = animation.keyframes.map((frame) => String(frame.value).match(C.GUARD.TRANSLATE));
@@ -30,9 +32,10 @@ const track = (animation: MotionSceneAnimation, composition: MotionSceneComposit
   return motionAnonymousLayer(layer) && animation.period !== undefined ? undefined : animation;
 };
 export const motionActorTracks = (composition: MotionSceneComposition, height: number): MotionSceneAnimation[] => {
+  if (composition.animationSource === "ai-complete") return composition.animations.some((animation) => animation.targets?.length) ? motionAnimationTracks(composition.animations) : composition.animations;
   const known = cache.get(composition);
   if (known) return known;
-  const animations = composition.animations.flatMap((animation) => {
+  const animations = motionAnimationTracks(composition.animations).flatMap((animation) => {
     const next = track(animation, composition, height);
     return next ? [next] : [];
   });

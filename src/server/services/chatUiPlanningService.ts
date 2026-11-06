@@ -140,7 +140,7 @@ import { assertGeminiFlashQuota, getGeminiModelButton, selectGeminiThinkingModel
 import { withChromeBackupRecovery, saveChatResponse, isGeminiFlashQuotaError } from "./chromeBackupService.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
-import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
+import { clickCurrentChatRetry, isRecoverableChatRefusal } from "./chatRoomRecovery.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
@@ -162,6 +162,7 @@ interface ChatResponseSnapshot {
 }
 type PendingRoomResponse = ChatPendingSubmission;
 interface ChatPlanningRequest {
+  oneGeneration?: boolean;
   onRecovery?: (line: string) => void;
   restoreContext?: () => string;
   onUploadProgress?: (progress: import("../../types/musicDownloadProgress.js").MusicUploadProgress) => void;
@@ -603,7 +604,7 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
     throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RATE_LIMIT_ERROR);
   }
 };
-export const waitForStableResponse = async (page: Page, responseSelector: string, busySelector: string, initialCount: number, expectedSceneIds: string[], initialResponseSnapshots: ChatResponseSnapshot[], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal, prompt?: string, waitForSession?: () => Promise<number>): Promise<string> => {
+export const waitForStableResponse = async (page: Page, responseSelector: string, busySelector: string, initialCount: number, expectedSceneIds: string[], initialResponseSnapshots: ChatResponseSnapshot[], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal, prompt?: string, waitForSession?: () => Promise<number>, regenerating = false): Promise<string> => {
   const startedAt = Date.now();
   let absoluteDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MAX_TIMEOUT_MS;
   let activityDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS;
@@ -620,6 +621,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
   let lastObservedCandidate: string = MR.MOTION_TEXT_EMPTY;
   let busyWaitLogged = false;
   let lastJsonCandidate: string = MR.MOTION_TEXT_EMPTY;
+  let regenerationObserved = false;
   const recoverDeepSeek = busySelector === D.BUSY ? createDeepSeekRetryRecovery(page, prompt, signal) : undefined;
   while (Date.now() < absoluteDeadline) {
     throwIfPlanningCancelled(signal);
@@ -627,6 +629,14 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     const pausedMs = (await waitForSession?.()) || 0;
     absoluteDeadline += pausedMs;
     activityDeadline += pausedMs;
+    if (responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR && /^https?:/.test(page.url()) && new URL(page.url()).origin !== new URL(EXTERNAL_URLS.GEMINI_CHAT).origin) {
+      const error = Object.assign(new Error(`Phòng Gemini đã chuyển sang ${new URL(page.url()).origin}; giữ yêu cầu cũ để đọc lại, không gửi lặp.`), {
+        code: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE,
+        diagnostics: { responseCount: lastObservedResponseCount, initialCount, candidateChars: lastJsonCandidate.length, busy: lastBusyState, identityMatch: !!lastJsonCandidate, elapsedMs: Date.now() - startedAt, lastCandidate: lastJsonCandidate, unexpectedOrigin: new URL(page.url()).origin },
+      });
+      Object.defineProperty(error, MOTION_TEXT_ROOMPAGE, { value: page, enumerable: false });
+      throw error;
+    }
     await throwIfGrokRateLimited(page, busySelector);
     if (await page.getByText(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_LIMIT_MESSAGE_PATTERN).filter({ visible: true }).count()) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_LIMIT_RESPONSE_ERROR);
     if (await recoverDeepSeek?.()) {
@@ -648,6 +658,10 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector, artifactType);
     const count = responseSnapshots.length;
     const responseTexts = _.map(responseSnapshots, SOURCE_TEXT_TEXT);
+    if (regenerating) {
+      const busy = await page.locator(busySelector).filter({ visible: true }).count();
+      if (busy || responseSnapshots.length < initialCount || responseSnapshots.some((snapshot) => !initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text))) regenerationObserved = true;
+    }
     const lastResponse = _.trim(_.last(responseTexts) || MR.MOTION_TEXT_EMPTY);
     const changedLastResponse = !_.isEmpty(lastResponse) && !initialResponseSet.has(lastResponse) ? lastResponse : MR.MOTION_TEXT_EMPTY;
     const newResponseTexts = count > initialCount ? _.slice(responseTexts, initialCount) : [];
@@ -656,7 +670,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       _.filter(responseSnapshots, (snapshot) => !_.isEmpty(snapshot.identity) && !initialResponseIdentitySet.has(snapshot.identity)),
       SOURCE_TEXT_TEXT,
     );
-    const freshResponses = newResponseTexts.length ? newResponseTexts : responsesWithNewIdentity.length ? responsesWithNewIdentity : [...responsesNotPresentBeforeSubmission, changedLastResponse];
+    const freshResponses = newResponseTexts.length ? newResponseTexts : responsesWithNewIdentity.length ? responsesWithNewIdentity : regenerating && regenerationObserved ? [lastResponse] : [...responsesNotPresentBeforeSubmission, changedLastResponse];
     const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
     const responseCandidates = _.uniq(_.compact(freshResponses)).filter((candidate) => {
       const identity = normalizeCinematicArtifactIdentity(chatResponseIdentity(candidate).requestId);
@@ -868,10 +882,10 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
   if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(String(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX)), SOURCE_TEMPLATE_SYMBOL_86(String(_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, MR.MOTION_TEXT_EMPTY))))).trim());
   if (scopedComposer) await page.keyboard.press(SOURCE_TEXT_ESCAPE);
 };
-const getComposerReadings = async (input: Locator): Promise<string[]> => {
+const getComposerReadings = async (input: Locator, signal?: AbortSignal): Promise<string[]> => {
   return readPlanningUi(
-    input.evaluate((element, empty) => [element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value : empty, element.textContent || empty], MR.MOTION_TEXT_EMPTY),
-    undefined,
+    input.evaluate((element, empty) => [element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value : empty, element.textContent || empty], MR.MOTION_TEXT_EMPTY, { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS }),
+    signal,
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS,
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_COMPOSER,
   );
@@ -933,7 +947,7 @@ const waitPageResponsive = async (page: Page, signal?: AbortSignal, deadline: nu
       page
         .evaluate(() => true)
         .then(() => true)
-        .catch(() => true),
+        .catch(() => false),
       delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS).then(() => false),
     ]);
     if (answered) return;
@@ -948,7 +962,7 @@ const waitComposerFilled = async (input: Locator, prompt: string, directive: str
   let afterSettle = 0;
   while (Date.now() < deadline) {
     throwIfPlanningCancelled(signal);
-    if (assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input)).valid) return true;
+    if (assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid) return true;
     if (settled() && ++afterSettle > CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_SETTLE_POLLS) return false;
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
@@ -960,23 +974,24 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
     await waitPageResponsive(page, signal, deadline);
     const cap = Math.max(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS, Math.min(uiActionCap(prompt.length), deadline - Date.now()));
     if (pass) appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_REWRITE_LOG);
-    let settled = false;
-    const write = pass
-      ? input
-          .focus({ timeout: cap })
-          .then(() => page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY))
-          .then(() => page.keyboard.insertText(prompt))
-      : input.fill(prompt, { timeout: cap });
-    void write.catch(_.noop).finally(() => (settled = true));
-    if (await waitComposerFilled(input, prompt, directive, requestId, Date.now() + cap, () => settled, signal)) return;
+    // Await the action's own timeout before another fill or a send may start.
+    // Racing fill against a read left the old write active in the next pass.
+    if (pass) {
+      await input.focus({ timeout: cap });
+      await page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY);
+      await page.keyboard.insertText(prompt);
+    } else await input.fill(prompt, { timeout: cap });
+    throwIfPlanningCancelled(signal);
+    if (await waitComposerFilled(input, prompt, directive, requestId, Math.min(deadline, Date.now() + cap), () => true, signal)) return;
   }
+  throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
 };
 const clickSendButton = async (page: Page, button: Locator, signal?: AbortSignal): Promise<void> => {
   await waitPageResponsive(page, signal);
   throwIfPlanningCancelled(signal);
   await button.click({ noWaitAfter: true, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS });
 };
-const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input)).valid;
+const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid;
 const contextReceipts = new WeakMap<Page, ChatContextReceipts>();
 const roomContextReceipts = (page: Page): ChatContextReceipts => {
   let receipts = contextReceipts.get(page);
@@ -1229,7 +1244,7 @@ const submitPrompt = async (
           await writeComposer(page, input, submittedPrompt, responseDirective, requestId, signal);
           await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
           await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-          const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input));
+          const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input, signal));
           if (!composerAssessment.valid) {
             await writeMusicDiagnostic(SOURCE_TEXT_CHAT_COMPOSER_MISMATCH, { runId: diagnosticRunId, stage: artifactType, expectedChars: submittedPrompt.length, actualChars: composerAssessment.actualChars, status: composerAssessment.reason });
             throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
@@ -1252,20 +1267,20 @@ const submitPrompt = async (
               await clickSendButton(page, sendButton, signal);
             } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
             submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
-            if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId))) {
+            if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_CLICK_FALLBACK_LOG);
               await waitPageResponsive(page, signal);
               await Promise.race([sendButton.evaluate((element: HTMLElement) => element.click()).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             }
-            if (!submission && !submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId))) {
+            if (!submission && !submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CHAT_UI_AUTOMATION_MESSAGES.SUBMIT_ENTER_FALLBACK);
               await input.focus().catch(() => undefined);
               await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             }
             await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
-            if (submission?.pending) submission.pending.url = page.url();
+            if (submission?.pending && new URL(submission.pending.url).origin === new URL(page.url()).origin) submission.pending.url = page.url();
           }
         });
       }
@@ -1299,7 +1314,7 @@ const submitPrompt = async (
       }
     } catch (error) {
       await waitForSession?.();
-      if (submission?.pending) submission.pending.url = page.url();
+      if (submission?.pending && new URL(submission.pending.url).origin === new URL(page.url()).origin) submission.pending.url = page.url();
       if (submission && isFinalChatResponseError(error)) submission.completed = true;
       throw error;
     } finally {
@@ -1336,10 +1351,13 @@ const resumeChatPlanningResponseTask = async (request: ChatPlanningRequest): Pro
   const releaseActivity = request.provider === AiPlanningFallbackProvider.GeminiChat ? await acquireGeminiActivityUse(page.context(), request.signal) : _.noop;
   try {
     if (wasClosed) await page.goto(pending.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
-    if (request.reloadPendingResponse && !wasClosed) await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+    if (request.reloadPendingResponse && !wasClosed) {
+      if (new URL(page.url()).origin !== new URL(pending.url).origin) await page.goto(pending.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+      else await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+    }
     pending.page = page;
-    pending.url = page.url();
-    const text = await waitForStableResponse(page, pending.responseSelector, pending.busySelector, pending.initialCount, pending.expectedSceneIds, pending.initialResponseSnapshots, pending.completionMarker, pending.artifactType, pending.requestId, request.signal, pending.prompt);
+    if (new URL(pending.url).origin === new URL(page.url()).origin) pending.url = page.url();
+    const text = await waitForStableResponse(page, pending.responseSelector, pending.busySelector, pending.initialCount, pending.expectedSceneIds, pending.initialResponseSnapshots, pending.completionMarker, pending.artifactType, pending.requestId, request.signal, pending.prompt, undefined, pending.regenerating);
     submission.completed = true;
     pendingRoomResponses.delete(getPlanningRoomKey(request));
     saveChatResponse({ projectId: request.projectId, workerId: request.workerId, requestId: request.requestId, artifactType: request.artifactType }, text);
@@ -1895,7 +1913,8 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
           if (interruptedRoom) await waitForGeminiSession(interruptedRoom, { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
         }
         const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
+        if (request.oneGeneration && ([CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR] as readonly string[]).includes(errorMessage)) throw Object.assign(error as Error, { [RECOVERY.COMPLETE]: true });
+        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
         if (!retryable) throw error;
         if (errorMessage === D.RETRY_EXHAUSTED && request.submission) request.submission.completed = true;
         const page = getProviderRooms(request.provider)?.get(roomKey);
@@ -1904,18 +1923,26 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
         const currentResponse = pending && (snapshots.length > pending.initialCount || snapshots.some((snapshot) => !pending.initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text)));
         if (recoveryAttempt === 0 && request.provider !== AiPlanningFallbackProvider.DeepSeekChat && pending && currentResponse && page && (await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
           request.submission.completed = false;
+          pending.initialCount = snapshots.length;
+          pending.initialResponseSnapshots = snapshots;
+          pending.regenerating = true;
           request.onRecovery?.(RECOVERY.CLICK_LOG);
           appLog(RECOVERY.CLICK_LOG);
           try {
             const result = await resumeChatPlanningResponseTask(request);
+            providerErrorCounts.delete(roomKey);
+            await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: result.text.length, elapsedMs: Date.now() - mutexStartedAt });
             responseCompleted = true;
             return result;
           } catch (retryError) {
             throwIfPlanningCancelled(request.signal);
             if (isGeminiFlashQuotaError(retryError) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
             if (isFinalChatResponseError(retryError)) request.submission!.completed = true;
+            if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError)) throw retryError;
             lastError = retryError;
           }
+        } else if (recoveryAttempt === 0 && pending && currentResponse) {
+          request.onRecovery?.(RECOVERY.CLICK_UNAVAILABLE);
         }
         if (recoveryAttempt >= maxRecoveryAttempts) throw Object.assign(lastError instanceof Error ? lastError : new Error(errorMessage), { [RECOVERY.COMPLETE]: true });
         if (request.submission?.attempted && !request.submission.completed) {

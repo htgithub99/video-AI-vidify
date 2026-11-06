@@ -116,7 +116,18 @@ export interface MotionSceneCrop {
   width: number;
   height: number;
 }
+export interface MotionSceneActionPlan {
+  start: string;
+  subjects: { nodeId: string; action: string; parts: { name: string; change: string }[]; phases: { phase: string; description: string }[]; end: string }[];
+  interactions: string[];
+  end: string;
+  environment: string;
+  camera: string;
+}
 export interface MotionRemotionScene {
+  actionPlan?: MotionSceneActionPlan;
+  /** AI-authored per-shot action direction from the scene planner; never a code-generated gait. */
+  motionIntent?: string;
   format?: MotionSceneDesign["format"];
   id: string;
   beatId: string;
@@ -154,10 +165,13 @@ export interface MotionRemotionScene {
   continuityDraft?: { nodes: MotionRemotionNode[]; resolvedKey: string };
   removedObjects?: string[];
   composition?: MotionSceneComposition;
+  /** score/warnings: local checklist of the kept answer; attempts: content requests used (max 3). */
+  generation?: { revision: 1; inputKey: string; status: "running" | "accepted" | "failed"; error?: string; promptRevision?: number; requestKey?: string; attempts?: number; score?: number; warnings?: string[] };
   build?: { inputKey: string; status: "accepted" | "failed"; review: boolean; error?: string; attempts?: number };
   failStreak?: number;
   deferred?: boolean;
   drawingNote?: string;
+  writtenMotionKey?: string;
   requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
 }
@@ -173,6 +187,7 @@ export interface MotionSceneLayer {
 }
 export interface MotionSceneAnimation {
   target: string;
+  targets?: string[];
   channel: "actor" | "effect" | "speech";
   attribute: "transform" | "d" | "opacity";
   period?: number;
@@ -181,6 +196,8 @@ export interface MotionSceneAnimation {
 }
 export type MotionMeasuredRect = MotionVisualRect & { local?: MotionVisualRect; flip?: boolean };
 export interface MotionSceneComposition {
+  animationSource?: "ai-complete";
+  duration?: number;
   /** AI-directed motion clips; when present they replace actor/effect keyframes and code default motion. */
   motion?: import("./motionClip.js").MotionSceneMotion;
   profileId?: MotionRemotionProfile;
@@ -209,6 +226,7 @@ export interface MotionRemotionState {
   settings: MotionVisualSettings;
   assets: Record<string, MotionVectorAsset>;
   sheet?: Record<string, MotionObjectSheetEntry>;
+  sheetRequests?: number;
   sheetKey?: string;
   scenes: Record<string, MotionRemotionScene[]>;
   inputKeys: Record<string, string>;

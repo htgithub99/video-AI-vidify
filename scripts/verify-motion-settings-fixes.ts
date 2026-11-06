@@ -1,0 +1,67 @@
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { motionOutputSettings } from "../src/lib/motionOutputSettings.ts";
+import { motionVoiceAsrSatisfied, motionVoiceTrackMatches } from "../src/lib/motionVoice.ts";
+import { motionAnalysisSettingsChanges } from "../src/lib/motionSettingsCompatibility.ts";
+import { motionCompileStateKey, motionRenderStateKey, motionProductionOutputKeys, recoverMotionVisualDraft } from "../src/features/motion/lib/motionVisualDraft.ts";
+import { scriptMotionStoryInput } from "../src/features/motion/server/services/motionProductionActions.ts";
+import { MOTION_VOICE } from "../src/constants/motionVoice.ts";
+import { HISTORY_ART_DIRECTION } from "../src/constants/motionProfiles/history/artDirection.ts";
+import { HORROR_ART_DIRECTION } from "../src/constants/motionProfiles/horror/artDirection.ts";
+
+const productionPath = path.resolve("storage/output/motion-video/productions/f82fe2c76c1ab22004a52e6147acdf2c.json");
+const record = JSON.parse(await fs.readFile(productionPath, "utf8"));
+const result = { ...record.result, outputSettings: motionOutputSettings(record.input, record.result) };
+const overrideInput = { ...record.input, soundOverrides: { sample: { muted: true } } };
+const detached = motionOutputSettings(overrideInput);
+detached.soundOverrides.sample.muted = false;
+assert.equal(overrideInput.soundOverrides.sample.muted, true, "Output settings cannot mutate the stored input");
+const state = { ...result.outputSettings, analysis: result.analysis, script: result.script, voice: result.voice, uploadedAudio: null };
+const keys = motionProductionOutputKeys(state, result)!;
+assert.equal(keys.compilationKey, motionCompileStateKey(state));
+assert.equal(keys.renderSignature, motionRenderStateKey(state));
+assert.equal(keys.renderSignature, motionRenderStateKey({ ...state, encoder: "auto" }));
+assert.equal(keys.renderSignature, motionRenderStateKey({ ...state, encoder: "gpu" }), "Remotion's effective encoder remains CPU");
+assert.equal(keys.compilationKey, motionCompileStateKey({ ...state, videoGenre: record.input.videoGenre, visualSettings: { ...state.visualSettings, pacing: undefined } }), "The genre's implicit pacing equals its explicit setting");
+const changes = [{ subtitles: false }, { fps: 24 }, { aspect: "9:16" }, { sfx: false }, { sfxVolume: .27 }, { soundOverrides: { fixture: { muted: true } } }, { characterMotion: false }, { renderBehavior: { version: 1, actors: "fixed", sceneEffects: "off", camera: "fixed" } }, { visualSettings: { ...state.visualSettings, pacing: "many" } }];
+for (const change of changes) assert.notEqual(keys.compilationKey, motionCompileStateKey({ ...state, ...change }), JSON.stringify(change));
+for (const change of [{ quality: "draft" }, { musicMood: "warm" }, { musicVolume: .19 }]) {
+  assert.equal(keys.compilationKey, motionCompileStateKey({ ...state, ...change }));
+  assert.notEqual(keys.renderSignature, motionRenderStateKey({ ...state, ...change }));
+}
+const library = { ...state, visualSettings: { version: 1, mode: "library", engine: "canvas", packId: "minimal_mask" }, encoder: "auto" };
+assert.notEqual(motionRenderStateKey(library), motionRenderStateKey({ ...library, encoder: "cpu" }));
+const restored = recoverMotionVisualDraft(state as any, result);
+assert.ok(restored?.compiled, "Matching saved production recovers local compile data");
+assert.equal(recoverMotionVisualDraft({ ...state, subtitles: false } as any, result)?.compiled, null);
+assert.equal(recoverMotionVisualDraft({ ...state, sfxVolume: .27 } as any, result)?.compiled, null);
+assert.equal(motionProductionOutputKeys(state, { ...result, outputSettings: undefined }), null, "Unknown legacy result is never stamped with current UI settings");
+assert.equal(recoverMotionVisualDraft(state as any, { ...result, outputSettings: undefined })?.compiled, null, "Legacy metadata can restore artwork, not certify a matching output");
+assert.ok(motionVoiceTrackMatches(state.voice, state.script, state.analysis, false));
+assert.equal(motionVoiceAsrSatisfied(state.voice, true), false, "Real project's ASR-off audio cannot satisfy ASR-on");
+const checked = { ...state.voice, asr: { version: MOTION_VOICE.ASR.VERSION, checked: true } };
+assert.ok(motionVoiceAsrSatisfied(checked, true));
+assert.ok(motionVoiceAsrSatisfied(checked, false));
+assert.equal(motionCompileStateKey({ ...state, voice: checked, asrCheck: true }), motionCompileStateKey({ ...state, voice: checked, asrCheck: false }), "Disabling ASR preserves already checked voice");
+assert.notEqual(motionCompileStateKey(state), motionCompileStateKey({ ...state, asrCheck: true }));
+assert.equal(motionVoiceAsrSatisfied({ ...checked, asr: { version: 0, checked: true } }, true), false);
+assert.equal(motionVoiceAsrSatisfied({ ...checked, asr: undefined, clips: [] }, true), false);
+for (const status of ["passed", "review", "unavailable"] as const) assert.ok(motionVoiceAsrSatisfied({ ...checked, asr: undefined, clips: [{ quality: { status, verifiedAt: Date.now() } }] as any }, true));
+assert.equal(motionVoiceAsrSatisfied({ ...checked, asr: undefined, clips: [{ quality: { status: "unchecked", verifiedAt: Date.now() } }] as any }, true), false);
+const analysisInput = { ...record.input, analysis: result.analysis };
+assert.deepEqual(motionAnalysisSettingsChanges(analysisInput), []);
+for (const [key, value] of Object.entries({ storytelling: "plain", renameEntities: true, length: "1min", videoGenre: "pov" })) {
+  assert.deepEqual(motionAnalysisSettingsChanges({ ...analysisInput, [key]: value }), [key]);
+  assert.throws(() => scriptMotionStoryInput({ ...analysisInput, [key]: value }), /phân tích|Phân tích/);
+}
+assert.deepEqual(motionAnalysisSettingsChanges({ ...analysisInput, language: "vi" } as any), [], "Full script rewriting may change language as before");
+assert.doesNotMatch(HISTORY_ART_DIRECTION.devices!.comparison!, /a brass balance scale or a wooden ledger/);
+assert.doesNotMatch(HORROR_ART_DIRECTION.devices!.comparison!, /a simple wooden balance or offering tray/);
+assert.match(HISTORY_ART_DIRECTION.devices!.comparison!, /only when the source or explicit scene brief requests/);
+assert.match(HORROR_ART_DIRECTION.devices!.comparison!, /only when the source or explicit scene brief requests/);
+const out = path.resolve("scratch/motion-settings-fixes-20261106");
+await fs.mkdir(out, { recursive: true });
+await fs.writeFile(path.join(out, "real-project-verification.json"), JSON.stringify({ at: new Date().toISOString(), productionPath, sourceModified: false, compileSettingsCases: changes.length, renderOnlyCases: 3, encoderAdapters: 2, savedDraftRecovery: true, asrOffProjectRejectedWhenOn: true, checkedVoiceRetainedWhenOff: true, guardedAnalysisSettings: 4, comparisonPromptsSourceBound: true }, null, 2));
+console.log("PASS: real project settings, output snapshots, draft recovery, effective CPU encoder, ASR coverage and legacy metadata, four analysis-setting guards, source-bound comparison prompts.");
+process.exit(0);
