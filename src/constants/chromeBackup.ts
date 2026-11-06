@@ -65,6 +65,7 @@ export const CHROME_BACKUP = {
 } as const;
 export const CHAT_ROOM_RECOVERY = {
   SAME_ROOM_RETRIES: 2,
+  REGENERATE_LIMIT: 2,
   BUTTON: "button",
   COMPLETE: "chatRoomRecoveryComplete",
   RETRY_NAME: /^(?:thử lại|thử lại câu trả lời|tạo lại|làm lại|retry|try again|regenerate)(?:\s|$)/iu,

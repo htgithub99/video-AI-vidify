@@ -14,6 +14,7 @@ export interface MotionSceneScoreInput {
   height: number;
   /** false when character motion is off: motion criteria do not apply. */
   motion: boolean;
+  picture?: { issues: string[]; severe: number };
 }
 export type MotionSceneCriterion = keyof typeof S.WEIGHTS;
 export interface MotionSceneScore {
@@ -63,7 +64,7 @@ export const scoreMotionScene = (input: MotionSceneScoreInput): MotionSceneScore
   const tracks = motionAnimationTracks(Array.isArray(input.animations) ? input.animations : []).filter((track) => Array.isArray(track?.keyframes) && track.keyframes.length > 0);
   const transforms = tracks.filter((track) => track.attribute === "transform");
   const issues: string[] = [];
-  const criteria: Record<MotionSceneCriterion, number> = { coverage: 1, parts: 1, frame: 1, duration: 1, identity: 1, stillness: 1 };
+  const criteria: Record<MotionSceneCriterion, number> = { coverage: 1, parts: 1, frame: 1, duration: 1, identity: 1, stillness: 1, picture: 1 };
   const seconds = input.duration && input.duration > 0 ? input.duration : Math.max(1, ...tracks.map((track) => lastTime(track, 0)));
   // Motion is judged only against what the AI planner wrote; without an actionPlan (older scripts),
   // stillness is a valid choice and only frame/identity are checked.
@@ -102,6 +103,10 @@ export const scoreMotionScene = (input: MotionSceneScoreInput): MotionSceneScore
   const wrong = cast.filter((node) => !(input.layers || []).some((layer) => layer.id === node.id && layer.kind === "character" && layer.entityId === node.entityId)).map((node) => node.id);
   criteria.identity = ratio(wrong.length, cast.length);
   if (wrong.length) issues.push(S.ISSUE.IDENTITY(wrong));
+  if (input.picture?.issues.length) {
+    criteria.picture = input.picture.severe ? 0 : Math.max(0, 1 - input.picture.issues.length * S.PICTURE_PENALTY);
+    issues.push(...input.picture.issues);
+  }
   const score = Math.round((Object.keys(S.WEIGHTS) as MotionSceneCriterion[]).reduce((sum, key) => sum + S.WEIGHTS[key] * Math.max(0, Math.min(1, criteria[key])), 0));
   return { revision: S.REVISION, score, passed: score >= S.THRESHOLD, issues, criteria };
 };

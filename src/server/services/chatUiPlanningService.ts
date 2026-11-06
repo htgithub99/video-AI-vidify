@@ -141,6 +141,7 @@ import { withChromeBackupRecovery, saveChatResponse, isGeminiFlashQuotaError } f
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry, isRecoverableChatRefusal } from "./chatRoomRecovery.js";
+import { claimBlankChatRoom, claimChatRoom } from "./sharedChromePage.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
@@ -445,7 +446,7 @@ const executeClearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
   let cleanupPage: Page | undefined;
   try {
-    const browser = provider === AiPlanningFallbackProvider.GrokChat ? await getOrLaunchGrokBrowser(false) : await getOrLaunchGlobalBrowser(false, true);
+    const browser = provider === AiPlanningFallbackProvider.GrokChat ? await getOrLaunchGrokBrowser(false) : await getOrLaunchGlobalBrowser(false, true, false);
     cleanupPage = await browser.context.newPage();
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
     appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(provider));
@@ -471,7 +472,7 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   throwIfPlanningCancelled(signal);
   const existingRoom = getLiveRoom(rooms, projectId);
   if (existingRoom) return existingRoom;
-  const page = await context.newPage();
+  const page = (url === EXTERNAL_URLS.GROK_CHAT ? undefined : claimBlankChatRoom(context)) || claimChatRoom(await context.newPage());
   try {
     throwIfPlanningCancelled(signal);
     rooms.set(projectId, page);
@@ -992,6 +993,22 @@ const clickSendButton = async (page: Page, button: Locator, signal?: AbortSignal
   await button.click({ noWaitAfter: true, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS });
 };
 const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid;
+const regenerateProviderError = async (page: Page, responseSelector: string, busySelector: string, artifactType: string, requestId: string, signal: AbortSignal | undefined, send: () => Promise<string>, onRegenerate?: (line: string) => void): Promise<string> => {
+  let run = send;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (_.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)) !== CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      throwIfPlanningCancelled(signal);
+      const snapshots = await getChatResponseSnapshots(page, responseSelector, artifactType).catch(() => []);
+      if (!(await clickCurrentChatRetry(page, signal).catch(() => false))) throw error;
+      onRegenerate?.(RECOVERY.CLICK_LOG);
+      appLog(RECOVERY.CLICK_LOG);
+      run = () => waitForStableResponse(page, responseSelector, busySelector, snapshots.length, [], snapshots, undefined, artifactType, requestId, signal, undefined, undefined, true);
+    }
+  }
+};
 const contextReceipts = new WeakMap<Page, ChatContextReceipts>();
 const roomContextReceipts = (page: Page): ChatContextReceipts => {
   let receipts = contextReceipts.get(page);
@@ -1042,7 +1059,24 @@ const submitPrompt = async (
         CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_PART(id, request, index + 1, parts.length, parts[index]),
         id,
         index + 1,
-        async (question) => parseStrictRoomJson(await submitPrompt(page, roomKey, question, inputSelector, sendSelector, responseSelector, busySelector, [], [], undefined, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT, id, signal, undefined, limit)),
+        async (question) =>
+          parseStrictRoomJson(
+            await regenerateProviderError(
+              page,
+              responseSelector,
+              busySelector,
+              CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT,
+              id,
+              signal,
+              () => submitPrompt(page, roomKey, question, inputSelector, sendSelector, responseSelector, busySelector, [], [], undefined, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT, id, signal, undefined, limit),
+              isDeepSeek
+                ? undefined
+                : (line) => {
+                    submission?.onContextProgress?.();
+                    submission?.onRegenerate?.(line);
+                  },
+            ),
+          ),
         signal,
         async (attempt) => {
           submission?.onContextProgress?.();
@@ -1633,7 +1667,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 };
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
   try {
     const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
@@ -1691,7 +1725,7 @@ const ensureDeepSeekReady = async (room: Page, request: ChatPlanningRequest): Pr
 };
 const generateWithDeepSeekChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
   await ensureDeepSeekReady(room, request);
   await selectDeepSeekChatModel(room, request.model, request.signal);
@@ -1720,7 +1754,7 @@ const ensureClaudeReady = async (room: Page, request: ChatPlanningRequest): Prom
 };
 const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
   await ensureClaudeReady(room, request);
   await selectClaudeChatModel(room, request.model, request.signal);
@@ -1749,19 +1783,19 @@ const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promis
   await manualCleanupFlights.get(request.provider);
   throwIfPlanningCancelled(request.signal);
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.DeepSeekChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
     await ensureDeepSeekReady(room, request);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ClaudeChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
     await ensureClaudeReady(room, request);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
     try {
       const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
@@ -1772,7 +1806,7 @@ const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promis
     }
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
     await ensureChatGptReady(room, browser.account.email);
     return;
@@ -1822,7 +1856,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
 };
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
   await ensureChatGptReady(room, browser.account.email);
   const response = await submitPrompt(
@@ -1919,9 +1953,9 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
         if (errorMessage === D.RETRY_EXHAUSTED && request.submission) request.submission.completed = true;
         const page = getProviderRooms(request.provider)?.get(roomKey);
         const pending = request.submission?.pending;
-        const snapshots = recoveryAttempt === 0 && pending && page && !page.isClosed() && request.provider !== AiPlanningFallbackProvider.DeepSeekChat ? await getChatResponseSnapshots(page, pending.responseSelector, request.artifactType).catch(() => []) : [];
+        const snapshots = recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES && pending && page && !page.isClosed() && request.provider !== AiPlanningFallbackProvider.DeepSeekChat ? await getChatResponseSnapshots(page, pending.responseSelector, request.artifactType).catch(() => []) : [];
         const currentResponse = pending && (snapshots.length > pending.initialCount || snapshots.some((snapshot) => !pending.initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text)));
-        if (recoveryAttempt === 0 && request.provider !== AiPlanningFallbackProvider.DeepSeekChat && pending && currentResponse && page && (await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
+        if (recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES && request.provider !== AiPlanningFallbackProvider.DeepSeekChat && pending && currentResponse && page && (await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
           request.submission.completed = false;
           pending.initialCount = snapshots.length;
           pending.initialResponseSnapshots = snapshots;
@@ -1941,7 +1975,7 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
             if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError)) throw retryError;
             lastError = retryError;
           }
-        } else if (recoveryAttempt === 0 && pending && currentResponse) {
+        } else if (recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES && pending && currentResponse) {
           request.onRecovery?.(RECOVERY.CLICK_UNAVAILABLE);
         }
         if (recoveryAttempt >= maxRecoveryAttempts) throw Object.assign(lastError instanceof Error ? lastError : new Error(errorMessage), { [RECOVERY.COMPLETE]: true });

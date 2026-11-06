@@ -5,7 +5,7 @@ export const HORROR_BRIEF: MotionIllustrationBrief = {
     "Vietnamese folk-horror illustration: muted cold surroundings, flat matte fills, simple outlined architecture and props, one light source (lamp, moon, dawn) where the hour needs it; darkness never hides the main action.",
     "Every human has the mask head and legless arch body; never add legs, knees, feet, shoes or sandals, and never divide the garment into trouser legs.",
     "Fear is shown by the tilt of the mask, the hands and the darkness around, not by changing the mask.",
-    "Named people keep their fixed identifiers (hair, headgear, scarf, accessories) in every picture; ghosts and spirits may be translucent, living people are fully opaque.",
+    "Named people keep their fixed identifiers (hair, headgear, scarf, accessories) in every picture; ghosts and spirits may be translucent, living people are fully opaque. A beard or moustache hugs the mask's jaw and upper lip; the mouth stays visible and it never covers the mask like a second face.",
     "Household and taboo objects are drawn accurately for the village setting of the story; no modern things.",
     "No captions, timestamps or watermarks; visible text only through label nodes with their exact text.",
     "Draw the people and things the brief lists, in the numbers it gives; add no ghost, prop or gesture the narration does not name.",

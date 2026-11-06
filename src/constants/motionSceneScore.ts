@@ -4,7 +4,8 @@ export const MOTION_SCENE_SCORE = {
   /** Content request budget per scene: first draw + at most 2 rewrites. */
   ATTEMPTS: 3,
   THRESHOLD: 80,
-  WEIGHTS: { coverage: 30, parts: 25, frame: 20, duration: 10, identity: 10, stillness: 5 },
+  WEIGHTS: { coverage: 25, parts: 20, frame: 15, duration: 5, identity: 5, stillness: 5, picture: 25 },
+  PICTURE_PENALTY: 0.25,
   /** Fraction of the scene that the longest moving track should span. */
   DURATION_COVER: 0.8,
   /** A box may overflow the canvas by this fraction of its own size before it counts as out of frame. */
@@ -24,7 +25,7 @@ export const MOTION_SCENE_SCORE = {
     `REVISION REQUEST: a previous answer for this exact scene scored ${score}/100 on the local checklist. Draw the scene above again and fix these problems; return the COMPLETE JSON object (svg, layers, animations, design, continuityNotes) — keep the brief's artwork, identities and actions:\n- ${issues.join("\n- ")}`,
   FRESH: (issues: string[]) => `A previous attempt for this scene had these problems; avoid them in this fresh drawing:\n- ${issues.join("\n- ")}`,
   CHECKLIST:
-    "SELF-CHECK BEFORE ANSWERING: (1) every actionPlan subject has animation tracks on its own layer or child parts; (2) each part the plan says moves has its own animated child group — never only translate the whole subject; (3) every subject stays fully inside the viewBox at start, middle and end; (4) the authored phases span the whole scene duration; (5) each cast node is its own character layer with the exact entityId; (6) subjects the plan keeps still do not move.",
+    "SELF-CHECK BEFORE ANSWERING: (1) every actionPlan subject has animation tracks on its own layer or child parts; (2) each part the plan says moves has its own animated child group — never only translate the whole subject; (3) every subject stays fully inside the viewBox at start, middle and end; (4) the authored phases span the whole scene duration; (5) each cast node is its own character layer with the exact entityId; (6) subjects the plan keeps still do not move; (7) each person has the brief's body position and facing (riders sit in the saddle, people seen from behind show no face), the brief's skin colour code, and a beard that leaves the mouth visible.",
   LOG_SCORE: (index: number, total: number, attempt: number, score: number) => `Cảnh Remotion ${index}/${total}: lượt ${attempt} đạt ${score}/100 điểm kiểm tra.`,
   LOG_RETRY: (index: number, total: number, attempt: number, score: number, mode: string) => `Cảnh Remotion ${index}/${total}: lượt ${attempt} đạt ${score}/100, chưa đủ ngưỡng — ${mode}.`,
   LOG_KEEP_BEST: (index: number, total: number, score: number, attempts: number) => `Cảnh Remotion ${index}/${total}: hết ${attempts} lượt, giữ bản tốt nhất ${score}/100 (có cảnh báo).`,

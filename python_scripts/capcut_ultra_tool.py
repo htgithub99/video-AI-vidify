@@ -1284,6 +1284,12 @@ def export_video_with_ffmpeg(draft_json_path, opts):
             ffmpeg_cmd[0] = static_ffmpeg1
         elif os.path.exists(static_ffmpeg2):
             ffmpeg_cmd[0] = static_ffmpeg2
+        else:
+            for root in (os.getcwd(), os.path.dirname(os.path.dirname(__file__))):
+                tool = os.path.join(root, 'tools', 'ffmpeg', ffmpeg_exe)
+                if os.path.isfile(tool):
+                    ffmpeg_cmd[0] = tool
+                    break
         process = subprocess.Popen(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding=_CODE_TEXT.UTF_8, errors=_CODE_TEXT.REPLACE)
         for line in iter(process.stdout.readline, ''):
             if line.strip():

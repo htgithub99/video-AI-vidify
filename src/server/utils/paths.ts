@@ -3,6 +3,7 @@ import _ from "lodash";
 import path from "path";
 import { SOURCE_TEXT_APP_DATA_DIR, SOURCE_TEXT_DATA_2, SOURCE_TEXT_ELECTRON_RUNNING, SOURCE_TEXT_PYTHON, SOURCE_TEXT_PYTHON3, SOURCE_TEXT_PYTHON_EXE, SOURCE_TEXT_PYTHON_RUNTIME, SOURCE_TEXT_PYTHON_SCRIPTS, SOURCE_TEXT_WIN32 } from "../../constants/sourceText";
 import { STORAGE_CONFIG } from "../../constants/storage.js";
+import { RUNTIME_MEDIA_TOOLS } from "../../constants/runtimeTools.js";
 const CONFIG_KEYS = { APP_DATA_DIR: SOURCE_TEXT_APP_DATA_DIR, ELECTRON_RUNNING: SOURCE_TEXT_ELECTRON_RUNNING } as const;
 const DIRECTORIES = { DATA: SOURCE_TEXT_DATA_2 } as const;
 const PLATFORMS = { WIN32: SOURCE_TEXT_WIN32 } as const;
@@ -43,6 +44,10 @@ export function getStaticResourcePath(filename: string): string {
     if (fs.existsSync(resourcePath)) {
       return resourcePath;
     }
+  }
+  if ((RUNTIME_MEDIA_TOOLS.BINARIES as readonly string[]).includes(filename)) {
+    const toolPath = path.join(process.cwd(), ...RUNTIME_MEDIA_TOOLS.DIRECTORY, filename);
+    if (fs.existsSync(toolPath)) return toolPath;
   }
   return path.join(process.cwd(), filename);
 }

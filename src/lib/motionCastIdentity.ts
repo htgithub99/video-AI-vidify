@@ -10,6 +10,16 @@ export const motionCastMarks = (marks: unknown): string[] => {
   return listed.slice(0, I.MARKS_MAX);
 };
 export const motionCastSkin = (skin: unknown, look?: string): string | undefined => field(skin, I.FIELD_CHARS) || (look || "").match(I.SKIN_WORDS)?.[1]?.trim();
+export const motionCastCarries = (carries: unknown): string[] =>
+  (Array.isArray(carries) ? carries : [])
+    .filter((item): item is string => typeof item === "string" && !!item.trim())
+    .map((item) => item.trim().slice(0, I.MARK_CHARS))
+    .slice(0, I.CARRIES_MAX);
+export const motionSkinHex = (skin: string | undefined, fallback: string): string => {
+  const text = (skin || "").trim();
+  if (I.HEX.test(text)) return text.toLowerCase();
+  return I.SKIN_TONES.find(([pattern]) => pattern.test(text))?.[1] || fallback;
+};
 export const motionAnalysisGroups = (raw: unknown): MotionAnalysisGroup[] | undefined => {
   if (!Array.isArray(raw)) return undefined;
   const used = new Set<string>();

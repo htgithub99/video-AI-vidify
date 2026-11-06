@@ -154,7 +154,7 @@ Kho hữu hạn không thể cam kết đáp ứng mọi hành động tưởng 
 
 ## Tài liệu và điểm nối khi bắt đầu
 
-- Hướng dẫn kho: [HUONG_DAN_KHO_2D_CO_DINH.md](../HUONG_DAN_KHO_2D_CO_DINH.md).
+- Hướng dẫn kho: [HUONG_DAN_KHO_2D_CO_DINH.md](guides/HUONG_DAN_KHO_2D_CO_DINH.md).
 - [Kế hoạch minh họa tĩnh và sửa kho cũ](motion-illustrated-library-plan-2026-10-24.md).
 - [Phạm vi kho đóng đã triển khai](motion-closed-pack-placement-implementation-2026-10-24.md).
 - Chỉ mục khả năng: `src/server/services/puppet/packCatalog.ts`.

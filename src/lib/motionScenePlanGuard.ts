@@ -6,6 +6,8 @@ import { motionSceneObjects } from "./motionObjects.js";
 import { motionNodeUnit } from "./motionUnits.js";
 import { MOTION_UNIT_VISIBLE } from "../constants/motionUnits.js";
 import { MOTION_OBJECT_ANIMAL_CLASSES, MOTION_OBJECT_HANDHELD, MOTION_OBJECT_HANDHELD_CLASSES } from "../constants/motionObjectClasses.js";
+import { MOTION_OBJECT_KIND_CLASS, MOTION_OBJECT_KIND_MATCH } from "../constants/motionObjectKinds.js";
+import { motionObjectKind } from "./motionObjectKinds.js";
 import type { MotionSceneObject } from "../types/motionVisual.js";
 export const motionNodeStance = (node: Pick<MotionRemotionNode, "posture" | "pose" | "support" | "description">): MotionPosture => {
   const text = [node.posture, node.pose, node.support].filter(Boolean).join(" ");
@@ -29,19 +31,56 @@ export const motionObjectAnimal = (item: Pick<MotionSceneObject, "class" | "term
   for (const text of [item.term || "", item.description || ""]) for (const [animal, pattern] of SPEC.ANIMAL_MATCH) if (pattern.test(text)) return animal;
   return G.CLASS_ANIMAL[item.class];
 };
-export const motionScenePlanGuard = (scenes: MotionRemotionScene[], opts: { cast: ReadonlySet<string>; lineText: (scene: MotionRemotionScene) => string; outfit: RegExp }): { stripped: number; details: number; animals: number; guessed: number; bodies: number; objects: number } => {
+const motionMergeNode = (scene: MotionRemotionScene, from: string, to: string): void => {
+  scene.nodes = scene.nodes.filter((node) => node.id !== from);
+  for (const node of scene.nodes) {
+    if (node.rides === from) node.rides = to;
+    if (node.uses?.objectId === from) node.uses = { ...node.uses, objectId: to };
+    if (node.target === from) node.target = to;
+  }
+  if (scene.objects) {
+    const kept = scene.objects.some((item) => item.id === to);
+    scene.objects = scene.objects.flatMap((item) => (item.id !== from ? [item] : kept ? [] : [{ ...item, id: to }]));
+  }
+  if (scene.actionPlan?.subjects) {
+    const seen = new Set<string>();
+    scene.actionPlan.subjects = scene.actionPlan.subjects.flatMap((subject) => {
+      const nodeId = subject.nodeId === from ? to : subject.nodeId;
+      if (seen.has(nodeId)) return [];
+      seen.add(nodeId);
+      return [{ ...subject, nodeId }];
+    });
+  }
+  if (scene.lead === from) scene.lead = to;
+};
+const motionNodeOwns = (node: MotionRemotionNode, ownerId: string): boolean => [node.entityId, node.id].some((key) => !!key && (ownerId === key || ownerId.startsWith(key + G.ID_JOIN)));
+const motionHandWeapon = (term: string): string | undefined => MOTION_OBJECT_KIND_MATCH.find(([kind, pattern]) => MOTION_OBJECT_KIND_CLASS[kind] === G.HAND_WEAPON && G.BLADE_KINDS.includes(kind) && pattern.test(term))?.[0];
+export const motionScenePlanGuard = (
+  scenes: MotionRemotionScene[],
+  opts: { cast: ReadonlySet<string>; lineText: (scene: MotionRemotionScene) => string; outfit: RegExp; carries?: (entityId: string) => string[] },
+): { stripped: number; details: number; animals: number; guessed: number; bodies: number; objects: number; merged: number; saddled: number; carried: number } => {
   let stripped = 0,
     details = 0,
     animals = 0,
     guessed = 0,
     bodies = 0,
-    objectNodes = 0;
+    objectNodes = 0,
+    merged = 0,
+    saddled = 0,
+    carried = 0;
   for (const scene of scenes) {
     const narration = opts.lineText(scene);
     const outfitTold = opts.outfit.test(narration);
-    for (const item of scene.objects || []) {
+    for (const item of [...(scene.objects || [])]) {
       if (!item?.id || scene.nodes.some((node) => node.id === item.id) || item.size === MOTION_OBJECT_HANDHELD || MOTION_OBJECT_HANDHELD_CLASSES.includes(item.class)) continue;
       const animal = motionObjectAnimal(item);
+      const rider = animal && item.owner ? scene.nodes.find((node) => node.kind === G.CHARACTER && (node.entityId === item.owner || node.id === item.owner)) : undefined;
+      const ridden = rider && scene.nodes.find((node) => node.id === (rider.rides || rider.uses?.objectId) && (node.animal || motionNodeAnimal(node, opts.cast)) === animal);
+      if (ridden) {
+        motionMergeNode(scene, item.id, ridden.id);
+        merged++;
+        continue;
+      }
       const user = scene.nodes.find((node) => node.uses?.objectId === item.id);
       scene.nodes.push({ id: item.id, kind: G.PROP, description: item.description || item.term || item.class, pose: G.OBJECT_POSE, slot: user?.slot || G.CENTER, evidence: user?.evidence || item.description || item.class, ...(animal ? { animal } : {}) } as MotionRemotionNode);
       objectNodes++;
@@ -70,6 +109,20 @@ export const motionScenePlanGuard = (scenes: MotionRemotionScene[], opts: { cast
         }
       }
     }
+    for (const node of scene.nodes) {
+      if (node.kind !== G.CHARACTER || node.animal || node.stance === G.MOUNTED || !G.SADDLE.test([node.pose, node.posture, node.support, node.description].filter(Boolean).join(" "))) continue;
+      const free = scene.nodes.find(
+        (item) =>
+          item.animal === G.HORSE &&
+          !scene.nodes.some((other) => other.rides === item.id || (other !== node && other.kind === G.CHARACTER && motionNodeOwns(other, item.id))) &&
+          !(scene.objects || []).some((entry) => entry.id === item.id && !!entry.owner && entry.owner !== node.entityId && entry.owner !== node.id),
+      );
+      const mountId = free?.id || node.id + G.ID_JOIN + G.MOUNT_SUFFIX;
+      if (!free) scene.nodes.push({ id: mountId, kind: G.PROP, description: G.SADDLE_MOUNT, pose: G.OBJECT_POSE, slot: node.slot || G.CENTER, evidence: node.evidence || node.description, animal: G.HORSE, ...(node.distance ? { distance: node.distance } : {}) } as MotionRemotionNode);
+      node.stance = G.MOUNTED;
+      node.rides = mountId;
+      saddled++;
+    }
     const riders = scene.nodes.filter((node) => node.kind === G.CHARACTER && !node.animal && node.stance === G.MOUNTED);
     const mounts = scene.nodes.filter((node) => !!node.animal);
     for (const node of riders) if (!node.rides || !mounts.some((mount) => mount.id === node.rides)) {
@@ -78,6 +131,38 @@ export const motionScenePlanGuard = (scenes: MotionRemotionScene[], opts: { cast
       else delete node.rides;
     }
     for (const node of scene.nodes) if (node.rides && node.stance !== G.MOUNTED) delete node.rides;
+    for (const rider of scene.nodes.filter((node) => node.kind === G.CHARACTER && !node.animal && node.rides)) {
+      const mount = scene.nodes.find((node) => node.id === rider.rides);
+      if (!mount?.animal) continue;
+      const extras = scene.nodes.filter(
+        (node) =>
+          node !== mount &&
+          node.animal === mount.animal &&
+          !scene.nodes.some((other) => other !== rider && (other.rides === node.id || other.uses?.objectId === node.id)) &&
+          (motionNodeOwns(rider, node.id) || (scene.objects || []).some((item) => item.id === node.id && !!item.owner && (item.owner === rider.entityId || item.owner === rider.id))),
+      );
+      for (const extra of extras) {
+        motionMergeNode(scene, extra.id, mount.id);
+        merged++;
+      }
+    }
+    for (const holder of scene.nodes.filter((node) => node.kind === G.CHARACTER && node.entityId && opts.cast.has(node.entityId))) {
+      const own = (opts.carries?.(holder.entityId!) || []).map((term) => ({ term, kind: motionHandWeapon(term) })).filter((entry) => entry.kind);
+      if (!own.length) continue;
+      const props = scene.nodes.filter((node) => node.kind === G.PROP && !node.animal && motionNodeOwns(holder, node.id) && !(scene.objects || []).some((item) => item.id === node.id)).map((node) => ({ id: node.id, class: G.HAND_WEAPON, description: node.description, owner: holder.entityId }) as MotionSceneObject);
+      for (const item of [...(scene.objects || []), ...props]) {
+        const kind = motionObjectKind(item);
+        if (!kind || !G.BLADE_KINDS.includes(kind) || own.some((entry) => entry.kind === kind)) continue;
+        if (!(item.owner === holder.entityId || item.owner === holder.id || motionNodeOwns(holder, item.id))) continue;
+        if (MOTION_OBJECT_KIND_MATCH.some(([match, pattern]) => match === kind && pattern.test(narration))) continue;
+        item.term = own[0].term;
+        item.description = own[0].term;
+        delete item.kind;
+        const node = scene.nodes.find((entry) => entry.id === item.id);
+        if (node) node.description = own[0].term;
+        carried++;
+      }
+    }
     for (const node of scene.nodes) {
       const unit = motionNodeUnit(node, scene);
       if (!unit) {
@@ -118,5 +203,5 @@ export const motionScenePlanGuard = (scenes: MotionRemotionScene[], opts: { cast
     const objects = motionSceneObjects(scene);
     if (objects.length) scene.objects = objects;
   }
-  return { stripped, details, animals, guessed, bodies, objects: objectNodes };
+  return { stripped, details, animals, guessed, bodies, objects: objectNodes, merged, saddled, carried };
 };

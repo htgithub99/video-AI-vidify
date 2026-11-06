@@ -315,6 +315,7 @@ export interface MotionCastMember {
   look?: string;
   marks?: string[];
   skin?: string;
+  carries?: string[];
   origin?: string;
   gender?: "male" | "female";
   age?: "child" | "adult" | "senior";

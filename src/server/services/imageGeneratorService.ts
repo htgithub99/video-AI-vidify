@@ -1,5 +1,5 @@
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
-import { sharedChromeFlowPage } from "./sharedChromePage.js";
+import { isChatRoomPage, sharedChromeFlowPage } from "./sharedChromePage.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { BROWSER_LIFECYCLE_TEXTS, isDisposableChatBrowserUrl } from "../../constants/browserLifecycle.js";
@@ -2000,7 +2000,7 @@ export const getExistingGlobalBrowser = async (): Promise<BrowserSession | null>
   if (existing) activeBrowserInstance = existing;
   return existing;
 };
-export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
+export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = true, needsPage: boolean = true): Promise<BrowserSession> {
   await waitForGeminiBrowserClose();
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
@@ -2024,7 +2024,8 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
       await closeActiveBrowser();
     } else {
       try {
-        if (activeBrowserInstance.page.isClosed()) throw new Error(BACKUP.CLOSE_FAILED);
+        if (needsPage && (activeBrowserInstance.page.isClosed() || isChatRoomPage(activeBrowserInstance.page))) activeBrowserInstance.page = await sharedChromeFlowPage(activeBrowserInstance.context);
+        if (needsPage ? activeBrowserInstance.page.isClosed() : activeBrowserInstance.context.browser()?.isConnected() === false) throw new Error(BACKUP.CLOSE_FAILED);
         await activeBrowserInstance.page.url();
         appLog(ImageGenMessages.REUSING_GLOBAL_CHROME);
         return activeBrowserInstance;
@@ -3630,7 +3631,7 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
     browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
     releaseActivity = await acquireGeminiActivityUse(browserInstance.context);
     const context = browserInstance.context;
-    const reusablePages = _.uniq(_.filter(_.concat(globalBatchPages, context.pages()), (page) => (!retainBrowserSession || page !== browserInstance!.page) && !page.isClosed() && !_.includes(page.url(), SOURCE_TEXT_GROK_COM) && (_.isEqual(page.url(), SOURCE_TEXT_ABOUT_BLANK) || _.includes(page.url(), SOURCE_TEXT_GEMINI_GOOGLE_COM))));
+    const reusablePages = _.uniq(_.filter(_.concat(globalBatchPages, context.pages()), (page) => (!retainBrowserSession || page !== browserInstance!.page) && !page.isClosed() && !isChatRoomPage(page) && !_.includes(page.url(), SOURCE_TEXT_GROK_COM) && (_.isEqual(page.url(), SOURCE_TEXT_ABOUT_BLANK) || _.includes(page.url(), SOURCE_TEXT_GEMINI_GOOGLE_COM))));
     const candidates = _.take(reusablePages, maxTabs);
     const surplusPages = _.drop(reusablePages, maxTabs);
     await Promise.allSettled(_.map(surplusPages, (page) => page.close()));

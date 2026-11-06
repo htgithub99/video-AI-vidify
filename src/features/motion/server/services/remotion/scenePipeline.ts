@@ -53,6 +53,7 @@ import { motionWrittenSceneIntents } from "../../../../../lib/motionSceneActionB
 import { MOTION_OBJECT_SHEET as SHEET } from "../../../../../constants/motionObjectSheet.js";
 import { MOTION_SCENE_SCORE as SCORE } from "../../../../../constants/motionSceneScore.js";
 import { scoreMotionScene, type MotionSceneScore } from "../../../../../lib/motionSceneScore.js";
+import { motionScenePictureIssues } from "../../../../../lib/motionScenePicture.js";
 import { motionSheetAssess, motionSheetCandidates, motionSheetPrompt } from "./sceneSheet.js";
 type SceneBuild = ReturnType<typeof normalizeSceneComposition>;
 const SCHEDULE = {
@@ -186,7 +187,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     state.pacingRevision = PACING.REVISION;
     const cast = new Set(analysis.cast.map((member) => member.key));
     const scoreOf = (built: SceneBuild, scene: MotionRemotionScene): MotionSceneScore =>
-      scoreMotionScene({ svg: built.asset.svg, layers: built.composition.layers, animations: built.composition.animations, nodes: scene.nodes, actionPlan: scene.actionPlan, duration: built.composition.duration, width, height, motion: state.renderBehavior?.actors === RT_SHARED.SIMPLE });
+      scoreMotionScene({ svg: built.asset.svg, layers: built.composition.layers, animations: built.composition.animations, nodes: scene.nodes, actionPlan: scene.actionPlan, duration: built.composition.duration, width, height, motion: state.renderBehavior?.actors === RT_SHARED.SIMPLE, picture: motionScenePictureIssues(built.asset.svg, scene, settings.profileId, analysis.cast, width, height) });
     opts.log(V.LOG_MODE(settings.mode));
     opts.log(C.LOG);
     opts.log(C.LOG_ONE_PASS);
@@ -265,6 +266,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           if (intent.views || intent.formats) opts.log(MOTION_SCENE_INTENT.LOG(intent.views, intent.formats));
           const guard = motionScenePlanGuard(state.scenes[beat.id], {
             cast,
+            carries: (entityId) => analysis.cast.find((member) => member.key === entityId)?.carries || [],
             outfit: motionLanguage(script.language).markers.outfit,
             lineText: (scene) => {
               const from = lines.findIndex((line) => line.key === scene.fromLineId),
@@ -276,6 +278,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             },
           });
           if (guard.stripped || guard.details || guard.animals || guard.guessed || guard.bodies || guard.objects) opts.log(MOTION_SCENE_PLAN_GUARD.LOG(guard.stripped, guard.details, guard.animals, guard.guessed, guard.bodies, guard.objects));
+          if (guard.merged || guard.saddled || guard.carried) opts.log(MOTION_SCENE_PLAN_GUARD.LOG_FIX(guard.merged, guard.saddled, guard.carried));
           for (const scene of state.scenes[beat.id]) {
             const from = lines.findIndex((line) => line.key === scene.fromLineId),
               to = lines.findIndex((line) => line.key === scene.toLineId);

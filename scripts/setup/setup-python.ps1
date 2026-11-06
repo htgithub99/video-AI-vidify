@@ -1,4 +1,5 @@
-. (Join-Path $PSScriptRoot "scripts/powershellTexts.ps1")
+. (Join-Path $PSScriptRoot "../powershellTexts.ps1")
+$WorkspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $ErrorActionPreference = $WORKSPACE_SCRIPT_TEXT.STOP
 $PYTHON_VERSION = $WORKSPACE_SCRIPT_TEXT.VALUE_3_10_11
 $PYTHON_URL = $WORKSPACE_SCRIPT_TEXT.PYTHON_EMBED_URL -f $PYTHON_VERSION
@@ -30,8 +31,8 @@ $PTH_ENABLED_SITE = $WORKSPACE_SCRIPT_TEXT.IMPORT_SITE_67
 $DIRECTORY_ITEM_TYPE = $WORKSPACE_SCRIPT_TEXT.DIRECTORY
 $EXIT_SUCCESS = 0
 $EXIT_FAILURE = 1
-$TARGET_DIR = Join-Path $PSScriptRoot $TARGET_RELATIVE_DIR
-$ZIP_PATH = Join-Path $PSScriptRoot $ZIP_RELATIVE_PATH
+$TARGET_DIR = Join-Path $WorkspaceRoot $TARGET_RELATIVE_DIR
+$ZIP_PATH = Join-Path $WorkspaceRoot $ZIP_RELATIVE_PATH
 $PIP_SCRIPT = Join-Path $TARGET_DIR $PIP_SCRIPT_NAME
 if (Test-Path (Join-Path $TARGET_DIR $PYTHON_EXE_NAME)) {
     Write-Host ($RUNTIME_EXISTS_MESSAGE -f $TARGET_DIR)

@@ -1,8 +1,0 @@
-{
-  "name": "Remix: Remix: Remix: Remix: AI Video Factory",
-  "description": "AI Story Rewriter \u0026 Video Creator - A comprehensive video production pipeline which rewrites stories, builds hooks, voice files, semantic storyboards, timelines, thumbnails, SEO assets, and exports to CapCut, Premiere Pro, or DaVinci Resolve.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

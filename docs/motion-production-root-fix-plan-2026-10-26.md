@@ -34,7 +34,7 @@ Các căn cứ:
 - [Plan gốc với 82 mã A01–K06](motion-production-root-fix-plan-2026-10-25.md).
 - [Ma trận triển khai và bằng chứng ngày 25/10](motion-production-root-fix-implementation-2026-10-25.md#trạng-thái-từng-mã-trong-plan).
 - [Bản sửa minh họa đơn giản vừa hoàn thành ngày 26/10](motion-simple-illustration-implementation-2026-10-26.md).
-- [Audit trước bản sửa minh họa](motion-simple-illustration-root-audit-2026-10-26.md), [audit prompt](motion-prompt-audit-2026-10-25.md) và [hướng dẫn kho](../HUONG_DAN_KHO_2D_CO_DINH.md).
+- [Audit trước bản sửa minh họa](motion-simple-illustration-root-audit-2026-10-26.md), [audit prompt](motion-prompt-audit-2026-10-25.md) và [hướng dẫn kho](guides/HUONG_DAN_KHO_2D_CO_DINH.md).
 
 Ma trận cũ có **45 mục kiểm cục bộ, 26 mục mới hoàn thành một phần, 11 mục cần nghiệm thu**. Đây là phân loại bằng chứng, không phải 45 mục đã bảo đảm chạy đúng trên mọi video. Những bản sửa ngày 26/10 bổ sung bảo vệ cho nhiều mã; không tự chuyển cả mã thành hoàn thành nếu phần còn lại chưa được kiểm.
 

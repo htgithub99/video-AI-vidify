@@ -31,6 +31,12 @@ export const MOTION_SCENE_PLAN_GUARD = {
   CENTER: "center",
   OBJECT_POSE: "in place",
   CLASS_ANIMAL: { mount: "horse", draft: "ox", bird: "bird" } as Record<string, "horse" | "ox" | "bird">,
+  ID_JOIN: "_",
+  MOUNT_SUFFIX: "mount",
+  HAND_WEAPON: "handWeapon",
+  BLADE_KINDS: ["saber", "sword", "spear", "crossbow", "bow", "halberd", "mace", "axe", "dagger", "club", "musket", "rifle", "pistol"] as readonly string[],
+  SADDLE: /\b(?:in|from|on|into) (?:the |his |her |their )?saddle\b|\bhorseback\b|\bastride\b|\bon (?:his|her|their) (?:horse|mount|steed)\b|yên ngựa|trên lưng ngựa/iu,
+  SADDLE_MOUNT: "Saddled riding horse carrying its rider.",
   BODY_PART: "bodyPart",
   OBJECT: "object",
   HANDS_WITH_OBJECT: "handsWithObject",
@@ -39,4 +45,5 @@ export const MOTION_SCENE_PLAN_GUARD = {
   FULL: "full",
   STANCE_CUT: /\s(?:behind|ahead of|in front of|beside|alongside|toward|towards|after|past|while|as|with|watching|facing|followed by|chased by|pursued by|sau lưng|phía trước|bên cạnh|trong khi|cùng)\s/iu,
   LOG: (stripped: number, details: number, animals: number, guessed: number, bodies: number, objects: number): string => `Phân cảnh sửa bằng code: bỏ trang phục tự đặt của ${stripped} nhân vật có tên, ${details} cận không người → đặc tả, ${animals} con vật đoán từ chữ, ${guessed} nhân vật AI không trả tư thế (đoán từ chữ pose), ${bodies} cảnh chỉ có bộ phận cơ thể → cảnh trung có cả người, ${objects} đồ vật/con vật AI liệt kê nhưng thiếu node → thêm node để kiểm tra.`,
+  LOG_FIX: (merged: number, saddled: number, carried: number): string => `Phân cảnh sửa bằng code: gộp ${merged} con vật trùng của cùng người cưỡi, ${saddled} người "trên yên" được đặt lên ngựa, ${carried} vũ khí cầm tay đổi theo vật đặc trưng của nhân vật.`,
 } as const;

@@ -19,7 +19,7 @@ import { MOTION_GENRE_STAGE } from "../../../../constants/motionGenreStage.js";
 import { MOTION_GENRE_REVIEW } from "../../../../constants/motionGenreReview.js";
 import { motionLineSimilarity, type MotionGenreReviewFinding } from "../../../../lib/motionGenreReview.js";
 import { MOTION_STORY_TIMELINE as TIMELINE } from "../../../../constants/motionStoryTimeline.js";
-import { motionCleanLook, motionAnalysisGroups, motionCastMarks, motionCastSkin } from "../../../../lib/motionCastIdentity.js";
+import { motionCleanLook, motionAnalysisGroups, motionCastMarks, motionCastSkin, motionCastCarries } from "../../../../lib/motionCastIdentity.js";
 import { closeMotionJsonContainers } from "../../../../lib/motionJsonRecovery.js";
 import { parseRemotionAssetReply, quoteBareJsonKeys } from "../../../../lib/motionVectorAsset.js";
 import { MOTION_PRODUCTION } from "../../../../constants/motionProduction.js";
@@ -1131,6 +1131,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         }, roomTimeout);
       };
       submission.onContextRetry = (part, total, attempt, max) => log?.(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_RETRY_LOG(part, total, attempt, max), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+      submission.onRegenerate = (line) => log?.(line, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
       submission.onAttempt = () => {
         clearTimeout(watchdog);
         log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RESPONSE });
@@ -1353,6 +1354,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       submission.onAttempt = undefined;
       submission.onContextProgress = undefined;
       submission.onContextRetry = undefined;
+      submission.onRegenerate = undefined;
       signal?.removeEventListener(MOTION_TEXT_ABORT, relay);
       run?.signal.removeEventListener(MOTION_TEXT_ABORT, relay);
       if (!retryRoom && !captchaRetry) providerRecoveries.finish(recoveryKey, requestId, roomOk || signal?.aborted || run?.signal.aborted ? undefined : terminalError);
@@ -1858,6 +1860,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           look: _.truncate(motionCleanLook(_.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY)), { length: 320 }),
           ...((marks) => (marks.length ? { marks } : {}))(motionCastMarks(m.marks)),
           ...((skin) => (skin ? { skin } : {}))(motionCastSkin(m.skin, _.toString(m.look || m.appearance || MR.MOTION_TEXT_EMPTY))),
+          ...((carries) => (carries.length ? { carries } : {}))(motionCastCarries(m.carries)),
           ...(_.isString(m.origin) && m.origin.trim() ? { origin: _.truncate(m.origin.trim(), { length: 60 }) } : {}),
           gender,
           ...(_.includes(MOTION_AUDIO_DIRECTION.AGES, m.age) ? { age: m.age } : {}),

@@ -1,5 +1,8 @@
-. (Join-Path $PSScriptRoot "scripts/powershellTexts.ps1")
+. (Join-Path $PSScriptRoot "../powershellTexts.ps1")
 $ErrorActionPreference = $WORKSPACE_SCRIPT_TEXT.STOP
+$WorkspaceRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
+Push-Location -LiteralPath $WorkspaceRoot
+try {
 Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
 Write-Host $WORKSPACE_SCRIPT_TEXT.VALUE_1_BUILDING_WEB_ASSETS_AND_BACKEND_BYTECODE -ForegroundColor Cyan
 Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
@@ -8,6 +11,8 @@ Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL_12 -ForegroundColor Cyan
 Write-Host $WORKSPACE_SCRIPT_TEXT.VALUE_2_PREPARING_STANDALONE_RELEASE_DIRECTORY -ForegroundColor Cyan
 Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Cyan
 $ReleaseDir = $WORKSPACE_SCRIPT_TEXT.RELEASE_VIDEO_WORKSPACE_WIN32_X64
+$ReleaseDir = [IO.Path]::GetFullPath((Join-Path $WorkspaceRoot $ReleaseDir))
+if (-not $ReleaseDir.StartsWith((Join-Path $WorkspaceRoot "release") + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw "Release directory must stay inside this workspace's release folder." }
 $AppResourceDir = "$ReleaseDir\resources\app"
 if (Test-Path $ReleaseDir) {
     Write-Host $WORKSPACE_SCRIPT_TEXT.CLEANING_EXISTING_RELEASE_DIRECTORY
@@ -79,3 +84,6 @@ Write-Host $WORKSPACE_SCRIPT_TEXT.BUILD_HOAN_TAT_THANH_CONG -ForegroundColor Gre
 Write-Host ($WORKSPACE_SCRIPT_TEXT.RELEASE_EXECUTABLE -f $ReleaseDir) -ForegroundColor Green
 Write-Host ($WORKSPACE_SCRIPT_TEXT.RELEASE_ARCHIVE -f $ZipFile) -ForegroundColor Green
 Write-Host $WORKSPACE_SCRIPT_TEXT.SYMBOL -ForegroundColor Green
+} finally {
+    Pop-Location
+}

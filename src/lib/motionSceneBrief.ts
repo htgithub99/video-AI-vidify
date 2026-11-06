@@ -10,6 +10,9 @@ import { MOTION_UNIT_LABEL, MOTION_UNIT_MAX_FRAMES, MOTION_UNIT_NOTES, MOTION_UN
 import { MOTION_OBJECT_CLASS_LABEL, MOTION_OBJECT_CLASS_LEGS, MOTION_OBJECT_CLASS_NOTES } from "../constants/motionObjectClasses.js";
 import { motionSceneObjects } from "./motionObjects.js";
 import { stringifyJson } from "./jsonStringify.js";
+import { motionSkinHex } from "./motionCastIdentity.js";
+import { MOTION_CAST_IDENTITY } from "../constants/motionCastIdentity.js";
+export const motionSkinLabel = (profile: MotionRemotionProfile, skin: string | undefined): string => B.SKIN_LABEL(skin, motionSkinHex(skin, MOTION_CAST_IDENTITY.SKIN_DEFAULT[profile]));
 import type { MotionAnalysisGroup, MotionCastMember } from "../types/motionVideo.js";
 import type { MotionRemotionEffect, MotionRemotionNode, MotionRemotionProfile, MotionRemotionScene, MotionSceneObject } from "../types/motionVisual.js";
 import { motionSceneActionLines, type MotionWrittenSceneIntent } from "./motionSceneActionBrief.js";
@@ -84,7 +87,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
     const member = cast.find((item) => item.key === node.entityId);
     const group = member ? undefined : groups.find((item) => item.key === (node.groupKey || node.crowd?.groupKey));
     const lines = [B.PERSON(node.id, member?.name || node.id, member?.role)];
-    const identity = member ? B.PERSON_IDENTITY(member.marks || [], member.skin, member.origin) : group ? B.GROUP_LOOK(group.origin, group.skin, group.outfit, group.gear, group.faction, group.look) : "";
+    const identity = member ? B.PERSON_IDENTITY(member.marks || [], motionSkinLabel(id, member.skin), member.origin, member.carries || []) : group ? B.GROUP_LOOK(group.origin, motionSkinLabel(id, group.skin), group.outfit, group.gear, group.faction, group.look) : "";
     if (identity) lines.push(identity);
     if (member?.look) lines.push(B.PERSON_LOOK(member.look));
     lines.push(B.PERSON_ACTION(node.description, node.pose, node.posture, node.support));
@@ -107,7 +110,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
       B.GROUP(node.id, node.description),
       node.unit ? B.UNIT_COUNT(visible, node.crowd?.count) : B.GROUP_COUNT(visible, node.crowd?.rows, node.crowd?.count),
       node.unit ? B.UNIT_LINE(MOTION_UNIT_LABEL[node.unit], node.rides || node.uses?.objectId) : node.stance ? B.PERSON_FRAME(node.stance, extraPoses.includes(pose) ? pose : MOTION_FRAME_STAND) : "",
-      B.GROUP_LOOK(group?.origin, group?.skin, group?.outfit, group?.gear, group?.faction || node.crowd?.faction, group?.look || node.crowd?.appearance),
+      B.GROUP_LOOK(group?.origin, motionSkinLabel(id, group?.skin), group?.outfit, group?.gear, group?.faction || node.crowd?.faction, group?.look || node.crowd?.appearance),
       node.crowd?.facing ? B.GROUP_FACING(node.crowd.facing, node.crowd.depth) : "",
       node.pose ? B.PERSON_ACTION("", node.pose, node.posture, node.support) : "",
     ]
