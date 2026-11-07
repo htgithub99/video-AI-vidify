@@ -1049,7 +1049,7 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
 import { hasValidImages, readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
-import { cancelAllActiveMediaGeneration, closeAllBatchPages, ensureFlowCharacters, generateBatchImagesWithGeminiChat, generateFlowVideoPromptBatchWithPlaywright, generateImageWithPlaywright, getOrLaunchGlobalBrowser, recoverExistingFlowVideo, scheduleGlobalBrowserCleanup } from "../services/imageGeneratorService.js";
+import { cancelAllActiveMediaGeneration, closeAllBatchPages, ensureFlowCharacters, generateBatchImagesWithGeminiChat, generateFlowVideoPromptBatchWithPlaywright, generateImageWithPlaywright, getOrLaunchGlobalBrowser, recoverExistingFlowVideo, retainGlobalBrowser, scheduleGlobalBrowserCleanup } from "../services/imageGeneratorService.js";
 import { createBatchContinuityContext, createPromptCharacterCards, createScopedVisualBibleContext, createVisualPlanningPayload, getVisualShotPlanIssues } from "../services/imagePromptPlanningService.js";
 import { LicenseService } from "../services/licenseService.js";
 import { MUSIC_PLANNING as MUSIC_PLAN } from "../../constants/musicPlanning.js";
@@ -1261,48 +1261,50 @@ const generateMusicThumbnailAsset = async (input: {
   const promptRequestId = SOURCE_TEMPLATE_MUSIC_IMAGE_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
   const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
   const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
+  const releaseBrowser = retainGlobalBrowser();
   let prompt: string = C.EMPTY;
   try {
-    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, provider: planningProvider, model: input.planningModel, promptRevision: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_REVISION });
-    const response = await generatePlanningWithChatUi({
-      provider: planningProvider,
-      model: input.planningModel,
-      prompt: SUNO_AUTOMATION_TEXTS.buildMusicImagePromptPlanningPrompt(imageBrief, input.assetPurpose || SOURCE_TEXT_COVER, promptRequestId),
-      projectId: promptRequestId,
-      workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE,
-      chromeHeadless: input.chromeHeadless,
-      artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT,
-      requestId: promptRequestId,
-      signal: input.signal ? AbortSignal.any([planningRun.signal, input.signal]) : planningRun.signal,
-      closeRoomOnComplete: false,
-    });
-    const parsed = jsonUtils.safeParse(response.text, null);
-    prompt = _.trim(_.toString(parsed?.imagePrompt));
-    if (parsed?.artifactType !== SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT || parsed?.requestId !== promptRequestId || prompt.length < 100 || prompt.length > 4000) {
-      throw new Error(SOURCE_TEXT_AI_CHUA_TRA_VE_PROMPT_TAO);
-    }
-    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_COMPLETED, { runId: promptRequestId, promptChars: prompt.length });
-  } catch (error) {
-    input.signal?.throwIfAborted();
-    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_FAILED, { runId: promptRequestId, ...musicErrorDetails(error) });
-    return { thumbnail: null, warning: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
-  } finally {
-    planningRun.complete();
-    await closeChatPlanningRoom({ provider: planningProvider, projectId: promptRequestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE }).catch(() => undefined);
-  }
-  await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, originalNoteChars: _.trim(input.description).length, plannedPromptChars: prompt.length, hasReference: !_.isEmpty(input.reference) });
-  let transientErrorCount = 0;
-  const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
-  for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
-    input.signal?.throwIfAborted();
     try {
-      logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_START_ATTEMPT_SONGS_HASREFERENCE(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${input.songs.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${!_.isEmpty(input.reference)}`)));
-      const result = await generateImageWithPlaywright({
-        prompt,
-        style: input.style,
-        retainBrowserSession: true,
-        forceNewPage: true,
-        visualConfig: {
+      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, provider: planningProvider, model: input.planningModel, promptRevision: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_REVISION });
+      const response = await generatePlanningWithChatUi({
+        provider: planningProvider,
+        model: input.planningModel,
+        prompt: SUNO_AUTOMATION_TEXTS.buildMusicImagePromptPlanningPrompt(imageBrief, input.assetPurpose || SOURCE_TEXT_COVER, promptRequestId),
+        projectId: promptRequestId,
+        workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE,
+        chromeHeadless: input.chromeHeadless,
+        artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT,
+        requestId: promptRequestId,
+        signal: input.signal ? AbortSignal.any([planningRun.signal, input.signal]) : planningRun.signal,
+        closeRoomOnComplete: false,
+      });
+      const parsed = jsonUtils.safeParse(response.text, null);
+      prompt = _.trim(_.toString(parsed?.imagePrompt));
+      if (parsed?.artifactType !== SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT || parsed?.requestId !== promptRequestId || prompt.length < 100 || prompt.length > 4000) {
+        throw new Error(SOURCE_TEXT_AI_CHUA_TRA_VE_PROMPT_TAO);
+      }
+      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_COMPLETED, { runId: promptRequestId, promptChars: prompt.length });
+    } catch (error) {
+      input.signal?.throwIfAborted();
+      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_FAILED, { runId: promptRequestId, ...musicErrorDetails(error) });
+      return { thumbnail: null, warning: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
+    } finally {
+      planningRun.complete();
+      await closeChatPlanningRoom({ provider: planningProvider, projectId: promptRequestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE }).catch(() => undefined);
+    }
+    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, originalNoteChars: _.trim(input.description).length, plannedPromptChars: prompt.length, hasReference: !_.isEmpty(input.reference) });
+    let transientErrorCount = 0;
+    const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
+    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
+      input.signal?.throwIfAborted();
+      try {
+        logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_START_ATTEMPT_SONGS_HASREFERENCE(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${input.songs.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${!_.isEmpty(input.reference)}`)));
+        const result = await generateImageWithPlaywright({
+          prompt,
+          style: input.style,
+          retainBrowserSession: true,
+          forceNewPage: false,
+          visualConfig: {
           chromeHeadless: input.chromeHeadless,
           generateType: GenerateType.Image,
           aspectRatio: AspectRatio.SixteenNine,
@@ -1357,6 +1359,9 @@ const generateMusicThumbnailAsset = async (input: {
   }
   logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_EXHAUSTED_ATTEMPTS_WARNING(SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
   return { thumbnail: null, warning: lastWarning };
+  } finally {
+    releaseBrowser();
+  }
 };
 const isRetryableMusicRoomError = (error: unknown): boolean => {
   if (_.get(error, CHAT_ROOM_RECOVERY.COMPLETE) || _.get(error, CHROME_BACKUP.ERROR_FLAG)) return false;

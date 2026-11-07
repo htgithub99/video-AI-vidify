@@ -4,7 +4,7 @@ import { stringifyJson } from "./jsonStringify.js";
 import { motionVideoGenre } from "../constants/motionGenre.js";
 import { motionGenreChapterWriting, motionGenreWritingPlan } from "./motionGenres/autofix.js";
 import type { MotionBeat, MotionChapter, MotionStoryAnalysis, MotionWritingChapter, MotionWritingPlan } from "../types/motionVideo.js";
-export const motionWritingChapterCount = (seconds: number, genre: unknown): number => Math.max(W.CHAPTERS.GENRE_MIN[motionVideoGenre(genre)] || W.CHAPTERS.MIN, Math.min(W.CHAPTERS.MAX, Math.round(seconds / W.CHAPTERS.SECONDS)));
+export const motionWritingChapterCount = (seconds: number, _genre: unknown): number => Math.max(W.CHAPTERS.MIN, Math.min(W.CHAPTERS.MAX, Math.round(seconds / W.CHAPTERS.SECONDS)));
 export const motionWritingReviewAnchors = (analysis: Partial<Pick<MotionStoryAnalysis, "motifs" | "cast" | "places">>): string[] => [
   ...(analysis.motifs || []),
   [
@@ -49,7 +49,7 @@ export const motionWritingBiblePrompt = (analysis: MotionStoryAnalysis): string 
     analysis.factual ? W.FACTUAL : "",
     W.NUMBERS,
     analysis.writingPlan ? W.CHAPTER + stringifyJson({ plan: motionGenreWritingPlan(analysis) }) : "",
-    motionVideoGenre(analysis.videoGenre) === "verdict" ? W.LABELS : "",
+    !analysis.authoringSettings && motionVideoGenre(analysis.videoGenre) === "verdict" ? W.LABELS : "",
   ]
     .filter(Boolean)
     .join("\n");

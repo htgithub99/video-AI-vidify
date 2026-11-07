@@ -11,6 +11,7 @@ import { MOTION_PRODUCTION as PRODUCTION } from "../../../../constants/motionPro
 import { MOTION_PATTERNS as MP } from "../../../../constants/motionPatterns.js";
 import { mixMotionSoundAudio } from "./motionSoundMixService.js";
 import { acquireMotionRenderBrowser } from "./motionStoryService.js";
+import { refreshMotionHtmlArtifacts } from "./html/sceneRenderer.js";
 import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_RELEASED_LOG } from "../../../../constants/browserLifecycle.js";
 import { isRemotionSpec } from "../../../../lib/motionVisual.js";
 import type { MotionRenderSpec } from "../../../../types/motionVisual.js";
@@ -445,13 +446,14 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     let cacheDir: string | undefined;
     const silent = path.join(work, MOTION_TEXT_VIDEO_MP4);
     if (isRemotionSpec(spec)) {
+      if (spec.renderer === "html-canvas") refreshMotionHtmlArtifacts(spec);
       if (options.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
       if (spec.fps !== fps || spec.aspect !== aspect) throw new Error(VISUAL.SETTINGS_CHANGED);
       duration = spec.duration;
       totalFrames = Math.ceil(duration * fps);
       encoder = MOTION_TEXT_LIBX264;
       job.encoder = encoder;
-      job.browser = VISUAL.MODES.REMOTION;
+      job.browser = spec.renderer === "html-canvas" ? "HTML Canvas / Chrome" : VISUAL.MODES.REMOTION;
       job.framesTotal = totalFrames;
       job.workers = motionRemotionRenderConcurrency(os.cpus().length, os.freemem());
       job.status = MotionJobStatus.RENDERING;

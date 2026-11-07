@@ -89,12 +89,13 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
         lastFrame = Math.min(endFrame, Math.round(end * fps));
       return lastFrame > startFrame ? [{ entityId: line.speaker, startFrame, endFrame: lastFrame }] : [];
     });
-    scenes.push({ ...scene, sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))], startFrame: frame, endFrame, speaking, nodes: scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]) });
+    scenes.push({ ...scene, sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))], startFrame: frame, endFrame, speaking, nodes: scene.renderer === "html-canvas" ? [] : scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]) });
     frame = endFrame;
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
+    ...(state.renderer ? { renderer: state.renderer } : {}),
     engine: RT_SHARED.REMOTION,
     version: V.VERSION,
     title: script.title,

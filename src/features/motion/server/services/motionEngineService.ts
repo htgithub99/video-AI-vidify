@@ -49,12 +49,6 @@ interface EngineCache {
   fontCss: string;
   fontFaces: { family: string; weight: number; style: string; src: string; unicodeRange: string }[];
 }
-export interface MotionValidation<T> {
-  value: T;
-  errors: string[];
-  warnings?: string[];
-  stats?: Record<string, number>;
-}
 let cache: EngineCache | null = null;
 export const getMotionEngineDir = (): string => {
   const resource = getStaticResourcePath(MOTION_VIDEO_CONSTANTS.ENGINE_DIR);

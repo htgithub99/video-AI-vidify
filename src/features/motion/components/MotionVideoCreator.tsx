@@ -282,13 +282,17 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const builtCount = remotionMode ? remotionProgress?.ready || 0 : gen?.puppet ? _.size(_.filter(sceneBeats, (b) => _.some(puppetBeatVisualLines(b, gen.puppet), (l) => !!gen.puppet?.frames[l.key]))) : 0;
   const sceneTotal = remotionMode ? remotionProgress?.total || 0 : sceneBeats.length;
   const estimateTotal = studio.compiled?.spec.duration || 0;
+  const plannedSeconds = state.analysis?.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0) || 0;
+  const actualAudioSeconds = state.uploadedAudio?.durationSeconds || (studio.voiceValid ? state.voice?.totalSeconds : undefined);
+  const htmlTiming = state.analysis?.authoringSettings;
   const previewSpec = useMemo(() => {
     const spec = studio.compiled?.spec;
     return spec ? applyMotionRenderBehavior(spec, state.renderBehavior) : null;
   }, [studio.compiled, state.renderBehavior]);
   const updateBeat = (id: string, patchBeat: Partial<MotionBeat>) => {
     if (!state.script) return;
-    patch({ script: { ...state.script, ...(patchBeat.narration !== undefined ? { voiceSettings: { ...state.script.voiceSettings, utterances: _.omit(state.script.voiceSettings?.utterances || {}, id) } } : {}), beats: _.map(state.script.beats, (b) => (b.id === id ? { ...b, ...patchBeat, ...(patchBeat.narration !== undefined ? { utterances: undefined } : {}) } : b)) } });
+    patch({ script: { ...state.script, ...(patchBeat.narration !== undefined ? { voiceSettings: { ...state.script.voiceSettings, utterances: _.omit(state.script.voiceSettings?.utterances || {}, id) } } : {}),
+      beats: _.map(state.script.beats, (b) => (b.id === id ? { ...b, ...patchBeat, ...(patchBeat.narration !== undefined ? { utterances: undefined, sceneTemplateDraft: undefined } : {}) } : b)) } });
   };
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
@@ -798,6 +802,10 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </>
                 }
               />
+              {htmlTiming && <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
+                {currentLang === "en" ? "Selected total" : "Mốc chọn tổng"}: {formatSeconds(htmlTiming.selectedTargetSeconds)} · {currentLang === "en" ? "This part planned" : "Dự kiến phần này"}: {formatSeconds(plannedSeconds)}
+                {actualAudioSeconds ? ` · ${currentLang === "en" ? "Actual audio" : "Audio thực"}: ${formatSeconds(actualAudioSeconds)}` : ""}
+              </p>}
               <div className={MOTION_STYLES.SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                 {_.map(state.analysis.chapters, (chapter, ci) => (
                   <div key={chapter.id} className={MOTION_STYLES.SPACE_Y_3}>
@@ -882,6 +890,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             />
             {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? RUNTIME_VALUES.PREPARINGSINGLE_21F3001B : RUNTIME_VALUES.PREPARING_D932D92A]}</p> : null}
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
+            {isRemotionSpec(previewSpec) && previewSpec.renderer === "html-canvas" && <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
+              {currentLang === "en" ? "Scene durations on this timeline" : "Thời lượng cảnh trên timeline này"}: {previewSpec.scenes.map((scene) => `${((scene.endFrame - scene.startFrame) / previewSpec.fps).toFixed(1)}s`).join(" · ")}
+            </p>}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {studio.renderedVideoUrl ? (
               <div className={MOTION_STYLES.SPACE_Y_3}>

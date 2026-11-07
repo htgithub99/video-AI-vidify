@@ -99,7 +99,8 @@ export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal): Pr
 };
 const checked = async (option: Locator): Promise<boolean> => {
   const hasAttribute = async (name: string, value: string): Promise<boolean> => (await option.getAttribute(name).catch(() => null)) === value;
-  if ((await hasAttribute(UI.ARIA_CHECKED, UI.TRUE)) || (await hasAttribute(UI.ARIA_SELECTED, UI.TRUE)) || (await hasAttribute(UI.DATA_STATE, UI.CHECKED))) return true;
+  if ((await hasAttribute(UI.ARIA_CHECKED, UI.TRUE)) || (await hasAttribute(UI.ARIA_SELECTED, UI.TRUE)) || (await hasAttribute(UI.DATA_STATE, UI.CHECKED)) || (await hasAttribute(UI.DATA_ACTIVE, UI.TRUE))) return true;
+  if (await option.evaluate((node) => node.classList.contains("selected") || node.classList.contains("active") || Boolean(node.querySelector('.selected, .active, [data-active="true"]'))).catch(() => false)) return true;
   return await option
     .locator(UI.CHECK_ICON_SELECTOR)
     .filter({ visible: true })

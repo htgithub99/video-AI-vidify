@@ -12,6 +12,16 @@ export const motionBeatVisualSeconds = (beat: MotionBeat, language: string = RT_
 export const motionScenePacingCount = (settings: MotionVisualSettings | undefined, seconds: number) => Math.max(1, Math.round(seconds / motionPacingSeconds(settings)));
 export const motionScenePacingRule = (settings: MotionVisualSettings | undefined, seconds: number, places = 1) => P.RULE(motionPacingSeconds(settings), motionScenePacingCount(settings, seconds)) + (places > 1 ? P.BRIEF_PLACES(motionPacingSeconds(settings)) : "");
 export const motionVisualBeatGroups = (script: Pick<MotionStoryScript, "beats" | "language" | "visualSettings">, grouping?: number, pacing: MotionScenePacing = motionScenePacing(script.visualSettings)) => {
+  if (grouping === 1001) {
+    const groups: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number }[] = [];
+    for (const beat of script.beats) {
+      const seconds = motionBeatVisualSeconds(beat, script.language);
+      const last = groups.at(-1);
+      if (!last || last.beats[0].chapterId !== beat.chapterId || last.seconds + seconds > 90 || last.beats.length >= 24) groups.push({ id: beat.id, beats: [beat], seconds, lineCount: puppetBeatLines(beat).length });
+      else { last.beats.push(beat); last.seconds += seconds; last.lineCount += puppetBeatLines(beat).length; }
+    }
+    return groups;
+  }
   const level = grouping === P.GROUPING || grouping === P.GROUPING_TIMED ? P.LEVELS[pacing] : grouping === P.GROUPING_PREVIOUS ? P.LEVELS_PREVIOUS[pacing] : undefined;
   const timeCut = grouping !== P.GROUPING;
   const limits = level ? { seconds: level.groupSeconds, lines: level.groupLines, beats: level.groupBeats, placeHold: level.placeHold } : { seconds: P.GROUP_SECONDS, lines: P.GROUP_LINES, beats: P.GROUP_BEATS, placeHold: 0 };

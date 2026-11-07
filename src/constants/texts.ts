@@ -1,4 +1,3 @@
-import { translations } from "../lib/lang.js";
 import { SortOrder, VideoGenre } from "./enums.js";
 export const FLOW_VIDEO_TEXTS = {
   vi: {
@@ -156,70 +155,6 @@ export const FLOW_VIDEO_TEXTS = {
     CLEAR_PROMPTS: "Clear All",
   },
 } as const;
-export const APP_TEXTS = {
-  VN: {
-    APP_TITLE: translations.vi.appTitle,
-    SAVE: translations.vi.save,
-    CANCEL: translations.vi.cancel,
-    DELETE: translations.vi.delete,
-    EDIT: translations.vi.editProject,
-    CLOSE: translations.vi.Close,
-    LOADING: translations.vi.Loading,
-    SCENE_DETAIL: translations.vi.sceneEditor,
-    CONFIRM_DELETE: translations.vi.confirmDelete,
-    NEXT_PAGE: translations.vi.Next,
-    PREV_PAGE: translations.vi.Previous,
-    DRAW_IMAGE: translations.vi.generateImage,
-    UPLOAD_IMAGE: translations.vi.uploadSceneAssets,
-    NO_IMAGE: translations.vi.charNoImages,
-    APPLY: translations.vi.charApplyBtn,
-    ERROR_OCCURRED: "Đã có lỗi xảy ra",
-    SUCCESS: translations.vi.Success,
-    BATCH_DELAY: translations.vi.Batch_Delay,
-    BATCH_DELAY_DEFAULT: translations.vi.Batch_Delay_Default,
-    BATCH_DELAY_1S: translations.vi.Batch_Delay_1s,
-    BATCH_DELAY_2S: translations.vi.Batch_Delay_2s,
-    BATCH_DELAY_3S: translations.vi.Batch_Delay_3s,
-    BATCH_DELAY_RANDOM_123: translations.vi.Batch_Delay_Random_123,
-    WAITING_MSG: (secs: string) => `Đang chờ ${secs} giây trước khi vẽ phân cảnh tiếp theo...`,
-    NO_SCENES_TO_OPTIMIZE: "Không tìm thấy phân cảnh nào để cải thiện.",
-    OPTIMIZING_PROMPTS_FALLBACK: "Đang tối ưu...",
-    OPTIMIZE_PROMPTS_SUCCESS_FALLBACK: "Cải thiện mô tả hình ảnh thành công!",
-    OPTIMIZE_PROMPTS_FAILED_FALLBACK: "Gặp sự cố khi tối ưu mô tả ảnh: ",
-    OPTIMIZATION_FAILED: "Không thể tối ưu hóa mô tả hình ảnh",
-  },
-  EN: {
-    APP_TITLE: translations.en.appTitle,
-    SAVE: translations.en.save,
-    CANCEL: translations.en.cancel,
-    DELETE: translations.en.delete,
-    EDIT: translations.en.editProject,
-    CLOSE: translations.en.Close,
-    LOADING: translations.en.Loading,
-    SCENE_DETAIL: translations.en.sceneEditor,
-    CONFIRM_DELETE: translations.en.confirmDelete,
-    NEXT_PAGE: translations.en.Next,
-    PREV_PAGE: translations.en.Previous,
-    DRAW_IMAGE: translations.en.generateImage,
-    UPLOAD_IMAGE: translations.en.uploadSceneAssets,
-    NO_IMAGE: translations.en.charNoImages,
-    APPLY: translations.en.charApplyBtn,
-    ERROR_OCCURRED: "An error occurred",
-    SUCCESS: translations.en.Success,
-    BATCH_DELAY: translations.en.Batch_Delay,
-    BATCH_DELAY_DEFAULT: translations.en.Batch_Delay_Default,
-    BATCH_DELAY_1S: translations.en.Batch_Delay_1s,
-    BATCH_DELAY_2S: translations.en.Batch_Delay_2s,
-    BATCH_DELAY_3S: translations.en.Batch_Delay_3s,
-    BATCH_DELAY_RANDOM_123: translations.en.Batch_Delay_Random_123,
-    WAITING_MSG: (secs: string) => `Waiting ${secs}s before next scene...`,
-    NO_SCENES_TO_OPTIMIZE: "No scenes found to improve.",
-    OPTIMIZING_PROMPTS_FALLBACK: "Optimizing...",
-    OPTIMIZE_PROMPTS_SUCCESS_FALLBACK: "Successfully improved image descriptions!",
-    OPTIMIZE_PROMPTS_FAILED_FALLBACK: "Error optimizing image descriptions: ",
-    OPTIMIZATION_FAILED: "Could not optimize image descriptions",
-  },
-};
 export const HTTP_METHODS = { PUT: "PUT", POST: "POST", GET: "GET", DELETE: "DELETE" };
 export const CONTENT_TYPES = { JSON: "application/json", NDJSON: "application/x-ndjson", JPEG: "image/jpeg" };
 export const HTTP_HEADERS = { CONTENT_TYPE: "Content-Type", TRANSFER_ENCODING: "Transfer-Encoding", XI_API_KEY: "xi-api-key" };
@@ -246,13 +181,8 @@ export const TEMPLATE_CONFIG = {
   MAX_TEMPLATES_ERROR: "EXCEED_MAX_TEMPLATES",
   INVALID_TEMPLATE_ERROR: "INVALID_CAPCUT_TEMPLATE",
 };
-export const AUDIO_MIME_TYPE = "audio/wav";
-export const BLOB_PREFIX = "blob:";
-export const RESTORE_SCENE_BLOB_ERR = "FAILED_RESTORE_SCENE_BLOB";
-export const RESTORE_BLOB_ERR = "FAILED_RESTORE_BLOB";
 export const CONTENT_TYPE_HEADER = HTTP_HEADERS.CONTENT_TYPE;
 export const THEME_VALUES = { DARK: "dark", LIGHT: "light" } as const;
-export const HTTP_STATUS = { UNAUTHORIZED: 401, FORBIDDEN: 403 } as const;
 export const TTS_POLLING_CONFIG = { MAX_ATTEMPTS: 60, INTERVAL_MS: 5000, STATUS_DONE: "done", STATUS_ERROR: "error" } as const;
 export const COMMON_STRINGS = {
   UNDEFINED: "undefined",
@@ -336,32 +266,6 @@ export const LOG_MESSAGES = {
   MIGRATE_PROJECT_DIR_SUCCESS: "Đã chuyển đổi dữ liệu dự án sang cấu trúc mới: ",
 } as const;
 export const DEFAULT_PROJECT_CONFIGS = { GENRE: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, DURATION: "2m", AUDIENCE: "General Audience", WRITING_STYLE: "Professional", HOOK_TYPE: "Auto", VOICE_PROVIDER: "Gemini Speech", VOICE_EMOTION: "Normal", VOICE_URI: "preset-vi-bac", VISUAL_SOURCE: "AI Auto", VISUAL_STYLE: "Realistic", VISUAL_QUALITY: "Standard" } as const;
-export const EXTERNAL_AUDIO_TEXTS = {
-  LOG_ACTION: "handleProcessExternalAudio",
-  LOG_ERROR_KEY: "EXTERNAL_AUDIO_ALIGN_FAILED",
-  vi: {
-    NO_SCENES: "Không có phân cảnh nào để đồng bộ.",
-    ALIGNING: "Đang đồng bộ giọng nói bằng Whisper...",
-    SCENE_NOT_FOUND: "Không tìm thấy thông tin đồng bộ cho phân cảnh {sceneId}.",
-    ALIGN_SUCCESS: "Đồng bộ giọng nói thành công.",
-    NO_VALID_RESULT: "Không có kết quả đồng bộ hợp lệ.",
-    SYNC_COMPLETE: "Đồng bộ kịch bản và giọng nói hoàn tất (Tổng thời lượng: {totalDuration}s)\n",
-    SYNC_ITEM: "👉 Phân cảnh #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
-    ALIGN_ERROR: "Lỗi đồng bộ giọng nói: {error}",
-    SERVER_ALIGN_ERROR: "Lỗi đồng bộ giọng đọc từ server.",
-  },
-  en: {
-    NO_SCENES: "No scenes to synchronize.",
-    ALIGNING: "Synchronizing voice with Whisper AI...",
-    SCENE_NOT_FOUND: "Sync info not found for scene {sceneId}.",
-    ALIGN_SUCCESS: "Voice synchronization successful.",
-    NO_VALID_RESULT: "No valid synchronization result.",
-    SYNC_COMPLETE: "Storyboard and voice sync completed (Total duration: {totalDuration}s)\n",
-    SYNC_ITEM: "👉 Scene #{index} [{startTime} -> {endTime}] ({duration}s): {script}...\n",
-    ALIGN_ERROR: "Voice synchronization error: {error}",
-    SERVER_ALIGN_ERROR: "Failed to align voice from server.",
-  },
-} as const;
 const SATIRICAL_LIFE_VISUAL_GUIDELINE = `CRITICAL VISUAL DIRECTIVE - SATIRICAL LIFE STORY:
 - Use an original minimalist 2D editorial-cartoon language by default: clean black outlines, flat colors, restrained shading, readable silhouettes and simple reusable backgrounds.
 - Preserve hard identity anchors, timeline-stage outfits, recurring locations, props and screen direction. Change pose, expression, blocking and shot purpose rather than redesigning the world.
@@ -411,22 +315,6 @@ export const GENRE_VISUAL_GUIDELINES: Record<string, string> = {
 - Symbolic & Conceptual Visuals: Use surreal or highly symbolic visual representations to depict thoughts, mental states, dualities of mind, or philosophical concepts (e.g., a person looking into a mirror reflecting a maze, or contrasting dark and light halves of a face).
 - Keep a clean, artistic, thought-provoking focus.`,
 };
-export const VITE_HMR_LOGS = {
-  vi: {
-    SERVER_CONNECTION_LOST: "[Hệ thống] Mất kết nối tới máy chủ dịch vụ. Đang tự động kết nối lại...",
-    FAILED_RELOAD_WITH_FILE: "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
-    FAILED_RELOAD_GENERIC: "[Hệ thống] Cập nhật giao diện không thành công. Vui lòng tải lại trang (F5).",
-    CONNECTED: "[Hệ thống] Đã kết nối lại thành công với máy chủ dịch vụ.",
-    HOT_UPDATED: "[Hệ thống] Giao diện đã tự động cập nhật thay đổi mới.",
-  },
-  en: { SERVER_CONNECTION_LOST: "[System] Connection lost. Reconnecting...", FAILED_RELOAD_WITH_FILE: "[System] Interface update failed. Please reload page (F5).", FAILED_RELOAD_GENERIC: "[System] Interface update failed. Please reload page (F5).", CONNECTED: "[System] Reconnected to server successfully.", HOT_UPDATED: "[System] Interface updated successfully." },
-} as const;
-export const LOG_LEVEL_SYMBOLS = { INFO: "ℹ️", SUCCESS: "✅", WARN: "⚠️", ERROR: "❌" };
-export const PIPELINE_STEP5_TEXTS = {
-  PROMPT_SAMPLE: `1. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.\n2. A group of 2D hand-drawn stickman cartoon hunters with intense, focused expressions, holding primitive stone spears, crouching behind massive, photorealistic granite boulders. In the distance, a colossal prehistoric beast moves through a foggy, ancient valley.`,
-  vi: { VIDEO_ZIP_NAME: "danh_sach_video_doc_lap.zip", IMAGE_ZIP_NAME: "danh_sach_anh_doc_lap.zip" },
-  en: { VIDEO_ZIP_NAME: "independent_video_list.zip", IMAGE_ZIP_NAME: "independent_image_list.zip" },
-} as const;
 export const SETTINGS_VIEW_TEXTS = {
   vi: {
     SYSTEM_TITLE: "Tài Nguyên Cá Nhân",
@@ -466,10 +354,6 @@ export const SETTINGS_VIEW_TEXTS = {
     NO_ACCOUNTS: "No accounts",
     HIDDEN_PWD: "••••••••",
   },
-} as const;
-export const PIPELINE_STEP2_TEXTS = {
-  vi: { THUMBNAIL_SCREEN_DESC: "Màn hình tạo danh sách ảnh bìa YouTube (Thumbnail) hàng loạt dựa trên kịch bản và chủ đề.", THUMBNAIL_GENERATE_DESC: "Dựa trên kịch bản, AI sẽ phân tích và tạo ra nhiều ý tưởng ảnh bìa giật tít, thu hút click.", BATCH_COUNT_LABEL: "Ảnh & Tiêu đề", CHAR_REF_NODE: "CHARACTER REFERENCE NODE" },
-  en: { THUMBNAIL_SCREEN_DESC: "Batch generate YouTube Thumbnails screen based on script and theme.", THUMBNAIL_GENERATE_DESC: "Based on the script, AI will analyze and generate catchy thumbnail ideas to attract clicks.", BATCH_COUNT_LABEL: "Images & Titles", CHAR_REF_NODE: "CHARACTER REFERENCE NODE" },
 } as const;
 export const SIDEBAR_TEXTS = {
   vi: {
@@ -511,9 +395,7 @@ export const SIDEBAR_TEXTS = {
     CLOSE_MENU: "Close menu",
   },
 } as const;
-export const PLAYER_SIMULATION_CONFIG = { MIN_PROGRESS: 0, MAX_PROGRESS_PERCENT: 100 } as const;
 export const BUTTON_TOOLTIP_PREFIX = { VI: "Chức năng: ", EN: "Function: " } as const;
-export const SEO_DEFAULT_CONFIGS = { NUM_TITLES: 3, NUM_DESCRIPTIONS: 1, NUM_HASHTAGS: 5, NUM_TAGS: 10, MIN_TITLES_OPTION: 1, MAX_TITLES_OPTION: 10 } as const;
 export const PROJECT_LIST_TEXTS = {
   vi: {
     desc: "Quản lý và biên tập tất cả các dự án sản xuất video AI của bạn",
@@ -558,79 +440,6 @@ export const PROJECT_LIST_TEXTS = {
 } as const;
 export const PROJECT_LIST_CONSTANTS = { FILTER_ALL: "all", LANG_VI: "vi", LANG_EN: "en", SLEEP_DURATION_MS: 1000, CREATE_REQUEST_TIMEOUT_MS: 15000, SKELETON_ITEMS: [1, 2, 3], ITEMS_PER_PAGE: 5, PAGE_ONE: 1, PAGINATION_DELIMITER: "/", DASH_DELIMITER: "-" } as const;
 export const URL_CONSTANTS = { IGNORED_PARAMS: ["token", "sig", "signature", "expires", "t"], ID_PARAMS: ["id", "docid", "name"] } as const;
-export const PIPELINE_STEP4_TEXTS = {
-  LBL_QUALITY: "Chất lượng Video:",
-  LBL_QUALITY_DESC: "Độ nét của video xuất ra.",
-  QUALITY_480P: "Thấp (480p) - Xuất nhanh",
-  QUALITY_720P: "Chuẩn (720p HD) - Cân bằng",
-  QUALITY_1080P: "Cao (1080p FHD) - Sắc nét",
-  QUALITY_4K: "Tuyệt đỉnh (4K) - Điện ảnh",
-  BTN_RENDER_FFMPEG: "Xuất Video Ngay",
-  BTN_DOWNLOAD: "Tải Video Xuống",
-  RENDERING: "Đang kết xuất video...",
-  RENDER_SUCCESS: "Xuất video thành công!",
-  RENDER_ERROR: "Kết xuất video thất bại.",
-  NO_SCENES_ERROR: "Không có phân cảnh nào để xuất video.",
-  SELECT_QUALITY: "Chọn chất lượng",
-  FOLDER_SELECT_ERR: "Lỗi chọn thư mục: ",
-  ERR_REQUIRE_STORYBOARD: "Vui lòng tạo phân cảnh trước khi xuất video.",
-  ERR_REQUIRE_IMAGES: "Vui lòng tạo và hoàn tất hình ảnh cho tất cả các phân cảnh trước khi tạo video.",
-  ERR_REQUIRE_AUDIO: "Vui lòng tạo giọng đọc hoặc tải lên âm thanh trước khi tạo video.",
-  ERR_REQUIRE_QA: "Kiểm tra chất lượng chưa hoàn tất. Hãy xử lý toàn bộ mục bị chặn rồi thử lại.",
-  FINAL_QA_RUNNING: "Đang kiểm tra bản dựng cuối...",
-  FINAL_QA_REJECTED: "Đã xuất video. Nên xem cảnh báo chất lượng trước khi đăng.",
-  RENDERING_WAIT: "Đang kết xuất video, vui lòng chờ...",
-  RENDER_FFMPEG_SUCCESS: "Đã xuất video thành công!",
-  RENDER_FFMPEG_ERR: "Lỗi xuất video: ",
-  NO_FFMPEG_VIDEO: "Chưa có video được tạo.",
-  USE_CREATE_BTN_HINT: 'Vui lòng sử dụng tính năng "Xuất Video Ngay" ở khung bên phải.',
-  EXPORTING_FFMPEG: "Đang kết xuất video...",
-  BTN_DOWNLOAD_HINT: "Tải video về máy",
-  PROJECT_NAME_PLACEHOLDER: "Nhập tên dự án...",
-  ZIP_DIR_PLACEHOLDER: "Nhập đường dẫn thư mục chứa file dự án ZIP...",
-  IMG_DIR_PLACEHOLDER: "Thư mục Hình ảnh...",
-  AUDIO_DIR_PLACEHOLDER: "Thư mục Âm thanh...",
-  AUTO_GATHER_MEDIA_HINT: "Tự động thu thập ảnh và âm thanh từ dự án hiện tại",
-} as const;
-export const PIPELINE_STEP3_TEXTS = {
-  SEO_RESULT: "Kết quả Tối ưu SEO",
-  NO_SEO_DATA: "Không có dữ liệu SEO.",
-  CLICK_OPTIMIZE_HINT: "Bấm tối ưu SEO để tạo.",
-  COPIED_TITLE: "Đã copy tiêu đề",
-  COPY_TITLE: "Copy tiêu đề",
-  COPIED_DESC: "Đã copy mô tả",
-  COPY_DESC: "Copy mô tả",
-  DESCRIPTIONS_EMPTY: "Chưa có mô tả",
-  COPIED_HASHTAGS: "Đã copy hashtags",
-  COPY_HASHTAGS: "Copy hashtags",
-  NO_HASHTAGS: "Chưa có hashtags",
-  COPIED_TAGS: "Đã copy từ khóa",
-  COPY_TAGS: "Copy từ khóa",
-  NO_TAGS: "Chưa có từ khóa",
-  SEARCH_TITLE: "Tìm kiếm",
-  CTR_TITLE: "CTR",
-  COMPETITION_TITLE: "Cạnh tranh",
-  SEO_SCORE_TITLE: "Điểm SEO",
-  TITLES_OPTIONS: "Tiêu đề gợi ý",
-  DESC_OPTIONS: "Mô tả gợi ý",
-  HASHTAGS: "HASHTAGS",
-  TAGS: "TỪ KHÓA",
-} as const;
-export const AUTO_GENERATE_TEXTS = {
-  EMPTY_SCRIPT_ERR: "Vui lòng nhập nội dung kịch bản.",
-  DRAFTING_SCRIPT: "Đang soạn kịch bản...",
-  SCRIPT_ERR: "Không thể tạo kịch bản.",
-  STORYBOARDING: "Đang phân tích và tách cảnh...",
-  STORYBOARD_ERR: "Không thể phân tách cảnh.",
-  VOICEOVER: "Đang tạo giọng đọc...",
-  IMAGES: "Đang khởi tạo tạo ảnh hàng loạt...",
-  SUCCESS: "Đã hoàn thành tạo video tự động.",
-  GENERIC_ERR: "Lỗi tự động tạo video.",
-  BTN_AUTO: "Tự động",
-  BTN_AUTO_TOOLTIP: "Tự động tạo kịch bản, tách cảnh, tạo giọng đọc và hình ảnh",
-  ERR_CODE: "AUTO_GENERATE_ERROR",
-  POSITION_TOP: "top",
-} as const;
 export const MEDIA_MIX_TEXTS = { vi: { mixed: "Ảnh + video", maxVideos: "Video tối đa", maxVideosTooltip: "Số cảnh video tối đa do AI lựa chọn", selecting: "AI chọn cảnh" }, en: { mixed: "Image + video", maxVideos: "Max videos", maxVideosTooltip: "Maximum video scenes selected by AI", selecting: "AI selects scenes" } } as const;
 export const AUTO_GENERATOR_PANEL_TEXTS = {
   vi: {
@@ -1174,32 +983,6 @@ export const VOICE_DIALOG_LANGUAGE_LABELS: Record<string, Record<"vi" | "en", st
   zh: { vi: "Tiếng Trung", en: "Chinese" },
 };
 export const VOICE_DIALOG_AGE_LABELS: Record<string, Record<"vi" | "en", string>> = { "": { vi: "Tất cả", en: "All" }, young: { vi: "Trẻ tuổi", en: "Young" }, middle_aged: { vi: "Trung niên", en: "Middle Aged" }, old: { vi: "Cao tuổi", en: "Elderly" } };
-export const PIPELINE_STEP4_SHORT_TEXTS = {
-  vi: {
-    RENDER_TITLE: "Kết xuất video",
-    RENDER_TITLE_TOOLTIP: "Xem trước và xuất bản dự án video",
-    WEBM_BTN: "Kết xuất WebM",
-    WEBM_TOOLTIP: "Kết xuất và biên dịch video WebM đầy đủ",
-    ZIP_BTN: "Tải ZIP",
-    ZIP_TOOLTIP: "Tải xuống toàn bộ dự án CapCut dạng ZIP",
-    SRT_BTN: "Tải SRT",
-    SRT_TOOLTIP: "Tải xuống tệp phụ đề SRT đã đồng bộ",
-    PREVIEW_BTN: "Xem trước",
-    PREVIEW_TOOLTIP: "Xem trước phân cảnh video đang chọn",
-  },
-  en: {
-    RENDER_TITLE: "Render Video",
-    RENDER_TITLE_TOOLTIP: "Preview and render full video project",
-    WEBM_BTN: "Render WebM",
-    WEBM_TOOLTIP: "Render and compile full WebM video",
-    ZIP_BTN: "Download ZIP",
-    ZIP_TOOLTIP: "Download complete CapCut project as ZIP",
-    SRT_BTN: "Download SRT",
-    SRT_TOOLTIP: "Download synchronized SRT subtitle file",
-    PREVIEW_BTN: "Preview",
-    PREVIEW_TOOLTIP: "Preview currently active video scene",
-  },
-} as const;
 export const PRESET_CONSTANTS = {
   ID_PREFIX: "preset_",
   DEFAULT_VOICE_NAME: "Preset Voice VI",

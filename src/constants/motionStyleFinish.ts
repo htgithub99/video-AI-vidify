@@ -90,24 +90,6 @@ const RECIPES: Record<string, Recipe> = {
   cinematic_3d: { grain: 0.03, vignette: 0.35, contrast: 1.05, fonts: { head: F.CINEMA }, music: "strings" },
   night_horror: { darkness: { amount: 0.55, torch: 0.45 }, grain: 0.07, saturation: 0.6, tint: { color: "#6f86a8", amount: 0.25 }, vignette: 0.9, film: { flicker: 0.05 }, transition: "dip", fonts: { head: F.GOTHIC, serif: F.GOTHIC }, music: "drone", ambience: "night" },
 };
-export const MOTION_STYLE_PREVIEW = {
-  VERSION: 2,
-  FOLDER: "style-presets",
-  EXT: ".jpg",
-  WIDTH: 640,
-  HEIGHT: 360,
-  AT: 1.4,
-  LOCATION_TYPE: "house_exterior",
-  LOCATION_TIME: "day",
-  CAST_TYPES: ["young_man", "young_woman"],
-  CAST_NAMES: ["Nam", "Lan"],
-  PLACE: "sample",
-  BEAT: "sample",
-  ACTION: "Nam waves while Lan points",
-  SHOT: "wide",
-  SUBTITLE: "Phụ đề vẫn sắc nét",
-  FILE: (id: string, version: number): string => `${id}-v${version}`,
-} as const;
 export const motionStyleFinish = (id: unknown): MotionStyleFinish | undefined => {
   const preset = motionStylePreset(id);
   const recipe = preset ? RECIPES[preset.id] : undefined;

@@ -13,4 +13,7 @@ export const claimChatRoom = (page: Page): Page => {
   chatRoomPages.add(page);
   return page;
 };
+export const releaseChatRoom = (page: Page): void => {
+  chatRoomPages.delete(page);
+};
 export const sharedChromeFlowPage = async (context: BrowserContext): Promise<Page> => context.pages().find((page) => !page.isClosed() && !chatRoomPages.has(page) && (page.url().startsWith(EXTERNAL_URLS.GOOGLE_LABS_FLOW) || page.url().startsWith(EXTERNAL_URLS.GOOGLE_LABS_FLOW_HOME))) || blankChromePage(context) || context.newPage();

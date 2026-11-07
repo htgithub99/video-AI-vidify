@@ -12,6 +12,16 @@ export const motionOutputSettings = (input: Record<string, any>, result?: Motion
   const renderBehavior = motionRenderBehaviorFor(input);
   return {
     version: 1,
+    controlSnapshot: {
+      mode: visualSettings.mode, profile: visualSettings.mode === "remotion" ? visualSettings.profileId : visualSettings.packId,
+      genre: input.videoGenre ?? input.analysis?.videoGenre, storytelling: input.storytelling ?? input.analysis?.storytelling,
+      length: input.length, parts: input.parts || 1, language: input.language ?? input.script?.language,
+      autoContinue: input.autoContinue ?? input.analyzeOnly !== true, renameEntities: input.renameEntities === true,
+      voiceChannel: input.voiceChannel ?? input.voiceChannelId, multiVoice: input.multiVoice ?? input.script?.voiceSettings?.multiVoice ?? true,
+      asrCheck: input.asrCheck === true, musicMood: input.musicMood || MOTION_MUSIC.AUTO, sfx: input.sfx === true,
+      pacing: visualSettings.pacing, characterMotion: renderBehavior.actors === "simple", subtitles: input.subtitles !== false,
+      autoExport: input.autoExport === true, clearGeminiChatsBeforeExport: input.clearGeminiChatsBeforeExport === true,
+    },
     visualSettings,
     renderBehavior,
     characterMotion: renderBehavior.actors === "simple",

@@ -109,7 +109,6 @@ import {
   SOURCE_TEXT_UNCONFIRMED,
   SOURCE_TEXT_VISIBLE,
 } from "../../constants/sourceText.js";
-import { parseJson } from "../../lib/jsonStringify.js";
 import { createHash } from "crypto";
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
@@ -141,7 +140,8 @@ import { withChromeBackupRecovery, saveChatResponse, isGeminiFlashQuotaError } f
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry, isRecoverableChatRefusal } from "./chatRoomRecovery.js";
-import { claimBlankChatRoom, claimChatRoom } from "./sharedChromePage.js";
+import { parseAiJson } from "../../lib/aiJson.js";
+import { claimBlankChatRoom, claimChatRoom, releaseChatRoom } from "./sharedChromePage.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
@@ -302,6 +302,7 @@ export const repairLooseJson = (text: string): string => {
   return out;
 };
 const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
+  if (artifactType === "motion-html-scene") return /<\/html>\s*(?:```)?\s*$/i.test(text.trim()) ? chatResponseIdentity(text) : undefined;
   if (artifactType === CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT) {
     const receipt = parseChatContextReceipt(text);
     if (receipt !== undefined) return receipt;
@@ -312,7 +313,7 @@ const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
   }
   const trimmed = _.trim(text);
   try {
-    return parseJson(trimmed);
+    return parseAiJson(trimmed);
   } catch {
     const start = trimmed.indexOf(MOTION_TEXT_SYMBOL_35);
     const end = trimmed.lastIndexOf(MOTION_TEXT_SYMBOL_36);
@@ -323,7 +324,7 @@ const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
       if (chapter !== undefined) return chapter;
     }
     try {
-      return parseJson(candidate);
+      return parseAiJson(candidate);
     } catch {
       try {
         const cleaned = candidate.replace(JP.JSON_FENCE, MR.MOTION_TEXT_EMPTY).replace(JP.CODE_FENCE, MR.MOTION_TEXT_EMPTY).trim();
@@ -332,9 +333,9 @@ const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
         if (cleanStart >= 0 && cleanEnd > cleanStart) {
           const body = cleaned.slice(cleanStart, cleanEnd + 1);
           try {
-            return parseJson(body);
+            return parseAiJson(body);
           } catch {
-            return parseJson(repairLooseJson(body));
+            return parseAiJson(repairLooseJson(body));
           }
         }
       } catch {
@@ -374,10 +375,20 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, r
   if (!rooms) return;
   const roomKey = getPlanningRoomKey(request);
   const page = rooms.get(roomKey);
-  if (requireClosed && page && !page.isClosed()) await page.close();
+  const openPages = page && !page.isClosed() ? (page.context?.()?.pages?.().filter((candidate) => !candidate.isClosed()) ?? []) : [];
+  if (requireClosed && page && !page.isClosed()) {
+    if (openPages.length === 1) await page.context?.()?.newPage?.().catch(() => undefined);
+    await page.close();
+    releaseChatRoom(page);
+  }
   rooms.delete(roomKey);
   pendingRoomResponses.delete(roomKey);
-  if (!requireClosed && page && !page.isClosed()) await page.close().catch(() => undefined);
+  if (!requireClosed && page && !page.isClosed()) {
+    contextReceipts.get(page)?.invalidate();
+    releaseChatRoom(page);
+    if (openPages.length === 1) await page.goto("about:blank").catch(() => undefined);
+    else await page.close().catch(() => undefined);
+  }
   if (!hasActiveChatRooms()) scheduleChatBrowserCleanup();
 };
 export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">, closeBrowser = true): Promise<void> => {
@@ -390,7 +401,13 @@ export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlannin
       const page = rooms.get(key);
       rooms.delete(key);
       pendingRoomResponses.delete(key);
-      if (page && !page.isClosed()) await page.close().catch(() => undefined);
+      if (page && !page.isClosed()) {
+        contextReceipts.get(page)?.invalidate();
+        releaseChatRoom(page);
+        const openPages = page.context?.()?.pages?.().filter((candidate) => !candidate.isClosed()) ?? [];
+        if (!closeBrowser && openPages.length === 1) await page.goto("about:blank").catch(() => undefined);
+        else await page.close().catch(() => undefined);
+      }
     }),
   );
   if (closeBrowser) await closeChatBrowserIfIdle();
@@ -401,6 +418,7 @@ export const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity):
   const page = rooms?.get(roomKey);
   pendingRoomResponses.delete(roomKey);
   if (!page || page.isClosed()) throw new Error(SOURCE_TEXT_CHAT_PLANNING_ROOM_UNAVAILABLE_FOR_RELOAD);
+  contextReceipts.get(page)?.invalidate();
   await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
 };
 const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { url: string } | undefined => {
@@ -533,7 +551,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
             });
         },
         {
-          preferCodeBlocks: AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
+          preferCodeBlocks: artifactType === "motion-html-scene" || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
           contentSelector: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_CONTENT_SELECTOR : MR.MOTION_TEXT_EMPTY,
           currentMessageIdAttribute: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_ID_ATTRIBUTE : MR.MOTION_TEXT_EMPTY,
           codeSelector: responseSelector === D.RESPONSE ? D.CODE : C.CODE_BLOCK_SELECTOR,
@@ -646,8 +664,8 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
       continue;
     }
-    const visibleAlerts = await page
-      .locator(SOURCE_TEXT_ROLE_ALERT)
+    const alertLocator = responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR ? page.locator(SOURCE_TEXT_ROLE_ALERT).or(page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ERROR_SNACKBAR_SELECTOR)) : page.locator(SOURCE_TEXT_ROLE_ALERT);
+    const visibleAlerts = await alertLocator
       .filter({ visible: true })
       .allTextContents()
       .catch(() => []);
@@ -735,7 +753,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
           }
           appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_COMPLETE(latestText.length));
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_UI_CONFIRMED, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseChars: latestText.length, stablePolls, elapsedMs: Date.now() - startedAt, identityMatch: belongsToCurrentRequest });
-          return jsonUtils.safeStringify(parsedLatest);
+          return artifactType === "motion-html-scene" ? latestText : jsonUtils.safeStringify(parsedLatest);
         }
         if (!isCompleteJson && !_.isEmpty(responseCandidates) && stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_STABLE_POLLS) {
           appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_PREVIEW_LOG(_.truncate(latestText, { length: 800 })));
@@ -754,6 +772,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       previousText = latestText;
     }
     if (!isBusy && Date.now() >= activityDeadline) break;
+    if (!isBusy && count === initialCount && !regenerationObserved && _.isEmpty(responseCandidates) && Date.now() - startedAt >= Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS, 60000)) break;
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_TIMEOUT_LOG(lastResponseCount, initialCount, lastCandidateLength, lastBusyState, lastIdentityMatch, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
@@ -999,7 +1018,9 @@ const regenerateProviderError = async (page: Page, responseSelector: string, bus
     try {
       return await run();
     } catch (error) {
-      if (_.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)) !== CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
+      const canRegenerate = errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR || errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR || isRecoverableChatRefusal(error) || isResponseTimeoutError(error);
+      if (!canRegenerate || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
       throwIfPlanningCancelled(signal);
       const snapshots = await getChatResponseSnapshots(page, responseSelector, artifactType).catch(() => []);
       if (!(await clickCurrentChatRetry(page, signal).catch(() => false))) throw error;
@@ -1039,7 +1060,7 @@ const submitPrompt = async (
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
   const isDeepSeek = inputSelector === D.INPUT;
   const singleMessage = motionPromptSingleMessage(artifactType);
-  const responseDirective = singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
+  const responseDirective = artifactType === "motion-html-scene" ? "Return the complete HTML document in one html code block, preserving the requested html root data-artifact and data-request-id. No JSON or explanation." : singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(String(normalizedPrompt)), SOURCE_TEMPLATE_SYMBOL_86(String(responseDirective)));
   const { limit, parts } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit, singleMessage);
@@ -1301,13 +1322,13 @@ const submitPrompt = async (
               await clickSendButton(page, sendButton, signal);
             } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
             submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
-            if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
+            if (!submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_CLICK_FALLBACK_LOG);
               await waitPageResponsive(page, signal);
               await Promise.race([sendButton.evaluate((element: HTMLElement) => element.click()).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             }
-            if (!submission && !submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
+            if (!submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CHAT_UI_AUTOMATION_MESSAGES.SUBMIT_ENTER_FALLBACK);
               await input.focus().catch(() => undefined);
               await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
@@ -1373,7 +1394,7 @@ const resumeChatPlanningResponseTask = async (request: ChatPlanningRequest): Pro
   if (!submission || !pending) throw uncertainChatSubmission(request.provider);
   throwIfPlanningCancelled(request.signal);
   let page = pending.page;
-  const wasClosed = page.isClosed();
+  const wasClosed = !page || page.isClosed();
   if (wasClosed) {
     const base = getProviderConversationSelectors(request.provider)?.url;
     const url = new URL(pending.url);
@@ -1947,36 +1968,40 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
           if (interruptedRoom) await waitForGeminiSession(interruptedRoom, { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
         }
         const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-        if (request.oneGeneration && ([CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR] as readonly string[]).includes(errorMessage)) throw Object.assign(error as Error, { [RECOVERY.COMPLETE]: true });
-        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
+        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error) || isResponseTimeoutError(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
         if (!retryable) throw error;
-        if (errorMessage === D.RETRY_EXHAUSTED && request.submission) request.submission.completed = true;
+        if ((errorMessage === D.RETRY_EXHAUSTED || isResponseTimeoutError(error)) && request.submission) request.submission.completed = true;
         const page = getProviderRooms(request.provider)?.get(roomKey);
         const pending = request.submission?.pending;
-        const snapshots = recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES && pending && page && !page.isClosed() && request.provider !== AiPlanningFallbackProvider.DeepSeekChat ? await getChatResponseSnapshots(page, pending.responseSelector, request.artifactType).catch(() => []) : [];
-        const currentResponse = pending && (snapshots.length > pending.initialCount || snapshots.some((snapshot) => !pending.initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text)));
-        if (recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES && request.provider !== AiPlanningFallbackProvider.DeepSeekChat && pending && currentResponse && page && (await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
-          request.submission.completed = false;
-          pending.initialCount = snapshots.length;
-          pending.initialResponseSnapshots = snapshots;
-          pending.regenerating = true;
-          request.onRecovery?.(RECOVERY.CLICK_LOG);
-          appLog(RECOVERY.CLICK_LOG);
-          try {
-            const result = await resumeChatPlanningResponseTask(request);
-            providerErrorCounts.delete(roomKey);
-            await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: result.text.length, elapsedMs: Date.now() - mutexStartedAt });
-            responseCompleted = true;
-            return result;
-          } catch (retryError) {
-            throwIfPlanningCancelled(request.signal);
-            if (isGeminiFlashQuotaError(retryError) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
-            if (isFinalChatResponseError(retryError)) request.submission!.completed = true;
-            if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError)) throw retryError;
-            lastError = retryError;
+        if (request.provider !== AiPlanningFallbackProvider.DeepSeekChat && pending && page && !page.isClosed()) {
+          for (let retryClick = 0; retryClick < RECOVERY.REGENERATE_LIMIT; retryClick++) {
+            const snapshots = await getChatResponseSnapshots(page, pending.responseSelector, request.artifactType).catch(() => []);
+            const currentResponse = snapshots.length > pending.initialCount || snapshots.some((snapshot) => !pending.initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text));
+            if (retryClick === 0 && !currentResponse) break;
+            if (!(await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
+              if (retryClick === 0 && currentResponse) request.onRecovery?.(RECOVERY.CLICK_UNAVAILABLE);
+              break;
+            }
+            request.submission!.completed = false;
+            pending.initialCount = snapshots.length;
+            pending.initialResponseSnapshots = snapshots;
+            pending.regenerating = true;
+            request.onRecovery?.(RECOVERY.CLICK_LOG);
+            appLog(RECOVERY.CLICK_LOG);
+            try {
+              const result = await resumeChatPlanningResponseTask({ ...request, reloadPendingResponse: false });
+              providerErrorCounts.delete(roomKey);
+              await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: result.text.length, elapsedMs: Date.now() - mutexStartedAt });
+              responseCompleted = true;
+              return result;
+            } catch (retryError) {
+              throwIfPlanningCancelled(request.signal);
+              if (isGeminiFlashQuotaError(retryError) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
+              request.submission!.completed = true;
+              if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError)) throw retryError;
+              lastError = retryError;
+            }
           }
-        } else if (recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES && pending && currentResponse) {
-          request.onRecovery?.(RECOVERY.CLICK_UNAVAILABLE);
         }
         if (recoveryAttempt >= maxRecoveryAttempts) throw Object.assign(lastError instanceof Error ? lastError : new Error(errorMessage), { [RECOVERY.COMPLETE]: true });
         if (request.submission?.attempted && !request.submission.completed) {

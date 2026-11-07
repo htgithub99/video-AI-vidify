@@ -109,7 +109,6 @@ export type VideoExportAudioItem = { id: string; index: number; name: string; re
 export type VideoExportImageItem = { id: string; index: number; name: string; relativePath: string; sourcePath: string; url: string; sizeBytes: number };
 export type VideoExportSource = { token: string; folderName: string; folderPath: string; audios: VideoExportAudioItem[]; images: VideoExportImageItem[] };
 export type VideoExportConfig = { aspectRatio: VideoExportAspectRatio; reframeMode?: ShortsReframeMode; effect: VideoExportEffect; transition: VideoExportTransition; slideMode: VideoExportSlideMode; slideSeconds: number; transitionSeconds: number; resolution: VideoExportResolution; fps: VideoExportFps; bitrate: VideoExportBitrate; codec: VideoExportCodec };
-export type VideoExportRenderRequest = VideoExportConfig & { token: string; title: string; audioIndexes: number[]; imageIndexes: number[] };
 export type VideoExportResultItem = { id: string; title: string; fileName: string; outputVideoPath: string; videoUrl: string; durationSeconds: number; sizeBytes: number; trackCount: number; imageCount: number; aspectRatio: VideoExportAspectRatio; createdAt: string };
 export type VideoExportJobState = { jobId: string; status: VideoExportJobStatus; stage: VideoExportJobStage; percent: number; message: string; error?: string; result?: VideoExportResultItem };
 export type VideoExportPreviewResult = { previewUrl: string; durationSeconds: number };

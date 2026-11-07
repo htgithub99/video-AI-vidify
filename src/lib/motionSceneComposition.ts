@@ -196,7 +196,6 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
 };
-export const failedSceneComposition = (key: string, inputKey: string, width: number, height: number) => normalizeFirstSceneComposition({ svg: C.PLACEHOLDER_SVG(width, height) }, key, inputKey, C.PLACEHOLDER, [], new Set(), width, height);
 export const mergeSceneCompositionDraft = (previous: unknown, raw: unknown): Record<string, unknown> => {
   const merged: Record<string, any> = { ...(previous && typeof previous === "object" && !Array.isArray(previous) ? previous : {}), ...(raw && typeof raw === "object" && !Array.isArray(raw) ? Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== undefined)) : {}) };
   if (merged.groupPatches !== undefined) {
@@ -270,11 +269,6 @@ const compositionFrameStep = (composition: MotionSceneComposition, tracks: Motio
     fineTracks.set(composition, fine);
   }
   return fine ? C.FRAME_STEP.FINE : C.FRAME_STEP.LOOP;
-};
-export const motionCompositionFrameTime = (composition: MotionSceneComposition, height: number, seconds: number): number => {
-  if (composition.animationSource === "ai-complete") return seconds;
-  const step = compositionFrameStep(composition, motionActorTracks(composition, height));
-  return Math.round(seconds / step) * step;
 };
 export const motionAuthoredTime = (composition: MotionSceneComposition, seconds: number, sceneSeconds?: number): number => (composition.animationSource === "ai-complete" && Number.isFinite(composition.duration) && composition.duration! > 0 && Number.isFinite(sceneSeconds) && sceneSeconds! > 0 ? (seconds * composition.duration!) / sceneSeconds! : seconds);
 /**

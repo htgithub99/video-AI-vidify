@@ -2,9 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import ts from "typescript";
 import { getAuthoredFiles } from "./codeMaintenance.js";
-const files = (await getAuthoredFiles()).filter((file) => /\.[cm]?[jt]sx?$/.test(file));
+const config = ts.readConfigFile("tsconfig.json", ts.sys.readFile).config;
+const configured = ts.parseJsonConfigFileContent(config, ts.sys, process.cwd()).fileNames.map((file) => path.relative(process.cwd(), file).replaceAll("\\", "/"));
+const files = [...new Set([...(await getAuthoredFiles()), ...configured])].filter((file) => /\.[cm]?[jt]sx?$/.test(file));
 const known = new Set(files);
-const options = ts.convertCompilerOptionsFromJson(ts.readConfigFile("tsconfig.json", ts.sys.readFile).config.compilerOptions, process.cwd()).options;
+const options = ts.convertCompilerOptionsFromJson(config.compilerOptions, process.cwd()).options;
 const edges = new Map<string, Set<string>>();
 const roots = new Set(["src/main.tsx", "server.ts", "vite.config.ts", "src/features/motion/remotion/Root.tsx", ...files.filter((file) => /^(scripts\/|electron\/)/.test(file) || file.endsWith(".d.ts"))]);
 for (const file of files) {

@@ -65,13 +65,17 @@ export const CHROME_BACKUP = {
 } as const;
 export const CHAT_ROOM_RECOVERY = {
   SAME_ROOM_RETRIES: 2,
-  REGENERATE_LIMIT: 2,
+  REGENERATE_LIMIT: 5,
   BUTTON: "button",
   COMPLETE: "chatRoomRecoveryComplete",
   RETRY_NAME: /^(?:thử lại|thử lại câu trả lời|tạo lại|làm lại|retry|try again|regenerate)(?:\s|$)/iu,
   RETRY_MENU_NAME: /^(?:khôi phục|làm lại|tạo lại|regenerate|redo|retry)(?:\s|$)/iu,
-  RETRY_MENU_SELECTOR: '[role="menu"]:visible, .cdk-overlay-pane:visible',
-  GEMINI_REGENERATE_SELECTOR: '[data-test-id="regenerate-button"]',
+  RETRY_MENU_SELECTOR: 'gem-menu[role="menu"]:visible, [role="menu"]:visible, .mat-mdc-menu-panel:visible, .cdk-overlay-pane:visible',
+  GEMINI_REGENERATE_SELECTOR: 'regenerate-button [data-test-id="regenerate-button"], [data-test-id="regenerate-button"], [data-testid="regenerate-button"], regenerate-button gem-icon-button[fonticonname="refresh"]',
+  GEMINI_RETRY_OPTION_SELECTOR: 'gem-menu-item[data-test-id="regenerate-option"]:has(mat-icon[fonticon="refresh"]), gem-menu-item[data-test-id="regenerate-option"]:has(mat-icon[data-mat-icon-name="refresh"])',
+  SNACKBAR_SELECTOR: 'bard-simple-snack-bar, mat-snack-bar-container, [role="alert"], [role="status"]',
+  GEM_MENU_TRIGGER: "gemmenutrigger",
+  MAT_MENU_TRIGGER_CLASS: "mat-mdc-menu-trigger",
   MENU_ITEM_ROLE: "menuitem",
   ARIA_HASPOPUP: "aria-haspopup",
   ARIA_CONTROLS: "aria-controls",
@@ -89,5 +93,5 @@ export const CHAT_ROOM_RECOVERY = {
   REPLACE_LOG: "Room vẫn lỗi sau hai lần thử lại – đóng room lỗi rồi mở room mới, khôi phục ngữ cảnh và ảnh tham chiếu.",
   RETRY_TIMEOUT: 5000,
   RELOAD_FAILED: (reason: string) => `Room hiện tại chưa tải lại được: ${reason}. Tiếp tục theo số lần phục hồi còn lại.`,
-  RETRY_PATTERN: /chat_planning_(?:provider_error_response|invalid_json_response|invalid_response|page_unresponsive|ui_read_timeout|send_button_not_ready|composer_content_mismatch|submission_not_confirmed|context_not_confirmed)|gemini_model_ui_not_ready|input.*not.*found|không tìm thấy.*(?:nhập|soạn)|locator\.(?:fill|click|press|type|focus)|Timeout \d+ms exceeded/iu,
+  RETRY_PATTERN: /chat_planning_(?:provider_error_response|invalid_json_response|invalid_response|response_timeout|page_unresponsive|ui_read_timeout|send_button_not_ready|composer_content_mismatch|submission_not_confirmed|context_not_confirmed)|chưa hoàn tất phản hồi trong thời gian chờ|gemini_model_ui_not_ready|input.*not.*found|không tìm thấy.*(?:nhập|soạn)|locator\.(?:fill|click|press|type|focus)|Timeout \d+ms exceeded/iu,
 } as const;

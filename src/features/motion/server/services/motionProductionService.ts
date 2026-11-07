@@ -1,3 +1,4 @@
+import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -326,6 +327,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (record.input.visualSettings || record.input.analysis?.visualSettings || record.input.script?.visualSettings) Object.assign(base, motionVisualRequest(record.input));
       const visualSettings = motionVisualSettingsFor(base);
       const buildStatus = visualSettings.mode === RT_SHARED.REMOTION && result.script && result.analysis ? remotionStoryBuildStatus(result.script, result.analysis) : RT_SHARED.READY;
+      if (visualSettings.mode === RT_SHARED.REMOTION && result.script && result.analysis && usesMotionHtml(result.script) && !motionHtmlPlanCurrent(result.script, result.analysis)) {
+        delete record.steps[P.STAGES.SCRIPT];
+        log(record, "Khôi phục bước phân cảnh từ lời dẫn đã lưu; chia xong tất cả cảnh trước khi dựng HTML.");
+      }
       if (result.script && buildStatus !== RT_SHARED.READY) {
         for (const name of Object.keys(record.steps)) if (name === P.STAGES.SCENES || name.startsWith(P.STAGES.SCENES + RT_SHARED.SYMBOL_588DA4) || name === P.STAGES.RENDER) delete record.steps[name];
         delete result.compiled;
@@ -343,7 +348,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       log(record, VISUAL.LOG_MODE(visualSettings.mode));
       if (visualSettings.mode === RT_SHARED.REMOTION) {
         if (base.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
-        await checkRemotionRuntime(signal);
+        await checkRemotionRuntime(signal, record.result.script?.gen?.remotion && record.result.script.gen.remotion.renderer !== "html-canvas" ? undefined : "html-canvas");
       }
       if (!base.analyzeOnly) {
         await checkMotionMediaTools(signal);
@@ -357,6 +362,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         () => analyzeMotionStoryInput(base),
         (full) => {
           if (!result.analysis) Object.assign(result, motionSeriesStart(full, Number(base.parts) || 1, base.language));
+          const effective = result.series?.parts.length || 1;
+          if (effective !== (Number(base.parts) || 1)) log(record, `Nguồn được AI lập thành ${effective} phần có nội dung, so với ${base.parts} phần đã chọn; giữ kế hoạch thực tế và ghi rõ sự khác biệt.`);
         },
         0,
         0.1,
@@ -405,7 +412,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       } else result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
       const sceneInput = (analysis: MotionStoryAnalysis, script: MotionStoryScript, sheetCarry: boolean) => ({ ...base, analysis, script, sheetCarry, illustration: record.illustration, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false });
-      if (visualSettings.mode === RT_SHARED.REMOTION && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair)
+      if (visualSettings.mode === RT_SHARED.REMOTION && result.script && !usesMotionHtml(result.script) && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair)
         early = createMotionEarlyScenes({ stage: P.STAGES.SCENES, text: P.EARLY_SCENES, analysis: () => result.analysis, start: (input, first) => scenesMotionStoryInput({ ...sceneInput(input.analysis, input.script, !first), sfx: false }), getJob: getStoryJob, cancel: cancelStoryJob, log: (line) => log(record, line), signal, pollMs });
       const voiceScript = (script: MotionStoryScript): MotionStoryScript => {
         const voiced = base.voiceChannel ? { ...script, voiceChannel: base.voiceChannel } : script;
@@ -446,7 +453,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         if (motionVisualSettingsFor(base).mode !== RT_SHARED.REMOTION) return;
         const ready = Object.values(result.script.gen.remotion.scenes || {})
           .flat()
-          .filter((scene) => scene.build?.status === RT_SERVER.ACCEPTED && scene.composition)
+          .filter((scene) => scene.build?.status === RT_SERVER.ACCEPTED && (scene.composition || scene.html))
           .map((scene) => scene.id);
         const key = ready.join(RT_SHARED.SYMBOL_01BA47);
         if (!ready.length || key === prerenderKey) return;
@@ -529,13 +536,13 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (!record.durationRepair || record.durationRepair.done) await buildMedia();
       const targetSeconds = result.analysis!.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0);
       const durationTolerance = Q.DURATION_TOLERANCE;
-      const durationFits = () => Number.isFinite(result.voice!.totalSeconds) && result.voice!.totalSeconds > 0;
+      const hasAudioDuration = () => Number.isFinite(result.voice!.totalSeconds) && result.voice!.totalSeconds > 0;
       const repairMediaPending = () => {
         const repair = record.durationRepair;
         if (!repair || repair.done) return false;
         return (record.steps[P.DURATION_STEP(P.STAGES.SCRIPT, repair.round)]?.done && (!record.steps[P.DURATION_STEP(P.STAGES.SCENES, repair.round)]?.done || !record.steps[P.DURATION_STEP(P.STAGES.VOICE, repair.round)]?.done)) || result.voice?.signature !== motionVoiceSignature(result.script, result.analysis);
       };
-      while (!durationFits() || repairMediaPending()) {
+      while (!hasAudioDuration() || repairMediaPending()) {
         if (!Number.isFinite(result.voice!.totalSeconds) || result.voice!.totalSeconds <= 0) throw new Error(P.AUDIO_REQUIRED);
         const previous = record.durationRepair;
         if (!previous || previous.done) {
@@ -570,7 +577,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           0.2,
         );
         await buildMedia(repair.round, RT_SHARED.VOICE);
-        if (durationFits()) await buildMedia(repair.round, RT_SHARED.SCENES);
+        if (hasAudioDuration()) await buildMedia(repair.round, RT_SHARED.SCENES);
         repair.done = true;
         save();
       }
@@ -579,6 +586,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         save();
       }
       if (motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.OK) log(record, Q.DURATION_WARNING(result.voice!.totalSeconds, targetSeconds));
+      const selectedSeconds = result.analysis!.authoringSettings?.selectedTargetSeconds || targetSeconds;
+      result.durationReport = { selectedSeconds, plannedSeconds: targetSeconds, audioSeconds: result.voice!.totalSeconds, ratio: result.voice!.totalSeconds / Math.max(1, targetSeconds), authoring: result.script!.authoringTiming };
+      log(record, `Thời lượng: đã chọn ${Math.round(selectedSeconds)}s tổng; phần này dự kiến ${Math.round(targetSeconds)}s; audio thực ${result.voice!.totalSeconds.toFixed(1)}s.`);
       await finishSeo();
       signal.throwIfAborted();
       record.job.stage = P.STAGES.COMPILE;

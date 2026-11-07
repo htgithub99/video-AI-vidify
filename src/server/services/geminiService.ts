@@ -83,10 +83,6 @@ export const isAiProviderAvailable = async (): Promise<boolean> => {
   const keys = await resolveApiKeys();
   return _.some([keys.cerebrasKey, keys.groqKey, keys.geminiKey], (key) => !_.isEmpty(key));
 };
-export const isGeminiProviderAvailable = async (): Promise<boolean> => {
-  const keys = await resolveApiKeys();
-  return !_.isEmpty(keys.geminiKey);
-};
 interface GeminiContentEstimate {
   textCharacters: number;
   estimatedTextTokens: number;

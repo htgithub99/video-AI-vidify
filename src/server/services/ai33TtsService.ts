@@ -13,7 +13,6 @@ import {
   MOTION_TEXT_AI33_TTS_TASK_TIMED_OUT,
   MOTION_TEXT_AUDIO_MPEG,
   MOTION_TEXT_FAILED_TO_DOWNLOAD_AI33_AUDIO,
-  MOTION_TEXT_MESSAGE,
   MOTION_TEXT_TRUE,
   MOTION_TEXT_TTS_TEXT_IS_EMPTY,
 } from "../../constants/motionRuntime.js";
@@ -50,7 +49,6 @@ const sleep = (ms: number, signal?: AbortSignal) =>
       { once: true },
     );
   });
-export const isAi33Abort = (error: unknown): boolean => _.get(error, MOTION_TEXT_MESSAGE) === ABORTED;
 export const getAi33ApiKey = async (): Promise<string> => {
   const keys = await resolveApiKeys();
   const apiKey = _.toString(_.get(keys, SecurityConstants.REQ_BODY_AI33_KEY, SecurityConstants.EMPTY_STRING));

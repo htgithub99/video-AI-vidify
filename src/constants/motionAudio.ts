@@ -24,4 +24,3 @@ export const MOTION_SFX_MOODS: Record<string, MotionSfxMood> = {
   folk_tale: { root: 65.41, chord: [1, 1.25, 1.5], gain: 0.8, swell: 17, noise: 0, pulse: 0, pulseFreq: 0, shimmer: 0.003, sparkle: 0.018, hitFreq: 52, endChime: 523.25 },
   drama: { root: 58.27, chord: [1, 1.26, 1.498], gain: 0.85, swell: 25, noise: 0, pulse: 0, pulseFreq: 0, shimmer: 0.002, sparkle: 0, hitFreq: 46, endChime: 440 },
 };
-export const MOTION_SFX_SPARKLE_NOTES = [523.25, 587.33, 659.25, 783.99, 880];

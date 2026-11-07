@@ -1,4 +1,6 @@
 import { motionSceneLocation, motionScenesByLocation } from "../../../../../lib/motionSceneReferences.js";
+import { usesMotionHtml } from "../../../../../lib/motionHtmlScene.js";
+import { buildMotionHtmlScenes } from "../html/scenePipeline.js";
 import * as COMMON_RUNTIME from "../../../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
@@ -90,10 +92,10 @@ export interface RemotionSceneOptions {
   scope?: string;
   aspect?: string;
   renderBehavior?: MotionRenderBehavior;
-  review?: boolean;
   sfx?: boolean;
   sheetCarry?: boolean;
   restart?: boolean;
+  rebuildKey?: string;
   onlyBeats?: string[];
   onlyScenes?: string[];
   onlyLocations?: string[];
@@ -101,6 +103,7 @@ export interface RemotionSceneOptions {
   ai?: typeof runMotionAi;
 }
 export const buildRemotionScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
+  if (usesMotionHtml(script)) return buildMotionHtmlScenes(script, analysis, opts);
   const settings = motionVisualSettingsFor({ analysis, script });
   if (settings.mode !== RT_SHARED.REMOTION) throw new Error(V.INVALID);
   {
@@ -109,12 +112,12 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     const [width, height] = aspect === RT_SERVER.VALUE_9_16 ? [720, 1280] : aspect === RT_SERVER.VALUE_1_1 ? [1000, 1000] : aspect === RT_SERVER.VALUE_4_5 ? [800, 1000] : [1280, 720];
     type Checkpoint = { state: MotionRemotionState; requests: Record<string, MotionAiContractState>; compositions?: Record<string, unknown> };
     const checkpoint = motionTaskCheckpoint<Checkpoint>(opts.scope, V.PROJECT_FOLDER, [PACING.REVISION, C.REVISION, profileRevision, settings, aspect]);
-    const saved = opts.restart ? undefined : checkpoint.read() || motionTaskCheckpoint<Checkpoint>(opts.scope, V.PROJECT_FOLDER, [PACING.REVISION, C.REVISION, profileRevision, settings, analysis.cast, analysis.places, script.beats, aspect, opts.note]).read();
+    const saved = checkpoint.read() || motionTaskCheckpoint<Checkpoint>(opts.scope, V.PROJECT_FOLDER, [PACING.REVISION, C.REVISION, profileRevision, settings, analysis.cast, analysis.places, script.beats, aspect, opts.note]).read();
     const incoming = script.gen?.remotion;
     const carried = incoming && (!saved?.state || (incoming.updatedAt || 0) > (saved.state.updatedAt || 0)) ? incoming : saved?.state || incoming;
-    const state: MotionRemotionState = !opts.restart && carried?.version === V.VERSION && stringifyJson(carried.settings) === stringifyJson(settings) ? structuredClone(carried) : { version: V.VERSION, settings, assets: {}, scenes: {}, inputKeys: {}, failures: {} };
-    const requests = opts.restart ? {} : saved?.requests || {};
-    const compositions: Record<string, unknown> = opts.restart ? {} : saved?.compositions || {};
+    const state: MotionRemotionState = carried?.version === V.VERSION && stringifyJson(carried.settings) === stringifyJson(settings) ? structuredClone(carried) : { version: V.VERSION, settings, assets: {}, scenes: {}, inputKeys: {}, failures: {} };
+    const requests = saved?.requests || {};
+    const compositions: Record<string, unknown> = saved?.compositions || {};
     for (const key of Object.keys(requests)) requests[key] = recoverMotionAiContractState(requests[key], `${V.RECOVERY_REVISION}${RT_SHARED.SYMBOL_E7AC07}${C.REVISION}${RT_SHARED.SYMBOL_E7AC07}${profileRevision}`);
     state.notes ||= {};
     state.drafts ||= {};

@@ -15,6 +15,7 @@ import { motionRemotionRenderConcurrency } from "../../../../lib/motionRemotionP
 import { MOTION_REMOTION_RENDER as R } from "../../../../constants/motionRemotionRender.js";
 import { checkRemotionCutoutLayers } from "./remotion/vectorCutoutInspector.js";
 import { logger } from "../../../../lib/logger.js";
+import { renderMotionHtmlSegments, renderMotionMixedSegments } from "./html/sceneRenderer.js";
 let cached: { key: string; promise: Promise<string> } | undefined;
 export const motionRemotionSourceFingerprint = (entryPoints: string[]): string => {
   const sources = new Map<string, string>();
@@ -60,9 +61,10 @@ export const motionRemotionBundle = async (): Promise<string> => {
     throw error;
   }
 };
-export const checkRemotionRuntime = async (signal?: AbortSignal): Promise<void> => {
+export const checkRemotionRuntime = async (signal?: AbortSignal, renderer?: "html-canvas"): Promise<void> => {
   signal?.throwIfAborted();
   findNativeChrome();
+  if (renderer === "html-canvas") return;
   await motionRemotionBundle();
   signal?.throwIfAborted();
 };
@@ -92,6 +94,8 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
 type RemotionRenderOptions = { width: number; height: number; crf: number; signal: AbortSignal; concurrency?: number; headless?: boolean; onProgress: (frames: number, total: number) => void; log?: (line: string) => void };
 /** Renders whole frame ranges (inclusive [start, end]) of one spec into separate silent H.264 files, sharing one browser. */
 export const renderRemotionSegments = async (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], options: RemotionRenderOptions & { onSegment?: (index: number) => Promise<void> | void }): Promise<void> => {
+  if (spec.renderer === "html-canvas" && spec.scenes.every((scene) => scene.renderer === "html-canvas")) return renderMotionHtmlSegments(spec, segments, options);
+  if (spec.renderer === "html-canvas") return renderMotionMixedSegments(spec, segments, options, renderRemotionSegments);
   validateRemotionSpec(spec);
   assertRemotionExportable(spec);
   await checkRemotionCutoutLayers(spec, options.signal);

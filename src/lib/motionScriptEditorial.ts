@@ -17,6 +17,7 @@ export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStor
   return { findings, ids: unique.map((item) => item.id), remaining: unique.map(({ id, issue }) => ({ id, issue })), concrete: [...new Set([...findings.overlap.map((item) => item.id), ...findings.review.filter((item) => ["source", "label", "handoff"].includes(item.kind || "")).map((item) => item.id)])] };
 };
 export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string, edit: (beats: MotionBeat[], ids: string[], supplemental: boolean) => Promise<MotionEditorialResult>, log?: (line: string) => void, scope?: ReadonlySet<string>): Promise<MotionEditorialResult> => {
+  if (analysis.authoringSettings) return edit(beats, beats.filter((beat) => !scope || scope.has(beat.chapterId)).map((beat) => beat.id), false);
   const names = analysis.cast.map((member) => member.name);
   const fixed = motionGenreAutofix(beats, analysis, language);
   if (fixed.dropped.length || fixed.visuals || fixed.shots || fixed.speech) log?.(A.LOG(fixed.dropped.length, fixed.visuals, fixed.shots, fixed.speech));

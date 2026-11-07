@@ -1,10 +1,9 @@
 import { MOTION_SCENE_QUALITY as Q } from "../constants/motionSceneQuality.js";
-import { MOTION_SCENE_SPEC as SPEC } from "../constants/motionProfiles/sceneSpec.js";
 import type { MotionProfileScene, MotionShotSize } from "../constants/motionProfiles/sceneSpec.js";
 import { compositionElements } from "./motionSceneComposition.js";
 import { motionLayerSvg } from "./motionIdentityReference.js";
 import { motionNodeAnimalOf, motionNodeStanceOf } from "./motionScenePoses.js";
-import type { MotionRemotionEffect, MotionRemotionNode, MotionSceneComposition, MotionSceneObject, MotionVisualRect } from "../types/motionVisual.js";
+import type { MotionRemotionNode, MotionSceneObject, MotionVisualRect } from "../types/motionVisual.js";
 import { MOTION_OBJECT_PART_CHECK_CLASSES } from "../constants/motionObjectClasses.js";
 import { motionObjectPartChecks } from "./motionObjectKinds.js";
 import { motionUnitPart, motionUnitTargets } from "./motionUnits.js";
@@ -94,86 +93,8 @@ const cutByEdge = (rect: MotionVisualRect | undefined): boolean => {
   return outside && visible > Q.CUT_VISIBLE;
 };
 const identityParts = (svg: string, nodeId: string, spec: MotionProfileScene): string[] => motionLayerParts(svg, nodeId, spec.identityParts).filter((id) => !Q.ANIMAL_PART.test(id));
-export const motionLayerFix = (svg: string, composition: MotionSceneComposition, nodes: MotionRemotionNode[], effects: MotionRemotionEffect[] | undefined, spec: MotionProfileScene): { svg: string; moved: number; opacity: number } => {
-  let elements: ReturnType<typeof compositionElements>;
-  try {
-    elements = compositionElements(svg);
-  } catch {
-    return { svg, moved: 0, opacity: 0 };
-  }
-  const characters = composition.layers.filter((layer) => layer.kind === "character" && elements.has(layer.id));
-  let next = svg;
-  let moved = 0;
-  const parentOf = (id: string) => elements.get(id)?.ancestors.at(-1);
-  const firstCharacter = characters.map((layer) => ({ layer, index: next.indexOf(motionLayerSvg(next, layer.id) || "\u0000") })).filter((entry) => entry.index >= 0).sort((a, b) => a.index - b.index)[0];
-  if (firstCharacter) {
-    const atmospheric = composition.layers.filter((layer) => {
-      if (layer.kind !== "effect" || !elements.has(layer.id)) return false;
-      const declared = effects?.find((effect) => effect.id === layer.id);
-      if (declared) return Q.EFFECT_KINDS_BACK.includes(declared.kind);
-      return Q.EFFECT_ID.test(layer.id) && !Q.EFFECT_FRONT.test(layer.id);
-    });
-    for (const layer of atmospheric) {
-      const part = motionLayerSvg(next, layer.id);
-      const anchor = motionLayerSvg(next, firstCharacter.layer.id);
-      if (!part || !anchor) continue;
-      if (parentOf(layer.id) !== parentOf(firstCharacter.layer.id)) continue;
-      if (next.indexOf(part) < next.indexOf(anchor)) continue;
-      next = next.replace(part, "");
-      next = next.replace(anchor, part + anchor);
-      moved++;
-    }
-  }
-  let opacity = 0;
-  for (const layer of characters) {
-    const node = nodes.find((item) => item.id === layer.id || (!!layer.entityId && item.entityId === layer.entityId));
-    if (spec.ghostOpacity && node && SPEC.GHOST.test(`${node.description} ${node.entityId || ""}`)) continue;
-    const part = motionLayerSvg(next, layer.id);
-    if (!part) continue;
-    let changed = false;
-    const fixed = part.replace(Q.G_OPACITY, (tag: string, _quote: string, value: string) => {
-      if (Number(value) >= Q.CHARACTER_MIN_OPACITY) return tag;
-      changed = true;
-      return tag.replace(Q.OPACITY_ATTR, (_match: string, head: string, quote: string) => `${head}${quote}1${quote}`);
-    });
-    if (changed) {
-      next = next.replace(part, fixed);
-      opacity++;
-    }
-  }
-  return { svg: next, moved, opacity };
-};
-export const motionQualityIds = (svg: string, composition: MotionSceneComposition, nodes: MotionRemotionNode[], spec: MotionProfileScene, cast: ReadonlySet<string>, view?: string): string[] => {
-  const ids = new Set<string>();
-  for (const node of nodes) {
-    if (!composition.layers.some((layer) => layer.id === node.id)) continue;
-    if (node.kind === "character" || motionNodeAnimalOf(node, cast)) ids.add(node.id);
-    if (motionNodeAnimalOf(node, cast)) for (const part of [motionLayerPart(svg, node.id, Q.ANIMAL_TAIL), motionLayerPart(svg, node.id, Q.ANIMAL_HEAD)]) if (part) ids.add(part);
-    if (node.kind === "character" && node.unit) for (const container of unitContainers(svg, node)) for (const part of MOTION_UNIT_PARTS[node.unit]) {
-      const found = motionLayerPart(svg, container, motionUnitPart(part));
-      if (found) ids.add(found);
-    }
-    if (node.kind === "character") {
-      const head = motionLayerPart(svg, node.id, spec.headPart);
-      if (head) ids.add(head);
-      if (node.anonymous && !node.crowd) for (const sub of motionLayerParts(svg, node.id, Q.SUB_PERSON)) {
-        ids.add(sub);
-        const subHead = motionLayerPart(svg, sub, spec.headPart);
-        if (subHead) ids.add(subHead);
-      }
-      if (!motionNodeAnimalOf(node, cast) && spec.legs === "required" && spec.lowPostures.includes(motionNodeStanceOf(node))) for (const part of [...motionLayerParts(svg, node.id, Q.LEG_PART), ...motionLayerParts(svg, node.id, Q.TORSO_PART)]) ids.add(part);
-      if (!motionNodeAnimalOf(node, cast) && spec.legs === "required" && Q.LEG_VIEWS.includes(view || "")) {
-        for (const part of [...motionLayerParts(svg, node.id, Q.LEG_PART), ...motionLayerParts(svg, node.id, Q.TORSO_PART)]) ids.add(part);
-        if (node.relation === Q.ON && node.target && composition.layers.some((layer) => layer.id === node.target)) ids.add(node.target);
-      }
-      if (!motionNodeAnimalOf(node, cast) && spec.hatWidth && Q.FRAME_VIEWS.includes(view || "")) for (const part of motionLayerParts(svg, node.id, Q.HEAD_BASE)) ids.add(part);
-      if (Q.FRAME_VIEWS.includes(view || "") && !motionNodeAnimalOf(node, cast)) for (const part of [...identityParts(svg, node.id, spec), ...motionLayerParts(svg, node.id, Q.HAND_PART)]) ids.add(part);
-    }
-    if (view === Q.DETAIL && node.kind !== "label") for (const part of [...motionLayerParts(svg, node.id, Q.HAND_PART), ...motionLayerParts(svg, node.id, Q.ARM_PART)]) ids.add(part);
-  }
-  return [...ids];
-};
-export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[], view: string | undefined, measured: Record<string, MotionVisualRect | null>, spec: MotionProfileScene, cast: ReadonlySet<string>, names: (node: MotionRemotionNode) => string, aspect: number, extra: { marks?: (node: MotionRemotionNode) => string[]; objects?: MotionSceneObject[]; profile?: MotionRemotionProfile } = {}): string[] => {
+export const motionSceneQualityIssues = (svg: string, nodes: MotionRemotionNode[], view: string | undefined, measured: Record<string, MotionVisualRect | null>, spec: MotionProfileScene, cast: ReadonlySet<string>, names: (node: MotionRemotionNode) => string, aspect: number,
+  extra: { marks?: (node: MotionRemotionNode) => string[]; objects?: MotionSceneObject[]; profile?: MotionRemotionProfile } = {}): string[] => {
   const issues: string[] = [];
   const people = nodes.filter((node) => node.kind === "character" && !motionNodeAnimalOf(node, cast) && measured[node.id]);
   const defaultHorse = nodes.find((node) => motionNodeAnimalOf(node, cast) === "horse" && measured[node.id]);

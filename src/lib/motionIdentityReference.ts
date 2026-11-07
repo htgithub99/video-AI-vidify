@@ -88,9 +88,6 @@ export const motionSvgPalette = (svg: string, size: number = I.PALETTE_SIZE): st
     .map(([hex]) => hex);
 };
 export const motionCostumeColors = (bodySvg: string): string[] => motionSvgPalette(bodySvg, 8).filter((hex) => !I.COSTUME_SKIP.test(hex)).slice(0, I.COSTUME_COLORS);
-const channel = (hex: string, offset: number) => parseInt(hex.slice(offset, offset + 2), 16);
-const near = (a: string, b: string) => Math.max(Math.abs(channel(a, 1) - channel(b, 1)), Math.abs(channel(a, 3) - channel(b, 3)), Math.abs(channel(a, 5) - channel(b, 5))) <= I.COLOR_TOLERANCE;
-export const motionPaletteDistance = (reference: string[], current: string[]): number => (reference.length ? reference.filter((hex) => !current.some((other) => near(hex, other))).length / reference.length : 0);
 export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: MotionRemotionScene[], profileId: MotionRemotionProfile, assets: Record<string, MotionVectorAsset>, cast: { key: string; narrator?: boolean }[] = []): { references: MotionIdentityReference[]; changed: string[] } => {
   const changed: string[] = [];
   const nodes = scene.nodes.filter((node) => node.kind === "character" && !node.anonymous && !node.appearanceChanged && node.entityId && node.representation !== "detail");
@@ -129,13 +126,3 @@ export const motionIdentityReferences = (scene: MotionRemotionScene, scenes: Mot
   }
   return { references, changed };
 };
-export const motionIdentityDrift = (references: MotionIdentityReference[], svg: string, layers: { id: string; kind: string; entityId?: string }[], profileId: MotionRemotionProfile): string[] =>
-  references.flatMap((reference) => {
-    const layer = layers.find((item) => item.kind === "character" && item.entityId === reference.entityId);
-    const full = layer && motionLayerSvg(svg, layer.id);
-    const drawn = full && motionIdentityHead(motionCompactSvg(full), MOTION_PROFILE_SCENES[profileId].identityParts);
-    if (!drawn) return [];
-    const expected = motionSvgPalette(reference.svg);
-    if (expected.length < I.MIN_PALETTE) return [];
-    return motionPaletteDistance(expected, motionSvgPalette(drawn)) > I.PALETTE_DISTANCE ? [reference.entityId] : [];
-  });

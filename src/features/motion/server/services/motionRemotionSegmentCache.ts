@@ -75,6 +75,7 @@ export const renderMotionSegmentsToCache = async (
           },
           onSegment: async (index) => {
             const segment = laneSegments[index];
+            if (spec.renderer === "html-canvas") segment.key = motionRemotionSegments(spec, encoding).find((fresh) => fresh.start === segment.start && fresh.end === segment.end)?.key || segment.key;
             await validateMotionMedia(outputs[index].output, { seconds: frames(segment) / spec.fps, width: encoding.width, height: encoding.height, fps: spec.fps, frames: frames(segment) }, laneSignal);
             fs.renameSync(outputs[index].output, motionSegmentFile(segment));
             options.onSegment?.(segment);

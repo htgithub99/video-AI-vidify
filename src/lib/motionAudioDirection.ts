@@ -1,6 +1,5 @@
 import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
-import { stringifyJson } from "./jsonStringify.js";
 import * as MR from "../constants/motionRuntime.js";
 import { MOTION_AUDIO_DIRECTION as C, MOTION_SPEAKER_TRAITS as T } from "../constants/motionAudioDirection.js";
 import { soundText } from "./motionSound.js";
@@ -68,4 +67,3 @@ export const motionAudioDirection = (script: MotionStoryScript | null, analysis:
     dialect: dna?.audienceProfile?.dialect || MR.MOTION_TEXT_EMPTY,
   };
 };
-export const motionAudioContext = (script: MotionStoryScript | null, analysis: MotionStoryAnalysis | null): string => C.CONTEXT + stringifyJson(motionAudioDirection(script, analysis));

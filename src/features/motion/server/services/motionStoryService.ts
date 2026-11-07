@@ -3,6 +3,10 @@ import { MOTION_SCENE_COMPOSITION as SCENE_COMPOSITION } from "../../../../const
 import { MOTION_WRITING as WRITING } from "../../../../constants/motionWriting.js";
 import { MOTION_ILLUSTRATION_PROFILES } from "../../../../constants/motionIllustrationProfiles.js";
 import { parseMotionChapterReply } from "../../../../lib/motionChapterJson.js";
+import { motionHtmlAuthoringSnapshot, motionHtmlGenreDirection, motionHtmlAnalysisPrompt } from "../../../../lib/motionHtmlAuthoring.js";
+import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../constants/motionHtmlTemplate.js";
+import { parseAiJson } from "../../../../lib/aiJson.js";
+import { writeMotionHtmlChapter, editMotionHtmlScript } from "./html/authoring.js";
 import { normalizeMotionWritingPlan, normalizeMotionWritingChapter, motionWritingBiblePrompt, motionWritingChapterLean, motionWritingProtectedMotifs, motionWritingState, motionWritingChapterCount } from "../../../../lib/motionWriting.js";
 import { normalizeMotionSpokenBeat } from "../../../../lib/motionSpokenNumbers.js";
 import * as COMMON_RUNTIME from "../../../../constants/sourceText.js";
@@ -171,7 +175,7 @@ import {
   MOTION_TEXT_WRONG,
 } from "../../../../constants/motionRuntime.js";
 import { MOTION_STORY_CONFIG, MOTION_STORY_LENGTH_SECONDS } from "../../../../constants/motionVideo.js";
-import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
+import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import { productionPreamble } from "../../../../lib/motionDirection.js";
 import { normalizeCreativeBlueprint } from "../../../../lib/motionCreativeBlueprint.js";
 import { normalizeScenePlan, normalizeVideoDna, scenePlanErrors, videoDnaSourceKey } from "../../../../lib/motionVideoDna.js";
@@ -251,12 +255,9 @@ const motionPromptSections = (artifact: string, sections: Record<string, number 
     _.noop();
   }
 };
-export const resolveTargetSeconds = (source: MotionStorySource, length: MotionStoryLength, expansion = 1): number => {
+export const resolveTargetSeconds = (source: MotionStorySource, length: MotionStoryLength, _expansion = 1): number => {
   const seconds = MOTION_STORY_LENGTH_SECONDS[length];
-  if (seconds !== undefined) {
-    if (source.kind === MR.MOTION_TEXT_BRIEF || length === MotionStoryLength.SHORT || length === MotionStoryLength.ONE) return seconds;
-    return Math.min(seconds, (seconds > 600 ? Math.max(300, source.sourceSeconds) : source.sourceSeconds) * Math.max(1, expansion));
-  }
+  if (seconds !== undefined) return seconds;
   return Math.max(60, source.sourceSeconds);
 };
 const formatTs = (s: number) => MOTION_TEMPLATE_SYMBOL_11(String(Math.floor(s / 60)), String(String(Math.floor(s % 60)).padStart(2, MOTION_TEXT_0)));
@@ -272,7 +273,7 @@ export const sourceSlice = (source: MotionStorySource, from?: number, to?: numbe
 export const extractJson = (raw: string): any => {
   const text = _.trim(_.toString(raw)).replace(MP.JSON_FENCE_START, MR.MOTION_TEXT_EMPTY).replace(MP.JSON_FENCE_END, MR.MOTION_TEXT_EMPTY);
   try {
-    return parseJson(text);
+    return parseAiJson(text);
   } catch {
     const chapter = parseMotionChapterReply(text);
     if (chapter !== undefined) return chapter;
@@ -282,7 +283,7 @@ export const extractJson = (raw: string): any => {
       b = text.lastIndexOf(MOTION_TEXT_SYMBOL_36);
     if (a >= 0 && b > a) {
       try {
-        return parseJson(text.slice(a, b + 1));
+        return parseAiJson(text.slice(a, b + 1));
       } catch {}
     }
     const starts = _.filter(_.range(text.length), (i) => text.startsWith(MOTION_TEXT_ARTIFACTTYPE, i));
@@ -290,12 +291,12 @@ export const extractJson = (raw: string): any => {
       const repaired = closeJson(text.slice(start));
       if (repaired == null) continue;
       try {
-        return parseJson(repaired);
+        return parseAiJson(repaired);
       } catch {}
     }
     if (a >= 0 && b > a) {
       try {
-        return parseJson(quoteBareJsonKeys(text.slice(a, b + 1)));
+        return parseAiJson(quoteBareJsonKeys(text.slice(a, b + 1)));
       } catch {}
     }
     throw new Error(MOTION_TEXT_AI_KHONG_TRA_VE_JSON_HOP_LE);
@@ -1042,7 +1043,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   const mode = pickEnum(_.values(AiPlanningExecutionMode), exec.mode, AiPlanningExecutionMode.ApiOnly);
   const provider = pickEnum(_.values(AiPlanningFallbackProvider), exec.provider, AiPlanningFallbackProvider.GeminiChat);
   const useRoom = mode !== AiPlanningExecutionMode.ApiOnly && provider !== AiPlanningFallbackProvider.Disabled;
-  const state = recovery || { requestId: MOTION_TEMPLATE_SYMBOL_5(String(artifactType), String(randomUUID().slice(0, 8))), submission: { attempted: false, completed: false } };
+  const state: { requestId: string; submission: ChatPlanningSubmission } = recovery || { requestId: exec.requestId || MOTION_TEMPLATE_SYMBOL_5(String(artifactType), String(randomUUID().slice(0, 8))), submission: exec.submission || { attempted: false, completed: false } };
   const { requestId, submission } = state;
   const identity = MOTION_TEMPLATE_ARTIFACTTYPE_REQUESTID(String(artifactType), String(requestId));
   const currentRun = motionAiRunStore.getStore();
@@ -1059,7 +1060,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     const basePrompt = editorialContext + (exec.bible && !bibleSent ? MOTION_STORY_CONFIG.BIBLE_WRAP(exec.bible.text) : MR.MOTION_TEXT_EMPTY) + prompt;
     const singleMessage = motionPromptSingleMessage(artifactType);
     const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
-    const fullPrompt = singleMessage ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity)) : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(artifactType, taskPrompt), String(identity));
+    const fullPrompt = exec.outputFormat === "html" ? `${taskPrompt}\nThe html root must carry data-artifact='${artifactType}' and data-request-id='${requestId}' to identify this response. Return the complete HTML only.` : singleMessage ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity)) : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
     log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
     const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")), singleMessage);
     if (measurement.overflow) log?.(singleMessage ? PROMPT.SINGLE_MESSAGE_LOG(artifactType, measurement.finalChars) : PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
@@ -1133,6 +1134,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       submission.onContextRetry = (part, total, attempt, max) => log?.(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_RETRY_LOG(part, total, attempt, max), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
       submission.onRegenerate = (line) => log?.(line, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
       submission.onAttempt = () => {
+        exec.submissionChanged?.();
         clearTimeout(watchdog);
         log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RESPONSE });
         watchdog = setTimeout(() => {
@@ -1192,7 +1194,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         artifactType,
         requestId,
         signal: roomCtrl.signal,
-        oneGeneration: exec.singleResponse === true && artifactType === SCENE_COMPOSITION.ARTIFACT,
+        oneGeneration: exec.singleResponse === true && (artifactType === SCENE_COMPOSITION.ARTIFACT || artifactType.startsWith("motion-html-") || exec.outputFormat === "html"),
         closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         submission,
@@ -1213,7 +1215,8 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         },
         attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
       });
-      const result = extractMotionRoomJson(r.text);
+      exec.responseReceived?.(r.text);
+      const result = exec.outputFormat === "html" ? r.text : extractMotionRoomJson(r.text);
       run?.roomRecoveries.delete(workerId!);
       if (run && bibleKey()) (run.bibles ||= new Map()).set(workerId!, bibleKey()!);
       roomOk = true;
@@ -1243,7 +1246,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         log?.(MOTION_STORY_CONFIG.ROOM_REFUSAL_LOG(provider));
         throw caught;
       }
-      const salvaged = salvageRoomJson(diag?.lastCandidate, artifactType, requestId);
+      const salvaged = exec.outputFormat === "html" ? undefined : salvageRoomJson(diag?.lastCandidate, artifactType, requestId);
       if (salvaged) {
         log?.(MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG);
         roomOk = true;
@@ -1267,8 +1270,9 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
       const earlyError = _.toString(caught?.message);
       const recovered = !!_.get(caught, CHAT_ROOM_RECOVERY.COMPLETE);
-      const unsent = !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
-      if (!captchaRetry && exec.singleResponse && !unsent) {
+      const isTimeoutError = _.get(caught, "code") === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE;
+      const unsent = !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || isTimeoutError || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
+      if (!captchaRetry && exec.singleResponse && !unsent && exec.outputFormat !== "html" && artifactType !== MOTION_HTML.PLAN) {
         roomOk = submission.completed;
         throw caught;
       }
@@ -1281,7 +1285,8 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
             if (check) log?.(AIR.RESUME_RELOAD(provider, check, AIR.ROOM_RELOADS), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
             const resumeSignal = AbortSignal.any(_.compact([signal, run?.signal, AbortSignal.timeout(AIR.RESUME_MS)]));
             const result = await resumeChatPlanningResponse({ provider, model: exec.model as AiPlanningChatModel, prompt: fullPrompt, projectId, workerId, artifactType, requestId, signal: resumeSignal, chromeHeadless: exec.chromeHeadless !== false, submission, reloadPendingResponse: check > 0 });
-            const parsed = extractMotionRoomJson(result.text);
+            exec.responseReceived?.(result.text);
+            const parsed = exec.outputFormat === "html" ? result.text : extractMotionRoomJson(result.text);
             roomOk = true;
             return parsed;
           } catch (resumeError) {
@@ -1314,7 +1319,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         await providerRecoveries.wait(recoveryKey, requestId, AbortSignal.any(_.compact([signal, run?.signal])));
       }
       const noInput = !limited && !captcha && currentError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND;
-      const transport = (timedOut && !submission.completed && !submission.abandoned) || AIR.TRANSPORT.test(currentError) || currentError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || noInput || currentError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(currentError);
+      const transport = (timedOut && !submission.completed && !submission.abandoned) || isTimeoutError || AIR.TRANSPORT.test(currentError) || currentError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || noInput || currentError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(currentError);
       const retryableResponse = isChatAttachmentError(caught) || _.includes([CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR], _.toString(caught?.message));
       if (!recovered && !retryRoom && !captchaRetry && !limited && (!submission.attempted || submission.completed) && (transport || retryableResponse) && attempt < AIR.ROOM_RETRIES) {
         retryRoom = true;
@@ -1363,7 +1368,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           if (retryRoom) {
             if (!replaceRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
             else await closeMotionAiRoom(run, workerId!);
-          } else if (!roomOk && !captchaRetry) await closeMotionAiRoom(run, workerId!);
+          } else if (!roomOk && !captchaRetry && !(artifactType.startsWith("motion-html-") && submission.attempted && !submission.completed && !submission.abandoned)) await closeMotionAiRoom(run, workerId!);
         } else {
           await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
         }
@@ -1388,9 +1393,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   countMotionRequest(MOTION_STORY_CONFIG.API_PROVIDER, log);
   const { fullPrompt } = requestPrompt();
   const contents = images?.length ? [{ role: MOTION_TEXT_USER, parts: [{ text: fullPrompt }, ..._.map(images, (im) => ({ inlineData: { mimeType: im.mimeType, data: fs.readFileSync(im.path).toString(MOTION_TEXT_BASE64) } }))] }] : fullPrompt;
-  const response = await generateContentWithRetry({ contents, task: { capability: AiTaskCapability.ScriptWriting }, config: { responseMimeType: MOTION_TEXT_APPLICATION_JSON } });
+  const response = await generateContentWithRetry({ contents, task: { capability: AiTaskCapability.ScriptWriting }, config: { responseMimeType: exec.outputFormat === "html" ? "text/plain" : MOTION_TEXT_APPLICATION_JSON } });
   const text = _.isString(response) ? response : response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || MR.MOTION_TEXT_EMPTY;
-  return extractJson(text);
+  exec.responseReceived?.(text);
+  return exec.outputFormat === "html" ? text : extractJson(text);
 };
 const slugKey = (s: string): string => _.trim(_.deburr(_.toString(s).replace(MP.VIETNAMESE_D_LOWER, MOTION_TEXT_D).replace(MP.VIETNAMESE_D_UPPER, MOTION_TEXT_D_2)).toLowerCase().replace(MP.SLUG_LOWER_INVALID, MOTION_TEXT_SYMBOL_30), MOTION_TEXT_SYMBOL_30).slice(0, 24) || MOTION_TEXT_NV;
 const { TIMES, WEATHERS, SHOTS, VISUALS, FRAMES, HOOKS } = MOTION_RESPONSE_VALUES;
@@ -1515,9 +1521,10 @@ interface MotionAnalysisRecovery {
 }
 export const analyzeStory = async (
   source: MotionStorySource,
-  opts: { visualSettings?: MotionVisualSettings; styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; aspect?: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre; stylePreset?: string; storytelling?: string; renameEntities?: boolean } & MotionAnalysisRecovery,
+  opts: { visualSettings?: MotionVisualSettings; styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; parts?: number; aspect?: string;
+    exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre; stylePreset?: string; storytelling?: string; renameEntities?: boolean } & MotionAnalysisRecovery,
 ): Promise<MotionStoryAnalysis> => {
-  const inputKey = motionInputKey([WRITING.REVISION, source, opts.language, opts.length, opts.aspect, opts.exec, opts.styleReferences, opts.videoGenre, opts.stylePreset, opts.characterMotion, motionStorytelling(opts.storytelling), opts.renameEntities === true, ...(opts.visualSettings ? [opts.visualSettings] : [])]);
+  const inputKey = motionInputKey([WRITING.REVISION, "html-authoring-english-v2", source, opts.language, opts.length, opts.parts, opts.aspect, opts.exec, opts.styleReferences, opts.videoGenre, opts.stylePreset, opts.characterMotion, motionStorytelling(opts.storytelling), opts.renameEntities === true, ...(opts.visualSettings ? [opts.visualSettings] : [])]);
   const draft: MotionAnalysisDraft = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft) : { inputKey, rejected: 0 };
   const checkpoint = () => {
     opts.signal?.throwIfAborted();
@@ -1532,30 +1539,32 @@ export const analyzeStory = async (
   if (draft.base) return complete(draft.base);
   const target = resolveTargetSeconds(source, opts.length, motionStorytellingExpansion(opts.storytelling, opts.videoGenre));
   const settings: MotionVideoDnaSettings = { length: opts.length, targetSeconds: target, language: motionLanguageCode(opts.language), aspect: opts.aspect || MR.MOTION_TEXT_16_9, drawingMode: MR.MOTION_TEXT_2D, characterMode: MR.MOTION_TEXT_DRAWN };
-  const chapterCount = motionWritingChapterCount(target, opts.videoGenre);
+  const chapterCount = Math.max(opts.parts || 1, motionWritingChapterCount(target, opts.videoGenre));
   const language = motionLanguage(opts.language).promptName;
   const ledger = await buildSourceLedger(source, { ...opts, draft, targetSeconds: target });
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
-  const prompt = MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
+  const htmlAuthoring = opts.visualSettings?.mode === "remotion";
+  const htmlSettings = opts.visualSettings?.mode === "remotion" ? motionHtmlAuthoringSnapshot({ videoGenre: opts.videoGenre, storytelling: opts.storytelling, length: opts.length, target, language: opts.language, profile: opts.visualSettings.profileId, pacing: opts.visualSettings.pacing, parts: opts.parts }) : undefined;
+  const prompt = htmlAuthoring ? motionHtmlAnalysisPrompt({ title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript, pacing: htmlSettings?.picturePacing }) : MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
   const rename = opts.renameEntities === true;
   const finish = (analysis: MotionStoryAnalysis, rawMap?: unknown): MotionStoryAnalysis => {
     const renameMap = rename ? normalizeMotionRenameMap(rawMap) : [];
     if (rename) opts.log?.(RENAME.LOG.MAP(renameMap.length));
     if (rename && analysis.factual) opts.log?.(RENAME.LOG.FACTUAL);
-    return { ...analysis, visualSettings: opts.visualSettings, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre), storytelling: motionStorytelling(opts.storytelling), renameEntities: rename, ...(rename ? { renameMap } : {}) };
+    return { ...analysis, ...(htmlSettings ? { authoringSettings: htmlSettings } : {}), visualSettings: opts.visualSettings, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre), storytelling: motionStorytelling(opts.storytelling), renameEntities: rename, ...(rename ? { renameMap } : {}) };
   };
   const renameErrors = (value: any): string[] => (rename ? motionRenameAnalysisIssues(value).map((issue) => MOTION_RESPONSE_TEXT.EXPECTED(issue.path, issue.expected, issue.actual)) : []);
-  const genreDirective = motionVideoGenreDirective(opts.videoGenre);
+  const genreDirective = opts.visualSettings?.mode === "remotion" ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) + ` Plan about ${chapterCount} chapters within ${target}s TOTAL, allowing stages to share chapters. At least ${opts.parts || 1} meaningful chapter ranges are needed for the requested parts; explain if the source cannot support them. No SOLO stages or candidate quota. Choose a single opening sequence and keep it throughout writing.` : motionVideoGenreDirective(opts.videoGenre);
   const fullRequest = withMotionResponsePrompt(
     MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
     ([WRITING.TEXT_TASK, prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, WRITING.PLAN, WRITING.BOOKENDS, SOURCE_READING_RULES, sourceDirections(source), briefNote, rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
       MR.MOTION_TEXT_SYMBOL_27 +
-      (opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
+      (htmlAuthoring ? `Canvas motion ${opts.characterMotion ? "enabled: describe the source-supported actions and camera in prose; AI will draw their full movement freely" : "disabled: plan an opening illustration; the host will freeze all content time"}. No pose transforms, moveTo coordinates, stock frames or simplified-contact restrictions.` : opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
       MR.MOTION_TEXT_SYMBOL_27 +
       (genreDirective ? MR.MOTION_TEXT_SYMBOL_27 + genreDirective : MR.MOTION_TEXT_EMPTY) +
       MR.MOTION_TEXT_SYMBOL_27 +
-      [MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)), motionStoryLanguageGuide(opts.language), motionVisualCapability(opts.visualSettings) || puppetPackPlanningCapabilities(opts.stylePreset)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      [MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)), motionStoryLanguageGuide(opts.language), opts.visualSettings?.mode === "remotion" ? `Selected visual style in prose: ${MOTION_HTML_STYLES[opts.visualSettings.profileId]}. Do not supply SVG, rig, body frames or numeric placement.` : motionVisualCapability(opts.visualSettings) || puppetPackPlanningCapabilities(opts.stylePreset)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
   );
   const legacy = !draft.core && draft.rejected > 0;
   const analysisErrors = (value: any): string[] => {
@@ -1564,7 +1573,7 @@ export const analyzeStory = async (
   };
   const core = (draft.core ||= { state: { rejected: draft.rejected, errors: draft.raw ? analysisErrors(draft.raw) : [] }, budget: legacy ? MOTION_ANALYSIS_ATTEMPTS : MOTION_PRODUCTION.CONTRACT_TOTAL_ATTEMPTS });
   let lastRaw: any = draft.raw ? (draft.raw = normalizeMotionAnalysisResponse(draft.raw)) : undefined;
-  const question = () => (lastRaw ? [motionAnalysisRepairPrompt(lastRaw, analysisErrors(lastRaw), transcript, rename ? motionRenameAnalysisIssues(lastRaw) : []), rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY, motionVideoGenreWritingProfile(opts.videoGenre)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) : fullRequest);
+  const question = () => (lastRaw ? [motionAnalysisRepairPrompt(lastRaw, analysisErrors(lastRaw), transcript, rename ? motionRenameAnalysisIssues(lastRaw) : []), rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY, htmlAuthoring ? genreDirective : motionVideoGenreWritingProfile(opts.videoGenre)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) : fullRequest);
   const contract: MotionAiResponseContract = {
     attempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
     routeAttempts: MOTION_PRODUCTION.CONTRACT_ROUTE_ATTEMPTS,
@@ -1591,7 +1600,7 @@ export const analyzeStory = async (
   const normalized = normalizeVideoDna(raw.videoDna, settings, videoDnaSourceKey(source))!;
   const videoDna = normalized.audienceProfile ? { ...normalized, audienceProfile: { ...normalized.audienceProfile, language: settings.language } } : normalized;
   opts.log?.(MR.MOTION_TEMPLATE_VIDEO_DNA(videoDna.format?.primary || MR.MOTION_TEXT_SYMBOL_25, videoDna.audienceProfile?.language || MR.MOTION_TEXT_EMPTY, videoDna.audienceProfile?.ageRange || MR.MOTION_TEXT_EMPTY, _.truncate(videoDna.narrativeDna?.narrativeVoice || MR.MOTION_TEXT_EMPTY, { length: 80 })));
-  return complete(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target, opts.videoGenre), raw), raw.renameMap));
+  return complete(finish(withMusicMood(normalizeAnalysis({ ...raw, characterMotion: opts.characterMotion === true, factual: videoDna.format?.factual ?? raw.factual, videoDna }, source, target, opts.videoGenre, htmlAuthoring), raw), raw.renameMap));
 };
 export const editScript = async (
   source: MotionStorySource,
@@ -1599,6 +1608,7 @@ export const editScript = async (
   beats: MotionBeat[],
   opts: { language: string; exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; scope?: string; focusIds?: string[]; supplemental?: boolean; reviewFindings?: MotionGenreReviewFinding[] },
 ): Promise<{ beats: MotionBeat[]; edit: NonNullable<MotionStoryScript["edit"]> }> => {
+  if (analysis.authoringSettings) return editMotionHtmlScript(source, analysis, beats, opts);
   const dna = analysis.videoDna;
   const writingProfile = opts.focusIds ? motionVideoGenreEditorProfile(analysis.videoGenre) : motionVideoGenreWritingProfile(analysis.videoGenre);
   const motifs = motionWritingProtectedMotifs(analysis);
@@ -1631,7 +1641,8 @@ export const editScript = async (
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
     const previous = stringifyJson(beats.slice(Math.max(0, beats.indexOf(lines[0]) - 2), beats.indexOf(lines[0])).map((beat) => beat.narration));
     const language = motionLanguage(opts.language).promptName;
-    const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.motionIntent !== undefined ? { motionIntent: beat.motionIntent } : {}), ...(visualIds.has(beat.id) ? { action: beat.action, scenePlan: beat.scenePlan } : {}), ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
+    const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.motionIntent !== undefined ? { motionIntent: beat.motionIntent } : {}),
+      ...(visualIds.has(beat.id) ? { action: beat.action, scenePlan: beat.scenePlan } : {}), ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
     const limit = editLimit(lines);
     const styleFocus = styleFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const overlapFocus = overlapFindings.filter((finding) => lines.some((line) => line.id === finding.id));
@@ -1704,7 +1715,8 @@ export const editScript = async (
       continue;
     }
     if (saved[beat.id].dropped && droppable(beat)) drop(beat, saved[beat.id].reason);
-    else if (saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances, { ...(saved[beat.id].action !== undefined ? { action: saved[beat.id].action } : {}), ...(saved[beat.id].motionIntent !== undefined ? { motionIntent: saved[beat.id].motionIntent } : {}), ...(saved[beat.id].scenePlan ? { scenePlan: saved[beat.id].scenePlan } : {}), ...(saved[beat.id].picture || {}) });
+    else if (saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances, { ...(saved[beat.id].action !== undefined ? { action: saved[beat.id].action } : {}),
+      ...(saved[beat.id].motionIntent !== undefined ? { motionIntent: saved[beat.id].motionIntent } : {}), ...(saved[beat.id].scenePlan ? { scenePlan: saved[beat.id].scenePlan } : {}), ...(saved[beat.id].picture || {}) });
   }
   const groups = motionPromptGroups(
     targets.filter((beat) => saved[beat.id]?.inputKey !== keys.get(beat.id)),
@@ -1797,7 +1809,7 @@ const foldAdultChapters = (chapters: MotionChapter[]): MotionChapter[] => {
   return _.map(out, (c, i) => ({ ...c, id: MOTION_TEMPLATE_C_2(String(i + 1)) }));
 };
 const OPENING_STYLES = [MR.MOTION_TEXT_A_CONCRETE_MOMENT_OR_IMAGE, MR.MOTION_TEXT_A_SURPRISING_FACT_OR_NUMBER, MR.MOTION_TEXT_A_CONTRAST_OR_A_TURN, MR.MOTION_TEXT_THE_REPORTED_WORDS_OR_ACTION_OF_A_PERSON_FROM_THE_SOURCE, MR.MOTION_TEXT_A_CALM_STATEMENT_THAT_CONTINUES_THE_PREVIOUS_THOUGHT, MR.MOTION_TEXT_A_QUESTION_ONLY_IF_IT_SOUNDS_NATURAL];
-export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number, videoGenre?: unknown): MotionStoryAnalysis => {
+export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number, videoGenre?: unknown, htmlAuthoring = false): MotionStoryAnalysis => {
   const declaredNeeds = Array.isArray(raw?.illustrationNeeds) ? raw.illustrationNeeds : undefined;
   const stageIds = motionVideoGenreStages(videoGenre);
   const stageOrder = Object.keys(stageIds);
@@ -1840,8 +1852,9 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
   const weighted = _.some(chapters, (c) => c.weight);
   const shares = _.map(chapters, (c, i) => (weighted ? (c.weight ?? 3) * (0.6 + 0.4 * Math.min(2.5, spans[i] / meanSpan)) : spans[i] / meanSpan));
   const total = _.sum(shares);
-  chapters = _.map(chapters, (c, i) => ({ ...c, targetSeconds: Math.max(c.mustKeep ? 25 : 15, Math.round((shares[i] / total) * target)) }));
-  if (!declaredNeeds?.length) chapters = motionMergeShortChapters(chapters, videoGenre);
+  let allocated = 0;
+  chapters = _.map(chapters, (c, i) => { const end = i === chapters.length - 1 ? Math.round(target) : Math.round((_.sum(shares.slice(0, i + 1)) / total) * target); const targetSeconds = end - allocated; allocated = end; return { ...c, targetSeconds }; });
+  if (!declaredNeeds?.length && !htmlAuthoring) chapters = motionMergeShortChapters(chapters, videoGenre);
   const used = new Set<string>();
   const cast: MotionCastMember[] = expandInitialCastNames(
     _.compact(
@@ -1956,7 +1969,7 @@ const chapterOutline = (analysis: MotionStoryAnalysis, chapter: MotionChapter, p
     .filter(Boolean)
     .join(MR.MOTION_TEXT_SYMBOL_27);
 };
-interface MotionChapterWriteOptions {
+export interface MotionChapterWriteOptions {
   repairState?: { rejected: number; errors: string[] };
   language: string;
   multiVoice?: boolean;
@@ -1980,6 +1993,7 @@ interface MotionChapterWriteOptions {
 }
 export const writeChapterBeats = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
   opts.signal?.throwIfAborted();
+  if (analysis.authoringSettings) return writeMotionHtmlChapter(source, analysis, chapter, opts);
   const expectedUnits = (chapter.targetSeconds || 120) * (opts.speechRate || motionLanguageRate(opts.language));
   const sourceText = sourceSlice(source, chapter.from, chapter.to);
   const inputKey = motionInputKey([chapter, analysis, sourceText, opts.language, opts.exec, opts.speechRate, opts.previous, opts.history, opts.previousSummary, opts.isFirst, opts.isLast]);
@@ -2303,6 +2317,7 @@ export const normalizeBeats = (rawBeats: any[], chapterId: string, analysis: Mot
     const visual = pickEnum(VISUALS, v?.visual, MOTION_TEXT_SCENE);
     const beat: MotionBeat = { id, chapterId, narration, visual };
     if (typeof v?.motionIntent === "string" && v.motionIntent.trim()) beat.motionIntent = v.motionIntent;
+    if (typeof v?.sceneTemplateDraft === "string") beat.sceneTemplateDraft = v.sceneTemplateDraft;
     const utterances = motionNarratorLines(normalizeMotionUtterances(b?.utterances, id, [MOTION_VOICE.NARRATOR, ...castKeys], beat.narration), motionNarratorCastKey(analysis), beat.narration);
     if (utterances.length) beat.utterances = _.map(utterances, (u) => ({ ...u, text: fullCastNames(u.text, analysis.cast) }));
     const sceneMood = normalizeMotionSceneMood(b?.sceneMood);

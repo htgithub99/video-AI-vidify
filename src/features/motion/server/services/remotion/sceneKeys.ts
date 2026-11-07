@@ -16,6 +16,7 @@ import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_SOUND_CONFIG } from "../../../../../constants/motionSound.js";
 import { PUPPET } from "../../../../../constants/motionPuppet.js";
+import { motionHtmlPlanCurrent } from "../../../../../lib/motionHtmlScene.js";
 const visualBeatData = (data: MotionBeat["data"]) => {
   const fields = Object.entries(data || {}).filter(([key]) => !([RUNTIME_VALUES.SOUNDEVENTS_663E13A7, RUNTIME_VALUES.SOUNDSILENCE_A9ADA975, MOTION_SOUND_CONFIG.DIRECTION_STATE, PUPPET.SOUND_FLAG] as string[]).includes(key));
   return fields.length ? Object.fromEntries(fields) : undefined;
@@ -97,8 +98,6 @@ export const remotionGroupPlanCurrent = (beats: MotionBeat[], analysis: MotionSt
   }
   return cursor === lines.length;
 };
-export const remotionStoryPlanCurrent = (script: MotionStoryScript, analysis: MotionStoryAnalysis) =>
-  script.beats.length > 0 && (script.gen?.remotion?.pacingRevision === PACING.REVISION ? remotionPlanGroups(script, analysis, script.gen?.remotion).every((group) => remotionGroupPlanCurrent(group.beats, analysis, script.gen?.remotion)) : script.beats.every((beat) => remotionBeatPlanCurrent(beat, analysis, script.gen?.remotion)));
 export const remotionCompositionKey = (scene: MotionRemotionScene, analysis: MotionStoryAnalysis, width: number, height: number, note?: string, state?: MotionRemotionState) =>
   motionInputKey(
     normalized([
@@ -129,6 +128,13 @@ export const remotionCompositionKey = (scene: MotionRemotionScene, analysis: Mot
 export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: MotionStoryAnalysis): "ready" | "partial" | "pending" | "outdated" | "invalid" => {
   const state = script.gen?.remotion;
   if (!state) return RT_SERVER.PENDING;
+  if (state.renderer === "html-canvas") {
+    if (stringifyJson(state.settings) !== stringifyJson(analysis.visualSettings || script.visualSettings)) return "outdated";
+    if (!motionHtmlPlanCurrent(script, analysis)) return "outdated";
+    const groups = motionVisualBeatGroups(script, 1001);
+    const scenes = groups.flatMap((group) => state.scenes[group.id] || []);
+    return groups.some((group) => !state.scenes[group.id]?.length) || scenes.some((scene) => !scene.html || !["ready", "rendered"].includes(scene.html.status)) ? "pending" : "ready";
+  }
   if (
     state.settings.mode !== RT_SHARED.REMOTION ||
     stringifyJson(normalized(grouped(state) ? withoutPacing(state.settings) : state.settings)) !== stringifyJson(normalized(grouped(state) ? withoutPacing(analysis.visualSettings || script.visualSettings || state.settings) : analysis.visualSettings || script.visualSettings || state.settings)) ||

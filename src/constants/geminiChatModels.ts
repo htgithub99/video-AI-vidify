@@ -23,6 +23,7 @@ export const GEMINI_MODEL_UI = {
   ARIA_CHECKED: "aria-checked",
   ARIA_SELECTED: "aria-selected",
   DATA_STATE: "data-state",
+  DATA_ACTIVE: "data-active",
   TRUE: "true",
   CHECKED: "checked",
   CHECK_ICON_SELECTOR: 'input:checked, [data-mat-icon-name="check"], [fonticon="check"], mat-icon',

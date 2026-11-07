@@ -1,6 +1,5 @@
 import type { MotionSpec } from "./motionVideo.js";
 import type { MotionSceneFormat, MotionSceneView } from "../constants/motionProfiles/framing.js";
-export type MotionVisualMode = "library" | "remotion";
 export type MotionRemotionProfile = "history" | "horror" | "explainer";
 export type MotionScenePacing = "few" | "medium" | "many";
 export interface MotionRenderBehavior {
@@ -125,6 +124,14 @@ export interface MotionSceneActionPlan {
   camera: string;
 }
 export interface MotionRemotionScene {
+  renderer?: "html-canvas";
+  sceneTemplate?: string;
+  continuityIn?: string;
+  continuityOut?: string;
+  soundEvents?: import("./motionVideo.js").MotionSoundEvent[];
+  html?: import("./motionHtmlScene.js").MotionHtmlArtifact;
+  htmlRequest?: import("./motionHtmlScene.js").MotionHtmlRequest;
+  htmlRebuildKey?: string;
   actionPlan?: MotionSceneActionPlan;
   /** AI-authored per-shot action direction from the scene planner; never a code-generated gait. */
   motionIntent?: string;
@@ -194,7 +201,6 @@ export interface MotionSceneAnimation {
   keyframes: { at: number; value: string | number }[];
   source?: "sway";
 }
-export type MotionMeasuredRect = MotionVisualRect & { local?: MotionVisualRect; flip?: boolean };
 export interface MotionSceneComposition {
   animationSource?: "ai-complete";
   duration?: number;
@@ -222,6 +228,9 @@ export interface MotionSceneDesign {
   continuityNotes?: string;
 }
 export interface MotionRemotionState {
+  renderer?: "html-canvas";
+  htmlPlanSources?: Record<string, string>;
+  htmlSfx?: boolean;
   version: number;
   settings: MotionVisualSettings;
   assets: Record<string, MotionVectorAsset>;
@@ -263,6 +272,7 @@ export interface MotionRemotionTimedScene extends Omit<MotionRemotionScene, "nod
   nodes: MotionRemotionPlacedNode[];
 }
 export interface MotionRemotionSpec {
+  renderer?: "html-canvas";
   engine: "remotion";
   version: number;
   title: string;

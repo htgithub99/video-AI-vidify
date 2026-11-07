@@ -407,6 +407,7 @@ export interface MotionRenameEntry {
   kind: MotionRenameKind;
 }
 export interface MotionStoryAnalysis {
+  authoringSettings?: import("./motionHtmlScene.js").MotionAuthoringSettings;
   writingPlan?: MotionWritingPlan;
   motifs?: string[];
   visualSettings?: import("./motionVisual.js").MotionVisualSettings;
@@ -457,6 +458,7 @@ export interface MotionVoiceDelivery {
   gain: number;
 }
 export interface MotionBeat {
+  sceneTemplateDraft?: string;
   sceneMood?: MotionSceneMood;
   utterances?: MotionUtterance[];
   placeName?: string;
@@ -738,6 +740,7 @@ export interface MotionSeriesState {
   carryGen?: Partial<MotionGenState>;
 }
 export interface MotionStoryScript {
+  authoringTiming?: { plannedDurationSeconds: number; estimatedSpeechSeconds: number; plannedPauseSeconds: number; speechRate: number; speechRateSource: "measured" | "language-default" };
   visualSettings?: import("./motionVisual.js").MotionVisualSettings;
   durationRepairStates?: Record<string, { rejected: number; errors: string[] }>;
   chapterDrafts?: Record<string, MotionChapterDraft>;
@@ -957,6 +960,12 @@ export interface MotionLogEntry {
   lines: string[];
 }
 export interface MotionAiExecution {
+  responseSchema?: "motion-html-chapter" | "motion-html-edit";
+  outputFormat?: "html";
+  requestId?: string;
+  submission?: { attempted: boolean; completed: boolean; abandoned?: boolean };
+  submissionChanged?: () => void;
+  responseReceived?: (text: string) => void;
   allowFallback?: boolean;
   singleResponse?: boolean;
   provider?: string;
@@ -1008,6 +1017,7 @@ export interface MotionStoryJobState {
   startedAt: number;
 }
 export interface MotionOutputSettings {
+  controlSnapshot?: Record<string, unknown>;
   version: 1;
   visualSettings: import("./motionVisual.js").MotionVisualSettings;
   renderBehavior: import("./motionVisual.js").MotionRenderBehavior;
@@ -1027,6 +1037,7 @@ export interface MotionOutputSettings {
   musicVolume: number;
 }
 export interface MotionProductionResult {
+  durationReport?: { selectedSeconds: number; plannedSeconds: number; audioSeconds: number; ratio: number; authoring?: MotionStoryScript["authoringTiming"] };
   outputSettings?: MotionOutputSettings;
   renderSettings?: { quality?: MotionQuality; encoder?: MotionEncoderPreference; musicMood?: string; musicVolume?: number };
   analysis?: MotionStoryAnalysis;

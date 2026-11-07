@@ -46,9 +46,6 @@ export const observeChatContextReceipts = (page: Page): ChatContextReceipts => {
     }
   };
   let room = conversation(page.url());
-  page.on(RT_SERVER.REQUEST, (request) => {
-    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) receipts.invalidate();
-  });
   page.on(RT_SERVER.FRAMENAVIGATED, (frame) => {
     if (frame !== page.mainFrame()) return;
     const next = conversation(frame.url());

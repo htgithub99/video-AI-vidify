@@ -12,7 +12,6 @@ export const motionLanguageCode = (value: unknown): MotionLanguageCode => {
   return alias || MOTION_LANGUAGE_DEFAULT;
 };
 export const motionLanguage = (value: unknown): MotionLanguageProfile => MOTION_LANGUAGES[motionLanguageCode(value)];
-export const motionLanguageIs = (value: unknown, code: MotionLanguageCode): boolean => motionLanguageCode(value) === code;
 export const motionSpeechUnits = (text: unknown): number => {
   const raw = String(text ?? "");
   const cjk = (raw.match(U.CJK) || []).length;

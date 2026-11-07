@@ -75,17 +75,4 @@ export const MOTION_STYLE_VALUES = {
   MODERATE: "moderate",
   RICH: "rich",
 } as const;
-export const MOTION_STYLE_SILHOUETTE = "silhouette" as const;
-export const MOTION_STYLE_SHADED = ["cel", "soft"] as string[];
-export const MOTION_STYLE_SKIN_MATERIAL = "skin" as const;
-export const MOTION_STYLE_PART_RE = {
-  hair: /(^|_)(hair|bangs?|fringe|bun|ponytail|braids?|toc)(_|$)/i,
-  nose: /(^|_)nose(_|$)/i,
-  brows: /(^|_)(brows?|eyebrows?)(_|$|l|r)/i,
-  ears: /(^|_)ears?(_|$|l|r)/i,
-  arms: /(^|_)(arms?|forearms?|sleeves?)(_|$|l|r)/i,
-  hands: /(^|_)(hands?|fingers?|fists?|palms?|thumbs?)(_|$|l|r)/i,
-  legs: /(^|_)(legs?|thighs?|shins?|feet|foot|shoes?|boots?)(_|$|l|r)/i,
-} as Record<string, RegExp>;
-export const MOTION_STYLE_LOG = { ENFORCED: (cast: string, items: string): string => `${cast}: ẩn bộ phận style không có / chỉnh màu mặt theo style (${items})`, HIDDEN_PART: (part: string): string => `ẩn ${part}`, FACE_FILL: (hex: string): string => `màu mặt ${hex}` } as const;
 export const MOTION_STYLE_FRAMING = { HEADS_TOP_HALF: "heads_top_half" } as const;

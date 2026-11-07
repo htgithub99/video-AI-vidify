@@ -55,7 +55,7 @@ try {
       record("compile", body);
       return { spec: { engine: body.visualSettings.mode === "remotion" ? "remotion" : "canvas", title: "Settings audit", duration: 3, fps: body.fps, aspect: body.aspect, scenes: [], subtitles: body.subtitles ? [{ start: 0, end: 3, text: "Audit" }] : [] }, missing: [], voiceStale: false, audioPreviewId: "audit-mix.wav", sfxId: "audit-sfx.wav" };
     }) as any,
-    startMotionVideoRenderInput: ((body: any) => { record("render", body); return start("render", { id: "audit-output", videoUrl: "/audit.mp4" }); }) as any,
+    startMotionVideoRenderInput: ((body: any) => { record("render", body); return start("render", { id: "audit-output", videoUrl: "/audit.mp4", aspect: body.options.aspect, quality: body.options.quality, fps: body.options.fps, durationSeconds: body.spec.duration, resolvedSettings: { subtitles: !!body.spec.subtitles?.length } }); }) as any,
     getStoryJob: ((id: string) => structuredClone(jobs.get(id))) as any,
     getMotionJob: ((id: string) => structuredClone(jobs.get(id))) as any,
     cancelStoryJob: () => false, cancelMotionJob: () => false,
@@ -120,7 +120,7 @@ try {
   assert.deepEqual(calls.slice(beforeVoiceRecheck).map((c) => c.stage), ["voice", "compile", "render"], "Resume rechecks unverified audio without reauthoring script or scenes");
   const output = { at: new Date().toISOString(), scope: "Actual backend runner with injected AI/media dependencies; temp production store; no live AI/TTS/render", matrix: records, analyzeOnly: "analyze only", remotionGpu: "rejected", resume: "saved input retained, only clear-chat updated; completed stages reused", resumeStages: calls.slice(beforeResume, beforeVoiceRecheck).map((c) => c.stage), voiceRecheckStages: calls.slice(beforeVoiceRecheck).map((c) => c.stage), stageNames: P.STAGES };
   const out = path.resolve("scratch/motion-settings-fixes-20261106"); fs.mkdirSync(out, { recursive: true }); fs.writeFileSync(path.join(out, "runner-verification.json"), JSON.stringify(output, null, 2));
-  console.log(JSON.stringify(output, null, 2));
+  process.stdout.write(JSON.stringify(output, null, 2) + "\n");
 } finally {
   if (priorStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR; else process.env.VIDIFY_STORAGE_DIR = priorStorage;
   if (priorData === undefined) delete process.env.APP_DATA_DIR; else process.env.APP_DATA_DIR = priorData;

@@ -211,7 +211,7 @@ const seriesState = (full: MotionStoryAnalysis, parts: number | undefined, langu
   return { ...analyzedState(started.analysis, look), series: started.series };
 };
 const chainOn = (s: PersistedState): boolean => !s.automationPaused && (s.autoContinue !== false || s.autoRun === true);
-const exportOn = (s: PersistedState): boolean => !s.automationPaused && (s.autoExport === true || s.autoRun === true);
+const exportOn = (s: PersistedState): boolean => !s.automationPaused && s.autoExport === true;
 export interface MotionScenesRequest {
   scenes?: string[];
   beats?: string[];
@@ -219,7 +219,7 @@ export interface MotionScenesRequest {
   restart?: boolean;
   restyle?: boolean;
   note?: string;
-  /** Grants failed scenes a fresh 3-request budget; accepted scenes are kept. */
+  /** Retries failed scenes while keeping accepted scenes. */
   retryFailed?: boolean;
 }
 const compileStateKey = motionCompileStateKey;
@@ -852,6 +852,7 @@ export function useMotionStudio() {
               gen: resume || chapterIds?.length ? now.script?.gen : undefined,
               carryGen: carryGen || (now.series?.index ? now.series.carryGen : undefined),
               aspect: now.aspect,
+              sfx: now.sfx,
               resume,
             },
             (partial) => partial?.beats && patch({ script: partial }),
@@ -971,7 +972,8 @@ export function useMotionStudio() {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, ...motionVisualRequest(now), characterMotion: now.characterMotion, review: now.aiReview !== false, autoVoice: false, sfx: now.sfx, previews: !exportOn(now), ...req },
+            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, ...motionVisualRequest(now), characterMotion: now.characterMotion, review: now.aiReview !== false,
+              autoVoice: false, sfx: now.sfx, previews: !exportOn(now), ...req, rebuildKey: req.restart || req.scenes?.length ? crypto.randomUUID() : undefined },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           if (!flowCancelled.current && !stateRef.current.automationPaused) requestVoice(result, analysis);
@@ -999,6 +1001,25 @@ export function useMotionStudio() {
     [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
   const voicePending = useRef<{ signature: string; asrCheck: boolean; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
+  useEffect(() => {
+    const pending = new Set<string>();
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const onError = (event: Event) => {
+      const detail = (event as CustomEvent<{ sceneId: string; hash: string }>).detail;
+      if (!detail?.sceneId || pending.has(detail.sceneId)) return;
+      pending.add(detail.sceneId);
+      const retry = () => {
+        const now = stateRef.current;
+        const scene = Object.values(now.script?.gen?.remotion?.scenes || {}).flat().find((item) => item.id === detail.sceneId);
+        if (jsonUtils.getItem(MOTION_STORY_CONFIG.STORY_STOP_STORAGE_KEY, false) || !scene?.html || scene.html.hash !== detail.hash) { pending.delete(detail.sceneId); return; }
+        if (sceneBuildPending.current || flowDepth.current) { const timer = setTimeout(() => { timers.delete(timer); retry(); }, 1000); timers.add(timer); return; }
+        void buildScenes({ scenes: [detail.sceneId] }).finally(() => pending.delete(detail.sceneId));
+      };
+      retry();
+    };
+    window.addEventListener("motion-html-execution-error", onError);
+    return () => { window.removeEventListener("motion-html-execution-error", onError); for (const timer of timers) clearTimeout(timer); };
+  }, [buildScenes]);
   const generateVoice = useCallback(
     async (scriptOverride?: MotionStoryScript): Promise<MotionVoiceTrack | undefined> => {
       const snapshot = stateRef.current,

@@ -9,6 +9,12 @@ const popupOpens = (value: string | null): boolean => (C.POPUP_VALUES as readonl
 export const clickCurrentChatRetry = async (page: Page, signal?: AbortSignal): Promise<boolean> => {
   signal?.throwIfAborted();
   if (page.isClosed()) return false;
+  const snackbarRetry = page.locator(C.SNACKBAR_SELECTOR).getByRole(C.BUTTON, { name: C.RETRY_NAME }).filter({ visible: true }).last();
+  if ((await snackbarRetry.count()) && (await snackbarRetry.isEnabled())) {
+    signal?.throwIfAborted();
+    await snackbarRetry.click({ timeout: C.RETRY_TIMEOUT });
+    return true;
+  }
   const containers = page.locator(C.CONTAINER_SELECTOR).filter({ visible: true });
   const turn = (await containers.count()) ? containers.last() : page.locator(C.TURN_SELECTOR).filter({ visible: true }).last();
   if (!(await turn.count())) return false;
@@ -31,23 +37,30 @@ export const clickCurrentChatRetry = async (page: Page, signal?: AbortSignal): P
   if ((await trigger.count()) && (isGeminiTrigger || !(await retry.count()) || popupOpens(await trigger.getAttribute(C.ARIA_HASPOPUP)))) {
     if (!(await trigger.isEnabled())) return false;
     const triggerButton = trigger.locator(C.BUTTON).last();
-    if ((await triggerButton.count()) && !(await triggerButton.isEnabled())) return false;
+    if ((await triggerButton.count()) && (!(await triggerButton.isEnabled()) || (await triggerButton.getAttribute(C.ARIA_DISABLED)) === "true")) return false;
     if ((await trigger.getAttribute(C.ARIA_DISABLED)) === "true") return false;
-    const opensMenu = popupOpens(await trigger.getAttribute(C.ARIA_HASPOPUP));
     const existingMenu = await trigger.getAttribute(C.ARIA_CONTROLS);
+    const explicitPopup = popupOpens(await trigger.getAttribute(C.ARIA_HASPOPUP)) || (await trigger.getAttribute(C.GEM_MENU_TRIGGER)) !== null || Boolean(existingMenu);
+    const classPopup = ((await trigger.getAttribute("class")) || "").includes(C.MAT_MENU_TRIGGER_CLASS);
+    const opensMenu = explicitPopup || classPopup;
     signal?.throwIfAborted();
     await trigger.click({ timeout: C.RETRY_TIMEOUT });
     // Gemini uses a direct regenerate action on some responses and a menu on refusals.
     if (isGeminiTrigger && !opensMenu) return true;
-    const controlledMenu = existingMenu || (await trigger.getAttribute(C.ARIA_CONTROLS, { timeout: C.RETRY_TIMEOUT }));
-    const menu = controlledMenu ? page.locator(`[id=${JSON.stringify(controlledMenu)}]`) : page.locator(C.RETRY_MENU_SELECTOR);
-    retry = menu.getByRole(C.MENU_ITEM_ROLE, { name: C.RETRY_NAME }).or(menu.getByRole(C.BUTTON, { name: C.RETRY_NAME })).filter({ visible: true }).last();
+    const controlledMenu = existingMenu || (await trigger.getAttribute(C.ARIA_CONTROLS, { timeout: C.RETRY_TIMEOUT }).catch(() => null));
+    const menu = controlledMenu ? page.locator(`[id=${JSON.stringify(controlledMenu)}]`).or(page.locator(C.RETRY_MENU_SELECTOR)) : page.locator(C.RETRY_MENU_SELECTOR);
+    retry = menu
+      .getByRole(C.MENU_ITEM_ROLE, { name: C.RETRY_NAME })
+      .or(menu.getByRole(C.BUTTON, { name: C.RETRY_NAME }))
+      .or(menu.locator(C.GEMINI_RETRY_OPTION_SELECTOR))
+      .filter({ visible: true })
+      .last();
     try {
       await retry.waitFor({ state: "visible", timeout: C.RETRY_TIMEOUT });
     } catch {
       signal?.throwIfAborted();
-      // A provider may expose a direct Retry rather than a menu trigger.
-      return false;
+      // If Gemini attached a menu trigger class without an active popup menu, the click already triggered regeneration.
+      return isGeminiTrigger && !explicitPopup;
     }
   }
   if (!(await retry.count()) || !(await retry.isEnabled())) return false;

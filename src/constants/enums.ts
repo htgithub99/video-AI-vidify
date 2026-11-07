@@ -1,9 +1,4 @@
-export enum EXPORT_TYPES {
-  CAPCUT = "capcut",
-  PREMIERE = "premiere",
-  ZIP = "zip",
-  SRT = "srt",
-}
+
 export enum LogEvent {
   FAILED_LOAD_VOICES = "FAILED_LOAD_VOICES",
   BATCH_SCENE_FAILED = "BATCH_SCENE_FAILED",
@@ -34,15 +29,6 @@ export enum LogEvent {
   ERROR_FFMPEG_MERGE = "ERROR_FFMPEG_MERGE",
   UNEXPECTED_ERROR_MERGE_AUDIO = "UNEXPECTED_ERROR_MERGE_AUDIO",
 }
-export enum ConsoleLogType {
-  LOG = "log",
-  INFO = "info",
-  WARN = "warn",
-  ERROR = "error",
-  DEBUG = "debug",
-  SUCCESS = "success",
-  PENDING = "pending",
-}
 export enum ErrorMessage {
   PROJECT_LOAD_ERROR = "Lỗi tải chi tiết dự án",
   FAILED_TO_FETCH = "Failed to fetch",
@@ -50,22 +36,6 @@ export enum ErrorMessage {
   NO_AUDIO_CHUNKS_PROVIDED = "No audio chunks provided",
   FAILED_TO_READ_MERGED_AUDIO_FILE = "Failed to read merged audio file",
   INTERNAL_SERVER_ERROR = "Internal server error: ",
-}
-export enum VoicePresetId {
-  PRESET_VI_BAC_FEMALE = "preset-vi-bac-female",
-  PRESET_VI_BAC_MALE = "preset-vi-bac-male",
-  PRESET_VI_TRUNG_FEMALE = "preset-vi-trung-female",
-  PRESET_VI_TRUNG_MALE = "preset-vi-trung-male",
-  PRESET_VI_NAM_FEMALE = "preset-vi-nam-female",
-  PRESET_VI_NAM_MALE = "preset-vi-nam-male",
-  PRESET_VI_KID = "preset-vi-kid",
-  ELEVENLABS_CLOUD_VI = "elevenlabs-cloud-vi",
-  AZURE_CLOUD_VI_HOAIMY = "azure-cloud-vi-hoaimy",
-  AZURE_CLOUD_VI_NAMMINH = "azure-cloud-vi-namminh",
-  GOOGLE_CLOUD_VI_A = "google-cloud-vi-a",
-  GOOGLE_CLOUD_VI_B = "google-cloud-vi-b",
-  OPENAI_TTS_ALLOY = "openai-tts-alloy",
-  OPENAI_TTS_NOVA = "openai-tts-nova",
 }
 export enum SplitStrategy {
   MIXED_SENTENCES = "mixed_sentences",
@@ -113,28 +83,12 @@ export enum UltraStreamLogType {
   LOG = "log",
   ERROR_LOG = "error_log",
 }
-export enum LogLevel {
-  INFO = "info",
-  SUCCESS = "success",
-  WARN = "warn",
-  ERROR = "error",
-}
 export enum SceneDensity {
   THEO_TU = "THEO_TU",
   CAU_NGAN = "CAU_NGAN",
   CAU_KET_HOP = "CAU_KET_HOP",
   CAU_DAI = "CAU_DAI",
   THEO_DOAN = "THEO_DOAN",
-}
-export enum PromptStatus {
-  IDLE = "idle",
-  RUNNING = "running",
-  SUCCESS = "success",
-  ERROR = "error",
-}
-export enum ThumbnailActionPosition {
-  TOP = "top",
-  EMPTY = "empty",
 }
 export enum AppTheme {
   LIGHT = "light",
@@ -143,10 +97,6 @@ export enum AppTheme {
 export enum AppLanguage {
   VI = "vi",
   EN = "en",
-}
-export enum StoryboardSourceMode {
-  AUDIO = "audio",
-  SCRIPT = "script",
 }
 export enum FileEncoding {
   UTF8 = "utf-8",
@@ -160,16 +110,6 @@ export enum VideoQuality {
   HIGH = "high",
   HIGHEST = "highest",
   ULTRA_4K = "4k",
-}
-export enum ResourceSourceMode {
-  ZIP = "ZIP",
-  SPLIT = "SPLIT",
-  CURRENT = "CURRENT",
-}
-export enum FolderSelectionType {
-  PARENT = "PARENT",
-  IMAGES = "IMAGES",
-  VOICES = "VOICES",
 }
 export enum AppTab {
   PROJECTS = "projects",

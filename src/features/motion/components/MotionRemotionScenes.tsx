@@ -30,7 +30,9 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
         {progress.entries.slice(pagination.start, pagination.end).map((entry, offset) => {
           const index = pagination.start + offset;
           const title = text.scene(index + 1);
-          const status = entry.status === RT_SHARED.FAILED ? text.sceneFailed : busy ? text.sceneWaiting : text.sceneStopped;
+          const htmlStatus = entry.scene?.htmlRequest?.status;
+          const htmlLabel = htmlStatus === "waiting_external" ? lang === "en" ? "Waiting for provider / previous request" : "Chờ provider / phản hồi yêu cầu cũ" : htmlStatus === "retry_wait" ? lang === "en" ? "Waiting to retry" : "Đang chờ thử lại" : lang === "en" ? "Generating HTML" : "Đang tạo HTML";
+          const status = entry.scene?.renderer === "html-canvas" && busy ? htmlLabel : entry.status === RT_SHARED.FAILED ? text.sceneFailed : busy ? text.sceneWaiting : text.sceneStopped;
           return (
             <div key={entry.key} className={S.CARD}>
               {entry.preview && entry.scene ? (
@@ -59,6 +61,9 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
                   {text.sceneScore(entry.score)}
                 </p>
               )}
+              {entry.scene?.renderer === "html-canvas" && entry.scene.htmlRequest && <p className={S.REASON} title={entry.scene.htmlRequest.error}>
+                {lang === "en" ? "Attempt" : "Lượt tạo"} {entry.scene.htmlRequest.attempt}{entry.preview ? "" : entry.scene.htmlRequest.error ? ` · ${entry.scene.htmlRequest.error}` : ""}
+              </p>}
               <p className={S.CAPTION} title={entry.narration || entry.scene?.purpose}>
                 {title}
                 {RT_MOTION.CAPTION_SEPARATOR}

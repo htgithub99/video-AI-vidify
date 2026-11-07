@@ -129,7 +129,6 @@ export const VIDEO_EXPORT_CONSTANTS = {
   MAX_POPULAR_ITEMS: 4,
   MAX_DEFAULT_QUICK_OPTIONS: 5,
 } as const;
-export const VIDEO_EXPORT_DIMENSIONS: Record<VideoExportAspectRatio, { width: number; height: number }> = { [VideoExportAspectRatio.HORIZONTAL_16_9]: { width: 1920, height: 1080 }, [VideoExportAspectRatio.VERTICAL_9_16]: { width: 1080, height: 1920 }, [VideoExportAspectRatio.SQUARE_1_1]: { width: 1080, height: 1080 } };
 export const VIDEO_EXPORT_RESOLUTIONS: Record<VideoExportAspectRatio, Record<VideoExportResolution, { width: number; height: number }>> = {
   [VideoExportAspectRatio.HORIZONTAL_16_9]: { [VideoExportResolution.RES_720P]: { width: 1280, height: 720 }, [VideoExportResolution.RES_1080P]: { width: 1920, height: 1080 }, [VideoExportResolution.RES_2K]: { width: 2560, height: 1440 }, [VideoExportResolution.RES_4K]: { width: 3840, height: 2160 } },
   [VideoExportAspectRatio.VERTICAL_9_16]: { [VideoExportResolution.RES_720P]: { width: 720, height: 1280 }, [VideoExportResolution.RES_1080P]: { width: 1080, height: 1920 }, [VideoExportResolution.RES_2K]: { width: 1440, height: 2560 }, [VideoExportResolution.RES_4K]: { width: 2160, height: 3840 } },

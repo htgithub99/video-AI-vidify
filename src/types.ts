@@ -1039,10 +1039,6 @@ export enum ThumbnailTextMode {
   Headline = "headline",
   NoText = "no_text",
 }
-export enum StyleReferencePurpose {
-  Scene = "scene",
-  Thumbnail = "thumbnail",
-}
 export enum ImageFocusMode {
   Default = "default",
   Portrait = "portrait",
@@ -1065,28 +1061,23 @@ export enum GeminiChatModelName {
 }
 export enum GeminiChatSelector {
   Response = "model-response",
-  Input = 'div.ql-editor[contenteditable="true"]',
-  InputTextarea = 'div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]',
-  ModelPickerButton = 'button[data-test-id="bard-mode-menu-button"], button.input-area-switch',
-  ModelMenu = '[data-test-id="gem-mode-menu"]',
-  ModelOption = 'gem-menu-item[role="menuitem"][data-test-id^="bard-mode-option-"]',
-  ModelLabel = ".label",
-  PlusButton = 'button[aria-label*="tải lên" i], button[aria-label*="thêm tệp" i], button[aria-label*="upload" i], button[aria-label*="add files" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button, gem-icon-button[data-test-id="action-menu-button"] button, gem-icon-button[data-test-id="action-menu-button"], button:has(mat-icon[fonticon="add"])',
-  PlusMenuOptions = '.cdk-overlay-pane button, mat-action-list button, [role="menuitem"], [role="menuitemcheckbox"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item',
-  ActiveGenerateType = 'gem-button[data-test-id="deselect-drawer-item-gem-button"], button, [role="button"], [aria-label], [data-test-id], .input-area-switch',
-  SendButton = 'button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button',
-  GenerationBusy = "gem-icon-button.send-button.stop",
-  ResponseGenerationBusy = '.model-response-label-announcer[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating)',
+  Input = 'rich-textarea [contenteditable="true"]:not(.ql-clipboard), div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]:not(.ql-clipboard)',
+  InputTextarea = 'rich-textarea [contenteditable="true"]:not(.ql-clipboard), div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]:not(.ql-clipboard)',
+  ModelPickerButton = 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], bard-mode-switcher button, button.input-area-switch',
+  ModelMenu = '[data-test-id="gem-mode-menu"], gem-menu[role="menu"]:visible, .cdk-overlay-pane [role="menu"]:visible, [role="menu"]:visible',
+  ModelOption = 'gem-menu-item[role="menuitem"][data-test-id^="bard-mode-option-"], gem-menu-item[role="menuitem"], [role="menuitemradio"], [role="menuitem"], [role="option"]',
+  ModelLabel = ".label, .title-and-description, .mode-title, [data-test-id='logo-pill-label-container'], .picker-primary-text",
+  PlusButton = 'simplified-input-menu button, button[aria-label*="Nội dung tải lên" i], button[aria-label*="tải lên" i], button[aria-label*="thêm tệp" i], button[aria-label*="upload" i], button[aria-label*="add files" i], gem-icon-button:has(mat-icon[fonticon="plus"]) button, button:has(mat-icon[fonticon="plus"]), button:has(mat-icon[data-mat-icon-name="plus"]), gem-icon-button[data-test-id="action-menu-button"] button, gem-icon-button[data-test-id="action-menu-button"], button:has(mat-icon[fonticon="add"]), button:has(mat-icon[data-mat-icon-name="add"])',
+  PlusMenuOptions = 'gem-menu-item[role="menuitem"], .cdk-overlay-pane button, mat-action-list button, [role="menuitem"], [role="menuitemcheckbox"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item',
+  ActiveGenerateType = 'gem-button[data-test-id="deselect-drawer-item-gem-button"], button[data-test-id="deselect-drawer-item-gem-button"], button, [role="button"], [aria-label], [data-test-id], .input-area-switch',
+  SendButton = '[data-test-id="send-button-container"] button, button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button, button:has(mat-icon[fonticon="arrow_upward"]), button:has(mat-icon[data-mat-icon-name="arrow_upward"])',
+  GenerationBusy = 'gem-icon-button.send-button.stop, [data-test-id="stop-button"], [data-testid="stop-button"], button[aria-label*="Dừng" i]:not([disabled]), button[aria-label*="Stop" i]:not([disabled])',
+  ResponseGenerationBusy = '.model-response-label-announcer[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating), thinking-overlay, async-processing-chip',
 }
 export const GEMINI_CHAT_MEDIA_SELECTORS = { image: SOURCE_TEXT_DOWNLOAD_GENERATED_IMAGE_BUTTON_DATA_TEST, video: SOURCE_TEXT_GENERATED_VIDEO_VIDEO_SRC_GENERATED_VIDEO, all: SOURCE_TEXT_IMG_VIDEO } as const;
 export enum GeminiChatTextOption {
   CreateVideoVi = "Tạo video",
   CreateImageVi = "Tạo hình ảnh",
-}
-export enum ImageModelLabel {
-  Veo3 = "VEO 3.0 FLUID",
-  Imagen = "IMAGEN 3 BATCH",
-  LabsSandbox = "GEMINI IMAGES · NANO BANANA 2",
 }
 export enum BatchDelayOption {
   Default = "default",

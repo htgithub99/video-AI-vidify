@@ -305,7 +305,8 @@ import { distributeItemsByContinuity } from "../../services/imageGenerationConti
 import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
-import { CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { CHAT_ROOM_RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
 import { isBackupChromeActive, registerChromeBackupSwitch, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure } from "./chromeBackupService.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { findNativeChrome } from "./nativeProxyBrowser.js";
@@ -1575,30 +1576,6 @@ export async function humanType(page: Page, text: string) {
     await delayAsync(delay);
   }
 }
-export const getImgIdSafe = (url: string): string => {
-  if (!url) return XRT.EMPTY;
-  try {
-    const baseUrl = _.startsWith(url, COMMON_STRINGS.SLASH_PREFIX) ? COMMON_STRINGS.RELATIVE_URL_PARSE_BASE : undefined;
-    const u = new URL(url, baseUrl);
-    let foundId: string = XRT.EMPTY;
-    const hasId = _.some(URL_CONSTANTS.ID_PARAMS, (param) => {
-      const idValue = u.searchParams.get(param);
-      if (idValue) {
-        foundId = idValue;
-        return true;
-      }
-      return false;
-    });
-    if (hasId) return foundId;
-    _.forEach(URL_CONSTANTS.IGNORED_PARAMS, (p) => u.searchParams.delete(p));
-    return u.toString();
-  } catch (error) {
-    appError(BACKEND_MESSAGES.PARSE_URL_ERR, error);
-    const match = url.match(IMAGE_ID_URL_REGEX);
-    if (match && match[2]) return match[2];
-    return url;
-  }
-};
 export const browserGetImgIdSafeStr = SOURCE_TEMPLATE_FUNCTION_URL_IF_URL_RETURN_TRY(`${COMMON_STRINGS.SLASH_PREFIX}`, `${COMMON_STRINGS.RELATIVE_URL_PARSE_BASE}`, `${jsonUtils.safeStringify(URL_CONSTANTS.ID_PARAMS)}`, `${jsonUtils.safeStringify(URL_CONSTANTS.IGNORED_PARAMS)}`, `${IMAGE_ID_URL_REGEX.toString()}`);
 export class SimpleMutex {
   private queue: (() => void)[] = [];
@@ -3343,11 +3320,13 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
         if (!browserInstance) {
           browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
           releaseActivity = await acquireGeminiActivityUse(browserInstance.context);
+          const openPages = browserInstance.context.pages().filter((candidate) => !candidate.isClosed());
           if (options.forceNewPage) {
             activePage = await browserInstance.context.newPage();
-            ownsActivePage = true;
+            ownsActivePage = openPages.length > 0;
           } else {
-            activePage = browserInstance.page;
+            activePage = !browserInstance.page.isClosed() ? browserInstance.page : openPages[0] || (await browserInstance.context.newPage());
+            browserInstance.page = activePage;
           }
           if (_.includes(activePage.url(), SOURCE_TEXT_GROK_COM)) {
             activePage = await browserInstance.context.newPage();
@@ -3387,7 +3366,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
         continue;
       }
       let reloadAttempts = SecurityConstants.ZERO;
-      const maxReloadAttempts = _.isEqual(visualConfig.generateType, GenerateType.Video) ? 1 : 2;
+      const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
       while (reloadAttempts < maxReloadAttempts && !success) {
         reloadAttempts++;
         if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
@@ -3432,7 +3411,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
             await activePage!.keyboard.press(SOURCE_TEXT_ENTER);
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
           }
-          base64Result = await waitForDownloadAndGetBase64(activePage!, visualConfig, initialResponseCount);
+          base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig, initialResponseCount);
           if (base64Result) {
             success = true;
             consecutiveGeminiErrors = 0;
@@ -3448,7 +3427,6 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
           appError(BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED.replace(SOURCE_TEXT_0_2, reloadAttempts.toString()).replace(SOURCE_TEXT_1_3, roomAttempts.toString()).replace(SOURCE_TEXT_2_2, errorMessage));
           if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(errorMessage)) {
             terminalWarning = errorMessage;
-            throw error;
           }
         }
       }
@@ -3458,7 +3436,11 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
     if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(failureReason)) terminalWarning = failureReason;
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace(SOURCE_TEXT_0_2, failureReason));
   } finally {
-    if (ownsActivePage && activePage && !activePage.isClosed()) await activePage.close().catch(() => undefined);
+    if (ownsActivePage && activePage && !activePage.isClosed()) {
+      const openPages = activePage.context().pages().filter((candidate) => !candidate.isClosed());
+      if (openPages.length > 1) await activePage.close().catch(() => undefined);
+      else if (browserInstance) browserInstance.page = activePage;
+    }
     releaseActivity?.();
     if (browserInstance) {
       if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
@@ -3700,7 +3682,7 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_ROOM_REUSE.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()));
           }
           let reloadAttempts = SecurityConstants.ZERO;
-          const maxReloadAttempts = _.isEqual(itemVisualConfig.generateType, GenerateType.Video) ? 1 : 2;
+          const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
           while (reloadAttempts < maxReloadAttempts && !success) {
             reloadAttempts++;
             if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
@@ -3749,7 +3731,7 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
                 await page.keyboard.press(SOURCE_TEXT_ENTER);
                 appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()).replace(SOURCE_TEXT_1_3, SOURCE_TEMPLATE_SYMBOL_20(`${item.sceneId}`, `${BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER}`)));
               }
-              base64Result = await waitForDownloadAndGetBase64(page, itemVisualConfig, initialResponseCount);
+              base64Result = await waitForGeminiMediaWithRetryClicks(page, itemVisualConfig, initialResponseCount);
               if (base64Result) {
                 success = true;
                 batchPagesErrors.set(page, 0);
@@ -3769,7 +3751,6 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
               );
               if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(errorMessage)) {
                 terminalWarning = errorMessage;
-                throw err;
               }
             }
           }
@@ -3890,10 +3871,17 @@ const isGeminiModelOptionSelected = (option: Locator): Promise<boolean> =>
     .evaluate(
       (element, browserPayload) => {
         const { SOURCE_TEXT_SYMBOL_23 } = browserPayload.texts;
-        const selectedClass = browserPayload.payload;
-        return element.classList.contains(selectedClass) || Boolean(element.querySelector(`${SOURCE_TEXT_SYMBOL_23}${selectedClass}`));
+        const { selectedClass, activeAttr, activeVal } = browserPayload.payload;
+        return (
+          element.classList.contains(selectedClass) ||
+          element.classList.contains("active") ||
+          element.getAttribute(activeAttr) === activeVal ||
+          element.getAttribute("aria-checked") === activeVal ||
+          element.getAttribute("aria-selected") === activeVal ||
+          Boolean(element.querySelector(`${SOURCE_TEXT_SYMBOL_23}${selectedClass}, .active, [${activeAttr}="${activeVal}"], [aria-checked="${activeVal}"], [data-mat-icon-name="check"], [fonticon="check"], input:checked`))
+        );
       },
-      { payload: GEMINI_MODEL_SELECTION_CONFIG.SELECTED_CLASS, texts: { SOURCE_TEXT_SYMBOL_23 } },
+      { payload: { selectedClass: GEMINI_MODEL_SELECTION_CONFIG.SELECTED_CLASS, activeAttr: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_ATTRIBUTE, activeVal: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_VALUE }, texts: { SOURCE_TEXT_SYMBOL_23 } },
     )
     .catch(() => false);
 const waitForGeminiModelOptionSelected = async (option: Locator): Promise<boolean> => {
@@ -3904,17 +3892,20 @@ const waitForGeminiModelOptionSelected = async (option: Locator): Promise<boolea
   }
   return false;
 };
+const readGeminiOptionLabel = async (option: Locator): Promise<string> => {
+  const labelNode = option.locator(GeminiChatSelector.ModelLabel).first();
+  if ((await labelNode.count().catch(() => 0)) > 0) {
+    const text = _.trim(await labelNode.textContent().catch(() => XRT.EMPTY));
+    if (text) return text;
+  }
+  return _.trim(await option.textContent().catch(() => XRT.EMPTY));
+};
 const findGeminiModelOption = async (menu: Locator, modelRegex: RegExp): Promise<Locator | null> => {
   const options = menu.locator(GeminiChatSelector.ModelOption);
   const optionCount = await options.count();
   for (let index = SecurityConstants.ZERO; index < optionCount; index++) {
     const option = options.nth(index);
-    const label = _.trim(
-      await option
-        .locator(GeminiChatSelector.ModelLabel)
-        .textContent()
-        .catch(() => XRT.EMPTY),
-    );
+    const label = await readGeminiOptionLabel(option);
     const matches = modelRegex.test(label);
     modelRegex.lastIndex = SecurityConstants.ZERO;
     if (matches) return option;
@@ -3927,12 +3918,7 @@ const getSelectedGeminiModelLabel = async (menu: Locator): Promise<string> => {
   for (let index = SecurityConstants.ZERO; index < optionCount; index++) {
     const option = options.nth(index);
     if (await isGeminiModelOptionSelected(option)) {
-      return _.trim(
-        await option
-          .locator(GeminiChatSelector.ModelLabel)
-          .textContent()
-          .catch(() => XRT.EMPTY),
-      );
+      return await readGeminiOptionLabel(option);
     }
   }
   return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
@@ -3961,6 +3947,15 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     return false;
   }
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_MODEL.replace(SOURCE_TEXT_0_2, targetModelText));
+  const initialButtonLabel = _.trim(await modelPickerBtn.innerText().catch(() => XRT.EMPTY));
+  const buttonMatchesTarget = targetModelRegex.test(initialButtonLabel);
+  targetModelRegex.lastIndex = SecurityConstants.ZERO;
+  const buttonMatchesFallback = Boolean(fallbackModelRegex?.test(initialButtonLabel));
+  if (fallbackModelRegex) fallbackModelRegex.lastIndex = SecurityConstants.ZERO;
+  if (buttonMatchesTarget || buttonMatchesFallback) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_CORRECT);
+    return true;
+  }
   for (let attempt = 0; attempt < GEMINI_MODEL_SELECTION_CONFIG.MAX_ATTEMPTS; attempt++) {
     const modelMenu = await openGeminiModelMenu(page, modelPickerBtn);
     if (!modelMenu) continue;
@@ -3988,6 +3983,13 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     }
     await matchingOption.click();
     await modelPickerBtn.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: GEMINI_MODEL_SELECTION_CONFIG.OPTION_TIMEOUT_MS });
+    const updatedButtonLabel = _.trim(await modelPickerBtn.innerText().catch(() => XRT.EMPTY));
+    const updatedButtonMatches = selectedModelRegex.test(updatedButtonLabel);
+    selectedModelRegex.lastIndex = SecurityConstants.ZERO;
+    if (updatedButtonMatches) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_SUCCESS.replace(SOURCE_TEXT_0_2, targetModelText));
+      return true;
+    }
     const verificationMenu = await openGeminiModelMenu(page, modelPickerBtn);
     if (!verificationMenu) continue;
     const selectedOption = await findGeminiModelOption(verificationMenu, selectedModelRegex);
@@ -4580,6 +4582,26 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
     appError(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERROR.replace(SOURCE_TEXT_0_2, getErrorMessage(error)));
   }
   return null;
+}
+async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
+  let lastError: unknown;
+  for (let retryClick = SecurityConstants.ZERO; retryClick <= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT; retryClick++) {
+    try {
+      if (retryClick > SecurityConstants.ZERO) {
+        await delayAsync(800);
+        await waitForGeminiPageIdle(page, visualConfig);
+      }
+      return await waitForDownloadAndGetBase64(page, visualConfig, retryClick === SecurityConstants.ZERO ? initialResponseCount : undefined);
+    } catch (error) {
+      lastError = error;
+      if (retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      const currentCount = await page.locator(GeminiChatSelector.Response).count().catch(() => SecurityConstants.ZERO);
+      if (retryClick === SecurityConstants.ZERO && !_.isUndefined(initialResponseCount) && currentCount <= initialResponseCount) throw error;
+      if (!(await clickCurrentChatRetry(page).catch(() => false))) throw error;
+      appLog(CHAT_ROOM_RECOVERY.CLICK_LOG);
+    }
+  }
+  throw lastError;
 }
 async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
   await waitForGeminiFinished(page, visualConfig, initialResponseCount);

@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import { parse, serializeOuter } from "parse5";
 import { CHAT_ROOM_LIFECYCLE_VERIFICATION as V } from "./chatRoomLifecycleVerificationTexts.ts";
+import { CHAT_ROOM_RECOVERY } from "../src/constants/chromeBackup.js";
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.ts";
 import { AiPlanningFallbackProvider as P } from "../src/types.ts";
 const deferred = () => {
@@ -14,13 +15,13 @@ const deferred = () => {
   const done = new Promise<void>((resolve) => (finish = resolve));
   return { done, finish };
 };
-const within = async <T>(work: Promise<T>): Promise<T> => {
+const within = async <T>(work: Promise<T>, timeout = V.WAIT_MS): Promise<T> => {
   let timer: ReturnType<typeof setTimeout>;
   try {
     return await Promise.race([
       work,
       new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error(V.DEADLOCK)), V.WAIT_MS);
+        timer = setTimeout(() => reject(new Error(V.DEADLOCK)), timeout);
       }),
     ]);
   } finally {
@@ -54,7 +55,7 @@ try {
           builder.onLoad({ filter: V.SOURCE_PATTERN }, async (args) => {
             const source = await readFile(args.path, VT.UTF8);
             assert.equal(source.split(V.HOOK).length, 2);
-            return { loader: VT.TS, contents: source.replace(V.HOOK, V.INJECT) + V.ENTRY + V.SET_GENERATOR + V.GENERATOR + V.GENERATOR_END };
+            return { loader: VT.TS, contents: source.replace(V.HOOK, V.INJECT) + V.ENTRY + "export { regenerateProviderError };" + V.SET_GENERATOR + V.GENERATOR + V.GENERATOR_END };
           });
         },
       },
@@ -63,7 +64,8 @@ try {
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, bundled.outputFiles[0].text);
   const service = await import(pathToFileURL(output).href);
-  Object.assign(service.config, { UI_ACTION_BASE_MS: 5000, UI_ACTION_MAX_MS: 5000, SEND_CLICK_WAIT_MS: 100, ROOM_IDLE_STABLE_POLLS: 1, RESPONSE_POLL_MS: 5, SUBMISSION_POLL_MS: 5, HUMAN_ACTION_SETTLE_MS: 0, PROMPT_INPUT_SETTLE_MS: 0, PROMPT_SUBMIT_SETTLE_MS: 0, ROOM_REQUEST_COOLDOWN_MS: 0, RESPONSE_STABLE_POLLS_MATCHED: 2, SUBMISSION_VERIFY_TIMEOUT_MS: 50 });
+  Object.assign(service.config, { UI_ACTION_BASE_MS: 5000, UI_ACTION_MAX_MS: 5000, SEND_CLICK_WAIT_MS: 100, ROOM_IDLE_STABLE_POLLS: 1, RESPONSE_POLL_MS: 5, SUBMISSION_POLL_MS: 5, HUMAN_ACTION_SETTLE_MS: 0, PROMPT_INPUT_SETTLE_MS: 0, PROMPT_SUBMIT_SETTLE_MS: 0, ROOM_REQUEST_COOLDOWN_MS: 0, 
+    RESPONSE_STABLE_POLLS: 2, RESPONSE_STABLE_POLLS_MATCHED: 2, INVALID_RESPONSE_STABLE_POLLS: 4, SUBMISSION_VERIFY_TIMEOUT_MS: 50 });
   const originalIdleWait = service.config.ROOM_IDLE_WAIT_TIMEOUT_MS;
   service.config.ROOM_IDLE_WAIT_TIMEOUT_MS = V.IDLE_WAIT_MS;
   service.config.ROOM_IDLE_STABLE_POLLS = V.IDLE_POLLS;
@@ -173,6 +175,28 @@ try {
     assert.equal(await service.geminiRooms.get(service.getPlanningRoomKey(native)).evaluate(() => (window as any).retryClicks), 1);
     await service.closeChatPlanningRoom(native, true);
   }
+  assert.equal(CHAT_ROOM_RECOVERY.REGENERATE_LIMIT, 5);
+  for (const successAt of [5, 6]) {
+    const retryPage = await context.newPage();
+    await retryPage.setContent(`<model-response><div class="answer">Sorry, something went wrong. Please try your request again.</div><button data-test-id="regenerate-button" aria-haspopup="menu" aria-controls="retry-menu">Khôi phục</button></model-response>`);
+    await retryPage.evaluate(({ successAt, artifactType }) => {
+      (window as any).retryClicks = 0;
+      (document.querySelector('button') as HTMLElement).onclick = () => {
+        const menu = document.createElement('div'); menu.id = 'retry-menu'; menu.setAttribute('role', 'menu');
+        const item = document.createElement('button'); item.setAttribute('role', 'menuitem'); item.textContent = 'Thử lại'; menu.append(item); document.body.append(menu);
+        item.onclick = () => {
+          const clicks = ++(window as any).retryClicks; menu.remove();
+          document.querySelector('.answer')!.textContent = clicks >= successAt ? JSON.stringify({ artifactType, requestId: 'retry-limit', ready: true }) : 'Sorry, something went wrong. Please try your request again. ' + clicks;
+        };
+      };
+    }, { successAt, artifactType: V.ARTIFACT });
+    const work = service.regenerateProviderError(retryPage, '.answer', '.busy', V.ARTIFACT, 'retry-limit', AbortSignal.timeout(10000), async () => { throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR); });
+    if (successAt === 5) assert.equal(JSON.parse(await within(work)).ready, true);
+    else await assert.rejects(within(work), { message: service.config.PROVIDER_ERROR_RESPONSE_ERROR });
+    assert.equal(await retryPage.evaluate(() => (window as any).retryClicks), 5, 'The circular recovery menu is clicked at most five times');
+    await retryPage.close();
+  }
+  process.stdout.write("PASS: real circular Gemini recovery menu succeeds on click five, never clicks a sixth time.\n");
   const bounded = request("bounded-shared-recovery", 1);
   if (process.env.VIDIFY_VERIFY_REAL_CASES === "1") {
     const base = "scratch/motion-real-recovery-20261105/baseline/output/motion-video/ai-debug/";
@@ -224,13 +248,15 @@ try {
   service.providerGenerators[P.GeminiChat] = async (item: any) => {
     singleCalls++;
     const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
-    await room.setContent('<user-query>Current request</user-query><model-response><div class="answer">Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó.</div><button onclick="window.retryClicks=(window.retryClicks||0)+1">Thử lại</button></model-response>');
+    await room.setContent('<user-query>Current request</user-query><model-response><div class="answer">Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó.</div><button onclick="window.retryClicks=(window.retryClicks||0)+1;if(window.retryClicks>=5){document.querySelector(\'.answer\').textContent=JSON.stringify(window.result)}else{document.querySelector(\'.answer\').textContent=\'Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó. \'+window.retryClicks}">Thử lại</button></model-response>');
+    await room.evaluate((value: any) => { (window as any).result = value; }, { artifactType: item.artifactType, requestId: item.requestId, ready: true });
     Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
     throw Object.assign(new Error(service.config.REFUSAL_RESPONSE_ERROR), { diagnostics: { lastCandidate: "Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó." } });
   };
-  await assert.rejects(within(service.generatePlanningWithChatUi(single)), (error: any) => error.message === service.config.REFUSAL_RESPONSE_ERROR);
-  assert.equal(singleCalls, 1, "Single-generation scenes must not regenerate a content refusal");
-  assert.equal(await service.geminiRooms.get(service.getPlanningRoomKey(single)).evaluate(() => (window as any).retryClicks || 0), 0);
+  const singleResult = await within(service.generatePlanningWithChatUi(single));
+  assert.equal(JSON.parse(singleResult.text).ready, true);
+  assert.equal(singleCalls, 1, "Single-generation scenes must click native Retry up to five times before reloading");
+  assert.equal(await service.geminiRooms.get(service.getPlanningRoomKey(single)).evaluate(() => (window as any).retryClicks || 0), CHAT_ROOM_RECOVERY.REGENERATE_LIMIT);
   await service.closeChatPlanningRoom(single, true);
   const boundedRooms: any[] = [];
   const recoveryLines: string[] = [];
@@ -239,9 +265,9 @@ try {
     assert.equal(item.prompt, bounded.prompt, "A new room must receive the full context even when another worker already switched Chrome");
     const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
     boundedRooms.push(room);
-    if (boundedRooms.length > 3) return JSON.stringify({ artifactType: item.artifactType, requestId: item.requestId, ready: true });
+    if (boundedRooms.length > CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES + 1) return JSON.stringify({ artifactType: item.artifactType, requestId: item.requestId, ready: true });
     await room.setContent(
-      "<user-query>Current request</user-query><model-response><div class=\"answer\">Sorry, something went wrong. Please try your request again.</div><button onclick=\"window.retryClicks=(window.retryClicks||0)+1;this.insertAdjacentHTML('afterend','<div class=busy>Generating</div>');setTimeout(()=>document.querySelector('.busy').remove(),50)\">Thử lại</button></model-response>",
+      "<user-query>Current request</user-query><model-response><div class=\"answer\">Sorry, something went wrong. Please try your request again.</div><button onclick=\"window.retryClicks=(window.retryClicks||0)+1;document.querySelector('.answer').textContent='Sorry, something went wrong. Please try your request again. '+window.retryClicks;this.insertAdjacentHTML('afterend','<div class=busy>Generating</div>');setTimeout(()=>document.querySelector('.busy').remove(),10)\">Thử lại</button></model-response>",
     );
     Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
     throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR);
@@ -256,14 +282,16 @@ try {
         return bounded.prompt;
       },
     }),
+    60000,
   );
-  assert.equal(boundedRooms.length, 4);
-  assert.equal(new Set(boundedRooms.slice(0, 3)).size, 1, "Both retries must use the original physical room");
-  assert.notEqual(boundedRooms[3], boundedRooms[0]);
+  const finalRoom = CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES + 1;
+  assert.equal(boundedRooms.length, finalRoom + 1);
+  assert.equal(new Set(boundedRooms.slice(0, finalRoom)).size, 1, "All same-room retries must use the original physical room");
+  assert.notEqual(boundedRooms[finalRoom], boundedRooms[0]);
   assert.equal(boundedRooms[0].isClosed(), true);
-  assert.equal(restored, 4);
-  assert.equal(recoveryLines.filter((line) => /bấm nút/u.test(line)).length, 1);
-  assert.equal(recoveryLines.filter((line) => /room hiện tại/u.test(line)).length, 2);
+  assert.equal(restored, finalRoom + 1);
+  assert.equal(recoveryLines.filter((line) => /bấm nút/u.test(line)).length, finalRoom * CHAT_ROOM_RECOVERY.REGENERATE_LIMIT);
+  assert.equal(recoveryLines.filter((line) => /room hiện tại/u.test(line)).length, CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES);
   assert.equal(recoveryLines.filter((line) => /mở room mới/u.test(line)).length, 1);
   await service.closeChatPlanningRoom(bounded, true);
   const failedRoom = {
@@ -282,7 +310,7 @@ try {
       throw new Error("room navigation failed");
     },
   };
-  const failedContext = { newPage: async () => failedNavigation };
+  const failedContext = { pages: () => [], newPage: async () => failedNavigation };
   await assert.rejects(service.createRoom(failedContext, V.URL(port, V.WORKERS[0]), service.geminiRooms, service.getPlanningRoomKey(current)), /room navigation failed/);
   assert.equal(service.geminiRooms.get(service.getPlanningRoomKey(current)), failedNavigation);
   service.geminiRooms.delete(service.getPlanningRoomKey(current));
@@ -297,3 +325,4 @@ try {
   if (previousStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;
   else process.env.VIDIFY_STORAGE_DIR = previousStorage;
 }
+process.exit(0);

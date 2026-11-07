@@ -5,7 +5,7 @@ import type { MotionRemotionSpec } from "../types/motionVisual.js";
 
 /** Scene fields that never change a rendered pixel (bookkeeping, prompts, scores); excluded from cache keys. */
 const NON_VISUAL = new Set(["generation", "build", "requestKeys", "writtenMotionKey", "actionPlan", "motionIntent", "drawingNote", "sourceKey", "sourceBeatIds", "failStreak", "deferred", "qualityNote", "qualityRedraws", "reviewKey", "continuityDraft", "continuityKey", "removedObjects"]);
-const visualScene = (scene: object) => Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key)));
+const visualScene = (scene: MotionRemotionSpec["scenes"][number]) => scene.html ? { id: scene.id, renderer: scene.renderer, startFrame: scene.startFrame, endFrame: scene.endFrame, htmlHash: scene.html.hash, seed: scene.html.seed, speaking: scene.speaking } : Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key)));
 export interface MotionRemotionSegment {
   index: number;
   /** Inclusive frame range. */
@@ -35,7 +35,7 @@ export const motionRemotionSegments = (spec: MotionRemotionSpec, encoding: { wid
   }
   bounds.push([start, total - 1]);
   // Everything that can change a frame but is not tied to one scene.
-  const global = stringifyJson([R.SEGMENT_VERSION, encoding, spec.version, spec.aspect, spec.fps, spec.width, spec.height, spec.motion, spec.profileId, spec.fontFamily, spec.renderBehavior, spec.resolvedSettings, total]);
+  const global = stringifyJson([R.SEGMENT_VERSION, spec.renderer, encoding, spec.version, spec.aspect, spec.fps, spec.width, spec.height, spec.motion, spec.profileId, spec.fontFamily, spec.renderBehavior, spec.resolvedSettings, total]);
   return bounds.map(([from, to], index) => {
     const scenes = (spec.scenes || []).filter((scene) => scene.startFrame <= to && scene.endFrame > from).map(visualScene);
     const text = stringifyJson(scenes);
