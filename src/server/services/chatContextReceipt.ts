@@ -52,6 +52,10 @@ export const observeChatContextReceipts = (page: Page): ChatContextReceipts => {
     if (room && room !== next) receipts.invalidate();
     room = next;
   });
+  page.on("domcontentloaded", () => {
+    room = conversation(page.url());
+    receipts.invalidate();
+  });
   page.on(RT_SERVER.CLOSE, () => receipts.invalidate());
   return receipts;
 };

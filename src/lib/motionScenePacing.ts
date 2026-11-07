@@ -17,7 +17,7 @@ export const motionVisualBeatGroups = (script: Pick<MotionStoryScript, "beats" |
     for (const beat of script.beats) {
       const seconds = motionBeatVisualSeconds(beat, script.language);
       const last = groups.at(-1);
-      if (!last || last.beats[0].chapterId !== beat.chapterId || last.seconds + seconds > 90 || last.beats.length >= 24) groups.push({ id: beat.id, beats: [beat], seconds, lineCount: puppetBeatLines(beat).length });
+      if (!last || last.beats[0].chapterId !== beat.chapterId || last.seconds + seconds > 32 || last.beats.length >= 2) groups.push({ id: beat.id, beats: [beat], seconds, lineCount: puppetBeatLines(beat).length });
       else { last.beats.push(beat); last.seconds += seconds; last.lineCount += puppetBeatLines(beat).length; }
     }
     return groups;

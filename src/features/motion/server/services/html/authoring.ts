@@ -11,10 +11,11 @@ import type { MotionChapterWriteOptions } from "../motionStoryService.js";
 const countChapterUnits = (rows: any[]): number => rows.reduce((sum, row) => sum + speechUnits(String(row?.narration || "")), 0);
 
 const HTML_PART_ATOM_SPLIT = /(?<=[.!?。！？])\s+(?=[\p{L}\p{N}\p{P}])|\r?\n+/u;
+const HTML_PART_CLAUSE_SPLIT = /(?<=[,;—–:])\s+(?=[\p{L}\p{N}\p{P}])/u;
 const HTML_PART_STAMP = /\((?:(\d+):)?(\d{1,2}):(\d{2})\)|\[(?:(\d+):)?(\d{1,2}):(\d{2})\]/g;
-const MAX_HTML_BEATS_PER_PART = 4;
-const MAX_HTML_UNITS_PER_PART = 150;
-const MAX_HTML_EDIT_BEATS_PER_BATCH = 5;
+const MAX_HTML_BEATS_PER_PART = 2;
+const MAX_HTML_UNITS_PER_PART = 75;
+const MAX_HTML_EDIT_BEATS_PER_BATCH = 2;
 
 interface HtmlChapterPartSlice {
   points: string[];
@@ -31,11 +32,31 @@ const parseStampSeconds = (match: RegExpMatchArray): number => {
 };
 
 export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, totalSeconds: number, totalUnits: number, totalScenes: number): HtmlChapterPartSlice[] => {
-  const atoms = slice
+  const rawDesiredParts = Math.max(Math.ceil(totalScenes / MAX_HTML_BEATS_PER_PART), Math.ceil(totalUnits / MAX_HTML_UNITS_PER_PART));
+  if (rawDesiredParts <= 1) return [];
+  let atoms = slice
     .split(HTML_PART_ATOM_SPLIT)
     .map((item) => item.trim())
     .filter(Boolean);
-  const desiredParts = Math.min(atoms.length, Math.max(Math.ceil(totalScenes / MAX_HTML_BEATS_PER_PART), Math.ceil(totalUnits / MAX_HTML_UNITS_PER_PART)));
+  if (atoms.length < rawDesiredParts) {
+    atoms = atoms.flatMap((item) =>
+      item
+        .split(HTML_PART_CLAUSE_SPLIT)
+        .map((sub) => sub.trim())
+        .filter(Boolean),
+    );
+  }
+  if (atoms.length < rawDesiredParts) {
+    const words = slice.trim().split(/\s+/).filter(Boolean);
+    if (words.length >= rawDesiredParts * 4) {
+      const chunkSize = Math.max(4, Math.ceil(words.length / rawDesiredParts));
+      atoms = [];
+      for (let i = 0; i < words.length; i += chunkSize) {
+        atoms.push(words.slice(i, i + chunkSize).join(" "));
+      }
+    }
+  }
+  const desiredParts = Math.min(atoms.length, rawDesiredParts);
   if (desiredParts <= 1 || atoms.length < 2) return [];
   const totalAtomChars = atoms.reduce((sum, atom) => sum + atom.length, 0) || 1;
   const groups: string[][] = [];
@@ -116,7 +137,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       });
     };
     saveMultipartDraft();
-    opts.log?.(`Chương ${chapter.id}: chia thành ${parts.length} phần nhỏ (~3–4 phân cảnh/lượt) để tránh quá tải token phản hồi trên video dài.`);
+    opts.log?.(`Chương ${chapter.id}: chia thành ${parts.length} phần nhỏ (~1–2 phân cảnh/lượt) để tránh quá tải token phản hồi trên video dài.`);
 
     for (let index = 0; index < parts.length; index++) {
       opts.signal?.throwIfAborted();
@@ -128,7 +149,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       const remainingUnits = Math.max(12, units - usedUnits);
       const remainingScenes = Math.max(1, targetScenes - usedScenes);
       const partUnits = index === parts.length - 1 ? remainingUnits : Math.max(12, Math.round(remainingUnits * partShare));
-      const partScenes = index === parts.length - 1 ? Math.max(1, Math.min(MAX_HTML_BEATS_PER_PART + 1, remainingScenes)) : Math.max(1, Math.min(MAX_HTML_BEATS_PER_PART, Math.round(remainingScenes * partShare)));
+      const partScenes = index === parts.length - 1 ? Math.max(1, Math.min(MAX_HTML_BEATS_PER_PART, remainingScenes)) : Math.max(1, Math.min(MAX_HTML_BEATS_PER_PART, Math.round(remainingScenes * partShare)));
       const partSeconds = Number((partUnits / Math.max(0.5, rate)).toFixed(1));
       const partMinUnits = Math.max(1, Math.round(partUnits * 0.9));
       const partMaxUnits = Math.max(partMinUnits, Math.round(partUnits * 1.1));
@@ -142,7 +163,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       }));
       const partSection = [
         opts.section,
-        `CHAPTER PART ${index + 1}/${parts.length}: Write ONLY consecutive part ${index + 1} of ${parts.length} for chapter ${chapter.id} (${chapter.title}). Return ONLY ${partScenes} beats (AT MOST ${partScenes + 1} beats, starting with beat ID ${chapter.id}_b${completed.length + 1}) covering this part's SOURCE slice.`,
+        `CHAPTER PART ${index + 1}/${parts.length}: Write ONLY consecutive part ${index + 1} of ${parts.length} for chapter ${chapter.id} (${chapter.title}). Return ONLY ${partScenes} beats (AT MOST ${MAX_HTML_BEATS_PER_PART} beats, starting with beat ID ${chapter.id}_b${completed.length + 1}) covering this part's SOURCE slice.`,
         index === 0
           ? "This part opens the chapter: establish the chapter hook immediately and cover only this part's source slice."
           : "Continue seamlessly from the last beat in alreadyWritten without repeating earlier hooks, facts, or scenes.",
@@ -156,7 +177,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       const partPrompt = [
         "Write the requested chapter part in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,sceneTemplateDraft,utterances?}]}. Stable IDs identify source events. visual is scene/map/diagram/process/timeline/comparison/card as appropriate. Do not turn a sentence into a separate picture by default.",
         motionHtmlWritingDirection(analysis, opts.language),
-        `Language=${opts.language}. THIS CHAPTER PART (${index + 1}/${parts.length}) has approximately ${partSeconds.toFixed(1)} seconds of speech at ${rate.toFixed(2)} spoken units/second: approximately ${partUnits} units TOTAL across its beats (target window ${partMinUnits}–${partMaxUnits} spoken words/syllables across ${partScenes} beats of ~${partUnitsPerScene} units each, holding ~${targetPictureSeconds}s per scene). Full chapter budget is ${seconds.toFixed(1)}s (${units} units across ~${targetScenes} scenes); full video part has ${total}s with ${pause}s reserved for pauses. Summarize this part's causal arc within ${partMinUnits}–${partMaxUnits} spoken units; do not narrate every source sentence.`,
+        `Language=${opts.language}. THIS CHAPTER PART (${index + 1}/${parts.length}) has approximately ${partSeconds.toFixed(1)} seconds of speech at ${rate.toFixed(2)} spoken units/second: approximately ${partUnits} units TOTAL across all its beats (target window ${partMinUnits}–${partMaxUnits} spoken words/syllables across ${partScenes} beats of ~${partUnitsPerScene} units each, holding ~${targetPictureSeconds}s per scene). Full chapter budget is ${seconds.toFixed(1)}s (${units} units across ~${targetScenes} scenes); full video part has ${total}s with ${pause}s reserved for pauses. Summarize this part's causal arc within ${partMinUnits}–${partMaxUnits} spoken units; do not narrate every source sentence.`,
         opts.multiVoice === false ? "One narrator reads everything exactly once. utterances can be omitted. Do not invent dialogue." : "Use narrator for narration and the supplied cast keys for source-supported dialogue. Joined utterance text matches narration exactly; no duplicate spoken words.",
         "Source supplies facts and uncertainty; real people's actions/quotes must be supported. Describe the mechanics of approved actions without inventing another event. Keep production prose separate from speech. Preserve the full sceneTemplateDraft through the response.",
         JSON.stringify({

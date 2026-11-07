@@ -20,6 +20,7 @@ import * as ST from "../../constants/sourceText.js";
 import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport } from "../../lib/chatPlanningUtils.js";
 import { motionPromptSingleMessage } from "../../lib/motionPrompt.js";
 import { MOTION_PROMPT } from "../../constants/motionPrompt.js";
+import { MOTION_RESPONSE_SCHEMAS } from "../../constants/motionResponseContract.js";
 import * as MR from "../../constants/motionRuntime.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_683,
@@ -746,7 +747,16 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
         if (isRefusal && !_.isEmpty(responseCandidates)) {
           throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR), { diagnostics: { responseCount: count, initialCount, candidateChars: latestText.length, busy: false, identityMatch: false, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
         }
-        const mayUseUnmarkedJsonFallback = _.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && _.isEmpty(artifactType) && _.isEmpty(normalizedExpectedRequestId) && isCompleteJson;
+        const unmarkedSchemaKeys =
+          isCompleteJson && _.isPlainObject(parsedLatest) && count > initialCount && _.isEmpty(returnedArtifactType) && _.isEmpty(returnedRequestId) && artifactType
+            ? new Set<string>([
+                ...Object.keys(MOTION_RESPONSE_SCHEMAS[artifactType]?.properties || {}),
+                ...(MOTION_RESPONSE_SCHEMAS[artifactType]?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []),
+                ...(artifactType === "motion-html-plan" ? ["scenes"] : []),
+              ])
+            : undefined;
+        const isFreshSchemaMatch = !!unmarkedSchemaKeys && _.keys(parsedLatest).length >= 1 && _.keys(parsedLatest).every((k) => unmarkedSchemaKeys.has(k));
+        const mayUseUnmarkedJsonFallback = (_.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && _.isEmpty(artifactType) && _.isEmpty(normalizedExpectedRequestId) && isCompleteJson) || isFreshSchemaMatch;
         if (isCompleteJson && (belongsToCurrentRequest || mayUseUnmarkedJsonFallback)) {
           if (!belongsToCurrentRequest) {
             appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RAW_CONTRACT_FALLBACK(_.join(expectedSceneIds, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_NOT_REQUIRED, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
@@ -1322,13 +1332,13 @@ const submitPrompt = async (
               await clickSendButton(page, sendButton, signal);
             } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
             submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
-            if (!submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
+            if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_CLICK_FALLBACK_LOG);
               await waitPageResponsive(page, signal);
               await Promise.race([sendButton.evaluate((element: HTMLElement) => element.click()).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             }
-            if (!submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
+            if (!submission && !submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CHAT_UI_AUTOMATION_MESSAGES.SUBMIT_ENTER_FALLBACK);
               await input.focus().catch(() => undefined);
               await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
@@ -1370,7 +1380,9 @@ const submitPrompt = async (
     } catch (error) {
       await waitForSession?.();
       if (submission?.pending && new URL(submission.pending.url).origin === new URL(page.url()).origin) submission.pending.url = page.url();
-      if (submission && isFinalChatResponseError(error)) submission.completed = true;
+      const diag = _.get(error, "diagnostics") as { responseCount?: number; initialCount?: number; busy?: boolean } | undefined;
+      const isCompletedInvalidTurn = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)) === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR && (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy;
+      if (submission && (isFinalChatResponseError(error) || isCompletedInvalidTurn)) submission.completed = true;
       throw error;
     } finally {
       uploadObservation?.dispose();
@@ -1379,7 +1391,9 @@ const submitPrompt = async (
   try {
     return generation ? await generation.run(perform()) : await perform();
   } catch (error) {
-    if (isFinalChatResponseError(error)) {
+    const diag = _.get(error, "diagnostics") as { responseCount?: number; initialCount?: number; busy?: boolean } | undefined;
+    const isCompletedInvalidTurn = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)) === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR && (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy;
+    if (isFinalChatResponseError(error) || isCompletedInvalidTurn) {
       pendingRoomResponses.delete(roomKey);
       if (submission) submission.completed = true;
     }

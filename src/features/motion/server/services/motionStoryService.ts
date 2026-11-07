@@ -425,20 +425,47 @@ export const escapeStrayQuotes = (text: string): string => {
   }
   return out;
 };
-const salvageRoomJson = (text: string | undefined, artifactType: string, requestId: string): any => {
-  if (!text || text.length < 40) return undefined;
-  const parsed = salvageOnce(text, artifactType, requestId);
+const salvageRoomJson = (
+  text: string | undefined,
+  artifactType: string,
+  requestId: string,
+  responseSchema?: string,
+  diag?: { responseCount?: number; initialCount?: number; busy?: boolean },
+): any => {
+  if (!text || text.length < 20) return undefined;
+  const parsed = salvageOnce(text, artifactType, requestId, responseSchema, diag);
   const closed = closeMotionJsonContainers(text);
-  return parsed ?? (closed && salvageOnce(closed, artifactType, requestId)) ?? salvageOnce(escapeStrayQuotes(text), artifactType, requestId);
+  return (
+    parsed ??
+    (closed && salvageOnce(closed, artifactType, requestId, responseSchema, diag)) ??
+    salvageOnce(escapeStrayQuotes(text), artifactType, requestId, responseSchema, diag)
+  );
 };
-const salvageOnce = (text: string, artifactType: string, requestId: string): any => {
+const salvageOnce = (
+  text: string,
+  artifactType: string,
+  requestId: string,
+  responseSchema?: string,
+  diag?: { responseCount?: number; initialCount?: number; busy?: boolean },
+): any => {
   try {
     const parsed = extractJson(text);
     if (!_.isPlainObject(parsed)) return undefined;
     const kind = _.toString(parsed.artifactType);
-    if (kind !== artifactType || parsed.requestId !== requestId) return undefined;
+    if (kind === artifactType && parsed.requestId === requestId) {
+      return _.keys(parsed).length >= 3 ? parsed : undefined;
+    }
+    if (kind || parsed.requestId) return undefined;
+    const isFreshCompletedTurn = (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy;
+    if (!isFreshCompletedTurn) return undefined;
+    const schema = MOTION_RESPONSE_SCHEMAS[responseSchema || artifactType];
+    const allowedKeys = new Set<string>([
+      ...Object.keys(schema?.properties || {}),
+      ...(schema?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []),
+      ...(artifactType === MOTION_HTML.PLAN ? ["scenes"] : []),
+    ]);
     const keys = _.keys(parsed);
-    return keys.length >= 3 ? parsed : undefined;
+    return keys.length >= 1 && keys.every((k) => allowedKeys.has(k)) ? parsed : undefined;
   } catch {
     return undefined;
   }
@@ -1246,11 +1273,14 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         log?.(MOTION_STORY_CONFIG.ROOM_REFUSAL_LOG(provider));
         throw caught;
       }
-      const salvaged = exec.outputFormat === "html" ? undefined : salvageRoomJson(diag?.lastCandidate, artifactType, requestId);
+      const salvaged = exec.outputFormat === "html" ? undefined : salvageRoomJson(diag?.lastCandidate, artifactType, requestId, exec.responseSchema, diag);
       if (salvaged) {
         log?.(MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG);
         roomOk = true;
         return salvaged;
+      }
+      if (_.toString(caught?.message) === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR && (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy) {
+        submission.completed = true;
       }
       const limitText = [_.toString(caught?.message), _.toString(diag?.lastCandidate), stringifyJson(roomProbe || {})] as string[];
       const limited =
