@@ -1,7 +1,7 @@
 export const MOTION_REMOTION_RENDER = {
   /** Scene-aligned segment length for cached, parallel rendering. */
   SEGMENT_SECONDS: 20,
-  SEGMENT_VERSION: 1,
+  SEGMENT_VERSION: 2,
   SEGMENT_FOLDER: "remotion-segments",
   SEGMENT_FILE: (key: string) => `${key}.mp4`,
   SEGMENT_MAX_AGE_MS: 14 * 24 * 60 * 60 * 1000,
