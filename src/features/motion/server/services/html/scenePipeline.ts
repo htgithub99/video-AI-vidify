@@ -522,7 +522,7 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
   state.pacingRevision = 1;
   const result = { ...script, visualSettings: settings, gen: { ...(script.gen || { cast: {}, locations: {} }), remotion: state } } as MotionStoryScript;
   const save = () => {
-    opts.signal?.throwIfAborted();
+    if (opts.signal?.aborted) return;
     state.updatedAt = Date.now();
     checkpoint.save(state);
     opts.partial?.(structuredClone(result));
@@ -545,6 +545,7 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
       delete state.inputKeys[id];
       delete state.htmlPlanSources[id];
     }
+  opts.signal?.throwIfAborted();
   save();
   return result;
 };
@@ -564,7 +565,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   const [width, height] = aspect === RT_MAINTENANCE.VALUE_9_16 ? [720, 1280] : aspect === RT_MAINTENANCE.VALUE_1_1 ? [1000, 1000] : aspect === RT_MAINTENANCE.VALUE_4_5 ? [800, 1000] : [1280, 720];
   state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, script.gen?.characterMotion);
   const save = () => {
-    opts.signal?.throwIfAborted();
+    if (opts.signal?.aborted) return;
     state.updatedAt = Date.now();
     opts.partial?.(structuredClone(result));
   };
@@ -574,6 +575,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   let totalTasks = 0;
   let done = 0;
   const scheduleFrom = (sourceScript: MotionStoryScript) => {
+    if (opts.signal?.aborted) return;
     const groups = motionVisualBeatGroups(sourceScript, 1001, settings.pacing);
     const tasks = groups
       .flatMap((group, groupIndex) => (state.scenes[group.id] || []).map((scene) => ({ group, groupIndex, scene })))
@@ -582,6 +584,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
       if (startedScenes.has(scene.id)) continue;
       totalTasks++;
       const task = (async () => {
+        opts.signal?.throwIfAborted();
         if ((opts.onlyScenes?.includes(scene.id) || opts.restart) && scene.htmlRebuildKey !== rebuildKey) {
           const attempt = scene.html?.attempts || 0;
           delete scene.html;
@@ -598,6 +601,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);
         save();
       })();
+      task.catch(() => undefined);
       startedScenes.set(scene.id, task);
     }
   };
@@ -606,6 +610,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     activeHtmlBuilders.set(
       opts.scope,
       AsyncResource.bind((nextScript: MotionStoryScript) => {
+        if (opts.signal?.aborted) return false;
         const nextRemotion = nextScript.gen?.remotion;
         if (!nextRemotion || nextRemotion.renderer !== RT_MAINTENANCE.HTML_CANVAS) return false;
         const existingIds = new Set(result.beats.map((beat) => beat.id));
@@ -636,6 +641,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
       await Promise.all(current);
       if (startedScenes.size === current.length) break;
     }
+    opts.signal?.throwIfAborted();
     return result;
   } finally {
     if (canRegister && opts.scope) activeHtmlBuilders.delete(opts.scope);

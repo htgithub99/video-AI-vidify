@@ -397,7 +397,11 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           );
         logChapterScore(chapter);
         checkpoint();
-        if (pipelined && idx < chapters.length - 1) chapterEdits.set(chapter.id, editChapter(chapter, idx));
+        if (pipelined && idx < chapters.length - 1) {
+          const editTask = editChapter(chapter, idx);
+          editTask.catch(_.noop);
+          chapterEdits.set(chapter.id, editTask);
+        }
       };
       if (analysis.authoringSettings && todo.length > 1 && !(globalThis as any).__motionHtmlStages) {
         for (const chapter of todo) {
@@ -560,6 +564,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
       let voiceJob: Promise<Awaited<ReturnType<typeof buildMotionVoiceTrack>> | undefined> = Promise.resolve(undefined);
       const prepareAudio = async (readyScript: MotionStoryScript) => {
         planJob = autoVoice ? listMotionVoiceSources(audioAbort.signal, ctx.log).then((sources) => directMotionVoice(readyScript, analysis, sources, voiceOpts)) : Promise.resolve(undefined);
+        planJob.catch(_.noop);
         voiceJob = planJob.then((plan) => (plan ? buildMotionVoiceTrack({ ...readyScript, gen: { ...(readyScript.gen || emptyGen()), voiceCast: motionVoiceCast(readyScript.gen?.voiceCast, plan.roles) } }, analysis, voiceOpts) : undefined));
         voiceJob.catch(_.noop);
         return planJob.then((plan) => plan?.direction).catch(() => undefined);

@@ -1025,6 +1025,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       }
     }
   })();
+  pending.catch(_.noop);
   run.pending.add(pending);
   try {
     return await pending;
@@ -1578,6 +1579,7 @@ export const buildSourceLedger = (source: MotionStorySource, opts: Parameters<ty
     ledgers.delete(key);
     throw error;
   });
+  task.catch(_.noop);
   ledgers.set(key, task);
   return task;
 };

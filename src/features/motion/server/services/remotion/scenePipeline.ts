@@ -539,6 +539,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           sheetPending = undefined;
         }
       })();
+      sheetPending.catch(() => undefined);
       return sheetPending;
     };
     const sound: Promise<unknown> =
@@ -585,6 +586,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             }
             return undefined;
           })();
+      promise.catch(() => undefined);
       anchors.set(location, promise);
       return promise;
     };
