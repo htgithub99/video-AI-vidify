@@ -402,6 +402,7 @@ export interface VisualConfig {
   styleFingerprint?: string;
   styleReferenceLocked?: boolean;
   generateType?: GenerateType;
+  skipGenerateTypeSelection?: boolean;
   maxVideoScenes?: number;
   generateCount?: number;
   promptInputMethod?: PromptInputMethod;

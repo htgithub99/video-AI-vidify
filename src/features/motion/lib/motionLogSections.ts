@@ -3,6 +3,9 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js"
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_LOG_SECTIONS as S } from "../constants/motionLogSections.js";
 import { MOTION_PROGRESS as P } from "../../../constants/motionProgress.js";
+import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../lib/motionHtmlScene.js";
+import { missingMotionChapters } from "../../../lib/motionProduction.js";
+import { remotionStateMissingScenes } from "../../../lib/motionRemotion.js";
 import { motionFlowLogRows } from "./motionLogHistory.js";
 import type { MotionLogEntry, MotionStoryJobState, MotionJobState, MotionProductionResult, MotionStepState } from "../../../types/motionVideo.js";
 export interface MotionSectionRow {
@@ -36,6 +39,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
   const text = S.TEXT[language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
   const sections = new Map<string, MotionLogSection>(S.ORDER.map((key) => [key, { key, rows: [], state: RT_SHARED.WAITING, summary: "", lastOrder: -1 }]));
   const phase = new Map<string, string>();
+  const scriptChaptersDone = new Set<string>();
   const sources = new Map<string, string>();
   const starts = new Map<string, number>();
   const ends = new Map<string, number>();
@@ -51,11 +55,16 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
       scopes.push(match[1]);
       message = message.slice(match[0].length);
     }
-    const declared = scopes.map(motionLogSectionKey).find(Boolean);
+    if (/^Viết (?:lời dẫn|phân cảnh chương)/iu.test(message)) scriptChaptersDone.delete(id);
+    const declaredScopes = scopes.map(motionLogSectionKey).filter((item): item is string => Boolean(item));
+    const innerDeclared = declaredScopes.at(-1);
     const kind = S.KINDS[row.kind];
     const artifact = motionLogSectionKey(row.event?.artifact || "");
-    const key = declared || artifact || kind || motionLogSectionKey(message) || phase.get(id) || RT_MOTION.OTHER;
-    phase.set(id, key);
+    const messageKey = motionLogSectionKey(message);
+    const inheritedScenePhase = scriptChaptersDone.has(id) && !messageKey && phase.get(id) === RT_SHARED.SCENES ? RT_SHARED.SCENES : undefined;
+    const key = (declaredScopes.length > 1 ? innerDeclared : undefined) || artifact || (messageKey === RT_SHARED.SCENES ? messageKey : undefined) || inheritedScenePhase || innerDeclared || kind || messageKey || phase.get(id) || RT_MOTION.OTHER;
+    if (/^Hoàn tất chia phân cảnh/iu.test(message)) scriptChaptersDone.add(id);
+    phase.set(id, declaredScopes.length > 0 && !scriptChaptersDone.has(id) ? declaredScopes[0] : key);
     const group = sections.get(key) || sections.get(RT_MOTION.OTHER)!;
     if (sources.has(key) && sources.get(key) !== id) group.state = RT_MOTION.RECORDED;
     sources.set(key, id);
@@ -79,11 +88,22 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
   if (job?.kind === RT_MOTION.PRODUCTION) {
     const result = job.result as MotionProductionResult | undefined;
     completed(RT_MOTION.ANALYZE, result?.analysis);
-    completed(RT_MOTION.SCRIPT, result?.script?.beats?.length && motionLogStageKeys(job.stage || "").some((key) => ([RT_SHARED.SCENES, RT_SHARED.VOICE, RT_MOTION.SEO, RT_MOTION.RENDER] as string[]).includes(key)));
+    const scriptComplete =
+      !!result?.script?.beats?.length &&
+      (motionLogStageKeys(job.stage || "").some((key) => ([RT_SHARED.SCENES, RT_SHARED.VOICE, RT_MOTION.SEO, RT_MOTION.RENDER] as string[]).includes(key)) ||
+        job.status === RT_SHARED.COMPLETED ||
+        (!!result.analysis && !missingMotionChapters(result.script, result.analysis).length && !Object.keys(result.script.chapterDrafts || {}).length && (!usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis))));
+    completed(RT_MOTION.SCRIPT, scriptComplete);
     completed(RT_MOTION.SEO, result?.seo?.options?.length);
     if (result?.seoJobId && !([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(job.status)) sections.get(RT_MOTION.SEO)!.state = RT_MOTION.ACTIVE;
     completed(RT_SHARED.VOICE, result?.voice?.audioId);
-    completed(RT_SHARED.SCENES, result?.script?.gen?.puppet?.report && !result.script.gen.puppet.report.missing);
+    const scenesComplete =
+      (result?.script?.gen?.puppet?.report && !result.script.gen.puppet.report.missing) ||
+      (result?.script?.gen?.remotion &&
+        Object.values(result.script.gen.remotion.scenes || {}).flat().length > 0 &&
+        remotionStateMissingScenes(result.script.gen.remotion).length === 0 &&
+        (!result.analysis || !usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis)));
+    completed(RT_SHARED.SCENES, scenesComplete);
     completed(RT_MOTION.RENDER, result?.rendered);
   }
   const currents = [...entries.filter((entry) => entry.status), job, render];
@@ -112,6 +132,11 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
       const active = motionLogSectionKey(ai.artifact);
       if (active && (!sources.has(active) || sources.get(active) === current.id) && sections.get(active)!.state !== RT_MOTION.DONE && ai.phase !== RT_MOTION.DONE) sections.get(active)!.state = RT_MOTION.ACTIVE;
     }
+    const sceneGroup = sections.get(RT_SHARED.SCENES)!;
+    if (sources.get(RT_SHARED.SCENES) === current.id && sceneGroup.rows.length > 0 && sceneGroup.state !== RT_MOTION.DONE && sceneGroup.state !== RT_SHARED.ERROR) {
+      if (current.status === RT_MOTION.CANCELLED) sceneGroup.state = RT_MOTION.CANCELLED;
+      else if (!([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(current.status) && sceneGroup.state === RT_MOTION.RECORDED) sceneGroup.state = RT_MOTION.ACTIVE;
+    }
   }
   const explicit = new Map<string, { state: MotionStepState; source: string; parentStatus: string }>();
   for (const current of currents) {
@@ -135,7 +160,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     const group = sections.get(key)!;
     const ownerStatus = job?.id === source ? job.status : render?.id === source ? render.status : parentStatus;
     const stopped = ([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(ownerStatus);
-    group.state = state.status === RT_SHARED.COMPLETED ? RT_MOTION.DONE : state.status === RT_SHARED.ERROR ? RT_SHARED.ERROR : state.status === RT_MOTION.CANCELLED || stopped ? RT_MOTION.CANCELLED : RT_MOTION.ACTIVE;
+    group.state = state.status === RT_SHARED.COMPLETED || (group.state === RT_MOTION.DONE && state.status !== RT_SHARED.ERROR) ? RT_MOTION.DONE : state.status === RT_SHARED.ERROR ? RT_SHARED.ERROR : state.status === RT_MOTION.CANCELLED || stopped ? RT_MOTION.CANCELLED : RT_MOTION.ACTIVE;
     if (state.startedAt) {
       const end = group.state === RT_MOTION.ACTIVE ? Date.now() : state.updatedAt || state.startedAt;
       if (end > state.startedAt) group.durationMs = end - state.startedAt;

@@ -1634,6 +1634,7 @@ export interface ImageGeneratorOptions {
   visualConfig?: {
     chromeHeadless?: boolean;
     generateType?: GenerateType;
+    skipGenerateTypeSelection?: boolean;
     aspectRatio?: string;
     generateCount?: number;
     imageGeneratorEngine?: ImageGeneratorEngine;
@@ -3313,7 +3314,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
         }
       }
       if (!detectedRatio) detectedRatio = SOURCE_TEXT_9_16;
-      const currentConfigState = jsonUtils.safeStringify({ generateType: visualConfig?.generateType || GenerateType.Image, imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3, aspectRatio: detectedRatio });
+      const currentConfigState = jsonUtils.safeStringify({ generateType: visualConfig?.generateType || GenerateType.Image, skipGenerateTypeSelection: Boolean(visualConfig?.skipGenerateTypeSelection), imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3, aspectRatio: detectedRatio });
       const isConfigChanged = currentConfigState !== lastGeminiConfigState;
       let needNewRoom = _.gt(roomAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
       try {
@@ -4004,6 +4005,14 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   return false;
 }
 export async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig): Promise<boolean> {
+  if (visualConfig?.skipGenerateTypeSelection) {
+    const selectedModeChip = page.locator(SOURCE_TEXT_GEM_BUTTON_DATA_TEST_ID_DESELECT).first();
+    if (await selectedModeChip.isVisible().catch(() => false)) {
+      await selectedModeChip.click().catch(() => undefined);
+      await randomDelay(300, 600);
+    }
+    return true;
+  }
   const isVideo = visualConfig?.generateType === GenerateType.Video;
   const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
   const activeModeRegex = isVideo ? GEMINI_ACTIVE_VIDEO_MODE_REGEX : GEMINI_ACTIVE_IMAGE_MODE_REGEX;
@@ -4189,7 +4198,9 @@ const configureGeminiAspectRatio = async (page: Page, targetRatio: AspectRatio):
 };
 async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualConfig) {
   await page.bringToFront().catch(() => {});
-  await configureGeminiAspectRatio(page, (visualConfig?.aspectRatio || AspectRatio.SixteenNine) as AspectRatio);
+  if (!visualConfig?.skipGenerateTypeSelection) {
+    await configureGeminiAspectRatio(page, (visualConfig?.aspectRatio || AspectRatio.SixteenNine) as AspectRatio);
+  }
   const rawReferences = !_.isEmpty(visualConfig?.referenceImages) ? visualConfig.referenceImages : !_.isEmpty(visualConfig?.sceneReferenceImages) ? visualConfig.sceneReferenceImages : visualConfig?.styleReferenceImages;
   const allReferenceFiles = createGeminiReferenceFiles(rawReferences, visualConfig?.referenceImageNames);
   const nextSignature = createReferenceSignature(allReferenceFiles);

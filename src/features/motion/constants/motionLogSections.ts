@@ -50,14 +50,14 @@ export const MOTION_LOG_SECTIONS = {
   },
   MATCH: [
     ["seo", /Tạo SEO|SEO YouTube|motion-story-seo|^SEO:/iu],
-    ["voice", /Tạo giọng|Phân vai|lời thoại VieNeu|VieNeu|motion-audio-|motion-speech|Giọng đọc:|Đo nhịp giọng|Kênh giọng:|Tốc độ đọc:|Giọng theo tâm trạng|Nhịp đọc /iu],
+    ["voice", /Tạo giọng|Phân vai|lời thoại VieNeu|VieNeu|motion-audio-|motion-speech|Giọng đọc:|Đo nhịp giọng|Kênh giọng:|Tốc độ đọc:|Giọng theo tâm trạng|Nhịp đọc |^Thời lượng giọng đọc|^Thời lượng:/iu],
     ["render", /Xuất và kiểm MP4|Xuất video|Chốt hình và tiếng|Render video|ffmpeg|ffprobe|^MP4|^Video đã hoàn thành/iu],
     [
       "scenes",
-      /Ghép hình từ kho|Dựng cảnh minh họa|Ghép tài nguyên|^Phân cảnh$|^Đọc cảnh$|^Dựng cảnh(?:$|:)|Duyệt ảnh|motion-puppet-|motion[_-]remotion|Lập nhịp hình|Đã lưu nhịp hình|Đã lập \d+ hình|Đọc sự kiện thành hình|Đọc cảnh:|Bố cục khung|Bảng khung hình|^Dựng hình 2D|^Gói kiểu vẽ:|^Xong phần hình|Kiểm khung hình|^Lấy nhân vật dựng sẵn|^Ghép bối cảnh|^Kiểm kho|^Chưa có phương án ghép|^Chưa ghép đủ điểm đặt|^Cảnh Remotion|^Đọc và dựng cảnh Remotion|^Dựng cảnh Remotion|^Remotion: AI thiết kế|^Đã dựng cảnh Remotion|^Dùng kho cố định|^Chỉ mục kho|^Chưa phân tích được hình minh họa/iu,
+      /Ghép hình từ kho|Dựng cảnh minh họa|Ghép tài nguyên|^Phân cảnh$|^Đọc cảnh$|^Dựng cảnh(?:$|:)|Duyệt ảnh|motion-puppet-|motion[_-]remotion|motion-html-scene|room AI dựng cảnh|^Cảnh HTML |^Dựng sớm cảnh |^Đã dựng .*phân cảnh HTML|^Phương thức dựng:|^Chuyển động:|^Nhịp hình:|Lập nhịp hình|Đã lưu nhịp hình|Đã lập \d+ hình|Đọc sự kiện thành hình|Đọc cảnh:|Bố cục khung|Bảng khung hình|^Dựng hình 2D|^Gói kiểu vẽ:|^Xong phần hình|Kiểm khung hình|^Lấy nhân vật dựng sẵn|^Ghép bối cảnh|^Kiểm kho|^Chưa có phương án ghép|^Chưa ghép đủ điểm đặt|^Cảnh Remotion|^Đọc và dựng cảnh Remotion|^Dựng cảnh Remotion|^Remotion: AI thiết kế|^Đã dựng cảnh Remotion|^Dùng kho cố định|^Chỉ mục kho|^Chưa phân tích được hình minh họa/iu,
     ],
-    ["script", /Viết kịch bản|Kịch bản & phân cảnh|motion-story-chapter|motion-story-edit|Viết lời dẫn|Biên tập viên|^Chương \S+:/iu],
-    ["analyze", /Phân tích nội dung|Phân tích.*DNA|^Phân tích câu chuyện|^Đã phân tích;|motion-story-new|motion-dna-|motion-story-analysis|Biên kịch AI:|Đề tài nguồn đã khóa|AI chia \d+ chương/iu],
+    ["script", /Viết kịch bản|Kịch bản & phân cảnh|motion-story-chapter|motion-story-edit|motion-html-plan|Viết lời dẫn|^Viết phân cảnh chương|room AI nội dung|Biên tập viên|^Chương \S+:|^Tốc độ đọc thực tế:|^Script estimate |^Ước tính kịch bản |^Đã viết \d+ phân cảnh|^Phân cảnh HTML:|^Đã chia .*phân cảnh HTML|^Hoàn tất chia phân cảnh|^Khôi phục bước phân cảnh/iu],
+    ["analyze", /Phân tích nội dung|Phân tích.*DNA|^Phân tích câu chuyện|^Đã phân tích;|motion-story-new|motion-dna-|motion-story-analysis|Biên kịch AI:|Đề tài nguồn đã khóa|AI chia \d+ chương|^Nguồn được AI lập thành/iu],
     ["library", /^Kho tài nguyên$/iu],
   ] as readonly (readonly [string, RegExp])[],
   KINDS: { analyze: "analyze", script: "script", seo: "seo", scenes: "scenes", voice: "voice", render: "render", thumbnail: "seo", library: "library", train_voice: "voice" } as Record<string, string>,
@@ -69,7 +69,7 @@ export const MOTION_LOG_SECTIONS = {
   FAILURE: /^(?:Lỗi:|Error:|Phòng chat lỗi:|Chưa ghép đủ điểm đặt|Chưa đủ hình để xuất video)|chưa phân tích được|chưa .* sau các lượt/iu,
   CAPTCHA: /captcha|yêu cầu xác minh|không phải robot/iu,
   COMPLETE: /^(?:Hoàn tất|Xong phần hình|Video đã hoàn thành)(?:[.!\s]|$)/iu,
-  COUNTER: /(?:cảnh|nhóm|chương)\s+\d+\s*\/\s*\d+|Đã xong\s+\d+\s*\/\s*\d+|Đã lưu nhịp hình:\s*\d+\s*\/\s*\d+/iu,
+  COUNTER: /(?:cảnh|nhóm|chương)\s+\d+\s*\/\s*\d+|Đã (?:xong|chia|dựng)\s+\d+\s*\/\s*\d+|Đã lưu nhịp hình:\s*\d+\s*\/\s*\d+/iu,
   FOLLOW_DISTANCE: 24,
   UI: {
     WRAP: "space-y-2",

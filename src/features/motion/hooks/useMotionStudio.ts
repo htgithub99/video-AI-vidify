@@ -842,6 +842,7 @@ export function useMotionStudio() {
               language: now.language,
               length: now.length,
               aiExecution: motionMainAiExecution(now),
+              sceneAiExecution: motionSceneAiExecution(now),
               keepBrowser: chainOn(stateRef.current),
               voiceChannel: selectedChannelRef(now, channelsRef.current),
               multiVoice: now.multiVoice !== false,

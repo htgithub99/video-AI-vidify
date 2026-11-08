@@ -195,4 +195,12 @@ assert.match(component, /onClick=\{\(\) => handleCopy\(displayTitle, `title-\$\{
 assert.doesNotMatch(component, /handleCopy\(numberedTitle, `title-/);
 assert.match(component, /texts\.DNA_ANALYSIS_TITLE/);
 assert.match(component, /setStyleAnalysis\(generatedStyleAnalysis\)/);
+assert.match(constants, /MASTERPIECE SONGWRITING & SOURCE-ESSENCE RULES/);
+assert.match(constants, /REFERENCE SOURCE ESSENCE/);
+assert.match(SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(2, 1, 2, "Bolero", listenerMarket, "songs-test", "songs", "Mưa chiều kỷ niệm bên hiên xưa"), /Mưa chiều kỷ niệm bên hiên xưa/);
+assert.doesNotMatch(controller, /buildMusicImagePromptPlanningPrompt/);
+assert.match(controller, /const prompt: string = imageBrief/);
+assert.match(controller, /skipGenerateTypeSelection: true/);
+assert.match(imageGenerator, /if \(visualConfig\?\.skipGenerateTypeSelection\)/);
+assert.match(imageGenerator, /if \(!visualConfig\?\.skipGenerateTypeSelection\) \{\s*await configureGeminiAspectRatio/);
 process.stdout.write("Music composition uses source-grounded songwriter, composer, lyricist, and producer roles.\n");

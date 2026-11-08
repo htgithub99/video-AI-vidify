@@ -13,6 +13,10 @@ import sys
 import string
 import copy
 import urllib.request
+if hasattr(sys.stdout, _CODE_TEXT.RECONFIGURE):
+    sys.stdout.reconfigure(encoding=_CODE_TEXT.UTF_8)
+if hasattr(sys.stderr, _CODE_TEXT.RECONFIGURE):
+    sys.stderr.reconfigure(encoding=_CODE_TEXT.UTF_8)
 PUNCTUATION_TO_REMOVE = string.punctuation + _CODE_TEXT.SYMBOL_5AA8AE
 REGEX_SONG_SUFFIX = _CODE_TEXT.D_9A45F1
 LOG_START_PROCESS = _CODE_TEXT.B_T_U_X_L_T_I_U_H_A_CAPCUT_CHO_T_P_TIN
@@ -116,16 +120,6 @@ def save_file_dialog(source_path, suggested_name, extension):
     root.destroy()
     if target_path:
         shutil.copyfile(source_path, target_path)
-        print(os.path.normpath(target_path), end="")
-def select_save_file_dialog(suggested_name, extension):
-    import tkinter as tk
-    from tkinter import filedialog
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes(_CODE_TEXT.TOPMOST, True)
-    target_path = filedialog.asksaveasfilename(title=_CODE_TEXT.L_U_T_P, initialfile=suggested_name, defaultextension=extension, filetypes=[(_CODE_TEXT.ZIP_FILES, _CODE_TEXT.ZIP_B500A0), (ALL_EXT, ALL_EXT)])
-    root.destroy()
-    if target_path:
         print(os.path.normpath(target_path), end="")
 def select_save_file_dialog(suggested_name, extension):
     import tkinter as tk
@@ -1325,9 +1319,6 @@ if __name__ == _CODE_TEXT.MAIN:
             logging.info(ERR_CLI_USAGE)
             sys.exit(1)
         save_file_dialog(sys.argv[2], sys.argv[3], sys.argv[4])
-        sys.exit(0)
-    elif cmd_arg == CMD_SELECT_SAVE_FILE:
-        select_save_file_dialog(sys.argv[2], sys.argv[3])
         sys.exit(0)
     elif cmd_arg == CMD_SELECT_SAVE_FILE:
         if len(sys.argv) < 4:

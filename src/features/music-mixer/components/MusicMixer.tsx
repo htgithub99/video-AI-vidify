@@ -169,8 +169,6 @@ import {
   SOURCE_TEXT_AI,
   SOURCE_TEXT_ALERT,
   SOURCE_TEXT_APPLICATION_JSON,
-  SOURCE_TEXT_APPLICATION_ZIP,
-  SOURCE_TEXT_BLOB,
   SOURCE_TEXT_BUTTON,
   SOURCE_TEXT_DUNG,
   SOURCE_TEXT_EN,
@@ -203,7 +201,6 @@ import {
 } from "../../../constants/sourceText.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { ChangeEvent, DragEvent, FC, useEffect, useMemo, useRef, useState } from "react";
-import JSZip from "jszip";
 import _ from "lodash";
 import { Download, FolderOpen, FolderPlus, Music2, Shuffle, Trash2, Sparkles, SlidersHorizontal, X, Disc3, Layers, FileArchive, AlertCircle, Square, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
@@ -221,27 +218,31 @@ import { MUSIC_MIXER_SERVER } from "../../../constants/musicMixer";
 import { deduplicateMusicMixerTracks, distributeMusicMixerTracks, getMusicMixerTrackKey } from "../services/musicMixerTracks";
 import { recordWorkflowActivity } from "../../../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../../../constants/workflowActivity";
-type Track = { file: File; path: string; folder: string; folderPath?: string; sourcePath?: string; sourceUrl?: string; size?: number; durationSeconds?: number };
+type Track = { file: File; name?: string; path: string; folder: string; folderPath?: string; sourcePath?: string; sourceUrl?: string; size?: number; durationSeconds?: number };
 type SeoData = ReturnType<typeof createSeo>;
 type ResultFolder = { name: string; tracks: Track[]; seo?: SeoData; seoOptions?: any[] };
 const AUDIO_EXT = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
 const MIXER_DB = MUSIC_MIXER_SERVER.DATABASE_NAME;
-const numberedName = (file: File, index: number) =>
-  SOURCE_TEMPLATE_SYMBOL_18(
-    SOURCE_TEMPLATE_SYMBOL_86(`${String(index + 1).padStart(2, SOURCE_TEXT_0)}`),
-    SOURCE_TEMPLATE_SYMBOL_86(
-      `${file.name
-        .replace(/\.[^.]+$/, "")
-        .replace(/^\d+[\s._-]*/, "")
-        .replace(/\s*\(\d+\)$/, "")}`,
-    ),
-    SOURCE_TEMPLATE_SYMBOL_86(`${file.name.match(/\.[^.]+$/)?.[0] || ""}`),
-  );
-const cleanTrackTitle = (name: string) =>
-  name
-    .replace(/\.[^.]+$/, "")
+const getTrackFileName = (track: { file?: File; name?: string; path?: string; sourcePath?: string }): string =>
+  track?.file?.name || track?.name || _.compact(String(track?.path || track?.sourcePath || "").split(/[\\/]/)).pop() || "track.mp3";
+const cleanTrackTitle = (name: string) => {
+  const raw = String(name || "").replace(/\.[^.]+$/, "");
+  const stripped = raw
     .replace(/^\d+[\s._-]*/, "")
-    .replace(/\s*\(\d+\)$/, "");
+    .replace(/\s*\(\d+\)$/, "")
+    .trim();
+  return stripped || raw.trim() || "Track";
+};
+const numberedName = (file: File | { name?: string }, index: number, fallbackTrack?: Track) => {
+  const rawName = file?.name || (fallbackTrack ? getTrackFileName(fallbackTrack) : "track.mp3");
+  const safeStem = cleanTrackTitle(rawName).replace(/[<>:"/\\|?*\x00-\x1f]/g, "_");
+  const ext = rawName.match(/\.[^.]+$/)?.[0] || "";
+  return SOURCE_TEMPLATE_SYMBOL_18(
+    SOURCE_TEMPLATE_SYMBOL_86(`${String(index + 1).padStart(2, SOURCE_TEXT_0)}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${safeStem}`),
+    SOURCE_TEMPLATE_SYMBOL_86(`${ext}`),
+  );
+};
 const getDisplayFolderName = (folderName: string, folderPath?: string) => {
   if (!folderPath) return folderName;
   const normalized = folderPath.replace(/^[A-Za-z]:[\\/]/, "");
@@ -257,11 +258,6 @@ const selectZipDestination = async (name: string): Promise<string | null> => {
   if (!destinationResponse.ok || !destination.success) throw new Error(destination.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
   return destination.cancelled ? null : destination.token;
 };
-const saveZip = async (blob: Blob, token: string) => {
-  const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_WRITE_ZIP, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_ZIP, "X-Music-Mixer-Zip-Token": token }, body: blob });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || !result.success) throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
-};
 const createSeo = (folder: ResultFolder) => {
   const title = SOURCE_TEMPLATE_SYMBOL_20(SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.DEFAULT_SEO_TITLE_SUFFIX}`));
   let elapsed = 0;
@@ -270,7 +266,7 @@ const createSeo = (folder: ResultFolder) => {
     const seconds = Math.floor(elapsed % 60);
     const stamp = SOURCE_TEMPLATE_SYMBOL_8(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(seconds), 2, SOURCE_TEXT_0)}`));
     elapsed += track.durationSeconds || 0;
-    return SOURCE_TEMPLATE_SYMBOL_126(`${stamp}`, `${cleanTrackTitle(track.file.name)}`);
+    return SOURCE_TEMPLATE_SYMBOL_126(`${stamp}`, `${cleanTrackTitle(getTrackFileName(track))}`);
   });
   return {
     title,
@@ -280,26 +276,33 @@ const createSeo = (folder: ResultFolder) => {
     tracks,
   };
 };
-const ensureTrackFile = async (track: Track): Promise<File> => {
-  if (track.file.size > 0 || (!track.sourcePath && !track.sourceUrl)) return track.file;
+const ensureTrackFile = async (track: Track, sourceTracks: Track[] = []): Promise<File> => {
+  const fileName = getTrackFileName(track);
+  if (track.file?.size > 0) return track.file;
+  if (!track.sourcePath && !track.sourceUrl) {
+    const key = getMusicMixerTrackKey(track);
+    const matched = _.find(sourceTracks, (candidate) => getMusicMixerTrackKey(candidate) === key && candidate.file?.size > 0);
+    if (matched) return matched.file;
+    return track.file;
+  }
   const response = track.sourcePath ? await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_SOURCE_FILE, { method: SOURCE_TEXT_POST, headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON }, body: stringifyJson({ sourcePath: track.sourcePath }) }) : await fetch(track.sourceUrl!);
   if (!response.ok) throw new Error(MUSIC_MIXER_SERVER.SOURCE_READ_ERROR);
   const blob = await response.blob();
-  return new File([blob], track.file.name, { type: blob.type || track.file.type });
+  return new File([blob], fileName, { type: blob.type || track.file?.type || "" });
 };
 const formatList = (val: unknown, sep: string = SOURCE_TEXT_SYMBOL_10): string => {
   if (_.isArray(val)) return _.join(_.compact(val), sep);
   return _.isString(val) ? val : "";
 };
 const formatSeoText = (folder: ResultFolder) => {
-  const orderedTracks = _.map(folder.tracks, (track) => cleanTrackTitle(track.file.name));
+  const orderedTracks = _.map(folder.tracks, (track) => cleanTrackTitle(getTrackFileName(track)));
   let elapsed = 0;
   const timeline = _.map(folder.tracks, (track) => {
     const minutes = Math.floor(elapsed / 60);
     const seconds = Math.floor(elapsed % 60);
     const stamp = SOURCE_TEMPLATE_SYMBOL_8(SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(minutes), 2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${_.padStart(_.toString(seconds), 2, SOURCE_TEXT_0)}`));
     elapsed += track.durationSeconds || 0;
-    return SOURCE_TEMPLATE_SYMBOL_126(`${stamp}`, `${cleanTrackTitle(track.file.name)}`);
+    return SOURCE_TEMPLATE_SYMBOL_126(`${stamp}`, `${cleanTrackTitle(getTrackFileName(track))}`);
   });
   const options = !_.isEmpty(folder.seoOptions) ? folder.seoOptions : [{ title: folder.seo?.title || "", description: folder.seo?.description || "", hashtags: [], tags: [], seoScore: SOURCE_TEXT_AI }];
   return SOURCE_TEMPLATE_SYMBOL_149(
@@ -308,6 +311,45 @@ const formatSeoText = (folder: ResultFolder) => {
     `${_.map(options, (option, index) => SOURCE_TEMPLATE_SYMBOL_21(SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_SAMPLE_PREFIX}`), SOURCE_TEMPLATE_SYMBOL_86(`${index + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_SCORE_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${option?.seoScore || SOURCE_TEXT_AI}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_TITLE_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${option?.title || ""}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_DESCRIPTION_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${option?.description || ""}`), SOURCE_TEMPLATE_SYMBOL_86(`${timeline.join(SOURCE_TEXT_SYMBOL_56)}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_ORDER_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${orderedTracks.join(MUSIC_MIXER_SERVER.SEO_TRACK_SEPARATOR)}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_HASHTAGS_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${formatList(option?.hashtags, SOURCE_TEXT_SYMBOL_52)}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_TAGS_LABEL}`), SOURCE_TEMPLATE_SYMBOL_86(`${formatList(option?.tags, SOURCE_TEXT_SYMBOL_10)}`))).join(SOURCE_TEMPLATE_SYMBOL_148(`${MUSIC_MIXER_SERVER.SEO_DIVIDER}`))}`,
   );
 };
+const stageTrackForZipBuild = async (token: string, track: Track, sourceTracks: Track[]): Promise<string> => {
+  const file = await ensureTrackFile(track, sourceTracks);
+  const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_STAGE_ZIP_FILE, {
+    method: SOURCE_TEXT_POST,
+    headers: {
+      "Content-Type": MUSIC_MIXER_SERVER.HEADER_CONTENT_TYPE_OCTET_STREAM,
+      [MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN]: token,
+      [MUSIC_MIXER_SERVER.HEADER_FILE_NAME]: encodeURIComponent(getTrackFileName(track)),
+    },
+    body: file,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.success || !payload.sourcePath) {
+    throw new Error(payload.error || MUSIC_MIXER_SERVER.SOURCE_READ_ERROR);
+  }
+  return String(payload.sourcePath);
+};
+const resolveFoldersWithSourcePaths = async (token: string, resultFolders: ResultFolder[], sourceTracks: Track[]): Promise<ResultFolder[]> => {
+  const stagedByKey = new Map<string, string>();
+  const resolvedFolders: ResultFolder[] = [];
+  for (const folder of resultFolders) {
+    const resolvedTracks: Track[] = [];
+    for (const track of folder.tracks) {
+      if (track.sourcePath) {
+        resolvedTracks.push(track);
+        continue;
+      }
+      const key = getMusicMixerTrackKey(track);
+      let stagedPath = stagedByKey.get(key);
+      if (!stagedPath) {
+        stagedPath = await stageTrackForZipBuild(token, track, sourceTracks);
+        stagedByKey.set(key, stagedPath);
+      }
+      resolvedTracks.push({ ...track, sourcePath: stagedPath });
+    }
+    resolvedFolders.push({ ...folder, tracks: resolvedTracks });
+  }
+  return resolvedFolders;
+};
 const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) => {
   const payload = {
     token,
@@ -315,7 +357,7 @@ const buildZipDirectly = async (token: string, resultFolders: ResultFolder[]) =>
       const seo = folder.seo || createSeo(folder);
       return {
         name: folder.name,
-        files: _.map(folder.tracks, (track, index) => ({ sourcePath: track.sourcePath, zipPath: SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`), SOURCE_TEMPLATE_SYMBOL_86(`${numberedName(track.file, index)}`)) })),
+        files: _.map(folder.tracks, (track, index) => ({ sourcePath: track.sourcePath, zipPath: SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`), SOURCE_TEMPLATE_SYMBOL_86(`${numberedName(track.file, index, track)}`)) })),
         texts: [
           { zipPath: SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_JSON_FILENAME}`)), content: stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2) },
           { zipPath: SOURCE_TEMPLATE_SYMBOL(SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`), SOURCE_TEMPLATE_SYMBOL_86(`${MUSIC_MIXER_SERVER.SEO_TXT_FILENAME}`)), content: formatSeoText(folder) },
@@ -334,7 +376,7 @@ const buildSingleFolderZipDirectly = async (token: string, folder: ResultFolder)
     folders: [
       {
         name: folder.name,
-        files: _.map(folder.tracks, (track, index) => ({ sourcePath: track.sourcePath, zipPath: numberedName(track.file, index) })),
+        files: _.map(folder.tracks, (track, index) => ({ sourcePath: track.sourcePath, zipPath: numberedName(track.file, index, track) })),
         texts: [
           { zipPath: MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, content: stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2) },
           { zipPath: MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, content: formatSeoText(folder) },
@@ -352,7 +394,9 @@ const walkEntry = async (entry: any): Promise<Track[]> => {
   if (entry.isFile) {
     const file = await readFile(entry);
     const path = String(entry.fullPath || file.name).replace(/^\//, "");
-    return AUDIO_EXT.test(file.name) ? [{ file, path, folder: path.split(SOURCE_TEXT_SYMBOL)[0] }] : [];
+    const parts = _.compact(path.split(SOURCE_TEXT_SYMBOL));
+    const folder = parts.length > 2 ? parts[parts.length - 2] : parts[0] || SOURCE_TEXT_FOLDER_2;
+    return AUDIO_EXT.test(file.name) ? [{ file, name: file.name, path, folder, size: file.size }] : [];
   }
   if (!entry.isDirectory) return [];
   const reader = entry.createReader();
@@ -418,10 +462,25 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     request.onsuccess = () => {
       const db = request.result;
       const get = db.transaction(SOURCE_TEXT_TRACKS, SOURCE_TEXT_READONLY).objectStore(SOURCE_TEXT_TRACKS).getAll();
-      get.onsuccess = () => setTracks(deduplicateMusicMixerTracks(_.map(get.result, (item: any) => ({ file: new File([item.blob], item.name, { type: item.type, lastModified: item.lastModified }), path: item.path, folder: item.folder, folderPath: item.folderPath, sourcePath: item.sourcePath, sourceUrl: item.sourceUrl, size: item.size, durationSeconds: item.durationSeconds }))));
+      get.onsuccess = () => setTracks(deduplicateMusicMixerTracks(_.map(get.result, (item: any) => ({ file: new File([item.blob], item.name, { type: item.type, lastModified: item.lastModified }), name: item.name, path: item.path, folder: item.folder, folderPath: item.folderPath, sourcePath: item.sourcePath, sourceUrl: item.sourceUrl, size: item.size, durationSeconds: item.durationSeconds }))));
       const savedResults = db.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READONLY).objectStore(SOURCE_TEXT_RESULTS).get(MUSIC_MIXER_SERVER.RESULTS_STORE_KEY);
       savedResults.onsuccess = () => {
-        if (savedResults.result?.value) setResults(savedResults.result.value);
+        if (Array.isArray(savedResults.result?.value)) {
+          setResults(
+            _.map(savedResults.result.value, (folder: any) => ({
+              ...folder,
+              tracks: _.map(folder.tracks || [], (item: any) => {
+                const name = getTrackFileName(item);
+                const blobPart = item.file instanceof Blob ? [item.file] : [];
+                return {
+                  ...item,
+                  name,
+                  file: new File(blobPart, name, { type: item.file?.type || item.type || "", lastModified: item.file?.lastModified ?? item.lastModified ?? 0 }),
+                };
+              }),
+            })),
+          );
+        }
       };
     };
   }, []);
@@ -431,8 +490,20 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   }, [settingsLoaded, songsPerResult, resultCount, trackOrder, seoProvider, seoModel, seoExecutionMode, seoChromeHeadless]);
   useEffect(() => {
     if (!results.length) return;
+    const serializedResults = _.map(results, (folder) => ({
+      ...folder,
+      tracks: _.map(folder.tracks, (track) => {
+        const name = getTrackFileName(track);
+        return {
+          ...track,
+          name,
+          size: track.size ?? track.file?.size ?? 0,
+          file: new File([], name, { type: track.file?.type || "", lastModified: track.file?.lastModified ?? 0 }),
+        };
+      }),
+    }));
     const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);
-    request.onsuccess = () => request.result.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_RESULTS).put({ id: MUSIC_MIXER_SERVER.RESULTS_STORE_KEY, value: results });
+    request.onsuccess = () => request.result.transaction(SOURCE_TEXT_RESULTS, SOURCE_TEXT_READWRITE).objectStore(SOURCE_TEXT_RESULTS).put({ id: MUSIC_MIXER_SERVER.RESULTS_STORE_KEY, value: serializedResults });
   }, [results]);
   useEffect(() => {
     if (!tracks.length || !results.length) return;
@@ -672,22 +743,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     try {
       const destinationToken = await selectZipDestination(SOURCE_TEMPLATE_SYMBOL_170(`${MUSIC_MIXER_SERVER.DEFAULT_ZIP_NAME_PREFIX}`, `${Date.now()}`, `${MUSIC_MIXER_SERVER.ZIP_EXTENSION}`));
       if (!destinationToken) return;
-      const allHaveSourcePath = _.every(results, (folder) => _.every(folder.tracks, (track) => Boolean(track.sourcePath)));
-      if (allHaveSourcePath) {
-        await buildZipDirectly(destinationToken, results);
-      } else {
-        const zip = new JSZip();
-        for (const folder of results) for (const [index, track] of folder.tracks.entries()) zip.folder(folder.name)!.file(numberedName(track.file, index), await ensureTrackFile(track));
-        _.forEach(results, (folder) => {
-          const seo = folder.seo || createSeo(folder);
-          zip
-            .folder(folder.name)!
-            .file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2))
-            .file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
-        });
-        const blob = await zip.generateAsync({ type: SOURCE_TEXT_BLOB, compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
-        await saveZip(blob, destinationToken);
-      }
+      const resolvedFolders = await resolveFoldersWithSourcePaths(destinationToken, results, tracks);
+      await buildZipDirectly(destinationToken, resolvedFolders);
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadDone, results.length);
       toast.success(text.ZIP_SUCCESS);
     } catch (error: any) {
@@ -706,17 +763,8 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
     try {
       const destinationToken = await selectZipDestination(SOURCE_TEMPLATE_SYMBOL_75(`${folder.name}`, `${MUSIC_MIXER_SERVER.ZIP_EXTENSION}`));
       if (!destinationToken) return;
-      const allHaveSourcePath = _.every(folder.tracks, (track) => Boolean(track.sourcePath));
-      if (allHaveSourcePath) {
-        await buildSingleFolderZipDirectly(destinationToken, folder);
-      } else {
-        const zip = new JSZip();
-        for (const [index, track] of folder.tracks.entries()) zip.file(numberedName(track.file, index), await ensureTrackFile(track));
-        const seo = folder.seo || createSeo(folder);
-        zip.file(MUSIC_MIXER_SERVER.SEO_JSON_FILENAME, stringifyJson({ ...seo, options: folder.seoOptions || [] }, null, 2)).file(MUSIC_MIXER_SERVER.SEO_TXT_FILENAME, formatSeoText(folder));
-        const blob = await zip.generateAsync({ type: SOURCE_TEXT_BLOB, compression: MUSIC_MIXER_SERVER.ZIP_COMPRESSION_STORE, streamFiles: true });
-        await saveZip(blob, destinationToken);
-      }
+      const [resolvedFolder] = await resolveFoldersWithSourcePaths(destinationToken, [folder], tracks);
+      await buildSingleFolderZipDirectly(destinationToken, resolvedFolder);
       recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.mixer, WORKFLOW_ACTIVITY_EVENT.musicMixerDownloadDone, 1, folder.name);
       toast.success(SOURCE_TEMPLATE_SYMBOL_24(SOURCE_TEMPLATE_SYMBOL_86(`${text.ZIP_SUCCESS}`), SOURCE_TEMPLATE_SYMBOL_86(`${folder.name}`)));
     } catch (error: any) {
@@ -1148,7 +1196,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
                             {String(index + 1).padStart(2, SOURCE_TEXT_0)}
                             {SOURCE_TEXT_SYMBOL_23}
                           </span>
-                          <span className={cn(SOURCE_TEXT_FONT_MEDIUM_TEXT_SLATE_200_TRUNCATE_TEXT)}>{cleanTrackTitle(track.file.name)}</span>
+                          <span className={cn(SOURCE_TEXT_FONT_MEDIUM_TEXT_SLATE_200_TRUNCATE_TEXT)}>{cleanTrackTitle(getTrackFileName(track))}</span>
                         </div>
                         <span className={cn(SOURCE_TEXT_TEXT_10PX_FONT_MONO_TEXT_SLATE_500)}>{track.folder}</span>
                       </div>

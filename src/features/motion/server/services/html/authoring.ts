@@ -1,4 +1,5 @@
-import { runMotionAi, normalizeBeats, sourceSlice } from "../motionStoryService.js";
+import { runMotionAi, normalizeBeats, sourceSlice, mapMotionAiPool } from "../motionStoryService.js";
+import { normalizeMotionChapterMetadata } from "../../../../../lib/motionEditorialMetadata.js";
 import { motionHtmlWritingDirection, motionHtmlChapterBudget } from "../../../../../lib/motionHtmlAuthoring.js";
 import { motionHtmlIdentities } from "../../../../../lib/motionHtmlScene.js";
 import { motionLanguageRate } from "../../../../../lib/motionLanguage.js";
@@ -13,9 +14,9 @@ const countChapterUnits = (rows: any[]): number => rows.reduce((sum, row) => sum
 const HTML_PART_ATOM_SPLIT = /(?<=[.!?。！？])\s+(?=[\p{L}\p{N}\p{P}])|\r?\n+/u;
 const HTML_PART_CLAUSE_SPLIT = /(?<=[,;—–:])\s+(?=[\p{L}\p{N}\p{P}])/u;
 const HTML_PART_STAMP = /\((?:(\d+):)?(\d{1,2}):(\d{2})\)|\[(?:(\d+):)?(\d{1,2}):(\d{2})\]/g;
-const MAX_HTML_BEATS_PER_PART = 2;
-const MAX_HTML_UNITS_PER_PART = 75;
-const MAX_HTML_EDIT_BEATS_PER_BATCH = 2;
+const MAX_HTML_BEATS_PER_PART = 5;
+const MAX_HTML_UNITS_PER_PART = 175;
+const MAX_HTML_EDIT_BEATS_PER_BATCH = 10;
 
 interface HtmlChapterPartSlice {
   points: string[];
@@ -48,8 +49,8 @@ export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, tot
   }
   if (atoms.length < rawDesiredParts) {
     const words = slice.trim().split(/\s+/).filter(Boolean);
-    if (words.length >= rawDesiredParts * 4) {
-      const chunkSize = Math.max(4, Math.ceil(words.length / rawDesiredParts));
+    if (words.length >= rawDesiredParts * 25) {
+      const chunkSize = Math.max(25, Math.ceil(words.length / rawDesiredParts));
       atoms = [];
       for (let i = 0; i < words.length; i += chunkSize) {
         atoms.push(words.slice(i, i + chunkSize).join(" "));
@@ -128,16 +129,16 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
     const chapterInputKey = motionInputKey(["html-multipart-v1", chapter.id, analysis.title, analysis.authoringSettings, slice, opts.language, rate, opts.isFirst, opts.isLast, parts.length]);
     const drafts: Record<string, { inputKey: string; rows: any[]; pending: any[] }> = opts.draft?.inputKey === chapterInputKey && opts.draft?.parts ? structuredClone(opts.draft.parts) : {};
     const completed: any[] = [];
-    const saveMultipartDraft = (finalRows: any[] = []) => {
+    const saveMultipartDraft = (currentRows: any[] = [], isFinal = false) => {
       opts.onDraft?.({
         inputKey: chapterInputKey,
-        rows: finalRows,
-        pending: finalRows.length ? [] : parts.flatMap((_part, idx) => (drafts[String(idx)]?.rows?.length ? [] : [{ id: String(idx), fields: ["narration", "sceneTemplateDraft"] as any }])),
+        rows: structuredClone(currentRows),
+        pending: isFinal ? [] : parts.flatMap((_part, idx) => (drafts[String(idx)]?.rows?.length ? [] : [{ id: String(idx), fields: ["narration", "sceneTemplateDraft"] as any }])),
         parts: structuredClone(drafts),
       });
     };
-    saveMultipartDraft();
-    opts.log?.(`Chương ${chapter.id}: chia thành ${parts.length} phần nhỏ (~1–2 phân cảnh/lượt) để tránh quá tải token phản hồi trên video dài.`);
+    saveMultipartDraft([], false);
+    opts.log?.(`Chương ${chapter.id}: chia thành ${parts.length} phần nhỏ (~${MAX_HTML_BEATS_PER_PART} phân cảnh/lượt) để tối ưu tốc độ và tránh quá tải token phản hồi.`);
 
     for (let index = 0; index < parts.length; index++) {
       opts.signal?.throwIfAborted();
@@ -210,13 +211,13 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
           id: beat?.id || `${chapter.id}_b${completed.length + beatIdx + 1}`,
         }));
         drafts[String(index)] = { inputKey: partKey, rows: partRows, pending: [] };
-        saveMultipartDraft();
       }
       completed.push(...partRows);
+      saveMultipartDraft(completed, false);
     }
 
-    saveMultipartDraft(completed);
-    return normalizeBeats(completed, chapter.id, analysis);
+    saveMultipartDraft(completed, true);
+    return normalizeBeats(normalizeMotionChapterMetadata(completed), chapter.id, analysis);
   }
 
   const prompt = [
@@ -233,7 +234,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   const rows = raw.beats;
   if (!Array.isArray(rows)) throw new Error("Không đọc được danh sách lời của chương từ phản hồi AI.");
   opts.onDraft?.({ inputKey: key, rows, pending: [] });
-  return normalizeBeats(rows, chapter.id, analysis);
+  return normalizeBeats(normalizeMotionChapterMetadata(rows), chapter.id, analysis);
 };
 
 export const editMotionHtmlScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: Parameters<typeof runMotionAi>[2]; signal?: AbortSignal; log?: Parameters<typeof runMotionAi>[4]; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }) => {
@@ -263,38 +264,41 @@ export const editMotionHtmlScript = async (source: MotionStorySource, analysis: 
     }
     const changes = new Map<string, any>();
     let requests = 0;
-    for (let idx = 0; idx < batches.length; idx++) {
-      opts.signal?.throwIfAborted();
-      const batch = batches[idx];
-      const chapter = analysis.chapters.find((item) => item.id === batch.chapterId) || analysis.chapters[0];
-      const chapterBudget = chapterBudgets.find((item) => item.chapterId === batch.chapterId);
-      const chapterSlice = chapter ? sourceSlice(source, chapter.from, chapter.to) : source.text;
-      const sliceParts = batch.totalBatchesInChapter > 1 ? splitHtmlChapterParts(chapter, chapterSlice, chapter?.targetSeconds || 60, chapterBudget?.targetUnits || 200, batch.totalBatchesInChapter * MAX_HTML_EDIT_BEATS_PER_BATCH) : [];
-      const batchSource = sliceParts[batch.batchIndex]?.source || chapterSlice;
-      const batchPrompt = [
-        "Edit the supplied spoken script batch once for source fidelity, strong genre voice, engaging storytelling cadence, and exact duration budget alignment. Return JSON {edits:[{id,narration,sceneTemplateDraft,utterances?,reason}]}; omit unchanged beats. If narration/action changes return its complete updated template sections 0–4 as well. Preserve chapters that are already within their minUnits–maxUnits window; if a chapter is below minUnits or above maxUnits, adjust its beats using only source-supported details so total spoken units match the chapter budget. Do not add prescribed stages or unsupported facts. Do not return scores or request redraws.",
-        motionHtmlWritingDirection(analysis, opts.language),
-        JSON.stringify({
-          language: opts.language,
-          batch: `${idx + 1}/${batches.length}`,
-          chapterBudget,
-          chapter: chapter ? { id: chapter.id, title: chapter.title, summary: chapter.summary, from: chapter.from, to: chapter.to, targetSeconds: chapter.targetSeconds } : undefined,
-          beats: batch.items,
-          source: batchSource,
-          renamed: analysis.renameEntities ? analysis.renameMap : undefined,
-        }),
-      ].join("\n");
-      const checkpoint = motionTaskCheckpoint<any>(opts.scope, `html-script-edit-batch-${idx + 1}`, [batchPrompt]);
-      let rawBatch = checkpoint.read();
-      if (!rawBatch) {
-        requests++;
-        rawBatch = await runMotionAi(batchPrompt, "motion-story-edit", exec, opts.signal, opts.log);
-        checkpoint.save(rawBatch);
-      }
-      for (const edit of rawBatch?.edits || []) {
-        if (edit?.id) changes.set(edit.id, edit);
-      }
-    }
+    await mapMotionAiPool(
+      batches,
+      async (batch, idx) => {
+        opts.signal?.throwIfAborted();
+        const chapter = analysis.chapters.find((item) => item.id === batch.chapterId) || analysis.chapters[0];
+        const chapterBudget = chapterBudgets.find((item) => item.chapterId === batch.chapterId);
+        const chapterSlice = chapter ? sourceSlice(source, chapter.from, chapter.to) : source.text;
+        const sliceParts = batch.totalBatchesInChapter > 1 ? splitHtmlChapterParts(chapter, chapterSlice, chapter?.targetSeconds || 60, chapterBudget?.targetUnits || 200, batch.totalBatchesInChapter * MAX_HTML_EDIT_BEATS_PER_BATCH) : [];
+        const batchSource = sliceParts[batch.batchIndex]?.source || chapterSlice;
+        const batchPrompt = [
+          "Edit the supplied spoken script batch once for source fidelity, strong genre voice, engaging storytelling cadence, and exact duration budget alignment. Return JSON {edits:[{id,narration,sceneTemplateDraft,utterances?,reason}]}; omit unchanged beats. If narration/action changes return its complete updated template sections 0–4 as well. Preserve chapters that are already within their minUnits–maxUnits window; if a chapter is below minUnits or above maxUnits, adjust its beats using only source-supported details so total spoken units match the chapter budget. Do not add prescribed stages or unsupported facts. Do not return scores or request redraws.",
+          motionHtmlWritingDirection(analysis, opts.language),
+          JSON.stringify({
+            language: opts.language,
+            batch: `${idx + 1}/${batches.length}`,
+            chapterBudget,
+            chapter: chapter ? { id: chapter.id, title: chapter.title, summary: chapter.summary, from: chapter.from, to: chapter.to, targetSeconds: chapter.targetSeconds } : undefined,
+            beats: batch.items,
+            source: batchSource,
+            renamed: analysis.renameEntities ? analysis.renameMap : undefined,
+          }),
+        ].join("\n");
+        const checkpoint = motionTaskCheckpoint<any>(opts.scope, `html-script-edit-batch-${idx + 1}`, [batchPrompt]);
+        let rawBatch = checkpoint.read();
+        if (!rawBatch) {
+          requests++;
+          rawBatch = await runMotionAi(batchPrompt, "motion-story-edit", exec, opts.signal, opts.log);
+          checkpoint.save(rawBatch);
+        }
+        for (const edit of rawBatch?.edits || []) {
+          if (edit?.id) changes.set(edit.id, edit);
+        }
+      },
+      2,
+    );
     const result = beats.map((beat) => {
       const edit = changes.get(beat.id);
       if (!edit) return beat;

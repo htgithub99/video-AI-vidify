@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
-import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { motionHtmlWritingDirection, motionHtmlPacingDirection, motionHtmlLanguageDirection } from "../../../../../lib/motionHtmlAuthoring.js";
 import { motionHtmlSource, motionHtmlPlanContext, motionHtmlPlanSource, motionHtmlPlanCurrent } from "../../../../../lib/motionHtmlScene.js";
 import { motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
@@ -9,15 +8,16 @@ import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBe
 import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js";
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
-import { runMotionAi, prepareMotionSceneRooms, extractJson } from "../motionStoryService.js";
+import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
+import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
 import { MotionPriorityPool } from "../motionPriorityPool.js";
 import { openMotionHtmlRuntime } from "./sceneRuntime.js";
 import { motionHtmlStore } from "./sceneStore.js";
 import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
-import type { MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
-import type { MotionRemotionScene, MotionRemotionState } from "../../../../../types/motionVisual.js";
+import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
+import type { MotionRemotionScene, MotionRemotionState, MotionVisualSettings } from "../../../../../types/motionVisual.js";
 import type { MotionHtmlRequest } from "../../../../../types/motionHtmlScene.js";
 
 const retainCheckpoint = async (write: () => void, opts: Pick<RemotionSceneOptions, "signal" | "log">) => {
@@ -28,6 +28,7 @@ const retainCheckpoint = async (write: () => void, opts: Pick<RemotionSceneOptio
 };
 
 const normalizePlannedHtmlScenes = (scenes: any[], lines: { key: string; text: string; beatId: string }[], beats: { id: string; sceneTemplateDraft?: string }[], totalSeconds: number, pacing?: string): any[] => {
+  if (beats.length > 0 && scenes.length === beats.length && beats.every((beat) => typeof beat.sceneTemplateDraft === "string" && beat.sceneTemplateDraft.trim().length > 0)) return scenes;
   const targetSeconds = pacing === "few" ? 14 : pacing === "many" ? 6 : 9;
   if (totalSeconds < targetSeconds * 1.3 || lines.length <= 1 || !scenes.length) return scenes;
   const totalChars = Math.max(1, lines.reduce((sum, line) => sum + Math.max(1, line.text.length), 0));
@@ -119,27 +120,29 @@ const normalizePlannedHtmlScenes = (scenes: any[], lines: { key: string; text: s
   return working;
 };
 
-const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, read: (raw: any) => void, groupIndex = 0) => {
+const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, read: (raw: any) => void, _groupIndex = 0, priority = 0) => {
   const store = motionTaskCheckpoint<MotionHtmlRequest>(opts.scope, "html-plan-submission", [key]);
   let attempt = store.read();
   let failures = 0;
-  const worker = MOTION_STORY_CONFIG.SCENE_WORKER_IDS[groupIndex % MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length];
   for (;;) {
     opts.signal?.throwIfAborted();
-    if (!attempt || attempt.status === "retry_wait") attempt = { id: randomUUID(), attempt: (attempt?.attempt || 0) + 1, status: "running", worker };
+    if (!attempt || attempt.status === "retry_wait") attempt = { id: randomUUID(), attempt: (attempt?.attempt || 0) + 1, status: "running" };
     const current = attempt;
-    current.worker ||= worker;
     const submission: any = { attempted: false, completed: false, ...current.submission };
+    const resuming = !!submission.attempted && !submission.completed && !submission.abandoned && !!current.worker;
+    const worker = resuming ? current.worker : undefined;
+    if (!resuming) delete current.worker;
     const persist = () => { const { page: _page, ...pending } = submission.pending || {}; current.submission = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) }; store.save(current); };
     let journal: ReturnType<typeof setInterval> | undefined, invalidData = false;
     try {
       persist();
       journal = setInterval(() => { try { persist(); } catch (error) { opts.log(`Chờ lưu yêu cầu phân cảnh: ${String(error)}`); } }, 2000);
-      if (!opts.ai) await prepareMotionSceneRooms(opts.mainExec || opts.exec, opts.signal, opts.log);
-      const exec: MotionAiExecution = { ...(opts.mainExec || opts.exec), role: "draw", worker: current.worker, requestId: current.id, submission, submissionChanged: persist, singleResponse: true, strictProvider: true, allowFallback: false, responseReceived: (raw) => { current.raw = raw; current.status = "received"; submission.completed = true; persist(); } };
+      const planExec = opts.mainExec?.provider ? opts.mainExec : opts.exec?.provider ? opts.exec : opts.mainExec || opts.exec;
+      if (!opts.ai) await prepareMotionContentRooms(planExec, opts.signal, opts.log);
+      const exec: MotionAiExecution = { ...planExec, role: "main", worker, workerAssigned: (assigned) => { current.worker = assigned; }, requestId: current.id, submission, submissionChanged: persist, singleResponse: true, strictProvider: true, allowFallback: false, responseReceived: (raw) => { current.raw = raw; current.status = "received"; submission.completed = true; persist(); } };
       let raw: any;
       if (current.raw !== undefined) { try { raw = extractJson(current.raw); } catch (error) { invalidData = true; throw error; } }
-      else raw = await slots.run(0, () => opts.ai ? opts.ai(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log), opts.signal);
+      else raw = await slots.run(priority, () => opts.ai ? opts.ai(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log), opts.signal);
       current.raw = JSON.stringify(raw); current.status = "received"; submission.completed = true; persist();
       try { read(raw); } catch (error) { invalidData = true; throw error; }
       return raw;
@@ -153,13 +156,13 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
   }
 };
 
-export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool }, save: () => void = () => undefined): Promise<void> => {
+export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
   const key = motionInputKey([MOTION_HTML.VERSION, MOTION_HTML.GRAPHICS, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) { Object.assign(scene, saved); save(); }
-  const prompt = scene.html?.prompt || [MOTION_HTML.OUTPUT, motionHtmlLanguageDirection(settings.language), "SCENE TEMPLATE (source data; exact visible text stays in the selected video language):\n" + scene.sceneTemplate, scene.drawingNote ? "USER NOTES (source data):\n" + scene.drawingNote : undefined, `RUNTIME: ${JSON.stringify({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`].filter(Boolean).join("\n\n");
   if (scene.html?.status === "ready" || scene.html?.status === "rendered") return;
+  const prompt = [MOTION_HTML.OUTPUT, motionHtmlLanguageDirection(settings.language), "SCENE TEMPLATE (source data; exact visible text stays in the selected video language):\n" + scene.sceneTemplate, scene.drawingNote ? "USER NOTES (source data):\n" + scene.drawingNote : undefined, `RUNTIME: ${JSON.stringify({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`].filter(Boolean).join("\n\n");
   const persist = () => { store.save(scene); save(); };
   let failures = 0;
   for (;;) {
@@ -168,21 +171,22 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     const attempt = prior && (prior.status === "running" || prior.status === "received" || prior.status === "waiting_external") ? prior : { id: randomUUID(), attempt: (prior?.attempt || 0) + 1, status: "running" as const, submission: { attempted: false, completed: false } };
     scene.htmlRequest = attempt;
     attempt.status = "running";
-    const worker = attempt.worker || MOTION_STORY_CONFIG.SCENE_WORKER_IDS[Math.abs(parseInt(key.slice(0, 6), 16)) % MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length];
-    attempt.worker = worker;
+    const submission: any = { attempted: attempt.submission?.attempted || false, completed: attempt.submission?.completed || false, abandoned: attempt.submission?.abandoned, pending: attempt.submission?.pending };
+    const resuming = !!submission.attempted && !submission.completed && !submission.abandoned && !!attempt.worker;
+    const worker = resuming ? attempt.worker : undefined;
+    if (!resuming) delete attempt.worker;
     opts.log(`Cảnh HTML ${scene.id}: tạo trọn cảnh, lượt ${attempt.attempt}.`);
     let journal: ReturnType<typeof setInterval> | undefined;
-    const submission: any = { attempted: attempt.submission?.attempted || false, completed: attempt.submission?.completed || false, abandoned: attempt.submission?.abandoned, pending: attempt.submission?.pending };
     const snapshotSubmission = () => { const { page, ...pending } = submission.pending || {}; if (page && !page.isClosed()) { const url = page.url(); if (new URL(url).origin === new URL(pending.url).origin) pending.url = url; } return { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) }; };
     const journalState = () => { attempt.submission = snapshotSubmission(); persist(); };
     try {
       persist();
       const received = (raw: string) => { attempt.raw = raw; attempt.status = "received"; submission.completed = true; store.raw(attempt.attempt, raw); journalState(); };
       if (!opts.ai) await prepareMotionSceneRooms(opts.exec, opts.signal, opts.log);
-      const exec: MotionAiExecution = { ...opts.exec, role: "draw", worker, requestId: attempt.id, submission, submissionChanged: journalState, outputFormat: "html", singleResponse: true, strictProvider: true, allowFallback: false, responseReceived: received };
+      const exec: MotionAiExecution = { ...opts.exec, role: "draw", worker, workerAssigned: (assigned) => { attempt.worker = assigned; }, requestId: attempt.id, submission, submissionChanged: journalState, outputFormat: "html", singleResponse: true, strictProvider: true, allowFallback: false, responseReceived: received };
       journal = setInterval(() => { try { journalState(); } catch (error) { opts.log(`Chờ lưu checkpoint cảnh ${scene.id}: ${String((error as Error).message)}`); } }, 2000);
       const request = () => opts.ai ? opts.ai(prompt, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log);
-      const raw = attempt.raw ?? (opts.pool ? await opts.pool.run(1, request, opts.signal) : await request());
+      const raw = attempt.raw ?? (opts.pool ? await opts.pool.run(opts.priority ?? 1, request, opts.signal) : await request());
       if (!attempt.raw) received(typeof raw === "string" ? raw : String(raw));
       clearInterval(journal);
       store.raw(attempt.attempt, attempt.raw!);
@@ -219,7 +223,137 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   }
 };
 
-export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
+const planHtmlBeatGroup = async (
+  group: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number },
+  groupIndex: number,
+  state: MotionRemotionState,
+  analysis: MotionStoryAnalysis,
+  settings: Extract<MotionVisualSettings, { mode: "remotion" }>,
+  language: string,
+  aspect: string,
+  opts: RemotionSceneOptions,
+  slots: MotionPriorityPool,
+  save: () => void,
+  priority = 0,
+): Promise<void> => {
+  const lines = group.beats.flatMap((beat) => puppetBeatLines(beat, motionNarratorCastKey(analysis)));
+  const note = (opts.note ?? state.notes?.[group.id]) || undefined;
+  const source = motionHtmlPlanSource(group.beats, analysis, settings, note, opts.sfx !== false);
+  const key = motionInputKey(source);
+  if (!state.scenes[group.id]?.length || state.inputKeys[group.id] !== key) {
+    const prompt = ["Plan the supplied consecutive speech lines into complete animated Canvas scenes. Return JSON {scenes:[{id,fromLineId,toLineId,purpose,sceneTemplate,continuityIn,continuityOut,soundEvents:[]}]}. sceneTemplate is the fully written sections 0–4 from the supplied template. Cover lines once in order; each scene can cover several beats. Use real supplied line IDs. No nodes, geometry, SVG, frame/rig references or drawing code. Keep identities and source events; exact labels come from the source. Static scenes can remain static.", analysis.authoringSettings ? motionHtmlWritingDirection(analysis) : `STYLE: ${MOTION_HTML_STYLES[settings.profileId]}\n${motionHtmlLanguageDirection(language)}\n${MOTION_HTML.TEMPLATE}`, motionHtmlPacingDirection(settings, group.seconds), opts.sfx === false ? "soundEvents=[]; SFX is disabled." : "In the same response supply source-supported soundEvents [{id,kind,layer,at,duration,description,source,actor?}]. at is scene progress 0..1; layer=ambience|action|character|accent; source=visible|offscreen. Optional utterance/edge anchors refer to supplied audio IDs. Coordinate event timing with section 3. No later sound-director call.", JSON.stringify({ ...motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false), lines: lines.map((line) => ({ id: line.key, text: line.text, utterance: line.utterance })) })].filter(Boolean).join("\n");
+    const planStore = motionTaskCheckpoint<any>(opts.scope, "html-plan-response", [key]);
+    const readPlan = (raw: any) => {
+      if (!Array.isArray(raw?.scenes) || !raw.scenes.length) throw new Error("Không đọc được danh sách phân cảnh HTML.");
+      let cursor = 0;
+      for (const row of raw.scenes) {
+        const start = lines.findIndex((line) => line.key === row.fromLineId), end = lines.findIndex((line) => line.key === row.toLineId);
+        if (start !== cursor || end < start || typeof row.sceneTemplate !== "string" || !row.sceneTemplate.trim()) throw new Error("Không ánh xạ được phân cảnh vào các dòng lời dẫn đã gửi.");
+        cursor = end + 1;
+      }
+      if (cursor !== lines.length) throw new Error("Phân cảnh chưa phủ hết các dòng lời dẫn đã gửi.");
+    };
+    const raw = planStore.read() || await requestPlan(prompt, key, opts, slots, readPlan, groupIndex, priority);
+    readPlan(raw);
+    const normalizedScenes = normalizePlannedHtmlScenes(raw.scenes, lines, group.beats, group.seconds, settings.pacing);
+    planStore.save({ ...raw, scenes: normalizedScenes });
+    const existingById = new Map((state.scenes[group.id] || []).map((scene) => [scene.id, scene]));
+    state.scenes[group.id] = normalizedScenes.map((row: any, index: number) => {
+      const id = `${group.id}:html:${index}`;
+      const prev = existingById.get(id);
+      const start = lines.findIndex((line) => line.key === row.fromLineId), end = lines.findIndex((line) => line.key === row.toLineId);
+      return { ...(prev?.html && prev.sceneTemplate === row.sceneTemplate ? { html: prev.html, htmlRequest: prev.htmlRequest, build: prev.build } : {}), ...row, id, renderer: "html-canvas", beatId: group.id, nodes: [], text: lines.slice(start, end + 1).map((line) => line.text).join(" "), sourceBeatIds: [...new Set(lines.slice(start, end + 1).map((line) => line.beatId))], environment: "", sourceKey: key, aspect, drawingNote: opts.note };
+    });
+    state.inputKeys[group.id] = key;
+    state.htmlPlanSources[group.id] = source;
+    (state.notes ||= {})[group.id] = note || "";
+    save();
+  }
+};
+
+export const createMotionHtmlSceneStreamer = (
+  initialAnalysis: MotionStoryAnalysis,
+  initialSettings: MotionVisualSettings,
+  language: string,
+  initialRemotion: MotionRemotionState | undefined,
+  opts: RemotionSceneOptions,
+) => {
+  if (initialSettings.mode !== "remotion") throw new Error("Chưa chọn cách dựng cảnh AI.");
+  const settings = initialSettings;
+  const analysis = initialAnalysis.authoringSettings
+    ? {
+        ...initialAnalysis,
+        authoringSettings: {
+          ...initialAnalysis.authoringSettings,
+          visualProfile: settings.profileId,
+          language,
+          picturePacing: settings.pacing || initialAnalysis.authoringSettings.picturePacing,
+          targetPictureSeconds: settings.pacing === "few" ? 14 : settings.pacing === "many" ? 6 : settings.pacing === "medium" ? 9 : initialAnalysis.authoringSettings.targetPictureSeconds,
+        },
+      }
+    : initialAnalysis;
+  const aspect = opts.aspect || "16:9";
+  const state: MotionRemotionState = structuredClone(initialRemotion || { version: 1, settings, assets: {}, scenes: {}, inputKeys: {}, failures: {} });
+  if (state.renderer !== "html-canvas") {
+    state.scenes = {}; state.assets = {}; state.inputKeys = {}; state.failures = {};
+  }
+  state.renderer = "html-canvas";
+  state.htmlPlanSources ||= {};
+  state.htmlSfx = opts.sfx !== false;
+  state.settings = settings;
+  state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior, undefined);
+  state.groupingRevision = 1001;
+  state.pacingRevision = 1;
+  const slots = new MotionPriorityPool(MOTION_STORY_CONFIG.WORKER_IDS.length);
+  const groupPromises = new Map<string, Promise<void>>();
+  const chapterGroupPromises = new Map<string, Promise<void>[]>();
+  let latestOnUpdate: ((remotion: MotionRemotionState) => void) | undefined;
+  const save = () => {
+    if (opts.signal?.aborted) return;
+    state.updatedAt = Date.now();
+    latestOnUpdate?.(structuredClone(state));
+  };
+  const push = (beats: MotionBeat[], chapterDrafts: Record<string, any> | undefined, allChaptersDone = false, onUpdate?: (remotion: MotionRemotionState) => void) => {
+    if (onUpdate) latestOnUpdate = onUpdate;
+    if (!beats.length || opts.signal?.aborted) return;
+    const groups = motionVisualBeatGroups({ beats, language, visualSettings: settings }, 1001, settings.pacing);
+    groups.forEach((group, groupIndex) => {
+      const chapterId = group.beats[0]?.chapterId;
+      const nextGroupSameChapter = groups[groupIndex + 1]?.beats[0]?.chapterId === chapterId;
+      const chapterFinished = !chapterDrafts || !chapterDrafts[chapterId];
+      const sealed = allChaptersDone || group.beats.length >= 5 || nextGroupSameChapter || chapterFinished;
+      if (!sealed) return;
+      const groupTaskKey = `${group.id}:${group.beats.map((beat) => beat.id).join(",")}`;
+      if (groupPromises.has(groupTaskKey)) return;
+      const groupTask = planHtmlBeatGroup(group, groupIndex, state, analysis, settings, language, aspect, opts, slots, save, groupIndex * 2);
+      groupTask.catch(() => undefined);
+      groupPromises.set(groupTaskKey, groupTask);
+      if (chapterId) {
+        const list = chapterGroupPromises.get(chapterId) || [];
+        list.push(groupTask);
+        chapterGroupPromises.set(chapterId, list);
+      }
+    });
+  };
+  const waitForChapter = async (chapterId: string): Promise<void> => {
+    const tasks = chapterGroupPromises.get(chapterId);
+    if (tasks?.length) await Promise.all(tasks);
+  };
+  const finish = async (script: MotionStoryScript, partial?: RemotionSceneOptions["partial"], progress?: RemotionSceneOptions["progress"]): Promise<MotionStoryScript> => {
+    push(script.beats, undefined, true);
+    await Promise.all([...groupPromises.values()]);
+    state.updatedAt = Date.now();
+    const mergedScript = {
+      ...script,
+      visualSettings: settings,
+      gen: { ...(script.gen || { cast: {}, locations: {} }), remotion: state },
+    } as MotionStoryScript;
+    return await planMotionHtmlScenes(mergedScript, analysis, { ...opts, partial, progress, slots });
+  };
+  return { push, waitForChapter, finish, getState: () => state };
+};
+
+export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions & { slots?: MotionPriorityPool }): Promise<MotionStoryScript> => {
   const settings = motionVisualSettingsFor({ analysis, script });
   if (settings.mode !== "remotion") throw new Error("Chưa chọn cách dựng cảnh AI.");
   if (analysis.authoringSettings) analysis = { ...analysis, authoringSettings: { ...analysis.authoringSettings, visualProfile: settings.profileId, language: script.language, picturePacing: settings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: settings.pacing === "few" ? 14 : settings.pacing === "many" ? 6 : settings.pacing === "medium" ? 9 : analysis.authoringSettings.targetPictureSeconds } };
@@ -241,45 +375,24 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
   const result = { ...script, visualSettings: settings, gen: { ...(script.gen || { cast: {}, locations: {} }), remotion: state } } as MotionStoryScript;
   const save = () => { opts.signal?.throwIfAborted(); state.updatedAt = Date.now(); checkpoint.save(state); opts.partial?.(structuredClone(result)); };
   const groups = motionVisualBeatGroups(result, 1001, settings.pacing);
-  const slots = new MotionPriorityPool(MOTION_HTML.WORKERS);
+  const slots = opts.slots || new MotionPriorityPool(MOTION_STORY_CONFIG.WORKER_IDS.length);
   let done = 0;
   await Promise.all(groups.map(async (group, groupIndex) => {
-    const lines = group.beats.flatMap((beat) => puppetBeatLines(beat, motionNarratorCastKey(analysis)));
-    const note = (opts.note ?? state.notes?.[group.id]) || undefined;
-    const source = motionHtmlPlanSource(group.beats, analysis, settings, note, opts.sfx !== false);
-    const key = motionInputKey(source);
-    if (!state.scenes[group.id]?.length || state.inputKeys[group.id] !== key) {
-      const prompt = ["Plan the supplied consecutive speech lines into complete animated Canvas scenes. Return JSON {scenes:[{id,fromLineId,toLineId,purpose,sceneTemplate,continuityIn,continuityOut,soundEvents:[]}]}. sceneTemplate is the fully written sections 0–4 from the supplied template. Cover lines once in order; each scene can cover several beats. Use real supplied line IDs. No nodes, geometry, SVG, frame/rig references or drawing code. Keep identities and source events; exact labels come from the source. Static scenes can remain static.", analysis.authoringSettings ? motionHtmlWritingDirection(analysis) : `STYLE: ${MOTION_HTML_STYLES[settings.profileId]}\n${motionHtmlLanguageDirection(script.language)}\n${MOTION_HTML.TEMPLATE}`, motionHtmlPacingDirection(settings, group.seconds), opts.sfx === false ? "soundEvents=[]; SFX is disabled." : "In the same response supply source-supported soundEvents [{id,kind,layer,at,duration,description,source,actor?}]. at is scene progress 0..1; layer=ambience|action|character|accent; source=visible|offscreen. Optional utterance/edge anchors refer to supplied audio IDs. Coordinate event timing with section 3. No later sound-director call.", JSON.stringify({ ...motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false), lines: lines.map((line) => ({ id: line.key, text: line.text, utterance: line.utterance })) })].filter(Boolean).join("\n");
-      const planStore = motionTaskCheckpoint<any>(opts.scope, "html-plan-response", [key]);
-      const readPlan = (raw: any) => {
-        if (!Array.isArray(raw?.scenes) || !raw.scenes.length) throw new Error("Không đọc được danh sách phân cảnh HTML.");
-        let cursor = 0;
-        for (const row of raw.scenes) {
-          const start = lines.findIndex((line) => line.key === row.fromLineId), end = lines.findIndex((line) => line.key === row.toLineId);
-          if (start !== cursor || end < start || typeof row.sceneTemplate !== "string" || !row.sceneTemplate.trim()) throw new Error("Không ánh xạ được phân cảnh vào các dòng lời dẫn đã gửi.");
-          cursor = end + 1;
-        }
-        if (cursor !== lines.length) throw new Error("Phân cảnh chưa phủ hết các dòng lời dẫn đã gửi.");
-      };
-      const raw = planStore.read() || await requestPlan(prompt, key, opts, slots, readPlan, groupIndex);
-      readPlan(raw);
-      const normalizedScenes = normalizePlannedHtmlScenes(raw.scenes, lines, group.beats, group.seconds, settings.pacing);
-      planStore.save({ ...raw, scenes: normalizedScenes });
-      state.scenes[group.id] = normalizedScenes.map((row: any, index: number) => {
-        const start = lines.findIndex((line) => line.key === row.fromLineId), end = lines.findIndex((line) => line.key === row.toLineId);
-        return { ...row, id: `${group.id}:html:${index}`, renderer: "html-canvas", beatId: group.id, nodes: [], text: lines.slice(start, end + 1).map((line) => line.text).join(" "), sourceBeatIds: [...new Set(lines.slice(start, end + 1).map((line) => line.beatId))], environment: "", sourceKey: key, aspect, drawingNote: opts.note };
-      });
-      state.inputKeys[group.id] = key;
-      state.htmlPlanSources[group.id] = source;
-      (state.notes ||= {})[group.id] = note || "";
-      save();
-    }
+    await planHtmlBeatGroup(group, groupIndex, state, analysis, settings, script.language, aspect, opts, slots, save, groupIndex * 2);
     done++; opts.progress?.(done / groups.length, `Đã chia ${done}/${groups.length} nhóm lời dẫn thành ${Object.values(state.scenes).flat().length} phân cảnh HTML.`); save();
   }));
   const active = new Set(groups.map((group) => group.id));
   for (const id of Object.keys(state.scenes)) if (!active.has(id)) { delete state.scenes[id]; delete state.inputKeys[id]; delete state.htmlPlanSources[id]; }
   save();
   return result;
+};
+
+const activeHtmlBuilders = new Map<string, (nextScript: MotionStoryScript) => boolean>();
+
+export const enqueueMotionHtmlScenes = (scope: string | undefined, script: MotionStoryScript): boolean => {
+  if (!scope) return false;
+  const enqueue = activeHtmlBuilders.get(scope);
+  return enqueue ? enqueue(script) : false;
 };
 
 export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
@@ -292,22 +405,78 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   const [width, height] = aspect === "9:16" ? [720, 1280] : aspect === "1:1" ? [1000, 1000] : aspect === "4:5" ? [800, 1000] : [1280, 720];
   state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, script.gen?.characterMotion);
   const save = () => { opts.signal?.throwIfAborted(); state.updatedAt = Date.now(); opts.partial?.(structuredClone(result)); };
-  const groups = motionVisualBeatGroups(result, 1001, settings.pacing);
-  const tasks = groups.flatMap((group) => (state.scenes[group.id] || []).map((scene) => ({ group, scene }))).filter(({ group, scene }) =>
-    (!opts.onlyBeats?.length || group.beats.some((beat) => opts.onlyBeats!.includes(beat.id))) &&
-    (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) &&
-    (!opts.onlyLocations?.length || group.beats.some((beat) => opts.onlyLocations!.includes(beat.place || ""))));
   const slots = new MotionPriorityPool(MOTION_HTML.WORKERS);
   const rebuildKey = opts.rebuildKey || randomUUID();
+  const startedScenes = new Map<string, Promise<void>>();
+  let totalTasks = 0;
   let done = 0;
-  await Promise.all(tasks.map(async ({ group, scene }) => {
-    if ((opts.onlyScenes?.includes(scene.id) || opts.restart) && scene.htmlRebuildKey !== rebuildKey) { const attempt = scene.html?.attempts || 0; delete scene.html; scene.htmlRequest = { id: randomUUID(), attempt, status: "retry_wait" }; scene.htmlRebuildKey = rebuildKey; save(); }
-    if (opts.note !== undefined) scene.drawingNote = opts.note;
-    scene.aspect = aspect;
-    const seconds = Math.max(1, group.seconds * scene.text.length / Math.max(1, group.beats.map((beat) => beat.narration).join(" ").length));
-    await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, scope: opts.scope, language: script.language }, { ...opts, pool: slots }, save);
-    delete state.failures[scene.id];
-    done++; opts.progress?.(done / Math.max(1, tasks.length), `Đã dựng ${done}/${tasks.length} phân cảnh HTML.`); save();
-  }));
-  return result;
+  const scheduleFrom = (sourceScript: MotionStoryScript) => {
+    const groups = motionVisualBeatGroups(sourceScript, 1001, settings.pacing);
+    const tasks = groups
+      .flatMap((group, groupIndex) => (state.scenes[group.id] || []).map((scene) => ({ group, groupIndex, scene })))
+      .filter(
+        ({ group, scene }) =>
+          (!opts.onlyBeats?.length || group.beats.some((beat) => opts.onlyBeats!.includes(beat.id))) &&
+          (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) &&
+          (!opts.onlyLocations?.length || group.beats.some((beat) => opts.onlyLocations!.includes(beat.place || ""))),
+      );
+    for (const { group, groupIndex, scene } of tasks) {
+      if (startedScenes.has(scene.id)) continue;
+      totalTasks++;
+      const task = (async () => {
+        if ((opts.onlyScenes?.includes(scene.id) || opts.restart) && scene.htmlRebuildKey !== rebuildKey) {
+          const attempt = scene.html?.attempts || 0;
+          delete scene.html;
+          scene.htmlRequest = { id: randomUUID(), attempt, status: "retry_wait" };
+          scene.htmlRebuildKey = rebuildKey;
+          save();
+        }
+        if (opts.note !== undefined) scene.drawingNote = opts.note;
+        scene.aspect = aspect;
+        const seconds = Math.max(1, (group.seconds * scene.text.length) / Math.max(1, group.beats.map((beat) => beat.narration).join(" ").length));
+        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, scope: opts.scope, language: result.language }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
+        delete state.failures[scene.id];
+        done++;
+        opts.progress?.(done / Math.max(1, totalTasks), `Đã dựng ${done}/${totalTasks} phân cảnh HTML.`);
+        save();
+      })();
+      startedScenes.set(scene.id, task);
+    }
+  };
+  const canRegister = !!opts.scope && !opts.onlyBeats?.length && !opts.onlyScenes?.length && !opts.onlyLocations?.length && !opts.restart;
+  if (canRegister && opts.scope) {
+    activeHtmlBuilders.set(opts.scope, (nextScript: MotionStoryScript) => {
+      const nextRemotion = nextScript.gen?.remotion;
+      if (!nextRemotion || nextRemotion.renderer !== "html-canvas") return false;
+      const existingIds = new Set(result.beats.map((beat) => beat.id));
+      for (const beat of nextScript.beats) {
+        if (!existingIds.has(beat.id)) {
+          result.beats.push(structuredClone(beat));
+          existingIds.add(beat.id);
+        }
+      }
+      for (const [groupId, scenes] of Object.entries(nextRemotion.scenes || {})) {
+        if (!state.scenes[groupId]?.length && scenes?.length) {
+          state.scenes[groupId] = structuredClone(scenes);
+          if (nextRemotion.inputKeys?.[groupId]) state.inputKeys[groupId] = nextRemotion.inputKeys[groupId];
+          if (nextRemotion.htmlPlanSources?.[groupId]) (state.htmlPlanSources ||= {})[groupId] = nextRemotion.htmlPlanSources[groupId];
+          if (nextRemotion.notes?.[groupId]) (state.notes ||= {})[groupId] = nextRemotion.notes[groupId];
+        }
+      }
+      scheduleFrom(result);
+      save();
+      return true;
+    });
+  }
+  try {
+    scheduleFrom(result);
+    while (startedScenes.size > 0) {
+      const current = [...startedScenes.values()];
+      await Promise.all(current);
+      if (startedScenes.size === current.length) break;
+    }
+    return result;
+  } finally {
+    if (canRegister && opts.scope) activeHtmlBuilders.delete(opts.scope);
+  }
 };

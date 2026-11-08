@@ -425,29 +425,13 @@ export const escapeStrayQuotes = (text: string): string => {
   }
   return out;
 };
-const salvageRoomJson = (
-  text: string | undefined,
-  artifactType: string,
-  requestId: string,
-  responseSchema?: string,
-  diag?: { responseCount?: number; initialCount?: number; busy?: boolean },
-): any => {
+const salvageRoomJson = (text: string | undefined, artifactType: string, requestId: string, responseSchema?: string, diag?: { responseCount?: number; initialCount?: number; busy?: boolean }): any => {
   if (!text || text.length < 20) return undefined;
   const parsed = salvageOnce(text, artifactType, requestId, responseSchema, diag);
   const closed = closeMotionJsonContainers(text);
-  return (
-    parsed ??
-    (closed && salvageOnce(closed, artifactType, requestId, responseSchema, diag)) ??
-    salvageOnce(escapeStrayQuotes(text), artifactType, requestId, responseSchema, diag)
-  );
+  return parsed ?? (closed && salvageOnce(closed, artifactType, requestId, responseSchema, diag)) ?? salvageOnce(escapeStrayQuotes(text), artifactType, requestId, responseSchema, diag);
 };
-const salvageOnce = (
-  text: string,
-  artifactType: string,
-  requestId: string,
-  responseSchema?: string,
-  diag?: { responseCount?: number; initialCount?: number; busy?: boolean },
-): any => {
+const salvageOnce = (text: string, artifactType: string, requestId: string, responseSchema?: string, diag?: { responseCount?: number; initialCount?: number; busy?: boolean }): any => {
   try {
     const parsed = extractJson(text);
     if (!_.isPlainObject(parsed)) return undefined;
@@ -459,11 +443,7 @@ const salvageOnce = (
     const isFreshCompletedTurn = (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy;
     if (!isFreshCompletedTurn) return undefined;
     const schema = MOTION_RESPONSE_SCHEMAS[responseSchema || artifactType];
-    const allowedKeys = new Set<string>([
-      ...Object.keys(schema?.properties || {}),
-      ...(schema?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []),
-      ...(artifactType === MOTION_HTML.PLAN ? ["scenes"] : []),
-    ]);
+    const allowedKeys = new Set<string>([...Object.keys(schema?.properties || {}), ...(schema?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []), ...(artifactType === MOTION_HTML.PLAN ? ["scenes"] : [])]);
     const keys = _.keys(parsed);
     return keys.length >= 1 && keys.every((k) => allowedKeys.has(k)) ? parsed : undefined;
   } catch {
@@ -876,17 +856,62 @@ export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => 
   );
   return [primary, ...rest];
 };
-export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
+export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
   const run = motionAiRunStore.getStore();
   if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
-  const key = AIR.MODEL_KEY(String(exec.provider), exec.model);
+  const key = `content:${AIR.MODEL_KEY(String(exec.provider), exec.model)}`;
   const linked = AbortSignal.any(_.compact([signal, run.signal]));
   if (!run.scenePreparations.has(key)) {
     const preparation = (async () => {
       const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
       releaseMotionBrowser ||= retainGlobalBrowser();
       try {
-        log?.(MOTION_STORY_CONFIG.SCENE_ROOMS_PREPARING);
+        log?.(`Đang mở ${MOTION_STORY_CONFIG.WORKER_IDS.length} room AI nội dung.`);
+        const results = await Promise.allSettled(
+          MOTION_STORY_CONFIG.WORKER_IDS.map(async (workerId) => {
+            linked.throwIfAborted();
+            const release = await acquireMotionAiRoom(run, workerId, exec.provider as AiPlanningFallbackProvider, linked);
+            const readySignal = AbortSignal.any([linked, AbortSignal.timeout(AIR.READINESS_TIMEOUT_MS)]);
+            try {
+              readySignal.throwIfAborted();
+              await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true });
+              readySignal.throwIfAborted();
+            } catch (error) {
+              await closeMotionAiRoom(run, workerId);
+              throw error;
+            } finally {
+              release();
+            }
+          }),
+        );
+        linked.throwIfAborted();
+        log?.(`Đã sẵn sàng ${results.filter((result) => result.status !== RT_SERVER.REJECTED).length}/${results.length} room AI nội dung.`);
+      } finally {
+        releaseSession();
+      }
+    })().catch((error) => {
+      run.scenePreparations.delete(key);
+      throw error;
+    });
+    run.scenePreparations.set(key, preparation);
+    run.pending.add(preparation);
+    const settled = () => run.pending.delete(preparation);
+    void preparation.then(settled, settled);
+  }
+  await waitForMotionBrowser(run.scenePreparations.get(key)!, linked);
+};
+export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
+  const run = motionAiRunStore.getStore();
+  if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
+  const key = AIR.MODEL_KEY(String(exec.provider), exec.model);
+  const linked = AbortSignal.any(_.compact([signal, run.signal]));
+  if (!run.scenePreparations.has(key)) {
+    const sceneLog = (line: string) => log?.(line && !/^\s*\[[^\]]+\]/u.test(line) ? `[${MOTION_PRODUCTION.STAGES.SCENES}] ${line}` : line);
+    const preparation = (async () => {
+      const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
+      releaseMotionBrowser ||= retainGlobalBrowser();
+      try {
+        sceneLog(MOTION_STORY_CONFIG.SCENE_ROOMS_PREPARING);
         const results = await Promise.allSettled(
           MOTION_STORY_CONFIG.SCENE_WORKER_IDS.map(async (workerId) => {
             linked.throwIfAborted();
@@ -906,9 +931,9 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
         );
         linked.throwIfAborted();
         results.forEach((result, index) => {
-          if (result.status === RT_SERVER.REJECTED) log?.(MOTION_STORY_CONFIG.SCENE_ROOM_PENDING(index + 1));
+          if (result.status === RT_SERVER.REJECTED) sceneLog(MOTION_STORY_CONFIG.SCENE_ROOM_PENDING(index + 1));
         });
-        log?.(MOTION_STORY_CONFIG.SCENE_ROOMS_READY(results.filter((result) => result.status !== RT_SERVER.REJECTED).length, results.length));
+        sceneLog(MOTION_STORY_CONFIG.SCENE_ROOMS_READY(results.filter((result) => result.status !== RT_SERVER.REJECTED).length, results.length));
       } finally {
         releaseSession();
       }
@@ -947,6 +972,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
       log?.(MR.MOTION_TEXT_EMPTY, { workerId: queueId, provider: String(exec.provider), model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.DONE });
     }
     const workerId = slot.workerId;
+    exec.workerAssigned?.(workerId);
     const requestId = randomUUID();
     let phaseKey: string = MR.MOTION_TEXT_EMPTY,
       phaseStartedAt = Date.now();
@@ -956,7 +982,8 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         phaseKey = next;
         phaseStartedAt = Date.now();
       }
-      log?.(line, activity ? { ...activity, owner: run.projectId, requestId, phaseStartedAt, roomGeneration: run.roomGenerations.get(workerId), targetIds: contract?.targetIds } : undefined);
+      const scopedLine = drawing && line && !/^\s*\[[^\]]+\]/u.test(line) ? `[${MOTION_PRODUCTION.STAGES.SCENES}] ${line}` : line;
+      log?.(scopedLine, activity ? { ...activity, artifact: activity.artifact || artifactType, owner: run.projectId, requestId, phaseStartedAt, roomGeneration: run.roomGenerations.get(workerId), targetIds: contract?.targetIds } : undefined);
     };
     try {
       signal?.throwIfAborted();
@@ -1087,7 +1114,12 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     const basePrompt = editorialContext + (exec.bible && !bibleSent ? MOTION_STORY_CONFIG.BIBLE_WRAP(exec.bible.text) : MR.MOTION_TEXT_EMPTY) + prompt;
     const singleMessage = motionPromptSingleMessage(artifactType);
     const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
-    const fullPrompt = exec.outputFormat === "html" ? `${taskPrompt}\nThe html root must carry data-artifact='${artifactType}' and data-request-id='${requestId}' to identify this response. Return the complete HTML only.` : singleMessage ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity)) : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
+    const fullPrompt =
+      exec.outputFormat === "html"
+        ? `${taskPrompt}\nThe html root must carry data-artifact='${artifactType}' and data-request-id='${requestId}' to identify this response. Return the complete HTML only.`
+        : singleMessage
+          ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity))
+          : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
     log?.(PROMPT.LOG(artifactType, fullPrompt.length, images?.length || 0));
     const measurement = motionPromptMeasurement(prompt, fullPrompt, editorialContext.length, images?.length || 0, motionPromptBudget(artifactType, String(exec.provider || ""), String(exec.model || "")), singleMessage);
     if (measurement.overflow) log?.(singleMessage ? PROMPT.SINGLE_MESSAGE_LOG(artifactType, measurement.finalChars) : PROMPT.OVERFLOW(artifactType, measurement.finalChars, measurement.budget));
@@ -1301,7 +1333,8 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       const earlyError = _.toString(caught?.message);
       const recovered = !!_.get(caught, CHAT_ROOM_RECOVERY.COMPLETE);
       const isTimeoutError = _.get(caught, "code") === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE;
-      const unsent = !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || isTimeoutError || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
+      const unsent =
+        !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || isTimeoutError || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
       if (!captchaRetry && exec.singleResponse && !unsent && exec.outputFormat !== "html" && artifactType !== MOTION_HTML.PLAN) {
         roomOk = submission.completed;
         throw caught;
@@ -1551,8 +1584,23 @@ interface MotionAnalysisRecovery {
 }
 export const analyzeStory = async (
   source: MotionStorySource,
-  opts: { visualSettings?: MotionVisualSettings; styleReferences?: MotionStyleReference[]; characterMotion?: boolean; language: string; length: MotionStoryLength; parts?: number; aspect?: string;
-    exec: MotionAiExecution; signal?: AbortSignal; log?: MotionAiLog; ai?: typeof runMotionAi; videoGenre?: MotionVideoGenre; stylePreset?: string; storytelling?: string; renameEntities?: boolean } & MotionAnalysisRecovery,
+  opts: {
+    visualSettings?: MotionVisualSettings;
+    styleReferences?: MotionStyleReference[];
+    characterMotion?: boolean;
+    language: string;
+    length: MotionStoryLength;
+    parts?: number;
+    aspect?: string;
+    exec: MotionAiExecution;
+    signal?: AbortSignal;
+    log?: MotionAiLog;
+    ai?: typeof runMotionAi;
+    videoGenre?: MotionVideoGenre;
+    stylePreset?: string;
+    storytelling?: string;
+    renameEntities?: boolean;
+  } & MotionAnalysisRecovery,
 ): Promise<MotionStoryAnalysis> => {
   const inputKey = motionInputKey([WRITING.REVISION, "html-authoring-english-v2", source, opts.language, opts.length, opts.parts, opts.aspect, opts.exec, opts.styleReferences, opts.videoGenre, opts.stylePreset, opts.characterMotion, motionStorytelling(opts.storytelling), opts.renameEntities === true, ...(opts.visualSettings ? [opts.visualSettings] : [])]);
   const draft: MotionAnalysisDraft = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft) : { inputKey, rejected: 0 };
@@ -1585,16 +1633,26 @@ export const analyzeStory = async (
     return { ...analysis, ...(htmlSettings ? { authoringSettings: htmlSettings } : {}), visualSettings: opts.visualSettings, stylePreset: opts.stylePreset, videoGenre: motionVideoGenre(opts.videoGenre), storytelling: motionStorytelling(opts.storytelling), renameEntities: rename, ...(rename ? { renameMap } : {}) };
   };
   const renameErrors = (value: any): string[] => (rename ? motionRenameAnalysisIssues(value).map((issue) => MOTION_RESPONSE_TEXT.EXPECTED(issue.path, issue.expected, issue.actual)) : []);
-  const genreDirective = opts.visualSettings?.mode === "remotion" ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) + ` Plan about ${chapterCount} chapters within ${target}s TOTAL, allowing stages to share chapters. At least ${opts.parts || 1} meaningful chapter ranges are needed for the requested parts; explain if the source cannot support them. No SOLO stages or candidate quota. Choose a single opening sequence and keep it throughout writing.` : motionVideoGenreDirective(opts.videoGenre);
+  const genreDirective =
+    opts.visualSettings?.mode === "remotion"
+      ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) +
+        ` Plan about ${chapterCount} chapters within ${target}s TOTAL, allowing stages to share chapters. At least ${opts.parts || 1} meaningful chapter ranges are needed for the requested parts; explain if the source cannot support them. No SOLO stages or candidate quota. Choose a single opening sequence and keep it throughout writing.`
+      : motionVideoGenreDirective(opts.videoGenre);
   const fullRequest = withMotionResponsePrompt(
     MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
     ([WRITING.TEXT_TASK, prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, WRITING.PLAN, WRITING.BOOKENDS, SOURCE_READING_RULES, sourceDirections(source), briefNote, rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
       MR.MOTION_TEXT_SYMBOL_27 +
-      (htmlAuthoring ? `Canvas motion ${opts.characterMotion ? "enabled: describe the source-supported actions and camera in prose; AI will draw their full movement freely" : "disabled: plan an opening illustration; the host will freeze all content time"}. No pose transforms, moveTo coordinates, stock frames or simplified-contact restrictions.` : opts.characterMotion ? MOTION_REFERENCE_PROMPTS.MOTION_ON : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
+      (htmlAuthoring
+        ? `Canvas motion ${opts.characterMotion ? "enabled: describe the source-supported actions and camera in prose; AI will draw their full movement freely" : "disabled: plan an opening illustration; the host will freeze all content time"}. No pose transforms, moveTo coordinates, stock frames or simplified-contact restrictions.`
+        : opts.characterMotion
+          ? MOTION_REFERENCE_PROMPTS.MOTION_ON
+          : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
       MR.MOTION_TEXT_SYMBOL_27 +
       (genreDirective ? MR.MOTION_TEXT_SYMBOL_27 + genreDirective : MR.MOTION_TEXT_EMPTY) +
       MR.MOTION_TEXT_SYMBOL_27 +
-      [MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)), motionStoryLanguageGuide(opts.language), opts.visualSettings?.mode === "remotion" ? `Selected visual style in prose: ${MOTION_HTML_STYLES[opts.visualSettings.profileId]}. Do not supply SVG, rig, body frames or numeric placement.` : motionVisualCapability(opts.visualSettings) || puppetPackPlanningCapabilities(opts.stylePreset)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
+      [MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)), motionStoryLanguageGuide(opts.language), opts.visualSettings?.mode === "remotion" ? `Selected visual style in prose: ${MOTION_HTML_STYLES[opts.visualSettings.profileId]}. Do not supply SVG, rig, body frames or numeric placement.` : motionVisualCapability(opts.visualSettings) || puppetPackPlanningCapabilities(opts.stylePreset)]
+        .filter(Boolean)
+        .join(MR.MOTION_TEXT_SYMBOL_27),
   );
   const legacy = !draft.core && draft.rejected > 0;
   const analysisErrors = (value: any): string[] => {
@@ -1671,8 +1729,17 @@ export const editScript = async (
     const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id));
     const previous = stringifyJson(beats.slice(Math.max(0, beats.indexOf(lines[0]) - 2), beats.indexOf(lines[0])).map((beat) => beat.narration));
     const language = motionLanguage(opts.language).promptName;
-    const review = stringifyJson(lines.map((beat) => ({ id: beat.id, chapter: beat.chapterId, visual: beat.visual, narration: beat.narration, ...(beat.motionIntent !== undefined ? { motionIntent: beat.motionIntent } : {}),
-      ...(visualIds.has(beat.id) ? { action: beat.action, scenePlan: beat.scenePlan } : {}), ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}) })));
+    const review = stringifyJson(
+      lines.map((beat) => ({
+        id: beat.id,
+        chapter: beat.chapterId,
+        visual: beat.visual,
+        narration: beat.narration,
+        ...(beat.motionIntent !== undefined ? { motionIntent: beat.motionIntent } : {}),
+        ...(visualIds.has(beat.id) ? { action: beat.action, scenePlan: beat.scenePlan } : {}),
+        ...(beat.utterances?.length ? { utterances: beat.utterances.map((line) => _.pick(line, [RT_SERVER.SPEAKER, RT_SERVER.ROLE, RT_SERVER.TEXT])) } : {}),
+      })),
+    );
     const limit = editLimit(lines);
     const styleFocus = styleFindings.filter((finding) => lines.some((line) => line.id === finding.id));
     const overlapFocus = overlapFindings.filter((finding) => lines.some((line) => line.id === finding.id));
@@ -1745,8 +1812,8 @@ export const editScript = async (
       continue;
     }
     if (saved[beat.id].dropped && droppable(beat)) drop(beat, saved[beat.id].reason);
-    else if (saved[beat.id].narration) apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances, { ...(saved[beat.id].action !== undefined ? { action: saved[beat.id].action } : {}),
-      ...(saved[beat.id].motionIntent !== undefined ? { motionIntent: saved[beat.id].motionIntent } : {}), ...(saved[beat.id].scenePlan ? { scenePlan: saved[beat.id].scenePlan } : {}), ...(saved[beat.id].picture || {}) });
+    else if (saved[beat.id].narration)
+      apply(beat, saved[beat.id].narration!, saved[beat.id].reason, saved[beat.id].utterances, { ...(saved[beat.id].action !== undefined ? { action: saved[beat.id].action } : {}), ...(saved[beat.id].motionIntent !== undefined ? { motionIntent: saved[beat.id].motionIntent } : {}), ...(saved[beat.id].scenePlan ? { scenePlan: saved[beat.id].scenePlan } : {}), ...(saved[beat.id].picture || {}) });
   }
   const groups = motionPromptGroups(
     targets.filter((beat) => saved[beat.id]?.inputKey !== keys.get(beat.id)),
@@ -1883,7 +1950,12 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
   const shares = _.map(chapters, (c, i) => (weighted ? (c.weight ?? 3) * (0.6 + 0.4 * Math.min(2.5, spans[i] / meanSpan)) : spans[i] / meanSpan));
   const total = _.sum(shares);
   let allocated = 0;
-  chapters = _.map(chapters, (c, i) => { const end = i === chapters.length - 1 ? Math.round(target) : Math.round((_.sum(shares.slice(0, i + 1)) / total) * target); const targetSeconds = end - allocated; allocated = end; return { ...c, targetSeconds }; });
+  chapters = _.map(chapters, (c, i) => {
+    const end = i === chapters.length - 1 ? Math.round(target) : Math.round((_.sum(shares.slice(0, i + 1)) / total) * target);
+    const targetSeconds = end - allocated;
+    allocated = end;
+    return { ...c, targetSeconds };
+  });
   if (!declaredNeeds?.length && !htmlAuthoring) chapters = motionMergeShortChapters(chapters, videoGenre);
   const used = new Set<string>();
   const cast: MotionCastMember[] = expandInitialCastNames(

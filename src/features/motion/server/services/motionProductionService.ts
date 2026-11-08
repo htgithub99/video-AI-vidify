@@ -17,7 +17,8 @@ import { logger } from "../../../../lib/logger.js";
 import { checkMotionMediaTools } from "./motionMediaValidation.js";
 import { checkMotionProductionVoice } from "./motionProductionPreflight.js";
 import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.js";
-import { assertMotionScriptComplete, assertMotionProductionMode, motionDurationRepairChapters } from "../../../../lib/motionProduction.js";
+import { assertMotionScriptComplete, assertMotionProductionMode, mergeMotionRemotionState, motionDurationRepairChapters, motionEarlyHtmlSceneInput } from "../../../../lib/motionProduction.js";
+import { enqueueMotionHtmlScenes } from "./html/scenePipeline.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionSeriesStart } from "../../../../lib/motionParts.js";
 import { motionVoiceSignature, withMotionVoiceMode, motionVoiceAsrSatisfied } from "../../../../lib/motionVoice.js";
@@ -262,7 +263,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           let state = record.steps[name] && get(record.steps[name].id);
           if (!state || state.status === S.ERROR || state.status === S.CANCELLED) {
             const response = await start();
-            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [], done: false, status: S.QUEUED, error: undefined, startedAt: Date.now() };
+            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [], done: false, status: S.QUEUED, error: undefined, startedAt: record.steps[name]?.startedAt || Date.now() };
             if (signal.aborted) {
               cancelStoryJob(response.job.id);
               cancelMotionJob(response.job.id);
@@ -412,8 +413,38 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       } else result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
       const sceneInput = (analysis: MotionStoryAnalysis, script: MotionStoryScript, sheetCarry: boolean) => ({ ...base, analysis, script, sheetCarry, illustration: record.illustration, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false });
-      if (visualSettings.mode === RT_SHARED.REMOTION && result.script && !usesMotionHtml(result.script) && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair)
-        early = createMotionEarlyScenes({ stage: P.STAGES.SCENES, text: P.EARLY_SCENES, analysis: () => result.analysis, start: (input, first) => scenesMotionStoryInput({ ...sceneInput(input.analysis, input.script, !first), sfx: false }), getJob: getStoryJob, cancel: cancelStoryJob, log: (line) => log(record, line), signal, pollMs });
+      if (visualSettings.mode === RT_SHARED.REMOTION && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair && !(globalThis as any).__motionHtmlStages)
+        early = createMotionEarlyScenes({
+          stage: P.STAGES.SCENES,
+          text: P.EARLY_SCENES,
+          analysis: () => result.analysis,
+          extractInput: motionEarlyHtmlSceneInput,
+          enqueueRunning: (input) => enqueueMotionHtmlScenes(record.job.id, input.script),
+          onUpdate: (job) => {
+            const prior = record.steps[P.STAGES.SCENES];
+            record.steps[P.STAGES.SCENES] = { ...prior, id: job.id, done: false, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            activities.set(P.STAGES.SCENES, terminal(job.status) ? {} : job.activeAi || {});
+            record.job.activeAi = Object.assign({}, ...activities.values());
+            const partialScript = job.result as MotionStoryScript | undefined;
+            if (partialScript?.gen?.remotion && result.script) {
+              result.script = {
+                ...result.script,
+                gen: {
+                  ...(result.script.gen || partialScript.gen),
+                  remotion: mergeMotionRemotionState(result.script.gen?.remotion, partialScript.gen.remotion),
+                },
+              };
+            }
+            syncSeo();
+            save();
+          },
+          start: (input, first) => scenesMotionStoryInput({ ...sceneInput(input.analysis, input.script, !first), sfx: base.sfx !== false }),
+          getJob: getStoryJob,
+          cancel: cancelStoryJob,
+          log: (line) => log(record, line),
+          signal,
+          pollMs,
+        });
       const voiceScript = (script: MotionStoryScript): MotionStoryScript => {
         const voiced = base.voiceChannel ? { ...script, voiceChannel: base.voiceChannel } : script;
         return typeof base.multiVoice === "boolean" ? withMotionVoiceMode(voiced, base.multiVoice) : voiced;
@@ -423,6 +454,13 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           stage: P.STAGES.VOICE,
           text: P.EARLY_VOICE,
           analysis: () => result.analysis,
+          onUpdate: (job) => {
+            const prior = record.steps[P.STAGES.VOICE];
+            record.steps[P.STAGES.VOICE] = { ...prior, id: job.id, done: false, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            activities.set(P.STAGES.VOICE, terminal(job.status) ? {} : job.activeAi || {});
+            record.job.activeAi = Object.assign({}, ...activities.values());
+            save();
+          },
           start: (input) => {
             record.voiceCastChapters ||= input.analysis.chapters.map((chapter) => chapter.id);
             return voiceMotionStoryInput({ ...base, analysis: input.analysis, script: voiceScript(input.script), aiExecution: base.aiExecution, castChapterIds: record.voiceCastChapters, voiceWarmup: true });
@@ -480,8 +518,17 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
             step<MotionStoryScript>(
               stage(P.STAGES.SCENES),
               async () => {
+                if (result.script) enqueueMotionHtmlScenes(record.job.id, result.script);
                 const gen = await early?.settle();
-                if (gen?.remotion && result.script && (gen.remotion.updatedAt || 0) > (result.script.gen?.remotion?.updatedAt || 0)) result.script = { ...result.script, gen: { ...(result.script.gen || gen), remotion: gen.remotion } };
+                if (gen?.remotion && result.script) {
+                  result.script = {
+                    ...result.script,
+                    gen: {
+                      ...(result.script.gen || gen),
+                      remotion: mergeMotionRemotionState(result.script.gen?.remotion, gen.remotion),
+                    },
+                  };
+                }
                 return scenesMotionStoryInput(sceneInput(result.analysis!, result.script!, !!gen));
               },
               (script) => {

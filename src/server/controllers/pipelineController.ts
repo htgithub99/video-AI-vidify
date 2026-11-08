@@ -248,7 +248,6 @@ import {
   SOURCE_TEXT_ADJACENTASSETURLS,
   SOURCE_TEXT_AGERANGE,
   SOURCE_TEXT_AI_CHUA_TRA_DU_TEN_VA,
-  SOURCE_TEXT_AI_CHUA_TRA_VE_PROMPT_TAO,
   SOURCE_TEXT_AI_GENERATED,
   SOURCE_TEXT_AI_ROUTER,
   SOURCE_TEXT_AI_VIDEO_DRAFT,
@@ -536,9 +535,6 @@ import {
   SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED,
   SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS,
   SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT,
-  SOURCE_TEXT_MUSIC_IMAGE_PROMPT_COMPLETED,
-  SOURCE_TEXT_MUSIC_IMAGE_PROMPT_FAILED,
-  SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED,
   SOURCE_TEXT_MUSIC_MIXER_MANIFEST,
   SOURCE_TEXT_MUSTNOTCOPY,
   SOURCE_TEXT_MUSTPRESERVE,
@@ -1259,39 +1255,9 @@ const generateMusicThumbnailAsset = async (input: {
       ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false, input.styleAnalysis)
       : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext, input.styleAnalysis);
   const promptRequestId = SOURCE_TEMPLATE_MUSIC_IMAGE_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
-  const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
-  const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
   const releaseBrowser = retainGlobalBrowser();
-  let prompt: string = C.EMPTY;
+  const prompt: string = imageBrief;
   try {
-    try {
-      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, provider: planningProvider, model: input.planningModel, promptRevision: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_REVISION });
-      const response = await generatePlanningWithChatUi({
-        provider: planningProvider,
-        model: input.planningModel,
-        prompt: SUNO_AUTOMATION_TEXTS.buildMusicImagePromptPlanningPrompt(imageBrief, input.assetPurpose || SOURCE_TEXT_COVER, promptRequestId),
-        projectId: promptRequestId,
-        workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE,
-        chromeHeadless: input.chromeHeadless,
-        artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT,
-        requestId: promptRequestId,
-        signal: input.signal ? AbortSignal.any([planningRun.signal, input.signal]) : planningRun.signal,
-        closeRoomOnComplete: false,
-      });
-      const parsed = jsonUtils.safeParse(response.text, null);
-      prompt = _.trim(_.toString(parsed?.imagePrompt));
-      if (parsed?.artifactType !== SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT || parsed?.requestId !== promptRequestId || prompt.length < 100 || prompt.length > 4000) {
-        throw new Error(SOURCE_TEXT_AI_CHUA_TRA_VE_PROMPT_TAO);
-      }
-      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_COMPLETED, { runId: promptRequestId, promptChars: prompt.length });
-    } catch (error) {
-      input.signal?.throwIfAborted();
-      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_FAILED, { runId: promptRequestId, ...musicErrorDetails(error) });
-      return { thumbnail: null, warning: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
-    } finally {
-      planningRun.complete();
-      await closeChatPlanningRoom({ provider: planningProvider, projectId: promptRequestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE }).catch(() => undefined);
-    }
     await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, originalNoteChars: _.trim(input.description).length, plannedPromptChars: prompt.length, hasReference: !_.isEmpty(input.reference) });
     let transientErrorCount = 0;
     const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
@@ -1305,60 +1271,61 @@ const generateMusicThumbnailAsset = async (input: {
           retainBrowserSession: true,
           forceNewPage: false,
           visualConfig: {
-          chromeHeadless: input.chromeHeadless,
-          generateType: GenerateType.Image,
-          aspectRatio: AspectRatio.SixteenNine,
-          generateCount: 1,
-          imageGeneratorEngine: ImageGeneratorEngine.Imagen,
-          generationMode: ImageGenerationMode.GeminiChat,
-          promptInputMethod: PromptInputMethod.Paste,
-          referenceImages: _.isEmpty(input.reference) ? [] : [input.reference],
-          referenceImageNames: _.isEmpty(input.reference) ? [] : [input.referenceName],
-        },
-      });
-      input.signal?.throwIfAborted();
-      if (!result.success) {
-        lastWarning = result.warning || lastWarning;
-        await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, errorMessage: lastWarning });
+            chromeHeadless: input.chromeHeadless,
+            generateType: GenerateType.Image,
+            skipGenerateTypeSelection: true,
+            aspectRatio: AspectRatio.SixteenNine,
+            generateCount: 1,
+            imageGeneratorEngine: ImageGeneratorEngine.Imagen,
+            generationMode: ImageGenerationMode.GeminiChat,
+            promptInputMethod: PromptInputMethod.Paste,
+            referenceImages: _.isEmpty(input.reference) ? [] : [input.reference],
+            referenceImageNames: _.isEmpty(input.reference) ? [] : [input.referenceName],
+          },
+        });
+        input.signal?.throwIfAborted();
+        if (!result.success) {
+          lastWarning = result.warning || lastWarning;
+          await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, errorMessage: lastWarning });
+          if (transientImageError.test(lastWarning)) {
+            transientErrorCount += 1;
+            if (transientErrorCount < 2) continue;
+            break;
+          }
+          if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning) || _.includes(lastWarning, GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.split(SOURCE_TEXT_SYMBOL_16)[0])) break;
+          continue;
+        }
+        const encodedImage = _.toString(result.base64);
+        const mimeType = getDownloadedImageMimeType(Buffer.from(encodedImage, SOURCE_TEXT_BASE64));
+        if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES || !mimeType) {
+          lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
+          logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_INVALID_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
+          await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT, { runId: promptRequestId, attempt: attempt + 1, bytes: encodedImage.length });
+          continue;
+        }
+        const thumbnail = SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage);
+        if (thumbnail) {
+          logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_SUCCESS_ATTEMPT_BYTES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
+          return { thumbnail };
+        }
+        lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
+        logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_NO_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
+      } catch (error) {
+        input.signal?.throwIfAborted();
+        logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
+        lastWarning = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, lastWarning));
+        logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_FAILED_ATTEMPT_REASON(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
+        await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, ...musicErrorDetails(error) });
         if (transientImageError.test(lastWarning)) {
           transientErrorCount += 1;
           if (transientErrorCount < 2) continue;
           break;
         }
-        if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning) || _.includes(lastWarning, GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.split(SOURCE_TEXT_SYMBOL_16)[0])) break;
-        continue;
+        if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning)) break;
       }
-      const encodedImage = _.toString(result.base64);
-      const mimeType = getDownloadedImageMimeType(Buffer.from(encodedImage, SOURCE_TEXT_BASE64));
-      if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES || !mimeType) {
-        lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-        logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_INVALID_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
-        await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT, { runId: promptRequestId, attempt: attempt + 1, bytes: encodedImage.length });
-        continue;
-      }
-      const thumbnail = SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage);
-      if (thumbnail) {
-        logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_SUCCESS_ATTEMPT_BYTES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
-        return { thumbnail };
-      }
-      lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-      logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_NO_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
-    } catch (error) {
-      input.signal?.throwIfAborted();
-      logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
-      lastWarning = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, lastWarning));
-      logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_FAILED_ATTEMPT_REASON(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
-      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, ...musicErrorDetails(error) });
-      if (transientImageError.test(lastWarning)) {
-        transientErrorCount += 1;
-        if (transientErrorCount < 2) continue;
-        break;
-      }
-      if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning)) break;
     }
-  }
-  logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_EXHAUSTED_ATTEMPTS_WARNING(SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
-  return { thumbnail: null, warning: lastWarning };
+    logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_EXHAUSTED_ATTEMPTS_WARNING(SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
+    return { thumbnail: null, warning: lastWarning };
   } finally {
     releaseBrowser();
   }
@@ -1690,10 +1657,12 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         report.progress(currentStage, undefined, { attempt: attempt + 1 });
         const prompt =
-          attempt === 0 || roomWasReloaded ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE) : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues, styleAnalysisParsed);
+          attempt === 0 || roomWasReloaded
+            ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, referenceSource)
+            : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues, styleAnalysisParsed, referenceSource);
         roomWasReloaded = false;
         try {
-          const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, workerId, () => SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE));
+          const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, workerId, () => SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, referenceSource));
           responseProvider = response.provider;
           batchParsed = jsonUtils.safeParse(response.text, null);
           await writeMusicDiagnostic(SOURCE_TEXT_PLAN_BATCH_RESPONSE, { runId: requestId, stage: currentStage, batch: startIndex, batchSize: batchCount, attempt: attempt + 1, responseChars: response.text.length, status: batchParsed ? SOURCE_TEXT_PARSED : SOURCE_TEXT_INVALID_JSON });
@@ -6013,25 +5982,67 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
   }
 });
 const musicMixerZipDestinations = new Map<string, string>();
+const musicMixerStagedDirs = new Map<string, string>();
+const cleanupMusicMixerStagedDir = async (token: string): Promise<void> => {
+  const stagedDir = musicMixerStagedDirs.get(token);
+  if (!stagedDir) return;
+  musicMixerStagedDirs.delete(token);
+  await fs.promises.rm(stagedDir, { recursive: true, force: true }).catch(() => undefined);
+};
 router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_ZIP_DESTINATION, (req: Request, res: Response) => {
   const name = path.basename(String(req.body?.suggestedName || MUSIC_MIXER_SERVER.DEFAULT_ZIP_NAME));
-  execFile(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SOURCE_TEXT_SELECT_SAVE_FILE, name, MUSIC_MIXER_SERVER.ZIP_EXTENSION], { windowsHide: true }, (error, stdout) => {
-    if (error) return res.status(500).json({ success: false, error: error.message });
-    const target = stdout.trim();
-    if (!target) return res.json({ success: true, cancelled: true });
-    const token = randomUUID();
-    musicMixerZipDestinations.set(token, target);
-    setTimeout(() => musicMixerZipDestinations.delete(token), 900000).unref();
-    return res.json({ success: true, token });
-  });
+  execFile(
+    getPythonCommand(),
+    [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SOURCE_TEXT_SELECT_SAVE_FILE, name, MUSIC_MIXER_SERVER.ZIP_EXTENSION],
+    { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } },
+    (error, stdout) => {
+      if (error) return res.status(500).json({ success: false, error: error.message });
+      const target = stdout.trim();
+      if (!target) return res.json({ success: true, cancelled: true });
+      const token = randomUUID();
+      musicMixerZipDestinations.set(token, target);
+      setTimeout(() => {
+        musicMixerZipDestinations.delete(token);
+        void cleanupMusicMixerStagedDir(token);
+      }, MUSIC_MIXER_SERVER.ZIP_TOKEN_TTL_MS).unref();
+      return res.json({ success: true, token });
+    },
+  );
+});
+router.post(MUSIC_MIXER_SERVER.ROUTE_STAGE_ZIP_FILE, async (req: Request, res: Response) => {
+  req.setTimeout(0);
+  res.setTimeout(0);
+  const token = req.header(MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN) || C.EMPTY;
+  if (!token || !musicMixerZipDestinations.has(token)) {
+    return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
+  }
+  const rawName = decodeURIComponent(req.header(MUSIC_MIXER_SERVER.HEADER_FILE_NAME) || C.EMPTY);
+  const ext = path.extname(path.basename(rawName)) || EXPORT_ZIP_CONFIG.WAV_EXT;
+  try {
+    let stagedDir = musicMixerStagedDirs.get(token);
+    if (!stagedDir) {
+      stagedDir = await fs.promises.mkdtemp(path.join(getTempDirectory(), MUSIC_MIXER_SERVER.STAGE_DIR_PREFIX));
+      musicMixerStagedDirs.set(token, stagedDir);
+    }
+    const stagedFilePath = path.join(stagedDir, SOURCE_TEMPLATE_SYMBOL_75(`${randomUUID()}`, `${ext}`));
+    await streamPipeline(req, fs.createWriteStream(stagedFilePath, { flags: SOURCE_TEXT_WX }));
+    return res.json({ success: true, sourcePath: stagedFilePath });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: getErrorMessage(error, MUSIC_MIXER_SERVER.SOURCE_READ_ERROR) });
+  }
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Response) => {
+  req.setTimeout(0);
+  res.setTimeout(0);
   const token = typeof req.body?.token === MOTION_TEXT_STRING ? req.body.token : C.EMPTY;
   const target = musicMixerZipDestinations.get(token);
   if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
   musicMixerZipDestinations.delete(token);
   const folders = Array.isArray(req.body?.folders) ? req.body.folders : [];
-  if (!folders.length) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_NO_FOLDERS_ZIP });
+  if (!folders.length) {
+    await cleanupMusicMixerStagedDir(token);
+    return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_NO_FOLDERS_ZIP });
+  }
   const tempManifestDir = await fs.promises.mkdtemp(path.join(getTempDirectory(), SOURCE_TEXT_MUSIC_MIXER_MANIFEST));
   const tempManifestPath = path.join(tempManifestDir, SOURCE_TEXT_MANIFEST_JSON);
   try {
@@ -6045,17 +6056,28 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
     };
     await fs.promises.writeFile(tempManifestPath, stringifyJson(manifest), SOURCE_TEXT_UTF_8);
     const result = await new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
-      execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath], { windowsHide: true }, (error, stdout, stderr) => {
-        if (error) {
-          return resolve({ success: false, error: error.message || stderr || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
-        }
-        try {
-          const parsed = parseJson(stdout.trim());
-          return resolve(parsed);
-        } catch {
+      execFile(
+        getPythonCommand(),
+        [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath],
+        { windowsHide: true, maxBuffer: MUSIC_MIXER_SERVER.ZIP_BUILDER_MAX_BUFFER_BYTES, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } },
+        (error, stdout, stderr) => {
+          const trimmedStdout = String(stdout || C.EMPTY).trim();
+          if (trimmedStdout) {
+            try {
+              const parsed = parseJson(trimmedStdout);
+              if (parsed && typeof parsed.success === "boolean") {
+                return resolve(parsed);
+              }
+            } catch {
+              // Fall through to error handling below
+            }
+          }
+          if (error) {
+            return resolve({ success: false, error: stderr?.trim() || error.message || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
+          }
           return resolve({ success: true, path: target });
-        }
-      });
+        },
+      );
     });
     if (!result.success) {
       throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);
@@ -6066,9 +6088,12 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
     return res.status(500).json({ success: false, error: getErrorMessage(error, MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR) });
   } finally {
     await fs.promises.rm(tempManifestDir, { recursive: true, force: true }).catch(() => undefined);
+    await cleanupMusicMixerStagedDir(token);
   }
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_WRITE_ZIP, async (req: Request, res: Response) => {
+  req.setTimeout(0);
+  res.setTimeout(0);
   const token = req.header(MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN) || C.EMPTY;
   const target = musicMixerZipDestinations.get(token);
   if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
@@ -6084,6 +6109,8 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_WRITE_ZIP, async (req: Request, res: Respon
   } catch (error) {
     await fs.promises.rm(temp, { force: true }).catch(() => undefined);
     return res.status(500).json({ success: false, error: getErrorMessage(error, MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR) });
+  } finally {
+    await cleanupMusicMixerStagedDir(token);
   }
 });
 router.post(ROUTER_PATHS.SAVE_FILE, async (req: Request, res: Response) => {

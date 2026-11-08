@@ -977,6 +977,7 @@ export interface MotionAiExecution {
   chained?: boolean;
   bible?: { key: string; text: string };
   worker?: string;
+  workerAssigned?: (workerId: string) => void;
   avoidWorker?: string;
 }
 export interface MotionAiActivity {
