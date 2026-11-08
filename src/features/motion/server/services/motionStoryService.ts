@@ -305,30 +305,51 @@ export const extractJson = (raw: string): any => {
 };
 const closeJson = (raw: string): string | null => {
   const stack: string[] = [];
+  let out: string = MR.MOTION_TEXT_EMPTY;
   let inString = false,
     escaped = false,
     end = -1;
   for (let i = 0; i < raw.length; i++) {
     const ch = raw[i];
     if (inString) {
+      out += ch;
       if (escaped) escaped = false;
       else if (ch === MOTION_TEXT_SYMBOL_49) escaped = true;
       else if (ch === MOTION_TEXT_SYMBOL_47) inString = false;
       continue;
     }
-    if (ch === MOTION_TEXT_SYMBOL_47) inString = true;
-    else if (ch === MOTION_TEXT_SYMBOL_35 || ch === MOTION_TEXT_SYMBOL_50) stack.push(ch === MOTION_TEXT_SYMBOL_35 ? MOTION_TEXT_SYMBOL_36 : MOTION_TEXT_SYMBOL_51);
-    else if (ch === MOTION_TEXT_SYMBOL_36 || ch === MOTION_TEXT_SYMBOL_51) {
-      if (stack.pop() !== ch) return null;
+    if (ch === MOTION_TEXT_SYMBOL_47) {
+      inString = true;
+      out += ch;
+    } else if (ch === MOTION_TEXT_SYMBOL_35 || ch === MOTION_TEXT_SYMBOL_50) {
+      stack.push(ch === MOTION_TEXT_SYMBOL_35 ? MOTION_TEXT_SYMBOL_36 : MOTION_TEXT_SYMBOL_51);
+      out += ch;
+    } else if (ch === MOTION_TEXT_SYMBOL_36 || ch === MOTION_TEXT_SYMBOL_51) {
+      out = out.replace(/,\s*$/u, MR.MOTION_TEXT_EMPTY);
+      if (stack.at(-1) === ch) {
+        stack.pop();
+      } else if (stack.includes(ch)) {
+        while (stack.length && stack.at(-1) !== ch) out += stack.pop();
+        stack.pop();
+      } else {
+        return null;
+      }
+      out += ch;
       if (!stack.length) {
-        end = i;
+        end = out.length - 1;
         break;
       }
+    } else {
+      out += ch;
     }
   }
-  if (end >= 0) return raw.slice(0, end + 1);
-  if (inString || !stack.length) return null;
-  return raw.replace(MP.JSON_TRAILING_SEPARATOR, MR.MOTION_TEXT_EMPTY) + stack.reverse().join(MR.MOTION_TEXT_EMPTY);
+  if (end >= 0) return out.slice(0, end + 1);
+  if (!stack.length) return null;
+  if (inString) {
+    if (escaped) out += MOTION_TEXT_SYMBOL_49;
+    out += MOTION_TEXT_SYMBOL_47;
+  }
+  return out.replace(MP.JSON_TRAILING_SEPARATOR, MR.MOTION_TEXT_EMPTY) + stack.reverse().join(MR.MOTION_TEXT_EMPTY);
 };
 const pickEnum = <T extends string>(values: readonly T[], v: unknown, fallback: T): T => (_.includes(values, v) ? (v as T) : fallback);
 export const writeMotionAiDebug = async (requestId: string, data: Record<string, unknown>): Promise<void> => {
@@ -1344,7 +1365,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       if (!recovered && !captchaRetry && submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
         clearTimeout(watchdog);
         log?.(AIR.RESUME(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
-        const replayable = !!run?.editorial || AIR.REPLAYABLE_ARTIFACT.test(artifactType);
+        const replayable = !!run?.editorial || AIR.REPLAYABLE_ARTIFACT.test(artifactType) || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML);
         for (let check = 0; check <= (replayable ? AIR.ROOM_RELOADS : 0); check++) {
           try {
             if (check) log?.(AIR.RESUME_RELOAD(provider, check, AIR.ROOM_RELOADS), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
@@ -1434,7 +1455,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           if (retryRoom) {
             if (!replaceRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
             else await closeMotionAiRoom(run, workerId!);
-          } else if (!roomOk && !captchaRetry && !(artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML) && submission.attempted && !submission.completed && !submission.abandoned)) await closeMotionAiRoom(run, workerId!);
+          } else if (!roomOk && !captchaRetry && !(artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML) && submission.attempted && !submission.abandoned)) await closeMotionAiRoom(run, workerId!);
         } else {
           await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
         }

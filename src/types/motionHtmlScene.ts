@@ -35,6 +35,8 @@ export interface MotionHtmlRequest {
   error?: string;
   raw?: string;
   worker?: string;
+  provider?: string;
+  model?: string;
   submission?: { attempted: boolean; completed: boolean; abandoned?: boolean; pending?: MotionHtmlPendingSubmission };
 }
 export interface MotionHtmlFrameInput {

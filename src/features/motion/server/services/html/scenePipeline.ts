@@ -1,5 +1,7 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionAiFallbackPolicy } from "../../../../../lib/motionAiExecution.js";
+import { stringifyJson } from "../../../../../lib/jsonStringify.js";
+import type { ChatPendingSubmission, ChatPlanningSubmission } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
@@ -11,6 +13,7 @@ import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js"
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
+import { MOTION_AI_RECOVERY as AIR } from "../../../../../constants/motionAiRecovery.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -21,6 +24,18 @@ import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
 import type { MotionRemotionScene, MotionRemotionState, MotionVisualSettings } from "../../../../../types/motionVisual.js";
 import type { MotionHtmlRequest } from "../../../../../types/motionHtmlScene.js";
+type HtmlSubmission = Omit<ChatPlanningSubmission, "pending"> & { pending?: Omit<ChatPendingSubmission, "page"> & { page?: ChatPendingSubmission["page"] } };
+const htmlSubmissionSnapshot = (submission: HtmlSubmission, refreshUrl = false): NonNullable<MotionHtmlRequest["submission"]> => {
+  const snapshot = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned };
+  if (!submission.pending) return snapshot;
+  const { page, ...pending } = submission.pending;
+  if (refreshUrl && page && !page.isClosed()) {
+    const url = page.url();
+    if (new URL(url).origin === new URL(pending.url).origin) pending.url = url;
+  }
+  return { ...snapshot, pending };
+};
+const htmlSubmission = (attempt: MotionHtmlRequest, resuming: boolean): HtmlSubmission => ({ attempted: false, completed: false, ...(resuming ? attempt.submission : {}) });
 const retainCheckpoint = async (write: () => void, opts: Pick<RemotionSceneOptions, "signal" | "log">) => {
   for (;;) {
     try {
@@ -114,21 +129,37 @@ const normalizePlannedHtmlScenes = (scenes: any[], lines: { key: string; text: s
   }
   return working;
 };
+const canResumeHtmlSubmission = (attempt: MotionHtmlRequest, targetExec?: MotionAiExecution): boolean => {
+  const sub = attempt.submission;
+  if (!sub?.attempted || sub.completed || sub.abandoned || !attempt.worker) return false;
+  if (attempt.provider && targetExec?.provider && attempt.provider !== targetExec.provider) return false;
+  if (attempt.model && targetExec?.model && attempt.model !== targetExec.model) return false;
+  if (sub.pending?.url) {
+    try {
+      if (!AIR.CONVERSATION_PATH.test(new URL(sub.pending.url).pathname)) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+};
 const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, read: (raw: any) => void, _groupIndex = 0, priority = 0) => {
   const store = motionTaskCheckpoint<MotionHtmlRequest>(opts.scope, RT_MAINTENANCE.HTML_PLAN_SUBMISSION, [key]);
   let attempt = store.read();
   let failures = 0;
   for (;;) {
     opts.signal?.throwIfAborted();
+    const planExec = opts.mainExec?.provider ? opts.mainExec : opts.exec?.provider ? opts.exec : opts.mainExec || opts.exec;
     if (!attempt || attempt.status === RT_MAINTENANCE.RETRY_WAIT) attempt = { id: randomUUID(), attempt: (attempt?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING };
     const current = attempt;
-    const submission: any = { attempted: false, completed: false, ...current.submission };
-    const resuming = !!submission.attempted && !submission.completed && !submission.abandoned && !!current.worker;
+    const resuming = canResumeHtmlSubmission(current, planExec);
+    const submission = htmlSubmission(current, resuming);
     const worker = resuming ? current.worker : undefined;
     if (!resuming) delete current.worker;
+    current.provider = planExec?.provider;
+    current.model = planExec?.model;
     const persist = () => {
-      const { page: _page, ...pending } = submission.pending || {};
-      current.submission = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) };
+      current.submission = htmlSubmissionSnapshot(submission);
       store.save(current);
     };
     let journal: ReturnType<typeof setInterval> | undefined,
@@ -142,7 +173,6 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
           opts.log(`${RT_MAINTENANCE.CHO_LUU_YEU_CAU_PHAN_CANH}${String(error)}`);
         }
       }, 2000);
-      const planExec = opts.mainExec?.provider ? opts.mainExec : opts.exec?.provider ? opts.exec : opts.mainExec || opts.exec;
       if (!opts.ai) await prepareMotionContentRooms(planExec, opts.signal, opts.log);
       const exec: MotionAiExecution = {
         ...planExec,
@@ -172,7 +202,7 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
           throw error;
         }
       } else raw = await slots.run(priority, () => (opts.ai ? opts.ai(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log)), opts.signal);
-      current.raw = JSON.stringify(raw);
+      current.raw = stringifyJson(raw);
       current.status = RT_MAINTENANCE.RECEIVED;
       submission.completed = true;
       persist();
@@ -211,7 +241,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
     RT_MAINTENANCE.SCENE_TEMPLATE_SOURCE_DATA_EXACT_VISIBLE_TEXT_STAYS_IN_THE + scene.sceneTemplate,
     scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
-    `${RT_MAINTENANCE.RUNTIME}${JSON.stringify({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`,
+    `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`,
     MOTION_HTML.DELIVERY,
   ]
     .filter(Boolean)
@@ -228,22 +258,16 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (scene.htmlRequest?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
     scene.htmlRequest = attempt;
     attempt.status = RT_MAINTENANCE.RUNNING;
-    const submission: any = { attempted: attempt.submission?.attempted || false, completed: attempt.submission?.completed || false, abandoned: attempt.submission?.abandoned, pending: attempt.submission?.pending };
-    const resuming = !!submission.attempted && !submission.completed && !submission.abandoned && !!attempt.worker;
+    const resuming = canResumeHtmlSubmission(attempt, opts.exec);
+    const submission = htmlSubmission(attempt, resuming);
     const worker = resuming ? attempt.worker : undefined;
     if (!resuming) delete attempt.worker;
+    attempt.provider = opts.exec?.provider;
+    attempt.model = opts.exec?.model;
     opts.log(`${RT_MAINTENANCE.CANH_HTML}${scene.id}${RT_MAINTENANCE.TAO_TRON_CANH_LUOT}${attempt.attempt}${RT_MAINTENANCE.DOT}`);
     let journal: ReturnType<typeof setInterval> | undefined;
-    const snapshotSubmission = () => {
-      const { page, ...pending } = submission.pending || {};
-      if (page && !page.isClosed()) {
-        const url = page.url();
-        if (new URL(url).origin === new URL(pending.url).origin) pending.url = url;
-      }
-      return { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) };
-    };
     const journalState = () => {
-      attempt.submission = snapshotSubmission();
+      attempt.submission = htmlSubmissionSnapshot(submission, true);
       persist();
     };
     try {
@@ -315,7 +339,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     } catch (error) {
       clearInterval(journal);
       opts.signal?.throwIfAborted();
-      attempt.submission = snapshotSubmission();
+      attempt.submission = htmlSubmissionSnapshot(submission, true);
       const reason = String((error as Error).message);
       attempt.error = reason;
       const unknown = !!attempt.submission?.attempted && !attempt.submission.completed && !attempt.submission.abandoned;
@@ -347,7 +371,7 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
       analysis.authoringSettings ? motionHtmlWritingDirection(analysis) : `${RT_MAINTENANCE.STYLE_2}${MOTION_HTML_STYLES[settings.profileId]}${RT_MAINTENANCE.NEWLINE}${motionHtmlLanguageDirection(language)}${RT_MAINTENANCE.NEWLINE}${MOTION_HTML.TEMPLATE}`,
       motionHtmlPacingDirection(settings, group.seconds),
       opts.sfx === false ? RT_MAINTENANCE.SOUNDEVENTS_SFX_IS_DISABLED : RT_MAINTENANCE.PROMPT_4,
-      JSON.stringify({ ...motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false), lines: lines.map((line) => ({ id: line.key, text: line.text, utterance: line.utterance })) }),
+      stringifyJson({ ...motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false), lines: lines.map((line) => ({ id: line.key, text: line.text, utterance: line.utterance })) }),
     ]
       .filter(Boolean)
       .join(RT_MAINTENANCE.NEWLINE);

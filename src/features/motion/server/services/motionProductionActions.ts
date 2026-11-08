@@ -133,11 +133,13 @@ export const aiExec = (v: any): MotionAiExecution => ({
   ...(v?.strictProvider === true ? { strictProvider: true } : {}),
 });
 export const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MOTION_AI_ROLE.DRAW });
+const editorialAiIdentity = ({ provider, model, mode, chromeHeadless }: MotionAiExecution) => ({ provider, model, mode, chromeHeadless });
 export const editorialSession = (body: any, source: MotionStorySource, exec: MotionAiExecution): MotionEditorialSession | undefined => {
   const id = _.toString(body?.editorialSessionId);
   if (!MOTION_EDITORIAL.ID_PATTERN.test(id) || !source?.segments) return undefined;
+  const sceneExec = body?.sceneAiExecution ? aiExec(body.sceneAiExecution) : undefined;
   const revision = createHash(RT_SERVER.SHA256)
-    .update(stringifyJson([videoDnaSourceKey(source), source.notes, storyLanguage(body?.language), { provider: exec.provider, model: exec.model, mode: exec.mode }]))
+    .update(stringifyJson([videoDnaSourceKey(source), source.notes, storyLanguage(body?.language), editorialAiIdentity(exec), ...(sceneExec ? [editorialAiIdentity(sceneExec)] : [])]))
     .digest(RT_SERVER.HEX);
   return { id, revision, context: motionEditorialContext(source, body?.analysis, body?.script, body?.beats, storyLanguage(body?.language)) };
 };

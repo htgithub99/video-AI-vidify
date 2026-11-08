@@ -782,7 +782,7 @@ export function useMotionStudio() {
             if (now.activeRenderJobId) await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: now.activeRenderJobId });
           } else patch({ autoRun: true, productionId: id, editorialSessionId: id });
           const body = resumeId
-            ? { productionId: resumeId, clearGeminiChatsBeforeExport: now.clearGeminiChatsBeforeExport === true }
+            ? { productionId: resumeId, clearGeminiChatsBeforeExport: now.clearGeminiChatsBeforeExport === true, aiExecution: motionMainAiExecution(now), sceneAiExecution: motionSceneAiExecution(now) }
             : {
                 source: now.source,
                 productionId: id,

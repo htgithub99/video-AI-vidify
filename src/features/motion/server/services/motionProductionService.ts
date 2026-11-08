@@ -52,6 +52,7 @@ import { scheduleMotionSegmentPrerender, stopMotionSegmentPrerender } from "./mo
 import { createMotionEarlyScenes, type MotionEarlyScenes } from "./motionEarlyScenes.js";
 import { MOTION_OUTPUT_CONFORMANCE as CONFORMANCE } from "../../../../constants/motionOutputConformance.js";
 import { MOTION_SETTINGS_COMPATIBILITY } from "../../../../constants/motionSettingsCompatibility.js";
+const productionAiOverride = (value?: Record<string, any>): Record<string, any> | undefined => (value && typeof value === "object" && value.provider ? value : undefined);
 interface ProductionRecord {
   illustration?: PuppetPlanReadiness;
   illustrationRecovery?: MotionPlanRecoveryState;
@@ -839,15 +840,21 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return publicJob(record);
   };
-  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean): MotionProductionJobState => {
+  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean, aiOverrides?: { aiExecution?: Record<string, any>; sceneAiExecution?: Record<string, any> }): MotionProductionJobState => {
     let record = read(id);
     if (!record) throw new Error(P.INVALID_RUN);
-    if (typeof clearGeminiChatsBeforeExport === "boolean" && !active.has(id) && record.input.clearGeminiChatsBeforeExport !== clearGeminiChatsBeforeExport) {
+    const hasClearOverride = typeof clearGeminiChatsBeforeExport === "boolean" && record.input.clearGeminiChatsBeforeExport !== clearGeminiChatsBeforeExport;
+    const nextAi = productionAiOverride(aiOverrides?.aiExecution);
+    const nextSceneAi = productionAiOverride(aiOverrides?.sceneAiExecution);
+    const hasAiOverride = (!!nextAi && stringifyJson(record.input.aiExecution) !== stringifyJson(nextAi)) || (!!nextSceneAi && stringifyJson(record.input.sceneAiExecution) !== stringifyJson(nextSceneAi));
+    if ((hasClearOverride || hasAiOverride) && !active.has(id)) {
       const owner = store.acquire(id);
       try {
         record = read(id);
         if (!record) throw new Error(P.INVALID_RUN);
-        record.input.clearGeminiChatsBeforeExport = clearGeminiChatsBeforeExport;
+        if (typeof clearGeminiChatsBeforeExport === "boolean") record.input.clearGeminiChatsBeforeExport = clearGeminiChatsBeforeExport;
+        if (nextAi) record.input.aiExecution = nextAi;
+        if (nextSceneAi) record.input.sceneAiExecution = nextSceneAi;
         record.inputKey = motionInputKey(record.input);
         store.save(id, record, owner);
       } finally {
