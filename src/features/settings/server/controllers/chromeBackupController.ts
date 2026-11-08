@@ -10,8 +10,12 @@ export const getChromeBackup = async (_req: Request, res: Response) => {
 };
 export const updateChromeBackup = (req: Request, res: Response) => {
   try {
-    if (typeof req.body?.enabled !== "boolean") return res.status(400).json(readChromeBackupSettings());
-    res.json(saveChromeBackupSettings({ enabled: req.body.enabled }));
+    const hasEnabled = req.body?.enabled !== undefined;
+    const hasUseBackup = req.body?.useBackup !== undefined;
+    if ((!hasEnabled && !hasUseBackup) || (hasEnabled && typeof req.body?.enabled !== "boolean") || (hasUseBackup && typeof req.body?.useBackup !== "boolean")) {
+      return res.status(400).json(readChromeBackupSettings());
+    }
+    res.json(saveChromeBackupSettings({ enabled: req.body?.enabled, useBackup: req.body?.useBackup }));
   } catch (error) {
     res.status(500).json({ error: String((error as Error).message) });
   }

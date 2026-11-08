@@ -110,6 +110,7 @@ try {
   await unknown.switch(0, async () => undefined);
   assert.equal(unknown.generation, 1);
   assert.equal(readChromeBackupSettings().enabled, false);
+  assert.equal(readChromeBackupSettings().useBackup, false);
   assert.equal(saveChatResponse({ projectId: "disabled" }, "kept in memory"), false, "Toggle off never journals chat responses");
   await assert.rejects(fs.readdir(path.join(root, C.RESULTS)), /ENOENT/);
   await assert.rejects(
@@ -159,6 +160,12 @@ try {
     }),
     (error: any) => error[C.ERROR_FLAG] && error.message === C.EXHAUSTED,
   );
+  saveChromeBackupSettings({ useBackup: false });
+  assert.equal(readChromeBackupSettings().useBackup, false);
+  assert.equal(readChromeBackupSettings().active, false, "Turning off useBackup immediately returns to primary Chrome");
+  saveChromeBackupSettings({ useBackup: true });
+  assert.equal(readChromeBackupSettings().useBackup, true);
+  assert.equal(readChromeBackupSettings().active, true, "Turning on useBackup immediately activates backup Chrome");
   browser = await chromium.launch({ channel: "chrome", headless: process.env.VIDIFY_VERIFY_CHROME_VISIBLE !== "1" });
   const page = await browser.newPage();
   const picker = (flash: string, pro: string, disabled = false) =>

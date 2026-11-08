@@ -39,7 +39,9 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(url);
   const toggle = page.getByRole("switch", { name: C.LABEL.vi });
+  const forceToggle = page.getByRole("switch", { name: C.FORCE_LABEL.vi });
   await toggle.waitFor();
+  await forceToggle.waitFor();
   await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>('[role="switch"]')?.disabled);
   assert.equal(await toggle.getAttribute("aria-checked"), "false");
   await toggle.click();
@@ -57,11 +59,21 @@ try {
   await toggle.click();
   await page.waitForFunction(() => document.querySelector('[role="switch"]')?.getAttribute("aria-checked") === "false");
   assert.equal(readChromeBackupSettings().enabled, false);
+  assert.equal(await forceToggle.getAttribute("aria-checked"), "false");
+  await forceToggle.click();
+  await page.waitForFunction(() => document.querySelectorAll('[role="switch"]')[1]?.getAttribute("aria-checked") === "true");
+  assert.equal(readChromeBackupSettings().useBackup, true);
+  assert.equal(readChromeBackupSettings().active, true);
+  await forceToggle.click();
+  await page.waitForFunction(() => document.querySelectorAll('[role="switch"]')[1]?.getAttribute("aria-checked") === "false");
+  assert.equal(readChromeBackupSettings().useBackup, false);
+  assert.equal(readChromeBackupSettings().active, false);
   const invalid = await fetch(url + C.API, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: "true" }) });
   assert.equal(invalid.status, 400);
   assert.equal(readChromeBackupSettings().enabled, false);
   await page.goto(url + "/?lang=en");
   await page.getByRole("switch", { name: C.LABEL.en }).waitFor();
+  await page.getByRole("switch", { name: C.FORCE_LABEL.en }).waitFor();
   assert.deepEqual(errors, []);
   console.log("PASS: visible installed Chrome, production Settings card and controller, shared setting persistence across reload, on/off, invalid API input, English and mobile layout.");
 } finally {

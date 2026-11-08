@@ -308,7 +308,7 @@ import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
 import { CHAT_ROOM_RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
-import { isBackupChromeActive, registerChromeBackupSwitch, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure } from "./chromeBackupService.js";
+import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure } from "./chromeBackupService.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { findNativeChrome } from "./nativeProxyBrowser.js";
 chromium.use(stealthPlugin());
@@ -1840,7 +1840,7 @@ export async function closeActiveBrowser(skipActivityCleanup = false) {
           }
         } else if (sharedChromeLaunchedByApp) {
           appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
-          return;
+          if (!isBackupChromeActive()) return;
         } else {
           appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
         }
@@ -1973,7 +1973,10 @@ export function scheduleGlobalBrowserCleanup() {
   }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
 export const getExistingGlobalBrowser = async (): Promise<BrowserSession | null> => {
-  if (activeBrowserInstance) return activeBrowserInstance;
+  if (activeBrowserInstance) {
+    if ((activeBrowserInstance.account?.email === BACKUP.PROFILE) !== isBackupChromeActive()) return null;
+    return activeBrowserInstance;
+  }
   if (isBackupChromeActive()) return null;
   const existing = await connectToSharedChromeBrowser(false);
   if (existing) activeBrowserInstance = existing;
@@ -1988,14 +1991,18 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
   const requestedHeadless = chromeHeadless !== false;
   if (activeBrowserLaunchPromise) {
     const launchedBrowser = await activeBrowserLaunchPromise;
-    if (!isBackupChromeActive() && preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
+    if ((launchedBrowser.account?.email === BACKUP.PROFILE) !== isBackupChromeActive()) {
+      await closeActiveBrowser();
+    } else if (!isBackupChromeActive() && preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
       await closeActiveBrowser();
     } else if (activeBrowserHeadless === requestedHeadless || (activeBrowserHeadless === false && requestedHeadless)) {
       return launchedBrowser;
     }
   }
   if (activeBrowserInstance) {
-    if (!isBackupChromeActive() && preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
+    if ((activeBrowserInstance.account?.email === BACKUP.PROFILE) !== isBackupChromeActive()) {
+      await closeActiveBrowser();
+    } else if (!isBackupChromeActive() && preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
       appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SWITCH_TO_SHARED_CHROME);
       await closeActiveBrowser();
     } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless === true && !requestedHeadless) {
@@ -2382,12 +2389,14 @@ const waitForVisibleGrokVerificationBeforeAutomation = async (): Promise<void> =
   }
   throw new Error(REFACTOR_CONSTANTS.GROK_PRECONNECT_TIMEOUT_ERROR);
 };
+let grokBrowserBackupMode = false;
 const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
-  const account = await getNextAccount();
+  const useBackup = isBackupChromeActive();
+  const account = useBackup ? ({ email: BACKUP.PROFILE } as GoogleAccount) : await getNextAccount();
   if (!account) throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
   await closeActiveBrowser();
   const emailHash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(account.email).digest(REFACTOR_CONSTANTS.ENCODING_HEX);
-  const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
+  const profilePath = useBackup ? backupProfilePath() : path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
   const chromeArgs = [REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG.replace(SOURCE_TEXT_0_2, _.toString(REFACTOR_CONSTANTS.GROK_REMOTE_DEBUGGING_PORT)), REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace(SOURCE_TEXT_0_2, profilePath), REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG, REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG, EXTERNAL_URLS.GROK_CHAT];
   if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
   spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: SOURCE_TEXT_IGNORE }).unref();
@@ -2398,12 +2407,18 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   const context = _.first(grokBrowser.contexts());
   if (!context) throw new Error(GROK_AUTOMATION_MESSAGES.NO_SESSION_CREATED);
   grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), SOURCE_TEXT_GROK_COM)) || (await context.newPage());
+  grokBrowserBackupMode = useBackup;
   activeBrowserInstance = { context, page: grokPage, account, ownsContext: false };
   activeBrowserHeadless = chromeHeadless !== false;
   appLog(GROK_AUTOMATION_MESSAGES.USING_ACCOUNT(account.email));
   return { context, page: grokPage };
 };
 export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
+  if (grokBrowser?.isConnected() && grokBrowserBackupMode !== isBackupChromeActive()) {
+    await closeOwnedGrokBrowserIfIdle(true).catch(() => undefined);
+    grokBrowser = null;
+    grokPage = null;
+  }
   if (grokBrowser?.isConnected() && grokPage && !grokPage.isClosed()) {
     const duplicateGrokPages = _.filter(grokPage.context().pages(), (page) => page !== grokPage && _.includes(page.url(), SOURCE_TEXT_GROK_COM_IMAGINE));
     await Promise.allSettled(_.map(duplicateGrokPages, (page) => page.close()));
@@ -4718,7 +4733,8 @@ const backupSignedIn = async (context: BrowserContext): Promise<boolean> => {
   return false;
 };
 const prepareBackupChromeTask = async () => {
-  if (sharedChromeTasks.switching || isBackupChromeActive()) throw backupChromeFailure(BACKUP.PREPARE_BUSY);
+  if (sharedChromeTasks.switching || (isBackupChromeActive() && !readChromeBackupSettings().useBackup)) throw backupChromeFailure(BACKUP.PREPARE_BUSY);
+  if (activeBrowserInstance?.account?.email === BACKUP.PROFILE) await closeActiveBrowser(true).catch(() => undefined);
   if (!backupSetupContext) {
     backupSetupContext = await chromium.launchPersistentContext(backupProfilePath(), { executablePath: findNativeChrome(), headless: false });
     const context = backupSetupContext;
@@ -4743,13 +4759,27 @@ export const checkBackupChrome = async () => {
   return readChromeBackupSettings();
 };
 const launchBackupChrome = async (headless = true): Promise<BrowserSession> => {
-  const context = await chromium.launchPersistentContext(backupProfilePath(), { executablePath: findNativeChrome(), headless });
+  if (backupPreparation) await backupPreparation.catch(() => undefined);
+  if (backupSetupContext) {
+    const signedIn = await backupSignedIn(backupSetupContext).catch(() => false);
+    if (signedIn) saveChromeBackupSettings({ ready: true });
+    await backupSetupContext.close().catch(() => undefined);
+    backupSetupContext = undefined;
+  }
+  const context = await chromium.launchPersistentContext(backupProfilePath(), { executablePath: findNativeChrome(), headless, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
   try {
+    const settings = readChromeBackupSettings();
     const page = context.pages()[0] || (await context.newPage());
     await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: BACKUP.READY_MS });
-    await page.locator(BACKUP.READY_SELECTOR).filter({ visible: true }).first().waitFor({ timeout: BACKUP.READY_MS });
+    const waitMs = settings.useBackup && !settings.ready ? BACKUP.READY_FAST_MS : BACKUP.READY_MS;
+    await page.locator(BACKUP.READY_SELECTOR).filter({ visible: true }).first().waitFor({ timeout: waitMs });
+    if (!settings.ready) saveChromeBackupSettings({ ready: true });
     return { context, page, account: { email: BACKUP.PROFILE } as GoogleAccount, ownsContext: true };
   } catch (cause) {
+    if (readChromeBackupSettings().useBackup) {
+      const page = context.pages()[0] || (await context.newPage());
+      return { context, page, account: { email: BACKUP.PROFILE } as GoogleAccount, ownsContext: true };
+    }
     await context.close();
     saveChromeBackupSettings({ ready: false });
     throw new Error(BACKUP.NOT_READY, { cause });
@@ -4790,6 +4820,22 @@ registerChromeBackupSwitch(async () => {
       activeBrowserHeadless = undefined;
     }
   });
+});
+registerChromeBackupModeSync(async (useBackup: boolean) => {
+  cancelGlobalBrowserCleanup();
+  if (activeBrowserInstance && (activeBrowserInstance.account?.email === BACKUP.PROFILE) !== useBackup) {
+    await closeAppBrowserAfterTask(true, true).catch(() => undefined);
+    if (activeBrowserInstance && (activeBrowserInstance.account?.email === BACKUP.PROFILE) !== useBackup) {
+      await closeActiveBrowser(true).catch(() => undefined);
+      activeBrowserInstance = null;
+      activeBrowserHeadless = undefined;
+    }
+  }
+  if (grokBrowser?.isConnected() && grokBrowserBackupMode !== useBackup) {
+    await closeOwnedGrokBrowserIfIdle(true).catch(() => undefined);
+    grokBrowser = null;
+    grokPage = null;
+  }
 });
 export const recoverExistingFlowVideo = (...args: Parameters<typeof recoverExistingFlowVideoTask>) => sharedChromeTasks.run(() => recoverExistingFlowVideoTask(...args));
 export const ensureFlowCharacters = (...args: Parameters<typeof ensureFlowCharactersTask>) => sharedChromeTasks.run(() => ensureFlowCharactersTask(...args));

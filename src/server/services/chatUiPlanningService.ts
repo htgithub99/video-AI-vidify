@@ -505,7 +505,11 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   if (provider) await manualCleanupFlights.get(provider);
   throwIfPlanningCancelled(signal);
   const existingRoom = getLiveRoom(rooms, projectId);
-  if (existingRoom) return existingRoom;
+  if (existingRoom && existingRoom.context() === context) return existingRoom;
+  if (existingRoom) {
+    releaseChatRoom(existingRoom);
+    rooms.delete(projectId);
+  }
   const page = (url === EXTERNAL_URLS.GROK_CHAT ? undefined : claimBlankChatRoom(context)) || claimChatRoom(await context.newPage());
   try {
     throwIfPlanningCancelled(signal);

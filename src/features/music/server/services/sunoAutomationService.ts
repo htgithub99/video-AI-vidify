@@ -103,6 +103,8 @@ import { REFACTOR_CONSTANTS } from "../../../../constants/refactor.js";
 import { logger } from "../../../../lib/logger.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../../../../server/services/musicDiagnosticService.js";
 import { SUNO_AUTOMATION_CONFIG, SUNO_AUTOMATION_PATTERNS, SUNO_AUTOMATION_SELECTORS, SUNO_AUTOMATION_TEXTS, formatSunoPlaylistName, normalizeSunoPlaylistName } from "../../../../constants/sunoAutomation.js";
+import { CHROME_BACKUP } from "../../../../constants/chromeBackup.js";
+import { isBackupChromeActive } from "../../../../server/services/chromeBackupService.js";
 export interface SunoSongInput {
   songId: string;
   title: string;
@@ -132,7 +134,7 @@ export interface SunoDownloadTrack {
   title: string;
 }
 export type SunoDownloadFormat = "mp3" | "wav";
-const SUNO_PROFILE_DIR = path.join(getDataDirectory(), SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
+const getSunoProfileDir = (): string => path.join(getDataDirectory(), isBackupChromeActive() ? CHROME_BACKUP.PROFILE : SUNO_AUTOMATION_CONFIG.SUNO_PROFILE_DIR_NAME);
 const SUNO_CDP_URL = SUNO_AUTOMATION_CONFIG.SUNO_CDP_URL;
 let activeSunoPage: Page | null = null;
 let sunoCreationRunning = false;
@@ -272,12 +274,12 @@ export const cancelActiveSunoCreation = async (): Promise<void> => {
   await closeSunoChrome(activeSunoPage);
 };
 export const launchSunoLoginBrowser = async (): Promise<{ message: string; profilePath: string; cdpPort: number }> => {
-  fs.mkdirSync(SUNO_PROFILE_DIR, { recursive: true });
+  fs.mkdirSync(getSunoProfileDir(), { recursive: true });
   try {
     const browser = await chromium.connectOverCDP(SUNO_CDP_URL);
     const page = browser.contexts()[0]?.pages()[0] || (await browser.contexts()[0]!.newPage());
     await page.goto(SUNO_AUTOMATION_CONFIG.SUNO_CREATE_URL, { waitUntil: SUNO_AUTOMATION_SELECTORS.WAIT_DOM_LOADED, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS }).catch(() => undefined);
-    return { message: SUNO_AUTOMATION_TEXTS.CHROME_OPENED, profilePath: SUNO_PROFILE_DIR, cdpPort: SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT };
+    return { message: SUNO_AUTOMATION_TEXTS.CHROME_OPENED, profilePath: getSunoProfileDir(), cdpPort: SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT };
   } catch {}
   if (!fs.existsSync(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH)) throw new Error(SUNO_AUTOMATION_TEXTS.CHROME_NOT_FOUND_ERR);
   spawn(
@@ -285,7 +287,7 @@ export const launchSunoLoginBrowser = async (): Promise<{ message: string; profi
     [
       SOURCE_TEMPLATE_REMOTE_DEBUGGING_PORT(`${SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT}`),
       SUNO_AUTOMATION_CONFIG.CHROME_ARG_REMOTE_ORIGINS,
-      SOURCE_TEMPLATE_USER_DATA_DIR(`${SUNO_PROFILE_DIR}`),
+      SOURCE_TEMPLATE_USER_DATA_DIR(`${getSunoProfileDir()}`),
       SOURCE_TEMPLATE_PROFILE_DIRECTORY(`${SUNO_AUTOMATION_CONFIG.CHROME_DEFAULT_PROFILE}`),
       SUNO_AUTOMATION_CONFIG.CHROME_ARG_NO_FIRST_RUN,
       SUNO_AUTOMATION_CONFIG.CHROME_ARG_NO_DEFAULT_CHECK,
@@ -293,7 +295,7 @@ export const launchSunoLoginBrowser = async (): Promise<{ message: string; profi
     ],
     { windowsHide: false, detached: true, stdio: SOURCE_TEXT_IGNORE },
   ).unref();
-  return { message: SUNO_AUTOMATION_TEXTS.formatChromeLaunchedMsg(SUNO_AUTOMATION_CONFIG.EXPECTED_ACCOUNT_EMAIL), profilePath: SUNO_PROFILE_DIR, cdpPort: SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT };
+  return { message: SUNO_AUTOMATION_TEXTS.formatChromeLaunchedMsg(SUNO_AUTOMATION_CONFIG.EXPECTED_ACCOUNT_EMAIL), profilePath: getSunoProfileDir(), cdpPort: SUNO_AUTOMATION_CONFIG.SUNO_CDP_PORT };
 };
 const visibleFirst = (locator: Locator): Locator => locator.locator(SUNO_AUTOMATION_SELECTORS.VISIBLE_FILTER).first();
 const firstVisible = async (page: Page, selectors: readonly string[] | string[], timeoutMs = 0): Promise<Locator | null> => {
