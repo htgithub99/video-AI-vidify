@@ -46,7 +46,11 @@ try {
           return { scenes: [{ fromLineId: context.lines[0].id, toLineId: context.lines.at(-1).id, purpose: "A moving marker", sceneTemplate: script.beats[0].sceneTemplateDraft, soundEvents: [{ id: "marker", kind: "whoosh", layer: "action", at: .6, duration: .3, description: "Marker passes", source: "visible", actor: "marker" }] }] };
         }
         assert.equal(artifact, MOTION_HTML.ARTIFACT);
-        assert.match(prompt, /PRODUCTION LANGUAGE: Write all production descriptions/);
+        assert.ok(prompt.startsWith(MOTION_HTML.OUTPUT), "Every scene generation and retry must receive the current code contract");
+        assert.ok(prompt.includes(script.beats[0].sceneTemplateDraft), "Code-quality instructions must preserve the original scene functionality");
+        assert.ok(prompt.includes(MOTION_HTML.CODE_LANGUAGE_POLICY));
+        assert.ok(!prompt.includes(MOTION_HTML.LANGUAGE_POLICY), "Drawing must not inherit prose-authoring instructions");
+        assert.ok(prompt.endsWith(MOTION_HTML.DELIVERY));
         assert.ok(prompt.includes(`SELECTED VIDEO LANGUAGE: ${language}`));
         drawing++;
         return profile === "history" && drawing <= 4 ? html.replace("x.fill();", "throw Error('fixture runtime fault');") : html;

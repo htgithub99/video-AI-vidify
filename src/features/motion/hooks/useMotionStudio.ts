@@ -9,7 +9,7 @@ import { createMotionEditorialId } from "../lib/motionEditorial.js";
 import { MOTION_EDITORIAL } from "../../../constants/motionEditorial.js";
 import { mergeMotionLogHistory, mergeMotionCanonicalLog, motionRestoredStoryJobId } from "../lib/motionLogHistory.js";
 import { PUPPET, PUPPET_KIT_API, PUPPET_STYLE_DEFAULT } from "../../../constants/motionPuppet.js";
-import { missingMotionChapters } from "../../../lib/motionProduction.js";
+import { missingMotionChapters, mergeMotionScriptProgress } from "../../../lib/motionProduction.js";
 import { MOTION_VISUAL_CONTRACT } from "../../../constants/motionVisualContract.js";
 import { MOTION_ILLUSTRATION } from "../../../constants/motionIllustration.js";
 import { MOTION_PACK } from "../../../constants/motionPack.js";
@@ -630,7 +630,7 @@ export function useMotionStudio() {
       if (!result) return;
       patch({
         ...(result.analysis ? { analysis: result.analysis, series: result.series } : {}),
-        ...(result.script ? { script: result.script } : {}),
+        ...(result.script ? { script: mergeMotionScriptProgress(stateRef.current.script, result.script) } : {}),
         ...(result.voice?.signature ? { voice: { ...result.voice, signature: result.voice.signature }, uploadedAudio: null } : {}),
         ...(result.seo ? { seo: result.seo } : {}),
         ...(result.seoJobId && !settledSeoJobs.current.has(result.seoJobId) ? { seoJobId: result.seoJobId } : {}),

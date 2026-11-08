@@ -2,16 +2,16 @@ import { MotionProviderRecovery, waitMotionProviderCooldown } from "../src/featu
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.js";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
-import { mkdir, rm, writeFile, readFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { MOTION_AI_RECOVERY_VERIFICATION as V } from "./motionAiRecoveryVerificationTexts.js";
 import { MOTION_AI_RECOVERY as R } from "../src/constants/motionAiRecovery.ts";
-import { MOTION_AI_ROLE, MOTION_AI_FALLBACK as FALLBACK } from "../src/constants/motionAiFallback.ts";
-import { MOTION_PRODUCTION as PRODUCTION } from "../src/constants/motionProduction.js";
+import { MOTION_AI_ROLE } from "../src/constants/motionAiFallback.ts";
 import { encodeGeminiChatModel, GEMINI_MODEL_ENCODING, GEMINI_MODEL_UI } from "../src/constants/geminiChatModels.ts";
 import { AiPlanningChatModel as M, AiPlanningExecutionMode as E, AiPlanningFallbackProvider as P } from "../src/types.ts";
-import { MotionJobStatus, MotionStoryJobKind } from "../src/types/motionVideo.ts";
+import { MotionJobStatus, MotionStoryJobKind, type MotionAiExecution, type MotionAiLog, type MotionStoryAnalysis } from "../src/types/motionVideo.ts";
+import type { PuppetLine } from "../src/lib/motionPuppet.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../src/constants/cinematicConstants.ts";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../src/constants/deepseekChat.ts";
 import { DEEPSEEK_ACCOUNT_VERIFICATION as S } from "./deepseekAccountVerificationTexts.ts";
@@ -87,12 +87,13 @@ await waitMotionProviderCooldown(
 );
 assert.equal(extendedWaits, 4, "Recheck a changed cooldown deadline rather than sending while still blocked");
 const within = async <T>(work: Promise<T>): Promise<T> => {
+  const timeoutError = new Error(V.DEADLOCK);
   let timer: ReturnType<typeof setTimeout>;
   try {
     return await Promise.race([
       work,
       new Promise<never>((_resolve, reject) => {
-        timer = setTimeout(() => reject(new Error(V.DEADLOCK)), V.WAIT_MS);
+        timer = setTimeout(() => reject(timeoutError), V.WAIT_MS);
       }),
     ]);
   } finally {
@@ -142,7 +143,15 @@ try {
   });
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, bundled.outputFiles[0].text);
-  const service = await import(pathToFileURL(output).href);
+  const service: typeof import("../src/features/motion/server/services/motionStoryService.js") &
+    typeof import("../src/features/motion/server/services/motionStoryJobService.js") &
+    Pick<typeof import("../src/constants/motionCaptcha.js"), "MOTION_CAPTCHA"> &
+    Pick<typeof import("../src/constants/motionAiRecovery.js"), "MOTION_AI_RECOVERY"> &
+    Pick<typeof import("../src/constants/motionVideo.js"), "MOTION_STORY_CONFIG"> &
+    Pick<typeof import("../src/features/motion/server/services/puppet/kitDraw.js"), "drawPuppetCharacters" | "drawPuppetSets" | "drawPuppetProps"> &
+    Pick<typeof import("../src/features/motion/server/services/puppet/director.js"), "readPuppetLines"> &
+    Pick<typeof import("../src/features/motion/server/services/puppet/kitLibrary.js"), "readPuppet"> &
+    Pick<typeof import("../src/features/motion/server/services/puppet/stylePack.js"), "presetStyle"> = await import(pathToFileURL(output).href);
   const model = encodeGeminiChatModel(M.GeminiFlash, VT.HIGH);
   const exec = { provider: P.GeminiChat, model, role: MOTION_AI_ROLE.DRAW, mode: E.RoomOnly, chromeHeadless: false };
   const reset = () => {
@@ -158,7 +167,7 @@ try {
     fixture.send = async (request) => ready(request);
     fixture.resume = async (request) => ready(request);
   };
-  const call = (options = exec, signal?: AbortSignal, log?: any) => service.runMotionAi(V.PROMPT, V.ARTIFACT, options, signal, log, [V.IMAGE]);
+  const call = (options: MotionAiExecution = exec, signal?: AbortSignal, log?: MotionAiLog) => service.runMotionAi(V.PROMPT, V.ARTIFACT, options, signal, log, [V.IMAGE]);
   const storyExec = { ...exec, role: MOTION_AI_ROLE.MAIN, model: encodeGeminiChatModel(M.GeminiFlash, VT.LOW) };
   reset();
   fixture.send = async () => {
@@ -199,7 +208,7 @@ try {
   assert.equal(providerFailureCalls, 3 + R.ROOM_RETRIES);
   assert.equal(fixture.reloaded.length, R.ROOM_RELOADS);
   assert.equal(new Set(fixture.reloaded.map((request) => request.workerId)).size, 1);
-  assert.equal(sharedLogs.filter((line) => line === R.PROVIDER_COOLDOWN(P.GeminiChat)).length, 1);
+  assert.equal(sharedLogs.filter((line) => line.endsWith(R.PROVIDER_COOLDOWN(P.GeminiChat))).length, 1);
   assert.equal(fixture.sent.filter((request) => request.provider === P.DeepSeekChat).length, 3);
   reset();
   assert.deepEqual(
@@ -477,7 +486,7 @@ try {
   reset();
   const captchaConfig = service.MOTION_CAPTCHA;
   const originalCaptchaPoll = captchaConfig.POLL_MS;
-  captchaConfig.POLL_MS = 5;
+  Object.assign(captchaConfig, { POLL_MS: 5 });
   let challenged = true;
   let composerReady = false;
   let captchaSolved = false;
@@ -515,8 +524,8 @@ try {
     return ready(request);
   };
   const captchaRun = call({ ...exec, chromeHeadless: true }, undefined, (line: string) => {
-    if (line === captchaConfig.LOG_WAIT(exec.provider)) captchaEntered.finish();
-    if (line === captchaConfig.LOG_SOLVED(exec.provider)) captchaSolved = true;
+    if (line.endsWith(captchaConfig.LOG_WAIT(exec.provider))) captchaEntered.finish();
+    if (line.endsWith(captchaConfig.LOG_SOLVED(exec.provider))) captchaSolved = true;
   });
   try {
     await within(captchaEntered.done);
@@ -538,7 +547,7 @@ try {
     assert.equal(fixture.prepared.length, independentPrepared + 1);
     assert.equal(fixture.prepared[1].chromeHeadless, false);
   } finally {
-    captchaConfig.POLL_MS = originalCaptchaPoll;
+    Object.assign(captchaConfig, { POLL_MS: originalCaptchaPoll });
   }
   reset();
   const preparationStarted = deferred(),
@@ -735,7 +744,14 @@ try {
     [...Array(R.ROOM_RETRIES + 1).fill(P.GeminiChat), P.DeepSeekChat],
   );
   assert.ok(fixture.sent.filter((request) => request.provider === P.GeminiChat).every((request) => request.model === model));
-  assert.equal(service.motionRoomBlockedMs(P.GeminiChat, model), 0);
+  assert.ok(service.motionRoomBlockedMs(P.GeminiChat, model) > 0);
+  fixture.sent = [];
+  fixture.send = async (request) => ready(request);
+  assert.equal((await call()).ready, true);
+  assert.ok(
+    fixture.sent.every((request) => request.provider !== P.GeminiChat),
+    "An exhausted room must cool down instead of starting another reload cycle",
+  );
   reset();
   await call();
   assert.equal(fixture.sent[0].provider, P.GeminiChat);
@@ -768,8 +784,8 @@ try {
   failures = 0;
   const originalTimeout = service.MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
   const originalReadinessTimeout = service.MOTION_AI_RECOVERY.READINESS_TIMEOUT_MS;
-  service.MOTION_AI_RECOVERY.READINESS_TIMEOUT_MS = 10;
-  service.MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS = 10;
+  Object.assign(service.MOTION_AI_RECOVERY, { READINESS_TIMEOUT_MS: 10 });
+  Object.assign(service.MOTION_STORY_CONFIG, { ROOM_TIMEOUT_MS: 10 });
   fixture.prepare = async (request) => {
     if (failures++ === 0) await new Promise<void>((_resolve, reject) => request.signal.addEventListener(VT.ABORT, () => reject(new Error(C.CANCELLED_ERROR)), { once: true }));
   };
@@ -779,8 +795,8 @@ try {
     assert.equal(fixture.sent.length, 1);
     assert.equal(fixture.sent[0].provider, P.GeminiChat);
   } finally {
-    service.MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS = originalTimeout;
-    service.MOTION_AI_RECOVERY.READINESS_TIMEOUT_MS = originalReadinessTimeout;
+    Object.assign(service.MOTION_STORY_CONFIG, { ROOM_TIMEOUT_MS: originalTimeout });
+    Object.assign(service.MOTION_AI_RECOVERY, { READINESS_TIMEOUT_MS: originalReadinessTimeout });
   }
   reset();
   failures = 0;
@@ -807,7 +823,7 @@ try {
     [...Array(R.ROOM_RETRIES + 1).fill(P.GeminiChat), P.DeepSeekChat],
   );
   assert.ok(events.some((event) => event.provider === P.DeepSeekChat && event.phase === R.PHASE.FALLBACK));
-  assert.equal(service.motionRoomBlockedMs(P.GeminiChat, model), 0);
+  assert.ok(service.motionRoomBlockedMs(P.GeminiChat, model) > 0);
   reset();
   await call();
   assert.equal(fixture.sent[0].provider, P.GeminiChat);
@@ -992,9 +1008,9 @@ try {
   );
   assert.ok(fixture.sent.every((request) => request.prompt.includes(R.VECTOR_INSTRUCTION)));
   assert.equal(C.REFUSAL_RESPONSE_PATTERN.test(V.REFUSAL), true);
-  const readLines = READ.BEATS.map((key) => ({ key, text: READ.TEXT, place: READ.ROOM }));
-  const readAnalysis = { title: READ.ROOM, logline: READ.TEXT, cast: READ.CAST };
-  const readPlaces = { [READ.ROOM]: { key: READ.ROOM, desc: READ.ROOM } };
+  const readLines: PuppetLine[] = READ.BEATS.map((key) => ({ key, beatId: key, chapterId: V.RUN, cast: [READ.A], text: READ.TEXT, place: READ.ROOM }));
+  const readAnalysis: MotionStoryAnalysis = { title: READ.ROOM, logline: READ.TEXT, cast: READ.CAST.map((member) => ({ ...member })), look: V.RUN, chapters: [], places: [], facts: [] };
+  const readPlaces = { [READ.ROOM]: { key: READ.ROOM, name: READ.ROOM, desc: READ.ROOM, interior: true, time: V.RUN } };
   const readRow = (i: number): any => ({ i, visual: visualReadFixture(READ.SCENE, READ.EVIDENCE), who: [READ.A], focus: READ.A, place: READ.ROOM, states: [{ char: READ.A, posture: PU.POSE_DEFAULT, action: PU.ACTION_DEFAULT }] });
   const readCall = (accepted?: any) => within(service.runInMotionAiSession(V.RUN, () => service.readPuppetLines(readLines, readLines, readAnalysis, readPlaces, {}, { exec, log() {} }, accepted), undefined, true));
   reset();
@@ -1035,8 +1051,8 @@ try {
   await assert.rejects(service.runMotionAi(V.PROMPT, V.STORY_ARTIFACT, storyExec), { message: C.REFUSAL_RESPONSE_ERROR });
   assert.equal(fixture.sent.length, 1);
   reset();
-  for (const [styleId, preset] of Object.entries(PUPPET_STYLE_PRESETS)) {
-    const style = { ...preset, id: styleId, refs: [], refKinds: {} };
+  for (const styleId of Object.keys(PUPPET_STYLE_PRESETS)) {
+    const style = { ...service.presetStyle(styleId), id: styleId, refs: [], refKinds: {} };
     const counts = new Map<string, number>();
     fixture.send = async (request) => {
       if (request.provider === P.GeminiChat && request.artifactType === PU.ARTIFACT_CHARACTER) {
@@ -1077,11 +1093,12 @@ try {
       throw terminal;
     },
   };
-  const firstStyle = { ...Object.values(PUPPET_STYLE_PRESETS)[0], id: V.RUN, refs: [] };
+  const firstStyle = { ...service.presetStyle(Object.keys(PUPPET_STYLE_PRESETS)[0]), id: V.RUN, refs: [] };
   await assert.rejects(service.drawPuppetCharacters(firstStyle, [V.CAST], V.STORY, V.CAST.name, exhaustedOptions), (error) => error === terminal);
   assert.equal(failedCalls, 1);
   failedCalls = 0;
-  await assert.rejects(service.readPuppetLines([{ key: V.RUN, text: V.STORY }], [{ key: V.RUN, text: V.STORY }], { cast: [], title: V.STORY, logline: V.STORY }, {}, {}, exhaustedOptions), (error) => error === terminal);
+  const terminalLines: PuppetLine[] = [{ key: V.RUN, beatId: V.RUN, chapterId: V.RUN, cast: [], text: V.STORY }];
+  await assert.rejects(service.readPuppetLines(terminalLines, terminalLines, { ...readAnalysis, cast: [], title: V.STORY, logline: V.STORY }, {}, {}, exhaustedOptions), (error) => error === terminal);
   assert.equal(failedCalls, 1);
   failedCalls = 0;
   const invalidOptions = {

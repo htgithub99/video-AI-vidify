@@ -500,7 +500,7 @@ try {
   assert.equal(timedSeo.result?.seoJobId, undefined);
   assert.ok(timedSeo.log.some((line) => line.includes(P.SEO_PENDING)));
   const timedRecord = JSON.parse(fs.readFileSync(path.join(seoDirectory, "seo-timeout.json"), "utf8"));
-  assert.equal(timedRecord.steps[P.STAGES.SEO].done, undefined);
+  assert.notEqual(timedRecord.steps[P.STAGES.SEO].done, true);
   assert.equal(jobs.get(timedRecord.steps[P.STAGES.SEO].id).status, S.CANCELLED);
   seoScenario = "pass";
   seoRecovery.resumeMotionProduction("seo-timeout");

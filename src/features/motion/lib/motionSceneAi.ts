@@ -1,4 +1,3 @@
-import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { MOTION_SCENE_AI } from "../../../constants/motionSceneLibrary.js";
 import { CINEMATIC_CHAT_DEFAULT_MODELS, CINEMATIC_CHAT_MODEL_OPTIONS } from "../../../constants/cinematicConstants.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
@@ -24,4 +23,4 @@ export const resolveMotionSceneExecution = (exec: MotionAiExecution) => {
   return { provider, model, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: exec.chromeHeadless !== false, allowFallback: exec.allowFallback !== false };
 };
 export const motionSceneAiExecution = (state: MotionAiChoice & Partial<MotionSceneAiChoice> & { visualSettings?: MotionVisualSettings }) =>
-  resolveMotionSceneExecution({ provider: state.sceneAiProvider || MOTION_SCENE_AI.PRIMARY_PROVIDER, model: state.sceneAiModel || (state.sceneAiProvider ? undefined : MOTION_SCENE_AI.PRIMARY_MODEL), chromeHeadless: state.sceneAiHeadless ?? state.aiHeadless, allowFallback: state.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? false : state.sceneAiFallback !== false });
+  resolveMotionSceneExecution({ provider: state.sceneAiProvider || MOTION_SCENE_AI.PRIMARY_PROVIDER, model: state.sceneAiModel || (state.sceneAiProvider ? undefined : MOTION_SCENE_AI.PRIMARY_MODEL), chromeHeadless: state.sceneAiHeadless ?? state.aiHeadless, allowFallback: state.sceneAiFallback !== false });

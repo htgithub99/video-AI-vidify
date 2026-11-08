@@ -5,6 +5,8 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
+    "typecheck": "tsc --noEmit --incremental false",
+    "typecheck:changes": "node scripts/check-git-types.mjs",
     "test:motion-html": "tsx scripts/verify-motion-html-transport.ts && tsx scripts/verify-motion-html.ts && tsx scripts/verify-motion-html-settings.ts && tsx scripts/verify-motion-html-recovery.ts && tsx scripts/verify-motion-html-stages.ts",
     "test:motion-html-export": "tsx scripts/verify-motion-html-export.ts",
     "test:motion-settings": "tsx scripts/verify-motion-settings-fixes.ts && tsx scripts/audit-motion-settings-runner.ts && tsx scripts/verify-motion-settings-chrome.ts",
@@ -48,6 +50,8 @@
     "test:motion-captcha": "tsx scripts/verify-motion-captcha.ts",
     "test:motion-preview": "tsx scripts/verify-motion-preview-loading.ts && tsx scripts/verify-motion-preview-recovery.ts",
     "test:motion-scene-ai": "tsx scripts/verify-motion-scene-routing.ts && tsx scripts/verify-motion-scene-ai-settings.ts && tsx scripts/verify-motion-scene-fallback.ts && tsx scripts/verify-motion-room-budget.ts && tsx scripts/verify-motion-action-layout.ts",
+    "test:motion-scene-controls": "tsx scripts/verify-motion-scene-fallback-controls.ts && tsx scripts/verify-motion-scene-ai-settings.ts && tsx scripts/verify-motion-scene-ai-settings.ts --remotion",
+    "test:motion-concurrency": "tsx scripts/verify-motion-progress-concurrency.ts && tsx scripts/verify-chat-single-generation.ts && tsx scripts/verify-motion-production-runner.ts",
     "test:deepseek": "tsx scripts/verify-deepseek-chat.ts",
     "test:motion-controls": "tsx scripts/verify-motion-references.ts && node scripts/verify-motion-static-cast.mjs && tsx scripts/verify-motion-advisory-qa.ts && tsx scripts/verify-motion-characters.ts && tsx scripts/verify-motion-render-controls.ts && tsx scripts/verify-motion-reference-ui.ts",
     "test:suno-evaluation": "tsx scripts/verify-suno-track-evaluation.ts",

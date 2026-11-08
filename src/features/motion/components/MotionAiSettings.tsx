@@ -50,7 +50,7 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onChromeHeadlessChange={(value) => patch({ sceneAiHeadless: value })}
           currentLang={currentLang}
           roomOnly
-          extraControl={onePass ? undefined : <MotionToggle checked={state.sceneAiFallback !== false} label={text.FALLBACK_LABEL} title={text.FALLBACK_HINT} text={state.sceneAiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ sceneAiFallback: state.sceneAiFallback === false })} />}
+          extraControl={<MotionToggle checked={state.sceneAiFallback !== false} label={text.FALLBACK_LABEL} title={text.FALLBACK_HINT} text={state.sceneAiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ sceneAiFallback: state.sceneAiFallback === false })} />}
         />
       </section>
     </div>

@@ -110,6 +110,7 @@ export const mergeMotionRemotionState = (base: MotionRemotionState | undefined, 
     merged.htmlPlanSources ||= {};
     merged.notes ||= {};
     for (const [groupId, scenes] of Object.entries(other.scenes || {})) {
+      if (merged.inputKeys[groupId] && other.inputKeys?.[groupId] && merged.inputKeys[groupId] !== other.inputKeys[groupId]) continue;
       if (!merged.scenes[groupId]?.length && scenes?.length) {
         merged.scenes[groupId] = structuredClone(scenes);
       } else if (merged.scenes[groupId]?.length && scenes?.length) {
@@ -117,6 +118,11 @@ export const mergeMotionRemotionState = (base: MotionRemotionState | undefined, 
         merged.scenes[groupId] = merged.scenes[groupId].map((target) => {
           const match = byId.get(target.id);
           if (!match) return target;
+          if (target.htmlRebuildKey !== match.htmlRebuildKey) return target;
+          const targetAttempt = target.htmlRequest?.attempt || target.html?.attempts || 0;
+          const matchAttempt = match.htmlRequest?.attempt || match.html?.attempts || 0;
+          if (targetAttempt > matchAttempt) return target;
+          if (matchAttempt > targetAttempt) return { ...target, html: structuredClone(match.html), htmlRequest: structuredClone(match.htmlRequest), build: structuredClone(match.build) };
           if (!target.html && match.html) return { ...target, html: structuredClone(match.html), htmlRequest: structuredClone(match.htmlRequest), build: structuredClone(match.build) };
           if (target.html && match.html && (match.html.status === RT_MAINTENANCE.READY || match.html.status === RT_MAINTENANCE.RENDERED) && target.html.status !== RT_MAINTENANCE.READY && target.html.status !== RT_MAINTENANCE.RENDERED) {
             return { ...target, html: structuredClone(match.html), htmlRequest: structuredClone(match.htmlRequest), build: structuredClone(match.build) };
@@ -131,4 +137,18 @@ export const mergeMotionRemotionState = (base: MotionRemotionState | undefined, 
     return merged;
   }
   return (incoming.updatedAt || 0) >= (base.updatedAt || 0) ? structuredClone(incoming) : base;
+};
+export const mergeMotionScriptProgress = (current: MotionStoryScript | null | undefined, incoming: MotionStoryScript): MotionStoryScript => {
+  if (!current?.gen) return incoming;
+  const remotion = incoming.gen?.remotion && incoming.gen.remotion.renderer !== RT_MAINTENANCE.HTML_CANVAS ? incoming.gen.remotion : mergeMotionRemotionState(incoming.gen?.remotion, current.gen.remotion);
+  return { ...incoming, gen: { ...current.gen, ...incoming.gen, ...(remotion ? { remotion } : {}) } };
+};
+export const motionScriptReadyForParallelMedia = (script: MotionStoryScript | undefined, analysis: MotionStoryAnalysis | undefined): boolean => {
+  if (!script || !analysis?.chapters?.length || (script.readyChapterIds && analysis.chapters.some((chapter) => !script.readyChapterIds!.includes(chapter.id)))) return false;
+  try {
+    assertMotionScriptComplete(script, analysis);
+    return true;
+  } catch {
+    return false;
+  }
 };

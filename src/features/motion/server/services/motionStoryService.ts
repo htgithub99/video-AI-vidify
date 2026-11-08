@@ -1035,10 +1035,11 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
       return await requestMotionAiContract(prompt, route, (question) => runMotionAiOnce(question, artifactType, route, signal, log, images, retry, undefined, !!contract), contract, linked);
     } catch (error: any) {
       if (isDeepSeekAccountUnavailable(error)) unavailableRoomProviders.set(String(route.provider), { error, until: Number(error.retryAt) > Date.now() ? Number(error.retryAt) : Date.now() + DEEPSEEK_CHAT_CONFIG.ACCOUNT_RECHECK_MS });
-      if (!linked.aborted && (isChatAttachmentError(error) || (AIR.REPLAYABLE_ARTIFACT.test(artifactType) && error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR))) {
+      const roomRecoveryFailed = !!_.get(error, CHAT_ROOM_RECOVERY.COMPLETE) && !_.get(error, AIR.UNCERTAIN_FLAG) && (!!_.get(error, AIR.EXHAUSTED_FLAG) || AIR.TRANSPORT.test(String(error?.message)) || error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || String(error?.message).includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE));
+      if (!linked.aborted && (roomRecoveryFailed || isChatAttachmentError(error) || ((AIR.REPLAYABLE_ARTIFACT.test(artifactType) || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML)) && error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR))) {
         if (!motionRoomBlockedMs(String(route.provider), route.model)) {
           blockedRoomModels.set(AIR.MODEL_KEY(String(route.provider), route.model), Date.now() + (isChatAttachmentError(error) ? AIR.ATTACHMENT_ERROR_COOLDOWN_MS : AIR.PROVIDER_ERROR_COOLDOWN_MS));
-          log?.(isChatAttachmentError(error) ? AIR.ATTACHMENT_COOLDOWN(String(route.provider)) : AIR.PROVIDER_COOLDOWN(String(route.provider)));
+          log?.(roomRecoveryFailed ? AIR.ROOM_COOLDOWN(String(route.provider)) : isChatAttachmentError(error) ? AIR.ATTACHMENT_COOLDOWN(String(route.provider)) : AIR.PROVIDER_COOLDOWN(String(route.provider)));
         }
       }
       throw error;
@@ -1392,6 +1393,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       if (!retryRoom && !captchaRetry && exec.strictProvider) {
         if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
         const error = timedOut && !submission.completed && !submission.abandoned ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
+        if (attempt >= AIR.ROOM_RETRIES && transport && (!submission.attempted || submission.completed)) Object.assign(error, { [AIR.EXHAUSTED_FLAG]: true, [CHAT_ROOM_RECOVERY.COMPLETE]: true });
         log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(String(_.truncate(_.toString(error?.message), { length: 140 }))));
         throw error;
       }

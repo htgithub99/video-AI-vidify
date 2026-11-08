@@ -1049,3 +1049,6 @@ export interface MotionProductionResult {
   rendered?: MotionResultItem;
   series?: MotionSeriesState | null;
 }
+export interface MotionProductionJobState extends MotionStoryJobState {
+  result?: MotionProductionResult;
+}

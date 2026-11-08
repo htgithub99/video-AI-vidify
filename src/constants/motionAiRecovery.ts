@@ -4,6 +4,7 @@ export const MOTION_AI_RECOVERY = {
   RESUME_MS: 45000,
   UNCONFIRMED_RESPONSE_MS: 45000,
   PROVIDER_ERROR_COOLDOWN_MS: 2 * 60 * 1000,
+  ROOM_COOLDOWN: (provider: string): string => `Room ${provider} chưa phục hồi được sau các lượt thử; tạm chờ dịch vụ, giữ tiến độ và không tải lại liên tục.`,
   ATTACHMENT_ERROR_COOLDOWN_MS: 10 * 60 * 1000,
   WAIT_LOG_MS: 30 * 1000,
   SHARED_RECOVERY_WAIT: (provider: string): string => `${provider} đang được một tab phục hồi; các tab còn lại giữ tiến độ và chờ kết quả chung.`,

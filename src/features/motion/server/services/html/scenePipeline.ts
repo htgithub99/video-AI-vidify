@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
+import { motionAiFallbackPolicy } from "../../../../../lib/motionAiExecution.js";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
@@ -154,8 +155,7 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
         submission,
         submissionChanged: persist,
         singleResponse: true,
-        strictProvider: true,
-        allowFallback: false,
+        ...motionAiFallbackPolicy(planExec),
         responseReceived: (raw) => {
           current.raw = raw;
           current.status = RT_MAINTENANCE.RECEIVED;
@@ -208,10 +208,11 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
   const prompt = [
     MOTION_HTML.OUTPUT,
-    motionHtmlLanguageDirection(settings.language),
+    motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
     RT_MAINTENANCE.SCENE_TEMPLATE_SOURCE_DATA_EXACT_VISIBLE_TEXT_STAYS_IN_THE + scene.sceneTemplate,
     scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
     `${RT_MAINTENANCE.RUNTIME}${JSON.stringify({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`,
+    MOTION_HTML.DELIVERY,
   ]
     .filter(Boolean)
     .join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
@@ -222,8 +223,9 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   let failures = 0;
   for (;;) {
     opts.signal?.throwIfAborted();
-    const prior = scene.htmlRequest;
-    const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (prior?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
+    const priorPrompt = scene.htmlRequest?.submission?.pending?.prompt;
+    const prior = scene.htmlRequest && (!priorPrompt || (priorPrompt.startsWith(MOTION_HTML.OUTPUT) && priorPrompt.includes(MOTION_HTML.GRAPHICS))) ? scene.htmlRequest : undefined;
+    const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (scene.htmlRequest?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
     scene.htmlRequest = attempt;
     attempt.status = RT_MAINTENANCE.RUNNING;
     const submission: any = { attempted: attempt.submission?.attempted || false, completed: attempt.submission?.completed || false, abandoned: attempt.submission?.abandoned, pending: attempt.submission?.pending };
@@ -266,8 +268,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         submissionChanged: journalState,
         outputFormat: RT_MAINTENANCE.HTML,
         singleResponse: true,
-        strictProvider: true,
-        allowFallback: false,
+        ...motionAiFallbackPolicy(opts.exec),
         responseReceived: received,
       };
       journal = setInterval(() => {
@@ -296,7 +297,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         duration: settings.seconds,
         attempts: attempt.attempt,
         status: RT_MAINTENANCE.RECEIVED,
-        execution: { ...opts.exec, role: RT_MAINTENANCE.DRAW, singleResponse: true, strictProvider: true, allowFallback: false },
+        execution: { ...opts.exec, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(opts.exec) },
       };
       persist();
       const runtime = await openMotionHtmlRuntime(html, opts.signal);

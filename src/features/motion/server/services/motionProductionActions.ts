@@ -480,7 +480,10 @@ export const seoMotionStoryInput = (body: Record<string, any>) => {
       const recovery = motionTaskCheckpoint<MotionSeoDraft>(body.productionId || body.editorialSessionId, MotionStoryJobKind.SEO, [analysis, seoScriptKey(script), language, exec, source]);
       return generateMotionSeo(analysis, script, { language, exec, source, durations, signal: ctx.signal, log: ctx.log, draft: recovery.read(), onDraft: recovery.save });
     },
-    editorialSession(body, body?.source, exec),
+    (() => {
+      const session = editorialSession(body, body?.source, exec);
+      return session ? { ...session, worker: true } : undefined;
+    })(),
   );
   return { success: true, job };
 };

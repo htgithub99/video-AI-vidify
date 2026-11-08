@@ -75,14 +75,30 @@ for (const profile of ["history", "horror", "explainer"] as const) {
     prompts.push(prompt);
     if (artifact === V.ARTIFACT_SCENE) {
       assert.ok(prompt.includes("SUBJECT ACTIONS"), "Planner receives the action-authoring contract");
-      return { scenes: lines.map((line, i) => ({ fromLineId: line.key, toLineId: line.key, purpose: `shot-${i}`, environment: "Courtyard", actionPlan: { start: `PLANNER-${profile}-${i}: start`, subjects: [{ nodeId: "person", action: line.text, parts: [{ name: "arm", change: "Performs the authored gesture relative to the torso" }], phases: [{ phase: "perform", description: "Perform the covered action with its visible parts" }], end: "Settle" }], interactions: ["Contacts stay joined"], end: "Settled", environment: "Still", camera: "Fixed" }, nodes: [node] })) };
+      return {
+        scenes: lines.map((line, i) => ({
+          fromLineId: line.key,
+          toLineId: line.key,
+          purpose: `shot-${i}`,
+          environment: "Courtyard",
+          actionPlan: {
+            start: `PLANNER-${profile}-${i}: start`,
+            subjects: [{ nodeId: "person", action: line.text, parts: [{ name: "arm", change: "Performs the authored gesture relative to the torso" }], phases: [{ phase: "perform", description: "Perform the covered action with its visible parts" }], end: "Settle" }],
+            interactions: ["Contacts stay joined"],
+            end: "Settled",
+            environment: "Still",
+            camera: "Fixed",
+          },
+          nodes: [node],
+        })),
+      };
     }
     assert.equal(artifact, C.ARTIFACT, "No motion director, QA, repair or other post-drawing AI task");
     assert.equal(exec.provider, "gemini-chat");
     assert.equal(exec.model, "gemini-flash::medium");
-    assert.equal(exec.strictProvider, true);
+    assert.equal(exec.strictProvider, false);
     assert.equal(exec.singleResponse, true);
-    assert.equal(exec.allowFallback, false);
+    assert.equal(exec.allowFallback, true);
     assert.ok(prompt.includes("COMPLETE MOTION IN THIS DRAWING RESPONSE"));
     assert.ok(prompt.includes(JSON.stringify(script.beats[0].motionIntent)), "The exact movement written with the script reaches every covered scene request");
     assert.ok(prompt.includes(`PLANNER-${profile}-`), "The scene planner's complete action direction reaches drawing unchanged too");
@@ -101,16 +117,7 @@ for (const profile of ["history", "horror", "explainer"] as const) {
     }
     return raw;
   };
-  const opts: any = {
-    exec: { provider: "gemini-chat", model: "gemini-flash::medium", allowFallback: true },
-    mainExec: { provider: "gemini-chat", model: "gemini-flash::low" },
-    review: true,
-    scope: `once-${profile}`,
-    log: (line: string) => logs.push(line),
-    renderBehavior: behavior,
-    partial: (value: any) => (latest = value),
-    ai,
-  };
+  const opts: any = { exec: { provider: "gemini-chat", model: "gemini-flash::medium", allowFallback: true }, mainExec: { provider: "gemini-chat", model: "gemini-flash::low" }, review: true, scope: `once-${profile}`, log: (line: string) => logs.push(line), renderBehavior: behavior, partial: (value: any) => (latest = value), ai };
   const generated = await buildRemotionScenes(script, analysis, opts),
     state = generated.gen!.remotion!,
     scenes = Object.values(state.scenes).flat();
@@ -140,7 +147,8 @@ for (const profile of ["history", "horror", "explainer"] as const) {
   const preserved = await buildRemotionScenes(olderPolicy, analysis, { ...opts, scope: `old-policy-${profile}` });
   assert.equal(calls.length, before, "A prompt-policy upgrade must not regenerate accepted older artwork");
   assert.equal(preserved.gen!.remotion!.scenes.beat[0].generation?.promptRevision, 0, "Reuse preserves the actual provenance, not the latest policy number");
-  const oldFailed = structuredClone(olderPolicy), olderScene = oldFailed.gen!.remotion!.scenes.beat[0];
+  const oldFailed = structuredClone(olderPolicy),
+    olderScene = oldFailed.gen!.remotion!.scenes.beat[0];
   olderScene.generation = { ...olderScene.generation!, status: "failed", error: "Retained pre-policy response" };
   olderScene.build = { ...olderScene.build!, status: "failed", error: "Retained pre-policy response" };
   const resumedFailed = await buildRemotionScenes(oldFailed, analysis, { ...opts, scope: `old-failed-policy-${profile}` });
@@ -194,7 +202,33 @@ built.composition.duration = 2;
 assert.equal(compositionFrameSvg(built.asset, built.composition, 1, behavior, new Set(), "history", 4), compositionFrameSvg(built.asset, built.composition, 0.5, behavior, new Set(), "history", 2), "Authored time maps consistently to final voice duration");
 assert.notEqual(compositionFrameSvg(built.asset, built.composition, 1 / 30, behavior, new Set(), "history", 2), compositionFrameSvg(built.asset, built.composition, 2 / 30, behavior, new Set(), "history", 2), "New keyframes render every output frame, not a 15fps quantized cache");
 assert.throws(() => normalizeSceneComposition({ ...raw, animations: [{ ...raw.animations[0], target: "absent" }] }, "bad", "bad", "", [node], new Set(), 1280, 720, true), "Invalid animation is reported, never silently dropped");
-assert.throws(() => normalizeSceneComposition({ ...raw, animations: [{ ...raw.animations[0], keyframes: [{ at: 0, value: "translate(0 0)" }, { at: 1, value: "translate(20 0)" }] }] }, "bad-loop", "bad-loop", "", [node], new Set(), 1280, 720, true), /Có period nhưng giá trị keyframe cuối khác/, "A broken loop reports the actual period error, without blaming speech/anatomy");
+assert.throws(
+  () =>
+    normalizeSceneComposition(
+      {
+        ...raw,
+        animations: [
+          {
+            ...raw.animations[0],
+            keyframes: [
+              { at: 0, value: "translate(0 0)" },
+              { at: 1, value: "translate(20 0)" },
+            ],
+          },
+        ],
+      },
+      "bad-loop",
+      "bad-loop",
+      "",
+      [node],
+      new Set(),
+      1280,
+      720,
+      true,
+    ),
+  /Có period nhưng giá trị keyframe cuối khác/,
+  "A broken loop reports the actual period error, without blaming speech/anatomy",
+);
 const legacy = { ...built.composition, animationSource: undefined };
 assert.notDeepEqual(motionActorTracks(legacy, 720), raw.animations, "Legacy rendering keeps its existing interpretation");
 const namedRaw = {
@@ -208,9 +242,15 @@ const named = normalizeSceneComposition(namedRaw, "named", "named", "", [{ ...no
 assert.equal(named.composition.layers[1].entityId, "traveller", "A render-group ID is mapped to the canonical entity by the exact source node");
 assert.equal(namedRaw.layers[1].entityId, "person", "The original response is retained verbatim");
 assert.deepEqual(named.composition.animations, namedRaw.animations);
-const symbolRaw = { ...art(), layers: [{ id: "room", kind: "background" }, { id: "person", kind: "character" }] };
+const symbolRaw = {
+  ...art(),
+  layers: [
+    { id: "room", kind: "background" },
+    { id: "person", kind: "character" },
+  ],
+};
 const symbol = normalizeSceneComposition(symbolRaw, "symbol", "symbol", "Map symbol", [{ ...node, kind: "prop", anonymous: false }], new Set(), 1280, 720, true);
 assert.equal(symbol.composition.layers[1].kind, "prop", "A symbolic marker is mapped to its exact source prop node rather than rejected as a missing cast member");
 assert.deepEqual(symbol.composition.animations, symbolRaw.animations, "Canonical metadata does not rewrite animation");
 assert.equal(symbolRaw.layers[1].kind, "character", "The original AI response remains unchanged");
-console.log(JSON.stringify({ pass: true, profiles: 3, acceptedScenes: accepted, peakDrawingWorkers: 5, maxRequestsPerScene: 3, selfContainedRewrite: true, keepBest: true, resume: true, manualRegenerate: true, animationPreserved: true, fixedAndEffects: true }));
+process.stdout.write(`${JSON.stringify({ pass: true, profiles: 3, acceptedScenes: accepted, peakDrawingWorkers: 5, maxRequestsPerScene: 3, selfContainedRewrite: true, keepBest: true, resume: true, manualRegenerate: true, animationPreserved: true, fixedAndEffects: true })}\n`);

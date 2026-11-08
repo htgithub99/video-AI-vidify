@@ -5,6 +5,7 @@ import { buildMotionHtmlScenes } from "../html/scenePipeline.js";
 import * as COMMON_RUNTIME from "../../../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
+import { motionAiFallbackPolicy } from "../../../../../lib/motionAiExecution.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../../constants/runtime/server.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
@@ -146,7 +147,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const sceneRoom = drawing || artifact === V.ARTIFACT_SCENE;
       const selectedExec = drawing ? opts.exec : opts.mainExec || opts.exec;
       if (sceneRoom && !opts.ai) await prepareMotionSceneRooms(opts.exec, opts.signal, opts.log);
-      const exec = { ...selectedExec, role: sceneRoom ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN, ...(drawing ? { singleResponse: true, strictProvider: true, allowFallback: false } : {}) };
+      const exec = { ...selectedExec, role: sceneRoom ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN, ...(drawing ? { singleResponse: true, ...motionAiFallbackPolicy(selectedExec) } : {}) };
       const contract: MotionAiResponseContract = {
         schema: MOTION_REMOTION_SCHEMAS[artifact],
         attempts: drawing ? SCORE.ATTEMPTS : exec.strictProvider ? V.REQUEST_BUDGET : V.REQUEST_ATTEMPTS,

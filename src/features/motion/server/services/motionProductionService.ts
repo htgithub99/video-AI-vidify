@@ -13,12 +13,12 @@ import { MOTION_PROGRESS as PROGRESS } from "../../../../constants/motionProgres
 import { motionDurationQa } from "../../../../lib/motionQa.js";
 import { MOTION_VOICE_LIBRARY } from "../../../../constants/motionVoice.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
-import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState, type MotionStoryAnalysis, type MotionStoryScript, type MotionVoiceTrack, type MotionSeoPack, type MotionResultItem, type MotionProductionResult } from "../../../../types/motionVideo.js";
+import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState, type MotionStoryAnalysis, type MotionStoryScript, type MotionVoiceTrack, type MotionSeoPack, type MotionResultItem, type MotionProductionResult, type MotionProductionJobState } from "../../../../types/motionVideo.js";
 import { logger } from "../../../../lib/logger.js";
 import { checkMotionMediaTools } from "./motionMediaValidation.js";
 import { checkMotionProductionVoice } from "./motionProductionPreflight.js";
 import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.js";
-import { assertMotionScriptComplete, assertMotionProductionMode, mergeMotionRemotionState, motionDurationRepairChapters, motionEarlyHtmlSceneInput } from "../../../../lib/motionProduction.js";
+import { assertMotionScriptComplete, assertMotionProductionMode, mergeMotionRemotionState, mergeMotionScriptProgress, motionScriptReadyForParallelMedia, motionDurationRepairChapters, motionEarlyHtmlSceneInput } from "../../../../lib/motionProduction.js";
 import { enqueueMotionHtmlScenes } from "./html/scenePipeline.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionSeriesStart } from "../../../../lib/motionParts.js";
@@ -62,7 +62,7 @@ interface ProductionRecord {
   inputKey: string;
   job: MotionStoryJobState;
   result: MotionProductionResult;
-  steps: Record<string, { id: string; done?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean }>;
+  steps: Record<string, { id: string; done?: boolean; partial?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean }>;
   owner?: MotionProductionOwner;
 }
 const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan };
@@ -79,6 +79,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   const seoMatches = (seo: any, script?: MotionStoryScript): seo is MotionSeoPack => !!script && Array.isArray(seo?.options) && seo.options.length > 0 && Array.isArray(seo.chapters) && seo.scriptKey === seoScriptKey(script);
   const read = (id: string): ProductionRecord | undefined => {
     const record = failedSnapshots.get(id) || store.read(id);
+    if (record?.job) delete record.job.result;
     return record?.version === P.RUN_VERSION && record.job?.id === id && record.input && record.inputKey === motionInputKey(record.input) ? record : undefined;
   };
   const log = (record: ProductionRecord, line: string): void => {
@@ -88,7 +89,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     logs.seed(record.job.id, prior);
     logs.append(record.job.id, entry);
   };
-  const publicJob = (record: ProductionRecord): MotionStoryJobState => {
+  const publicJob = (record: ProductionRecord): MotionProductionJobState => {
     const job = structuredClone({ ...record.job, result: record.result });
     job.stepStates = Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error }]] : [])));
     job.result.outputSettings = motionOutputSettings(record.input, job.result);
@@ -123,7 +124,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           controller.abort();
           signal.throwIfAborted();
         }
-        record.job.result = result;
+        delete record.job.result;
         store.save(record.job.id, record, owner);
       };
       const running = new Set<string>();
@@ -261,10 +262,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
             delete pending.retryAt;
             waiting.delete(name);
           }
-          let state = record.steps[name] && get(record.steps[name].id);
+          let state = record.steps[name] && !record.steps[name].partial && get(record.steps[name].id);
           if (!state || state.status === S.ERROR || state.status === S.CANCELLED) {
             const response = await start();
-            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [], done: false, status: S.QUEUED, error: undefined, startedAt: record.steps[name]?.startedAt || Date.now() };
+            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [], done: false, partial: false, status: S.QUEUED, error: undefined, startedAt: record.steps[name]?.startedAt || Date.now() };
             if (signal.aborted) {
               cancelStoryJob(response.job.id);
               cancelMotionJob(response.job.id);
@@ -423,7 +424,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           enqueueRunning: (input) => enqueueMotionHtmlScenes(record.job.id, input.script),
           onUpdate: (job) => {
             const prior = record.steps[P.STAGES.SCENES];
-            record.steps[P.STAGES.SCENES] = { ...prior, id: job.id, done: false, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            record.steps[P.STAGES.SCENES] = { ...prior, id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
             activities.set(P.STAGES.SCENES, terminal(job.status) ? {} : job.activeAi || {});
             record.job.activeAi = Object.assign({}, ...activities.values());
             const partialScript = job.result as MotionStoryScript | undefined;
@@ -451,7 +452,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           analysis: () => result.analysis,
           onUpdate: (job) => {
             const prior = record.steps[P.STAGES.VOICE];
-            record.steps[P.STAGES.VOICE] = { ...prior, id: job.id, done: false, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            record.steps[P.STAGES.VOICE] = { ...prior, id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
             activities.set(P.STAGES.VOICE, terminal(job.status) ? {} : job.activeAi || {});
             record.job.activeAi = Object.assign({}, ...activities.values());
             save();
@@ -470,9 +471,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         P.STAGES.SCRIPT,
         () => scriptMotionStoryInput({ ...base, analysis: result.analysis, resume: true, beats: result.script?.beats || [], gen: result.script?.gen, chapterDrafts: result.script?.chapterDrafts, voiceSettings: result.script?.voiceSettings, carryGen: base.carryGen }),
         (script) => {
-          result.script = script;
-          early?.offer(script);
-          earlyVoice?.offer(script);
+          result.script = mergeMotionScriptProgress(result.script, script);
+          early?.offer(result.script);
+          earlyVoice?.offer(result.script);
+          if (motionScriptReadyForParallelMedia(result.script, result.analysis)) startSeo();
         },
         0.1,
         0.2,
@@ -495,9 +497,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
             if (!isRemotionSpec(compiled.spec)) return;
             const spec = { ...compiled.spec, fps: base.fps || compiled.spec.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
             scheduleMotionSegmentPrerender(record.job.id, spec, ready, base.quality, (line) => log(record, line));
-          } catch {
-            /* A partial timeline that cannot compile yet is simply rendered at export time. */
-          }
+          } catch {}
         })();
       };
       const buildMedia = async (round = 0, media: "both" | "voice" | "scenes" = RT_SERVER.BOTH) => {
@@ -505,6 +505,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         startSeo();
         const voicedScript = structuredClone(result.script!);
         const stage = (name: string) => (round ? P.DURATION_STEP(name, round) : name);
+        if (!round && early && record.steps[P.STAGES.SCENES]) record.steps[P.STAGES.SCENES].partial = true;
+        if (!round && earlyVoice && record.steps[P.STAGES.VOICE]) record.steps[P.STAGES.VOICE].partial = true;
         const jobs: Promise<void>[] = [];
         if (media !== RT_SHARED.VOICE)
           jobs.push(
@@ -519,7 +521,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
                 return scenesMotionStoryInput(sceneInput(result.analysis!, result.script!, !!gen));
               },
               (script) => {
-                result.script = { ...script, ...(result.voice ? { voiceTrack: result.voice } : {}) };
+                result.script = { ...mergeMotionScriptProgress(result.script, script), ...(result.voice ? { voiceTrack: result.voice } : {}) };
                 prerender();
               },
               0.3,
@@ -726,7 +728,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (active.get(record.job.id)?.owner.token === owner.token) active.delete(record.job.id);
     }
   };
-  const launch = (record: ProductionRecord, seoOnly = false): MotionStoryJobState => {
+  const launch = (record: ProductionRecord, seoOnly = false): MotionProductionJobState => {
     const owner = store.acquire(record.job.id);
     const controller = new AbortController();
     record.owner = owner;
@@ -761,7 +763,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     });
     return publicJob(record);
   };
-  const startMotionProduction = (input: Record<string, any>, resume = false): MotionStoryJobState => {
+  const startMotionProduction = (input: Record<string, any>, resume = false): MotionProductionJobState => {
     assertMotionProductionMode(input);
     const id = String(input.productionId || randomUUID());
     const existing = read(id);
@@ -810,7 +812,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return launch(record);
   };
-  const getMotionProduction = (id: string): MotionStoryJobState | undefined => {
+  const getMotionProduction = (id: string): MotionProductionJobState | undefined => {
     const record = active.get(id)?.record || read(id);
     if (!record) {
       if (!store.exists(id)) return undefined;
@@ -837,7 +839,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return publicJob(record);
   };
-  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean): MotionStoryJobState => {
+  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean): MotionProductionJobState => {
     let record = read(id);
     if (!record) throw new Error(P.INVALID_RUN);
     if (typeof clearGeminiChatsBeforeExport === "boolean" && !active.has(id) && record.input.clearGeminiChatsBeforeExport !== clearGeminiChatsBeforeExport) {

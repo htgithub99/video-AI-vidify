@@ -1990,6 +1990,11 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
           const interruptedRoom = geminiRooms.get(roomKey);
           if (interruptedRoom) await waitForGeminiSession(interruptedRoom, { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
         }
+        if (request.oneGeneration && request.artifactType?.startsWith(RT_MAINTENANCE.MOTION_HTML) && (request.submission?.attempted || isFinalChatResponseError(error))) {
+          if (request.submission && isFinalChatResponseError(error)) request.submission.completed = true;
+          const failure = request.submission?.attempted && !request.submission.completed ? uncertainChatSubmission(request.provider) : error instanceof Error ? error : new Error(String(error));
+          throw Object.assign(failure, { [RECOVERY.COMPLETE]: true, ...(failure !== error ? { cause: error } : {}) });
+        }
         const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
         const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error) || isResponseTimeoutError(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
         if (!retryable) throw error;
