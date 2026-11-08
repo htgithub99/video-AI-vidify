@@ -48,8 +48,8 @@ try {
   await fs.writeFile(output, bundle.outputFiles[0].text);
   const service = await import(pathToFileURL(output).href);
   for (const [message, completed] of [
-    [C.PROVIDER_ERROR_RESPONSE_ERROR, false],
-    [C.INVALID_JSON_RESPONSE_ERROR, true],
+    [C.PROMPT_LIMIT_RESPONSE_ERROR, false],
+    [C.REFUSAL_RESPONSE_ERROR, true],
     [C.UI_READ_TIMEOUT_ERROR, false],
     ["Execution context was destroyed", false],
   ] as const) {
@@ -61,7 +61,7 @@ try {
     assert.equal(result.uncertain, pending, message);
     assert.equal(result.completed, !pending, message);
   }
-  process.stdout.write("Single-generation recovery passed: no reload or regenerate loops after submitted errors, definite failures remain complete and unknown responses stay pending.\n");
+  process.stdout.write("Single-generation recovery passed: unknown submissions stay pending without duplicate sends, and non-recoverable completed failures stop without reload loops.\n");
 } finally {
   await fs.rm(output, { force: true });
   if (previousStorage === undefined) delete process.env.VIDIFY_STORAGE_DIR;

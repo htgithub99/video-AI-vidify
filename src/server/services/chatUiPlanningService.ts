@@ -1031,15 +1031,17 @@ const clickSendButton = async (page: Page, button: Locator, signal?: AbortSignal
   await button.click({ noWaitAfter: true, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS });
 };
 const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid;
+const canRegenerateChatResponse = (error: unknown): boolean => {
+  const message = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
+  return message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR || isRecoverableChatRefusal(error) || isResponseTimeoutError(error);
+};
 const regenerateProviderError = async (page: Page, responseSelector: string, busySelector: string, artifactType: string, requestId: string, signal: AbortSignal | undefined, send: () => Promise<string>, onRegenerate?: (line: string) => void): Promise<string> => {
   let run = send;
   for (let attempt = 0; ; attempt++) {
     try {
       return await run();
     } catch (error) {
-      const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-      const canRegenerate = errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR || errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR || isRecoverableChatRefusal(error) || isResponseTimeoutError(error);
-      if (!canRegenerate || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      if (!canRegenerateChatResponse(error) || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
       throwIfPlanningCancelled(signal);
       const snapshots = await getChatResponseSnapshots(page, responseSelector, artifactType).catch(() => []);
       if (!(await clickCurrentChatRetry(page, signal).catch(() => false))) throw error;
@@ -1991,9 +1993,12 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
           if (interruptedRoom) await waitForGeminiSession(interruptedRoom, { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
         }
         if (request.oneGeneration && request.artifactType?.startsWith(RT_MAINTENANCE.MOTION_HTML) && (request.submission?.attempted || isFinalChatResponseError(error))) {
-          if (request.submission && isFinalChatResponseError(error)) request.submission.completed = true;
-          const failure = request.submission?.attempted && !request.submission.completed ? uncertainChatSubmission(request.provider) : error instanceof Error ? error : new Error(String(error));
-          throw Object.assign(failure, { [RECOVERY.COMPLETE]: true, ...(failure !== error ? { cause: error } : {}) });
+          const completedFailure = isFinalChatResponseError(error);
+          if (request.submission && completedFailure) request.submission.completed = true;
+          if (!(canRegenerateChatResponse(error) && (completedFailure || request.submission?.completed))) {
+            const failure = request.submission?.attempted && !request.submission.completed ? uncertainChatSubmission(request.provider) : error instanceof Error ? error : new Error(String(error));
+            throw Object.assign(failure, { [RECOVERY.COMPLETE]: true, ...(failure !== error ? { cause: error } : {}) });
+          }
         }
         const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
         const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error) || isResponseTimeoutError(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);

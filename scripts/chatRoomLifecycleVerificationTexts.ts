@@ -16,6 +16,10 @@ export const CHAT_ROOM_LIFECYCLE_VERIFICATION = {
   WORKERS: ["room-a", "room-b", "room-c"],
   PROJECT: "chat-room-lifecycle",
   ARTIFACT: "motion-puppet-read",
+  HTML_SERVICE_ERROR: "I encountered an error doing what you asked. Could you try again?",
+  HTML_SERVICE_UNAVAILABLE: "I'm having a hard time fulfilling your request. Can I help you with something else instead?",
+  HTML_RETRY_DOCUMENT: '<user-query>Current scene request</user-query><model-response><div class="answer"></div><button data-test-id="regenerate-button">Thử lại</button></model-response>',
+  HTML_RESPONSE: (artifact: string, request: string) => `<!DOCTYPE html><html data-artifact="${artifact}" data-request-id="${request}"><head></head><body><canvas id="motion-canvas"></canvas><script>window.motionScene={ready:Promise.resolve(),renderAt:async()=>{}};</script></body></html>`,
   REQUEST: (worker: string, index: number) => `${worker}-${index}`,
   PROMPT: (id: string) => `Return JSON with artifactType "motion-puppet-read" and requestId "${id}".`,
   GENERATOR: `async request => {

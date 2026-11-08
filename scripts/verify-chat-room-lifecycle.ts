@@ -8,14 +8,16 @@ import { chromium } from "playwright";
 import { parse, serializeOuter } from "parse5";
 import { CHAT_ROOM_LIFECYCLE_VERIFICATION as V } from "./chatRoomLifecycleVerificationTexts.ts";
 import { CHAT_ROOM_RECOVERY } from "../src/constants/chromeBackup.js";
+import { MOTION_HTML } from "../src/constants/motionHtmlTemplate.js";
 import { VERIFICATION_VALUES as VT } from "./motionVerificationValues.ts";
 import { AiPlanningFallbackProvider as P } from "../src/types.ts";
+type PlanningResponse = Awaited<ReturnType<typeof import("../src/server/services/chatUiPlanningService.js").generatePlanningWithChatUi>>;
 const deferred = () => {
   let finish!: () => void;
   const done = new Promise<void>((resolve) => (finish = resolve));
   return { done, finish };
 };
-const within = async <T>(work: Promise<T>, timeout = V.WAIT_MS): Promise<T> => {
+const within = async <T>(work: Promise<T>, timeout: number = V.WAIT_MS): Promise<T> => {
   let timer: ReturnType<typeof setTimeout>;
   try {
     return await Promise.race([
@@ -64,8 +66,22 @@ try {
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, bundled.outputFiles[0].text);
   const service = await import(pathToFileURL(output).href);
-  Object.assign(service.config, { UI_ACTION_BASE_MS: 5000, UI_ACTION_MAX_MS: 5000, SEND_CLICK_WAIT_MS: 100, ROOM_IDLE_STABLE_POLLS: 1, RESPONSE_POLL_MS: 5, SUBMISSION_POLL_MS: 5, HUMAN_ACTION_SETTLE_MS: 0, PROMPT_INPUT_SETTLE_MS: 0, PROMPT_SUBMIT_SETTLE_MS: 0, ROOM_REQUEST_COOLDOWN_MS: 0, 
-    RESPONSE_STABLE_POLLS: 2, RESPONSE_STABLE_POLLS_MATCHED: 2, INVALID_RESPONSE_STABLE_POLLS: 4, SUBMISSION_VERIFY_TIMEOUT_MS: 50 });
+  Object.assign(service.config, {
+    UI_ACTION_BASE_MS: 5000,
+    UI_ACTION_MAX_MS: 5000,
+    SEND_CLICK_WAIT_MS: 100,
+    ROOM_IDLE_STABLE_POLLS: 1,
+    RESPONSE_POLL_MS: 5,
+    SUBMISSION_POLL_MS: 5,
+    HUMAN_ACTION_SETTLE_MS: 0,
+    PROMPT_INPUT_SETTLE_MS: 0,
+    PROMPT_SUBMIT_SETTLE_MS: 0,
+    ROOM_REQUEST_COOLDOWN_MS: 0,
+    RESPONSE_STABLE_POLLS: 2,
+    RESPONSE_STABLE_POLLS_MATCHED: 2,
+    INVALID_RESPONSE_STABLE_POLLS: 4,
+    SUBMISSION_VERIFY_TIMEOUT_MS: 50,
+  });
   const originalIdleWait = service.config.ROOM_IDLE_WAIT_TIMEOUT_MS;
   service.config.ROOM_IDLE_WAIT_TIMEOUT_MS = V.IDLE_WAIT_MS;
   service.config.ROOM_IDLE_STABLE_POLLS = V.IDLE_POLLS;
@@ -167,7 +183,7 @@ try {
       Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
       throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR);
     };
-    const result = await within(service.generatePlanningWithChatUi({ ...native, onRecovery: (line: string) => recoveries.push(line) }));
+    const result = await within<PlanningResponse>(service.generatePlanningWithChatUi({ ...native, onRecovery: (line: string) => recoveries.push(line) }));
     assert.equal(JSON.parse(result.text).ready, true);
     assert.equal(generated, 1, "A native Retry success must not resend the user request");
     assert.equal(recoveries.length, 1);
@@ -179,25 +195,93 @@ try {
   for (const successAt of [5, 6]) {
     const retryPage = await context.newPage();
     await retryPage.setContent(`<model-response><div class="answer">Sorry, something went wrong. Please try your request again.</div><button data-test-id="regenerate-button" aria-haspopup="menu" aria-controls="retry-menu">Khôi phục</button></model-response>`);
-    await retryPage.evaluate(({ successAt, artifactType }) => {
-      (window as any).retryClicks = 0;
-      (document.querySelector('button') as HTMLElement).onclick = () => {
-        const menu = document.createElement('div'); menu.id = 'retry-menu'; menu.setAttribute('role', 'menu');
-        const item = document.createElement('button'); item.setAttribute('role', 'menuitem'); item.textContent = 'Thử lại'; menu.append(item); document.body.append(menu);
-        item.onclick = () => {
-          const clicks = ++(window as any).retryClicks; menu.remove();
-          document.querySelector('.answer')!.textContent = clicks >= successAt ? JSON.stringify({ artifactType, requestId: 'retry-limit', ready: true }) : 'Sorry, something went wrong. Please try your request again. ' + clicks;
+    await retryPage.evaluate(
+      ({ successAt, artifactType }) => {
+        (window as any).retryClicks = 0;
+        (document.querySelector("button") as HTMLElement).onclick = () => {
+          const menu = document.createElement("div");
+          menu.id = "retry-menu";
+          menu.setAttribute("role", "menu");
+          const item = document.createElement("button");
+          item.setAttribute("role", "menuitem");
+          item.textContent = "Thử lại";
+          menu.append(item);
+          document.body.append(menu);
+          item.onclick = () => {
+            const clicks = ++(window as any).retryClicks;
+            menu.remove();
+            document.querySelector(".answer")!.textContent = clicks >= successAt ? JSON.stringify({ artifactType, requestId: "retry-limit", ready: true }) : "Sorry, something went wrong. Please try your request again. " + clicks;
+          };
         };
-      };
-    }, { successAt, artifactType: V.ARTIFACT });
-    const work = service.regenerateProviderError(retryPage, '.answer', '.busy', V.ARTIFACT, 'retry-limit', AbortSignal.timeout(10000), async () => { throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR); });
+      },
+      { successAt, artifactType: V.ARTIFACT },
+    );
+    const work = service.regenerateProviderError(retryPage, ".answer", ".busy", V.ARTIFACT, "retry-limit", AbortSignal.timeout(10000), async () => {
+      throw new Error(service.config.PROVIDER_ERROR_RESPONSE_ERROR);
+    });
     if (successAt === 5) assert.equal(JSON.parse(await within(work)).ready, true);
     else await assert.rejects(within(work), { message: service.config.PROVIDER_ERROR_RESPONSE_ERROR });
-    assert.equal(await retryPage.evaluate(() => (window as any).retryClicks), 5, 'The circular recovery menu is clicked at most five times');
+    assert.equal(await retryPage.evaluate(() => (window as any).retryClicks), 5, "The circular recovery menu is clicked at most five times");
     await retryPage.close();
   }
   process.stdout.write("PASS: real circular Gemini recovery menu succeeds on click five, never clicks a sixth time.\n");
-  const bounded = request("bounded-shared-recovery", 1);
+  for (const [artifactType, failureText, menu, errorCode] of [
+    [MOTION_HTML.ARTIFACT, V.HTML_SERVICE_ERROR, false, service.config.PROVIDER_ERROR_RESPONSE_ERROR],
+    [MOTION_HTML.ARTIFACT, V.HTML_SERVICE_UNAVAILABLE, true, service.config.PROVIDER_ERROR_RESPONSE_ERROR],
+    [MOTION_HTML.PLAN, V.HTML_SERVICE_UNAVAILABLE, true, service.config.PROVIDER_ERROR_RESPONSE_ERROR],
+    [MOTION_HTML.ARTIFACT, V.HTML_SERVICE_UNAVAILABLE, true, service.config.INVALID_JSON_RESPONSE_ERROR],
+  ] as const) {
+    assert.ok(service.config.PROVIDER_ERROR_RESPONSE_PATTERN.test(failureText));
+    const native = { ...request(`html-native-${artifactType}-${menu}`, 1), artifactType, oneGeneration: true };
+    const expected = artifactType === MOTION_HTML.ARTIFACT ? V.HTML_RESPONSE(artifactType, native.requestId) : JSON.stringify({ artifactType, requestId: native.requestId, scenes: [], ready: true });
+    let generated = 0;
+    service.providerGenerators[P.GeminiChat] = async (item: any) => {
+      generated++;
+      const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
+      await room.setContent(V.HTML_RETRY_DOCUMENT);
+      await room.evaluate(
+        ({ failureText, expected, menu }: any) => {
+          document.querySelector(".answer")!.textContent = failureText;
+          (window as any).retryClicks = 0;
+          (window as any).applyRetry = () => {
+            (window as any).retryClicks++;
+            document.querySelector(".answer")!.textContent = expected;
+          };
+          const trigger = document.querySelector("button")!;
+          if (menu) {
+            trigger.textContent = "Khôi phục";
+            trigger.setAttribute("aria-haspopup", "menu");
+            trigger.setAttribute("aria-controls", "html-retry-menu");
+          }
+          trigger.onclick = () => {
+            if (!menu) return (window as any).applyRetry();
+            const popup = document.createElement("div");
+            popup.id = "html-retry-menu";
+            popup.setAttribute("role", "menu");
+            const retry = document.createElement("button");
+            retry.setAttribute("role", "menuitem");
+            retry.textContent = "Thử lại";
+            retry.onclick = () => {
+              (window as any).applyRetry();
+              popup.remove();
+            };
+            popup.append(retry);
+            document.body.append(popup);
+          };
+        },
+        { failureText, expected, menu },
+      );
+      Object.assign(item.submission, { attempted: true, completed: false, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
+      throw new Error(errorCode);
+    };
+    const result = await within<PlanningResponse>(service.generatePlanningWithChatUi(native));
+    assert.equal(result.text, expected, "HTML scenes and plans must recover the current response through native Retry");
+    assert.equal(generated, 1, "Native Retry must not submit the scene prompt again");
+    assert.equal(await service.geminiRooms.get(service.getPlanningRoomKey(native)).evaluate(() => (window as any).retryClicks), 1);
+    await service.closeChatPlanningRoom(native, true);
+  }
+  process.stdout.write("PASS: HTML scene/plan errors recover through direct Retry and the Gemini recovery menu without duplicate prompt submission.\n");
+  const bounded = { ...request("bounded-shared-recovery", 1), artifactType: MOTION_HTML.ARTIFACT, oneGeneration: true };
   if (process.env.VIDIFY_VERIFY_REAL_CASES === "1") {
     const base = "scratch/motion-real-recovery-20261105/baseline/output/motion-video/ai-debug/";
     const source: any = parse(await readFile(base + "motion_remotion_composition-a8c3f22c.dom.txt", "utf8"));
@@ -236,7 +320,7 @@ try {
       Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".model-response-text", busySelector: ".busy" } });
       throw Object.assign(new Error(service.config.REFUSAL_RESPONSE_ERROR), { diagnostics: { lastCandidate: realFailure.lastCandidate } });
     };
-    const result = await within(service.generatePlanningWithChatUi({ ...native, onRecovery: (line: string) => recoveries.push(line) }));
+    const result = await within<PlanningResponse>(service.generatePlanningWithChatUi({ ...native, onRecovery: (line: string) => recoveries.push(line) }));
     assert.equal(JSON.parse(result.text).ready, true);
     assert.equal(generated, 1, "The actual refusal branch must click native menu Retry without resubmitting the prompt");
     assert.equal(recoveries.filter((line) => /bấm nút/u.test(line)).length, 1);
@@ -248,12 +332,19 @@ try {
   service.providerGenerators[P.GeminiChat] = async (item: any) => {
     singleCalls++;
     const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
-    await room.setContent('<user-query>Current request</user-query><model-response><div class="answer">Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó.</div><button onclick="window.retryClicks=(window.retryClicks||0)+1;if(window.retryClicks>=5){document.querySelector(\'.answer\').textContent=JSON.stringify(window.result)}else{document.querySelector(\'.answer\').textContent=\'Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó. \'+window.retryClicks}">Thử lại</button></model-response>');
-    await room.evaluate((value: any) => { (window as any).result = value; }, { artifactType: item.artifactType, requestId: item.requestId, ready: true });
+    await room.setContent(
+      "<user-query>Current request</user-query><model-response><div class=\"answer\">Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó.</div><button onclick=\"window.retryClicks=(window.retryClicks||0)+1;if(window.retryClicks>=5){document.querySelector('.answer').textContent=JSON.stringify(window.result)}else{document.querySelector('.answer').textContent='Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó. '+window.retryClicks}\">Thử lại</button></model-response>",
+    );
+    await room.evaluate(
+      (value: any) => {
+        (window as any).result = value;
+      },
+      { artifactType: item.artifactType, requestId: item.requestId, ready: true },
+    );
     Object.assign(item.submission, { attempted: true, completed: true, pending: { page: room, url: room.url(), prompt: item.prompt, initialCount: 0, initialResponseSnapshots: [], expectedSceneIds: [], artifactType: item.artifactType, requestId: item.requestId, responseSelector: ".answer", busySelector: ".busy" } });
     throw Object.assign(new Error(service.config.REFUSAL_RESPONSE_ERROR), { diagnostics: { lastCandidate: "Tôi chỉ là một mô hình ngôn ngữ nên không thể thực hiện điều đó." } });
   };
-  const singleResult = await within(service.generatePlanningWithChatUi(single));
+  const singleResult = await within<PlanningResponse>(service.generatePlanningWithChatUi(single));
   assert.equal(JSON.parse(singleResult.text).ready, true);
   assert.equal(singleCalls, 1, "Single-generation scenes must click native Retry up to five times before reloading");
   assert.equal(await service.geminiRooms.get(service.getPlanningRoomKey(single)).evaluate(() => (window as any).retryClicks || 0), CHAT_ROOM_RECOVERY.REGENERATE_LIMIT);
@@ -265,7 +356,7 @@ try {
     assert.equal(item.prompt, bounded.prompt, "A new room must receive the full context even when another worker already switched Chrome");
     const room = await service.createRoom(context, V.URL(port, item.workerId), service.geminiRooms, service.getPlanningRoomKey(item), item.signal);
     boundedRooms.push(room);
-    if (boundedRooms.length > CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES + 1) return JSON.stringify({ artifactType: item.artifactType, requestId: item.requestId, ready: true });
+    if (boundedRooms.length > CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES + 1) return V.HTML_RESPONSE(item.artifactType, item.requestId);
     await room.setContent(
       "<user-query>Current request</user-query><model-response><div class=\"answer\">Sorry, something went wrong. Please try your request again.</div><button onclick=\"window.retryClicks=(window.retryClicks||0)+1;document.querySelector('.answer').textContent='Sorry, something went wrong. Please try your request again. '+window.retryClicks;this.insertAdjacentHTML('afterend','<div class=busy>Generating</div>');setTimeout(()=>document.querySelector('.busy').remove(),10)\">Thử lại</button></model-response>",
     );
