@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_SPEECH as C, MOTION_SPEECH_ATTRIBUTION as A } from "../constants/motionSpeech.js";
 import { soundText } from "./motionSound.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
@@ -9,7 +10,7 @@ export const motionCharacterAttribution = (line: Pick<MotionUtterance, "speaker"
     const at = narration.indexOf(line.text.trim());
     if (at >= 0 && narration.indexOf(line.text.trim(), at + 1) < 0) {
       for (let index = 0; index < at; index++) {
-        if (narration[index] === "'" && A.LETTER.test(narration[index - 1] || "") && A.LETTER.test(narration[index + 1] || "")) continue;
+        if (narration[index] === RT_MAINTENANCE.SINGLE_QUOTE && A.LETTER.test(narration[index - 1] || "") && A.LETTER.test(narration[index + 1] || "")) continue;
         const end = motionSpeechQuoteEnd(narration.slice(index));
         if (end === undefined) continue;
         if (index + end > at) return null;
@@ -29,8 +30,8 @@ export const motionSpeechQuoteEnd = (text: string): number | undefined => {
   let depth = 1;
   for (let index = opening[0].length; index < text.length; index++) {
     let slashes = 0;
-    for (let at = index - 1; at >= 0 && text[at] === "\\"; at--) slashes++;
-    if (quote === "'" && A.LETTER.test(text[index - 1] || "") && A.LETTER.test(text[index + 1] || "")) continue;
+    for (let at = index - 1; at >= 0 && text[at] === RT_MAINTENANCE.BACKSLASH; at--) slashes++;
+    if (quote === RT_MAINTENANCE.SINGLE_QUOTE && A.LETTER.test(text[index - 1] || "") && A.LETTER.test(text[index + 1] || "")) continue;
     if (quote !== closing && text[index] === quote && slashes % 2 === 0) depth++;
     if (text[index] === closing && (encoded ? slashes % 2 === 1 : slashes % 2 === 0) && --depth === 0) return index + 1;
   }

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
@@ -330,7 +331,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const buildStatus = visualSettings.mode === RT_SHARED.REMOTION && result.script && result.analysis ? remotionStoryBuildStatus(result.script, result.analysis) : RT_SHARED.READY;
       if (visualSettings.mode === RT_SHARED.REMOTION && result.script && result.analysis && usesMotionHtml(result.script) && !motionHtmlPlanCurrent(result.script, result.analysis)) {
         delete record.steps[P.STAGES.SCRIPT];
-        log(record, "Khôi phục bước phân cảnh từ lời dẫn đã lưu; chia xong tất cả cảnh trước khi dựng HTML.");
+        log(record, RT_MAINTENANCE.KHOI_PHUC_BUOC_PHAN_CANH_TU_LOI_DAN_DA_LUU);
       }
       if (result.script && buildStatus !== RT_SHARED.READY) {
         for (const name of Object.keys(record.steps)) if (name === P.STAGES.SCENES || name.startsWith(P.STAGES.SCENES + RT_SHARED.SYMBOL_588DA4) || name === P.STAGES.RENDER) delete record.steps[name];
@@ -349,7 +350,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       log(record, VISUAL.LOG_MODE(visualSettings.mode));
       if (visualSettings.mode === RT_SHARED.REMOTION) {
         if (base.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
-        await checkRemotionRuntime(signal, record.result.script?.gen?.remotion && record.result.script.gen.remotion.renderer !== "html-canvas" ? undefined : "html-canvas");
+        await checkRemotionRuntime(signal, record.result.script?.gen?.remotion && record.result.script.gen.remotion.renderer !== RT_MAINTENANCE.HTML_CANVAS ? undefined : RT_MAINTENANCE.HTML_CANVAS);
       }
       if (!base.analyzeOnly) {
         await checkMotionMediaTools(signal);
@@ -364,7 +365,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         (full) => {
           if (!result.analysis) Object.assign(result, motionSeriesStart(full, Number(base.parts) || 1, base.language));
           const effective = result.series?.parts.length || 1;
-          if (effective !== (Number(base.parts) || 1)) log(record, `Nguồn được AI lập thành ${effective} phần có nội dung, so với ${base.parts} phần đã chọn; giữ kế hoạch thực tế và ghi rõ sự khác biệt.`);
+          if (effective !== (Number(base.parts) || 1)) log(record, `${RT_MAINTENANCE.NGUON_DUOC_AI_LAP_THANH}${effective}${RT_MAINTENANCE.PHAN_CO_NOI_DUNG_SO_VOI}${base.parts}${RT_MAINTENANCE.PHAN_DA_CHON_GIU_KE_HOACH_THUC_TE_VA_GHI}`);
         },
         0,
         0.1,
@@ -427,13 +428,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
             record.job.activeAi = Object.assign({}, ...activities.values());
             const partialScript = job.result as MotionStoryScript | undefined;
             if (partialScript?.gen?.remotion && result.script) {
-              result.script = {
-                ...result.script,
-                gen: {
-                  ...(result.script.gen || partialScript.gen),
-                  remotion: mergeMotionRemotionState(result.script.gen?.remotion, partialScript.gen.remotion),
-                },
-              };
+              result.script = { ...result.script, gen: { ...(result.script.gen || partialScript.gen), remotion: mergeMotionRemotionState(result.script.gen?.remotion, partialScript.gen.remotion) } };
             }
             syncSeo();
             save();
@@ -483,8 +478,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         0.2,
       );
       result.script = voiceScript(result.script!);
-      // Rolling pre-render (Remotion only): once the final voice timing exists, every scene-aligned segment whose
-      // scenes are all accepted is encoded in the background, so export mostly concatenates cached segments.
       let prerenderKey = "";
       const prerender = (): void => {
         if (base.autoExport === false || !result.script?.gen?.remotion || !result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis)) return;
@@ -521,13 +514,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
                 if (result.script) enqueueMotionHtmlScenes(record.job.id, result.script);
                 const gen = await early?.settle();
                 if (gen?.remotion && result.script) {
-                  result.script = {
-                    ...result.script,
-                    gen: {
-                      ...(result.script.gen || gen),
-                      remotion: mergeMotionRemotionState(result.script.gen?.remotion, gen.remotion),
-                    },
-                  };
+                  result.script = { ...result.script, gen: { ...(result.script.gen || gen), remotion: mergeMotionRemotionState(result.script.gen?.remotion, gen.remotion) } };
                 }
                 return scenesMotionStoryInput(sceneInput(result.analysis!, result.script!, !!gen));
               },
@@ -561,8 +548,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
             ),
           );
         let firstFailure: unknown;
-        // Voice and scenes are independent: a scene failure must not discard a voice track
-        // that is still being produced. Siblings are cancelled only when the run itself stops.
         const outcomes = await Promise.allSettled(
           jobs.map((job) =>
             job.catch((error) => {
@@ -635,7 +620,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.OK) log(record, Q.DURATION_WARNING(result.voice!.totalSeconds, targetSeconds));
       const selectedSeconds = result.analysis!.authoringSettings?.selectedTargetSeconds || targetSeconds;
       result.durationReport = { selectedSeconds, plannedSeconds: targetSeconds, audioSeconds: result.voice!.totalSeconds, ratio: result.voice!.totalSeconds / Math.max(1, targetSeconds), authoring: result.script!.authoringTiming };
-      log(record, `Thời lượng: đã chọn ${Math.round(selectedSeconds)}s tổng; phần này dự kiến ${Math.round(targetSeconds)}s; audio thực ${result.voice!.totalSeconds.toFixed(1)}s.`);
+      log(record, `${RT_MAINTENANCE.THOI_LUONG_DA_CHON}${Math.round(selectedSeconds)}${RT_MAINTENANCE.S_TONG_PHAN_NAY_DU_KIEN}${Math.round(targetSeconds)}${RT_MAINTENANCE.S_AUDIO_THUC}${result.voice!.totalSeconds.toFixed(1)}${RT_MAINTENANCE.S_5}`);
       await finishSeo();
       signal.throwIfAborted();
       record.job.stage = P.STAGES.COMPILE;
@@ -680,8 +665,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           true,
         );
       if (result.rendered && result.compiled) {
-        // Final gate: the published file must match the configuration snapshot of this run.
-        // Unset options resolve to what was actually compiled (e.g. fps follows the spec when the user left it on default).
         const chosen = motionOutputSettings({ ...record.input, fps: record.input.fps || result.compiled.spec.fps, aspect: record.input.aspect || result.compiled.spec.aspect }, result);
         const issues = motionOutputConformance(chosen, result.compiled.spec, result.rendered, base.subtitles !== false && !!result.compiled.spec.subtitles?.length);
         if (issues.length) {
@@ -706,7 +689,6 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     } finally {
       early?.stop();
       earlyVoice?.stop();
-      // Export already waited for (and reused) the pre-render; on stop/error drop any background work.
       stopMotionSegmentPrerender(record.job.id);
       const seo = record.steps[P.STAGES.SEO];
       try {

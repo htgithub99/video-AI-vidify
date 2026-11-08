@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionLanguage } from "../../../../../lib/motionLanguage.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
@@ -89,7 +90,14 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
         lastFrame = Math.min(endFrame, Math.round(end * fps));
       return lastFrame > startFrame ? [{ entityId: line.speaker, startFrame, endFrame: lastFrame }] : [];
     });
-    scenes.push({ ...scene, sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))], startFrame: frame, endFrame, speaking, nodes: scene.renderer === "html-canvas" ? [] : scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]) });
+    scenes.push({
+      ...scene,
+      sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))],
+      startFrame: frame,
+      endFrame,
+      speaking,
+      nodes: scene.renderer === RT_MAINTENANCE.HTML_CANVAS ? [] : scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]),
+    });
     frame = endFrame;
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);

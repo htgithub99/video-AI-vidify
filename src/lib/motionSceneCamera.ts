@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_CAMERA as C } from "../constants/motionCamera.js";
 import { compositionElements, motionCompositionDirected, motionSceneAnimationValue, motionAuthoredTime } from "./motionSceneComposition.js";
 import { motionActorTracks } from "./motionActorTracks.js";
@@ -19,10 +20,10 @@ const matrix = (value: string): Matrix => {
     const n = match[2].match(/[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g)?.map(Number) || [];
     if (!n.length || !n.every(Number.isFinite)) continue;
     let next = identity();
-    if (match[1] === "matrix" && n.length === 6) next = n as Matrix;
-    if (match[1] === "translate") next = [1, 0, 0, 1, n[0], n[1] || 0];
-    if (match[1] === "scale") next = [n[0], 0, 0, n[1] ?? n[0], 0, 0];
-    if (match[1] === "rotate") {
+    if (match[1] === RT_MAINTENANCE.MATRIX && n.length === 6) next = n as Matrix;
+    if (match[1] === RT_MAINTENANCE.TRANSLATE_3) next = [1, 0, 0, 1, n[0], n[1] || 0];
+    if (match[1] === RT_MAINTENANCE.SCALE_2) next = [n[0], 0, 0, n[1] ?? n[0], 0, 0];
+    if (match[1] === RT_MAINTENANCE.ROTATE_2) {
       const a = (n[0] * Math.PI) / 180,
         x = n[1] || 0,
         y = n[2] || 0,
@@ -30,8 +31,8 @@ const matrix = (value: string): Matrix => {
         s = Math.sin(a);
       next = [c, s, -s, c, x - c * x + s * y, y - s * x - c * y];
     }
-    if (match[1] === "skewX") next[2] = Math.tan((n[0] * Math.PI) / 180);
-    if (match[1] === "skewY") next[1] = Math.tan((n[0] * Math.PI) / 180);
+    if (match[1] === RT_MAINTENANCE.SKEWX) next[2] = Math.tan((n[0] * Math.PI) / 180);
+    if (match[1] === RT_MAINTENANCE.SKEWY) next[1] = Math.tan((n[0] * Math.PI) / 180);
     result = multiply(result, next);
   }
   return result;
@@ -40,7 +41,7 @@ const cache = new WeakMap<MotionSceneComposition, { asset: MotionVectorAsset; el
 const contextFor = (composition: MotionSceneComposition, asset: MotionVectorAsset) => {
   let context = cache.get(composition);
   if (!context || context.asset !== asset) {
-    const tracks = motionCompositionDirected(composition) ? [] : motionActorTracks(composition, asset.height).filter((track) => track.channel === "actor" && track.attribute === "transform");
+    const tracks = motionCompositionDirected(composition) ? [] : motionActorTracks(composition, asset.height).filter((track) => track.channel === RT_MAINTENANCE.ACTOR && track.attribute === RT_MAINTENANCE.TRANSFORM_3);
     context = { asset, elements: compositionElements(asset.svg), tracks, paths: new Map() };
     cache.set(composition, context);
   }
@@ -65,16 +66,16 @@ export const motionSceneCameraDirection = (scene: MotionRemotionTimedScene, asse
   const composition = scene.composition!,
     context = contextFor(composition, asset),
     plan = composition.design?.cameraMotion;
-  const eligible = (id?: string) => composition.layers.find((layer) => layer.id === id && (layer.kind === "character" || layer.kind === "prop"));
-  if (plan?.subjectId && !eligible(plan.subjectId)) return { mode: "hold" as const };
+  const eligible = (id?: string) => composition.layers.find((layer) => layer.id === id && (layer.kind === RT_MAINTENANCE.CHARACTER || layer.kind === RT_MAINTENANCE.PROP));
+  if (plan?.subjectId && !eligible(plan.subjectId)) return { mode: RT_MAINTENANCE.HOLD };
   const traveling = context.tracks.find((track) => !track.period && eligible(track.target) && /translate|matrix/.test(String(track.keyframes[0]?.value)));
   const subject = eligible(plan?.subjectId) || eligible(scene.focus?.[0]) || eligible(traveling?.target);
-  const planned = plan?.mode || (traveling && subject?.id === traveling.target ? "follow" : "hold");
-  const mode = planned === "hold" && camera ? camera.HOLD_SUBJECT : planned;
-  if (mode === "hold" || !subject) return { mode: "hold" as const };
+  const planned = plan?.mode || (traveling && subject?.id === traveling.target ? RT_MAINTENANCE.FOLLOW : RT_MAINTENANCE.HOLD);
+  const mode = planned === RT_MAINTENANCE.HOLD && camera ? camera.HOLD_SUBJECT : planned;
+  if (mode === RT_MAINTENANCE.HOLD || !subject) return { mode: RT_MAINTENANCE.HOLD };
   const placement = composition.design?.placements.find((item) => item.id === subject.id)?.box;
   const origin = plan?.focus ? { x: plan.focus.x * asset.width, y: plan.focus.y * asset.height } : placement ? { x: (placement.x + placement.width / 2) * asset.width, y: (placement.y + placement.height / 2) * asset.height } : { x: asset.width / 2, y: asset.height / 2 };
-  if (mode !== "follow" && !camera?.TRACK) return { mode, origin, focus: origin };
+  if (mode !== RT_MAINTENANCE.FOLLOW && !camera?.TRACK) return { mode, origin, focus: origin };
   const parts = camera?.PART_WEIGHT ? context.tracks.filter((track) => track.target !== subject.id && !!context.elements.get(track.target)?.ancestors.includes(subject.id)).map((track) => track.target) : [];
   const live = (at: number): Point => {
     const authored = motionAuthoredTime(composition, at, duration);

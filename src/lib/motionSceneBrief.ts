@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_SCENE_BRIEF as B } from "../constants/motionSceneBrief.js";
 import { MOTION_ILLUSTRATION_PROFILES } from "../constants/motionIllustrationProfiles.js";
 import { MOTION_FRAME_MAX_EXTRA, MOTION_FRAME_STAND, type MotionFramePose } from "../constants/motionProfiles/characterFrames/poses.js";
@@ -39,14 +40,14 @@ export interface MotionSceneBriefContext {
   genreLine?: string;
   note?: string;
 }
-const CHARACTER = "character";
-const PROP = "prop";
-const LABEL = "label";
-const DETAIL = "detail";
-const CLOSE_VIEWS: readonly string[] = ["close", "medium_close"];
-const WHOLE_VIEWS: readonly string[] = ["wide", "medium", "establishing", "over_shoulder"];
-const HANDS_WITH_OBJECT = "handsWithObject";
-const MOUNTED = "mounted";
+const CHARACTER = RT_MAINTENANCE.CHARACTER;
+const PROP = RT_MAINTENANCE.PROP;
+const LABEL = RT_MAINTENANCE.LABEL;
+const DETAIL = RT_MAINTENANCE.DETAIL;
+const CLOSE_VIEWS: readonly string[] = [RT_MAINTENANCE.CLOSE, RT_MAINTENANCE.MEDIUM_CLOSE];
+const WHOLE_VIEWS: readonly string[] = [RT_MAINTENANCE.WIDE, RT_MAINTENANCE.MEDIUM, RT_MAINTENANCE.ESTABLISHING, RT_MAINTENANCE.OVER_SHOULDER];
+const HANDS_WITH_OBJECT = RT_MAINTENANCE.HANDSWITHOBJECT;
+const MOUNTED = RT_MAINTENANCE.MOUNTED;
 const personPose = (id: MotionRemotionProfile, node: MotionRemotionNode): MotionFramePose => motionFramePose(id, node.stance, node.facing);
 const scenePoses = (id: MotionRemotionProfile, nodes: MotionRemotionNode[]): MotionFramePose[] => {
   const people = nodes.filter((node) => node.kind === CHARACTER && !node.animal && node.representation !== DETAIL && !node.unit);
@@ -99,7 +100,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
     if (shown) lines.push(shown);
     if (node.relation && node.target) lines.push(B.PERSON_RELATION(node.relation, node.target));
     if (node.uses) lines.push(B.PERSON_USES(node.uses.objectId, node.uses.how));
-    return [lines.join(" ")];
+    return [lines.join(RT_MAINTENANCE.SPACE)];
   });
   sections.push(B.SECTION(B.HEADINGS.PEOPLE, personLines));
   const groupLines = crowds.map((node) => {
@@ -115,7 +116,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
       node.pose ? B.PERSON_ACTION("", node.pose, node.posture, node.support) : "",
     ]
       .filter(Boolean)
-      .join(" ");
+      .join(RT_MAINTENANCE.SPACE);
   });
   sections.push(B.SECTION(B.HEADINGS.GROUPS, groupLines));
   const sheets = context.sheets || [];
@@ -126,9 +127,9 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
   const ownerName = (key: string | undefined): string | undefined => {
     if (!key) return undefined;
     const member = cast.find((item) => item.key === key);
-    if (member) return member.origin ? `${member.name}, ${member.origin}` : member.name;
+    if (member) return member.origin ? `${member.name}${RT_MAINTENANCE.COMMA_SPACE}${member.origin}` : member.name;
     const group = groups.find((item) => item.key === key);
-    return group ? [group.name, group.faction || group.origin].filter(Boolean).join(", ") : undefined;
+    return group ? [group.name, group.faction || group.origin].filter(Boolean).join(RT_MAINTENANCE.COMMA_SPACE) : undefined;
   };
   const objectLines = objects.map((item: MotionSceneObject) => {
     const node = scene.nodes.find((entry) => entry.id === item.id);
@@ -137,7 +138,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
     if (owner) lines.push(B.OBJECT_OWNER(owner));
     if (unitTargets.has(item.id)) {
       lines.push(B.OBJECT_IN_UNIT(unitTargets.get(item.id)!));
-      return lines.join(" ");
+      return lines.join(RT_MAINTENANCE.SPACE);
     }
     if (node?.pose) lines.push(B.PERSON_ACTION("", node.pose, node.posture, node.support));
     if (node?.gait) lines.push(B.OBJECT_GAIT(node.gait));
@@ -156,7 +157,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
       if (kindFrame && reference === kindFrame) codeFrames++;
       lines.push(code ? B.OBJECT_FRAME(reference) : B.OBJECT_SHEET(reference));
     }
-    return lines.join(" ");
+    return lines.join(RT_MAINTENANCE.SPACE);
   });
   sections.push(B.SECTION(B.HEADINGS.OBJECTS, objectLines));
   const unitKinds = [...new Set(scene.nodes.flatMap((node) => (node.unit ? [node.unit] : [])))].slice(0, MOTION_UNIT_MAX_FRAMES) as MotionUnit[];
@@ -173,7 +174,7 @@ export const motionSceneBriefLines = (context: MotionSceneBriefContext): string[
     const kind = listed && motionObjectKind(listed);
     if (!kind || !B.HANDHELD_VIEWS.includes(view || "") || handFrames >= MOTION_OBJECT_HANDHELD_MAX_FRAMES) return line;
     handFrames++;
-    return `${line} ${B.OBJECT_FRAME(kindFrames[kind])}`;
+    return `${line}${RT_MAINTENANCE.SPACE}${B.OBJECT_FRAME(kindFrames[kind])}`;
   });
   sections.push(B.SECTION(B.HEADINGS.PROPS, [...propLines, ...labels.map((node) => B.LABEL(node.id, node.description))]));
   const effects = (scene.effects || []) as MotionRemotionEffect[];
@@ -202,7 +203,7 @@ export const motionSceneWatchOuts = (context: MotionSceneBriefContext, objects: 
   if (CLOSE_VIEWS.includes(scene.view || "")) out.push(B.WATCH.NO_CUT);
   if (people.length) out.push(B.WATCH.TOP_ROOM);
   for (const node of people) if (node.uses) out.push(B.WATCH.USES(nameOf(node, cast), node.uses.objectId));
-  for (const node of scene.nodes) if (node.kind === PROP && node.relation === "heldBy" && node.target) out.push(B.WATCH.HELD(nameOf(scene.nodes.find((other) => other.id === node.target) || node, cast)));
+  for (const node of scene.nodes) if (node.kind === PROP && node.relation === RT_MAINTENANCE.HELDBY && node.target) out.push(B.WATCH.HELD(nameOf(scene.nodes.find((other) => other.id === node.target) || node, cast)));
   for (const item of objects.filter((entry) => !inUnit.has(entry.id))) {
     const owner = scene.nodes.find((node) => node.id === item.id);
     const legs = owner?.animal ? motionAnimalLegs(owner.animal) : MOTION_OBJECT_CLASS_LEGS[item.class];
@@ -212,7 +213,7 @@ export const motionSceneWatchOuts = (context: MotionSceneBriefContext, objects: 
   return [...new Set(out)];
 };
 export const motionSceneRequiredIds = (id: MotionRemotionProfile, named: MotionRemotionNode[], people: MotionRemotionNode[], crowds: MotionRemotionNode[], objects: MotionSceneObject[], cast: MotionCastMember[], nodes: MotionRemotionNode[] = []): string[] => {
-  const legless = !MOTION_ILLUSTRATION_PROFILES[id].brief.partIds.includes("legs");
+  const legless = !MOTION_ILLUSTRATION_PROFILES[id].brief.partIds.includes(RT_MAINTENANCE.LEGS);
   const singles = people.filter((node) => !crowds.includes(node) && node.representation !== DETAIL && !node.unit);
   const lines: string[] = [];
   if (singles.length)
@@ -233,7 +234,6 @@ export const motionSceneRequiredIds = (id: MotionRemotionProfile, named: MotionR
   lines.push(B.IDS_EFFECTS);
   return lines;
 };
-/** Compatibility entry point: choreography is now authored with the script, never generated here. */
 export const motionSceneRigLines = (_context: MotionSceneBriefContext, _objects?: MotionSceneObject[]): string[] => {
   return [];
 };
@@ -242,5 +242,5 @@ export const motionSceneBrief = (context: MotionSceneBriefContext): string => {
   const profile = MOTION_ILLUSTRATION_PROFILES[id];
   const hasPeople = context.scene.nodes.some((node) => node.kind === CHARACTER && node.representation !== DETAIL && !node.animal);
   const frame = hasPeople ? [profile.brief.frame, ...[MOTION_FRAME_STAND, ...scenePoses(id, context.scene.nodes)].map((pose) => B.FRAME_BLOCK(pose, motionFrameSvg(id, pose))), B.FRAME_END].join(B.JOIN) : "";
-  return [B.TASK, frame, `${B.HEADINGS.BRIEF}\n${motionSceneBriefLines(context).join(B.BLANK)}`, motionSceneActionLines(context).join(B.JOIN), B.COMPLETE_MOTION(context.seconds), B.OUTPUT].filter(Boolean).join(B.BLANK);
+  return [B.TASK, frame, `${B.HEADINGS.BRIEF}${RT_MAINTENANCE.NEWLINE}${motionSceneBriefLines(context).join(B.BLANK)}`, motionSceneActionLines(context).join(B.JOIN), B.COMPLETE_MOTION(context.seconds), B.OUTPUT].filter(Boolean).join(B.BLANK);
 };

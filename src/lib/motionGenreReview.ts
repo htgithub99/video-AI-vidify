@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_GENRE_REVIEW as R } from "../constants/motionGenreReview.js";
 import { MOTION_WRITING as W } from "../constants/motionWriting.js";
 import { motionOpeningTeaserIds } from "./motionStoryTimeline.js";
@@ -15,14 +16,14 @@ export interface MotionGenreReviewFinding {
   issue: string;
   kind?: "source" | "label" | "handoff" | "retell" | "speech" | "style";
 }
-const normalize = (text: string): string => (text.toLowerCase().match(R.WORD) || []).join(" ");
+const normalize = (text: string): string => (text.toLowerCase().match(R.WORD) || []).join(RT_MAINTENANCE.SPACE);
 const tokenizer = (language: string, motifs: string[]) => {
   const vi = R.VI.test(language.trim());
-  const min = R.RETELL.MIN_LENGTH[vi ? "vi" : "en"];
+  const min = R.RETELL.MIN_LENGTH[vi ? RT_MAINTENANCE.VI : RT_MAINTENANCE.EN];
   const motifWords = new Set(motifs.flatMap((motif) => motif.toLowerCase().match(R.WORD) || []));
   return (text: string): Set<string> => {
-    const list = (text.replace(R.QUOTE, " ").replace(U.CJK, " $& ").toLowerCase().match(R.WORD) || []).filter((word) => word.length >= min && !motifWords.has(word) && !R.STOP.test(word) && !R.MONTH.test(word) && !R.DIGIT.test(word));
-    return new Set(vi ? list.slice(1).map((word, index) => list[index] + " " + word) : list.map((word) => word.slice(0, R.RETELL.STEM)));
+    const list = (text.replace(R.QUOTE, RT_MAINTENANCE.SPACE).replace(U.CJK, RT_MAINTENANCE.REGEXP_PAD_MATCH).toLowerCase().match(R.WORD) || []).filter((word) => word.length >= min && !motifWords.has(word) && !R.STOP.test(word) && !R.MONTH.test(word) && !R.DIGIT.test(word));
+    return new Set<string>(vi ? list.slice(1).map((word, index) => list[index] + RT_MAINTENANCE.SPACE + word) : list.map((word) => word.slice(0, R.RETELL.STEM)));
   };
 };
 const overlap = (a: Set<string>, b: Set<string>): { shared: number; ratio: number } => {
@@ -39,12 +40,12 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
   const dropRefs = new Map<string, string>();
   const checks = motionGenreSpec(analysis.videoGenre).REVIEW;
   const vi = R.VI.test(language.trim());
-  const add = (id: string, issue: string, ref?: string, kind: MotionGenreReviewFinding["kind"] = "retell") => {
+  const add = (id: string, issue: string, ref?: string, kind: MotionGenreReviewFinding["kind"] = RT_MAINTENANCE.RETELL) => {
     const known = findings.find((finding) => finding.id === id);
     if (!known) findings.push({ id, issue, kind });
     else {
-      if (!known.issue.includes(issue)) known.issue += "; " + issue;
-      if ((W.PRIORITY[kind || "style"] ?? 5) < (W.PRIORITY[known.kind || "style"] ?? 5)) known.kind = kind;
+      if (!known.issue.includes(issue)) known.issue += RT_MAINTENANCE.SEMICOLON_SPACE + issue;
+      if ((W.PRIORITY[kind || RT_MAINTENANCE.STYLE] ?? 5) < (W.PRIORITY[known.kind || RT_MAINTENANCE.STYLE] ?? 5)) known.kind = kind;
     }
     if (ref && !dropIds.has(id)) {
       dropIds.add(id);
@@ -59,11 +60,13 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
   const dated = (text: string): boolean => R.DIGIT.test(text) || R.MONTH.test(text);
   const quote = (beat: MotionBeat): string => beat.narration.trim().slice(0, 80);
   const chapterIndex = new Map(analysis.chapters.map((chapter, index) => [chapter.id, index]));
-  const known = [sourceText, stringifyJson({ cast: analysis.cast, places: analysis.places, groups: (analysis as MotionStoryAnalysis).groups, title: (analysis as MotionStoryAnalysis).title, logline: (analysis as MotionStoryAnalysis).logline, facts: (analysis as MotionStoryAnalysis).facts, chapters: analysis.chapters.map((chapter) => [chapter.title, chapter.summary, chapter.keyPoints]) })].join(" ");
+  const known = [sourceText, stringifyJson({ cast: analysis.cast, places: analysis.places, groups: (analysis as MotionStoryAnalysis).groups, title: (analysis as MotionStoryAnalysis).title, logline: (analysis as MotionStoryAnalysis).logline, facts: (analysis as MotionStoryAnalysis).facts, chapters: analysis.chapters.map((chapter) => [chapter.title, chapter.summary, chapter.keyPoints]) })].join(
+    RT_MAINTENANCE.SPACE,
+  );
   spoken.forEach((beat, index) => {
     const previous = spoken[index - 1];
     const duplicate = (other: MotionBeat): string | undefined => (normalize(other.narration) === normalize(beat.narration) ? other.id : undefined);
-    if (previous && !teasers.has(previous.id) && previous.chapterId !== beat.chapterId && overlap(sets[index], sets[index - 1]).shared >= R.RETELL.SHARED && overlap(sets[index], sets[index - 1]).ratio >= R.RETELL.HANDOFF_RATIO) add(beat.id, R.ISSUE.HANDOFF(previous.id), duplicate(previous), "handoff");
+    if (previous && !teasers.has(previous.id) && previous.chapterId !== beat.chapterId && overlap(sets[index], sets[index - 1]).shared >= R.RETELL.SHARED && overlap(sets[index], sets[index - 1]).ratio >= R.RETELL.HANDOFF_RATIO) add(beat.id, R.ISSUE.HANDOFF(previous.id), duplicate(previous), RT_MAINTENANCE.HANDOFF);
     if (checks.retell)
       for (let back = 1; back <= R.RETELL.DISTANCE && index - back >= 0; back++) {
         const before = spoken[index - back];
@@ -75,7 +78,7 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
           break;
         }
       }
-    if (checks.crossChapter && !analysis.chapters.find((chapter) => chapter.id === beat.chapterId)?.stages?.includes("verdict")) {
+    if (checks.crossChapter && !analysis.chapters.find((chapter) => chapter.id === beat.chapterId)?.stages?.includes(RT_MAINTENANCE.VERDICT)) {
       const own = chapterIndex.get(beat.chapterId) ?? 0;
       const earlier = spoken.findIndex(
         (other, at) =>
@@ -89,12 +92,12 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
       );
       if (earlier >= 0) add(beat.id, R.ISSUE.CROSS(spoken[earlier].id, quote(spoken[earlier])), duplicate(spoken[earlier]));
     }
-    if (checks.digits && motionLanguage(language).numbers === N.SPOKEN && R.DIGIT.test(beat.narration.replace(R.QUOTE, " "))) add(beat.id, R.ISSUE.DIGITS(vi), undefined, "speech");
+    if (checks.digits && motionLanguage(language).numbers === N.SPOKEN && R.DIGIT.test(beat.narration.replace(R.QUOTE, RT_MAINTENANCE.SPACE))) add(beat.id, R.ISSUE.DIGITS(vi), undefined, RT_MAINTENANCE.SPEECH);
     if (checks.commentary && R.COMMENTARY.test(beat.narration)) add(beat.id, R.ISSUE.COMMENTARY);
-    if (checks.experts && sourceText && R.EXPERTS.test(beat.narration) && !R.EXPERTS.test(sourceText)) add(beat.id, R.ISSUE.EXPERTS, undefined, "source");
-    if ((analysis as MotionStoryAnalysis).factual && sourceText) for (const figure of motionUnsupportedFigures(beat.narration, sourceText)) add(beat.id, W.FIGURES.ISSUE(figure), undefined, "source");
-    for (const figure of motionGarbledNumbers(beat.narration)) add(beat.id, W.FIGURES.GARBLED_ISSUE(figure), undefined, "source");
-    if ((analysis as MotionStoryAnalysis).factual && sourceText) for (const name of motionUnsupportedNames(beat.narration.replace(R.QUOTE, " "), known, language)) add(beat.id, W.FIGURES.NAME_ISSUE(name), undefined, "source");
+    if (checks.experts && sourceText && R.EXPERTS.test(beat.narration) && !R.EXPERTS.test(sourceText)) add(beat.id, R.ISSUE.EXPERTS, undefined, RT_MAINTENANCE.SOURCE);
+    if ((analysis as MotionStoryAnalysis).factual && sourceText) for (const figure of motionUnsupportedFigures(beat.narration, sourceText)) add(beat.id, W.FIGURES.ISSUE(figure), undefined, RT_MAINTENANCE.SOURCE);
+    for (const figure of motionGarbledNumbers(beat.narration)) add(beat.id, W.FIGURES.GARBLED_ISSUE(figure), undefined, RT_MAINTENANCE.SOURCE);
+    if ((analysis as MotionStoryAnalysis).factual && sourceText) for (const name of motionUnsupportedNames(beat.narration.replace(R.QUOTE, RT_MAINTENANCE.SPACE), known, language)) add(beat.id, W.FIGURES.NAME_ISSUE(name), undefined, RT_MAINTENANCE.SOURCE);
   });
   if (checks.timeJump) {
     const jumps = spoken.filter((beat) => R.TIME_JUMP.test(beat.narration));
@@ -113,17 +116,17 @@ export const motionGenreReviewFindings = (beats: MotionBeat[], analysis: Pick<Mo
       if (lines.length && !lines.some((beat) => R.COUNT.test(beat.narration))) add(lines[Math.floor(lines.length / 2)].id, R.ISSUE.ORDEAL);
     }
   if (checks.labels && ((analysis as MotionStoryAnalysis).writingPlan?.labels?.length || motifs.length > 1)) {
-    const labels = ((analysis as MotionStoryAnalysis).writingPlan?.labels?.length ? (analysis as MotionStoryAnalysis).writingPlan!.labels : motifs.slice(1)).map((label) => ({ label, pattern: " " + normalize(label) + " " }));
+    const labels = ((analysis as MotionStoryAnalysis).writingPlan?.labels?.length ? (analysis as MotionStoryAnalysis).writingPlan!.labels : motifs.slice(1)).map((label) => ({ label, pattern: RT_MAINTENANCE.SPACE + normalize(label) + RT_MAINTENANCE.SPACE }));
     for (const chapter of analysis.chapters.filter((item) => item.stages?.includes(R.CANDIDATE_STAGE))) {
       const lines = spoken.filter((beat) => beat.chapterId === chapter.id);
       const asked = lines.map((beat) => R.QUESTION.test(beat.narration)).lastIndexOf(true);
       if (asked < 0) continue;
       const weighing = lines.slice(asked);
-      const used = labels.filter((item) => weighing.some((beat) => (" " + normalize(beat.narration) + " ").includes(item.pattern)));
-      const target = weighing.find((beat) => used.some((item) => (" " + normalize(beat.narration) + " ").includes(item.pattern)));
-      if (used.length > 1 && target) add(target.id, R.ISSUE.LABELS(used.map((item) => item.label)), undefined, "label");
+      const used = labels.filter((item) => weighing.some((beat) => (RT_MAINTENANCE.SPACE + normalize(beat.narration) + RT_MAINTENANCE.SPACE).includes(item.pattern)));
+      const target = weighing.find((beat) => used.some((item) => (RT_MAINTENANCE.SPACE + normalize(beat.narration) + RT_MAINTENANCE.SPACE).includes(item.pattern)));
+      if (used.length > 1 && target) add(target.id, R.ISSUE.LABELS(used.map((item) => item.label)), undefined, RT_MAINTENANCE.LABEL);
       const chosen = chapter.writing?.verdictLabel;
-      if (chosen && weighing.length && (used.length !== 1 || normalize(used[0].label) !== normalize(chosen))) add((target || weighing[0]).id, R.ISSUE.EXPECTED_LABEL(chosen), undefined, "label");
+      if (chosen && weighing.length && (used.length !== 1 || normalize(used[0].label) !== normalize(chosen))) add((target || weighing[0]).id, R.ISSUE.EXPECTED_LABEL(chosen), undefined, RT_MAINTENANCE.LABEL);
     }
   }
   return { findings: [...findings.filter((finding) => dropIds.has(finding.id)), ...findings.filter((finding) => !dropIds.has(finding.id))], dropIds, dropRefs };

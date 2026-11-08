@@ -7,25 +7,14 @@ export const CHRONICLE_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENI
   DIALOGUE: { minLines: 1, skipProtagonist: true, needsSourceQuotes: true },
   TEXTURE: "1) an everyday object, price, street or job of the era; 2) a plain comparison that makes a number tangible; 3) the look of the place where it happened; 4) what the people of the time called the thing; 5) one iconic trait of the real figure named",
   STYLE_BRIEF: "CHRONICLE: a confident overview narrator, dense and fast, one dated thing per sentence; every chapter moves the clock forward and names the year, place and actor. Real figures get their iconic traits once. Numbers and dates only from the source. Comparisons make scale tangible in one clause. No lived first person, no invented dialogue.",
-  CONTRACT: {
-    voice: "a fast overview narrator; one milestone per sentence, dates and names exact",
-    opening: "the promise of the whole sweep and the first milestone",
-    spine: "milestones in time order, a card when the era changes",
-    devices: "year and name cards, maps of the moving front or territory",
-    closing: "the consequence and the last milestone",
-  },
-  VOICE: {
-    frames: [],
-    maxUnits: 26,
-    longIssue: "cut into two brisk sentences, each carrying one date, name or number",
-  },
+  CONTRACT: { voice: "a fast overview narrator; one milestone per sentence, dates and names exact", opening: "the promise of the whole sweep and the first milestone", spine: "milestones in time order, a card when the era changes", devices: "year and name cards, maps of the moving front or territory", closing: "the consequence and the last milestone" },
+  VOICE: { frames: [], maxUnits: 26, longIssue: "cut into two brisk sentences, each carrying one date, name or number" },
   GRAMMAR: {
     shots: [S.WIDE, S.MEDIUM, S.MEDIUM_CLOSE, S.CLOSE, S.INSERT, S.ESTABLISHING, S.AERIAL],
     mix: { [S.WIDE]: 30, [S.MEDIUM]: 20, [S.MEDIUM_CLOSE]: 10, [V.MAP]: 15, [V.TIMELINE]: 15, [S.CLOSE]: 10 },
     visuals: [V.SCENE, V.MAP, V.TIMELINE, V.CHAPTER, V.STATS, V.TITLE],
     devices: ["map", "year card", "organisation chart"],
-    rule:
-      "PICTURE GRAMMAR (chronicle): each beat names in subject the one dated thing on screen. A new era opens with a chapter or timeline beat carrying the year. A real figure appearing for the first time gets a medium or close beat that shows the iconic traits in the cast look. A change of region or front is a map beat. Numbers that compare (budgets, agents, divisions) are a stats beat. Wide for institutions, parades, cities; insert for documents, seals, weapons, devices. No beat shows a narrator or a figure addressing the viewer.",
+    rule: "PICTURE GRAMMAR (chronicle): each beat names in subject the one dated thing on screen. A new era opens with a chapter or timeline beat carrying the year. A real figure appearing for the first time gets a medium or close beat that shows the iconic traits in the cast look. A change of region or front is a map beat. Numbers that compare (budgets, agents, divisions) are a stats beat. Wide for institutions, parades, cities; insert for documents, seals, weapons, devices. No beat shows a narrator or a figure addressing the viewer.",
     picture: "each picture carries one dated thing: a real figure with iconic traits, a map with the front, a year card; crowds and formations show scale, faces show only the people the narration names",
     sample:
       '{"narration":"Nineteen fifty-four. The agency is born from the ashes of its predecessor.","shot":"medium","subject":"year card nineteen fifty-four over the new headquarters","visual":"chapter"} {"narration":"Its first chairman wears the uniform he will never take off.","shot":"close","subject":"the chairman in uniform, iconic traits from the cast look","visual":"scene"} {"narration":"From Berlin to Havana, the network spreads.","shot":"wide","subject":"map with the two cities linked by a red line","visual":"map"}',

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { planMotionHtmlScenes, createMotionHtmlSceneStreamer } from "./html/scenePipeline.js";
 import { usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
 import { runMotionScriptEditorial } from "../../../../lib/motionScriptEditorial.js";
@@ -197,7 +198,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       ...analysis,
       visualSettings,
       stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined,
-      ...(analysis.authoringSettings && visualSettings.mode === "remotion"
+      ...(analysis.authoringSettings && visualSettings.mode === RT_MAINTENANCE.REMOTION
         ? { authoringSettings: { ...analysis.authoringSettings, language: storyLanguage(body?.language), visualProfile: visualSettings.profileId, picturePacing: visualSettings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: visualSettings.pacing ? MOTION_SCENE_PACING.SECONDS[visualSettings.pacing] : analysis.authoringSettings.targetPictureSeconds } }
         : {}),
     };
@@ -254,7 +255,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         }
       }
       const scope = body.productionId || body.editorialSessionId;
-      const canStreamHtmlScenes = visualSettings.mode === "remotion" && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
+      const canStreamHtmlScenes = visualSettings.mode === RT_MAINTENANCE.REMOTION && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
       const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) }) : undefined;
       if (htmlStreamer) {
         keepGen = { ...(keepGen || emptyGen()), remotion: htmlStreamer.getState() };
@@ -368,7 +369,10 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
                 checkpoint();
               },
             );
-            void htmlStreamer.waitForChapter(chapter.id).then(() => checkpoint()).catch(_.noop);
+            void htmlStreamer
+              .waitForChapter(chapter.id)
+              .then(() => checkpoint())
+              .catch(_.noop);
           }
         } catch (error) {
           if (isTerminalMotionAiError(error, ctx.signal) || MOTION_PRODUCTION.SERVICE_ERROR_RE.test(String((error as Error)?.message))) throw error;
@@ -396,7 +400,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       if (analysis.authoringSettings && todo.length > 1 && !(globalThis as any).__motionHtmlStages) {
         for (const chapter of todo) {
           if (!byChapter[chapter.id]?.length) {
-            chapterDrafts[chapter.id] ||= { inputKey: "", rows: [], pending: [{ id: "0", fields: ["narration"] as any }] };
+            chapterDrafts[chapter.id] ||= { inputKey: "", rows: [], pending: [{ id: RT_MAINTENANCE.VALUE_0_2, fields: [RT_MAINTENANCE.NARRATION] as any }] };
           }
         }
         void prepareMotionContentRooms(exec, ctx.signal, ctx.log).catch(_.noop);
@@ -437,11 +441,11 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         const silent = motionStorytellingSilent(analysis.storytelling);
         return silent ? analysis.chapters.length * (silent.chapterCard + silent.chapterEnd) + silent.videoEnd : 0;
       })();
-      if (analysis.authoringSettings) script.authoringTiming = { plannedDurationSeconds: chosenTotal, estimatedSpeechSeconds: _.sumBy(beats, (beat) => speechUnits(beat.narration)) / speechRate, plannedPauseSeconds: silentTotal, speechRate, speechRateSource: speechRateMeasured ? "measured" : "language-default" };
+      if (analysis.authoringSettings) script.authoringTiming = { plannedDurationSeconds: chosenTotal, estimatedSpeechSeconds: _.sumBy(beats, (beat) => speechUnits(beat.narration)) / speechRate, plannedPauseSeconds: silentTotal, speechRate, speechRateSource: speechRateMeasured ? RT_MAINTENANCE.MEASURED : RT_MAINTENANCE.LANGUAGE_DEFAULT };
       if (complete && chosenTotal > 0) ctx.log(motionStorytellingText(language).ESTIMATE(_.sumBy(beats, (beat) => speechUnits(beat.narration)) / speechRate + silentTotal, chosenTotal));
       ctx.partial(script);
       assertMotionScriptComplete(script, analysis);
-      if (visualSettings.mode === "remotion" && usesMotionHtml(script)) {
+      if (visualSettings.mode === RT_MAINTENANCE.REMOTION && usesMotionHtml(script)) {
         const planned = htmlStreamer
           ? await htmlStreamer.finish(
               script,
@@ -449,7 +453,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
               (value, stage) => ctx.progress(0.8 + value * 0.19, stage),
             )
           : await planMotionHtmlScenes(script, analysis, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, scope, signal: ctx.signal, log: ctx.log, partial: (draft) => ctx.partial(draft), progress: (value, stage) => ctx.progress(0.8 + value * 0.19, stage), aspect: body.aspect, sfx: body.sfx !== false });
-        ctx.log("Hoàn tất chia phân cảnh và prompt 0–4 trước khi chuyển sang dựng cảnh HTML.");
+        ctx.log(RT_MAINTENANCE.HOAN_TAT_CHIA_PHAN_CANH_VA_PROMPT_0_4_TRUOC);
         ctx.partial(planned);
         return planned;
       }
@@ -648,7 +652,6 @@ export const compileMotionStoryInput = async (body: Record<string, any>) => {
       uploadedSeconds,
     );
   const directedScript = script.gen ? { ...script, gen: { ...script.gen, characterMotion: behavior.actors === RT_SHARED.SIMPLE, renderBehavior: behavior } } : script;
-  // previewOnly: compile the timeline even while some scenes are still being drawn, with no audio side effects.
   const previewOnly = body?.previewOnly === true;
   const compiled =
     visualSettings.mode === RT_SHARED.REMOTION

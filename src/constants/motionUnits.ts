@@ -19,11 +19,7 @@ export const MOTION_UNIT_PARTS: Record<MotionUnit, readonly string[]> = {
   palanquinBearers: ["bearer_1", "bearer_2", "palanquin"],
   galleyWithOarsmen: ["rower_1", "rower_2", "rower_3", "galley"],
 };
-export const MOTION_UNIT_SEAT: Partial<Record<MotionUnit, { person: string; carrier: string }>> = {
-  riderOnHorse: { person: "rider", carrier: "horse" },
-  riderOnCamel: { person: "rider", carrier: "camel" },
-  riderOnElephant: { person: "rider", carrier: "elephant" },
-};
+export const MOTION_UNIT_SEAT: Partial<Record<MotionUnit, { person: string; carrier: string }>> = { riderOnHorse: { person: "rider", carrier: "horse" }, riderOnCamel: { person: "rider", carrier: "camel" }, riderOnElephant: { person: "rider", carrier: "elephant" } };
 export const MOTION_UNIT_CREW: Partial<Record<MotionUnit, { people: readonly string[]; object: string }>> = {
   gunCrew: { people: ["crew_1", "crew_2"], object: "gun" },
   heavyGunCrew: { people: ["crew_1", "crew_2"], object: "gun" },
@@ -70,7 +66,27 @@ export const MOTION_UNIT_LABEL: Record<MotionUnit, string> = {
   galleyWithOarsmen: "galley with oarsmen",
 };
 export const MOTION_UNIT_BY_ANIMAL: Partial<Record<MotionAnimal, MotionUnit>> = { horse: "riderOnHorse", camel: "riderOnCamel", elephant: "riderOnElephant", donkey: "riderOnHorse" };
-export const MOTION_UNIT_BY_KIND: Partial<Record<MotionObjectKind, MotionUnit>> = { fieldGun: "gunCrew", gatling: "gunCrew", catapult: "siegeCrew", ballista: "siegeCrew", batteringRam: "ramCrew", chariot: "chariotCrew", palanquin: "palanquinBearers", galley: "galleyWithOarsmen", longship: "galleyWithOarsmen", trebuchet: "siegeCrew", howitzer: "heavyGunCrew", mortar: "heavyGunCrew", machineGun: "machineGunCrew", cart: "cartWithDriver", wagon: "wagonWithDriver", carriage: "wagonWithDriver", rowboat: "boatWithRowers", canoe: "boatWithRowers", sampan: "boatWithRowers" };
+export const MOTION_UNIT_BY_KIND: Partial<Record<MotionObjectKind, MotionUnit>> = {
+  fieldGun: "gunCrew",
+  gatling: "gunCrew",
+  catapult: "siegeCrew",
+  ballista: "siegeCrew",
+  batteringRam: "ramCrew",
+  chariot: "chariotCrew",
+  palanquin: "palanquinBearers",
+  galley: "galleyWithOarsmen",
+  longship: "galleyWithOarsmen",
+  trebuchet: "siegeCrew",
+  howitzer: "heavyGunCrew",
+  mortar: "heavyGunCrew",
+  machineGun: "machineGunCrew",
+  cart: "cartWithDriver",
+  wagon: "wagonWithDriver",
+  carriage: "wagonWithDriver",
+  rowboat: "boatWithRowers",
+  canoe: "boatWithRowers",
+  sampan: "boatWithRowers",
+};
 export const MOTION_UNIT_LEAD: MotionUnit = "horseLeader";
 export const MOTION_UNIT_VISIBLE: Record<string, number> = { wide: 6, establishing: 6, medium: 3, over_shoulder: 2, medium_close: 2, close: 1, detail: 1 };
 export const MOTION_UNIT_MAX_FRAMES = 1;

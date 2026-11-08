@@ -1,3 +1,5 @@
+import { delayAsync } from "../../lib/asyncUtils.js";
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import type { BrowserContext, Locator, Page } from "playwright";
 import { EXTERNAL_URLS } from "../../constants/apiRoutes.js";
 import { GEMINI_ACTIVITY_CLEANUP as C } from "../../constants/geminiActivityCleanup.js";
@@ -21,7 +23,7 @@ const stateFor = (context: BrowserContext): CleanupState => {
   if (!state) {
     state = { active: 0, revision: 1, cleaned: 0, closed: false, failed: false };
     contexts.set(context, state);
-    context.once("close", () => {
+    context.once(RT_MAINTENANCE.CLOSE, () => {
       state!.closed = true;
     });
   }
@@ -36,11 +38,11 @@ const audit = async (state: CleanupState, status: string, error?: string): Promi
 };
 const visible = (locator: Locator) => locator.filter({ visible: true }).first();
 const verifyDeleted = async (page: Page): Promise<boolean> => {
-  await page.reload({ waitUntil: "domcontentloaded", timeout: C.ACTION_TIMEOUT_MS });
-  await visible(page.getByRole("button", { name: C.DELETE, exact: true }))
+  await page.reload({ waitUntil: RT_MAINTENANCE.DOMCONTENTLOADED, timeout: C.ACTION_TIMEOUT_MS });
+  await visible(page.getByRole(RT_MAINTENANCE.BUTTON, { name: C.DELETE, exact: true }))
     .or(visible(page.getByText(C.EMPTY, { exact: true })))
     .first()
-    .waitFor({ state: "visible", timeout: C.ACTION_TIMEOUT_MS });
+    .waitFor({ state: RT_MAINTENANCE.VISIBLE, timeout: C.ACTION_TIMEOUT_MS });
   if (await visible(page.getByText(C.EMPTY, { exact: true })).count()) return true;
   return !(await visible(page.getByText(C.TODAY, { exact: true })).count());
 };
@@ -52,28 +54,28 @@ export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSigna
   const closeOnAbort = () => {
     void page.close().catch(() => undefined);
   };
-  signal.addEventListener("abort", closeOnAbort, { once: true });
+  signal.addEventListener(RT_MAINTENANCE.ABORT, closeOnAbort, { once: true });
   try {
     for (let attempt = 0; attempt < C.ATTEMPTS; attempt++) {
       check();
       try {
         if (!committed) {
-          await page.goto(EXTERNAL_URLS.GEMINI_ACTIVITY, { waitUntil: "domcontentloaded", timeout: C.ACTION_TIMEOUT_MS });
-          const remove = visible(page.getByRole("button", { name: C.DELETE, exact: true }));
+          await page.goto(EXTERNAL_URLS.GEMINI_ACTIVITY, { waitUntil: RT_MAINTENANCE.DOMCONTENTLOADED, timeout: C.ACTION_TIMEOUT_MS });
+          const remove = visible(page.getByRole(RT_MAINTENANCE.BUTTON, { name: C.DELETE, exact: true }));
           await remove
             .or(visible(page.getByText(C.EMPTY, { exact: true })))
             .first()
-            .waitFor({ state: "visible", timeout: C.ACTION_TIMEOUT_MS });
-          if (await visible(page.getByText(C.EMPTY, { exact: true })).count()) return "empty";
+            .waitFor({ state: RT_MAINTENANCE.VISIBLE, timeout: C.ACTION_TIMEOUT_MS });
+          if (await visible(page.getByText(C.EMPTY, { exact: true })).count()) return RT_MAINTENANCE.EMPTY;
           check();
           await remove.click({ timeout: C.ACTION_TIMEOUT_MS });
           const day = visible(
             page
-              .getByRole("menuitem", { name: C.LAST_DAY, exact: true })
-              .or(page.getByRole("button", { name: C.LAST_DAY, exact: true }))
+              .getByRole(RT_MAINTENANCE.MENUITEM, { name: C.LAST_DAY, exact: true })
+              .or(page.getByRole(RT_MAINTENANCE.BUTTON, { name: C.LAST_DAY, exact: true }))
               .or(page.getByText(C.LAST_DAY, { exact: true })),
           );
-          await day.waitFor({ state: "visible", timeout: C.ACTION_TIMEOUT_MS });
+          await day.waitFor({ state: RT_MAINTENANCE.VISIBLE, timeout: C.ACTION_TIMEOUT_MS });
           check();
           committed = true;
           await day.click({ timeout: C.ACTION_TIMEOUT_MS });
@@ -85,39 +87,46 @@ export const deleteGeminiActivityLastDay = async (page: Page, signal: AbortSigna
           check();
           const dialog = visible(
             page
-              .getByRole("dialog")
-              .or(page.getByRole("alertdialog"))
-              .filter({ has: page.getByRole("heading", { name: C.CONFIRM_HEADING }) }),
+              .getByRole(RT_MAINTENANCE.DIALOG)
+              .or(page.getByRole(RT_MAINTENANCE.ALERTDIALOG))
+              .filter({ has: page.getByRole(RT_MAINTENANCE.HEADING, { name: C.CONFIRM_HEADING }) }),
           );
-          const success = visible(page.getByRole("heading", { name: C.SUCCESS_HEADING }).or(page.getByText(C.SUCCESS, { exact: true })).or(page.getByText(C.SUCCESS_TEXT)));
+          const success = visible(
+            page
+              .getByRole(RT_MAINTENANCE.HEADING, { name: C.SUCCESS_HEADING })
+              .or(page.getByText(C.SUCCESS, { exact: true }))
+              .or(page.getByText(C.SUCCESS_TEXT)),
+          );
           if (!(await dialog.count()) && (await success.count())) {
-            await visible(page.getByRole("button", { name: C.DISMISS })).click({ timeout: C.POLL_MS * 5 }).catch(() => undefined);
-            return "deleted";
+            await visible(page.getByRole(RT_MAINTENANCE.BUTTON, { name: C.DISMISS }))
+              .click({ timeout: C.POLL_MS * 5 })
+              .catch(() => undefined);
+            return RT_MAINTENANCE.DELETED;
           }
           if (!confirmed && (await dialog.count())) {
-            const confirm = visible(dialog.getByRole("button", { name: C.DELETE, exact: true }));
+            const confirm = visible(dialog.getByRole(RT_MAINTENANCE.BUTTON, { name: C.DELETE, exact: true }));
             check();
             confirmed = true;
             await confirm.click({ timeout: C.ACTION_TIMEOUT_MS });
           }
-          if (confirmed && (await visible(page.getByText(C.EMPTY, { exact: true })).count()) && !(await dialog.count())) return "deleted";
+          if (confirmed && (await visible(page.getByText(C.EMPTY, { exact: true })).count()) && !(await dialog.count())) return RT_MAINTENANCE.DELETED;
           const settled = confirmed && !(await dialog.count()) && !(await visible(page.getByText(C.PROGRESS)).count());
           if (!settled) settledAt = 0;
           else if (!settledAt) settledAt = Date.now();
-          else if (Date.now() - settledAt >= C.SETTLE_MS && (await verifyDeleted(page))) return "deleted";
-          await new Promise<void>((resolve) => setTimeout(resolve, C.POLL_MS));
+          else if (Date.now() - settledAt >= C.SETTLE_MS && (await verifyDeleted(page))) return RT_MAINTENANCE.DELETED;
+          await delayAsync(C.POLL_MS);
         }
         throw new Error(C.ERROR);
       } catch (error) {
         check();
         if (committed || attempt + 1 >= C.ATTEMPTS || page.isClosed()) throw error;
         appWarn(C.RETRY(attempt + 2));
-        await new Promise<void>((resolve) => setTimeout(resolve, C.RETRY_MS));
+        await delayAsync(C.RETRY_MS);
       }
     }
     throw new Error(C.ERROR);
   } finally {
-    signal.removeEventListener("abort", closeOnAbort);
+    signal.removeEventListener(RT_MAINTENANCE.ABORT, closeOnAbort);
   }
 };
 export const waitForGeminiBrowserClose = async (): Promise<void> => {
@@ -167,7 +176,7 @@ export const closeAfterGeminiActivityCleanup = async (context: BrowserContext, c
         page = await context.newPage();
         const result = await deleteGeminiActivityLastDay(page, signal);
         state.cleaned = state.revision;
-        emit(state, result === "empty" ? C.NO_ACTIVITY : C.COMPLETE);
+        emit(state, result === RT_MAINTENANCE.EMPTY ? C.NO_ACTIVITY : C.COMPLETE);
         await audit(state, C.SUCCESS_STATUS);
         state.pending = undefined;
       } catch (error) {

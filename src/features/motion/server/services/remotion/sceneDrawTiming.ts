@@ -2,7 +2,6 @@ import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import type { MotionRemotionScene } from "../../../../../types/motionVisual.js";
 import type { MotionStoryScript } from "../../../../../types/motionVideo.js";
 import { estimateBeatSeconds } from "../motionDirectorService.js";
-
 export const sceneDrawSeconds = (scene: MotionRemotionScene, script: MotionStoryScript): number => {
   const lines = script.beats.flatMap((beat) => puppetBeatLines(beat));
   const from = lines.findIndex((line) => line.key === scene.fromLineId),

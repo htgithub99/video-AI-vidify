@@ -6,7 +6,7 @@ export const MOTION_GENRE_GRAMMAR_REVIEW = {
   PREACH: /\b(?:the lesson|moral of|teaches us|remember that)\b|bài học|ngẫm ra|hiểu rằng|nhắc mình|sống tích cực|răn dạy/iu,
   PREACH_ISSUE: 'the closing of a witness tale keeps one small lingering detail instead of a lesson; replace this moral with a concrete thing the narrator still sees or touches, or return "drop": true',
   OBJECT_MIN_PER_CHAPTER: 2,
-  OBJECT_ISSUE: "this chapter has no insert picture of a household or taboo object; make this beat shot \"insert\" with subject naming the object the narrator mentions",
+  OBJECT_ISSUE: 'this chapter has no insert picture of a household or taboo object; make this beat shot "insert" with subject naming the object the narrator mentions',
   SUBJECT_MIN_CHARS: 3,
   DIALOGUE: {
     MIN_PRESENT_BEATS: 3,

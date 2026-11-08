@@ -3,7 +3,6 @@ import { MOTION_PRODUCTION as P } from "../../../../constants/motionProduction.j
 import { MOTION_PROGRESS as PROGRESS } from "../../../../constants/motionProgress.js";
 import { mergeMotionRemotionState, motionEarlySceneInput, type MotionEarlySceneInput } from "../../../../lib/motionProduction.js";
 import { MotionJobStatus as S, type MotionStoryAnalysis, type MotionStoryJobState, type MotionStoryScript } from "../../../../types/motionVideo.js";
-
 export interface MotionEarlyScenes {
   offer: (script: MotionStoryScript) => void;
   settle: () => Promise<MotionStoryScript["gen"] | undefined>;

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_PRODUCTION as P } from "../constants/motionProduction.js";
 import type { MotionChapterDraft, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../types/motionVideo.js";
 import type { MotionRemotionState } from "../types/motionVisual.js";
@@ -75,7 +76,7 @@ export const motionEarlySceneInput = (script: MotionStoryScript | undefined, ana
 export const motionEarlyHtmlSceneInput = (script: MotionStoryScript | undefined, analysis: MotionStoryAnalysis | undefined): MotionEarlySceneInput | undefined => {
   if (!script?.beats?.length || !analysis?.chapters?.length) return undefined;
   const state = script.gen?.remotion;
-  if (state?.renderer !== "html-canvas") return motionEarlySceneInput(script, analysis);
+  if (state?.renderer !== RT_MAINTENANCE.HTML_CANVAS) return motionEarlySceneInput(script, analysis);
   const pendingDraft = (draft: MotionChapterDraft): boolean => !!draft.pending?.length || Object.values(draft.parts || {}).some(pendingDraft);
   const allChaptersWritten = missingMotionChapters(script, analysis).length === 0 && !Object.values(script.chapterDrafts || {}).some((draft) => draft && pendingDraft(draft));
   if (allChaptersWritten && motionHtmlPlanCurrent(script, analysis)) return undefined;
@@ -95,20 +96,14 @@ export const motionEarlyHtmlSceneInput = (script: MotionStoryScript | undefined,
   const chapterIds = new Set(plannedBeats.map((beat) => beat.chapterId));
   const chapters = analysis.chapters.filter((chapter) => chapterIds.has(chapter.id)).map((chapter) => ({ ...chapter, targetSeconds: 1 }));
   if (!chapters.length) return undefined;
-  return {
-    key: plannedGroups.map((group) => group.id).join(P.EARLY_SCENES.KEY_SEPARATOR),
-    ready: chapters.length,
-    total: analysis.chapters.length,
-    script: { ...script, readyChapterIds: undefined, chapterDrafts: undefined, beats: plannedBeats },
-    analysis: { ...analysis, chapters },
-  };
+  return { key: plannedGroups.map((group) => group.id).join(P.EARLY_SCENES.KEY_SEPARATOR), ready: chapters.length, total: analysis.chapters.length, script: { ...script, readyChapterIds: undefined, chapterDrafts: undefined, beats: plannedBeats }, analysis: { ...analysis, chapters } };
 };
 export const mergeMotionRemotionState = (base: MotionRemotionState | undefined, incoming: MotionRemotionState | undefined): MotionRemotionState | undefined => {
   if (!incoming) return base;
   if (!base) return structuredClone(incoming);
-  if (base.renderer === "html-canvas" || incoming.renderer === "html-canvas") {
-    const merged: MotionRemotionState = structuredClone(base.renderer === "html-canvas" ? base : incoming);
-    const other = base.renderer === "html-canvas" ? incoming : base;
+  if (base.renderer === RT_MAINTENANCE.HTML_CANVAS || incoming.renderer === RT_MAINTENANCE.HTML_CANVAS) {
+    const merged: MotionRemotionState = structuredClone(base.renderer === RT_MAINTENANCE.HTML_CANVAS ? base : incoming);
+    const other = base.renderer === RT_MAINTENANCE.HTML_CANVAS ? incoming : base;
     merged.updatedAt = Math.max(base.updatedAt || 0, incoming.updatedAt || 0);
     merged.scenes ||= {};
     merged.inputKeys ||= {};
@@ -123,7 +118,7 @@ export const mergeMotionRemotionState = (base: MotionRemotionState | undefined, 
           const match = byId.get(target.id);
           if (!match) return target;
           if (!target.html && match.html) return { ...target, html: structuredClone(match.html), htmlRequest: structuredClone(match.htmlRequest), build: structuredClone(match.build) };
-          if (target.html && match.html && (match.html.status === "ready" || match.html.status === "rendered") && target.html.status !== "ready" && target.html.status !== "rendered") {
+          if (target.html && match.html && (match.html.status === RT_MAINTENANCE.READY || match.html.status === RT_MAINTENANCE.RENDERED) && target.html.status !== RT_MAINTENANCE.READY && target.html.status !== RT_MAINTENANCE.RENDERED) {
             return { ...target, html: structuredClone(match.html), htmlRequest: structuredClone(match.htmlRequest), build: structuredClone(match.build) };
           }
           return target;

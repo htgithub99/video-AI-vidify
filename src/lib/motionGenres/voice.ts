@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import { MOTION_GENRE_VOICE as V } from "../../constants/motionGenreVoice.js";
 import { MOTION_GENRE_VOCABULARY as X } from "../../constants/motionGenres/vocabulary.js";
 import { motionGenreSpec, motionVideoGenre } from "../../constants/motionGenre.js";
@@ -13,7 +14,7 @@ export const motionGenreVoiceFindings = (beats: MotionBeat[], language: string, 
   const findings: MotionGenreVoiceFinding[] = [];
   const add = (id: string, issue: string) => {
     const known = findings.find((finding) => finding.id === id);
-    if (known) known.issue += "; " + issue;
+    if (known) known.issue += RT_MAINTENANCE.SEMICOLON_SPACE + issue;
     else findings.push({ id, issue });
   };
   const hindsightByChapter = new Map<string, number>();
@@ -21,7 +22,7 @@ export const motionGenreVoiceFindings = (beats: MotionBeat[], language: string, 
   for (const beat of beats) {
     const narration = beat.narration?.trim();
     if (!narration) continue;
-    const spoken = narration.replace(V.QUOTE, " ");
+    const spoken = narration.replace(V.QUOTE, RT_MAINTENANCE.SPACE);
     const maxUnits = motionLanguageMaxUnits(language, motionVideoGenre(genre), voice.maxUnits);
     if (motionSplitSentences(narration).some((sentence) => motionSpeechUnits(sentence) > maxUnits)) add(beat.id, voice.longIssue);
     if (voice.detached && voice.detachedIssue && !profile.markers.viewer.test(spoken) && !(beat.utterances || []).some((line) => line.role !== V.NARRATION) && beat.frame !== X.FRAMES.HINDSIGHT && beat.visual === X.VISUALS.SCENE && (detachedByChapter.get(beat.chapterId) || 0) < V.DETACHED_PER_CHAPTER) {

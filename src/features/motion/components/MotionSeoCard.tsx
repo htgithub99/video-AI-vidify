@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
 import * as MR from "../../../constants/motionRuntime.js";
@@ -71,10 +72,12 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
     />
   );
   const chaptersText = seo ? chapterLines(seo) : "";
-  const chapterRows = chaptersText ? chaptersText.split(RT_SHARED.SYMBOL_01BA47).map((line) => {
-    const separator = line.indexOf(" ");
-    return { time: line.slice(0, separator), title: line.slice(separator + 1) };
-  }) : [];
+  const chapterRows = chaptersText
+    ? chaptersText.split(RT_SHARED.SYMBOL_01BA47).map((line) => {
+        const separator = line.indexOf(RT_MAINTENANCE.SPACE);
+        return { time: line.slice(0, separator), title: line.slice(separator + 1) };
+      })
+    : [];
   return (
     <StudioCard className={MR.MOTION_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800_80_B}>
       <div className={MR.MOTION_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER}>
@@ -326,8 +329,13 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
             <section aria-label={t.chapters} className={CS.PANEL}>
               <div className={CS.HEADER}>
                 <div className={CS.HEADING}>
-                  <span className={CS.ICON}><Clock size={14} /></span>
-                  <h4 className={CS.TITLE}>{t.chaptersShort}<span className={CS.COUNT}>{chapterRows.length}</span></h4>
+                  <span className={CS.ICON}>
+                    <Clock size={14} />
+                  </span>
+                  <h4 className={CS.TITLE}>
+                    {t.chaptersShort}
+                    <span className={CS.COUNT}>{chapterRows.length}</span>
+                  </h4>
                 </div>
                 <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} className={CS.COPY} title={copiedKey === MR.MOTION_TEXT_SEO_CHAPTERS ? t.copied : t.copy} aria-label={copiedKey === MR.MOTION_TEXT_SEO_CHAPTERS ? t.copied : t.copy} onClick={() => handleCopy(chaptersText, MR.MOTION_TEXT_SEO_CHAPTERS, t.copied)}>
                   {copiedKey === MR.MOTION_TEXT_SEO_CHAPTERS ? <Check size={13} /> : <Copy size={13} />}
@@ -335,7 +343,10 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
               </div>
               <ol className={CS.LIST}>
                 {chapterRows.map((chapter, index) => (
-                  <li key={index} className={CS.ROW}><span className={CS.TIME}>{chapter.time}</span><span className={CS.CHAPTER}>{chapter.title}</span></li>
+                  <li key={index} className={CS.ROW}>
+                    <span className={CS.TIME}>{chapter.time}</span>
+                    <span className={CS.CHAPTER}>{chapter.title}</span>
+                  </li>
                 ))}
               </ol>
             </section>

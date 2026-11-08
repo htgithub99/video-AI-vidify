@@ -6,3 +6,4 @@ export const TOGGLE_STYLES = {
   THUMB_ACTIVE: "translate-x-[20px] bg-white",
   THUMB_INACTIVE: "translate-x-0 !bg-slate-300",
 } as const;
+export const TOGGLE_ELEMENTS = { INLINE: "span", BLOCK: "div" } as const;

@@ -10,12 +10,6 @@ export interface MotionClipBox {
   width: number;
   height: number;
 }
-/**
- * One movable SVG group as measured after drawing.
- * `box`/`pivot` use the group's own user space (where appended transforms apply);
- * `canvas` is the same box in canvas pixels (defaults to `box` when the group has no base transform);
- * `flip` marks a mirrored base transform so screen directions stay correct.
- */
 export interface MotionRigPart {
   id: string;
   parent?: string;
@@ -32,7 +26,6 @@ export interface MotionRig {
   facing?: "left" | "right";
   parts: MotionRigPart[];
 }
-/** AI-authored motion instruction: semantic levels only, no coordinates. */
 export interface MotionClip {
   id?: string;
   op: MotionClipOp;
@@ -40,10 +33,8 @@ export interface MotionClip {
   group?: string[];
   amount?: MotionClipLevel;
   speed?: MotionClipSpeed;
-  /** Seconds per cycle at full speed. */
   cycle?: number;
   phase?: number | number[];
-  /** Id of a travel clip; cycles then follow the travelled distance. */
   couple?: string;
   lag?: number;
   lean?: "forward" | "back";
@@ -51,32 +42,25 @@ export interface MotionClip {
   dir?: "left" | "right" | "up" | "down" | "back" | "cw" | "ccw";
   depth?: number;
   parent?: string;
-  /** Emit anchor: "<partId>:<top|bottom|left|right|center>". */
   at?: string;
   particle?: MotionClipParticle;
   density?: MotionClipLevel;
-  /** scroll_background: the subject stays put and scroll layers move; otherwise travel from → to (canvas fractions of the foot point). */
   mode?: "scroll_background" | "path";
   from?: { x: number; y: number };
   to?: { x: number; y: number };
-  /** Active window as fractions (0..1) of the scene duration. */
   start?: number;
   end?: number;
-  /** Screen direction the subject faces; flips swing bias and lean. */
   facing?: "left" | "right";
-  /** Side of the part's box it rotates around (limb top, head bottom, wheel center). */
   joint?: MotionClipJoint;
 }
 export interface MotionClipScript {
   scene: string;
   intent: string;
   temperament?: MotionClipTemperament;
-  /** Scene seconds; the renderer overrides it with the real scene length. */
   duration?: number;
   rig: MotionRig;
   clips: MotionClip[];
 }
-/** AI-directed motion stored on a drawn scene composition. */
 export interface MotionSceneMotion extends MotionClipScript {
   revision: number;
   key: string;

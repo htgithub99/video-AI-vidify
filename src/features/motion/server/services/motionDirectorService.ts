@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { puppetKitSpec, puppetSceneShot, linkPuppetVisualFrames, applyPuppetShotAppearances } from "./puppet/compilePuppet.js";
 import { PUPPET as PUPPET_C } from "../../../../constants/motionPuppet.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
@@ -96,7 +97,7 @@ const splitSubtitle = (text: string, max: number): string[] => {
       if (line.trim()) out.push(line.trim());
     }
   }
-  return out.flatMap((piece) => (piece.length > max && P.SPACELESS.test(piece) ? (piece.match(new RegExp(`.{1,${max}}`, "gu")) || [piece]) : [piece]));
+  return out.flatMap((piece) => (piece.length > max && P.SPACELESS.test(piece) ? piece.match(new RegExp(`${RT_MAINTENANCE.VALUE_1_3}${max}${RT_MAINTENANCE.CLOSE_BRACE}`, RT_MAINTENANCE.GU)) || [piece] : [piece]));
 };
 export const buildSubtitles = (beat: MotionBeat, start: number, end: number, language?: string): { start: number; end: number; text: string }[] => {
   const pieces = splitSubtitle(beat.narration, language ? motionLanguage(language).subtitle.maxChars : MOTION_STORY_CONFIG.SUBTITLE_MAX_CHARS);

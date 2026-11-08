@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
@@ -80,9 +81,9 @@ export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: 
   if (scene?.crop) {
     const still = behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED;
     const progress = still ? 0 : (seconds - scene.startFrame / fps) / Math.max(1 / fps, (scene.endFrame - scene.startFrame) / fps);
-    return { ...motionSceneCropPush(progress), mode: "push" as const };
+    return { ...motionSceneCropPush(progress), mode: RT_MAINTENANCE.PUSH };
   }
-  if (behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED) return { scale: 1, x: 0, y: 0, mode: scene?.composition?.design?.cameraMotion?.mode || "hold" };
+  if (behavior.actors === RT_SHARED.FIXED || behavior.camera === RT_SHARED.FIXED) return { scale: 1, x: 0, y: 0, mode: scene?.composition?.design?.cameraMotion?.mode || RT_MAINTENANCE.HOLD };
   const view = remotionSceneView(scene, width, height, assets);
   const range = remotionCameraRange(scene, scenes);
   const selected = (scene?.nodes || []).filter((node) => node.essential || node.kind === RT_SHARED.CHARACTER || scene?.focus?.includes(node.id));
@@ -108,7 +109,7 @@ export const motionSceneCameraFrame = (behavior: MotionRenderBehavior, seconds: 
         return { x: rect.x * view.scale + view.x, y: rect.y * view.scale + view.y, width: rect.width * view.scale, height: rect.height * view.scale };
       });
   const asset = scene?.composition && assets[scene.composition.assetKey];
-  const direction = scene && asset ? motionSceneCameraDirection(scene, asset, Math.max(0, seconds - scene.startFrame / fps), (scene.endFrame - scene.startFrame) / fps, camera) : { mode: "hold" as const };
+  const direction = scene && asset ? motionSceneCameraDirection(scene, asset, Math.max(0, seconds - scene.startFrame / fps), (scene.endFrame - scene.startFrame) / fps, camera) : { mode: RT_MAINTENANCE.HOLD };
   return motionCameraFrame({ enabled: behavior.actors === RT_SHARED.SIMPLE && behavior.camera === RT_SHARED.GENTLE, seconds, start: (range?.startFrame || 0) / fps, end: range ? range.endFrame / fps : 12, width, height, seed: range?.id || scene?.id || "", protectedRects, ...direction }, camera);
 };
 export const remotionSceneEffects = (scene: MotionRemotionScene): NonNullable<MotionRemotionScene["effects"]> => {

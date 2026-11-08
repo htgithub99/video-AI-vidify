@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { stringifyJson } from "./jsonStringify.js";
@@ -24,7 +25,7 @@ export interface MotionSourceLedgerDraft {
   nodes?: Record<string, MotionSourceLedgerNode>;
   attempts?: Record<string, number>;
 }
-const looseText = (value: string): string => value.toLowerCase().replace(P.LEDGER_LOOSE.STRIP, "").replace(P.LEDGER_LOOSE.SPACES, " ").trim();
+const looseText = (value: string): string => value.toLowerCase().replace(P.LEDGER_LOOSE.STRIP, "").replace(P.LEDGER_LOOSE.SPACES, RT_MAINTENANCE.SPACE).trim();
 export const motionSourceLedgerPartIssues = (raw: any, segments: { id: string; t: number; text: string }[]): string[] => {
   const schema = motionResponseIssues(raw, MOTION_RESPONSE_SCHEMAS[RT_CORE.MOTION_STORY_LEDGER].anyOf![0]);
   if (schema.length) return schema.map((issue) => R.EXPECTED(issue.path, issue.expected, issue.actual));
@@ -37,7 +38,7 @@ export const motionSourceLedgerPartIssues = (raw: any, segments: { id: string; t
   const loose = segments.map((segment) => looseText(segment.text));
   const seen = new Set<string>();
   for (const event of Array.isArray(raw?.events) ? raw.events : []) {
-    const label = String(event?.id ?? "?");
+    const label = String(event?.id ?? RT_MAINTENANCE.QUESTION_MARK);
     if (!event || typeof event.id !== "string" || !event.id.trim()) issues.push(P.LEDGER_ISSUE.EVENT(label, P.LEDGER_ISSUE.ID));
     else if (seen.has(event.id)) issues.push(P.LEDGER_ISSUE.EVENT(label, P.LEDGER_ISSUE.DUPLICATE));
     seen.add(String(event?.id));
@@ -73,7 +74,10 @@ export const parseMotionSourceLedgerPart = (raw: any, segments: { id: string; t:
   };
   return { ids: [partId], text: facts.map((fact) => fact.id + RT_SHARED.SYMBOL_45822F + fact.point).join(P.SEPARATOR), facts, boundaries: [...new Set([segments[0], segments.at(-1)!])].map(boundary) };
 };
-export const compactMotionSourceLedger = async (parts: (string | MotionSourceLedgerNode)[], options: { draft: MotionSourceLedgerDraft; request: (prompt: string) => Promise<unknown>; key: (value: unknown) => string; checkpoint: () => void; signal?: AbortSignal; fallback?: () => void; totalChars?: number; map?: <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>) => Promise<R[]> }): Promise<string> => {
+export const compactMotionSourceLedger = async (
+  parts: (string | MotionSourceLedgerNode)[],
+  options: { draft: MotionSourceLedgerDraft; request: (prompt: string) => Promise<unknown>; key: (value: unknown) => string; checkpoint: () => void; signal?: AbortSignal; fallback?: () => void; totalChars?: number; map?: <T, R>(items: T[], worker: (item: T, index: number) => Promise<R>) => Promise<R[]> },
+): Promise<string> => {
   const initial = parts.map((part, index) => (typeof part === "string" ? { ids: [String(index + 1)], text: part } : part));
   const join = (nodes: MotionSourceLedgerNode[]) => nodes.map((node) => stringifyJson({ parts: node.ids, events: node.text, ...(node.facts?.length ? { facts: node.facts } : {}), ...(node.boundaries?.length ? { sourceBoundaries: node.boundaries } : {}) })).join(P.SEPARATOR);
   let nodes = initial;

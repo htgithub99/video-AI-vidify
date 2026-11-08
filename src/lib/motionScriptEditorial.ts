@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_WRITING as W } from "../constants/motionWriting.js";
 import { motionScriptFindings } from "./motionScriptFindings.js";
 import { normalizeMotionSpokenBeat } from "./motionSpokenNumbers.js";
@@ -12,12 +13,17 @@ export type MotionEditorialResult = { beats: MotionBeat[]; edit: NonNullable<Mot
 export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string) => {
   const findings = motionScriptFindings(beats, analysis, language, sourceText);
   const all = [...findings.review, ...findings.overlap, ...findings.stage, ...findings.style, ...findings.echo, ...findings.repeat];
-  const sorted = all.map((item, index) => ({ ...item, priority: W.PRIORITY[("kind" in item && typeof item.kind === "string" ? item.kind : "") || "style"] ?? 5, index })).sort((a, b) => a.priority - b.priority || a.index - b.index);
+  const sorted = all.map((item, index) => ({ ...item, priority: W.PRIORITY[(RT_MAINTENANCE.KIND in item && typeof item.kind === "string" ? item.kind : "") || RT_MAINTENANCE.STYLE] ?? 5, index })).sort((a, b) => a.priority - b.priority || a.index - b.index);
   const unique = sorted.filter((item, index) => sorted.findIndex((other) => other.id === item.id) === index);
-  return { findings, ids: unique.map((item) => item.id), remaining: unique.map(({ id, issue }) => ({ id, issue })), concrete: [...new Set([...findings.overlap.map((item) => item.id), ...findings.review.filter((item) => ["source", "label", "handoff"].includes(item.kind || "")).map((item) => item.id)])] };
+  return { findings, ids: unique.map((item) => item.id), remaining: unique.map(({ id, issue }) => ({ id, issue })), concrete: [...new Set<string>([...findings.overlap.map((item) => item.id), ...findings.review.filter((item) => ([RT_MAINTENANCE.SOURCE, RT_MAINTENANCE.LABEL, RT_MAINTENANCE.HANDOFF] as string[]).includes(item.kind || "")).map((item) => item.id)])] };
 };
 export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string, edit: (beats: MotionBeat[], ids: string[], supplemental: boolean) => Promise<MotionEditorialResult>, log?: (line: string) => void, scope?: ReadonlySet<string>): Promise<MotionEditorialResult> => {
-  if (analysis.authoringSettings) return edit(beats, beats.filter((beat) => !scope || scope.has(beat.chapterId)).map((beat) => beat.id), false);
+  if (analysis.authoringSettings)
+    return edit(
+      beats,
+      beats.filter((beat) => !scope || scope.has(beat.chapterId)).map((beat) => beat.id),
+      false,
+    );
   const names = analysis.cast.map((member) => member.name);
   const fixed = motionGenreAutofix(beats, analysis, language);
   if (fixed.dropped.length || fixed.visuals || fixed.shots || fixed.speech) log?.(A.LOG(fixed.dropped.length, fixed.visuals, fixed.shots, fixed.speech));

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionSceneLocation, motionScenesByLocation } from "../../../../../lib/motionSceneReferences.js";
 import { usesMotionHtml } from "../../../../../lib/motionHtmlScene.js";
 import { buildMotionHtmlScenes } from "../html/scenePipeline.js";
@@ -59,15 +60,12 @@ import { motionScenePictureIssues } from "../../../../../lib/motionScenePicture.
 import { motionSheetAssess, motionSheetCandidates, motionSheetPrompt } from "./sceneSheet.js";
 type SceneBuild = ReturnType<typeof normalizeSceneComposition>;
 const SCHEDULE = {
-  /** Lower runs first. Anchors unblock a whole place; plans feed the queue; rewrites are part of a scene task. */
   PRIORITY: { ANCHOR: 0, PLAN: 1, SCENE: 2 },
-  INDEPENDENT_FORMATS: ["card", "diagram", "map", "timeline", "process", "comparison"] as readonly string[],
-  DETAIL_VIEW: "detail",
-  LOG_UTILIZATION: (percent: number, rooms: number) => `Dựng cảnh: ${rooms} room bận trung bình ${percent}% thời gian.`,
+  INDEPENDENT_FORMATS: [RT_MAINTENANCE.CARD, RT_MAINTENANCE.DIAGRAM, RT_MAINTENANCE.MAP, RT_MAINTENANCE.TIMELINE, RT_MAINTENANCE.PROCESS, RT_MAINTENANCE.COMPARISON] as readonly string[],
+  DETAIL_VIEW: RT_MAINTENANCE.DETAIL,
+  LOG_UTILIZATION: (percent: number, rooms: number) => `${RT_MAINTENANCE.DUNG_CANH}${rooms}${RT_MAINTENANCE.ROOM_BAN_TRUNG_BINH}${percent}${RT_MAINTENANCE.THOI_GIAN}`,
 } as const;
-/** Checkpoint key suffix holding the highest-scoring raw answer of a scene. */
-const SCORE_BEST_SUFFIX = ":best";
-/** Drops fields of the removed QA/redraw/motion-director pipeline; harmless on new scenes. */
+const SCORE_BEST_SUFFIX = RT_MAINTENANCE.BEST;
 const clearLegacySceneFlags = (scene: MotionRemotionScene, state: MotionRemotionState) => {
   delete scene.reviewKey;
   delete scene.crop;
@@ -79,8 +77,8 @@ const clearLegacySceneFlags = (scene: MotionRemotionScene, state: MotionRemotion
   if (state.motionTried) delete state.motionTried[scene.id];
 };
 const drawingNodes = (nodes: MotionRemotionScene["nodes"]) => nodes.map((node) => Object.fromEntries(Object.entries(node).filter(([key]) => !C.DRAW_NODE_OMIT.includes(key))));
-const establishingScene = (scene: MotionRemotionScene) => (!scene.view || (ESTABLISHING_VIEWS as readonly string[]).includes(scene.view)) && !scene.nodes.some((node) => ["bust", "detail"].includes(node.representation || ""));
-const ESTABLISHING_VIEWS = ["wide", "establishing"] as const;
+const establishingScene = (scene: MotionRemotionScene) => (!scene.view || (ESTABLISHING_VIEWS as readonly string[]).includes(scene.view)) && !scene.nodes.some((node) => ([RT_MAINTENANCE.BUST, RT_MAINTENANCE.DETAIL] as string[]).includes(node.representation || ""));
+const ESTABLISHING_VIEWS = [RT_MAINTENANCE.WIDE, RT_MAINTENANCE.ESTABLISHING] as const;
 export interface RemotionSceneOptions {
   retryFailed?: boolean;
   exec: MotionAiExecution;
@@ -145,10 +143,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     };
     const ask = async (key: string, artifact: string, prompt: string, assess: MotionAiResponseContract["assess"], images?: Parameters<typeof runMotionAi>[5], context?: unknown, rewrite?: MotionAiResponseContract["repair"], resumeNote?: string) => {
       const drawing = artifact === C.ARTIFACT;
-      // Scene planning keeps the content model but runs in the 5 scene rooms, so planning never queues
-      // behind the 2 content rooms while scene rooms sit idle. The prompt is self-contained.
       const sceneRoom = drawing || artifact === V.ARTIFACT_SCENE;
-      // Scene drawing: no provider switch, no native regenerate; the contract below owns the 3-request budget.
       const selectedExec = drawing ? opts.exec : opts.mainExec || opts.exec;
       if (sceneRoom && !opts.ai) await prepareMotionSceneRooms(opts.exec, opts.signal, opts.log);
       const exec = { ...selectedExec, role: sceneRoom ? MOTION_AI_ROLE.DRAW : MOTION_AI_ROLE.MAIN, ...(drawing ? { singleResponse: true, strictProvider: true, allowFallback: false } : {}) };
@@ -247,15 +242,16 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           const draft = await ask(
             `${RT_SERVER.PLAN}${inputKey}`,
             V.ARTIFACT_SCENE,
-            P.SCENE(context) + RT_SHARED.SYMBOL_01BA47 + C.PLAN_POLICY + (group.beats.some((member) => member.motionIntent) ? "\n" + P.SCENE_MOTION : ""),
+            P.SCENE(context) + RT_SHARED.SYMBOL_01BA47 + C.PLAN_POLICY + (group.beats.some((member) => member.motionIntent) ? RT_MAINTENANCE.NEWLINE + P.SCENE_MOTION : ""),
             (raw) => {
               const checked = mergeRemotionSceneDraft(raw, state.drafts![inputKey] || [], lines, cast, true);
               if (group.beats.some((member) => member.motionIntent)) {
                 for (const row of checked.drafts as { fromLineId?: string; actionPlan?: MotionRemotionScene["actionPlan"]; nodes?: MotionRemotionNode[] }[]) {
-                  if (!row.actionPlan) checked.errors.push(`scenes[${row.fromLineId}].actionPlan: return the scene's AI-authored action plan with subjects, relative part changes and phases`);
-                  else for (const subject of Array.isArray(row.actionPlan.subjects) ? row.actionPlan.subjects : []) {
-                    if (!row.nodes?.some((node) => node.id === subject?.nodeId)) checked.errors.push(`scenes[${row.fromLineId}].actionPlan.subjects: nodeId ${subject?.nodeId} must reference a scene node`);
-                  }
+                  if (!row.actionPlan) checked.errors.push(`${RT_MAINTENANCE.SCENES_2}${row.fromLineId}${RT_MAINTENANCE.ACTIONPLAN_RETURN_THE_SCENE_S_AI_AUTHORED_ACTION_PLAN_WITH}`);
+                  else
+                    for (const subject of Array.isArray(row.actionPlan.subjects) ? row.actionPlan.subjects : []) {
+                      if (!row.nodes?.some((node) => node.id === subject?.nodeId)) checked.errors.push(`${RT_MAINTENANCE.SCENES_2}${row.fromLineId}${RT_MAINTENANCE.ACTIONPLAN_SUBJECTS_NODEID}${subject?.nodeId}${RT_MAINTENANCE.MUST_REFERENCE_A_SCENE_NODE}`);
+                    }
                 }
               }
               state.drafts![inputKey] = checked.drafts;
@@ -345,14 +341,12 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       else delete scene.writtenMotionKey;
       const inputKey = remotionCompositionKey(scene, analysis, width, height, scene.drawingNote ?? state.notes![beat.id], state);
       const legacyInputKey = motionInputKey([C.REVISION, scene.sourceKey, scene.purpose, scene.environment, scene.nodes, scene.text, settings, V.PROFILES[settings.profileId].revision, width, height, state.notes![beat.id], legacyPreviousKeys.get(scene.id)]);
-      const targeted = !!opts.onlyScenes?.includes(scene.id) || (opts.retryFailed === true && scene.build?.status === "failed");
+      const targeted = !!opts.onlyScenes?.includes(scene.id) || (opts.retryFailed === true && scene.build?.status === RT_MAINTENANCE.FAILED);
       const oldKey = `${RT_SERVER.COMPOSITION}${inputKey}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_16}${scene.id}`;
-      // Accepted/input keys stay compatible. Only new generation requests use the new policy.
       const priorGeneration = !targeted && scene.generation?.inputKey === inputKey ? scene.generation : undefined;
-      const key = priorGeneration ? priorGeneration.requestKey || oldKey : `${oldKey}:action-${MOTION_SCENE_ACTION_REVISION}`;
+      const key = priorGeneration ? priorGeneration.requestKey || oldKey : `${oldKey}${RT_MAINTENANCE.ACTION_2}${MOTION_SCENE_ACTION_REVISION}`;
       const existingReady = !!scene.composition && !!remotionSceneReadiness(scene, state).preview;
-      if (!targeted && existingReady && scene.build?.status !== "failed" && [inputKey, legacyInputKey].includes(scene.composition!.inputKey)) {
-        // Same picture under an older key format: adopt the current key so later runs match directly.
+      if (!targeted && existingReady && scene.build?.status !== RT_MAINTENANCE.FAILED && [inputKey, legacyInputKey].includes(scene.composition!.inputKey)) {
         const asset = state.assets[scene.composition!.assetKey];
         if (scene.composition!.inputKey !== inputKey && asset) {
           scene.composition = { ...scene.composition!, inputKey };
@@ -368,11 +362,9 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       const generation = scene.generation;
       const index = allScenes.indexOf(scene) + 1;
       const resumable = !targeted && generation?.inputKey === inputKey;
-      if (resumable && generation!.status !== "accepted") {
-        // The scene record is the source of truth for spent attempts (request states are reset between runs).
-        // An interrupted request may already have been answered: count it so resume never exceeds the budget.
+      if (resumable && generation!.status !== RT_MAINTENANCE.ACCEPTED) {
         const prior = requests[key] || { rejected: 0, errors: [] };
-        const spent = Math.max(prior.rejected || 0, generation!.attempts || 0) + (generation!.status === "running" ? 1 : 0);
+        const spent = Math.max(prior.rejected || 0, generation!.attempts || 0) + (generation!.status === RT_MAINTENANCE.RUNNING ? 1 : 0);
         requests[key] = { ...prior, rejected: Math.min(SCORE.ATTEMPTS, spent), errors: prior.errors?.length ? prior.errors : [generation!.error || C.GENERATION_INTERRUPTED] };
       }
       const used = () => (targeted && !requests[key] ? 0 : requests[key]?.rejected || 0);
@@ -389,8 +381,8 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         state.assets[key] = built.asset;
         scene.composition = { ...built.composition, profileId: settings.profileId, profileRevision };
         scene.aspect = aspect;
-        scene.generation = { revision: 1, inputKey, promptRevision: MOTION_SCENE_ACTION_REVISION, requestKey: key, status: "accepted", attempts, score: score.score, ...(score.passed ? {} : { warnings: score.issues }) };
-        scene.build = { inputKey, status: "accepted", review: false, attempts };
+        scene.generation = { revision: 1, inputKey, promptRevision: MOTION_SCENE_ACTION_REVISION, requestKey: key, status: RT_MAINTENANCE.ACCEPTED, attempts, score: score.score, ...(score.passed ? {} : { warnings: score.issues }) };
+        scene.build = { inputKey, status: RT_MAINTENANCE.ACCEPTED, review: false, attempts };
         clearLegacySceneFlags(scene, state);
         ready.add(scene.id);
         processed.add(scene.id);
@@ -400,13 +392,13 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         stepProgress(line);
       };
       const saved = resumable && compositions[key] ? restore(compositions[key]) : undefined;
-      if (saved && (generation!.status !== "running" || saved.score.passed || used() >= SCORE.ATTEMPTS)) {
+      if (saved && (generation!.status !== RT_MAINTENANCE.RUNNING || saved.score.passed || used() >= SCORE.ATTEMPTS)) {
         accept(saved.value, saved.score, Math.max(1, used()), true);
         return;
       }
-      if (resumable && generation!.status !== "accepted" && used() >= SCORE.ATTEMPTS) {
-        scene.generation = { ...generation!, status: "failed", error: generation!.error || C.GENERATION_INTERRUPTED };
-        scene.build = { inputKey, status: "failed", review: false, attempts: used(), error: scene.generation.error };
+      if (resumable && generation!.status !== RT_MAINTENANCE.ACCEPTED && used() >= SCORE.ATTEMPTS) {
+        scene.generation = { ...generation!, status: RT_MAINTENANCE.FAILED, error: generation!.error || C.GENERATION_INTERRUPTED };
+        scene.build = { inputKey, status: RT_MAINTENANCE.FAILED, review: false, attempts: used(), error: scene.generation.error };
         processed.add(scene.id);
         ready.delete(scene.id);
         save();
@@ -419,7 +411,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         delete requests[key];
       }
       const generationInfo = { revision: 1 as const, inputKey, promptRevision: MOTION_SCENE_ACTION_REVISION, requestKey: key };
-      scene.generation = { ...generationInfo, status: "running", attempts: used() };
+      scene.generation = { ...generationInfo, status: RT_MAINTENANCE.RUNNING, attempts: used() };
       scene.requestKeys = [...new Set([...(scene.requestKeys || []), key])];
       save();
       opts.log(C.LOG_DRAW(allScenes.indexOf(scene) + 1, allScenes.length, scene.purpose));
@@ -430,7 +422,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         const context = {
           width,
           height,
-          viewBox: `0 0 ${width} ${height}`,
+          viewBox: `${RT_MAINTENANCE.VALUE_0_0}${width}${RT_MAINTENANCE.SPACE}${height}`,
           seconds,
           sourceMotionIntents,
           sceneMotionIntent: scene.motionIntent,
@@ -468,8 +460,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         const bestKey = key + SCORE_BEST_SUFFIX;
         let best = saved && compositions[bestKey] ? restore(compositions[bestKey]) || saved : saved;
         let lastIssues: string[] = best?.score.issues || [];
-        // Technical faults are fixed by code inside normalizeSceneComposition (ids, viewBox, markup);
-        // only content problems (unparseable answer, failed checklist) consume an AI attempt.
         const assess = (raw: unknown) => {
           compositions[key] = raw;
           try {
@@ -491,8 +481,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
           }
         };
         const firstPrompt = C.PROMPT(context) + RT_SHARED.SYMBOL_01BA47 + SCORE.CHECKLIST;
-        // Any of the 5 rooms may take the next attempt, so every rewrite is self-contained:
-        // attempt 2 = full brief + targeted fix list; attempt 3 = full brief + clean redraw guidance.
         const rewrite = (_base: string, _draft: unknown, errors: string[]) => firstPrompt + RT_SHARED.SYMBOL_01BA47 + (used() <= 1 ? SCORE.REWRITE(errors, best?.score.score ?? 0) : SCORE.FRESH(errors));
         let built: SceneBuild | undefined;
         try {
@@ -504,8 +492,8 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         else accept(best!.value, best!.score, used());
       } catch (error) {
         const reason = String((error as Error).message);
-        scene.generation = { ...generationInfo, status: "failed", error: reason, attempts: used() };
-        scene.build = { inputKey, status: "failed", review: false, attempts: used(), error: reason };
+        scene.generation = { ...generationInfo, status: RT_MAINTENANCE.FAILED, error: reason, attempts: used() };
+        scene.build = { inputKey, status: RT_MAINTENANCE.FAILED, review: false, attempts: used(), error: reason };
         scene.composition = snapshot.composition;
         scene.crop = snapshot.crop;
         scene.focus = snapshot.focus;
@@ -552,8 +540,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       })();
       return sheetPending;
     };
-    // SFX planning needs only the final script, so it runs on the content rooms while scenes are drawn
-    // instead of after the last scene. Resolves to a fatal error (abort/CAPTCHA) or undefined.
     const sound: Promise<unknown> =
       opts.sfx === true
         ? directMotionSound(result, analysis, { exec: opts.mainExec || opts.exec, signal: opts.signal, log: opts.log, ai: opts.ai, onAccepted: save }).then(
@@ -569,8 +555,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             },
           )
         : Promise.resolve(undefined);
-    // One scheduler keeps all scene rooms busy: planning and drawing share the same slots,
-    // and the most unblocking task always goes first (see SCHEDULE.PRIORITY).
     const slots = new MotionPriorityPool(MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length);
     const timeline = new Map(planGroups.map((group, order) => [group.id, order]));
     const tasks: Promise<void>[] = [];
@@ -582,22 +566,17 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
         }),
       );
     const draw = async (scene: (typeof allScenes)[number], priority: number, anchor?: (typeof allScenes)[number]) => {
-      // Only scenes that use an object still missing from the sheet wait for it, and they wait without holding a room.
       if (sheetPending && motionSheetCandidates(state, [scene], settings.profileId).length) await sheetPending;
       await slots.run(priority + (timeline.get(scene.beatId) || 0) / (planGroups.length + 1), () => drawScene(scene, anchor), opts.signal);
     };
     const anchors = new Map<string, Promise<(typeof allScenes)[number] | undefined>>();
     const anchorFor = (location: string, locationScenes: (typeof allScenes)[number][]) => {
       if (anchors.has(location)) return anchors.get(location)!;
-      const usable = allScenes.filter(
-        (scene) => motionSceneLocation(scene) === location && !opts.onlyScenes?.includes(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && scene.composition?.profileId === settings.profileId && scene.composition.profileRevision === profileRevision && scene.aspect === aspect && remotionSceneReadiness(scene, state).preview,
-      );
+      const usable = allScenes.filter((scene) => motionSceneLocation(scene) === location && !opts.onlyScenes?.includes(scene.id) && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED && scene.composition?.profileId === settings.profileId && scene.composition.profileRevision === profileRevision && scene.aspect === aspect && remotionSceneReadiness(scene, state).preview);
       const existing = usable.find(establishingScene) || usable[0];
       const promise = existing
         ? Promise.resolve(existing)
         : (async () => {
-            // The anchor unblocks every other shot of this place: it is drawn first, and its first renderable
-            // answer is enough for followers (they do not wait for later rewrites of other scenes).
             for (const candidate of [...locationScenes].sort((a, b) => Number(establishingScene(b)) - Number(establishingScene(a)))) {
               locationScenes.splice(locationScenes.indexOf(candidate), 1);
               await draw(candidate, SCHEDULE.PRIORITY.ANCHOR);
@@ -614,7 +593,6 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       track(ensureSheet() || Promise.resolve());
       const candidates = (state.scenes[group.id] || []).filter((scene) => !opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id));
       for (const [location, locationScenes] of motionScenesByLocation(candidates)) {
-        // Shots that do not reuse the place background (cards, maps, diagrams, close details) never wait for the anchor.
         const independent = locationScenes.filter((scene) => SCHEDULE.INDEPENDENT_FORMATS.includes(scene.format || "") || scene.view === SCHEDULE.DETAIL_VIEW);
         for (const scene of independent) {
           locationScenes.splice(locationScenes.indexOf(scene), 1);
@@ -633,14 +611,12 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     for (const group of selectedGroups)
       track(
         (async () => {
-          // Already-current plans cost no request, so they need no slot.
           if (remotionGroupPlanCurrent(group.beats, analysis, state, opts.onlyScenes?.length ? undefined : opts.note)) await planGroup(group);
           else await slots.run(SCHEDULE.PRIORITY.PLAN + (timeline.get(group.id) || 0) / (planGroups.length + 1), () => planGroup(group), opts.signal);
           planned.add(group.id);
           scheduleGroup(group);
         })(),
       );
-    // Tasks append further tasks (group → anchor → scenes); wait until the set stops growing.
     for (let settled = 0; settled < tasks.length; ) {
       const batch = tasks.length;
       await Promise.all(tasks.slice(settled, batch));
@@ -671,12 +647,11 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
     try {
       requireDrawings();
     } catch (error) {
-      // Keep finished SFX planning (it is saved with the script) even when some scenes are still missing.
       await sound;
       throw error;
     }
     const scoped = scopedScenes(),
-      complete = scoped.filter((scene) => ready.has(scene.id) && scene.build?.status !== "failed").length;
+      complete = scoped.filter((scene) => ready.has(scene.id) && scene.build?.status !== RT_MAINTENANCE.FAILED).length;
     const summary = C.LOG_COMPLETE_SUMMARY(complete, scoped.length);
     opts.log(summary);
     opts.progress?.(complete / Math.max(1, scoped.length), summary);

@@ -14,7 +14,10 @@ const runtimeFiles = [
     .map((group) => ({ file: `src/features/${group}/constants/runtimeText.ts`, group }))
     .filter(({ file }) => existsSync(file)),
 ];
-for (const { file, group } of runtimeFiles) runtimeTexts.set(`RT_${group.replaceAll("-", "_").toUpperCase()}`, (await import(pathToFileURL(path.resolve(file)).href)).RUNTIME_TEXT);
+for (const { file, group } of runtimeFiles) {
+  const texts = await import(pathToFileURL(path.resolve(file)).href);
+  runtimeTexts.set(`RT_${group.replaceAll("-", "_").toUpperCase()}`, texts.RUNTIME_TEXT || texts);
+}
 const constantsTree = ts.createSourceFile("sourceText.ts", readFileSync(new URL("../src/constants/sourceText.ts", import.meta.url), "utf8"), ts.ScriptTarget.Latest, true);
 const templates = new Map<string, Array<string | number>>();
 const quoteLiteral = (value: string): string => (value.includes('"') ? "'" + stringifyJson(value).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'") + "'" : stringifyJson(value));
@@ -72,6 +75,19 @@ export const resolveSourceTextConstants = (source: string): string => {
   };
   visit(tree);
   for (const edit of edits.sort((a, b) => b.start - a.start)) source = source.slice(0, edit.start) + edit.value + source.slice(edit.end);
+  const templateTree = ts.createSourceFile("templates.tsx", source, ts.ScriptTarget.Latest, true, tree.languageVariant === ts.LanguageVariant.JSX ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const templateEdits: Array<{ start: number; end: number; value: string }> = [];
+  const templateText = (value: string): string => stringifyJson(value).slice(1, -1).replace(/\\"/g, '"').replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+  const collapseTemplates = (node: ts.Node): void => {
+    if (ts.isTemplateExpression(node) && node.templateSpans.some((span) => ts.isStringLiteralLike(span.expression))) {
+      const value = "`" + templateText(node.head.text) + node.templateSpans.map((span) => (ts.isStringLiteralLike(span.expression) ? templateText(span.expression.text) : "${" + resolveSourceTextConstants(span.expression.getText(templateTree)) + "}") + templateText(span.literal.text)).join("") + "`";
+      templateEdits.push({ start: node.getStart(templateTree), end: node.end, value });
+      return;
+    }
+    ts.forEachChild(node, collapseTemplates);
+  };
+  collapseTemplates(templateTree);
+  for (const edit of templateEdits.sort((a, b) => b.start - a.start)) source = source.slice(0, edit.start) + edit.value + source.slice(edit.end);
   const resolvedTree = ts.createSourceFile("resolved.tsx", source, ts.ScriptTarget.Latest, true, tree.languageVariant === ts.LanguageVariant.JSX ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const spacingEdits: Array<{ start: number; end: number; value: string }> = [];
   const collect = (node: ts.Node): void => {

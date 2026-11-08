@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
@@ -22,9 +23,8 @@ export const remotionSceneProgress = (script: MotionStoryScript, busy = false, l
       const failure = scene?.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED ? scene.build.error : state?.failures[beat.id];
       const reason = failure || readiness.error || (readiness.missingBackground ? text.missingBackground : readiness.missingAssets?.length ? text.missingAssets(readiness.missingAssets) : "") || (!scene ? text.scenePlanning : "");
       const status = failure ? RT_SHARED.FAILED : readiness.preview ? RT_SHARED.READY : busy ? RT_SHARED.WAITING : RT_MOTION.STOPPED;
-      // Accepted answer kept below the checklist threshold: shown with its score and the concrete issues.
-      const warnings = scene?.renderer !== "html-canvas" && scene?.generation?.status === RUNTIME_VALUES.ACCEPTED_070C160A && scene.generation.warnings?.length ? scene.generation.warnings : undefined;
-      return { key: scene?.id || member.id, beatId: member.id, scene, preview: readiness.preview, status, reason, narration: scene?.text || member.narration || "", score: scene?.renderer === "html-canvas" ? undefined : scene?.generation?.score, warnings };
+      const warnings = scene?.renderer !== RT_MAINTENANCE.HTML_CANVAS && scene?.generation?.status === RUNTIME_VALUES.ACCEPTED_070C160A && scene.generation.warnings?.length ? scene.generation.warnings : undefined;
+      return { key: scene?.id || member.id, beatId: member.id, scene, preview: readiness.preview, status, reason, narration: scene?.text || member.narration || "", score: scene?.renderer === RT_MAINTENANCE.HTML_CANVAS ? undefined : scene?.generation?.score, warnings };
     });
   });
   return { entries, ready: entries.filter((entry) => entry.status === RT_SHARED.READY).length, total: entries.length, warned: entries.filter((entry) => entry.warnings).length, failed: entries.filter((entry) => entry.status === RT_SHARED.FAILED).length };

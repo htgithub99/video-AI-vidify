@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
@@ -19,19 +20,26 @@ import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
 import type { MotionRemotionScene, MotionRemotionState, MotionVisualSettings } from "../../../../../types/motionVisual.js";
 import type { MotionHtmlRequest } from "../../../../../types/motionHtmlScene.js";
-
 const retainCheckpoint = async (write: () => void, opts: Pick<RemotionSceneOptions, "signal" | "log">) => {
   for (;;) {
-    try { write(); return; }
-    catch (error) { opts.signal?.throwIfAborted(); opts.log(`Chờ ghi lại dữ liệu đã nhận, giữ nguyên phản hồi AI: ${String((error as Error).message)}`); await delay(2000, undefined, { signal: opts.signal }); }
+    try {
+      write();
+      return;
+    } catch (error) {
+      opts.signal?.throwIfAborted();
+      opts.log(`${RT_MAINTENANCE.CHO_GHI_LAI_DU_LIEU_DA_NHAN_GIU_NGUYEN_PHAN}${String((error as Error).message)}`);
+      await delay(2000, undefined, { signal: opts.signal });
+    }
   }
 };
-
 const normalizePlannedHtmlScenes = (scenes: any[], lines: { key: string; text: string; beatId: string }[], beats: { id: string; sceneTemplateDraft?: string }[], totalSeconds: number, pacing?: string): any[] => {
   if (beats.length > 0 && scenes.length === beats.length && beats.every((beat) => typeof beat.sceneTemplateDraft === "string" && beat.sceneTemplateDraft.trim().length > 0)) return scenes;
-  const targetSeconds = pacing === "few" ? 14 : pacing === "many" ? 6 : 9;
+  const targetSeconds = pacing === RT_MAINTENANCE.FEW ? 14 : pacing === RT_MAINTENANCE.MANY ? 6 : 9;
   if (totalSeconds < targetSeconds * 1.3 || lines.length <= 1 || !scenes.length) return scenes;
-  const totalChars = Math.max(1, lines.reduce((sum, line) => sum + Math.max(1, line.text.length), 0));
+  const totalChars = Math.max(
+    1,
+    lines.reduce((sum, line) => sum + Math.max(1, line.text.length), 0),
+  );
   const lineSeconds = lines.map((line) => (totalSeconds * Math.max(1, line.text.length)) / totalChars);
   const spanSeconds = (start: number, end: number) => lineSeconds.slice(start, end + 1).reduce((sum, value) => sum + value, 0);
   const targetCount = Math.max(1, Math.round(totalSeconds / targetSeconds));
@@ -63,12 +71,7 @@ const normalizePlannedHtmlScenes = (scenes: any[], lines: { key: string; text: s
           for (const chunk of chunks) {
             const beatId = lines[chunk.from].beatId;
             const draft = beatDrafts.get(beatId);
-            expanded.push({
-              ...row,
-              fromLineId: lines[chunk.from].key,
-              toLineId: lines[chunk.to].key,
-              sceneTemplate: draft && draft.trim() ? draft : row.sceneTemplate,
-            });
+            expanded.push({ ...row, fromLineId: lines[chunk.from].key, toLineId: lines[chunk.to].key, sceneTemplate: draft && draft.trim() ? draft : row.sceneTemplate });
           }
           continue;
         }
@@ -104,104 +107,208 @@ const normalizePlannedHtmlScenes = (scenes: any[], lines: { key: string; text: s
     const bSec = Math.max(0.1, spanSeconds(bStart, bEnd));
     const totalSec = aSec + bSec;
     const firstRatio = aSec / totalSec;
-    const mergedEvents = [
-      ...(Array.isArray(first.soundEvents) ? first.soundEvents.map((ev: any) => ({ ...ev, at: Number(((Number(ev.at) || 0) * firstRatio).toFixed(3)) })) : []),
-      ...(Array.isArray(second.soundEvents) ? second.soundEvents.map((ev: any) => ({ ...ev, at: Number((firstRatio + (Number(ev.at) || 0) * (1 - firstRatio)).toFixed(3)) })) : []),
-    ];
-    const merged = {
-      ...first,
-      toLineId: second.toLineId,
-      purpose: [first.purpose, second.purpose].filter(Boolean).join(" -> "),
-      continuityOut: second.continuityOut || first.continuityOut,
-      soundEvents: mergedEvents,
-    };
+    const mergedEvents = [...(Array.isArray(first.soundEvents) ? first.soundEvents.map((ev: any) => ({ ...ev, at: Number(((Number(ev.at) || 0) * firstRatio).toFixed(3)) })) : []), ...(Array.isArray(second.soundEvents) ? second.soundEvents.map((ev: any) => ({ ...ev, at: Number((firstRatio + (Number(ev.at) || 0) * (1 - firstRatio)).toFixed(3)) })) : [])];
+    const merged = { ...first, toLineId: second.toLineId, purpose: [first.purpose, second.purpose].filter(Boolean).join(RT_MAINTENANCE.ASCII_ARROW_SEPARATOR), continuityOut: second.continuityOut || first.continuityOut, soundEvents: mergedEvents };
     working.splice(bestIndex, 2, merged);
   }
   return working;
 };
-
 const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, read: (raw: any) => void, _groupIndex = 0, priority = 0) => {
-  const store = motionTaskCheckpoint<MotionHtmlRequest>(opts.scope, "html-plan-submission", [key]);
+  const store = motionTaskCheckpoint<MotionHtmlRequest>(opts.scope, RT_MAINTENANCE.HTML_PLAN_SUBMISSION, [key]);
   let attempt = store.read();
   let failures = 0;
   for (;;) {
     opts.signal?.throwIfAborted();
-    if (!attempt || attempt.status === "retry_wait") attempt = { id: randomUUID(), attempt: (attempt?.attempt || 0) + 1, status: "running" };
+    if (!attempt || attempt.status === RT_MAINTENANCE.RETRY_WAIT) attempt = { id: randomUUID(), attempt: (attempt?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING };
     const current = attempt;
     const submission: any = { attempted: false, completed: false, ...current.submission };
     const resuming = !!submission.attempted && !submission.completed && !submission.abandoned && !!current.worker;
     const worker = resuming ? current.worker : undefined;
     if (!resuming) delete current.worker;
-    const persist = () => { const { page: _page, ...pending } = submission.pending || {}; current.submission = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) }; store.save(current); };
-    let journal: ReturnType<typeof setInterval> | undefined, invalidData = false;
+    const persist = () => {
+      const { page: _page, ...pending } = submission.pending || {};
+      current.submission = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) };
+      store.save(current);
+    };
+    let journal: ReturnType<typeof setInterval> | undefined,
+      invalidData = false;
     try {
       persist();
-      journal = setInterval(() => { try { persist(); } catch (error) { opts.log(`Chờ lưu yêu cầu phân cảnh: ${String(error)}`); } }, 2000);
+      journal = setInterval(() => {
+        try {
+          persist();
+        } catch (error) {
+          opts.log(`${RT_MAINTENANCE.CHO_LUU_YEU_CAU_PHAN_CANH}${String(error)}`);
+        }
+      }, 2000);
       const planExec = opts.mainExec?.provider ? opts.mainExec : opts.exec?.provider ? opts.exec : opts.mainExec || opts.exec;
       if (!opts.ai) await prepareMotionContentRooms(planExec, opts.signal, opts.log);
-      const exec: MotionAiExecution = { ...planExec, role: "main", worker, workerAssigned: (assigned) => { current.worker = assigned; }, requestId: current.id, submission, submissionChanged: persist, singleResponse: true, strictProvider: true, allowFallback: false, responseReceived: (raw) => { current.raw = raw; current.status = "received"; submission.completed = true; persist(); } };
+      const exec: MotionAiExecution = {
+        ...planExec,
+        role: RT_MAINTENANCE.MAIN,
+        worker,
+        workerAssigned: (assigned) => {
+          current.worker = assigned;
+        },
+        requestId: current.id,
+        submission,
+        submissionChanged: persist,
+        singleResponse: true,
+        strictProvider: true,
+        allowFallback: false,
+        responseReceived: (raw) => {
+          current.raw = raw;
+          current.status = RT_MAINTENANCE.RECEIVED;
+          submission.completed = true;
+          persist();
+        },
+      };
       let raw: any;
-      if (current.raw !== undefined) { try { raw = extractJson(current.raw); } catch (error) { invalidData = true; throw error; } }
-      else raw = await slots.run(priority, () => opts.ai ? opts.ai(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log), opts.signal);
-      current.raw = JSON.stringify(raw); current.status = "received"; submission.completed = true; persist();
-      try { read(raw); } catch (error) { invalidData = true; throw error; }
+      if (current.raw !== undefined) {
+        try {
+          raw = extractJson(current.raw);
+        } catch (error) {
+          invalidData = true;
+          throw error;
+        }
+      } else raw = await slots.run(priority, () => (opts.ai ? opts.ai(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.PLAN, exec, opts.signal, opts.log)), opts.signal);
+      current.raw = JSON.stringify(raw);
+      current.status = RT_MAINTENANCE.RECEIVED;
+      submission.completed = true;
+      persist();
+      try {
+        read(raw);
+      } catch (error) {
+        invalidData = true;
+        throw error;
+      }
       return raw;
     } catch (error) {
-      if (invalidData || (submission.completed && current.raw === undefined)) { delete current.raw; current.status = "retry_wait"; }
-      else current.status = "waiting_external";
-      await retainCheckpoint(persist, opts); opts.signal?.throwIfAborted();
-      opts.log(`Phân cảnh HTML: ${current.status === "waiting_external" ? "phục hồi yêu cầu đã gửi" : "thử lại lỗi dữ liệu"} (${String((error as Error).message)}).`);
+      if (invalidData || (submission.completed && current.raw === undefined)) {
+        delete current.raw;
+        current.status = RT_MAINTENANCE.RETRY_WAIT;
+      } else current.status = RT_MAINTENANCE.WAITING_EXTERNAL;
+      await retainCheckpoint(persist, opts);
+      opts.signal?.throwIfAborted();
+      opts.log(`${RT_MAINTENANCE.PHAN_CANH_HTML}${current.status === RT_MAINTENANCE.WAITING_EXTERNAL ? RT_MAINTENANCE.PHUC_HOI_YEU_CAU_DA_GUI : RT_MAINTENANCE.THU_LAI_LOI_DU_LIEU}${RT_MAINTENANCE.OPEN_PAREN_SPACE}${String((error as Error).message)}${RT_MAINTENANCE.SENTENCE_END}`);
       await delay(MOTION_HTML.RETRY_MS[Math.min(failures++, 4)], undefined, { signal: opts.signal });
-    } finally { clearInterval(journal); }
+    } finally {
+      clearInterval(journal);
+    }
   }
 };
-
 export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
   const key = motionInputKey([MOTION_HTML.VERSION, MOTION_HTML.GRAPHICS, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
-  if (!scene.htmlRequest && saved) { Object.assign(scene, saved); save(); }
-  if (scene.html?.status === "ready" || scene.html?.status === "rendered") return;
-  const prompt = [MOTION_HTML.OUTPUT, motionHtmlLanguageDirection(settings.language), "SCENE TEMPLATE (source data; exact visible text stays in the selected video language):\n" + scene.sceneTemplate, scene.drawingNote ? "USER NOTES (source data):\n" + scene.drawingNote : undefined, `RUNTIME: ${JSON.stringify({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`].filter(Boolean).join("\n\n");
-  const persist = () => { store.save(scene); save(); };
+  if (!scene.htmlRequest && saved) {
+    Object.assign(scene, saved);
+    save();
+  }
+  if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
+  const prompt = [
+    MOTION_HTML.OUTPUT,
+    motionHtmlLanguageDirection(settings.language),
+    RT_MAINTENANCE.SCENE_TEMPLATE_SOURCE_DATA_EXACT_VISIBLE_TEXT_STAYS_IN_THE + scene.sceneTemplate,
+    scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
+    `${RT_MAINTENANCE.RUNTIME}${JSON.stringify({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`,
+  ]
+    .filter(Boolean)
+    .join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+  const persist = () => {
+    store.save(scene);
+    save();
+  };
   let failures = 0;
   for (;;) {
     opts.signal?.throwIfAborted();
     const prior = scene.htmlRequest;
-    const attempt = prior && (prior.status === "running" || prior.status === "received" || prior.status === "waiting_external") ? prior : { id: randomUUID(), attempt: (prior?.attempt || 0) + 1, status: "running" as const, submission: { attempted: false, completed: false } };
+    const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (prior?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
     scene.htmlRequest = attempt;
-    attempt.status = "running";
+    attempt.status = RT_MAINTENANCE.RUNNING;
     const submission: any = { attempted: attempt.submission?.attempted || false, completed: attempt.submission?.completed || false, abandoned: attempt.submission?.abandoned, pending: attempt.submission?.pending };
     const resuming = !!submission.attempted && !submission.completed && !submission.abandoned && !!attempt.worker;
     const worker = resuming ? attempt.worker : undefined;
     if (!resuming) delete attempt.worker;
-    opts.log(`Cảnh HTML ${scene.id}: tạo trọn cảnh, lượt ${attempt.attempt}.`);
+    opts.log(`${RT_MAINTENANCE.CANH_HTML}${scene.id}${RT_MAINTENANCE.TAO_TRON_CANH_LUOT}${attempt.attempt}${RT_MAINTENANCE.DOT}`);
     let journal: ReturnType<typeof setInterval> | undefined;
-    const snapshotSubmission = () => { const { page, ...pending } = submission.pending || {}; if (page && !page.isClosed()) { const url = page.url(); if (new URL(url).origin === new URL(pending.url).origin) pending.url = url; } return { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) }; };
-    const journalState = () => { attempt.submission = snapshotSubmission(); persist(); };
+    const snapshotSubmission = () => {
+      const { page, ...pending } = submission.pending || {};
+      if (page && !page.isClosed()) {
+        const url = page.url();
+        if (new URL(url).origin === new URL(pending.url).origin) pending.url = url;
+      }
+      return { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned, ...(submission.pending ? { pending } : {}) };
+    };
+    const journalState = () => {
+      attempt.submission = snapshotSubmission();
+      persist();
+    };
     try {
       persist();
-      const received = (raw: string) => { attempt.raw = raw; attempt.status = "received"; submission.completed = true; store.raw(attempt.attempt, raw); journalState(); };
+      const received = (raw: string) => {
+        attempt.raw = raw;
+        attempt.status = RT_MAINTENANCE.RECEIVED;
+        submission.completed = true;
+        store.raw(attempt.attempt, raw);
+        journalState();
+      };
       if (!opts.ai) await prepareMotionSceneRooms(opts.exec, opts.signal, opts.log);
-      const exec: MotionAiExecution = { ...opts.exec, role: "draw", worker, workerAssigned: (assigned) => { attempt.worker = assigned; }, requestId: attempt.id, submission, submissionChanged: journalState, outputFormat: "html", singleResponse: true, strictProvider: true, allowFallback: false, responseReceived: received };
-      journal = setInterval(() => { try { journalState(); } catch (error) { opts.log(`Chờ lưu checkpoint cảnh ${scene.id}: ${String((error as Error).message)}`); } }, 2000);
-      const request = () => opts.ai ? opts.ai(prompt, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log);
+      const exec: MotionAiExecution = {
+        ...opts.exec,
+        role: RT_MAINTENANCE.DRAW,
+        worker,
+        workerAssigned: (assigned) => {
+          attempt.worker = assigned;
+        },
+        requestId: attempt.id,
+        submission,
+        submissionChanged: journalState,
+        outputFormat: RT_MAINTENANCE.HTML,
+        singleResponse: true,
+        strictProvider: true,
+        allowFallback: false,
+        responseReceived: received,
+      };
+      journal = setInterval(() => {
+        try {
+          journalState();
+        } catch (error) {
+          opts.log(`${RT_MAINTENANCE.CHO_LUU_CHECKPOINT_CANH}${scene.id}${RT_MAINTENANCE.COLON_SPACE}${String((error as Error).message)}`);
+        }
+      }, 2000);
+      const request = () => (opts.ai ? opts.ai(prompt, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log) : runMotionAi(prompt, MOTION_HTML.ARTIFACT, exec, opts.signal, opts.log));
       const raw = attempt.raw ?? (opts.pool ? await opts.pool.run(opts.priority ?? 1, request, opts.signal) : await request());
       if (!attempt.raw) received(typeof raw === "string" ? raw : String(raw));
       clearInterval(journal);
       store.raw(attempt.attempt, attempt.raw!);
       const html = motionHtmlSource(attempt.raw);
-      scene.html = { version: 1, html, hash: motionInputKey(html), prompt, file: store.html(attempt.attempt, html), manifest: store.manifest, scope: settings.scope, language: settings.language, seed: key, duration: settings.seconds, attempts: attempt.attempt, status: "received", execution: { ...opts.exec, role: "draw", singleResponse: true, strictProvider: true, allowFallback: false } };
+      scene.html = {
+        version: 1,
+        html,
+        hash: motionInputKey(html),
+        prompt,
+        file: store.html(attempt.attempt, html),
+        manifest: store.manifest,
+        scope: settings.scope,
+        language: settings.language,
+        seed: key,
+        duration: settings.seconds,
+        attempts: attempt.attempt,
+        status: RT_MAINTENANCE.RECEIVED,
+        execution: { ...opts.exec, role: RT_MAINTENANCE.DRAW, singleResponse: true, strictProvider: true, allowFallback: false },
+      };
       persist();
-      // This is the actual first preview frame, not a frame inspection or a scoring pass.
       const runtime = await openMotionHtmlRuntime(html, opts.signal);
       try {
-        const image = await runtime.render({ time: 0, progress: 0, frame: 0, fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: "preview", motionEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });
-        scene.html.thumbnail = `data:image/png;base64,${image.toString("base64")}`;
-      } finally { await runtime.close(); }
-      scene.html.status = "ready";
+        const image = await runtime.render({ time: 0, progress: 0, frame: 0, fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });
+        scene.html.thumbnail = `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`;
+      } finally {
+        await runtime.close();
+      }
+      scene.html.status = RT_MAINTENANCE.READY;
       delete scene.html.error;
-      scene.build = { status: "accepted", inputKey: key, review: false, attempts: attempt.attempt };
+      scene.build = { status: RT_MAINTENANCE.ACCEPTED, inputKey: key, review: false, attempts: attempt.attempt };
       persist();
       return;
     } catch (error) {
@@ -212,57 +319,76 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       attempt.error = reason;
       const unknown = !!attempt.submission?.attempted && !attempt.submission.completed && !attempt.submission.abandoned;
       const external = unknown || /quota|captcha|đăng nhập|login|rate.limit|account.*unavailable/i.test(reason);
-      attempt.status = external ? "waiting_external" : "retry_wait";
-      if (scene.html) { scene.html.status = attempt.raw && !(error as any).motionHtmlExecution ? "received" : "retry_wait"; scene.html.error = reason; }
-      if (attempt.raw && !(error as any).motionHtmlExecution) attempt.status = "received";
-      else if (!external) { delete attempt.raw; if (scene.html) scene.html.status = "retry_wait"; }
+      attempt.status = external ? RT_MAINTENANCE.WAITING_EXTERNAL : RT_MAINTENANCE.RETRY_WAIT;
+      if (scene.html) {
+        scene.html.status = attempt.raw && !(error as any).motionHtmlExecution ? RT_MAINTENANCE.RECEIVED : RT_MAINTENANCE.RETRY_WAIT;
+        scene.html.error = reason;
+      }
+      if (attempt.raw && !(error as any).motionHtmlExecution) attempt.status = RT_MAINTENANCE.RECEIVED;
+      else if (!external) {
+        delete attempt.raw;
+        if (scene.html) scene.html.status = RT_MAINTENANCE.RETRY_WAIT;
+      }
       await retainCheckpoint(persist, opts);
-      opts.log(`Cảnh HTML ${scene.id}: ${external ? "chờ phục hồi yêu cầu/provider" : attempt.status === "received" ? "chạy lại phản hồi đã lưu" : "lỗi thực thi, sẽ tạo lại toàn bộ"} (${reason}).`);
+      opts.log(`${RT_MAINTENANCE.CANH_HTML}${scene.id}${RT_MAINTENANCE.COLON_SPACE}${external ? RT_MAINTENANCE.CHO_PHUC_HOI_YEU_CAU_PROVIDER : attempt.status === RT_MAINTENANCE.RECEIVED ? RT_MAINTENANCE.CHAY_LAI_PHAN_HOI_DA_LUU : RT_MAINTENANCE.LOI_THUC_THI_SE_TAO_LAI_TOAN_BO}${RT_MAINTENANCE.OPEN_PAREN_SPACE}${reason}${RT_MAINTENANCE.SENTENCE_END}`);
       await delay(MOTION_HTML.RETRY_MS[Math.min(failures++, MOTION_HTML.RETRY_MS.length - 1)], undefined, { signal: opts.signal });
     }
   }
 };
-
-const planHtmlBeatGroup = async (
-  group: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number },
-  groupIndex: number,
-  state: MotionRemotionState,
-  analysis: MotionStoryAnalysis,
-  settings: Extract<MotionVisualSettings, { mode: "remotion" }>,
-  language: string,
-  aspect: string,
-  opts: RemotionSceneOptions,
-  slots: MotionPriorityPool,
-  save: () => void,
-  priority = 0,
-): Promise<void> => {
+const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number }, groupIndex: number, state: MotionRemotionState, analysis: MotionStoryAnalysis, settings: Extract<MotionVisualSettings, { mode: "remotion" }>, language: string, aspect: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, save: () => void, priority = 0): Promise<void> => {
   const lines = group.beats.flatMap((beat) => puppetBeatLines(beat, motionNarratorCastKey(analysis)));
   const note = (opts.note ?? state.notes?.[group.id]) || undefined;
   const source = motionHtmlPlanSource(group.beats, analysis, settings, note, opts.sfx !== false);
   const key = motionInputKey(source);
   if (!state.scenes[group.id]?.length || state.inputKeys[group.id] !== key) {
-    const prompt = ["Plan the supplied consecutive speech lines into complete animated Canvas scenes. Return JSON {scenes:[{id,fromLineId,toLineId,purpose,sceneTemplate,continuityIn,continuityOut,soundEvents:[]}]}. sceneTemplate is the fully written sections 0–4 from the supplied template. Cover lines once in order; each scene can cover several beats. Use real supplied line IDs. No nodes, geometry, SVG, frame/rig references or drawing code. Keep identities and source events; exact labels come from the source. Static scenes can remain static.", analysis.authoringSettings ? motionHtmlWritingDirection(analysis) : `STYLE: ${MOTION_HTML_STYLES[settings.profileId]}\n${motionHtmlLanguageDirection(language)}\n${MOTION_HTML.TEMPLATE}`, motionHtmlPacingDirection(settings, group.seconds), opts.sfx === false ? "soundEvents=[]; SFX is disabled." : "In the same response supply source-supported soundEvents [{id,kind,layer,at,duration,description,source,actor?}]. at is scene progress 0..1; layer=ambience|action|character|accent; source=visible|offscreen. Optional utterance/edge anchors refer to supplied audio IDs. Coordinate event timing with section 3. No later sound-director call.", JSON.stringify({ ...motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false), lines: lines.map((line) => ({ id: line.key, text: line.text, utterance: line.utterance })) })].filter(Boolean).join("\n");
-    const planStore = motionTaskCheckpoint<any>(opts.scope, "html-plan-response", [key]);
+    const prompt = [
+      RT_MAINTENANCE.PROMPT_3,
+      analysis.authoringSettings ? motionHtmlWritingDirection(analysis) : `${RT_MAINTENANCE.STYLE_2}${MOTION_HTML_STYLES[settings.profileId]}${RT_MAINTENANCE.NEWLINE}${motionHtmlLanguageDirection(language)}${RT_MAINTENANCE.NEWLINE}${MOTION_HTML.TEMPLATE}`,
+      motionHtmlPacingDirection(settings, group.seconds),
+      opts.sfx === false ? RT_MAINTENANCE.SOUNDEVENTS_SFX_IS_DISABLED : RT_MAINTENANCE.PROMPT_4,
+      JSON.stringify({ ...motionHtmlPlanContext(group.beats, analysis, settings, note, opts.sfx !== false), lines: lines.map((line) => ({ id: line.key, text: line.text, utterance: line.utterance })) }),
+    ]
+      .filter(Boolean)
+      .join(RT_MAINTENANCE.NEWLINE);
+    const planStore = motionTaskCheckpoint<any>(opts.scope, RT_MAINTENANCE.HTML_PLAN_RESPONSE, [key]);
     const readPlan = (raw: any) => {
-      if (!Array.isArray(raw?.scenes) || !raw.scenes.length) throw new Error("Không đọc được danh sách phân cảnh HTML.");
+      if (!Array.isArray(raw?.scenes) || !raw.scenes.length) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_PHAN_CANH_HTML);
       let cursor = 0;
       for (const row of raw.scenes) {
-        const start = lines.findIndex((line) => line.key === row.fromLineId), end = lines.findIndex((line) => line.key === row.toLineId);
-        if (start !== cursor || end < start || typeof row.sceneTemplate !== "string" || !row.sceneTemplate.trim()) throw new Error("Không ánh xạ được phân cảnh vào các dòng lời dẫn đã gửi.");
+        const start = lines.findIndex((line) => line.key === row.fromLineId),
+          end = lines.findIndex((line) => line.key === row.toLineId);
+        if (start !== cursor || end < start || typeof row.sceneTemplate !== "string" || !row.sceneTemplate.trim()) throw new Error(RT_MAINTENANCE.KHONG_ANH_XA_DUOC_PHAN_CANH_VAO_CAC_DONG_LOI);
         cursor = end + 1;
       }
-      if (cursor !== lines.length) throw new Error("Phân cảnh chưa phủ hết các dòng lời dẫn đã gửi.");
+      if (cursor !== lines.length) throw new Error(RT_MAINTENANCE.PHAN_CANH_CHUA_PHU_HET_CAC_DONG_LOI_DAN_DA);
     };
-    const raw = planStore.read() || await requestPlan(prompt, key, opts, slots, readPlan, groupIndex, priority);
+    const raw = planStore.read() || (await requestPlan(prompt, key, opts, slots, readPlan, groupIndex, priority));
     readPlan(raw);
     const normalizedScenes = normalizePlannedHtmlScenes(raw.scenes, lines, group.beats, group.seconds, settings.pacing);
     planStore.save({ ...raw, scenes: normalizedScenes });
     const existingById = new Map((state.scenes[group.id] || []).map((scene) => [scene.id, scene]));
     state.scenes[group.id] = normalizedScenes.map((row: any, index: number) => {
-      const id = `${group.id}:html:${index}`;
+      const id = `${group.id}${RT_MAINTENANCE.HTML_2}${index}`;
       const prev = existingById.get(id);
-      const start = lines.findIndex((line) => line.key === row.fromLineId), end = lines.findIndex((line) => line.key === row.toLineId);
-      return { ...(prev?.html && prev.sceneTemplate === row.sceneTemplate ? { html: prev.html, htmlRequest: prev.htmlRequest, build: prev.build } : {}), ...row, id, renderer: "html-canvas", beatId: group.id, nodes: [], text: lines.slice(start, end + 1).map((line) => line.text).join(" "), sourceBeatIds: [...new Set(lines.slice(start, end + 1).map((line) => line.beatId))], environment: "", sourceKey: key, aspect, drawingNote: opts.note };
+      const start = lines.findIndex((line) => line.key === row.fromLineId),
+        end = lines.findIndex((line) => line.key === row.toLineId);
+      return {
+        ...(prev?.html && prev.sceneTemplate === row.sceneTemplate ? { html: prev.html, htmlRequest: prev.htmlRequest, build: prev.build } : {}),
+        ...row,
+        id,
+        renderer: RT_MAINTENANCE.HTML_CANVAS,
+        beatId: group.id,
+        nodes: [],
+        text: lines
+          .slice(start, end + 1)
+          .map((line) => line.text)
+          .join(RT_MAINTENANCE.SPACE),
+        sourceBeatIds: [...new Set(lines.slice(start, end + 1).map((line) => line.beatId))],
+        environment: "",
+        sourceKey: key,
+        aspect,
+        drawingNote: opts.note,
+      };
     });
     state.inputKeys[group.id] = key;
     state.htmlPlanSources[group.id] = source;
@@ -270,15 +396,8 @@ const planHtmlBeatGroup = async (
     save();
   }
 };
-
-export const createMotionHtmlSceneStreamer = (
-  initialAnalysis: MotionStoryAnalysis,
-  initialSettings: MotionVisualSettings,
-  language: string,
-  initialRemotion: MotionRemotionState | undefined,
-  opts: RemotionSceneOptions,
-) => {
-  if (initialSettings.mode !== "remotion") throw new Error("Chưa chọn cách dựng cảnh AI.");
+export const createMotionHtmlSceneStreamer = (initialAnalysis: MotionStoryAnalysis, initialSettings: MotionVisualSettings, language: string, initialRemotion: MotionRemotionState | undefined, opts: RemotionSceneOptions) => {
+  if (initialSettings.mode !== RT_MAINTENANCE.REMOTION) throw new Error(RT_MAINTENANCE.CHUA_CHON_CACH_DUNG_CANH_AI);
   const settings = initialSettings;
   const analysis = initialAnalysis.authoringSettings
     ? {
@@ -288,16 +407,19 @@ export const createMotionHtmlSceneStreamer = (
           visualProfile: settings.profileId,
           language,
           picturePacing: settings.pacing || initialAnalysis.authoringSettings.picturePacing,
-          targetPictureSeconds: settings.pacing === "few" ? 14 : settings.pacing === "many" ? 6 : settings.pacing === "medium" ? 9 : initialAnalysis.authoringSettings.targetPictureSeconds,
+          targetPictureSeconds: settings.pacing === RT_MAINTENANCE.FEW ? 14 : settings.pacing === RT_MAINTENANCE.MANY ? 6 : settings.pacing === RT_MAINTENANCE.MEDIUM ? 9 : initialAnalysis.authoringSettings.targetPictureSeconds,
         },
       }
     : initialAnalysis;
-  const aspect = opts.aspect || "16:9";
+  const aspect = opts.aspect || RT_MAINTENANCE.VALUE_16_9;
   const state: MotionRemotionState = structuredClone(initialRemotion || { version: 1, settings, assets: {}, scenes: {}, inputKeys: {}, failures: {} });
-  if (state.renderer !== "html-canvas") {
-    state.scenes = {}; state.assets = {}; state.inputKeys = {}; state.failures = {};
+  if (state.renderer !== RT_MAINTENANCE.HTML_CANVAS) {
+    state.scenes = {};
+    state.assets = {};
+    state.inputKeys = {};
+    state.failures = {};
   }
-  state.renderer = "html-canvas";
+  state.renderer = RT_MAINTENANCE.HTML_CANVAS;
   state.htmlPlanSources ||= {};
   state.htmlSfx = opts.sfx !== false;
   state.settings = settings;
@@ -323,7 +445,7 @@ export const createMotionHtmlSceneStreamer = (
       const chapterFinished = !chapterDrafts || !chapterDrafts[chapterId];
       const sealed = allChaptersDone || group.beats.length >= 5 || nextGroupSameChapter || chapterFinished;
       if (!sealed) return;
-      const groupTaskKey = `${group.id}:${group.beats.map((beat) => beat.id).join(",")}`;
+      const groupTaskKey = `${group.id}${RT_MAINTENANCE.COLON}${group.beats.map((beat) => beat.id).join(RT_MAINTENANCE.COMMA)}`;
       if (groupPromises.has(groupTaskKey)) return;
       const groupTask = planHtmlBeatGroup(group, groupIndex, state, analysis, settings, language, aspect, opts, slots, save, groupIndex * 2);
       groupTask.catch(() => undefined);
@@ -343,29 +465,37 @@ export const createMotionHtmlSceneStreamer = (
     push(script.beats, undefined, true);
     await Promise.all([...groupPromises.values()]);
     state.updatedAt = Date.now();
-    const mergedScript = {
-      ...script,
-      visualSettings: settings,
-      gen: { ...(script.gen || { cast: {}, locations: {} }), remotion: state },
-    } as MotionStoryScript;
+    const mergedScript = { ...script, visualSettings: settings, gen: { ...(script.gen || { cast: {}, locations: {} }), remotion: state } } as MotionStoryScript;
     return await planMotionHtmlScenes(mergedScript, analysis, { ...opts, partial, progress, slots });
   };
   return { push, waitForChapter, finish, getState: () => state };
 };
-
 export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions & { slots?: MotionPriorityPool }): Promise<MotionStoryScript> => {
   const settings = motionVisualSettingsFor({ analysis, script });
-  if (settings.mode !== "remotion") throw new Error("Chưa chọn cách dựng cảnh AI.");
-  if (analysis.authoringSettings) analysis = { ...analysis, authoringSettings: { ...analysis.authoringSettings, visualProfile: settings.profileId, language: script.language, picturePacing: settings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: settings.pacing === "few" ? 14 : settings.pacing === "many" ? 6 : settings.pacing === "medium" ? 9 : analysis.authoringSettings.targetPictureSeconds } };
-  const aspect = opts.aspect || "16:9";
+  if (settings.mode !== RT_MAINTENANCE.REMOTION) throw new Error(RT_MAINTENANCE.CHUA_CHON_CACH_DUNG_CANH_AI);
+  if (analysis.authoringSettings)
+    analysis = {
+      ...analysis,
+      authoringSettings: {
+        ...analysis.authoringSettings,
+        visualProfile: settings.profileId,
+        language: script.language,
+        picturePacing: settings.pacing || analysis.authoringSettings.picturePacing,
+        targetPictureSeconds: settings.pacing === RT_MAINTENANCE.FEW ? 14 : settings.pacing === RT_MAINTENANCE.MANY ? 6 : settings.pacing === RT_MAINTENANCE.MEDIUM ? 9 : analysis.authoringSettings.targetPictureSeconds,
+      },
+    };
+  const aspect = opts.aspect || RT_MAINTENANCE.VALUE_16_9;
   const checkpoint = motionTaskCheckpoint<MotionRemotionState>(opts.scope, MOTION_HTML.PLAN, [MOTION_HTML.VERSION, settings, aspect, script.beats.map(({ id, chapterId, narration, sceneTemplateDraft }) => ({ id, chapterId, narration, sceneTemplateDraft }))]);
   const carried = checkpoint.read();
   const state: MotionRemotionState = structuredClone((carried && (carried.updatedAt || 0) > (script.gen?.remotion?.updatedAt || 0) ? carried : script.gen?.remotion) || carried || { version: 1, settings, assets: {}, scenes: {}, inputKeys: {}, failures: {} });
-  if (state.renderer !== "html-canvas") {
-    if (Object.keys(state.scenes).length) motionTaskCheckpoint<MotionRemotionState>(opts.scope, "legacy-before-html", [state.updatedAt, state.settings]).save(state);
-    state.scenes = {}; state.assets = {}; state.inputKeys = {}; state.failures = {};
+  if (state.renderer !== RT_MAINTENANCE.HTML_CANVAS) {
+    if (Object.keys(state.scenes).length) motionTaskCheckpoint<MotionRemotionState>(opts.scope, RT_MAINTENANCE.LEGACY_BEFORE_HTML, [state.updatedAt, state.settings]).save(state);
+    state.scenes = {};
+    state.assets = {};
+    state.inputKeys = {};
+    state.failures = {};
   }
-  state.renderer = "html-canvas";
+  state.renderer = RT_MAINTENANCE.HTML_CANVAS;
   state.htmlPlanSources ||= {};
   state.htmlSfx = opts.sfx !== false;
   state.settings = settings;
@@ -373,38 +503,53 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
   state.groupingRevision = 1001;
   state.pacingRevision = 1;
   const result = { ...script, visualSettings: settings, gen: { ...(script.gen || { cast: {}, locations: {} }), remotion: state } } as MotionStoryScript;
-  const save = () => { opts.signal?.throwIfAborted(); state.updatedAt = Date.now(); checkpoint.save(state); opts.partial?.(structuredClone(result)); };
+  const save = () => {
+    opts.signal?.throwIfAborted();
+    state.updatedAt = Date.now();
+    checkpoint.save(state);
+    opts.partial?.(structuredClone(result));
+  };
   const groups = motionVisualBeatGroups(result, 1001, settings.pacing);
   const slots = opts.slots || new MotionPriorityPool(MOTION_STORY_CONFIG.WORKER_IDS.length);
   let done = 0;
-  await Promise.all(groups.map(async (group, groupIndex) => {
-    await planHtmlBeatGroup(group, groupIndex, state, analysis, settings, script.language, aspect, opts, slots, save, groupIndex * 2);
-    done++; opts.progress?.(done / groups.length, `Đã chia ${done}/${groups.length} nhóm lời dẫn thành ${Object.values(state.scenes).flat().length} phân cảnh HTML.`); save();
-  }));
+  await Promise.all(
+    groups.map(async (group, groupIndex) => {
+      await planHtmlBeatGroup(group, groupIndex, state, analysis, settings, script.language, aspect, opts, slots, save, groupIndex * 2);
+      done++;
+      opts.progress?.(done / groups.length, `${RT_MAINTENANCE.DA_CHIA}${done}${RT_MAINTENANCE.SLASH}${groups.length}${RT_MAINTENANCE.NHOM_LOI_DAN_THANH}${Object.values(state.scenes).flat().length}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);
+      save();
+    }),
+  );
   const active = new Set(groups.map((group) => group.id));
-  for (const id of Object.keys(state.scenes)) if (!active.has(id)) { delete state.scenes[id]; delete state.inputKeys[id]; delete state.htmlPlanSources[id]; }
+  for (const id of Object.keys(state.scenes))
+    if (!active.has(id)) {
+      delete state.scenes[id];
+      delete state.inputKeys[id];
+      delete state.htmlPlanSources[id];
+    }
   save();
   return result;
 };
-
 const activeHtmlBuilders = new Map<string, (nextScript: MotionStoryScript) => boolean>();
-
 export const enqueueMotionHtmlScenes = (scope: string | undefined, script: MotionStoryScript): boolean => {
   if (!scope) return false;
   const enqueue = activeHtmlBuilders.get(scope);
   return enqueue ? enqueue(script) : false;
 };
-
 export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
-  if (!motionHtmlPlanCurrent(script, analysis)) throw new Error("Phân cảnh chưa được chia đầy đủ hoặc đã đổi nội dung/cấu hình. Hoàn tất bước viết kịch bản và phân cảnh trước khi dựng cảnh.");
+  if (!motionHtmlPlanCurrent(script, analysis)) throw new Error(RT_MAINTENANCE.PHAN_CANH_CHUA_DUOC_CHIA_DAY_DU_HOAC_DA_DOI);
   const result = structuredClone(script);
   const state = result.gen!.remotion!;
   const settings = state.settings;
-  if (settings.mode !== "remotion") throw new Error("Chưa chọn cách dựng cảnh AI.");
-  const aspect = opts.aspect || "16:9";
-  const [width, height] = aspect === "9:16" ? [720, 1280] : aspect === "1:1" ? [1000, 1000] : aspect === "4:5" ? [800, 1000] : [1280, 720];
+  if (settings.mode !== RT_MAINTENANCE.REMOTION) throw new Error(RT_MAINTENANCE.CHUA_CHON_CACH_DUNG_CANH_AI);
+  const aspect = opts.aspect || RT_MAINTENANCE.VALUE_16_9;
+  const [width, height] = aspect === RT_MAINTENANCE.VALUE_9_16 ? [720, 1280] : aspect === RT_MAINTENANCE.VALUE_1_1 ? [1000, 1000] : aspect === RT_MAINTENANCE.VALUE_4_5 ? [800, 1000] : [1280, 720];
   state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, script.gen?.characterMotion);
-  const save = () => { opts.signal?.throwIfAborted(); state.updatedAt = Date.now(); opts.partial?.(structuredClone(result)); };
+  const save = () => {
+    opts.signal?.throwIfAborted();
+    state.updatedAt = Date.now();
+    opts.partial?.(structuredClone(result));
+  };
   const slots = new MotionPriorityPool(MOTION_HTML.WORKERS);
   const rebuildKey = opts.rebuildKey || randomUUID();
   const startedScenes = new Map<string, Promise<void>>();
@@ -414,12 +559,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     const groups = motionVisualBeatGroups(sourceScript, 1001, settings.pacing);
     const tasks = groups
       .flatMap((group, groupIndex) => (state.scenes[group.id] || []).map((scene) => ({ group, groupIndex, scene })))
-      .filter(
-        ({ group, scene }) =>
-          (!opts.onlyBeats?.length || group.beats.some((beat) => opts.onlyBeats!.includes(beat.id))) &&
-          (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) &&
-          (!opts.onlyLocations?.length || group.beats.some((beat) => opts.onlyLocations!.includes(beat.place || ""))),
-      );
+      .filter(({ group, scene }) => (!opts.onlyBeats?.length || group.beats.some((beat) => opts.onlyBeats!.includes(beat.id))) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && (!opts.onlyLocations?.length || group.beats.some((beat) => opts.onlyLocations!.includes(beat.place || ""))));
     for (const { group, groupIndex, scene } of tasks) {
       if (startedScenes.has(scene.id)) continue;
       totalTasks++;
@@ -427,17 +567,17 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         if ((opts.onlyScenes?.includes(scene.id) || opts.restart) && scene.htmlRebuildKey !== rebuildKey) {
           const attempt = scene.html?.attempts || 0;
           delete scene.html;
-          scene.htmlRequest = { id: randomUUID(), attempt, status: "retry_wait" };
+          scene.htmlRequest = { id: randomUUID(), attempt, status: RT_MAINTENANCE.RETRY_WAIT };
           scene.htmlRebuildKey = rebuildKey;
           save();
         }
         if (opts.note !== undefined) scene.drawingNote = opts.note;
         scene.aspect = aspect;
-        const seconds = Math.max(1, (group.seconds * scene.text.length) / Math.max(1, group.beats.map((beat) => beat.narration).join(" ").length));
+        const seconds = Math.max(1, (group.seconds * scene.text.length) / Math.max(1, group.beats.map((beat) => beat.narration).join(RT_MAINTENANCE.SPACE).length));
         await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, scope: opts.scope, language: result.language }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
         delete state.failures[scene.id];
         done++;
-        opts.progress?.(done / Math.max(1, totalTasks), `Đã dựng ${done}/${totalTasks} phân cảnh HTML.`);
+        opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);
         save();
       })();
       startedScenes.set(scene.id, task);
@@ -447,7 +587,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   if (canRegister && opts.scope) {
     activeHtmlBuilders.set(opts.scope, (nextScript: MotionStoryScript) => {
       const nextRemotion = nextScript.gen?.remotion;
-      if (!nextRemotion || nextRemotion.renderer !== "html-canvas") return false;
+      if (!nextRemotion || nextRemotion.renderer !== RT_MAINTENANCE.HTML_CANVAS) return false;
       const existingIds = new Set(result.beats.map((beat) => beat.id));
       for (const beat of nextScript.beats) {
         if (!existingIds.has(beat.id)) {

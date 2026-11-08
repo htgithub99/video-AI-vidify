@@ -1,8 +1,8 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_SCENE_SCORE as S } from "../constants/motionSceneScore.js";
 import { parseSvgTransform, svgGeometry, svgWithin, type SvgGeometry } from "./motionSvgGeometry.js";
 import { motionAnimationTracks } from "./motionActorTracks.js";
 import type { MotionRemotionNode, MotionSceneActionPlan, MotionSceneAnimation, MotionSceneLayer } from "../types/motionVisual.js";
-
 export interface MotionSceneScoreInput {
   svg: string;
   layers: MotionSceneLayer[];
@@ -12,7 +12,6 @@ export interface MotionSceneScoreInput {
   duration?: number;
   width: number;
   height: number;
-  /** false when character motion is off: motion criteria do not apply. */
   motion: boolean;
   picture?: { issues: string[]; severe: number };
 }
@@ -42,7 +41,7 @@ const offsetAt = (tracks: MotionSceneAnimation[], time: number): [number, number
 const lastTime = (track: MotionSceneAnimation, duration: number) => (track.period ? duration : track.keyframes.at(-1)?.at || 0);
 const ratio = (bad: number, total: number) => (total ? 1 - bad / total : 1);
 const outOfFrame = (input: MotionSceneScoreInput, geometry: SvgGeometry, transforms: MotionSceneAnimation[], seconds: number): { framed: number; outside: string[] } => {
-  const framed = input.nodes.filter((node) => (node.kind === "character" || node.kind === "prop") && geometry.boxes.has(node.id));
+  const framed = input.nodes.filter((node) => (node.kind === RT_MAINTENANCE.CHARACTER || node.kind === RT_MAINTENANCE.PROP) && geometry.boxes.has(node.id));
   const outside = framed
     .filter((node) => {
       const box = geometry.boxes.get(node.id)!;
@@ -58,27 +57,22 @@ const outOfFrame = (input: MotionSceneScoreInput, geometry: SvgGeometry, transfo
     .map((node) => node.id);
   return { framed: framed.length, outside };
 };
-/** Scores one scene answer against its AI-authored action plan and the canvas. Pure: never edits the scene. */
 export const scoreMotionScene = (input: MotionSceneScoreInput): MotionSceneScore => {
   const geometry = svgGeometry(input.svg);
   const tracks = motionAnimationTracks(Array.isArray(input.animations) ? input.animations : []).filter((track) => Array.isArray(track?.keyframes) && track.keyframes.length > 0);
-  const transforms = tracks.filter((track) => track.attribute === "transform");
+  const transforms = tracks.filter((track) => track.attribute === RT_MAINTENANCE.TRANSFORM_3);
   const issues: string[] = [];
   const criteria: Record<MotionSceneCriterion, number> = { coverage: 1, parts: 1, frame: 1, duration: 1, identity: 1, stillness: 1, picture: 1 };
   const seconds = input.duration && input.duration > 0 ? input.duration : Math.max(1, ...tracks.map((track) => lastTime(track, 0)));
-  // Motion is judged only against what the AI planner wrote; without an actionPlan (older scripts),
-  // stillness is a valid choice and only frame/identity are checked.
   const subjects: Subject[] = (input.actionPlan?.subjects || []).filter((subject) => typeof subject?.nodeId === "string");
-  const still = (subject: Subject) => !subject.phases?.length && S.STILL_WORDS.test(`${subject.action} ${subject.end}`);
+  const still = (subject: Subject) => !subject.phases?.length && S.STILL_WORDS.test(`${subject.action}${RT_MAINTENANCE.SPACE}${subject.end}`);
   if (input.motion) {
     const moving = subjects.filter((subject) => !still(subject));
     const uncovered = moving.filter((subject) => !tracks.some((track) => svgWithin(geometry, subject.nodeId, track.target))).map((subject) => subject.nodeId);
     criteria.coverage = ratio(uncovered.length, moving.length);
     if (uncovered.length) issues.push(S.ISSUE.COVERAGE(uncovered));
     const withParts = moving.filter((subject) => (subject.parts?.length || 0) > 0);
-    const rigid = withParts
-      .filter((subject) => new Set(tracks.filter((track) => track.target !== subject.nodeId && svgWithin(geometry, subject.nodeId, track.target)).map((track) => track.target)).size < Math.min(2, subject.parts.length))
-      .map((subject) => subject.nodeId);
+    const rigid = withParts.filter((subject) => new Set(tracks.filter((track) => track.target !== subject.nodeId && svgWithin(geometry, subject.nodeId, track.target)).map((track) => track.target)).size < Math.min(2, subject.parts.length)).map((subject) => subject.nodeId);
     criteria.parts = ratio(rigid.length, withParts.length);
     if (rigid.length) issues.push(S.ISSUE.PARTS(rigid));
     if (moving.length && tracks.length) {
@@ -99,8 +93,8 @@ export const scoreMotionScene = (input: MotionSceneScoreInput): MotionSceneScore
   const frame = outOfFrame(input, geometry, transforms, seconds);
   criteria.frame = ratio(frame.outside.length, frame.framed);
   if (frame.outside.length) issues.push(S.ISSUE.FRAME(frame.outside));
-  const cast = input.nodes.filter((node) => node.kind === "character" && node.entityId);
-  const wrong = cast.filter((node) => !(input.layers || []).some((layer) => layer.id === node.id && layer.kind === "character" && layer.entityId === node.entityId)).map((node) => node.id);
+  const cast = input.nodes.filter((node) => node.kind === RT_MAINTENANCE.CHARACTER && node.entityId);
+  const wrong = cast.filter((node) => !(input.layers || []).some((layer) => layer.id === node.id && layer.kind === RT_MAINTENANCE.CHARACTER && layer.entityId === node.entityId)).map((node) => node.id);
   criteria.identity = ratio(wrong.length, cast.length);
   if (wrong.length) issues.push(S.ISSUE.IDENTITY(wrong));
   if (input.picture?.issues.length) {
@@ -110,4 +104,3 @@ export const scoreMotionScene = (input: MotionSceneScoreInput): MotionSceneScore
   const score = Math.round((Object.keys(S.WEIGHTS) as MotionSceneCriterion[]).reduce((sum, key) => sum + S.WEIGHTS[key] * Math.max(0, Math.min(1, criteria[key])), 0));
   return { revision: S.REVISION, score, passed: score >= S.THRESHOLD, issues, criteria };
 };
-

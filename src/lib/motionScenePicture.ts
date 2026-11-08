@@ -7,7 +7,6 @@ import { motionLayerPart, motionLayerParts, motionSceneQualityIssues } from "./m
 import { motionSkinHex } from "./motionCastIdentity.js";
 import type { MotionCastMember } from "../types/motionVideo.js";
 import type { MotionRemotionNode, MotionRemotionProfile, MotionSceneObject, MotionVisualRect } from "../types/motionVisual.js";
-
 export interface MotionScenePicture {
   issues: string[];
   severe: number;

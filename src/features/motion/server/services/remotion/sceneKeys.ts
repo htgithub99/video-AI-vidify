@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../../../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
@@ -128,12 +129,12 @@ export const remotionCompositionKey = (scene: MotionRemotionScene, analysis: Mot
 export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: MotionStoryAnalysis): "ready" | "partial" | "pending" | "outdated" | "invalid" => {
   const state = script.gen?.remotion;
   if (!state) return RT_SERVER.PENDING;
-  if (state.renderer === "html-canvas") {
-    if (stringifyJson(state.settings) !== stringifyJson(analysis.visualSettings || script.visualSettings)) return "outdated";
-    if (!motionHtmlPlanCurrent(script, analysis)) return "outdated";
+  if (state.renderer === RT_MAINTENANCE.HTML_CANVAS) {
+    if (stringifyJson(state.settings) !== stringifyJson(analysis.visualSettings || script.visualSettings)) return RT_MAINTENANCE.OUTDATED;
+    if (!motionHtmlPlanCurrent(script, analysis)) return RT_MAINTENANCE.OUTDATED;
     const groups = motionVisualBeatGroups(script, 1001);
     const scenes = groups.flatMap((group) => state.scenes[group.id] || []);
-    return groups.some((group) => !state.scenes[group.id]?.length) || scenes.some((scene) => !scene.html || !["ready", "rendered"].includes(scene.html.status)) ? "pending" : "ready";
+    return groups.some((group) => !state.scenes[group.id]?.length) || scenes.some((scene) => !scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status)) ? RT_MAINTENANCE.PENDING : RT_MAINTENANCE.READY;
   }
   if (
     state.settings.mode !== RT_SHARED.REMOTION ||

@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { API_ROUTES } from "../constants/apiRoutes.js";
 import { CAPTCHA_ALERT } from "../constants/captchaAlert.js";
-import { initMotionAlertAudio, motionAlertBeep } from "../features/motion/lib/motionAlertBeep.js";
+import { initAlertAudio, alertBeep } from "../lib/alertAudio.js";
 export const useCaptchaAlert = (): void => {
   useEffect(() => {
-    const disposeAudio = initMotionAlertAudio();
+    const disposeAudio = initAlertAudio();
     let seen: number | undefined;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -13,7 +13,7 @@ export const useCaptchaAlert = (): void => {
         const response = await fetch(API_ROUTES.CAPTCHA_ALERT);
         const data = (await response.json()) as { seq?: number };
         const seq = Number(data?.seq) || 0;
-        if (seen !== undefined && seq > seen) motionAlertBeep();
+        if (seen !== undefined && seq > seen) alertBeep();
         seen = seq;
       } catch {}
       if (!stopped) timer = setTimeout(poll, CAPTCHA_ALERT.POLL_MS);

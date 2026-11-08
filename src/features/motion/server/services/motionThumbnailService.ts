@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { motionLanguage } from "../../../../lib/motionLanguage.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -45,9 +46,9 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       for (const [index, reference] of references.entries()) {
         const match = reference.match(/^data:(image\/(?:png|jpeg|webp));base64,([\s\S]+)$/u);
         if (!match) continue;
-        const buffer = Buffer.from(match[2], "base64");
+        const buffer = Buffer.from(match[2], RT_MAINTENANCE.BASE64);
         if (!getDownloadedImageMimeType(buffer)) continue;
-        const name = `${T.FILE_PREFIX}${requestId}-${index}.${match[1].split("/")[1]}`;
+        const name = `${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.DASH}${index}${RT_MAINTENANCE.DOT}${match[1].split(RT_MAINTENANCE.SLASH)[1]}`;
         const file = path.join(directory, name);
         await fs.promises.writeFile(file, buffer);
         images.push({ name, mimeType: match[1], path: file });
@@ -70,7 +71,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         userNote: opts.note || "",
         ...(motionRenameMapActive(analysis).length ? { renaming: RENAME.PROMPT.THUMBNAIL } : {}),
       };
-      const prompt = withMotionResponsePrompt(T.ARTIFACT, [T.DRAW_TASK, T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, stringifyJson(brief)].join("\n"));
+      const prompt = withMotionResponsePrompt(T.ARTIFACT, [T.DRAW_TASK, T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE));
       const contract: MotionAiResponseContract = {
         schema: MOTION_RESPONSE_SCHEMAS[T.ARTIFACT],
         attempts: T.DRAW_ATTEMPTS,
@@ -88,7 +89,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
           }
         },
         repair: (question, draft, errors) => motionResponseRepair(question, { draft, errors }),
-        failure: (errors) => new Error(MR.MOTION_TEMPLATE_CHUA_TAO_DUOC_THUMBNAIL(errors.join("; "))),
+        failure: (errors) => new Error(MR.MOTION_TEMPLATE_CHUA_TAO_DUOC_THUMBNAIL(errors.join(RT_MAINTENANCE.SEMICOLON_SPACE))),
       };
       const vector = overrides.runMotionAi ? await requestMotionAiContract(prompt, exec, (question) => deps.runMotionAi(question, T.ARTIFACT, exec, opts.signal, opts.log, images), contract, opts.signal) : await deps.runMotionAi(prompt, T.ARTIFACT, exec, opts.signal, opts.log, images, 0, contract);
       opts.signal?.throwIfAborted();
@@ -97,8 +98,8 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         const leaked = [...new Set([...vector.svg.matchAll(RENAME.SVG_TEXT)].flatMap((match) => motionRenameLeaks(match[1], renameMap)))];
         if (leaked.length) opts.log?.(RENAME.LOG.THUMBNAIL_LEAK(leaked));
       }
-      const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}.png`);
-      await fs.promises.writeFile(file.replace(/\.png$/u, ".svg"), vector.svg);
+      const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
+      await fs.promises.writeFile(file.replace(/\.png$/u, RT_MAINTENANCE.SVG_3), vector.svg);
       opts.log?.(T.RENDER_LOG);
       for (let attempt = 0; attempt < T.RENDER_ATTEMPTS; attempt++) {
         opts.signal?.throwIfAborted();
@@ -110,7 +111,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         opts.signal?.throwIfAborted();
         const buffer = await fs.promises.readFile(file).catch(() => undefined);
         if (!buffer || buffer.length < T.PNG_HEADER_BYTES || getDownloadedImageMimeType(buffer) !== MR.MOTION_TEXT_IMAGE_PNG) continue;
-        const base64 = buffer.toString("base64");
+        const base64 = buffer.toString(RT_MAINTENANCE.BASE64);
         const dimensions = readBase64ImageDimensions(base64);
         if (dimensions?.width !== width || dimensions.height !== height) continue;
         opts.log?.(MR.MOTION_TEXT_THUMBNAIL_XONG);

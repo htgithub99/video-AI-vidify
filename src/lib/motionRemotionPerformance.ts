@@ -1,6 +1,5 @@
 import { MOTION_REMOTION_RENDER as R } from "../constants/motionRemotionRender.js";
 export const motionRemotionRenderConcurrency = (cpus: number, freeBytes: number): number => Math.max(1, Math.min(R.MAX_WORKERS, Math.floor(freeBytes / R.BYTES_PER_WORKER), cpus - R.RESERVED_CPUS));
-/** Independent render lanes (browser + few threads each); total threads stay within the single-render budget. */
 export const motionRemotionRenderLanes = (cpus: number, freeBytes: number, segments: number): { lanes: number; perLane: number } => {
   const budget = motionRemotionRenderConcurrency(cpus, freeBytes);
   const perLane = Math.max(1, Math.min(R.WORKERS_PER_LANE, budget));

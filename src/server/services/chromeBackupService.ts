@@ -71,7 +71,6 @@ export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal
     }
   }
 };
-/** Journals a received chat response only while backup switching can use it. Never rejects a response that was already received. */
 export const saveChatResponse = (request: { projectId: string; workerId?: string; requestId?: string; artifactType?: string }, text: string): boolean => {
   try {
     if (!sharedChromeTasks.switching && !readChromeBackupSettings().enabled) return false;

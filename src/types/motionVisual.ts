@@ -133,7 +133,6 @@ export interface MotionRemotionScene {
   htmlRequest?: import("./motionHtmlScene.js").MotionHtmlRequest;
   htmlRebuildKey?: string;
   actionPlan?: MotionSceneActionPlan;
-  /** AI-authored per-shot action direction from the scene planner; never a code-generated gait. */
   motionIntent?: string;
   format?: MotionSceneDesign["format"];
   id: string;
@@ -172,7 +171,6 @@ export interface MotionRemotionScene {
   continuityDraft?: { nodes: MotionRemotionNode[]; resolvedKey: string };
   removedObjects?: string[];
   composition?: MotionSceneComposition;
-  /** score/warnings: local checklist of the kept answer; attempts: content requests used (max 3). */
   generation?: { revision: 1; inputKey: string; status: "running" | "accepted" | "failed"; error?: string; promptRevision?: number; requestKey?: string; attempts?: number; score?: number; warnings?: string[] };
   build?: { inputKey: string; status: "accepted" | "failed"; review: boolean; error?: string; attempts?: number };
   failStreak?: number;
@@ -204,7 +202,6 @@ export interface MotionSceneAnimation {
 export interface MotionSceneComposition {
   animationSource?: "ai-complete";
   duration?: number;
-  /** AI-directed motion clips; when present they replace actor/effect keyframes and code default motion. */
   motion?: import("./motionClip.js").MotionSceneMotion;
   profileId?: MotionRemotionProfile;
   profileRevision?: number;
@@ -241,9 +238,7 @@ export interface MotionRemotionState {
   inputKeys: Record<string, string>;
   failures: Record<string, string>;
   drafts?: Record<string, unknown[]>;
-  /** Per-subject motion notes written by the AI motion director, reused for consistency across scenes. */
   motionBible?: Record<string, string>;
-  /** Scene id → motion request key already attempted, so rebuilds never re-ask the director for unchanged scenes. */
   motionTried?: Record<string, string>;
   planRecoveryRevision?: number;
   notes?: Record<string, string>;

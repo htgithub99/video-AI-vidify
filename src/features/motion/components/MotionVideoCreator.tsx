@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
@@ -226,7 +227,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const partsText = currentLang === MR.MOTION_TEXT_EN ? MOTION_PARTS_TEXT.en : MOTION_PARTS_TEXT.vi;
   const { state, patch } = studio;
   const refText = MOTION_REFERENCE_TEXTS[currentLang] ?? MOTION_REFERENCE_TEXTS.vi;
-  const settingsText = MOTION_SETTINGS_COMPATIBILITY[currentLang === "en" ? "en" : "vi"];
+  const settingsText = MOTION_SETTINGS_COMPATIBILITY[currentLang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI];
   const analysisSettingsMessage = motionAnalysisSettingsMessage(state, currentLang);
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const kitText = PUPPET_TEXTS[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
@@ -291,8 +292,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   }, [studio.compiled, state.renderBehavior]);
   const updateBeat = (id: string, patchBeat: Partial<MotionBeat>) => {
     if (!state.script) return;
-    patch({ script: { ...state.script, ...(patchBeat.narration !== undefined ? { voiceSettings: { ...state.script.voiceSettings, utterances: _.omit(state.script.voiceSettings?.utterances || {}, id) } } : {}),
-      beats: _.map(state.script.beats, (b) => (b.id === id ? { ...b, ...patchBeat, ...(patchBeat.narration !== undefined ? { utterances: undefined, sceneTemplateDraft: undefined } : {}) } : b)) } });
+    patch({
+      script: { ...state.script, ...(patchBeat.narration !== undefined ? { voiceSettings: { ...state.script.voiceSettings, utterances: _.omit(state.script.voiceSettings?.utterances || {}, id) } } : {}), beats: _.map(state.script.beats, (b) => (b.id === id ? { ...b, ...patchBeat, ...(patchBeat.narration !== undefined ? { utterances: undefined, sceneTemplateDraft: undefined } : {}) } : b)) },
+    });
   };
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
@@ -567,9 +569,21 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 </MotionSettingsGroup>
               </div>
-              {analysisSettingsMessage && <p role="status" className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>{analysisSettingsMessage}</p>}
-              {state.script && state.script.language !== state.language && <p role="status" className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>{settingsText.language}</p>}
-              {state.script && (state.parts || 1) !== (state.series?.parts.length || 1) && <p role="status" className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>{settingsText.parts}</p>}
+              {analysisSettingsMessage && (
+                <p role={RT_MAINTENANCE.STATUS} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
+                  {analysisSettingsMessage}
+                </p>
+              )}
+              {state.script && state.script.language !== state.language && (
+                <p role={RT_MAINTENANCE.STATUS} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
+                  {settingsText.language}
+                </p>
+              )}
+              {state.script && (state.parts || 1) !== (state.series?.parts.length || 1) && (
+                <p role={RT_MAINTENANCE.STATUS} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
+                  {settingsText.parts}
+                </p>
+              )}
               {state.productionId && <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>{settingsText.resume}</p>}
               {!remotionMode && <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />}
               <div className={MOTION_STYLES.FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP}>
@@ -802,10 +816,18 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </>
                 }
               />
-              {htmlTiming && <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
-                {currentLang === "en" ? "Selected total" : "Mốc chọn tổng"}: {formatSeconds(htmlTiming.selectedTargetSeconds)} · {currentLang === "en" ? "This part planned" : "Dự kiến phần này"}: {formatSeconds(plannedSeconds)}
-                {actualAudioSeconds ? ` · ${currentLang === "en" ? "Actual audio" : "Audio thực"}: ${formatSeconds(actualAudioSeconds)}` : ""}
-              </p>}
+              {htmlTiming && (
+                <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
+                  {currentLang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.SELECTED_TOTAL : RT_MAINTENANCE.MOC_CHON_TONG}
+                  {RT_MAINTENANCE.COLON_SPACE}
+                  {formatSeconds(htmlTiming.selectedTargetSeconds)}
+                  {RT_MAINTENANCE.DOT_SEPARATOR}
+                  {currentLang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.THIS_PART_PLANNED : RT_MAINTENANCE.DU_KIEN_PHAN_NAY}
+                  {RT_MAINTENANCE.COLON_SPACE}
+                  {formatSeconds(plannedSeconds)}
+                  {actualAudioSeconds ? `${RT_MAINTENANCE.DOT_SEPARATOR}${currentLang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.ACTUAL_AUDIO : RT_MAINTENANCE.AUDIO_THUC}${RT_MAINTENANCE.COLON_SPACE}${formatSeconds(actualAudioSeconds)}` : ""}
+                </p>
+              )}
               <div className={MOTION_STYLES.SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                 {_.map(state.analysis.chapters, (chapter, ci) => (
                   <div key={chapter.id} className={MOTION_STYLES.SPACE_Y_3}>
@@ -890,9 +912,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             />
             {!state.autoExport && studio.audioPreparing ? <p>{MOTION_VOICE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI][state.multiVoice === false ? RUNTIME_VALUES.PREPARINGSINGLE_21F3001B : RUNTIME_VALUES.PREPARING_D932D92A]}</p> : null}
             {studio.voiceValid && !state.uploadedAudio && <MotionVoiceQualityNotice track={state.voice} language={currentLang} />}
-            {isRemotionSpec(previewSpec) && previewSpec.renderer === "html-canvas" && <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
-              {currentLang === "en" ? "Scene durations on this timeline" : "Thời lượng cảnh trên timeline này"}: {previewSpec.scenes.map((scene) => `${((scene.endFrame - scene.startFrame) / previewSpec.fps).toFixed(1)}s`).join(" · ")}
-            </p>}
+            {isRemotionSpec(previewSpec) && previewSpec.renderer === RT_MAINTENANCE.HTML_CANVAS && (
+              <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>
+                {currentLang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.SCENE_DURATIONS_ON_THIS_TIMELINE : RT_MAINTENANCE.THOI_LUONG_CANH_TREN_TIMELINE_NAY}
+                {RT_MAINTENANCE.COLON_SPACE}
+                {previewSpec.scenes.map((scene) => `${((scene.endFrame - scene.startFrame) / previewSpec.fps).toFixed(1)}${RT_MAINTENANCE.S_4}`).join(RT_MAINTENANCE.DOT_SEPARATOR)}
+              </p>
+            )}
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {studio.renderedVideoUrl ? (
               <div className={MOTION_STYLES.SPACE_Y_3}>
@@ -1045,7 +1071,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <option value={MotionEncoderPreference.CPU}>{text.ENCODER_CPU}</option>
                 </MotionSelectField>
               </div>
-              <div className={remotionMode ? "grid grid-cols-1 gap-2 pt-2" : MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
+              <div className={remotionMode ? RT_MAINTENANCE.GRID_GRID_COLS_1_GAP_2_PT_2 : MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
                 {!remotionMode && (
                   <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_5_ROUNDED_XL_TEXT_XS}>
                     {studio.checking ? <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} /> : <ScanSearch className={MOTION_STYLES.W_4_H_4} />}

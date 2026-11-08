@@ -11,15 +11,10 @@ export const MOTION_CLIP = {
   MAX_CLIPS: 24,
   MAX_CYCLE: 10,
   TRAVEL_SECONDS: 5,
-  /** Allowed travel endpoints, as canvas fractions (off-screen entries allowed). */
   PATH_RANGE: [-0.6, 1.6] as const,
-  /** Degrees for swing amounts. */
   SWING: { small: 6, medium: 14, large: 26 },
-  /** Fraction of canvas height. */
   BOB: { small: 0.005, medium: 0.011, large: 0.02 },
-  /** Fraction of canvas width per second. */
   SPEED: { slow: 0.06, medium: 0.16, fast: 0.34 },
-  /** Degrees per second. */
   SPIN: { slow: 40, medium: 110, fast: 260 },
   SHAKE: { small: 0.002, medium: 0.005, large: 0.01 },
   PULSE: { small: 0.03, medium: 0.07, large: 0.14 },
@@ -27,10 +22,8 @@ export const MOTION_CLIP = {
   TEMPERAMENT: { calm: 0.7, lively: 1, tense: 0.85 },
   CYCLE: 1,
   RAMP: 0.6,
-  /** Sampling step for clip frames (seconds); every 30/60 fps frame lands exactly on it. */
   FRAME_STEP: 1 / 60,
   FRAME_CACHE: 96,
-  /** A scroll layer holds two identical copies one canvas width apart, so it spans at least this many canvas widths. */
   SCROLL_MIN_WIDTH: 1.9,
   PARTICLE: {
     dust: { color: "#d9c69c", life: 1, from: 0.006, to: 0.034, rise: 0.04, drift: 0.05, gravity: 0, opacity: 0.55 },

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import type { MotionStoryScript } from "../../../../types/motionVideo.js";
 import { MOTION_SCENE_COMPOSITION as SCENE_COMPOSITION } from "../../../../constants/motionSceneComposition.js";
 import { MOTION_WRITING as WRITING } from "../../../../constants/motionWriting.js";
@@ -443,7 +444,7 @@ const salvageOnce = (text: string, artifactType: string, requestId: string, resp
     const isFreshCompletedTurn = (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy;
     if (!isFreshCompletedTurn) return undefined;
     const schema = MOTION_RESPONSE_SCHEMAS[responseSchema || artifactType];
-    const allowedKeys = new Set<string>([...Object.keys(schema?.properties || {}), ...(schema?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []), ...(artifactType === MOTION_HTML.PLAN ? ["scenes"] : [])]);
+    const allowedKeys = new Set<string>([...Object.keys(schema?.properties || {}), ...(schema?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []), ...(artifactType === MOTION_HTML.PLAN ? [RT_MAINTENANCE.SCENES] : [])]);
     const keys = _.keys(parsed);
     return keys.length >= 1 && keys.every((k) => allowedKeys.has(k)) ? parsed : undefined;
   } catch {
@@ -859,14 +860,14 @@ export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => 
 export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
   const run = motionAiRunStore.getStore();
   if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
-  const key = `content:${AIR.MODEL_KEY(String(exec.provider), exec.model)}`;
+  const key = `${RT_MAINTENANCE.CONTENT}${AIR.MODEL_KEY(String(exec.provider), exec.model)}`;
   const linked = AbortSignal.any(_.compact([signal, run.signal]));
   if (!run.scenePreparations.has(key)) {
     const preparation = (async () => {
       const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
       releaseMotionBrowser ||= retainGlobalBrowser();
       try {
-        log?.(`Đang mở ${MOTION_STORY_CONFIG.WORKER_IDS.length} room AI nội dung.`);
+        log?.(`${RT_MAINTENANCE.DANG_MO}${MOTION_STORY_CONFIG.WORKER_IDS.length}${RT_MAINTENANCE.ROOM_AI_NOI_DUNG}`);
         const results = await Promise.allSettled(
           MOTION_STORY_CONFIG.WORKER_IDS.map(async (workerId) => {
             linked.throwIfAborted();
@@ -885,7 +886,7 @@ export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?
           }),
         );
         linked.throwIfAborted();
-        log?.(`Đã sẵn sàng ${results.filter((result) => result.status !== RT_SERVER.REJECTED).length}/${results.length} room AI nội dung.`);
+        log?.(`${RT_MAINTENANCE.DA_SAN_SANG}${results.filter((result) => result.status !== RT_SERVER.REJECTED).length}${RT_MAINTENANCE.SLASH}${results.length}${RT_MAINTENANCE.ROOM_AI_NOI_DUNG}`);
       } finally {
         releaseSession();
       }
@@ -906,7 +907,7 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
   const key = AIR.MODEL_KEY(String(exec.provider), exec.model);
   const linked = AbortSignal.any(_.compact([signal, run.signal]));
   if (!run.scenePreparations.has(key)) {
-    const sceneLog = (line: string) => log?.(line && !/^\s*\[[^\]]+\]/u.test(line) ? `[${MOTION_PRODUCTION.STAGES.SCENES}] ${line}` : line);
+    const sceneLog = (line: string) => log?.(line && !/^\s*\[[^\]]+\]/u.test(line) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${line}` : line);
     const preparation = (async () => {
       const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
       releaseMotionBrowser ||= retainGlobalBrowser();
@@ -982,7 +983,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         phaseKey = next;
         phaseStartedAt = Date.now();
       }
-      const scopedLine = drawing && line && !/^\s*\[[^\]]+\]/u.test(line) ? `[${MOTION_PRODUCTION.STAGES.SCENES}] ${line}` : line;
+      const scopedLine = drawing && line && !/^\s*\[[^\]]+\]/u.test(line) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${line}` : line;
       log?.(scopedLine, activity ? { ...activity, artifact: activity.artifact || artifactType, owner: run.projectId, requestId, phaseStartedAt, roomGeneration: run.roomGenerations.get(workerId), targetIds: contract?.targetIds } : undefined);
     };
     try {
@@ -1115,8 +1116,8 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     const singleMessage = motionPromptSingleMessage(artifactType);
     const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
     const fullPrompt =
-      exec.outputFormat === "html"
-        ? `${taskPrompt}\nThe html root must carry data-artifact='${artifactType}' and data-request-id='${requestId}' to identify this response. Return the complete HTML only.`
+      exec.outputFormat === RT_MAINTENANCE.HTML
+        ? `${taskPrompt}${RT_MAINTENANCE.THE_HTML_ROOT_MUST_CARRY_DATA_ARTIFACT}${artifactType}${RT_MAINTENANCE.AND_DATA_REQUEST_ID}${requestId}${RT_MAINTENANCE.TO_IDENTIFY_THIS_RESPONSE_RETURN_THE_COMPLETE_HTML_ONLY}`
         : singleMessage
           ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity))
           : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
@@ -1253,7 +1254,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         artifactType,
         requestId,
         signal: roomCtrl.signal,
-        oneGeneration: exec.singleResponse === true && (artifactType === SCENE_COMPOSITION.ARTIFACT || artifactType.startsWith("motion-html-") || exec.outputFormat === "html"),
+        oneGeneration: exec.singleResponse === true && (artifactType === SCENE_COMPOSITION.ARTIFACT || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML) || exec.outputFormat === RT_MAINTENANCE.HTML),
         closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         submission,
@@ -1275,7 +1276,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
       });
       exec.responseReceived?.(r.text);
-      const result = exec.outputFormat === "html" ? r.text : extractMotionRoomJson(r.text);
+      const result = exec.outputFormat === RT_MAINTENANCE.HTML ? r.text : extractMotionRoomJson(r.text);
       run?.roomRecoveries.delete(workerId!);
       if (run && bibleKey()) (run.bibles ||= new Map()).set(workerId!, bibleKey()!);
       roomOk = true;
@@ -1305,7 +1306,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         log?.(MOTION_STORY_CONFIG.ROOM_REFUSAL_LOG(provider));
         throw caught;
       }
-      const salvaged = exec.outputFormat === "html" ? undefined : salvageRoomJson(diag?.lastCandidate, artifactType, requestId, exec.responseSchema, diag);
+      const salvaged = exec.outputFormat === RT_MAINTENANCE.HTML ? undefined : salvageRoomJson(diag?.lastCandidate, artifactType, requestId, exec.responseSchema, diag);
       if (salvaged) {
         log?.(MOTION_TEXT_PHONG_CHAT_DA_TRA_JSON_DAY_DU_NHUNG);
         roomOk = true;
@@ -1332,10 +1333,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
       const earlyError = _.toString(caught?.message);
       const recovered = !!_.get(caught, CHAT_ROOM_RECOVERY.COMPLETE);
-      const isTimeoutError = _.get(caught, "code") === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE;
+      const isTimeoutError = _.get(caught, RT_MAINTENANCE.CODE) === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MESSAGE;
       const unsent =
         !recovered && !submission.attempted && !limited && attempt < AIR.ROOM_RETRIES && (AIR.TRANSPORT.test(earlyError) || isTimeoutError || earlyError === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || earlyError === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || earlyError.includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE) || MOTION_STORY_CONFIG.ROOM_UI_ERROR_RE.test(earlyError));
-      if (!captchaRetry && exec.singleResponse && !unsent && exec.outputFormat !== "html" && artifactType !== MOTION_HTML.PLAN) {
+      if (!captchaRetry && exec.singleResponse && !unsent && exec.outputFormat !== RT_MAINTENANCE.HTML && artifactType !== MOTION_HTML.PLAN) {
         roomOk = submission.completed;
         throw caught;
       }
@@ -1349,7 +1350,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
             const resumeSignal = AbortSignal.any(_.compact([signal, run?.signal, AbortSignal.timeout(AIR.RESUME_MS)]));
             const result = await resumeChatPlanningResponse({ provider, model: exec.model as AiPlanningChatModel, prompt: fullPrompt, projectId, workerId, artifactType, requestId, signal: resumeSignal, chromeHeadless: exec.chromeHeadless !== false, submission, reloadPendingResponse: check > 0 });
             exec.responseReceived?.(result.text);
-            const parsed = exec.outputFormat === "html" ? result.text : extractMotionRoomJson(result.text);
+            const parsed = exec.outputFormat === RT_MAINTENANCE.HTML ? result.text : extractMotionRoomJson(result.text);
             roomOk = true;
             return parsed;
           } catch (resumeError) {
@@ -1431,7 +1432,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           if (retryRoom) {
             if (!replaceRoom && attempt < AIR.ROOM_RELOADS) await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
             else await closeMotionAiRoom(run, workerId!);
-          } else if (!roomOk && !captchaRetry && !(artifactType.startsWith("motion-html-") && submission.attempted && !submission.completed && !submission.abandoned)) await closeMotionAiRoom(run, workerId!);
+          } else if (!roomOk && !captchaRetry && !(artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML) && submission.attempted && !submission.completed && !submission.abandoned)) await closeMotionAiRoom(run, workerId!);
         } else {
           await closeChatPlanningRoom({ provider, projectId }).catch(_.noop);
         }
@@ -1456,10 +1457,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
   countMotionRequest(MOTION_STORY_CONFIG.API_PROVIDER, log);
   const { fullPrompt } = requestPrompt();
   const contents = images?.length ? [{ role: MOTION_TEXT_USER, parts: [{ text: fullPrompt }, ..._.map(images, (im) => ({ inlineData: { mimeType: im.mimeType, data: fs.readFileSync(im.path).toString(MOTION_TEXT_BASE64) } }))] }] : fullPrompt;
-  const response = await generateContentWithRetry({ contents, task: { capability: AiTaskCapability.ScriptWriting }, config: { responseMimeType: exec.outputFormat === "html" ? "text/plain" : MOTION_TEXT_APPLICATION_JSON } });
+  const response = await generateContentWithRetry({ contents, task: { capability: AiTaskCapability.ScriptWriting }, config: { responseMimeType: exec.outputFormat === RT_MAINTENANCE.HTML ? RT_MAINTENANCE.TEXT_PLAIN : MOTION_TEXT_APPLICATION_JSON } });
   const text = _.isString(response) ? response : response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || MR.MOTION_TEXT_EMPTY;
   exec.responseReceived?.(text);
-  return exec.outputFormat === "html" ? text : extractJson(text);
+  return exec.outputFormat === RT_MAINTENANCE.HTML ? text : extractJson(text);
 };
 const slugKey = (s: string): string => _.trim(_.deburr(_.toString(s).replace(MP.VIETNAMESE_D_LOWER, MOTION_TEXT_D).replace(MP.VIETNAMESE_D_UPPER, MOTION_TEXT_D_2)).toLowerCase().replace(MP.SLUG_LOWER_INVALID, MOTION_TEXT_SYMBOL_30), MOTION_TEXT_SYMBOL_30).slice(0, 24) || MOTION_TEXT_NV;
 const { TIMES, WEATHERS, SHOTS, VISUALS, FRAMES, HOOKS } = MOTION_RESPONSE_VALUES;
@@ -1602,7 +1603,7 @@ export const analyzeStory = async (
     renameEntities?: boolean;
   } & MotionAnalysisRecovery,
 ): Promise<MotionStoryAnalysis> => {
-  const inputKey = motionInputKey([WRITING.REVISION, "html-authoring-english-v2", source, opts.language, opts.length, opts.parts, opts.aspect, opts.exec, opts.styleReferences, opts.videoGenre, opts.stylePreset, opts.characterMotion, motionStorytelling(opts.storytelling), opts.renameEntities === true, ...(opts.visualSettings ? [opts.visualSettings] : [])]);
+  const inputKey = motionInputKey([WRITING.REVISION, RT_MAINTENANCE.HTML_AUTHORING_ENGLISH_V2, source, opts.language, opts.length, opts.parts, opts.aspect, opts.exec, opts.styleReferences, opts.videoGenre, opts.stylePreset, opts.characterMotion, motionStorytelling(opts.storytelling), opts.renameEntities === true, ...(opts.visualSettings ? [opts.visualSettings] : [])]);
   const draft: MotionAnalysisDraft = opts.draft?.inputKey === inputKey ? structuredClone(opts.draft) : { inputKey, rejected: 0 };
   const checkpoint = () => {
     opts.signal?.throwIfAborted();
@@ -1621,8 +1622,8 @@ export const analyzeStory = async (
   const language = motionLanguage(opts.language).promptName;
   const ledger = await buildSourceLedger(source, { ...opts, draft, targetSeconds: target });
   const transcript = ledger ? MR.MOTION_TEMPLATE_EVENT_LEDGER_OF_THE_FULL_SOURCE_BUILT_PART_BY_PART_FROM_THE_COMPL(ledger) : sourceSlice(source);
-  const htmlAuthoring = opts.visualSettings?.mode === "remotion";
-  const htmlSettings = opts.visualSettings?.mode === "remotion" ? motionHtmlAuthoringSnapshot({ videoGenre: opts.videoGenre, storytelling: opts.storytelling, length: opts.length, target, language: opts.language, profile: opts.visualSettings.profileId, pacing: opts.visualSettings.pacing, parts: opts.parts }) : undefined;
+  const htmlAuthoring = opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION;
+  const htmlSettings = opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlAuthoringSnapshot({ videoGenre: opts.videoGenre, storytelling: opts.storytelling, length: opts.length, target, language: opts.language, profile: opts.visualSettings.profileId, pacing: opts.visualSettings.pacing, parts: opts.parts }) : undefined;
   const prompt = htmlAuthoring ? motionHtmlAnalysisPrompt({ title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript, pacing: htmlSettings?.picturePacing }) : MOTION_GEN_ANALYSIS_PROMPT({ preamble: MOTION_GEN_PREAMBLE, title: source.title, seconds: Math.round(target), language, chapters: chapterCount, transcript });
   const briefNote = source.kind === MR.MOTION_TEXT_BRIEF ? MR.MOTION_TEXT_THE_INPUT_IS_A_CREATIVE_BRIEF_NOT_A_TIMESTAMPED_TRANSCRIPT_DEVELO : MR.MOTION_TEXT_EMPTY;
   const rename = opts.renameEntities === true;
@@ -1634,23 +1635,24 @@ export const analyzeStory = async (
   };
   const renameErrors = (value: any): string[] => (rename ? motionRenameAnalysisIssues(value).map((issue) => MOTION_RESPONSE_TEXT.EXPECTED(issue.path, issue.expected, issue.actual)) : []);
   const genreDirective =
-    opts.visualSettings?.mode === "remotion"
-      ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) +
-        ` Plan about ${chapterCount} chapters within ${target}s TOTAL, allowing stages to share chapters. At least ${opts.parts || 1} meaningful chapter ranges are needed for the requested parts; explain if the source cannot support them. No SOLO stages or candidate quota. Choose a single opening sequence and keep it throughout writing.`
-      : motionVideoGenreDirective(opts.videoGenre);
+    opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) + `${RT_MAINTENANCE.PLAN_ABOUT}${chapterCount}${RT_MAINTENANCE.CHAPTERS_WITHIN}${target}${RT_MAINTENANCE.S_TOTAL_ALLOWING_STAGES_TO_SHARE_CHAPTERS_AT_LEAST}${opts.parts || 1}${RT_MAINTENANCE.GENREDIRECTIVE_TEMPLATE_PART_4}` : motionVideoGenreDirective(opts.videoGenre);
   const fullRequest = withMotionResponsePrompt(
     MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
     ([WRITING.TEXT_TASK, prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, WRITING.PLAN, WRITING.BOOKENDS, SOURCE_READING_RULES, sourceDirections(source), briefNote, rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
       MR.MOTION_TEXT_SYMBOL_27 +
       (htmlAuthoring
-        ? `Canvas motion ${opts.characterMotion ? "enabled: describe the source-supported actions and camera in prose; AI will draw their full movement freely" : "disabled: plan an opening illustration; the host will freeze all content time"}. No pose transforms, moveTo coordinates, stock frames or simplified-contact restrictions.`
+        ? `${RT_MAINTENANCE.CANVAS_MOTION}${opts.characterMotion ? RT_MAINTENANCE.ENABLED_DESCRIBE_THE_SOURCE_SUPPORTED_ACTIONS_AND_CAMERA_IN_PROSE : RT_MAINTENANCE.DISABLED_PLAN_AN_OPENING_ILLUSTRATION_THE_HOST_WILL_FREEZE_ALL}${RT_MAINTENANCE.NO_POSE_TRANSFORMS_MOVETO_COORDINATES_STOCK_FRAMES_OR_SIMPLIFIED_CONTACT}`
         : opts.characterMotion
           ? MOTION_REFERENCE_PROMPTS.MOTION_ON
           : MOTION_REFERENCE_PROMPTS.MOTION_OFF) +
       MR.MOTION_TEXT_SYMBOL_27 +
       (genreDirective ? MR.MOTION_TEXT_SYMBOL_27 + genreDirective : MR.MOTION_TEXT_EMPTY) +
       MR.MOTION_TEXT_SYMBOL_27 +
-      [MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)), motionStoryLanguageGuide(opts.language), opts.visualSettings?.mode === "remotion" ? `Selected visual style in prose: ${MOTION_HTML_STYLES[opts.visualSettings.profileId]}. Do not supply SVG, rig, body frames or numeric placement.` : motionVisualCapability(opts.visualSettings) || puppetPackPlanningCapabilities(opts.stylePreset)]
+      [
+        MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)),
+        motionStoryLanguageGuide(opts.language),
+        opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? `${RT_MAINTENANCE.SELECTED_VISUAL_STYLE_IN_PROSE}${MOTION_HTML_STYLES[opts.visualSettings.profileId]}${RT_MAINTENANCE.DO_NOT_SUPPLY_SVG_RIG_BODY_FRAMES_OR_NUMERIC_PLACEMENT}` : motionVisualCapability(opts.visualSettings) || puppetPackPlanningCapabilities(opts.stylePreset),
+      ]
         .filter(Boolean)
         .join(MR.MOTION_TEXT_SYMBOL_27),
   );
@@ -1711,7 +1713,7 @@ export const editScript = async (
   const findings = motionScriptFindings(beats, analysis, opts.language, source.text);
   const { style: styleFindings, overlap: overlapFindings, repeat: repeatFindings, stage: stageFindings, echo: echoFindings, dropIds, dropRefs } = findings;
   const reviewFindings = [...findings.review, ...(opts.reviewFindings || []).filter((finding) => byId.has(finding.id))];
-  const visualIds = new Set(reviewFindings.filter((finding) => finding.kind === "source").map((finding) => finding.id));
+  const visualIds = new Set<string>(reviewFindings.filter((finding) => finding.kind === RT_MAINTENANCE.SOURCE).map((finding) => finding.id));
   const dropped = new Set<string>();
   const styleIds = new Set([...findings.ids, ...reviewFindings.map((finding) => finding.id)]);
   const sourceWindow = (chapter: MotionChapter, lines: MotionBeat[]): string => {
@@ -1770,7 +1772,7 @@ export const editScript = async (
         WRITING.EDIT,
         WRITING.BOOKENDS,
         WRITING.NUMBERS,
-        analysis.videoGenre === "verdict" ? WRITING.LABELS : "",
+        analysis.videoGenre === RT_MAINTENANCE.VERDICT ? WRITING.LABELS : "",
         TIMELINE.EDITOR.SCOPE,
         analysis.factual ? WRITING.FACTUAL : "",
         established ? TIMELINE.EDITOR.LEDGER + RT_SHARED.SYMBOL_01BA47 + established : "",
@@ -2119,7 +2121,7 @@ export const writeChapterBeats = async (source: MotionStorySource, analysis: Mot
     const written = completed.map((beat) => beat.narration.trim()).filter(Boolean);
     const recent: string[] = [];
     for (const line of [...written].reverse()) {
-      if (recent.join(" ").length + line.length > PROMPT.CHAPTER_PART_WRITTEN_CHARS) break;
+      if (recent.join(RT_MAINTENANCE.SPACE).length + line.length > PROMPT.CHAPTER_PART_WRITTEN_CHARS) break;
       recent.unshift(line);
     }
     const section = [PROMPT.CHAPTER_PART(index, parts.length, part.points, written.at(-1), parts[index + 1]?.points[0]), recent.length ? PROMPT.CHAPTER_PART_WRITTEN(recent) : ""].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
@@ -2160,7 +2162,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   const language = languageProfile.promptName;
   const unitName = languageProfile.unit.promptName;
   const prev = opts.previous?.length ? _.map(_.takeRight(opts.previous, PROMPT.CHAPTER_PREVIOUS_BEATS), (b) => MOTION_TEMPLATE_SYMBOL_53(String(b.narration))).join(MOTION_TEXT_SYMBOL_27) : opts.previousSummary ? MOTION_TEMPLATE_SYMBOL_53(String(opts.previousSummary)) : MR.MOTION_TEXT_EMPTY;
-  const hookRule = hooks === "light" ? genreSpec.HOOKS.light : hooks === "full" ? genreSpec.HOOKS.full : null;
+  const hookRule = hooks === RT_MAINTENANCE.LIGHT ? genreSpec.HOOKS.light : hooks === RT_MAINTENANCE.FULL ? genreSpec.HOOKS.full : null;
   const texture = motionStorytellingPreset(analysis.storytelling).texture;
   const bibleRules = _.compact([
     analysis.visualSettings?.mode === RT_SHARED.REMOTION || closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_SCENES : MOTION_GEN_STORYBOARD_RULES(language),
@@ -2174,10 +2176,10 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     texture ? STORYTELLING.PROMPT.TEXTURE(texture, genreSpec.TEXTURE) : null,
     opts.multiVoice === false ? null : MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
     analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
-    analysis.visualSettings?.mode === RT_SHARED.REMOTION ? WRITING.SCENE_MOTION + "\nSELECTED VISUAL CONSTRUCTION (shape reference, not prescribed choreography): " + MOTION_ILLUSTRATION_PROFILES[analysis.visualSettings.profileId].brief.frame : null,
+    analysis.visualSettings?.mode === RT_SHARED.REMOTION ? WRITING.SCENE_MOTION + RT_MAINTENANCE.SELECTED_VISUAL_CONSTRUCTION_SHAPE_REFERENCE_NOT_PRESCRIBED_CHOREOGRAPHY + MOTION_ILLUSTRATION_PROFILES[analysis.visualSettings.profileId].brief.frame : null,
   ] as string[]);
   const chapterRules = _.compact([
-    analysis.visualSettings?.mode === RT_SHARED.REMOTION ? motionVideoGenreGrammar(analysis.videoGenre, { first: !!opts.isFirst, last: !!opts.isLast, hooks: hooks !== "off" }) : null,
+    analysis.visualSettings?.mode === RT_SHARED.REMOTION ? motionVideoGenreGrammar(analysis.videoGenre, { first: !!opts.isFirst, last: !!opts.isLast, hooks: hooks !== RT_MAINTENANCE.OFF }) : null,
     motionWritingState(opts.history || opts.previous || [], analysis),
     motionWritingChapterLean(analysis, chapter),
     motionVideoGenreStageRule(analysis.videoGenre, chapter.stages) || null,
@@ -2188,7 +2190,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   ] as string[]);
   const bibleParts = {
     preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), motionSourceReadingRules(sourceSlice(source))),
-    role: analysis.visualSettings?.mode === RT_SHARED.REMOTION ? "Scriptwriter preserving source facts, spoken voice and continuity, authoring the complete intended scene action alongside narration." : PROMPT.CHAPTER_ROLE,
+    role: analysis.visualSettings?.mode === RT_SHARED.REMOTION ? RT_MAINTENANCE.SCRIPTWRITER_PRESERVING_SOURCE_FACTS_SPOKEN_VOICE_AND_CONTINUITY_AUTHORING_THE : PROMPT.CHAPTER_ROLE,
     title: analysis.title,
     logline: analysis.logline,
     languageNote: [MR.MOTION_TEMPLATE_WRITE_NATURAL((analysis.videoDna || analysis.creativeBlueprint)?.narrative.voice || MR.MOTION_TEXT_USE_THE_VOICE_APPROPRIATE_TO_THIS_INPUT, language), motionStoryLanguageGuide(opts.language, false, true)].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27),
@@ -2301,7 +2303,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     if (analysis.visualSettings?.mode === RT_SHARED.REMOTION && !opts.durationRepair) {
       for (const row of rawBeats) {
         if (typeof row.motionIntent === "string" && row.motionIntent.trim()) continue;
-        const issue = { path: "motionIntent", expected: "nonempty scene movement written by the script AI", actual: typeof row.motionIntent, value: MOTION_RESPONSE_TEXT.VALUE(row.motionIntent) };
+        const issue = { path: RT_MAINTENANCE.MOTIONINTENT, expected: RT_MAINTENANCE.NONEMPTY_SCENE_MOVEMENT_WRITTEN_BY_THE_SCRIPT_AI, actual: typeof row.motionIntent, value: MOTION_RESPONSE_TEXT.VALUE(row.motionIntent) };
         const existing = responseIssues.find((item) => item.id === row.id);
         if (existing) existing.issues.push(issue);
         else responseIssues.push({ id: row.id, issues: [issue] });

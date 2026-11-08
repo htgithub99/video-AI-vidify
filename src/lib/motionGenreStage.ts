@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_GENRE_STAGE as S } from "../constants/motionGenreStage.js";
 import { motionVideoGenre } from "../constants/motionGenre.js";
 import { motionNarratorCastKey } from "./motionVoice.js";
@@ -21,12 +22,12 @@ export const motionHasMotif = (text: string, motif: string): boolean => {
 export const motionMotifsLost = (before: string, after: string, motifs: string[] = []): string[] => motifs.filter((motif) => motionHasMotif(before, motif) && !motionHasMotif(after, motif));
 export const motionChapterEchoFindings = (beats: MotionBeat[], language: string, motifs: string[] = []): MotionGenreStageFinding[] => {
   const E = S.ECHO;
-  const min = E.MIN_LENGTH[E.VI.test(language.trim()) ? "vi" : "en"];
+  const min = E.MIN_LENGTH[E.VI.test(language.trim()) ? RT_MAINTENANCE.VI : RT_MAINTENANCE.EN];
   const motifWords = new Set(motifs.flatMap((motif) => [...motionMotifWords(motif)]));
   const vi = E.VI.test(language.trim());
   const tokens = (text: string): Set<string> => {
     const list = (text.toLowerCase().match(E.WORD) || []).filter((word) => word.length >= min && !motifWords.has(word) && !T.REPEAT.STOP.test(word));
-    return new Set(vi ? list.slice(1).map((word, index) => list[index] + " " + word) : list);
+    return new Set<string>(vi ? list.slice(1).map((word, index) => list[index] + RT_MAINTENANCE.SPACE + word) : list);
   };
   const findings: MotionGenreStageFinding[] = [];
   const seen = new Map<string, { id: string; text: string; set: Set<string> }[]>();
@@ -51,7 +52,7 @@ export const motionGenreStageFindings = (beats: MotionBeat[], analysis: Pick<Mot
   const add = (id: string, issue: string) => {
     const known = findings.find((finding) => finding.id === id);
     if (!known) findings.push({ id, issue });
-    else if (!known.issue.includes(issue)) known.issue += "; " + issue;
+    else if (!known.issue.includes(issue)) known.issue += RT_MAINTENANCE.SEMICOLON_SPACE + issue;
   };
   const motifs = analysis.motifs || [];
   chapters.forEach((chapter, index) => {
@@ -59,10 +60,9 @@ export const motionGenreStageFindings = (beats: MotionBeat[], analysis: Pick<Mot
     if (!lines.length) return;
     const staged = !!chapter.stages?.length;
     const closing = staged ? chapter.stages!.includes(C.TIME_JUMP_STAGE) : index === last;
-    if (C.TIME_JUMP_GENRES.includes(genre) && !closing && index < last)
-      for (const beat of lines) if ((beat.narration.match(C.SENTENCE) || []).some((sentence) => C.TIME_JUMP.test(sentence) && !C.FUTURE.test(sentence))) add(beat.id, C.TIME_JUMP_ISSUE);
+    if (C.TIME_JUMP_GENRES.includes(genre) && !closing && index < last) for (const beat of lines) if ((beat.narration.match(C.SENTENCE) || []).some((sentence) => C.TIME_JUMP.test(sentence) && !C.FUTURE.test(sentence))) add(beat.id, C.TIME_JUMP_ISSUE);
     if (C.STAMP_GENRES.includes(genre) && !(C.STAMP_SKIP_LAST.includes(genre) && index === last)) {
-      const planned = [chapter.summary, ...(chapter.keyPoints || []).map((point) => point.replace(C.POINT_PREFIX, ""))].join(" ");
+      const planned = [chapter.summary, ...(chapter.keyPoints || []).map((point) => point.replace(C.POINT_PREFIX, ""))].join(RT_MAINTENANCE.SPACE);
       if (C.PLAN_STAMP.test(planned) && !lines.slice(0, C.STAMP_BEATS).some((beat) => C.STAMP.test(beat.narration))) add(lines[0].id, C.STAMP_ISSUE[genre]);
     }
     const candidate = staged ? chapter.stages!.includes(C.QUESTION_STAGE) : index > 0 && index < last;
@@ -79,9 +79,19 @@ export const motionGenreStageFindings = (beats: MotionBeat[], analysis: Pick<Mot
     const chapterIndex = new Map(chapters.map((chapter, index) => [chapter.id, index]));
     const dropped = analysis.cast
       .filter((member) => member.key !== narrator)
-      .filter((member) => !sourceText || ![member.name, member.alias].flatMap((name) => name?.match(P.NAME_TOKEN) || []).filter((word) => word.length >= P.REAL_NAME_MIN).some((word) => P.BOUNDARY(word).test(sourceText)))
+      .filter(
+        (member) =>
+          !sourceText ||
+          ![member.name, member.alias]
+            .flatMap((name) => name?.match(P.NAME_TOKEN) || [])
+            .filter((word) => word.length >= P.REAL_NAME_MIN)
+            .some((word) => P.BOUNDARY(word).test(sourceText)),
+      )
       .filter((member) => {
-        const names = [member.name, member.alias].filter((name): name is string => !!name?.trim()).flatMap((name) => name.match(P.NAME_TOKEN) || []).map((name) => name.toLowerCase());
+        const names = [member.name, member.alias]
+          .filter((name): name is string => !!name?.trim())
+          .flatMap((name) => name.match(P.NAME_TOKEN) || [])
+          .map((name) => name.toLowerCase());
         const present = beats.filter((beat) => beat.utterances?.some((line) => line.speaker === member.key) || names.some((name) => P.BOUNDARY(name).test(beat.narration)));
         const lastSeen = Math.max(-1, ...present.map((beat) => chapterIndex.get(beat.chapterId) ?? -1));
         return present.length >= P.MIN_LINES && lastSeen < last - 1;

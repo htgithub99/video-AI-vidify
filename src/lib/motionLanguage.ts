@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_LANGUAGES, MOTION_LANGUAGE_DEFAULT, MOTION_LANGUAGE_UNITS as U, type MotionLanguageCode } from "../constants/motionLanguages/index.js";
 import type { MotionLanguageProfile } from "../constants/motionLanguages/types.js";
 export const motionLanguageCode = (value: unknown): MotionLanguageCode => {
@@ -16,7 +17,7 @@ export const motionSpeechUnits = (text: unknown): number => {
   const raw = String(text ?? "");
   const cjk = (raw.match(U.CJK) || []).length;
   const words = raw
-    .replace(U.CJK, " ")
+    .replace(U.CJK, RT_MAINTENANCE.SPACE)
     .split(/\s+/)
     .filter((word) => U.TOKEN.test(word)).length;
   return cjk + words;

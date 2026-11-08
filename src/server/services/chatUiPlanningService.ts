@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import { deleteProviderConversationHistory } from "./chatHistoryCleanupService.js";
 import { CHAT_HISTORY_CLEANUP } from "../../constants/chatHistoryCleanup.js";
 import { RUNTIME_VALUES } from "../../constants/runtime/values.js";
@@ -303,7 +304,7 @@ export const repairLooseJson = (text: string): string => {
   return out;
 };
 const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
-  if (artifactType === "motion-html-scene") return /<\/html>\s*(?:```)?\s*$/i.test(text.trim()) ? chatResponseIdentity(text) : undefined;
+  if (artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE) return /<\/html>\s*(?:```)?\s*$/i.test(text.trim()) ? chatResponseIdentity(text) : undefined;
   if (artifactType === CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT) {
     const receipt = parseChatContextReceipt(text);
     if (receipt !== undefined) return receipt;
@@ -376,9 +377,19 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, r
   if (!rooms) return;
   const roomKey = getPlanningRoomKey(request);
   const page = rooms.get(roomKey);
-  const openPages = page && !page.isClosed() ? (page.context?.()?.pages?.().filter((candidate) => !candidate.isClosed()) ?? []) : [];
+  const openPages =
+    page && !page.isClosed()
+      ? (page
+          .context?.()
+          ?.pages?.()
+          .filter((candidate) => !candidate.isClosed()) ?? [])
+      : [];
   if (requireClosed && page && !page.isClosed()) {
-    if (openPages.length === 1) await page.context?.()?.newPage?.().catch(() => undefined);
+    if (openPages.length === 1)
+      await page
+        .context?.()
+        ?.newPage?.()
+        .catch(() => undefined);
     await page.close();
     releaseChatRoom(page);
   }
@@ -387,7 +398,7 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, r
   if (!requireClosed && page && !page.isClosed()) {
     contextReceipts.get(page)?.invalidate();
     releaseChatRoom(page);
-    if (openPages.length === 1) await page.goto("about:blank").catch(() => undefined);
+    if (openPages.length === 1) await page.goto(RT_MAINTENANCE.ABOUT_BLANK).catch(() => undefined);
     else await page.close().catch(() => undefined);
   }
   if (!hasActiveChatRooms()) scheduleChatBrowserCleanup();
@@ -405,8 +416,12 @@ export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlannin
       if (page && !page.isClosed()) {
         contextReceipts.get(page)?.invalidate();
         releaseChatRoom(page);
-        const openPages = page.context?.()?.pages?.().filter((candidate) => !candidate.isClosed()) ?? [];
-        if (!closeBrowser && openPages.length === 1) await page.goto("about:blank").catch(() => undefined);
+        const openPages =
+          page
+            .context?.()
+            ?.pages?.()
+            .filter((candidate) => !candidate.isClosed()) ?? [];
+        if (!closeBrowser && openPages.length === 1) await page.goto(RT_MAINTENANCE.ABOUT_BLANK).catch(() => undefined);
         else await page.close().catch(() => undefined);
       }
     }),
@@ -552,7 +567,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
             });
         },
         {
-          preferCodeBlocks: artifactType === "motion-html-scene" || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
+          preferCodeBlocks: artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
           contentSelector: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_CONTENT_SELECTOR : MR.MOTION_TEXT_EMPTY,
           currentMessageIdAttribute: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_ID_ATTRIBUTE : MR.MOTION_TEXT_EMPTY,
           codeSelector: responseSelector === D.RESPONSE ? D.CODE : C.CODE_BLOCK_SELECTOR,
@@ -650,7 +665,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     absoluteDeadline += pausedMs;
     activityDeadline += pausedMs;
     if (responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR && /^https?:/.test(page.url()) && new URL(page.url()).origin !== new URL(EXTERNAL_URLS.GEMINI_CHAT).origin) {
-      const error = Object.assign(new Error(`Phòng Gemini đã chuyển sang ${new URL(page.url()).origin}; giữ yêu cầu cũ để đọc lại, không gửi lặp.`), {
+      const error = Object.assign(new Error(`${RT_MAINTENANCE.PHONG_GEMINI_DA_CHUYEN_SANG}${new URL(page.url()).origin}${RT_MAINTENANCE.GIU_YEU_CAU_CU_DE_DOC_LAI_KHONG_GUI_LAP}`), {
         code: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE,
         diagnostics: { responseCount: lastObservedResponseCount, initialCount, candidateChars: lastJsonCandidate.length, busy: lastBusyState, identityMatch: !!lastJsonCandidate, elapsedMs: Date.now() - startedAt, lastCandidate: lastJsonCandidate, unexpectedOrigin: new URL(page.url()).origin },
       });
@@ -749,11 +764,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
         }
         const unmarkedSchemaKeys =
           isCompleteJson && _.isPlainObject(parsedLatest) && count > initialCount && _.isEmpty(returnedArtifactType) && _.isEmpty(returnedRequestId) && artifactType
-            ? new Set<string>([
-                ...Object.keys(MOTION_RESPONSE_SCHEMAS[artifactType]?.properties || {}),
-                ...(MOTION_RESPONSE_SCHEMAS[artifactType]?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []),
-                ...(artifactType === "motion-html-plan" ? ["scenes"] : []),
-              ])
+            ? new Set<string>([...Object.keys(MOTION_RESPONSE_SCHEMAS[artifactType]?.properties || {}), ...(MOTION_RESPONSE_SCHEMAS[artifactType]?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []), ...(artifactType === RT_MAINTENANCE.MOTION_HTML_PLAN ? [RT_MAINTENANCE.SCENES] : [])])
             : undefined;
         const isFreshSchemaMatch = !!unmarkedSchemaKeys && _.keys(parsedLatest).length >= 1 && _.keys(parsedLatest).every((k) => unmarkedSchemaKeys.has(k));
         const mayUseUnmarkedJsonFallback = (_.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && _.isEmpty(artifactType) && _.isEmpty(normalizedExpectedRequestId) && isCompleteJson) || isFreshSchemaMatch;
@@ -763,7 +774,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
           }
           appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_COMPLETE(latestText.length));
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_UI_CONFIRMED, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseChars: latestText.length, stablePolls, elapsedMs: Date.now() - startedAt, identityMatch: belongsToCurrentRequest });
-          return artifactType === "motion-html-scene" ? latestText : jsonUtils.safeStringify(parsedLatest);
+          return artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? latestText : jsonUtils.safeStringify(parsedLatest);
         }
         if (!isCompleteJson && !_.isEmpty(responseCandidates) && stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_STABLE_POLLS) {
           appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_PREVIEW_LOG(_.truncate(latestText, { length: 800 })));
@@ -1004,8 +1015,6 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
     await waitPageResponsive(page, signal, deadline);
     const cap = Math.max(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS, Math.min(uiActionCap(prompt.length), deadline - Date.now()));
     if (pass) appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_REWRITE_LOG);
-    // Await the action's own timeout before another fill or a send may start.
-    // Racing fill against a read left the old write active in the next pass.
     if (pass) {
       await input.focus({ timeout: cap });
       await page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY);
@@ -1070,7 +1079,7 @@ const submitPrompt = async (
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
   const isDeepSeek = inputSelector === D.INPUT;
   const singleMessage = motionPromptSingleMessage(artifactType);
-  const responseDirective = artifactType === "motion-html-scene" ? "Return the complete HTML document in one html code block, preserving the requested html root data-artifact and data-request-id. No JSON or explanation." : singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
+  const responseDirective = artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? RT_MAINTENANCE.RETURN_THE_COMPLETE_HTML_DOCUMENT_IN_ONE_HTML_CODE_BLOCK : singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(String(normalizedPrompt)), SOURCE_TEMPLATE_SYMBOL_86(String(responseDirective)));
   const { limit, parts } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit, singleMessage);
@@ -1380,7 +1389,7 @@ const submitPrompt = async (
     } catch (error) {
       await waitForSession?.();
       if (submission?.pending && new URL(submission.pending.url).origin === new URL(page.url()).origin) submission.pending.url = page.url();
-      const diag = _.get(error, "diagnostics") as { responseCount?: number; initialCount?: number; busy?: boolean } | undefined;
+      const diag = _.get(error, RT_MAINTENANCE.DIAGNOSTICS) as { responseCount?: number; initialCount?: number; busy?: boolean } | undefined;
       const isCompletedInvalidTurn = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)) === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR && (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy;
       if (submission && (isFinalChatResponseError(error) || isCompletedInvalidTurn)) submission.completed = true;
       throw error;
@@ -1391,7 +1400,7 @@ const submitPrompt = async (
   try {
     return generation ? await generation.run(perform()) : await perform();
   } catch (error) {
-    const diag = _.get(error, "diagnostics") as { responseCount?: number; initialCount?: number; busy?: boolean } | undefined;
+    const diag = _.get(error, RT_MAINTENANCE.DIAGNOSTICS) as { responseCount?: number; initialCount?: number; busy?: boolean } | undefined;
     const isCompletedInvalidTurn = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error)) === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR && (diag?.responseCount ?? 0) > (diag?.initialCount ?? 0) && !diag?.busy;
     if (isFinalChatResponseError(error) || isCompletedInvalidTurn) {
       pendingRoomResponses.delete(roomKey);

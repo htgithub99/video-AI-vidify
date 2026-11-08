@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -446,14 +447,14 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     let cacheDir: string | undefined;
     const silent = path.join(work, MOTION_TEXT_VIDEO_MP4);
     if (isRemotionSpec(spec)) {
-      if (spec.renderer === "html-canvas") refreshMotionHtmlArtifacts(spec);
+      if (spec.renderer === RT_MAINTENANCE.HTML_CANVAS) refreshMotionHtmlArtifacts(spec);
       if (options.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
       if (spec.fps !== fps || spec.aspect !== aspect) throw new Error(VISUAL.SETTINGS_CHANGED);
       duration = spec.duration;
       totalFrames = Math.ceil(duration * fps);
       encoder = MOTION_TEXT_LIBX264;
       job.encoder = encoder;
-      job.browser = spec.renderer === "html-canvas" ? "HTML Canvas / Chrome" : VISUAL.MODES.REMOTION;
+      job.browser = spec.renderer === RT_MAINTENANCE.HTML_CANVAS ? RT_MAINTENANCE.HTML_CANVAS_CHROME : VISUAL.MODES.REMOTION;
       job.framesTotal = totalFrames;
       job.workers = motionRemotionRenderConcurrency(os.cpus().length, os.freemem());
       job.status = MotionJobStatus.RENDERING;
@@ -467,12 +468,9 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       }
       const renderStarted = Date.now();
       let loggedPercent = 0;
-      // Scene-aligned segments: cached per content hash (a redrawn scene re-renders only its segment) and
-      // rendered by several narrow lanes, which measured faster than one wide render. Frames are identical.
       const encoding = { width, height, crf: preset.crf };
       const segments = motionRemotionSegments(spec, encoding);
       pruneMotionSegments();
-      // Segments pre-rendered while scenes were still being drawn are reused here.
       await waitMotionSegmentPrerender(options.editorialSessionId, signal);
       const cached = await motionCachedSegments(spec, segments, encoding, signal);
       const fileOf = motionSegmentFile;

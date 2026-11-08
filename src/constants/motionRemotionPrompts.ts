@@ -34,7 +34,14 @@ export const MOTION_REMOTION_SCHEMAS: Record<string, MotionResponseSchema> = {
               type: "object",
               properties: {
                 start: text,
-                subjects: { type: "array", items: { type: "object", properties: { nodeId: text, action: text, parts: { type: "array", items: { type: "object", properties: { name: text, change: text }, required: ["name", "change"] } }, phases: { type: "array", minItems: 1, items: { type: "object", properties: { phase: text, description: text }, required: ["phase", "description"] } }, end: text }, required: ["nodeId", "action", "parts", "phases", "end"] } },
+                subjects: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { nodeId: text, action: text, parts: { type: "array", items: { type: "object", properties: { name: text, change: text }, required: ["name", "change"] } }, phases: { type: "array", minItems: 1, items: { type: "object", properties: { phase: text, description: text }, required: ["phase", "description"] } }, end: text },
+                    required: ["nodeId", "action", "parts", "phases", "end"],
+                  },
+                },
                 interactions: { type: "array", items: text },
                 end: text,
                 environment: text,

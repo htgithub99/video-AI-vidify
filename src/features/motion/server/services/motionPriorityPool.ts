@@ -1,7 +1,4 @@
-/**
- * Fixed-size slot pool where waiting tasks are served by priority (lower first), FIFO inside a priority.
- * Used to keep all scene rooms busy with the most unblocking work first.
- */
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 export class MotionPriorityPool {
   private free: number;
   private queue: { priority: number; order: number; take: () => void }[] = [];
@@ -23,9 +20,9 @@ export class MotionPriorityPool {
           this.queue = this.queue.filter((item) => item !== entry);
           reject(signal?.reason);
         };
-        signal?.addEventListener("abort", stop, { once: true });
+        signal?.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
         entry.take = () => {
-          signal?.removeEventListener("abort", stop);
+          signal?.removeEventListener(RT_MAINTENANCE.ABORT, stop);
           resolve();
         };
         this.queue.push(entry);
@@ -52,7 +49,6 @@ export class MotionPriorityPool {
       release();
     }
   }
-  /** Share of slot-time spent busy since creation (0..1). */
   utilization(): number {
     const now = Date.now();
     const active = [...this.busySince.values()].reduce((sum, since) => sum + now - since, 0);

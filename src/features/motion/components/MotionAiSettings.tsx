@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import * as MR from "../../../constants/motionRuntime.js";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock.js";
 import { MOTION_AI_SETTINGS_TEXT } from "../../../constants/motionSceneLibrary.js";
@@ -11,7 +12,7 @@ import type { MotionVisualSettings } from "../../../types/motionVisual.js";
 export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice & { visualSettings?: MotionVisualSettings }; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice>) => void; currentLang: Lang }) {
   const text = MOTION_AI_SETTINGS_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const scene = motionSceneAiExecution(state);
-  const onePass = state.visualSettings?.mode === "remotion";
+  const onePass = state.visualSettings?.mode === RT_MAINTENANCE.REMOTION;
   const selectSceneProvider = (provider: MotionSceneAiChoice["sceneAiProvider"]) => {
     const next = resolveMotionSceneExecution({ provider });
     patch({ sceneAiProvider: next.provider, sceneAiModel: next.model });

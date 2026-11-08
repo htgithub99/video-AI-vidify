@@ -1063,7 +1063,7 @@ export enum GeminiChatModelName {
 export enum GeminiChatSelector {
   Response = "model-response",
   Input = 'rich-textarea [contenteditable="true"]:not(.ql-clipboard), div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]:not(.ql-clipboard)',
-  InputTextarea = 'rich-textarea [contenteditable="true"]:not(.ql-clipboard), div.ql-editor[contenteditable="true"], div[role="textbox"][contenteditable="true"]:not(.ql-clipboard)',
+  InputTextarea = Input,
   ModelPickerButton = 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], bard-mode-switcher button, button.input-area-switch',
   ModelMenu = '[data-test-id="gem-mode-menu"], gem-menu[role="menu"]:visible, .cdk-overlay-pane [role="menu"]:visible, [role="menu"]:visible',
   ModelOption = 'gem-menu-item[role="menuitem"][data-test-id^="bard-mode-option-"], gem-menu-item[role="menuitem"], [role="menuitemradio"], [role="menuitem"], [role="option"]',

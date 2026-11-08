@@ -44,34 +44,21 @@ export const MOTION_CLIP_DIRECTOR = {
   ARTIFACT: "motion_remotion_motion",
   REVISION: 1,
   MAX_PARTS: 64,
-  /** Joint hints from semantic part names, sent to the director as `joint`. */
   PART_HINTS: [
     [/(?:^|_)(?:wheels?(?:_\d+)?|rotor|propeller|mill_?wheel|water_?wheel|gear)(?:_\d+)?$/i, "center"],
     [/(?:^|_)(?:legs?|arms?|hands?|oars?|tail|mane|hair|cloak|cape|flag|banner|reins|wings?)(?:_(?:front|back|fore|hind))?(?:_(?:left|right|near|far))?(?:_\d+)?$/i, "top"],
     [/(?:^|_)(?:head|neck|torso|body|tree|stem|plant|mast)$/i, "bottom"],
   ] as readonly (readonly [RegExp, string])[],
-  /** Minimum box side (px) so zero-thickness stroke groups still get a joint. */
   MIN_PART_SIZE: 1,
   BIBLE_CHARS: 240,
   BIBLE_ENTRIES: 40,
   KEY: (inputKey: string, sceneId: string) => `motion_${inputKey}_${sceneId}`,
-  /** After a repair attempt, keep the valid clips when at least this share of the response survives. */
   SALVAGE_MIN_SHARE: 0.5,
   SALVAGE_PASSES: 4,
   CLIP_INDEX: /^clip (\d+):/,
   LOG_DROPPED: (index: number, total: number, count: number, reasons: string[]) => `[Dựng cảnh] Cảnh ${index}/${total}: bỏ ${count} chuyển động AI không hợp lệ, giữ phần hợp lệ (${reasons.join("; ")}).`,
-  /** Narration speed used to estimate scene length before voice timing exists. */
   CHARS_PER_SECOND: 15,
-  SCHEMA: {
-    type: "object",
-    properties: {
-      temperament: choice(M.TEMPERAMENTS),
-      clips: { type: "array", items: clip, maxItems: M.MAX_CLIPS },
-      bible: { type: "array", items: { type: "object", properties: { subject: text, note: text }, required: ["subject", "note"] } },
-    },
-    required: ["clips"],
-  } as MotionResponseSchema,
-  /** Groups that are never moved by motion (drawing scaffolding, not subjects). */
+  SCHEMA: { type: "object", properties: { temperament: choice(M.TEMPERAMENTS), clips: { type: "array", items: clip, maxItems: M.MAX_CLIPS }, bible: { type: "array", items: { type: "object", properties: { subject: text, note: text }, required: ["subject", "note"] } } }, required: ["clips"] } as MotionResponseSchema,
   SKIP_PART: /(?:^|_)(?:shadow|outline|clip|mask|defs|gradient|label|text|scene_canvas)(?:_|$)/i,
   PROMPT: (context: unknown): string =>
     `TEXT CODING TASK: write animation data (JSON) for an existing 2D SVG illustration of a video scene. CONTEXT lists the narration and the named SVG groups (parts) already measured in the picture. Choose which parts move so a viewer instantly understands the narrated moment, as a list of motion clips. The renderer computes pivots, angles, speeds and particles from these semantic choices, so the JSON holds no SVG, coordinates or angles.\n${OPS_TEXT}\n${COMBINERS_TEXT}\n${RULES_TEXT}\nReturn one JSON object {temperament?, clips, bible?} in a json code block.\nCONTEXT: ${stringifyJson(context)}`,
@@ -85,5 +72,4 @@ export const MOTION_CLIP_DIRECTOR = {
   LOG_UNMEASURED: (index: number, total: number) => `[Dựng cảnh] Cảnh ${index}/${total}: chưa đo được bộ phận để đạo diễn chuyển động; giữ chuyển động vẽ kèm của cảnh.`,
   ERROR: (scene: string, errors: string[]) => `Chuyển động cảnh ${scene}: ${errors.join("; ")}`,
 } as const;
-
 const RULES_TEXT = `RULES: animate only what the narration and picture support; one clear main action per scene plus at most two supporting motions; static moments may return clips=[]. Targets must be part ids from context.parts; never move the whole background or a planted person to fake travel. Only parts marked scrollable:true may use scroll; when none is scrollable, show travel with a "path" travel clip (entering or crossing the frame) instead. emit.at always names a part id and a side, e.g. "horse_1_legs:bottom". Use each part's joint hint unless the picture clearly needs another side. Keep the same subject's motion consistent with context.bible across scenes (same gait, rhythm and amount) unless the story changes it. Respect context.temperament for the genre mood. Return at most ${M.MAX_CLIPS} clips, plus optional bible entries {subject, note} describing a recurring subject's motion in one short sentence for later scenes.`;

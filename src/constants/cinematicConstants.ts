@@ -211,7 +211,8 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GROK_POST_CHALLENGE_READY_STABLE_POLLS: 5,
   GROK_CHALLENGE_TEXT_PATTERN: /performing security verification|verify you are human|verifying you are human|just a moment|chờ một chút|xác minh bạn là người|đang thực hiện xác minh bảo mật/i,
   ATTACHMENT_REMOVABLE_BUTTON_SELECTOR: 'button[aria-label*="remove attachment" i], button[aria-label*="remove file" i], button[aria-label*="xóa tệp" i], button[aria-label*="gỡ tệp" i]',
-  ATTACHMENT_BUTTON_SELECTOR: 'simplified-input-menu button, button[aria-label*="attach" i], button[aria-label*="upload" i], button[aria-label*="add file" i], button[aria-label*="đính kèm" i], button[aria-label*="tải tệp" i], button[aria-label*="nội dung tải lên" i], button:has(mat-icon[fonticon="plus"]), button:has(mat-icon[data-mat-icon-name="plus"]), button:has(mat-icon[fonticon="add"]), button:has(mat-icon[data-mat-icon-name="add"])',
+  ATTACHMENT_BUTTON_SELECTOR:
+    'simplified-input-menu button, button[aria-label*="attach" i], button[aria-label*="upload" i], button[aria-label*="add file" i], button[aria-label*="đính kèm" i], button[aria-label*="tải tệp" i], button[aria-label*="nội dung tải lên" i], button:has(mat-icon[fonticon="plus"]), button:has(mat-icon[data-mat-icon-name="plus"]), button:has(mat-icon[fonticon="add"]), button:has(mat-icon[data-mat-icon-name="add"])',
   ATTACHMENT_BUTTON_NAME_PATTERN: /attach|upload|add files?|open upload file menu|đính kèm|tải tệp|thêm tệp|thêm tệp và ảnh|mở trình đơn tải tệp|nội dung tải lên và công cụ/i,
   UPLOAD_FILE_MENU_NAME_PATTERN: /upload files?|tải tệp lên|tải tệp|thêm tệp/i,
   SEMANTIC_SEND_BUTTON_NAME_PATTERN: /Gửi tin nhắn|Send message|^Submit$/i,

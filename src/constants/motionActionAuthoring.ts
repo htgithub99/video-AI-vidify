@@ -1,4 +1,3 @@
-/** Instructions for AI authors. Code must not fill the described actions itself. */
 export const MOTION_ACTION_AUTHORING = {
   SCRIPT: `For this Remotion script, write motionIntent as a detailed natural-language description for EVERY visual beat in this SAME script response. It is a production direction, separate from spoken narration/utterances. Author a drawable sequence, not just a picture, mood or a verb such as "moves", "rides", "runs" or "fights".
 Use these clear sections:

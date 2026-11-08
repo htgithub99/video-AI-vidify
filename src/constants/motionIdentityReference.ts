@@ -13,7 +13,8 @@ export const MOTION_IDENTITY_REFERENCE = {
   HEX_SHORT: 4,
   REPRESENTATION_ORDER: ["full", "bust", "detail"] as readonly string[],
   ROOT_TRANSFORM: /^(<[\w:-]+\b[^<>]*?)\s+transform\s*=\s*(["'])[^"']*\2/,
-  PROMPT: "referenceCharacters holds only the head of each recurring person from an earlier scene of this video: keep that face, hair, headgear, mask and marks exactly as drawn. Build the body, clothing, pose, held objects, position and scale fresh for this scene from the cast look, costumeColors and the current narration; costumeColors are the default garment colors while the narration does not change the clothing.",
+  PROMPT:
+    "referenceCharacters holds only the head of each recurring person from an earlier scene of this video: keep that face, hair, headgear, mask and marks exactly as drawn. Build the body, clothing, pose, held objects, position and scale fresh for this scene from the cast look, costumeColors and the current narration; costumeColors are the default garment colors while the narration does not change the clothing.",
   HEAD_CHANGE: /\b(?:aged|older|grey-haired|gray-haired|white-haired|shaved|scarred face|face wounded|bandaged head|blindfolded|disguised|unmasked|veiled)\b|già đi|tóc bạc|cạo đầu|cạo trọc|sẹo trên mặt|bị thương ở mặt|băng đầu|bịt mắt|cải trang|che mặt/iu,
   COSTUME_SKIP: /^#(?:f{6}|fefefe|fdfdfd|000000|04080c|28221f)$/i,
   COSTUME_COLORS: 3,

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { RUNTIME_VALUES } from "../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
@@ -22,16 +23,14 @@ export interface MotionLogSection {
   state: string;
   summary: string;
   lastOrder: number;
-  /** Wall-clock time of this step (start → last update, or now while running), in ms. */
   durationMs?: number;
 }
-/** "1 giờ 05 phút", "7 phút 12 giây", "38 giây" — compact h/m/s text for step durations. */
 export const motionDurationText = (ms: number, language: string = RT_SHARED.VI): string => {
   const total = Math.max(0, Math.round(ms / 1000));
   const [h, m, s] = [Math.floor(total / 3600), Math.floor((total % 3600) / 60), total % 60];
-  const unit = language === RT_SHARED.EN ? { h: "h", m: "m", s: "s" } : { h: " giờ", m: " phút", s: " giây" };
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return h ? `${h}${unit.h} ${pad(m)}${unit.m}` : m ? `${m}${unit.m} ${pad(s)}${unit.s}` : `${s}${unit.s}`;
+  const unit = language === RT_SHARED.EN ? { h: RT_MAINTENANCE.H_3, m: RT_MAINTENANCE.M_2, s: RT_MAINTENANCE.S_4 } : { h: RT_MAINTENANCE.GIO, m: RT_MAINTENANCE.PHUT, s: RT_MAINTENANCE.GIAY };
+  const pad = (value: number) => String(value).padStart(2, RT_MAINTENANCE.VALUE_0_2);
+  return h ? `${h}${unit.h}${RT_MAINTENANCE.SPACE}${pad(m)}${unit.m}` : m ? `${m}${unit.m}${RT_MAINTENANCE.SPACE}${pad(s)}${unit.s}` : `${s}${unit.s}`;
 };
 export const motionLogSectionKey = (text: string): string | undefined => S.MATCH.find(([, pattern]) => pattern.test(text))?.[0];
 const motionLogStageKeys = (stage: string): string[] => S.MATCH.filter(([, pattern]) => pattern.test(stage)).map(([key]) => key);
@@ -72,7 +71,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     const technical = !recovering && S.TECHNICAL.test(message);
     const failure = row.event?.severity === S.SEVERITY.ERROR || (!recovering && S.FAILURE.test(message));
     const explanation = S.CAPTCHA.test(message) ? text.captcha : S.CONTEXT_ERROR.test(message) ? text.contextError : S.OBJECT_ERROR.test(message) ? text.objectError : S.REPAIR.test(message) ? (failure ? text.invalidData : text.repair) : undefined;
-    const display = failure ? (explanation ? `${explanation} ${message}` : message) : explanation || message;
+    const display = failure ? (explanation ? `${explanation}${RT_MAINTENANCE.SPACE}${message}` : message) : explanation || message;
     const substage = key === RT_SHARED.SCENES ? scopes.filter((scope) => Object.values(P.STAGE).includes(scope as typeof P.STAGE.PLAN)).at(-1) : undefined;
     group.rows.push({ key: row.key, time, message: substage ? `${substage}${RT_SHARED.SYMBOL_588DA4}${display}` : display, raw: row.line, technical, visible: failure || !technical || display !== message });
     group.lastOrder = order++;
@@ -98,11 +97,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     if (result?.seoJobId && !([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(job.status)) sections.get(RT_MOTION.SEO)!.state = RT_MOTION.ACTIVE;
     completed(RT_SHARED.VOICE, result?.voice?.audioId);
     const scenesComplete =
-      (result?.script?.gen?.puppet?.report && !result.script.gen.puppet.report.missing) ||
-      (result?.script?.gen?.remotion &&
-        Object.values(result.script.gen.remotion.scenes || {}).flat().length > 0 &&
-        remotionStateMissingScenes(result.script.gen.remotion).length === 0 &&
-        (!result.analysis || !usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis)));
+      (result?.script?.gen?.puppet?.report && !result.script.gen.puppet.report.missing) || (result?.script?.gen?.remotion && Object.values(result.script.gen.remotion.scenes || {}).flat().length > 0 && remotionStateMissingScenes(result.script.gen.remotion).length === 0 && (!result.analysis || !usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis)));
     completed(RT_SHARED.SCENES, scenesComplete);
     completed(RT_MOTION.RENDER, result?.rendered);
   }

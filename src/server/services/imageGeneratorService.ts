@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { isChatRoomPage, sharedChromeFlowPage } from "./sharedChromePage.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
@@ -3438,7 +3439,10 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace(SOURCE_TEXT_0_2, failureReason));
   } finally {
     if (ownsActivePage && activePage && !activePage.isClosed()) {
-      const openPages = activePage.context().pages().filter((candidate) => !candidate.isClosed());
+      const openPages = activePage
+        .context()
+        .pages()
+        .filter((candidate) => !candidate.isClosed());
       if (openPages.length > 1) await activePage.close().catch(() => undefined);
       else if (browserInstance) browserInstance.page = activePage;
     }
@@ -3870,19 +3874,30 @@ const closeGeminiModelMenu = async (picker: Locator, menu: Locator): Promise<voi
 const isGeminiModelOptionSelected = (option: Locator): Promise<boolean> =>
   option
     .evaluate(
-      (element, browserPayload) => {
+      (element, { payload: browserPayload, maintenanceTexts: RT_MAINTENANCE }) => {
         const { SOURCE_TEXT_SYMBOL_23 } = browserPayload.texts;
         const { selectedClass, activeAttr, activeVal } = browserPayload.payload;
         return (
           element.classList.contains(selectedClass) ||
-          element.classList.contains("active") ||
+          element.classList.contains(RT_MAINTENANCE.ACTIVE) ||
           element.getAttribute(activeAttr) === activeVal ||
-          element.getAttribute("aria-checked") === activeVal ||
-          element.getAttribute("aria-selected") === activeVal ||
-          Boolean(element.querySelector(`${SOURCE_TEXT_SYMBOL_23}${selectedClass}, .active, [${activeAttr}="${activeVal}"], [aria-checked="${activeVal}"], [data-mat-icon-name="check"], [fonticon="check"], input:checked`))
+          element.getAttribute(RT_MAINTENANCE.ARIA_CHECKED) === activeVal ||
+          element.getAttribute(RT_MAINTENANCE.ARIA_SELECTED) === activeVal ||
+          Boolean(element.querySelector(`${SOURCE_TEXT_SYMBOL_23}${selectedClass}${RT_MAINTENANCE.ACTIVE_2}${activeAttr}${RT_MAINTENANCE.ATTRIBUTE_EQUALS_QUOTE}${activeVal}${RT_MAINTENANCE.ARIA_CHECKED_2}${activeVal}${RT_MAINTENANCE.DATA_MAT_ICON_NAME_CHECK_FONTICON_CHECK_INPUT_CHECKED}`))
         );
       },
-      { payload: { selectedClass: GEMINI_MODEL_SELECTION_CONFIG.SELECTED_CLASS, activeAttr: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_ATTRIBUTE, activeVal: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_VALUE }, texts: { SOURCE_TEXT_SYMBOL_23 } },
+      {
+        payload: { payload: { selectedClass: GEMINI_MODEL_SELECTION_CONFIG.SELECTED_CLASS, activeAttr: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_ATTRIBUTE, activeVal: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_VALUE }, texts: { SOURCE_TEXT_SYMBOL_23 } },
+        maintenanceTexts: {
+          ACTIVE: RT_MAINTENANCE.ACTIVE,
+          ARIA_CHECKED: RT_MAINTENANCE.ARIA_CHECKED,
+          ARIA_SELECTED: RT_MAINTENANCE.ARIA_SELECTED,
+          ACTIVE_2: RT_MAINTENANCE.ACTIVE_2,
+          ATTRIBUTE_EQUALS_QUOTE: RT_MAINTENANCE.ATTRIBUTE_EQUALS_QUOTE,
+          ARIA_CHECKED_2: RT_MAINTENANCE.ARIA_CHECKED_2,
+          DATA_MAT_ICON_NAME_CHECK_FONTICON_CHECK_INPUT_CHECKED: RT_MAINTENANCE.DATA_MAT_ICON_NAME_CHECK_FONTICON_CHECK_INPUT_CHECKED,
+        },
+      },
     )
     .catch(() => false);
 const waitForGeminiModelOptionSelected = async (option: Locator): Promise<boolean> => {
@@ -4606,7 +4621,10 @@ async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: Gemin
     } catch (error) {
       lastError = error;
       if (retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
-      const currentCount = await page.locator(GeminiChatSelector.Response).count().catch(() => SecurityConstants.ZERO);
+      const currentCount = await page
+        .locator(GeminiChatSelector.Response)
+        .count()
+        .catch(() => SecurityConstants.ZERO);
       if (retryClick === SecurityConstants.ZERO && !_.isUndefined(initialResponseCount) && currentCount <= initialResponseCount) throw error;
       if (!(await clickCurrentChatRetry(page).catch(() => false))) throw error;
       appLog(CHAT_ROOM_RECOVERY.CLICK_LOG);

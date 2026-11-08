@@ -13,8 +13,7 @@ export const MOTION_BEAT_SHEET = {
     MISSING: (eventId: string, point: string): string => `event ${eventId} of this chapter ("${point}") is not told anywhere; fold it into this beat or the beat right after it, in order, without dropping what is already here`,
     FOREIGN: (eventId: string): string => `this beat tells event ${eventId}, which belongs to another chapter of the outline; replace it with this chapter's moment or return "drop": true`,
   },
-  QUALITY_LOG: (chapter: string, units: number, viewer: number | undefined, covered: number, events: number, texture: number, stage = ""): string =>
-    `Điểm kịch bản ${chapter}${stage}: độ dài ${units}%${viewer === undefined ? "" : `, câu đúng ngôi ${viewer}%`}, sự kiện ${covered}/${events}, tình tiết ${texture} (chỉ ghi nhận).`,
+  QUALITY_LOG: (chapter: string, units: number, viewer: number | undefined, covered: number, events: number, texture: number, stage = ""): string => `Điểm kịch bản ${chapter}${stage}: độ dài ${units}%${viewer === undefined ? "" : `, câu đúng ngôi ${viewer}%`}, sự kiện ${covered}/${events}, tình tiết ${texture} (chỉ ghi nhận).`,
   AFTER_EDIT: " sau biên tập",
   MIN_DEVICE_BEATS: 1,
   PROTAGONIST: "protagonist",

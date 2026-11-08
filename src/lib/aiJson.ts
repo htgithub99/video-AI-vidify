@@ -1,20 +1,28 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { parseJson } from "./jsonStringify.js";
-
-/** JSON never escapes apostrophes; fix that known AI typo only inside a quoted string. */
 export const parseAiJson = <T = any>(raw: string): T => {
-  try { return parseJson<T>(raw); }
-  catch (originalError) {
-    let quoted = false, repaired = "";
+  try {
+    return parseJson<T>(raw);
+  } catch (originalError) {
+    let quoted = false,
+      repaired = "";
     for (let index = 0; index < raw.length; index++) {
       const token = raw[index];
-      if (quoted && token === "\\") {
+      if (quoted && token === RT_MAINTENANCE.BACKSLASH) {
         const next = raw[index + 1];
-        if (next === "'") { repaired += next; index++; continue; }
+        if (next === RT_MAINTENANCE.SINGLE_QUOTE) {
+          repaired += next;
+          index++;
+          continue;
+        }
         repaired += token;
-        if (next !== undefined) { repaired += next; index++; }
+        if (next !== undefined) {
+          repaired += next;
+          index++;
+        }
         continue;
       }
-      if (token === '"') quoted = !quoted;
+      if (token === RT_MAINTENANCE.DOUBLE_QUOTE) quoted = !quoted;
       repaired += token;
     }
     if (repaired === raw) throw originalError;

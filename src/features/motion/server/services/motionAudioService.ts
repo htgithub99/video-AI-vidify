@@ -438,7 +438,11 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
     try {
       const cached = parseJson(fs.readFileSync(metadata, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
       if (
-        cached.signature === plan.signature && cached.provider === C.PROVIDER && cached.speedKey === speedKey && motionVoiceAsrSatisfied(cached, opts.asr === true) && motionVoiceTrackFilesValid(cached, script) &&
+        cached.signature === plan.signature &&
+        cached.provider === C.PROVIDER &&
+        cached.speedKey === speedKey &&
+        motionVoiceAsrSatisfied(cached, opts.asr === true) &&
+        motionVoiceTrackFilesValid(cached, script) &&
         cached.clips?.every((clip) => !opts.asr || ![Q.STATUS.REVIEW, Q.STATUS.UNAVAILABLE].includes(clip.quality?.status as any) || Date.now() - (clip.quality?.verifiedAt || 0) < C.ASR.RECHECK_MS)
       ) {
         return rememberRate(cached);
@@ -520,7 +524,17 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
         await fs.promises.rm(temporary, { force: true }).catch(() => {});
       }
       const track: MotionVoiceTrack = {
-        asr: { version: C.ASR.VERSION, checked: opts.asr === true }, continuous: !!pacing, speedKey: voiceTrackSpeedKey(plan), audioId: id, provider: C.PROVIDER, voiceId: C.MODEL, signature: plan.signature, durations, totalSeconds: timeline.total, plan, clips,
+        asr: { version: C.ASR.VERSION, checked: opts.asr === true },
+        continuous: !!pacing,
+        speedKey: voiceTrackSpeedKey(plan),
+        audioId: id,
+        provider: C.PROVIDER,
+        voiceId: C.MODEL,
+        signature: plan.signature,
+        durations,
+        totalSeconds: timeline.total,
+        plan,
+        clips,
         subtitles: clips.map((clip) => ({ start: clip.start, end: clip.end, text: clip.text, speaker: clip.speaker })),
       };
       writeMotionJsonAtomic(metadata, track);

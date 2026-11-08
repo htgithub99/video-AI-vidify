@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { StudioHeader, StudioPage, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard, StudioInput } from "../../../components/ui/Studio.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_86,
@@ -223,25 +224,20 @@ type SeoData = ReturnType<typeof createSeo>;
 type ResultFolder = { name: string; tracks: Track[]; seo?: SeoData; seoOptions?: any[] };
 const AUDIO_EXT = /\.(mp3|wav|m4a|aac|flac|ogg|opus|webm)$/i;
 const MIXER_DB = MUSIC_MIXER_SERVER.DATABASE_NAME;
-const getTrackFileName = (track: { file?: File; name?: string; path?: string; sourcePath?: string }): string =>
-  track?.file?.name || track?.name || _.compact(String(track?.path || track?.sourcePath || "").split(/[\\/]/)).pop() || "track.mp3";
+const getTrackFileName = (track: { file?: File; name?: string; path?: string; sourcePath?: string }): string => track?.file?.name || track?.name || _.compact(String(track?.path || track?.sourcePath || "").split(/[\\/]/)).pop() || RT_MAINTENANCE.TRACK_MP3;
 const cleanTrackTitle = (name: string) => {
   const raw = String(name || "").replace(/\.[^.]+$/, "");
   const stripped = raw
     .replace(/^\d+[\s._-]*/, "")
     .replace(/\s*\(\d+\)$/, "")
     .trim();
-  return stripped || raw.trim() || "Track";
+  return stripped || raw.trim() || RT_MAINTENANCE.TRACK;
 };
 const numberedName = (file: File | { name?: string }, index: number, fallbackTrack?: Track) => {
-  const rawName = file?.name || (fallbackTrack ? getTrackFileName(fallbackTrack) : "track.mp3");
-  const safeStem = cleanTrackTitle(rawName).replace(/[<>:"/\\|?*\x00-\x1f]/g, "_");
+  const rawName = file?.name || (fallbackTrack ? getTrackFileName(fallbackTrack) : RT_MAINTENANCE.TRACK_MP3);
+  const safeStem = cleanTrackTitle(rawName).replace(new RegExp(RT_MAINTENANCE.INVALID_FILE_NAME_PATTERN, RT_MAINTENANCE.REGEXP_GLOBAL), RT_MAINTENANCE.UNDERSCORE);
   const ext = rawName.match(/\.[^.]+$/)?.[0] || "";
-  return SOURCE_TEMPLATE_SYMBOL_18(
-    SOURCE_TEMPLATE_SYMBOL_86(`${String(index + 1).padStart(2, SOURCE_TEXT_0)}`),
-    SOURCE_TEMPLATE_SYMBOL_86(`${safeStem}`),
-    SOURCE_TEMPLATE_SYMBOL_86(`${ext}`),
-  );
+  return SOURCE_TEMPLATE_SYMBOL_18(SOURCE_TEMPLATE_SYMBOL_86(`${String(index + 1).padStart(2, SOURCE_TEXT_0)}`), SOURCE_TEMPLATE_SYMBOL_86(`${safeStem}`), SOURCE_TEMPLATE_SYMBOL_86(`${ext}`));
 };
 const getDisplayFolderName = (folderName: string, folderPath?: string) => {
   if (!folderPath) return folderName;
@@ -313,15 +309,7 @@ const formatSeoText = (folder: ResultFolder) => {
 };
 const stageTrackForZipBuild = async (token: string, track: Track, sourceTracks: Track[]): Promise<string> => {
   const file = await ensureTrackFile(track, sourceTracks);
-  const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_STAGE_ZIP_FILE, {
-    method: SOURCE_TEXT_POST,
-    headers: {
-      "Content-Type": MUSIC_MIXER_SERVER.HEADER_CONTENT_TYPE_OCTET_STREAM,
-      [MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN]: token,
-      [MUSIC_MIXER_SERVER.HEADER_FILE_NAME]: encodeURIComponent(getTrackFileName(track)),
-    },
-    body: file,
-  });
+  const response = await fetch(API_ROUTES.PIPELINE_MUSIC_MIXER_STAGE_ZIP_FILE, { method: SOURCE_TEXT_POST, headers: { "Content-Type": MUSIC_MIXER_SERVER.HEADER_CONTENT_TYPE_OCTET_STREAM, [MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN]: token, [MUSIC_MIXER_SERVER.HEADER_FILE_NAME]: encodeURIComponent(getTrackFileName(track)) }, body: file });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload.success || !payload.sourcePath) {
     throw new Error(payload.error || MUSIC_MIXER_SERVER.SOURCE_READ_ERROR);
@@ -472,11 +460,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               tracks: _.map(folder.tracks || [], (item: any) => {
                 const name = getTrackFileName(item);
                 const blobPart = item.file instanceof Blob ? [item.file] : [];
-                return {
-                  ...item,
-                  name,
-                  file: new File(blobPart, name, { type: item.file?.type || item.type || "", lastModified: item.file?.lastModified ?? item.lastModified ?? 0 }),
-                };
+                return { ...item, name, file: new File(blobPart, name, { type: item.file?.type || item.type || "", lastModified: item.file?.lastModified ?? item.lastModified ?? 0 }) };
               }),
             })),
           );
@@ -494,12 +478,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
       ...folder,
       tracks: _.map(folder.tracks, (track) => {
         const name = getTrackFileName(track);
-        return {
-          ...track,
-          name,
-          size: track.size ?? track.file?.size ?? 0,
-          file: new File([], name, { type: track.file?.type || "", lastModified: track.file?.lastModified ?? 0 }),
-        };
+        return { ...track, name, size: track.size ?? track.file?.size ?? 0, file: new File([], name, { type: track.file?.type || "", lastModified: track.file?.lastModified ?? 0 }) };
       }),
     }));
     const request = indexedDB.open(MIXER_DB, MUSIC_MIXER_SERVER.DATABASE_VERSION);

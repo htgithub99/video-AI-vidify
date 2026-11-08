@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { runMotionAi, normalizeBeats, sourceSlice, mapMotionAiPool } from "../motionStoryService.js";
 import { normalizeMotionChapterMetadata } from "../../../../../lib/motionEditorialMetadata.js";
 import { motionHtmlWritingDirection, motionHtmlChapterBudget } from "../../../../../lib/motionHtmlAuthoring.js";
@@ -8,30 +9,25 @@ import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
 import type { MotionBeat, MotionChapter, MotionStoryAnalysis, MotionStorySource } from "../../../../../types/motionVideo.js";
 import type { MotionChapterWriteOptions } from "../motionStoryService.js";
-
 const countChapterUnits = (rows: any[]): number => rows.reduce((sum, row) => sum + speechUnits(String(row?.narration || "")), 0);
-
 const HTML_PART_ATOM_SPLIT = /(?<=[.!?。！？])\s+(?=[\p{L}\p{N}\p{P}])|\r?\n+/u;
 const HTML_PART_CLAUSE_SPLIT = /(?<=[,;—–:])\s+(?=[\p{L}\p{N}\p{P}])/u;
 const HTML_PART_STAMP = /\((?:(\d+):)?(\d{1,2}):(\d{2})\)|\[(?:(\d+):)?(\d{1,2}):(\d{2})\]/g;
 const MAX_HTML_BEATS_PER_PART = 5;
 const MAX_HTML_UNITS_PER_PART = 175;
 const MAX_HTML_EDIT_BEATS_PER_BATCH = 10;
-
 interface HtmlChapterPartSlice {
   points: string[];
   source: string;
   weight: number;
   seconds: number;
 }
-
 const parseStampSeconds = (match: RegExpMatchArray): number => {
   const hours = Number(match[1] ?? match[4] ?? 0);
   const minutes = Number(match[2] ?? match[5] ?? 0);
   const seconds = Number(match[3] ?? match[6] ?? 0);
   return hours * 3600 + minutes * 60 + seconds;
 };
-
 export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, totalSeconds: number, totalUnits: number, totalScenes: number): HtmlChapterPartSlice[] => {
   const rawDesiredParts = Math.max(Math.ceil(totalScenes / MAX_HTML_BEATS_PER_PART), Math.ceil(totalUnits / MAX_HTML_UNITS_PER_PART));
   if (rawDesiredParts <= 1) return [];
@@ -53,7 +49,7 @@ export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, tot
       const chunkSize = Math.max(25, Math.ceil(words.length / rawDesiredParts));
       atoms = [];
       for (let i = 0; i < words.length; i += chunkSize) {
-        atoms.push(words.slice(i, i + chunkSize).join(" "));
+        atoms.push(words.slice(i, i + chunkSize).join(RT_MAINTENANCE.SPACE));
       }
     }
   }
@@ -79,11 +75,11 @@ export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, tot
     else groups[groups.length - 1].push(...currentGroup);
   }
   if (groups.length <= 1) return [];
-  const weights = groups.map((group) => Math.max(1, group.join("\n").length));
+  const weights = groups.map((group) => Math.max(1, group.join(RT_MAINTENANCE.NEWLINE).length));
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) || 1;
   let carriedStamp = -1;
   const groupStarts = groups.map((group) => {
-    const marks = [...group.join("\n").matchAll(HTML_PART_STAMP)].map(parseStampSeconds);
+    const marks = [...group.join(RT_MAINTENANCE.NEWLINE).matchAll(HTML_PART_STAMP)].map(parseStampSeconds);
     const start = marks.length ? Math.min(...marks) : carriedStamp;
     if (marks.length) carriedStamp = Math.max(...marks);
     return start;
@@ -102,14 +98,8 @@ export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, tot
           );
     ownedPoints[partIndex].push(point);
   });
-  return groups.map((group, index) => ({
-    points: ownedPoints[index],
-    source: group.join("\n"),
-    weight: weights[index] / totalWeight,
-    seconds: Number((totalSeconds * (weights[index] / totalWeight)).toFixed(1)),
-  }));
+  return groups.map((group, index) => ({ points: ownedPoints[index], source: group.join(RT_MAINTENANCE.NEWLINE), weight: weights[index] / totalWeight, seconds: Number((totalSeconds * (weights[index] / totalWeight)).toFixed(1)) }));
 };
-
 export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
   const rate = opts.speechRate || motionLanguageRate(opts.language);
   const total = analysis.chapters.reduce((sum, item) => sum + (item.targetSeconds || 0), 0);
@@ -122,24 +112,17 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   const slice = sourceSlice(source, chapter.from, chapter.to);
   const compactOutline = analysis.chapters.map(({ id, title, summary, from, to, targetSeconds }) => ({ id, title, summary, from, to, targetSeconds }));
   const previousTail = opts.previous?.slice(-5).map((beat) => beat.narration) || opts.previousSummary;
-  const exec = { ...opts.exec, responseSchema: "motion-html-chapter" as const };
+  const exec = { ...opts.exec, responseSchema: RT_MAINTENANCE.MOTION_HTML_CHAPTER };
   const parts = splitHtmlChapterParts(chapter, slice, seconds, units, targetScenes);
-
   if (parts.length > 1) {
-    const chapterInputKey = motionInputKey(["html-multipart-v1", chapter.id, analysis.title, analysis.authoringSettings, slice, opts.language, rate, opts.isFirst, opts.isLast, parts.length]);
+    const chapterInputKey = motionInputKey([RT_MAINTENANCE.HTML_MULTIPART_V1, chapter.id, analysis.title, analysis.authoringSettings, slice, opts.language, rate, opts.isFirst, opts.isLast, parts.length]);
     const drafts: Record<string, { inputKey: string; rows: any[]; pending: any[] }> = opts.draft?.inputKey === chapterInputKey && opts.draft?.parts ? structuredClone(opts.draft.parts) : {};
     const completed: any[] = [];
     const saveMultipartDraft = (currentRows: any[] = [], isFinal = false) => {
-      opts.onDraft?.({
-        inputKey: chapterInputKey,
-        rows: structuredClone(currentRows),
-        pending: isFinal ? [] : parts.flatMap((_part, idx) => (drafts[String(idx)]?.rows?.length ? [] : [{ id: String(idx), fields: ["narration", "sceneTemplateDraft"] as any }])),
-        parts: structuredClone(drafts),
-      });
+      opts.onDraft?.({ inputKey: chapterInputKey, rows: structuredClone(currentRows), pending: isFinal ? [] : parts.flatMap((_part, idx) => (drafts[String(idx)]?.rows?.length ? [] : [{ id: String(idx), fields: [RT_MAINTENANCE.NARRATION, RT_MAINTENANCE.SCENETEMPLATEDRAFT] as any }])), parts: structuredClone(drafts) });
     };
     saveMultipartDraft([], false);
-    opts.log?.(`Chương ${chapter.id}: chia thành ${parts.length} phần nhỏ (~${MAX_HTML_BEATS_PER_PART} phân cảnh/lượt) để tối ưu tốc độ và tránh quá tải token phản hồi.`);
-
+    opts.log?.(`${RT_MAINTENANCE.CHUONG}${chapter.id}${RT_MAINTENANCE.CHIA_THANH}${parts.length}${RT_MAINTENANCE.PHAN_NHO}${MAX_HTML_BEATS_PER_PART}${RT_MAINTENANCE.PHAN_CANH_LUOT_DE_TOI_UU_TOC_DO_VA_TRANH}`);
     for (let index = 0; index < parts.length; index++) {
       opts.signal?.throwIfAborted();
       const part = parts[index];
@@ -155,32 +138,21 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       const partMinUnits = Math.max(1, Math.round(partUnits * 0.9));
       const partMaxUnits = Math.max(partMinUnits, Math.round(partUnits * 1.1));
       const partUnitsPerScene = Math.max(6, Math.round(partUnits / partScenes));
-      const alreadyWritten = completed.slice(-3).map((beat) => ({
-        id: beat.id,
-        narration: beat.narration,
-        visual: beat.visual,
-        place: beat.place,
-        cast: beat.cast,
-      }));
+      const alreadyWritten = completed.slice(-3).map((beat) => ({ id: beat.id, narration: beat.narration, visual: beat.visual, place: beat.place, cast: beat.cast }));
       const partSection = [
         opts.section,
-        `CHAPTER PART ${index + 1}/${parts.length}: Write ONLY consecutive part ${index + 1} of ${parts.length} for chapter ${chapter.id} (${chapter.title}). Return ONLY ${partScenes} beats (AT MOST ${MAX_HTML_BEATS_PER_PART} beats, starting with beat ID ${chapter.id}_b${completed.length + 1}) covering this part's SOURCE slice.`,
-        index === 0
-          ? "This part opens the chapter: establish the chapter hook immediately and cover only this part's source slice."
-          : "Continue seamlessly from the last beat in alreadyWritten without repeating earlier hooks, facts, or scenes.",
-        index < parts.length - 1
-          ? "Stop at the end of this part's source slice; reserve the chapter's closing payoff/handoff for the final part."
-          : "This is the final part of the chapter: deliver the chapter's closing payoff or handoff cleanly.",
+        `${RT_MAINTENANCE.CHAPTER_PART}${index + 1}${RT_MAINTENANCE.SLASH}${parts.length}${RT_MAINTENANCE.WRITE_ONLY_CONSECUTIVE_PART}${index + 1}${RT_MAINTENANCE.OF}${parts.length}${RT_MAINTENANCE.FOR_CHAPTER}${chapter.id}${RT_MAINTENANCE.OPEN_PAREN_SPACE}${chapter.title}${RT_MAINTENANCE.RETURN_ONLY}${partScenes}${RT_MAINTENANCE.BEATS_AT_MOST}${MAX_HTML_BEATS_PER_PART}${RT_MAINTENANCE.BEATS_STARTING_WITH_BEAT_ID}${chapter.id}${RT_MAINTENANCE.B}${completed.length + 1}${RT_MAINTENANCE.COVERING_THIS_PART_S_SOURCE_SLICE}`,
+        index === 0 ? RT_MAINTENANCE.THIS_PART_OPENS_THE_CHAPTER_ESTABLISH_THE_CHAPTER_HOOK_IMMEDIATELY : RT_MAINTENANCE.CONTINUE_SEAMLESSLY_FROM_THE_LAST_BEAT_IN_ALREADYWRITTEN_WITHOUT_REPEATING,
+        index < parts.length - 1 ? RT_MAINTENANCE.STOP_AT_THE_END_OF_THIS_PART_S_SOURCE_SLICE : RT_MAINTENANCE.THIS_IS_THE_FINAL_PART_OF_THE_CHAPTER_DELIVER_THE,
       ]
         .filter(Boolean)
-        .join(" ");
-
+        .join(RT_MAINTENANCE.SPACE);
       const partPrompt = [
-        "Write the requested chapter part in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,sceneTemplateDraft,utterances?}]}. Stable IDs identify source events. visual is scene/map/diagram/process/timeline/comparison/card as appropriate. Do not turn a sentence into a separate picture by default.",
+        RT_MAINTENANCE.PARTPROMPT,
         motionHtmlWritingDirection(analysis, opts.language),
-        `Language=${opts.language}. THIS CHAPTER PART (${index + 1}/${parts.length}) has approximately ${partSeconds.toFixed(1)} seconds of speech at ${rate.toFixed(2)} spoken units/second: approximately ${partUnits} units TOTAL across all its beats (target window ${partMinUnits}–${partMaxUnits} spoken words/syllables across ${partScenes} beats of ~${partUnitsPerScene} units each, holding ~${targetPictureSeconds}s per scene). Full chapter budget is ${seconds.toFixed(1)}s (${units} units across ~${targetScenes} scenes); full video part has ${total}s with ${pause}s reserved for pauses. Summarize this part's causal arc within ${partMinUnits}–${partMaxUnits} spoken units; do not narrate every source sentence.`,
-        opts.multiVoice === false ? "One narrator reads everything exactly once. utterances can be omitted. Do not invent dialogue." : "Use narrator for narration and the supplied cast keys for source-supported dialogue. Joined utterance text matches narration exactly; no duplicate spoken words.",
-        "Source supplies facts and uncertainty; real people's actions/quotes must be supported. Describe the mechanics of approved actions without inventing another event. Keep production prose separate from speech. Preserve the full sceneTemplateDraft through the response.",
+        `${RT_MAINTENANCE.LANGUAGE_2}${opts.language}${RT_MAINTENANCE.THIS_CHAPTER_PART}${index + 1}${RT_MAINTENANCE.SLASH}${parts.length}${RT_MAINTENANCE.HAS_APPROXIMATELY}${partSeconds.toFixed(1)}${RT_MAINTENANCE.SECONDS_OF_SPEECH_AT}${rate.toFixed(2)}${RT_MAINTENANCE.SPOKEN_UNITS_SECOND_APPROXIMATELY}${partUnits}${RT_MAINTENANCE.UNITS_TOTAL_ACROSS_ALL_ITS_BEATS_TARGET_WINDOW}${partMinUnits}${RT_MAINTENANCE.EN_DASH}${partMaxUnits}${RT_MAINTENANCE.SPOKEN_WORDS_SYLLABLES_ACROSS}${partScenes}${RT_MAINTENANCE.BEATS_OF}${partUnitsPerScene}${RT_MAINTENANCE.UNITS_EACH_HOLDING}${targetPictureSeconds}${RT_MAINTENANCE.S_PER_SCENE_FULL_CHAPTER_BUDGET_IS}${seconds.toFixed(1)}${RT_MAINTENANCE.S_6}${units}${RT_MAINTENANCE.UNITS_ACROSS}${targetScenes}${RT_MAINTENANCE.SCENES_FULL_VIDEO_PART_HAS}${total}${RT_MAINTENANCE.S_WITH}${pause}${RT_MAINTENANCE.S_RESERVED_FOR_PAUSES_SUMMARIZE_THIS_PART_S_CAUSAL_ARC}${partMinUnits}${RT_MAINTENANCE.EN_DASH}${partMaxUnits}${RT_MAINTENANCE.SPOKEN_UNITS_DO_NOT_NARRATE_EVERY_SOURCE_SENTENCE}`,
+        opts.multiVoice === false ? RT_MAINTENANCE.ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED : RT_MAINTENANCE.USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR,
+        RT_MAINTENANCE.PARTPROMPT_2,
         JSON.stringify({
           title: analysis.title,
           chapter: { ...chapter, keyPoints: part.points.length ? part.points : chapter.keyPoints, targetSeconds: partSeconds },
@@ -194,49 +166,42 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
           last: opts.isLast && index === parts.length - 1,
           section: partSection,
         }),
-        "SOURCE:\n" + part.source,
-      ].join("\n");
-
+        RT_MAINTENANCE.SOURCE_2 + part.source,
+      ].join(RT_MAINTENANCE.NEWLINE);
       const partKey = motionInputKey(partPrompt);
       const savedPart = drafts[String(index)];
       let partRows: any[];
       if (savedPart?.inputKey === partKey && Array.isArray(savedPart.rows) && savedPart.rows.length > 0) {
         partRows = savedPart.rows;
       } else {
-        opts.log?.(`Viết phân cảnh chương ${chapter.id} — phần ${index + 1}/${parts.length} (~${partScenes} cảnh, ~${partUnits} âm tiết)…`);
-        const rawPart = opts.ai ? await opts.ai(partPrompt, "motion-story-chapter", exec, opts.signal, opts.log) : await runMotionAi(partPrompt, "motion-story-chapter", exec, opts.signal, opts.log);
-        if (!Array.isArray(rawPart?.beats) || !rawPart.beats.length) throw new Error("Không đọc được danh sách lời của chương từ phản hồi AI.");
-        partRows = rawPart.beats.map((beat: any, beatIdx: number) => ({
-          ...beat,
-          id: beat?.id || `${chapter.id}_b${completed.length + beatIdx + 1}`,
-        }));
+        opts.log?.(`${RT_MAINTENANCE.VIET_PHAN_CANH_CHUONG}${chapter.id}${RT_MAINTENANCE.PHAN}${index + 1}${RT_MAINTENANCE.SLASH}${parts.length}${RT_MAINTENANCE.APPROXIMATE_PREFIX}${partScenes}${RT_MAINTENANCE.CANH}${partUnits}${RT_MAINTENANCE.AM_TIET}`);
+        const rawPart = opts.ai ? await opts.ai(partPrompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : await runMotionAi(partPrompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log);
+        if (!Array.isArray(rawPart?.beats) || !rawPart.beats.length) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
+        partRows = rawPart.beats.map((beat: any, beatIdx: number) => ({ ...beat, id: beat?.id || `${chapter.id}${RT_MAINTENANCE.B}${completed.length + beatIdx + 1}` }));
         drafts[String(index)] = { inputKey: partKey, rows: partRows, pending: [] };
       }
       completed.push(...partRows);
       saveMultipartDraft(completed, false);
     }
-
     saveMultipartDraft(completed, true);
     return normalizeBeats(normalizeMotionChapterMetadata(completed), chapter.id, analysis);
   }
-
   const prompt = [
-    "Write the requested chapter in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,sceneTemplateDraft,utterances?}]}. Stable IDs identify source events. visual is scene/map/diagram/process/timeline/comparison/card as appropriate. Do not turn a sentence into a separate picture by default.",
+    RT_MAINTENANCE.PROMPT,
     motionHtmlWritingDirection(analysis, opts.language),
-    `Language=${opts.language}. THIS CHAPTER has approximately ${seconds.toFixed(1)} seconds of speech at ${rate.toFixed(2)} spoken units/second: approximately ${units} units TOTAL across all its beats (target window ${minUnits}–${maxUnits} spoken words/syllables across roughly ${targetScenes} beats of ~${unitsPerScene} units each, holding ~${targetPictureSeconds}s per scene). This is not per beat. The full part has ${total}s. Reserve ${pause}s for pauses here. Summarize the source's causal arc within this budget; do not narrate every source sentence. More dramatic delivery must use the same budget.`,
-    opts.multiVoice === false ? "One narrator reads everything exactly once. utterances can be omitted. Do not invent dialogue." : "Use narrator for narration and the supplied cast keys for source-supported dialogue. Joined utterance text matches narration exactly; no duplicate spoken words.",
-    "Source supplies facts and uncertainty; real people's actions/quotes must be supported. Describe the mechanics of approved actions without inventing another event. Keep production prose separate from speech. Preserve the full sceneTemplateDraft through the response.",
+    `${RT_MAINTENANCE.LANGUAGE_2}${opts.language}${RT_MAINTENANCE.THIS_CHAPTER_HAS_APPROXIMATELY}${seconds.toFixed(1)}${RT_MAINTENANCE.SECONDS_OF_SPEECH_AT}${rate.toFixed(2)}${RT_MAINTENANCE.SPOKEN_UNITS_SECOND_APPROXIMATELY}${units}${RT_MAINTENANCE.UNITS_TOTAL_ACROSS_ALL_ITS_BEATS_TARGET_WINDOW}${minUnits}${RT_MAINTENANCE.EN_DASH}${maxUnits}${RT_MAINTENANCE.SPOKEN_WORDS_SYLLABLES_ACROSS_ROUGHLY}${targetScenes}${RT_MAINTENANCE.BEATS_OF}${unitsPerScene}${RT_MAINTENANCE.UNITS_EACH_HOLDING}${targetPictureSeconds}${RT_MAINTENANCE.S_PER_SCENE_THIS_IS_NOT_PER_BEAT_THE_FULL}${total}${RT_MAINTENANCE.S_RESERVE}${pause}${RT_MAINTENANCE.S_FOR_PAUSES_HERE_SUMMARIZE_THE_SOURCE_S_CAUSAL_ARC}`,
+    opts.multiVoice === false ? RT_MAINTENANCE.ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED : RT_MAINTENANCE.USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR,
+    RT_MAINTENANCE.PARTPROMPT_2,
     JSON.stringify({ title: analysis.title, chapter, outline: compactOutline, ...motionHtmlIdentities(analysis), previous: previousTail, first: opts.isFirst, last: opts.isLast, section: opts.section }),
-    "SOURCE:\n" + slice,
-  ].join("\n");
+    RT_MAINTENANCE.SOURCE_2 + slice,
+  ].join(RT_MAINTENANCE.NEWLINE);
   const key = motionInputKey(prompt);
-  const raw = opts.draft?.inputKey === key && opts.draft.rows.length ? { beats: opts.draft.rows } : opts.ai ? await opts.ai(prompt, "motion-story-chapter", exec, opts.signal, opts.log) : await runMotionAi(prompt, "motion-story-chapter", exec, opts.signal, opts.log);
+  const raw = opts.draft?.inputKey === key && opts.draft.rows.length ? { beats: opts.draft.rows } : opts.ai ? await opts.ai(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : await runMotionAi(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log);
   const rows = raw.beats;
-  if (!Array.isArray(rows)) throw new Error("Không đọc được danh sách lời của chương từ phản hồi AI.");
+  if (!Array.isArray(rows)) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
   opts.onDraft?.({ inputKey: key, rows, pending: [] });
   return normalizeBeats(normalizeMotionChapterMetadata(rows), chapter.id, analysis);
 };
-
 export const editMotionHtmlScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: Parameters<typeof runMotionAi>[2]; signal?: AbortSignal; log?: Parameters<typeof runMotionAi>[4]; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }) => {
   const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;
   const rate = motionLanguageRate(opts.language);
@@ -246,20 +211,14 @@ export const editMotionHtmlScript = async (source: MotionStorySource, analysis: 
     const currentUnits = countChapterUnits(chapterBeats);
     return { chapterId: chapter.id, targetSeconds: budget.seconds, targetUnits: budget.units, minUnits: Math.round(budget.units * 0.9), maxUnits: Math.round(budget.units * 1.1), currentUnits };
   });
-  const exec = { ...opts.exec, responseSchema: "motion-html-edit" as const };
-
+  const exec = { ...opts.exec, responseSchema: RT_MAINTENANCE.MOTION_HTML_EDIT };
   if (!opts.ai && targets.length > MAX_HTML_EDIT_BEATS_PER_BATCH) {
     const batches: { chapterId: string; items: MotionBeat[]; batchIndex: number; totalBatchesInChapter: number }[] = [];
     for (const chapter of analysis.chapters) {
       const chapterTargets = targets.filter((beat) => beat.chapterId === chapter.id);
       const totalBatchesInChapter = Math.max(1, Math.ceil(chapterTargets.length / MAX_HTML_EDIT_BEATS_PER_BATCH));
       for (let i = 0; i < chapterTargets.length; i += MAX_HTML_EDIT_BEATS_PER_BATCH) {
-        batches.push({
-          chapterId: chapter.id,
-          items: chapterTargets.slice(i, i + MAX_HTML_EDIT_BEATS_PER_BATCH),
-          batchIndex: Math.floor(i / MAX_HTML_EDIT_BEATS_PER_BATCH),
-          totalBatchesInChapter,
-        });
+        batches.push({ chapterId: chapter.id, items: chapterTargets.slice(i, i + MAX_HTML_EDIT_BEATS_PER_BATCH), batchIndex: Math.floor(i / MAX_HTML_EDIT_BEATS_PER_BATCH), totalBatchesInChapter });
       }
     }
     const changes = new Map<string, any>();
@@ -274,23 +233,23 @@ export const editMotionHtmlScript = async (source: MotionStorySource, analysis: 
         const sliceParts = batch.totalBatchesInChapter > 1 ? splitHtmlChapterParts(chapter, chapterSlice, chapter?.targetSeconds || 60, chapterBudget?.targetUnits || 200, batch.totalBatchesInChapter * MAX_HTML_EDIT_BEATS_PER_BATCH) : [];
         const batchSource = sliceParts[batch.batchIndex]?.source || chapterSlice;
         const batchPrompt = [
-          "Edit the supplied spoken script batch once for source fidelity, strong genre voice, engaging storytelling cadence, and exact duration budget alignment. Return JSON {edits:[{id,narration,sceneTemplateDraft,utterances?,reason}]}; omit unchanged beats. If narration/action changes return its complete updated template sections 0–4 as well. Preserve chapters that are already within their minUnits–maxUnits window; if a chapter is below minUnits or above maxUnits, adjust its beats using only source-supported details so total spoken units match the chapter budget. Do not add prescribed stages or unsupported facts. Do not return scores or request redraws.",
+          RT_MAINTENANCE.BATCHPROMPT,
           motionHtmlWritingDirection(analysis, opts.language),
           JSON.stringify({
             language: opts.language,
-            batch: `${idx + 1}/${batches.length}`,
+            batch: `${idx + 1}${RT_MAINTENANCE.SLASH}${batches.length}`,
             chapterBudget,
             chapter: chapter ? { id: chapter.id, title: chapter.title, summary: chapter.summary, from: chapter.from, to: chapter.to, targetSeconds: chapter.targetSeconds } : undefined,
             beats: batch.items,
             source: batchSource,
             renamed: analysis.renameEntities ? analysis.renameMap : undefined,
           }),
-        ].join("\n");
-        const checkpoint = motionTaskCheckpoint<any>(opts.scope, `html-script-edit-batch-${idx + 1}`, [batchPrompt]);
+        ].join(RT_MAINTENANCE.NEWLINE);
+        const checkpoint = motionTaskCheckpoint<any>(opts.scope, `${RT_MAINTENANCE.HTML_SCRIPT_EDIT_BATCH}${idx + 1}`, [batchPrompt]);
         let rawBatch = checkpoint.read();
         if (!rawBatch) {
           requests++;
-          rawBatch = await runMotionAi(batchPrompt, "motion-story-edit", exec, opts.signal, opts.log);
+          rawBatch = await runMotionAi(batchPrompt, RT_MAINTENANCE.MOTION_STORY_EDIT, exec, opts.signal, opts.log);
           checkpoint.save(rawBatch);
         }
         for (const edit of rawBatch?.edits || []) {
@@ -302,23 +261,13 @@ export const editMotionHtmlScript = async (source: MotionStorySource, analysis: 
     const result = beats.map((beat) => {
       const edit = changes.get(beat.id);
       if (!edit) return beat;
-      return {
-        ...beat,
-        narration: edit.narration ?? beat.narration,
-        sceneTemplateDraft: edit.sceneTemplateDraft ?? (edit.narration && edit.narration !== beat.narration ? undefined : beat.sceneTemplateDraft),
-        ...(edit.utterances ? { utterances: edit.utterances } : edit.narration && edit.narration !== beat.narration ? { utterances: undefined } : {}),
-      };
+      return { ...beat, narration: edit.narration ?? beat.narration, sceneTemplateDraft: edit.sceneTemplateDraft ?? (edit.narration && edit.narration !== beat.narration ? undefined : beat.sceneTemplateDraft), ...(edit.utterances ? { utterances: edit.utterances } : edit.narration && edit.narration !== beat.narration ? { utterances: undefined } : {}) };
     });
     return { beats: result, edit: { reviewed: targets.length, rewritten: changes.size, notes: [], requests, extraRequests: Math.max(0, requests - 1), dropped: 0 } };
   }
-
-  const prompt = [
-    "Edit the supplied spoken script once for source fidelity, strong genre voice, engaging storytelling cadence, and exact duration budget alignment. Return JSON {edits:[{id,narration,sceneTemplateDraft,utterances?,reason}]}; omit unchanged beats. If narration/action changes return its complete updated template sections 0–4 as well. Preserve chapters that are already within their minUnits–maxUnits window; if a chapter is below minUnits or above maxUnits, adjust its beats using only source-supported details so total spoken units match the chapter budget. Do not add prescribed stages or unsupported facts. Do not return scores or request redraws.",
-    motionHtmlWritingDirection(analysis, opts.language),
-    JSON.stringify({ language: opts.language, chapterBudgets, chapters: analysis.chapters, beats: targets, source: source.text, renamed: analysis.renameEntities ? analysis.renameMap : undefined }),
-  ].join("\n");
-  const checkpoint = motionTaskCheckpoint<any>(opts.scope, "html-script-edit", [prompt]);
-  const raw = checkpoint.read() || (opts.ai ? await opts.ai(prompt, "motion-story-edit", exec, opts.signal, opts.log) : await runMotionAi(prompt, "motion-story-edit", exec, opts.signal, opts.log));
+  const prompt = [RT_MAINTENANCE.PROMPT_2, motionHtmlWritingDirection(analysis, opts.language), JSON.stringify({ language: opts.language, chapterBudgets, chapters: analysis.chapters, beats: targets, source: source.text, renamed: analysis.renameEntities ? analysis.renameMap : undefined })].join(RT_MAINTENANCE.NEWLINE);
+  const checkpoint = motionTaskCheckpoint<any>(opts.scope, RT_MAINTENANCE.HTML_SCRIPT_EDIT, [prompt]);
+  const raw = checkpoint.read() || (opts.ai ? await opts.ai(prompt, RT_MAINTENANCE.MOTION_STORY_EDIT, exec, opts.signal, opts.log) : await runMotionAi(prompt, RT_MAINTENANCE.MOTION_STORY_EDIT, exec, opts.signal, opts.log));
   checkpoint.save(raw);
   const changes = new Map<string, any>((raw.edits || []).map((edit: any) => [edit.id, edit]));
   const result = beats.map((beat) => {

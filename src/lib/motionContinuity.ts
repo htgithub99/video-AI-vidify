@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_CONTINUITY as C } from "../constants/motionContinuity.js";
 import { motionNarratorCastKey } from "./motionVoice.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../types/motionVideo.js";
@@ -7,8 +8,7 @@ const losses = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "cast">
   const lost = new Map<string, { chapter: string; index: number }>();
   beats.forEach((beat, index) => {
     if (beat.frame === C.HINDSIGHT || !C.LOST.test(beat.narration)) return;
-    for (const member of analysis.cast)
-      if (!lost.has(member.key) && [...words(member.name), ...words(member.alias)].some((word) => beat.narration.includes(word) && C.LOST.test(beat.narration.slice(beat.narration.indexOf(word), beat.narration.indexOf(word) + word.length + C.LOST_WINDOW)))) lost.set(member.key, { chapter: beat.chapterId, index });
+    for (const member of analysis.cast) if (!lost.has(member.key) && [...words(member.name), ...words(member.alias)].some((word) => beat.narration.includes(word) && C.LOST.test(beat.narration.slice(beat.narration.indexOf(word), beat.narration.indexOf(word) + word.length + C.LOST_WINDOW)))) lost.set(member.key, { chapter: beat.chapterId, index });
   });
   return lost;
 };
@@ -26,7 +26,7 @@ export const motionContinuityLedger = (history: MotionBeat[] = [], analysis: Pic
   const motifs = (analysis.motifs || []).map((motif) => C.MOTIF(motif, history.filter((beat) => beat.narration.toLowerCase().includes(motif.toLowerCase())).length));
   const told = [...new Set(history.flatMap((beat) => (beat.eventId ? [beat.eventId] : [])))];
   const place = analysis.places.find((item) => item.key === last.place)?.name || last.place || C.NONE;
-  return C.LEDGER([place, last.time, last.weather].filter(Boolean).join(", "), cast.join("; ") || C.NONE, motifs.join("; ") || C.NONE, told.join(", ") || C.NONE);
+  return C.LEDGER([place, last.time, last.weather].filter(Boolean).join(RT_MAINTENANCE.COMMA_SPACE), cast.join(RT_MAINTENANCE.SEMICOLON_SPACE) || C.NONE, motifs.join(RT_MAINTENANCE.SEMICOLON_SPACE) || C.NONE, told.join(RT_MAINTENANCE.COMMA_SPACE) || C.NONE);
 };
 export const motionContinuityFindings = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "cast">): { id: string; issue: string }[] => {
   const lost = losses(beats, analysis);

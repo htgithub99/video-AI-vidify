@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { Player } from "@remotion/player";
 import { Audio } from "remotion";
@@ -14,6 +15,8 @@ const PreviewComposition: FC<{ document: MotionRemotionSpec; audioUrl?: string }
 export const MotionRemotionPlayer: FC<{ spec: MotionRemotionSpec; audioUrl?: string; videoUrl?: string }> = ({ spec, audioUrl, videoUrl }) =>
   videoUrl ? (
     <video src={videoUrl} controls className={RT_MOTION.BLOCK_W_FULL_ROUNDED_XL_BG_BLACK} />
-  ) : spec.renderer === "html-canvas" ? <MotionHtmlScenePlayer spec={spec} audioUrl={audioUrl} /> : (
+  ) : spec.renderer === RT_MAINTENANCE.HTML_CANVAS ? (
+    <MotionHtmlScenePlayer spec={spec} audioUrl={audioUrl} />
+  ) : (
     <Player component={PreviewComposition} inputProps={{ document: spec, audioUrl }} durationInFrames={Math.ceil(spec.duration * spec.fps)} compositionWidth={spec.width} compositionHeight={spec.height} fps={spec.fps} controls style={{ width: RT_MOTION.VALUE_100, maxHeight: 600, borderRadius: 12, backgroundColor: RT_MOTION.VALUE_111 }} />
   );

@@ -25,11 +25,7 @@ export const HORROR_SCENE: MotionProfileScene = {
   },
   standingHeadRatio: 0.39,
   lowPostures: ["sit", "sit_ground", "kneel", "crouch", "slump"],
-  shotSizes: {
-    close: { head: [0.2, 0.7], top: 0.03 },
-    medium_close: { head: [0.12, 0.75], top: 0.03 },
-    medium: { head: [0.06, 0.5], top: 0.03 },
-  },
+  shotSizes: { close: { head: [0.2, 0.7], top: 0.03 }, medium_close: { head: [0.12, 0.75], top: 0.03 }, medium: { head: [0.06, 0.5], top: 0.03 } },
   animals: HORROR_ANIMAL_FRAMES,
   objects: HORROR_OBJECT_FRAMES,
   units: HORROR_UNIT_FRAMES,

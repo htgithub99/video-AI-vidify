@@ -1,16 +1,11 @@
-/** Local, deterministic scoring of one AI scene response. No AI call, no artwork changes. */
 export const MOTION_SCENE_SCORE = {
   REVISION: 1,
-  /** Content request budget per scene: first draw + at most 2 rewrites. */
   ATTEMPTS: 3,
   THRESHOLD: 80,
   WEIGHTS: { coverage: 25, parts: 20, frame: 15, duration: 5, identity: 5, stillness: 5, picture: 25 },
   PICTURE_PENALTY: 0.25,
-  /** Fraction of the scene that the longest moving track should span. */
   DURATION_COVER: 0.8,
-  /** A box may overflow the canvas by this fraction of its own size before it counts as out of frame. */
   FRAME_TOLERANCE: 0.15,
-  /** Translation (in SVG units, relative to canvas) above which a "still" subject counts as moving. */
   STILL_LIMIT: 0.04,
   STILL_WORDS: /\b(?:still|static|motionless|stands? still|remains? (?:still|seated|standing)|holds? (?:still|position)|does not move|no movement|unmoving|đứng yên|bất động|giữ yên)\b/i,
   ISSUE: {
@@ -21,8 +16,7 @@ export const MOTION_SCENE_SCORE = {
     IDENTITY: (ids: string[]) => `character layers missing or with wrong entityId: ${ids.join(", ")}. Each cast node needs its own character layer with the exact entityId.`,
     STILL: (ids: string[]) => `subjects the actionPlan keeps still are moving: ${ids.join(", ")}. Keep them still.`,
   },
-  REWRITE: (issues: string[], score: number) =>
-    `REVISION REQUEST: a previous answer for this exact scene scored ${score}/100 on the local checklist. Draw the scene above again and fix these problems; return the COMPLETE JSON object (svg, layers, animations, design, continuityNotes) — keep the brief's artwork, identities and actions:\n- ${issues.join("\n- ")}`,
+  REWRITE: (issues: string[], score: number) => `REVISION REQUEST: a previous answer for this exact scene scored ${score}/100 on the local checklist. Draw the scene above again and fix these problems; return the COMPLETE JSON object (svg, layers, animations, design, continuityNotes) — keep the brief's artwork, identities and actions:\n- ${issues.join("\n- ")}`,
   FRESH: (issues: string[]) => `A previous attempt for this scene had these problems; avoid them in this fresh drawing:\n- ${issues.join("\n- ")}`,
   CHECKLIST:
     "SELF-CHECK BEFORE ANSWERING: (1) every actionPlan subject has animation tracks on its own layer or child parts; (2) each part the plan says moves has its own animated child group — never only translate the whole subject; (3) every subject stays fully inside the viewBox at start, middle and end; (4) the authored phases span the whole scene duration; (5) each cast node is its own character layer with the exact entityId; (6) subjects the plan keeps still do not move; (7) each person has the brief's body position and facing (riders sit in the saddle, people seen from behind show no face), the brief's skin colour code, and a beard that leaves the mouth visible.",

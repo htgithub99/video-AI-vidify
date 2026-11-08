@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
@@ -47,7 +48,10 @@ export const hasMotionVisualDraft = (state: VisualDraftContext) => (state.visual
 export const motionVisualDraftKey = (settings: MotionVisualSettings) => stringifyJson(normalizeMotionVisualSettings(settings));
 export const motionCompileStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
-  return stringifyJson([...V.DRAFT_COMPILE_FIELDS.map((key) => (key === "visualSettings" ? motionVisualSettingsFor(fields) : key === RT_MOTION.SUBTITLES ? fields[key] !== false : key === RT_MOTION.STYLEPRESET && (fields.visualSettings as MotionVisualSettings)?.mode === RT_SHARED.REMOTION ? undefined : fields[key])), motionVoiceAsrSatisfied(fields.voice as MotionStoryScript["voiceTrack"], fields.asrCheck === true && !fields.uploadedAudio)]);
+  return stringifyJson([
+    ...V.DRAFT_COMPILE_FIELDS.map((key) => (key === RT_MAINTENANCE.VISUALSETTINGS ? motionVisualSettingsFor(fields) : key === RT_MOTION.SUBTITLES ? fields[key] !== false : key === RT_MOTION.STYLEPRESET && (fields.visualSettings as MotionVisualSettings)?.mode === RT_SHARED.REMOTION ? undefined : fields[key])),
+    motionVoiceAsrSatisfied(fields.voice as MotionStoryScript["voiceTrack"], fields.asrCheck === true && !fields.uploadedAudio),
+  ]);
 };
 export const motionRenderStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;

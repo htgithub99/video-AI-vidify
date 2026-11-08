@@ -5991,23 +5991,18 @@ const cleanupMusicMixerStagedDir = async (token: string): Promise<void> => {
 };
 router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_ZIP_DESTINATION, (req: Request, res: Response) => {
   const name = path.basename(String(req.body?.suggestedName || MUSIC_MIXER_SERVER.DEFAULT_ZIP_NAME));
-  execFile(
-    getPythonCommand(),
-    [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SOURCE_TEXT_SELECT_SAVE_FILE, name, MUSIC_MIXER_SERVER.ZIP_EXTENSION],
-    { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } },
-    (error, stdout) => {
-      if (error) return res.status(500).json({ success: false, error: error.message });
-      const target = stdout.trim();
-      if (!target) return res.json({ success: true, cancelled: true });
-      const token = randomUUID();
-      musicMixerZipDestinations.set(token, target);
-      setTimeout(() => {
-        musicMixerZipDestinations.delete(token);
-        void cleanupMusicMixerStagedDir(token);
-      }, MUSIC_MIXER_SERVER.ZIP_TOKEN_TTL_MS).unref();
-      return res.json({ success: true, token });
-    },
-  );
+  execFile(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SOURCE_TEXT_SELECT_SAVE_FILE, name, MUSIC_MIXER_SERVER.ZIP_EXTENSION], { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } }, (error, stdout) => {
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    const target = stdout.trim();
+    if (!target) return res.json({ success: true, cancelled: true });
+    const token = randomUUID();
+    musicMixerZipDestinations.set(token, target);
+    setTimeout(() => {
+      musicMixerZipDestinations.delete(token);
+      void cleanupMusicMixerStagedDir(token);
+    }, MUSIC_MIXER_SERVER.ZIP_TOKEN_TTL_MS).unref();
+    return res.json({ success: true, token });
+  });
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_STAGE_ZIP_FILE, async (req: Request, res: Response) => {
   req.setTimeout(0);
@@ -6056,28 +6051,23 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
     };
     await fs.promises.writeFile(tempManifestPath, stringifyJson(manifest), SOURCE_TEXT_UTF_8);
     const result = await new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
-      execFile(
-        getPythonCommand(),
-        [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath],
-        { windowsHide: true, maxBuffer: MUSIC_MIXER_SERVER.ZIP_BUILDER_MAX_BUFFER_BYTES, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } },
-        (error, stdout, stderr) => {
-          const trimmedStdout = String(stdout || C.EMPTY).trim();
-          if (trimmedStdout) {
-            try {
-              const parsed = parseJson(trimmedStdout);
-              if (parsed && typeof parsed.success === "boolean") {
-                return resolve(parsed);
-              }
-            } catch {
-              // Fall through to error handling below
+      execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath], { windowsHide: true, maxBuffer: MUSIC_MIXER_SERVER.ZIP_BUILDER_MAX_BUFFER_BYTES, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } }, (error, stdout, stderr) => {
+        const trimmedStdout = String(stdout || C.EMPTY).trim();
+        if (trimmedStdout) {
+          try {
+            const parsed = parseJson(trimmedStdout);
+            if (parsed && typeof parsed.success === "boolean") {
+              return resolve(parsed);
             }
+          } catch {
+            // Fall through to error handling below
           }
-          if (error) {
-            return resolve({ success: false, error: stderr?.trim() || error.message || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
-          }
-          return resolve({ success: true, path: target });
-        },
-      );
+        }
+        if (error) {
+          return resolve({ success: false, error: stderr?.trim() || error.message || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
+        }
+        return resolve({ success: true, path: target });
+      });
     });
     if (!result.success) {
       throw new Error(result.error || MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR);

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { parseJson } from "../../lib/jsonStringify.js";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../../constants/cinematicConstants.js";
@@ -52,7 +53,7 @@ export const observeChatContextReceipts = (page: Page): ChatContextReceipts => {
     if (room && room !== next) receipts.invalidate();
     room = next;
   });
-  page.on("domcontentloaded", () => {
+  page.on(RT_MAINTENANCE.DOMCONTENTLOADED, () => {
     room = conversation(page.url());
     receipts.invalidate();
   });

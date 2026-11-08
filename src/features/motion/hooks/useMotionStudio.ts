@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
@@ -87,7 +88,22 @@ import { MOTION_VISUAL } from "../../../constants/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import type { MotionVisualSettings, MotionRemotionProfile, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { StorageCleanResult, StorageJunkReport } from "../../../types/storage.js";
-import { captureMotionVisualDraft, forgetMotionVisualDraftResults, hasMotionVisualDraft, invalidateMotionVisualDraftOutput, motionCompileStateKey, motionRenderStateKey, motionProductionOutputKeys, motionRenderedPreview, motionVisualDraftContextKey, motionVisualDraftKey, motionVisualDraftRuntime, recoverMotionVisualDraft, switchMotionVisualDraft, type MotionVisualDraft } from "../lib/motionVisualDraft.js";
+import {
+  captureMotionVisualDraft,
+  forgetMotionVisualDraftResults,
+  hasMotionVisualDraft,
+  invalidateMotionVisualDraftOutput,
+  motionCompileStateKey,
+  motionRenderStateKey,
+  motionProductionOutputKeys,
+  motionRenderedPreview,
+  motionVisualDraftContextKey,
+  motionVisualDraftKey,
+  motionVisualDraftRuntime,
+  recoverMotionVisualDraft,
+  switchMotionVisualDraft,
+  type MotionVisualDraft,
+} from "../lib/motionVisualDraft.js";
 import { motionVisualBeatGroups } from "../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING } from "../../../constants/motionScenePacing.js";
 import { createMotionSourceReader } from "../lib/motionSourceReader.js";
@@ -219,7 +235,6 @@ export interface MotionScenesRequest {
   restart?: boolean;
   restyle?: boolean;
   note?: string;
-  /** Retries failed scenes while keeping accepted scenes. */
   retryFailed?: boolean;
 }
 const compileStateKey = motionCompileStateKey;
@@ -973,8 +988,23 @@ export function useMotionStudio() {
         try {
           const result = (await runStoryJob(
             API_ROUTES.MOTION_STORY_SCENES,
-            { script, analysis, aspect: now.aspect, aiExecution: motionSceneAiExecution(now), mainAiExecution: motionMainAiExecution(now), asrCheck: now.asrCheck === true, styleReferences: now.styleReferences, ...motionVisualRequest(now), characterMotion: now.characterMotion, review: now.aiReview !== false,
-              autoVoice: false, sfx: now.sfx, previews: !exportOn(now), ...req, rebuildKey: req.restart || req.scenes?.length ? crypto.randomUUID() : undefined },
+            {
+              script,
+              analysis,
+              aspect: now.aspect,
+              aiExecution: motionSceneAiExecution(now),
+              mainAiExecution: motionMainAiExecution(now),
+              asrCheck: now.asrCheck === true,
+              styleReferences: now.styleReferences,
+              ...motionVisualRequest(now),
+              characterMotion: now.characterMotion,
+              review: now.aiReview !== false,
+              autoVoice: false,
+              sfx: now.sfx,
+              previews: !exportOn(now),
+              ...req,
+              rebuildKey: req.restart || req.scenes?.length ? crypto.randomUUID() : undefined,
+            },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
           if (!flowCancelled.current && !stateRef.current.automationPaused) requestVoice(result, analysis);
@@ -1011,15 +1041,30 @@ export function useMotionStudio() {
       pending.add(detail.sceneId);
       const retry = () => {
         const now = stateRef.current;
-        const scene = Object.values(now.script?.gen?.remotion?.scenes || {}).flat().find((item) => item.id === detail.sceneId);
-        if (jsonUtils.getItem(MOTION_STORY_CONFIG.STORY_STOP_STORAGE_KEY, false) || !scene?.html || scene.html.hash !== detail.hash) { pending.delete(detail.sceneId); return; }
-        if (sceneBuildPending.current || flowDepth.current) { const timer = setTimeout(() => { timers.delete(timer); retry(); }, 1000); timers.add(timer); return; }
+        const scene = Object.values(now.script?.gen?.remotion?.scenes || {})
+          .flat()
+          .find((item) => item.id === detail.sceneId);
+        if (jsonUtils.getItem(MOTION_STORY_CONFIG.STORY_STOP_STORAGE_KEY, false) || !scene?.html || scene.html.hash !== detail.hash) {
+          pending.delete(detail.sceneId);
+          return;
+        }
+        if (sceneBuildPending.current || flowDepth.current) {
+          const timer = setTimeout(() => {
+            timers.delete(timer);
+            retry();
+          }, 1000);
+          timers.add(timer);
+          return;
+        }
         void buildScenes({ scenes: [detail.sceneId] }).finally(() => pending.delete(detail.sceneId));
       };
       retry();
     };
-    window.addEventListener("motion-html-execution-error", onError);
-    return () => { window.removeEventListener("motion-html-execution-error", onError); for (const timer of timers) clearTimeout(timer); };
+    window.addEventListener(RT_MAINTENANCE.MOTION_HTML_EXECUTION_ERROR, onError);
+    return () => {
+      window.removeEventListener(RT_MAINTENANCE.MOTION_HTML_EXECUTION_ERROR, onError);
+      for (const timer of timers) clearTimeout(timer);
+    };
   }, [buildScenes]);
   const generateVoice = useCallback(
     async (scriptOverride?: MotionStoryScript): Promise<MotionVoiceTrack | undefined> => {

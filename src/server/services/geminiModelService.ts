@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import type { Locator, Page } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG, GEMINI_CHAT_BASE_MODEL_LABELS } from "../../constants/cinematicConstants.js";
 import { GEMINI_MODEL_ENCODING, GEMINI_MODEL_UI as UI, GEMINI_THINKING_LEVEL_OPTIONS, parseGeminiChatModel } from "../../constants/geminiChatModels.js";
@@ -100,7 +101,12 @@ export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal): Pr
 const checked = async (option: Locator): Promise<boolean> => {
   const hasAttribute = async (name: string, value: string): Promise<boolean> => (await option.getAttribute(name).catch(() => null)) === value;
   if ((await hasAttribute(UI.ARIA_CHECKED, UI.TRUE)) || (await hasAttribute(UI.ARIA_SELECTED, UI.TRUE)) || (await hasAttribute(UI.DATA_STATE, UI.CHECKED)) || (await hasAttribute(UI.DATA_ACTIVE, UI.TRUE))) return true;
-  if (await option.evaluate((node) => node.classList.contains("selected") || node.classList.contains("active") || Boolean(node.querySelector('.selected, .active, [data-active="true"]'))).catch(() => false)) return true;
+  if (
+    await option
+      .evaluate((node, RT_MAINTENANCE) => node.classList.contains(RT_MAINTENANCE.SELECTED) || node.classList.contains(RT_MAINTENANCE.ACTIVE) || Boolean(node.querySelector(RT_MAINTENANCE.SELECTED_ACTIVE_DATA_ACTIVE_TRUE)), { SELECTED: RT_MAINTENANCE.SELECTED, ACTIVE: RT_MAINTENANCE.ACTIVE, SELECTED_ACTIVE_DATA_ACTIVE_TRUE: RT_MAINTENANCE.SELECTED_ACTIVE_DATA_ACTIVE_TRUE })
+      .catch(() => false)
+  )
+    return true;
   return await option
     .locator(UI.CHECK_ICON_SELECTOR)
     .filter({ visible: true })

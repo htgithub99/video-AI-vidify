@@ -475,7 +475,6 @@ export interface MotionBeat {
   hook?: string;
   cast?: string[];
   action?: string;
-  /** Written by the script AI; passed verbatim to the scene drawing prompt. */
   motionIntent?: string;
   label?: string;
   emphasis?: boolean;

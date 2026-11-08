@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
@@ -73,7 +74,7 @@ export const validateSceneComposition = (composition: MotionSceneComposition, as
   const ids = new Set<string>();
   for (const layer of composition.layers) {
     const sourceNode = nodes.find((node) => node.id === layer?.id);
-    const anonymous = layer?.anonymous === true && !layer.entityId && (sourceNode?.kind === RT_SHARED.CHARACTER && sourceNode.anonymous === true || composition.animationSource === "ai-complete" && !sourceNode?.entityId);
+    const anonymous = layer?.anonymous === true && !layer.entityId && ((sourceNode?.kind === RT_SHARED.CHARACTER && sourceNode.anonymous === true) || (composition.animationSource === RT_MAINTENANCE.AI_COMPLETE && !sourceNode?.entityId));
     if (layer?.id && elements.get(layer.id)?.tag !== RT_CORE.G) throw new Error(C.ERROR(layer.id, C.SVG_GROUP_MISSING));
     if (!layer || !C.ID.test(layer.id) || ids.has(layer.id) || elements.get(layer.id)?.tag !== RT_CORE.G || !(C.KINDS as readonly string[]).includes(layer.kind) || (layer.kind === RT_SHARED.CHARACTER && !anonymous && (!layer.entityId || (cast && !cast.has(layer.entityId))))) throw new Error(C.ERROR(layer?.id || RT_CORE.LAYERS, C.IDS));
     ids.add(layer.id);
@@ -131,21 +132,20 @@ export const normalizeSceneComposition = (raw: any, key: string, inputKey: strin
     complete && Array.isArray(raw?.layers)
       ? raw.layers.map((layer: MotionSceneLayer) => {
           const source = nodes.find((node) => node.id === layer?.id);
-          // Map markers/statues/symbols use their exact source node kind; they are not new cast members.
-          if (source?.kind === "prop" && layer.kind === "character") return { ...layer, kind: "prop", entityId: undefined, anonymous: undefined };
-          return source?.kind === "character" && layer.kind === "character" ? { ...layer, entityId: source.entityId, anonymous: !source.entityId && source.anonymous === true } : layer;
+          if (source?.kind === RT_MAINTENANCE.PROP && layer.kind === RT_MAINTENANCE.CHARACTER) return { ...layer, kind: RT_MAINTENANCE.PROP, entityId: undefined, anonymous: undefined };
+          return source?.kind === RT_MAINTENANCE.CHARACTER && layer.kind === RT_MAINTENANCE.CHARACTER ? { ...layer, entityId: source.entityId, anonymous: !source.entityId && source.anonymous === true } : layer;
         })
       : complete
         ? raw?.layers
         : Array.isArray(raw?.layers)
           ? raw.layers.filter((layer: MotionSceneLayer) => !layer || typeof layer.id !== "string" || required.has(layer.id) || elements.has(layer.id))
           : raw?.layers;
-  if (complete && !Array.isArray(raw?.animations)) throw new Error(C.ERROR("animations", C.INVALID));
+  if (complete && !Array.isArray(raw?.animations)) throw new Error(C.ERROR(RT_MAINTENANCE.ANIMATIONS, C.INVALID));
   const composition: MotionSceneComposition = {
     revision: C.REVISION,
     assetKey: key,
     inputKey,
-    ...(complete ? { animationSource: "ai-complete", unchecked: true } : {}),
+    ...(complete ? { animationSource: RT_MAINTENANCE.AI_COMPLETE, unchecked: true } : {}),
     layers,
     animations: raw?.animations || [],
     ...(raw?.design ? { design: normalizeMotionSceneDesign(raw.design, nodes, { width, height }) } : {}),
@@ -174,9 +174,9 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
       kind: layer.kind,
       ...(layer.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE ? (anonymous ? { anonymous: true } : { entityId: layer.entityId }) : {}),
       ...(typeof layer.description === "string" ? { description: layer.description.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
-      ...(layer.kind === "character" && typeof layer.appearance === "string" ? { appearance: layer.appearance.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
-      ...(layer.kind === "effect" && ["rain", "smoke", "steam", "flame", "fog", "sway", "highlight", "wind", "water"].includes(layer.effectKind) ? { effectKind: layer.effectKind } : {}),
-      ...(layer.kind === "effect" && typeof layer.sourceId === "string" && C.ID.test(layer.sourceId) ? { sourceId: layer.sourceId } : {}),
+      ...(layer.kind === RT_MAINTENANCE.CHARACTER && typeof layer.appearance === "string" ? { appearance: layer.appearance.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
+      ...(layer.kind === RT_MAINTENANCE.EFFECT && ([RT_MAINTENANCE.RAIN, RT_MAINTENANCE.SMOKE, RT_MAINTENANCE.STEAM, RT_MAINTENANCE.FLAME, RT_MAINTENANCE.FOG, RT_MAINTENANCE.SWAY, RT_MAINTENANCE.HIGHLIGHT, RT_MAINTENANCE.WIND, RT_MAINTENANCE.WATER] as string[]).includes(layer.effectKind) ? { effectKind: layer.effectKind } : {}),
+      ...(layer.kind === RT_MAINTENANCE.EFFECT && typeof layer.sourceId === "string" && C.ID.test(layer.sourceId) ? { sourceId: layer.sourceId } : {}),
     });
   }
   const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, unchecked: true, layers, animations: [], ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
@@ -270,11 +270,7 @@ const compositionFrameStep = (composition: MotionSceneComposition, tracks: Motio
   }
   return fine ? C.FRAME_STEP.FINE : C.FRAME_STEP.LOOP;
 };
-export const motionAuthoredTime = (composition: MotionSceneComposition, seconds: number, sceneSeconds?: number): number => (composition.animationSource === "ai-complete" && Number.isFinite(composition.duration) && composition.duration! > 0 && Number.isFinite(sceneSeconds) && sceneSeconds! > 0 ? (seconds * composition.duration!) / sceneSeconds! : seconds);
-/**
- * Legacy read path: scenes saved by the removed AI motion-director step carry `composition.motion` clips.
- * They still render unchanged; new scenes never produce clips (motion is authored with the drawing).
- */
+export const motionAuthoredTime = (composition: MotionSceneComposition, seconds: number, sceneSeconds?: number): number => (composition.animationSource === RT_MAINTENANCE.AI_COMPLETE && Number.isFinite(composition.duration) && composition.duration! > 0 && Number.isFinite(sceneSeconds) && sceneSeconds! > 0 ? (seconds * composition.duration!) / sceneSeconds! : seconds);
 export const motionCompositionDirected = (composition: MotionSceneComposition): boolean => composition.motion?.revision === MOTION_CLIP_DIRECTOR.REVISION && Array.isArray(composition.motion.clips);
 const speechTracks = new WeakMap<MotionSceneComposition, MotionSceneAnimation[]>();
 const directedTracks = (composition: MotionSceneComposition, height: number): MotionSceneAnimation[] => {
@@ -292,7 +288,7 @@ export const compositionFrameSvg = (asset: MotionVectorAsset, composition: Motio
   const tracks = motionActorTracks(composition, asset.height);
   if (!tracks.length) return asset.svg;
   const step = compositionFrameStep(composition, tracks);
-  const time = composition.animationSource === "ai-complete" ? motionAuthoredTime(composition, seconds, sceneSeconds) : Math.round(seconds / step) * step;
+  const time = composition.animationSource === RT_MAINTENANCE.AI_COMPLETE ? motionAuthoredTime(composition, seconds, sceneSeconds) : Math.round(seconds / step) * step;
   const cacheKey = [time.toFixed(4), behavior.sceneEffects, [...speakers].sort().join(RT_SHARED.SYMBOL_D03502)].join(RT_SHARED.SYMBOL_01BA47);
   let cached = frameCache.get(composition);
   if (!cached) {

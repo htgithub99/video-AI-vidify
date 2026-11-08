@@ -96,7 +96,6 @@ export class ChromeTaskCoordinator {
     if (unsettled) this.unsettledResponses.add(key);
     else this.unsettledResponses.delete(key);
   }
-  /** Blocks only the Chrome handoff in progress; outside a handoff the error is not retained. */
   fail(error: unknown): boolean {
     if (!this.transition) return false;
     this.transitionFailure = error;

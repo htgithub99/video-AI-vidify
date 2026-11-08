@@ -1,26 +1,35 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { createHash } from "node:crypto";
 import { stringifyJson } from "./jsonStringify.js";
 import { MOTION_REMOTION_RENDER as R } from "../constants/motionRemotionRender.js";
 import type { MotionRemotionSpec } from "../types/motionVisual.js";
-
-/** Scene fields that never change a rendered pixel (bookkeeping, prompts, scores); excluded from cache keys. */
-const NON_VISUAL = new Set(["generation", "build", "requestKeys", "writtenMotionKey", "actionPlan", "motionIntent", "drawingNote", "sourceKey", "sourceBeatIds", "failStreak", "deferred", "qualityNote", "qualityRedraws", "reviewKey", "continuityDraft", "continuityKey", "removedObjects"]);
-const visualScene = (scene: MotionRemotionSpec["scenes"][number]) => scene.html ? { id: scene.id, renderer: scene.renderer, startFrame: scene.startFrame, endFrame: scene.endFrame, htmlHash: scene.html.hash, seed: scene.html.seed, speaking: scene.speaking } : Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key)));
+const NON_VISUAL = new Set<string>([
+  RT_MAINTENANCE.GENERATION,
+  RT_MAINTENANCE.BUILD,
+  RT_MAINTENANCE.REQUESTKEYS,
+  RT_MAINTENANCE.WRITTENMOTIONKEY,
+  RT_MAINTENANCE.ACTIONPLAN,
+  RT_MAINTENANCE.MOTIONINTENT,
+  RT_MAINTENANCE.DRAWINGNOTE,
+  RT_MAINTENANCE.SOURCEKEY,
+  RT_MAINTENANCE.SOURCEBEATIDS,
+  RT_MAINTENANCE.FAILSTREAK,
+  RT_MAINTENANCE.DEFERRED,
+  RT_MAINTENANCE.QUALITYNOTE,
+  RT_MAINTENANCE.QUALITYREDRAWS,
+  RT_MAINTENANCE.REVIEWKEY,
+  RT_MAINTENANCE.CONTINUITYDRAFT,
+  RT_MAINTENANCE.CONTINUITYKEY,
+  RT_MAINTENANCE.REMOVEDOBJECTS,
+]);
+const visualScene = (scene: MotionRemotionSpec["scenes"][number]) => (scene.html ? { id: scene.id, renderer: scene.renderer, startFrame: scene.startFrame, endFrame: scene.endFrame, htmlHash: scene.html.hash, seed: scene.html.seed, speaking: scene.speaking } : Object.fromEntries(Object.entries(scene).filter(([key]) => !NON_VISUAL.has(key))));
 export interface MotionRemotionSegment {
   index: number;
-  /** Inclusive frame range. */
   start: number;
   end: number;
-  /** Content hash: changes only when something drawn inside this range (or a global render setting) changes. */
   key: string;
-  /** Scenes visible in this range: the segment can be pre-rendered once all of them are final. */
   sceneIds: string[];
 }
-/**
- * Splits a spec into frame ranges cut at scene boundaries (~R.SEGMENT_SECONDS each), so a redrawn scene
- * invalidates only its own segment and segments can render in parallel lanes. Output is identical to one
- * continuous render: same composition, same absolute frame numbers.
- */
 export const motionRemotionSegments = (spec: MotionRemotionSpec, encoding: { width: number; height: number; crf: number }): MotionRemotionSegment[] => {
   const total = Math.ceil(spec.duration * spec.fps);
   const target = Math.max(1, Math.round(R.SEGMENT_SECONDS * spec.fps));
@@ -34,7 +43,6 @@ export const motionRemotionSegments = (spec: MotionRemotionSpec, encoding: { wid
     }
   }
   bounds.push([start, total - 1]);
-  // Everything that can change a frame but is not tied to one scene.
   const global = stringifyJson([R.SEGMENT_VERSION, spec.renderer, encoding, spec.version, spec.aspect, spec.fps, spec.width, spec.height, spec.motion, spec.profileId, spec.fontFamily, spec.renderBehavior, spec.resolvedSettings, total]);
   return bounds.map(([from, to], index) => {
     const scenes = (spec.scenes || []).filter((scene) => scene.startFrame <= to && scene.endFrame > from).map(visualScene);
@@ -44,11 +52,12 @@ export const motionRemotionSegments = (spec: MotionRemotionSpec, encoding: { wid
       .sort()
       .map((key) => [key, spec.assets[key]]);
     const subtitles = (spec.subtitles || []).filter((item) => item.start * spec.fps <= to + 1 && item.end * spec.fps >= from - 1);
-    const key = createHash("sha256").update(stringifyJson([global, from, to, scenes, assets, subtitles])).digest("hex");
+    const key = createHash(RT_MAINTENANCE.SHA256)
+      .update(stringifyJson([global, from, to, scenes, assets, subtitles]))
+      .digest(RT_MAINTENANCE.HEX);
     return { index, start: from, end: to, key, sceneIds: (spec.scenes || []).filter((scene) => scene.startFrame <= to && scene.endFrame > from).map((scene) => scene.id) };
   });
 };
-/** Splits work into `lanes` lists of similar frame counts (longest first), preserving nothing about order. */
 export const motionSegmentLanes = <T extends { start: number; end: number }>(items: T[], lanes: number): T[][] => {
   const result: { frames: number; items: T[] }[] = Array.from({ length: Math.max(1, lanes) }, () => ({ frames: 0, items: [] }));
   for (const item of [...items].sort((a, b) => b.end - b.start - (a.end - a.start))) {

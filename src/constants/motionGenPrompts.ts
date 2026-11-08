@@ -121,7 +121,20 @@ export const MOTION_GEN_STORYBOARD_RULES = (language: string): string => `STORYB
 ${MOTION_HISTORY_STORYBOARD}
   All on-screen text (data, label) must be in ${language}.
 - No gore, blood or bodies; suggest violent moments with light and darkness.`;
-export const MOTION_GEN_CHAPTER_BIBLE = (o: { preamble: string; role: string; title: string; logline: string; languageNote: string; language: string; genre: string; contract: string; rules: string; outline: string; cast: string; places: string }): string => `STORY BIBLE FOR EVERY CHAPTER OF THIS VIDEO. Keep it for all following chapter requests in this chat; each chapter request only adds its own part.
+export const MOTION_GEN_CHAPTER_BIBLE = (o: {
+  preamble: string;
+  role: string;
+  title: string;
+  logline: string;
+  languageNote: string;
+  language: string;
+  genre: string;
+  contract: string;
+  rules: string;
+  outline: string;
+  cast: string;
+  places: string;
+}): string => `STORY BIBLE FOR EVERY CHAPTER OF THIS VIDEO. Keep it for all following chapter requests in this chat; each chapter request only adds its own part.
 ${o.preamble}
 ROLE: ${o.role}.
 Story: "${o.title}" — ${o.logline}
@@ -142,7 +155,25 @@ ${o.places}
 END OF STORY BIBLE.
 
 `;
-export const MOTION_GEN_CHAPTER_LEAN = (o: { chapterId: string; chapterTitle: string; chapterSummary: string; units: number; unitName: string; seconds: number; beats: number; perBeat: number; firstNote: string; lastNote: string; previous: string; outline?: string; continuity: string; sheet: string; rules: string; transcript: string; transcriptLabel?: string }): string => `Write the narration and the shot list (JSON) for ONE chapter, following the STORY BIBLE of this video (rules, genre contract, cast, places and whole outline).
+export const MOTION_GEN_CHAPTER_LEAN = (o: {
+  chapterId: string;
+  chapterTitle: string;
+  chapterSummary: string;
+  units: number;
+  unitName: string;
+  seconds: number;
+  beats: number;
+  perBeat: number;
+  firstNote: string;
+  lastNote: string;
+  previous: string;
+  outline?: string;
+  continuity: string;
+  sheet: string;
+  rules: string;
+  transcript: string;
+  transcriptLabel?: string;
+}): string => `Write the narration and the shot list (JSON) for ONE chapter, following the STORY BIBLE of this video (rules, genre contract, cast, places and whole outline).
 CHAPTER ${o.chapterId}: "${o.chapterTitle}" — ${o.chapterSummary}
 ${MOTION_QA.CHAPTER_LENGTH_RULE(o.units, o.unitName, o.seconds, o.beats, o.perBeat)}${o.firstNote}${o.lastNote}
 ${o.previous}

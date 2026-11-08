@@ -1,6 +1,7 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_CAST_IDENTITY as I } from "../constants/motionCastIdentity.js";
 import type { MotionAnalysisGroup } from "../types/motionVideo.js";
-export const motionCleanLook = (look?: string): string => I.TIDY.reduce((text, pattern, index) => text.replace(pattern, index === 2 ? " " : ""), (look || "").replace(I.CONSTRUCTION, "")).trim();
+export const motionCleanLook = (look?: string): string => I.TIDY.reduce((text, pattern, index) => text.replace(pattern, index === 2 ? RT_MAINTENANCE.SPACE : ""), (look || "").replace(I.CONSTRUCTION, "")).trim();
 const field = (value: unknown, max: number): string | undefined => {
   const text = typeof value === "string" ? value.trim().slice(0, max) : "";
   return text || undefined;

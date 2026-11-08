@@ -12,6 +12,33 @@ import { BackgroundMode } from "../src/types";
 import { blobToBase64, readBlobAsDataUrl } from "../src/lib/fileUtils";
 import { getErrorMessage } from "../src/utils/errorUtils";
 import { delayAsync } from "../src/lib/asyncUtils";
+import { escapeRegExp } from "../src/lib/regexUtils.js";
+import * as runtimeTexts from "../src/constants/runtime/maintenance.js";
+import { CopyButton } from "../src/components/common/CopyButton.js";
+import { MotionCopyButton } from "../src/features/motion/components/MotionCopyButton.js";
+import { PlanningToggleField } from "../src/components/common/PlanningToggleField.js";
+import { MotionToggle } from "../src/features/motion/components/MotionToggle.js";
+import { Check } from "lucide-react";
+for (const value of ["simple-id", "a.b[c](d)+e?", "a\\b^c$d|e{f}*", "Nhân vật (I)"]) assert.ok(new RegExp("^" + escapeRegExp(value) + "$").test(value));
+for (const [value, expected] of [
+  ['Track: "one"?.mp3', "Track_ _one__.mp3"],
+  ["A\0B\x1fC\x7fD", "A_B_C\x7fD"],
+  ["Nhạc 🎵.wav", "Nhạc 🎵.wav"],
+])
+  assert.equal(value.replace(new RegExp(runtimeTexts.INVALID_FILE_NAME_PATTERN, runtimeTexts.REGEXP_GLOBAL), "_"), expected);
+assert.equal(MotionCopyButton, CopyButton);
+for (const checked of [false, true]) {
+  const props = { checked, label: "Toggle label", text: "Toggle text", title: "Toggle hint", icon: Check, disabled: true };
+  for (const component of [React.createElement(PlanningToggleField, { ...props, onChange: () => undefined }), React.createElement(MotionToggle, { ...props, onClick: () => undefined })]) {
+    const html = renderToStaticMarkup(component);
+    assert.match(html, /role="switch"/);
+    assert.ok(html.includes(`aria-checked="${checked}"`));
+    assert.ok(html.includes('aria-label="Toggle label"'));
+    assert.ok(html.includes('title="Toggle hint"'));
+    assert.ok(html.includes("Toggle text"));
+    assert.ok(html.includes('disabled=""'));
+  }
+}
 for (const language of ["vi", "en"] as const) {
   const option = BACKGROUND_OPTION_GROUPS[language][0].options[0];
   const html = renderToStaticMarkup(React.createElement(BackgroundModeSelect, { value: option.value as BackgroundMode, onChange: () => undefined, language, label: "Reference label" }));

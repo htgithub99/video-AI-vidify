@@ -19,5 +19,4 @@ export const MOTION_CAST_IDENTITY = {
   FIELD_CHARS: 60,
   MARK_TRIM: /[.;,\s]+$/u,
   SKIN_WORDS: /\b((?:very\s+|deep\s+|light\s+|pale\s+|dark\s+|medium\s+)?(?:brown|black|dark|pale|fair|light|olive|tan|tanned|bronze|ebony|golden|ruddy|sallow|white)\s+skin(?:ned)?|skin\s+(?:tone\s+)?(?:is\s+)?(?:very\s+|deep\s+|light\s+|pale\s+)?(?:brown|black|dark|pale|fair|light|olive|tan|bronze))\b/iu,
-
 } as const;

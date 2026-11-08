@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -9,7 +10,6 @@ import { renderRemotionSegments } from "./motionRemotionRenderService.js";
 import { validateMotionMedia } from "./motionMediaValidation.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import type { MotionRemotionSpec } from "../../../../types/motionVisual.js";
-
 export interface MotionSegmentEncoding {
   width: number;
   height: number;
@@ -18,7 +18,6 @@ export interface MotionSegmentEncoding {
 export const motionSegmentRoot = (): string => path.join(getMotionRootDirectory(), R.SEGMENT_FOLDER);
 export const motionSegmentFile = (segment: Pick<MotionRemotionSegment, "key">): string => path.join(motionSegmentRoot(), R.SEGMENT_FILE(segment.key));
 const frames = (segment: MotionRemotionSegment) => segment.end - segment.start + 1;
-/** Segments of `spec` already rendered and valid in the shared cache. */
 export const motionCachedSegments = async (spec: MotionRemotionSpec, segments: MotionRemotionSegment[], encoding: MotionSegmentEncoding, signal?: AbortSignal): Promise<Set<string>> => {
   const done = new Set<string>();
   for (const segment of segments) {
@@ -44,16 +43,7 @@ export const pruneMotionSegments = (): void => {
     if (Date.now() - fs.statSync(file).mtimeMs > R.SEGMENT_MAX_AGE_MS) fs.rmSync(file, { force: true });
   }
 };
-/**
- * Renders the given segments into the shared cache with several narrow lanes. Each finished segment is
- * validated and atomically renamed, so a later export (or a crash) only ever sees complete files.
- */
-export const renderMotionSegmentsToCache = async (
-  spec: MotionRemotionSpec,
-  todo: MotionRemotionSegment[],
-  encoding: MotionSegmentEncoding,
-  options: { signal: AbortSignal; lanes?: { lanes: number; perLane: number }; log?: (line: string) => void; onFrames?: (rendered: number) => void; onSegment?: (segment: MotionRemotionSegment) => void },
-): Promise<{ lanes: number; perLane: number }> => {
+export const renderMotionSegmentsToCache = async (spec: MotionRemotionSpec, todo: MotionRemotionSegment[], encoding: MotionSegmentEncoding, options: { signal: AbortSignal; lanes?: { lanes: number; perLane: number }; log?: (line: string) => void; onFrames?: (rendered: number) => void; onSegment?: (segment: MotionRemotionSegment) => void }): Promise<{ lanes: number; perLane: number }> => {
   const plan = options.lanes || motionRemotionRenderLanes(os.cpus().length, os.freemem(), todo.length);
   if (!todo.length) return plan;
   fs.mkdirSync(motionSegmentRoot(), { recursive: true });
@@ -75,7 +65,7 @@ export const renderMotionSegmentsToCache = async (
           },
           onSegment: async (index) => {
             const segment = laneSegments[index];
-            if (spec.renderer === "html-canvas") segment.key = motionRemotionSegments(spec, encoding).find((fresh) => fresh.start === segment.start && fresh.end === segment.end)?.key || segment.key;
+            if (spec.renderer === RT_MAINTENANCE.HTML_CANVAS) segment.key = motionRemotionSegments(spec, encoding).find((fresh) => fresh.start === segment.start && fresh.end === segment.end)?.key || segment.key;
             await validateMotionMedia(outputs[index].output, { seconds: frames(segment) / spec.fps, width: encoding.width, height: encoding.height, fps: spec.fps, frames: frames(segment) }, laneSignal);
             fs.renameSync(outputs[index].output, motionSegmentFile(segment));
             options.onSegment?.(segment);
@@ -88,7 +78,7 @@ export const renderMotionSegmentsToCache = async (
       }
     }),
   );
-  const failed = outcomes.find((outcome) => outcome.status === "rejected") as PromiseRejectedResult | undefined;
+  const failed = outcomes.find((outcome) => outcome.status === RT_MAINTENANCE.REJECTED) as PromiseRejectedResult | undefined;
   if (failed) throw failed.reason;
   return plan;
 };

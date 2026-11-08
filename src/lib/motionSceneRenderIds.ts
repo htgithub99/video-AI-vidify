@@ -1,15 +1,18 @@
+import { escapeRegExp } from "./regexUtils.js";
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
 import { MOTION_DEPTHS } from "../constants/motionProfiles/sceneSpec.js";
-
-// Only render identifiers are changed. Scene/entity IDs remain the source of truth.
 type Copy = { id: string; owner?: string; rank: number };
 const LIMITS: Record<string, number> = { [C.LAYERS_FIELD]: C.LAYERS, [C.ANIMATIONS_FIELD]: C.ANIMATIONS };
 const TAG = /<(\/?)([\w:-]+)\b[^<>]*>/g;
 const ID_ATTRIBUTE = /(?<=\s)id\s*=\s*(["'])([^"']+)\1/g;
-const REFERENCE_FIELDS = new Set(["id", "target", "sourceId", "supportId", "subjectId"]);
-const cssIdPattern = (id: string) => new RegExp(`#${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}_.-])`, "u");
+const REFERENCE_FIELDS = new Set<string>([RT_MAINTENANCE.ID, RT_MAINTENANCE.TARGET, RT_MAINTENANCE.SOURCEID, RT_MAINTENANCE.SUPPORTID, RT_MAINTENANCE.SUBJECTID]);
+const cssIdPattern = (id: string) => new RegExp(`${RT_MAINTENANCE.HASH}${escapeRegExp(id)}${RT_MAINTENANCE.P_L_P_N}`, RT_MAINTENANCE.U);
 const plainId = (id: string) => {
-  const plain = id.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^A-Za-z0-9_.-]/g, "_");
+  const plain = id
+    .normalize(RT_MAINTENANCE.NFD)
+    .replace(/\p{M}/gu, "")
+    .replace(/[^A-Za-z0-9_.-]/g, RT_MAINTENANCE.UNDERSCORE);
   return /^[A-Za-z_]/.test(plain) ? plain : C.RENDER_ID(plain);
 };
 export const normalizeSceneRenderIds = (raw: any, nodes: { id: string; distance?: string }[] = []): any => {
@@ -29,12 +32,12 @@ export const normalizeSceneRenderIds = (raw: any, nodes: { id: string; distance?
   const collect = (value: any, key = "") => {
     if (typeof value === "string" && REFERENCE_FIELDS.has(key)) references.add(value);
     else if (Array.isArray(value)) value.forEach((item) => collect(item));
-    else if (value && typeof value === "object") for (const [field, item] of Object.entries(value)) if (field !== "svg") collect(item, field);
+    else if (value && typeof value === "object") for (const [field, item] of Object.entries(value)) if (field !== RT_MAINTENANCE.SVG_2) collect(item, field);
   };
   collect(raw);
   const unique = (base: string) => {
     let id = base;
-    for (let index = 2; used.has(id); index++) id = `${base}_${index}`;
+    for (let index = 2; used.has(id); index++) id = `${base}${RT_MAINTENANCE.UNDERSCORE}${index}`;
     used.add(id);
     return id;
   };
@@ -97,26 +100,34 @@ export const normalizeSceneRenderIds = (raw: any, nodes: { id: string; distance?
         if (seen.has(id)) value = unique(value);
       }
       seen.add(id);
-      return `id=${quote}${value}${quote}`;
+      return `${RT_MAINTENANCE.ID_2}${quote}${value}${quote}`;
     });
     const local = [...chain, own];
     next = next.replace(/\s([\w:-]+)\s*=\s*(["'])([\s\S]*?)\2/g, (match: string, field: string, quote: string, value: string) => {
-      if (field === "id") return match;
-      let updated = value.replace(/url\(\s*(["']?)#([^\s)'" >]+)\1\s*\)/g, (found, q, id) => (copies.has(id) || renamed.has(id) ? `url(${q}#${pick(id, local)}${q})` : found));
-      if ((field === "href" || field === "xlink:href") && value.startsWith("#") && (copies.has(value.slice(1)) || renamed.has(value.slice(1)))) updated = "#" + pick(value.slice(1), local);
-      if (field === "aria-labelledby" || field === "aria-describedby") updated = value.split(/\s+/).map((id) => pick(id, local)).join(" ");
-      return updated === value ? match : ` ${field}=${quote}${updated}${quote}`;
+      if (field === RT_MAINTENANCE.ID) return match;
+      let updated = value.replace(/url\(\s*(["']?)#([^\s)'" >]+)\1\s*\)/g, (found, q, id) => (copies.has(id) || renamed.has(id) ? `${RT_MAINTENANCE.URL}${q}${RT_MAINTENANCE.HASH}${pick(id, local)}${q}${RT_MAINTENANCE.CLOSE_PAREN}` : found));
+      if ((field === RT_MAINTENANCE.HREF || field === RT_MAINTENANCE.XLINK_HREF) && value.startsWith(RT_MAINTENANCE.HASH) && (copies.has(value.slice(1)) || renamed.has(value.slice(1)))) updated = RT_MAINTENANCE.HASH + pick(value.slice(1), local);
+      if (field === RT_MAINTENANCE.ARIA_LABELLEDBY || field === RT_MAINTENANCE.ARIA_DESCRIBEDBY)
+        updated = value
+          .split(/\s+/)
+          .map((id) => pick(id, local))
+          .join(RT_MAINTENANCE.SPACE);
+      return updated === value ? match : `${RT_MAINTENANCE.SPACE}${field}${RT_MAINTENANCE.EQUALS}${quote}${updated}${quote}`;
     });
     if (!/\/\s*>$/.test(tag)) stack.push(own);
     return next;
   });
   const targets = new Map<string, string[]>([...renamed].map(([from, to]) => [from, [to]]));
-  for (const [id, list] of copies) targets.set(id, list.map((copy) => copy.id));
+  for (const [id, list] of copies)
+    targets.set(
+      id,
+      list.map((copy) => copy.id),
+    );
   const updated = svg.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/g, (_match: string, open: string, style: string, close: string) => {
-    let css = style.replace(/url\(\s*(["']?)#([^\s)'" >]+)\1\s*\)/g, (found, q, id) => (targets.has(id) ? `url(${q}#${targets.get(id)![0]}${q})` : found));
+    let css = style.replace(/url\(\s*(["']?)#([^\s)'" >]+)\1\s*\)/g, (found, q, id) => (targets.has(id) ? `${RT_MAINTENANCE.URL}${q}${RT_MAINTENANCE.HASH}${targets.get(id)![0]}${q}${RT_MAINTENANCE.CLOSE_PAREN}` : found));
     for (const [from, to] of targets) {
-      const pattern = new RegExp(cssIdPattern(from).source, "gu");
-      css = to.length > 1 ? css.replace(/([^{}]+)(\{[^{}]*\})/g, (rule: string, selector: string, body: string) => (cssIdPattern(from).test(selector) ? to.map((id) => selector.replace(pattern, `#${id}`) + body).join("") : rule)) : css.replace(pattern, `#${to[0]}`);
+      const pattern = new RegExp(cssIdPattern(from).source, RT_MAINTENANCE.GU);
+      css = to.length > 1 ? css.replace(/([^{}]+)(\{[^{}]*\})/g, (rule: string, selector: string, body: string) => (cssIdPattern(from).test(selector) ? to.map((id) => selector.replace(pattern, `${RT_MAINTENANCE.HASH}${id}`) + body).join("") : rule)) : css.replace(pattern, `${RT_MAINTENANCE.HASH}${to[0]}`);
     }
     return open + css + close;
   });
@@ -147,8 +158,12 @@ export const normalizeSceneRenderIds = (raw: any, nodes: { id: string; distance?
   };
   const remap = (value: any, key = ""): any => {
     if (typeof value === "string") return REFERENCE_FIELDS.has(key) ? (targets.get(value) || [value])[0] : value;
-    if (Array.isArray(value)) return fit(value.flatMap((item) => expand(item, key)), LIMITS[key]);
-    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([field, item]) => [field, field === "svg" ? updated : remap(item, field)]));
+    if (Array.isArray(value))
+      return fit(
+        value.flatMap((item) => expand(item, key)),
+        LIMITS[key],
+      );
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([field, item]) => [field, field === RT_MAINTENANCE.SVG_2 ? updated : remap(item, field)]));
     return value;
   };
   return remap(raw);
