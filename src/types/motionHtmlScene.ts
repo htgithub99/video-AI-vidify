@@ -27,6 +27,8 @@ export interface MotionHtmlPendingSubmission {
   busySelector: string;
   url: string;
   regenerating?: boolean;
+  retryClicks?: number;
+  recoveryAttempt?: number;
 }
 export interface MotionHtmlRequest {
   id: string;

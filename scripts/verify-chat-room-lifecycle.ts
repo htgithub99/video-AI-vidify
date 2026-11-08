@@ -381,7 +381,7 @@ try {
   assert.notEqual(boundedRooms[finalRoom], boundedRooms[0]);
   assert.equal(boundedRooms[0].isClosed(), true);
   assert.equal(restored, finalRoom + 1);
-  assert.equal(recoveryLines.filter((line) => /bấm nút/u.test(line)).length, finalRoom * CHAT_ROOM_RECOVERY.REGENERATE_LIMIT);
+  assert.equal(recoveryLines.filter((line) => /bấm nút/u.test(line)).length, CHAT_ROOM_RECOVERY.REGENERATE_LIMIT);
   assert.equal(recoveryLines.filter((line) => /room hiện tại/u.test(line)).length, CHAT_ROOM_RECOVERY.SAME_ROOM_RETRIES);
   assert.equal(recoveryLines.filter((line) => /mở room mới/u.test(line)).length, 1);
   await service.closeChatPlanningRoom(bounded, true);

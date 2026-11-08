@@ -133,7 +133,7 @@ export const aiExec = (v: any): MotionAiExecution => ({
   ...(v?.strictProvider === true ? { strictProvider: true } : {}),
 });
 export const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MOTION_AI_ROLE.DRAW });
-const editorialAiIdentity = ({ provider, model, mode, chromeHeadless }: MotionAiExecution) => ({ provider, model, mode, chromeHeadless });
+const editorialAiIdentity = ({ provider, model, mode }: MotionAiExecution) => ({ provider, model, mode });
 export const editorialSession = (body: any, source: MotionStorySource, exec: MotionAiExecution): MotionEditorialSession | undefined => {
   const id = _.toString(body?.editorialSessionId);
   if (!MOTION_EDITORIAL.ID_PATTERN.test(id) || !source?.segments) return undefined;

@@ -3,6 +3,7 @@ import { motionAiFallbackPolicy } from "../../../../../lib/motionAiExecution.js"
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import type { ChatPendingSubmission, ChatPlanningSubmission } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { randomUUID } from "node:crypto";
+import { AsyncResource } from "node:async_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
 import { motionHtmlWritingDirection, motionHtmlPacingDirection, motionHtmlLanguageDirection } from "../../../../../lib/motionHtmlAuthoring.js";
@@ -254,7 +255,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   for (;;) {
     opts.signal?.throwIfAborted();
     const priorPrompt = scene.htmlRequest?.submission?.pending?.prompt;
-    const prior = scene.htmlRequest && (!priorPrompt || (priorPrompt.startsWith(MOTION_HTML.OUTPUT) && priorPrompt.includes(MOTION_HTML.GRAPHICS))) ? scene.htmlRequest : undefined;
+    const prior = scene.htmlRequest && ((scene.htmlRequest.submission?.attempted && !scene.htmlRequest.submission.completed && !scene.htmlRequest.submission.abandoned) || !priorPrompt || (priorPrompt.startsWith(MOTION_HTML.OUTPUT) && priorPrompt.includes(MOTION_HTML.GRAPHICS))) ? scene.htmlRequest : undefined;
     const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (scene.htmlRequest?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
     scene.htmlRequest = attempt;
     attempt.status = RT_MAINTENANCE.RUNNING;
@@ -610,28 +611,31 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   };
   const canRegister = !!opts.scope && !opts.onlyBeats?.length && !opts.onlyScenes?.length && !opts.onlyLocations?.length && !opts.restart;
   if (canRegister && opts.scope) {
-    activeHtmlBuilders.set(opts.scope, (nextScript: MotionStoryScript) => {
-      const nextRemotion = nextScript.gen?.remotion;
-      if (!nextRemotion || nextRemotion.renderer !== RT_MAINTENANCE.HTML_CANVAS) return false;
-      const existingIds = new Set(result.beats.map((beat) => beat.id));
-      for (const beat of nextScript.beats) {
-        if (!existingIds.has(beat.id)) {
-          result.beats.push(structuredClone(beat));
-          existingIds.add(beat.id);
+    activeHtmlBuilders.set(
+      opts.scope,
+      AsyncResource.bind((nextScript: MotionStoryScript) => {
+        const nextRemotion = nextScript.gen?.remotion;
+        if (!nextRemotion || nextRemotion.renderer !== RT_MAINTENANCE.HTML_CANVAS) return false;
+        const existingIds = new Set(result.beats.map((beat) => beat.id));
+        for (const beat of nextScript.beats) {
+          if (!existingIds.has(beat.id)) {
+            result.beats.push(structuredClone(beat));
+            existingIds.add(beat.id);
+          }
         }
-      }
-      for (const [groupId, scenes] of Object.entries(nextRemotion.scenes || {})) {
-        if (!state.scenes[groupId]?.length && scenes?.length) {
-          state.scenes[groupId] = structuredClone(scenes);
-          if (nextRemotion.inputKeys?.[groupId]) state.inputKeys[groupId] = nextRemotion.inputKeys[groupId];
-          if (nextRemotion.htmlPlanSources?.[groupId]) (state.htmlPlanSources ||= {})[groupId] = nextRemotion.htmlPlanSources[groupId];
-          if (nextRemotion.notes?.[groupId]) (state.notes ||= {})[groupId] = nextRemotion.notes[groupId];
+        for (const [groupId, scenes] of Object.entries(nextRemotion.scenes || {})) {
+          if (!state.scenes[groupId]?.length && scenes?.length) {
+            state.scenes[groupId] = structuredClone(scenes);
+            if (nextRemotion.inputKeys?.[groupId]) state.inputKeys[groupId] = nextRemotion.inputKeys[groupId];
+            if (nextRemotion.htmlPlanSources?.[groupId]) (state.htmlPlanSources ||= {})[groupId] = nextRemotion.htmlPlanSources[groupId];
+            if (nextRemotion.notes?.[groupId]) (state.notes ||= {})[groupId] = nextRemotion.notes[groupId];
+          }
         }
-      }
-      scheduleFrom(result);
-      save();
-      return true;
-    });
+        scheduleFrom(result);
+        save();
+        return true;
+      }),
+    );
   }
   try {
     scheduleFrom(result);

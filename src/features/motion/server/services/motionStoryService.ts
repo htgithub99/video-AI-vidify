@@ -1292,7 +1292,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           if (line !== CHROME_BACKUP.WAIT)
             watchdog = setTimeout(() => {
               timedOut = true;
-              roomCtrl.abort(AIR.READINESS_TIMEOUT_REASON);
+              roomCtrl.abort(submission.attempted ? AIR.TIMEOUT_REASON : AIR.READINESS_TIMEOUT_REASON);
             }, roomTimeout);
         },
         attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
@@ -1364,6 +1364,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
       if (!recovered && !captchaRetry && submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
         clearTimeout(watchdog);
+        if (artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML)) throw Object.assign(uncertainChatSubmission(provider), { [CHAT_ROOM_RECOVERY.COMPLETE]: true, cause: caught });
         log?.(AIR.RESUME(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
         const replayable = !!run?.editorial || AIR.REPLAYABLE_ARTIFACT.test(artifactType) || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML);
         for (let check = 0; check <= (replayable ? AIR.ROOM_RELOADS : 0); check++) {
