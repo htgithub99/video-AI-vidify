@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { build } from "esbuild";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { MOTION_HTML } from "../src/constants/motionHtmlTemplate.js";
@@ -23,6 +23,7 @@ try {
         name: "room-context-runtime",
         setup(builder) {
           builder.onLoad({ filter: /html[\\/]sceneRuntime\.ts$/ }, () => ({ loader: "ts", contents: "export const openMotionHtmlRuntime = async () => ({render: async () => Buffer.from('preview'),close: async () => undefined});" }));
+          builder.onLoad({ filter: /html[\\/]scenePipeline\.ts$/ }, async (args) => ({ loader: "ts", contents: (await readFile(args.path, "utf8")) + "export { canResumeHtmlSubmission };" }));
         },
       },
     ],
@@ -30,6 +31,7 @@ try {
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, bundled.outputFiles[0].text);
   const pipeline = await import(pathToFileURL(output).href);
+  assert.equal(pipeline.canResumeHtmlSubmission({ worker: "motion-scene-first", submission: { attempted: true, completed: false, pending: { url: "https://gemini.google.com/app" } } }), true);
   const settings = { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1, pacing: "few" };
   const analysis = {
     title: "Letters",

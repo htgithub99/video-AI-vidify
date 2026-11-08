@@ -166,6 +166,25 @@ try {
   await service.closeChatPlanningRoom(current, true);
   assert.equal(page.isClosed(), true);
   assert.equal(service.geminiRooms.has(service.getPlanningRoomKey(current)), false);
+  const busyLabelPage = await context.newPage();
+  await busyLabelPage.setContent(V.GEMINI_BUSY_DOCUMENT);
+  assert.equal(await busyLabelPage.locator(service.config.GEMINI_BUSY_SELECTOR).filter({ visible: true }).count(), 1);
+  await busyLabelPage.locator(V.ANSWER_SELECTOR).evaluate(
+    (node: HTMLElement, value: unknown) => {
+      node.textContent = JSON.stringify(value);
+    },
+    { artifactType: V.ARTIFACT, requestId: current.requestId, ready: true },
+  );
+  let busyLabelCompleted = false;
+  const busyLabelResult = service.waitForStableResponse(busyLabelPage, V.ANSWER_SELECTOR, service.config.GEMINI_BUSY_SELECTOR, 0, [], [], undefined, V.ARTIFACT, current.requestId, AbortSignal.timeout(V.WAIT_MS)).then((text: string) => {
+    busyLabelCompleted = true;
+    return text;
+  });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.equal(busyLabelCompleted, false);
+  await busyLabelPage.getByRole("button", { name: V.GEMINI_BUSY_LABEL }).evaluate((node: HTMLElement) => node.remove());
+  assert.equal(JSON.parse(await busyLabelResult).requestId, current.requestId);
+  await busyLabelPage.close();
   for (const artifactType of ["motion_remotion_composition", "cinematic-plan", "music-mixer-ranking"]) {
     const native = { ...request("native-" + artifactType, 1), artifactType };
     const recoveries: string[] = [];

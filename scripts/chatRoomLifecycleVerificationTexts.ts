@@ -51,6 +51,8 @@ export const CHAT_ROOM_LIFECYCLE_VERIFICATION = {
   IDLE_WAIT_MS: 700,
   IDLE_POLLS: 12,
   BUSY_SELECTOR: ".busy",
+  GEMINI_BUSY_LABEL: "Ngừng tạo câu trả lời",
+  GEMINI_BUSY_DOCUMENT: '<div class="answer"></div><button aria-label="Ngừng tạo câu trả lời">Ngừng tạo câu trả lời</button>',
   ANSWER_SELECTOR: ".answer",
   DEADLOCK: "Another room blocked the composer",
   PASSED: "Real browser room lifecycle passed: three independent composers, continued conversations without navigation, current response identity and two reloads preserving the conversation URL. No external AI requests.\n",

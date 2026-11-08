@@ -14,7 +14,6 @@ import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js"
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
-import { MOTION_AI_RECOVERY as AIR } from "../../../../../constants/motionAiRecovery.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -135,13 +134,6 @@ const canResumeHtmlSubmission = (attempt: MotionHtmlRequest, targetExec?: Motion
   if (!sub?.attempted || sub.completed || sub.abandoned || !attempt.worker) return false;
   if (attempt.provider && targetExec?.provider && attempt.provider !== targetExec.provider) return false;
   if (attempt.model && targetExec?.model && attempt.model !== targetExec.model) return false;
-  if (sub.pending?.url) {
-    try {
-      if (!AIR.CONVERSATION_PATH.test(new URL(sub.pending.url).pathname)) return false;
-    } catch {
-      return false;
-    }
-  }
   return true;
 };
 const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, read: (raw: any) => void, _groupIndex = 0, priority = 0) => {

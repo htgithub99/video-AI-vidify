@@ -180,7 +180,7 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   GEMINI_STREAM_ERROR_NAME: (codes: number[]): string => `GeminiChatRequestRejected:${codes.join(":")}`,
   GEMINI_STREAM_REQUEST_EVENT: "request" as const,
   GEMINI_STREAM_RESPONSE_EVENT: "response" as const,
-  GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, button[aria-label*="Stop" i]:not([disabled]), button[aria-label*="Dừng" i]:not([disabled]), [data-testid="stop-button"], [data-test-id="stop-button"], button.stop-button',
+  GEMINI_BUSY_SELECTOR: 'gem-icon-button.send-button.stop, button[aria-label*="Stop" i]:not([disabled]), button[aria-label*="Dừng" i]:not([disabled]), button[aria-label*="Ngừng" i]:not([disabled]), [data-testid="stop-button"], [data-test-id="stop-button"], button.stop-button',
   GEMINI_UPLOAD_SCOPE_SELECTOR: "input-area-v2, input-area, form",
   GEMINI_COMPOSER_ANCESTOR_SELECTOR: "xpath=ancestor::*[self::input-area-v2 or self::input-area or self::form][1]",
   GEMINI_ATTACHMENT_SELECTOR: "uploader-file-preview, .file-preview-chip",

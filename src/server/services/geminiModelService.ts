@@ -48,7 +48,7 @@ const uiError = (page: Page, phase: string, model?: AiPlanningChatModel, cause?:
   Object.defineProperty(error, MOTION_TEXT_ROOMPAGE, { value: page });
   return Object.assign(error, { [GEMINI_MODEL_ENCODING.DIAGNOSTICS]: { phase, model, reason: cause instanceof Error ? cause.message : undefined, readiness: readiness || previous?.readiness } });
 };
-export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal): Promise<void> => {
+export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal, timeout: number = CONFIG.PAGE_READY_TIMEOUT_MS): Promise<void> => {
   const inputs = page
     .locator(UI.PRIMARY_INPUT_SELECTOR)
     .or(page.locator(CONFIG.GEMINI_INPUT_SELECTOR).and(page.locator(UI.EDITABLE_INPUT_SELECTOR)))
@@ -94,7 +94,7 @@ export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal): Pr
       return stable >= UI.READY_POLLS;
     },
     signal,
-    CONFIG.PAGE_READY_TIMEOUT_MS,
+    timeout,
   );
   if (!ready) throw uiError(page, UI.PHASE.READY, undefined, undefined, { ...readiness, elapsedMs: Date.now() - started });
 };

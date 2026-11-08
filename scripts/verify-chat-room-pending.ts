@@ -55,7 +55,7 @@ try {
       {
         name: "pending-room-fixture",
         setup(builder) {
-            builder.onLoad({ filter: V.SOURCE_PATTERN }, async (args) => ({ loader: "ts", contents: (await readFile(args.path, "utf8")) + V.ENTRY + "export { cancelGlobalBrowserCleanup } from './imageGeneratorService.js';" }));
+          builder.onLoad({ filter: V.SOURCE_PATTERN }, async (args) => ({ loader: "ts", contents: (await readFile(args.path, "utf8")) + V.ENTRY + "export { cancelGlobalBrowserCleanup } from './imageGeneratorService.js';" }));
         },
       },
     ],
@@ -114,6 +114,8 @@ try {
   assert.equal(generations, 1);
   assert.equal(context.pages().length, 1);
   const controller = new AbortController();
+  request.submission.pending.page = undefined;
+  request.submission.pending.url = new URL("/app", url).href;
   request.submission.pending.recoveryAttempt = 1;
   const timer = setTimeout(() => controller.abort(AIR.READINESS_TIMEOUT_REASON), 30);
   await assert.rejects(service.generatePlanningWithChatUi({ ...request, signal: controller.signal }));

@@ -1414,7 +1414,9 @@ const resumeChatPlanningResponseTask = async (request: ChatPlanningRequest): Pro
   const pending = submission?.pending;
   if (!submission || !pending) throw uncertainChatSubmission(request.provider);
   throwIfPlanningCancelled(request.signal);
-  let page = pending.page;
+  const rooms = getProviderRooms(request.provider);
+  let page: Page | undefined = pending.page;
+  if (!page || page.isClosed()) page = rooms && getLiveRoom(rooms, getPlanningRoomKey(request));
   const wasClosed = !page || page.isClosed();
   if (wasClosed) {
     const base = getProviderConversationSelectors(request.provider)?.url;
@@ -1422,8 +1424,8 @@ const resumeChatPlanningResponseTask = async (request: ChatPlanningRequest): Pro
     if (!base || url.origin !== new URL(base).origin || !AIR.CONVERSATION_PATH.test(url.pathname)) throw uncertainChatSubmission(request.provider);
     await prepareChatPlanningRoom(request);
     page = getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
-    if (!page) throw uncertainChatSubmission(request.provider);
   }
+  if (!page) throw uncertainChatSubmission(request.provider);
   const releaseActivity = request.provider === AiPlanningFallbackProvider.GeminiChat ? await acquireGeminiActivityUse(page.context(), request.signal) : _.noop;
   try {
     if (wasClosed) await page.goto(pending.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
@@ -1841,7 +1843,7 @@ const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promis
     const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
     try {
       const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
-      await withGeminiSession(room, () => waitForGeminiModelUi(room, request.signal), { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
+      await withGeminiSession(room, () => waitForGeminiModelUi(room, request.signal, AIR.READINESS_TIMEOUT_MS), { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
       return;
     } finally {
       releaseActivity();
