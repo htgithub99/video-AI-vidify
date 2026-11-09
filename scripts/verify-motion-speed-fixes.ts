@@ -180,6 +180,9 @@ assert.match(motionHtmlFigureDoc("history"), /groundY/, "figures stand on the dr
 assert.match(scenePrompt, /hand-drawn[\s\S]*one Path2D/, "outline belongs to its shape");
 assert.match(scenePrompt, /only advances when the SCENE says/, "a gathering group does not charge");
 assert.match(scenePrompt, /never drawn while a clip is active/, "a ground clip cannot hide the figures");
+assert.match(motionHtmlFigureDoc("history"), /legs visible from the hem at -0.9r/, "legs show below the torso");
+assert.match(motionHtmlFigureDoc("horror"), /The hem never reaches the shoes/, "horror legs show too");
+assert.match(scenePrompt, /never a flat strip, bar or crown/, "clouds have a rounded underside");
 assert.match(scenePrompt, /camX follows groupX at most 1:1[\s\S]*distance travelled/, "the camera never outruns marchers and steps follow distance");
 assert.doesNotMatch(motionHtmlFigureDoc("history"), /torsoY=-28|headR\+4/, "no fixed pixel offsets");
 assert.doesNotMatch(scenePrompt, /overlapping (?:outlined )?(?:puffs|circles)|lumpy blobs|capsule|corner radius/, "no geometric shape recipes");
