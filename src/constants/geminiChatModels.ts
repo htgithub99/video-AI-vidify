@@ -1,6 +1,7 @@
 import { AiPlanningChatModel } from "../types.js";
 export const GEMINI_MODEL_UI = {
   POLL_MS: 100,
+  LEVEL_FLAGS: "iu",
   READY_POLLS: 3,
   COLLAPSED_COMPOSER_SELECTOR: "rich-textarea.simplified-input",
   PRIMARY_MODEL_SELECTOR: 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"]',

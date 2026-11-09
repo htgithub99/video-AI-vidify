@@ -310,8 +310,8 @@ export const GEMINI_REQUEST_POLICY = {
 } as const;
 export const FREE_AI_PROVIDER_CONFIG = {
   MAX_MODELS_PER_PROVIDER: 3,
-  CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["gpt-oss-120b", "zai-glm-4.7"] },
-  GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.6-27b"], scriptModels: ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"], toolModels: ["groq/compound-mini", "groq/compound"] },
+  CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["zai-glm-4.7"] },
+  GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["openai/gpt-oss-20b"], scriptModels: ["openai/gpt-oss-20b"], toolModels: ["groq/compound-mini", "groq/compound"] },
   AUTHORIZATION_HEADER: "Authorization",
   BEARER_PREFIX: "Bearer ",
   CONTENT_TYPE_HEADER: "Content-Type",

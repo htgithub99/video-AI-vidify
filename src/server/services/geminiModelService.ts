@@ -8,6 +8,18 @@ import type { AiPlanningChatModel } from "../../types.js";
 import { AiPlanningChatModel as Models } from "../../types.js";
 import { CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
+import { CHAT_SPEED } from "../../constants/chatSpeed.js";
+const selectedModels = new WeakMap<Page, { model: AiPlanningChatModel; at: number }>();
+export const markGeminiModel = (page: Page, model: AiPlanningChatModel): void => {
+  selectedModels.set(page, { model, at: Date.now() });
+};
+export async function geminiModelStillSelected(page: Page, model: AiPlanningChatModel, ...labels: RegExp[]): Promise<boolean> {
+  const last = selectedModels.get(page);
+  if (!last || last.model !== model || Date.now() - last.at > CHAT_SPEED.MODEL_REUSE_MS) return false;
+  const button = await getGeminiModelButton(page).catch(() => undefined);
+  const text = button ? (await button.innerText().catch(() => "")).trim() : "";
+  return !!text && labels.every((label) => label.test(text));
+}
 const waitUntil = async (page: Page, test: () => Promise<boolean>, signal?: AbortSignal, timeout: number = CONFIG.MODEL_PICKER_TIMEOUT_MS) => {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
@@ -130,6 +142,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
   const baseLabel = selection && GEMINI_CHAT_BASE_MODEL_LABELS[selection.model];
   const unavailable = () => new Error(GEMINI_MODEL_ENCODING.UNAVAILABLE(model));
   if (!selection || !level || !baseLabel) throw unavailable();
+  if (await geminiModelStillSelected(page, model, baseLabel, new RegExp(`${level.label}|${level.labelEn}`, level.pattern.flags))) return;
   for (let attempt = 0; attempt < UI.SELECTION_ATTEMPTS; attempt++) {
     let phase: string = UI.PHASE.READY;
     try {
@@ -173,6 +186,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       phase = UI.PHASE.BASE_VERIFY;
       if (!baseLabel.test((await button.innerText()).trim())) throw uiError(page, phase, model);
       throwIfPlanningCancelled(signal);
+      markGeminiModel(page, model);
       return;
     } catch (error) {
       throwIfPlanningCancelled(signal);

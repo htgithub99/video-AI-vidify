@@ -96,9 +96,9 @@ export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitc
 export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
 export const AI_MODEL_CAPABILITY = { TEXT: "text", VISUAL: "visual", AUDIO: "audio" } as const;
 export const AI_MODEL_REGISTRY = [
-  { id: "gemini-3.7-flash", freeEligible: true, priority: 1, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
-  { id: "gemini-3.6-flash", freeEligible: true, priority: 2, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
-  { id: "gemini-3.5-flash-lite", freeEligible: true, priority: 3, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3.5-flash-lite", freeEligible: true, priority: 1, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3-flash-preview", freeEligible: true, priority: 2, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3.1-flash-lite", freeEligible: true, priority: 3, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
 ] as const;
 export const AVAILABLE_MODELS = _.map(_.sortBy(_.filter(AI_MODEL_REGISTRY, "freeEligible"), "priority"), "id");
 export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not found", "model is not found", "unsupported model"] as const;

@@ -1,4 +1,8 @@
 import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
+import fs from "node:fs";
+import path from "node:path";
+import { CHAT_SPEED } from "../../constants/chatSpeed.js";
+import { getLogsDirectory } from "../utils/paths.js";
 import { deleteProviderConversationHistory } from "./chatHistoryCleanupService.js";
 import { CHAT_HISTORY_CLEANUP } from "../../constants/chatHistoryCleanup.js";
 import { RUNTIME_VALUES } from "../../constants/runtime/values.js";
@@ -139,7 +143,7 @@ import { selectDeepSeekChatModel } from "./deepseekModelService.js";
 import { META_AI_CHAT_CONFIG as M } from "../../constants/metaAiChat.js";
 import { selectMetaAiChatModel } from "./metaAiModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
-import { assertGeminiFlashQuota, getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
+import { assertGeminiFlashQuota, geminiModelStillSelected, getGeminiModelButton, markGeminiModel, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
 import { withChromeBackupRecovery, saveChatResponse, isGeminiFlashQuotaError } from "./chromeBackupService.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
@@ -439,7 +443,8 @@ export const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity):
   pendingRoomResponses.delete(roomKey);
   if (!page || page.isClosed()) throw new Error(SOURCE_TEXT_CHAT_PLANNING_ROOM_UNAVAILABLE_FOR_RELOAD);
   contextReceipts.get(page)?.invalidate();
-  await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  if (request.provider === AiPlanningFallbackProvider.GeminiChat) await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  else await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
 };
 const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { url: string } | undefined => {
   if (provider === AiPlanningFallbackProvider.GeminiChat) return { url: EXTERNAL_URLS.GEMINI_CHAT };
@@ -499,6 +504,32 @@ const executeClearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
     await Promise.allSettled(_.map(pagesToClose, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
   }
 };
+const activeRooms = new WeakSet<Page>();
+const keepRoomActive = async (page: Page): Promise<void> => {
+  if (activeRooms.has(page) || page.isClosed()) return;
+  activeRooms.add(page);
+  try {
+    const session = await page.context().newCDPSession(page);
+    await session.send(CHAT_SPEED.FOCUS_EMULATION as any, { enabled: true } as any);
+    await session.send(CHAT_SPEED.LIFECYCLE as any, { state: CHAT_SPEED.ACTIVE } as any).catch(() => undefined);
+  } catch {
+    activeRooms.delete(page);
+  }
+};
+const roomTimings = new WeakMap<Page, Record<string, number>>();
+const markRoomTiming = (page: Page, key: string): void => {
+  const marks = roomTimings.get(page) || {};
+  if (marks[key] === undefined) marks[key] = Date.now();
+  roomTimings.set(page, marks);
+};
+const writeGeminiTiming = (page: Page | undefined, request: ChatPlanningRequest, started: number, phases: Record<string, number>, ok: boolean): void => {
+  const marks = (page && roomTimings.get(page)) || {};
+  if (page) roomTimings.delete(page);
+  const at = (value?: number) => (value ? Math.round((value - started) / 100) / 10 : undefined);
+  try {
+    fs.appendFileSync(path.join(getLogsDirectory(), CHAT_SPEED.TIMING_FILE), stringifyJson({ at: new Date().toISOString(), artifact: request.artifactType, worker: request.workerId, model: request.model, ok, tab: at(phases.tab), model_ready: at(phases.model), written: at(marks[CHAT_SPEED.MARK.WRITTEN]), sent: at(marks[CHAT_SPEED.MARK.SENT]), first_text: at(marks[CHAT_SPEED.MARK.FIRST_TEXT]), done: at(phases.done) }) + CHAT_SPEED.NEWLINE);
+  } catch {}
+};
 const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefined => {
   const room = rooms.get(projectId);
   if (room && !room.isClosed()) return room;
@@ -510,7 +541,10 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   if (provider) await manualCleanupFlights.get(provider);
   throwIfPlanningCancelled(signal);
   const existingRoom = getLiveRoom(rooms, projectId);
-  if (existingRoom && existingRoom.context() === context) return existingRoom;
+  if (existingRoom && existingRoom.context() === context) {
+    await keepRoomActive(existingRoom);
+    return existingRoom;
+  }
   if (existingRoom) {
     releaseChatRoom(existingRoom);
     rooms.delete(projectId);
@@ -519,6 +553,7 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   try {
     throwIfPlanningCancelled(signal);
     rooms.set(projectId, page);
+    await keepRoomActive(page);
     await page.goto(url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
     throwIfPlanningCancelled(signal);
     return page;
@@ -814,6 +849,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     lastIdentityMatch = belongsToCurrentRequest;
     const isCompleteJson = !_.isUndefined(parsedLatest);
     const isRefusal = !isCompleteJson && CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_PATTERN.test(latestText);
+    if (latestText) markRoomTiming(page, CHAT_SPEED.MARK.FIRST_TEXT);
     if ((_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) || isRefusal) && !isBusy) {
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
@@ -835,6 +871,10 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_UI_CONFIRMED, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseChars: latestText.length, stablePolls, elapsedMs: Date.now() - startedAt, identityMatch: belongsToCurrentRequest });
           return artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? latestText : jsonUtils.safeStringify(parsedLatest);
         }
+        if (!isCompleteJson && CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(latestText) && latestText.length < CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_MAX_CHARS) {
+          await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_RESPONSE_ERROR, { stage: artifactType, errorMessage: latestText });
+          throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_RESPONSE, responseCount: count, initialCount, candidateChars: latestText.length, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
+        }
         if (!isCompleteJson && !_.isEmpty(responseCandidates) && stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_STABLE_POLLS) {
           appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_PREVIEW_LOG(_.truncate(latestText, { length: 800 })));
           if (CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(latestText)) {
@@ -853,7 +893,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     }
     if (!isBusy && Date.now() >= activityDeadline) break;
     if (!isBusy && count === initialCount && !regenerationObserved && _.isEmpty(responseCandidates) && Date.now() - startedAt >= Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS, 60000)) break;
-    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
+    await delayAsync(isBusy ? CHAT_SPEED.BUSY_POLL_MS : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_TIMEOUT_LOG(lastResponseCount, initialCount, lastCandidateLength, lastBusyState, lastIdentityMatch, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
   await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_TIMEOUT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseCount: lastResponseCount, candidateChars: lastCandidateLength, busy: lastBusyState, identityMatch: lastIdentityMatch, elapsedMs: Date.now() - startedAt });
@@ -1394,6 +1434,7 @@ const submitPrompt = async (
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
         await withComposerGate(roomKey, signal, async () => {
           await writeComposer(page, input, submittedPrompt, responseDirective, requestId, signal);
+          markRoomTiming(page, CHAT_SPEED.MARK.WRITTEN);
           await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
           await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
           const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input, signal));
@@ -1417,6 +1458,7 @@ const submitPrompt = async (
               }
               markPendingSubmission();
               await clickSendButton(page, sendButton, signal);
+              markRoomTiming(page, CHAT_SPEED.MARK.SENT);
             } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
             submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
@@ -1604,8 +1646,9 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_SELECTED_WITH_THINKING_LEVEL });
     return;
   }
-  await waitForGeminiModelUi(page, signal);
   const requestedModelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
+  if (requestedModelLabel && (await geminiModelStillSelected(page, model, requestedModelLabel))) return;
+  await waitForGeminiModelUi(page, signal);
   const baseModelLabel = GEMINI_CHAT_BASE_MODEL_LABELS[model];
   if (!baseModelLabel) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_UNAVAILABLE);
   let modelButton = await getGeminiModelButton(page).catch(() => undefined);
@@ -1626,12 +1669,14 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
       }
     }
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_ALREADY_SELECTED });
+    markGeminiModel(page, model);
     return;
   }
   await clickPlanningControl(modelButton, signal);
   await assertGeminiFlashQuota(page, model);
   if ((await clickChatModelOption(page, requestedModelLabel)) && (await waitForSelectedModelLabel(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, requestedModelLabel))) {
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_SELECTED });
+    markGeminiModel(page, model);
     return;
   }
   const thinkingLevelLabel = GEMINI_CHAT_THINKING_LEVEL_LABELS[model];
@@ -1787,21 +1832,28 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 };
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
+  const started = Date.now();
+  const phases: Record<string, number> = {};
+  let room: Page | undefined;
+  let ok = false;
   const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
   try {
-    const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
+    const activeRoom = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
+    room = activeRoom;
+    phases.tab = Date.now();
     await withGeminiSession(
-      room,
+      activeRoom,
       async () => {
-        await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
+        await getLastVisibleLocator(activeRoom, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-        await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel, request.signal);
+        await selectGeminiChatModel(activeRoom, request.model, request.allowDefaultGeminiModel, request.signal);
       },
       { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser },
     );
+    phases.model = Date.now();
     const response = await submitPrompt(
-      room,
+      activeRoom,
       getPlanningRoomKey(request),
       request.prompt,
       CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
@@ -1819,8 +1871,11 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
       request.onUploadProgress,
     );
     scheduleChatBrowserCleanup();
+    ok = true;
     return response;
   } finally {
+    phases.done = Date.now();
+    writeGeminiTiming(room, request, started, phases, ok);
     releaseActivity();
   }
 };

@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
+import { CHAT_SPEED } from "../../constants/chatSpeed.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { isChatRoomPage, sharedChromeFlowPage } from "./sharedChromePage.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
@@ -1713,6 +1714,7 @@ const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
       SOURCE_TEMPLATE_PROFILE_DIRECTORY(`${REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_NAME}`),
       REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
       REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
+      ...CHAT_SPEED.CHROME_ARGS,
     ],
     { windowsHide: false, detached: true, stdio: SOURCE_TEXT_IGNORE },
   ).unref();
@@ -1750,9 +1752,9 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
     const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
     try {
       try {
-        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, channel: SOURCE_TEXT_CHROME, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
+        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, channel: SOURCE_TEXT_CHROME, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED, ...CHAT_SPEED.CHROME_ARGS] });
       } catch (chromeErr) {
-        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
+        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED, ...CHAT_SPEED.CHROME_ARGS] });
       }
       page = context.pages()[0] || (await context.newPage());
       try {
@@ -4771,7 +4773,7 @@ const launchBackupChrome = async (headless = true): Promise<BrowserSession> => {
     await backupSetupContext.close().catch(() => undefined);
     backupSetupContext = undefined;
   }
-  const context = await chromium.launchPersistentContext(backupProfilePath(), { executablePath: findNativeChrome(), headless, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
+  const context = await chromium.launchPersistentContext(backupProfilePath(), { executablePath: findNativeChrome(), headless, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED, ...CHAT_SPEED.CHROME_ARGS] });
   try {
     const settings = readChromeBackupSettings();
     const page = context.pages()[0] || (await context.newPage());

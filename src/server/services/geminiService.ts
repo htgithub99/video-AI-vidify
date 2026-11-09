@@ -192,9 +192,9 @@ export const generateContentWithRetry = async (params: { contents: string | any;
   }
   const keys = await resolveApiKeys();
   const activeApiKey = _.get(keys, SOURCE_TEXT_GEMINIKEY, "");
-  const freeProviderResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
-  if (freeProviderResult.response) return freeProviderResult.response;
   if (_.isEmpty(activeApiKey)) {
+    const freeProviderResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+    if (freeProviderResult.response) return freeProviderResult.response;
     const providerError = freeProviderResult.lastError || createAppError(SecurityMessages.MISSING_GEMINI_KEY);
     providerError.rotationLogs = freeProviderResult.rotationLogs;
     providerError.noRetry = true;
@@ -217,7 +217,7 @@ export const generateContentWithRetry = async (params: { contents: string | any;
   let activeModelForRequest = "";
   let geminiConfigForRequest: any = {};
   let lastError: any = null;
-  const rotationLogs: string[] = [...freeProviderResult.rotationLogs];
+  const rotationLogs: string[] = [];
   const contentEstimate = estimateGeminiContents(params.contents);
   let route: ReturnType<typeof routeAiTask>;
   try {
@@ -302,8 +302,13 @@ export const generateContentWithRetry = async (params: { contents: string | any;
       await delayAsync(GEMINI_REQUEST_POLICY.MODEL_SWITCH_DELAY_MS);
     }
   }
-  const finalError = lastError || createAppError(SOURCE_TEXT_GEMINI_GENERATION_FAILED_ALL);
-  finalError.rotationLogs = rotationLogs;
+  const freeFallbackResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+  if (freeFallbackResult.response) {
+    freeFallbackResult.response.rotationLogs = [...rotationLogs, ...freeFallbackResult.rotationLogs];
+    return freeFallbackResult.response;
+  }
+  const finalError = lastError || freeFallbackResult.lastError || createAppError(SOURCE_TEXT_GEMINI_GENERATION_FAILED_ALL);
+  finalError.rotationLogs = [...rotationLogs, ...freeFallbackResult.rotationLogs];
   finalError.noRetry = true;
   logStep(SOURCE_TEXT_GEMINI_ALL_FAILED, route.models.length);
   throw finalError;
