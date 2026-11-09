@@ -4,7 +4,6 @@ export const MOTION_LOUDNESS = {
   RANGE: 11,
   JSON_RE: /\{[^{}]*"input_i"[^{}]*\}/,
   EBUR_RE: /I:\s*(-?[\d.]+)\s*LUFS/g,
-  BLACK_RE: /black_start:/g,
   SILENCE_RE: /silence_start:/g,
   BLACK_FILTER: "blackdetect=d=1:pix_th=0.1",
   SILENCE_FILTER: "silencedetect=noise=-50dB:d=4",
@@ -12,7 +11,10 @@ export const MOTION_LOUDNESS = {
   NULL_FORMAT: "null",
   NULL_TARGET: "-",
   CHAIN: ",",
-  LOG: { NORMALIZED: (lufs: number): string => `Đã chuẩn hoá âm lượng về ${lufs} LUFS`, LOUDNESS: (lufs: string): string => `Độ to video: ${lufs} LUFS`, BLACK: (count: number): string => `Cảnh báo: phát hiện ${count} đoạn hình đen ≥ 1 giây`, SILENCE: (count: number): string => `Cảnh báo: phát hiện ${count} đoạn im lặng ≥ 4 giây`, SKIPPED: "Bỏ qua chuẩn hoá âm lượng (không đo được)" },
+  KEEP_LINES: /black_start:|silence_(?:start|end):/,
+  LINE_SPLIT: /\r\n|\r|\n/,
+  LINE_JOIN: "\n",
+  LOG: { NORMALIZED: (lufs: number): string => `Đã chuẩn hoá âm lượng về ${lufs} LUFS`, LOUDNESS: (lufs: string): string => `Độ to video: ${lufs} LUFS`, BLACK: (ranges: string): string => `Cảnh báo: có hình đen ≥ 1 giây ở ${ranges}`, RANGE: (start: number, end: number): string => `${start.toFixed(1)}–${end.toFixed(1)} giây`, RANGE_JOIN: ", ", SILENCE: (count: number): string => `Cảnh báo: phát hiện ${count} đoạn im lặng ≥ 4 giây`, SKIPPED: "Bỏ qua chuẩn hoá âm lượng (không đo được)" },
 } as const;
 export const motionLoudnormFilter = (measured?: Record<string, string>): string => {
   const base = `loudnorm=I=${MOTION_LOUDNESS.TARGET_LUFS}:TP=${MOTION_LOUDNESS.TRUE_PEAK}:LRA=${MOTION_LOUDNESS.RANGE}`;

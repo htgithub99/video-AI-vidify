@@ -16,6 +16,8 @@ import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { MOTION_AI_RECOVERY } from "../../../../../constants/motionAiRecovery.js";
 import { motionRenameText } from "../../../../../lib/motionRename.js";
+import { motionHtmlCastCards, motionHtmlContinuity } from "../../../../../lib/motionHtmlCast.js";
+import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -232,9 +234,9 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
   const route = routes[Math.min(Math.floor(missed / MOTION_HTML.SWITCH_AFTER), routes.length - 1)];
   return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
 };
-export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
+export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string; cast?: string; continuity?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
   const graphics = MOTION_HTML.PROFILE_GRAPHICS[settings.profile] || MOTION_HTML.GRAPHICS;
-  const key = motionInputKey([MOTION_HTML.VERSION, graphics, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language]);
+  const key = motionInputKey([MOTION_HTML.VERSION, graphics, motionHtmlFigureDoc(settings.profile), scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) {
@@ -245,7 +247,10 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   const prompt = [
     MOTION_HTML.OUTPUT,
     graphics,
+    motionHtmlFigureDoc(settings.profile),
     motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
+    settings.cast,
+    settings.continuity,
     MOTION_HTML.SCENE_LABEL + scene.sceneTemplate,
     scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
     `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: Number(settings.seconds.toFixed(1)), profile: settings.profile })}`,
@@ -632,7 +637,9 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         if (opts.note !== undefined) scene.drawingNote = opts.note;
         scene.aspect = aspect;
         const seconds = Math.max(1, (group.seconds * scene.text.length) / Math.max(1, group.beats.map((beat) => beat.narration).join(RT_MAINTENANCE.SPACE).length));
-        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, scope: opts.scope, language: result.language }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
+        const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
+        const cast = motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
+        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
         delete state.failures[scene.id];
         done++;
         opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);

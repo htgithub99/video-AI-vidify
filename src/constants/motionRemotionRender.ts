@@ -1,6 +1,6 @@
 export const MOTION_REMOTION_RENDER = {
   SEGMENT_SECONDS: 20,
-  SEGMENT_VERSION: 2,
+  SEGMENT_VERSION: 3,
   SEGMENT_FOLDER: "remotion-segments",
   SEGMENT_FILE: (key: string) => `${key}.mp4`,
   SEGMENT_MAX_AGE_MS: 14 * 24 * 60 * 60 * 1000,

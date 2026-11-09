@@ -98,8 +98,8 @@ assert.ok(routeLogs.some((line) => line.includes(routed[2].provider)));
 const scenePrompt = routed[0].prompt;
 assert.ok(scenePrompt.startsWith(MOTION_HTML.OUTPUT));
 assert.equal(scenePrompt.split(MOTION_HTML.GRAPHICS).length, 2, "style rules appear once");
-assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|shako|cowhide|chainmail|screaming|Unconscious/i);
-assert.ok(scenePrompt.length < 8000, "scene prompt stays bounded: " + scenePrompt.length);
+assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|cowhide|chainmail|screaming|Unconscious/i);
+assert.ok(scenePrompt.length < 9200, "scene prompt stays bounded: " + scenePrompt.length);
 const horrorCtrl = new AbortController();
 let horrorPrompt = "";
 await assert.rejects(
@@ -134,4 +134,55 @@ assert.equal(motionUserLogLine("Cảnh HTML c2_b6:html:4: tạo trọn cảnh, l
 const once = createMotionLogFilter(() => 0);
 assert.ok(once("[Viết kịch bản] Đang mở 2 tab AI nội dung."));
 assert.equal(once("09:00:01 · [Viết kịch bản] Đang mở 2 tab AI nội dung."), undefined, "repeated line is shown once");
+const { motionHtmlCastCards, motionHtmlContinuity } = await import("../src/lib/motionHtmlCast.js");
+const castAnalysis: any = {
+  cast: [
+    { key: "pulleine", name: "Colonel Henry Pulleine", look: "British officer in red coat, white helmet, moustache", marks: ["moustache"], skin: "pale" },
+    { key: "durnford", name: "Colonel Anthony Durnford", look: "British colonial officer, red coat, left arm held stiff", skin: "pale" },
+    { key: "narrator", name: "Narrator", look: "Unseen voice", narrator: true },
+  ],
+  groups: [{ key: "zulu", name: "Zulu impi", look: "warriors with cowhide shields", gear: "assegai" }],
+};
+const cardsA = motionHtmlCastCards(castAnalysis, [{ cast: ["pulleine", "narrator"] }], "Pulleine waits while Durnford rides in; the Zulu impi gathers.");
+const cardsB = motionHtmlCastCards(castAnalysis, [{ cast: ["pulleine"] }], "Durnford and Pulleine study the map; Zulu warriors on the ridge.");
+const lineOf = (cards: string, name: string) => cards.split("\n").find((line) => line.includes(name));
+assert.ok(cardsA.includes("Colonel Henry Pulleine") && cardsA.includes("Colonel Anthony Durnford") && cardsA.includes("Zulu impi"));
+assert.ok(!cardsA.includes("Narrator"), "narrator is not drawn");
+assert.equal(lineOf(cardsA, "Pulleine"), lineOf(cardsB, "Pulleine"), "a character card is identical in every scene");
+assert.notEqual(lineOf(cardsA, "Pulleine")!.split("signature")[1], lineOf(cardsA, "Durnford")!.split("signature")[1], "two officers get different signatures");
+assert.match(motionHtmlContinuity("Durnford is already on foot."), /STARTS FROM[\s\S]*already on foot/);
+const castCtrl = new AbortController();
+let castPrompt = "";
+await assert.rejects(
+  generateMotionHtmlScene({ id: "c2_b1:html:0", sceneTemplate: "0. Durnford rides in." } as any, { width: 1280, height: 720, seconds: 6, profile: "history", scope: "t-cast-" + Date.now(), language: "en", cast: cardsA, continuity: motionHtmlContinuity("Durnford is mounted.") }, {
+    exec: { provider: "gemini-chat", model: "gemini-flash", allowFallback: false } as any,
+    ai: (async (prompt: string) => {
+      castPrompt = prompt;
+      castCtrl.abort();
+      throw new Error("stop");
+    }) as any,
+    signal: castCtrl.signal,
+    log: () => undefined,
+  }),
+);
+assert.ok(castPrompt.includes(cardsA) && castPrompt.indexOf(cardsA) < castPrompt.indexOf("SCENE (source data)"), "cast cards precede the scene");
+assert.match(castPrompt, /faces the way it moves[\s\S]*rider stays seated/, "motion direction and rider rules are in the prompt");
+const { motionHtmlFigureDoc } = await import("../src/lib/motionHtmlFigure.js");
+assert.ok(scenePrompt.includes(motionHtmlFigureDoc("history")) && horrorPrompt.includes(motionHtmlFigureDoc("horror")), "scene prompts carry the measured figure design of their profile");
+assert.match(motionHtmlFigureDoc("history"), /groundY/, "figures stand on the drawn ground");
+assert.match(scenePrompt, /HAND-DRAWN/, "lines stay hand-drawn");
+assert.equal(scenePrompt.split(/round caps|lineJoin and lineCap/).length, 2, "round line rule appears once");
+assert.doesNotMatch(scenePrompt, /legs down both flanks/, "one rider rule only");
+assert.ok(!scenePrompt.includes("MotionKit"), "the AI draws every figure itself");
+const bare = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body><script>window.motionScene={}</script></body></html>";
+const { motionHtmlHostDocument } = await import("../src/lib/motionHtmlHost.js");
+const { MOTION_REMOTION_RENDER } = await import("../src/constants/motionRemotionRender.js");
+const hostDoc = motionHtmlHostDocument(bare, "t");
+assert.ok(hostDoc.includes("blank:true") && hostDoc.includes("allowBlank") && hostDoc.includes("Canvas blank frame"), "export frames that come back empty are rejected and redrawn instead of encoded as black");
+assert.ok(MOTION_REMOTION_RENDER.SEGMENT_VERSION >= 3, "segments cached before the blank-frame check are rendered again");
+const { motionOutputQualityIssues } = await import("../src/lib/motionOutputQuality.js");
+const { MOTION_LOUDNESS } = await import("../src/constants/motionLoudness.js");
+assert.equal(motionOutputQualityIssues("black_start:44.53 black_end:50.57", { renderer: "html-canvas", engine: "remotion", scenes: [], duration: 82, fps: 30 } as any).length, 0, "a dark html scene is reported, not a failed export");
+assert.ok(MOTION_LOUDNESS.KEEP_LINES.test("[blackdetect @ 0x1] black_start:44.5333 black_end:50.5663") && !MOTION_LOUDNESS.KEEP_LINES.test("frame= 1428 fps=257"), "black and silence events survive the stderr tail");
+assert.equal(MOTION_LOUDNESS.LOG.BLACK(MOTION_LOUDNESS.LOG.RANGE(44.5333, 50.5663)), "Cảnh báo: có hình đen ≥ 1 giây ở 44.5–50.6 giây");
 console.log("Speed fixes: readiness probe instead of long cooldown, step time kept across resume, stalled scene tab released passed.");

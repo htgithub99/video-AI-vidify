@@ -7,24 +7,34 @@ import type { MotionHtmlFrameInput } from "../../../../../types/motionHtmlScene.
 const timedOutFrames = new Map<string, number>();
 export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, headless = true) => {
   signal?.throwIfAborted();
-  const browser = await chromium.launch({ executablePath: findNativeChrome(), headless });
+  let browser = await chromium.launch({ executablePath: findNativeChrome(), headless });
   const contentKey = createHash(RT_MAINTENANCE.SHA256).update(html).digest(RT_MAINTENANCE.HEX);
   const stop = () => {
     void browser.close().catch(() => undefined);
   };
   signal?.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
   try {
-    const page = await browser.newPage();
-    await page.route(RT_MAINTENANCE.ALL_REQUESTS_PATTERN, (route) => route.abort());
-    await page.setContent(motionHtmlHostDocument(html, randomUUID()), { waitUntil: RT_MAINTENANCE.LOAD });
-    return {
-      async render(input: MotionHtmlFrameInput, subtitle = "", fontFamily: string = RT_MAINTENANCE.ARIAL): Promise<Buffer> {
+    const openPage = async () => {
+      const next = await browser.newPage();
+      await next.route(RT_MAINTENANCE.ALL_REQUESTS_PATTERN, (route) => route.abort());
+      await next.setContent(motionHtmlHostDocument(html, randomUUID()), { waitUntil: RT_MAINTENANCE.LOAD });
+      return next;
+    };
+    let page = await openPage();
+    let blankRun = false;
+    const relaunch = async () => {
+      await browser.close().catch(() => undefined);
+      signal?.throwIfAborted();
+      browser = await chromium.launch({ executablePath: findNativeChrome(), headless });
+      page = await openPage();
+    };
+    const draw = async (input: MotionHtmlFrameInput, subtitle: string, fontFamily: string, allowBlank: boolean): Promise<Buffer> => {
         signal?.throwIfAborted();
         let watchdog: ReturnType<typeof setTimeout> | undefined;
         try {
           const operation = page.evaluate(
-            async ({ payload: { value, text, font }, maintenanceTexts: RT_MAINTENANCE }) => {
-              const result = (await Promise.race([(window as any).renderMotionFrame(value), new Promise((_, reject) => setTimeout(() => reject(new Error(RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT)), 30000))])) as string;
+            async ({ payload: { value, text, font, allowBlank }, maintenanceTexts: RT_MAINTENANCE }) => {
+              const result = (await Promise.race([(window as any).renderMotionFrame(value, allowBlank), new Promise((_, reject) => setTimeout(() => reject(new Error(RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT)), 30000))])) as string;
               if (!text) return result;
               const image = new Image();
               image.src = result;
@@ -60,7 +70,7 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
               return canvas.toDataURL(RT_MAINTENANCE.IMAGE_PNG);
             },
             {
-              payload: { value: input, text: subtitle, font: fontFamily },
+              payload: { value: input, text: subtitle, font: fontFamily, allowBlank },
               maintenanceTexts: {
                 CANVAS_RENDERAT_TIMED_OUT: RT_MAINTENANCE.CANVAS_RENDERAT_TIMED_OUT,
                 CANVAS: RT_MAINTENANCE.CANVAS,
@@ -87,6 +97,7 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
         } catch (error) {
           signal?.throwIfAborted();
           const reason = String((error as Error).message);
+          if (RT_MAINTENANCE.CANVAS_BLANK_FRAME_RE.test(reason)) throw error;
           if (/Canvas renderAt timed out/.test(reason)) {
             const key = `${contentKey}${RT_MAINTENANCE.COLON}${input.frame}${RT_MAINTENANCE.COLON}${input.width}${RT_MAINTENANCE.COLON}${input.height}`;
             const count = (timedOutFrames.get(key) || 0) + 1;
@@ -99,6 +110,29 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
         } finally {
           clearTimeout(watchdog);
         }
+    };
+    return {
+      async render(input: MotionHtmlFrameInput, subtitle = "", fontFamily: string = RT_MAINTENANCE.ARIAL): Promise<Buffer> {
+        const blank = (error: unknown) => {
+          if (!RT_MAINTENANCE.CANVAS_BLANK_FRAME_RE.test(String((error as Error)?.message))) throw error;
+        };
+        try {
+          const image = await draw(input, subtitle, fontFamily, false);
+          blankRun = false;
+          return image;
+        } catch (error) {
+          blank(error);
+        }
+        if (!blankRun) {
+          await relaunch();
+          try {
+            return await draw(input, subtitle, fontFamily, false);
+          } catch (error) {
+            blank(error);
+          }
+        }
+        blankRun = true;
+        return draw(input, subtitle, fontFamily, true);
       },
       async close() {
         signal?.removeEventListener(RT_MAINTENANCE.ABORT, stop);

@@ -197,10 +197,12 @@ import { getFfmpegPath } from "../../../../server/services/shortsPreprocessServi
 const ABORTED = MOTION_TEXT_MOTION_RENDER_ABORTED;
 const jobs = new Map<string, MotionJobState & { controller: AbortController }>();
 let encoderCache: string[] | null = null;
-const runFfmpegCollect = (args: string[], signal?: AbortSignal): Promise<{ code: number; stderr: string }> =>
+const runFfmpegCollect = (args: string[], signal?: AbortSignal, keep?: RegExp): Promise<{ code: number; stderr: string }> =>
   new Promise((resolve, reject) => {
     const child = spawn(getFfmpegPath(), args, { windowsHide: true });
     let stderr: string = MR.MOTION_TEXT_EMPTY;
+    let partial: string = MR.MOTION_TEXT_EMPTY;
+    const kept: string[] = [];
     const onAbort = () => {
       try {
         child.kill(MOTION_TEXT_SIGKILL);
@@ -208,7 +210,12 @@ const runFfmpegCollect = (args: string[], signal?: AbortSignal): Promise<{ code:
     };
     signal?.addEventListener(MOTION_TEXT_ABORT, onAbort, { once: true });
     child.stderr.on(MOTION_TEXT_DATA, (d: Buffer) => {
-      stderr = MR.MOTION_TEMPLATE_SYMBOL_230(stderr, d.toString()).slice(-6000);
+      const chunk = d.toString();
+      stderr = MR.MOTION_TEMPLATE_SYMBOL_230(stderr, chunk).slice(-6000);
+      if (!keep) return;
+      const lines = (partial + chunk).split(MOTION_LOUDNESS.LINE_SPLIT);
+      partial = lines.pop() || MR.MOTION_TEXT_EMPTY;
+      kept.push(...lines.filter((line) => keep.test(line)));
     });
     child.on(MOTION_TEXT_ERROR, (e) => {
       signal?.removeEventListener(MOTION_TEXT_ABORT, onAbort);
@@ -217,7 +224,8 @@ const runFfmpegCollect = (args: string[], signal?: AbortSignal): Promise<{ code:
     child.on(MOTION_TEXT_CLOSE, (code) => {
       signal?.removeEventListener(MOTION_TEXT_ABORT, onAbort);
       if (signal?.aborted) reject(new Error(ABORTED));
-      else resolve({ code: code ?? 1, stderr });
+      else if (!keep) resolve({ code: code ?? 1, stderr });
+      else resolve({ code: code ?? 1, stderr: [...kept, ...[partial].filter((line) => keep.test(line)), ...stderr.split(MOTION_LOUDNESS.LINE_SPLIT).filter((line) => !keep.test(line))].join(MOTION_LOUDNESS.LINE_JOIN) });
     });
   });
 const measureLoudness = async (file: string, signal?: AbortSignal): Promise<Record<string, string> | undefined> => {
@@ -231,12 +239,12 @@ const measureLoudness = async (file: string, signal?: AbortSignal): Promise<Reco
   }
 };
 const checkOutput = async (file: string, spec: MotionRenderSpec, options: MotionRenderOptions, signal?: AbortSignal): Promise<string[]> => {
-  const { code, stderr } = await runFfmpegCollect([VALIDATION.STRICT, MOTION_TEXT_I, file, MOTION_TEXT_VF, MOTION_LOUDNESS.BLACK_FILTER, MR.MOTION_TEXT_AF, [MOTION_LOUDNESS.SILENCE_FILTER, MOTION_LOUDNESS.EBUR_FILTER].join(MOTION_LOUDNESS.CHAIN), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal);
+  const { code, stderr } = await runFfmpegCollect([VALIDATION.STRICT, MOTION_TEXT_I, file, MOTION_TEXT_VF, MOTION_LOUDNESS.BLACK_FILTER, MR.MOTION_TEXT_AF, [MOTION_LOUDNESS.SILENCE_FILTER, MOTION_LOUDNESS.EBUR_FILTER].join(MOTION_LOUDNESS.CHAIN), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal, MOTION_LOUDNESS.KEEP_LINES);
   if (code !== 0) throw new Error(PRODUCTION.OUTPUT_INVALID);
   const qualityErrors = motionOutputQualityIssues(stderr, spec, options.speechRanges || (options.requireAudio ? spec.subtitles : undefined));
   if (qualityErrors.length) throw new Error([PRODUCTION.OUTPUT_INVALID, ...qualityErrors].join(PRODUCTION.SEPARATOR));
   const loud = [...stderr.matchAll(MOTION_LOUDNESS.EBUR_RE)].pop()?.[1],
-    black = (stderr.match(MOTION_LOUDNESS.BLACK_RE) || []).length,
+    black = [...stderr.matchAll(VALIDATION.BLACK_INTERVAL)].map((match) => MOTION_LOUDNESS.LOG.RANGE(Number(match[1]), Number(match[2]))).join(MOTION_LOUDNESS.LOG.RANGE_JOIN),
     silence = (stderr.match(MOTION_LOUDNESS.SILENCE_RE) || []).length;
   return _.compact([loud ? MOTION_LOUDNESS.LOG.LOUDNESS(loud) : undefined, black ? MOTION_LOUDNESS.LOG.BLACK(black) : undefined, silence ? MOTION_LOUDNESS.LOG.SILENCE(silence) : undefined]);
 };
