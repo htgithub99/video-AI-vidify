@@ -131,9 +131,10 @@ export const aiExec = (v: any): MotionAiExecution => ({
   chromeHeadless: v?.chromeHeadless !== false,
   ...(typeof v?.allowFallback === "boolean" ? { allowFallback: v.allowFallback, ...(v.allowFallback === false ? { strictProvider: true } : {}) } : {}),
   ...(v?.strictProvider === true ? { strictProvider: true } : {}),
+  ...(typeof v?.multiSceneRooms === "boolean" ? { multiSceneRooms: v.multiSceneRooms } : {}),
 });
 export const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MOTION_AI_ROLE.DRAW });
-const editorialAiIdentity = ({ provider, model, mode }: MotionAiExecution) => ({ provider, model, mode });
+const editorialAiIdentity = ({ provider, model, mode, multiSceneRooms }: MotionAiExecution) => ({ provider, model, mode, ...(multiSceneRooms === false ? { multiSceneRooms: false } : {}) });
 export const editorialSession = (body: any, source: MotionStorySource, exec: MotionAiExecution): MotionEditorialSession | undefined => {
   const id = _.toString(body?.editorialSessionId);
   if (!MOTION_EDITORIAL.ID_PATTERN.test(id) || !source?.segments) return undefined;

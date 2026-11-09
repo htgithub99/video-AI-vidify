@@ -966,6 +966,7 @@ export interface MotionAiExecution {
   submissionChanged?: () => void;
   responseReceived?: (text: string) => void;
   allowFallback?: boolean;
+  multiSceneRooms?: boolean;
   singleResponse?: boolean;
   provider?: string;
   model?: string;

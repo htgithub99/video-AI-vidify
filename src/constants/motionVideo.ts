@@ -143,6 +143,7 @@ export const MOTION_STORY_CONFIG = {
   WORKER_IDS: ["motion-primary", "motion-second"],
   SCENE_WORKER_IDS: ["motion-scene-first", "motion-scene-second", "motion-scene-third"],
   SCENE_ROOMS_PREPARING: "[Dựng cảnh] Đang mở 3 room AI dựng cảnh riêng.",
+  SCENE_ROOMS_PREPARING_COUNT: (count: number): string => `[Dựng cảnh] Đang mở ${count} room AI dựng cảnh riêng.`,
   SCENE_ROOMS_READY: (ready: number, total: number): string => `[Dựng cảnh] Đã sẵn sàng ${ready}/${total} room AI dựng cảnh.`,
   SCENE_ROOM_PENDING: (index: number): string => `[Dựng cảnh] Room ${index} chưa sẵn sàng; sẽ phục hồi khi gửi yêu cầu dựng cảnh.`,
   ROOM_UI_ERROR_RE: /locator\.(fill|click|press|type|focus)|Timeout \d+ms exceeded|chat_planning_composer_content_mismatch|chat_planning_send_button_not_ready|chat_planning_submission_not_confirmed/,

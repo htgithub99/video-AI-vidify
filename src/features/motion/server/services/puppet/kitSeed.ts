@@ -5,6 +5,7 @@ import type { PuppetProp, PuppetSet, PuppetStylePack } from "../../../../../type
 import { drawPuppetProps, drawPuppetSets, ensureSetVariant } from "./kitDraw.js";
 import { mapMotionAiPool } from "../motionStoryService.js";
 import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
+import { motionSceneWorkerIds } from "../../../../../lib/motionAiExecution.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { listPuppets, readPuppet, writePuppet } from "./kitLibrary.js";
 import { presetStyle, type PuppetRunOptions } from "./stylePack.js";
@@ -62,7 +63,7 @@ export const seedPuppetKit = async (styleId: string, genre: string, o: PuppetRun
       _.map(round, (pr) => pr.key),
       P.PROPS_PER_CALL,
     );
-    const made = Object.assign({}, ...(await mapMotionAiPool(groups, (g) => drawPuppetProps(style, g, notes, PUPPET_SEED_SETTING, o), MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length, MOTION_AI_ROLE.DRAW))) as Record<string, PuppetProp>;
+    const made = Object.assign({}, ...(await mapMotionAiPool(groups, (g) => drawPuppetProps(style, g, notes, PUPPET_SEED_SETTING, o), motionSceneWorkerIds(o.exec).length, MOTION_AI_ROLE.DRAW, o.exec))) as Record<string, PuppetProp>;
     for (const pr of round) {
       const p = made[pr.key];
       if (!p) continue;

@@ -150,6 +150,7 @@ try {
   } finally {
     await fs.rm(localBundle, { force: true });
   }
+  Object.assign(service.MOTION_AI_RECOVERY, { SEND_STAGGER_MS: 0 });
   const draw = { provider: P.GeminiChat, model: M.GeminiFlash, mode: E.RoomOnly, role: ROLE.DRAW, singleResponse: true, allowFallback: true };
   const content = { provider: P.ChatGptUi, model: M.ChatGptAuto, mode: E.RoomOnly, role: ROLE.MAIN, allowFallback: false };
   const session = async (id: string, work: () => Promise<any>) => {
@@ -200,6 +201,33 @@ try {
     assert.equal(peakContent, CONTENT_ROOMS);
     results.push({ id, peakRequests: peak, drawing: peakDrawing, content: peakContent, rooms: rooms.size });
     await service.releaseMotionEditorialSession(id);
+    assert.equal(rooms.size, 0);
+  }
+  {
+    const singleId = "scene-room-single";
+    const singleDraw = { ...draw, multiSceneRooms: false };
+    let activeDrawing = 0,
+      peakDrawing = 0;
+    const workersUsed = new Set<string>();
+    fixture.send = async (request) => {
+      open(request);
+      workersUsed.add(request.workerId);
+      peakDrawing = Math.max(peakDrawing, ++activeDrawing);
+      await tick();
+      activeDrawing--;
+      return ready(request);
+    };
+    await within(
+      session(singleId, async () => {
+        await service.prepareMotionSceneRooms(singleDraw);
+        assert.equal(rooms.size, 1);
+        await Promise.all(Array.from({ length: 4 }, () => service.runMotionAi(V.PROMPT, C.ARTIFACT, singleDraw)));
+      }),
+    );
+    assert.equal(peakDrawing, 1);
+    assert.deepEqual([...workersUsed], [CONFIG.SCENE_WORKER_IDS[0]]);
+    results.push({ id: singleId, peakDrawing, rooms: rooms.size });
+    await service.releaseMotionEditorialSession(singleId);
     assert.equal(rooms.size, 0);
   }
   fixture.send = async (request) => {

@@ -201,6 +201,7 @@ const DEFAULTS: PersistedState = {
   sceneAiModel: MOTION_SCENE_AI.PRIMARY_MODEL,
   sceneAiHeadless: true,
   sceneAiFallback: true,
+  sceneMultiRooms: true,
   aiReview: true,
   videoGenre: MOTION_VIDEO_GENRE_DEFAULT,
   storytelling: MOTION_STORYTELLING.DEFAULT,
@@ -888,7 +889,7 @@ export function useMotionStudio() {
         }
       });
     },
-    [inFlow, state.source, state.analysis, state.language, state.length, state.autoContinue, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, runStoryJob, patch, resumeAutomation, pauseAutomation],
+    [inFlow, state.source, state.analysis, state.language, state.length, state.autoContinue, state.script, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneMultiRooms, runStoryJob, patch, resumeAutomation, pauseAutomation],
   );
   const generateSeo = useCallback(
     async (scriptOverride?: MotionStoryScript, analysisOverride?: MotionStoryAnalysis, quiet = false) => {
@@ -1029,7 +1030,7 @@ export function useMotionStudio() {
       if (result && !failed && automaticExport && exportOn(stateRef.current) && !flowCancelled.current) await exportBuiltScenes.current?.();
       return result;
     },
-    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
+    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneMultiRooms, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
   const voicePending = useRef<{ signature: string; asrCheck: boolean; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
   useEffect(() => {

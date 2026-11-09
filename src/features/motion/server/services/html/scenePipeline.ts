@@ -1,5 +1,5 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
-import { motionAiFallbackPolicy } from "../../../../../lib/motionAiExecution.js";
+import { motionAiFallbackPolicy, motionSceneWorkerIds } from "../../../../../lib/motionAiExecution.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import type { ChatPendingSubmission, ChatPlanningSubmission } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { randomUUID } from "node:crypto";
@@ -611,7 +611,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
     state.updatedAt = Date.now();
     opts.partial?.(structuredClone(result));
   };
-  const slots = new MotionPriorityPool(MOTION_HTML.WORKERS);
+  const slots = new MotionPriorityPool(motionSceneWorkerIds(opts.exec).length);
   const rebuildKey = opts.rebuildKey || randomUUID();
   const startedScenes = new Map<string, Promise<void>>();
   let totalTasks = 0;

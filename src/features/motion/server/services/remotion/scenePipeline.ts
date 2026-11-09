@@ -5,7 +5,7 @@ import { buildMotionHtmlScenes } from "../html/scenePipeline.js";
 import * as COMMON_RUNTIME from "../../../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
-import { motionAiFallbackPolicy } from "../../../../../lib/motionAiExecution.js";
+import { motionAiFallbackPolicy, motionSceneWorkerIds } from "../../../../../lib/motionAiExecution.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../../constants/runtime/server.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
@@ -557,7 +557,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
             },
           )
         : Promise.resolve(undefined);
-    const slots = new MotionPriorityPool(MOTION_STORY_CONFIG.SCENE_WORKER_IDS.length);
+    const slots = new MotionPriorityPool(motionSceneWorkerIds(opts.exec).length);
     const timeline = new Map(planGroups.map((group, order) => [group.id, order]));
     const tasks: Promise<void>[] = [];
     let failure: { error: unknown } | undefined;
