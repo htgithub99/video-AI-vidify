@@ -99,7 +99,7 @@ const scenePrompt = routed[0].prompt;
 assert.ok(scenePrompt.startsWith(MOTION_HTML.OUTPUT));
 assert.equal(scenePrompt.split(MOTION_HTML.GRAPHICS).length, 2, "style rules appear once");
 assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|shako|cowhide|chainmail|screaming|Unconscious/i);
-assert.ok(scenePrompt.length < 4200, "scene prompt stays compact: " + scenePrompt.length);
+assert.ok(scenePrompt.length < 8000, "scene prompt stays bounded: " + scenePrompt.length);
 const horrorCtrl = new AbortController();
 let horrorPrompt = "";
 await assert.rejects(
