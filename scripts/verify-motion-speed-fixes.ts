@@ -166,12 +166,21 @@ await assert.rejects(
   }),
 );
 assert.ok(castPrompt.includes(cardsA) && castPrompt.indexOf(cardsA) < castPrompt.indexOf("SCENE (source data)"), "cast cards precede the scene");
-assert.match(castPrompt, /faces the way it moves[\s\S]*rider stays seated/, "motion direction and rider rules are in the prompt");
+assert.match(castPrompt, /faces its direction[\s\S]*seated rider is drawn inside drawHorse/, "motion direction and the rider rule are in a riding scene");
+assert.doesNotMatch(scenePrompt, /COUPLED MECHANICS/, "a scene without riders, vehicles or props gets no coupled mechanics");
+const { motionHtmlMechanics } = await import("../src/lib/motionHtmlMechanics.js");
+assert.match(motionHtmlMechanics("Gunners haul the field guns forward."), /rigX/);
+assert.doesNotMatch(motionHtmlMechanics("Gunners haul the field guns forward."), /horseX|propX/);
+const onlyNamed = motionHtmlCastCards(castAnalysis, [{ cast: ["pulleine", "durnford"] }], "The Zulu impi gathers on the ridge.");
+assert.ok(!onlyNamed.includes("Pulleine") && !onlyNamed.includes("Durnford") && onlyNamed.includes("Zulu impi"), "only people the scene names get a card");
+assert.equal(motionHtmlCastCards(castAnalysis, [], "A colonel waits."), "", "a title alone does not pull in a named officer");
 const { motionHtmlFigureDoc } = await import("../src/lib/motionHtmlFigure.js");
 assert.ok(scenePrompt.includes(motionHtmlFigureDoc("history")) && horrorPrompt.includes(motionHtmlFigureDoc("horror")), "scene prompts carry the measured figure design of their profile");
 assert.match(motionHtmlFigureDoc("history"), /groundY/, "figures stand on the drawn ground");
-assert.match(scenePrompt, /hand-drawn[\s\S]*ONE closed path/, "outline belongs to its shape");
-assert.match(scenePrompt, /never slides sideways/, "an advance changes depth");
+assert.match(scenePrompt, /hand-drawn[\s\S]*one Path2D/, "outline belongs to its shape");
+assert.match(scenePrompt, /only advances when the SCENE says/, "a gathering group does not charge");
+assert.match(scenePrompt, /camX follows groupX at most 1:1[\s\S]*distance travelled/, "the camera never outruns marchers and steps follow distance");
+assert.doesNotMatch(motionHtmlFigureDoc("history"), /torsoY=-28|headR\+4/, "no fixed pixel offsets");
 assert.doesNotMatch(scenePrompt, /overlapping (?:outlined )?(?:puffs|circles)|lumpy blobs|capsule|corner radius/, "no geometric shape recipes");
 assert.doesNotMatch(scenePrompt, /legs down both flanks/, "one rider rule only");
 assert.ok(!scenePrompt.includes("MotionKit"), "the AI draws every figure itself");

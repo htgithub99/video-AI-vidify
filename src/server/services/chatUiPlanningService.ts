@@ -543,8 +543,35 @@ const getLastVisibleLocator = async (page: Page, selector: string, timeoutMs: nu
   }
   throw Object.assign(new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND), { [MR.MOTION_TEXT_ROOMPAGE]: page });
 };
-export const getChatResponseSnapshots = async (page: Page, responseSelector: string, artifactType?: string): Promise<ChatResponseSnapshot[]> =>
-  readPlanningUi(
+export const getChatResponseSnapshots = async (page: Page, responseSelector: string, artifactType?: string): Promise<ChatResponseSnapshot[]> => {
+  if (responseSelector === M.RESPONSE) {
+    const clickedExpandOrRaw = await page
+      .locator(responseSelector)
+      .evaluateAll(
+        (elements, selectors) => {
+          let didClick = false;
+          for (const el of elements) {
+            el.querySelectorAll<HTMLElement>(selectors.expandCode).forEach((btn) => {
+              if (btn.getClientRects().length > 0) {
+                btn.click();
+                didClick = true;
+              }
+            });
+            el.querySelectorAll<HTMLElement>(selectors.jsonRaw).forEach((btn) => {
+              if (btn.getClientRects().length > 0 && /^raw$/i.test((btn.textContent || "").trim())) {
+                btn.click();
+                didClick = true;
+              }
+            });
+          }
+          return didClick;
+        },
+        { expandCode: M.EXPAND_CODE_BUTTON, jsonRaw: M.JSON_RAW_BUTTON },
+      )
+      .catch(() => false);
+    if (clickedExpandOrRaw) await delayAsync(150);
+  }
+  return readPlanningUi(
     page
       .locator(responseSelector)
       .evaluateAll(
@@ -573,6 +600,12 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
               }
               const codeText = browserPayload.preferCodeBlocks
                 ? Array.from(content.querySelectorAll(browserPayload.codeSelector))
+                    .filter((block) => {
+                      if (!browserPayload.filterVisibleCodeBlocks) return true;
+                      if (!(block instanceof HTMLElement)) return false;
+                      const blockStyle = window.getComputedStyle(block);
+                      return blockStyle.visibility !== SOURCE_TEXT_HIDDEN && blockStyle.display !== SOURCE_TEXT_NONE && block.getClientRects().length > 0;
+                    })
                     .map((block) => block.textContent || MOTION_TEXT_EMPTY)
                     .join(ST.SOURCE_TEXT_SYMBOL_56)
                 : MOTION_TEXT_EMPTY;
@@ -582,6 +615,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
         },
         {
           preferCodeBlocks: artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE || responseSelector === M.RESPONSE,
+          filterVisibleCodeBlocks: responseSelector === M.RESPONSE,
           contentSelector: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_CONTENT_SELECTOR : MR.MOTION_TEXT_EMPTY,
           currentMessageIdAttribute: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_ID_ATTRIBUTE : MR.MOTION_TEXT_EMPTY,
           codeSelector: responseSelector === D.RESPONSE ? D.CODE : responseSelector === M.RESPONSE ? M.CODE : C.CODE_BLOCK_SELECTOR,
@@ -601,6 +635,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS,
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_RESPONSE,
   );
+};
 const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): boolean => {
   if (_.isEmpty(text)) return false;
   const parsed = parseStrictRoomJson(text);

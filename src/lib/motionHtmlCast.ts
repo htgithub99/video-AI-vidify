@@ -3,13 +3,14 @@ import { MOTION_HTML_CAST as C } from "../constants/motionHtmlCast.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../types/motionVideo.js";
 const pick = <T>(list: readonly T[], key: string, salt: string): T => list[createHash(C.HASH).update(salt + key).digest()[0] % list.length];
 const mentions = (text: string, name: string): boolean => {
-  const words = name.toLowerCase().match(C.WORD) || [];
-  return words.some((word) => text.includes(word));
+  const said = new Set(text.match(C.WORD) || []);
+  const words = (name.toLowerCase().match(C.WORD) || []).filter((word) => !C.TITLES.test(word));
+  return words.some((word) => said.has(word));
 };
 export const motionHtmlCastCards = (analysis: Pick<MotionStoryAnalysis, "cast" | "groups">, beats: Pick<MotionBeat, "cast">[], template: string): string => {
   const text = template.toLowerCase();
   const keys = new Set(beats.flatMap((beat) => beat.cast || []));
-  const people = (analysis.cast || []).filter((member) => !member.narrator && !C.HIDDEN.test(member.look || C.EMPTY) && (keys.has(member.key) || mentions(text, member.name)));
+  const people = (analysis.cast || []).filter((member) => !member.narrator && !C.HIDDEN.test(member.look || C.EMPTY) && (text.trim() ? mentions(text, member.name) : keys.has(member.key)));
   const groups = (analysis.groups || []).filter((group) => mentions(text, group.name) || text.includes(group.key.toLowerCase()));
   if (!people.length && !groups.length) return C.EMPTY;
   const lines = [

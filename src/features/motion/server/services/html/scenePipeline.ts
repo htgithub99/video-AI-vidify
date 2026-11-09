@@ -18,6 +18,7 @@ import { MOTION_AI_RECOVERY } from "../../../../../constants/motionAiRecovery.js
 import { motionRenameText } from "../../../../../lib/motionRename.js";
 import { motionHtmlCastCards, motionHtmlContinuity } from "../../../../../lib/motionHtmlCast.js";
 import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
+import { motionHtmlMechanics } from "../../../../../lib/motionHtmlMechanics.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -236,7 +237,7 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
 };
 export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string; cast?: string; continuity?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
   const graphics = MOTION_HTML.PROFILE_GRAPHICS[settings.profile] || MOTION_HTML.GRAPHICS;
-  const key = motionInputKey([MOTION_HTML.VERSION, graphics, motionHtmlFigureDoc(settings.profile), scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
+  const key = motionInputKey([MOTION_HTML.VERSION, MOTION_HTML.OUTPUT, graphics, motionHtmlFigureDoc(settings.profile), scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) {
@@ -246,6 +247,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
   const prompt = [
     MOTION_HTML.OUTPUT,
+    motionHtmlMechanics([scene.sceneTemplate, settings.continuity].join("\n")),
     graphics,
     motionHtmlFigureDoc(settings.profile),
     motionHtmlLanguageDirection(settings.language, { codeOnly: true }),

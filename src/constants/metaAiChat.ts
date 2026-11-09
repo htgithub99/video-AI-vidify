@@ -13,7 +13,9 @@ export const META_AI_CHAT_CONFIG = {
   SEND: 'button[data-testid="composer-send-button"]:not([disabled]):not([aria-disabled="true"])',
   RESPONSE: '[data-testid="assistant-message"]',
   BUSY: 'button[data-testid="composer-stop-button"], [data-testid="assistant-message"][data-streaming-complete="false"], [data-testid="assistant-message"][data-streaming-state="INIT"], [data-testid="assistant-message"][data-streaming-state="STREAMING"]',
-  CODE: "pre code, pre.ur-sm-code",
+  CODE: "pre",
+  EXPAND_CODE_BUTTON:
+    'button[aria-label="Mở rộng"], button[aria-label="Expand"], button[aria-label*="Mở rộng" i], button[aria-label*="Expand" i]',
   REMOVE:
     '.inline-image-node button[aria-label*="Remove" i], .inline-image-node button[aria-label*="Xóa" i], .inline-image-node button[aria-label*="Xoá" i], .inline-image-node button[aria-label*="Gỡ" i]',
   INLINE_IMAGE_NODE: ".inline-image-node",

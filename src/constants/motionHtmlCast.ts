@@ -21,6 +21,7 @@ export const MOTION_HTML_CAST = {
   HIDDEN: /^(?:unseen|n\/a|none|voice only|off-?screen)/iu,
   FACIAL: /moustache|mustache|beard|râu/iu,
   WORD: /[\p{L}\p{N}]{4,}/gu,
+  TITLES: /^(?:colonel|general|captain|major|lieutenant|sergeant|corporal|private|lord|lady|king|queen|prince|princess|chief|commander|emperor|sultan|duke|count|baron|bishop|father|mother|uncle|aunt|grandma|grandpa|master|mister|madam|saint)$/iu,
   BUILD: ["stocky build", "tall thin build", "short round build", "broad shoulders", "average build"],
   ACCENT: ["gold trim", "silver trim", "dark green trim", "navy trim", "crimson trim", "white piping", "brown leather straps"],
   WITH_FACIAL: ["thick walrus moustache", "neat thin moustache", "curled-tip moustache", "moustache with short grey beard", "bushy moustache and side whiskers"],
