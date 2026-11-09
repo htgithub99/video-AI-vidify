@@ -18,12 +18,16 @@ export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStor
   return { findings, ids: unique.map((item) => item.id), remaining: unique.map(({ id, issue }) => ({ id, issue })), concrete: [...new Set<string>([...findings.overlap.map((item) => item.id), ...findings.review.filter((item) => ([RT_MAINTENANCE.SOURCE, RT_MAINTENANCE.LABEL, RT_MAINTENANCE.HANDOFF] as string[]).includes(item.kind || "")).map((item) => item.id)])] };
 };
 export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string, edit: (beats: MotionBeat[], ids: string[], supplemental: boolean) => Promise<MotionEditorialResult>, log?: (line: string) => void, scope?: ReadonlySet<string>): Promise<MotionEditorialResult> => {
-  if (analysis.authoringSettings)
-    return edit(
+  if (analysis.authoringSettings) {
+    const result = await edit(
       beats,
       beats.filter((beat) => !scope || scope.has(beat.chapterId)).map((beat) => beat.id),
       false,
     );
+    const renamed = motionRenameAutofix(result.beats, analysis);
+    if (renamed.replaced) log?.(N.LOG.AUTOFIX(renamed.replaced));
+    return { ...result, beats: renamed.beats };
+  }
   const names = analysis.cast.map((member) => member.name);
   const fixed = motionGenreAutofix(beats, analysis, language);
   if (fixed.dropped.length || fixed.visuals || fixed.shots || fixed.speech) log?.(A.LOG(fixed.dropped.length, fixed.visuals, fixed.shots, fixed.speech));

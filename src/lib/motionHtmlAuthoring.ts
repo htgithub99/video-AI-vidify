@@ -4,10 +4,12 @@ import { motionVideoGenre } from "../constants/motionGenre.js";
 import { motionStorytelling } from "./motionStorytelling.js";
 import { motionStorytellingSilent } from "./motionStorytelling.js";
 import { MOTION_SCENE_PACING } from "../constants/motionScenePacing.js";
+import { MOTION_RENAME } from "../constants/motionRename.js";
+import { motionRenameMapActive, motionRenamePairs } from "./motionRename.js";
 import type { MotionChapter, MotionStoryAnalysis } from "../types/motionVideo.js";
 import type { MotionVisualSettings } from "../types/motionVisual.js";
 export const motionHtmlLanguageDirection = (language?: string, options: { codeOnly?: boolean } = {}) =>
-  `${options.codeOnly ? MOTION_HTML.CODE_LANGUAGE_POLICY : MOTION_HTML.LANGUAGE_POLICY}${RT_MAINTENANCE.SELECTED_VIDEO_LANGUAGE}${language || RT_MAINTENANCE.AS_SPECIFIED_BY_THE_SUPPLIED_NARRATION_AND_EXACT_DISPLAY_STRINGS}${RT_MAINTENANCE.PRODUCTION_INSTRUCTIONS_ARE_ENGLISH_THIS_DOES_NOT_CHANGE_THE_SELECTED}${MOTION_HTML.GRAPHICS}`;
+  options.codeOnly ? MOTION_HTML.CODE_LANGUAGE(language) : `${MOTION_HTML.LANGUAGE_POLICY}${RT_MAINTENANCE.SELECTED_VIDEO_LANGUAGE}${language || RT_MAINTENANCE.AS_SPECIFIED_BY_THE_SUPPLIED_NARRATION_AND_EXACT_DISPLAY_STRINGS}${RT_MAINTENANCE.PRODUCTION_INSTRUCTIONS_ARE_ENGLISH_THIS_DOES_NOT_CHANGE_THE_SELECTED}`;
 export const motionHtmlChapterBudget = (analysis: MotionStoryAnalysis, chapter: MotionChapter, speechRate: number, first = false, last = false) => {
   const silent = motionStorytellingSilent(analysis.storytelling);
   const pause = (silent ? (last ? silent.videoEnd : silent.chapterCard + silent.chapterEnd) : 0) + (first ? 0.3 : 0);
@@ -47,6 +49,7 @@ export const motionHtmlWritingDirection = (analysis: MotionStoryAnalysis, langua
     `${RT_MAINTENANCE.PICTURE_PACING}${a.picturePacing}${RT_MAINTENANCE.ROUGHLY}${a.targetPictureSeconds}${RT_MAINTENANCE.SECONDS_PER_ILLUSTRATION_SPOKEN_BEATS_AND_PICTURES_ARE_SEPARATE_MULTIPLE}`,
     `${RT_MAINTENANCE.VISUAL_STYLE_WORDS_ONLY}${MOTION_HTML_STYLES[a.visualProfile]}`,
     MOTION_HTML.TEMPLATE,
+    ...(motionRenameMapActive(analysis).length ? [MOTION_RENAME.PROMPT.CHAPTER(motionRenamePairs(motionRenameMapActive(analysis)))] : []),
   ].join(RT_MAINTENANCE.NEWLINE);
 };
 export const motionHtmlAuthoringSnapshot = (input: { videoGenre?: unknown; storytelling?: unknown; length: string; target: number; language: string; profile: string; pacing?: string; parts?: number }) => ({

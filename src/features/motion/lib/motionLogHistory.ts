@@ -47,7 +47,7 @@ export const mergeMotionLogHistory = (history: MotionLogEntry[], id: string, kin
     const steps = { ...history[index].stepStates };
     for (const [key, incoming] of Object.entries(state.stepStates || {})) {
       const current = steps[key];
-      if (current && ((current.startedAt || 0) > (incoming.startedAt || 0) || (current.id === incoming.id && (current.updatedAt || 0) > (incoming.updatedAt || 0)))) continue;
+      if (current && (current.id === incoming.id ? (current.updatedAt || 0) > (incoming.updatedAt || 0) : (current.updatedAt || current.startedAt || 0) > (incoming.updatedAt || incoming.startedAt || 0))) continue;
       if (current?.id === incoming.id && terminal(current?.status) && !terminal(incoming.status)) continue;
       steps[key] = incoming;
     }

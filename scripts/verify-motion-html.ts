@@ -37,7 +37,7 @@ try {
     const options: any = { exec: {}, scope: `${profile}-${Date.now()}`, renderBehavior: { version: 1, actors: "simple", sceneEffects: "gentle", camera: "gentle" }, log: () => undefined,
       ai: async (prompt: string, artifact: string) => {
         calls.push(artifact);
-        assert.ok(prompt.includes(MOTION_HTML.GRAPHICS), "Every profile receives the entire fixed graphic standard");
+        assert.equal(prompt.includes(MOTION_HTML.PROFILE_GRAPHICS[profile] || MOTION_HTML.GRAPHICS), artifact === MOTION_HTML.ARTIFACT, "Only scene drawing receives the profile graphic standard");
         assert.doesNotMatch(prompt, /CHARACTER SVG FRAME|SELECTED VISUAL CONSTRUCTION|GENERIC HORSE|SELF-CHECK BEFORE ANSWERING|REVISION REQUEST/);
         if (artifact === MOTION_HTML.PLAN) {
           assert.match(prompt, /PRODUCTION LANGUAGE: Write all production descriptions/);
@@ -48,10 +48,10 @@ try {
         assert.equal(artifact, MOTION_HTML.ARTIFACT);
         assert.ok(prompt.startsWith(MOTION_HTML.OUTPUT), "Every scene generation and retry must receive the current code contract");
         assert.ok(prompt.includes(script.beats[0].sceneTemplateDraft), "Code-quality instructions must preserve the original scene functionality");
-        assert.ok(prompt.includes(MOTION_HTML.CODE_LANGUAGE_POLICY));
+        assert.ok(prompt.includes(MOTION_HTML.CODE_LANGUAGE(language)));
         assert.ok(!prompt.includes(MOTION_HTML.LANGUAGE_POLICY), "Drawing must not inherit prose-authoring instructions");
-        assert.ok(prompt.endsWith(MOTION_HTML.DELIVERY));
-        assert.ok(prompt.includes(`SELECTED VIDEO LANGUAGE: ${language}`));
+        assert.equal(prompt.split(MOTION_HTML.PROFILE_GRAPHICS[profile] || MOTION_HTML.GRAPHICS).length, 2, "The graphic standard appears once");
+        assert.doesNotMatch(prompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE/, "Format and language rules are not repeated in the scene body");
         drawing++;
         return profile === "history" && drawing <= 4 ? html.replace("x.fill();", "throw Error('fixture runtime fault');") : html;
       },

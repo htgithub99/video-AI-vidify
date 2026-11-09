@@ -3,7 +3,7 @@ import { MOTION_PRODUCTION as P } from "../constants/motionProduction.js";
 import type { MotionChapterDraft, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../types/motionVideo.js";
 import type { MotionRemotionState } from "../types/motionVisual.js";
 import { motionChapterPending } from "./motionChapterRepair.js";
-import { motionHtmlPlanCurrent, motionHtmlPlanSource } from "./motionHtmlScene.js";
+import { motionHtmlPlanCurrent, motionHtmlPlanSource, motionHtmlPlanSourceMatches } from "./motionHtmlScene.js";
 import { motionVisualBeatGroups } from "./motionScenePacing.js";
 import { motionVisualSettingsFor } from "./motionVisual.js";
 import { MOTION_VOICE } from "../constants/motionVoice.js";
@@ -87,7 +87,7 @@ export const motionEarlyHtmlSceneInput = (script: MotionStoryScript | undefined,
   for (const group of groups) {
     const chapterId = group.beats[0]?.chapterId;
     if (!chapterId || blockedChapters.has(chapterId)) continue;
-    const isPlanned = !!state.scenes[group.id]?.length && state.htmlPlanSources?.[group.id] === motionHtmlPlanSource(group.beats, analysis, settings, state.notes?.[group.id] || undefined, state.htmlSfx !== false);
+    const isPlanned = !!state.scenes[group.id]?.length && motionHtmlPlanSourceMatches(state.htmlPlanSources?.[group.id], motionHtmlPlanSource(group.beats, analysis, settings, state.notes?.[group.id] || undefined, state.htmlSfx !== false));
     if (isPlanned) plannedGroups.push(group);
     else blockedChapters.add(chapterId);
   }

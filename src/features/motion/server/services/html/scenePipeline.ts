@@ -7,14 +7,16 @@ import { AsyncResource } from "node:async_hooks";
 import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
 import { motionHtmlWritingDirection, motionHtmlPacingDirection, motionHtmlLanguageDirection } from "../../../../../lib/motionHtmlAuthoring.js";
-import { motionHtmlSource, motionHtmlPlanContext, motionHtmlPlanSource, motionHtmlPlanCurrent } from "../../../../../lib/motionHtmlScene.js";
+import { motionHtmlSource, motionHtmlPlanContext, motionHtmlPlanSource, motionHtmlPlanCurrent, motionHtmlPlanSourceMatches } from "../../../../../lib/motionHtmlScene.js";
 import { motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBehavior.js";
 import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js";
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
-import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson } from "../motionStoryService.js";
+import { MOTION_AI_RECOVERY } from "../../../../../constants/motionAiRecovery.js";
+import { motionRenameText } from "../../../../../lib/motionRename.js";
+import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
 import { MotionPriorityPool } from "../motionPriorityPool.js";
@@ -207,7 +209,11 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
       }
       return raw;
     } catch (error) {
-      if (invalidData || (submission.completed && current.raw === undefined)) {
+      if (!invalidData && current.raw === undefined && (error as Record<string, unknown> | null)?.[MOTION_AI_RECOVERY.UNCERTAIN_FLAG]) {
+        submission.abandoned = true;
+        delete current.worker;
+        current.status = RT_MAINTENANCE.RETRY_WAIT;
+      } else if (invalidData || (submission.completed && current.raw === undefined)) {
         delete current.raw;
         current.status = RT_MAINTENANCE.RETRY_WAIT;
       } else current.status = RT_MAINTENANCE.WAITING_EXTERNAL;
@@ -220,8 +226,15 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
     }
   }
 };
+const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): MotionAiExecution | undefined => {
+  if (!exec?.provider || !motionAiFallbackPolicy(exec).allowFallback) return exec;
+  const routes = motionAiRoutes({ ...exec, role: RT_MAINTENANCE.DRAW });
+  const route = routes[Math.min(Math.floor(missed / MOTION_HTML.SWITCH_AFTER), routes.length - 1)];
+  return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
+};
 export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
-  const key = motionInputKey([MOTION_HTML.VERSION, MOTION_HTML.GRAPHICS, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language]);
+  const graphics = MOTION_HTML.PROFILE_GRAPHICS[settings.profile] || MOTION_HTML.GRAPHICS;
+  const key = motionInputKey([MOTION_HTML.VERSION, graphics, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) {
@@ -231,11 +244,11 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
   const prompt = [
     MOTION_HTML.OUTPUT,
+    graphics,
     motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
-    RT_MAINTENANCE.SCENE_TEMPLATE_SOURCE_DATA_EXACT_VISIBLE_TEXT_STAYS_IN_THE + scene.sceneTemplate,
+    MOTION_HTML.SCENE_LABEL + scene.sceneTemplate,
     scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
-    `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: settings.seconds, seed: key, profile: settings.profile, outputLanguage: settings.language })}`,
-    MOTION_HTML.DELIVERY,
+    `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: Number(settings.seconds.toFixed(1)), profile: settings.profile })}`,
   ]
     .filter(Boolean)
     .join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
@@ -243,20 +256,27 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     store.save(scene);
     save();
   };
-  let failures = 0;
+  let failures = 0,
+    missed = 0,
+    routed = opts.exec?.provider;
   for (;;) {
     opts.signal?.throwIfAborted();
+    const target = htmlSceneRoute(opts.exec, missed);
+    if (target?.provider !== routed) {
+      opts.log(MOTION_HTML.SWITCH_LOG(scene.id, String(routed), String(target?.provider)));
+      routed = target?.provider;
+    }
     const priorPrompt = scene.htmlRequest?.submission?.pending?.prompt;
-    const prior = scene.htmlRequest && ((scene.htmlRequest.submission?.attempted && !scene.htmlRequest.submission.completed && !scene.htmlRequest.submission.abandoned) || !priorPrompt || (priorPrompt.startsWith(MOTION_HTML.OUTPUT) && priorPrompt.includes(MOTION_HTML.GRAPHICS))) ? scene.htmlRequest : undefined;
+    const prior = scene.htmlRequest && ((scene.htmlRequest.submission?.attempted && !scene.htmlRequest.submission.completed && !scene.htmlRequest.submission.abandoned) || !priorPrompt || (priorPrompt.startsWith(MOTION_HTML.OUTPUT) && priorPrompt.includes(graphics))) ? scene.htmlRequest : undefined;
     const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (scene.htmlRequest?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
     scene.htmlRequest = attempt;
     attempt.status = RT_MAINTENANCE.RUNNING;
-    const resuming = canResumeHtmlSubmission(attempt, opts.exec);
+    const resuming = canResumeHtmlSubmission(attempt, target);
     const submission = htmlSubmission(attempt, resuming);
     const worker = resuming ? attempt.worker : undefined;
     if (!resuming) delete attempt.worker;
-    attempt.provider = opts.exec?.provider;
-    attempt.model = opts.exec?.model;
+    attempt.provider = target?.provider;
+    attempt.model = target?.model;
     opts.log(`${RT_MAINTENANCE.CANH_HTML}${scene.id}${RT_MAINTENANCE.TAO_TRON_CANH_LUOT}${attempt.attempt}${RT_MAINTENANCE.DOT}`);
     let journal: ReturnType<typeof setInterval> | undefined;
     const journalState = () => {
@@ -272,9 +292,9 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         store.raw(attempt.attempt, raw);
         journalState();
       };
-      if (!opts.ai) await prepareMotionSceneRooms(opts.exec, opts.signal, opts.log);
+      if (!opts.ai) await prepareMotionSceneRooms(target, opts.signal, opts.log);
       const exec: MotionAiExecution = {
-        ...opts.exec,
+        ...target,
         role: RT_MAINTENANCE.DRAW,
         worker,
         workerAssigned: (assigned) => {
@@ -285,7 +305,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         submissionChanged: journalState,
         outputFormat: RT_MAINTENANCE.HTML,
         singleResponse: true,
-        ...motionAiFallbackPolicy(opts.exec),
+        ...motionAiFallbackPolicy(target),
         responseReceived: received,
       };
       journal = setInterval(() => {
@@ -314,7 +334,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         duration: settings.seconds,
         attempts: attempt.attempt,
         status: RT_MAINTENANCE.RECEIVED,
-        execution: { ...opts.exec, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(opts.exec) },
+        execution: { ...target, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) },
       };
       persist();
       const runtime = await openMotionHtmlRuntime(html, opts.signal);
@@ -333,8 +353,20 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       clearInterval(journal);
       opts.signal?.throwIfAborted();
       attempt.submission = htmlSubmissionSnapshot(submission, true);
+      if (!attempt.raw) missed++;
       const reason = String((error as Error).message);
       attempt.error = reason;
+      const abandoned = !attempt.raw && !!(error as Record<string, unknown> | null)?.[MOTION_AI_RECOVERY.UNCERTAIN_FLAG];
+      if (abandoned) {
+        attempt.submission = { ...attempt.submission, attempted: true, completed: false, abandoned: true };
+        delete attempt.worker;
+        attempt.status = RT_MAINTENANCE.RETRY_WAIT;
+        if (scene.html) scene.html.status = RT_MAINTENANCE.RETRY_WAIT;
+        await retainCheckpoint(persist, opts);
+        opts.log(MOTION_HTML.ABANDON_LOG(scene.id));
+        await delay(MOTION_HTML.RETRY_MS[0], undefined, { signal: opts.signal });
+        continue;
+      }
       const unknown = !!attempt.submission?.attempted && !attempt.submission.completed && !attempt.submission.abandoned;
       const external = unknown || /quota|captcha|đăng nhập|login|rate.limit|account.*unavailable/i.test(reason);
       attempt.status = external ? RT_MAINTENANCE.WAITING_EXTERNAL : RT_MAINTENANCE.RETRY_WAIT;
@@ -358,6 +390,11 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
   const note = (opts.note ?? state.notes?.[group.id]) || undefined;
   const source = motionHtmlPlanSource(group.beats, analysis, settings, note, opts.sfx !== false);
   const key = motionInputKey(source);
+  const stored = state.htmlPlanSources?.[group.id];
+  if (state.scenes[group.id]?.length && stored !== source && motionHtmlPlanSourceMatches(stored, source)) {
+    state.inputKeys[group.id] = key;
+    state.htmlPlanSources[group.id] = source;
+  }
   if (!state.scenes[group.id]?.length || state.inputKeys[group.id] !== key) {
     const prompt = [
       RT_MAINTENANCE.PROMPT_3,
@@ -382,7 +419,7 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
     };
     const raw = planStore.read() || (await requestPlan(prompt, key, opts, slots, readPlan, groupIndex, priority));
     readPlan(raw);
-    const normalizedScenes = normalizePlannedHtmlScenes(raw.scenes, lines, group.beats, group.seconds, settings.pacing);
+    const normalizedScenes = normalizePlannedHtmlScenes(raw.scenes, lines, group.beats, group.seconds, settings.pacing).map((row: any) => (typeof row.sceneTemplate === "string" ? { ...row, sceneTemplate: motionRenameText(row.sceneTemplate, analysis) } : row));
     planStore.save({ ...raw, scenes: normalizedScenes });
     const existingById = new Map((state.scenes[group.id] || []).map((scene) => [scene.id, scene]));
     state.scenes[group.id] = normalizedScenes.map((row: any, index: number) => {

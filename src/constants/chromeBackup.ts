@@ -94,7 +94,7 @@ export const CHAT_ROOM_RECOVERY = {
   RETRY_LOG: (attempt: number) => `Phòng chat gặp lỗi – thử lại tại room hiện tại (${attempt}/2), giữ model và ảnh tham chiếu.`,
   RECONNECT_LOG: (attempt: number) => `Room đã đóng hoặc chưa mở được – thử kết nối lại đúng worker (${attempt}/2).`,
   REPLACE_LOG: "Room vẫn lỗi sau hai lần thử lại – đóng room lỗi rồi mở room mới, khôi phục ngữ cảnh và ảnh tham chiếu.",
-  RETRY_TIMEOUT: 5000,
+  RETRY_TIMEOUT: 2500,
   RELOAD_FAILED: (reason: string) => `Room hiện tại chưa tải lại được: ${reason}. Tiếp tục theo số lần phục hồi còn lại.`,
   RETRY_PATTERN:
     /chat_planning_(?:provider_error_response|invalid_json_response|invalid_response|response_timeout|page_unresponsive|ui_read_timeout|send_button_not_ready|composer_content_mismatch|submission_not_confirmed|context_not_confirmed)|chưa hoàn tất phản hồi trong thời gian chờ|gemini_model_ui_not_ready|input.*not.*found|không tìm thấy.*(?:nhập|soạn)|locator\.(?:fill|click|press|type|focus)|Timeout \d+ms exceeded/iu,

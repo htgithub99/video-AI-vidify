@@ -67,6 +67,10 @@ const replaceAll = (text: string, map: MotionRenameEntry[]): string => {
   }
   return next;
 };
+export const motionRenameText = (text: string, analysis: Pick<MotionStoryAnalysis, "renameEntities" | "renameMap">): string => {
+  const map = motionRenameMapActive(analysis);
+  return map.length && text ? replaceAll(text, map) : text;
+};
 export const motionRenameAutofix = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "renameEntities" | "renameMap">): { beats: MotionBeat[]; replaced: number } => {
   const map = motionRenameMapActive(analysis);
   if (!map.length) return { beats, replaced: 0 };
@@ -82,8 +86,9 @@ export const motionRenameAutofix = (beats: MotionBeat[], analysis: Pick<MotionSt
       const text = fix(line.text);
       return text === line.text ? line : { ...line, text };
     });
-    const changed = narration !== (beat.narration || "") || (utterances && utterances.some((line, index) => line !== beat.utterances![index]));
-    return changed ? { ...beat, narration, ...(utterances ? { utterances } : {}) } : beat;
+    const sceneTemplateDraft = beat.sceneTemplateDraft ? fix(beat.sceneTemplateDraft) : beat.sceneTemplateDraft;
+    const changed = narration !== (beat.narration || "") || sceneTemplateDraft !== beat.sceneTemplateDraft || (utterances && utterances.some((line, index) => line !== beat.utterances![index]));
+    return changed ? { ...beat, narration, ...(utterances ? { utterances } : {}), ...(sceneTemplateDraft !== beat.sceneTemplateDraft ? { sceneTemplateDraft } : {}) } : beat;
   });
   return { beats: next, replaced };
 };

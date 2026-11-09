@@ -75,7 +75,7 @@ export const MOTION_VOICE = {
   SETUP: "Chuẩn bị VieNeu-TTS; lần đầu cần tải runtime và model, các lần sau dùng cache.",
   PLANNING: "Phân vai và lên nhịp lời thoại theo kịch bản.",
   SINGLE_VOICE_LOG: "Phân vai giọng tắt: người kể đọc toàn bộ lời dẫn và lời thoại; bỏ qua AI phân vai giọng.",
-  GENERATING: "Tạo lời thoại VieNeu-TTS theo nhân vật.",
+  GENERATING: "Đang đọc lời thoại bằng VieNeu-TTS.",
   PROGRESS: (done: number, total: number): string => `Tạo lời thoại: ${done}/${total} câu`,
   MIXING: "Ghép lời thoại vào dòng thời gian.",
   PLAN_FALLBACK: "Giữ lời thoại gốc và dùng phân vai an toàn cho phần chưa xác định được.",

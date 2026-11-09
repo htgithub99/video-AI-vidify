@@ -9,6 +9,13 @@ import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
 import type { MotionBeat, MotionChapter, MotionStoryAnalysis, MotionStorySource } from "../../../../../types/motionVideo.js";
 import type { MotionChapterWriteOptions } from "../motionStoryService.js";
+import { motionRenameAutofix } from "../../../../../lib/motionRename.js";
+import { MOTION_RENAME } from "../../../../../constants/motionRename.js";
+const renamedBeats = (beats: MotionBeat[], analysis: MotionStoryAnalysis, log?: (line: string) => void): MotionBeat[] => {
+  const fixed = motionRenameAutofix(beats, analysis);
+  if (fixed.replaced) log?.(MOTION_RENAME.LOG.AUTOFIX(fixed.replaced));
+  return fixed.beats;
+};
 const countChapterUnits = (rows: any[]): number => rows.reduce((sum, row) => sum + speechUnits(String(row?.narration || "")), 0);
 const HTML_PART_ATOM_SPLIT = /(?<=[.!?。！？])\s+(?=[\p{L}\p{N}\p{P}])|\r?\n+/u;
 const HTML_PART_CLAUSE_SPLIT = /(?<=[,;—–:])\s+(?=[\p{L}\p{N}\p{P}])/u;
@@ -184,7 +191,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       saveMultipartDraft(completed, false);
     }
     saveMultipartDraft(completed, true);
-    return normalizeBeats(normalizeMotionChapterMetadata(completed), chapter.id, analysis);
+    return renamedBeats(normalizeBeats(normalizeMotionChapterMetadata(completed), chapter.id, analysis), analysis, opts.log);
   }
   const prompt = [
     RT_MAINTENANCE.PROMPT,
@@ -200,7 +207,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   const rows = raw.beats;
   if (!Array.isArray(rows)) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
   opts.onDraft?.({ inputKey: key, rows, pending: [] });
-  return normalizeBeats(normalizeMotionChapterMetadata(rows), chapter.id, analysis);
+  return renamedBeats(normalizeBeats(normalizeMotionChapterMetadata(rows), chapter.id, analysis), analysis, opts.log);
 };
 export const editMotionHtmlScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; exec: Parameters<typeof runMotionAi>[2]; signal?: AbortSignal; log?: Parameters<typeof runMotionAi>[4]; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }) => {
   const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;

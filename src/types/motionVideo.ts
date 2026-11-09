@@ -1000,6 +1000,8 @@ export interface MotionStepState {
   progress?: number;
   startedAt?: number;
   error?: string;
+  elapsedMs?: number;
+  segmentAt?: number;
 }
 export interface MotionStoryJobState {
   stepStates?: Record<string, MotionStepState>;

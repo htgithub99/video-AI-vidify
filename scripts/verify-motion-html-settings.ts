@@ -19,7 +19,7 @@ const { motionResponsePrompt } = await import("../src/lib/motionResponseContract
 for (const schema of ["motion-html-chapter", "motion-html-edit"]) assert.doesNotMatch(motionResponsePrompt(schema), /motionIntent|scenePlan|frame:|stance|unit:/);
 const sentence = "The messenger carries a letter across the courtyard.";
 assert.doesNotMatch(MOTION_HTML.TEMPLATE, /[\u00c0-\u024f\u1e00-\u1eff]/u, "Production template headings and instructions are English");
-for (const heading of ["0. SCENE THEME & TYPE", "1. VISUAL STYLE", "2. THREE-LAYER SETTING & CAMERA", "3. CHARACTERS & ACTION MECHANICS", "4. OVERLAYS & INTERACTION"]) assert.ok(MOTION_HTML.TEMPLATE.includes(heading));
+for (const heading of ["0. SCENE THEME & TYPE", "1. SUBJECTS & LOOK", "2. THREE-LAYER SETTING & CAMERA", "3. CHARACTERS & ACTION MECHANICS", "4. OVERLAYS & INTERACTION"]) assert.ok(MOTION_HTML.TEMPLATE.includes(heading));
 const viText = "Người đưa tin mang thư qua sân.";
 const viSource: any = { kind: "brief", title: "Lá thư", text: viText, sourceSeconds: 10, segments: [{ t: 0, text: viText }] };
 const viAnalysis: any = { title: "Lá thư", chapters: [{ id: "c1", title: "Lá thư", targetSeconds: 10 }], cast: [], places: [], authoringSettings: motionHtmlAuthoringSnapshot({ length: "2min", target: 120, language: "vi", profile: "history", pacing: "few" }) };

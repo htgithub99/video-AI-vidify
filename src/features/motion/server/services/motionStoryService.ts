@@ -46,7 +46,7 @@ import { motionSourceChunks } from "../../../../lib/motionSourceChunks.js";
 import { compactMotionSourceLedger, motionSourceLedgerPartIssues, parseMotionSourceLedgerPart, type MotionSourceLedgerDraft, type MotionSourceLedgerNode } from "../../../../lib/motionSourceLedger.js";
 import { MOTION_EDITORIAL } from "../../../../constants/motionEditorial.js";
 import { motionStoryLanguageGuide } from "../../../../constants/motionStoryLanguage.js";
-import { MotionProviderRecovery, waitMotionProviderCooldown } from "./motionProviderRecovery.js";
+import { MotionProviderRecovery, waitMotionProviderReady } from "./motionProviderRecovery.js";
 import { requestMotionAiContract, recoverMotionAiContractState, type MotionAiResponseContract } from "./motionAiContractService.js";
 import { MOTION_CAPTCHA_PROBE } from "../../../../constants/motionStoryFields.js";
 import { expandInitialCastNames, fullCastNames } from "../../../../lib/motionCastNames.js";
@@ -189,7 +189,7 @@ import { DEEPSEEK_CHAT_CONFIG, DEEPSEEK_CHAT_MODES } from "../../../../constants
 import { isDeepSeekAccountUnavailable } from "../../../../server/services/deepseekAccountService.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../../../constants/messages.js";
 import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionCastMember, type MotionChapter, type MotionPlace, type MotionStoryAnalysis, type MotionStorySource, type MotionVideoDnaSettings } from "../../../../types/motionVideo.js";
-import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, getChatPlanningRoom, prepareChatPlanningRoom, reloadChatPlanningRoom, resumeChatPlanningResponse } from "../../../../server/services/chatUiPlanningService.js";
+import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, getChatPlanningRoom, prepareChatPlanningRoom, probeChatPlanningRoomReady, reloadChatPlanningRoom, resumeChatPlanningResponse } from "../../../../server/services/chatUiPlanningService.js";
 import { sharedChromeTasks } from "../../../../server/services/chromeTaskCoordinator.js";
 import { CHROME_BACKUP, CHAT_ROOM_RECOVERY } from "../../../../constants/chromeBackup.js";
 import { exhaustedMotionRoom, isChatAttachmentError, isFinalChatResponseError, isMotionContentResponseError, isTerminalMotionAiError, uncertainChatSubmission, type ChatPlanningSubmission } from "../../../../server/services/chatSubmissionRecovery.js";
@@ -753,6 +753,42 @@ const acquireProviderGate = async (provider: string, signal?: AbortSignal, role?
   providerGates.set(key, gate);
   return (await gate.acquire(signal)).release;
 };
+const limitStrikes = new Map<string, number>();
+const sendSlots = new Map<string, number>();
+const staggerMotionSend = async (provider: string, signal: AbortSignal): Promise<void> => {
+  const now = Date.now();
+  const at = Math.max(now, sendSlots.get(provider) || 0);
+  sendSlots.set(provider, at + AIR.SEND_STAGGER_MS);
+  if (at > now) await motionServiceDelay(at - now, signal);
+};
+const motionLimitBlockUntil = (provider: string): number => {
+  const strikes = (limitStrikes.get(provider) || 0) + 1;
+  limitStrikes.set(provider, strikes);
+  return Date.now() + AIR.LIMIT_BACKOFF_MS[Math.min(strikes - 1, AIR.LIMIT_BACKOFF_MS.length - 1)];
+};
+const clearMotionRoomBlocks = (provider: string, model?: string): void => {
+  blockedRoomModels.delete(AIR.MODEL_KEY(provider, model));
+  blockedRoomProviders.delete(provider);
+  unavailableRoomProviders.delete(provider);
+};
+const motionRoomChatModel = (provider: string, model?: string): AiPlanningChatModel =>
+  provider === AiPlanningFallbackProvider.ClaudeChat
+    ? parseClaudeChatModel(model)
+      ? (model as AiPlanningChatModel)
+      : AiPlanningChatModel.ClaudeAuto
+    : provider === AiPlanningFallbackProvider.GeminiChat
+      ? parseGeminiChatModel(model)
+        ? (model as AiPlanningChatModel)
+        : AiPlanningChatModel.GeminiFlash
+      : provider === AiPlanningFallbackProvider.DeepSeekChat
+        ? pickEnum(
+            DEEPSEEK_CHAT_MODES.map((item) => item.value),
+            model,
+            AiPlanningChatModel.DeepSeekAuto,
+          )
+        : provider === AiPlanningFallbackProvider.GrokChat
+          ? ((_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined) as AiPlanningChatModel)
+          : pickEnum(_.values(AiPlanningChatModel), model, AiPlanningChatModel.GeminiFlash);
 export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
 export const resetMotionAiRoom = async (): Promise<void> => {
   const run = motionAiRunStore.getStore();
@@ -1004,7 +1040,9 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
         phaseKey = next;
         phaseStartedAt = Date.now();
       }
-      const scopedLine = drawing && line && !/^\s*\[[^\]]+\]/u.test(line) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${line}` : line;
+      const tab = line && activity?.workerId ? AIR.TAB_LABELS[activity.workerId] : undefined;
+      const tabbedLine = tab ? line + AIR.TAB_SUFFIX(tab) : line;
+      const scopedLine = drawing && tabbedLine && !/^\s*\[[^\]]+\]/u.test(tabbedLine) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${tabbedLine}` : tabbedLine;
       log?.(scopedLine, activity ? { ...activity, artifact: activity.artifact || artifactType, owner: run.projectId, requestId, phaseStartedAt, roomGeneration: run.roomGenerations.get(workerId), targetIds: contract?.targetIds } : undefined);
     };
     try {
@@ -1043,18 +1081,28 @@ const runMotionAiTask = async (prompt: string, artifactType: string, exec: Motio
     const run = motionAiRunStore.getStore();
     const linked = AbortSignal.any(_.compact([signal, run?.signal]));
     if (mode !== AiPlanningExecutionMode.ApiOnly) {
-      const unavailable = unavailableRoomProvider(String(route.provider));
-      if (unavailable) throw unavailable.error;
-      const waited = await waitMotionProviderCooldown(
-        () => motionRoomBlockedMs(String(route.provider), route.model),
+      const provider = String(route.provider);
+      const activity = (phase: string) => ({ workerId: run!.workerId, provider, model: String(route.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase });
+      await waitMotionProviderReady(
+        () => motionRoomBlockedMs(provider, route.model),
         (ms) => motionServiceDelay(ms, linked),
-        (ms) => log?.(AIR.WAIT(String(route.provider), ms), { workerId: run!.workerId, provider: String(route.provider), model: String(route.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PROVIDER }),
+        async () => {
+          await probeChatPlanningRoomReady({ provider: provider as AiPlanningFallbackProvider, model: motionRoomChatModel(provider, route.model), prompt: MR.MOTION_TEXT_EMPTY, projectId: run?.projectId || AIR.PROBE_WORKER, workerId: run?.workerId || AIR.PROBE_WORKER, chromeHeadless: route.chromeHeadless !== false, signal: AbortSignal.any([linked, AbortSignal.timeout(AIR.PROBE_TIMEOUT_MS)]), allowDefaultGeminiModel: true });
+          clearMotionRoomBlocks(provider, route.model);
+        },
+        {
+          waiting: (ms) => log?.(AIR.WAIT(provider, ms), activity(AIR.PHASE.PROVIDER)),
+          checking: (round) => log?.(AIR.PROBE_CHECK(provider, round), activity(AIR.PHASE.CHECKING)),
+          ready: () => log?.(AIR.PROBE_READY(provider), activity(AIR.PHASE.PRIMARY)),
+          notReady: (error) => log?.(AIR.PROBE_NOT_READY(provider, _.truncate(error instanceof Error ? error.message : _.toString(error), { length: 120 })), activity(AIR.PHASE.PROVIDER)),
+        },
         linked,
       );
-      if (waited) log?.(AIR.SERVICE_RESUMED(String(route.provider)), { workerId: run!.workerId, provider: String(route.provider), model: String(route.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PRIMARY });
     }
     try {
-      return await requestMotionAiContract(prompt, route, (question) => runMotionAiOnce(question, artifactType, route, signal, log, images, retry, undefined, !!contract), contract, linked);
+      const out = await requestMotionAiContract(prompt, route, (question) => runMotionAiOnce(question, artifactType, route, signal, log, images, retry, undefined, !!contract), contract, linked);
+      limitStrikes.delete(String(route.provider));
+      return out;
     } catch (error: any) {
       if (isDeepSeekAccountUnavailable(error)) unavailableRoomProviders.set(String(route.provider), { error, until: Number(error.retryAt) > Date.now() ? Number(error.retryAt) : Date.now() + DEEPSEEK_CHAT_CONFIG.ACCOUNT_RECHECK_MS });
       const roomRecoveryFailed = !!_.get(error, CHAT_ROOM_RECOVERY.COMPLETE) && !_.get(error, AIR.UNCERTAIN_FLAG) && (!!_.get(error, AIR.EXHAUSTED_FLAG) || AIR.TRANSPORT.test(String(error?.message)) || error?.message === CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR || String(error?.message).includes(GEMINI_MODEL_ENCODING.UI_NOT_READY_CODE));
@@ -1140,7 +1188,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     const taskPrompt = AIR.VECTOR_ARTIFACT.test(artifactType) && !singleMessage ? [AIR.VECTOR_INSTRUCTION, basePrompt].join(MR.MOTION_TEXT_SYMBOL_27) : basePrompt;
     const fullPrompt =
       exec.outputFormat === RT_MAINTENANCE.HTML
-        ? `${taskPrompt}${RT_MAINTENANCE.THE_HTML_ROOT_MUST_CARRY_DATA_ARTIFACT}${artifactType}${RT_MAINTENANCE.AND_DATA_REQUEST_ID}${requestId}${RT_MAINTENANCE.TO_IDENTIFY_THIS_RESPONSE_RETURN_THE_COMPLETE_HTML_ONLY}`
+        ? `${taskPrompt}${MOTION_HTML.IDENTITY(artifactType, String(requestId))}`
         : singleMessage
           ? PROMPT.SCENE_OUTPUT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity))
           : MOTION_TEMPLATE_MANDATORY_OUTPUT_RETURN_EXACTLY_ONE_VALID_JSON_OBJECT(withMotionResponsePrompt(exec.responseSchema || artifactType, taskPrompt), String(identity));
@@ -1265,6 +1313,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
       run?.contextRooms.add(workerId!);
       roomCtrl.signal.throwIfAborted();
+      if (exec.role === MOTION_AI_ROLE.DRAW && !submission.attempted) await staggerMotionSend(provider, roomCtrl.signal);
       countMotionRequest(provider, log);
       const r = await generatePlanningWithChatUi({
         provider,
@@ -1308,6 +1357,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       let caught = error;
       terminalError = error;
       if (signal?.aborted || run?.signal.aborted) throw caught;
+      if (artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML) && _.get(caught, AIR.UNCERTAIN_FLAG)) run?.roomRefreshes.add(workerId!);
       if (_.get(caught, CHROME_BACKUP.ERROR_FLAG)) throw caught;
       if (isDeepSeekAccountUnavailable(caught)) throw caught;
       const geminiSelection = _.get(caught, GEMINI_MODEL_ENCODING.DIAGNOSTICS);
@@ -1365,7 +1415,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
       if (!recovered && !captchaRetry && submission.attempted && !submission.completed && !limited && !isFinalChatResponseError(caught)) {
         clearTimeout(watchdog);
-        if (artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML)) throw Object.assign(uncertainChatSubmission(provider), { [CHAT_ROOM_RECOVERY.COMPLETE]: true, cause: caught });
+        if (artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML)) {
+          run?.roomRefreshes.add(workerId!);
+          throw Object.assign(uncertainChatSubmission(provider), { [CHAT_ROOM_RECOVERY.COMPLETE]: true, cause: caught });
+        }
         log?.(AIR.RESUME(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.CHECKING });
         const replayable = !!run?.editorial || AIR.REPLAYABLE_ARTIFACT.test(artifactType) || artifactType.startsWith(RT_MAINTENANCE.MOTION_HTML);
         for (let check = 0; check <= (replayable ? AIR.ROOM_RELOADS : 0); check++) {
@@ -1414,7 +1467,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         log?.(attempt < AIR.ROOM_RELOADS ? AIR.RECOVER(provider, attempt + 1, AIR.ROOM_RELOADS) : AIR.REPLACE(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
       }
       if (!retryRoom && !captchaRetry && exec.strictProvider) {
-        if (limited) blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
+        if (limited) blockedRoomProviders.set(provider, motionLimitBlockUntil(provider));
         const error = timedOut && !submission.completed && !submission.abandoned ? new Error(MOTION_TEMPLATE_PHONG_CHAT_AI_KHONG_TRA_KET_QUA_SAU(String(Math.round(roomTimeout / 60000)))) : caught;
         if (attempt >= AIR.ROOM_RETRIES && transport && (!submission.attempted || submission.completed)) Object.assign(error, { [AIR.EXHAUSTED_FLAG]: true, [CHAT_ROOM_RECOVERY.COMPLETE]: true });
         log?.(MOTION_TEMPLATE_PHONG_CHAT_LOI(String(_.truncate(_.toString(error?.message), { length: 140 }))));
@@ -1427,7 +1480,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           fallbackToLimit = !isBlocked(limitTo.provider);
           if (!fallbackToLimit && mode === AiPlanningExecutionMode.RoomOnly) throw caught;
         } else if (limited) {
-          blockedRoomProviders.set(provider, Date.now() + MOTION_STORY_CONFIG.ROOM_LIMIT_BLOCK_MS);
+          blockedRoomProviders.set(provider, motionLimitBlockUntil(provider));
           log?.(MOTION_STORY_CONFIG.ROOM_LIMIT_LOG(provider, limitTo.provider));
           fallbackToLimit = !isBlocked(limitTo.provider);
           if (!fallbackToLimit && mode === AiPlanningExecutionMode.RoomOnly) throw caught;

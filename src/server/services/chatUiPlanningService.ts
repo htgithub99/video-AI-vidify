@@ -2098,6 +2098,18 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
     }
   }
 };
+const probeBusySelectors: Partial<Record<AiPlanningFallbackProvider, string>> = {
+  [AiPlanningFallbackProvider.ChatGptUi]: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
+  [AiPlanningFallbackProvider.DeepSeekChat]: D.BUSY,
+  [AiPlanningFallbackProvider.ClaudeChat]: CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR,
+  [AiPlanningFallbackProvider.GrokChat]: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR,
+};
+export const probeChatPlanningRoomReady = async (request: ChatPlanningRequest): Promise<void> => {
+  await prepareChatPlanningRoomTask(request);
+  const page = getChatPlanningRoom(request);
+  const busySelector = probeBusySelectors[request.provider];
+  if (page && !page.isClosed() && busySelector) await throwIfGrokRateLimited(page, busySelector);
+};
 export const prepareChatPlanningRoom = (request: ChatPlanningRequest): Promise<void> =>
   withChromeBackupRecovery(
     async () => {

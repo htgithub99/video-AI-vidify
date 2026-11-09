@@ -152,6 +152,7 @@ try {
     Pick<typeof import("../src/features/motion/server/services/puppet/director.js"), "readPuppetLines"> &
     Pick<typeof import("../src/features/motion/server/services/puppet/kitLibrary.js"), "readPuppet"> &
     Pick<typeof import("../src/features/motion/server/services/puppet/stylePack.js"), "presetStyle"> = await import(pathToFileURL(output).href);
+  Object.assign(service.MOTION_AI_RECOVERY, { SEND_STAGGER_MS: 0 });
   const model = encodeGeminiChatModel(M.GeminiFlash, VT.HIGH);
   const exec = { provider: P.GeminiChat, model, role: MOTION_AI_ROLE.DRAW, mode: E.RoomOnly, chromeHeadless: false };
   const reset = () => {
@@ -237,8 +238,16 @@ try {
     assert.equal(fixture.reloaded.length, 0, S.NO_RETRY);
     assert.equal(fixture.resumed.length, 0, S.NO_RETRY);
     const sentBefore = fixture.sent.length;
-    await within(assert.rejects(call({ ...suspendedExec, allowFallback: false }), { message: D.ACCOUNT_UNAVAILABLE_ERROR }));
+    const strict = new AbortController();
+    const waiting = call({ ...suspendedExec, allowFallback: false }, strict.signal).then(
+      () => assert.fail(S.NO_WAIT),
+      () => undefined,
+    );
+    await tick();
+    await tick();
     assert.equal(fixture.sent.length, sentBefore, S.NO_WAIT);
+    strict.abort();
+    await within(waiting);
     await within(call(suspendedExec));
     assert.equal(fixture.prepared.filter((request) => request.provider === P.DeepSeekChat).length, 1);
     assert.equal(fixture.sent.at(-1).provider, P.GeminiChat);

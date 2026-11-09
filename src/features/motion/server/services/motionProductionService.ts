@@ -1,4 +1,6 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
+import { motionStepElapsedMs, motionStepSegment } from "../../../../lib/motionStepTime.js";
+import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
@@ -63,7 +65,7 @@ interface ProductionRecord {
   inputKey: string;
   job: MotionStoryJobState;
   result: MotionProductionResult;
-  steps: Record<string, { id: string; done?: boolean; partial?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean }>;
+  steps: Record<string, { id: string; done?: boolean; partial?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean; elapsedMs?: number; segmentAt?: number }>;
   owner?: MotionProductionOwner;
 }
 const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan };
@@ -83,8 +85,13 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     if (record?.job) delete record.job.result;
     return record?.version === P.RUN_VERSION && record.job?.id === id && record.input && record.inputKey === motionInputKey(record.input) ? record : undefined;
   };
+  const logFilters = new WeakMap<ProductionRecord, ReturnType<typeof createMotionLogFilter>>();
   const log = (record: ProductionRecord, line: string): void => {
-    const entry = PROGRESS.TIME.test(line) ? line : PROGRESS.STAMP(line);
+    const filter = logFilters.get(record) || createMotionLogFilter();
+    logFilters.set(record, filter);
+    const shown = filter(line);
+    if (!shown) return;
+    const entry = PROGRESS.TIME.test(shown) ? shown : PROGRESS.STAMP(shown);
     const prior = record.job.log;
     record.job.log = [...prior, entry].slice(-MOTION_VIDEO_CONSTANTS.MAX_LOG_LINES);
     logs.seed(record.job.id, prior);
@@ -92,7 +99,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   };
   const publicJob = (record: ProductionRecord): MotionProductionJobState => {
     const job = structuredClone({ ...record.job, result: record.result });
-    job.stepStates = Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error }]] : [])));
+    job.stepStates = Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error, elapsedMs: task.segmentAt ? task.elapsedMs || 0 : motionStepElapsedMs(task), segmentAt: task.segmentAt }]] : [])));
     job.result.outputSettings = motionOutputSettings(record.input, job.result);
     if (job.result.rendered) {
       const settings = job.result.outputSettings;
@@ -134,7 +141,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const activities = new Map<string, MotionStoryJobState["activeAi"]>();
       const syncStep = (name: string, state: Pick<MotionStoryJobState, "id" | "status" | "stage" | "progress" | "startedAt" | "error">): void => {
         const task = record.steps[name];
-        if (task) Object.assign(task, { status: state.status, stage: state.stage, progress: state.progress, startedAt: state.startedAt, updatedAt: Date.now(), error: state.error });
+        if (task) Object.assign(task, { ...motionStepSegment(task, state.id), status: state.status, stage: state.stage, progress: state.progress, startedAt: task.startedAt || state.startedAt, updatedAt: Date.now(), error: state.error });
       };
       const mediaProgress = { scenes: 0, voice: 0 };
       const syncSeo = (): void => {
@@ -266,7 +273,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           let state = record.steps[name] && !record.steps[name].partial && get(record.steps[name].id);
           if (!state || state.status === S.ERROR || state.status === S.CANCELLED) {
             const response = await start();
-            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [], done: false, partial: false, status: S.QUEUED, error: undefined, startedAt: record.steps[name]?.startedAt || Date.now() };
+            record.steps[name] = { ...record.steps[name], ...motionStepSegment(record.steps[name], response.job.id), id: response.job.id, log: [], done: false, partial: false, status: S.QUEUED, error: undefined, startedAt: record.steps[name]?.startedAt || Date.now(), updatedAt: Date.now() };
             if (signal.aborted) {
               cancelStoryJob(response.job.id);
               cancelMotionJob(response.job.id);
@@ -379,7 +386,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         return;
       }
       if (visualSettings.mode === RT_SHARED.LIBRARY) {
-        record.steps[P.INVENTORY_STAGE] = { id: record.job.id, status: S.RENDERING, startedAt: Date.now() };
+        record.steps[P.INVENTORY_STAGE] = { ...motionStepSegment(record.steps[P.INVENTORY_STAGE], record.job.id), id: record.job.id, status: S.RENDERING, startedAt: record.steps[P.INVENTORY_STAGE]?.startedAt || Date.now(), updatedAt: Date.now() };
         record.job.stage = P.INVENTORY_STAGE;
         save();
         let ready: Awaited<ReturnType<typeof recoverMotionIllustrationPlan>>;
@@ -425,7 +432,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           enqueueRunning: (input) => enqueueMotionHtmlScenes(record.job.id, input.script),
           onUpdate: (job) => {
             const prior = record.steps[P.STAGES.SCENES];
-            record.steps[P.STAGES.SCENES] = { ...prior, id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            record.steps[P.STAGES.SCENES] = { ...prior, ...motionStepSegment(prior, job.id), id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
             activities.set(P.STAGES.SCENES, terminal(job.status) ? {} : job.activeAi || {});
             record.job.activeAi = Object.assign({}, ...activities.values());
             const partialScript = job.result as MotionStoryScript | undefined;
@@ -453,7 +460,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           analysis: () => result.analysis,
           onUpdate: (job) => {
             const prior = record.steps[P.STAGES.VOICE];
-            record.steps[P.STAGES.VOICE] = { ...prior, id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            record.steps[P.STAGES.VOICE] = { ...prior, ...motionStepSegment(prior, job.id), id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
             activities.set(P.STAGES.VOICE, terminal(job.status) ? {} : job.activeAi || {});
             record.job.activeAi = Object.assign({}, ...activities.values());
             save();

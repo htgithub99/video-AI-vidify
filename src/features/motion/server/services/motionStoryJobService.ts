@@ -12,6 +12,7 @@ import { saveMotionStoryCheckpoint, readMotionStoryCheckpoint } from "./motionSt
 import { MOTION_PRODUCTION as PRODUCTION } from "../../../../constants/motionProduction.js";
 import { motionStoryLogs } from "./motionLogStore.js";
 import { MOTION_EDITORIAL } from "../../../../constants/motionEditorial.js";
+import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
 type InternalJob = MotionStoryJobState & { controller: AbortController; editorialSessionId?: string; editorialRevision?: string; requestKey?: string };
 const jobs = new Map<string, InternalJob>();
 const ACTIVE = [MotionJobStatus.QUEUED, MotionJobStatus.PREPARING, MotionJobStatus.RENDERING, MotionJobStatus.ENCODING];
@@ -60,6 +61,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
     throw error;
   }
   job.controller.signal.addEventListener(MOTION_TEXT_ABORT, safeSave, { once: true });
+  const userLine = createMotionLogFilter();
   const ctx: StoryJobContext = {
     signal: job.controller.signal,
     log: (line, activity) => {
@@ -68,8 +70,9 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
         if (activity.phase === AIR.PHASE.DONE) delete job.activeAi[activity.workerId];
         else job.activeAi[activity.workerId] = activity;
       }
-      if (line) {
-        const entry = MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), String(line));
+      const shown = line ? userLine(String(line)) : undefined;
+      if (shown) {
+        const entry = MOTION_TEMPLATE_SYMBOL_7(String(new Date().toLocaleTimeString(MOTION_TEXT_VI_VN)), shown);
         try {
           logs.append(job.id, entry, activity);
         } catch (error) {

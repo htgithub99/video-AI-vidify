@@ -19,6 +19,7 @@ export const MOTION_AI_RECOVERY_VERIFICATION = {
     export const getChatPlanningRoom = () => f.captchaPage;
     export const generatePlanningWithChatUi = async request => { f.sent.push(request); request.submission?.onAttempt?.(); return await f.send(request); };
     export const resumeChatPlanningResponse = async request => { f.resumed.push(request); return await f.resume(request); };
+    export const probeChatPlanningRoomReady = async request => { (f.probed ||= []).push(request); await (f.probe ? f.probe(request) : undefined); };
   `,
   API_STUB: "export const generateContentWithRetry = async () => { globalThis.__motionAiRecovery.apiCalls++; throw new Error('unexpected-live-api-call'); };",
   BUNDLE: (pid: number) => `node_modules/.cache/motion-ai-recovery-${pid}.mjs`,

@@ -32,7 +32,7 @@ await fs.writeFile(modulePath, jobBundle.outputFiles[0].text);
 const actions = await import(pathToFileURL(modulePath).href);
 hooks.ai = async (prompt: string, artifact: string) => {
   hooks.calls.push(artifact); assert.equal(artifact, MOTION_HTML.PLAN, "Resuming scene planning must not rewrite narration or draw HTML");
-  assert.ok(prompt.includes(MOTION_HTML.GRAPHICS));
+  assert.ok(!prompt.includes(MOTION_HTML.GRAPHICS), "Scene planning does not carry the drawing style rules");
   await delay(25);
   const context = JSON.parse(prompt.slice(prompt.lastIndexOf("\n") + 1));
   return { scenes: context.lines.map((line: any) => ({ fromLineId: line.id, toLineId: line.id, purpose: line.text, sceneTemplate: context.beats.find((beat: any) => line.id.startsWith(beat.id + "::")).sceneTemplateDraft })) };
