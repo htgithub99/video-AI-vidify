@@ -1108,6 +1108,20 @@ const waitComposerFilled = async (input: Locator, prompt: string, directive: str
   }
   return false;
 };
+const pasteComposer = async (input: Locator, prompt: string): Promise<boolean> =>
+  input
+    .evaluate(
+      (element: HTMLElement, [text, type, event]: string[]) => {
+        if (!element.isContentEditable) return false;
+        element.focus();
+        window.getSelection()?.selectAllChildren(element);
+        const data = new DataTransfer();
+        data.setData(type, text);
+        return !element.dispatchEvent(new ClipboardEvent(event, { clipboardData: data, bubbles: true, cancelable: true }));
+      },
+      [prompt, CHAT_SPEED.PASTE_TYPE, CHAT_SPEED.PASTE_EVENT],
+    )
+    .catch(() => false);
 const writeComposer = async (page: Page, input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<void> => {
   const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.UI_COMPOSE_MAX_MS;
   for (let pass = 0; pass < 2 && Date.now() < deadline; pass++) {
@@ -1132,7 +1146,7 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
       await input.focus({ timeout: cap });
       await page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY);
       await page.keyboard.insertText(prompt);
-    } else await input.fill(prompt, { timeout: cap });
+    } else if (!(await pasteComposer(input, prompt))) await input.fill(prompt, { timeout: cap });
     throwIfPlanningCancelled(signal);
     if (await waitComposerFilled(input, prompt, directive, requestId, Math.min(deadline, Date.now() + cap), () => true, signal)) return;
   }

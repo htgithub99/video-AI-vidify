@@ -142,7 +142,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
   const baseLabel = selection && GEMINI_CHAT_BASE_MODEL_LABELS[selection.model];
   const unavailable = () => new Error(GEMINI_MODEL_ENCODING.UNAVAILABLE(model));
   if (!selection || !level || !baseLabel) throw unavailable();
-  if (await geminiModelStillSelected(page, model, baseLabel, new RegExp(`${level.label}|${level.labelEn}`, level.pattern.flags))) return;
+  if (await geminiModelStillSelected(page, model, baseLabel)) return;
   for (let attempt = 0; attempt < UI.SELECTION_ATTEMPTS; attempt++) {
     let phase: string = UI.PHASE.READY;
     try {

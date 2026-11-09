@@ -371,7 +371,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         if (scene.html) scene.html.status = RT_MAINTENANCE.RETRY_WAIT;
         await retainCheckpoint(persist, opts);
         opts.log(MOTION_HTML.ABANDON_LOG(scene.id));
-        await delay(MOTION_HTML.RETRY_MS[0], undefined, { signal: opts.signal });
+        await delay(MOTION_HTML.RETRY_MS[Math.min(failures++, MOTION_HTML.RETRY_MS.length - 1)], undefined, { signal: opts.signal });
         continue;
       }
       const unknown = !!attempt.submission?.attempted && !attempt.submission.completed && !attempt.submission.abandoned;
