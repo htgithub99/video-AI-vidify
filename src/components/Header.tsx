@@ -97,6 +97,7 @@ export default function Header({ currentLang, setLang, theme, toggleTheme, isMob
     { provider: AiPlanningFallbackProvider.GeminiChat, name: planningTexts.GEMINI_CHAT_OPTION, label: planningTexts.CLEAR_GEMINI_ROOMS, subtext: planningTexts.GEMINI_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE : SOURCE_TEXT_BG_BLUE_50_TEXT_BLUE_600, icon: <Sparkles className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
     { provider: AiPlanningFallbackProvider.GrokChat, name: planningTexts.GROK_CHAT_OPTION, label: planningTexts.CLEAR_GROK_ROOMS, subtext: planningTexts.GROK_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_AMBER_500_15_TEXT_AMBER : SOURCE_TEXT_BG_AMBER_50_TEXT_AMBER_600, icon: <Zap className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
     { provider: AiPlanningFallbackProvider.ChatGptUi, name: planningTexts.CHATGPT_UI_OPTION, label: planningTexts.CLEAR_CHATGPT_ROOMS, subtext: planningTexts.CHATGPT_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_EMERALD_500_15_TEXT_EMERALD : SOURCE_TEXT_BG_EMERALD_50_TEXT_EMERALD_600, icon: <Bot className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
+    { provider: AiPlanningFallbackProvider.MetaAi, name: planningTexts.META_AI_OPTION, label: planningTexts.CLEAR_META_AI_ROOMS, subtext: planningTexts.META_AI_BROWSER, badgeStyle: isDark ? SOURCE_TEXT_BG_BLUE_500_15_TEXT_BLUE : SOURCE_TEXT_BG_BLUE_50_TEXT_BLUE_600, icon: <Sparkles className={cn(RT_SHARED.W_3_5_H_3_5)} /> },
   ];
   const handleExecuteClearRooms = async () => {
     if (!confirmAction) return;

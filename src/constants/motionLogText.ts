@@ -30,6 +30,7 @@ export const MOTION_LOG_TEXT = {
     [/\bchatgpt-ui\b/gu, "ChatGPT"],
     [/\bgrok-chat\b/gu, "Grok"],
     [/\bclaude-chat\b/gu, "Claude"],
+    [/\bmeta-ai\b/gu, "Meta AI"],
     [/^Phòng chat gặp lỗi – bấm nút Thử lại của lượt hiện tại\./u, "AI báo lỗi – tự bấm Thử lại."],
     [/^Phòng chat gặp lỗi – thử lại tại room hiện tại \((\d+)\/(\d+)\), giữ model và ảnh tham chiếu\./u, "AI vẫn lỗi – gửi lại trong cùng tab ($1/$2)."],
     [/^Chương (c\d+): chia thành (\d+) phần nhỏ.*$/u, "Chương $1: viết thành $2 phần."],

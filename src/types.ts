@@ -62,6 +62,7 @@ export enum AiPlanningFallbackProvider {
   ChatGptUi = "chatgpt-ui",
   ClaudeChat = "claude-chat",
   DeepSeekChat = "deepseek-chat",
+  MetaAi = "meta-ai",
   Disabled = "disabled",
 }
 export enum AiPlanningExecutionMode {
@@ -88,6 +89,9 @@ export enum AiPlanningChatModel {
   DeepSeekThink = "deepseek-think",
   DeepSeekSearch = "deepseek-search",
   DeepSeekThinkSearch = "deepseek-think-search",
+  MetaAiAuto = "meta-ai-auto",
+  MetaAiInstant = "meta-ai-instant",
+  MetaAiThinking = "meta-ai-thinking",
   ClaudeFable51 = "claude-fable-5-1",
   ClaudeOpus55 = "claude-opus-5-5",
   ClaudeSonnet55 = "claude-sonnet-5-5",

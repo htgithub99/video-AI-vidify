@@ -788,7 +788,13 @@ const motionRoomChatModel = (provider: string, model?: string): AiPlanningChatMo
             model,
             AiPlanningChatModel.DeepSeekAuto,
           )
-        : provider === AiPlanningFallbackProvider.GrokChat
+        : provider === AiPlanningFallbackProvider.MetaAi
+          ? pickEnum(
+              CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.MetaAi].map((item) => item.value),
+              model,
+              AiPlanningChatModel.MetaAiAuto,
+            )
+          : provider === AiPlanningFallbackProvider.GrokChat
           ? ((_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined) as AiPlanningChatModel)
           : pickEnum(_.values(AiPlanningChatModel), model, AiPlanningChatModel.GeminiFlash);
 export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
@@ -1294,7 +1300,13 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
                   exec.model,
                   AiPlanningChatModel.DeepSeekAuto,
                 )
-              : provider === AiPlanningFallbackProvider.GrokChat
+              : provider === AiPlanningFallbackProvider.MetaAi
+                ? pickEnum(
+                    CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.MetaAi].map((item) => item.value),
+                    exec.model,
+                    AiPlanningChatModel.MetaAiAuto,
+                  )
+                : provider === AiPlanningFallbackProvider.GrokChat
                 ? (_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: exec.model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined)
                 : pickEnum(_.values(AiPlanningChatModel), exec.model, AiPlanningChatModel.GeminiFlash);
       if (run?.roomRefreshes.delete(workerId!)) {

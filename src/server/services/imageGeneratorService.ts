@@ -1683,17 +1683,22 @@ export interface FlowVideoPromptBatchResult extends ImageGeneratorResult {
 }
 let lastUsedEmail: string | undefined = undefined;
 const connectToSharedChromeBrowser = async (logConnectionError: boolean = true): Promise<BrowserSession | null> => {
-  try {
-    const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
-    const context = _.first(browser.contexts());
-    if (!context) return null;
-    const page = await sharedChromeFlowPage(context);
-    appLog(FLOW_AUTOMATION_MESSAGES.FLOW_NO_ROTATING_ACCOUNT_FALLBACK);
-    return { context, page, account: { email: SOURCE_TEXT_SHARED_CHROME_SESSION }, ownsContext: false, preserveExternalPages: true };
-  } catch (error) {
-    if (logConnectionError) appError(FLOW_AUTOMATION_MESSAGES.FLOW_CONNECT_PORT_FAILED, error);
-    return null;
+  const endpoints = isBackupChromeActive() ? [EXTERNAL_URLS.PLAYWRIGHT_CDP] : [EXTERNAL_URLS.PLAYWRIGHT_CDP, REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT];
+  let lastError: unknown;
+  for (const endpoint of endpoints) {
+    try {
+      const browser = await chromium.connectOverCDP(endpoint);
+      const context = _.first(browser.contexts());
+      if (!context) continue;
+      const page = await sharedChromeFlowPage(context);
+      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_NO_ROTATING_ACCOUNT_FALLBACK);
+      return { context, page, account: { email: SOURCE_TEXT_SHARED_CHROME_SESSION }, ownsContext: false, preserveExternalPages: true };
+    } catch (error) {
+      lastError = error;
+    }
   }
+  if (logConnectionError && lastError) appError(FLOW_AUTOMATION_MESSAGES.FLOW_CONNECT_PORT_FAILED, lastError);
+  return null;
 };
 let sharedChromeLaunchedByApp = false;
 const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
@@ -1736,7 +1741,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
     attempts++;
     account = await getNextAccount(lastUsedEmail);
     if (!account) {
-      const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser() : null);
+      const sharedBrowser = (await connectToSharedChromeBrowser()) || (preferSharedChrome || chromeHeadless === false ? await launchSharedChromeBrowser() : null);
       if (sharedBrowser) return sharedBrowser;
       throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
     }

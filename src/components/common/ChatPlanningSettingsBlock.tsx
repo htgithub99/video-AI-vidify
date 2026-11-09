@@ -43,6 +43,7 @@ interface PlanningTexts {
   readonly CHATGPT_UI_OPTION: string;
   readonly CLAUDE_CHAT_OPTION: string;
   readonly DEEPSEEK_CHAT_OPTION: string;
+  readonly META_AI_OPTION: string;
   readonly PLANNING_API_ONLY: string;
   readonly PLANNING_HYBRID: string;
   readonly PLANNING_CHROME_HIDDEN: string;
@@ -69,6 +70,7 @@ const resolveProviderName = (provider: AiPlanningFallbackProvider, texts: Planni
   if (_.isEqual(provider, AiPlanningFallbackProvider.GrokChat)) return texts.GROK_CHAT_OPTION;
   if (_.isEqual(provider, AiPlanningFallbackProvider.ClaudeChat)) return texts.CLAUDE_CHAT_OPTION;
   if (_.isEqual(provider, AiPlanningFallbackProvider.DeepSeekChat)) return texts.DEEPSEEK_CHAT_OPTION;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.MetaAi)) return texts.META_AI_OPTION;
   return texts.CHATGPT_UI_OPTION;
 };
 const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackProvider, chromeHeadless: boolean, texts: PlanningTexts): string => {
@@ -148,6 +150,9 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
           <option value={AiPlanningFallbackProvider.DeepSeekChat} className={CHAT_PLANNING_STYLES.OPTION}>
             {texts.DEEPSEEK_CHAT_OPTION}
           </option>
+          <option value={AiPlanningFallbackProvider.MetaAi} className={CHAT_PLANNING_STYLES.OPTION}>
+            {texts.META_AI_OPTION}
+          </option>
           {allowHybrid && !roomOnly && (
             <option value={AiPlanningExecutionMode.Hybrid} className={CHAT_PLANNING_STYLES.OPTION}>
               {texts.PLANNING_HYBRID}
@@ -200,6 +205,7 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
       </div>
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.ClaudeChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.CLAUDE_CHAT_NOTE}</p>}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.DeepSeekChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.DEEPSEEK_CHAT_NOTE}</p>}
+      {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.MetaAi && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.META_AI_NOTE}</p>}
     </StudioCard>
   );
 }

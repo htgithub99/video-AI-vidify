@@ -45,7 +45,6 @@ import { motionScenePacingRule, motionScenePacing, motionScenePacingCount } from
 import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionScenePacing.js";
 import { directMotionSound } from "../motionSoundDirectionService.js";
 import { MOTION_SOUND_CONFIG } from "../../../../../constants/motionSound.js";
-import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { MotionPriorityPool } from "../motionPriorityPool.js";
 import type { MotionAiExecution, MotionAiLog, MotionStoryAnalysis, MotionStoryScript } from "../../../../../types/motionVideo.js";
 import type { MotionAiContractState } from "../../../../../types/motionAiContract.js";

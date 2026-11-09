@@ -13,9 +13,10 @@ const DEEPSEEK: MotionAiRoute = { provider: AiPlanningFallbackProvider.DeepSeekC
 const SITE_DEFAULT_MODEL = "";
 const GROK: MotionAiRoute = { provider: AiPlanningFallbackProvider.GrokChat, model: SITE_DEFAULT_MODEL };
 const CLAUDE: MotionAiRoute = { provider: AiPlanningFallbackProvider.ClaudeChat, model: encodeClaudeChatModel(MOTION_SCENE_AI.MODEL, MOTION_SCENE_AI.EFFORT) };
+const META_AI: MotionAiRoute = { provider: AiPlanningFallbackProvider.MetaAi, model: AiPlanningChatModel.MetaAiAuto };
 export const MOTION_AI_FALLBACK = {
-  MAIN: [GEMINI, DEEPSEEK, CHATGPT, GROK, CLAUDE],
-  DRAW: [GEMINI, DEEPSEEK, CHATGPT, GROK],
+  MAIN: [GEMINI, DEEPSEEK, CHATGPT, META_AI, GROK, CLAUDE],
+  DRAW: [GEMINI, DEEPSEEK, CHATGPT, META_AI, GROK],
   FALLBACK_TURNS: 2,
   LOG_SWITCH: (from: string, to: string, reason: string): string => `AI ${from} lỗi (${reason}) – chuyển sang ${to}.`,
   LOG_TRY: (index: number, total: number, provider: string): string => `AI ${index}/${total}: ${provider}`,

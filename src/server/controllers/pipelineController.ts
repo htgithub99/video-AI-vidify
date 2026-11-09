@@ -6624,7 +6624,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, C
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
   const roomProvider = _.toString(req.body?.roomProvider) as AiPlanningFallbackProvider;
   const roomProjectId = _.trim(_.toString(req.body?.roomProjectId));
-  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
+  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat, AiPlanningFallbackProvider.MetaAi], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
   if (closeMusicRooms) {
     cleanupTasks.push(closeChatPlanningRoomsForProject({ provider: roomProvider, projectId: roomProjectId }));
   }
@@ -6640,7 +6640,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, C
 });
 router.post(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS.replace(API_ROUTES.PIPELINE, C.EMPTY), async (req: Request, res: Response) => {
   const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
-  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi];
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.MetaAi];
   if (!_.includes(supportedProviders, provider)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
   try {
     const cleanupResult = await clearChatPlanningRooms(provider);
@@ -6654,7 +6654,7 @@ router.post(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS.replace(API_ROUTES.PIP
   const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
   const projectId = _.toString(req.body?.projectId);
   const workerIds = _.uniq(_.compact(_.map(_.castArray(req.body?.workerIds || []), _.toString)));
-  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat];
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat, AiPlanningFallbackProvider.MetaAi];
   if (!_.includes(supportedProviders, provider) || _.isEmpty(projectId)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
   await Promise.allSettled(_.map(workerIds, (workerId) => closeChatPlanningRoom({ provider, projectId, workerId })));
   await closeChatBrowserIfIdle();

@@ -60,8 +60,42 @@ const deleteAllGeminiActivity = async (page: Page): Promise<void> => {
   }
   throw new Error(C.ERROR);
 };
+const deleteAllMetaAiConversations = async (page: Page): Promise<number> => {
+  await navigate(page, EXTERNAL_URLS.META_AI_CHAT);
+  await delayAsync(1200);
+  let deleted = 0;
+  const maxItems = 200;
+  for (let i = 0; i < maxItems; i++) {
+    const item = page.locator('[data-testid="conversation-item"]').first();
+    if (!(await item.isVisible({ timeout: 2000 }).catch(() => false))) break;
+    await item.hover({ timeout: 2500 }).catch(() => undefined);
+    const menuBtn = item.locator('button[data-sidebar="menu-action"], button[aria-haspopup="menu"]').first();
+    if (!(await menuBtn.isVisible({ timeout: 2000 }).catch(() => false))) break;
+    await menuBtn.click({ timeout: 2500 }).catch(() => undefined);
+    const deleteMenuItem = page
+      .locator('[role="menuitem"]')
+      .filter({ hasText: /^(?:Xóa|Xoá|Delete)$/i })
+      .first();
+    if (!(await deleteMenuItem.isVisible({ timeout: 2500 }).catch(() => false))) {
+      await page.keyboard.press("Escape").catch(() => undefined);
+      break;
+    }
+    await deleteMenuItem.click({ timeout: 2500 }).catch(() => undefined);
+    const confirmBtn = page
+      .locator('[role="dialog"] button, [role="alertdialog"] button')
+      .filter({ hasText: /^(?:Xóa|Xoá|Delete)$/i })
+      .last();
+    if (await confirmBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
+      await confirmBtn.click({ timeout: 2500 }).catch(() => undefined);
+    }
+    deleted++;
+    await delayAsync(450);
+  }
+  return deleted;
+};
 export const deleteProviderConversationHistory = async (page: Page, provider: AiPlanningFallbackProvider): Promise<number> => {
   if (provider === AiPlanningFallbackProvider.GeminiChat) await deleteAllGeminiActivity(page);
+  else if (provider === AiPlanningFallbackProvider.MetaAi) return deleteAllMetaAiConversations(page);
   else if (provider === AiPlanningFallbackProvider.ChatGptUi || provider === AiPlanningFallbackProvider.GrokChat) {
     const isGrok = provider === AiPlanningFallbackProvider.GrokChat;
     await navigate(page, isGrok ? C.GROK_SETTINGS_URL : C.CHATGPT_SETTINGS_URL);

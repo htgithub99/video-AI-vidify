@@ -9,6 +9,7 @@ export const CINEMATIC_CHAT_DEFAULT_MODELS: Record<AiPlanningFallbackProvider, A
   [AiPlanningFallbackProvider.ChatGptUi]: AiPlanningChatModel.ChatGptAuto,
   [AiPlanningFallbackProvider.ClaudeChat]: AiPlanningChatModel.ClaudeAuto,
   [AiPlanningFallbackProvider.DeepSeekChat]: AiPlanningChatModel.DeepSeekAuto,
+  [AiPlanningFallbackProvider.MetaAi]: AiPlanningChatModel.MetaAiAuto,
   [AiPlanningFallbackProvider.Disabled]: AiPlanningChatModel.GeminiFlash,
 };
 export const CINEMATIC_POLICY_CONFIG = {
@@ -328,6 +329,11 @@ export const CINEMATIC_CHAT_MODEL_OPTIONS: Record<AiPlanningFallbackProvider, Re
   [AiPlanningFallbackProvider.ChatGptUi]: [{ value: AiPlanningChatModel.ChatGptAuto, label: "Mặc định" }],
   [AiPlanningFallbackProvider.ClaudeChat]: CLAUDE_CHAT_MODEL_OPTIONS,
   [AiPlanningFallbackProvider.DeepSeekChat]: [...DEEPSEEK_CHAT_MODES],
+  [AiPlanningFallbackProvider.MetaAi]: [
+    { value: AiPlanningChatModel.MetaAiAuto, label: "Mặc định" },
+    { value: AiPlanningChatModel.MetaAiInstant, label: "Meta AI · Tức thì" },
+    { value: AiPlanningChatModel.MetaAiThinking, label: "Meta AI · Suy nghĩ" },
+  ],
   [AiPlanningFallbackProvider.Disabled]: [],
 };
 export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = {
@@ -349,6 +355,9 @@ export const CINEMATIC_CHAT_MODEL_LABELS: Record<AiPlanningChatModel, RegExp> = 
   [AiPlanningChatModel.DeepSeekThink]: /Suy Nghĩ Sâu|DeepThink|深度思考/i,
   [AiPlanningChatModel.DeepSeekSearch]: /Tìm kiếm|Search|搜索/i,
   [AiPlanningChatModel.DeepSeekThinkSearch]: /DeepSeek/i,
+  [AiPlanningChatModel.MetaAiAuto]: /Auto|Mặc định|Default/i,
+  [AiPlanningChatModel.MetaAiInstant]: /Tức thì|Instant|Fast|think_fast/i,
+  [AiPlanningChatModel.MetaAiThinking]: /Suy nghĩ|Thinking|Think|think_hard/i,
   [AiPlanningChatModel.ClaudeFable51]: /^Fable\s+5\.1(?:\s|$)/i,
   [AiPlanningChatModel.ClaudeOpus55]: /^Opus\s+5\.5(?:\s|$)/i,
   [AiPlanningChatModel.ClaudeSonnet55]: /^Sonnet\s+5\.5(?:\s|$)/i,

@@ -35,7 +35,7 @@ export const MOTION_AI_RECOVERY = {
   READINESS_TIMEOUT_REASON: "motion-room-readiness-timeout",
   UNCERTAIN_FLAG: "motionSubmissionUncertain",
   TRANSPORT: /Target page, context or browser has been closed|page has been closed|page closed|browser.*closed|frame was detached|ERR_ABORTED|ERR_CONNECTION_RESET|ERR_CONNECTION_CLOSED|ERR_NETWORK_IO_SUSPENDED|ERR_NETWORK_CHANGED|ERR_INTERNET_DISCONNECTED|ERR_NAME_NOT_RESOLVED|ERR_TIMED_OUT|WebSocket.*closed|Execution context was destroyed/i,
-  CONVERSATION_PATH: /\/(?:app|c|chat|a\/chat\/s)\/[^/?#]+/,
+  CONVERSATION_PATH: /\/(?:app|c|chat|prompt|a\/chat\/s)\/[^/?#]+/,
   CLOSED: "Motion chat page has been closed",
   WORKER: (worker: string, role: string): string => `${worker}-${role}`,
   MODEL_KEY: (provider: string, model?: string): string => `${provider}:${model || ""}`,

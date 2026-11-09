@@ -144,6 +144,7 @@ export const EXTERNAL_URLS = {
   CHATGPT: "https://chatgpt.com/",
   CLAUDE_CHAT: "https://claude.ai/new",
   DEEPSEEK_CHAT: "https://chat.deepseek.com/",
+  META_AI_CHAT: "https://www.meta.ai/",
   AI33_VOICES: "https://api.ai33.pro/v3/voices",
   AI33_TTS: "https://api.ai33.pro/v3/text-to-speech",
   AI33_TASK: "https://api.ai33.pro/v1/task",

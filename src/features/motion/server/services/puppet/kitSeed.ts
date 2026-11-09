@@ -6,7 +6,6 @@ import { drawPuppetProps, drawPuppetSets, ensureSetVariant } from "./kitDraw.js"
 import { mapMotionAiPool } from "../motionStoryService.js";
 import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
 import { motionSceneWorkerIds } from "../../../../../lib/motionAiExecution.js";
-import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { listPuppets, readPuppet, writePuppet } from "./kitLibrary.js";
 import { presetStyle, type PuppetRunOptions } from "./stylePack.js";
 import { closedPuppetPackId } from "./packPolicy.js";

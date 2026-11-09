@@ -136,6 +136,8 @@ import { geminiSessionInterruption, waitForGeminiSession, withGeminiSession } fr
 import { selectClaudeChatModel } from "./claudeModelService.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { selectDeepSeekChatModel } from "./deepseekModelService.js";
+import { META_AI_CHAT_CONFIG as M } from "../../constants/metaAiChat.js";
+import { selectMetaAiChatModel } from "./metaAiModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { assertGeminiFlashQuota, getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
 import { withChromeBackupRecovery, saveChatResponse, isGeminiFlashQuotaError } from "./chromeBackupService.js";
@@ -198,6 +200,7 @@ const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
 const claudeRooms = new Map<string, Page>();
 const deepseekRooms = new Map<string, Page>();
+const metaAiRooms = new Map<string, Page>();
 const pendingRoomResponses = new Map<string, PendingRoomResponse>();
 let activeMusicMixerRequests = 0;
 const scheduleChatBrowserCleanup = (): void => {
@@ -354,13 +357,14 @@ const getProviderRooms = (provider: AiPlanningFallbackProvider): Map<string, Pag
   if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi)) return chatGptRooms;
   if (_.isEqual(provider, AiPlanningFallbackProvider.ClaudeChat)) return claudeRooms;
   if (_.isEqual(provider, AiPlanningFallbackProvider.DeepSeekChat)) return deepseekRooms;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.MetaAi)) return metaAiRooms;
   return undefined;
 };
-const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
+const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms, metaAiRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
 export const closeChatBrowserIfIdle = async (log?: (line: string) => void): Promise<boolean> => {
   if (sharedChromeTasks.switching) return false;
   if (manualCleanupFlights.size || hasActiveChatRooms()) {
-    log?.(MOTION_BROWSER_HANDOFF.ACTIVE_ROOMS(_.flatMap([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => [...rooms.values()].filter((page) => !page.isClosed()).map((page) => page.url())).join(BROWSER_LIFECYCLE_TEXTS.urlSeparator)));
+    log?.(MOTION_BROWSER_HANDOFF.ACTIVE_ROOMS(_.flatMap([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms, metaAiRooms], (rooms) => [...rooms.values()].filter((page) => !page.isClosed()).map((page) => page.url())).join(BROWSER_LIFECYCLE_TEXTS.urlSeparator)));
     return false;
   }
   const grokClosed = await closeOwnedGrokBrowserIfIdle();
@@ -441,6 +445,7 @@ const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider):
   if (provider === AiPlanningFallbackProvider.GeminiChat) return { url: EXTERNAL_URLS.GEMINI_CHAT };
   if (provider === AiPlanningFallbackProvider.GrokChat) return { url: EXTERNAL_URLS.GROK_CHAT };
   if (provider === AiPlanningFallbackProvider.ChatGptUi) return { url: EXTERNAL_URLS.CHATGPT };
+  if (provider === AiPlanningFallbackProvider.MetaAi) return { url: EXTERNAL_URLS.META_AI_CHAT };
   return undefined;
 };
 const manualCleanupFlights = new Map<AiPlanningFallbackProvider, Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }>>();
@@ -561,6 +566,11 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
               const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MOTION_TEXT_EMPTY;
               const identity = messageId || currentMessageId || (testId ? testId + SOURCE_TEXT_SYMBOL_16 + index : identityElement.id);
               const content = browserPayload.contentSelector ? element.querySelector(browserPayload.contentSelector) || element : element;
+              if (browserPayload.jsonRawButtonSelector) {
+                content.querySelectorAll<HTMLElement>(browserPayload.jsonRawButtonSelector).forEach((btn) => {
+                  if (/^raw$/i.test((btn.textContent || MOTION_TEXT_EMPTY).trim())) btn.click();
+                });
+              }
               const codeText = browserPayload.preferCodeBlocks
                 ? Array.from(content.querySelectorAll(browserPayload.codeSelector))
                     .map((block) => block.textContent || MOTION_TEXT_EMPTY)
@@ -571,10 +581,11 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
             });
         },
         {
-          preferCodeBlocks: artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
+          preferCodeBlocks: artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE || responseSelector === M.RESPONSE,
           contentSelector: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_CONTENT_SELECTOR : MR.MOTION_TEXT_EMPTY,
           currentMessageIdAttribute: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_ID_ATTRIBUTE : MR.MOTION_TEXT_EMPTY,
-          codeSelector: responseSelector === D.RESPONSE ? D.CODE : C.CODE_BLOCK_SELECTOR,
+          codeSelector: responseSelector === D.RESPONSE ? D.CODE : responseSelector === M.RESPONSE ? M.CODE : C.CODE_BLOCK_SELECTOR,
+          jsonRawButtonSelector: responseSelector === M.RESPONSE ? M.JSON_RAW_BUTTON : MR.MOTION_TEXT_EMPTY,
           payload: {
             selector: responseSelector === D.RESPONSE ? XRT.RESPONSE_ROW_SELECTOR : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_IDENTITY_SELECTOR,
             messageIdAttribute: responseSelector === D.RESPONSE ? XRT.RESPONSE_ROW_ATTRIBUTE : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MESSAGE_ID_ATTRIBUTE,
@@ -623,6 +634,15 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
       .allTextContents()
       .catch(() => []);
     if (alerts.some((alert) => D.RATE_LIMIT.test(alert))) throw new Error(D.RATE_LIMIT_ERROR);
+    return;
+  }
+  if (busySelector === M.BUSY) {
+    const alerts = await page
+      .locator(SOURCE_TEXT_ROLE_ALERT)
+      .filter({ visible: true })
+      .allTextContents()
+      .catch(() => []);
+    if (alerts.some((alert) => M.RATE_LIMIT_PATTERN.test(alert))) throw new Error(M.RATE_LIMIT_ERROR);
     return;
   }
   if (_.isEqual(busySelector, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR)) {
@@ -1019,7 +1039,21 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
     await waitPageResponsive(page, signal, deadline);
     const cap = Math.max(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS, Math.min(uiActionCap(prompt.length), deadline - Date.now()));
     if (pass) appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_REWRITE_LOG);
-    if (pass) {
+    const hasInlineImage = (await input.locator(M.INLINE_IMAGE_NODE).count().catch(() => 0)) > 0;
+    if (hasInlineImage) {
+      await input
+        .evaluate((el, inlineImgSel) => {
+          Array.from(el.querySelectorAll("p, span[data-lexical-text]")).forEach((node) => {
+            if (!node.querySelector(inlineImgSel) && !node.closest(inlineImgSel)) {
+              node.textContent = "";
+            }
+          });
+        }, M.INLINE_IMAGE_NODE)
+        .catch(() => undefined);
+      await input.focus({ timeout: cap });
+      await page.keyboard.press("End").catch(() => undefined);
+      await page.keyboard.insertText(prompt);
+    } else if (pass) {
       await input.focus({ timeout: cap });
       await page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY);
       await page.keyboard.insertText(prompt);
@@ -1221,9 +1255,10 @@ const submitPrompt = async (
         initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
         initialCount = initialResponseSnapshots.length;
         if (isGemini && attachments.length) initialUserQueries = await page.locator(RT_SERVER.USER_QUERY).count();
+        const isMetaAi = inputSelector === M.INPUT;
         const uploadPolicy = isGemini ? geminiUploadPolicy : isChatGpt ? chatGptUploadPolicy : undefined;
         const scopedComposer = isClaude || uploadPolicy ? await getClaudeComposerScope(input, uploadPolicy) : isDeepSeek ? await getDeepSeekComposerScope(input) : undefined;
-        const removeSelector = isDeepSeek ? D.REMOVE : uploadPolicy?.remove;
+        const removeSelector = isDeepSeek ? D.REMOVE : isMetaAi ? M.REMOVE : uploadPolicy?.remove;
         if (!_.isEmpty(attachments)) {
           throwIfPlanningCancelled(signal);
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_STARTED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
@@ -1318,6 +1353,8 @@ const submitPrompt = async (
           await clearQueuedRoomAttachments(page, scopedComposer, removeSelector);
           if (isDeepSeek) await waitForDeepSeekUploads(input, [], CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation);
           else await waitForClaudeUploads(input, [], CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_STABLE_MS, false, uploadPolicy);
+        } else if (isMetaAi) {
+          await clearQueuedRoomAttachments(page, input, M.REMOVE).catch(() => undefined);
         }
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
         await withComposerGate(roomKey, signal, async () => {
@@ -1826,10 +1863,64 @@ const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<str
   scheduleChatBrowserCleanup();
   return response;
 };
+const ensureMetaAiReady = async (room: Page, request: ChatPlanningRequest): Promise<void> => {
+  const input = room.locator(M.INPUT).filter({ visible: true }).last();
+  const loginBtn = room.locator(M.LOGIN_BUTTON).filter({ visible: true }).first();
+  const ready = await input
+    .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS })
+    .then(async () => !(await loginBtn.isVisible().catch(() => false)))
+    .catch(() => false);
+  throwIfPlanningCancelled(request.signal);
+  if (ready) return;
+  if (request.chromeHeadless !== false) throw new Error(M.LOGIN_ERROR);
+  appWarn(M.LOGIN_WAIT_LOG);
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_LOGIN_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    throwIfPlanningCancelled(request.signal);
+    if (room.isClosed()) throw new Error(M.LOGIN_ERROR);
+    const inputVisible = await input.isVisible().catch(() => false);
+    const loginVisible = await loginBtn.isVisible().catch(() => false);
+    if (inputVisible && !loginVisible) return;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+  }
+  throw new Error(M.LOGIN_ERROR);
+};
+const generateWithMetaAiChat = async (request: ChatPlanningRequest): Promise<string> => {
+  throwIfPlanningCancelled(request.signal);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.META_AI_CHAT, metaAiRooms, getPlanningRoomKey(request), request.signal);
+  await ensureMetaAiReady(room, request);
+  await selectMetaAiChatModel(room, request.model);
+  const response = await submitPrompt(
+    room,
+    getPlanningRoomKey(request),
+    request.prompt,
+    M.INPUT,
+    M.SEND,
+    M.RESPONSE,
+    M.BUSY,
+    request.expectedSceneIds || [],
+    request.attachments || [],
+    request.completionMarker,
+    request.artifactType,
+    request.requestId,
+    request.signal,
+    request.submission,
+    request.promptMessageLimit,
+  );
+  scheduleChatBrowserCleanup();
+  return response;
+};
 export const getChatPlanningRoom = (request: ChatPlanningRoomIdentity): Page | undefined => getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
 const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promise<void> => {
   await manualCleanupFlights.get(request.provider);
   throwIfPlanningCancelled(request.signal);
+  if (_.isEqual(request.provider, AiPlanningFallbackProvider.MetaAi)) {
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+    const room = await createRoom(browser.context, EXTERNAL_URLS.META_AI_CHAT, metaAiRooms, getPlanningRoomKey(request), request.signal);
+    await ensureMetaAiReady(room, request);
+    return;
+  }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.DeepSeekChat)) {
     const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
@@ -1933,6 +2024,7 @@ const providerNames: Record<AiPlanningFallbackProvider, string> = {
   [AiPlanningFallbackProvider.ChatGptUi]: SOURCE_TEXT_CHATGPT,
   [AiPlanningFallbackProvider.ClaudeChat]: C.CLAUDE,
   [AiPlanningFallbackProvider.DeepSeekChat]: XRT.DEEPSEEK_NAME,
+  [AiPlanningFallbackProvider.MetaAi]: M.NAME,
   [AiPlanningFallbackProvider.Disabled]: SOURCE_TEXT_DISABLED,
 };
 const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: ChatPlanningRequest) => Promise<string>>> = {
@@ -1941,6 +2033,7 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
   [AiPlanningFallbackProvider.ChatGptUi]: generateWithChatGptUi,
   [AiPlanningFallbackProvider.ClaudeChat]: generateWithClaudeChat,
   [AiPlanningFallbackProvider.DeepSeekChat]: generateWithDeepSeekChat,
+  [AiPlanningFallbackProvider.MetaAi]: generateWithMetaAiChat,
 };
 const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
@@ -2103,6 +2196,7 @@ const probeBusySelectors: Partial<Record<AiPlanningFallbackProvider, string>> = 
   [AiPlanningFallbackProvider.DeepSeekChat]: D.BUSY,
   [AiPlanningFallbackProvider.ClaudeChat]: CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR,
   [AiPlanningFallbackProvider.GrokChat]: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR,
+  [AiPlanningFallbackProvider.MetaAi]: M.BUSY,
 };
 export const probeChatPlanningRoomReady = async (request: ChatPlanningRequest): Promise<void> => {
   await prepareChatPlanningRoomTask(request);
