@@ -1,4 +1,6 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
+import { isChatBridgeEnabled } from "../../../../server/services/chatBridgeService.js";
+import { CHAT_BRIDGE } from "../../../../constants/chatBridge.js";
 import { motionSceneWorkerIds } from "../../../../lib/motionAiExecution.js";
 import type { MotionStoryScript } from "../../../../types/motionVideo.js";
 import { MOTION_SCENE_COMPOSITION as SCENE_COMPOSITION } from "../../../../constants/motionSceneComposition.js";
@@ -1236,7 +1238,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     signal?.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     run?.signal.addEventListener(MOTION_TEXT_ABORT, relay, { once: true });
     let timedOut = false;
-    const roomTimeout = _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : _.includes(MOTION_STORY_CONFIG.ROOM_SHORT_ARTIFACTS, artifactType) ? MOTION_STORY_CONFIG.ROOM_SHORT_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
+    const roomTimeout = isChatBridgeEnabled() ? CHAT_BRIDGE.TIMEOUT_MS : _.includes([MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS, MOTION_STORY_CONFIG.ARTIFACT_CHAPTER], artifactType) ? MOTION_STORY_CONFIG.ROOM_LONG_TIMEOUT_MS : _.includes(MOTION_STORY_CONFIG.ROOM_SHORT_ARTIFACTS, artifactType) ? MOTION_STORY_CONFIG.ROOM_SHORT_TIMEOUT_MS : MOTION_STORY_CONFIG.ROOM_TIMEOUT_MS;
     let watchdog: ReturnType<typeof setTimeout> | undefined;
     let retryRoom = false;
     let replaceRoom = false;
