@@ -11,7 +11,7 @@ interface BridgeRequest {
   requestId?: string;
   workerId?: string;
   signal?: AbortSignal;
-  submission?: { attempted: boolean; completed: boolean };
+  submission?: { attempted: boolean; completed: boolean; onAttempt?: () => void; onContextProgress?: () => void };
 }
 const root = (): string => path.join(getDataDirectory(), B.DIR);
 const folder = (name: string): string => {
@@ -35,7 +35,11 @@ export const askChatBridge = async (request: BridgeRequest): Promise<{ text: str
   const promptFile = path.join(folder(B.INBOX), name + B.PROMPT_EXT);
   const replyFile = path.join(folder(B.OUTBOX), name + B.REPLY_EXT);
   if (!fs.existsSync(promptFile) && !fs.existsSync(path.join(folder(B.DONE), name + B.PROMPT_EXT))) fs.writeFileSync(promptFile, B.HEADER(stringifyJson({ artifactType: request.artifactType, requestId: request.requestId, workerId: request.workerId })) + request.prompt, B.ENCODING);
-  if (request.submission) request.submission.attempted = true;
+  if (request.submission) {
+    request.submission.attempted = true;
+    request.submission.onAttempt?.();
+    request.submission.onContextProgress?.();
+  }
   for (;;) {
     if (request.signal?.aborted) throw new Error(B.ABORTED);
     if (fs.existsSync(replyFile)) {
