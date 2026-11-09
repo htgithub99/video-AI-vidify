@@ -170,8 +170,9 @@ assert.match(castPrompt, /faces the way it moves[\s\S]*rider stays seated/, "mot
 const { motionHtmlFigureDoc } = await import("../src/lib/motionHtmlFigure.js");
 assert.ok(scenePrompt.includes(motionHtmlFigureDoc("history")) && horrorPrompt.includes(motionHtmlFigureDoc("horror")), "scene prompts carry the measured figure design of their profile");
 assert.match(motionHtmlFigureDoc("history"), /groundY/, "figures stand on the drawn ground");
-assert.match(scenePrompt, /HAND-DRAWN/, "lines stay hand-drawn");
-assert.equal(scenePrompt.split(/round caps|lineJoin and lineCap/).length, 2, "round line rule appears once");
+assert.match(scenePrompt, /hand-drawn[\s\S]*ONE closed path/, "outline belongs to its shape");
+assert.match(scenePrompt, /never slides sideways/, "an advance changes depth");
+assert.doesNotMatch(scenePrompt, /overlapping (?:outlined )?(?:puffs|circles)|lumpy blobs|capsule|corner radius/, "no geometric shape recipes");
 assert.doesNotMatch(scenePrompt, /legs down both flanks/, "one rider rule only");
 assert.ok(!scenePrompt.includes("MotionKit"), "the AI draws every figure itself");
 const bare = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body><script>window.motionScene={}</script></body></html>";
