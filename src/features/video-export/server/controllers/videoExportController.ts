@@ -15,8 +15,10 @@ import { getCapcutResourceCatalog } from "../services/capcutResourceService.js";
 import { cancelAiClipJob, getAiClipJobState, resolveAiClipAudioFlags, resolveAiClipPaths, sanitizeAiClipInputs, startAiClipJob } from "../services/videoExportAiClipService.js";
 import { VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS } from "../../constants/videoExportAiClip.js";
 import { exportCapcutProject } from "../services/videoExportCapcutService.js";
+import { isPlanningChatModel } from "../../../../lib/chatPlanningUtils.js";
 import { logger } from "../../../../lib/logger.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../../../constants/sunoAutomation.js";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../../types.js";
 import { VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
 import { VideoExportAspectRatio, VideoExportCancelTarget, VideoExportConfig, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportResultItem } from "../../types/videoExport.js";
 type RenderJob = VideoExportJobState & { abortController: AbortController };
@@ -276,7 +278,15 @@ export const createCapcutProjectController = async (req: Request, res: Response)
 };
 export const startVideoExportAiClips = (req: Request, res: Response): void => {
   try {
-    const jobId = startAiClipJob({ inputs: sanitizeAiClipInputs(req.body?.images), note: _.toString(req.body?.note), aspectRatio: pickEnum(VideoExportAspectRatio, req.body?.aspectRatio, VIDEO_EXPORT_CONSTANTS.DEFAULT_ASPECT_RATIO), chromeHeadless: req.body?.chromeHeadless !== false });
+    const jobId = startAiClipJob({
+      inputs: sanitizeAiClipInputs(req.body?.images),
+      note: _.toString(req.body?.note),
+      aspectRatio: pickEnum(VideoExportAspectRatio, req.body?.aspectRatio, VIDEO_EXPORT_CONSTANTS.DEFAULT_ASPECT_RATIO),
+      provider: pickEnum(AiPlanningFallbackProvider, req.body?.provider, AiPlanningFallbackProvider.GeminiChat),
+      model: isPlanningChatModel(req.body?.model) ? req.body.model : AiPlanningChatModel.GeminiFlash,
+      executionMode: pickEnum(AiPlanningExecutionMode, req.body?.executionMode, AiPlanningExecutionMode.RoomOnly),
+      chromeHeadless: req.body?.chromeHeadless !== false,
+    });
     res.json({ success: true, jobId });
   } catch (error) {
     sendError(res, 400, error, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.ERR_NO_IMAGES);

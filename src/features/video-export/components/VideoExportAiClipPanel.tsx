@@ -1,6 +1,6 @@
 import { FC } from "react";
 import _ from "lodash";
-import { ImagePlus, Loader2, RefreshCw, RotateCcw, Square, Trash2, Volume2, VolumeX, Wand2 } from "lucide-react";
+import { ImagePlus, RefreshCw, RotateCcw, Sparkles, Square, Trash2, Volume2, VolumeX, Wand2 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.js";
 import { cn } from "../../../lib/utils.js";
 import { VIDEO_EXPORT_TEXT_BUTTON, VIDEO_EXPORT_TEXT_UNSTYLED } from "../../../constants/videoExportText";
@@ -80,7 +80,7 @@ export const VideoExportAiClipPanel: FC<VideoExportAiClipPanelProps> = ({ text, 
           <textarea value={note} rows={VIDEO_EXPORT_AI_CLIP_CONSTANTS.NOTE_ROWS} maxLength={VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_NOTE_CHARS} disabled={isLocked} placeholder={text.AI_CLIP_NOTE_PLACEHOLDER} onChange={(event) => aiClips.setNote(event.target.value)} className={CLS.NOTE} />
           <div className={CLS.ACTIONS}>
             <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={isLocked || _.isEmpty(images)} onClick={() => void aiClips.generate()} className={CLS.PRIMARY}>
-              {isGenerating ? <Loader2 className={CLS.SPIN_ICON} /> : <PrimaryIcon className={CLS.BUTTON_ICON} />}
+              {isGenerating ? <Sparkles className={CLS.SPIN_ICON} /> : <PrimaryIcon className={CLS.BUTTON_ICON} />}
               <span>{primaryLabel}</span>
             </Button>
             {isGenerating ? (

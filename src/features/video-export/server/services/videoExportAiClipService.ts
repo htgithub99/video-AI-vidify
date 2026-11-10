@@ -2,16 +2,34 @@ import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import _ from "lodash";
+import { parseGeminiChatModel } from "../../../../constants/geminiChatModels.js";
 import { cancelAllActiveMediaGeneration, generateImageWithPlaywright } from "../../../../server/services/imageGeneratorService.js";
 import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { logger } from "../../../../lib/logger.js";
-import { GenerateType, ImageGenerationMode, ImageGeneratorEngine, PromptInputMethod } from "../../../../types.js";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, GenerateType, ImageGenerationMode, ImageGeneratorEngine, PromptInputMethod } from "../../../../types.js";
 import { probeMediaDurationSeconds } from "./videoExportFfmpegService.js";
 import { VIDEO_EXPORT_CONSTANTS } from "../../constants/videoExport.js";
 import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_GEMINI_ASPECT, VIDEO_EXPORT_AI_CLIP_LOG, VIDEO_EXPORT_AI_CLIP_PROMPTS, VIDEO_EXPORT_AI_CLIP_REGEX, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS } from "../../constants/videoExportAiClip.js";
 import { VideoExportAiClip, VideoExportAiClipInput, VideoExportAiClipJobState, VideoExportAiClipJobStatus, VideoExportAspectRatio } from "../../types/videoExport.js";
 type AiClipJob = VideoExportAiClipJobState & { cancelRequested: boolean };
-export type StartAiClipJobParams = { inputs: VideoExportAiClipInput[]; note: string; aspectRatio: VideoExportAspectRatio; chromeHeadless?: boolean };
+export type StartAiClipJobParams = {
+  inputs: VideoExportAiClipInput[];
+  note: string;
+  aspectRatio: VideoExportAspectRatio;
+  provider?: AiPlanningFallbackProvider;
+  model?: AiPlanningChatModel;
+  executionMode?: AiPlanningExecutionMode;
+  chromeHeadless?: boolean;
+};
+const resolveAiClipEngine = (provider?: AiPlanningFallbackProvider, model?: AiPlanningChatModel): ImageGeneratorEngine => {
+  if (provider === AiPlanningFallbackProvider.GrokChat) return ImageGeneratorEngine.GrokImagine;
+  const baseModel = parseGeminiChatModel(model)?.model ?? model;
+  if (baseModel === AiPlanningChatModel.GeminiFlashLite) return ImageGeneratorEngine.Veo3Lite;
+  if (baseModel === AiPlanningChatModel.GeminiPro || baseModel === AiPlanningChatModel.GeminiThinking || baseModel === AiPlanningChatModel.GeminiDeepThink || baseModel === AiPlanningChatModel.GeminiArgon) {
+    return ImageGeneratorEngine.Veo3Quality;
+  }
+  return ImageGeneratorEngine.Veo3;
+};
 const aiClipJobs = new Map<string, AiClipJob>();
 let activeAiClipJobId: string | null = null;
 export const getAiClipDirectory = (): string => path.join(getDataDirectory(), VIDEO_EXPORT_CONSTANTS.OUTPUT_FOLDER, VIDEO_EXPORT_CONSTANTS.EXPORT_FOLDER, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FOLDER);
@@ -62,7 +80,8 @@ const generateClip = async (job: AiClipJob, input: VideoExportAiClipInput, promp
         generateType: GenerateType.Video,
         aspectRatio: VIDEO_EXPORT_AI_CLIP_GEMINI_ASPECT[params.aspectRatio],
         generateCount: 1,
-        imageGeneratorEngine: ImageGeneratorEngine.Veo3,
+        imageGeneratorEngine: resolveAiClipEngine(params.provider, params.model),
+        planningChatModel: params.model,
         generationMode: ImageGenerationMode.GeminiChat,
         promptInputMethod: PromptInputMethod.Paste,
         preserveVideoAudio: true,

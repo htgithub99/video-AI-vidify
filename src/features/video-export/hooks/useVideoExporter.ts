@@ -12,6 +12,7 @@ import { VIDEO_EXPORT_TEXTS } from "../../../constants/texts.js";
 import { jsonUtils } from "../../../lib/json.js";
 import { Lang } from "../../../lib/lang.js";
 import { computeVideoExportSlidePlan } from "../lib/videoExportPlan.js";
+import { isPlanningChatModel } from "../../../lib/chatPlanningUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { VideoExportAudioItem, VideoExportCancelTarget, VideoExportConfig, VideoExportImageItem, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportMultiPreviews, VideoExportPreviewResult, VideoExportResultItem, VideoExportSource, VideoExportSourceTab, VideoExportTransition } from "../types/videoExport.js";
 import { isAbortRequest, loadStoredResults, requestJson, saveStoredResults } from "../components/videoExportUtils.js";
@@ -62,12 +63,13 @@ export function useVideoExporter(lang: Lang) {
   const [title, setTitle] = useState<string>(() => _.toString(initialSettings.savedTitle));
   const [sourceTab, setSourceTab] = useState<VideoExportSourceTab>(() => pickStoredEnum(VideoExportSourceTab, initialSettings.sourceTab, VideoExportSourceTab.AUDIO));
   const [aiProvider, setAiProvider] = useState<AiPlanningFallbackProvider>(pickStoredEnum(AiPlanningFallbackProvider, initialSettings.aiProvider, AiPlanningFallbackProvider.GeminiChat));
-  const [aiModel, setAiModel] = useState<AiPlanningChatModel>(pickStoredEnum(AiPlanningChatModel, initialSettings.aiModel, AiPlanningChatModel.GeminiFlash));
+  const [aiModel, setAiModel] = useState<AiPlanningChatModel>(() => (isPlanningChatModel(initialSettings.aiModel) ? initialSettings.aiModel : AiPlanningChatModel.GeminiFlash));
   const [aiExecutionMode, setAiExecutionMode] = useState<AiPlanningExecutionMode>(pickStoredEnum(AiPlanningExecutionMode, initialSettings.aiExecutionMode, AiPlanningExecutionMode.RoomOnly));
   const [aiChromeHeadless, setAiChromeHeadless] = useState<boolean>(initialSettings.aiChromeHeadless !== false);
   const selectedAudios = useMemo(() => _.filter(audios, (item) => _.includes(selectedAudioIds, item.id)), [audios, selectedAudioIds]);
   const selectedImages = useMemo(() => _.filter(images, (item) => _.includes(selectedImageIds, item.id)), [images, selectedImageIds]);
-  const aiClips = useVideoExportAiClips(text, config.aspectRatio, aiChromeHeadless, selectedImages, source?.folderPath);
+  const aiClipRuntimeSettings = useMemo(() => ({ provider: aiProvider, model: aiModel, executionMode: aiExecutionMode, chromeHeadless: aiChromeHeadless }), [aiProvider, aiModel, aiExecutionMode, aiChromeHeadless]);
+  const aiClips = useVideoExportAiClips(text, config.aspectRatio, aiClipRuntimeSettings, selectedImages, source?.folderPath);
   const [isRanking, setIsRanking] = useState<boolean>(false);
   const [previews, setPreviews] = useState<VideoExportMultiPreviews>(() => {
     if (initialSettings.savedPreviews && !_.isEmpty(initialSettings.savedPreviews)) {

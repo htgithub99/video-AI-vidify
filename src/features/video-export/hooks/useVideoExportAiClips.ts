@@ -3,11 +3,18 @@ import { toast } from "sonner";
 import _ from "lodash";
 import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { jsonUtils } from "../../../lib/json.js";
+import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_REGEX } from "../constants/videoExportAiClip.js";
 import { requestJson, VideoExportTexts } from "../components/videoExportUtils.js";
 import { VideoExportAiClip, VideoExportAiClipJobState, VideoExportAiClipJobStatus, VideoExportAspectRatio, VideoExportImageItem } from "../types/videoExport.js";
 type AiClipImage = { id: string; name: string; dataUrl: string };
 export type GenerateAiClipsOptions = { imageIds?: string[]; restart?: boolean };
+export type VideoExportAiClipRuntimeSettings = {
+  provider: AiPlanningFallbackProvider;
+  model: AiPlanningChatModel;
+  executionMode: AiPlanningExecutionMode;
+  chromeHeadless: boolean;
+};
 type StoredAiClipSettings = { enabled?: boolean; folderPath?: string; note?: string; images?: AiClipImage[]; clips?: VideoExportAiClip[]; jobId?: string; lastJob?: VideoExportAiClipJobState | null };
 const buildSourceImageId = (relativePath: string): string => `${VIDEO_EXPORT_AI_CLIP_CONSTANTS.SOURCE_ID_PREFIX}${relativePath}`;
 const isSourceSyncedImageId = (id: string): boolean => _.startsWith(id, VIDEO_EXPORT_AI_CLIP_CONSTANTS.SOURCE_ID_PREFIX);
@@ -56,7 +63,8 @@ const fetchImageAsDataUrl = async (url: string): Promise<string> => {
     return "";
   }
 };
-export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: VideoExportAspectRatio, chromeHeadless: boolean, sourceImages: VideoExportImageItem[] = [], folderPath?: string) {
+export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: VideoExportAspectRatio, aiSettings: VideoExportAiClipRuntimeSettings, sourceImages: VideoExportImageItem[] = [], folderPath?: string) {
+  const { provider, model, executionMode, chromeHeadless } = aiSettings;
   const initial = useMemo(readStoredAiClipSettings, []);
   const [enabled, setEnabled] = useState<boolean>(true);
   const [note, setNote] = useState<string>(_.toString(initial.note));
@@ -267,6 +275,9 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
           images: _.map(targetImages, (image) => ({ id: image.id, name: image.name, dataUrl: image.dataUrl })),
           note,
           aspectRatio,
+          provider,
+          model,
+          executionMode,
           chromeHeadless,
         });
         if (!data.jobId) return;
@@ -292,7 +303,7 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
         toast.error(errMsg);
       }
     },
-    [isGenerating, images, missingImages, clips, note, aspectRatio, chromeHeadless, text],
+    [isGenerating, images, missingImages, clips, note, aspectRatio, provider, model, executionMode, chromeHeadless, text],
   );
   const retryFailed = useCallback(() => {
     const targetIds = _.map(!_.isEmpty(missingImages) ? missingImages : images, (image) => image.id);
