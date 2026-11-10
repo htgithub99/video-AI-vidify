@@ -93,7 +93,8 @@ import { ShortsReframeMode } from "../../../types/shorts.js";
 import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportEffect, VideoExportFps, VideoExportJobStatus, VideoExportResolution, VideoExportTransition } from "../types/videoExport.js";
 import { VideoExportOptionGrid, VideoExportOptionItem, VideoExportOptionSection, VideoExportOptionTone } from "./VideoExportOptionGrid.js";
 import { VideoExportVisualSelector } from "./VideoExportVisualSelector.js";
-type VideoExportConfigCardProps = { exporter: Pick<VideoExporterState, "text" | "config" | "title" | "slidePlan" | "totalAudioSeconds" | "job" | "isExporting" | "canRender" | "isRanking" | "isScanning" | "updateConfig" | "setTitle" | "startExport" | "stopExport"> };
+import { VideoExportAiClipPanel } from "./VideoExportAiClipPanel.js";
+type VideoExportConfigCardProps = { exporter: Pick<VideoExporterState, "text" | "config" | "title" | "slidePlan" | "totalAudioSeconds" | "job" | "isExporting" | "canRender" | "isRanking" | "isScanning" | "aiClips" | "updateConfig" | "setTitle" | "startExport" | "stopExport"> };
 export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter }) => {
   const { text, config, title, slidePlan, totalAudioSeconds, job, isExporting, canRender, isRanking, isScanning } = exporter;
   const isDisabled = isExporting;
@@ -108,6 +109,14 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
   );
   const effectSections = useMemo<VideoExportOptionSection<VideoExportEffect>[]>(
     () => [
+      {
+        key: VIDEO_EXPORT_TEXT_BASIC,
+        label: text.EFFECT_GROUP_BASIC,
+        options: [
+          { value: VideoExportEffect.NONE, label: text.EFFECT_NONE, icon: ImageIcon },
+          { value: VideoExportEffect.RANDOM, label: text.EFFECT_RANDOM, icon: Shuffle },
+        ],
+      },
       {
         key: VIDEO_EXPORT_TEXT_CAPCUT_HOT,
         label: text.EFFECT_GROUP_CAPCUT_HOT,
@@ -160,14 +169,6 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
           { value: VideoExportEffect.SHAKE, label: text.EFFECT_SHAKE, icon: Vibrate },
           { value: VideoExportEffect.SWING, label: text.EFFECT_SWING, icon: Waves },
           { value: VideoExportEffect.ZOOM_ROTATE, label: text.EFFECT_ZOOM_ROTATE, icon: RotateCw },
-        ],
-      },
-      {
-        key: VIDEO_EXPORT_TEXT_BASIC,
-        label: text.EFFECT_GROUP_BASIC,
-        options: [
-          { value: VideoExportEffect.NONE, label: text.EFFECT_NONE, icon: ImageIcon },
-          { value: VideoExportEffect.RANDOM, label: text.EFFECT_RANDOM, icon: Shuffle },
         ],
       },
     ],
@@ -345,6 +346,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         <VideoExportVisualSelector text={text} label={text.EFFECT_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_MOTION} sections={effectSections} value={config.effect} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_EFFECT, value)} />
         <VideoExportVisualSelector text={text} label={text.TRANSITION_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_TRANSITION} sections={transitionSections} value={config.transition} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITION, value)} />
         {config.transition !== VideoExportTransition.NONE && <VideoExportOptionGrid label={text.TRANSITION_DURATION_LABEL} options={toSecondOptions(VIDEO_EXPORT_CONSTANTS.TRANSITION_SECONDS_OPTIONS)} value={config.transitionSeconds} columns={4} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITIONSECONDS, value)} />}
+        <VideoExportAiClipPanel text={text} aiClips={exporter.aiClips} disabled={isDisabled} />
         <div className={cn(RT_VIDEO_EXPORT.P_3_5_ROUNDED_2XL_BG_SLATE_50_80_DARK)}>
           <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO_UPPERCASE_TRACKING_WIDER_TEXT)}>
             <span>{text.EXPORT_SETTINGS_LABEL}</span>

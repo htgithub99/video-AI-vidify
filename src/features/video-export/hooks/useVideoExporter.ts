@@ -16,6 +16,7 @@ import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvide
 import { VideoExportAudioItem, VideoExportCancelTarget, VideoExportConfig, VideoExportImageItem, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportMultiPreviews, VideoExportPreviewResult, VideoExportResultItem, VideoExportSource, VideoExportSourceTab, VideoExportTransition } from "../types/videoExport.js";
 import { isAbortRequest, loadStoredResults, requestJson, saveStoredResults } from "../components/videoExportUtils.js";
 import { ShortsReframeMode } from "../../../types/shorts.js";
+import { useVideoExportAiClips } from "./useVideoExportAiClips.js";
 type StoredSettings = Partial<VideoExportConfig> & {
   aiProvider?: AiPlanningFallbackProvider;
   aiModel?: AiPlanningChatModel;
@@ -55,6 +56,7 @@ export function useVideoExporter(lang: Lang) {
   const [aiModel, setAiModel] = useState<AiPlanningChatModel>(pickStoredEnum(AiPlanningChatModel, initialSettings.aiModel, AiPlanningChatModel.GeminiFlash));
   const [aiExecutionMode, setAiExecutionMode] = useState<AiPlanningExecutionMode>(pickStoredEnum(AiPlanningExecutionMode, initialSettings.aiExecutionMode, AiPlanningExecutionMode.RoomOnly));
   const [aiChromeHeadless, setAiChromeHeadless] = useState<boolean>(initialSettings.aiChromeHeadless !== false);
+  const aiClips = useVideoExportAiClips(text, config.aspectRatio, aiChromeHeadless);
   const [isRanking, setIsRanking] = useState<boolean>(false);
   const [previews, setPreviews] = useState<VideoExportMultiPreviews>(() => {
     if (initialSettings.savedPreviews && !_.isEmpty(initialSettings.savedPreviews)) {
@@ -83,12 +85,13 @@ export function useVideoExporter(lang: Lang) {
   const slidePlan = useMemo(() => computeVideoExportSlidePlan(totalAudioSeconds, selectedImages.length, config), [totalAudioSeconds, selectedImages.length, config]);
   const isExporting = job?.status === VideoExportJobStatus.RENDERING;
   const isBusy = isScanning || isRanking || isExporting;
-  const canRender = Boolean(source) && !_.isEmpty(selectedAudios) && !_.isEmpty(selectedImages);
+  const hasVisuals = aiClips.enabled ? !_.isEmpty(aiClips.activeClipIds) : !_.isEmpty(selectedImages);
+  const canRender = Boolean(source) && !_.isEmpty(selectedAudios) && hasVisuals && !aiClips.isGenerating;
   const preview = useMemo(() => previews[config.aspectRatio] ?? null, [previews, config.aspectRatio]);
-  const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), ...config }), [source?.token, selectedAudios, selectedImages, config]);
+  const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, ...config }), [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, config]);
   const currentPreviewSignature = useMemo(
-    () => stringifyJson({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: config.effect, transition: config.transition, transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds }),
-    [source?.token, selectedAudios, selectedImages, config.reframeMode, config.effect, config.transition, config.transitionSeconds],
+    () => stringifyJson({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: config.effect, transition: config.transition, transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds }),
+    [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, config.reframeMode, config.effect, config.transition, config.transitionSeconds],
   );
   const isPreviewOutdated = useMemo(() => {
     if (!preview) return false;
@@ -98,7 +101,7 @@ export function useVideoExporter(lang: Lang) {
         if (!raw || typeof raw !== VIDEO_EXPORT_TEXT_OBJECT) return {};
         const audios = Array.isArray(raw.audioIndexes) ? raw.audioIndexes : Array.isArray(raw.audioIds) ? raw.audioIds : [];
         const imgs = Array.isArray(raw.imageIndexes) ? raw.imageIndexes : Array.isArray(raw.imageIds) ? raw.imageIds : [];
-        return { token: _.toString(raw.token), audioIndexes: audios, imageIndexes: imgs, reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: _.toString(raw.effect), transition: _.toString(raw.transition), transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1) };
+        return { token: _.toString(raw.token), audioIndexes: audios, imageIndexes: imgs, aiClipIds: Array.isArray(raw.aiClipIds) ? raw.aiClipIds : [], reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: _.toString(raw.effect), transition: _.toString(raw.transition), transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1) };
       };
       const savedObj = normalize(parseJson(previewSignature));
       const currentObj = normalize(parseJson(currentPreviewSignature));
@@ -230,12 +233,16 @@ export function useVideoExporter(lang: Lang) {
       toast.error(text.ERR_NO_AUDIO);
       return false;
     }
-    if (_.isEmpty(selectedImages)) {
+    if (aiClips.enabled && _.isEmpty(aiClips.activeClipIds)) {
+      toast.error(text.AI_CLIP_ERR_NEED_CLIPS);
+      return false;
+    }
+    if (!aiClips.enabled && _.isEmpty(selectedImages)) {
       toast.error(text.ERR_NO_IMAGE);
       return false;
     }
     return true;
-  }, [source, selectedAudios, selectedImages, text]);
+  }, [source, selectedAudios, selectedImages, aiClips.enabled, aiClips.activeClipIds, text]);
   const selectFolder = useCallback(async () => {
     if (isBusy) return;
     setIsScanning(true);
@@ -497,6 +504,7 @@ export function useVideoExporter(lang: Lang) {
     stopExport,
     downloadResult,
     removeResult,
+    aiClips,
   };
 }
 export type VideoExporterState = ReturnType<typeof useVideoExporter>;

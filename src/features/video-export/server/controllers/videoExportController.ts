@@ -12,13 +12,15 @@ import { renderVideoExport, renderVideoExportMultiPreviews, VideoExportQuality }
 import { isAbortError } from "../services/videoExportFfmpegService.js";
 import { getDataDirectory, getPythonCommand, getStaticResourcePath } from "../../../../server/utils/paths.js";
 import { getCapcutResourceCatalog } from "../services/capcutResourceService.js";
+import { cancelAiClipJob, getAiClipJobState, resolveAiClipPaths, sanitizeAiClipInputs, startAiClipJob } from "../services/videoExportAiClipService.js";
+import { VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS } from "../../constants/videoExportAiClip.js";
 import { exportCapcutProject } from "../services/videoExportCapcutService.js";
 import { logger } from "../../../../lib/logger.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../../../constants/sunoAutomation.js";
 import { VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
 import { VideoExportAspectRatio, VideoExportCancelTarget, VideoExportConfig, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportResultItem } from "../../types/videoExport.js";
 type RenderJob = VideoExportJobState & { abortController: AbortController };
-type SelectionResult = { audioPaths: string[]; imagePaths: string[] };
+type SelectionResult = { audioPaths: string[]; imagePaths: string[]; aiClipPaths: string[] };
 const renderJobs = new Map<string, RenderJob>();
 const saveDestinations = new Map<string, string>();
 let activeRenderJobId: string | null = null;
@@ -27,14 +29,15 @@ const getExportDirectory = (): string => path.join(getDataDirectory(), VIDEO_EXP
 const getPreviewDirectory = (): string => path.join(getExportDirectory(), VIDEO_EXPORT_CONSTANTS.PREVIEW_FOLDER);
 const getTempDirectory = (id: string): string => path.join(getExportDirectory(), VIDEO_EXPORT_CONSTANTS.TEMP_FOLDER, id);
 const parseConfig = (body: any): VideoExportConfig => resolveVideoExportConfig(body, { coerceNumbers: true });
-const resolveSelection = async (body: any): Promise<SelectionResult> => {
+const resolveSelection = async (body: any, allowAiClips: boolean = true): Promise<SelectionResult> => {
   const source = getVideoExportSource(_.toString(body?.token));
   if (!source) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_SOURCE_MISSING);
   const audioIndexes = _.isArray(body?.audioIndexes) ? body.audioIndexes : [];
   const imageIndexes = _.isArray(body?.imageIndexes) ? body.imageIndexes : [];
   const audioPaths = _.map(audioIndexes, (index: unknown) => source.audios[_.toNumber(index)]?.sourcePath);
   const imagePaths = _.map(imageIndexes, (index: unknown) => source.images[_.toNumber(index)]?.sourcePath);
-  if (_.isEmpty(audioPaths) || _.isEmpty(imagePaths) || _.some([...audioPaths, ...imagePaths], (filePath) => !filePath)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_INVALID_SELECTION);
+  const aiClipPaths = allowAiClips ? await resolveAiClipPaths(body?.aiClipIds) : [];
+  if (_.isEmpty(audioPaths) || (_.isEmpty(imagePaths) && _.isEmpty(aiClipPaths)) || _.some([...audioPaths, ...imagePaths], (filePath) => !filePath)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_INVALID_SELECTION);
   const exists = await Promise.all(
     _.map([...audioPaths, ...imagePaths], (filePath: string) =>
       fs.promises.access(filePath).then(
@@ -44,7 +47,7 @@ const resolveSelection = async (body: any): Promise<SelectionResult> => {
     ),
   );
   if (!_.every(exists)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_SOURCE_MISSING);
-  return { audioPaths: audioPaths as string[], imagePaths: imagePaths as string[] };
+  return { audioPaths: audioPaths as string[], imagePaths: imagePaths as string[], aiClipPaths };
 };
 const buildSafeFileStem = (title: unknown): string => {
   const cleaned = _.replace(_.replace(_.deburr(_.toString(title)), VIDEO_EXPORT_REGEX.UNSAFE_FILENAME, VIDEO_EXPORT_TEXT_SYMBOL_11), VIDEO_EXPORT_REGEX.TRIM_UNDERSCORE, "");
@@ -93,7 +96,7 @@ export const createVideoExportPreview = async (req: Request, res: Response): Pro
   activePreviewController = abortController;
   const previewId = randomUUID();
   try {
-    const { audioPaths, imagePaths } = await resolveSelection(req.body);
+    const { audioPaths, imagePaths, aiClipPaths } = await resolveSelection(req.body);
     await clearOldPreviews();
     const aspectRatios = [VideoExportAspectRatio.HORIZONTAL_16_9, VideoExportAspectRatio.VERTICAL_9_16, VideoExportAspectRatio.SQUARE_1_1];
     const timestamp = Date.now();
@@ -103,7 +106,7 @@ export const createVideoExportPreview = async (req: Request, res: Response): Pro
       return { aspectRatio, fileName, outputPath: path.join(getPreviewDirectory(), fileName) };
     });
     const parsedConfig = parseConfig(req.body);
-    const results = await renderVideoExportMultiPreviews({ audioPaths, imagePaths, config: parsedConfig, outputs: _.map(outputs, (o) => ({ aspectRatio: o.aspectRatio, outputPath: o.outputPath })), tempDir: getTempDirectory(`${VIDEO_EXPORT_CONSTANTS.PREVIEW_PREFIX}${previewId}`), signal: abortController.signal });
+    const results = await renderVideoExportMultiPreviews({ audioPaths, imagePaths, aiClipPaths, config: parsedConfig, outputs: _.map(outputs, (o) => ({ aspectRatio: o.aspectRatio, outputPath: o.outputPath })), tempDir: getTempDirectory(`${VIDEO_EXPORT_CONSTANTS.PREVIEW_PREFIX}${previewId}`), signal: abortController.signal });
     const previews: Record<string, { previewUrl: string; durationSeconds: number }> = {};
     for (const item of outputs) {
       const durationSeconds = results[item.aspectRatio]?.durationSeconds || VIDEO_EXPORT_CONSTANTS.PREVIEW_MAX_SECONDS;
@@ -149,7 +152,7 @@ const runRenderJob = async (job: RenderJob, selection: SelectionResult, config: 
       durationSeconds,
       sizeBytes,
       trackCount: selection.audioPaths.length,
-      imageCount: selection.imagePaths.length,
+      imageCount: selection.aiClipPaths.length || selection.imagePaths.length,
       aspectRatio: config.aspectRatio,
       createdAt: new Date().toISOString(),
     };
@@ -263,10 +266,29 @@ export const getCapcutResourceCatalogController = (_req: Request, res: Response)
 };
 export const createCapcutProjectController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const selection = await resolveSelection(req.body);
+    const selection = await resolveSelection(req.body, false);
     const result = await exportCapcutProject({ projectName: _.toString(req.body?.title) || VIDEO_EXPORT_TEXT_CAPCUT_MUSIC_VIDEO, audioPaths: selection.audioPaths, imagePaths: selection.imagePaths, config: parseConfig(req.body), capcutEffectId: _.toString(req.body?.capcutEffectId), capcutTransitionId: _.toString(req.body?.capcutTransitionId) });
     res.json({ success: true, result });
   } catch (error: any) {
     sendError(res, 500, error, VIDEO_EXPORT_TEXT_XUAT_PROJECT_CAPCUT_THAT_BAI);
   }
+};
+export const startVideoExportAiClips = (req: Request, res: Response): void => {
+  try {
+    const jobId = startAiClipJob({ inputs: sanitizeAiClipInputs(req.body?.images), note: _.toString(req.body?.note), aspectRatio: pickEnum(VideoExportAspectRatio, req.body?.aspectRatio, VIDEO_EXPORT_CONSTANTS.DEFAULT_ASPECT_RATIO), chromeHeadless: req.body?.chromeHeadless !== false });
+    res.json({ success: true, jobId });
+  } catch (error) {
+    sendError(res, 400, error, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.ERR_NO_IMAGES);
+  }
+};
+export const getVideoExportAiClipStatus = (req: Request, res: Response): void => {
+  const job = getAiClipJobState(_.toString(req.params.jobId));
+  if (!job) {
+    res.status(404).json({ success: false, error: VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.ERR_JOB_NOT_FOUND });
+    return;
+  }
+  res.json({ success: true, job });
+};
+export const cancelVideoExportAiClips = (req: Request, res: Response): void => {
+  res.json({ success: true, job: cancelAiClipJob(_.toString(req.body?.jobId)) });
 };

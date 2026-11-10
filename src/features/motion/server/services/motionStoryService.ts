@@ -502,6 +502,7 @@ interface MotionAiRun {
   roomRefreshes: Set<string>;
   roomGenerations: Map<string, number>;
   browserGenerations: Map<string, number>;
+  roomTurns?: Map<string, number>;
   bibles?: Map<string, string>;
   halt: { error?: Error };
   editorial?: { context: string; route?: MotionAiExecution };
@@ -617,6 +618,7 @@ export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (li
 };
 const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<void> => {
   run.bibles?.delete(workerId);
+  run.roomTurns?.delete(workerId);
   const provider = run.rooms.get(workerId);
   if (!provider) return;
   await motionRooms.close({ provider, projectId: run.projectId, workerId });
@@ -629,6 +631,7 @@ const acquireMotionAiRoom = async (run: MotionAiRun, workerId: string, provider:
       run.contextRooms.delete(workerId);
       run.roomRefreshes.delete(workerId);
       run.roomRecoveries.delete(workerId);
+      run.roomTurns?.delete(workerId);
     },
     signal,
   );
@@ -1322,6 +1325,11 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
           run.contextRooms.delete(workerId!);
         }
       }
+      if (run && !submission.attempted && attempt === 0 && PROMPT.SELF_CONTAINED_ARTIFACTS.includes(artifactType) && (run.roomTurns?.get(workerId!) || 0) >= AIR.MAX_SELF_CONTAINED_ROOM_TURNS) {
+        run.roomTurns?.delete(workerId!);
+        run.bibles?.delete(workerId!);
+        await reloadChatPlanningRoom({ provider, projectId, workerId }).catch(_.noop);
+      }
       if (run && (!run.contextRooms.has(workerId!) || attempt > 0)) {
         if (!run.contextRooms.has(workerId!)) run.roomGenerations.set(workerId!, (run.roomGenerations.get(workerId!) || 0) + 1);
         log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.READY });
@@ -1330,7 +1338,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
       run?.contextRooms.add(workerId!);
       roomCtrl.signal.throwIfAborted();
-      if (exec.role === MOTION_AI_ROLE.DRAW && exec.multiSceneRooms !== false && !submission.attempted) await staggerMotionSend(provider, roomCtrl.signal);
+      if (!submission.attempted) await staggerMotionSend(provider, roomCtrl.signal);
       countMotionRequest(provider, log);
       const r = await generatePlanningWithChatUi({
         provider,
@@ -1367,6 +1375,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       exec.responseReceived?.(r.text);
       const result = exec.outputFormat === RT_MAINTENANCE.HTML ? r.text : extractMotionRoomJson(r.text);
       run?.roomRecoveries.delete(workerId!);
+      if (run) (run.roomTurns ||= new Map()).set(workerId!, (run.roomTurns.get(workerId!) || 0) + 1);
       if (run && bibleKey()) (run.bibles ||= new Map()).set(workerId!, bibleKey()!);
       roomOk = true;
       return result;

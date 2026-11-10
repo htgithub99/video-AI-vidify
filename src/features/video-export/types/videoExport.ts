@@ -117,3 +117,12 @@ export enum VideoExportSourceTab {
   AUDIO = "audio",
   IMAGE = "image",
 }
+export enum VideoExportAiClipJobStatus {
+  RUNNING = "running",
+  COMPLETED = "completed",
+  ERROR = "error",
+  CANCELLED = "cancelled",
+}
+export type VideoExportAiClip = { id: string; name: string; url: string; durationSeconds: number };
+export type VideoExportAiClipInput = { name: string; dataUrl: string };
+export type VideoExportAiClipJobState = { jobId: string; status: VideoExportAiClipJobStatus; done: number; total: number; message: string; clips: VideoExportAiClip[]; errors: string[]; stopping?: boolean };

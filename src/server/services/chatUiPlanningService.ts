@@ -444,7 +444,7 @@ export const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity):
   pendingRoomResponses.delete(roomKey);
   if (!page || page.isClosed()) throw new Error(SOURCE_TEXT_CHAT_PLANNING_ROOM_UNAVAILABLE_FOR_RELOAD);
   contextReceipts.get(page)?.invalidate();
-  if (request.provider === AiPlanningFallbackProvider.GeminiChat) await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  if (request.provider === AiPlanningFallbackProvider.GeminiChat && page.url().startsWith(EXTERNAL_URLS.GEMINI_CHAT)) await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   else await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
 };
 const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { url: string } | undefined => {
@@ -893,7 +893,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       previousText = latestText;
     }
     if (!isBusy && Date.now() >= activityDeadline) break;
-    if (!isBusy && count === initialCount && !regenerationObserved && _.isEmpty(responseCandidates) && Date.now() - startedAt >= Math.min(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS, 60000)) break;
+    if (!isBusy && count === initialCount && !regenerationObserved && _.isEmpty(responseCandidates) && Date.now() - startedAt >= CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS) break;
     await delayAsync(isBusy ? CHAT_SPEED.BUSY_POLL_MS : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_TIMEOUT_LOG(lastResponseCount, initialCount, lastCandidateLength, lastBusyState, lastIdentityMatch, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
@@ -1156,6 +1156,7 @@ const regenerateProviderError = async (page: Page, responseSelector: string, bus
       return await run();
     } catch (error) {
       if (!canRegenerateChatResponse(error) || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      if (CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS > 0) await delayAsync(RECOVERY.RETRY_CLICK_COOLDOWN_MS * (attempt + 1));
       throwIfPlanningCancelled(signal);
       const snapshots = await getChatResponseSnapshots(page, responseSelector, artifactType).catch(() => []);
       if (!(await clickCurrentChatRetry(page, signal).catch(() => false))) throw error;
@@ -2203,6 +2204,8 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
             const snapshots = await getChatResponseSnapshots(page, pending.responseSelector, request.artifactType).catch(() => []);
             const currentResponse = snapshots.length > pending.initialCount || snapshots.some((snapshot) => !pending.initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text));
             if (retryClick === 0 && !currentResponse) break;
+            if (CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS > 0) await delayAsync(RECOVERY.RETRY_CLICK_COOLDOWN_MS * (roomRetryClicks + 1));
+            throwIfPlanningCancelled(request.signal);
             if (!(await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
               request.onRecovery?.(RECOVERY.CLICK_UNAVAILABLE);
               break;

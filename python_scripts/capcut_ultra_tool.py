@@ -3,6 +3,10 @@ if __package__:
 else:
     from runtime_text import RuntimeText as _CODE_TEXT
 import logging
+try:
+    from .dialog_focus import open_dialog_root
+except ImportError:
+    from dialog_focus import open_dialog_root
 logging.basicConfig(level=logging.INFO, format=_CODE_TEXT.ASCTIME_S_LEVELNAME_S_MESSAGE_S)
 import os
 import json
@@ -112,9 +116,7 @@ def save_file_dialog(source_path, suggested_name, extension):
     import shutil
     import tkinter as tk
     from tkinter import filedialog
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes(_CODE_TEXT.TOPMOST, True)
+    root = open_dialog_root()
     normalized_extension = extension if extension.startswith(_CODE_TEXT.SYMBOL_CDB4EE) else _CODE_TEXT.SYMBOL_CDB4EE + extension
     target_path = filedialog.asksaveasfilename(title=_CODE_TEXT.L_U_T_P, initialfile=suggested_name, defaultextension=normalized_extension, filetypes=[(f'{normalized_extension.upper()}{_CODE_TEXT.FILES}', f'{_CODE_TEXT.SYMBOL_684888}{normalized_extension}'), (ALL_EXT, ALL_EXT)])
     root.destroy()
@@ -124,9 +126,7 @@ def save_file_dialog(source_path, suggested_name, extension):
 def select_save_file_dialog(suggested_name, extension):
     import tkinter as tk
     from tkinter import filedialog
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes(_CODE_TEXT.TOPMOST, True)
+    root = open_dialog_root()
     normalized_extension = extension if extension.startswith(_CODE_TEXT.SYMBOL_CDB4EE) else _CODE_TEXT.SYMBOL_CDB4EE + extension
     target_path = filedialog.asksaveasfilename(title=_CODE_TEXT.L_U_T_P, initialfile=suggested_name, defaultextension=normalized_extension, filetypes=[(f'{normalized_extension.upper()}{_CODE_TEXT.FILES}', f'{_CODE_TEXT.SYMBOL_684888}{normalized_extension}'), (ALL_EXT, ALL_EXT)])
     root.destroy()
@@ -331,9 +331,7 @@ def open_file_dialog():
     try:
         import tkinter as tk
         from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes(_CODE_TEXT.TOPMOST, True)
+        root = open_dialog_root()
         file_path = filedialog.askopenfilename(title=DIALOG_FILE_TITLE, filetypes=[(JSON_FILE_TYPES_LABEL, JSON_EXT), (ALL_EXT, ALL_EXT)])
         if file_path:
             print(os.path.normpath(file_path), end="")
@@ -365,9 +363,7 @@ def open_folder_dialog():
     try:
         import tkinter as tk
         from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes(_CODE_TEXT.TOPMOST, True)
+        root = open_dialog_root()
         dir_path = filedialog.askdirectory(title=DIALOG_FOLDER_TITLE)
         if dir_path:
             print(os.path.normpath(dir_path), end="")
