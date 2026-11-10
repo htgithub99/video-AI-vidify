@@ -101,12 +101,6 @@ export const VideoExportAiClipPanel: FC<VideoExportAiClipPanelProps> = ({ text, 
             <div className={CLS.RECOVERY_BOX}>
               <div className={CLS.RECOVERY_HEADER}>
                 <span className={CLS.ERROR}>{job.message || text.AI_CLIP_ERR_FAILED}</span>
-                {!isLocked && !_.isEmpty(images) && (
-                  <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={() => void aiClips.retryFailed()} className={CLS.RECOVERY_RETRY_BTN}>
-                    <RotateCcw className={CLS.BUTTON_ICON} />
-                    <span>{text.AI_CLIP_RETRY_BTN}</span>
-                  </Button>
-                )}
               </div>
               {!_.isEmpty(job.errors) && (
                 <div className={CLS.ERROR_LIST}>
