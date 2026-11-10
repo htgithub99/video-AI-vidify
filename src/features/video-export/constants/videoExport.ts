@@ -137,7 +137,7 @@ export const VIDEO_EXPORT_RESOLUTIONS: Record<VideoExportAspectRatio, Record<Vid
 export const VIDEO_EXPORT_CODEC_MAP: Record<VideoExportCodec, string> = { [VideoExportCodec.H264]: "libx264", [VideoExportCodec.HEVC]: "libx265" };
 export const VIDEO_EXPORT_BITRATE_CRF: Record<VideoExportBitrate, string> = { [VideoExportBitrate.STANDARD]: "20", [VideoExportBitrate.HIGH]: "16" };
 export const VIDEO_EXPORT_PREVIEW_DIMENSIONS: Record<VideoExportAspectRatio, { width: number; height: number }> = { [VideoExportAspectRatio.HORIZONTAL_16_9]: { width: 854, height: 480 }, [VideoExportAspectRatio.VERTICAL_9_16]: { width: 480, height: 854 }, [VideoExportAspectRatio.SQUARE_1_1]: { width: 480, height: 480 } };
-export const VIDEO_EXPORT_REGEX = { AUDIO_EXT: /\.(mp3|wav|m4a|aac|flac|ogg|opus)$/i, IMAGE_EXT: /\.(jpg|jpeg|png|webp|bmp)$/i, DURATION: /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/, OUT_TIME: /out_time_(?:us|ms)=(\d+)/g, UNSAFE_FILENAME: /[^a-zA-Z0-9_-]+/g, TRIM_UNDERSCORE: /^_+|_+$/g, EXTENSION: /\.[^.]+$/, CONCAT_QUOTE: /'/g } as const;
+export const VIDEO_EXPORT_REGEX = { AUDIO_EXT: /\.(mp3|wav|m4a|aac|flac|ogg|opus)$/i, IMAGE_EXT: /\.(jpg|jpeg|png|webp|bmp)$/i, DURATION: /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/, AUDIO_STREAM: /Stream #\d+:\d+.*Audio:/i, OUT_TIME: /out_time_(?:us|ms)=(\d+)/g, UNSAFE_FILENAME: /[^a-zA-Z0-9_-]+/g, TRIM_UNDERSCORE: /^_+|_+$/g, EXTENSION: /\.[^.]+$/, CONCAT_QUOTE: /'/g } as const;
 export const VIDEO_EXPORT_SERVER_TEXTS = {
   ERR_SOURCE_MISSING: "Không tìm thấy nguồn đã chọn. Vui lòng chọn lại folder.",
   ERR_EMPTY_AUDIO: "Folder không có file nhạc hợp lệ (mp3, wav, m4a, aac, flac, ogg, opus).",

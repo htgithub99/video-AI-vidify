@@ -72,7 +72,7 @@ export const RUNTIME_TEXT = {
   TEXT_10PX_TEXT_SLATE_400_FONT_MONO_UPPERCASE_TRUNCATE: "text-[10px] text-slate-400 font-mono uppercase truncate",
   FLEX_1_H_9_ROUNDED_XL_TEXT_XS_FONT_BOLD: "flex-1 h-9 rounded-xl text-xs font-bold inline-flex items-center justify-center gap-1.5 border transition-all cursor-pointer select-none",
   GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_5_SPACE: "glass-card rounded-2xl sm:rounded-3xl p-5 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full flex flex-col",
-  TEXT_XS_FONT_SEMIBOLD_TEXT_PURPLE_400_HOVER_TEXT_PURPLE: "text-xs font-semibold text-purple-400 hover:text-purple-300 hover:underline transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed",
+  TEXT_XS_FONT_SEMIBOLD_TEXT_PURPLE_400_HOVER_TEXT_PURPLE: "h-8 px-3 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-all border-purple-500/40 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 shrink-0 disabled:opacity-60 disabled:cursor-not-allowed",
   PY_10_PX_6_ROUNDED_2XL_BG_SLATE_950_40: "py-10 px-6 rounded-2xl bg-slate-950/40 border border-purple-500/20 flex flex-col items-center justify-center text-center gap-4 animate-in fade-in duration-200",
   W_14_H_14_ROUNDED_2XL_BG_GRADIENT_TO_TR: "w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600/20 via-fuchsia-600/20 to-pink-600/20 border border-purple-500/30 flex items-center justify-center shadow-lg shadow-purple-500/10",
   ABSOLUTE_INSET_1_ROUNDED_2XL_BG_PURPLE_500_20_BLUR: "absolute -inset-1 rounded-2xl bg-purple-500/20 blur-md -z-10 animate-pulse",
@@ -187,4 +187,7 @@ export const RUNTIME_TEXT = {
   GRID_GRID_COLS_1_LG_GRID_COLS_3_GAP_6: "grid grid-cols-1 lg:grid-cols-3 gap-6 items-start",
   LG_COL_SPAN_2_FLEX_FLEX_COL_GAP_5_MIN: "lg:col-span-2 flex flex-col gap-5 min-w-0",
   LG_COL_SPAN_1_FLEX_FLEX_COL_GAP_5_MIN: "lg:col-span-1 flex flex-col gap-5 min-w-0 lg:sticky lg:top-0",
+  EXPORT_RETRY_INLINE_BTN: "h-7 px-2.5 rounded-lg text-[11px] font-bold bg-rose-600 hover:bg-rose-500 text-white inline-flex items-center gap-1 shrink-0 shadow-xs",
+  PREVIEW_ERROR_TEXT: "text-xs text-rose-400 leading-relaxed",
+  PREVIEW_RETRY_BTN_CLS: "mt-1 h-8 px-3 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white inline-flex items-center gap-1.5 shadow-sm",
 } as const;

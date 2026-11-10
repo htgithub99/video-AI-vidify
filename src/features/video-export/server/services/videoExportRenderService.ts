@@ -12,10 +12,7 @@ import {
   VIDEO_EXPORT_TEMPLATE_1_02_0_09_ABS_SIN,
   VIDEO_EXPORT_TEMPLATE_1_0_06,
   VIDEO_EXPORT_TEMPLATE_1_0_07,
-  VIDEO_EXPORT_TEMPLATE_A,
-  VIDEO_EXPORT_TEMPLATE_A_2,
   VIDEO_EXPORT_TEMPLATE_A_ARESAMPLE_AFORMAT_SAMPLE_FMTS_FLTP,
-  VIDEO_EXPORT_TEMPLATE_CONCAT_N_V_0_A_1,
   VIDEO_EXPORT_TEMPLATE_CROP,
   VIDEO_EXPORT_TEMPLATE_FILE,
   VIDEO_EXPORT_TEMPLATE_FORMAT,
@@ -34,7 +31,6 @@ import {
   VIDEO_EXPORT_TEMPLATE_SYMBOL_8,
   VIDEO_EXPORT_TEMPLATE_SYMBOL_9,
   VIDEO_EXPORT_TEMPLATE_S_XFADE_TRANSITION_DURATION_OFFSET,
-  VIDEO_EXPORT_TEMPLATE_V_SETTB_AVTB_FPS_FORMAT_S,
   VIDEO_EXPORT_TEMPLATE_X,
   VIDEO_EXPORT_TEMPLATE_ZOOMPAN_Z_X_Y_D_S,
   VIDEO_EXPORT_TEXT_0,
@@ -90,13 +86,15 @@ import {
   VIDEO_EXPORT_TEXT_VOUT,
   VIDEO_EXPORT_TEXT_Y,
 } from "../../../../constants/videoExportText";
+import { createHash } from "crypto";
 import fs from "fs";
 import os from "os";
 import path from "path";
 import _ from "lodash";
-import { probeMediaDurationSeconds, runFfmpeg, throwIfAborted } from "./videoExportFfmpegService.js";
+import { getDataDirectory } from "../../../../server/utils/paths.js";
+import { probeMediaDurationSeconds, probeMediaHasAudio, runFfmpeg, throwIfAborted } from "./videoExportFfmpegService.js";
 import { logger } from "../../../../lib/logger.js";
-import { computeVideoExportSlidePlan, VideoExportSlidePlan } from "../../lib/videoExportPlan.js";
+import { computeVideoExportSlidePlan } from "../../lib/videoExportPlan.js";
 import { VIDEO_EXPORT_BITRATE_CRF, VIDEO_EXPORT_CODEC_MAP, VIDEO_EXPORT_CONSTANTS, VIDEO_EXPORT_LOG_MESSAGES, VIDEO_EXPORT_PREVIEW_DIMENSIONS, VIDEO_EXPORT_REGEX, VIDEO_EXPORT_RESOLUTIONS, VIDEO_EXPORT_SERVER_TEXTS } from "../../constants/videoExport.js";
 import { ShortsReframeMode } from "../../../../types/shorts.js";
 import { VIDEO_EXPORT_SPEED } from "../../constants/videoExportSpeed.js";
@@ -106,7 +104,7 @@ import { VideoExportAspectRatio, VideoExportConfig, VideoExportEffect, VideoExpo
 export { VideoExportQuality };
 type EncodeProfile = { width: number; height: number; fps: number; preset: string; crf: string; codec: string };
 export type VideoExportProgressHandler = (stage: VideoExportJobStage, percent: number, message: string) => void;
-export type RenderVideoExportParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; config: VideoExportConfig; outputPath: string; tempDir: string; quality: VideoExportQuality; signal?: AbortSignal; onProgress?: VideoExportProgressHandler };
+export type RenderVideoExportParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; aiClipKeepAudio?: boolean[]; config: VideoExportConfig; outputPath: string; tempDir: string; quality: VideoExportQuality; signal?: AbortSignal; onProgress?: VideoExportProgressHandler };
 const resolveEncodeProfile = (config: VideoExportConfig, quality: VideoExportQuality): EncodeProfile => {
   if (quality === VideoExportQuality.PREVIEW) {
     return { ...VIDEO_EXPORT_PREVIEW_DIMENSIONS[config.aspectRatio], fps: VIDEO_EXPORT_CONSTANTS.PREVIEW_FPS, preset: VIDEO_EXPORT_CONSTANTS.PREVIEW_PRESET, crf: VIDEO_EXPORT_CONSTANTS.PREVIEW_CRF, codec: VIDEO_EXPORT_CONSTANTS.VIDEO_CODEC };
@@ -239,16 +237,79 @@ const buildSegmentArgs = (imagePath: string, effect: VideoExportEffect, seconds:
   filters.push(VIDEO_EXPORT_TEXT_SETSAR_1, VIDEO_EXPORT_TEMPLATE_FORMAT(`${pixelFormat}`));
   return [VIDEO_EXPORT_TEXT_I, imagePath, VIDEO_EXPORT_TEXT_VF, _.join(filters, VIDEO_EXPORT_TEXT_SYMBOL_14), ...encodeArgs];
 };
-const buildAudioArgs = (audioPaths: string[], outputPath: string, maxSeconds?: number): string[] => {
-  const inputArgs = _.flatMap(audioPaths, (audioPath) => [VIDEO_EXPORT_TEXT_I, audioPath]);
-  const normalized = _.map(audioPaths, (_audioPath, index) => VIDEO_EXPORT_TEMPLATE_A_ARESAMPLE_AFORMAT_SAMPLE_FMTS_FLTP(`${index}`, `${VIDEO_EXPORT_CONSTANTS.AUDIO_SAMPLE_RATE}`, `${index}`));
-  const concatInputs = _.join(
-    _.map(audioPaths, (_audioPath, index) => VIDEO_EXPORT_TEMPLATE_A(`${index}`)),
-    "",
-  );
-  const filter = VIDEO_EXPORT_TEMPLATE_CONCAT_N_V_0_A_1(`${_.join(normalized, VIDEO_EXPORT_TEXT_SYMBOL_15)}`, `${concatInputs}`, `${audioPaths.length}`);
-  const limitArgs = maxSeconds ? [VIDEO_EXPORT_TEXT_T, `${maxSeconds}`] : [];
-  return [...inputArgs, VIDEO_EXPORT_TEXT_FILTER_COMPLEX, filter, VIDEO_EXPORT_TEXT_MAP, VIDEO_EXPORT_TEXT_AOUT, ...limitArgs, VIDEO_EXPORT_TEXT_VN, VIDEO_EXPORT_TEXT_C_A, VIDEO_EXPORT_CONSTANTS.AUDIO_CODEC, VIDEO_EXPORT_TEXT_B_A, VIDEO_EXPORT_CONSTANTS.AUDIO_BITRATE, VIDEO_EXPORT_TEXT_Y, outputPath];
+const buildSingleTrackNormalizeArgs = (inputPath: string, outputPath: string): string[] => [
+  VIDEO_EXPORT_TEXT_I,
+  inputPath,
+  VIDEO_EXPORT_TEXT_FILTER_COMPLEX,
+  `${VIDEO_EXPORT_TEMPLATE_A_ARESAMPLE_AFORMAT_SAMPLE_FMTS_FLTP("0", `${VIDEO_EXPORT_CONSTANTS.AUDIO_SAMPLE_RATE}`, "out")}`,
+  VIDEO_EXPORT_TEXT_MAP,
+  VIDEO_EXPORT_TEXT_AOUT,
+  VIDEO_EXPORT_TEXT_VN,
+  VIDEO_EXPORT_TEXT_C_A,
+  VIDEO_EXPORT_CONSTANTS.AUDIO_CODEC,
+  VIDEO_EXPORT_TEXT_B_A,
+  VIDEO_EXPORT_CONSTANTS.AUDIO_BITRATE,
+  VIDEO_EXPORT_TEXT_Y,
+  outputPath,
+];
+const buildAudioConcatCopyArgs = (listPath: string, outputPath: string): string[] => [
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS,
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS,
+  VIDEO_EXPORT_TEXT_F,
+  VIDEO_EXPORT_TEXT_CONCAT,
+  VIDEO_EXPORT_TEXT_SAFE,
+  VIDEO_EXPORT_TEXT_0,
+  VIDEO_EXPORT_TEXT_I,
+  listPath,
+  VIDEO_EXPORT_TEXT_VN,
+  VIDEO_EXPORT_TEXT_C_A,
+  VIDEO_EXPORT_TEXT_COPY,
+  VIDEO_EXPORT_TEXT_Y,
+  outputPath,
+];
+const getAudioCacheDirectory = (): string => path.join(getDataDirectory(), VIDEO_EXPORT_CONSTANTS.OUTPUT_FOLDER, VIDEO_EXPORT_CONSTANTS.EXPORT_FOLDER, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_CACHE_FOLDER);
+const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string, workDir: string, signal?: AbortSignal, onProgressRatio?: (ratio: number) => void): Promise<number> => {
+  const cacheDir = getAudioCacheDirectory();
+  await fs.promises.mkdir(cacheDir, { recursive: true });
+  const stats = await Promise.all(_.map(audioPaths, (audioPath) => fs.promises.stat(audioPath)));
+  const cachedPaths = _.map(audioPaths, (audioPath, index) => {
+    const stat = stats[index];
+    const hash = createHash("sha1").update(`${audioPath}|${stat.size}|${stat.mtimeMs}`).digest("hex");
+    return path.join(cacheDir, `${hash}${VIDEO_EXPORT_CONSTANTS.EXT_M4A}`);
+  });
+  const totalTracks = audioPaths.length;
+  let completedTracks = 0;
+  const audioLanes = Math.max(1, Math.min(8, os.cpus().length, totalTracks));
+  const laneAbort = createLinkedAbort(signal);
+  await runVideoExportLanes(audioPaths, audioLanes, async (audioPath, index) => {
+    const cachedPath = cachedPaths[index];
+    const exists = await fs.promises.access(cachedPath).then(
+      () => true,
+      () => false,
+    );
+    if (!exists) {
+      const tempCachePath = path.join(workDir, `track_${_.padStart(`${index}`, 4, VIDEO_EXPORT_TEXT_0)}${VIDEO_EXPORT_CONSTANTS.EXT_M4A}`);
+      await runFfmpeg(buildSingleTrackNormalizeArgs(audioPath, tempCachePath), { signal: laneAbort.signal }).catch((error) => {
+        laneAbort.abort();
+        throw error;
+      });
+      await fs.promises.copyFile(tempCachePath, cachedPath).catch(() => undefined);
+    }
+    completedTracks += 1;
+    onProgressRatio?.(completedTracks / totalTracks);
+  });
+  throwIfAborted(signal);
+  if (cachedPaths.length === 1) {
+    await fs.promises.copyFile(cachedPaths[0], outputPath);
+  } else {
+    const listPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_CONCAT_LIST_FILE_NAME);
+    await writeConcatList(listPath, cachedPaths);
+    await runFfmpeg(buildAudioConcatCopyArgs(listPath, outputPath), { signal });
+  }
+  const totalSeconds = await probeMediaDurationSeconds(outputPath);
+  if (totalSeconds > 0) return totalSeconds;
+  const individualDurations = await Promise.all(_.map(cachedPaths, probeMediaDurationSeconds));
+  return _.sum(individualDurations);
 };
 const escapeConcatPath = (filePath: string): string => _.replace(filePath, VIDEO_EXPORT_REGEX.CONCAT_QUOTE, VIDEO_EXPORT_TEXT_SYMBOL_16);
 const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: string): string[] => [
@@ -274,26 +335,85 @@ const buildConcatMergeArgs = (listPath: string, audioPath: string, outputPath: s
   VIDEO_EXPORT_TEXT_Y,
   outputPath,
 ];
-const buildXfadeMergeArgs = (segmentPaths: string[], audioPath: string, plan: VideoExportSlidePlan, transition: VideoExportTransition, profile: EncodeProfile, outputPath: string): string[] => {
-  const inputArgs = _.flatMap(segmentPaths, (segmentPath) => [VIDEO_EXPORT_TEXT_I, segmentPath]);
-  const prepared = _.map(segmentPaths, (_segmentPath, index) => VIDEO_EXPORT_TEMPLATE_V_SETTB_AVTB_FPS_FORMAT_S(`${index}`, `${profile.fps}`, `${VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT}`, `${index}`));
-  const transitions = _.map(_.range(1, segmentPaths.length), (index) => {
+const buildAiClipNormalizeArgs = (clipPath: string, clipIndex: number, frames: number, transitionFrames: number, hasTransitions: boolean, config: VideoExportConfig, profile: EncodeProfile, outputPath: string): string[] => {
+  const { width, height, fps, preset, crf } = profile;
+  const pixelFormat = VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT;
+  const isVertical916 = config.aspectRatio === VideoExportAspectRatio.VERTICAL_9_16;
+  const visualFilter = buildVisualPostFilter(resolveEffect(config.effect, clipIndex));
+  const keyframeArgs = hasTransitions ? [VIDEO_EXPORT_SPEED.FORCE_KEY_FRAMES, VIDEO_EXPORT_SPEED.KEYFRAMES(transitionFrames, frames - transitionFrames), VIDEO_EXPORT_SPEED.FORCED_IDR, VIDEO_EXPORT_SPEED.FLAG_ON] : [];
+  const encodeArgs = [VIDEO_EXPORT_SPEED.FRAMES_V, `${frames}`, VIDEO_EXPORT_TEXT_R, `${fps}`, VIDEO_EXPORT_TEXT_C_V, profile.codec, VIDEO_EXPORT_TEXT_PRESET, preset, VIDEO_EXPORT_TEXT_CRF, crf, VIDEO_EXPORT_TEXT_PIX_FMT, pixelFormat, ...keyframeArgs, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
+  if (isVertical916 && (config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND) === ShortsReframeMode.BLUR_BACKGROUND) {
+    const postFilter = `${visualFilter ? VIDEO_EXPORT_TEMPLATE_SYMBOL_10(visualFilter) : ""},${VIDEO_EXPORT_AI_CLIP_FILTERS.FPS(fps)}`;
+    const filterComplex = VIDEO_EXPORT_TEMPLATE_0_V_SCALE_FORCE_ORIGINAL_ASPECT(`${width}`, `${height}`, `${width}`, `${height}`, `${width}`, `${height}`, postFilter, `${pixelFormat}`);
+    return [VIDEO_EXPORT_TEXT_I, clipPath, VIDEO_EXPORT_TEXT_FILTER_COMPLEX, filterComplex, VIDEO_EXPORT_TEXT_MAP, VIDEO_EXPORT_TEXT_VOUT, ...encodeArgs];
+  }
+  const filters = [buildCoverFilter(width, height)];
+  if (visualFilter) filters.push(visualFilter);
+  filters.push(VIDEO_EXPORT_AI_CLIP_FILTERS.FPS(fps), VIDEO_EXPORT_TEXT_SETSAR_1, VIDEO_EXPORT_TEMPLATE_FORMAT(`${pixelFormat}`));
+  return [VIDEO_EXPORT_TEXT_I, clipPath, VIDEO_EXPORT_TEXT_VF, _.join(filters, VIDEO_EXPORT_TEXT_SYMBOL_14), ...encodeArgs];
+};
+const buildAiClipAudioExtractArgs = (clipPath: string, durationSeconds: number, keepAudio: boolean, outputPath: string): string[] => {
+  const sampleRate = VIDEO_EXPORT_CONSTANTS.AUDIO_SAMPLE_RATE;
+  if (!keepAudio) {
+    return [VIDEO_EXPORT_TEXT_F, VIDEO_EXPORT_AI_CLIP_CONSTANTS.LAVFI, VIDEO_EXPORT_TEXT_I, VIDEO_EXPORT_AI_CLIP_FILTERS.SILENCE_SOURCE(sampleRate), VIDEO_EXPORT_TEXT_T, durationSeconds.toFixed(6), VIDEO_EXPORT_TEXT_VN, VIDEO_EXPORT_TEXT_C_A, VIDEO_EXPORT_CONSTANTS.AUDIO_CODEC, VIDEO_EXPORT_TEXT_B_A, VIDEO_EXPORT_CONSTANTS.AUDIO_BITRATE, VIDEO_EXPORT_TEXT_Y, outputPath];
+  }
+  const fadeSeconds = Math.min(VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_FADE_SECONDS, durationSeconds * 0.2);
+  const filter = VIDEO_EXPORT_AI_CLIP_FILTERS.CLIP_AUDIO(sampleRate, durationSeconds, durationSeconds - fadeSeconds, fadeSeconds);
+  return [VIDEO_EXPORT_TEXT_I, clipPath, VIDEO_EXPORT_TEXT_FILTER_COMPLEX, `[0:a]${filter}${VIDEO_EXPORT_TEXT_AOUT}`, VIDEO_EXPORT_TEXT_MAP, VIDEO_EXPORT_TEXT_AOUT, VIDEO_EXPORT_TEXT_T, durationSeconds.toFixed(6), VIDEO_EXPORT_TEXT_VN, VIDEO_EXPORT_TEXT_C_A, VIDEO_EXPORT_CONSTANTS.AUDIO_CODEC, VIDEO_EXPORT_TEXT_B_A, VIDEO_EXPORT_CONSTANTS.AUDIO_BITRATE, VIDEO_EXPORT_TEXT_Y, outputPath];
+};
+const buildAiClipAudioLoopMixArgs = (cycleAudioPath: string, musicAudioPath: string, totalSeconds: number, outputPath: string): string[] => [
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS,
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS,
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.STREAM_LOOP,
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.LOOP_FOREVER,
+  VIDEO_EXPORT_TEXT_I,
+  cycleAudioPath,
+  VIDEO_EXPORT_TEXT_I,
+  musicAudioPath,
+  VIDEO_EXPORT_TEXT_FILTER_COMPLEX,
+  VIDEO_EXPORT_AI_CLIP_FILTERS.AMIX_TWO,
+  VIDEO_EXPORT_TEXT_MAP,
+  VIDEO_EXPORT_TEXT_AOUT,
+  VIDEO_EXPORT_TEXT_T,
+  totalSeconds.toFixed(3),
+  VIDEO_EXPORT_TEXT_VN,
+  VIDEO_EXPORT_TEXT_C_A,
+  VIDEO_EXPORT_CONSTANTS.AUDIO_CODEC,
+  VIDEO_EXPORT_TEXT_B_A,
+  VIDEO_EXPORT_CONSTANTS.AUDIO_BITRATE,
+  VIDEO_EXPORT_TEXT_Y,
+  outputPath,
+];
+const buildAiClipCycleXfadeArgs = (normalizedPaths: string[], clipFrames: number[], transitionFrames: number, transition: VideoExportTransition, profile: EncodeProfile, outputPath: string): string[] => {
+  const inputArgs = _.flatMap(normalizedPaths, (normalizedPath) => [VIDEO_EXPORT_TEXT_I, normalizedPath]);
+  const pixelFormat = VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT;
+  const { fps } = profile;
+  const transitionSeconds = transitionFrames / fps;
+  const prepared: string[] = [
+    VIDEO_EXPORT_AI_CLIP_FILTERS.TRIM_VIDEO_SEGMENT(0, transitionFrames, clipFrames[0], fps, pixelFormat, 0),
+    ..._.map(_.range(1, normalizedPaths.length), (index) => VIDEO_EXPORT_AI_CLIP_FILTERS.TRIM_VIDEO_SEGMENT(index, 0, clipFrames[index], fps, pixelFormat, index)),
+    VIDEO_EXPORT_AI_CLIP_FILTERS.TRIM_VIDEO_SEGMENT(0, 0, transitionFrames, fps, pixelFormat, normalizedPaths.length),
+  ];
+  const segmentDurations: number[] = [
+    (clipFrames[0] - transitionFrames) / fps,
+    ..._.map(_.range(1, normalizedPaths.length), (index) => clipFrames[index] / fps),
+    transitionSeconds,
+  ];
+  let cumulativeOffset = 0;
+  const totalStreams = normalizedPaths.length + 1;
+  const transitions = _.map(_.range(1, totalStreams), (index) => {
+    cumulativeOffset += segmentDurations[index - 1] - transitionSeconds;
     const previousLabel = index === 1 ? VIDEO_EXPORT_TEXT_S0 : VIDEO_EXPORT_TEMPLATE_X(`${index - 1}`);
-    const outputLabel = index === segmentPaths.length - 1 ? VIDEO_EXPORT_TEXT_VOUT : VIDEO_EXPORT_TEMPLATE_X(`${index}`);
-    const offset = (index * (plan.slideSeconds - plan.transitionSeconds)).toFixed(3);
-    return VIDEO_EXPORT_TEMPLATE_S_XFADE_TRANSITION_DURATION_OFFSET(`${previousLabel}`, `${index}`, `${resolveTransition(transition, index - 1)}`, `${plan.transitionSeconds.toFixed(3)}`, `${offset}`, `${outputLabel}`);
+    const outputLabel = index === totalStreams - 1 ? VIDEO_EXPORT_TEXT_VOUT : VIDEO_EXPORT_TEMPLATE_X(`${index}`);
+    return VIDEO_EXPORT_TEMPLATE_S_XFADE_TRANSITION_DURATION_OFFSET(`${previousLabel}`, `${index}`, `${resolveTransition(transition, index - 1)}`, `${transitionSeconds.toFixed(3)}`, `${Math.max(0.05, cumulativeOffset).toFixed(3)}`, `${outputLabel}`);
   });
   const filter = _.join([...prepared, ...transitions], VIDEO_EXPORT_TEXT_SYMBOL_15);
   return [
     ...inputArgs,
-    VIDEO_EXPORT_TEXT_I,
-    audioPath,
     VIDEO_EXPORT_TEXT_FILTER_COMPLEX,
     filter,
     VIDEO_EXPORT_TEXT_MAP,
     VIDEO_EXPORT_TEXT_VOUT,
-    VIDEO_EXPORT_TEXT_MAP,
-    VIDEO_EXPORT_TEMPLATE_A_2(`${segmentPaths.length}`),
     VIDEO_EXPORT_TEXT_C_V,
     profile.codec,
     VIDEO_EXPORT_TEXT_PRESET,
@@ -301,31 +421,17 @@ const buildXfadeMergeArgs = (segmentPaths: string[], audioPath: string, plan: Vi
     VIDEO_EXPORT_TEXT_CRF,
     profile.crf,
     VIDEO_EXPORT_TEXT_PIX_FMT,
-    VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT,
+    pixelFormat,
     VIDEO_EXPORT_TEXT_R,
-    `${profile.fps}`,
-    VIDEO_EXPORT_TEXT_C_A,
-    VIDEO_EXPORT_TEXT_COPY,
-    VIDEO_EXPORT_TEXT_SHORTEST,
-    VIDEO_EXPORT_TEXT_MOVFLAGS,
-    VIDEO_EXPORT_TEXT_FASTSTART,
+    `${fps}`,
+    VIDEO_EXPORT_TEXT_AN,
     VIDEO_EXPORT_TEXT_Y,
     outputPath,
   ];
 };
-const buildAiClipNormalizeArgs = (clipPath: string, profile: EncodeProfile, outputPath: string): string[] => {
-  const filters = [buildCoverFilter(profile.width, profile.height), VIDEO_EXPORT_AI_CLIP_FILTERS.FPS(profile.fps), VIDEO_EXPORT_TEXT_SETSAR_1, VIDEO_EXPORT_TEMPLATE_FORMAT(`${VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT}`)];
-  return [VIDEO_EXPORT_TEXT_I, clipPath, VIDEO_EXPORT_TEXT_VF, _.join(filters, VIDEO_EXPORT_TEXT_SYMBOL_14), VIDEO_EXPORT_TEXT_R, `${profile.fps}`, VIDEO_EXPORT_TEXT_C_V, profile.codec, VIDEO_EXPORT_TEXT_PRESET, profile.preset, VIDEO_EXPORT_TEXT_CRF, profile.crf, VIDEO_EXPORT_TEXT_PIX_FMT, VIDEO_EXPORT_CONSTANTS.PIXEL_FORMAT, VIDEO_EXPORT_TEXT_AN, VIDEO_EXPORT_TEXT_Y, outputPath];
-};
-const buildAiClipLoopArgs = (listPath: string, audioPath: string, totalSeconds: number, outputPath: string): string[] => [
-  VIDEO_EXPORT_AI_CLIP_CONSTANTS.STREAM_LOOP,
-  VIDEO_EXPORT_AI_CLIP_CONSTANTS.LOOP_FOREVER,
-  VIDEO_EXPORT_TEXT_F,
-  VIDEO_EXPORT_TEXT_CONCAT,
-  VIDEO_EXPORT_TEXT_SAFE,
-  VIDEO_EXPORT_TEXT_0,
+const buildAiClipSingleMuxArgs = (videoPath: string, audioPath: string, totalSeconds: number, outputPath: string): string[] => [
   VIDEO_EXPORT_TEXT_I,
-  listPath,
+  videoPath,
   VIDEO_EXPORT_TEXT_I,
   audioPath,
   VIDEO_EXPORT_TEXT_MAP,
@@ -344,28 +450,90 @@ const buildAiClipLoopArgs = (listPath: string, audioPath: string, totalSeconds: 
   VIDEO_EXPORT_TEXT_Y,
   outputPath,
 ];
-type AiClipRenderParams = { clipPaths: string[]; audioPath: string; totalSeconds: number; profile: EncodeProfile; workDir: string; outputPath: string; signal?: AbortSignal; onNormalize?: (index: number) => void; onLoopSeconds?: (seconds: number) => void };
+const buildStreamLoopMuxArgs = (cycleVideoPath: string, audioPath: string, totalSeconds: number, outputPath: string): string[] => [
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.FFLAGS,
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.GENPTS,
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.STREAM_LOOP,
+  VIDEO_EXPORT_AI_CLIP_CONSTANTS.LOOP_FOREVER,
+  VIDEO_EXPORT_TEXT_I,
+  cycleVideoPath,
+  VIDEO_EXPORT_TEXT_I,
+  audioPath,
+  VIDEO_EXPORT_TEXT_MAP,
+  VIDEO_EXPORT_TEXT_0_V,
+  VIDEO_EXPORT_TEXT_MAP,
+  VIDEO_EXPORT_TEXT_1_A,
+  VIDEO_EXPORT_TEXT_C_V,
+  VIDEO_EXPORT_TEXT_COPY,
+  VIDEO_EXPORT_TEXT_C_A,
+  VIDEO_EXPORT_TEXT_COPY,
+  VIDEO_EXPORT_TEXT_T,
+  totalSeconds.toFixed(3),
+  VIDEO_EXPORT_TEXT_SHORTEST,
+  VIDEO_EXPORT_TEXT_MOVFLAGS,
+  VIDEO_EXPORT_TEXT_FASTSTART,
+  VIDEO_EXPORT_TEXT_Y,
+  outputPath,
+];
+type AiClipRenderParams = { clipPaths: string[]; clipKeepAudio?: boolean[]; audioPath: string; totalSeconds: number; config: VideoExportConfig; profile: EncodeProfile; workDir: string; outputPath: string; signal?: AbortSignal; onNormalize?: (index: number) => void; onLoopSeconds?: (seconds: number) => void };
 const renderAiClipOutput = async (params: AiClipRenderParams): Promise<void> => {
-  const { clipPaths, audioPath, totalSeconds, profile, workDir, outputPath, signal, onNormalize, onLoopSeconds } = params;
+  const { clipPaths, clipKeepAudio = [], audioPath, totalSeconds, config, profile, workDir, outputPath, signal, onNormalize, onLoopSeconds } = params;
+  const [probedDurations, probedHasAudio] = await Promise.all([
+    Promise.all(_.map(clipPaths, probeMediaDurationSeconds)),
+    Promise.all(_.map(clipPaths, probeMediaHasAudio)),
+  ]);
+  throwIfAborted(signal);
+  const rawClipSeconds = _.map(probedDurations, (sec) => (sec >= VIDEO_EXPORT_AI_CLIP_CONSTANTS.MIN_CLIP_SECONDS ? sec : VIDEO_EXPORT_AI_CLIP_CONSTANTS.DEFAULT_CLIP_SECONDS));
+  const effectiveKeepAudio = _.map(clipPaths, (_clipPath, index) => Boolean(clipKeepAudio[index]) && Boolean(probedHasAudio[index]));
+  const anyKeepAudio = _.some(effectiveKeepAudio, Boolean);
+  const minClipSeconds = _.min(rawClipSeconds) ?? VIDEO_EXPORT_AI_CLIP_CONSTANTS.DEFAULT_CLIP_SECONDS;
+  const desiredTransitionSeconds = config.transition === VideoExportTransition.NONE ? VIDEO_EXPORT_AI_CLIP_CONSTANTS.DEFAULT_CROSSFADE_SECONDS : config.transitionSeconds;
+  const clampedTransitionSeconds = _.clamp(desiredTransitionSeconds, VIDEO_EXPORT_AI_CLIP_CONSTANTS.MIN_CROSSFADE_SECONDS, Math.min(VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_CROSSFADE_SECONDS, minClipSeconds * VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_CROSSFADE_CLIP_RATIO));
+  const transitionFrames = Math.max(2, Math.round(clampedTransitionSeconds * profile.fps));
+  const actualTransitionSeconds = transitionFrames / profile.fps;
+  const actualTransition = config.transition === VideoExportTransition.NONE ? VideoExportTransition.FADE : config.transition;
+  const clipFrames = _.map(rawClipSeconds, (sec) => Math.max(transitionFrames * 3, Math.round(sec * profile.fps)));
+  const clipSeconds = _.map(clipFrames, (frames) => frames / profile.fps);
+  const needsLoopOrTransition = clipPaths.length > 1 || totalSeconds > clipSeconds[0] + 0.05;
   const normalizedPaths: string[] = [];
   for (const [index, clipPath] of clipPaths.entries()) {
     throwIfAborted(signal);
     onNormalize?.(index);
     const normalizedPath = path.join(workDir, `${VIDEO_EXPORT_AI_CLIP_CONSTANTS.NORMALIZED_PREFIX}${_.padStart(`${index}`, 4, VIDEO_EXPORT_TEXT_0)}${VIDEO_EXPORT_CONSTANTS.EXT_MP4}`);
-    await runFfmpeg(buildAiClipNormalizeArgs(clipPath, profile, normalizedPath), { signal });
+    await runFfmpeg(buildAiClipNormalizeArgs(clipPath, index, clipFrames[index], transitionFrames, needsLoopOrTransition, config, profile, normalizedPath), { signal });
     normalizedPaths.push(normalizedPath);
   }
   throwIfAborted(signal);
-  const listPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.LIST_FILE_NAME);
-  await fs.promises.writeFile(
-    listPath,
-    _.join(
-      _.map(normalizedPaths, (normalizedPath) => VIDEO_EXPORT_TEMPLATE_FILE(`${escapeConcatPath(normalizedPath)}`)),
-      RT_SHARED.SYMBOL_01BA47,
-    ),
-    VIDEO_EXPORT_TEXT_UTF8,
-  );
-  await runFfmpeg(buildAiClipLoopArgs(listPath, audioPath, totalSeconds, outputPath), { signal, onProgressSeconds: onLoopSeconds });
+  let finalAudioPath = audioPath;
+  if (anyKeepAudio) {
+    const clipAudioPaths: string[] = [];
+    for (const [index, clipPath] of clipPaths.entries()) {
+      throwIfAborted(signal);
+      const stepSeconds = needsLoopOrTransition ? Math.max(0.5, clipSeconds[index] - actualTransitionSeconds) : clipSeconds[index];
+      const clipAudioPath = path.join(workDir, `${VIDEO_EXPORT_AI_CLIP_CONSTANTS.NORMALIZED_AUDIO_PREFIX}${_.padStart(`${index}`, 4, VIDEO_EXPORT_TEXT_0)}${VIDEO_EXPORT_CONSTANTS.EXT_M4A}`);
+      await runFfmpeg(buildAiClipAudioExtractArgs(clipPath, stepSeconds, effectiveKeepAudio[index], clipAudioPath), { signal });
+      clipAudioPaths.push(clipAudioPath);
+    }
+    let cycleAudioPath = clipAudioPaths[0];
+    if (clipAudioPaths.length > 1) {
+      const audioListPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUDIO_LIST_FILE_NAME);
+      await writeConcatList(audioListPath, clipAudioPaths);
+      cycleAudioPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.CYCLE_AUDIO_FILE_NAME);
+      await runFfmpeg(buildAudioConcatCopyArgs(audioListPath, cycleAudioPath), { signal });
+    }
+    const mixedAudioPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.MIXED_AUDIO_FILE_NAME);
+    await runFfmpeg(buildAiClipAudioLoopMixArgs(cycleAudioPath, audioPath, totalSeconds, mixedAudioPath), { signal });
+    finalAudioPath = mixedAudioPath;
+  }
+  throwIfAborted(signal);
+  if (!needsLoopOrTransition) {
+    await runFfmpeg(buildAiClipSingleMuxArgs(normalizedPaths[0], finalAudioPath, totalSeconds, outputPath), { signal, onProgressSeconds: onLoopSeconds });
+    return;
+  }
+  const cycleVideoPath = path.join(workDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.CYCLE_VIDEO_FILE_NAME);
+  await runFfmpeg(buildAiClipCycleXfadeArgs(normalizedPaths, clipFrames, transitionFrames, actualTransition, profile, cycleVideoPath), { signal });
+  throwIfAborted(signal);
+  await runFfmpeg(buildStreamLoopMuxArgs(cycleVideoPath, finalAudioPath, totalSeconds, outputPath), { signal, onProgressSeconds: onLoopSeconds });
 };
 const splitSegmentFrames = (totalSeconds: number, segmentCount: number, transitionFrames: number, fps: number): number[] => {
   const overlapFrames = (segmentCount - 1) * transitionFrames;
@@ -438,7 +606,7 @@ const removePathSafely = async (targetPath: string): Promise<void> => {
 };
 const toPercent = (base: number, weight: number, ratio: number): number => Math.round(base + weight * _.clamp(ratio, 0, 1));
 export const renderVideoExport = async (params: RenderVideoExportParams): Promise<{ durationSeconds: number }> => {
-  const { audioPaths, imagePaths, aiClipPaths = [], config, outputPath, tempDir, quality, signal, onProgress } = params;
+  const { audioPaths, imagePaths, aiClipPaths = [], aiClipKeepAudio = [], config, outputPath, tempDir, quality, signal, onProgress } = params;
   const isPreview = quality === VideoExportQuality.PREVIEW;
   const profile = resolveEncodeProfile(config, quality);
   const notify = (stage: VideoExportJobStage, percent: number, message: string) => onProgress?.(stage, _.clamp(percent, 0, 100), message);
@@ -451,20 +619,17 @@ export const renderVideoExport = async (params: RenderVideoExportParams): Promis
     await fs.promises.mkdir(path.dirname(outputPath), { recursive: true });
     notify(VideoExportJobStage.PREPARING, 0, VIDEO_EXPORT_SERVER_TEXTS.MSG_PREPARING);
     const audioOutputPath = path.join(tempDir, VIDEO_EXPORT_CONSTANTS.AUDIO_FILE_NAME);
-    const sourceAudioPaths = isPreview ? _.take(audioPaths, 1) : audioPaths;
-    const audioLimit = isPreview ? VIDEO_EXPORT_CONSTANTS.PREVIEW_MAX_SECONDS : undefined;
-    const knownDurations = await Promise.all(_.map(sourceAudioPaths, probeMediaDurationSeconds));
-    const expectedAudioSeconds = Math.min(_.sum(knownDurations), audioLimit ?? Number.POSITIVE_INFINITY);
     notify(VideoExportJobStage.AUDIO, 0, VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO);
-    await runFfmpeg(buildAudioArgs(sourceAudioPaths, audioOutputPath, audioLimit), { signal, onProgressSeconds: (seconds) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, expectedAudioSeconds > 0 ? seconds / expectedAudioSeconds : 0), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO) });
+    const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal, (ratio) => notify(VideoExportJobStage.AUDIO, toPercent(0, audioWeight, ratio), VIDEO_EXPORT_SERVER_TEXTS.MSG_AUDIO));
     throwIfAborted(signal);
-    const totalSeconds = (await probeMediaDurationSeconds(audioOutputPath)) || expectedAudioSeconds;
     if (!(totalSeconds > 0)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_AUDIO_DURATION);
     if (!_.isEmpty(aiClipPaths)) {
       await renderAiClipOutput({
         clipPaths: aiClipPaths,
+        clipKeepAudio: aiClipKeepAudio,
         audioPath: audioOutputPath,
         totalSeconds,
+        config,
         profile,
         workDir: tempDir,
         outputPath,
@@ -544,9 +709,9 @@ export const renderVideoExport = async (params: RenderVideoExportParams): Promis
   }
 };
 export type MultiPreviewOutputItem = { aspectRatio: VideoExportAspectRatio; outputPath: string };
-export type RenderMultiPreviewParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; config: VideoExportConfig; outputs: MultiPreviewOutputItem[]; tempDir: string; signal?: AbortSignal };
+export type RenderMultiPreviewParams = { audioPaths: string[]; imagePaths: string[]; aiClipPaths?: string[]; aiClipKeepAudio?: boolean[]; config: VideoExportConfig; outputs: MultiPreviewOutputItem[]; tempDir: string; signal?: AbortSignal };
 export const renderVideoExportMultiPreviews = async (params: RenderMultiPreviewParams): Promise<Record<string, { durationSeconds: number }>> => {
-  const { audioPaths, imagePaths, aiClipPaths = [], config, outputs, tempDir, signal } = params;
+  const { audioPaths, imagePaths, aiClipPaths = [], aiClipKeepAudio = [], config, outputs, tempDir, signal } = params;
   const completedOutputs: string[] = [];
   try {
     await fs.promises.mkdir(tempDir, { recursive: true });
@@ -554,16 +719,12 @@ export const renderVideoExportMultiPreviews = async (params: RenderMultiPreviewP
       await fs.promises.mkdir(path.dirname(item.outputPath), { recursive: true });
     }
     const audioOutputPath = path.join(tempDir, VIDEO_EXPORT_CONSTANTS.AUDIO_FILE_NAME);
-    const sourceAudioPaths = _.take(audioPaths, 1);
-    const audioLimit = VIDEO_EXPORT_CONSTANTS.PREVIEW_MAX_SECONDS;
-    const knownDurations = await Promise.all(_.map(sourceAudioPaths, probeMediaDurationSeconds));
-    const expectedAudioSeconds = Math.min(_.sum(knownDurations), audioLimit ?? Number.POSITIVE_INFINITY);
-    await runFfmpeg(buildAudioArgs(sourceAudioPaths, audioOutputPath, audioLimit), { signal });
+    const totalSeconds = await prepareConcatenatedAudio(audioPaths, audioOutputPath, tempDir, signal);
     throwIfAborted(signal);
-    const totalSeconds = (await probeMediaDurationSeconds(audioOutputPath)) || expectedAudioSeconds;
     if (!(totalSeconds > 0)) throw new Error(VIDEO_EXPORT_SERVER_TEXTS.ERR_AUDIO_DURATION);
     const sourceImagePaths = _.take(imagePaths, VIDEO_EXPORT_CONSTANTS.PREVIEW_MAX_IMAGES);
-    const plan = computeVideoExportSlidePlan(totalSeconds, sourceImagePaths.length, { ...config, slideMode: VideoExportSlideMode.EVEN });
+    const previewCycleSeconds = Math.min(totalSeconds, VIDEO_EXPORT_CONSTANTS.PREVIEW_MAX_SECONDS);
+    const plan = computeVideoExportSlidePlan(previewCycleSeconds, sourceImagePaths.length, { ...config, slideMode: VideoExportSlideMode.EVEN });
     const results: Record<string, { durationSeconds: number }> = {};
     await Promise.all(
       _.map(outputs, async (item) => {
@@ -574,7 +735,7 @@ export const renderVideoExportMultiPreviews = async (params: RenderMultiPreviewP
         const profile = resolveEncodeProfile(aspectConfig, VideoExportQuality.PREVIEW);
         const isVertical916 = item.aspectRatio === VideoExportAspectRatio.VERTICAL_9_16;
         if (!_.isEmpty(aiClipPaths)) {
-          await renderAiClipOutput({ clipPaths: aiClipPaths, audioPath: audioOutputPath, totalSeconds, profile, workDir: aspectTempDir, outputPath: item.outputPath, signal });
+          await renderAiClipOutput({ clipPaths: aiClipPaths, clipKeepAudio: aiClipKeepAudio, audioPath: audioOutputPath, totalSeconds, config: aspectConfig, profile, workDir: aspectTempDir, outputPath: item.outputPath, signal });
           throwIfAborted(signal);
           completedOutputs.push(item.outputPath);
           results[item.aspectRatio] = { durationSeconds: (await probeMediaDurationSeconds(item.outputPath)) || totalSeconds };
@@ -589,20 +750,13 @@ export const renderVideoExportMultiPreviews = async (params: RenderMultiPreviewP
           segmentPaths.push(segmentPath);
         }
         throwIfAborted(signal);
-        if (plan.transitionSeconds > 0 && segmentPaths.length > 1) {
-          await runFfmpeg(buildXfadeMergeArgs(segmentPaths, audioOutputPath, plan, config.transition, profile, item.outputPath), { signal });
-        } else {
-          const listPath = path.join(aspectTempDir, VIDEO_EXPORT_CONSTANTS.CONCAT_LIST_FILE_NAME);
-          await fs.promises.writeFile(
-            listPath,
-            _.join(
-              _.map(segmentPaths, (segmentPath) => VIDEO_EXPORT_TEMPLATE_FILE(`${escapeConcatPath(segmentPath)}`)),
-              RT_SHARED.SYMBOL_01BA47,
-            ),
-            VIDEO_EXPORT_TEXT_UTF8,
-          );
-          await runFfmpeg(buildConcatMergeArgs(listPath, audioOutputPath, item.outputPath), { signal });
-        }
+        const transitionFrames = Math.max(2, Math.round((plan.transitionSeconds > 0 ? plan.transitionSeconds : VIDEO_EXPORT_AI_CLIP_CONSTANTS.DEFAULT_CROSSFADE_SECONDS) * profile.fps));
+        const segmentFrames = _.map(segmentPaths, () => Math.max(transitionFrames * 3, Math.round(plan.slideSeconds * profile.fps)));
+        const actualTransition = config.transition === VideoExportTransition.NONE ? VideoExportTransition.FADE : config.transition;
+        const cycleVideoPath = path.join(aspectTempDir, VIDEO_EXPORT_AI_CLIP_CONSTANTS.CYCLE_VIDEO_FILE_NAME);
+        await runFfmpeg(buildAiClipCycleXfadeArgs(segmentPaths, segmentFrames, transitionFrames, actualTransition, profile, cycleVideoPath), { signal });
+        throwIfAborted(signal);
+        await runFfmpeg(buildStreamLoopMuxArgs(cycleVideoPath, audioOutputPath, totalSeconds, item.outputPath), { signal });
         throwIfAborted(signal);
         const durationSeconds = (await probeMediaDurationSeconds(item.outputPath)) || totalSeconds;
         completedOutputs.push(item.outputPath);

@@ -67,6 +67,7 @@ import {
   PanelLeft,
   PanelRight,
   PartyPopper,
+  RotateCcw,
   RotateCw,
   Rows3,
   Shuffle,
@@ -385,10 +386,17 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         <div className={cn(RT_VIDEO_EXPORT.P_2_5_ROUNDED_XL_BG_WHITE_DARK_BG_SLATE)}>
           <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
             <span className={cn(RT_VIDEO_EXPORT.TEXT_SLATE_700_DARK_TEXT_SLATE_300_FONT_BOLD_TRUNCATE)}>{job.status === VideoExportJobStatus.ERROR ? job.error || text.EXPORT_ERROR : job.message || text.EXPORTING_BTN}</span>
-            <span className={cn(RT_VIDEO_EXPORT.FONT_BOLD_TEXT_PURPLE_700_DARK_TEXT_PURPLE_300_SHRINK)}>
-              {progressPercent}
-              {VIDEO_EXPORT_TEXT_SYMBOL_2}
-            </span>
+            {!isExporting && (job.status === VideoExportJobStatus.ERROR || job.status === VideoExportJobStatus.CANCELLED) ? (
+              <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={!canStart} onClick={exporter.startExport} className={cn(RT_VIDEO_EXPORT.EXPORT_RETRY_INLINE_BTN)}>
+                <RotateCcw className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
+                <span>{text.AI_CLIP_RETRY_BTN}</span>
+              </Button>
+            ) : (
+              <span className={cn(RT_VIDEO_EXPORT.FONT_BOLD_TEXT_PURPLE_700_DARK_TEXT_PURPLE_300_SHRINK)}>
+                {progressPercent}
+                {VIDEO_EXPORT_TEXT_SYMBOL_2}
+              </span>
+            )}
           </div>
           <div className={cn(RT_VIDEO_EXPORT.W_FULL_BG_SLATE_100_DARK_BG_SLATE_950_ROUNDED)}>
             <div
@@ -410,8 +418,8 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
             "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !isExporting && canStart,
             "bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !isExporting && !canStart,
           })}>
-          {isExporting ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_4_H_4_ANIMATE_SPIN_SHRINK_0)} /> : <Clapperboard className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} />}
-          <span className={cn(RT_SHARED.TRUNCATE)}>{isExporting ? text.EXPORTING_BTN : text.EXPORT_BTN}</span>
+          {isExporting ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_4_H_4_ANIMATE_SPIN_SHRINK_0)} /> : job?.status === VideoExportJobStatus.ERROR ? <RotateCcw className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} /> : <Clapperboard className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} />}
+          <span className={cn(RT_SHARED.TRUNCATE)}>{isExporting ? text.EXPORTING_BTN : job?.status === VideoExportJobStatus.ERROR ? text.EXPORT_RETRY_BTN : text.EXPORT_BTN}</span>
         </Button>
         {isExporting && (
           <Button id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_STOP} variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={exporter.stopExport} className={cn(RT_SHARED.H_11_MIN_H_44PX_PX_4_ROUNDED_XL_BORDER)}>

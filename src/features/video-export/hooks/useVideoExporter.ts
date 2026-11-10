@@ -16,6 +16,7 @@ import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvide
 import { VideoExportAudioItem, VideoExportCancelTarget, VideoExportConfig, VideoExportImageItem, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportMultiPreviews, VideoExportPreviewResult, VideoExportResultItem, VideoExportSource, VideoExportSourceTab, VideoExportTransition } from "../types/videoExport.js";
 import { isAbortRequest, loadStoredResults, requestJson, saveStoredResults } from "../components/videoExportUtils.js";
 import { ShortsReframeMode } from "../../../types/shorts.js";
+import { VIDEO_EXPORT_AI_CLIP_CONSTANTS } from "../constants/videoExportAiClip.js";
 import { useVideoExportAiClips } from "./useVideoExportAiClips.js";
 type StoredSettings = Partial<VideoExportConfig> & {
   aiProvider?: AiPlanningFallbackProvider;
@@ -33,10 +34,18 @@ type StoredSettings = Partial<VideoExportConfig> & {
   savedPreview?: VideoExportPreviewResult | null;
   savedPreviews?: VideoExportMultiPreviews;
   savedPreviewSignature?: string;
+  savedLastJob?: VideoExportJobState | null;
 };
 type RankScore = { index: number; score: number; durationSeconds?: number };
 type MoveDirection = -1 | 1;
 const TERMINAL_STATUSES = [VideoExportJobStatus.COMPLETED, VideoExportJobStatus.ERROR, VideoExportJobStatus.CANCELLED];
+const normalizeStoredExportJob = (raw: VideoExportJobState | null | undefined, hasActiveJobId: boolean): VideoExportJobState | null => {
+  if (!raw || typeof raw !== "object") return null;
+  if (raw.status === VideoExportJobStatus.RENDERING && !hasActiveJobId) {
+    return { ...raw, status: VideoExportJobStatus.CANCELLED };
+  }
+  return raw;
+};
 const readStoredSettings = (): StoredSettings => jsonUtils.getItem<StoredSettings>(VIDEO_EXPORT_CONSTANTS.SETTINGS_STORAGE_KEY, {}) ?? {};
 const restoreConfig = (saved: StoredSettings): VideoExportConfig => resolveVideoExportConfig(saved, { forceEvenSlides: true });
 export function useVideoExporter(lang: Lang) {
@@ -69,14 +78,16 @@ export function useVideoExporter(lang: Lang) {
   });
   const [previewSignature, setPreviewSignature] = useState<string>(() => _.toString(initialSettings.savedPreviewSignature));
   const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
-  const [job, setJob] = useState<VideoExportJobState | null>(null);
+  const [previewError, setPreviewError] = useState<string>("");
   const [activeJobId, setActiveJobId] = useState<string>(_.toString(initialSettings.activeJobId));
+  const [job, setJob] = useState<VideoExportJobState | null>(() => normalizeStoredExportJob(initialSettings.savedLastJob, Boolean(initialSettings.activeJobId)));
   const [results, setResults] = useState<VideoExportResultItem[]>([]);
   const [resultsLoaded, setResultsLoaded] = useState<boolean>(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const rankAbortRef = useRef<AbortController | null>(null);
   const rankProjectIdRef = useRef<string>("");
   const previewAbortRef = useRef<AbortController | null>(null);
+  const lastAutoPreviewSignatureRef = useRef<string>("");
   const isMountedRef = useRef<boolean>(true);
   const selectedAudios = useMemo(() => _.filter(audios, (item) => _.includes(selectedAudioIds, item.id)), [audios, selectedAudioIds]);
   const selectedImages = useMemo(() => _.filter(images, (item) => _.includes(selectedImageIds, item.id)), [images, selectedImageIds]);
@@ -88,20 +99,21 @@ export function useVideoExporter(lang: Lang) {
   const hasVisuals = aiClips.enabled ? !_.isEmpty(aiClips.activeClipIds) : !_.isEmpty(selectedImages);
   const canRender = Boolean(source) && !_.isEmpty(selectedAudios) && hasVisuals && !aiClips.isGenerating;
   const preview = useMemo(() => previews[config.aspectRatio] ?? null, [previews, config.aspectRatio]);
-  const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, ...config }), [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, config]);
+  const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, aiClipAudioIds: aiClips.activeClipAudioIds, ...config }), [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, aiClips.activeClipAudioIds, config]);
   const currentPreviewSignature = useMemo(
-    () => stringifyJson({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: config.effect, transition: config.transition, transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds }),
-    [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, config.reframeMode, config.effect, config.transition, config.transitionSeconds],
+    () => stringifyJson({ token: source?.token ?? "", aspectRatio: config.aspectRatio, totalAudioSeconds: Math.round(totalAudioSeconds), audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, aiClipAudioIds: aiClips.activeClipAudioIds, reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: config.effect, transition: config.transition, transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds }),
+    [source?.token, config.aspectRatio, totalAudioSeconds, selectedAudios, selectedImages, aiClips.activeClipIds, aiClips.activeClipAudioIds, config.reframeMode, config.effect, config.transition, config.transitionSeconds],
   );
   const isPreviewOutdated = useMemo(() => {
     if (!preview) return false;
+    if (totalAudioSeconds > 0 && Math.abs((preview.durationSeconds || 0) - totalAudioSeconds) > 2) return true;
     if (!previewSignature) return true;
     try {
       const normalize = (raw: any) => {
         if (!raw || typeof raw !== VIDEO_EXPORT_TEXT_OBJECT) return {};
         const audios = Array.isArray(raw.audioIndexes) ? raw.audioIndexes : Array.isArray(raw.audioIds) ? raw.audioIds : [];
         const imgs = Array.isArray(raw.imageIndexes) ? raw.imageIndexes : Array.isArray(raw.imageIds) ? raw.imageIds : [];
-        return { token: _.toString(raw.token), audioIndexes: audios, imageIndexes: imgs, aiClipIds: Array.isArray(raw.aiClipIds) ? raw.aiClipIds : [], reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: _.toString(raw.effect), transition: _.toString(raw.transition), transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1) };
+        return { token: _.toString(raw.token), aspectRatio: _.toString(raw.aspectRatio), totalAudioSeconds: Number(raw.totalAudioSeconds ?? 0), audioIndexes: audios, imageIndexes: imgs, aiClipIds: Array.isArray(raw.aiClipIds) ? raw.aiClipIds : [], aiClipAudioIds: Array.isArray(raw.aiClipAudioIds) ? raw.aiClipAudioIds : [], reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: _.toString(raw.effect), transition: _.toString(raw.transition), transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1) };
       };
       const savedObj = normalize(parseJson(previewSignature));
       const currentObj = normalize(parseJson(currentPreviewSignature));
@@ -109,7 +121,7 @@ export function useVideoExporter(lang: Lang) {
     } catch {
       return previewSignature !== currentPreviewSignature;
     }
-  }, [preview, previewSignature, currentPreviewSignature]);
+  }, [preview, totalAudioSeconds, previewSignature, currentPreviewSignature]);
   useEffect(() => {
     isMountedRef.current = true;
     loadStoredResults().then((items) => {
@@ -216,8 +228,9 @@ export function useVideoExporter(lang: Lang) {
       savedPreview: preview,
       savedPreviews: previews,
       savedPreviewSignature: previewSignature,
+      savedLastJob: job,
     });
-  }, [sourceLoaded, config, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, activeJobId, sourceTab, source?.folderPath, title, selectedAudioPaths, selectedImagePaths, savedAudioOrder, savedAudioScores, preview, previews, previewSignature]);
+  }, [sourceLoaded, config, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, activeJobId, sourceTab, source?.folderPath, title, selectedAudioPaths, selectedImagePaths, savedAudioOrder, savedAudioScores, preview, previews, previewSignature, job]);
   useEffect(() => {
     if (resultsLoaded) void saveStoredResults(results);
   }, [results, resultsLoaded]);
@@ -348,15 +361,19 @@ export function useVideoExporter(lang: Lang) {
     const signature = currentPreviewSignature;
     previewAbortRef.current = abortController;
     setIsPreviewing(true);
+    setPreviewError("");
     try {
       const data = await requestJson<{ preview?: VideoExportPreviewResult; previews?: VideoExportMultiPreviews }>(API_ROUTES.VIDEO_EXPORT_PREVIEW, renderPayload, abortController.signal);
       const nextPreviews = data.previews || (data.preview ? { [config.aspectRatio]: data.preview } : {});
       if (_.isEmpty(nextPreviews)) throw new Error(text.PREVIEW_ERROR);
       setPreviews(nextPreviews);
       setPreviewSignature(signature);
+      setPreviewError("");
     } catch (error: any) {
       if (isAbortRequest(error) || abortController.signal.aborted || error?.status === 499) return;
-      toast.error(`${text.PREVIEW_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim());
+      const errMsg = `${text.PREVIEW_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim();
+      setPreviewError(errMsg);
+      toast.error(errMsg);
     } finally {
       if (previewAbortRef.current === abortController) {
         previewAbortRef.current = null;
@@ -364,6 +381,17 @@ export function useVideoExporter(lang: Lang) {
       }
     }
   }, [isPreviewing, ensureRenderable, currentPreviewSignature, renderPayload, config.aspectRatio, text]);
+  useEffect(() => {
+    const hasAnyPreview = !_.isEmpty(previews);
+    const shouldAutoPreview = sourceLoaded && canRender && !isPreviewing && !isExporting && (isPreviewOutdated || (!preview && (hasAnyPreview || (aiClips.enabled && !_.isEmpty(aiClips.activeClipIds)))));
+    if (!shouldAutoPreview) return;
+    if (lastAutoPreviewSignatureRef.current === currentPreviewSignature) return;
+    const timer = setTimeout(() => {
+      lastAutoPreviewSignatureRef.current = currentPreviewSignature;
+      void generatePreview();
+    }, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUTO_PREVIEW_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [sourceLoaded, canRender, isPreviewing, isExporting, isPreviewOutdated, preview, previews, aiClips.enabled, aiClips.activeClipIds, currentPreviewSignature, generatePreview]);
   const cancelPreview = useCallback(() => {
     previewAbortRef.current?.abort();
     previewAbortRef.current = null;
@@ -397,7 +425,7 @@ export function useVideoExporter(lang: Lang) {
       } catch (error: any) {
         if (error?.status === 404) {
           setActiveJobId("");
-          setJob(null);
+          setJob((prev) => (prev ? { ...prev, status: VideoExportJobStatus.ERROR, error: prev.error || text.EXPORT_ERROR } : null));
         }
       } finally {
         isPolling = false;
@@ -406,7 +434,7 @@ export function useVideoExporter(lang: Lang) {
     void poll();
     const timer = setInterval(poll, VIDEO_EXPORT_CONSTANTS.POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [activeJobId, handleJobUpdate]);
+  }, [activeJobId, handleJobUpdate, text.EXPORT_ERROR]);
   const startExport = useCallback(async () => {
     if (isExporting || !ensureRenderable()) return;
     try {
@@ -415,7 +443,9 @@ export function useVideoExporter(lang: Lang) {
       setJob({ jobId: data.jobId, status: VideoExportJobStatus.RENDERING, stage: VideoExportJobStage.PREPARING, percent: 0, message: "" });
       setActiveJobId(data.jobId);
     } catch (error: any) {
-      toast.error(`${text.EXPORT_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim());
+      const errMsg = `${text.EXPORT_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim();
+      setJob({ jobId: "", status: VideoExportJobStatus.ERROR, stage: VideoExportJobStage.PREPARING, percent: 0, message: text.EXPORT_ERROR, error: errMsg });
+      toast.error(errMsg);
     }
   }, [isExporting, ensureRenderable, renderPayload, title, source?.folderName, text]);
   const stopExport = useCallback(async () => {
@@ -474,6 +504,7 @@ export function useVideoExporter(lang: Lang) {
     aiChromeHeadless,
     isRanking,
     preview,
+    previewError,
     isPreviewing,
     isPreviewOutdated,
     job,

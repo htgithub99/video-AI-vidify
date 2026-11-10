@@ -123,6 +123,7 @@ export enum VideoExportAiClipJobStatus {
   ERROR = "error",
   CANCELLED = "cancelled",
 }
-export type VideoExportAiClip = { id: string; name: string; url: string; durationSeconds: number };
-export type VideoExportAiClipInput = { name: string; dataUrl: string };
-export type VideoExportAiClipJobState = { jobId: string; status: VideoExportAiClipJobStatus; done: number; total: number; message: string; clips: VideoExportAiClip[]; errors: string[]; stopping?: boolean };
+export type VideoExportAiClip = { id: string; sourceImageId?: string; name: string; url: string; durationSeconds: number; keepAudio?: boolean };
+export type VideoExportAiClipInput = { id?: string; name: string; dataUrl: string };
+export type VideoExportAiClipItemError = { imageId?: string; name: string; reason: string };
+export type VideoExportAiClipJobState = { jobId: string; status: VideoExportAiClipJobStatus; done: number; total: number; message: string; clips: VideoExportAiClip[]; errors: string[]; itemErrors?: VideoExportAiClipItemError[]; stopping?: boolean };

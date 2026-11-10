@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import _ from "lodash";
-import { generateImageWithPlaywright } from "../../../../server/services/imageGeneratorService.js";
+import { cancelAllActiveMediaGeneration, generateImageWithPlaywright } from "../../../../server/services/imageGeneratorService.js";
 import { getDataDirectory } from "../../../../server/utils/paths.js";
 import { logger } from "../../../../lib/logger.js";
 import { GenerateType, ImageGenerationMode, ImageGeneratorEngine, PromptInputMethod } from "../../../../types.js";
@@ -22,7 +22,10 @@ export const buildAiClipPrompt = (note: string): string => {
 };
 export const sanitizeAiClipInputs = (raw: unknown): VideoExportAiClipInput[] =>
   _.chain(_.isArray(raw) ? raw : [])
-    .map((item) => ({ name: path.basename(_.toString(_.get(item, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_NAME))), dataUrl: _.toString(_.get(item, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_DATA_URL)) }))
+    .map((item) => {
+      const id = _.trim(_.toString(_.get(item, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_ID)));
+      return { ...(id ? { id } : {}), name: path.basename(_.toString(_.get(item, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_NAME))), dataUrl: _.toString(_.get(item, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_DATA_URL)) };
+    })
     .filter((item) => VIDEO_EXPORT_AI_CLIP_REGEX.IMAGE_DATA_URL.test(item.dataUrl) && item.dataUrl.length <= VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_IMAGE_BYTES * 2)
     .take(VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_IMAGES)
     .value();
@@ -39,6 +42,11 @@ export const resolveAiClipPaths = async (rawIds: unknown): Promise<string[]> => 
   );
   if (!_.every(exists)) throw new Error(VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.ERR_CLIP_MISSING);
   return clipPaths;
+};
+export const resolveAiClipAudioFlags = (rawIds: unknown, rawAudioIds: unknown): boolean[] => {
+  const clipIds = _.filter(_.map(_.isArray(rawIds) ? rawIds : [], _.toString), (clipId) => VIDEO_EXPORT_AI_CLIP_REGEX.CLIP_ID.test(clipId));
+  const audioIdSet = new Set(_.filter(_.map(_.isArray(rawAudioIds) ? rawAudioIds : [], _.toString), (clipId) => VIDEO_EXPORT_AI_CLIP_REGEX.CLIP_ID.test(clipId)));
+  return _.map(clipIds, (clipId) => audioIdSet.has(clipId));
 };
 const toJobState = (job: AiClipJob): VideoExportAiClipJobState => ({ ..._.omit(job, [VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_CANCEL_REQUESTED]), stopping: job.cancelRequested && job.status === VideoExportAiClipJobStatus.RUNNING });
 const generateClip = async (job: AiClipJob, input: VideoExportAiClipInput, prompt: string, params: StartAiClipJobParams): Promise<VideoExportAiClip> => {
@@ -57,6 +65,7 @@ const generateClip = async (job: AiClipJob, input: VideoExportAiClipInput, promp
         imageGeneratorEngine: ImageGeneratorEngine.Veo3,
         generationMode: ImageGenerationMode.GeminiChat,
         promptInputMethod: PromptInputMethod.Paste,
+        preserveVideoAudio: true,
         referenceImages: [input.dataUrl],
       },
     }).catch((error: unknown) => ({ success: false, base64: null, warning: _.toString(_.get(error, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_MESSAGE)) }));
@@ -69,7 +78,7 @@ const generateClip = async (job: AiClipJob, input: VideoExportAiClipInput, promp
       const durationSeconds = await probeMediaDurationSeconds(clipPath);
       if (durationSeconds > 0) {
         logger.log(VIDEO_EXPORT_AI_CLIP_LOG.ITEM_DONE(job.jobId, input.name, clipPath));
-        return { id: clipId, name: input.name, url: `${VIDEO_EXPORT_AI_CLIP_CONSTANTS.URL_PREFIX}${clipId}${VIDEO_EXPORT_AI_CLIP_CONSTANTS.EXT_MP4}`, durationSeconds };
+        return { id: clipId, ...(input.id ? { sourceImageId: input.id } : {}), name: input.name, url: `${VIDEO_EXPORT_AI_CLIP_CONSTANTS.URL_PREFIX}${clipId}${VIDEO_EXPORT_AI_CLIP_CONSTANTS.EXT_MP4}`, durationSeconds, keepAudio: false };
       }
       await fs.promises.rm(clipPath, { force: true }).catch(() => undefined);
       lastError = VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.ERR_INVALID_VIDEO;
@@ -87,14 +96,20 @@ const runAiClipJob = async (job: AiClipJob, params: StartAiClipJobParams): Promi
       if (job.cancelRequested) break;
       job.message = VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_GENERATING(index + 1, job.total, input.name);
       try {
-        job.clips = [...job.clips, await generateClip(job, input, prompt, params)];
+        const clip = await generateClip(job, input, prompt, params);
+        if (job.cancelRequested) break;
+        job.clips = [...job.clips, clip];
       } catch (error) {
-        job.errors = [...job.errors, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.FAILED_ITEM(input.name, _.toString(_.get(error, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_MESSAGE)))];
+        if (job.cancelRequested) break;
+        const reason = _.toString(_.get(error, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FIELD_MESSAGE)) || VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.ERR_INVALID_VIDEO;
+        job.errors = [...job.errors, VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.FAILED_ITEM(input.name, reason)];
+        job.itemErrors = [...(job.itemErrors ?? []), { ...(input.id ? { imageId: input.id } : {}), name: input.name, reason }];
       }
       job.done = index + 1;
     }
     if (job.cancelRequested) _.assign(job, { status: VideoExportAiClipJobStatus.CANCELLED, message: VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_CANCELLED });
     else if (_.isEmpty(job.clips)) _.assign(job, { status: VideoExportAiClipJobStatus.ERROR, message: VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.ERR_ALL_FAILED });
+    else if (!_.isEmpty(job.errors)) _.assign(job, { status: VideoExportAiClipJobStatus.COMPLETED, message: VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_PARTIAL(job.clips.length, job.total, job.errors.length) });
     else _.assign(job, { status: VideoExportAiClipJobStatus.COMPLETED, message: VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_DONE(job.clips.length, job.total) });
     logger.log(VIDEO_EXPORT_AI_CLIP_LOG.DONE(job.jobId, job.clips.length, job.total));
   } finally {
@@ -120,6 +135,10 @@ export const getAiClipJobState = (jobId: string): VideoExportAiClipJobState | nu
 export const cancelAiClipJob = (jobId: string): VideoExportAiClipJobState | null => {
   const job = aiClipJobs.get(jobId || activeAiClipJobId || "");
   if (!job) return null;
-  if (job.status === VideoExportAiClipJobStatus.RUNNING) _.assign(job, { cancelRequested: true, message: VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_STOPPING });
+  if (job.status === VideoExportAiClipJobStatus.RUNNING) {
+    _.assign(job, { cancelRequested: true, status: VideoExportAiClipJobStatus.CANCELLED, message: VIDEO_EXPORT_AI_CLIP_SERVER_TEXTS.MSG_CANCELLED });
+    if (activeAiClipJobId === job.jobId) activeAiClipJobId = null;
+    void cancelAllActiveMediaGeneration().catch(() => undefined);
+  }
   return toJobState(job);
 };

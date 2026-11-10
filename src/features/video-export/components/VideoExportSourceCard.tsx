@@ -108,9 +108,10 @@ export const VideoExportSourceCard: FC<VideoExportSourceCardProps> = ({ exporter
         <VideoExportSectionHeading step={text.STEP_01} title={text.SOURCE_TITLE} icon={FolderOpen} titleClassName={cn(RT_SHARED.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100)} iconClassName={cn(RT_SHARED.W_3_5_H_3_5_TEXT_PURPLE_400)}>
           <span className={cn(RT_VIDEO_EXPORT.PX_1_5_PY_0_5_ROUNDED_TEXT_9PX_BG)}>{text.SOURCE_BADGE}</span>
         </VideoExportSectionHeading>
-        {(hasSource || isRestoring) && (
+        {hasSource && !isScanning && !isRestoring && (
           <Button id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_CHANGE_FOLDER} variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={exporter.selectFolder} disabled={isBusy || isRestoring} className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_SEMIBOLD_TEXT_PURPLE_400_HOVER_TEXT_PURPLE)}>
-            {isScanning || isRestoring ? "" : text.CHANGE_FOLDER_BTN}
+            <FolderOpen className={cn(RT_SHARED.W_3_5_H_3_5)} />
+            <span>{text.CHANGE_FOLDER_BTN}</span>
           </Button>
         )}
       </div>

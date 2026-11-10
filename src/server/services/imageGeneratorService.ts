@@ -3391,7 +3391,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
       }
       let reloadAttempts = SecurityConstants.ZERO;
       const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
-      while (reloadAttempts < maxReloadAttempts && !success) {
+      while (reloadAttempts < maxReloadAttempts && !success && !isMediaGenerationCancelled(generationRevision)) {
         reloadAttempts++;
         if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace(SOURCE_TEXT_0_2, _.toString(_.subtract(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT))));
@@ -3418,8 +3418,10 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
           await configureGeminiMediaInput(activePage!, visualConfig);
           if (forceSetting) lastGeminiConfigState = currentConfigState;
           await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
+          if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
           const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
           await waitForGeminiRequestSlot(reloadAttempts);
+          if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
           const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
           let clicked = false;
           try {
@@ -3446,6 +3448,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
           }
           if (!base64Result) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
         } catch (error: unknown) {
+          if (isMediaGenerationCancelled(generationRevision)) break;
           consecutiveGeminiErrors++;
           const errorMessage = getErrorMessage(error);
           appError(BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED.replace(SOURCE_TEXT_0_2, reloadAttempts.toString()).replace(SOURCE_TEXT_1_3, roomAttempts.toString()).replace(SOURCE_TEXT_2_2, errorMessage));
@@ -4418,6 +4421,7 @@ const tryDownloadViaButton = async (page: Page, container: Locator, requireVideo
   return null;
 };
 async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number) {
+  const generationRevision = mediaGenerationRevision;
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_WAITING_RESPONSE);
   await captureGeminiDomState(page, SOURCE_TEXT_WAITING_FOR_RESPONSE);
   if (!_.isUndefined(initialResponseCount)) {
@@ -4454,6 +4458,7 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
   let isMediaFound = false;
   const generationFailurePattern = GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN;
   for (let i = SecurityConstants.ZERO; i < maxAttempts; i++) {
+    if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
     const hasDownloadBtn = await latestResponse
       .locator(_.join(GEMINI_MEDIA_EXTRACTION_CONFIG.DOWNLOAD_BUTTON_SELECTORS, SOURCE_TEXT_SYMBOL_10))
       .first()
@@ -4632,9 +4637,11 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
   return null;
 }
 async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
+  const generationRevision = mediaGenerationRevision;
   let lastError: unknown;
   for (let retryClick = SecurityConstants.ZERO; retryClick <= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT; retryClick++) {
     try {
+      if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
       if (retryClick > SecurityConstants.ZERO) {
         await delayAsync(800);
         await waitForGeminiPageIdle(page, visualConfig);
@@ -4642,7 +4649,7 @@ async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: Gemin
       return await waitForDownloadAndGetBase64(page, visualConfig, retryClick === SecurityConstants.ZERO ? initialResponseCount : undefined);
     } catch (error) {
       lastError = error;
-      if (retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      if (isMediaGenerationCancelled(generationRevision) || retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
       const currentCount = await page
         .locator(GeminiChatSelector.Response)
         .count()
