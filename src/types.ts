@@ -1076,8 +1076,8 @@ export enum GeminiChatSelector {
   PlusMenuOptions = 'gem-menu-item[role="menuitem"], .cdk-overlay-pane button, mat-action-list button, [role="menuitem"], [role="menuitemcheckbox"], .toolbox-drawer-item-content-wrapper, .mat-mdc-menu-item',
   ActiveGenerateType = 'gem-button[data-test-id="deselect-drawer-item-gem-button"], button[data-test-id="deselect-drawer-item-gem-button"], button, [role="button"], [aria-label], [data-test-id], .input-area-switch',
   SendButton = '[data-test-id="send-button-container"] button, button[aria-label*="Gửi" i], button[aria-label*="Send" i], gem-icon-button.send-button button, div.send-button-container button, button:has(mat-icon[fonticon="arrow_upward"]), button:has(mat-icon[data-mat-icon-name="arrow_upward"])',
-  GenerationBusy = 'gem-icon-button.send-button.stop, [data-test-id="stop-button"], [data-testid="stop-button"], button[aria-label*="Dừng" i]:not([disabled]), button[aria-label*="Stop" i]:not([disabled])',
-  ResponseGenerationBusy = '.model-response-label-announcer[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating), thinking-overlay, async-processing-chip',
+  GenerationBusy = 'gem-icon-button.send-button.stop, gem-icon-button.send-button.stop button, [data-test-id="stop-button"], [data-testid="stop-button"], button[aria-label*="Dừng" i]:not([disabled]), button[aria-label*="Ngừng" i]:not([disabled]), button[aria-label*="Stop" i]:not([disabled]), button.stop-button',
+  ResponseGenerationBusy = '.model-response-label-announcer[aria-busy="true"], [aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating), thinking-overlay thinking-dots-animation, thinking-overlay .animated-thinking-content, async-processing-chip',
 }
 export const GEMINI_CHAT_MEDIA_SELECTORS = { image: SOURCE_TEXT_DOWNLOAD_GENERATED_IMAGE_BUTTON_DATA_TEST, video: SOURCE_TEXT_GENERATED_VIDEO_VIDEO_SRC_GENERATED_VIDEO, all: SOURCE_TEXT_IMG_VIDEO } as const;
 export enum GeminiChatTextOption {

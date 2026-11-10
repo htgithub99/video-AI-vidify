@@ -65,7 +65,9 @@ export function useVideoExporter(lang: Lang) {
   const [aiModel, setAiModel] = useState<AiPlanningChatModel>(pickStoredEnum(AiPlanningChatModel, initialSettings.aiModel, AiPlanningChatModel.GeminiFlash));
   const [aiExecutionMode, setAiExecutionMode] = useState<AiPlanningExecutionMode>(pickStoredEnum(AiPlanningExecutionMode, initialSettings.aiExecutionMode, AiPlanningExecutionMode.RoomOnly));
   const [aiChromeHeadless, setAiChromeHeadless] = useState<boolean>(initialSettings.aiChromeHeadless !== false);
-  const aiClips = useVideoExportAiClips(text, config.aspectRatio, aiChromeHeadless);
+  const selectedAudios = useMemo(() => _.filter(audios, (item) => _.includes(selectedAudioIds, item.id)), [audios, selectedAudioIds]);
+  const selectedImages = useMemo(() => _.filter(images, (item) => _.includes(selectedImageIds, item.id)), [images, selectedImageIds]);
+  const aiClips = useVideoExportAiClips(text, config.aspectRatio, aiChromeHeadless, selectedImages, source?.folderPath);
   const [isRanking, setIsRanking] = useState<boolean>(false);
   const [previews, setPreviews] = useState<VideoExportMultiPreviews>(() => {
     if (initialSettings.savedPreviews && !_.isEmpty(initialSettings.savedPreviews)) {
@@ -89,14 +91,12 @@ export function useVideoExporter(lang: Lang) {
   const previewAbortRef = useRef<AbortController | null>(null);
   const lastAutoPreviewSignatureRef = useRef<string>("");
   const isMountedRef = useRef<boolean>(true);
-  const selectedAudios = useMemo(() => _.filter(audios, (item) => _.includes(selectedAudioIds, item.id)), [audios, selectedAudioIds]);
-  const selectedImages = useMemo(() => _.filter(images, (item) => _.includes(selectedImageIds, item.id)), [images, selectedImageIds]);
   const totalAudioSeconds = useMemo(() => _.sumBy(selectedAudios, (item) => item.durationSeconds || 0), [selectedAudios]);
   const totalAudioBytes = useMemo(() => _.sumBy(selectedAudios, (item) => item.sizeBytes || 0), [selectedAudios]);
   const slidePlan = useMemo(() => computeVideoExportSlidePlan(totalAudioSeconds, selectedImages.length, config), [totalAudioSeconds, selectedImages.length, config]);
   const isExporting = job?.status === VideoExportJobStatus.RENDERING;
   const isBusy = isScanning || isRanking || isExporting;
-  const hasVisuals = aiClips.enabled ? !_.isEmpty(aiClips.activeClipIds) : !_.isEmpty(selectedImages);
+  const hasVisuals = !_.isEmpty(aiClips.activeClipIds) || !_.isEmpty(selectedImages);
   const canRender = Boolean(source) && !_.isEmpty(selectedAudios) && hasVisuals && !aiClips.isGenerating;
   const preview = useMemo(() => previews[config.aspectRatio] ?? null, [previews, config.aspectRatio]);
   const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, aiClipAudioIds: aiClips.activeClipAudioIds, ...config }), [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, aiClips.activeClipAudioIds, config]);
@@ -246,16 +246,12 @@ export function useVideoExporter(lang: Lang) {
       toast.error(text.ERR_NO_AUDIO);
       return false;
     }
-    if (aiClips.enabled && _.isEmpty(aiClips.activeClipIds)) {
-      toast.error(text.AI_CLIP_ERR_NEED_CLIPS);
-      return false;
-    }
-    if (!aiClips.enabled && _.isEmpty(selectedImages)) {
+    if (_.isEmpty(aiClips.activeClipIds) && _.isEmpty(selectedImages)) {
       toast.error(text.ERR_NO_IMAGE);
       return false;
     }
     return true;
-  }, [source, selectedAudios, selectedImages, aiClips.enabled, aiClips.activeClipIds, text]);
+  }, [source, selectedAudios, selectedImages, aiClips.activeClipIds, text]);
   const selectFolder = useCallback(async () => {
     if (isBusy) return;
     setIsScanning(true);

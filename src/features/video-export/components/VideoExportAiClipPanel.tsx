@@ -9,9 +9,10 @@ import { VideoExportAiClipsState } from "../hooks/useVideoExportAiClips.js";
 import { VideoExportTexts } from "./videoExportUtils.js";
 type VideoExportAiClipPanelProps = { text: VideoExportTexts; aiClips: VideoExportAiClipsState; disabled: boolean };
 export const VideoExportAiClipPanel: FC<VideoExportAiClipPanelProps> = ({ text, aiClips, disabled }) => {
-  const { enabled, note, images, clips, job, isGenerating, completedImageIds, missingImages, failedErrorByImageId, hasRecoverableError } = aiClips;
+  const { note, images, clips, job, isGenerating, completedImageIds, missingImages, failedErrorByImageId, hasRecoverableError } = aiClips;
   const isLocked = disabled || isGenerating;
-  const hasPartialMissing = !_.isEmpty(clips) && !_.isEmpty(missingImages);
+  const hasActiveClips = !_.isEmpty(clips);
+  const hasPartialMissing = hasActiveClips && !_.isEmpty(missingImages);
   const primaryLabel = isGenerating
     ? text.AI_CLIP_GENERATING
     : hasPartialMissing
@@ -29,13 +30,12 @@ export const VideoExportAiClipPanel: FC<VideoExportAiClipPanelProps> = ({ text, 
           <Wand2 className={CLS.TITLE_ICON} />
           <span className={CLS.TITLE_TEXT}>{text.AI_CLIP_TITLE}</span>
         </div>
-        <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={disabled} onClick={() => aiClips.setEnabled(!enabled)} className={cn(CLS.TOGGLE, enabled ? CLS.TOGGLE_ON : CLS.TOGGLE_OFF)}>
-          {enabled ? text.AI_CLIP_ON : text.AI_CLIP_OFF}
-        </Button>
+        <span className={cn(CLS.TOGGLE, hasActiveClips ? CLS.TOGGLE_ON : CLS.TOGGLE_OFF)}>
+          {hasActiveClips ? text.AI_CLIP_ON : text.AI_CLIP_OFF}
+        </span>
       </div>
       <p className={CLS.HINT}>{text.AI_CLIP_HINT}</p>
-      {enabled && (
-        <div className={CLS.BODY}>
+      <div className={CLS.BODY}>
           <div className={CLS.LABEL}>{text.AI_CLIP_IMAGES_LABEL}</div>
           <div className={CLS.THUMB_GRID}>
             {_.map(images, (image) => {
@@ -187,7 +187,6 @@ export const VideoExportAiClipPanel: FC<VideoExportAiClipPanelProps> = ({ text, 
             </div>
           )}
         </div>
-      )}
     </div>
   );
 };

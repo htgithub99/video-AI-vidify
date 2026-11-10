@@ -688,7 +688,7 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
     "a[download]",
   ],
   EXCLUDED_IMAGE_SELECTOR: "img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon), img.image",
-  BUSY_ELEMENT_SELECTOR: '[aria-busy="true"], thinking-overlay, async-processing-chip',
+  BUSY_ELEMENT_SELECTOR: '[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating), thinking-overlay thinking-dots-animation, thinking-overlay .animated-thinking-content, async-processing-chip',
   BUTTON_DOWNLOAD_LOG: "[GeminiChat] Tải media thành công qua nút Download của Gemini.",
   GENERATION_ERROR_PATTERNS: ["i'm unable to create images", "i am unable to create images", "i can't create images", "unable to generate", "couldn't generate", "something went wrong", "không thể tạo hình ảnh", "không thể tạo video"],
 } as const;

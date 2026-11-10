@@ -3319,7 +3319,8 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
   let success = false;
   let base64Result: string | null = null;
   let roomAttempts = SecurityConstants.ZERO;
-  const maxRoomAttempts = _.isEqual(visualConfig.generateType, GenerateType.Video) ? 2 : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
+  const isVideoGeneration = _.isEqual(visualConfig.generateType, GenerateType.Video);
+  const maxRoomAttempts = isVideoGeneration ? GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
   let browserInstance: BrowserSession | null = null;
   let activePage: Page | null = null;
   let ownsActivePage = false;
@@ -3358,8 +3359,11 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
           }
         }
         const currentUrl = activePage!.url();
+        const isCurrentlyGenerating = _.includes(currentUrl, SOURCE_TEXT_GEMINI_GOOGLE_COM) && (await isGeminiPageActivelyGenerating(activePage!));
         if (!_.includes(currentUrl, SOURCE_TEXT_GEMINI_GOOGLE_COM)) {
           needNewRoom = true;
+        } else if (isCurrentlyGenerating) {
+          needNewRoom = false;
         } else if (consecutiveGeminiErrors >= GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM) {
           needNewRoom = true;
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_FORCED);
@@ -3390,7 +3394,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
         continue;
       }
       let reloadAttempts = SecurityConstants.ZERO;
-      const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
+      const maxReloadAttempts = isVideoGeneration ? GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
       while (reloadAttempts < maxReloadAttempts && !success && !isMediaGenerationCancelled(generationRevision)) {
         reloadAttempts++;
         if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
@@ -3405,39 +3409,44 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
           }
         }
         try {
-          await waitForGeminiPageIdle(activePage!, visualConfig);
-          const isPageReady = await waitForGeminiReadyOrCaptchaSolved(activePage!);
-          if (!isPageReady) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-          const forceSetting = needNewRoom || isConfigChanged || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
-          const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
-          if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-          const generateTypeConfigured = await configureGeminiGenerateType(activePage!, visualConfig);
-          if (!generateTypeConfigured) {
-            throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace(SOURCE_TEXT_0_2, _.isEqual(visualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
-          }
-          await configureGeminiMediaInput(activePage!, visualConfig);
-          if (forceSetting) lastGeminiConfigState = currentConfigState;
-          await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
-          if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
-          const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
-          await waitForGeminiRequestSlot(reloadAttempts);
-          if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
-          const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
-          let clicked = false;
-          try {
-            if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
-              await sendBtn.click();
-              clicked = true;
-              appLog(BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND);
+          if (isVideoGeneration && (await isGeminiPageActivelyGenerating(activePage!))) {
+            appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_WAIT);
+            base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig);
+          } else {
+            await waitForGeminiPageIdle(activePage!, visualConfig);
+            const isPageReady = await waitForGeminiReadyOrCaptchaSolved(activePage!);
+            if (!isPageReady) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+            const forceSetting = needNewRoom || isConfigChanged || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
+            const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
+            if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+            const generateTypeConfigured = await configureGeminiGenerateType(activePage!, visualConfig);
+            if (!generateTypeConfigured) {
+              throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace(SOURCE_TEXT_0_2, _.isEqual(visualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
             }
-          } catch (error: unknown) {
-            appError(BACKEND_MESSAGES.GEMINI_CHAT_CLICK_SEND_FAILED.replace(SOURCE_TEXT_0_2, getErrorMessage(error)));
+            await configureGeminiMediaInput(activePage!, visualConfig);
+            if (forceSetting) lastGeminiConfigState = currentConfigState;
+            await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
+            if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
+            const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
+            await waitForGeminiRequestSlot(reloadAttempts);
+            if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
+            const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
+            let clicked = false;
+            try {
+              if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
+                await sendBtn.click();
+                clicked = true;
+                appLog(BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND);
+              }
+            } catch (error: unknown) {
+              appError(BACKEND_MESSAGES.GEMINI_CHAT_CLICK_SEND_FAILED.replace(SOURCE_TEXT_0_2, getErrorMessage(error)));
+            }
+            if (!clicked) {
+              await activePage!.keyboard.press(SOURCE_TEXT_ENTER);
+              appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
+            }
+            base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig, initialResponseCount);
           }
-          if (!clicked) {
-            await activePage!.keyboard.press(SOURCE_TEXT_ENTER);
-            appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
-          }
-          base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig, initialResponseCount);
           if (base64Result) {
             success = true;
             consecutiveGeminiErrors = 0;
@@ -4058,15 +4067,21 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
   const activeModeRegex = isVideo ? GEMINI_ACTIVE_VIDEO_MODE_REGEX : GEMINI_ACTIVE_IMAGE_MODE_REGEX;
   const hasActiveGenerateType = async (): Promise<boolean> => {
     const selectedModeChip = page.locator(SOURCE_TEXT_GEM_BUTTON_DATA_TEST_ID_DESELECT).first();
-    if (await selectedModeChip.isVisible().catch(() => false)) {
-      const selectedModeLabel = _.trim(await selectedModeChip.innerText().catch(() => XRT.EMPTY));
-      if (activeModeRegex.test(selectedModeLabel)) return true;
+    if ((await selectedModeChip.count().catch(() => SecurityConstants.ZERO)) > SecurityConstants.ZERO) {
+      const chipTexts = [
+        _.trim(await selectedModeChip.innerText().catch(() => XRT.EMPTY)),
+        _.trim((await selectedModeChip.textContent().catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+        _.trim((await selectedModeChip.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+        _.trim((await selectedModeChip.locator('button').first().getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+      ];
+      if (_.some(chipTexts, (text) => Boolean(text) && activeModeRegex.test(text))) return true;
     }
     const candidates = page.locator(GeminiChatSelector.ActiveGenerateType);
     const candidateCount = await candidates.count();
     for (let index = SecurityConstants.ZERO; index < candidateCount; index++) {
       const candidate = candidates.nth(index);
-      if (!(await candidate.isVisible().catch(() => false))) continue;
+      const isCandidateVisible = (await candidate.isVisible().catch(() => false)) || (await candidate.locator('button').first().isVisible().catch(() => false));
+      if (!isCandidateVisible) continue;
       const belongsToNavigation = await candidate
         .evaluate(
           (element: HTMLElement, browserPayload) => {
@@ -4077,8 +4092,12 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
         )
         .catch(() => false);
       if (belongsToNavigation) continue;
-      const label = _.trim(_.join([await candidate.innerText().catch(() => XRT.EMPTY), await candidate.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)], SRT.SOURCE_TEXT_SYMBOL_52));
-      if (activeModeRegex.test(label)) return true;
+      const candidateTexts = [
+        _.trim(await candidate.innerText().catch(() => XRT.EMPTY)),
+        _.trim((await candidate.textContent().catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+        _.trim((await candidate.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+      ];
+      if (_.some(candidateTexts, (text) => Boolean(text) && activeModeRegex.test(text))) return true;
     }
     return false;
   };
@@ -4366,21 +4385,52 @@ const waitForGeneratedImageReady = async (media: Locator): Promise<void> => {
     await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_POLL_MS);
   }
 };
-const waitForGeminiPageIdle = async (page: Page, visualConfig: GeminiVisualConfig): Promise<void> => {
-  const mediaType = _.isEqual(visualConfig.generateType, GenerateType.Video) ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
-  await page
-    .waitForFunction(
+const isGeminiPageActivelyGenerating = async (page: Page): Promise<boolean> => {
+  if (page.isClosed()) return false;
+  return page
+    .evaluate(
       ({ responseSelector, globalBusySelector, responseBusySelector, lastResponseOffset }) => {
+        const isElementActive = (el: Element | null): boolean => {
+          if (!el) return false;
+          const htmlEl = el as HTMLElement;
+          if (htmlEl.hasAttribute('disabled') || htmlEl.getAttribute('aria-disabled') === 'true') return false;
+          const style = window.getComputedStyle(htmlEl);
+          if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+          const rect = htmlEl.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) return true;
+          const innerBtn = htmlEl.querySelector('button');
+          if (innerBtn) {
+            const innerRect = innerBtn.getBoundingClientRect();
+            return innerRect.width > 0 && innerRect.height > 0 && !innerBtn.disabled;
+          }
+          return false;
+        };
+        const globalCandidates = Array.from(document.querySelectorAll(globalBusySelector));
+        if (globalCandidates.some((candidate) => isElementActive(candidate))) return true;
         const responses = document.querySelectorAll(responseSelector);
         const latestResponse = responses.item(responses.length - lastResponseOffset);
-        return !document.querySelector(globalBusySelector) && !latestResponse?.querySelector(responseBusySelector);
+        if (!latestResponse) return false;
+        return Boolean(latestResponse.querySelector(responseBusySelector));
       },
-      { responseSelector: GeminiChatSelector.Response, globalBusySelector: GeminiChatSelector.GenerationBusy, responseBusySelector: GeminiChatSelector.ResponseGenerationBusy, lastResponseOffset: SecurityConstants.DEFAULT_AMOUNT },
-      { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.PAGE_IDLE_TIMEOUT_MS },
+      {
+        responseSelector: GeminiChatSelector.Response,
+        globalBusySelector: GeminiChatSelector.GenerationBusy,
+        responseBusySelector: GeminiChatSelector.ResponseGenerationBusy,
+        lastResponseOffset: SecurityConstants.DEFAULT_AMOUNT,
+      },
     )
-    .catch(() => {
-      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, mediaType));
-    });
+    .catch(() => false);
+};
+const waitForGeminiPageIdle = async (page: Page, visualConfig: GeminiVisualConfig): Promise<void> => {
+  const isVideoGeneration = _.isEqual(visualConfig.generateType, GenerateType.Video);
+  const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
+  const timeoutMs = isVideoGeneration ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS : GEMINI_MEDIA_EXTRACTION_CONFIG.PAGE_IDLE_TIMEOUT_MS;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await isGeminiPageActivelyGenerating(page))) return;
+    await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS);
+  }
+  throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, mediaType));
 };
 export const isDownloadedVideoBuffer = (buffer: Buffer): boolean => {
   if (_.lt(buffer.length, 12)) return false;
@@ -4420,14 +4470,37 @@ const tryDownloadViaButton = async (page: Page, container: Locator, requireVideo
   }
   return null;
 };
-async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number) {
+async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number, previousErrorText?: string) {
   const generationRevision = mediaGenerationRevision;
+  const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
+  const mediaReadyTimeout = isVideoGeneration ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS : GEMINI_CHAT_VIDEO_INPUT_CONFIG.MEDIA_READY_TIMEOUT_MS;
+  const pollIntervalMs = GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS;
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_WAITING_RESPONSE);
   await captureGeminiDomState(page, SOURCE_TEXT_WAITING_FOR_RESPONSE);
   if (!_.isUndefined(initialResponseCount)) {
-    try {
-      await page.waitForFunction(({ expectedResponseCount, responseSelector }) => document.querySelectorAll(responseSelector).length >= expectedResponseCount, { expectedResponseCount: _.add(initialResponseCount, SecurityConstants.DEFAULT_AMOUNT), responseSelector: GeminiChatSelector.Response }, { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.NEW_RESPONSE_TIMEOUT_MS });
-    } catch (e) {
+    const expectedResponseCount = _.add(initialResponseCount, SecurityConstants.DEFAULT_AMOUNT);
+    const maxWaitStartMs = Date.now();
+    let idleSinceMs = Date.now();
+    let hasNewResponse = false;
+    while (Date.now() - maxWaitStartMs < mediaReadyTimeout) {
+      if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
+      const currentCount = await page
+        .locator(GeminiChatSelector.Response)
+        .count()
+        .catch(() => SecurityConstants.ZERO);
+      if (currentCount >= expectedResponseCount) {
+        hasNewResponse = true;
+        break;
+      }
+      const isBusy = await isGeminiPageActivelyGenerating(page);
+      if (isBusy) {
+        idleSinceMs = Date.now();
+      } else if (Date.now() - idleSinceMs >= GEMINI_MEDIA_EXTRACTION_CONFIG.NEW_RESPONSE_TIMEOUT_MS) {
+        break;
+      }
+      await delayAsync(pollIntervalMs);
+    }
+    if (!hasNewResponse) {
       appError(BACKEND_MESSAGES.GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT);
       throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_NO_NEW_RESPONSE);
     }
@@ -4439,7 +4512,6 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_RESPONSE);
   }
   await captureGeminiDomState(page, SOURCE_TEXT_RESPONSE_DETECTED);
-  const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const mediaSelector = isVideoGeneration ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO : GEMINI_CHAT_MEDIA_SELECTORS.image;
   const mediaContainer = latestResponse.locator(mediaSelector).first();
   await captureGeminiDomState(page, isVideoGeneration ? SOURCE_TEXT_VIDEO_LOADING : SOURCE_TEXT_IMAGE_LOADING);
@@ -4452,12 +4524,15 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_THINKING_DETACHED);
     }
   }
-  const mediaReadyTimeout = isVideoGeneration ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS : GEMINI_CHAT_VIDEO_INPUT_CONFIG.MEDIA_READY_TIMEOUT_MS;
-  const pollIntervalMs = GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS;
-  const maxAttempts = Math.ceil(mediaReadyTimeout / pollIntervalMs);
   let isMediaFound = false;
   const generationFailurePattern = GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN;
-  for (let i = SecurityConstants.ZERO; i < maxAttempts; i++) {
+  const startedAtMs = Date.now();
+  const absoluteMaxDeadlineMs = startedAtMs + mediaReadyTimeout * 2;
+  let deadlineMs = startedAtMs + mediaReadyTimeout;
+  let idlePollsWithoutMedia = SecurityConstants.ZERO;
+  let pollIndex = SecurityConstants.ZERO;
+  while (Date.now() < deadlineMs && Date.now() < absoluteMaxDeadlineMs) {
+    pollIndex++;
     if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
     const hasDownloadBtn = await latestResponse
       .locator(_.join(GEMINI_MEDIA_EXTRACTION_CONFIG.DOWNLOAD_BUTTON_SELECTORS, SOURCE_TEXT_SYMBOL_10))
@@ -4469,15 +4544,27 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
       isMediaFound = true;
       break;
     }
-    const responseText = await latestResponse.innerText().catch(() => XRT.EMPTY);
+    const isBusy = await isGeminiPageActivelyGenerating(page);
+    if (isBusy) {
+      idlePollsWithoutMedia = SecurityConstants.ZERO;
+      deadlineMs = Math.max(deadlineMs, Date.now() + 60_000);
+      await delayAsync(pollIntervalMs);
+      continue;
+    }
+    const responseText = _.trim(await latestResponse.innerText().catch(() => XRT.EMPTY));
+    if (previousErrorText && responseText === previousErrorText && pollIndex < 15) {
+      await delayAsync(pollIntervalMs);
+      continue;
+    }
     if (generationFailurePattern.test(responseText)) {
       await captureGeminiDomState(page, isVideoGeneration ? SOURCE_TEXT_VIDEO_GENERATION_REJECTED : SOURCE_TEXT_IMAGE_GENERATION_REJECTED);
-      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace(SOURCE_TEXT_ERROR_2, _.trim(responseText)));
+      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace(SOURCE_TEXT_ERROR_2, responseText));
     }
-    const isBusy = await latestResponse.evaluate((el: HTMLElement, busySelector: string) => Boolean(el.querySelector(busySelector)), GEMINI_MEDIA_EXTRACTION_CONFIG.BUSY_ELEMENT_SELECTOR).catch(() => false);
-    if (!isVideoGeneration && !isBusy && _.gt(i, 5) && !_.isEmpty(_.trim(responseText))) {
-      await captureGeminiDomState(page, SOURCE_TEXT_IMAGE_TEXT_ONLY_RESPONSE);
-      throw new Error(GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE).replace(SOURCE_TEXT_ERROR_2, _.truncate(_.trim(responseText), { length: 500 })));
+    idlePollsWithoutMedia++;
+    if (idlePollsWithoutMedia >= 5 && !_.isEmpty(responseText)) {
+      await captureGeminiDomState(page, isVideoGeneration ? SOURCE_TEXT_VIDEO_GENERATION_REJECTED : SOURCE_TEXT_IMAGE_TEXT_ONLY_RESPONSE);
+      const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
+      throw new Error(GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, mediaType).replace(SOURCE_TEXT_ERROR_2, _.truncate(responseText, { length: 500 })));
     }
     await delayAsync(pollIntervalMs);
   }
@@ -4639,30 +4726,37 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
 async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
   const generationRevision = mediaGenerationRevision;
   let lastError: unknown;
+  let previousErrorText: string = XRT.EMPTY;
   for (let retryClick = SecurityConstants.ZERO; retryClick <= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT; retryClick++) {
     try {
       if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
       if (retryClick > SecurityConstants.ZERO) {
-        await delayAsync(800);
-        await waitForGeminiPageIdle(page, visualConfig);
+        const retryWaitDeadline = Date.now() + 12_000;
+        while (Date.now() < retryWaitDeadline) {
+          if (await isGeminiPageActivelyGenerating(page)) break;
+          const currentText = _.trim(await page.locator(GeminiChatSelector.Response).last().innerText().catch(() => XRT.EMPTY));
+          if (currentText && currentText !== previousErrorText) break;
+          await delayAsync(400);
+        }
       }
-      return await waitForDownloadAndGetBase64(page, visualConfig, retryClick === SecurityConstants.ZERO ? initialResponseCount : undefined);
+      return await waitForDownloadAndGetBase64(page, visualConfig, retryClick === SecurityConstants.ZERO ? initialResponseCount : undefined, retryClick > SecurityConstants.ZERO ? previousErrorText : undefined);
     } catch (error) {
       lastError = error;
-      if (isMediaGenerationCancelled(generationRevision) || retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
-      const currentCount = await page
-        .locator(GeminiChatSelector.Response)
-        .count()
-        .catch(() => SecurityConstants.ZERO);
-      if (retryClick === SecurityConstants.ZERO && !_.isUndefined(initialResponseCount) && currentCount <= initialResponseCount) throw error;
+      if (isMediaGenerationCancelled(generationRevision) || page.isClosed()) throw error;
+      if (await isGeminiPageActivelyGenerating(page)) {
+        retryClick--;
+        continue;
+      }
+      if (retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT) throw error;
+      previousErrorText = _.trim(await page.locator(GeminiChatSelector.Response).last().innerText().catch(() => XRT.EMPTY));
       if (!(await clickCurrentChatRetry(page).catch(() => false))) throw error;
       appLog(CHAT_ROOM_RECOVERY.CLICK_LOG);
     }
   }
   throw lastError;
 }
-async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
-  await waitForGeminiFinished(page, visualConfig, initialResponseCount);
+async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number, previousErrorText?: string): Promise<string | null> {
+  await waitForGeminiFinished(page, visualConfig, initialResponseCount, previousErrorText);
   const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const finalizeVideo = (value: string): Promise<string> => (visualConfig?.preserveVideoAudio ? Promise.resolve(value) : removeVideoAudioTrack(value));
   const latestResponse = page.locator(GeminiChatSelector.Response).last();

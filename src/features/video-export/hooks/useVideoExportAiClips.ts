@@ -5,11 +5,13 @@ import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { jsonUtils } from "../../../lib/json.js";
 import { VIDEO_EXPORT_AI_CLIP_CONSTANTS, VIDEO_EXPORT_AI_CLIP_REGEX } from "../constants/videoExportAiClip.js";
 import { requestJson, VideoExportTexts } from "../components/videoExportUtils.js";
-import { VideoExportAiClip, VideoExportAiClipJobState, VideoExportAiClipJobStatus, VideoExportAspectRatio } from "../types/videoExport.js";
+import { VideoExportAiClip, VideoExportAiClipJobState, VideoExportAiClipJobStatus, VideoExportAspectRatio, VideoExportImageItem } from "../types/videoExport.js";
 type AiClipImage = { id: string; name: string; dataUrl: string };
 export type GenerateAiClipsOptions = { imageIds?: string[]; restart?: boolean };
-type StoredAiClipSettings = { enabled?: boolean; note?: string; images?: AiClipImage[]; clips?: VideoExportAiClip[]; jobId?: string; lastJob?: VideoExportAiClipJobState | null };
-const clipMatchesImage = (clip: VideoExportAiClip, image: AiClipImage): boolean => (clip.sourceImageId ? clip.sourceImageId === image.id : clip.name === image.name);
+type StoredAiClipSettings = { enabled?: boolean; folderPath?: string; note?: string; images?: AiClipImage[]; clips?: VideoExportAiClip[]; jobId?: string; lastJob?: VideoExportAiClipJobState | null };
+const buildSourceImageId = (relativePath: string): string => `${VIDEO_EXPORT_AI_CLIP_CONSTANTS.SOURCE_ID_PREFIX}${relativePath}`;
+const isSourceSyncedImageId = (id: string): boolean => _.startsWith(id, VIDEO_EXPORT_AI_CLIP_CONSTANTS.SOURCE_ID_PREFIX);
+const clipMatchesImage = (clip: VideoExportAiClip, image: AiClipImage): boolean => (clip.sourceImageId ? clip.sourceImageId === image.id || clip.name === image.name : clip.name === image.name);
 const normalizeStoredJob = (raw: VideoExportAiClipJobState | null | undefined, hasActiveJobId: boolean): VideoExportAiClipJobState | null => {
   if (!raw || typeof raw !== "object") return null;
   if (raw.status === VideoExportAiClipJobStatus.RUNNING && !hasActiveJobId) {
@@ -35,16 +37,28 @@ const sanitizeStoredImages = (raw: unknown): AiClipImage[] =>
     .take(VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_IMAGES)
     .value();
 const readStoredAiClipSettings = (): StoredAiClipSettings => jsonUtils.getItem<StoredAiClipSettings>(VIDEO_EXPORT_AI_CLIP_CONSTANTS.STORAGE_KEY, {}) ?? {};
-const readFileAsDataUrl = (file: File): Promise<string> =>
+const readBlobAsDataUrl = (blob: Blob): Promise<string> =>
   new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => resolve(_.toString(reader.result));
     reader.onerror = () => resolve("");
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(blob);
   });
-export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: VideoExportAspectRatio, chromeHeadless: boolean) {
+const fetchImageAsDataUrl = async (url: string): Promise<string> => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return "";
+    const blob = await response.blob();
+    if (!blob || blob.size === 0 || blob.size > VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_IMAGE_BYTES) return "";
+    const dataUrl = await readBlobAsDataUrl(blob);
+    return VIDEO_EXPORT_AI_CLIP_REGEX.IMAGE_DATA_URL.test(dataUrl) ? dataUrl : "";
+  } catch {
+    return "";
+  }
+};
+export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: VideoExportAspectRatio, chromeHeadless: boolean, sourceImages: VideoExportImageItem[] = [], folderPath?: string) {
   const initial = useMemo(readStoredAiClipSettings, []);
-  const [enabled, setEnabled] = useState<boolean>(initial.enabled === true);
+  const [enabled, setEnabled] = useState<boolean>(true);
   const [note, setNote] = useState<string>(_.toString(initial.note));
   const [images, setImages] = useState<AiClipImage[]>(() => sanitizeStoredImages(initial.images));
   const [clips, setClips] = useState<VideoExportAiClip[]>(_.isArray(initial.clips) ? initial.clips : []);
@@ -53,9 +67,12 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
   const [hydrated, setHydrated] = useState<boolean>(false);
   const isMountedRef = useRef<boolean>(true);
   const seenClipIdsRef = useRef<Set<string>>(new Set(_.map(initial.clips, (clip) => clip.id)));
+  const folderPathRef = useRef<string>(_.toString(initial.folderPath));
+  const dismissedSourceKeysRef = useRef<Set<string>>(new Set());
+  const prevSourceIdsSignatureRef = useRef<string>("");
   const isGenerating = job?.status === VideoExportAiClipJobStatus.RUNNING;
-  const activeClipIds = useMemo(() => (enabled ? _.map(clips, (clip) => clip.id) : []), [enabled, clips]);
-  const activeClipAudioIds = useMemo(() => (enabled ? _.map(_.filter(clips, (clip) => Boolean(clip.keepAudio)), (clip) => clip.id) : []), [enabled, clips]);
+  const activeClipIds = useMemo(() => _.map(clips, (clip) => clip.id), [clips]);
+  const activeClipAudioIds = useMemo(() => _.map(_.filter(clips, (clip) => Boolean(clip.keepAudio)), (clip) => clip.id), [clips]);
   const completedImageIds = useMemo(() => new Set(_.map(_.filter(images, (image) => _.some(clips, (clip) => clipMatchesImage(clip, image))), (image) => image.id)), [images, clips]);
   const missingImages = useMemo(() => _.filter(images, (image) => !completedImageIds.has(image.id)), [images, completedImageIds]);
   const failedErrorByImageId = useMemo(() => {
@@ -83,7 +100,9 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
       .then((stored) => {
         if (!isMountedRef.current) return;
         if (stored && typeof stored === "object") {
-          if (_.isUndefined(initial.enabled) && typeof stored.enabled === "boolean") setEnabled(stored.enabled);
+          if (!folderPathRef.current && _.isString(stored.folderPath) && stored.folderPath) {
+            folderPathRef.current = stored.folderPath;
+          }
           if (!initial.note && _.isString(stored.note) && stored.note) setNote(stored.note);
           const storedImages = sanitizeStoredImages(stored.images);
           if (!_.isEmpty(storedImages)) setImages((previous) => (_.isEmpty(previous) ? storedImages : previous));
@@ -107,13 +126,69 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
   }, [initial]);
   useEffect(() => {
     if (!hydrated) return;
-    jsonUtils.setItem<StoredAiClipSettings>(VIDEO_EXPORT_AI_CLIP_CONSTANTS.STORAGE_KEY, { enabled, note, clips, jobId, lastJob: job });
+    const activeFolderPath = folderPath || folderPathRef.current || undefined;
+    jsonUtils.setItem<StoredAiClipSettings>(VIDEO_EXPORT_AI_CLIP_CONSTANTS.STORAGE_KEY, { enabled, folderPath: activeFolderPath, note, clips, jobId, lastJob: job });
     const totalImageChars = _.sumBy(images, (item) => item.dataUrl.length);
     if (!_.isEmpty(images) && totalImageChars <= VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_LOCAL_STORAGE_CHARS) {
-      jsonUtils.setItem<StoredAiClipSettings>(VIDEO_EXPORT_AI_CLIP_CONSTANTS.STORAGE_KEY, { enabled, note, images, clips, jobId, lastJob: job });
+      jsonUtils.setItem<StoredAiClipSettings>(VIDEO_EXPORT_AI_CLIP_CONSTANTS.STORAGE_KEY, { enabled, folderPath: activeFolderPath, note, images, clips, jobId, lastJob: job });
     }
-    void jsonUtils.setAsyncItem<StoredAiClipSettings>(VIDEO_EXPORT_AI_CLIP_CONSTANTS.STORAGE_KEY, { enabled, note, images, clips, jobId, lastJob: job });
-  }, [hydrated, enabled, note, images, clips, jobId, job]);
+    void jsonUtils.setAsyncItem<StoredAiClipSettings>(VIDEO_EXPORT_AI_CLIP_CONSTANTS.STORAGE_KEY, { enabled, folderPath: activeFolderPath, note, images, clips, jobId, lastJob: job });
+  }, [hydrated, enabled, folderPath, note, images, clips, jobId, job]);
+  useEffect(() => {
+    if (!hydrated) return;
+    const cleanFolder = _.trim(folderPath);
+    const folderChanged = Boolean(cleanFolder && folderPathRef.current && folderPathRef.current !== cleanFolder);
+    if (cleanFolder) folderPathRef.current = cleanFolder;
+    if (folderChanged) {
+      dismissedSourceKeysRef.current.clear();
+      seenClipIdsRef.current.clear();
+      setClips([]);
+      setJob(null);
+      setImages([]);
+    }
+    const currentSignature = _.join(_.map(sourceImages, (item) => item.relativePath), "|");
+    if (prevSourceIdsSignatureRef.current && prevSourceIdsSignatureRef.current !== currentSignature) {
+      dismissedSourceKeysRef.current.clear();
+    }
+    prevSourceIdsSignatureRef.current = currentSignature;
+    const selectedSourceIds = new Set(_.map(sourceImages, (item) => buildSourceImageId(item.relativePath)));
+    setImages((previous) => {
+      const filtered = _.filter(previous, (img) => !isSourceSyncedImageId(img.id) || selectedSourceIds.has(img.id));
+      return filtered.length === previous.length ? previous : filtered;
+    });
+    if (_.isEmpty(sourceImages)) return;
+    let cancelled = false;
+    void (async () => {
+      const candidates = _.take(sourceImages, VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_IMAGES);
+      const loadedItems: AiClipImage[] = [];
+      for (const item of candidates) {
+        if (cancelled) return;
+        const sourceId = buildSourceImageId(item.relativePath);
+        if (dismissedSourceKeysRef.current.has(sourceId) || dismissedSourceKeysRef.current.has(item.name)) continue;
+        const dataUrl = await fetchImageAsDataUrl(item.url);
+        if (cancelled) return;
+        if (dataUrl) loadedItems.push({ id: sourceId, name: item.name, dataUrl });
+      }
+      if (cancelled || _.isEmpty(loadedItems)) return;
+      setImages((previous) => {
+        const next = [...previous];
+        let changed = false;
+        for (const loaded of loadedItems) {
+          if (next.length >= VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_IMAGES) break;
+          if (dismissedSourceKeysRef.current.has(loaded.id) || dismissedSourceKeysRef.current.has(loaded.name)) continue;
+          const exists = _.some(next, (existing) => existing.id === loaded.id || existing.name === loaded.name);
+          if (!exists) {
+            next.push(loaded);
+            changed = true;
+          }
+        }
+        return changed ? next : previous;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, folderPath, sourceImages]);
   useEffect(() => {
     if (!jobId) return;
     const poll = async () => {
@@ -148,7 +223,7 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
       event.target.value = "";
       if (_.isEmpty(files)) return;
       const accepted = _.filter(files, (file) => file.size <= VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_IMAGE_BYTES);
-      const loaded = await Promise.all(_.map(accepted, async (file) => ({ id: _.uniqueId(VIDEO_EXPORT_AI_CLIP_CONSTANTS.INPUT_ID_PREFIX), name: file.name, dataUrl: await readFileAsDataUrl(file) })));
+      const loaded = await Promise.all(_.map(accepted, async (file) => ({ id: _.uniqueId(VIDEO_EXPORT_AI_CLIP_CONSTANTS.INPUT_ID_PREFIX), name: file.name, dataUrl: await readBlobAsDataUrl(file) })));
       const valid = _.filter(loaded, (item) => VIDEO_EXPORT_AI_CLIP_REGEX.IMAGE_DATA_URL.test(item.dataUrl));
       if (valid.length < files.length) toast.warning(text.AI_CLIP_ERR_TOO_BIG);
       setImages((previous) => {
@@ -159,7 +234,16 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
     },
     [text],
   );
-  const removeImage = useCallback((imageId: string) => setImages((previous) => _.reject(previous, { id: imageId })), []);
+  const removeImage = useCallback((imageId: string) => {
+    setImages((previous) => {
+      const target = _.find(previous, { id: imageId });
+      if (target) {
+        dismissedSourceKeysRef.current.add(target.id);
+        dismissedSourceKeysRef.current.add(target.name);
+      }
+      return _.reject(previous, { id: imageId });
+    });
+  }, []);
   const removeClip = useCallback((clipId: string) => setClips((previous) => _.reject(previous, { id: clipId })), []);
   const toggleClipAudio = useCallback((clipId: string) => setClips((previous) => _.map(previous, (clip) => (clip.id === clipId ? { ...clip, keepAudio: !clip.keepAudio } : clip))), []);
   const clearClips = useCallback(() => {
