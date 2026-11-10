@@ -7,11 +7,13 @@ import { AiPlanningExecutionMode } from "../../../types.js";
 import { Shuffle } from "lucide-react";
 import { MotionToggle } from "./MotionToggle.js";
 import type { Lang } from "../../../lib/lang.js";
-import { motionSceneAiExecution, resolveMotionSceneExecution, type MotionAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
+import { motionLightAiExecution, motionPlanAiExecution, motionSceneAiExecution, resolveMotionSceneExecution, type MotionAiChoice, type MotionLightAiChoice, type MotionPlanAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
-export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice & { visualSettings?: MotionVisualSettings }; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice>) => void; currentLang: Lang }) {
+export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice & MotionPlanAiChoice & MotionLightAiChoice & { visualSettings?: MotionVisualSettings }; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice & MotionPlanAiChoice & MotionLightAiChoice>) => void; currentLang: Lang }) {
   const text = MOTION_AI_SETTINGS_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const scene = motionSceneAiExecution(state);
+  const plan = motionPlanAiExecution(state);
+  const light = motionLightAiExecution(state);
   const onePass = state.visualSettings?.mode === RT_MAINTENANCE.REMOTION;
   const selectSceneProvider = (provider: MotionSceneAiChoice["sceneAiProvider"]) => {
     const next = resolveMotionSceneExecution({ provider });
@@ -36,6 +38,42 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           extraControl={<MotionToggle checked={state.aiFallback !== false} label={text.FALLBACK_LABEL} title={text.MAIN_FALLBACK_HINT} text={state.aiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ aiFallback: state.aiFallback === false })} />}
         />
       </section>
+      <section aria-label={text.LIGHT_TITLE}>
+        <ChatPlanningSettingsBlock
+          title={text.LIGHT_TITLE}
+          note={text.LIGHT_NOTE}
+          provider={light.provider}
+          model={light.model}
+          executionMode={AiPlanningExecutionMode.RoomOnly}
+          chromeHeadless={light.chromeHeadless}
+          onProviderChange={(value) => patch({ lightAiProvider: value, lightAiModel: undefined, lightAiHeadless: light.chromeHeadless })}
+          onModelChange={(value) => patch({ lightAiProvider: light.provider, lightAiModel: value })}
+          onExecutionModeChange={() => undefined}
+          onChromeHeadlessChange={(value) => patch({ lightAiProvider: light.provider, lightAiModel: light.model, lightAiHeadless: value })}
+          currentLang={currentLang}
+          roomOnly
+          extraControl={<MotionToggle checked={light.allowFallback} label={text.FALLBACK_LABEL} title={text.LIGHT_FALLBACK_HINT} text={light.allowFallback ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ lightAiProvider: light.provider, lightAiModel: light.model, lightAiFallback: !light.allowFallback })} />}
+        />
+      </section>
+      {onePass && (
+        <section aria-label={text.PLAN_TITLE}>
+          <ChatPlanningSettingsBlock
+            title={text.PLAN_TITLE}
+            note={text.PLAN_NOTE}
+            provider={plan.provider}
+            model={plan.model}
+            executionMode={AiPlanningExecutionMode.RoomOnly}
+            chromeHeadless={plan.chromeHeadless}
+            onProviderChange={(value) => patch({ planAiProvider: value, planAiModel: undefined, planAiHeadless: plan.chromeHeadless })}
+            onModelChange={(value) => patch({ planAiProvider: plan.provider, planAiModel: value })}
+            onExecutionModeChange={() => undefined}
+            onChromeHeadlessChange={(value) => patch({ planAiProvider: plan.provider, planAiModel: plan.model, planAiHeadless: value })}
+            currentLang={currentLang}
+            roomOnly
+            extraControl={<MotionToggle checked={plan.allowFallback} label={text.FALLBACK_LABEL} title={text.PLAN_FALLBACK_HINT} text={plan.allowFallback ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ planAiFallback: !plan.allowFallback })} />}
+          />
+        </section>
+      )}
       <section aria-label={text.DRAW_TITLE}>
         <ChatPlanningSettingsBlock
           title={text.DRAW_TITLE}

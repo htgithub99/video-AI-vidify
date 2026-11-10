@@ -14,6 +14,7 @@ import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js"
 import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
+import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
 import { MOTION_AI_RECOVERY } from "../../../../../constants/motionAiRecovery.js";
 import { motionRenameText } from "../../../../../lib/motionRename.js";
 import { motionHtmlCastCards, motionHtmlContinuity } from "../../../../../lib/motionHtmlCast.js";
@@ -147,7 +148,8 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
   let failures = 0;
   for (;;) {
     opts.signal?.throwIfAborted();
-    const planExec = opts.mainExec?.provider ? opts.mainExec : opts.exec?.provider ? opts.exec : opts.mainExec || opts.exec;
+    const dedicatedPlan = !!opts.planExec?.provider;
+    const planExec = dedicatedPlan ? opts.planExec : opts.mainExec?.provider ? opts.mainExec : opts.exec?.provider ? opts.exec : opts.mainExec || opts.exec;
     if (!attempt || attempt.status === RT_MAINTENANCE.RETRY_WAIT) attempt = { id: randomUUID(), attempt: (attempt?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING };
     const current = attempt;
     const resuming = canResumeHtmlSubmission(current, planExec);
@@ -171,10 +173,10 @@ const requestPlan = async (prompt: string, key: string, opts: RemotionSceneOptio
           opts.log(`${RT_MAINTENANCE.CHO_LUU_YEU_CAU_PHAN_CANH}${String(error)}`);
         }
       }, 2000);
-      if (!opts.ai) await prepareMotionContentRooms(planExec, opts.signal, opts.log);
+      if (!opts.ai && !dedicatedPlan) await prepareMotionContentRooms(planExec!, opts.signal, opts.log);
       const exec: MotionAiExecution = {
         ...planExec,
-        role: RT_MAINTENANCE.MAIN,
+        role: dedicatedPlan ? MOTION_AI_ROLE.PLAN : RT_MAINTENANCE.MAIN,
         worker,
         workerAssigned: (assigned) => {
           current.worker = assigned;

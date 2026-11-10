@@ -6,7 +6,8 @@ export interface MotionAiRoute {
   provider: string;
   model: string;
 }
-export const MOTION_AI_ROLE = { MAIN: "main", DRAW: "draw" } as const;
+export const MOTION_AI_ROLE = { MAIN: "main", DRAW: "draw", PLAN: "plan", LIGHT: "light" } as const;
+export const MOTION_LIGHT_ARTIFACTS: readonly string[] = ["motion-story-seo", "motion-story-thumbnail-prompt", "motion-sound-direction", "motion-voice-direction", "motion-audio-casting", "motion-illustration-need-repair", "motion-illustration-plan-repair", "motion-story-originality"];
 const GEMINI: MotionAiRoute = { provider: AiPlanningFallbackProvider.GeminiChat, model: encodeGeminiChatModel(AiPlanningChatModel.GeminiFlash, "medium") };
 const CHATGPT: MotionAiRoute = { provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto };
 const DEEPSEEK: MotionAiRoute = { provider: AiPlanningFallbackProvider.DeepSeekChat, model: AiPlanningChatModel.DeepSeekStandard };

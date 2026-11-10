@@ -132,6 +132,7 @@ export const aiExec = (v: any): MotionAiExecution => ({
   ...(typeof v?.allowFallback === "boolean" ? { allowFallback: v.allowFallback, ...(v.allowFallback === false ? { strictProvider: true } : {}) } : {}),
   ...(v?.strictProvider === true ? { strictProvider: true } : {}),
   ...(typeof v?.multiSceneRooms === "boolean" ? { multiSceneRooms: v.multiSceneRooms } : {}),
+  ...(v?.light?.provider ? { light: { provider: _.toString(v.light.provider), model: _.toString(v.light.model || MR.MOTION_TEXT_EMPTY), chromeHeadless: v.light.chromeHeadless !== false, allowFallback: v.light.allowFallback !== false } } : {}),
 });
 export const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MOTION_AI_ROLE.DRAW });
 const editorialAiIdentity = ({ provider, model, mode, multiSceneRooms }: MotionAiExecution) => ({ provider, model, mode, ...(multiSceneRooms === false ? { multiSceneRooms: false } : {}) });
@@ -224,6 +225,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
   }
   const exec = aiExec(body?.aiExecution);
   const sceneExec = drawExec(body?.sceneAiExecution || body?.aiExecution);
+  const planExec = body?.planAiExecution ? { ...aiExec(body.planAiExecution), role: MOTION_AI_ROLE.PLAN } : undefined;
   const only: string[] = _.map(_.castArray(body?.chapterIds || []), _.toString);
   const existing: MotionBeat[] = _.castArray(body?.beats || []);
   const speechRate = body?.durationRepair && Number(body?.speechRate) > 0 ? Number(body.speechRate) : motionSpeechRate(body?.voiceChannel, language);
@@ -259,7 +261,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       }
       const scope = body.productionId || body.editorialSessionId;
       const canStreamHtmlScenes = visualSettings.mode === RT_MAINTENANCE.REMOTION && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
-      const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) }) : undefined;
+      const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) }) : undefined;
       if (htmlStreamer) {
         keepGen = { ...(keepGen || emptyGen()), remotion: htmlStreamer.getState() };
         void prepareMotionContentRooms(exec, ctx.signal, ctx.log).catch(_.noop);
@@ -459,7 +461,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
               (draft) => ctx.partial(draft),
               (value, stage) => ctx.progress(0.8 + value * 0.19, stage),
             )
-          : await planMotionHtmlScenes(script, analysis, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, scope, signal: ctx.signal, log: ctx.log, partial: (draft) => ctx.partial(draft), progress: (value, stage) => ctx.progress(0.8 + value * 0.19, stage), aspect: body.aspect, sfx: body.sfx !== false });
+          : await planMotionHtmlScenes(script, analysis, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, partial: (draft) => ctx.partial(draft), progress: (value, stage) => ctx.progress(0.8 + value * 0.19, stage), aspect: body.aspect, sfx: body.sfx !== false });
         ctx.log(RT_MAINTENANCE.HOAN_TAT_CHIA_PHAN_CANH_VA_PROMPT_0_4_TRUOC);
         ctx.partial(planned);
         return planned;

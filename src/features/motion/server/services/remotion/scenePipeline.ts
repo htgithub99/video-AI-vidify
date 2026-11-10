@@ -83,6 +83,7 @@ export interface RemotionSceneOptions {
   retryFailed?: boolean;
   exec: MotionAiExecution;
   mainExec?: MotionAiExecution;
+  planExec?: MotionAiExecution;
   signal?: AbortSignal;
   log: MotionAiLog;
   progress?: (value: number, stage: string) => void;

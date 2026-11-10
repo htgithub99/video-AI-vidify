@@ -847,13 +847,14 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return publicJob(record);
   };
-  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean, aiOverrides?: { aiExecution?: Record<string, any>; sceneAiExecution?: Record<string, any> }): MotionProductionJobState => {
+  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean, aiOverrides?: { aiExecution?: Record<string, any>; sceneAiExecution?: Record<string, any>; planAiExecution?: Record<string, any> }): MotionProductionJobState => {
     let record = read(id);
     if (!record) throw new Error(P.INVALID_RUN);
     const hasClearOverride = typeof clearGeminiChatsBeforeExport === "boolean" && record.input.clearGeminiChatsBeforeExport !== clearGeminiChatsBeforeExport;
     const nextAi = productionAiOverride(aiOverrides?.aiExecution);
     const nextSceneAi = productionAiOverride(aiOverrides?.sceneAiExecution);
-    const hasAiOverride = (!!nextAi && stringifyJson(record.input.aiExecution) !== stringifyJson(nextAi)) || (!!nextSceneAi && stringifyJson(record.input.sceneAiExecution) !== stringifyJson(nextSceneAi));
+    const nextPlanAi = productionAiOverride(aiOverrides?.planAiExecution);
+    const hasAiOverride = (!!nextAi && stringifyJson(record.input.aiExecution) !== stringifyJson(nextAi)) || (!!nextSceneAi && stringifyJson(record.input.sceneAiExecution) !== stringifyJson(nextSceneAi)) || (!!nextPlanAi && stringifyJson(record.input.planAiExecution) !== stringifyJson(nextPlanAi));
     if ((hasClearOverride || hasAiOverride) && !active.has(id)) {
       const owner = store.acquire(id);
       try {
@@ -862,6 +863,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         if (typeof clearGeminiChatsBeforeExport === "boolean") record.input.clearGeminiChatsBeforeExport = clearGeminiChatsBeforeExport;
         if (nextAi) record.input.aiExecution = nextAi;
         if (nextSceneAi) record.input.sceneAiExecution = nextSceneAi;
+        if (nextPlanAi) record.input.planAiExecution = nextPlanAi;
         record.inputKey = motionInputKey(record.input);
         store.save(id, record, owner);
       } finally {
