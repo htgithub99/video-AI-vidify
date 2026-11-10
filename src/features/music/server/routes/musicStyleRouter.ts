@@ -7,6 +7,7 @@ import { AiPlanningFallbackProvider } from "../../../../types.js";
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, generatePlanningWithChatUi } from "../../../../server/services/chatUiPlanningService.js";
 import { MUSIC_CREATION_OPTIONS as O } from "../../constants/musicCreationOptions.js";
 import { createAnalyzedMusicStyle } from "../../lib/musicStyleLibrary.js";
+import { resolveMusicReferenceSource } from "../services/musicReferenceSourceService.js";
 export const musicStyleRouter = Router();
 musicStyleRouter.post(O.STYLE_ROUTE, async (req, res) => {
   const referenceSource = typeof req.body?.referenceSource === "string" ? req.body.referenceSource.trim() : O.EMPTY;
@@ -20,7 +21,7 @@ musicStyleRouter.post(O.STYLE_ROUTE, async (req, res) => {
     if (!res.writableEnded) run.cancel();
   });
   try {
-    const response = await generatePlanningWithChatUi({ provider, model: execution.model, prompt: O.STYLE_PROMPT(referenceSource, requestId), projectId: requestId, workerId: O.STYLE_WORKER, chromeHeadless: execution.chromeHeadless !== false, artifactType: O.STYLE_ARTIFACT, requestId, signal: run.signal, closeRoomOnComplete: false });
+    const response = await generatePlanningWithChatUi({ provider, model: execution.model, prompt: O.STYLE_PROMPT(await resolveMusicReferenceSource(referenceSource, run.signal), requestId), projectId: requestId, workerId: O.STYLE_WORKER, chromeHeadless: execution.chromeHeadless !== false, artifactType: O.STYLE_ARTIFACT, requestId, signal: run.signal, closeRoomOnComplete: false });
     const parsed = jsonUtils.safeParse(response.text, null);
     const style = parsed?.artifactType === O.STYLE_ARTIFACT && parsed.requestId === requestId ? createAnalyzedMusicStyle(parsed) : undefined;
     if (!style) throw new Error(O.TEXT.vi.reanalyzeError);

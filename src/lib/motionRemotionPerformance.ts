@@ -6,3 +6,4 @@ export const motionRemotionRenderLanes = (cpus: number, freeBytes: number, segme
   const lanes = Math.max(1, Math.min(R.MAX_LANES, Math.floor(budget / perLane), Math.max(1, segments)));
   return { lanes, perLane };
 };
+export const motionHtmlRenderLanes = (cpus: number, freeBytes: number, segments: number): { lanes: number; perLane: number } => ({ lanes: Math.max(1, Math.min(motionRemotionRenderConcurrency(cpus, freeBytes), Math.max(1, segments))), perLane: 1 });

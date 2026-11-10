@@ -119,6 +119,7 @@ export const renderRemotionSegments = async (spec: MotionRemotionSpec, segments:
           codec: RT_SERVER.H264,
           muted: true,
           crf: options.crf,
+          x264Preset: R.X264_PRESET,
           pixelFormat: RT_SERVER.YUV420P,
           frameRange: [segment.start, segment.end],
           concurrency: options.concurrency ?? motionRemotionRenderConcurrency(os.cpus().length, os.freemem()),

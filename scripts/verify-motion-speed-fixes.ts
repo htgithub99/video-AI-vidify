@@ -182,7 +182,8 @@ assert.match(scenePrompt, /only advances when the SCENE says/, "a gathering grou
 assert.match(scenePrompt, /never drawn while a clip is active/, "a ground clip cannot hide the figures");
 assert.match(motionHtmlFigureDoc("history"), /legs visible from the hem at -0.9r/, "legs show below the torso");
 assert.match(motionHtmlFigureDoc("horror"), /The hem never reaches the shoes/, "horror legs show too");
-assert.match(scenePrompt, /never a flat strip, bar or crown/, "clouds have a rounded underside");
+assert.match(scenePrompt, /no flat base line, never a row of equal bumps/, "clouds have a rounded underside");
+assert.match(scenePrompt, /never on heads, faces, bodies/, "labels stay off the subjects");
 assert.match(scenePrompt, /camX follows groupX at most 1:1[\s\S]*distance travelled/, "the camera never outruns marchers and steps follow distance");
 assert.doesNotMatch(motionHtmlFigureDoc("history"), /torsoY=-28|headR\+4/, "no fixed pixel offsets");
 assert.doesNotMatch(scenePrompt, /overlapping (?:outlined )?(?:puffs|circles)|lumpy blobs|capsule|corner radius/, "no geometric shape recipes");

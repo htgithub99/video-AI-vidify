@@ -1052,6 +1052,8 @@ import { MUSIC_PLANNING as MUSIC_PLAN } from "../../constants/musicPlanning.js";
 import { MUSIC_CREATION_OPTIONS as MUSIC_OPTIONS } from "../../features/music/constants/musicCreationOptions.js";
 import { musicStyleRouter } from "../../features/music/server/routes/musicStyleRouter.js";
 import { validMusicEditorialReview, musicReviewOrder } from "../../lib/musicPlanning.js";
+import { musicLyricQualityIssues } from "../../lib/musicLyricQuality.js";
+import { resolveMusicReferenceSource } from "../../features/music/server/services/musicReferenceSourceService.js";
 import { musicPlanReporter } from "../../features/music/server/services/musicPlanProgress.js";
 import { reviewMusicSongBatch } from "../../features/music/server/services/musicSongReviewService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
@@ -1603,7 +1605,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     });
     const generateRoomResponse = (prompt: string, artifactType: string, responseRequestId: string, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, restoreContext?: () => string) =>
       generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId: responseRequestId, signal: planningRun.signal, closeRoomOnComplete: false, restoreContext });
-    const referenceSource = _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER);
+    const referenceSource = await resolveMusicReferenceSource(_.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER), planningRun.signal);
     const analysisRequestId = SOURCE_TEMPLATE_STYLE_ANALYSIS(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
     report.progress(currentStage);
@@ -1681,8 +1683,12 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           if (_.uniq(titles).length !== titles.length || _.some(titles, (title) => completedSongTitles.has(title))) {
             batchIssues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_DUPLICATE_SONG_TITLE_ISSUE);
           } else {
-            _.forEach(titles, (title) => completedSongTitles.add(title));
-            return batchParsed.songs;
+            const qualityIssues = attempt < maxAttempts - 1 ? musicLyricQualityIssues(batchParsed.songs, referenceSource) : [];
+            if (qualityIssues.length) batchIssues.push(...qualityIssues);
+            else {
+              _.forEach(titles, (title) => completedSongTitles.add(title));
+              return batchParsed.songs;
+            }
           }
         }
         if (!_.isEmpty(batchIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_SONG_COMPOSITION_CONTRACT_BATCH_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${startIndex}`), SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${batchIssues.join(SOURCE_TEXT_SYMBOL_34)}`)));

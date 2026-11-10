@@ -46,7 +46,6 @@ import {
   SOURCE_TEXT_CENTER,
   SOURCE_TEXT_CHECKBOX,
   SOURCE_TEXT_COUNT,
-  SOURCE_TEXT_COVER,
   SOURCE_TEXT_DANGER,
   SOURCE_TEXT_DATA_PLAYLISTSEOOPTIONS,
   SOURCE_TEXT_DATA_SEOWARNING,
@@ -698,7 +697,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const [generatedThumbnail, setGeneratedThumbnail] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
-  const [isNormalizingThumbnailNote, setIsNormalizingThumbnailNote] = useState(false);
+  const [isNormalizingThumbnailNote] = useState(false);
   const [isCreatingSuno, setIsCreatingSuno] = useState(false);
   const [isCreatingSunoTest, setIsCreatingSunoTest] = useState(false);
   const [sunoTestPlaylistUrl, setSunoTestPlaylistUrl] = useState(initialState.sunoTestPlaylistUrl || MUSIC_CREATOR_RUNTIME.EMPTY);
@@ -727,7 +726,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const [showVideoTrackList, setShowVideoTrackList] = useState(initialState.showVideoTrackList ?? true);
   const [generatedVideoBackground, setGeneratedVideoBackground] = useState<string>(MUSIC_CREATOR_RUNTIME.EMPTY);
   const [isGeneratingVideoBackground, setIsGeneratingVideoBackground] = useState(false);
-  const [isNormalizingVideoBackgroundNote, setIsNormalizingVideoBackgroundNote] = useState(false);
+  const [isNormalizingVideoBackgroundNote] = useState(false);
   const { copiedKey, copyText } = useClipboardFeedback();
   const thumbnailFileInputRef = useRef<HTMLInputElement | null>(null);
   const videoBackgroundFileInputRef = useRef<HTMLInputElement | null>(null);
@@ -1397,41 +1396,6 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       if (_.get(error, SOURCE_TEXT_NAME) !== SUNO_AUTOMATION_CONFIG.ABORT_ERROR_NAME) toast.error(texts.FILE_SAVE_ERROR);
     }
   };
-  const handleNormalizeImageNote = async (assetPurpose: "cover" | "video-background") => {
-    if (isBusy) return;
-    const isVideoBackground = assetPurpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO;
-    const note = isVideoBackground ? videoBackgroundDescription : thumbnailDescription;
-    if (_.isEmpty(_.trim(note))) return;
-    const setNormalizing = isVideoBackground ? setIsNormalizingVideoBackgroundNote : setIsNormalizingThumbnailNote;
-    setNormalizing(true);
-    try {
-      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_IMAGE_NOTE_NORMALIZE, {
-        method: HTTP_METHODS.POST,
-        headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({
-          note,
-          assetPurpose,
-          styleAnalysis,
-          thumbnailReference: isVideoBackground ? undefined : thumbnailReference,
-          thumbnailReferenceName: isVideoBackground ? undefined : thumbnailReferenceName,
-          videoBackgroundReference: isVideoBackground ? videoBackgroundReference : undefined,
-          videoBackgroundReferenceName: isVideoBackground ? videoBackgroundReferenceName : undefined,
-          showTrackList: showVideoTrackList,
-          chromeHeadless,
-        }),
-      });
-      const result = await response.json();
-      const normalizedNote = _.trim(_.toString(result.normalizedNote));
-      if (!response.ok || !result.success || _.isEmpty(normalizedNote)) throw new Error(result.error || texts.IMAGE_NOTE_NORMALIZE_ERROR);
-      if (isVideoBackground) setVideoBackgroundDescription(normalizedNote);
-      else setThumbnailDescription(normalizedNote);
-      toast.success(texts.IMAGE_NOTE_NORMALIZED);
-    } catch (error) {
-      toast.error(_.toString(_.get(error, SOURCE_TEXT_MESSAGE, texts.IMAGE_NOTE_NORMALIZE_ERROR)));
-    } finally {
-      setNormalizing(false);
-    }
-  };
   const handleRegenerateThumbnail = async () => {
     if (_.isEmpty(songs) || isBusy) return;
     recordWorkflowActivity(WORKFLOW_ACTIVITY_CONFIG.AREAS.music, WORKFLOW_ACTIVITY_EVENT.musicCoverStart);
@@ -2053,17 +2017,6 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_1)}>
                 <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
                   <span className={cn(MCS.TEXT_11PX_FONT_SEMIBOLD_TEXT_SLATE_300)}>{texts.COVER_IMAGE_NOTE_LABEL}</span>
-                  <Button
-                    variant={SOURCE_TEXT_UNSTYLED}
-                    type={SOURCE_TEXT_BUTTON}
-                    onClick={() => {
-                      void handleNormalizeImageNote(SOURCE_TEXT_COVER);
-                    }}
-                    disabled={isBusy || _.isEmpty(_.trim(thumbnailDescription))}
-                    className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC_2)}
-                    title={isNormalizingThumbnailNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}>
-                    {isNormalizingThumbnailNote ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_FUCHSIA_400)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
-                  </Button>
                 </div>
                 <StudioTextarea rows={4} value={thumbnailDescription} onChange={(event) => setThumbnailDescription(event.target.value)} disabled={isBusy} placeholder={texts.THUMBNAIL_DESCRIPTION_PLACEHOLDER} className={cn(MCS.W_FULL_MIN_H_95PX_SM_MIN_H_110PX_BG_SLATE_955_90_TEXT_SLATE_100_P_3_ROUNDED)} />
               </div>
@@ -2185,17 +2138,6 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
                     <div className={cn(SRT.SOURCE_TEXT_SPACE_Y_1)}>
                       <div className={cn(SRT.SOURCE_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
                         <span className={cn(MCS.TEXT_11PX_FONT_SEMIBOLD_TEXT_SLATE_300)}>{texts.VIDEO_BACKGROUND_NOTE_LABEL}</span>
-                        <Button
-                          variant={SOURCE_TEXT_UNSTYLED}
-                          type={SOURCE_TEXT_BUTTON}
-                          onClick={() => {
-                            void handleNormalizeImageNote(SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO);
-                          }}
-                          disabled={isBusy || _.isEmpty(_.trim(videoBackgroundDescription))}
-                          className={cn(MCS.BTN_ICON_TINY_W_6_H_6_MIN_W_24PX_MAX_W_24PX_MIN_H_24PX_MAX_H_24PX_P_0_ASPEC_3)}
-                          title={isNormalizingVideoBackgroundNote ? texts.IMAGE_NOTE_NORMALIZING : texts.IMAGE_NOTE_NORMALIZE}>
-                          {isNormalizingVideoBackgroundNote ? <Sparkles className={cn(MCS.W_3_5_H_3_5_SHRINK_0_ANIMATE_SPIN_TEXT_CYAN_400)} /> : <WandSparkles className={cn(SRT.SOURCE_TEXT_W_3_5_H_3_5_SHRINK_3)} />}
-                        </Button>
                       </div>
                       <StudioTextarea rows={3} value={videoBackgroundDescription} onChange={(event) => setVideoBackgroundDescription(event.target.value)} disabled={isBusy} placeholder={texts.VIDEO_BACKGROUND_DESCRIPTION_PLACEHOLDER} className={cn(MCS.W_FULL_MIN_H_78PX_BG_SLATE_955_90_TEXT_SLATE_100_P_3_ROUNDED_XL_TEXT_XS_LEA)} />
                     </div>

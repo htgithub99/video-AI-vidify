@@ -1,16 +1,17 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
-import { chromium } from "playwright";
+import { chromium, type Browser } from "playwright";
 import { createHash, randomUUID } from "node:crypto";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { motionHtmlHostDocument } from "../../../../../lib/motionHtmlHost.js";
 import type { MotionHtmlFrameInput } from "../../../../../types/motionHtmlScene.js";
 const timedOutFrames = new Map<string, number>();
-export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, headless = true) => {
+export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, headless = true, shared?: Browser) => {
   signal?.throwIfAborted();
-  let browser = await chromium.launch({ executablePath: findNativeChrome(), headless });
+  let owned = !shared?.isConnected();
+  let browser = owned ? await chromium.launch({ executablePath: findNativeChrome(), headless }) : shared!;
   const contentKey = createHash(RT_MAINTENANCE.SHA256).update(html).digest(RT_MAINTENANCE.HEX);
   const stop = () => {
-    void browser.close().catch(() => undefined);
+    if (owned) void browser.close().catch(() => undefined);
   };
   signal?.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
   try {
@@ -23,9 +24,10 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
     let page = await openPage();
     let blankRun = false;
     const relaunch = async () => {
-      await browser.close().catch(() => undefined);
+      await (owned ? browser.close() : page.close()).catch(() => undefined);
       signal?.throwIfAborted();
       browser = await chromium.launch({ executablePath: findNativeChrome(), headless });
+      owned = true;
       page = await openPage();
     };
     const draw = async (input: MotionHtmlFrameInput, subtitle: string, fontFamily: string, allowBlank: boolean): Promise<Buffer> => {
@@ -136,7 +138,7 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
       },
       async close() {
         signal?.removeEventListener(RT_MAINTENANCE.ABORT, stop);
-        await browser.close().catch(() => undefined);
+        await (owned ? browser.close() : page.close()).catch(() => undefined);
       },
     };
   } catch (error) {

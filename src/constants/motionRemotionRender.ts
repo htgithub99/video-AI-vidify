@@ -14,6 +14,7 @@ export const MOTION_REMOTION_RENDER = {
   RESERVED_CPUS: 1,
   BYTES_PER_WORKER: 805306368,
   GL: "angle",
+  X264_PRESET: "veryfast",
   PROGRESS_STEP: 10,
   START: (workers: number, frames: number) => `Remotion: ${workers} luồng render thực tế · ${frames} frame · mã hóa CPU libx264.`,
   GL_FALLBACK: "Remotion: không mở được Chrome với GPU (angle), chuyển sang render phần mềm.",

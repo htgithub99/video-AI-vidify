@@ -50,33 +50,45 @@ export const renderMotionSegmentsToCache = async (spec: MotionRemotionSpec, todo
   const laneFrames = new Array(plan.lanes).fill(0);
   const laneAbort = new AbortController();
   const laneSignal = AbortSignal.any([options.signal, laneAbort.signal]);
+  const renderLane = async (laneSegments: MotionRemotionSegment[], lane: number, base: number) => {
+    const outputs = laneSegments.map((segment) => ({ start: segment.start, end: segment.end, output: motionSegmentFile(segment) + MOTION_RENDER_CACHE.TEMP_SUFFIX }));
+    try {
+      await renderRemotionSegments(spec, outputs, {
+        ...encoding,
+        log: options.log,
+        concurrency: plan.perLane,
+        signal: laneSignal,
+        onProgress: (done) => {
+          laneFrames[lane] = base + done;
+          options.onFrames?.(laneFrames.reduce((sum, value) => sum + value, 0));
+        },
+        onSegment: async (index) => {
+          const segment = laneSegments[index];
+          if (spec.renderer === RT_MAINTENANCE.HTML_CANVAS) segment.key = motionRemotionSegments(spec, encoding).find((fresh) => fresh.start === segment.start && fresh.end === segment.end)?.key || segment.key;
+          await validateMotionMedia(outputs[index].output, { seconds: frames(segment) / spec.fps, width: encoding.width, height: encoding.height, fps: spec.fps, frames: frames(segment) }, laneSignal);
+          fs.renameSync(outputs[index].output, motionSegmentFile(segment));
+          options.onSegment?.(segment);
+        },
+      });
+    } catch (error) {
+      laneAbort.abort();
+      for (const output of outputs) fs.rmSync(output.output, { force: true });
+      throw error;
+    }
+  };
+  const html = spec.renderer === RT_MAINTENANCE.HTML_CANVAS && spec.scenes.every((scene) => scene.renderer === RT_MAINTENANCE.HTML_CANVAS);
+  const queue = [...todo].sort((a, b) => b.end - b.start - (a.end - a.start));
   const outcomes = await Promise.allSettled(
-    motionSegmentLanes(todo, plan.lanes).map(async (laneSegments, lane) => {
-      const outputs = laneSegments.map((segment) => ({ start: segment.start, end: segment.end, output: motionSegmentFile(segment) + MOTION_RENDER_CACHE.TEMP_SUFFIX }));
-      try {
-        await renderRemotionSegments(spec, outputs, {
-          ...encoding,
-          log: options.log,
-          concurrency: plan.perLane,
-          signal: laneSignal,
-          onProgress: (done) => {
-            laneFrames[lane] = done;
-            options.onFrames?.(laneFrames.reduce((sum, value) => sum + value, 0));
-          },
-          onSegment: async (index) => {
-            const segment = laneSegments[index];
-            if (spec.renderer === RT_MAINTENANCE.HTML_CANVAS) segment.key = motionRemotionSegments(spec, encoding).find((fresh) => fresh.start === segment.start && fresh.end === segment.end)?.key || segment.key;
-            await validateMotionMedia(outputs[index].output, { seconds: frames(segment) / spec.fps, width: encoding.width, height: encoding.height, fps: spec.fps, frames: frames(segment) }, laneSignal);
-            fs.renameSync(outputs[index].output, motionSegmentFile(segment));
-            options.onSegment?.(segment);
-          },
-        });
-      } catch (error) {
-        laneAbort.abort();
-        for (const output of outputs) fs.rmSync(output.output, { force: true });
-        throw error;
-      }
-    }),
+    html
+      ? Array.from({ length: Math.min(plan.lanes, queue.length) }, async (_, lane) => {
+          let base = 0;
+          for (let segment = queue.shift(); segment; segment = queue.shift()) {
+            laneSignal.throwIfAborted();
+            await renderLane([segment], lane, base);
+            base += frames(segment);
+          }
+        })
+      : motionSegmentLanes(todo, plan.lanes).map((laneSegments, lane) => renderLane(laneSegments, lane, 0)),
   );
   const failed = outcomes.find((outcome) => outcome.status === RT_MAINTENANCE.REJECTED) as PromiseRejectedResult | undefined;
   if (failed) throw failed.reason;

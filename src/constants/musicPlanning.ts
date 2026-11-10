@@ -16,7 +16,7 @@ export const MUSIC_PLANNING = {
   REVIEW_ATTEMPTS: 2,
   RANKING_ATTEMPTS: 2,
   REVIEW_VERSION: 1,
-  SOURCE_EXCERPT_CHARS: 4000,
+  SOURCE_EXCERPT_CHARS: 8000,
   SONG_EXCERPT_CHARS: 160,
   REVIEW_RULE:
     'After composing each complete song, audit its full lyrics against the approved Music DNA and the same absolute 0-100 rubric across all batches. Include editorialReview:{version:1,impact:0,wording:0,singability:0,originality:0,fit:0,hook:"",strength:"",risk:""}. Use integer scores; explain the hook, strongest quality and main weakness in at most 80 characters each. Do not inflate scores or use the batch order as a quality signal. This review never replaces the complete lyrics.',
@@ -60,4 +60,35 @@ export const MUSIC_PLANNING = {
       attempt: (attempt: number) => `Attempt ${attempt}`,
     },
   },
+} as const;
+export const MUSIC_REFERENCE_SOURCE = {
+  URL_RE: /https?:\/\/[^\s<>"')\]]+/gi,
+  TIMESTAMP_RE: /^\(\d{1,2}:\d{2}(?::\d{2})?\)\s*/gm,
+  MAX_LINKS: 12,
+  MAX_DESCRIPTION_CHARS: 1500,
+  MAX_LYRICS_CHARS: 6000,
+  MAX_TOTAL_CHARS: 40000,
+  USER_NOTES: "USER-PASTED REFERENCE (lyrics, notes):",
+  SOURCE: (index: number, total: number) => `REFERENCE TRACK ${index}/${total}`,
+  TITLE: "Title:",
+  CHANNEL: "Channel/artist:",
+  TAGS: "Tags:",
+  URL: "URL:",
+  DESCRIPTION: "Description:",
+  LYRICS: "Lyrics/captions:",
+  PAGE_TEXT: "Page text:",
+  UNREADABLE: "(link could not be read; only the URL is known)",
+  JOIN: "\n",
+  BLOCK_JOIN: "\n\n",
+} as const;
+export const MUSIC_STYLE_EVIDENCE_PRIORITY =
+  "EVIDENCE PRIORITY for the musical style: (1) explicit genre/style words in track tags, descriptions, Suno style text or the user notes; (2) channel/artist and playlist identity; (3) the language, dialect, register and meter of the lyrics; (4) titles. Describe the single style shared by most reference tracks, not a blend of every possibility. Name the concrete subgenre and regional tradition, the lead vocal gender and delivery, the tempo range and the 3-5 signature instruments that the evidence supports. Never fall back to a generic pop/ballad label when the evidence points to a specific tradition.";
+export const MUSIC_LYRIC_QUALITY = {
+  NGRAM_WORDS: 6,
+  WORD_RE: /[\p{L}\p{N}']+/gu,
+  PRODUCTION_TERMS_RE: /\b(?:sub[- ]?bass|808s?|synth(?:s|esizer|esizers)?|reverb|bpm|hi-?hats?|ad-?libs?|fender|rhodes|sidechain|auto-?tune|drum machine|trap beat|mixdown|stereo|eq|compressor|vocal chops?)\b/i,
+  STAGE_DIRECTION_RE: /\(([^)]*(?::|whisper|ad-?lib|instrumental|beat|drums?|guitar|piano|synth|bass|chords?|drone|fade|sigh|breath|nhạc dạo|tiếng đàn|hòa âm)[^)]*)\)/i,
+  COPIED: (label: string, phrase: string) => `${label} copies a reference phrase verbatim ("${phrase}"); rewrite it with new wording and a new image`,
+  JARGON: (label: string, term: string) => `${label} lyrics contain production/instrument wording ("${term}") that a singer would sing; remove all production terms from the lyrics`,
+  DIRECTION: (label: string, text: string) => `${label} lyrics contain a stage direction "(${text})"; Suno would sing it, so keep only singable words and [Section] labels`,
 } as const;

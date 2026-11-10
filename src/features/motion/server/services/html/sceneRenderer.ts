@@ -11,6 +11,8 @@ import { getFfmpegPath } from "../../../../../server/services/shortsPreprocessSe
 import { getMotionRootDirectory } from "../motionLibraryService.js";
 import { motionHtmlFrame } from "../../../../../lib/motionHtmlScene.js";
 import { openMotionHtmlRuntime } from "./sceneRuntime.js";
+import { chromium, type Browser } from "playwright";
+import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { generateMotionHtmlScene } from "./scenePipeline.js";
 import type { MotionRemotionSpec, MotionRemotionTimedScene } from "../../../../../types/motionVisual.js";
 export const refreshMotionHtmlArtifacts = (spec: MotionRemotionSpec): void => {
@@ -38,6 +40,14 @@ export interface HtmlRenderOptions {
 export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], opts: HtmlRenderOptions): Promise<void> => {
   let completed = 0;
   const total = segments.reduce((sum, item) => sum + item.end - item.start + 1, 0);
+  let shared: Browser | undefined;
+  const laneBrowser = async () => {
+    if (!shared?.isConnected()) shared = await chromium.launch({ executablePath: findNativeChrome(), headless: true });
+    return shared;
+  };
+  const closeShared = () => void shared?.close().catch(() => undefined);
+  opts.signal.addEventListener(RT_MAINTENANCE.ABORT, closeShared, { once: true });
+  try {
   for (const [index, segment] of segments.entries()) {
     let active: MotionRemotionTimedScene | undefined;
     for (;;) {
@@ -63,6 +73,8 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
           RT_MAINTENANCE.AN,
           RT_MAINTENANCE.C_V,
           RT_MAINTENANCE.LIBX264,
+          RT_MAINTENANCE.PRESET,
+          RT_MAINTENANCE.X264_EXPORT_PRESET,
           RT_MAINTENANCE.CRF,
           String(opts.crf),
           RT_MAINTENANCE.PIX_FMT,
@@ -98,7 +110,7 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
           if (!active?.html) throw new Error(RT_MAINTENANCE.THIEU_TAI_LIEU_HTML_CUA_CANH_CAN_XUAT);
           if (current !== active.html.hash) {
             await runtime?.close();
-            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal);
+            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser());
             current = active.html.hash;
           }
           const subtitle = spec.subtitles.find((item) => frame / spec.fps >= item.start && frame / spec.fps < item.end);
@@ -139,6 +151,10 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
         await runtime?.close();
       }
     }
+  }
+  } finally {
+    opts.signal.removeEventListener(RT_MAINTENANCE.ABORT, closeShared);
+    closeShared();
   }
 };
 export const renderMotionMixedSegments = async (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], opts: HtmlRenderOptions, legacy: (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], opts: HtmlRenderOptions) => Promise<void>) => {

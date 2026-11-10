@@ -21,7 +21,7 @@ import { motionCachedSegments, motionRemotionSegments, motionSegmentFile, pruneM
 import { waitMotionSegmentPrerender } from "./motionSegmentPrerender.js";
 import { validateRemotionSpec } from "../../../../lib/motionRemotion.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
-import { motionRemotionRenderConcurrency, motionRemotionRenderLanes } from "../../../../lib/motionRemotionPerformance.js";
+import { motionHtmlRenderLanes, motionRemotionRenderConcurrency, motionRemotionRenderLanes } from "../../../../lib/motionRemotionPerformance.js";
 import { MOTION_REMOTION_RENDER } from "../../../../constants/motionRemotionRender.js";
 import { MOTION_SOUND_CONFIG } from "../../../../constants/motionSound.js";
 import * as MR from "../../../../constants/motionRuntime.js";
@@ -484,7 +484,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       const fileOf = motionSegmentFile;
       const frames = (segment: (typeof segments)[number]) => segment.end - segment.start + 1;
       const todo = segments.filter((segment) => !cached.has(segment.key));
-      const plan = motionRemotionRenderLanes(os.cpus().length, os.freemem(), todo.length);
+      const plan = (spec.renderer === RT_MAINTENANCE.HTML_CANVAS && spec.scenes.every((scene) => scene.renderer === RT_MAINTENANCE.HTML_CANVAS) ? motionHtmlRenderLanes : motionRemotionRenderLanes)(os.cpus().length, os.freemem(), todo.length);
       job.workers = plan.lanes * plan.perLane;
       pushLog(job, MOTION_REMOTION_RENDER.SEGMENTS(segments.length, segments.length - todo.length, plan.lanes, plan.perLane));
       const reused = segments.filter((segment) => cached.has(segment.key)).reduce((sum, segment) => sum + frames(segment), 0);
