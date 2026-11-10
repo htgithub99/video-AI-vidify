@@ -33,6 +33,8 @@ export const MOTION_LOG_TEXT = {
     [/\bmeta-ai\b/gu, "Meta AI"],
     [/^Phòng chat gặp lỗi – bấm nút Thử lại của lượt hiện tại\./u, "AI báo lỗi – tự bấm Thử lại."],
     [/^Phòng chat gặp lỗi – thử lại tại room hiện tại \((\d+)\/(\d+)\), giữ model và ảnh tham chiếu\./u, "AI vẫn lỗi – gửi lại trong cùng tab ($1/$2)."],
+    [/^Room vẫn lỗi sau hai lần thử lại – .*?\./u, "Đã mở tab mới thay tab lỗi, giữ nguyên ngữ cảnh."],
+    [/^Room đã đóng hoặc chưa mở được – thử kết nối lại đúng worker \((\d+)\/(\d+)\)\./u, "Tab đã đóng – kết nối lại ($1/$2)."],
     [/^Chương (c\d+): chia thành (\d+) phần nhỏ.*$/u, "Chương $1: viết thành $2 phần."],
     [/^Cảnh HTML (\S+): tạo trọn cảnh, lượt (\d+)\./u, "Dựng lại cảnh $1 (lần $2)."],
     [/^Cảnh HTML /u, "Cảnh "],
@@ -44,6 +46,7 @@ export const MOTION_LOG_TEXT = {
     [/\bmotion-story-edit\b/gu, "biên tập"],
     [/\s*–\s*câu chuyện dài có thể mất 1–3 phút để AI trả lời…/u, "…"],
   ] as readonly (readonly [RegExp, string])[],
+  FIRST_LETTER: /^\p{Ll}/u,
   REPEAT: (count: number): string => ` (×${count})`,
   REPEAT_TAIL: /\s\(×\d+\)$/u,
 } as const;

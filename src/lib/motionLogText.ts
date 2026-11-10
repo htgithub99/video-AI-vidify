@@ -13,7 +13,7 @@ const splitScopes = (text: string): { scopes: string[]; message: string } => {
 export const motionUserLogMessage = (message: string): string | undefined => {
   const text = message.trim();
   if (!text || T.DROP.some((pattern) => pattern.test(text))) return undefined;
-  return T.REWRITE.reduce((value, [pattern, to]) => value.replace(pattern, to), text);
+  return T.REWRITE.reduce((value, [pattern, to]) => value.replace(pattern, to), text).replace(T.FIRST_LETTER, (letter) => letter.toLocaleUpperCase());
 };
 export const motionUserLogLine = (line: string): string | undefined => {
   const stamp = line.match(T.TIME)?.[1] || T.EMPTY;

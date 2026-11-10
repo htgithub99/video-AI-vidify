@@ -315,6 +315,7 @@ import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
 import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure } from "./chromeBackupService.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { findNativeChrome } from "./nativeProxyBrowser.js";
+import { humanClick, waitHumanSendTurn } from "./humanInteractionService.js";
 chromium.use(stealthPlugin());
 interface BrowserSession {
   context: BrowserContext;
@@ -3453,12 +3454,13 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
             if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
             const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
             await waitForGeminiRequestSlot(reloadAttempts);
+            await waitHumanSendTurn(activePage!);
             if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
             const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
             let clicked = false;
             try {
               if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
-                await sendBtn.click();
+                await humanClick(activePage!, sendBtn);
                 clicked = true;
                 appLog(BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND);
               }
@@ -3782,11 +3784,12 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
               await enterGeminiPrompt(page, finalPrompt, itemVisualConfig);
               const initialResponseCount = await page.locator(GeminiChatSelector.Response).count();
               await waitForGeminiRequestSlot(reloadAttempts);
+              await waitHumanSendTurn(page);
               const sendBtn = page.locator(GeminiChatSelector.SendButton).first();
               let clicked = false;
               try {
                 if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
-                  await sendBtn.click();
+                  await humanClick(page, sendBtn);
                   clicked = true;
                   appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()).replace(SOURCE_TEXT_1_3, SOURCE_TEMPLATE_SYMBOL_20(`${item.sceneId}`, `${BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND}`)));
                 }

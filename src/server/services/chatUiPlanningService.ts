@@ -160,6 +160,7 @@ import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserI
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
+import { humanClick, waitHumanSendTurn } from "./humanInteractionService.js";
 interface ChatRoomAttachment {
   name: string;
   mimeType: string;
@@ -528,7 +529,7 @@ const writeGeminiTiming = (page: Page | undefined, request: ChatPlanningRequest,
   if (page) roomTimings.delete(page);
   const at = (value?: number) => (value ? Math.round((value - started) / 100) / 10 : undefined);
   try {
-    fs.appendFileSync(path.join(getLogsDirectory(), CHAT_SPEED.TIMING_FILE), stringifyJson({ at: new Date().toISOString(), artifact: request.artifactType, worker: request.workerId, model: request.model, ok, tab: at(phases.tab), model_ready: at(phases.model), written: at(marks[CHAT_SPEED.MARK.WRITTEN]), sent: at(marks[CHAT_SPEED.MARK.SENT]), first_text: at(marks[CHAT_SPEED.MARK.FIRST_TEXT]), done: at(phases.done) }) + CHAT_SPEED.NEWLINE);
+    fs.appendFileSync(path.join(getLogsDirectory(), CHAT_SPEED.TIMING_FILE), stringifyJson({ at: new Date().toISOString(), artifact: request.artifactType, worker: request.workerId, model: request.model, ok, tab: at(phases.tab), model_ready: at(phases.model), uploaded: at(marks[CHAT_SPEED.MARK.UPLOADED]), compose: at(marks[CHAT_SPEED.MARK.COMPOSE]), prompt_chars: request.prompt?.length, written: at(marks[CHAT_SPEED.MARK.WRITTEN]), sent: at(marks[CHAT_SPEED.MARK.SENT]), first_text: at(marks[CHAT_SPEED.MARK.FIRST_TEXT]), done: at(phases.done) }) + CHAT_SPEED.NEWLINE);
   } catch {}
 };
 const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefined => {
@@ -1133,7 +1134,10 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
       await input.focus({ timeout: cap });
       await page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY);
       await page.keyboard.insertText(prompt);
-    } else await input.fill(prompt, { timeout: cap });
+    } else {
+      await humanClick(page, input, cap).catch(() => undefined);
+      await input.fill(prompt, { timeout: cap });
+    }
     throwIfPlanningCancelled(signal);
     if (await waitComposerFilled(input, prompt, directive, requestId, Math.min(deadline, Date.now() + cap), () => true, signal)) return;
   }
@@ -1142,7 +1146,7 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
 const clickSendButton = async (page: Page, button: Locator, signal?: AbortSignal): Promise<void> => {
   await waitPageResponsive(page, signal);
   throwIfPlanningCancelled(signal);
-  await button.click({ noWaitAfter: true, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS });
+  await humanClick(page, button, CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS);
 };
 const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid;
 const canRegenerateChatResponse = (error: unknown): boolean => {
@@ -1433,8 +1437,11 @@ const submitPrompt = async (
         } else if (isMetaAi) {
           await clearQueuedRoomAttachments(page, input, M.REMOVE).catch(() => undefined);
         }
+        markRoomTiming(page, CHAT_SPEED.MARK.UPLOADED);
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
         await withComposerGate(roomKey, signal, async () => {
+          await waitHumanSendTurn(page, signal);
+          markRoomTiming(page, CHAT_SPEED.MARK.COMPOSE);
           await writeComposer(page, input, submittedPrompt, responseDirective, requestId, signal);
           markRoomTiming(page, CHAT_SPEED.MARK.WRITTEN);
           await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
@@ -1466,7 +1473,7 @@ const submitPrompt = async (
             if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_CLICK_FALLBACK_LOG);
               await waitPageResponsive(page, signal);
-              await Promise.race([sendButton.evaluate((element: HTMLElement) => element.click()).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
+              await Promise.race([humanClick(page, sendButton, CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             }
             if (!submission && !submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
@@ -1810,7 +1817,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
   else if (await cookieFallbackControl.isVisible().catch(() => false)) await cookieFallbackControl.click();
   const loginControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_LOGIN_SELECTOR).first();
   if (await loginControl.isVisible().catch(() => false)) {
-    await loginControl.evaluate((element: HTMLElement) => element.click());
+    await humanClick(page, loginControl);
     await page.waitForLoadState(SOURCE_TEXT_DOMCONTENTLOADED).catch(() => {});
   }
   const googleLoginControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GOOGLE_LOGIN_SELECTOR).first();
@@ -1819,7 +1826,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
       .context()
       .waitForEvent(SOURCE_TEXT_PAGE, { timeout: 5000 })
       .catch(() => undefined);
-    await googleLoginControl.evaluate((element: HTMLElement) => element.click());
+    await humanClick(page, googleLoginControl);
     const authPage = (await popupPromise) || page;
     await authPage.waitForLoadState(SOURCE_TEXT_DOMCONTENTLOADED).catch(() => {});
     const accountControl = authPage.getByText(accountEmail, { exact: false }).first();

@@ -7,5 +7,5 @@ export const CHAT_SPEED = {
   MODEL_REUSE_MS: 600_000,
   TIMING_FILE: "gemini-timing.jsonl",
   NEWLINE: "\n",
-  MARK: { WRITTEN: "written", SENT: "sent", FIRST_TEXT: "firstText" },
+  MARK: { UPLOADED: "uploaded", COMPOSE: "compose", WRITTEN: "written", SENT: "sent", FIRST_TEXT: "firstText" },
 } as const;
