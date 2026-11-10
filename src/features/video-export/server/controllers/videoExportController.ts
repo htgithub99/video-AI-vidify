@@ -218,8 +218,12 @@ export const cancelVideoExport = (req: Request, res: Response): void => {
   }
   res.json({ success: true, message: VIDEO_EXPORT_SERVER_TEXTS.MSG_CANCELLED });
 };
+const buildSaveFileName = (raw: unknown): string => {
+  const stem = _.trim(_.replace(_.replace(_.replace(_.trim(_.toString(raw)), VIDEO_EXPORT_REGEX.SAVE_NAME_MP4, ""), VIDEO_EXPORT_REGEX.SAVE_NAME_ILLEGAL, " "), VIDEO_EXPORT_REGEX.SAVE_NAME_SPACES, " "));
+  return `${_.replace(stem, VIDEO_EXPORT_REGEX.SAVE_NAME_TRAILING, "") || VIDEO_EXPORT_CONSTANTS.DEFAULT_TITLE}${VIDEO_EXPORT_CONSTANTS.EXT_MP4}`;
+};
 export const selectVideoExportSaveDestination = (req: Request, res: Response): void => {
-  const suggestedName = path.basename(_.toString(req.body?.suggestedName) || `${VIDEO_EXPORT_CONSTANTS.DEFAULT_TITLE}${VIDEO_EXPORT_CONSTANTS.EXT_MP4}`);
+  const suggestedName = buildSaveFileName(req.body?.suggestedName);
   execFile(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SOURCE_TEXT_SELECT_SAVE_FILE, suggestedName, VIDEO_EXPORT_CONSTANTS.EXT_MP4], { windowsHide: true }, (error, stdout) => {
     if (error) {
       logger.error(VIDEO_EXPORT_LOG_MESSAGES.SAVE_ERROR(error.message));

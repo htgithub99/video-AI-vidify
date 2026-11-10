@@ -461,7 +461,7 @@ export function useVideoExporter(lang: Lang) {
       if (!result?.fileName) return;
       setDownloadingId(result.id);
       try {
-        const destination = await requestJson<{ cancelled?: boolean; token?: string }>(API_ROUTES.VIDEO_EXPORT_SELECT_SAVE_DESTINATION, { suggestedName: result.fileName });
+        const destination = await requestJson<{ cancelled?: boolean; token?: string }>(API_ROUTES.VIDEO_EXPORT_SELECT_SAVE_DESTINATION, { suggestedName: _.trim(result.title) || result.fileName });
         if (destination.cancelled || !destination.token) {
           toast.info(text.SAVE_CANCELLED);
           return;
