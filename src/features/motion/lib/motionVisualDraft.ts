@@ -4,6 +4,7 @@ import { RUNTIME_TEXT as RT_MOTION } from "../constants/runtimeText.js";
 import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_TEXT_EMPTY } from "../../../constants/motionRuntime.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
+import { cachedJson, hashJson, hashText } from "../../../lib/cachedJson.js";
 import { normalizeMotionVisualSettings, motionVisualSettingsFor } from "../../../lib/motionVisual.js";
 import { motionVoiceSignature, motionVoiceAsrSatisfied } from "../../../lib/motionVoice.js";
 import { motionEffectiveEncoder } from "../../../lib/motionOutputSettings.js";
@@ -46,17 +47,37 @@ interface VisualDraftContext {
 }
 export const hasMotionVisualDraft = (state: VisualDraftContext) => (state.visualSettings.mode === RT_SHARED.REMOTION ? !!Object.values(state.script?.gen?.remotion?.scenes || {}).some((scenes) => scenes.length) : !!state.script?.gen && (!!state.script.gen.puppet || Object.keys(state.script.gen.cast || {}).length > 0 || Object.keys(state.script.gen.locations || {}).length > 0));
 export const motionVisualDraftKey = (settings: MotionVisualSettings) => stringifyJson(normalizeMotionVisualSettings(settings));
+const compileKeys: { inputs: unknown[]; key: string }[] = [];
 export const motionCompileStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
-  return stringifyJson([
+  const inputs = [...V.DRAFT_COMPILE_FIELDS.map((key) => fields[key]), fields.asrCheck, fields.videoGenre];
+  const hit = compileKeys.find((entry) => entry.inputs.every((value, index) => value === inputs[index]));
+  if (hit) return hit.key;
+  const key = hashJson([
     ...V.DRAFT_COMPILE_FIELDS.map((key) => (key === RT_MAINTENANCE.VISUALSETTINGS ? motionVisualSettingsFor(fields) : key === RT_MOTION.SUBTITLES ? fields[key] !== false : key === RT_MOTION.STYLEPRESET && (fields.visualSettings as MotionVisualSettings)?.mode === RT_SHARED.REMOTION ? undefined : fields[key])),
     motionVoiceAsrSatisfied(fields.voice as MotionStoryScript["voiceTrack"], fields.asrCheck === true && !fields.uploadedAudio),
   ]);
+  compileKeys.unshift({ inputs, key });
+  compileKeys.length = Math.min(compileKeys.length, V.COMPILE_KEY_SLOTS);
+  return key;
 };
 export const motionRenderStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
-  return stringifyJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, motionEffectiveEncoder(fields), fields.musicMood, fields.musicVolume]);
+  return hashJson([MOTION_CAMERA_REVISION, motionCompileStateKey(state), fields.quality, motionEffectiveEncoder(fields), fields.musicMood, fields.musicVolume]);
 };
+const legacyKey = (key: unknown): key is string => typeof key === V.KEY_TYPE && (key as string).length > V.HASHED_KEY_MAX;
+export const migrateMotionCompileKey = <T>(key: T): T => (legacyKey(key) ? (hashText(key) as T) : key);
+export const migrateMotionRenderKey = <T>(key: T): T => {
+  if (!legacyKey(key)) return key;
+  const parts = JSON.parse(key) as unknown[];
+  parts[1] = migrateMotionCompileKey(parts[1]);
+  return hashText(JSON.stringify(parts)) as T;
+};
+export const migrateMotionVisualDraft = (draft: MotionVisualDraft): MotionVisualDraft => ({
+  ...draft,
+  renderSignature: migrateMotionRenderKey(draft.renderSignature),
+  compiled: draft.compiled && { ...draft.compiled, compilationKey: migrateMotionCompileKey(draft.compiled.compilationKey) },
+});
 export const motionProductionOutputKeys = (state: object, result: MotionProductionResult) => {
   if (!result.outputSettings || result.outputSettings.version !== 1) return null;
   if (!motionVoiceAsrSatisfied(result.voice, result.outputSettings.asrCheck)) return null;
@@ -72,7 +93,7 @@ export const motionRenderedPreview = (state: { lastRenderJobId?: string | null; 
 };
 export const motionVisualDraftContextKey = (state: Pick<VisualDraftContext, "analysis" | "script">) => {
   const analysis = state.analysis && { ...state.analysis, visualSettings: undefined, stylePreset: undefined, illustrationNeeds: undefined, illustrationCoverage: undefined };
-  return stringifyJson([analysis, state.script && { title: state.script.title, language: state.script.language, beats: state.script.beats }]);
+  return cachedJson([analysis, state.script && { title: state.script.title, language: state.script.language, beats: state.script.beats }]);
 };
 export const captureMotionVisualDraft = (state: VisualDraftContext, runtime: Pick<MotionVisualDraft, "compiled" | "renderJob"> = {}): MotionVisualDraft => ({
   contextKey: motionVisualDraftContextKey(state),

@@ -3,6 +3,7 @@ import _ from "lodash";
 import { JSON_UTILS_CONFIG } from "../constants/config";
 import { storageUtils } from "./storage";
 import { parseJson, stringifyJson } from "./jsonStringify";
+import { cachedJson } from "./cachedJson";
 export const jsonUtils = {
   safeParse: <T = unknown>(str: string | null | undefined, fallback: T): T => {
     if (_.isNil(str) || _.isEmpty(_.trim(str))) return fallback;
@@ -38,6 +39,15 @@ export const jsonUtils = {
   },
   setAsyncItem: async <T = unknown>(key: string, value: T): Promise<void> => {
     const serialized = jsonUtils.safeStringify(value);
+    await storageUtils.setAsync(key, serialized);
+  },
+  setAsyncImmutableItem: async <T = unknown>(key: string, value: T): Promise<void> => {
+    let serialized: string = JSON_UTILS_CONFIG.EMPTY_FALLBACK;
+    try {
+      serialized = cachedJson(value);
+    } catch (error) {
+      appError(JSON_UTILS_CONFIG.STRINGIFY_ERROR_EVENT, error);
+    }
     await storageUtils.setAsync(key, serialized);
   },
   removeAsyncItem: async (key: string): Promise<void> => {

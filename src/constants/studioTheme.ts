@@ -1,4 +1,6 @@
 export const STUDIO_UI = {
+  DEFER_MS: 250,
+  HEADER_BADGE_ROW: "header-badge-row",
   STATUS_ROLE: "status",
   POLITE_LIVE: "polite",
   GROUP_ROLE: "group",

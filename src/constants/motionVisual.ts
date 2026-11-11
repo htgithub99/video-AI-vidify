@@ -5,6 +5,9 @@ export const MOTION_VISUAL = {
   VERSION: 1,
   COMPONENT_REVISION: 1,
   RECOVERY_REVISION: "remotion-composition-and-anatomy-20261028",
+  COMPILE_KEY_SLOTS: 4,
+  HASHED_KEY_MAX: 64,
+  KEY_TYPE: "string",
   DRAFT_COMPILE_FIELDS: ["script", "analysis", "stylePreset", "aspect", "look", "voice", "uploadedAudio", "fps", "characterMotion", "renderBehavior", "subtitles", "sfx", "sfxVolume", "soundOverrides", "visualSettings"],
   CUTOUT: {
     SIZE: 64,

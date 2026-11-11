@@ -104,6 +104,7 @@ import {
   switchMotionVisualDraft,
   type MotionVisualDraft,
 } from "../lib/motionVisualDraft.js";
+import { createMotionStoryWriter, loadMotionStoryState } from "../lib/motionStoryStorage.js";
 import { motionVisualBeatGroups } from "../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING } from "../../../constants/motionScenePacing.js";
 import { createMotionSourceReader } from "../lib/motionSourceReader.js";
@@ -408,7 +409,7 @@ export function useMotionStudio() {
   useEffect(() => {
     mounted.current = true;
     (async () => {
-      const saved = await jsonUtils.getAsyncItem<Partial<PersistedState>>(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, {});
+      const saved = await loadMotionStoryState<PersistedState>();
       if (!mounted.current) return;
       const restored = { ...DEFAULTS, ...(saved as Partial<PersistedState>), length: saved.length === MotionStoryLength.SHORT ? MotionStoryLength.ONE : (saved.length ?? DEFAULTS.length), multiVoice: saved.multiVoice ?? saved.script?.voiceSettings?.multiVoice ?? true, sceneAiHeadless: saved.sceneAiHeadless ?? saved.aiHeadless ?? DEFAULTS.sceneAiHeadless };
       try {
@@ -456,7 +457,7 @@ export function useMotionStudio() {
       renderPollAbort.current?.abort();
     };
   }, []);
-  const persist = useMemo(() => _.debounce((s: PersistedState) => void jsonUtils.setAsyncItem(MOTION_STORY_CONFIG.STORY_STORAGE_KEY, s), 600), []);
+  const persist = useMemo(() => _.debounce(createMotionStoryWriter(), 600), []);
   useEffect(() => {
     if (hydrated) persist({ ...state, logHistory, visualDrafts: { ...state.visualDrafts, [motionVisualDraftKey(state.visualSettings)]: captureMotionVisualDraft(state, visualRuntime.current) } });
   }, [state, compiled, renderJob, logHistory, hydrated, persist]);

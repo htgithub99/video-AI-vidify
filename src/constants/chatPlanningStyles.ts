@@ -1,6 +1,6 @@
 export const CHAT_PLANNING_STYLES = {
   WRAPPER: "bg-slate-900/60 border border-slate-800/80 rounded-3xl p-5 space-y-4 shadow-xl backdrop-blur-md w-full text-left",
-  HEADER: "flex items-center justify-between gap-3",
+  HEADER: "header-badge-row flex items-center justify-between gap-3",
   HEADER_INFO: "flex items-center gap-2.5 min-w-0",
   HEADER_ICON_FRAME: "w-6 h-6 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-400 flex items-center justify-center font-mono font-extrabold text-xs shadow-sm shadow-violet-500/20 shrink-0",
   HEADER_ICON: "w-3.5 h-3.5 text-violet-400",
