@@ -195,5 +195,6 @@ export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionS
     sceneEffectsEnabled: enabled && spec.renderBehavior?.sceneEffects !== RT_MAINTENANCE.OFF,
     seed: scene.html?.seed || scene.id,
     speaking: enabled ? (scene.speaking || []).map((span) => ({ entityId: span.entityId, start: (span.startFrame - scene.startFrame) / spec.fps, end: (span.endFrame - scene.startFrame) / spec.fps })) : [],
+    places: scene.places || [],
   };
 };

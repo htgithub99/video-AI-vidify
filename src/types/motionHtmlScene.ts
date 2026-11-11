@@ -55,6 +55,7 @@ export interface MotionHtmlFrameInput {
   sceneEffectsEnabled: boolean;
   seed: string;
   speaking: { entityId: string; start: number; end: number }[];
+  places?: string[];
 }
 export interface MotionAuthoringSettings {
   version: 1;

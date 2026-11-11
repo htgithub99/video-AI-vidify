@@ -125,6 +125,7 @@ export interface MotionSceneActionPlan {
 }
 export interface MotionRemotionScene {
   renderer?: "html-canvas";
+  places?: string[];
   sceneTemplate?: string;
   continuityIn?: string;
   continuityOut?: string;

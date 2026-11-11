@@ -259,6 +259,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     settings.cast,
     settings.continuity,
     MOTION_HTML.SCENE_LABEL + scene.sceneTemplate,
+    MOTION_HTML.ON_SCREEN_TEXT(scene.places || []),
     scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
     `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: Number(settings.seconds.toFixed(1)), profile: settings.profile })}`,
   ]
@@ -635,6 +636,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   const scheduleFrom = (sourceScript: MotionStoryScript) => {
     if (opts.signal?.aborted) return;
     const groups = motionVisualBeatGroups(sourceScript, 1001, settings.pacing);
+    for (const group of groups) for (const scene of state.scenes[group.id] || []) scene.places = [...new Set(group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id)).map((beat) => analysis.places.find((place) => place.key === beat.place)?.name).filter((name): name is string => !!name))];
     const tasks = groups
       .flatMap((group, groupIndex) => (state.scenes[group.id] || []).map((scene) => ({ group, groupIndex, scene })))
       .filter(({ group, scene }) => (!opts.onlyBeats?.length || group.beats.some((beat) => opts.onlyBeats!.includes(beat.id))) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && (!opts.onlyLocations?.length || group.beats.some((beat) => opts.onlyLocations!.includes(beat.place || ""))));

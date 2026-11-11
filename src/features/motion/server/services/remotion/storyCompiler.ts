@@ -93,6 +93,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     scenes.push({
       ...scene,
       sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))],
+      places: scene.places?.length ? scene.places : [...new Set(covered.map(({ line }) => analysis?.places.find((place) => place.key === script.beats.find((beat) => beat.id === line.beatId)?.place)?.name).filter((name): name is string => !!name))],
       startFrame: frame,
       endFrame,
       speaking,
