@@ -13,6 +13,8 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
   const plan = motionPlanAiExecution(state);
   const light = motionLightAiExecution(state);
   const onePass = state.visualSettings?.mode === RT_MAINTENANCE.REMOTION;
+  const patchMain = (value: Partial<MotionAiChoice>) =>
+    patch({ ...value, lightAiProvider: light.provider, lightAiModel: light.model, lightAiHeadless: light.chromeHeadless, lightAiFallback: light.allowFallback, planAiProvider: plan.provider, planAiModel: plan.model, planAiHeadless: plan.chromeHeadless, planAiFallback: plan.allowFallback, sceneAiHeadless: scene.chromeHeadless });
   const selectSceneProvider = (provider: MotionSceneAiChoice["sceneAiProvider"]) => {
     const next = resolveMotionSceneExecution({ provider });
     patch({ sceneAiProvider: next.provider, sceneAiModel: next.model });
@@ -27,16 +29,16 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           model={state.aiModel}
           executionMode={state.aiMode}
           chromeHeadless={state.aiHeadless}
-          onProviderChange={(value) => patch({ aiProvider: value })}
-          onModelChange={(value) => patch({ aiModel: value })}
-          onExecutionModeChange={(value) => patch({ aiMode: value })}
-          onChromeHeadlessChange={(value) => patch({ aiHeadless: value })}
+          onProviderChange={(value) => patchMain({ aiProvider: value })}
+          onModelChange={(value) => patchMain({ aiModel: value })}
+          onExecutionModeChange={(value) => patchMain({ aiMode: value })}
+          onChromeHeadlessChange={(value) => patchMain({ aiHeadless: value })}
           currentLang={currentLang}
           allowHybrid
           multiRoom={state.aiMultiRoom === true}
-          onMultiRoomChange={(value) => patch({ aiMultiRoom: value })}
+          onMultiRoomChange={(value) => patchMain({ aiMultiRoom: value })}
           allowFallback={state.aiFallback !== false}
-          onAllowFallbackChange={(value) => patch({ aiFallback: value })}
+          onAllowFallbackChange={(value) => patchMain({ aiFallback: value })}
         />
       </section>
       <section aria-label={text.LIGHT_TITLE}>

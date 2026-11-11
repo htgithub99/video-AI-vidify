@@ -195,6 +195,8 @@ import { MotionStoryLength, type MotionAiExecution, type MotionBeat, type Motion
 import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, closeChatPlanningRoomsForProject, generatePlanningWithChatUi, getChatPlanningRoom, prepareChatPlanningRoom, probeChatPlanningRoomReady, reloadChatPlanningRoom, resumeChatPlanningResponse } from "../../../../server/services/chatUiPlanningService.js";
 import { sharedChromeTasks } from "../../../../server/services/chromeTaskCoordinator.js";
 import { CHROME_BACKUP, CHAT_ROOM_RECOVERY } from "../../../../constants/chromeBackup.js";
+import { aiOutageMs, aiFallbackChain } from "../../../../server/services/chromeBackupService.js";
+import { AI_AVAILABILITY } from "../../../../constants/aiAvailability.js";
 import { exhaustedMotionRoom, isChatAttachmentError, isFinalChatResponseError, isMotionContentResponseError, isTerminalMotionAiError, uncertainChatSubmission, type ChatPlanningSubmission } from "../../../../server/services/chatSubmissionRecovery.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../../../constants/motionAiRecovery.js";
 import type { MotionAiLog } from "../../../../types/motionVideo.js";
@@ -831,7 +833,7 @@ const motionRoomChatModel = (provider: string, model?: string): AiPlanningChatMo
           : provider === AiPlanningFallbackProvider.GrokChat
           ? ((_.find(CINEMATIC_CHAT_MODEL_OPTIONS[AiPlanningFallbackProvider.GrokChat], { value: model as AiPlanningChatModel })?.value as AiPlanningChatModel | undefined) as AiPlanningChatModel)
           : pickEnum(_.values(AiPlanningChatModel), model, AiPlanningChatModel.GeminiFlash);
-export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
+export const motionRoomBlockedMs = (provider: string, model?: string): number => Math.max(0, aiOutageMs(provider), (unavailableRoomProvider(provider)?.until || 0) - Date.now(), (blockedRoomProviders.get(provider) || 0) - Date.now(), (blockedRoomModels.get(AIR.MODEL_KEY(provider, model)) || 0) - Date.now());
 export const resetMotionAiRoom = async (): Promise<void> => {
   const run = motionAiRunStore.getStore();
   if (!run) return;
@@ -949,7 +951,7 @@ export const logMotionAiChain = (entry: { artifact: string; step: number; total:
 export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => {
   const primary = { ...exec, strictProvider: true, chained: true };
   if (exec.strictProvider || exec.allowFallback === false) return [primary];
-  const list = exec.role === MOTION_AI_ROLE.DRAW ? MOTION_AI_FALLBACK.DRAW : MOTION_AI_FALLBACK.MAIN;
+  const list = exec.role === MOTION_AI_ROLE.DRAW ? aiFallbackChain().filter((route) => MOTION_AI_FALLBACK.DRAW.some((item) => item.provider === route.provider)) : aiFallbackChain();
   const rest = _.map(
     _.filter(list, (r) => r.provider !== exec.provider),
     (r): MotionAiExecution => ({ ...exec, provider: r.provider, model: r.model, mode: AiPlanningExecutionMode.RoomOnly, strictProvider: true, chained: true }),
@@ -1390,6 +1392,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         allowFallback: false,
+        waitOnExhausted: exec.allowFallback === false,
         submission,
         restoreContext: () => {
           run?.contextRooms.delete(workerId!);
@@ -1400,7 +1403,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         onRecovery: (line) => {
           log?.(line, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
           clearTimeout(watchdog);
-          if (line !== CHROME_BACKUP.WAIT)
+          if (line !== CHROME_BACKUP.WAIT && !line.startsWith(AI_AVAILABILITY.WAIT_PREFIX))
             watchdog = setTimeout(() => {
               timedOut = true;
               roomCtrl.abort(submission.attempted ? AIR.TIMEOUT_REASON : AIR.READINESS_TIMEOUT_REASON);

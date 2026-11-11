@@ -148,7 +148,9 @@ import { META_AI_CHAT_CONFIG as M } from "../../constants/metaAiChat.js";
 import { selectMetaAiChatModel } from "./metaAiModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { assertGeminiFlashQuota, geminiModelStillSelected, getGeminiModelButton, markGeminiModel, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
-import { withChromeBackupRecovery, saveChatResponse, isGeminiFlashQuotaError } from "./chromeBackupService.js";
+import { withChromeBackupRecovery, saveChatResponse, isAutoChromeSwitchEnabled, chromeWaitPolicy, earliestProviderReset, activeChromeId, aiFallbackChain } from "./chromeBackupService.js";
+import { classifyAiError, tagAiAvailability, aiAvailabilityOf, isAiExhausted, aiUnavailableUntil, formatAiUntil, waitAiReset } from "./aiAvailabilityService.js";
+import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry, isRecoverableChatRefusal } from "./chatRoomRecovery.js";
@@ -177,6 +179,7 @@ interface ChatResponseSnapshot {
 type PendingRoomResponse = ChatPendingSubmission;
 interface ChatPlanningRequest {
   allowFallback?: boolean;
+  waitOnExhausted?: boolean;
   oneGeneration?: boolean;
   onRecovery?: (line: string) => void;
   restoreContext?: () => string;
@@ -2187,7 +2190,7 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
         lastError = error;
         if (request.submission?.pending) Object.assign(request.submission.pending, { retryClicks: roomRetryClicks, recoveryAttempt });
         throwIfPlanningCancelled(request.signal);
-        if (isGeminiFlashQuotaError(error) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw error;
+        if ((await aiOutage(error, request.provider)) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw error;
         if (request.provider === AiPlanningFallbackProvider.GeminiChat) {
           const interruptedRoom = geminiRooms.get(roomKey);
           if (interruptedRoom) await waitForGeminiSession(interruptedRoom, { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
@@ -2236,7 +2239,7 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
               return result;
             } catch (retryError) {
               throwIfPlanningCancelled(request.signal);
-              if (isGeminiFlashQuotaError(retryError) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
+              if ((await aiOutage(retryError, request.provider)) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
               request.submission!.completed = isCompletedChatResponseError(retryError);
               if (!request.submission!.completed) throw Object.assign(uncertainChatSubmission(request.provider), { [RECOVERY.COMPLETE]: true, cause: retryError });
               if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError)) throw retryError;
@@ -2321,7 +2324,7 @@ export const prepareChatPlanningRoom = (request: ChatPlanningRequest): Promise<v
         } catch (error) {
           throwIfPlanningCancelled(request.signal);
           const message = String((error as Error).message);
-          if (isGeminiFlashQuotaError(error) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG] || !(AIR.TRANSPORT.test(message) || RECOVERY.RETRY_PATTERN.test(message))) throw error;
+          if ((await aiOutage(error, request.provider)) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG] || !(AIR.TRANSPORT.test(message) || RECOVERY.RETRY_PATTERN.test(message))) throw error;
           if (attempt >= RECOVERY.SAME_ROOM_RETRIES + 1) throw Object.assign(error as Error, { [RECOVERY.COMPLETE]: true });
           const page = getChatPlanningRoom(request);
           const line = attempt >= RECOVERY.SAME_ROOM_RETRIES ? RECOVERY.REPLACE_LOG : page && !page.isClosed() ? RECOVERY.RETRY_LOG(attempt + 1) : RECOVERY.RECONNECT_LOG(attempt + 1);
@@ -2334,6 +2337,7 @@ export const prepareChatPlanningRoom = (request: ChatPlanningRequest): Promise<v
     },
     request.signal,
     request.onRecovery,
+    request.provider,
   );
 const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Promise<T>): Promise<T> => {
   try {
@@ -2344,6 +2348,12 @@ const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Pr
 };
 export const resumeChatPlanningResponse = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => isChatBridgeEnabled() ? askChatBridge(request) : sharedChromeTasks.run(() => trackChatResponse(request, () => resumeChatPlanningResponseTask(request)), request.signal);
 const blockedFallbackProviders = new Map<string, number>();
+const aiOutage = async (error: unknown, provider: string): Promise<boolean> => {
+  const found = await classifyAiError(error, provider);
+  if (found) tagAiAvailability(error, found);
+  return !!found;
+};
+const providerBlockedUntil = (provider: string): number => Math.max(blockedFallbackProviders.get(provider) || 0, isAutoChromeSwitchEnabled() ? earliestProviderReset(provider) : aiUnavailableUntil(activeChromeId(), provider));
 const stopsFallback = (error: unknown, request: ChatPlanningRequest): boolean =>
   !!request.signal?.aborted ||
   !!_.get(error, BACKUP.ERROR_FLAG) ||
@@ -2351,18 +2361,45 @@ const stopsFallback = (error: unknown, request: ChatPlanningRequest): boolean =>
   _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR ||
   _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR;
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+  for (;;) {
+    try {
+      return await generatePlanningWithChatUiRoutes(request);
+    } catch (error) {
+      const found = aiAvailabilityOf(error);
+      if (!found || !isAiExhausted(error) || request.signal?.aborted || request.waitOnExhausted === false || chromeWaitPolicy() !== AI_AVAILABILITY.WAIT_POLICY.WAIT) throw error;
+      const until = Math.max(Date.now() + AI_AVAILABILITY.MIN_MS, found.until);
+      const line = AI_AVAILABILITY.LOG.WAIT(found.provider, formatAiUntil(until));
+      request.onRecovery?.(line);
+      appLog(line);
+      await waitAiReset(until, request.signal);
+      const resume = AI_AVAILABILITY.LOG.RESUME(found.provider);
+      request.onRecovery?.(resume);
+      appLog(resume);
+    }
+  }
+};
+const generatePlanningWithChatUiRoutes = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (!(request.allowFallback ?? requestContext.getStore()?.aiAllowFallback) || isChatBridgeEnabled()) return generatePlanningWithChatUiOnce(request);
-  const routes = [{ provider: request.provider, model: request.model }, ...MOTION_AI_FALLBACK.MAIN.filter((route) => route.provider !== request.provider)];
+  const routes = [{ provider: request.provider, model: request.model }, ...aiFallbackChain().filter((route) => route.provider !== request.provider)];
   let failure: unknown;
   for (const [index, route] of routes.entries()) {
-    if (index > 0 && (blockedFallbackProviders.get(route.provider) || 0) > Date.now()) continue;
+    const blockedUntil = providerBlockedUntil(route.provider);
+    const outage = aiUnavailableUntil(activeChromeId(), route.provider);
+    if (blockedUntil > Date.now() && (index > 0 || outage)) {
+      if (outage) {
+        const line = AI_AVAILABILITY.LOG.SKIP(String(route.provider), formatAiUntil(blockedUntil));
+        request.onRecovery?.(line);
+        appLog(line);
+      }
+      continue;
+    }
     try {
       return await generatePlanningWithChatUiOnce({ ...request, provider: route.provider as AiPlanningFallbackProvider, model: route.model as AiPlanningChatModel, submission: index === 0 ? request.submission : undefined });
     } catch (error) {
       if (stopsFallback(error, request)) throw error;
-      failure ??= error;
-      blockedFallbackProviders.set(route.provider, Date.now() + CHAT_EXECUTION_POLICY.PROVIDER_BLOCK_MS);
-      const next = routes.slice(index + 1).find((candidate) => (blockedFallbackProviders.get(candidate.provider) || 0) <= Date.now());
+      if (!failure || (isAiExhausted(error) && (!isAiExhausted(failure) || (aiAvailabilityOf(error)?.until || 0) < (aiAvailabilityOf(failure)?.until || 0)))) failure = error;
+      if (!aiAvailabilityOf(error)) blockedFallbackProviders.set(route.provider, Date.now() + CHAT_EXECUTION_POLICY.PROVIDER_BLOCK_MS);
+      const next = routes.slice(index + 1).find((candidate) => providerBlockedUntil(candidate.provider) <= Date.now());
       if (next) {
         const line = MOTION_AI_FALLBACK.LOG_SWITCH(String(route.provider), String(next.provider), _.truncate(_.toString(_.get(error, SOURCE_TEXT_MESSAGE)), { length: MOTION_AI_FALLBACK.REASON_MAX }));
         request.onRecovery?.(line);
@@ -2370,6 +2407,7 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
       }
     }
   }
+  if (!failure) return generatePlanningWithChatUiOnce(request);
   throw failure;
 };
 const generatePlanningWithChatUiOnce = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
@@ -2391,5 +2429,6 @@ const generatePlanningWithChatUiOnce = (request: ChatPlanningRequest): Promise<{
     },
     request.signal,
     request.onRecovery,
+    request.provider,
   );
 };

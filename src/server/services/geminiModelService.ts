@@ -7,6 +7,7 @@ import { clickPlanningControl, throwIfPlanningCancelled } from "../../lib/chatPl
 import type { AiPlanningChatModel } from "../../types.js";
 import { AiPlanningChatModel as Models } from "../../types.js";
 import { CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
 import { CHAT_SPEED } from "../../constants/chatSpeed.js";
 const selectedModels = new WeakMap<Page, { model: AiPlanningChatModel; at: number }>();
@@ -40,11 +41,17 @@ const editableInput = async (input: Locator): Promise<boolean> => {
   return input.evaluate((element) => (element as HTMLElement).isContentEditable || element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement).catch(() => false);
 };
 const optionFor = (page: Page, name: RegExp): Locator => page.getByRole(UI.MENU_ITEM_RADIO, { name }).or(page.getByRole(UI.MENU_ITEM, { name })).or(page.getByRole(UI.OPTION, { name })).filter({ visible: true }).first();
+const quotaError = (model: AiPlanningChatModel | undefined, text: string): Error => (parseGeminiChatModel(model)?.model === Models.GeminiFlash ? new Error(BACKUP.QUOTA + AI_AVAILABILITY.SPACE + text) : new Error(AI_AVAILABILITY.GEMINI_QUOTA(String(model), text)));
 export const assertGeminiFlashQuota = async (page: Page, model?: AiPlanningChatModel): Promise<void> => {
-  if (parseGeminiChatModel(model)?.model !== Models.GeminiFlash) return;
-  const option = optionFor(page, GEMINI_CHAT_BASE_MODEL_LABELS[Models.GeminiFlash]!);
-  const text = await option.innerText({ timeout: UI.POLL_MS }).catch(() => "");
-  if (BACKUP.RESET_PATTERN.test(text)) throw new Error(BACKUP.QUOTA);
+  const selection = parseGeminiChatModel(model);
+  const label = selection && GEMINI_CHAT_BASE_MODEL_LABELS[selection.model];
+  if (!label) return;
+  const text = await optionFor(page, label).innerText({ timeout: UI.POLL_MS }).catch(() => AI_AVAILABILITY.EMPTY);
+  if (BACKUP.RESET_PATTERN.test(text)) throw quotaError(model, text);
+};
+const unavailableFor = async (option: Locator, model: AiPlanningChatModel): Promise<Error> => {
+  const text = await option.innerText({ timeout: UI.POLL_MS }).catch(() => AI_AVAILABILITY.EMPTY);
+  return BACKUP.RESET_PATTERN.test(text) ? quotaError(model, text) : new Error(GEMINI_MODEL_ENCODING.UNAVAILABLE(model));
 };
 const available = async (option: Locator): Promise<boolean> => (await visible(option)) && (await option.isEnabled().catch(() => false)) && (await option.getAttribute(UI.ARIA_DISABLED)) !== UI.TRUE && (await option.getAttribute(C.DATA_DISABLED)) === null;
 const disabled = async (option: Locator): Promise<boolean> => (await visible(option)) && (!(await option.isEnabled()) || (await option.getAttribute(UI.ARIA_DISABLED)) === UI.TRUE || (await option.getAttribute(C.DATA_DISABLED)) !== null);
@@ -162,7 +169,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
         await assertGeminiFlashQuota(page, model);
         if (!(await waitUntil(page, () => available(option), signal))) {
           await assertGeminiFlashQuota(page, model);
-          if (await disabled(option)) throw unavailable();
+          if (await disabled(option)) throw await unavailableFor(option, model);
           throw uiError(page, phase, model);
         }
         await clickPlanningControl(option, signal);
@@ -174,7 +181,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       const option = optionFor(page, level.pattern);
       if (!(await openThinkingMenu(page, button, option, signal))) throw uiError(page, phase, model);
       if (!(await waitUntil(page, () => available(option), signal))) {
-        if (await disabled(option)) throw unavailable();
+        if (await disabled(option)) throw await unavailableFor(option, model);
         throw uiError(page, phase, model);
       }
       if (!(await checked(option))) {
@@ -190,7 +197,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       return;
     } catch (error) {
       throwIfPlanningCancelled(signal);
-      if (error instanceof Error && error.message.startsWith(BACKUP.QUOTA_CODE)) throw Object.assign(error, { [MOTION_TEXT_ROOMPAGE]: page });
+      if (error instanceof Error && (error.message.startsWith(BACKUP.QUOTA_CODE) || error.message.startsWith(AI_AVAILABILITY.GEMINI_QUOTA_CODE))) throw Object.assign(error, { [MOTION_TEXT_ROOMPAGE]: page });
       if (error instanceof Error && error.message.includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE)) throw Object.assign(error, { [MOTION_TEXT_ROOMPAGE]: page, [GEMINI_MODEL_ENCODING.DIAGNOSTICS]: { phase, model } });
       if (attempt + 1 === UI.SELECTION_ATTEMPTS) throw uiError(page, phase, model, error);
     } finally {

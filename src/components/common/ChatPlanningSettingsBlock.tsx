@@ -4,7 +4,7 @@ import * as ST from "../../constants/sourceText.js";
 import _ from "lodash";
 import { useEffect } from "react";
 import { Bot, ChevronDown, Cpu, Eye, Layers, Shuffle, Sparkles } from "lucide-react";
-import { PlanningToggleField } from "./PlanningToggleField.js";
+import { PlanningChipToggle } from "./PlanningToggleField.js";
 import { CHAT_PLANNING_STYLES } from "../../constants/chatPlanningStyles.js";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../../constants/cinematicConstants";
 import { CLAUDE_CHAT_MODELS, CLAUDE_CHAT_BASE_MODEL_OPTIONS, CLAUDE_MODEL_ENCODING, CLAUDE_EFFORT_OPTIONS, encodeClaudeChatModel, parseClaudeChatModel, type ClaudeEffort } from "../../constants/claudeChatModels";
@@ -18,7 +18,7 @@ const CHROME_WINDOW_MODE = { HIDDEN: SOURCE_TEXT_HIDDEN, VISIBLE: SOURCE_TEXT_VI
 const SELECT_BASE_CLASSNAME = SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE;
 const FIELD_BASE_CLASSNAME = SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2;
 const PlanningSelectField = ({ title, icon: Icon, iconClassName, value, onChange, disabled = false, fieldDisabled = false, children }: { title: string; icon: typeof Bot; iconClassName: string; value: string; onChange: React.ChangeEventHandler<HTMLSelectElement>; disabled?: boolean; fieldDisabled?: boolean; children: React.ReactNode }) => (
-  <div className={cn(FIELD_BASE_CLASSNAME, fieldDisabled && CHAT_PLANNING_STYLES.DISABLED)} title={title}>
+  <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.FIELD, fieldDisabled && CHAT_PLANNING_STYLES.DISABLED)} title={title}>
     <Icon className={iconClassName} />
     <StudioSelect aria-label={title} disabled={disabled} value={value} onChange={onChange} className={SELECT_BASE_CLASSNAME}>
       {children}
@@ -138,7 +138,7 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
           <span className={CHAT_PLANNING_STYLES.BADGE_TEXT}>{badgeSummary}</span>
         </div>
       </div>
-      <div className={cn(CHAT_PLANNING_STYLES.GRID, extraControl && (hasClaudeEffort || hasGeminiThinking) ? CHAT_PLANNING_STYLES.GRID_WITH_LEVEL_AND_EXTRA : extraControl || hasClaudeEffort || hasGeminiThinking ? CHAT_PLANNING_STYLES.GRID_WITH_EXTRA : CHAT_PLANNING_STYLES.GRID_DEFAULT, CHAT_PLANNING_STYLES.GAP)}>
+      <div className={CHAT_PLANNING_STYLES.ROW}>
         <PlanningSelectField title={texts.PLANNING_AI_LABEL} icon={Bot} iconClassName={CHAT_PLANNING_STYLES.PROVIDER_ICON} value={sourceValue} onChange={(e) => handleSourceChange(e.target.value)}>
           <option value={AiPlanningFallbackProvider.GeminiChat} className={CHAT_PLANNING_STYLES.OPTION}>
             {texts.GEMINI_CHAT_OPTION}
@@ -206,22 +206,14 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
             {texts.PLANNING_CHROME_VISIBLE}
           </option>
         </PlanningSelectField>
-        {extraControl && <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>{extraControl}</div>}
+        {extraControl && <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD, CHAT_PLANNING_STYLES.FIELD_WIDE)}>{extraControl}</div>}
+        {!isApiOnly && (onMultiRoomChange || onAllowFallbackChange) && (
+          <div className={CHAT_PLANNING_STYLES.CHIPS}>
+            {onMultiRoomChange && <PlanningChipToggle checked={multiRoom === true} label={texts.MULTI_ROOM_LABEL} onText={texts.MULTI_ROOM_SHORT_ON} offText={texts.MULTI_ROOM_SHORT_OFF} title={texts.MULTI_ROOM_HINT} icon={Layers} onChange={onMultiRoomChange} />}
+            {onAllowFallbackChange && <PlanningChipToggle checked={allowFallback === true} label={texts.FALLBACK_LABEL} onText={texts.FALLBACK_SHORT_ON} offText={texts.FALLBACK_SHORT_OFF} title={texts.FALLBACK_HINT} icon={Shuffle} onChange={onAllowFallbackChange} />}
+          </div>
+        )}
       </div>
-      {!isApiOnly && (onMultiRoomChange || onAllowFallbackChange) && (
-        <div className={CHAT_PLANNING_STYLES.POLICY_ROW}>
-          {onMultiRoomChange && (
-            <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>
-              <PlanningToggleField checked={multiRoom === true} label={texts.MULTI_ROOM_LABEL} text={multiRoom === true ? texts.MULTI_ROOM_ON : texts.MULTI_ROOM_OFF} title={texts.MULTI_ROOM_HINT} icon={Layers} onChange={onMultiRoomChange} />
-            </div>
-          )}
-          {onAllowFallbackChange && (
-            <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>
-              <PlanningToggleField checked={allowFallback === true} label={texts.FALLBACK_LABEL} text={allowFallback === true ? texts.FALLBACK_ON : texts.FALLBACK_OFF} title={texts.FALLBACK_HINT} icon={Shuffle} onChange={onAllowFallbackChange} />
-            </div>
-          )}
-        </div>
-      )}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.ClaudeChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.CLAUDE_CHAT_NOTE}</p>}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.DeepSeekChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.DEEPSEEK_CHAT_NOTE}</p>}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.MetaAi && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.META_AI_NOTE}</p>}
