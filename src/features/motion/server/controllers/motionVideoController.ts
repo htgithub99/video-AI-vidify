@@ -1,13 +1,8 @@
-import { RUNTIME_TEXT as RT_MOTION } from "../../constants/runtimeText.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import { startMotionProduction, resumeMotionProduction, getMotionProduction, cancelMotionProduction, getMotionProductionLogs } from "../services/motionProductionService.js";
 import { motionStoryLogs } from "../services/motionLogStore.js";
-import { MOTION_ASSET_PREVIEW as ASSET_PREVIEW } from "../../constants/motionAssetPreview.js";
-import { isRemotionSpec, motionVisualSettingsFor } from "../../../../lib/motionVisual.js";
-import { MOTION_VISUAL } from "../../../../constants/motionVisual.js";
-import type { MotionStoryScript, MotionProductionResult } from "../../../../types/motionVideo.js";
-import { analyzeMotionStoryInput, scriptMotionStoryInput, seoMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, readStorySource, storyLanguage, aiExec, drawExec, validateSpec } from "../services/motionProductionActions.js";
-import { puppetSheet } from "../services/puppet/qa.js";
+import { motionVisualSettingsFor } from "../../../../lib/motionVisual.js";
+import { analyzeMotionStoryInput, scriptMotionStoryInput, seoMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, readStorySource, storyLanguage, drawExec, validateSpec } from "../services/motionProductionActions.js";
 const respondMotionAction = async (req: Request, res: Response, action: (body: Record<string, any>) => unknown): Promise<void> => {
   try {
     res.json(await action(req.body || {}));
@@ -15,10 +10,6 @@ const respondMotionAction = async (req: Request, res: Response, action: (body: R
     fail(res, 400, error);
   }
 };
-import { listPuppetKit, puppetKitThumb, removePuppetKit, renamePuppetKit } from "../services/puppet/kitAdmin.js";
-import { seedPuppetKit } from "../services/puppet/kitSeed.js";
-import { PUPPET_KIT_API, PUPPET_STYLE_DEFAULT } from "../../../../constants/motionPuppet.js";
-import { PUPPET_SEED_DEFAULT } from "../../../../constants/motionPuppetSeed.js";
 import { deleteTrainedVoice, listTrainedVoices, trainVieneuVoice } from "../services/motionVoiceTrainService.js";
 import { MOTION_VOICE_TRAIN } from "../../../../constants/motionVoiceTrain.js";
 import { motionSoundAudition } from "../services/motionSoundMixService.js";
@@ -74,7 +65,7 @@ import { registerVieneuVoice, vieneuRoot } from "../../../../server/services/vie
 import { prepareMotionVoiceReference } from "../services/motionVoiceReferenceService.js";
 import { createHash } from "crypto";
 import { getMotionDemoSpec, getMotionEngineClientScript } from "../services/motionEngineService.js";
-import { resolveGenPreview } from "../services/puppet/genState.js";
+import { resolveGenPreview } from "../services/motionGenState.js";
 import { clearMotionResults, deleteMotionResult, getMotionAudioDirectory, getMotionRootDirectory, listMotionResults } from "../services/motionLibraryService.js";
 import { cancelMotionJob, checkMotionSpec, execFileText, getMotionJob, isMotionRenderBusy, probeMediaDuration } from "../services/motionRenderService.js";
 import { cancelStoryJob, getStoryJob, startStoryJob } from "../services/motionStoryJobService.js";
@@ -118,15 +109,6 @@ export const checkMotionVideo = async (req: Request, res: Response): Promise<voi
     res.json({ success: true, ...(await checkMotionSpec(validateSpec(req.body?.spec))) });
   } catch (error) {
     logger.error(MOTION_TEXT_MOTION_VIDEO_CHECK_FAILED, error);
-    fail(res, 400, error);
-  }
-};
-export const renderBoard2dSheet = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const spec = validateSpec(req.body?.spec);
-    if (isRemotionSpec(spec)) throw new Error(MOTION_VISUAL.SETTINGS_CHANGED);
-    res.json({ success: true, items: _.map(await puppetSheet(spec), (it) => _.omit(it, [PUPPET_KIT_API.ABS])) });
-  } catch (error) {
     fail(res, 400, error);
   }
 };
@@ -430,55 +412,5 @@ export const serveMotionSfx = async (req: Request, res: Response): Promise<void>
     res.sendFile(file);
   } catch {
     res.status(404).end();
-  }
-};
-export const seedPuppetKitItems = (req: Request, res: Response): void => {
-  try {
-    const styleId = _.toString(req.body?.styleId || PUPPET_STYLE_DEFAULT);
-    const exec = drawExec(req.body?.aiExecution);
-    const mainExec = aiExec(req.body?.mainAiExecution || req.body?.aiExecution);
-    const job = startStoryJob(false, MotionStoryJobKind.LIBRARY, async (ctx) => seedPuppetKit(styleId, _.toString(req.body?.genre || PUPPET_SEED_DEFAULT), { exec, mainExec, signal: ctx.signal, log: ctx.log }, (v) => ctx.progress(v)));
-    res.json({ success: true, job });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const listPuppetKitItems = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, items: listPuppetKit(req.query.type, req.query.styleId) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const removePuppetKitItems = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: true, removed: removePuppetKit(req.body?.type, req.body?.ids ?? [req.body?.id]) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const renamePuppetKitItem = (req: Request, res: Response): void => {
-  try {
-    res.json({ success: renamePuppetKit(req.body?.type, req.body?.id, req.body?.name) });
-  } catch (error) {
-    fail(res, 400, error);
-  }
-};
-export const servePuppetKitThumb = (req: Request, res: Response): void => {
-  try {
-    const p = req.params as Record<string, string>;
-    const project = typeof req.query[ASSET_PREVIEW.QUERY] === "string" ? (req.query[ASSET_PREVIEW.QUERY] as string) : undefined;
-    const job = project ? getMotionProduction(project) || getStoryJob(project) : undefined;
-    if (project && !job) return void res.status(404).end();
-    const result = job?.result as MotionProductionResult | MotionStoryScript | undefined;
-    const gen = result && (RT_MOTION.SCRIPT in result ? result.script?.gen : RT_MOTION.GEN in result ? result.gen : undefined);
-    const thumb = puppetKitThumb(p.type, p.id, gen?.puppet?.pack);
-    if (!thumb) return void res.status(404).end();
-    res.setHeader(PUPPET_KIT_API.CACHE, PUPPET_KIT_API.NO_CACHE);
-    if (thumb.file) return void res.sendFile(thumb.file);
-    res.setHeader(PUPPET_KIT_API.CSP, PUPPET_KIT_API.CSP_VALUE);
-    res.type(PUPPET_KIT_API.SVG_TYPE).send(thumb.svg);
-  } catch (error) {
-    fail(res, 400, error);
   }
 };

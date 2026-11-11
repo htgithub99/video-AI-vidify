@@ -15,16 +15,10 @@ import { MotionPartsCard } from "./MotionPartsCard.js";
 import { MOTION_PARTS, MOTION_PARTS_TEXT } from "../../../constants/motionParts.js";
 import { MOTION_STORY_LENGTH_SECONDS } from "../../../constants/motionVideo.js";
 import { motionPartMinutes } from "../../../lib/motionParts.js";
-import { MotionReferenceControls } from "./MotionReferenceControls.js";
 import { MotionVoicePanel } from "./MotionVoicePanel.js";
 import { MotionVoiceQualityNotice } from "./MotionVoiceQualityNotice.js";
-import { MotionKitLibraryPanel } from "./MotionKitLibraryPanel.js";
-import { MotionPuppetPanel } from "./MotionPuppetPanel.js";
 import { MotionAssetImage } from "./MotionAssetImage.js";
 import { MOTION_ASSET_PREVIEW as ASSET_PREVIEW } from "../constants/motionAssetPreview.js";
-import type { PuppetAssetPreview } from "../../../types/motionPuppet.js";
-import { PUPPET_STYLE_DEFAULT, PUPPET_STYLE_DESIGN_SOURCE, PUPPET_STYLE_NONE, PUPPET_STYLE_PRESETS, PUPPET_TEXTS, PUPPET_KIT_API, PUPPET_TYPES } from "../../../constants/motionPuppet.js";
-import { puppetBeatVisualLines } from "../../../lib/motionStoryboard.js";
 import { motionDisplayedJob } from "../lib/motionDisplayedJob.js";
 import { MOTION_REFERENCE_TEXTS } from "../../../constants/motionReference.js";
 import * as MR from "../../../constants/motionRuntime.js";
@@ -36,7 +30,7 @@ import { MOTION_LANGUAGES, MOTION_LANGUAGE_CODES } from "../../../constants/moti
 import { motionLanguageCode } from "../../../lib/motionLanguage.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
-import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Library, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, ShieldCheck, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
+import { Activity, Shuffle, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, ShieldCheck, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { isRemotionSpec } from "../../../lib/motionVisual.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
@@ -46,6 +40,8 @@ import { MOTION_SCENE_PACING } from "../../../constants/motionScenePacing.js";
 import type { MotionScenePacing } from "../../../types/motionVisual.js";
 import { applyMotionRenderBehavior } from "../../../lib/motionRenderBehavior.js";
 import { MotionVisualModeField } from "./MotionVisualModeField.js";
+import { MotionNoticeHint } from "./MotionNoticeHint.js";
+import { MOTION_NOTICE_IDS } from "../constants/motionNotices.js";
 import { toast } from "sonner";
 import {
   MOTION_TEMPLATE_BEATS,
@@ -140,7 +136,7 @@ import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, 
 import type { StorageJunkReport } from "../../../types/storage.js";
 import { MotionAiSettings } from "./MotionAiSettings.js";
 import { MotionReviewToggle } from "./MotionReviewToggle.js";
-import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl, motionRequest } from "./motionApi";
+import { formatBytes, formatSeconds, genPreviewUrl, motionAudioUrl } from "./motionApi";
 import { ActionBtn, MotionSelectField, ChipButton, ElapsedLine, MotionAnalysisTabButton, MotionAiStatusLine, MotionFlowLog, MotionLoadingIcon, MotionProgressBar, MotionStatCard, StepHeader, StopBtn } from "./MotionControls.js";
 import { MotionSeoCard } from "./MotionSeoCard.js";
 import { MotionSpecPlayer } from "./MotionSpecPlayer";
@@ -176,7 +172,6 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
                     [
                       { id: MotionWorkspaceTab.CREATE, label: text.TAB_CREATE, icon: Wand2 },
                       { id: MotionWorkspaceTab.VOICES, label: MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].TAB, icon: Mic2 },
-                      { id: MotionWorkspaceTab.LIBRARY, label: PUPPET_TEXTS[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI].LIBRARY, icon: Library },
                       { id: MotionWorkspaceTab.RESULTS, label: MOTION_TEMPLATE_SYMBOL(String(text.TAB_RESULTS), String(studio.results.length)), icon: FolderKanban },
                     ],
                     ({ id, label, icon: Icon }) => (
@@ -207,7 +202,6 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
         <div className={cn(MOTION_STYLES.W_FULL, studio.busy && MOTION_STORY_CONFIG.BUSY_LOCK_CLASS)}>
           {tab === MotionWorkspaceTab.CREATE && <CreateWorkspace studio={studio} text={text} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.VOICES && <MotionVoicePanel studio={studio} currentLang={currentLang} />}
-          {tab === MotionWorkspaceTab.LIBRARY && <MotionKitLibraryPanel studio={studio} currentLang={currentLang} />}
           {tab === MotionWorkspaceTab.RESULTS && <ResultsPanel studio={studio} text={text} />}
         </div>
       </StudioCanvas>
@@ -215,7 +209,14 @@ const MotionVideoCreator: FC<{ currentLang?: Lang }> = ({ currentLang = MOTION_T
   );
 };
 export default MotionVideoCreator;
-interface MotionPreviewModalData extends PuppetAssetPreview {
+interface MotionPreviewModalData {
+  type: "location" | "beat" | "character" | "prop";
+  id: string;
+  title: string;
+  imageUrl: string;
+  description?: string;
+  beats?: string[];
+  extension?: string;
   remotion?: MotionRemotionSpec;
   score?: number;
   issues?: string[];
@@ -230,15 +231,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const settingsText = MOTION_SETTINGS_COMPATIBILITY[currentLang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI];
   const analysisSettingsMessage = motionAnalysisSettingsMessage(state, currentLang);
   const voiceText = MOTION_VOICE_CHANNEL_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
-  const kitText = PUPPET_TEXTS[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const musicText = MOTION_MUSIC.UI[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const asrText = MOTION_VOICE.ASR.UI[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
-  const [kitStyles, setKitStyles] = useState<{ id: string; name: string; preset?: string; source?: string }[]>([]);
-  useEffect(() => {
-    void motionRequest<{ items: { id: string; name: string; preset?: string; source?: string }[] }>(PUPPET_KIT_API.URLS.LIST + PUPPET_KIT_API.Q_TYPE + PUPPET_TYPES.STYLE)
-      .then((r) => setKitStyles(r.items || []))
-      .catch(_.noop);
-  }, [state.stylePreset, state.styleReferences?.length]);
   const genreText = MOTION_VIDEO_GENRE_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const storytellingText = motionStorytellingText(currentLang);
   const renameText = MOTION_RENAME.TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
@@ -276,12 +270,18 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
     [state.analysis, beatsByChapter],
   );
   const gen = state.script?.gen;
-  const remotionMode = state.visualSettings.mode === RT_SHARED.REMOTION;
   const visualText = MOTION_VISUAL.TEXT[currentLang === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
-  const sceneBeats = useMemo(() => _.filter(state.script?.beats || [], (b) => remotionMode || b.visual === MOTION_TEXT_SCENE), [state.script, remotionMode]);
-  const remotionProgress = remotionMode && state.script ? remotionSceneProgress(state.script) : undefined;
-  const builtCount = remotionMode ? remotionProgress?.ready || 0 : gen?.puppet ? _.size(_.filter(sceneBeats, (b) => _.some(puppetBeatVisualLines(b, gen.puppet), (l) => !!gen.puppet?.frames[l.key]))) : 0;
-  const sceneTotal = remotionMode ? remotionProgress?.total || 0 : sceneBeats.length;
+  const remotionProgress = state.script ? remotionSceneProgress(state.script) : undefined;
+  const builtCount = remotionProgress?.ready || 0;
+  const [sceneAction, setSceneAction] = useState<string | null>(null);
+  const runSceneAction = (key: string, work: () => Promise<unknown>) => {
+    setSceneAction(key);
+    void work().finally(() => setSceneAction(null));
+  };
+  const builtWithKit = state.script?.gen?.remotion?.settings?.figureKit === true;
+  const restyleNeeded = !!builtCount && builtWithKit !== (state.visualSettings.figureKit === true);
+  const scenesBusy = busyKind === MOTION_TEXT_SCENES;
+  const sceneTotal = remotionProgress?.total || 0;
   const estimateTotal = studio.compiled?.spec.duration || 0;
   const plannedSeconds = state.analysis?.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0) || 0;
   const actualAudioSeconds = state.uploadedAudio?.durationSeconds || (studio.voiceValid ? state.voice?.totalSeconds : undefined);
@@ -384,36 +384,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               ) : null}
               <MotionVisualModeField
                 value={state.visualSettings}
-                packId={state.stylePreset}
-                profileId={state.remotionProfile}
                 language={currentLang}
                 disabled={studio.busy}
                 onChange={(visualSettings) => patch({ visualSettings })}
-                libraryField={
-                  <MotionSelectField
-                    label={kitText.STYLE_LABEL}
-                    value={state.styleReferences?.length ? MR.MOTION_TEXT_EMPTY : state.stylePreset === PUPPET_STYLE_NONE ? PUPPET_STYLE_NONE : _.find(kitStyles, (k) => k.id === state.stylePreset)?.id || (PUPPET_STYLE_PRESETS[state.stylePreset || MR.MOTION_TEXT_EMPTY] ? state.stylePreset : PUPPET_STYLE_DEFAULT)}
-                    onChange={(e) => e.target.value && patch({ stylePreset: e.target.value, styleReferences: [] })}
-                    disabled={studio.storyBusy}
-                    title={kitText.STYLE_HINT}
-                    className={MOTION_STYLES.VISUAL_MODE_SELECT}>
-                    {!!state.styleReferences?.length && <option value={MR.MOTION_TEXT_EMPTY}>{kitText.STYLE_FROM_REFS}</option>}
-                    <option value={PUPPET_STYLE_NONE}>{kitText.STYLE_NONE}</option>
-                    {_.map(PUPPET_STYLE_PRESETS, (item, key) => (
-                      <option key={key} value={key}>
-                        {item.name}
-                      </option>
-                    ))}
-                    {_.map(
-                      _.filter(kitStyles, (k) => !k.preset && (k.source !== PUPPET_STYLE_DESIGN_SOURCE || k.id === state.stylePreset)),
-                      (k) => (
-                        <option key={k.id} value={k.id}>
-                          {k.name}
-                        </option>
-                      ),
-                    )}
-                  </MotionSelectField>
-                }
               />
               {state.visualSettingsError && (
                 <p role={RT_MOTION.ALERT} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
@@ -421,7 +394,19 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 </p>
               )}
               <div className={MOTION_STYLES.SETTINGS_GROUPS}>
-                <MotionSettingsGroup title={MOTION_SETTINGS_TEXT[currentLang].CONTENT}>
+                <MotionSettingsGroup
+                  title={MOTION_SETTINGS_TEXT[currentLang].CONTENT}
+                  hint={
+                    <MotionNoticeHint
+                      notices={[
+                        { id: MOTION_NOTICE_IDS.ANALYSIS, tone: MOTION_NOTICE_IDS.WARN, text: analysisSettingsMessage || MR.MOTION_TEXT_EMPTY, show: !!analysisSettingsMessage },
+                        { id: MOTION_NOTICE_IDS.LANGUAGE, tone: MOTION_NOTICE_IDS.WARN, text: settingsText.language, show: !!state.script && state.script.language !== state.language },
+                        { id: MOTION_NOTICE_IDS.PARTS, tone: MOTION_NOTICE_IDS.WARN, text: settingsText.parts, show: !!state.script && (state.parts || 1) !== (state.series?.parts.length || 1) },
+                        { id: MOTION_NOTICE_IDS.RESUME, tone: MOTION_NOTICE_IDS.INFO, text: settingsText.resume, show: !!state.productionId },
+                      ]}
+                    />
+                  }
+                >
                   <MotionSelectField label={genreText.LABEL} value={motionVideoGenre(state.videoGenre)} onChange={(e) => patch({ videoGenre: e.target.value as MotionVideoGenre })} disabled={studio.storyBusy} title={genreText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
                     {_.map(MOTION_VIDEO_GENRES, (genre) => (
                       <option key={genre} value={genre}>
@@ -569,23 +554,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 </MotionSettingsGroup>
               </div>
-              {analysisSettingsMessage && (
-                <p role={RT_MAINTENANCE.STATUS} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
-                  {analysisSettingsMessage}
-                </p>
-              )}
-              {state.script && state.script.language !== state.language && (
-                <p role={RT_MAINTENANCE.STATUS} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
-                  {settingsText.language}
-                </p>
-              )}
-              {state.script && (state.parts || 1) !== (state.series?.parts.length || 1) && (
-                <p role={RT_MAINTENANCE.STATUS} className={RT_MOTION.TEXT_XS_TEXT_AMBER_400}>
-                  {settingsText.parts}
-                </p>
-              )}
-              {state.productionId && <p className={MOTION_STYLES.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED_FONT_SANS}>{settingsText.resume}</p>}
-              {!remotionMode && <MotionReferenceControls images={state.styleReferences} characterMotion={state.characterMotion} disabled={studio.storyBusy || studio.renderBusy} language={currentLang} onImages={(styleReferences) => patch({ styleReferences })} onMotion={(characterMotion) => patch({ characterMotion })} hideMotionToggle={true} />}
               <div className={MOTION_STYLES.FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP}>
                 {busyKind === MOTION_TEXT_ANALYZE || busyKind === MotionStoryJobKind.PRODUCTION ? (
                   <div className={MOTION_STYLES.PRODUCTION_ACTIONS}>
@@ -875,7 +843,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                                   {b.time ? MOTION_TEMPLATE_SYMBOL_6(String(b.time)) : MR.MOTION_TEXT_EMPTY}
                                 </span>
                               )}
-                              {b.visual === MOTION_TEXT_SCENE && _.some(puppetBeatVisualLines(b, gen?.puppet), (l) => !!gen?.puppet?.frames[l.key]) ? <Check className={MOTION_STYLES.W_3_5_H_3_5_TEXT_EMERALD_400} /> : null}
                             </div>
                             <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => removeBeat(b.id)} className={MOTION_STYLES.P_1_5_ROUNDED_LG_TEXT_SLATE_400_HOVER_TEXT_ROSE_500_HOVER_BG_ROSE_500_10_TRANSITION_ALL_CURSOR_POINTER} title={text.DELETE || MOTION_TEXT_XOA} disabled={studio.storyBusy}>
                               <Trash2 className={MOTION_STYLES.W_3_5_H_3_5} />
@@ -900,7 +867,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               n={MOTION_TEXT_SYMBOL_11}
               icon={PlayCircle}
               title={text.PREVIEW}
-              badge={studio.renderedVideoUrl ? text.EXPORTED_VIDEO_BADGE : remotionMode ? text.PREVIEW_REMOTION_BADGE : text.PREVIEW_BADGE}
+              hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.STALE, tone: MOTION_NOTICE_IDS.WARN, text: text.EXPORTED_VIDEO_STALE, show: !!studio.renderedVideoUrl && !!studio.renderedVideoStale }]} />}
+              badge={studio.renderedVideoUrl ? text.EXPORTED_VIDEO_BADGE : text.PREVIEW_REMOTION_BADGE}
               right={
                 studio.renderedVideoResult && (
                   <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => studio.renderedVideoResult && void studio.saveResult(studio.renderedVideoResult)} title={text.SAVE_AS} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
@@ -922,7 +890,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {studio.renderedVideoUrl ? (
               <div className={MOTION_STYLES.SPACE_Y_3}>
-                {studio.renderedVideoStale && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.EXPORTED_VIDEO_STALE}</p>}
                 <video src={studio.renderedVideoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
               </div>
             ) : state.autoExport ? (
@@ -946,42 +913,46 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
           </StudioCard>
           {state.script && state.analysis && (
             <StudioCard className={cardCls}>
-              <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES} badge={sceneTotal ? MOTION_TEMPLATE_SYMBOL_4(String(builtCount), String(sceneTotal)) : undefined} />
+              <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES}
+                badge={sceneTotal ? MOTION_TEMPLATE_SYMBOL_4(String(builtCount), String(sceneTotal)) : undefined}
+                hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.RESTYLE, tone: MOTION_NOTICE_IDS.INFO, text: visualText.restyleNote(builtWithKit ? visualText.kit : visualText.remotion, builtWithKit ? visualText.remotion : visualText.kit), show: restyleNeeded && !scenesBusy }]} />}
+              />
               <div className={MOTION_STYLES.SPACE_Y_3}>
-                <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{remotionMode ? visualText.sceneHint : text.SCENES_HINT}</p>
+                <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{visualText.sceneHint}</p>
                 <StudioInput value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.busy} />
-                {busyKind === MOTION_TEXT_SCENES ? (
-                  <div className={MOTION_STYLES.SPACE_Y_3}>
-                    <div className={MOTION_STYLES.PY_6_FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_SPACE_Y_3}>
-                      <div className={MOTION_STYLES.W_10_H_10_ROUNDED_XL_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_FLEX}>
-                        <Box className={MOTION_STYLES.W_5_H_5_TEXT_PURPLE_400_ANIMATE_PULSE} />
-                      </div>
-                      <div className={MOTION_STYLES.SPACE_Y_1}>
-                        <p className={MOTION_STYLES.TEXT_XS_FONT_BOLD_TEXT_SLATE_200}>{text.SCENES_RUNNING}</p>
-                        <p className={MOTION_STYLES.TEXT_11PX_TEXT_SLATE_400_FONT_MONO}>{job?.log?.[job.log.length - 1] || MR.MOTION_TEXT_EMPTY}</p>
-                      </div>
-                      {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCENES_TIME} suffix={text.ELAPSED} />}
-                      <MotionProgressBar progress={job?.progress} minimum={6} className={MOTION_STYLES.W_FULL_MAX_W_XS_H_1_5} />
-                    </div>
-                    <StopBtn className={MOTION_STYLES.W_FULL} onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
-                  </div>
-                ) : (
-                  <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_FLEX_WRAP}>
-                    <ActionBtn icon={Wand2} className={MOTION_STYLES.FLEX_1} onClick={() => void studio.buildScenes({ note: sceneNote || undefined })} disabled={studio.busy}>
-                      {builtCount ? text.SCENES_CONTINUE : text.SCENES_BTN}
+                <div className={MOTION_STYLES.SCENE_BAR}>
+                  <ActionBtn
+                    icon={restyleNeeded ? Shuffle : Wand2}
+                    className={MOTION_STYLES.SCENE_BAR_BUTTON}
+                    busy={scenesBusy || (sceneAction === MOTION_NOTICE_IDS.CONTINUE && studio.busy)}
+                    onClick={() => runSceneAction(MOTION_NOTICE_IDS.CONTINUE, () => studio.buildScenes({ note: sceneNote || undefined }))}
+                    disabled={studio.busy}
+                  >
+                    {scenesBusy ? text.SCENES_RUNNING : restyleNeeded ? visualText.restyleBtn(builtWithKit ? visualText.remotion : visualText.kit) : builtCount ? text.SCENES_CONTINUE : text.SCENES_BTN}
+                  </ActionBtn>
+                  {scenesBusy ? (
+                    <StopBtn className={MOTION_STYLES.SCENE_BAR_BUTTON} onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
+                  ) : (
+                    <ActionBtn icon={RefreshCw} className={MOTION_STYLES.SCENE_BAR_BUTTON} busy={sceneAction === MOTION_NOTICE_IDS.RESTART && studio.busy} onClick={() => runSceneAction(MOTION_NOTICE_IDS.RESTART, () => studio.buildScenes({ restart: true, note: sceneNote || undefined }))} disabled={studio.busy || !builtCount}>
+                      {text.SCENES_RESTART}
                     </ActionBtn>
-                    {!!builtCount && (
-                      <>
-                        <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.buildScenes({ restart: true, note: sceneNote || undefined })} disabled={studio.busy} className={MOTION_STYLES.TEXT_10PX_FONT_BOLD_TEXT_SLATE_500_HOVER_TEXT_PURPLE_300_FLEX_ITEMS_CENTER_GAP_1}>
-                          <RefreshCw className={MOTION_STYLES.W_3_H_3} />
-                          {MR.MOTION_TEXT_SYMBOL_13}
-                          {text.SCENES_RESTART}
-                        </Button>
-                      </>
-                    )}
+                  )}
+                </div>
+                <div className={cn(MOTION_STYLES.NOTICE_ITEM, scenesBusy ? MOTION_STYLES.NOTICE_OPEN : MOTION_STYLES.NOTICE_CLOSED)} aria-hidden={!scenesBusy}>
+                  <div className={MOTION_STYLES.NOTICE_INNER}>
+                    <div className={MOTION_STYLES.SCENE_PROGRESS}>
+                      <span className={MOTION_STYLES.SCENE_PROGRESS_ICON_WRAP}>
+                        <Box className={MOTION_STYLES.SCENE_PROGRESS_ICON} />
+                      </span>
+                      <div className={MOTION_STYLES.SCENE_PROGRESS_BODY}>
+                        <p className={MOTION_STYLES.SCENE_PROGRESS_LOG}>{(scenesBusy && job?.log?.[job.log.length - 1]) || text.SCENES_RUNNING}</p>
+                        {scenesBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCENES_TIME} suffix={text.ELAPSED} />}
+                        <MotionProgressBar progress={scenesBusy ? job?.progress : undefined} minimum={6} className={MOTION_STYLES.SCENE_PROGRESS_BAR} />
+                      </div>
+                    </div>
                   </div>
-                )}
-                {state.script && remotionMode ? (
+                </div>
+                {state.script ? (
                   <Suspense fallback={<p>{visualText.loading}</p>}>
                     <MotionRemotionScenes
                       script={state.script}
@@ -993,26 +964,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       onOpen={(scene, preview, index) => setPreviewModal({ type: RT_MOTION.BEAT, id: scene.id, title: visualText.scene(index + 1), imageUrl: "", remotion: preview, narration: scene.text, beats: [scene.beatId] })}
                     />
                   </Suspense>
-                ) : (
-                  state.script && (
-                    <MotionPuppetPanel
-                      lang={currentLang}
-                      script={state.script}
-                      analysis={state.analysis}
-                      spec={isRemotionSpec(studio.compiled?.spec) ? undefined : studio.compiled?.spec}
-                      busy={studio.busy}
-                      onFrames={(frames) => state.script?.gen?.puppet && patch({ script: { ...state.script, gen: { ...state.script.gen, puppet: { ...state.script.gen.puppet, frames } } } })}
-                      onRedoBeats={(beats) => void studio.buildScenes({ beats, note: sceneNote || undefined })}
-                      onCompile={async () => {
-                        const spec = (await studio.compile())?.spec;
-                        return isRemotionSpec(spec) ? undefined : spec;
-                      }}
-                      onRedoPlace={(place) => void studio.buildScenes({ locations: [place], note: sceneNote || undefined })}
-                      projectId={state.productionId || state.activeStoryJobId || undefined}
-                      onOpen={setPreviewModal}
-                    />
-                  )
-                )}
+                ) : null}
               </div>
             </StudioCard>
           )}
@@ -1065,19 +1017,13 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </option>
                   ))}
                 </MotionSelectField>
-                <MotionSelectField label={text.ENCODER} wrapperClassName={MOTION_STYLES.SPACE_Y_1} value={remotionMode ? MotionEncoderPreference.CPU : state.encoder} onChange={(e) => patch({ encoder: e.target.value as MotionEncoderPreference })} className={inputCls} disabled={studio.renderBusy || remotionMode}>
+                <MotionSelectField label={text.ENCODER} wrapperClassName={MOTION_STYLES.SPACE_Y_1} value={MotionEncoderPreference.CPU} onChange={(e) => patch({ encoder: e.target.value as MotionEncoderPreference })} className={inputCls} disabled={true}>
                   <option value={MotionEncoderPreference.AUTO}>{text.ENCODER_AUTO}</option>
                   <option value={MotionEncoderPreference.GPU}>{text.ENCODER_GPU}</option>
                   <option value={MotionEncoderPreference.CPU}>{text.ENCODER_CPU}</option>
                 </MotionSelectField>
               </div>
-              <div className={remotionMode ? RT_MAINTENANCE.GRID_GRID_COLS_1_GAP_2_PT_2 : MOTION_STYLES.GRID_GRID_COLS_AUTO_1FR_GAP_2_PT_2}>
-                {!remotionMode && (
-                  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.check()} disabled={!studio.compiled || studio.checking || studio.renderBusy} className={MOTION_STYLES.INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_2_5_ROUNDED_XL_TEXT_XS}>
-                    {studio.checking ? <MotionLoadingIcon className={MOTION_STYLES.W_4_H_4_ANIMATE_SPIN_TEXT_PURPLE_400_SHRINK_0} /> : <ScanSearch className={MOTION_STYLES.W_4_H_4} />}
-                    <span>{text.CHECK_BTN}</span>
-                  </Button>
-                )}
+              <div className={RT_MAINTENANCE.GRID_GRID_COLS_1_GAP_2_PT_2}>
                 {studio.renderBusy ? (
                   <StopBtn onClick={() => void studio.cancelRender()} label={renderStopping ? text.STOPPING : text.STOP_RENDER} stopping={renderStopping} />
                 ) : (

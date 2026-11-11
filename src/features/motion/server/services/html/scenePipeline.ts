@@ -8,10 +8,10 @@ import { setTimeout as delay } from "node:timers/promises";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../../../../../constants/motionHtmlTemplate.js";
 import { motionHtmlWritingDirection, motionHtmlPacingDirection, motionHtmlLanguageDirection } from "../../../../../lib/motionHtmlAuthoring.js";
 import { motionHtmlSource, motionHtmlPlanContext, motionHtmlPlanSource, motionHtmlPlanCurrent, motionHtmlPlanSourceMatches } from "../../../../../lib/motionHtmlScene.js";
-import { motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
+import { motionPlanSettings, motionSceneKitMatches, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBehavior.js";
 import { motionVisualBeatGroups } from "../../../../../lib/motionScenePacing.js";
-import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
+import { motionBeatLines } from "../../../../../lib/motionBeatLines.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_STORY_CONFIG } from "../../../../../constants/motionVideo.js";
 import { MOTION_AI_ROLE } from "../../../../../constants/motionAiFallback.js";
@@ -19,6 +19,8 @@ import { MOTION_AI_RECOVERY } from "../../../../../constants/motionAiRecovery.js
 import { motionRenameText } from "../../../../../lib/motionRename.js";
 import { motionHtmlCastCards, motionHtmlContinuity } from "../../../../../lib/motionHtmlCast.js";
 import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
+import { motionHtmlKitDoc, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../../lib/motionHtmlKit.js";
+import { MOTION_HTML_KIT } from "../../../../../constants/motionHtmlKit.js";
 import { motionHtmlMechanics } from "../../../../../lib/motionHtmlMechanics.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
@@ -237,9 +239,10 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
   const route = routes[Math.min(Math.floor(missed / MOTION_HTML.SWITCH_AFTER), routes.length - 1)];
   return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
 };
-export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; scope?: string; language?: string; cast?: string; continuity?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
+export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; figureKit?: boolean; scope?: string; language?: string; cast?: string; continuity?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
   const graphics = MOTION_HTML.PROFILE_GRAPHICS[settings.profile] || MOTION_HTML.GRAPHICS;
-  const key = motionInputKey([MOTION_HTML.VERSION, MOTION_HTML.OUTPUT, graphics, motionHtmlFigureDoc(settings.profile), scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity]);
+  const figureDoc = settings.figureKit ? motionHtmlKitDoc(settings.profile) : motionHtmlFigureDoc(settings.profile);
+  const key = motionInputKey([MOTION_HTML.VERSION, MOTION_HTML.OUTPUT, graphics, figureDoc, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity, ...(settings.figureKit ? [MOTION_HTML_KIT.VERSION] : [])]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) {
@@ -247,11 +250,11 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     save();
   }
   if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
-  const prompt = [
+  let prompt = [
     MOTION_HTML.OUTPUT,
     motionHtmlMechanics([scene.sceneTemplate, settings.continuity].join("\n")),
     graphics,
-    motionHtmlFigureDoc(settings.profile),
+    figureDoc,
     motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
     settings.cast,
     settings.continuity,
@@ -329,7 +332,13 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       if (!attempt.raw) received(typeof raw === "string" ? raw : String(raw));
       clearInterval(journal);
       store.raw(attempt.attempt, attempt.raw!);
-      const html = motionHtmlSource(attempt.raw);
+      const source = motionHtmlSource(attempt.raw);
+      const kitIssue = settings.figureKit ? motionHtmlKitIssue(source) : undefined;
+      if (kitIssue) {
+        if (!prompt.includes(MOTION_HTML_KIT.RETRY)) prompt = [prompt, MOTION_HTML_KIT.RETRY].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+        throw Object.assign(new Error(kitIssue), { motionHtmlExecution: true });
+      }
+      const html = settings.figureKit ? motionHtmlWithKit(source, settings.profile) : source;
       scene.html = {
         version: 1,
         html,
@@ -342,6 +351,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         seed: key,
         duration: settings.seconds,
         attempts: attempt.attempt,
+        figureKit: settings.figureKit === true,
         status: RT_MAINTENANCE.RECEIVED,
         execution: { ...target, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) },
       };
@@ -395,7 +405,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   }
 };
 const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; seconds: number; lineCount: number }, groupIndex: number, state: MotionRemotionState, analysis: MotionStoryAnalysis, settings: Extract<MotionVisualSettings, { mode: "remotion" }>, language: string, aspect: string, opts: RemotionSceneOptions, slots: MotionPriorityPool, save: () => void, priority = 0): Promise<void> => {
-  const lines = group.beats.flatMap((beat) => puppetBeatLines(beat, motionNarratorCastKey(analysis)));
+  const lines = group.beats.flatMap((beat) => motionBeatLines(beat, motionNarratorCastKey(analysis)));
   const note = (opts.note ?? state.notes?.[group.id]) || undefined;
   const source = motionHtmlPlanSource(group.beats, analysis, settings, note, opts.sfx !== false);
   const key = motionInputKey(source);
@@ -549,7 +559,7 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
       },
     };
   const aspect = opts.aspect || RT_MAINTENANCE.VALUE_16_9;
-  const checkpoint = motionTaskCheckpoint<MotionRemotionState>(opts.scope, MOTION_HTML.PLAN, [MOTION_HTML.VERSION, settings, aspect, script.beats.map(({ id, chapterId, narration, sceneTemplateDraft }) => ({ id, chapterId, narration, sceneTemplateDraft }))]);
+  const checkpoint = motionTaskCheckpoint<MotionRemotionState>(opts.scope, MOTION_HTML.PLAN, [MOTION_HTML.VERSION, motionPlanSettings(settings), aspect, script.beats.map(({ id, chapterId, narration, sceneTemplateDraft }) => ({ id, chapterId, narration, sceneTemplateDraft }))]);
   const carried = checkpoint.read();
   const state: MotionRemotionState = structuredClone((carried && (carried.updatedAt || 0) > (script.gen?.remotion?.updatedAt || 0) ? carried : script.gen?.remotion) || carried || { version: 1, settings, assets: {}, scenes: {}, inputKeys: {}, failures: {} });
   if (state.renderer !== RT_MAINTENANCE.HTML_CANVAS) {
@@ -605,6 +615,8 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   if (!motionHtmlPlanCurrent(script, analysis)) throw new Error(RT_MAINTENANCE.PHAN_CANH_CHUA_DUOC_CHIA_DAY_DU_HOAC_DA_DOI);
   const result = structuredClone(script);
   const state = result.gen!.remotion!;
+  const requested = motionVisualSettingsFor({ analysis, script });
+  if (stringifyJson(motionPlanSettings(requested)) === stringifyJson(motionPlanSettings(state.settings))) state.settings = requested;
   const settings = state.settings;
   if (settings.mode !== RT_MAINTENANCE.REMOTION) throw new Error(RT_MAINTENANCE.CHUA_CHON_CACH_DUNG_CANH_AI);
   const aspect = opts.aspect || RT_MAINTENANCE.VALUE_16_9;
@@ -638,12 +650,18 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
           scene.htmlRebuildKey = rebuildKey;
           save();
         }
+        if (scene.html && !motionSceneKitMatches(scene.html, settings)) {
+          delete scene.html;
+          delete scene.htmlRequest;
+          delete scene.build;
+          save();
+        }
         if (opts.note !== undefined) scene.drawingNote = opts.note;
         scene.aspect = aspect;
         const seconds = Math.max(1, (group.seconds * scene.text.length) / Math.max(1, group.beats.map((beat) => beat.narration).join(RT_MAINTENANCE.SPACE).length));
         const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
         const cast = motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
-        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
+        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, figureKit: settings.figureKit === true, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
         delete state.failures[scene.id];
         done++;
         opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);

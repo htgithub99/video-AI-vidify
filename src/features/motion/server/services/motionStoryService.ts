@@ -37,7 +37,6 @@ import { MOTION_CHAPTER_REPAIR as CHAPTER_REPAIR } from "../../../../constants/m
 import { motionChapterCastRepair, mergeMotionChapterDraft, motionChapterPending, motionChapterRepairPrompt, motionChapterResponseIssues, normalizeMotionDurationResponse } from "../../../../lib/motionChapterRepair.js";
 import { repairMotionChapterSpeech } from "../../../../lib/motionChapterSpeech.js";
 import { MOTION_PROMPT as PROMPT } from "../../../../constants/motionPrompt.js";
-import { closedPuppetPackId } from "./puppet/packPolicy.js";
 import { motionVisualCapability } from "../../../../lib/motionVisual.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
 import { motionPromptGroups, motionPromptMeasurement, motionPromptBudget, motionPromptEditorialContext, motionPromptSingleMessage } from "../../../../lib/motionPrompt.js";
@@ -69,7 +68,7 @@ import { MOTION_CAPTCHA } from "../../../../constants/motionCaptcha.js";
 import { CAPTCHA_ALERT } from "../../../../constants/captchaAlert.js";
 import { reportCaptchaAlert } from "../../../../server/services/captchaAlertService.js";
 import { SOURCE_TEXT_DOMCONTENTLOADED } from "../../../../constants/sourceText.js";
-import { puppetTags } from "../../../../lib/motionPuppet.js";
+import { motionTags } from "../../../../lib/motionBeatLines.js";
 import { cleanCharacterColors } from "../../../../lib/motionCharacterVariant.js";
 import type { MotionStyleReference } from "../../../../types/motionVideo.js";
 import * as MR from "../../../../constants/motionRuntime.js";
@@ -87,10 +86,9 @@ import { motionRenameAnalysisIssues, motionRenameMapActive, motionRenamePairs, n
 import { motionStorytelling, motionStorytellingExpansion, motionStorytellingPreset, motionStorytellingSilent, motionStorytellingText } from "../../../../lib/motionStorytelling.js";
 import { motionLanguage, motionLanguageCode, motionLanguageRate } from "../../../../lib/motionLanguage.js";
 import _ from "lodash";
-import { puppetPackPlanningCapabilities, puppetPackChapterCapabilities } from "./puppet/packCatalog.js";
 import path from "path";
 import { CINEMATIC_CHAT_MODEL_OPTIONS, CINEMATIC_CHAT_PLANNING_CONFIG } from "../../../../constants/index.js";
-import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_BIBLE, MOTION_GEN_CHAPTER_LEAN, MOTION_GEN_LOOKS, MOTION_GEN_PREAMBLE, MOTION_GEN_STORYBOARD_RULES, MOTION_SERIES_PROMPT } from "../../../../constants/motionGenPrompts.js";
+import { MOTION_GEN_ANALYSIS_PROMPT, MOTION_GEN_CHAPTER_BIBLE, MOTION_GEN_CHAPTER_LEAN, MOTION_GEN_LOOKS, MOTION_GEN_PREAMBLE, MOTION_SERIES_PROMPT } from "../../../../constants/motionGenPrompts.js";
 import { motionAnalysisResponseErrors, motionAnalysisRepairDraft, motionAnalysisRepairPrompt, normalizeMotionAnalysisResponse } from "../../../../lib/motionAnalysisResponse.js";
 import { withMotionResponsePrompt } from "../../../../lib/motionResponseContract.js";
 import { MOTION_RESPONSE_SCHEMAS, MOTION_RESPONSE_TEXT, MOTION_RESPONSE_VALUES } from "../../../../constants/motionResponseContract.js";
@@ -1795,7 +1793,7 @@ export const analyzeStory = async (
       [
         MOTION_MUSIC.PROMPT(_.keys(MOTION_MUSIC_MOODS)),
         motionStoryLanguageGuide(opts.language),
-        opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? `${RT_MAINTENANCE.SELECTED_VISUAL_STYLE_IN_PROSE}${MOTION_HTML_STYLES[opts.visualSettings.profileId]}${RT_MAINTENANCE.DO_NOT_SUPPLY_SVG_RIG_BODY_FRAMES_OR_NUMERIC_PLACEMENT}` : motionVisualCapability(opts.visualSettings) || puppetPackPlanningCapabilities(opts.stylePreset),
+        opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? `${RT_MAINTENANCE.SELECTED_VISUAL_STYLE_IN_PROSE}${MOTION_HTML_STYLES[opts.visualSettings.profileId]}${RT_MAINTENANCE.DO_NOT_SUPPLY_SVG_RIG_BODY_FRAMES_OR_NUMERIC_PLACEMENT}` : motionVisualCapability(opts.visualSettings),
       ]
         .filter(Boolean)
         .join(MR.MOTION_TEXT_SYMBOL_27),
@@ -2053,7 +2051,6 @@ const foldAdultChapters = (chapters: MotionChapter[]): MotionChapter[] => {
 };
 const OPENING_STYLES = [MR.MOTION_TEXT_A_CONCRETE_MOMENT_OR_IMAGE, MR.MOTION_TEXT_A_SURPRISING_FACT_OR_NUMBER, MR.MOTION_TEXT_A_CONTRAST_OR_A_TURN, MR.MOTION_TEXT_THE_REPORTED_WORDS_OR_ACTION_OF_A_PERSON_FROM_THE_SOURCE, MR.MOTION_TEXT_A_CALM_STATEMENT_THAT_CONTINUES_THE_PREVIOUS_THOUGHT, MR.MOTION_TEXT_A_QUESTION_ONLY_IF_IT_SOUNDS_NATURAL];
 export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: number, videoGenre?: unknown, htmlAuthoring = false): MotionStoryAnalysis => {
-  const declaredNeeds = Array.isArray(raw?.illustrationNeeds) ? raw.illustrationNeeds : undefined;
   const stageIds = motionVideoGenreStages(videoGenre);
   const stageOrder = Object.keys(stageIds);
   const chapterStages = (value: unknown): string[] =>
@@ -2071,23 +2068,21 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
     ),
     MOTION_GENRE_STAGE.MOTIF.MAX,
   );
-  const rawChapters = _.castArray(raw?.chapters || []);
-  const chapterIds = new Map<string, string>(rawChapters.map((chapter: any, index: number) => [_.toString(chapter?.id || MOTION_TEMPLATE_C_2(String(index + 1))), MOTION_TEMPLATE_C_2(String(index + 1))]));
   let chapters: MotionChapter[] = _.map(_.castArray(raw?.chapters || []), (c: any, i: number) => ({
     ...(normalizeMotionWritingChapter(c?.writing) ? { writing: normalizeMotionWritingChapter(c.writing) } : {}),
     id: MOTION_TEMPLATE_C_2(String(i + 1)),
     title: _.truncate(_.toString(c?.title || MOTION_TEMPLATE_CHUONG(String(i + 1))), { length: 80 }),
-    summary: declaredNeeds?.length ? _.toString(c?.summary || MR.MOTION_TEXT_EMPTY) : _.truncate(_.toString(c?.summary || MR.MOTION_TEXT_EMPTY), { length: 400 }),
+    summary: _.truncate(_.toString(c?.summary || MR.MOTION_TEXT_EMPTY), { length: 400 }),
     from: _.isFinite(_.toNumber(c?.from)) ? _.toNumber(c.from) : undefined,
     to: _.isFinite(_.toNumber(c?.to)) ? _.toNumber(c.to) : undefined,
     ...(_.inRange(_.toNumber(c?.weight), 1, 5.01) ? { weight: Math.round(_.toNumber(c.weight)) } : {}),
     ...(c?.mustKeep === true ? { mustKeep: true } : {}),
     ...(_.trim(_.toString(c?.hook)) ? { hook: _.truncate(_.toString(c.hook), { length: 240 }) } : {}),
-    ...(_.isArray(c?.keyPoints) && c.keyPoints.length ? { keyPoints: declaredNeeds?.length ? _.compact(_.map(c.keyPoints, (k: unknown) => _.toString(k))) : _.take(_.compact(_.map(c.keyPoints, (k: unknown) => _.truncate(_.toString(k), { length: 200 }))), 8) } : {}),
+    ...(_.isArray(c?.keyPoints) && c.keyPoints.length ? { keyPoints: _.take(_.compact(_.map(c.keyPoints, (k: unknown) => _.truncate(_.toString(k), { length: 200 }))), 8) } : {}),
     ...(_.trim(_.toString(c?.handoff)) ? { handoff: _.truncate(_.toString(c.handoff), { length: 240 }) } : {}),
     ...(chapterStages(c?.stage ?? c?.stages).length ? { stages: chapterStages(c?.stage ?? c?.stages) } : {}),
   }));
-  if (!declaredNeeds?.length) chapters = foldAdultChapters(chapters);
+  chapters = foldAdultChapters(chapters);
   if (_.isEmpty(chapters)) chapters = [{ id: MOTION_TEXT_C1, title: source.title, summary: MR.MOTION_TEXT_EMPTY, from: 0, to: source.sourceSeconds }];
   chapters = motionChapterKeyPoints(motionChapterRanges(chapters, source.sourceSeconds), source.sourceSeconds).chapters;
   const spans = _.map(chapters, (c, i) => Math.max(10, (c.to ?? chapters[i + 1]?.from ?? source.sourceSeconds) - (c.from ?? 0)));
@@ -2102,7 +2097,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
     allocated = end;
     return { ...c, targetSeconds };
   });
-  if (!declaredNeeds?.length && !htmlAuthoring) chapters = motionMergeShortChapters(chapters, videoGenre);
+  if (!htmlAuthoring) chapters = motionMergeShortChapters(chapters, videoGenre);
   const used = new Set<string>();
   const cast: MotionCastMember[] = expandInitialCastNames(
     _.compact(
@@ -2126,7 +2121,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
           gender,
           ...(_.includes(MOTION_AUDIO_DIRECTION.AGES, m.age) ? { age: m.age } : {}),
           ...(m.narrator === true ? { narrator: true } : {}),
-          tags: puppetTags(m.tags),
+          tags: motionTags(m.tags),
           ...(cleanCharacterColors(m.colors) ? { colors: cleanCharacterColors(m.colors) } : {}),
         } as MotionCastMember;
       }),
@@ -2146,7 +2141,7 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
         let key = rawKey;
         while (usedPlaces.has(key)) key = MOTION_TEMPLATE_2_2(String(key));
         usedPlaces.add(key);
-        return { key, name: _.truncate(_.toString(obj.name || key), { length: 60 }), description: _.truncate(_.toString(obj.description || obj.name || key), { length: 500 }), interior: !!obj.interior, time: _.includes(TIMES, obj.time) ? obj.time : obj.interior ? MOTION_TEXT_TOON_CAT_INTERIOR : MOTION_TEXT_DAY, tags: puppetTags(obj.tags) } as MotionPlace;
+        return { key, name: _.truncate(_.toString(obj.name || key), { length: 60 }), description: _.truncate(_.toString(obj.description || obj.name || key), { length: 500 }), interior: !!obj.interior, time: _.includes(TIMES, obj.time) ? obj.time : obj.interior ? MOTION_TEXT_TOON_CAT_INTERIOR : MOTION_TEXT_DAY, tags: motionTags(obj.tags) } as MotionPlace;
       }),
     ),
     target > 1200 ? 18 : 10,
@@ -2156,17 +2151,6 @@ export const normalizeAnalysis = (raw: any, source: MotionStorySource, target: n
   const genre2 = raw?.genre2 !== genre ? normalizeMotionText(raw?.genre2 || MR.MOTION_TEXT_EMPTY, 80) || undefined : undefined;
   return {
     ...(normalizeMotionWritingPlan(raw?.writingPlan) ? { writingPlan: normalizeMotionWritingPlan(raw.writingPlan) } : {}),
-    ...(declaredNeeds
-      ? {
-          illustrationNeeds: declaredNeeds.map((need: any) => ({
-            ...structuredClone(need),
-            chapterId: chapterIds.get(need?.chapterId) || need?.chapterId,
-            place: typeof need?.place === "string" ? slugKey(need.place) : need?.place,
-            states: Array.isArray(need?.states) ? need.states.map((state: any) => ({ ...state, char: typeof state?.char === "string" ? slugKey(state.char) : state?.char })) : need?.states,
-            objects: Array.isArray(need?.objects) ? need.objects.map((object: any) => ({ ...object, ...(typeof object?.owner === "string" ? { owner: slugKey(object.owner) } : {}) })) : need?.objects,
-          })),
-        }
-      : {}),
     ...(motifs.length ? { motifs } : {}),
     title: _.truncate(_.toString(raw?.title || source.title), { length: 120 }),
     logline: _.truncate(_.toString(raw?.logline || MR.MOTION_TEXT_EMPTY), { length: 300 }),
@@ -2309,7 +2293,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
   const hookRule = hooks === RT_MAINTENANCE.LIGHT ? genreSpec.HOOKS.light : hooks === RT_MAINTENANCE.FULL ? genreSpec.HOOKS.full : null;
   const texture = motionStorytellingPreset(analysis.storytelling).texture;
   const bibleRules = _.compact([
-    analysis.visualSettings?.mode === RT_SHARED.REMOTION || closedPuppetPackId(analysis.stylePreset) ? PROMPT.CHAPTER_SCENES : MOTION_GEN_STORYBOARD_RULES(language),
+    PROMPT.CHAPTER_SCENES,
     MOTION_CAST_NAMES.RULE,
     motionRenameMapActive(analysis).length ? RENAME.PROMPT.CHAPTER(motionRenamePairs(motionRenameMapActive(analysis))) : null,
     opts.multiVoice === false ? PROMPT.CHAPTER_SINGLE_VOICE : PROMPT.CHAPTER_VOICE,
@@ -2319,7 +2303,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     hookRule,
     texture ? STORYTELLING.PROMPT.TEXTURE(texture, genreSpec.TEXTURE) : null,
     opts.multiVoice === false ? null : MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(_.pick(motionAudioDirection(null, analysis), [RT_SERVER.MODE, RT_SERVER.FACTUAL, RT_SERVER.NARRATIONSTYLE, RT_SERVER.DIALECT])),
-    analysis.visualSettings?.mode === RT_SHARED.REMOTION ? PROMPT.CHAPTER_REMOTION : puppetPackChapterCapabilities(analysis.stylePreset),
+    PROMPT.CHAPTER_REMOTION,
     analysis.visualSettings?.mode === RT_SHARED.REMOTION ? WRITING.SCENE_MOTION + RT_MAINTENANCE.SELECTED_VISUAL_CONSTRUCTION_SHAPE_REFERENCE_NOT_PRESCRIBED_CHOREOGRAPHY + MOTION_ILLUSTRATION_PROFILES[analysis.visualSettings.profileId].brief.frame : null,
   ] as string[]);
   const chapterRules = _.compact([
@@ -2330,7 +2314,6 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
     thinSource && expansion <= 1 ? TIMELINE.CONTENT.RULE(beatsWanted) : null,
     stretched ? STORYTELLING.PROMPT.EXPANSION(expansion, genreSpec.EXPANSION_RULE) : null,
     !thinSource && !stretched ? STORYTELLING.PROMPT.FLOOR(STORYTELLING.LENGTH_FLOOR_RATIO) : null,
-    analysis.visualSettings?.mode !== RT_SHARED.REMOTION && analysis.illustrationNeeds?.some((need) => need.chapterId === chapter.id) ? PROMPT.ILLUSTRATION_NEEDS + stringifyJson(analysis.illustrationNeeds.filter((need) => need.chapterId === chapter.id).map(({ evidence, place, states, objects, features }) => ({ evidence, place, states, objects, features }))) : null,
   ] as string[]);
   const bibleParts = {
     preamble: MR.MOTION_TEMPLATE_SYMBOL_315(productionPreamble(analysis, MR.MOTION_TEXT_STORY, false, true), motionSourceReadingRules(sourceSlice(source))),
@@ -2441,7 +2424,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
       rawBeats,
       analysis.cast.map((member) => member.key),
       analysis.places.map((place) => place.key),
-      !!closedPuppetPackId(analysis.stylePreset),
+      false,
       opts.multiVoice,
     );
     if (analysis.visualSettings?.mode === RT_SHARED.REMOTION && !opts.durationRepair) {
@@ -2493,7 +2476,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
             draft.rows,
             analysis.cast.map((member) => member.key),
             analysis.places.map((place) => place.key),
-            !!closedPuppetPackId(analysis.stylePreset),
+            false,
             opts.multiVoice,
           ),
           multiVoice: opts.multiVoice !== false,

@@ -11,7 +11,8 @@ export const motionOutputSettings = (input: Record<string, any>, result?: Motion
     version: 1,
     controlSnapshot: {
       mode: visualSettings.mode,
-      profile: visualSettings.mode === RT_MAINTENANCE.REMOTION ? visualSettings.profileId : visualSettings.packId,
+      profile: visualSettings.profileId,
+      figureKit: visualSettings.figureKit === true,
       genre: input.videoGenre ?? input.analysis?.videoGenre,
       storytelling: input.storytelling ?? input.analysis?.storytelling,
       length: input.length,
@@ -33,7 +34,7 @@ export const motionOutputSettings = (input: Record<string, any>, result?: Motion
     visualSettings,
     renderBehavior,
     characterMotion: renderBehavior.actors === RT_MAINTENANCE.SIMPLE,
-    stylePreset: visualSettings.mode === RT_MAINTENANCE.LIBRARY ? visualSettings.packId : undefined,
+    stylePreset: undefined,
     aspect: input.aspect || result?.compiled?.spec.aspect || RT_MAINTENANCE.VALUE_16_9,
     fps: input.fps || result?.compiled?.spec.fps || 30,
     subtitles: input.subtitles !== false,

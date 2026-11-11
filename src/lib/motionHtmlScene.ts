@@ -5,7 +5,7 @@ import type { MotionRemotionScene, MotionRemotionSpec } from "../types/motionVis
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../types/motionVideo.js";
 import type { MotionVisualSettings } from "../types/motionVisual.js";
 import { motionVisualBeatGroups } from "./motionScenePacing.js";
-import { motionVisualSettingsFor } from "./motionVisual.js";
+import { motionPlanSettings, motionVisualSettingsFor } from "./motionVisual.js";
 import { MOTION_HTML, MOTION_HTML_REPAIR as R } from "../constants/motionHtmlTemplate.js";
 export const motionHtmlIdentities = (analysis: MotionStoryAnalysis) => ({
   cast: analysis.cast.map(({ key, name, alias, role, description, look, marks, skin, carries, gender, age }) => ({ key, name, alias, role, description, look, marks, skin, carries, gender, age })),
@@ -17,7 +17,7 @@ export const motionHtmlPlanContext = (beats: MotionBeat[], analysis: MotionStory
   productionLanguage: RT_MAINTENANCE.EN,
   beats: beats.map(({ id, chapterId, narration, sceneTemplateDraft, utterances, visual, place, cast, time, weather }) => ({ id, chapterId, narration, sceneTemplateDraft, utterances: utterances?.map(({ id, text, speaker, role }) => ({ id, text, speaker, role })), visual, place, cast, time, weather })),
   ...motionHtmlIdentities(analysis),
-  settings,
+  settings: motionPlanSettings(settings),
   note,
   sfx,
   genre: analysis.videoGenre,

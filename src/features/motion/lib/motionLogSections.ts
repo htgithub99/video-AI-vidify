@@ -111,7 +111,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     if (result?.seoJobId && !([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(job.status)) sections.get(RT_MOTION.SEO)!.state = RT_MOTION.ACTIVE;
     completed(RT_SHARED.VOICE, result?.voice?.audioId);
     const scenesComplete =
-      (result?.script?.gen?.puppet?.report && !result.script.gen.puppet.report.missing) || (result?.script?.gen?.remotion && Object.values(result.script.gen.remotion.scenes || {}).flat().length > 0 && remotionStateMissingScenes(result.script.gen.remotion).length === 0 && (!result.analysis || !usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis)));
+      (result?.script?.gen?.remotion && Object.values(result.script.gen.remotion.scenes || {}).flat().length > 0 && remotionStateMissingScenes(result.script.gen.remotion).length === 0 && (!result.analysis || !usesMotionHtml(result.script) || motionHtmlPlanCurrent(result.script, result.analysis)));
     completed(RT_SHARED.SCENES, scenesComplete);
     completed(RT_MOTION.RENDER, result?.rendered);
   }

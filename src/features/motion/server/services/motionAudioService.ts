@@ -12,9 +12,8 @@ import { MOTION_VOICE as C, MOTION_VOICE_DELIVERY as D, MOTION_VOICE_FX as FX, M
 import { knownVoiceTempoFactor, readVoiceSpeedSettings, voiceSpeedKey, voiceTempoFactor, voiceSpeedUsesAcoustics, voiceUsesReferenceSpeed, withMotionVoiceSpeedSnapshot } from "./motionVoiceSpeedService.js";
 import { MOTION_STORY_CONFIG } from "../../../../constants/motionVideo.js";
 import type { MotionBeat, MotionVoiceTrack, MotionStoryScript, MotionStoryAnalysis, MotionVoicePreset, MotionUtterance, MotionVoiceDelivery, MotionVoicePlan, MotionVoiceClipQuality, MotionVoiceCadence } from "../../../../types/motionVideo.js";
-import { computeBeatTimeline, compileStorySpec } from "./motionDirectorService.js";
-import { motionSoundSpatial } from "../../../../lib/motionSoundPlan.js";
-import { directedSpeechText, isAi33Voice, motionVoiceFilter, motionVoiceSignature, resolveMotionDelivery, motionLanguageCode, motionNarratorCastKey, motionVoiceAsrSatisfied } from "../../../../lib/motionVoice.js";
+import { computeBeatTimeline } from "./motionDirectorService.js";
+import { directedSpeechText, isAi33Voice, motionVoiceFilter, motionVoiceSignature, resolveMotionDelivery, motionLanguageCode, motionVoiceAsrSatisfied } from "../../../../lib/motionVoice.js";
 import { getMotionAudioDirectory } from "./motionLibraryService.js";
 import { directMotionVoice, type MotionVoiceOptions } from "./motionVoiceDirectionService.js";
 import { transcribeVieneuAudio, vieneuRoot, type VieneuDelivery } from "../../../../server/services/vieneuTtsService.js";
@@ -26,8 +25,6 @@ import { normalizeReferenceVoiceCadence, referenceCadenceProfile } from "./motio
 import _ from "lodash";
 import { motionAudioHash as hash, motionWavData, motionWavFileInfo } from "./motionAudioUtils.js";
 import { motionVoiceSignal, trimMotionVoiceEdges, motionVoiceBoundaryPadding, compareMotionVoiceText, motionSupportedTranscript } from "./motionVoiceQualityService.js";
-import { puppetStoryboardInputKey, puppetStoryboardCovers } from "../../../../lib/motionStoryboard.js";
-import { collectPuppetLines } from "../../../../lib/motionPuppet.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionStorytellingPreset, motionStorytellingSilent } from "../../../../lib/motionStorytelling.js";
 import { motionLanguage, motionLanguageRate } from "../../../../lib/motionLanguage.js";
@@ -454,13 +451,9 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
       opts.log?.(C.GENERATING);
       const silent = analysis && motionStorytellingPreset(analysis.storytelling).dramaticAudio ? motionStorytellingSilent(analysis.storytelling) : undefined;
       const { local, durations } = await layoutMotionVoice(plan, script, opts, deps, pacing, silent);
-      const puppet = script.gen?.puppet;
-      const sources = puppet?.storyboard ? collectPuppetLines(script, MR.MOTION_TEXT_SCENE, motionNarratorCastKey(analysis)) : [];
-      const visualReady = !puppet ? !!Object.keys(script.gen?.staging || {}).length : !!analysis && !!puppet.storyboard && puppet.storyboard.inputKey === puppetStoryboardInputKey(sources, analysis) && puppetStoryboardCovers(puppet.storyboard, sources) && puppet.storyboard.units.every((unit) => !!puppet.frames[unit.key]);
       const timeline = computeBeatTimeline(script.beats, durations, !!pacing),
         temporary = file + randomUUID() + MR.MOTION_TEXT_WAV,
-        frames = Math.ceil(timeline.total * C.SAMPLE_RATE),
-        visual = visualReady ? compileStorySpec(script, analysis, { aspect: opts.aspect || MR.MOTION_TEXT_16_9, durations, continuousVoice: !!pacing }).spec : undefined;
+        frames = Math.ceil(timeline.total * C.SAMPLE_RATE);
       const clips = local.map((item) => {
         const index = script.beats.findIndex((beat) => beat.id === item.beatId);
         const start = timeline.starts[index] + item.t;
@@ -500,10 +493,7 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
             const audio = await fs.promises.readFile(path.join(folder, local[index].audio.id));
             const pcm = motionWavData(audio);
             const item = local[index],
-              beatIndex = script.beats.findIndex((beat) => beat.id === item.beatId),
-              staging: any = script.gen?.staging?.[item.beatId],
-              actor = staging?.actors?.find((actor: any) => actor.cast === item.line.speaker);
-            const pan = !visual || item.line.role === MR.MOTION_TEXT_NARRATION || item.line.role === MR.MOTION_TEXT_THOUGHT ? 0 : Math.max(-0.35, Math.min(0.35, motionSoundSpatial(visual, clips[index].start, actor, durations[beatIndex], item.t).pan || 0));
+              pan = 0;
             const stereo = Buffer.alloc(item.audio.bytes * 2),
               gain = item.delivery.gain;
             for (let sample = 0; sample < item.audio.bytes / 2; sample++) {

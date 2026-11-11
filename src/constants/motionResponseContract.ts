@@ -1,5 +1,4 @@
 import { stringifyJson } from "../lib/jsonStringify.js";
-import { MOTION_QA as Q } from "./motionQa.js";
 import { MOTION_APPEARANCE as APPEARANCE } from "./motionAppearance.js";
 import { MOTION_REMOTION_SCHEMAS } from "./motionRemotionPrompts.js";
 import { MOTION_EDITORIAL_POLICY } from "./motionEditorialPolicy.js";
@@ -32,7 +31,6 @@ const text: MotionResponseSchema = { type: "string", minLength: 1 };
 const plainText: MotionResponseSchema = { type: "string" };
 const boolean: MotionResponseSchema = { type: "boolean" };
 const number: MotionResponseSchema = { type: "number" };
-const integer: MotionResponseSchema = { type: "integer", minimum: 0 };
 const strings = (minItems = 0): MotionResponseSchema => ({ type: "array", items: text, minItems });
 const object = (properties: Record<string, MotionResponseSchema>, required = Object.keys(properties)): MotionResponseSchema => ({ type: "object", properties, required });
 const array = (items: MotionResponseSchema, minItems = 0): MotionResponseSchema => ({ type: "array", items, minItems });
@@ -128,15 +126,6 @@ const prop = object(
 );
 const need = object({ ...texts("id", "chapterId", "place", "evidence"), states: array(state), objects: array(prop), features: strings() });
 const needs = array(need);
-const read = object({ i: integer, focus: text, who: strings(), place: text, action: text, emotion: text, object: nullable(prop), objects: array(prop), states: array(state), overlays: strings(), visual: object({ scene: text, timeline: text, evidence: strings(1), fixtures: array(object(texts("key", "state"))) }, ["scene", "timeline", "evidence"]) }, [
-  "i",
-  "focus",
-  "who",
-  "place",
-  "action",
-  "states",
-  "visual",
-]);
 const beat = object(
   {
     id: text,
@@ -173,7 +162,6 @@ const story = object({
   chapters,
   cast,
   places: place,
-  illustrationNeeds: needs,
   illustrationAudit: array(object({ chapterId: text, checked: boolean })),
   notes: plainText,
 });
@@ -213,10 +201,6 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   }),
   "motion-voice-direction": object({ beats: array(object({ id: text, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }), 1) }),
   "motion-audio-casting": object({ audioDirection: object(texts("mode", "narrationStyle", "soundStyle")), roles: array(object({ ...texts("speaker", "voiceId"), gender: choice("male", "female"), age: choice("child", "adult", "senior") }, ["speaker", "voiceId"]), 1) }),
-  "motion-puppet-storyboard": object({ units: array(object({ id: text, from: object({ line: integer, cue: text, occurrence: integer }, ["line"]), ...texts("scene", "show"), purpose: choice("establish", "action", "clue", "reaction", "explanation", "transition"), read: { ...read, required: read.required!.filter((key) => key !== "i") } }, ["from", "scene", "purpose", "show"]), 1) }),
-  "motion-puppet-read": object({ lines: array(read, 1) }),
-  "motion-puppet-compose": object({ frames: array(object({ i: integer, shot: text, form: text, anchor: nullable(text), actors: array(object(texts("char", "spot", "pose", "expr", "face"))), camera: object({ move: text, subject: text }, ["move"]), shot2: nullable(object({})) }, ["i", "shot", "actors"]), 1) }),
-  "motion-puppet-qa": object({ checks: array(object({ i: integer, ok: boolean, category: choice(...Q.REVIEW_CATEGORIES), evidence: plainText, problem: plainText, fix: plainText, replan: boolean }, ["i", "ok"])) }),
   "motion-sound-direction": object({
     beats: array(
       object(
@@ -243,28 +227,6 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   "motion-illustration-coverage": object({ chapterId: text, checked: boolean, needs }),
   "motion-illustration-need-repair": object({ need }),
   "motion-illustration-plan-repair": object({ cast: array(object({ key: text, gender: choice("male", "female") })), places: array(object(texts("key", "optionId", "name", "description"))) }),
-  "motion-puppet-asset-profiles": object({ ...texts("title", "logline", "era", "look"), cast: array(object(texts("key", "name", "role", "look"), ["key", "name"])), places: array(object(texts("key", "name", "description"), ["key", "name"])) }, ["cast", "places"]),
-  "motion-puppet-cast-match": object({ matches: array(object({ key: text, archetype: nullable(text) })) }),
-  "motion-puppet-lib-match": object({ matches: array(object({ key: text, id: nullable(text) })) }),
-  "motion-puppet-set-plan": object({ sets: array(object({ key: text, base: text, pieces: array(object(texts("slot", "piece"))), new: array(object(texts("key", "desc", "kind", "slot"))) }, ["key", "base", "pieces"])) }),
-  "motion-puppet-pieces": object({ pieces: array(object({ key: text, svg: text }, ["key", "svg"])) }),
-  "motion-puppet-character": object({ colors: object(texts("body", "sleeve", "skin", "hair", "face")), height: { type: "number", minimum: 0.6, maximum: 1.15 }, head: object(texts("front", "side", "back")), body: object(texts("front", "side", "back")) }),
-  "motion-puppet-sprites": object(Object.fromEntries(["sit", "lie", "kneel"].map((key) => [key, object({ svg: text, w: number, h: number, anchor: array(number, 2) })])), []),
-  "motion-puppet-set": object({ svg: text, floorY: number, lights: array(object({ x: number, y: number, color: text, kind: text })), spots: array(object({ ...texts("key", "kind", "label"), x: number, y: number })), compositions: array(object({})) }, ["svg", "floorY", "spots"]),
-  "motion-puppet-set-variant": object({ svg: text, lights: array(object({ x: number, y: number, color: text, kind: text })) }),
-  "motion-puppet-props": object({ props: array(object({ key: text, svg: text, base: array(number, 2), height: number, size: number, mount: choice("floor", "table", "hang", "held", "air") })) }),
-  "motion-puppet-character-check": object({ checks: array(object({ i: integer, ok: boolean, problems: plainText, styleScore: number, styleDiff: plainText }, ["i", "ok"])) }),
-  "motion-puppet-set-check": object({ checks: array(object({ i: integer, looksLike: text, match: boolean, severity: choice("none", "minor", "critical"), missing: plainText, styleScore: number, styleDiff: plainText }, ["i", "match"])) }),
-  "motion-puppet-style": object({
-    ...texts("name", "description", "sets", "characters", "framing"),
-    body: object({ head: number, headW: number, bodyW: number, legs: { type: "number", enum: [0, 1] }, overlap: number, limb: choice("tube", "noodle"), limbW: number, armLen: number, hand: number, shape: choice("dome", "tube", "robe") }),
-    face: object({ ...texts("fill", "eyes", "eyeColor", "mouth"), eyeW: number, eyeH: number, eyeGap: number, eyeY: number, mouthW: number, mouthH: number, mouthY: number, brows: boolean }),
-    line: object({ width: number, color: text }),
-    palette: strings(1),
-    detail: choice("low", "medium", "high"),
-    gradients: boolean,
-    idleArms: choice("down", "nub"),
-  }),
 };
 export const MOTION_RESPONSE_TEXT = {
   HEADER: "OUTPUT TYPE CONTRACT (types, not story content): ",

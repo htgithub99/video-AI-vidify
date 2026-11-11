@@ -24,7 +24,7 @@ import { motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBehavior.js";
 import { normalizeSceneComposition } from "../../../../../lib/motionSceneComposition.js";
 import { remotionSceneReadiness } from "../../../../../lib/motionRemotion.js";
-import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
+import { motionBeatLines } from "../../../../../lib/motionBeatLines.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { motionCastIdentity } from "../../../../../lib/motionCastIdentity.js";
 import { motionIdentityReferences } from "../../../../../lib/motionIdentityReference.js";
@@ -38,7 +38,7 @@ import { recoverMotionAiContractState, requestMotionAiContract, type MotionAiRes
 import { isTerminalMotionAiError } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
-import { emptyGen } from "../puppet/genState.js";
+import { emptyGen } from "../motionGenState.js";
 import { mergeRemotionSceneDraft, remotionScenesFromDraft } from "./sceneContract.js";
 import { remotionBeatKey, remotionGroupKey, remotionGroupPlanCurrent, remotionCompositionKey, remotionPlanGroups } from "./sceneKeys.js";
 import { motionScenePacingRule, motionScenePacing, motionScenePacingCount } from "../../../../../lib/motionScenePacing.js";
@@ -126,7 +126,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       state.planRecoveryRevision = P.PLAN_RECOVERY_REVISION;
     }
     state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, script.gen?.characterMotion);
-    const result: MotionStoryScript = { ...script, visualSettings: settings, gen: { ...(script.gen || emptyGen()), renderBehavior: state.renderBehavior, puppet: undefined, remotion: state, failed: [] } };
+    const result: MotionStoryScript = { ...script, visualSettings: settings, gen: { ...(script.gen || emptyGen()), renderBehavior: state.renderBehavior, remotion: state, failed: [] } };
     const save = () => {
       opts.signal?.throwIfAborted();
       state.updatedAt = Math.max(Date.now(), (state.updatedAt || 0) + 1);
@@ -206,7 +206,7 @@ export const buildRemotionScenes = async (script: MotionStoryScript, analysis: M
       try {
         for (const member of group.beats) delete state.failures[member.id];
         if (!remotionGroupPlanCurrent(group.beats, analysis, state, opts.onlyScenes?.length ? undefined : opts.note)) {
-          const lines = group.beats.flatMap((member) => puppetBeatLines(member, motionNarratorCastKey(analysis)));
+          const lines = group.beats.flatMap((member) => motionBeatLines(member, motionNarratorCastKey(analysis)));
           const groupPlaces = [...new Set(group.beats.map((member) => member.place).filter((place): place is string => !!place))];
           const direction = motionIllustrationDirection(settings.profileId, RT_SERVER.PLANNING);
           const context = {

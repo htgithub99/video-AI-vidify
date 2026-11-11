@@ -5,7 +5,7 @@ import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { MOTION_TEXT_EMPTY } from "../../../constants/motionRuntime.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { cachedJson, hashJson, hashText } from "../../../lib/cachedJson.js";
-import { normalizeMotionVisualSettings, motionVisualSettingsFor } from "../../../lib/motionVisual.js";
+import { normalizeMotionVisualSettings, motionPlanSettings, motionVisualSettingsFor } from "../../../lib/motionVisual.js";
 import { motionVoiceSignature, motionVoiceAsrSatisfied } from "../../../lib/motionVoice.js";
 import { motionEffectiveEncoder } from "../../../lib/motionOutputSettings.js";
 import { MOTION_CAMERA_REVISION } from "../../../lib/motionCamera.js";
@@ -45,8 +45,8 @@ interface VisualDraftContext {
   voice?: MotionStoryScript["voiceTrack"] | null;
   uploadedAudio?: { id: string } | null;
 }
-export const hasMotionVisualDraft = (state: VisualDraftContext) => (state.visualSettings.mode === RT_SHARED.REMOTION ? !!Object.values(state.script?.gen?.remotion?.scenes || {}).some((scenes) => scenes.length) : !!state.script?.gen && (!!state.script.gen.puppet || Object.keys(state.script.gen.cast || {}).length > 0 || Object.keys(state.script.gen.locations || {}).length > 0));
-export const motionVisualDraftKey = (settings: MotionVisualSettings) => stringifyJson(normalizeMotionVisualSettings(settings));
+export const hasMotionVisualDraft = (state: VisualDraftContext) => !!Object.values(state.script?.gen?.remotion?.scenes || {}).some((scenes) => scenes.length);
+export const motionVisualDraftKey = (settings: MotionVisualSettings) => stringifyJson(motionPlanSettings(normalizeMotionVisualSettings(settings)));
 const compileKeys: { inputs: unknown[]; key: string }[] = [];
 export const motionCompileStateKey = (state: object) => {
   const fields = state as Record<string, unknown>;
@@ -92,7 +92,7 @@ export const motionRenderedPreview = (state: { lastRenderJobId?: string | null; 
   return { videoUrl, result: videoUrl ? (current ? result : stored) : undefined, stale: !!videoUrl && (!state.renderSignature || state.renderSignature !== motionRenderStateKey(state)) };
 };
 export const motionVisualDraftContextKey = (state: Pick<VisualDraftContext, "analysis" | "script">) => {
-  const analysis = state.analysis && { ...state.analysis, visualSettings: undefined, stylePreset: undefined, illustrationNeeds: undefined, illustrationCoverage: undefined };
+  const analysis = state.analysis && { ...state.analysis, visualSettings: undefined, stylePreset: undefined };
   return cachedJson([analysis, state.script && { title: state.script.title, language: state.script.language, beats: state.script.beats }]);
 };
 export const captureMotionVisualDraft = (state: VisualDraftContext, runtime: Pick<MotionVisualDraft, "compiled" | "renderJob"> = {}): MotionVisualDraft => ({
@@ -121,17 +121,21 @@ export const motionVisualDraftRuntime = (state: VisualDraftContext, draft?: Moti
 };
 export const forgetMotionVisualDraftResults = (drafts: Record<string, MotionVisualDraft> | undefined, id?: string) => Object.fromEntries(Object.entries(drafts || {}).map(([key, draft]) => [key, !id || draft.lastRenderJobId === id || draft.renderJob?.id === id || draft.renderJob?.result?.id === id ? { ...draft, renderJob: null, lastRenderJobId: null, renderSignature: undefined } : draft]));
 export const switchMotionVisualDraft = <T extends VisualDraftContext>(state: T, requested: MotionVisualSettings, runtime: Pick<MotionVisualDraft, "compiled" | "renderJob"> = {}) => {
-  const settings = normalizeMotionVisualSettings(requested, state.stylePreset);
+  const settings = normalizeMotionVisualSettings(requested);
+  if (motionVisualDraftKey(settings) === motionVisualDraftKey(state.visualSettings) && stringifyJson(settings.pacing) === stringifyJson(state.visualSettings.pacing)) {
+    const next = { ...state, visualSettings: settings, analysis: state.analysis && { ...state.analysis, visualSettings: settings }, script: state.script && { ...state.script, visualSettings: settings }, automationPaused: true } as T;
+    return { state: next, ...motionVisualDraftRuntime(next, captureMotionVisualDraft(state, runtime)) };
+  }
   const drafts = { ...state.visualDrafts, [motionVisualDraftKey(state.visualSettings)]: captureMotionVisualDraft(state, runtime) };
   const saved = drafts[motionVisualDraftKey(settings)];
   const target = saved?.contextKey === motionVisualDraftContextKey(state) ? saved : undefined;
-  const pacingOnly = stringifyJson({ ...state.visualSettings, pacing: undefined }) === stringifyJson({ ...settings, pacing: undefined });
+  const pacingOnly = stringifyJson({ ...motionPlanSettings(state.visualSettings), pacing: undefined }) === stringifyJson({ ...motionPlanSettings(settings), pacing: undefined });
   const next = {
     ...state,
     visualSettings: settings,
     visualDrafts: drafts,
-    ...(settings.mode === RT_SHARED.REMOTION ? { remotionProfile: settings.profileId } : { stylePreset: settings.packId }),
-    analysis: target ? target.analysis : state.analysis && { ...state.analysis, visualSettings: settings, stylePreset: settings.mode === RT_SHARED.LIBRARY ? settings.packId : undefined, ...(pacingOnly ? {} : { illustrationNeeds: undefined, illustrationCoverage: undefined }) },
+    remotionProfile: settings.profileId,
+    analysis: target ? target.analysis : state.analysis && { ...state.analysis, visualSettings: settings, stylePreset: undefined,  },
     script: state.script && { ...state.script, visualSettings: target ? target.scriptSettings : settings, gen: target?.gen || (pacingOnly ? state.script.gen : undefined) },
     thumbnail: target?.thumbnail || null,
     thumbnails: target?.thumbnails || {},
@@ -151,7 +155,7 @@ export const recoverMotionVisualDraft = <T extends VisualDraftContext>(state: T,
   const script = result.script;
   const analysis = result.analysis || state.analysis;
   if (!script?.gen || !state.script || !analysis) return null;
-  const settings = normalizeMotionVisualSettings(script.visualSettings || analysis.visualSettings, analysis.stylePreset);
+  const settings = normalizeMotionVisualSettings(script.visualSettings || analysis.visualSettings);
   if (motionVisualDraftKey(settings) !== motionVisualDraftKey(state.visualSettings) || motionVisualDraftContextKey({ script, analysis }) !== motionVisualDraftContextKey(state)) return null;
   const next = { ...state, analysis, script: { ...state.script, gen: script.gen, visualSettings: script.visualSettings } };
   const candidate = result.compiled;

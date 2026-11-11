@@ -25,7 +25,7 @@ export interface MotionRemotionEffect {
   direction?: "up" | "ground" | "left" | "right";
   intensity?: number;
 }
-export type MotionVisualSettings = ({ version: 1; mode: "library"; engine: "canvas"; packId: string } | { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number }) & { pacing?: MotionScenePacing };
+export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; figureKit?: boolean; pacing?: MotionScenePacing };
 export interface MotionVectorAsset {
   key: string;
   inputKey: string;

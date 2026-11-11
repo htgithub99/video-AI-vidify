@@ -19,7 +19,7 @@ import { runMotionAi, motionAiRoutes, type MotionAiImage } from "./motionStorySe
 import { requestMotionAiContract, type MotionAiResponseContract } from "./motionAiContractService.js";
 import { rasterizeMotionSvgs } from "./motionRenderService.js";
 import { getMotionWorkDirectory } from "./motionLibraryService.js";
-import { genPreviewDir } from "./puppet/genState.js";
+import { genPreviewDir } from "./motionGenState.js";
 import { motionThumbnailStyle, prepareMotionThumbnailReferences } from "./motionThumbnailReferences.js";
 import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis, MotionStoryScript } from "../../../../types/motionVideo.js";
 import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";

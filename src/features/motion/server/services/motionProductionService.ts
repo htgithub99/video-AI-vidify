@@ -30,14 +30,9 @@ import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { getStoryJob, cancelStoryJob } from "./motionStoryJobService.js";
 import { getMotionJob, cancelMotionJob, detectEncoders } from "./motionRenderService.js";
 import { MotionProductionStore, motionProcessAlive, type MotionProductionOwner } from "./motionProductionStore.js";
-import { puppetPackStoryCapabilities } from "./puppet/packCatalog.js";
-import { closedPuppetPackId } from "./puppet/packPolicy.js";
-import { type PuppetPlanReadiness } from "./puppet/planReadiness.js";
-import { recoverMotionIllustrationPlan, type MotionPlanRecoveryState } from "./motionPlanRecoveryService.js";
 import { retimeMotionSeo, seoScriptKey } from "./motionSeoService.js";
 import { MotionLogStore } from "./motionLogStore.js";
-import { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, editorialSession, aiExec } from "./motionProductionActions.js";
-import { runInMotionAiSession } from "./motionStoryService.js";
+import { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput } from "./motionProductionActions.js";
 import { motionVisualRequest, motionVisualSettingsFor, isRemotionSpec } from "../../../../lib/motionVisual.js";
 import { MOTION_VISUAL as VISUAL } from "../../../../constants/motionVisual.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
@@ -56,8 +51,6 @@ import { MOTION_OUTPUT_CONFORMANCE as CONFORMANCE } from "../../../../constants/
 import { MOTION_SETTINGS_COMPATIBILITY } from "../../../../constants/motionSettingsCompatibility.js";
 const productionAiOverride = (value?: Record<string, any>): Record<string, any> | undefined => (value && typeof value === "object" && value.provider ? value : undefined);
 interface ProductionRecord {
-  illustration?: PuppetPlanReadiness;
-  illustrationRecovery?: MotionPlanRecoveryState;
   durationRepair?: { round: number; rate: number; chapters?: string[]; done?: boolean };
   voiceCastChapters?: string[];
   version: number;
@@ -68,9 +61,9 @@ interface ProductionRecord {
   steps: Record<string, { id: string; done?: boolean; partial?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean; elapsedMs?: number; segmentAt?: number }>;
   owner?: MotionProductionOwner;
 }
-const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan };
+const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime };
 export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS, seoWaitMs: number = P.SEO_WAIT_MS) => {
-  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan } = {
+  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime } = {
     ...productionDependencies,
     ...dependencies,
   };
@@ -355,7 +348,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const directory = getMotionRootDirectory();
       fs.accessSync(directory, fs.constants.W_OK);
       const disk = fs.statfsSync(directory);
-      if (!base.source?.segments?.length || disk.bavail * disk.bsize < P.MIN_FREE_BYTES || (visualSettings.mode === RT_SHARED.LIBRARY && closedPuppetPackId(base.stylePreset) && !puppetPackStoryCapabilities(base.stylePreset))) throw new Error(P.PREFLIGHT_FAILED);
+      if (!base.source?.segments?.length || disk.bavail * disk.bsize < P.MIN_FREE_BYTES) throw new Error(P.PREFLIGHT_FAILED);
       log(record, VISUAL.LOG_MODE(visualSettings.mode));
       if (visualSettings.mode === RT_SHARED.REMOTION) {
         if (base.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
@@ -385,44 +378,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         record.job.stage = P.ANALYSIS_DONE;
         return;
       }
-      if (visualSettings.mode === RT_SHARED.LIBRARY) {
-        record.steps[P.INVENTORY_STAGE] = { ...motionStepSegment(record.steps[P.INVENTORY_STAGE], record.job.id), id: record.job.id, status: S.RENDERING, startedAt: record.steps[P.INVENTORY_STAGE]?.startedAt || Date.now(), updatedAt: Date.now() };
-        record.job.stage = P.INVENTORY_STAGE;
-        save();
-        let ready: Awaited<ReturnType<typeof recoverMotionIllustrationPlan>>;
-        try {
-          ready = await runInMotionAiSession(
-            record.job.id,
-            () =>
-              recoverMotionIllustrationPlan(
-                { ...result.analysis!, stylePreset: base.stylePreset || result.analysis?.stylePreset },
-                {
-                  verifyCoverage: true,
-                  exec: base.aiExecution || {},
-                  signal,
-                  log: (line) => log(record, line),
-                  state: (record.illustrationRecovery ||= { attempts: 0, errors: [] }),
-                  save: (analysis) => {
-                    result.analysis = analysis;
-                    save();
-                  },
-                },
-              ),
-            (line) => log(record, line),
-            true,
-            signal,
-            editorialSession(base, base.source, aiExec(base.aiExecution)),
-          );
-          Object.assign(record.steps[P.INVENTORY_STAGE], { done: true, status: S.COMPLETED, updatedAt: Date.now() });
-        } catch (error) {
-          Object.assign(record.steps[P.INVENTORY_STAGE], { status: signal.aborted ? S.CANCELLED : S.ERROR, error: String((error as Error).message), updatedAt: Date.now() });
-          throw error;
-        }
-        record.illustration = ready.illustration;
-        result.analysis = ready.analysis;
-      } else result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
+      result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
-      const sceneInput = (analysis: MotionStoryAnalysis, script: MotionStoryScript, sheetCarry: boolean) => ({ ...base, analysis, script, sheetCarry, illustration: record.illustration, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false });
+      const sceneInput = (analysis: MotionStoryAnalysis, script: MotionStoryScript, sheetCarry: boolean) => ({ ...base, analysis, script, sheetCarry, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false });
       if (visualSettings.mode === RT_SHARED.REMOTION && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair && !(globalThis as any).__motionHtmlStages)
         early = createMotionEarlyScenes({
           stage: P.STAGES.SCENES,

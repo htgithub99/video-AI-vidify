@@ -1,5 +1,3 @@
-import { PUPPET_KIT_API } from "../../../../constants/motionPuppet.js";
-import { listPuppetKitItems, removePuppetKitItems, renamePuppetKitItem, seedPuppetKitItems, servePuppetKitThumb } from "../controllers/motionVideoController.js";
 import { MOTION_SOUND_CONFIG } from "../../../../constants/motionSound.js";
 import { listMotionSfx, serveMotionSfx } from "../controllers/motionVideoController.js";
 import { listMotionVoices, registerMotionVoice, updateMotionVoiceMeta, removeMotionVoice, listMotionVoiceChannels, saveMotionVoiceChannel, removeMotionVoiceChannel } from "../controllers/motionVideoController.js";
@@ -17,7 +15,6 @@ import {
   cancelMotionStory,
   cancelMotionVideo,
   checkMotionVideo,
-  renderBoard2dSheet,
   cleanStorageJunkHandler,
   clearMotionVideoResults,
   compileMotionStory,
@@ -60,11 +57,6 @@ router.post(MOTION_VOICE_LIBRARY.AI33_ROUTE, addMotionAi33Voice);
 router.get(MOTION_VOICE_LIBRARY.CHANNELS_ROUTE, listMotionVoiceChannels);
 router.post(MOTION_VOICE_LIBRARY.CHANNELS_ROUTE, saveMotionVoiceChannel);
 router.post(MOTION_VOICE_LIBRARY.CHANNEL_DELETE_ROUTE, removeMotionVoiceChannel);
-router.get(PUPPET_KIT_API.ROUTES.LIST, listPuppetKitItems);
-router.post(PUPPET_KIT_API.ROUTES.SEED, seedPuppetKitItems);
-router.post(PUPPET_KIT_API.ROUTES.REMOVE, removePuppetKitItems);
-router.post(PUPPET_KIT_API.ROUTES.RENAME, renamePuppetKitItem);
-router.get(PUPPET_KIT_API.ROUTES.THUMB, servePuppetKitThumb);
 router.get(MOTION_SOUND_CONFIG.LIST_ROUTE, listMotionSfx);
 router.get(MOTION_SOUND_CONFIG.ASSET_ROUTE, serveMotionSfx);
 router.get(MOTION_VIDEO_API_PATHS.ENGINE, getMotionEngineScript);
@@ -72,7 +64,6 @@ router.get(MOTION_VIDEO_API_PATHS.DEMO, getMotionDemo);
 router.get(MOTION_VIDEO_API_PATHS.GEN_PREVIEW, serveGenPreview);
 router.post(MOTION_VIDEO_API_PATHS.AUDIO, uploadMotionAudio);
 router.post(MOTION_VIDEO_API_PATHS.CHECK, checkMotionVideo);
-router.post(MOTION_VIDEO_API_PATHS.BOARD2D_SHEET, renderBoard2dSheet);
 router.post(MOTION_VIDEO_API_PATHS.RENDER, startMotionVideoRender);
 router.get(MOTION_VIDEO_API_PATHS.STATUS, getMotionVideoStatus);
 router.post(MOTION_VIDEO_API_PATHS.CANCEL, cancelMotionVideo);

@@ -79,8 +79,6 @@ export const MOTION_PRODUCTION = {
   ATOMIC_RETRY_CODES: ["EPERM", "EACCES", "EBUSY"] as readonly string[],
   ATOMIC_RETRY_DELAYS: [10, 20, 40, 80, 160, 200] as readonly number[],
   ILLUSTRATION_VERSION: 1,
-  ILLUSTRATION_NEEDS_INVALID: "Yêu cầu minh họa thiết yếu chưa khớp chương, địa điểm, nhân vật hoặc bằng chứng trong dàn ý. Giữ phần đạt để sửa đúng dữ liệu; không tự đổi vật hay tạo thêm kho.",
-  ILLUSTRATION_NEEDS_READY: (count: number): string => `Đã kiểm ${count} tổ hợp minh họa thiết yếu được khai báo: đạo cụ, chỗ tựa và vị trí đồng thời có trong gói.`,
   ILLUSTRATION_READY: (characters: number, places: number): string => `Kiểm kế hoạch minh họa: ${characters} nhân vật, ${places} địa điểm có lựa chọn trong gói. Tư thế, chủ vật và hình học sẽ được kiểm theo từng cảnh.`,
   SNAPSHOT_VERSION: 1,
   SNAPSHOT_DELAY: 500,

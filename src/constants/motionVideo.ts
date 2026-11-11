@@ -1,4 +1,3 @@
-import { PA } from "./motionPuppetAssets.js";
 import { MotionAspect, MotionQuality, MotionStoryLength } from "../types/motionVideo.js";
 export const MOTION_STORY_LENGTH_SECONDS: Partial<Record<MotionStoryLength, number>> = {
   [MotionStoryLength.ONE]: 60,
@@ -51,7 +50,7 @@ export const MOTION_VIDEO_CONSTANTS = {
   TEMPLATE_2D: "gen2d",
   DRAWING_2D: "2d",
   FX_CUE_RE: /^(thunder|explosion)$/,
-  ENGINE_FILES: ["texts.js", "core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "puppet2d.js"],
+  ENGINE_FILES: ["texts.js", "core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js"],
   CLIENT_ONLY_FILES: ["style-finish.js"],
   FONTS_DIR: "fonts",
   FONTS_MANIFEST: "fonts.json",
@@ -135,7 +134,7 @@ export const MOTION_STORY_CONFIG = {
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
   ROOM_LONG_TIMEOUT_MS: 12 * 60 * 1000,
   ROOM_SHORT_TIMEOUT_MS: 3 * 60 * 1000,
-  ROOM_SHORT_ARTIFACTS: ["motion-puppet-lib-match", "motion-puppet-cast-match", PA.ARTIFACT, "motion-puppet-set-plan", "motion-audio-casting", "motion-puppet-set-check", "motion-puppet-character-check", "motion-story-seo"] as string[],
+  ROOM_SHORT_ARTIFACTS: ["motion-audio-casting", "motion-story-seo"] as string[],
   ROOM_STUCK_BLOCK_MS: 5 * 60 * 1000,
   ROOM_CLOSED_RE: /Target page, context or browser has been closed|frame was detached|ERR_ABORTED/,
   ROOM_SKIP_LOG: (provider: string, minutes: number): string => `Phòng chat ${provider} đang lỗi – bỏ qua ${provider} trong ${minutes} phút cho các yêu cầu tiếp theo, chuyển ngay sang AI dự phòng.`,

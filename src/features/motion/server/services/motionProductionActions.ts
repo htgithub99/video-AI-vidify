@@ -18,7 +18,6 @@ import type { MotionRenderSpec } from "../../../../types/motionVisual.js";
 import { buildRemotionScenes } from "./remotion/scenePipeline.js";
 import { compileRemotionStory } from "./remotion/storyCompiler.js";
 import { motionEditorialContext } from "./motionEditorialContextService.js";
-import { buildScenesPuppet } from "./puppet/pipelinePuppet.js";
 import { MOTION_SOUND_CONFIG as SOUND } from "../../../../constants/motionSound.js";
 import { normalizeSoundCues } from "../../../../lib/motionSound.js";
 import { buildMotionSoundTrack, mixMotionSoundAudio } from "./motionSoundMixService.js";
@@ -30,7 +29,6 @@ import { motionBeatSheetCoverage } from "../../../../lib/motionBeatSheet.js";
 import { MOTION_BEAT_SHEET } from "../../../../constants/motionBeatSheet.js";
 import { motionChapterRanges, motionChapterKeyPoints } from "../../../../lib/motionStoryTimeline.js";
 import { MOTION_STORY_TIMELINE } from "../../../../constants/motionStoryTimeline.js";
-import { listMotionVoices as listMotionVoiceSources } from "./motionVoiceSourceService.js";
 import { MOTION_MUSIC } from "../../../../constants/motionMusic.js";
 import _ from "lodash";
 import { motionSpeechRate, motionSpeechRateMeasured, speechUnits } from "./motionSpeechRateService.js";
@@ -66,12 +64,11 @@ import { parseJson } from "../../../../lib/jsonStringify.js";
 import { logger } from "../../../../lib/logger.js";
 import { MotionEncoderPreference, MotionQuality, MotionStoryJobKind, MotionStoryLength, type MotionAiExecution, type MotionBeat, type MotionChapter, type MotionSpec, type MotionStoryAnalysis, type MotionStoryScript, type MotionStorySource } from "../../../../types/motionVideo.js";
 import { buildMotionVoiceTrack, fitUploadedVoice, readMotionVoiceTrack } from "./motionAudioService.js";
-import { motionVoiceCast, withMotionVoiceMode } from "../../../../lib/motionVoice.js";
+import { withMotionVoiceMode } from "../../../../lib/motionVoice.js";
 import { MOTION_VOICE, MOTION_VOICE_PATTERNS } from "../../../../constants/motionVoice.js";
-import { directMotionVoice } from "./motionVoiceDirectionService.js";
 import { createHash } from "crypto";
-import { compileStorySpec, estimateBeatSeconds } from "./motionDirectorService.js";
-import { emptyGen } from "./puppet/genState.js";
+import { estimateBeatSeconds } from "./motionDirectorService.js";
+import { emptyGen } from "./motionGenState.js";
 import { MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
 import { motionContentWorkerIds } from "../../../../lib/motionAiExecution.js";
 import { startMotionRender } from "./motionRenderService.js";
@@ -170,7 +167,7 @@ export const analyzeMotionStoryInput = async (body: Record<string, any>) => {
         visualSettings,
         styleReferences: visualSettings.mode === RT_SHARED.REMOTION ? [] : styleReferences,
         videoGenre: motionVideoGenre(body?.videoGenre),
-        stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined,
+        stylePreset: undefined,
         characterMotion: body?.characterMotion === true,
         aspect: _.toString(body?.aspect || MR.MOTION_TEXT_16_9),
         exec,
@@ -203,7 +200,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
     analysis = {
       ...analysis,
       visualSettings,
-      stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined,
+      stylePreset: undefined,
       ...(analysis.authoringSettings && visualSettings.mode === RT_MAINTENANCE.REMOTION
         ? { authoringSettings: { ...analysis.authoringSettings, language: storyLanguage(body?.language), visualProfile: visualSettings.profileId, picturePacing: visualSettings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: visualSettings.pacing ? MOTION_SCENE_PACING.SECONDS[visualSettings.pacing] : analysis.authoringSettings.targetPictureSeconds } }
         : {}),
@@ -500,114 +497,47 @@ export const seoMotionStoryInput = (body: Record<string, any>) => {
 };
 export const scenesMotionStoryInput = (body: Record<string, any>) => {
   assertMotionProductionMode(body);
-  const behavior = motionRenderBehaviorFor(body);
   const visualSettings = motionVisualSettingsFor(body);
   const raw = body?.analysis as MotionStoryAnalysis;
-  const analysis = (raw ? { ...raw, visualSettings, stylePreset: visualSettings.mode === RT_SHARED.LIBRARY ? visualSettings.packId : undefined } : raw) as MotionStoryAnalysis;
+  const analysis = (raw ? { ...raw, visualSettings, stylePreset: undefined } : raw) as MotionStoryAnalysis;
   const script = body?.script as MotionStoryScript;
   if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
   assertMotionScriptComplete(script, analysis);
   const exec = drawExec(body?.aiExecution);
   const mainExec = { ...aiExec(body?.mainAiExecution || body?.aiExecution), role: MOTION_AI_ROLE.MAIN };
-  const styleReferences = normalizeMotionReferences(body?.styleReferences);
   const onlyBeats: string[] = _.map(_.castArray(body?.beats || []), _.toString);
   const onlyLocations: string[] = _.map(_.castArray(body?.locations || []), _.toString);
   const note = _.truncate(_.toString(body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
-  if (visualSettings.mode === RT_SHARED.REMOTION) {
-    const job = startInputJob(
-      body,
-      body?.keepBrowser === true,
-      MotionStoryJobKind.SCENES,
-      async (ctx) => {
-        const result = await buildRemotionScenes({ ...script, visualSettings }, analysis, {
-          exec,
-          mainExec,
-          signal: ctx.signal,
-          log: ctx.log,
-          progress: ctx.progress,
-          partial: ctx.partial,
-          scope: body.productionId || body.editorialSessionId,
-          aspect: body.aspect,
-          renderBehavior: motionRenderBehaviorFor(body),
-          sfx: body.sfx !== false,
-          sheetCarry: body.sheetCarry === true,
-          restart: body.restart === true,
-          rebuildKey: body.rebuildKey || motionInputKey([script.gen?.remotion, body.restart, body.scenes]),
-          retryFailed: body.retryFailed === true,
-          onlyBeats,
-          onlyScenes: _.map(_.castArray(body?.scenes || []), _.toString),
-          onlyLocations,
-          note: note || undefined,
-        });
-        ctx.partial(result);
-        const selectedScenes = _.map(_.castArray(body?.scenes || []), _.toString);
-        const missing = remotionStateMissingScenes(result.gen!.remotion!).filter((id) => !selectedScenes.length || selectedScenes.includes(id));
-        if (missing.length) throw new Error(C.INCOMPLETE(missing));
-        return result;
-      },
-      (() => {
-        const session = editorialSession(body, body.source, mainExec);
-        return session ? { ...session, worker: true } : undefined;
-      })(),
-    );
-    return { success: true, job };
-  }
-  if (body?.restart) delete script.gen;
   const job = startInputJob(
     body,
     body?.keepBrowser === true,
     MotionStoryJobKind.SCENES,
     async (ctx) => {
-      const autoVoice = body?.autoVoice !== false;
-      ctx.progress(0, MOTION_STORY_CONFIG.SCENES_PREPARING);
-      const audioAbort = new AbortController();
-      const cancelAudio = () => audioAbort.abort(ctx.signal.reason);
-      ctx.signal.addEventListener(RT_SHARED.ABORT, cancelAudio, { once: true });
-      if (ctx.signal.aborted) cancelAudio();
-      const voiceOpts = { exec: mainExec, session: editorialSession(body, body.source, mainExec), scope: body.productionId || body.editorialSessionId, asr: body?.asrCheck === true, aspect: _.toString(body?.aspect || MOTION_TEXT_16_9), signal: audioAbort.signal, log: ctx.log, onProgress: (done: number, total: number) => done === total && ctx.log(MOTION_VOICE.MIXING) };
-      let planJob: Promise<Awaited<ReturnType<typeof directMotionVoice>> | undefined> = Promise.resolve(undefined);
-      let voiceJob: Promise<Awaited<ReturnType<typeof buildMotionVoiceTrack>> | undefined> = Promise.resolve(undefined);
-      const prepareAudio = async (readyScript: MotionStoryScript) => {
-        planJob = autoVoice ? listMotionVoiceSources(audioAbort.signal, ctx.log).then((sources) => directMotionVoice(readyScript, analysis, sources, voiceOpts)) : Promise.resolve(undefined);
-        planJob.catch(_.noop);
-        voiceJob = planJob.then((plan) => (plan ? buildMotionVoiceTrack({ ...readyScript, gen: { ...(readyScript.gen || emptyGen()), voiceCast: motionVoiceCast(readyScript.gen?.voiceCast, plan.roles) } }, analysis, voiceOpts) : undefined));
-        voiceJob.catch(_.noop);
-        return planJob.then((plan) => plan?.direction).catch(() => undefined);
-      };
-      try {
-        const result = await buildScenesPuppet(script, analysis, {
-          prepareAudio,
-          resolveVoice: () => voiceJob,
-          exec,
-          mainExec,
-          signal: ctx.signal,
-          log: ctx.log,
-          progress: (value, stage) => ctx.progress(value * (autoVoice ? 0.9 : 0.99), stage === MR.MOTION_TEXT_DONE ? MOTION_STORY_CONFIG.SCENES_COMPLETED : stage),
-          partial: (r) => r && ctx.partial(r),
-          aspect: _.toString(body?.aspect || MOTION_TEXT_16_9),
-          onlyBeats,
-          onlyLocations,
-          styleReferences,
-          characterMotion: behavior.actors === RT_SHARED.SIMPLE,
-          note: note || undefined,
-          review: body?.review !== false,
-          sfx: body?.sfx !== false,
-          previews: body?.previews !== false,
-          readiness: body?.illustration,
-        });
-        if (result.gen) result.gen.renderBehavior = behavior;
-        const plan = await planJob;
-        if (plan && result.gen) result.gen.voiceCast = motionVoiceCast(result.gen.voiceCast, plan.roles);
-        if (autoVoice && !result.gen?.failed?.length) {
-          ctx.progress(0.92, MOTION_VOICE.GENERATING);
-          result.voiceTrack = await voiceJob;
-          ctx.partial(result);
-        }
-        return result;
-      } finally {
-        audioAbort.abort();
-        ctx.signal.removeEventListener(RT_SHARED.ABORT, cancelAudio);
-      }
+      const result = await buildRemotionScenes({ ...script, visualSettings }, analysis, {
+        exec,
+        mainExec,
+        signal: ctx.signal,
+        log: ctx.log,
+        progress: ctx.progress,
+        partial: ctx.partial,
+        scope: body.productionId || body.editorialSessionId,
+        aspect: body.aspect,
+        renderBehavior: motionRenderBehaviorFor(body),
+        sfx: body.sfx !== false,
+        sheetCarry: body.sheetCarry === true,
+        restart: body.restart === true,
+        rebuildKey: body.rebuildKey || motionInputKey([script.gen?.remotion, body.restart, body.scenes]),
+        retryFailed: body.retryFailed === true,
+        onlyBeats,
+        onlyScenes: _.map(_.castArray(body?.scenes || []), _.toString),
+        onlyLocations,
+        note: note || undefined,
+      });
+      ctx.partial(result);
+      const selectedScenes = _.map(_.castArray(body?.scenes || []), _.toString);
+      const missing = remotionStateMissingScenes(result.gen!.remotion!).filter((id) => !selectedScenes.length || selectedScenes.includes(id));
+      if (missing.length) throw new Error(C.INCOMPLETE(missing));
+      return result;
     },
     (() => {
       const session = editorialSession(body, body.source, mainExec);
@@ -668,10 +598,7 @@ export const compileMotionStoryInput = async (body: Record<string, any>) => {
     );
   const directedScript = script.gen ? { ...script, gen: { ...script.gen, characterMotion: behavior.actors === RT_SHARED.SIMPLE, renderBehavior: behavior } } : script;
   const previewOnly = body?.previewOnly === true;
-  const compiled =
-    visualSettings.mode === RT_SHARED.REMOTION
-      ? compileRemotionStory({ ...directedScript, visualSettings }, analysis ? { ...analysis, visualSettings } : null, { aspect, durations, fps: body.fps, voiceTrack, renderBehavior: behavior, subtitles: body.subtitles, review: previewOnly })
-      : compileStorySpec(directedScript, analysis, { aspect, durations, look: body?.look, accent: body?.accent, voiceTrack });
+  const compiled = compileRemotionStory({ ...directedScript, visualSettings }, analysis ? { ...analysis, visualSettings } : null, { aspect, durations, fps: body.fps, voiceTrack, renderBehavior: behavior, subtitles: body.subtitles, review: previewOnly });
   compiled.spec = applyMotionRenderBehavior(compiled.spec, behavior);
   if (previewOnly) return { success: true, spec: compiled.spec, sfxCues: compiled.sfxCues, starts: compiled.starts, missing: compiled.missing, sfxId: undefined, audioPreviewId: undefined, soundSelections: [], voiceStale };
   const duration = compiled.spec.duration || 1,

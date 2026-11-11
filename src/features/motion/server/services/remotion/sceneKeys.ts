@@ -4,6 +4,7 @@ import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../../constants/runtime/server.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
+import { motionPlanSettings, motionSceneKitMatches, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemotionLayout.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../../../../../types/motionVideo.js";
@@ -13,13 +14,13 @@ import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSc
 import { validateSceneComposition, motionCompositionMissingChannels } from "../../../../../lib/motionSceneComposition.js";
 import { motionVisualBeatGroups, motionBeatVisualSeconds, motionScenePacing, motionScenePacingCount } from "../../../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionScenePacing.js";
-import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
+import { motionBeatLines } from "../../../../../lib/motionBeatLines.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_SOUND_CONFIG } from "../../../../../constants/motionSound.js";
-import { PUPPET } from "../../../../../constants/motionPuppet.js";
+import { MOTION_SOUND_DIRECTION } from "../../../../../constants/motionSoundDirection.js";
 import { motionHtmlPlanCurrent } from "../../../../../lib/motionHtmlScene.js";
 const visualBeatData = (data: MotionBeat["data"]) => {
-  const fields = Object.entries(data || {}).filter(([key]) => !([RUNTIME_VALUES.SOUNDEVENTS_663E13A7, RUNTIME_VALUES.SOUNDSILENCE_A9ADA975, MOTION_SOUND_CONFIG.DIRECTION_STATE, PUPPET.SOUND_FLAG] as string[]).includes(key));
+  const fields = Object.entries(data || {}).filter(([key]) => !([RUNTIME_VALUES.SOUNDEVENTS_663E13A7, RUNTIME_VALUES.SOUNDSILENCE_A9ADA975, MOTION_SOUND_CONFIG.DIRECTION_STATE, MOTION_SOUND_DIRECTION.SOUND_FLAG] as string[]).includes(key));
   return fields.length ? Object.fromEntries(fields) : undefined;
 };
 const normalized = (value: unknown): unknown =>
@@ -89,7 +90,7 @@ export const remotionGroupPlanCurrent = (beats: MotionBeat[], analysis: MotionSt
   const scenes = state?.scenes[beats[0]?.id];
   if (!scenes?.length || !beats.every((beat) => [remotionBeatKey(beat, analysis, "", state), legacyBeatKey(beat, analysis)].includes(state?.inputKeys[beat.id] || ""))) return false;
   const keys = [remotionGroupKey(beats, analysis, state, note), motionInputKey([PACING.REVISION, beats.map((beat) => legacyBeatKey(beat, analysis, note ?? state?.notes?.[beat.id] ?? ""))])];
-  const lines = beats.flatMap((beat) => puppetBeatLines(beat, motionNarratorCastKey(analysis)));
+  const lines = beats.flatMap((beat) => motionBeatLines(beat, motionNarratorCastKey(analysis)));
   let cursor = 0;
   for (const scene of scenes) {
     const from = lines.findIndex((line) => line.key === scene.fromLineId),
@@ -130,11 +131,12 @@ export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: Mo
   const state = script.gen?.remotion;
   if (!state) return RT_SERVER.PENDING;
   if (state.renderer === RT_MAINTENANCE.HTML_CANVAS) {
-    if (stringifyJson(state.settings) !== stringifyJson(analysis.visualSettings || script.visualSettings)) return RT_MAINTENANCE.OUTDATED;
+    const requested = motionVisualSettingsFor({ analysis, script });
+    if (stringifyJson(motionPlanSettings(state.settings)) !== stringifyJson(motionPlanSettings(requested))) return RT_MAINTENANCE.OUTDATED;
     if (!motionHtmlPlanCurrent(script, analysis)) return RT_MAINTENANCE.OUTDATED;
     const groups = motionVisualBeatGroups(script, 1001);
     const scenes = groups.flatMap((group) => state.scenes[group.id] || []);
-    return groups.some((group) => !state.scenes[group.id]?.length) || scenes.some((scene) => !scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status)) ? RT_MAINTENANCE.PENDING : RT_MAINTENANCE.READY;
+    return groups.some((group) => !state.scenes[group.id]?.length) || scenes.some((scene) => !scene.html || !motionSceneKitMatches(scene.html, requested) || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status)) ? RT_MAINTENANCE.PENDING : RT_MAINTENANCE.READY;
   }
   if (
     state.settings.mode !== RT_SHARED.REMOTION ||

@@ -2,7 +2,7 @@ import { RUNTIME_VALUES } from "../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
 import _ from "lodash";
-import { PUPPET as P, PUPPET_PROMPTS as PR } from "../../../../constants/motionPuppet.js";
+import { MOTION_SOUND_DIRECTION as P } from "../../../../constants/motionSoundDirection.js";
 import { MOTION_SOUND_CONFIG, MOTION_SOUND_PROMPT } from "../../../../constants/motionSound.js";
 import { MOTION_AUDIO_DIRECTION } from "../../../../constants/motionAudioDirection.js";
 import * as MR from "../../../../constants/motionRuntime.js";
@@ -67,7 +67,7 @@ export const directMotionSound = async (script: MotionStoryScript, analysis: Mot
   const promptOf = async (group: MotionBeat[]) => {
     o.signal?.throwIfAborted();
     const context = stringifyJson(group.map((beat) => beatContext(beat)));
-    return ([MOTION_SOUND_PROMPT, motionResponsePrompt(MOTION_SOUND_CONFIG.ARTIFACT), MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(direction), await motionSoundCatalogPrompt(context), PR.SOUND({ genre, horror: P.HORROR_RE.test(genre), beats: context })] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
+    return ([MOTION_SOUND_PROMPT, motionResponsePrompt(MOTION_SOUND_CONFIG.ARTIFACT), MOTION_AUDIO_DIRECTION.CONTEXT + stringifyJson(direction), await motionSoundCatalogPrompt(context), P.PROMPT({ genre, horror: P.HORROR_RE.test(genre), beats: context })] as string[]).join(MR.MOTION_TEXT_SYMBOL_27);
   };
   try {
     const groups = await motionPromptGroupsAsync(

@@ -37,7 +37,6 @@ export interface MotionEngineGlobal {
   fontsReady?: Promise<unknown>;
   registry: { templates: Record<string, any> };
   createRenderer: (canvas: HTMLCanvasElement, spec: unknown, opts?: Record<string, unknown>) => { duration: number; drawFrame: (t: number) => void; width: number; height: number };
-  PUPPET_PRELOAD?: (spec: unknown) => Promise<void>;
 }
 declare global {
   interface Window {

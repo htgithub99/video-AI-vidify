@@ -2,7 +2,7 @@ import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_SCENE_PACING as P } from "../constants/motionScenePacing.js";
 import type { MotionBeat, MotionStoryScript } from "../types/motionVideo.js";
 import type { MotionScenePacing, MotionVisualSettings } from "../types/motionVisual.js";
-import { puppetBeatLines } from "./motionPuppet.js";
+import { motionBeatLines } from "./motionBeatLines.js";
 import { motionLanguageRate, motionSpeechUnits } from "./motionLanguage.js";
 export const motionScenePacing = (settings?: MotionVisualSettings): MotionScenePacing => settings?.pacing || P.DEFAULT;
 export const motionPacingSeconds = (settings?: MotionVisualSettings) => P.SECONDS[motionScenePacing(settings)];
@@ -17,11 +17,11 @@ export const motionVisualBeatGroups = (script: Pick<MotionStoryScript, "beats" |
     for (const beat of script.beats) {
       const seconds = motionBeatVisualSeconds(beat, script.language);
       const last = groups.at(-1);
-      if (!last || last.beats[0].chapterId !== beat.chapterId || last.seconds + seconds > 75 || last.beats.length >= 5) groups.push({ id: beat.id, beats: [beat], seconds, lineCount: puppetBeatLines(beat).length });
+      if (!last || last.beats[0].chapterId !== beat.chapterId || last.seconds + seconds > 75 || last.beats.length >= 5) groups.push({ id: beat.id, beats: [beat], seconds, lineCount: motionBeatLines(beat).length });
       else {
         last.beats.push(beat);
         last.seconds += seconds;
-        last.lineCount += puppetBeatLines(beat).length;
+        last.lineCount += motionBeatLines(beat).length;
       }
     }
     return groups;
@@ -35,7 +35,7 @@ export const motionVisualBeatGroups = (script: Pick<MotionStoryScript, "beats" |
     const group = groups.at(-1),
       previous = group?.beats.at(-1);
     const seconds = motionBeatVisualSeconds(beat, script.language),
-      lineCount = puppetBeatLines(beat).length;
+      lineCount = motionBeatLines(beat).length;
     const placeCut = !!previous && previous.place !== beat.place && (!group || group.seconds >= limits.placeHold);
     const boundary = !previous || previous.chapterId !== beat.chapterId || placeCut || (timeCut && ((!!beat.time && beat.time !== time) || (!!beat.weather && beat.weather !== weather)));
     if (!group || boundary || group.seconds + seconds > limits.seconds || group.lineCount + lineCount > limits.lines || group.beats.length >= limits.beats) groups.push({ id: beat.id, beats: [beat], seconds, lineCount });

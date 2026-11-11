@@ -63,7 +63,6 @@ export const MotionSpecPlayer: FC<{ ME: MotionEngineGlobal; spec: MotionSpec | n
     let frame = 0;
     const t = setTimeout(async () => {
       try {
-        await ME.PUPPET_PRELOAD?.(spec);
         if (cancelled) return;
         const renderer = ME.createRenderer(canvas, spec, { width: w, height: h, quality: MOTION_PREVIEW_QUALITY, preview: true });
         renderer.drawFrame(0);

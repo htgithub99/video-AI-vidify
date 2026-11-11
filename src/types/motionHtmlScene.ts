@@ -12,6 +12,7 @@ export interface MotionHtmlArtifact {
   seed: string;
   duration: number;
   attempts: number;
+  figureKit?: boolean;
   status: "received" | "ready" | "rendered" | "retry_wait" | "waiting_external";
   error?: string;
 }
