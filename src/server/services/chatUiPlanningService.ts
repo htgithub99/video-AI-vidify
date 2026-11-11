@@ -148,7 +148,7 @@ import { META_AI_CHAT_CONFIG as M } from "../../constants/metaAiChat.js";
 import { selectMetaAiChatModel } from "./metaAiModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { assertGeminiFlashQuota, geminiModelStillSelected, getGeminiModelButton, markGeminiModel, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
-import { withChromeBackupRecovery, saveChatResponse, isAutoChromeSwitchEnabled, chromeWaitPolicy, earliestProviderReset, activeChromeId, aiFallbackChain } from "./chromeBackupService.js";
+import { withChromeBackupRecovery, saveChatResponse, isAutoChromeSwitchEnabled, chromeWaitPolicy, earliestProviderReset, activeChromeId, aiFallbackChain, providerChromeId, providerRouteGeneration } from "./chromeBackupService.js";
 import { classifyAiError, tagAiAvailability, aiAvailabilityOf, isAiExhausted, aiUnavailableUntil, formatAiUntil, waitAiReset } from "./aiAvailabilityService.js";
 import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
@@ -161,7 +161,7 @@ import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
 import { acquireGeminiActivityUse } from "./geminiActivityCleanupService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
-import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGlobalBrowser, getOrLaunchGrokBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
+import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGrokBrowser, getOrLaunchProviderBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
@@ -179,6 +179,7 @@ interface ChatResponseSnapshot {
 type PendingRoomResponse = ChatPendingSubmission;
 interface ChatPlanningRequest {
   allowFallback?: boolean;
+  fallbackChain?: readonly string[];
   waitOnExhausted?: boolean;
   oneGeneration?: boolean;
   onRecovery?: (line: string) => void;
@@ -498,7 +499,7 @@ const executeClearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
   let cleanupPage: Page | undefined;
   try {
-    const browser = provider === AiPlanningFallbackProvider.GrokChat ? await getOrLaunchGrokBrowser(false) : await getOrLaunchGlobalBrowser(false, true, false);
+    const browser = provider === AiPlanningFallbackProvider.GrokChat ? await getOrLaunchGrokBrowser(false) : await getOrLaunchProviderBrowser(provider, false);
     cleanupPage = await browser.context.newPage();
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
     appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(provider));
@@ -742,6 +743,34 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
     throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RATE_LIMIT_ERROR);
   }
 };
+const metaLastTurnError = async (page: Page): Promise<string | undefined> => {
+  const turnError = page.locator(M.TURN_ITEM).last().locator(M.TURN_ERROR);
+  if (!(await turnError.count().catch(() => 0))) return undefined;
+  return _.trim((await turnError.first().textContent().catch(() => null)) || M.TURN_EMPTY) || M.TURN_ERROR;
+};
+const metaTurnFailed = async (page: Page, prompt?: string): Promise<string | undefined> => {
+  const head = _.trim(prompt || M.TURN_EMPTY).replace(new RegExp(M.TURN_SPACE, M.TURN_SPACE_FLAGS), M.TURN_JOIN).slice(0, M.TURN_PROMPT_HEAD_CHARS);
+  if (!head) return undefined;
+  return page
+    .evaluate(
+      ({ head, source, flags, selector, space, spaceFlags, join, empty }) => {
+        const pattern = new RegExp(source, flags);
+        const flat = (value: string | null) => (value || empty).replace(new RegExp(space, spaceFlags), join).trim();
+        let lastPrompt: Element | null = null;
+        let lastError: Element | null = null;
+        for (const element of Array.from(document.querySelectorAll(selector))) {
+          const text = flat(element.textContent);
+          if (!text) continue;
+          if (text.includes(head) && !Array.from(element.children).some((child) => flat(child.textContent).includes(head))) lastPrompt = element;
+          if (pattern.test(text) && element.getClientRects().length > 0 && !Array.from(element.children).some((child) => pattern.test(flat(child.textContent)))) lastError = element;
+        }
+        if (!lastPrompt || !lastError) return undefined;
+        return lastPrompt.compareDocumentPosition(lastError) & Node.DOCUMENT_POSITION_FOLLOWING ? flat(lastError.textContent) : undefined;
+      },
+      { head, source: M.TURN_ERROR_PATTERN.source, flags: M.TURN_ERROR_PATTERN.flags, selector: M.TURN_SCAN_SELECTOR, space: M.TURN_SPACE, spaceFlags: M.TURN_SPACE_FLAGS, join: M.TURN_JOIN, empty: M.TURN_EMPTY },
+    )
+    .catch(() => undefined);
+};
 export const waitForStableResponse = async (page: Page, responseSelector: string, busySelector: string, initialCount: number, expectedSceneIds: string[], initialResponseSnapshots: ChatResponseSnapshot[], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal, prompt?: string, waitForSession?: () => Promise<number>, regenerating = false): Promise<string> => {
   const startedAt = Date.now();
   let absoluteDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MAX_TIMEOUT_MS;
@@ -789,6 +818,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       .allTextContents()
       .catch(() => []);
     const providerErrorAlert = _.find(visibleAlerts, (alert) => CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(alert));
+    const metaTurnError = busySelector === M.BUSY ? (await metaLastTurnError(page)) || (await metaTurnFailed(page, prompt)) : undefined;
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector, artifactType);
     const count = responseSnapshots.length;
     const responseTexts = _.map(responseSnapshots, SOURCE_TEXT_TEXT);
@@ -835,6 +865,10 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     if (providerErrorAlert && !isBusy && !parseableJsonResponse && (!regenerating || regenerationObserved)) {
       await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ALERT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, errorMessage: providerErrorAlert });
       throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_ALERT, busy: false, elapsedMs: Date.now() - startedAt, lastCandidate: _.toString(providerErrorAlert) } });
+    }
+    if (metaTurnError && !parseableJsonResponse) {
+      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ALERT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, errorMessage: metaTurnError, busy: isBusy });
+      throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_ALERT, busy: false, elapsedMs: Date.now() - startedAt, lastCandidate: metaTurnError } });
     }
     if (responseProgressed || isBusy) {
       activityDeadline = _.min([absoluteDeadline, Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_ACTIVITY_GRACE_MS]) || absoluteDeadline;
@@ -1852,7 +1886,7 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
   const phases: Record<string, number> = {};
   let room: Page | undefined;
   let ok = false;
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+  const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
   const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
   try {
     const activeRoom = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
@@ -1916,7 +1950,7 @@ const ensureDeepSeekReady = async (room: Page, request: ChatPlanningRequest): Pr
 };
 const generateWithDeepSeekChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+  const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
   await ensureDeepSeekReady(room, request);
   await selectDeepSeekChatModel(room, request.model, request.signal);
@@ -1945,7 +1979,7 @@ const ensureClaudeReady = async (room: Page, request: ChatPlanningRequest): Prom
 };
 const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+  const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
   await ensureClaudeReady(room, request);
   await selectClaudeChatModel(room, request.model, request.signal);
@@ -1993,7 +2027,7 @@ const ensureMetaAiReady = async (room: Page, request: ChatPlanningRequest): Prom
 };
 const generateWithMetaAiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+  const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.META_AI_CHAT, metaAiRooms, getPlanningRoomKey(request), request.signal);
   await ensureMetaAiReady(room, request);
   await selectMetaAiChatModel(room, request.model);
@@ -2022,25 +2056,25 @@ const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promis
   await manualCleanupFlights.get(request.provider);
   throwIfPlanningCancelled(request.signal);
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.MetaAi)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+    const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
     const room = await createRoom(browser.context, EXTERNAL_URLS.META_AI_CHAT, metaAiRooms, getPlanningRoomKey(request), request.signal);
     await ensureMetaAiReady(room, request);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.DeepSeekChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+    const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
     const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
     await ensureDeepSeekReady(room, request);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ClaudeChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+    const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
     const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
     await ensureClaudeReady(room, request);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+    const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
     const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
     try {
       const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
@@ -2051,7 +2085,7 @@ const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promis
     }
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+    const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
     const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
     await ensureChatGptReady(room, browser.account.email);
     return;
@@ -2101,7 +2135,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
 };
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+  const browser = await getOrLaunchProviderBrowser(request.provider, request.chromeHeadless);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
   await ensureChatGptReady(room, browser.account.email);
   const response = await submitPrompt(
@@ -2338,6 +2372,7 @@ export const prepareChatPlanningRoom = (request: ChatPlanningRequest): Promise<v
     request.signal,
     request.onRecovery,
     request.provider,
+    request.fallbackChain,
   );
 const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Promise<T>): Promise<T> => {
   try {
@@ -2384,7 +2419,7 @@ const generatePlanningWithChatUiRoutes = async (request: ChatPlanningRequest): P
   let failure: unknown;
   for (const [index, route] of routes.entries()) {
     const blockedUntil = providerBlockedUntil(route.provider);
-    const outage = aiUnavailableUntil(activeChromeId(), route.provider);
+    const outage = aiUnavailableUntil(providerChromeId(route.provider), route.provider);
     if (blockedUntil > Date.now() && (index > 0 || outage)) {
       if (outage) {
         const line = AI_AVAILABILITY.LOG.SKIP(String(route.provider), formatAiUntil(blockedUntil));
@@ -2394,7 +2429,7 @@ const generatePlanningWithChatUiRoutes = async (request: ChatPlanningRequest): P
       continue;
     }
     try {
-      return await generatePlanningWithChatUiOnce({ ...request, provider: route.provider as AiPlanningFallbackProvider, model: route.model as AiPlanningChatModel, submission: index === 0 ? request.submission : undefined });
+      return await generatePlanningWithChatUiOnce({ ...request, provider: route.provider as AiPlanningFallbackProvider, model: route.model as AiPlanningChatModel, submission: index === 0 ? request.submission : undefined, fallbackChain: routes.map((item) => String(item.provider)) });
     } catch (error) {
       if (stopsFallback(error, request)) throw error;
       if (!failure || (isAiExhausted(error) && (!isAiExhausted(failure) || (aiAvailabilityOf(error)?.until || 0) < (aiAvailabilityOf(failure)?.until || 0)))) failure = error;
@@ -2415,11 +2450,13 @@ const generatePlanningWithChatUiOnce = (request: ChatPlanningRequest): Promise<{
   if (sharedChromeTasks.switching) request.onRecovery?.(BACKUP.WAIT);
   const execution = { ...request, submission: request.submission || { attempted: false, completed: false } };
   let generation = sharedChromeTasks.generation;
+  let route = providerRouteGeneration(request.provider);
   return withChromeBackupRecovery(
     () => {
       const room = getChatPlanningRoom(request);
-      if (generation !== sharedChromeTasks.generation) {
+      if (generation !== sharedChromeTasks.generation || route !== providerRouteGeneration(request.provider)) {
         generation = sharedChromeTasks.generation;
+        route = providerRouteGeneration(request.provider);
         execution.prompt = request.restoreContext?.() || request.prompt;
         Object.assign(execution.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
         pendingRoomResponses.delete(getPlanningRoomKey(request));
@@ -2430,5 +2467,6 @@ const generatePlanningWithChatUiOnce = (request: ChatPlanningRequest): Promise<{
     request.signal,
     request.onRecovery,
     request.provider,
+    request.fallbackChain,
   );
 };

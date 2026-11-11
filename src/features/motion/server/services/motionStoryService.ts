@@ -956,6 +956,7 @@ export const motionAiRoutes = (exec: MotionAiExecution): MotionAiExecution[] => 
   );
   return [primary, ...rest];
 };
+export const motionFallbackChain = (exec: MotionAiExecution): string[] | undefined => (exec.allowFallback === false ? undefined : motionAiRoutes({ ...exec, strictProvider: false }).map((route) => String(route.provider)));
 export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?: AbortSignal, log?: MotionAiLog): Promise<void> => {
   const run = motionAiRunStore.getStore();
   if (!run || exec.mode === AiPlanningExecutionMode.ApiOnly || !exec.provider || exec.provider === AiPlanningFallbackProvider.Disabled) return;
@@ -974,7 +975,7 @@ export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?
             const readySignal = AbortSignal.any([linked, AbortSignal.timeout(AIR.READINESS_TIMEOUT_MS)]);
             try {
               readySignal.throwIfAborted();
-              await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true });
+              await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true, fallbackChain: motionFallbackChain(exec) });
               readySignal.throwIfAborted();
             } catch (error) {
               await closeMotionAiRoom(run, workerId);
@@ -1020,7 +1021,7 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
             const readySignal = AbortSignal.any([linked, AbortSignal.timeout(AIR.READINESS_TIMEOUT_MS)]);
             try {
               readySignal.throwIfAborted();
-              await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true });
+              await prepareChatPlanningRoom({ provider: exec.provider as AiPlanningFallbackProvider, model: exec.model as AiPlanningChatModel, prompt: MR.MOTION_TEXT_EMPTY, projectId: run.projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: readySignal, allowDefaultGeminiModel: true, fallbackChain: motionFallbackChain(exec) });
               readySignal.throwIfAborted();
             } catch (error) {
               await closeMotionAiRoom(run, workerId);
@@ -1369,7 +1370,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         if (!run.contextRooms.has(workerId!)) run.roomGenerations.set(workerId!, (run.roomGenerations.get(workerId!) || 0) + 1);
         log?.(MR.MOTION_TEXT_EMPTY, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.READY });
         run.rooms.set(workerId!, provider);
-        await prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true });
+        await prepareChatPlanningRoom({ provider, model, prompt: MR.MOTION_TEXT_EMPTY, projectId, workerId, chromeHeadless: exec.chromeHeadless !== false, signal: roomCtrl.signal, allowDefaultGeminiModel: true, fallbackChain: motionFallbackChain(exec) });
       }
       run?.contextRooms.add(workerId!);
       roomCtrl.signal.throwIfAborted();
@@ -1390,6 +1391,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         closeRoomOnComplete: !run,
         allowDefaultGeminiModel: true,
         allowFallback: false,
+        fallbackChain: motionFallbackChain(exec),
         waitOnExhausted: exec.allowFallback === false,
         submission,
         restoreContext: () => {

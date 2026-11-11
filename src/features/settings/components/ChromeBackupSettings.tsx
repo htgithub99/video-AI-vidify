@@ -17,8 +17,8 @@ type ChainRoute = { provider: string; model: string; enabled: boolean };
 type Availability = { chromeId: string; chromeName: string; provider: string; kind: string; kindLabel: string; untilText: string; notice: string };
 type Task = { keys: string[]; label: string };
 type Settings = { mainReady?: boolean; enabled: boolean; pinned: string | null; waitPolicy: string; activeId: string; chromes: ChromeItem[]; fallbackChain?: ChainRoute[]; switching: boolean; error?: string; availability: Availability[] };
-const STATUS_ROW: Record<string, string> = { [A.KIND.QUOTA]: U.STATUS_QUOTA, [A.KIND.BLOCKED]: U.STATUS_BLOCKED, [A.KIND.LOGIN]: U.STATUS_LOGIN, [A.KIND.PLAN]: U.STATUS_PLAN };
-const STATUS_KIND: Record<string, string> = { [A.KIND.QUOTA]: U.STATUS_KIND_QUOTA, [A.KIND.BLOCKED]: U.STATUS_KIND_BLOCKED, [A.KIND.LOGIN]: U.STATUS_KIND_LOGIN, [A.KIND.PLAN]: U.STATUS_KIND_PLAN };
+const STATUS_ROW: Record<string, string> = { [A.KIND.QUOTA]: U.STATUS_QUOTA, [A.KIND.BLOCKED]: U.STATUS_BLOCKED, [A.KIND.LOGIN]: U.STATUS_LOGIN, [A.KIND.PLAN]: U.STATUS_PLAN, [A.KIND.ERROR]: U.STATUS_ERROR };
+const STATUS_KIND: Record<string, string> = { [A.KIND.QUOTA]: U.STATUS_KIND_QUOTA, [A.KIND.BLOCKED]: U.STATUS_KIND_BLOCKED, [A.KIND.LOGIN]: U.STATUS_KIND_LOGIN, [A.KIND.PLAN]: U.STATUS_KIND_PLAN, [A.KIND.ERROR]: U.STATUS_KIND_ERROR };
 export const ChromeBackupSettings = ({ language }: { language: string }) => {
   const lang = language === C.EN ? C.EN : C.VI;
   const M = C.MANAGER;

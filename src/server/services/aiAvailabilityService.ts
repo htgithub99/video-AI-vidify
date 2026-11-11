@@ -26,6 +26,10 @@ export interface AiAvailabilityClass {
 }
 const file = () => path.join(getDataDirectory(), A.FILE);
 const keyOf = (chromeId: string, provider: string) => chromeId + A.KEY_SEP + provider;
+const errorStreaks = new Map<string, number>();
+export const resetAiErrorStreak = (provider: string): void => {
+  errorStreaks.delete(provider);
+};
 const load = (): Map<string, AiUnavailability> => {
   try {
     const saved = fs.existsSync(file()) ? (parseJson(fs.readFileSync(file(), A.ENCODING)) as AiUnavailability[]) : [];
@@ -167,6 +171,15 @@ export const classifyAiError = async (error: unknown, provider: string): Promise
   if (quota) return found(A.KIND.QUOTA, quota);
   const login = pageHit(A.PAGE.login);
   if (login) return found(A.KIND.LOGIN, login);
+  if (message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR) {
+    const streak = (errorStreaks.get(provider) || 0) + 1;
+    errorStreaks.set(provider, streak);
+    if (streak >= A.ERROR_STREAK) {
+      errorStreaks.delete(provider);
+      const detail = (record as { diagnostics?: { lastCandidate?: string } }).diagnostics?.lastCandidate;
+      return found(A.KIND.ERROR, detail || message);
+    }
+  }
   return null;
 };
 export const classifyAiText = (text: string, provider: string): AiAvailabilityClass | null => {

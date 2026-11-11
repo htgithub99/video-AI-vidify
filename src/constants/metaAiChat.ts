@@ -26,6 +26,15 @@ export const META_AI_CHAT_CONFIG = {
   LOGIN_ERROR:
     "Meta AI chưa hoàn tất đăng nhập trên trình duyệt. Vui lòng chọn Hiện trình duyệt và đăng nhập https://www.meta.ai/.",
   RATE_LIMIT_ERROR: "META_AI_RATE_LIMITED",
+  TURN_ERROR_PATTERN: /^(?:Đã xảy ra lỗi\.?\s*Vui lòng thử lại\.?|Something went wrong\.?\s*Please try again\.?|An error occurred\.?\s*Please try again\.?)$/i,
+  TURN_SCAN_SELECTOR: "body *",
+  TURN_ITEM: '[data-message-item="true"]',
+  TURN_ERROR: '[data-ecto-error-fallback="true"]',
+  TURN_SPACE: "\\s+",
+  TURN_SPACE_FLAGS: "g",
+  TURN_JOIN: " ",
+  TURN_EMPTY: "",
+  TURN_PROMPT_HEAD_CHARS: 60,
   RATE_LIMIT_PATTERN:
     /you(?:'|’)?ve reached.{0,40}limit|too many (?:messages|requests)|rate limit|đã đạt giới hạn|quá nhiều yêu cầu/i,
   MODE_DROPDOWN_BUTTON: '[data-testid="composer-mode-dropdown-button"]',

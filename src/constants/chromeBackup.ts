@@ -125,7 +125,7 @@ export const CHROME_BACKUP = {
   LABEL: { vi: "Tự chuyển Chrome khi AI hết lượt hoặc bị chặn", en: "Switch Chrome when an AI is out of quota or blocked" },
   FORCE_LABEL: { vi: "Luôn dùng Chrome dự phòng", en: "Always use backup Chrome" },
   FORCE_DESCRIPTION: { vi: "Chạy mọi tính năng trên Chrome dự phòng; tắt để về Chrome chính.", en: "Runs all features on backup Chrome; turn off for primary Chrome." },
-  DESCRIPTION: { vi: "Chỉ chuyển khi đọc được thông báo hết hạn mức, xác minh/chặn hoặc mất đăng nhập trên trang AI; lưu xong tác vụ đang chạy rồi mới chuyển.", en: "Switches only when the AI page shows a quota, verification/block or sign-in notice; saves running tasks first." },
+  DESCRIPTION: { vi: "Chuyển khi trang AI báo hết hạn mức, xác minh/chặn, mất đăng nhập hoặc báo lỗi liên tục sau 3 lần thử lại; lưu xong tác vụ đang chạy rồi mới chuyển.", en: "Switches when the AI page shows a quota, verification/block or sign-in notice, or keeps failing after 3 retries; saves running tasks first." },
   PREPARE: { vi: "Mở Chrome đăng nhập", en: "Open Chrome login" },
   CHECK: { vi: "Kiểm tra", en: "Check" },
   READY: { vi: "Đã đăng nhập Gemini", en: "Signed in to Gemini" },

@@ -8,7 +8,7 @@ import { MOTION_AI_FALLBACK } from "../../constants/motionAiFallback.js";
 import { getDataDirectory } from "../utils/paths.js";
 import { appWarn } from "../../lib/logger.js";
 import { sharedChromeTasks, waitChromeTask } from "./chromeTaskCoordinator.js";
-import { aiUnavailableUntil, classifyAiError, clearAiUnavailability, formatAiUntil, listAiUnavailability, markAiUnavailable, tagAiAvailability, type AiAvailabilityClass } from "./aiAvailabilityService.js";
+import { aiUnavailableUntil, classifyAiError, clearAiUnavailability, resetAiErrorStreak, formatAiUntil, listAiUnavailability, markAiUnavailable, tagAiAvailability, type AiAvailabilityClass } from "./aiAvailabilityService.js";
 export interface BackupChrome {
   id: string;
   name: string;
@@ -43,6 +43,8 @@ let activeId: string | undefined;
 let changeBrowser: ((targetId: string) => Promise<void>) | undefined;
 let syncBrowserMode: (() => Promise<void>) | undefined;
 const recentProviders = new Map<string, number>();
+const providerRoutes = new Map<string, string>();
+const routeGenerations = new Map<string, number>();
 export const registerChromeBackupSwitch = (change: (targetId: string) => Promise<void>): void => {
   changeBrowser = change;
 };
@@ -127,6 +129,7 @@ export const readChromeBackupSettings = (): ChromeBackupSettings => {
 const moveTo = (target: string) => {
   if (target === activeChromeId()) return;
   activeId = target;
+  providerRoutes.clear();
   sharedChromeTasks.resetFailure();
   sharedChromeTasks.generation++;
   if (syncBrowserMode) void syncBrowserMode().catch(() => undefined);
@@ -182,6 +185,24 @@ export const pickChromeFor = (provider: string, current = activeChromeId()): str
   const recent = [...recentProviders].filter(([name, at]) => name !== provider && Date.now() - at < A.RECENT_MS).map(([name]) => name);
   return candidates(stored, current).find((id) => !aiUnavailableUntil(id, provider) && recent.every((name) => !aiUnavailableUntil(id, name)));
 };
+const isRoutedProvider = (provider?: string): provider is string => !!provider && provider !== A.MEDIA_PROVIDER;
+export const providerRouteGeneration = (provider: string): number => routeGenerations.get(provider) || 0;
+const routeProvider = (provider: string, target: string): void => {
+  if (target === activeChromeId()) providerRoutes.delete(provider);
+  else providerRoutes.set(provider, target);
+  routeGenerations.set(provider, providerRouteGeneration(provider) + 1);
+};
+export const providerChromeId = (provider?: string): string => {
+  const active = activeChromeId();
+  const route = provider ? providerRoutes.get(provider) : undefined;
+  if (!provider || !route || route === active) return active;
+  const stored = readStored();
+  if (stored.enabled && (route === A.MAIN || stored.chromes.some((chrome) => chrome.id === route && chrome.ready))) return route;
+  routeProvider(provider, active);
+  return active;
+};
+export const routedChromeIds = (): string[] => [...new Set([...providerRoutes.keys()].map((provider) => providerChromeId(provider)))].filter((id) => id !== activeChromeId());
+const pickProviderChrome = (provider: string, current: string): string | undefined => candidates(readStored(), current).find((id) => !aiUnavailableUntil(id, provider));
 export const earliestProviderReset = (provider: string): number => {
   const stored = readStored();
   const all = [A.MAIN, ...stored.chromes.filter((chrome) => chrome.ready).map((chrome) => chrome.id)];
@@ -190,19 +211,45 @@ export const earliestProviderReset = (provider: string): number => {
 export const chromeWaitPolicy = (): ChromeWaitPolicy => readStored().waitPolicy;
 export const aiOutageMs = (provider: string): number => (readStored().waitPolicy !== A.WAIT_POLICY.WAIT ? 0 : Math.max(0, (readStored().enabled ? earliestProviderReset(provider) : aiUnavailableUntil(activeChromeId(), provider)) - Date.now()));
 export const isAutoChromeSwitchEnabled = (): boolean => readStored().enabled;
-export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal?: AbortSignal, log?: (line: string) => void, provider?: string): Promise<T> => {
+const chainOpen = (provider: string, chain?: readonly string[]): boolean => !!chain?.some((name) => name !== provider && !aiUnavailableUntil(providerChromeId(name), name));
+const routeChain = (provider: string, chain: readonly string[] | undefined, log?: (line: string) => void): void => {
+  for (const name of chain || []) {
+    const current = providerChromeId(name);
+    const entry = name === provider ? undefined : listAiUnavailability().find((item) => item.chromeId === current && item.provider === name);
+    const target = entry && pickProviderChrome(name, current);
+    if (!entry || !target) continue;
+    log?.(A.LOG.ROUTE(name, chromeName(current), chromeName(target), A.KIND_LABEL[entry.kind]));
+    routeProvider(name, target);
+  }
+};
+export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal?: AbortSignal, log?: (line: string) => void, provider?: string, chain?: readonly string[]): Promise<T> => {
   if (sharedChromeTasks.nested) return work();
   const stored = readStored();
   const maxHops = stored.chromes.length + 2;
   for (let hop = 0; ; hop++) {
     let generation = sharedChromeTasks.generation;
-    const chromeId = activeChromeId();
-    if (provider) markProviderRecent(provider);
+    const routed = isRoutedProvider(provider) && readStored().enabled;
+    if (routed && aiUnavailableUntil(providerChromeId(provider), provider)) {
+      const current = providerChromeId(provider);
+      const target = pickProviderChrome(provider, current);
+      const entry = listAiUnavailability().find((item) => item.chromeId === current && item.provider === provider);
+      if (chainOpen(provider, chain)) {
+        if (entry) throw tagAiAvailability(new Error(entry.notice), { kind: entry.kind, until: entry.until, notice: entry.notice, provider });
+      } else if (target) {
+        if (entry) log?.(A.LOG.ROUTE(provider, chromeName(current), chromeName(target), A.KIND_LABEL[entry.kind]));
+        routeProvider(provider, target);
+        routeChain(provider, chain, log);
+      }
+    }
+    const chromeId = routed ? providerChromeId(provider) : activeChromeId();
+    if (provider && !routed) markProviderRecent(provider);
     try {
-      return await sharedChromeTasks.run(() => {
+      const result = await sharedChromeTasks.run(() => {
         generation = sharedChromeTasks.generation;
         return work();
       }, signal);
+      if (provider) resetAiErrorStreak(provider);
+      return result;
     } catch (error) {
       if (signal?.aborted || !provider) throw error;
       if ((sharedChromeTasks.switching || generation !== sharedChromeTasks.generation) && hop < maxHops) continue;
@@ -210,7 +257,19 @@ export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal
       if (!found) throw error;
       markAiUnavailable(chromeId, found);
       tagAiAvailability(error, found);
-      if (!readStored().enabled || !changeBrowser || hop >= maxHops) throw tagAiAvailability(error, { ...found, until: earliestProviderReset(provider) } as AiAvailabilityClass, true);
+      if (!readStored().enabled || (!routed && !changeBrowser) || hop >= maxHops) throw tagAiAvailability(error, { ...found, until: earliestProviderReset(provider) } as AiAvailabilityClass, true);
+      if (routed) {
+        if (chainOpen(provider, chain)) throw error;
+        const target = pickProviderChrome(provider, chromeId);
+        if (!target) {
+          log?.(A.LOG.NO_CHROME(provider, A.KIND_LABEL[found.kind]));
+          throw tagAiAvailability(error, { ...found, until: earliestProviderReset(provider) }, true);
+        }
+        log?.(A.LOG.ROUTE(provider, chromeName(chromeId), chromeName(target), A.KIND_LABEL[found.kind]));
+        routeProvider(provider, target);
+        routeChain(provider, chain, log);
+        continue;
+      }
       const tried = new Set<string>();
       let moved = false;
       for (let target = pickChromeFor(provider, chromeId); target && !tried.has(target); target = pickChromeFor(provider, chromeId)) {

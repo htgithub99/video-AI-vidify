@@ -292,7 +292,7 @@ import { CINEMATIC_CHAT_MODEL_LABELS } from "../../constants/cinematicConstants.
 import { FLOW_AUTOMATION_MESSAGES, GROK_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { appError, appLog, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
-import { AiPlanningChatModel, GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, ProjectLanguage, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
+import { AiPlanningChatModel, AiPlanningFallbackProvider, GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, ProjectLanguage, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
 import { selectGeminiThinkingModel } from "./geminiModelService.js";
 import { Browser, BrowserContext, Locator, Page } from "playwright";
 import { spawn } from "child_process";
@@ -312,7 +312,7 @@ import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
 import { CHAT_ROOM_RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
-import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure, withChromeBackupRecovery, chromeWaitPolicy, activeChromeId, chromeProfilePath, chromeDebugPort, chromeBackupAccountEmail, chromeSessionMismatch, sessionChromeId } from "./chromeBackupService.js";
+import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure, withChromeBackupRecovery, chromeWaitPolicy, activeChromeId, chromeProfilePath, chromeDebugPort, chromeBackupAccountEmail, chromeSessionMismatch, sessionChromeId, providerChromeId, routedChromeIds } from "./chromeBackupService.js";
 import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
 import { classifyAiError, classifyAiText, tagAiAvailability, aiAvailabilityOf, isAiExhausted, formatAiUntil, type AiAvailabilityClass } from "./aiAvailabilityService.js";
@@ -2477,6 +2477,10 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
   return { context, page: grokPage };
 };
 export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
+  if (providerChromeId(AiPlanningFallbackProvider.GrokChat) !== activeChromeId()) {
+    const routed = await getOrLaunchProviderBrowser(AiPlanningFallbackProvider.GrokChat, chromeHeadless);
+    return { context: routed.context, page: routed.page };
+  }
   if (grokBrowser?.isConnected() && grokBrowserChromeId !== activeChromeId()) {
     await closeOwnedGrokBrowserIfIdle(true).catch(() => undefined);
     grokBrowser = null;
@@ -5123,6 +5127,18 @@ const launchBackupChrome = async (headless = true, id = activeChromeId()): Promi
   const page = _.find(context.pages(), (candidate) => !candidate.isClosed()) || (await context.newPage());
   return { context, page, account: { email: chromeBackupAccountEmail(id) } as GoogleAccount, ownsContext: true, closeBrowser: async () => void (await stopBackupChrome(id)) };
 };
+const routedSharedSessions = new Map<string, BrowserSession>();
+export const getOrLaunchProviderBrowser = async (provider: string, chromeHeadless?: boolean): Promise<BrowserSession> => {
+  const id = providerChromeId(provider);
+  if (id === activeChromeId()) return getOrLaunchGlobalBrowser(chromeHeadless, true, false);
+  if (id !== AI_AVAILABILITY.MAIN) return launchBackupChrome(chromeHeadless !== false, id);
+  const current = routedSharedSessions.get(id);
+  if (current?.context.browser()?.isConnected()) return current;
+  const session = (await connectToSharedChromeBrowser(false)) || (await launchSharedChromeBrowser(chromeHeadless));
+  if (!session) throw backupChromeFailure(BACKUP.START_FAILED);
+  routedSharedSessions.set(id, session);
+  return session;
+};
 registerChromeBackupSwitch(async (targetId: string) => {
   cancelGlobalBrowserCleanup();
   const preparation = backupPreparations.get(targetId);
@@ -5132,7 +5148,8 @@ registerChromeBackupSwitch(async (targetId: string) => {
   const headless = activeBrowserHeadless;
   if (activeFlowVideoGenerationCount || globalBatchPages.some((page) => !page.isClosed())) throw backupChromeFailure(BACKUP.DRAIN_FAILED);
   if (session) {
-    if (session.preserveExternalPages) {
+    if (routedChromeIds().includes(sessionChromeId(session.account?.email))) _.noop();
+    else if (session.preserveExternalPages) {
       if (session.context.pages().some((page) => !page.isClosed() && !isDisposableChatBrowserUrl(page.url()))) throw backupChromeFailure(BACKUP.CLOSE_FAILED);
       const page = session.context.pages().find((page) => !page.isClosed()) || (await session.context.newPage());
       const cdp = await session.context.newCDPSession(page);

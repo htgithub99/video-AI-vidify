@@ -21,13 +21,15 @@ export const AI_AVAILABILITY = {
   GEMINI_QUOTA_CODE: "gemini_quota_exhausted",
   GEMINI_QUOTA: (model: string, text: string) => `gemini_quota_exhausted: ${model} đã hết hạn mức trong menu model – ${text}`,
   KEY_SEP: "|",
-  KIND: { QUOTA: "quota", BLOCKED: "blocked", LOGIN: "login", PLAN: "plan" },
+  KIND: { QUOTA: "quota", BLOCKED: "blocked", LOGIN: "login", PLAN: "plan", ERROR: "error" },
+  ERROR_STREAK: 3,
   WAIT_POLICY: { WAIT: "wait", STOP: "stop" },
   DEFAULT_MS: {
     quota: 3 * 60 * 60 * 1000,
     blocked: 30 * 60 * 1000,
     login: 30 * 60 * 1000,
     plan: 12 * 60 * 60 * 1000,
+    error: 20 * 60 * 1000,
   } as Record<string, number>,
   PROVIDER_QUOTA_MS: {
     "claude-chat": 5 * 60 * 60 * 1000,
@@ -71,6 +73,7 @@ export const AI_AVAILABILITY = {
   LOG: {
     MARK: (chrome: string, provider: string, kind: string, until: string) => `${provider} trên ${chrome}: ${kind} – tạm không dùng đến ${until}.`,
     SWITCH: (provider: string, from: string, to: string, kind: string) => `${provider} ${kind} trên ${from} – lưu xong tác vụ rồi chuyển sang ${to}.`,
+    ROUTE: (provider: string, from: string, to: string, kind: string) => `${provider} ${kind} trên ${from} – chỉ chuyển ${provider} sang ${to}, AI chưa lỗi vẫn chạy trên Chrome hiện tại.`,
     NO_CHROME: (provider: string, kind: string) => `${provider} ${kind} trên mọi Chrome đã cấu hình.`,
     WAIT: (provider: string, until: string) => `Tạm dừng: ${provider} hết lượt trên mọi Chrome – giữ nguyên tiến độ, tự chạy tiếp lúc ${until}.`,
     RESUME: (provider: string) => `Hết thời gian chờ – thử lại ${provider}.`,
@@ -81,6 +84,7 @@ export const AI_AVAILABILITY = {
     blocked: "bị chặn hoặc cần xác minh",
     login: "mất đăng nhập",
     plan: "gói tài khoản không có model này",
+    error: "lỗi liên tục",
   } as Record<string, string>,
   TIME_LOCALE: "vi-VN",
   TIME_OPTIONS: { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" } as Intl.DateTimeFormatOptions,
