@@ -131,6 +131,7 @@ import { MOTION_STORY_CONFIG } from "../../../constants/motionVideo.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils";
+import { MotionExportedVideo, MotionMediaPlaceholder } from "./MotionMediaFrame.js";
 import { getMotionErrorMessage } from "../../../lib/motionUtils.js";
 import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../../../types/motionVideo.js";
 import type { StorageJunkReport } from "../../../types/storage.js";
@@ -890,7 +891,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             {!!studio.compiled?.missing?.length && <p className={MOTION_STYLES.TEXT_11PX_TEXT_AMBER_400}>{text.SCENES_MISSING}</p>}
             {studio.renderedVideoUrl ? (
               <div className={MOTION_STYLES.SPACE_Y_3}>
-                <video src={studio.renderedVideoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
+                <MotionExportedVideo key={studio.renderedVideoUrl} url={studio.renderedVideoUrl} width={studio.renderedVideoResult?.width} height={studio.renderedVideoResult?.height} />
               </div>
             ) : state.autoExport ? (
               <div className={MOTION_STYLES.SPACE_Y_3}>
@@ -898,7 +899,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                 {studio.renderBusy && <MotionProgressBar progress={rj?.progress} minimum={4} className={MOTION_STYLES.H_2} animated={false} />}
               </div>
             ) : isRemotionSpec(previewSpec) ? (
-              <Suspense fallback={<p>{visualText.loading}</p>}>
+              <Suspense fallback={<MotionMediaPlaceholder width={previewSpec.width} height={previewSpec.height} />}>
                 <MotionRemotionPlayer spec={previewSpec} videoUrl={studio.previewVideoUrl} audioUrl={motionAudioUrl(studio.previewAudioId)} />
               </Suspense>
             ) : studio.ME ? (

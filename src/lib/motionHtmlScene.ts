@@ -204,10 +204,11 @@ export const motionSceneOnScreen = (items: { scene: MotionRemotionScene; beats: 
   let lastTime = "";
   for (const { scene, beats } of items) {
     const names = [...new Set(beats.map((beat) => analysis.places.find((place) => place.key === beat.place)?.name).filter((name): name is string => !!name))];
-    const time = beats.map((beat) => beat.time?.trim() || "").find(Boolean) || "";
+    const time = beats.map((beat) => beat.time?.trim() || "").find((value) => (value.match(MOTION_HTML.DATE_PART) || []).length > 0) || "";
+    const date = (time.match(MOTION_HTML.DATE_PART) || []).join(" ");
     scene.places = names.filter((name) => !lastPlaces.includes(name));
-    scene.timeLabel = time && time !== lastTime ? time : undefined;
+    scene.timeLabel = date && date !== lastTime ? time : undefined;
     if (names.length) lastPlaces = names;
-    if (time) lastTime = time;
+    if (date) lastTime = date;
   }
 };
