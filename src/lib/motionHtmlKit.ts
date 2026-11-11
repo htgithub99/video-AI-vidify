@@ -26,3 +26,11 @@ export const motionHtmlWithKit = (html: string, profile: string): string => {
   if (open) return html.slice(0, open.index + open[0].length) + tag + html.slice(open.index + open[0].length);
   return tag + html;
 };
+export const motionHtmlKitRefresh = (html: string): string => {
+  const start = html.indexOf(K.SCRIPT_TAG);
+  if (start < 0) return html;
+  const end = html.indexOf(K.SCRIPT_CLOSE, start);
+  if (end < 0) return html;
+  const used = [...html.slice(start, end).matchAll(K.STYLE_USED)].pop()?.[1] || K.STYLE_FALLBACK;
+  return html.slice(0, start) + K.SCRIPT_TAG + K.SCRIPT + K.SET_STYLE(used) + K.TIME_HOOK + html.slice(end);
+};

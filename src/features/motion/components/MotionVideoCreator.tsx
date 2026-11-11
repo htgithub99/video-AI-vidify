@@ -938,20 +938,18 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     </ActionBtn>
                   )}
                 </div>
-                <div className={cn(MOTION_STYLES.NOTICE_ITEM, scenesBusy ? MOTION_STYLES.NOTICE_OPEN : MOTION_STYLES.NOTICE_CLOSED)} aria-hidden={!scenesBusy}>
-                  <div className={MOTION_STYLES.NOTICE_INNER}>
-                    <div className={MOTION_STYLES.SCENE_PROGRESS}>
-                      <span className={MOTION_STYLES.SCENE_PROGRESS_ICON_WRAP}>
-                        <Box className={MOTION_STYLES.SCENE_PROGRESS_ICON} />
-                      </span>
-                      <div className={MOTION_STYLES.SCENE_PROGRESS_BODY}>
-                        <p className={MOTION_STYLES.SCENE_PROGRESS_LOG}>{(scenesBusy && job?.log?.[job.log.length - 1]) || text.SCENES_RUNNING}</p>
-                        {scenesBusy && job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCENES_TIME} suffix={text.ELAPSED} />}
-                        <MotionProgressBar progress={scenesBusy ? job?.progress : undefined} minimum={6} className={MOTION_STYLES.SCENE_PROGRESS_BAR} />
-                      </div>
+                {scenesBusy && (
+                  <div className={MOTION_STYLES.SCENE_PROGRESS}>
+                    <span className={MOTION_STYLES.SCENE_PROGRESS_ICON_WRAP}>
+                      <Box className={MOTION_STYLES.SCENE_PROGRESS_ICON} />
+                    </span>
+                    <div className={MOTION_STYLES.SCENE_PROGRESS_BODY}>
+                      <p className={MOTION_STYLES.SCENE_PROGRESS_LOG}>{job?.log?.[job.log.length - 1] || text.SCENES_RUNNING}</p>
+                      {job?.startedAt && <ElapsedLine since={job.startedAt} label={text.SCENES_TIME} suffix={text.ELAPSED} />}
+                      <MotionProgressBar progress={job?.progress} minimum={6} className={MOTION_STYLES.SCENE_PROGRESS_BAR} />
                     </div>
                   </div>
-                </div>
+                )}
                 {state.script ? (
                   <Suspense fallback={<p>{visualText.loading}</p>}>
                     <MotionRemotionScenes

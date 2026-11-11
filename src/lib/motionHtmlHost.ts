@@ -1,5 +1,7 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
-export const motionHtmlHostDocument = (html: string, token: string): string => {
+import { motionHtmlKitRefresh } from "./motionHtmlKit.js";
+export const motionHtmlHostDocument = (raw: string, token: string): string => {
+  const html = motionHtmlKitRefresh(raw);
   const canvasGuard = RT_MAINTENANCE.CANVAS_GUARD_SCRIPT;
   const bridge = `${RT_MAINTENANCE.SCRIPT}${canvasGuard}${RT_MAINTENANCE.HTML_BRIDGE_PREFIX}${JSON.stringify(token)}${RT_MAINTENANCE.HTML_BRIDGE_SUFFIX}`;
   const source = /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, (head) => head + bridge) : bridge + html;
