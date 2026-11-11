@@ -9,7 +9,7 @@ export const useMusicStyleAnalysis = () => {
   const [pending, setPending] = useState<SavedMusicStyle | null>(null);
   const active = useRef<AbortController | null>(null);
   useEffect(() => () => active.current?.abort(), []);
-  const analyze = async (target: SavedMusicStyle, referenceSource: string, aiExecution: { provider: AiPlanningFallbackProvider; model: AiPlanningChatModel; chromeHeadless: boolean }, errorText: string): Promise<SavedMusicStyle | undefined> => {
+  const analyze = async (target: SavedMusicStyle, referenceSource: string, aiExecution: { provider: AiPlanningFallbackProvider; model: AiPlanningChatModel; chromeHeadless: boolean; multiRoom?: boolean; allowFallback?: boolean }, errorText: string): Promise<SavedMusicStyle | undefined> => {
     if (active.current) return undefined;
     const controller = new AbortController();
     active.current = controller;

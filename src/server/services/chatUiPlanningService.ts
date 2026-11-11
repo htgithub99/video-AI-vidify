@@ -120,6 +120,9 @@ import { createHash } from "crypto";
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import _ from "lodash";
+import { MOTION_AI_FALLBACK } from "../../constants/motionAiFallback.js";
+import { CHAT_EXECUTION_POLICY } from "../../constants/chatExecutionPolicy.js";
+import { requestContext } from "../utils/requestContext.js";
 import type { BrowserContext, Locator, Page } from "playwright";
 import { waitForMusicMixerUploads } from "../../features/music-mixer/server/services/musicMixerUploadReadiness.js";
 import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity } from "../../constants/index.js";
@@ -150,7 +153,7 @@ import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
 import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry, isRecoverableChatRefusal } from "./chatRoomRecovery.js";
 import { parseAiJson } from "../../lib/aiJson.js";
-import { claimBlankChatRoom, claimChatRoom, releaseChatRoom } from "./sharedChromePage.js";
+import { claimBlankChatRoom, claimChatRoom, pruneBlankChromePages, releaseChatRoom } from "./sharedChromePage.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
@@ -173,6 +176,7 @@ interface ChatResponseSnapshot {
 }
 type PendingRoomResponse = ChatPendingSubmission;
 interface ChatPlanningRequest {
+  allowFallback?: boolean;
   oneGeneration?: boolean;
   onRecovery?: (line: string) => void;
   restoreContext?: () => string;
@@ -395,12 +399,9 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, r
           .filter((candidate) => !candidate.isClosed()) ?? [])
       : [];
   if (requireClosed && page && !page.isClosed()) {
-    if (openPages.length === 1)
-      await page
-        .context?.()
-        ?.newPage?.()
-        .catch(() => undefined);
-    await page.close();
+    contextReceipts.get(page)?.invalidate();
+    if (openPages.length === 1) await page.goto(RT_MAINTENANCE.ABOUT_BLANK).catch(() => undefined);
+    else await page.close();
     releaseChatRoom(page);
   }
   rooms.delete(roomKey);
@@ -411,6 +412,8 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, r
     if (openPages.length === 1) await page.goto(RT_MAINTENANCE.ABOUT_BLANK).catch(() => undefined);
     else await page.close().catch(() => undefined);
   }
+  const context = page && !page.isClosed() ? page.context?.() : openPages[0]?.context?.();
+  if (context) await pruneBlankChromePages(context).catch(() => undefined);
   if (!hasActiveChatRooms()) scheduleChatBrowserCleanup();
 };
 export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">, closeBrowser = true): Promise<void> => {
@@ -551,6 +554,7 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
     releaseChatRoom(existingRoom);
     rooms.delete(projectId);
   }
+  await pruneBlankChromePages(context).catch(() => undefined);
   const page = (url === EXTERNAL_URLS.GROK_CHAT ? undefined : claimBlankChatRoom(context)) || claimChatRoom(await context.newPage());
   try {
     throwIfPlanningCancelled(signal);
@@ -2339,7 +2343,36 @@ const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Pr
   }
 };
 export const resumeChatPlanningResponse = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => isChatBridgeEnabled() ? askChatBridge(request) : sharedChromeTasks.run(() => trackChatResponse(request, () => resumeChatPlanningResponseTask(request)), request.signal);
-export const generatePlanningWithChatUi = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+const blockedFallbackProviders = new Map<string, number>();
+const stopsFallback = (error: unknown, request: ChatPlanningRequest): boolean =>
+  !!request.signal?.aborted ||
+  !!_.get(error, BACKUP.ERROR_FLAG) ||
+  !!_.get(error, AIR.UNCERTAIN_FLAG) ||
+  _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR ||
+  _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR;
+export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+  if (!(request.allowFallback ?? requestContext.getStore()?.aiAllowFallback) || isChatBridgeEnabled()) return generatePlanningWithChatUiOnce(request);
+  const routes = [{ provider: request.provider, model: request.model }, ...MOTION_AI_FALLBACK.MAIN.filter((route) => route.provider !== request.provider)];
+  let failure: unknown;
+  for (const [index, route] of routes.entries()) {
+    if (index > 0 && (blockedFallbackProviders.get(route.provider) || 0) > Date.now()) continue;
+    try {
+      return await generatePlanningWithChatUiOnce({ ...request, provider: route.provider as AiPlanningFallbackProvider, model: route.model as AiPlanningChatModel, submission: index === 0 ? request.submission : undefined });
+    } catch (error) {
+      if (stopsFallback(error, request)) throw error;
+      failure ??= error;
+      blockedFallbackProviders.set(route.provider, Date.now() + CHAT_EXECUTION_POLICY.PROVIDER_BLOCK_MS);
+      const next = routes.slice(index + 1).find((candidate) => (blockedFallbackProviders.get(candidate.provider) || 0) <= Date.now());
+      if (next) {
+        const line = MOTION_AI_FALLBACK.LOG_SWITCH(String(route.provider), String(next.provider), _.truncate(_.toString(_.get(error, SOURCE_TEXT_MESSAGE)), { length: MOTION_AI_FALLBACK.REASON_MAX }));
+        request.onRecovery?.(line);
+        appLog(line);
+      }
+    }
+  }
+  throw failure;
+};
+const generatePlanningWithChatUiOnce = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (isChatBridgeEnabled()) return askChatBridge({ ...request, submission: request.submission || { attempted: false, completed: false } });
   if (sharedChromeTasks.switching) request.onRecovery?.(BACKUP.WAIT);
   const execution = { ...request, submission: request.submission || { attempted: false, completed: false } };

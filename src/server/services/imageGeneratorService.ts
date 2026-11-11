@@ -1707,8 +1707,31 @@ const connectToSharedChromeBrowser = async (logConnectionError: boolean = true):
   return null;
 };
 let sharedChromeLaunchedByApp = false;
-const launchSharedChromeBrowser = async (chromeHeadless?: boolean): Promise<BrowserSession | null> => {
+let sharedChromeLaunch: Promise<BrowserSession | null> | null = null;
+const sharedChromeRunning = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${EXTERNAL_URLS.PLAYWRIGHT_CDP}${REFACTOR_CONSTANTS.SHARED_CHROME_VERSION_PATH}`, { signal: AbortSignal.timeout(REFACTOR_CONSTANTS.SHARED_CHROME_PROBE_TIMEOUT_MS) });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+const launchSharedChromeBrowser = (chromeHeadless?: boolean): Promise<BrowserSession | null> => {
+  sharedChromeLaunch ||= launchSharedChromeBrowserOnce(chromeHeadless).finally(() => {
+    sharedChromeLaunch = null;
+  });
+  return sharedChromeLaunch;
+};
+const launchSharedChromeBrowserOnce = async (chromeHeadless?: boolean): Promise<BrowserSession | null> => {
   if (!_.isEqual(process.platform, SOURCE_TEXT_WIN32) || !fs.existsSync(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH)) return null;
+  if (await sharedChromeRunning()) {
+    for (let attempt = 0; attempt < REFACTOR_CONSTANTS.SHARED_CHROME_READY_ATTEMPTS; attempt += 1) {
+      const sharedBrowser = await connectToSharedChromeBrowser(false);
+      if (sharedBrowser) return sharedBrowser;
+      await delayAsync(REFACTOR_CONSTANTS.SHARED_CHROME_READY_INTERVAL_MS);
+    }
+    return null;
+  }
   const sharedProfilePath = path.join(process.env.SystemDrive || SOURCE_TEXT_C, REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_DIR);
   const headless = chromeHeadless !== false;
   spawn(

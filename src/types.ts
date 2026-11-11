@@ -197,6 +197,8 @@ interface ProjectConfig {
   planningChatModel?: AiPlanningChatModel;
   planningExecutionMode?: AiPlanningExecutionMode;
   planningChromeHeadless?: boolean;
+  planningMultiRoom?: boolean;
+  planningAllowFallback?: boolean;
 }
 export interface HookVersion {
   id: string;
@@ -429,6 +431,8 @@ export interface VisualConfig {
   planningChatModel?: AiPlanningChatModel;
   planningExecutionMode?: AiPlanningExecutionMode;
   planningChromeHeadless?: boolean;
+  planningMultiRoom?: boolean;
+  planningAllowFallback?: boolean;
   preserveAiPromptText?: boolean;
 }
 export interface CharacterConfig {

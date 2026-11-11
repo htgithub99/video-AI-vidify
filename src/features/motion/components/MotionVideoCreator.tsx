@@ -567,18 +567,6 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       onClick={() => patch({ clearGeminiChatsBeforeExport: state.clearGeminiChatsBeforeExport !== true })}
                     />
                   </div>
-                  <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
-                    <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SCENE_MULTI_ROOMS}</span>
-                    <MotionToggle
-                      checked={state.sceneMultiRooms !== false}
-                      label={text.SCENE_MULTI_ROOMS}
-                      icon={Layers}
-                      text={state.sceneMultiRooms !== false ? text.SCENE_MULTI_ROOMS_ON : text.SCENE_MULTI_ROOMS_OFF}
-                      title={text.SCENE_MULTI_ROOMS_HINT}
-                      disabled={studio.storyBusy}
-                      onClick={() => patch({ sceneMultiRooms: state.sceneMultiRooms === false })}
-                    />
-                  </div>
                 </MotionSettingsGroup>
               </div>
               {analysisSettingsMessage && (

@@ -213,6 +213,8 @@ import { MUSIC_MIXER_TEXTS } from "../../../constants/texts";
 import { cn } from "../../../lib/utils";
 import { jsonUtils } from "../../../lib/json";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock";
+import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy";
+import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types";
 import { API_ROUTES } from "../../../constants";
 import { MUSIC_MIXER_SERVER } from "../../../constants/musicMixer";
@@ -420,6 +422,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
   const [seoModel, setSeoModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlashLite);
   const [seoExecutionMode, setSeoExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.RoomOnly);
   const [seoChromeHeadless, setSeoChromeHeadless] = useState(false);
+  const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.MUSIC_MIXER);
   const [trackOrder, setTrackOrder] = useState<"random" | "featured" | "name">(SOURCE_TEXT_FEATURED);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState(false);
   const [pendingFolders, setPendingFolders] = useState<Array<{ folderPath: string; files: Array<{ name: string; relativePath: string; sourcePath: string; url: string; size: number; type: string }> }>>([]);
@@ -657,7 +660,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               method: SOURCE_TEXT_POST,
               signal: abortController.signal,
               headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-              body: stringifyJson({ projectId: folderProjectId, tracks: _.map(folder.tracks, (track) => ({ sourcePath: track.sourcePath, title: track.file.name })), model: seoModel, provider: seoProvider, executionMode: seoExecutionMode, chromeHeadless: seoChromeHeadless }),
+              body: stringifyJson({ ...chatPolicy, projectId: folderProjectId, tracks: _.map(folder.tracks, (track) => ({ sourcePath: track.sourcePath, title: track.file.name })), model: seoModel, provider: seoProvider, executionMode: seoExecutionMode, chromeHeadless: seoChromeHeadless }),
             });
             const ranking = await response.json();
             if (!response.ok || !ranking.success) throw new Error(ranking.error || text.RANK_ERROR);
@@ -674,7 +677,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
               method: SOURCE_TEXT_POST,
               signal: abortController.signal,
               headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-              body: stringifyJson({ titles: _.map(orderedTracks, (track) => cleanTrackTitle(track.file.name)), roomId: ranking.roomId, aiExecution: { provider: seoProvider, model: seoModel, chromeHeadless: seoChromeHeadless } }),
+              body: stringifyJson({ ...chatPolicy, titles: _.map(orderedTracks, (track) => cleanTrackTitle(track.file.name)), roomId: ranking.roomId, aiExecution: { provider: seoProvider, model: seoModel, chromeHeadless: seoChromeHeadless } }),
             });
             const seoPayload = await seoResponse.json();
             if (!seoResponse.ok || !seoPayload.success) throw new Error(seoPayload.error || text.RANK_ERROR);
@@ -777,7 +780,7 @@ const MusicMixer: FC<{ currentLang: Lang }> = ({ currentLang }) => {
           }></StudioHeader>
         {isAiConfigOpen && (
           <StudioFieldset disabled={isBusy} className={cn(SOURCE_TEXT_GLASS_CARD_ROUNDED_2XL_P_4_BG)}>
-            <ChatPlanningSettingsBlock provider={seoProvider} model={seoModel} executionMode={seoExecutionMode} chromeHeadless={seoChromeHeadless} onProviderChange={setSeoProvider} onModelChange={setSeoModel} onExecutionModeChange={setSeoExecutionMode} onChromeHeadlessChange={setSeoChromeHeadless} currentLang={currentLang} />
+            <ChatPlanningSettingsBlock {...chatPolicyProps} provider={seoProvider} model={seoModel} executionMode={seoExecutionMode} chromeHeadless={seoChromeHeadless} onProviderChange={setSeoProvider} onModelChange={setSeoModel} onExecutionModeChange={setSeoExecutionMode} onChromeHeadlessChange={setSeoChromeHeadless} currentLang={currentLang} />
           </StudioFieldset>
         )}
         <div className={cn(SOURCE_TEXT_GRID_GRID_COLS_1_LG_GRID_COLS_2)}>

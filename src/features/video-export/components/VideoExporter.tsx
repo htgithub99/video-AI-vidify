@@ -21,7 +21,7 @@ const VideoExporter: FC<{ currentLang?: Lang }> = ({ currentLang = VIDEO_EXPORT_
         <VideoExportHeader text={exporter.text} isAiConfigOpen={isAiConfigOpen} disabled={exporter.isRanking} onToggleAiConfig={() => setIsAiConfigOpen((prev) => !prev)} />
         {isAiConfigOpen && (
           <StudioFieldset disabled={exporter.isRanking} className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80)}>
-            <ChatPlanningSettingsBlock provider={exporter.aiProvider} model={exporter.aiModel} executionMode={exporter.aiExecutionMode} chromeHeadless={exporter.aiChromeHeadless} onProviderChange={exporter.setAiProvider} onModelChange={exporter.setAiModel} onExecutionModeChange={exporter.setAiExecutionMode} onChromeHeadlessChange={exporter.setAiChromeHeadless} currentLang={currentLang} />
+            <ChatPlanningSettingsBlock {...exporter.chatPolicyProps} provider={exporter.aiProvider} model={exporter.aiModel} executionMode={exporter.aiExecutionMode} chromeHeadless={exporter.aiChromeHeadless} onProviderChange={exporter.setAiProvider} onModelChange={exporter.setAiModel} onExecutionModeChange={exporter.setAiExecutionMode} onChromeHeadlessChange={exporter.setAiChromeHeadless} currentLang={currentLang} />
           </StudioFieldset>
         )}
         <div className={cn(RT_VIDEO_EXPORT.GRID_GRID_COLS_1_LG_GRID_COLS_3_GAP_6)}>

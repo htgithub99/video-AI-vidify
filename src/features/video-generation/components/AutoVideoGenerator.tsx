@@ -42,6 +42,8 @@ import { VoiceSelectionSection } from "./VoiceSelectionSection";
 import type { CinematicSetupProps } from "../types/cinematicSetup.js";
 import type { ComponentType } from "react";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock";
+import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy";
+import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy";
 import { CINEMATIC_FILM_STYLE_PRESET_IDS } from "../../../constants/stylePresets";
 import { genreLabels } from "../../../constants/data";
 import { AutoVideoStudioSkeleton } from "../../../components/ui/Skeleton";
@@ -170,6 +172,7 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
   const [planningChatModel, setPlanningChatModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlash);
   const [planningExecutionMode, setPlanningExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.RoomOnly);
   const [planningChromeHeadless, setPlanningChromeHeadless] = useState<boolean>(CINEMATIC_CONFIG.GENERATION_DEFAULTS.CHROME_HEADLESS);
+  const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.VIDEO_GENERATION);
   const [cinematicSubtitleMode, setCinematicSubtitleMode] = useState<SubtitleMode>(SubtitleMode.None);
   const cinematicEstimate = useMemo(() => {
     const estimateDuration = canContinueProject ? _.defaultTo(presentationProject?.config?.duration, duration) : duration;
@@ -387,6 +390,8 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
       planningChatModel,
       planningExecutionMode,
       planningChromeHeadless,
+      planningMultiRoom: chatPolicy.multiRoom,
+      planningAllowFallback: chatPolicy.allowFallback,
     });
   const recoveredPipelineProjectIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -471,13 +476,14 @@ export default function AutoVideoGenerator({ currentLang, projects, selectedProj
                 setPlanningExecutionMode={setPlanningExecutionMode}
                 planningChromeHeadless={planningChromeHeadless}
                 setPlanningChromeHeadless={setPlanningChromeHeadless}
+                chatPolicyProps={chatPolicyProps}
                 currentLang={currentLang}
               />
             ) : (
               <ProjectInputSection inputType={inputType} setInputType={setInputType} scriptContent={scriptContent} setScriptContent={setScriptContent} T={T} />
             )}
             {!cinematicMode && (
-              <ChatPlanningSettingsBlock provider={planningFallbackProvider} model={planningChatModel} onProviderChange={setPlanningFallbackProvider} onModelChange={setPlanningChatModel} executionMode={planningExecutionMode} onExecutionModeChange={setPlanningExecutionMode} chromeHeadless={planningChromeHeadless} onChromeHeadlessChange={setPlanningChromeHeadless} currentLang={currentLang} />
+              <ChatPlanningSettingsBlock {...chatPolicyProps} provider={planningFallbackProvider} model={planningChatModel} onProviderChange={setPlanningFallbackProvider} onModelChange={setPlanningChatModel} executionMode={planningExecutionMode} onExecutionModeChange={setPlanningExecutionMode} chromeHeadless={planningChromeHeadless} onChromeHeadlessChange={setPlanningChromeHeadless} currentLang={currentLang} />
             )}
             {!cinematicMode && <VoiceSelectionSection voiceName={voiceName} voiceURI={voiceURI} voiceProvider={voiceProvider} isVoiceDialogOpen={isVoiceDialogOpen} setIsVoiceDialogOpen={setIsVoiceDialogOpen} voiceDialogPersistenceScope={CINEMATIC_CONFIG.PERSISTENCE_SCOPE} currentLang={currentLang} handleVoiceSelect={handleVoiceSelectAndClose} truncateWords={truncateWords} T={T} />}
             <StudioCard className={cn(AV.SETTINGS_PANEL)}>

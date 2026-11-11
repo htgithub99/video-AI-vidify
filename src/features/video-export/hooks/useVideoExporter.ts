@@ -10,6 +10,8 @@ import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { VIDEO_EXPORT_CONSTANTS } from "../constants/videoExport.js";
 import { VIDEO_EXPORT_TEXTS } from "../../../constants/texts.js";
 import { jsonUtils } from "../../../lib/json.js";
+import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy.js";
+import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy.js";
 import { Lang } from "../../../lib/lang.js";
 import { computeVideoExportSlidePlan } from "../lib/videoExportPlan.js";
 import { isPlanningChatModel } from "../../../lib/chatPlanningUtils.js";
@@ -66,6 +68,7 @@ export function useVideoExporter(lang: Lang) {
   const [aiModel, setAiModel] = useState<AiPlanningChatModel>(() => (isPlanningChatModel(initialSettings.aiModel) ? initialSettings.aiModel : AiPlanningChatModel.GeminiFlash));
   const [aiExecutionMode, setAiExecutionMode] = useState<AiPlanningExecutionMode>(pickStoredEnum(AiPlanningExecutionMode, initialSettings.aiExecutionMode, AiPlanningExecutionMode.RoomOnly));
   const [aiChromeHeadless, setAiChromeHeadless] = useState<boolean>(initialSettings.aiChromeHeadless !== false);
+  const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.VIDEO_EXPORT);
   const selectedAudios = useMemo(() => _.filter(audios, (item) => _.includes(selectedAudioIds, item.id)), [audios, selectedAudioIds]);
   const selectedImages = useMemo(() => _.filter(images, (item) => _.includes(selectedImageIds, item.id)), [images, selectedImageIds]);
   const aiClipRuntimeSettings = useMemo(() => ({ provider: aiProvider, model: aiModel, executionMode: aiExecutionMode, chromeHeadless: aiChromeHeadless }), [aiProvider, aiModel, aiExecutionMode, aiChromeHeadless]);
@@ -315,7 +318,7 @@ export function useVideoExporter(lang: Lang) {
     rankProjectIdRef.current = projectId;
     setIsRanking(true);
     try {
-      const data = await requestJson<{ scores?: RankScore[] }>(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, { projectId, tracks: _.map(rankedAudios, (item) => ({ sourcePath: item.sourcePath, title: item.name })), provider: aiProvider, model: aiModel, executionMode: aiExecutionMode, chromeHeadless: aiChromeHeadless }, abortController.signal);
+      const data = await requestJson<{ scores?: RankScore[] }>(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, { ...chatPolicy, projectId, tracks: _.map(rankedAudios, (item) => ({ sourcePath: item.sourcePath, title: item.name })), provider: aiProvider, model: aiModel, executionMode: aiExecutionMode, chromeHeadless: aiChromeHeadless }, abortController.signal);
       const scoreById = new Map<string, RankScore>();
       _.forEach(data.scores ?? [], (score) => {
         const item = rankedAudios[_.toInteger(score?.index) - 1];
@@ -342,7 +345,7 @@ export function useVideoExporter(lang: Lang) {
         if (isMountedRef.current) setIsRanking(false);
       }
     }
-  }, [isBusy, source, selectedAudios, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, closeRankRooms, text]);
+  }, [isBusy, source, selectedAudios, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, chatPolicy, closeRankRooms, text]);
   const cancelRanking = useCallback(() => {
     const controller = rankAbortRef.current;
     if (!controller) return;
@@ -500,6 +503,7 @@ export function useVideoExporter(lang: Lang) {
     aiModel,
     aiExecutionMode,
     aiChromeHeadless,
+    chatPolicyProps,
     isRanking,
     preview,
     previewError,

@@ -73,6 +73,7 @@ import { closeActiveBrowser } from "./src/server/services/imageGeneratorService.
 import { closeProxySessions } from "./src/server/services/proxyService.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
 import { requestContext } from "./src/server/utils/requestContext.js";
+import { CHAT_EXECUTION_POLICY } from "./src/constants/chatExecutionPolicy.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "./src/types.js";
 const SERVER_CONFIG = {
   PORT: 3002,
@@ -162,7 +163,9 @@ app.use((req, _res, next) => {
   const aiRoomModel = _.get(executionSource, MOTION_TEXT_MODEL) || _.get(req.body, MOTION_TEXT_PLANNINGCHATMODEL) || _.get(configSource, MOTION_TEXT_PLANNINGCHATMODEL) || _.get(visualSource, MOTION_TEXT_PLANNINGCHATMODEL);
   const aiRoomProjectId = _.toString(_.get(executionSource, MOTION_TEXT_PROJECTID) || _.get(req.body, MOTION_TEXT_PROJECTID) || _.get(req.body, MOTION_TEXT_LOCALPROJECTID) || MOTION_TEXT_PIPELINE_ROOM);
   const aiRoomChromeHeadless = Boolean(_.get(executionSource, MOTION_TEXT_CHROMEHEADLESS) ?? _.get(req.body, MOTION_TEXT_PLANNINGCHROMEHEADLESS) ?? _.get(configSource, MOTION_TEXT_PLANNINGCHROMEHEADLESS) ?? _.get(visualSource, MOTION_TEXT_PLANNINGCHROMEHEADLESS));
-  requestContext.run({ geminiKey, cerebrasKey, groqKey, ai33Key, licenseKey, aiExecutionMode: _.includes(Object.values(AiPlanningExecutionMode), aiExecutionMode) ? aiExecutionMode : undefined, aiRoomProvider: _.includes(Object.values(AiPlanningFallbackProvider), aiRoomProvider) ? aiRoomProvider : undefined, aiRoomModel, aiRoomProjectId, aiRoomChromeHeadless }, next);
+  const aiMultiRoom = _.some(CHAT_EXECUTION_POLICY.MULTI_ROOM_PATHS, (key) => _.get(req.body, key) === true);
+  const aiAllowFallback = _.some(CHAT_EXECUTION_POLICY.ALLOW_FALLBACK_PATHS, (key) => _.get(req.body, key) === true);
+  requestContext.run({ geminiKey, cerebrasKey, groqKey, ai33Key, licenseKey, aiExecutionMode: _.includes(Object.values(AiPlanningExecutionMode), aiExecutionMode) ? aiExecutionMode : undefined, aiRoomProvider: _.includes(Object.values(AiPlanningFallbackProvider), aiRoomProvider) ? aiRoomProvider : undefined, aiRoomModel, aiRoomProjectId, aiRoomChromeHeadless, aiMultiRoom, aiAllowFallback }, next);
 });
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, SHORTS_CONSTANTS.SHORTS_FOLDER)));

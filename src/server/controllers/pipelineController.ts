@@ -1096,7 +1096,9 @@ import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { validateFFmpegRenderOptions } from "../utils/ffmpegRender.js";
 import { formatTime, safeParseJSON } from "../utils/helpers.js";
 import { getDataDirectory, getLogsDirectory, getPythonCommand, getStaticResourcePath, getTempDirectory } from "../utils/paths.js";
-import { requestContext } from "../utils/requestContext.js";
+import { requestContext, currentChatPolicy } from "../utils/requestContext.js";
+import { chatRoomLanes, runInChatRoomLanes } from "../../lib/chatExecutionPolicy.js";
+import { CHAT_EXECUTION_POLICY } from "../../constants/chatExecutionPolicy.js";
 import { getSafeFolderName } from "./projectController.js";
 const ffmpegBinary = getStaticResourcePath(SOURCE_TEXT_FFMPEG_EXE);
 if (fs.existsSync(ffmpegBinary)) {
@@ -1728,7 +1730,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     let compositionFailure: unknown;
     const publishSongs = (stage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION) => report.progress(stage, { songs: _.flatten(composedBatchResults) });
     publishSongs();
-    const compositionWorkerIds = _.take([SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_THIRD_ROOM_WORKER_TYPE], Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, pendingCompositionBatches.length));
+    const compositionWorkerIds = _.take([SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_THIRD_ROOM_WORKER_TYPE], Math.min(chatRoomLanes(currentChatPolicy()), pendingCompositionBatches.length));
     const roomPreparations = _.map(compositionWorkerIds, (workerId) => prepareChatPlanningRoom({ provider, model: execution.model, prompt: C.EMPTY, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, signal: planningRun.signal }));
     const runCompositionWorker = async (workerId: string, workerIndex: number): Promise<void> => {
       await roomPreparations[workerIndex];
@@ -2374,7 +2376,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       planningRun.signal.throwIfAborted();
       await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_READY, { evaluationRunId, trackCount: evaluationAudio.size, elapsedMs: Date.now() - preparationStarted });
       report.progress({ phase: RT_SERVER.PREPARING, expected: pendingTrackCount, ready: evaluationAudio.size, message: pendingTrackCount ? RT_MUSIC.ALL_AUDIO_READY : MUSIC_RECOVERY.ALL_SELECTIONS_READY });
-      const evaluationSlots = new AsyncTaskLimiter(SUNO_AUTOMATION_CONFIG.EVALUATION_ROOM_CONCURRENCY);
+      const evaluationSlots = new AsyncTaskLimiter(chatRoomLanes(currentChatPolicy()));
       const evaluationResults = await Promise.allSettled(
         _.map(groupsByChunk, async (groups, chunkIndex) => {
           const roomProgress = (progress: Omit<MusicDownloadProgress, "room" | "rooms">) => report.progress({ ...progress, room: chunkIndex + 1, rooms: groupsByChunk.length });
@@ -5920,8 +5922,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
     );
     if (_.some(availableFiles, (available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
     planningRun.signal.throwIfAborted();
-    const scores: Array<{ index: number; score: number; durationSeconds: number }> = [];
-    for (const [chunkIndex, chunk] of _.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST).entries()) {
+    const chunkScores = await runInChatRoomLanes(_.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST), currentChatPolicy(), async (chunk, chunkIndex, lane) => {
       const requestId = SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${rankingId}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkIndex + 1}`));
       const offset = chunkIndex * MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST;
       const attachments = _.map(chunk, (item: any, index: number) => ({ name: SOURCE_TEMPLATE_SYMBOL_51(SOURCE_TEMPLATE_SYMBOL_86(`${offset + index + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${path.basename(item.sourcePath)}`)), mimeType: path.extname(item.sourcePath).toLowerCase() === SOURCE_TEXT_WAV_2 ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, path: item.sourcePath }));
@@ -5929,13 +5930,14 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
         _.map(chunk, (item: any, index: number) => ({ index: offset + index + 1, title: item.title })),
         requestId,
       );
-      const result = await generatePlanningWithChatUi({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, model: req.body?.model, prompt, projectId: rankingId, signal: planningRun.signal, chromeHeadless: req.body?.chromeHeadless === true, attachments, artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT, requestId, closeRoomOnComplete: false, allowDefaultGeminiModel: true });
+      const result = await generatePlanningWithChatUi({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, model: req.body?.model, prompt, projectId: rankingId, workerId: lane === 0 ? undefined : CHAT_EXECUTION_POLICY.WORKER_ID(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX, lane), signal: planningRun.signal, chromeHeadless: req.body?.chromeHeadless === true, attachments, artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT, requestId, closeRoomOnComplete: false, allowDefaultGeminiModel: true });
       const parsed = parseJson(result.text.replace(/^```(?:json)?\s*|\s*```$/g, C.EMPTY));
       const validScores = parsed.artifactType === MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT && parsed.requestId === requestId && Array.isArray(parsed.scores) && parsed.scores.length === chunk.length && parsed.scores.every((item: any) => Number.isInteger(item.index) && item.index >= offset + 1 && item.index <= offset + chunk.length && Number.isInteger(item.score) && item.score >= 0 && item.score <= 100);
       if (!validScores) throw new Error(MUSIC_MIXER_SERVER.ERROR_RANKING_RESPONSE);
       const durations = await Promise.all(_.map(chunk, (item: any) => readMediaDurationSeconds(item.sourcePath)));
-      scores.push(...parsed.scores.map((item: any) => ({ ...item, durationSeconds: durations[item.index - offset - 1] || 0 })));
-    }
+      return parsed.scores.map((item: any) => ({ ...item, durationSeconds: durations[item.index - offset - 1] || 0 }));
+    });
+    const scores: Array<{ index: number; score: number; durationSeconds: number }> = _.flatten(chunkScores);
     planningRun.signal.throwIfAborted();
     return res.json({ success: true, scores, roomId: rankingId });
   } catch (error) {

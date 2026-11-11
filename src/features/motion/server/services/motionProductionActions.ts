@@ -73,6 +73,7 @@ import { createHash } from "crypto";
 import { compileStorySpec, estimateBeatSeconds } from "./motionDirectorService.js";
 import { emptyGen } from "./puppet/genState.js";
 import { MOTION_AI_ROLE } from "../../../../constants/motionAiFallback.js";
+import { motionContentWorkerIds } from "../../../../lib/motionAiExecution.js";
 import { startMotionRender } from "./motionRenderService.js";
 import { startStoryJob, type StoryJobContext } from "./motionStoryJobService.js";
 import { motionInputKey } from "./motionFileUtils.js";
@@ -132,7 +133,8 @@ export const aiExec = (v: any): MotionAiExecution => ({
   ...(typeof v?.allowFallback === "boolean" ? { allowFallback: v.allowFallback, ...(v.allowFallback === false ? { strictProvider: true } : {}) } : {}),
   ...(v?.strictProvider === true ? { strictProvider: true } : {}),
   ...(typeof v?.multiSceneRooms === "boolean" ? { multiSceneRooms: v.multiSceneRooms } : {}),
-  ...(v?.light?.provider ? { light: { provider: _.toString(v.light.provider), model: _.toString(v.light.model || MR.MOTION_TEXT_EMPTY), chromeHeadless: v.light.chromeHeadless !== false, allowFallback: v.light.allowFallback !== false } } : {}),
+  ...(typeof v?.multiRoom === "boolean" ? { multiRoom: v.multiRoom } : {}),
+  ...(v?.light?.provider ? { light: { provider: _.toString(v.light.provider), model: _.toString(v.light.model || MR.MOTION_TEXT_EMPTY), chromeHeadless: v.light.chromeHeadless !== false, allowFallback: v.light.allowFallback !== false, multiRoom: v.light.multiRoom === true } } : {}),
 });
 export const drawExec = (v: any): MotionAiExecution => ({ ...aiExec(v), role: MOTION_AI_ROLE.DRAW });
 const editorialAiIdentity = ({ provider, model, mode, multiSceneRooms }: MotionAiExecution) => ({ provider, model, mode, ...(multiSceneRooms === false ? { multiSceneRooms: false } : {}) });
@@ -413,7 +415,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           }
         }
         void prepareMotionContentRooms(exec, ctx.signal, ctx.log).catch(_.noop);
-        await mapMotionAiPool(todo, async (chapter) => writeOne(chapter), MOTION_STORY_CONFIG.WORKER_IDS.length);
+        await mapMotionAiPool(todo, async (chapter) => writeOne(chapter), motionContentWorkerIds(exec).length);
       } else {
         for (const chapter of todo) await writeOne(chapter);
       }

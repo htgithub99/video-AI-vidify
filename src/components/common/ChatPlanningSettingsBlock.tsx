@@ -3,7 +3,8 @@ import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.
 import * as ST from "../../constants/sourceText.js";
 import _ from "lodash";
 import { useEffect } from "react";
-import { Bot, ChevronDown, Cpu, Eye, Sparkles } from "lucide-react";
+import { Bot, ChevronDown, Cpu, Eye, Layers, Shuffle, Sparkles } from "lucide-react";
+import { PlanningToggleField } from "./PlanningToggleField.js";
 import { CHAT_PLANNING_STYLES } from "../../constants/chatPlanningStyles.js";
 import { CINEMATIC_CHAT_MODEL_OPTIONS } from "../../constants/cinematicConstants";
 import { CLAUDE_CHAT_MODELS, CLAUDE_CHAT_BASE_MODEL_OPTIONS, CLAUDE_MODEL_ENCODING, CLAUDE_EFFORT_OPTIONS, encodeClaudeChatModel, parseClaudeChatModel, type ClaudeEffort } from "../../constants/claudeChatModels";
@@ -64,6 +65,10 @@ interface ChatPlanningSettingsBlockProps {
   allowHybrid?: boolean;
   roomOnly?: boolean;
   extraControl?: React.ReactNode;
+  multiRoom?: boolean;
+  onMultiRoomChange?: (multiRoom: boolean) => void;
+  allowFallback?: boolean;
+  onAllowFallbackChange?: (allowFallback: boolean) => void;
 }
 const resolveProviderName = (provider: AiPlanningFallbackProvider, texts: PlanningTexts): string => {
   if (_.isEqual(provider, AiPlanningFallbackProvider.GeminiChat)) return texts.GEMINI_CHAT_OPTION;
@@ -79,7 +84,7 @@ const resolveBadgeSummary = (isApiOnly: boolean, provider: AiPlanningFallbackPro
   const modeText = chromeHeadless ? texts.PLANNING_CHROME_HIDDEN : texts.PLANNING_CHROME_VISIBLE;
   return SOURCE_TEMPLATE_SYMBOL_32(name, modeText);
 };
-export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, roomOnly = false, extraControl }: ChatPlanningSettingsBlockProps) {
+export default function ChatPlanningSettingsBlock({ provider, model, executionMode, chromeHeadless, onProviderChange, onModelChange, onExecutionModeChange, onChromeHeadlessChange, currentLang = SOURCE_TEXT_VI, title, note, allowHybrid = true, roomOnly = false, extraControl , multiRoom, onMultiRoomChange, allowFallback, onAllowFallbackChange }: ChatPlanningSettingsBlockProps) {
   const texts = CINEMATIC_SETUP_TEXTS[currentLang] || CINEMATIC_SETUP_TEXTS.vi;
   const isApiOnly = _.isEqual(executionMode, AiPlanningExecutionMode.ApiOnly);
   const resolvedProvider = _.isEqual(provider, AiPlanningFallbackProvider.Disabled) ? AiPlanningFallbackProvider.GeminiChat : provider;
@@ -203,6 +208,20 @@ export default function ChatPlanningSettingsBlock({ provider, model, executionMo
         </PlanningSelectField>
         {extraControl && <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>{extraControl}</div>}
       </div>
+      {!isApiOnly && (onMultiRoomChange || onAllowFallbackChange) && (
+        <div className={CHAT_PLANNING_STYLES.POLICY_ROW}>
+          {onMultiRoomChange && (
+            <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>
+              <PlanningToggleField checked={multiRoom === true} label={texts.MULTI_ROOM_LABEL} text={multiRoom === true ? texts.MULTI_ROOM_ON : texts.MULTI_ROOM_OFF} title={texts.MULTI_ROOM_HINT} icon={Layers} onChange={onMultiRoomChange} />
+            </div>
+          )}
+          {onAllowFallbackChange && (
+            <div className={cn(FIELD_BASE_CLASSNAME, CHAT_PLANNING_STYLES.EXTRA_FIELD)}>
+              <PlanningToggleField checked={allowFallback === true} label={texts.FALLBACK_LABEL} text={allowFallback === true ? texts.FALLBACK_ON : texts.FALLBACK_OFF} title={texts.FALLBACK_HINT} icon={Shuffle} onChange={onAllowFallbackChange} />
+            </div>
+          )}
+        </div>
+      )}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.ClaudeChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.CLAUDE_CHAT_NOTE}</p>}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.DeepSeekChat && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.DEEPSEEK_CHAT_NOTE}</p>}
       {!isApiOnly && resolvedProvider === AiPlanningFallbackProvider.MetaAi && <p className={CHAT_PLANNING_STYLES.NOTE}>{texts.META_AI_NOTE}</p>}

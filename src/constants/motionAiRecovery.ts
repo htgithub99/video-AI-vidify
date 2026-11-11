@@ -15,7 +15,7 @@ export const MOTION_AI_RECOVERY = {
   PROBE_WORKER: "motion-probe",
   SEND_STAGGER_MS: 5000,
   MAX_SELF_CONTAINED_ROOM_TURNS: 4,
-  TAB_LABELS: { "motion-primary": "Tab nội dung 1", "motion-second": "Tab nội dung 2", "motion-scene-first": "Tab dựng cảnh 1", "motion-scene-second": "Tab dựng cảnh 2", "motion-scene-third": "Tab dựng cảnh 3", "motion-plan": "Tab phân cảnh", "motion-light": "Tab việc phụ" } as Record<string, string>,
+  TAB_LABELS: { "motion-primary": "Tab nội dung 1", "motion-second": "Tab nội dung 2", "motion-scene-first": "Tab dựng cảnh 1", "motion-scene-second": "Tab dựng cảnh 2", "motion-scene-third": "Tab dựng cảnh 3", "motion-plan": "Tab phân cảnh", "motion-plan-2": "Tab phân cảnh 2", "motion-light": "Tab việc phụ", "motion-light-2": "Tab việc phụ 2" } as Record<string, string>,
   TAB_SUFFIX: (label: string): string => ` (${label})`,
   PROBE_CHECK: (provider: string, round: number): string => `Kiểm tra ${provider} đã sẵn sàng chưa (lần ${round})…`,
   PROBE_READY: (provider: string): string => `${provider} đã sẵn sàng – làm tiếp ngay.`,

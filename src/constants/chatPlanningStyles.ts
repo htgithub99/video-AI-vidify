@@ -13,6 +13,7 @@ export const CHAT_PLANNING_STYLES = {
   BADGE_DOT_ROOM: "bg-violet-400 animate-pulse",
   BADGE_TEXT: "font-semibold text-slate-300",
   GRID: "grid grid-cols-1",
+  POLICY_ROW: "grid grid-cols-1 sm:grid-cols-2 gap-3",
   GRID_WITH_EXTRA: "sm:grid-cols-2 lg:grid-cols-4",
   GRID_WITH_LEVEL_AND_EXTRA: "sm:grid-cols-2 lg:grid-cols-5",
   GRID_DEFAULT: "sm:grid-cols-3",

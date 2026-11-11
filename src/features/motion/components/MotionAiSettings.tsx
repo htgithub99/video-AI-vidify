@@ -4,8 +4,6 @@ import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSe
 import { MOTION_AI_SETTINGS_TEXT } from "../../../constants/motionSceneLibrary.js";
 import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { AiPlanningExecutionMode } from "../../../types.js";
-import { Shuffle } from "lucide-react";
-import { MotionToggle } from "./MotionToggle.js";
 import type { Lang } from "../../../lib/lang.js";
 import { motionLightAiExecution, motionPlanAiExecution, motionSceneAiExecution, resolveMotionSceneExecution, type MotionAiChoice, type MotionLightAiChoice, type MotionPlanAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
@@ -35,7 +33,10 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onChromeHeadlessChange={(value) => patch({ aiHeadless: value })}
           currentLang={currentLang}
           allowHybrid
-          extraControl={<MotionToggle checked={state.aiFallback !== false} label={text.FALLBACK_LABEL} title={text.MAIN_FALLBACK_HINT} text={state.aiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ aiFallback: state.aiFallback === false })} />}
+          multiRoom={state.aiMultiRoom === true}
+          onMultiRoomChange={(value) => patch({ aiMultiRoom: value })}
+          allowFallback={state.aiFallback !== false}
+          onAllowFallbackChange={(value) => patch({ aiFallback: value })}
         />
       </section>
       <section aria-label={text.LIGHT_TITLE}>
@@ -52,7 +53,10 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onChromeHeadlessChange={(value) => patch({ lightAiProvider: light.provider, lightAiModel: light.model, lightAiHeadless: value })}
           currentLang={currentLang}
           roomOnly
-          extraControl={<MotionToggle checked={light.allowFallback} label={text.FALLBACK_LABEL} title={text.LIGHT_FALLBACK_HINT} text={light.allowFallback ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ lightAiProvider: light.provider, lightAiModel: light.model, lightAiFallback: !light.allowFallback })} />}
+          multiRoom={light.multiRoom}
+          onMultiRoomChange={(value) => patch({ lightAiProvider: light.provider, lightAiModel: light.model, lightAiMultiRoom: value })}
+          allowFallback={light.allowFallback}
+          onAllowFallbackChange={(value) => patch({ lightAiProvider: light.provider, lightAiModel: light.model, lightAiFallback: value })}
         />
       </section>
       {onePass && (
@@ -70,7 +74,10 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
             onChromeHeadlessChange={(value) => patch({ planAiProvider: plan.provider, planAiModel: plan.model, planAiHeadless: value })}
             currentLang={currentLang}
             roomOnly
-            extraControl={<MotionToggle checked={plan.allowFallback} label={text.FALLBACK_LABEL} title={text.PLAN_FALLBACK_HINT} text={plan.allowFallback ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ planAiFallback: !plan.allowFallback })} />}
+            multiRoom={plan.multiRoom}
+            onMultiRoomChange={(value) => patch({ planAiProvider: plan.provider, planAiModel: plan.model, planAiMultiRoom: value })}
+            allowFallback={plan.allowFallback}
+            onAllowFallbackChange={(value) => patch({ planAiProvider: plan.provider, planAiModel: plan.model, planAiFallback: value })}
           />
         </section>
       )}
@@ -88,7 +95,10 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onChromeHeadlessChange={(value) => patch({ sceneAiHeadless: value })}
           currentLang={currentLang}
           roomOnly
-          extraControl={<MotionToggle checked={state.sceneAiFallback !== false} label={text.FALLBACK_LABEL} title={text.FALLBACK_HINT} text={state.sceneAiFallback !== false ? text.FALLBACK_ON : text.FALLBACK_OFF} icon={Shuffle} className={MOTION_STYLES.SCENE_AI_FALLBACK_CONTROL} onClick={() => patch({ sceneAiFallback: state.sceneAiFallback === false })} />}
+          multiRoom={state.sceneAiMultiRoom === true}
+          onMultiRoomChange={(value) => patch({ sceneAiMultiRoom: value })}
+          allowFallback={state.sceneAiFallback !== false}
+          onAllowFallbackChange={(value) => patch({ sceneAiFallback: value })}
         />
       </section>
     </div>

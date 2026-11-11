@@ -967,6 +967,7 @@ export interface MotionAiExecution {
   responseReceived?: (text: string) => void;
   allowFallback?: boolean;
   multiSceneRooms?: boolean;
+  multiRoom?: boolean;
   singleResponse?: boolean;
   provider?: string;
   model?: string;
@@ -979,7 +980,7 @@ export interface MotionAiExecution {
   worker?: string;
   workerAssigned?: (workerId: string) => void;
   avoidWorker?: string;
-  light?: { provider: string; model: string; chromeHeadless: boolean; allowFallback: boolean };
+  light?: { provider: string; model: string; chromeHeadless: boolean; allowFallback: boolean; multiRoom?: boolean };
 }
 export interface MotionAiActivity {
   workerId: string;

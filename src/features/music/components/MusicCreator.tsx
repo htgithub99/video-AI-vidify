@@ -129,6 +129,8 @@ import { toast } from "sonner";
 import { recordWorkflowActivity } from "../../../services/workflowActivity";
 import { WORKFLOW_ACTIVITY_CONFIG, WORKFLOW_ACTIVITY_EVENT } from "../../../constants/workflowActivity";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock";
+import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy";
+import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy";
 import { Tooltip } from "../../../components/ui/Tooltip";
 import { Modal } from "../../../components/ui/Modal";
 import { Button } from "../../../components/ui/Button";
@@ -661,6 +663,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
   const [model, setModel] = useState<AiPlanningChatModel>(initialState.model || AiPlanningChatModel.ChatGptAuto);
   const [executionMode, setExecutionMode] = useState<AiPlanningExecutionMode>(initialState.executionMode || AiPlanningExecutionMode.RoomOnly);
   const [chromeHeadless, setChromeHeadless] = useState(initialState.chromeHeadless ?? true);
+  const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.MUSIC);
   const musicRunIdRef = useRef<string | null>(null);
   const musicResumeRef = useRef<{ signature: string; runId: string } | null>(null);
   const musicAbortControllerRef = useRef<AbortController | null>(null);
@@ -835,7 +838,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       return;
     }
     try {
-      const result = await styleRequest.analyze(savedStyle, source, { provider, model, chromeHeadless }, optionTexts.reanalyzeError);
+      const result = await styleRequest.analyze(savedStyle, source, { provider, model, chromeHeadless, ...chatPolicy }, optionTexts.reanalyzeError);
       if (!result) return;
       const latest = readSavedStyles();
       const index = latest.findIndex((item) => item.title === savedStyle.title && item.content === savedStyle.content);
@@ -996,7 +999,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_PLAN, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ requestedSongCount: outputCount, streamProgress: true, style: trimmedStyle, analyzeStyleFromSource, referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource], projectId: runId, requestId: runId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo, aiExecution: { provider, model, executionMode, chromeHeadless } }),
+        body: jsonUtils.safeStringify({ ...chatPolicy, requestedSongCount: outputCount, streamProgress: true, style: trimmedStyle, analyzeStyleFromSource, referenceSongs: _.isEmpty(referenceSource) ? [] : [referenceSource], projectId: runId, requestId: runId, thumbnailReference, thumbnailReferenceName, thumbnailDescription, sunoInspo, aiExecution: { provider, model, executionMode, chromeHeadless } }),
         signal: abortController.signal,
       });
       const result = await readMusicPlanResponse(response, ({ progress, data }) => {
@@ -1069,7 +1072,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
             const thumbnailResponse = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
               method: HTTP_METHODS.POST,
               headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-              body: jsonUtils.safeStringify({
+              body: jsonUtils.safeStringify({ ...chatPolicy,
                 songs: generatedSongs,
                 style: analyzeStyleFromSource ? createAnalyzedMusicStyle(generatedStyleAnalysis)?.content || trimmedStyle : trimmedStyle,
                 styleAnalysis: generatedStyleAnalysis,
@@ -1139,7 +1142,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
     setIsRegeneratingSeo(true);
     const runId = SOURCE_TEMPLATE_SEO_2(String(SUNO_AUTOMATION_CONFIG.RUN_ID_PREFIX), String(Date.now()), String(Math.random().toString(36).slice(2)));
     try {
-      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SEO_REGENERATE, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ songs, style: activeStyle, referenceSource: referenceSongs, styleAnalysis, projectId: runId, requestId: runId, aiExecution: { provider, model, executionMode, chromeHeadless } }) });
+      const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SEO_REGENERATE, { method: HTTP_METHODS.POST, headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON }, body: jsonUtils.safeStringify({ ...chatPolicy, songs, style: activeStyle, referenceSource: referenceSongs, styleAnalysis, projectId: runId, requestId: runId, aiExecution: { provider, model, executionMode, chromeHeadless } }) });
       const result = await response.json();
       const regeneratedOptions = _.castArray(result.playlistSeoOptions || []) as SongSeoOption[];
       if (!response.ok || !result.success || _.isEmpty(regeneratedOptions)) throw new Error(result.error || texts.SEO_REGENERATE_ERROR);
@@ -1295,7 +1298,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_SUNO_DOWNLOAD, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({
+        body: jsonUtils.safeStringify({ ...chatPolicy,
           stream: true,
           folderPath,
           tracks,
@@ -1409,7 +1412,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ songs, style, styleAnalysis, sourceContext: referenceSongs, playlistSeoOptions, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless, aiExecution: { provider, model }, imageRunId }),
+        body: jsonUtils.safeStringify({ ...chatPolicy, songs, style, styleAnalysis, sourceContext: referenceSongs, playlistSeoOptions, thumbnailDescription, thumbnailReference, thumbnailReferenceName, chromeHeadless, aiExecution: { provider, model }, imageRunId }),
         signal: imageAbortController.signal,
       });
       const result = await response.json();
@@ -1466,7 +1469,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
       const response = await fetch(API_ROUTES.PIPELINE_MUSIC_THUMBNAIL, {
         method: HTTP_METHODS.POST,
         headers: { [CONTENT_TYPE_HEADER]: CONTENT_TYPES.JSON },
-        body: jsonUtils.safeStringify({ songs: downloadedMusicTracks, style, styleAnalysis, videoBackgroundDescription, videoBackgroundReference, videoBackgroundReferenceName, chromeHeadless, aiExecution: { provider, model }, assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO, showTrackList: showVideoTrackList, imageRunId }),
+        body: jsonUtils.safeStringify({ ...chatPolicy, songs: downloadedMusicTracks, style, styleAnalysis, videoBackgroundDescription, videoBackgroundReference, videoBackgroundReferenceName, chromeHeadless, aiExecution: { provider, model }, assetPurpose: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO, showTrackList: showVideoTrackList, imageRunId }),
         signal: imageAbortController.signal,
       });
       const result = await response.json();
@@ -1518,6 +1521,7 @@ export default function MusicCreator({ currentLang = SOURCE_TEXT_VI }: MusicCrea
               onExecutionModeChange={setExecutionMode}
               onChromeHeadlessChange={setChromeHeadless}
               currentLang={currentLang}
+              {...chatPolicyProps}
               extraControl={<PlanningToggleField checked={autoCreateImages} label={optionTexts.autoImages} text={autoCreateImages ? optionTexts.autoImages : optionTexts.manualImages} title={optionTexts.autoImagesHint} icon={ImageIcon} onChange={setAutoCreateImages} />}
             />
           </StudioFieldset>

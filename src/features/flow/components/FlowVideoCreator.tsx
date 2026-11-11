@@ -64,6 +64,8 @@ import { Lang } from "../../../lib/lang";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, AspectRatio, GenerateType, ImageGenerationMode, ImageGeneratorEngine, StoryboardScene, VideoProject } from "../../../types";
 import { submitProjectFlowVideoBatch, recoverProjectFlowVideo, isPersistedProjectVideoUrl } from "../../../services/projectImageGenerationService";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock";
+import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy";
+import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy";
 import { Button } from "../../../components/ui/Button";
 import { Modal } from "../../../components/ui/Modal";
 import { cn } from "../../../lib/utils";
@@ -114,6 +116,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
   const [model, setModel] = useState<AiPlanningChatModel>(resolveFlowVideoPlanningModel(saved.provider || AiPlanningFallbackProvider.ChatGptUi, saved.model));
   const [executionMode, setExecutionMode] = useState<AiPlanningExecutionMode>(saved.executionMode || AiPlanningExecutionMode.RoomOnly);
   const [chromeHeadless, setChromeHeadless] = useState<boolean>(saved.chromeHeadless ?? true);
+  const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.FLOW);
   const [productionConfig, setProductionConfig] = useState<FlowVideoProductionConfig>(() => {
     const projectVisual = _.find(projects, (project) => project.id === (saved.projectId || selectedProjectId))?.visualConfig;
     const stored = saved.productionConfig;
@@ -240,7 +243,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
     setClips([]);
     setBusy(FLOW_BUSY_STATES.PLANNING);
     try {
-      const data = await post(API_ROUTES.PIPELINE_PLAN_FLOW_VIDEO_PROMPTS, { request: request.trim(), projectId: projectId || undefined, execution: { provider, model, mode: executionMode, chromeHeadless } });
+      const data = await post(API_ROUTES.PIPELINE_PLAN_FLOW_VIDEO_PROMPTS, { ...chatPolicy, request: request.trim(), projectId: projectId || undefined, execution: { provider, model, mode: executionMode, chromeHeadless } });
       const generatedVideos: { title: string; prompt: string }[] = data.videos || [];
       if (!generatedVideos.length) throw new Error(flowTexts.PLAN_FAILED);
       setClips(_.map(generatedVideos, ({ title, prompt }, index: number) => ({ id: SOURCE_TEMPLATE_FLOWCLIP(`${Date.now()}`, `${index + 1}`), title, prompt, status: SOURCE_TEXT_WAITING })));
@@ -433,6 +436,7 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
               onModelChange={setModel}
               onExecutionModeChange={setExecutionMode}
               onChromeHeadlessChange={setChromeHeadless}
+              {...chatPolicyProps}
               currentLang={currentLang}
             />
           </StudioFieldset>
