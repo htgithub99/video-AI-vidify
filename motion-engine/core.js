@@ -261,11 +261,6 @@
     s.duration = s.duration || end || 5;
     return s;
   };
-  ME.puppetTransition = (from, to) => {
-    if (!from || !to || to.cut === true) return null;
-    if (from.visualId && from.visualId === to.visualId) return { type: MT.CUT, duration: 0 };
-    return from.set === to.set && from.light === to.light ? MT.PUPPET.SAME_SCENE_TRANSITION : MT.PUPPET.TRANSITION;
-  };
   ME.createRenderer = (canvas, specIn, opts = {}) => {
     const spec = ME.normalizeSpec(U.parseJson(U.stringifyJson(specIn || {})));
     const q = Object.assign({}, ME.QUALITY.standard, typeof opts.quality === MT.STRING ? ME.QUALITY[opts.quality] : opts.quality || {});
@@ -390,13 +385,6 @@
     };
     const transitionOf = (sh, previous) => {
       const tr = Object.assign({ type: MT.FADE, duration: 0.6 }, sh.transition || {});
-      if (spec.kit) {
-        const before = previous && previous.params && previous.params.frames;
-        const after = sh.params && sh.params.frames;
-        const policy = ME.puppetTransition(before && before[before.length - 1], after && after[0]);
-        if (policy && (tr.type !== MT.CUT || policy.type === MT.FADE)) return Object.assign({}, policy);
-      }
-      if (spec.kit && tr.type !== MT.CUT) return Object.assign({}, MT.PUPPET.TRANSITION);
       if (finish && finish.transition && tr.type !== MT.CUT && ME.registry.transitions[finish.transition]) tr.type = finish.transition;
       return tr;
     };

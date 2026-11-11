@@ -58,6 +58,8 @@ import { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils.js";
 import { jsonUtils } from "../../../lib/json.js";
 import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSettingsBlock.js";
+import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy";
+import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { SHORTS_EXTRACTOR_TEXTS } from "../../../constants/texts.js";
@@ -102,6 +104,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
   const [aiModel, setAiModel] = useState<AiPlanningChatModel>(AiPlanningChatModel.GeminiFlash);
   const [aiExecutionMode, setAiExecutionMode] = useState<AiPlanningExecutionMode>(AiPlanningExecutionMode.ApiOnly);
   const [aiChromeHeadless, setAiChromeHeadless] = useState<boolean>(true);
+  const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.SHORTS);
   useEffect(() => {
     try {
       const saved = jsonUtils.getItem<Record<string, any>>(SHORTS_CONSTANTS.SETTINGS_STORAGE_KEY, {});
@@ -230,7 +233,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       const response = await fetch(API_ROUTES.SHORTS_GENERATE, {
         method: SOURCE_TEXT_POST,
         headers: { "Content-Type": SOURCE_TEXT_APPLICATION_JSON },
-        body: stringifyJson({ sourceVideoPath, aspectRatio, reframeMode, clipCount, durationMode, aiExecution: { provider: aiProvider, model: aiModel, mode: aiExecutionMode, chromeHeadless: aiChromeHeadless, projectId: SHORTS_CONSTANTS.PROJECT_ID_PREFIX } }),
+        body: stringifyJson({ ...chatPolicy, sourceVideoPath, aspectRatio, reframeMode, clipCount, durationMode, aiExecution: { provider: aiProvider, model: aiModel, mode: aiExecutionMode, chromeHeadless: aiChromeHeadless, projectId: SHORTS_CONSTANTS.PROJECT_ID_PREFIX } }),
         signal: abortControllerRef.current.signal,
       });
       clearInterval(progressTimer);
@@ -345,7 +348,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
           }></StudioHeader>
         {isAiConfigOpen && (
           <StudioFieldset disabled={isProcessing} className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_P_4_BG_SLATE_900_80)}>
-            <ChatPlanningSettingsBlock provider={aiProvider} model={aiModel} executionMode={aiExecutionMode} chromeHeadless={aiChromeHeadless} onProviderChange={setAiProvider} onModelChange={setAiModel} onExecutionModeChange={setAiExecutionMode} onChromeHeadlessChange={setAiChromeHeadless} currentLang={currentLang} />
+            <ChatPlanningSettingsBlock {...chatPolicyProps} provider={aiProvider} model={aiModel} executionMode={aiExecutionMode} chromeHeadless={aiChromeHeadless} onProviderChange={setAiProvider} onModelChange={setAiModel} onExecutionModeChange={setAiExecutionMode} onChromeHeadlessChange={setAiChromeHeadless} currentLang={currentLang} />
           </StudioFieldset>
         )}
         <div className={cn(RT_SHORTS.GRID_GRID_COLS_1_LG_GRID_COLS_3_GAP_6)}>

@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { stringifyJson } from "./jsonStringify.js";
@@ -10,7 +11,7 @@ import { motionResponseIssues, motionResponseShape, type MotionResponseIssue } f
 import { motionSpeechResponseIssues } from "./motionSpeechResponse.js";
 import { MOTION_VOICE } from "../constants/motionVoice.js";
 import { normalizeMotionChapterMetadata } from "./motionEditorialMetadata.js";
-const castSlug = (value: string): string => value.toLowerCase().normalize("NFD").replace(C.CAST_MARKS, "").replace(C.CAST_SLUG, "_").replace(C.CAST_TRIM, "");
+const castSlug = (value: string): string => value.toLowerCase().normalize(RT_MAINTENANCE.NFD).replace(C.CAST_MARKS, "").replace(C.CAST_SLUG, RT_MAINTENANCE.UNDERSCORE).replace(C.CAST_TRIM, "");
 export const motionChapterCastRepair = <T extends Record<string, any>>(row: T, cast: { key: string; name?: string; alias?: string }[]): T => {
   if (!Array.isArray(row?.cast) || row.cast.every((key: unknown) => cast.some((member) => member.key === key))) return row;
   const resolve = (key: unknown): string | undefined => {

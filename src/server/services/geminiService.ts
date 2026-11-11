@@ -1,5 +1,6 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { parseJson } from "../../lib/jsonStringify.js";
+import { CHAT_ROOM_RECOVERY, CHROME_BACKUP } from "../../constants/chromeBackup.js";
 import {
   SOURCE_TEMPLATE_AI_ROOM_COMPLETED_WITHOUT_API_FALLBACK,
   SOURCE_TEMPLATE_REQUIRED_RESPONSE_CONTRACT_RETURN_ONLY_VALID,
@@ -81,10 +82,6 @@ export const isAiProviderAvailable = async (): Promise<boolean> => {
   if (getRoomOnlyContext()) return true;
   const keys = await resolveApiKeys();
   return _.some([keys.cerebrasKey, keys.groqKey, keys.geminiKey], (key) => !_.isEmpty(key));
-};
-export const isGeminiProviderAvailable = async (): Promise<boolean> => {
-  const keys = await resolveApiKeys();
-  return !_.isEmpty(keys.geminiKey);
 };
 interface GeminiContentEstimate {
   textCharacters: number;
@@ -184,6 +181,7 @@ export const generateContentWithRetry = async (params: { contents: string | any;
         roomResponse = candidateResponse;
       } catch (error) {
         lastRoomError = error;
+        if (_.get(error, CHAT_ROOM_RECOVERY.COMPLETE) || _.get(error, CHROME_BACKUP.ERROR_FLAG)) throw error;
         const message = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
         const responseWasInvalid = _.includes([CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR, CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR], message) || _.startsWith(message, SOURCE_TEXT_CHAT_PLANNING_SCHEMA_MISMATCH);
         if (!responseWasInvalid) throw error;
@@ -194,9 +192,9 @@ export const generateContentWithRetry = async (params: { contents: string | any;
   }
   const keys = await resolveApiKeys();
   const activeApiKey = _.get(keys, SOURCE_TEXT_GEMINIKEY, "");
-  const freeProviderResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
-  if (freeProviderResult.response) return freeProviderResult.response;
   if (_.isEmpty(activeApiKey)) {
+    const freeProviderResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+    if (freeProviderResult.response) return freeProviderResult.response;
     const providerError = freeProviderResult.lastError || createAppError(SecurityMessages.MISSING_GEMINI_KEY);
     providerError.rotationLogs = freeProviderResult.rotationLogs;
     providerError.noRetry = true;
@@ -219,7 +217,7 @@ export const generateContentWithRetry = async (params: { contents: string | any;
   let activeModelForRequest = "";
   let geminiConfigForRequest: any = {};
   let lastError: any = null;
-  const rotationLogs: string[] = [...freeProviderResult.rotationLogs];
+  const rotationLogs: string[] = [];
   const contentEstimate = estimateGeminiContents(params.contents);
   let route: ReturnType<typeof routeAiTask>;
   try {
@@ -304,8 +302,13 @@ export const generateContentWithRetry = async (params: { contents: string | any;
       await delayAsync(GEMINI_REQUEST_POLICY.MODEL_SWITCH_DELAY_MS);
     }
   }
-  const finalError = lastError || createAppError(SOURCE_TEXT_GEMINI_GENERATION_FAILED_ALL);
-  finalError.rotationLogs = rotationLogs;
+  const freeFallbackResult = await generateWithFreeProviders(params, { cerebrasKey: keys.cerebrasKey, groqKey: keys.groqKey });
+  if (freeFallbackResult.response) {
+    freeFallbackResult.response.rotationLogs = [...rotationLogs, ...freeFallbackResult.rotationLogs];
+    return freeFallbackResult.response;
+  }
+  const finalError = lastError || freeFallbackResult.lastError || createAppError(SOURCE_TEXT_GEMINI_GENERATION_FAILED_ALL);
+  finalError.rotationLogs = [...rotationLogs, ...freeFallbackResult.rotationLogs];
   finalError.noRetry = true;
   logStep(SOURCE_TEXT_GEMINI_ALL_FAILED, route.models.length);
   throw finalError;

@@ -43,6 +43,7 @@ export const API_ROUTES = {
   PIPELINE_MUSIC_MIXER_SEO: "/api/pipeline/music-mixer/seo",
   PIPELINE_MUSIC_MIXER_CANCEL: "/api/pipeline/music-mixer/cancel",
   PIPELINE_MUSIC_MIXER_SELECT_ZIP_DESTINATION: "/api/pipeline/music-mixer/select-zip-destination",
+  PIPELINE_MUSIC_MIXER_STAGE_ZIP_FILE: "/api/pipeline/music-mixer/stage-zip-file",
   PIPELINE_MUSIC_MIXER_WRITE_ZIP: "/api/pipeline/music-mixer/write-zip",
   PIPELINE_MUSIC_MIXER_BUILD_ZIP: "/api/pipeline/music-mixer/build-zip",
   PIPELINE_MUSIC_THUMBNAIL: "/api/pipeline/music-thumbnail",
@@ -92,6 +93,9 @@ export const API_ROUTES = {
   VIDEO_EXPORT_SAVE_VIDEO: "/api/video-export/save-video",
   VIDEO_EXPORT_CAPCUT_CATALOG: "/api/video-export/capcut-catalog",
   VIDEO_EXPORT_CAPCUT_PROJECT: "/api/video-export/capcut-project",
+  VIDEO_EXPORT_AI_CLIPS_START: "/api/video-export/ai-clips/start",
+  VIDEO_EXPORT_AI_CLIPS_STATUS: "/api/video-export/ai-clips/status/",
+  VIDEO_EXPORT_AI_CLIPS_CANCEL: "/api/video-export/ai-clips/cancel",
   MOTION_VIDEO_ENGINE: "/api/motion-video/engine",
   MOTION_VIDEO_DEMO: "/api/motion-video/demo",
   MOTION_VIDEO_ASSET: "/api/motion-video/asset/",
@@ -99,7 +103,6 @@ export const API_ROUTES = {
   MOTION_STYLE_PREVIEW: "/api/motion-video/style-preview/",
   MOTION_VIDEO_AUDIO: "/api/motion-video/audio",
   MOTION_VIDEO_CHECK: "/api/motion-video/check",
-  MOTION_BOARD2D_SHEET: "/api/motion-video/board2d-sheet",
   MOTION_VIDEO_RENDER: "/api/motion-video/render",
   MOTION_VIDEO_STATUS: "/api/motion-video/status/",
   MOTION_VIDEO_CANCEL: "/api/motion-video/cancel",
@@ -143,6 +146,7 @@ export const EXTERNAL_URLS = {
   CHATGPT: "https://chatgpt.com/",
   CLAUDE_CHAT: "https://claude.ai/new",
   DEEPSEEK_CHAT: "https://chat.deepseek.com/",
+  META_AI_CHAT: "https://www.meta.ai/",
   AI33_VOICES: "https://api.ai33.pro/v3/voices",
   AI33_TTS: "https://api.ai33.pro/v3/text-to-speech",
   AI33_TASK: "https://api.ai33.pro/v1/task",
@@ -195,7 +199,7 @@ export const VIDEOS_DIR_NAME = "videos";
 export const API_HEADERS = { CONTENT_TYPE: "Content-Type", ACCESS_CONTROL_ALLOW_ORIGIN: "Access-Control-Allow-Origin", AI33_API_KEY: "x-ai33-api-key", GEMINI_API_KEY: "x-gemini-api-key", CEREBRAS_API_KEY: "x-cerebras-api-key", GROQ_API_KEY: "x-groq-api-key", LICENSE_KEY: "x-license-key" } as const;
 export const SERVER_ROUTES = { PROJECTS: "/projects", PROJECTS_ID: "/projects/:id", PRESETS: "/presets", PRESETS_ID: "/presets/:id", VOICES: "/voices", CAPTCHA_ALERT: "/captcha-alert", SETTINGS: "/settings", SHORTS: "/shorts", VIDEO_EXPORT: "/video-export", MOTION_VIDEO: "/motion-video" } as const;
 export const SHORTS_API_PATHS = { BASE: "/shorts", METADATA: "/metadata", GENERATE: "/generate", EXPORT_ZIP: "/export-zip", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", BUILD_ZIP: "/build-zip", STREAM_SOURCE: "/stream-source" } as const;
-export const VIDEO_EXPORT_API_PATHS = { BASE: "/video-export", SELECT_SOURCE: "/select-source", MEDIA: "/media/:token/:kind/:index", PREVIEW: "/preview", RENDER: "/render", STATUS: "/status/:jobId", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", CAPCUT_CATALOG: "/capcut-catalog", CAPCUT_PROJECT: "/capcut-project" } as const;
+export const VIDEO_EXPORT_API_PATHS = { BASE: "/video-export", SELECT_SOURCE: "/select-source", MEDIA: "/media/:token/:kind/:index", PREVIEW: "/preview", RENDER: "/render", STATUS: "/status/:jobId", CANCEL: "/cancel", SELECT_SAVE_DESTINATION: "/select-save-destination", SAVE_VIDEO: "/save-video", CAPCUT_CATALOG: "/capcut-catalog", CAPCUT_PROJECT: "/capcut-project", AI_CLIPS_START: "/ai-clips/start", AI_CLIPS_STATUS: "/ai-clips/status/:jobId", AI_CLIPS_CANCEL: "/ai-clips/cancel" } as const;
 export const MOTION_VIDEO_API_PATHS = {
   ENGINE: "/engine",
   DEMO: "/demo",
@@ -204,7 +208,6 @@ export const MOTION_VIDEO_API_PATHS = {
   STYLE_PREVIEW: "/style-preview/:id",
   AUDIO: "/audio",
   CHECK: "/check",
-  BOARD2D_SHEET: "/board2d-sheet",
   RENDER: "/render",
   STATUS: "/status/:jobId",
   CANCEL: "/cancel",

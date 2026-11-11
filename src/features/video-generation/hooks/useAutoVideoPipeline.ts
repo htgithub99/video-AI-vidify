@@ -419,6 +419,8 @@ export interface PipelineConfig {
   planningChatModel?: AiPlanningChatModel;
   planningExecutionMode?: AiPlanningExecutionMode;
   planningChromeHeadless?: boolean;
+  planningMultiRoom?: boolean;
+  planningAllowFallback?: boolean;
 }
 export interface PipelineState {
   isProcessing: boolean;
@@ -714,7 +716,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
       config.planningChatModel = resolvedAiExecution.model;
       config.planningExecutionMode = resolvedAiExecution.mode;
       config.planningChromeHeadless = resolvedAiExecution.chromeHeadless;
-      const pipelineSystemFetch = (url: string, payload: any, signal?: AbortSignal) => safeSystemFetch(url, { ...payload, aiExecution: { mode: resolvedAiExecution.mode, provider: resolvedAiExecution.provider, model: resolvedAiExecution.model, projectId: newProjectId || pipelineTargetKey, chromeHeadless: resolvedAiExecution.chromeHeadless } }, signal);
+      const pipelineSystemFetch = (url: string, payload: any, signal?: AbortSignal) => safeSystemFetch(url, { ...payload, aiExecution: { mode: resolvedAiExecution.mode, provider: resolvedAiExecution.provider, model: resolvedAiExecution.model, projectId: newProjectId || pipelineTargetKey, chromeHeadless: resolvedAiExecution.chromeHeadless, multiRoom: config.planningMultiRoom === true, allowFallback: config.planningAllowFallback === true } }, signal);
       const routeTexts = _.isEqual(config.language, ProjectLanguage.VI) ? PIPELINE_EXECUTION_ROUTE_TEXTS.vi : PIPELINE_EXECUTION_ROUTE_TEXTS.en;
       const modeLabel = _.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.RoomOnly) ? routeTexts.ROOM_ONLY : _.isEqual(resolvedAiExecution.mode, AiPlanningExecutionMode.ApiOnly) ? routeTexts.API_ONLY : routeTexts.HYBRID;
       appendLog(routeTexts.formatRoute(modeLabel, resolvedAiExecution.provider, resolvedAiExecution.model));
@@ -783,6 +785,8 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             planningChatModel: resolvedAiExecution.model,
             planningExecutionMode: resolvedAiExecution.mode,
             planningChromeHeadless: resolvedAiExecution.chromeHeadless,
+            planningMultiRoom: config.planningMultiRoom === true,
+            planningAllowFallback: config.planningAllowFallback === true,
           },
           hookConfig: {
             ...existingTargetProj.hookConfig,
@@ -826,6 +830,8 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             planningChatModel: resolvedAiExecution.model,
             planningExecutionMode: resolvedAiExecution.mode,
             planningChromeHeadless: resolvedAiExecution.chromeHeadless,
+            planningMultiRoom: config.planningMultiRoom === true,
+            planningAllowFallback: config.planningAllowFallback === true,
           },
           generationCheckpoint: { intent: runIntent, phase: SOURCE_TEXT_INITIALIZING, lastSuccessfulPhase: existingTargetProj.generationCheckpoint?.lastSuccessfulPhase, ...getGenerationCheckpointSceneProgress(existingTargetProj), updatedAt: new Date().toISOString() },
         };
@@ -871,6 +877,8 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             planningChatModel: resolvedAiExecution.model,
             planningExecutionMode: resolvedAiExecution.mode,
             planningChromeHeadless: resolvedAiExecution.chromeHeadless,
+            planningMultiRoom: config.planningMultiRoom === true,
+            planningAllowFallback: config.planningAllowFallback === true,
           },
           hookConfig: { type: isCinematicPipeline ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_STRATEGY : config.hookStrategy, duration: isCinematicPipeline ? CINEMATIC_CONFIG.PIPELINE_PROFILE.HOOK_DURATION : config.hookDuration, count: isCinematicPipeline ? SecurityConstants.ZERO : 3, positions: isCinematicPipeline ? HookPosition.Start : (config.hookPosition as HookPosition), versions: [] },
           voiceConfig: { provider: config.voiceProvider, audioType: AudioType.TTS, gender: Gender.Male, age: AgeGroup.Adult, emotion: REFACTOR_CONSTANTS.AVG_EMOTION_NORMAL, speed: config.voiceSpeed, pitch: config.voicePitch, volume: config.voiceVolume, voiceURI: config.voiceURI, voiceName: config.voiceName },
@@ -912,6 +920,8 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
             planningChatModel: resolvedAiExecution.model,
             planningExecutionMode: resolvedAiExecution.mode,
             planningChromeHeadless: resolvedAiExecution.chromeHeadless,
+            planningMultiRoom: config.planningMultiRoom === true,
+            planningAllowFallback: config.planningAllowFallback === true,
           },
           seoConfig: { numTitles: 3, numDescriptions: 1, numHashtags: 5, numTags: 10 },
           creditsUsed: 0,
@@ -1431,6 +1441,8 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
           planningChatModel: resolvedAiExecution.model,
           planningExecutionMode: resolvedAiExecution.mode,
           planningChromeHeadless: resolvedAiExecution.chromeHeadless,
+          planningMultiRoom: config.planningMultiRoom === true,
+          planningAllowFallback: config.planningAllowFallback === true,
           chromeHeadless: config.chromeHeadless,
           pipelineRunId: pipelineArtifactRunId,
           pipelineStartedAt,

@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { build } from "esbuild";
 import { chromium } from "playwright";
+import { getStaticResourcePath } from "../src/server/utils/paths.js";
 const bundle = await build({ stdin: { contents: VT.IMPORT_REACT_USESTATE_FROM_REACT_IMPORT_CREATEROOT_FROM_REACT_DO, loader: VT.TSX, resolveDir: process.cwd() }, bundle: true, define: { "import.meta": VT.EMPTY_9 }, platform: VT.BROWSER, format: VT.IIFE, write: false });
 const browser = await chromium.launch({ channel: VT.CHROME, headless: true });
 try {
@@ -138,7 +139,7 @@ try {
   await assertBusy();
   releaseAudio!();
   await ready();
-  const video = execFileSync(process.platform === VT.WIN32 ? path.resolve(VT.FFMPEG_EXE) : VT.FFMPEG, [VT.LOGLEVEL, VT.ERROR, VT.F, VT.LAVFI, VT.I, VT.COLOR_C_BLACK_S_32X32_R_10, VT.T, VT.VALUE_0_3, VT.C_V, VT.LIBVPX, VT.F, VT.WEBM, VT.PIPE_1]);
+  const video = execFileSync(process.platform === VT.WIN32 ? getStaticResourcePath(VT.FFMPEG_EXE) : VT.FFMPEG, [VT.LOGLEVEL, VT.ERROR, VT.F, VT.LAVFI, VT.I, VT.COLOR_C_BLACK_S_32X32_R_10, VT.T, VT.VALUE_0_3, VT.C_V, VT.LIBVPX, VT.F, VT.WEBM, VT.PIPE_1]);
   let releaseVideo: () => void;
   const videoGate = new Promise<void>((resolve) => {
     releaseVideo = resolve;

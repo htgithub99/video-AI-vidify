@@ -6,7 +6,8 @@ const V = X.VISUALS;
 export const POV_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | "CLOSING" | "PLAN_FIELDS" | "REVIEW" | "EXPANSION_RULE" | "HOOKS" | "DIALOGUE" | "TEXTURE" | "STYLE_BRIEF" | "CONTRACT"> = {
   DIALOGUE: { minLines: 1, skipProtagonist: true, needsSourceQuotes: false },
   TEXTURE: "1) breath, weight, cold, thirst or pain in the body at this moment; 2) hands at work on a concrete task; 3) the personal token touched or remembered; 4) a companion's habit, joke or small promise in one quoted line; 5) a count the protagonist keeps (steps, rounds, minutes); 6) what others say or shout nearby",
-  STYLE_BRIEF: "POV: every line is lived by \"you\" in the present tense: what you see, hear, smell, carry, do or are told. Short declarative sentences and fragments; feelings through the body, not adjectives. Facts you could not witness arrive as orders, shouted news, rumours, letters or one hindsight line, never as a detached explanation. Counts and distances come from the source, hedged as the source hedges them. Invented people are ordinary composites with plain names; real named people never get invented words or acts. Companions speak in short quoted lines. The token and refrain return at moments of fear.",
+  STYLE_BRIEF:
+    'POV: every line is lived by "you" in the present tense: what you see, hear, smell, carry, do or are told. Short declarative sentences and fragments; feelings through the body, not adjectives. Facts you could not witness arrive as orders, shouted news, rumours, letters or one hindsight line, never as a detached explanation. Counts and distances come from the source, hedged as the source hedges them. Invented people are ordinary composites with plain names; real named people never get invented words or acts. Companions speak in short quoted lines. The token and refrain return at moments of fear.',
   CONTRACT: {
     voice: "second person (you / b\u1ea1n), present tense, short plain sentences; feelings shown through the body and the senses; what you cannot witness reaches you as an order, news, a rumour or one hindsight line",
     opening: "your age, the exact place and moment, an ordinary task with two or three sensory details and a small plan; the change arrives only in a later line",
@@ -14,20 +15,13 @@ export const POV_RULES: Pick<MotionGenreSpec, "VOICE" | "GRAMMAR" | "OPENING" | 
     devices: "one or two personal tokens with a refrain (full at first and last use, broken or changed in between); two or three companions, each with a habit, an object and a line of their own",
     closing: "a quiet present moment held one beat longer, the token and the refrain with a new meaning; no summary of what history records",
   },
-  VOICE: {
-    frames: [],
-    maxUnits: 24,
-    detached: true,
-    detachedIssue: "this line explains from outside; anchor it in what you (bạn) see, hear, feel, do or are told right now",
-    longIssue: "shorten into two present-tense sentences the protagonist could think in the moment",
-  },
+  VOICE: { frames: [], maxUnits: 24, detached: true, detachedIssue: "this line explains from outside; anchor it in what you (bạn) see, hear, feel, do or are told right now", longIssue: "shorten into two present-tense sentences the protagonist could think in the moment" },
   GRAMMAR: {
     shots: [S.CLOSE, S.MEDIUM_CLOSE, S.MEDIUM, S.WIDE, S.INSERT, S.OVER_SHOULDER],
     mix: { [S.CLOSE]: 20, [S.MEDIUM_CLOSE]: 15, [S.MEDIUM]: 25, [S.WIDE]: 15, [S.INSERT]: 15, [S.OVER_SHOULDER]: 10 },
     visuals: [V.SCENE, V.MAP, V.TITLE],
     devices: ["personal token"],
-    rule:
-      "PICTURE GRAMMAR (pov): the narration speaks to you, the camera watches you from outside like a film. What you do, hold or feel is a medium or close beat of the protagonist (the cast member \"protagonist\") doing it, or an insert of the object in your hands seen from the side; a companion speaking or reacting is a close or over_shoulder beat; wide only when you stand inside a battlefield, a column or a landscape; the personal token gets an insert beat when it changes state; a map beat only when the front or the journey moves. Never a first-person camera through your own eyes.",
+    rule: 'PICTURE GRAMMAR (pov): the narration speaks to you, the camera watches you from outside like a film. What you do, hold or feel is a medium or close beat of the protagonist (the cast member "protagonist") doing it, or an insert of the object in your hands seen from the side; a companion speaking or reacting is a close or over_shoulder beat; wide only when you stand inside a battlefield, a column or a landscape; the personal token gets an insert beat when it changes state; a map beat only when the front or the journey moves. Never a first-person camera through your own eyes.',
     picture: "the camera watches the viewer-protagonist from outside like a film: your actions are seen on the protagonist's body, a companion's reaction is a face, an object in your hands is seen from the side, never through your own eyes",
     sample:
       '{"narration":"Bạn siết chặt quai ba lô. Tay bạn vẫn run.","shot":"insert","subject":"hai bàn tay bạn trên quai ba lô ướt mưa, nhìn ngang","visual":"scene"} {"narration":"Người lính bên cạnh nhìn bạn, không nói gì.","shot":"close","subject":"gương mặt người lính bên cạnh dưới vành mũ sắt","visual":"scene"} {"narration":"Phía trước, bãi biển dài hút tầm mắt.","shot":"wide","subject":"bãi biển, khói, hàng rào kẽm gai nhìn từ cửa tàu","visual":"scene"}',

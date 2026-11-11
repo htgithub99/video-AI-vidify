@@ -10,7 +10,7 @@ interface RoomRecord {
   onClose: () => void;
 }
 interface RoomSlot {
-  drawing: boolean;
+  group: string;
   busy: boolean;
   used: number;
   room?: RoomRecord;
@@ -25,8 +25,15 @@ interface RoomWaiter {
   reject: (reason: unknown) => void;
   stop: () => void;
 }
+export const motionRoomGroup = (workerId: string): string =>
+  (MOTION_STORY_CONFIG.SCENE_WORKER_IDS as readonly string[]).includes(workerId) ? MOTION_STORY_CONFIG.ROOM_GROUPS.SCENE : (MOTION_STORY_CONFIG.PLAN_WORKER_IDS as readonly string[]).includes(workerId) ? MOTION_STORY_CONFIG.ROOM_GROUPS.PLAN : (MOTION_STORY_CONFIG.LIGHT_WORKER_IDS as readonly string[]).includes(workerId) ? MOTION_STORY_CONFIG.ROOM_GROUPS.LIGHT : MOTION_STORY_CONFIG.ROOM_GROUPS.CONTENT;
 export class MotionAiRoomPool {
-  private readonly slots: RoomSlot[] = [...MOTION_STORY_CONFIG.SCENE_WORKER_IDS.map(() => ({ drawing: true, busy: false, used: 0 })), ...MOTION_STORY_CONFIG.WORKER_IDS.map(() => ({ drawing: false, busy: false, used: 0 }))];
+  private readonly slots: RoomSlot[] = [
+    ...MOTION_STORY_CONFIG.SCENE_WORKER_IDS.map(() => ({ group: MOTION_STORY_CONFIG.ROOM_GROUPS.SCENE, busy: false, used: 0 })),
+    ...MOTION_STORY_CONFIG.WORKER_IDS.map(() => ({ group: MOTION_STORY_CONFIG.ROOM_GROUPS.CONTENT, busy: false, used: 0 })),
+    ...MOTION_STORY_CONFIG.PLAN_WORKER_IDS.map(() => ({ group: MOTION_STORY_CONFIG.ROOM_GROUPS.PLAN, busy: false, used: 0 })),
+    ...MOTION_STORY_CONFIG.LIGHT_WORKER_IDS.map(() => ({ group: MOTION_STORY_CONFIG.ROOM_GROUPS.LIGHT, busy: false, used: 0 })),
+  ];
   private waiting: RoomWaiter[] = [];
   private clock = 0;
   constructor(private readonly closeRoom: (identity: MotionAiRoomIdentity) => Promise<void>) {}
@@ -52,8 +59,8 @@ export class MotionAiRoomPool {
   }
   private pump(): void {
     for (const waiter of [...this.waiting]) {
-      const drawing = MOTION_STORY_CONFIG.SCENE_WORKER_IDS.some((workerId) => workerId === waiter.identity.workerId);
-      const slots = this.slots.filter((slot) => slot.drawing === drawing);
+      const group = motionRoomGroup(waiter.identity.workerId);
+      const slots = this.slots.filter((slot) => slot.group === group);
       const owned = slots.find((slot) => [slot.reserved, slot.room?.identity].some((identity) => identity?.projectId === waiter.identity.projectId && identity.workerId === waiter.identity.workerId));
       const slot = owned ? (!owned.busy && !owned.closing ? owned : undefined) : slots.filter((slot) => !slot.busy && !slot.closing).sort((a, b) => Number(!!a.room) - Number(!!b.room) || a.used - b.used)[0];
       if (!slot) continue;

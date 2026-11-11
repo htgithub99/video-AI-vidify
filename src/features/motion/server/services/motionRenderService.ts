@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -11,14 +12,16 @@ import { MOTION_PRODUCTION as PRODUCTION } from "../../../../constants/motionPro
 import { MOTION_PATTERNS as MP } from "../../../../constants/motionPatterns.js";
 import { mixMotionSoundAudio } from "./motionSoundMixService.js";
 import { acquireMotionRenderBrowser } from "./motionStoryService.js";
+import { refreshMotionHtmlArtifacts } from "./html/sceneRenderer.js";
 import { MOTION_BROWSER_HANDOFF, MOTION_BROWSER_RELEASED_LOG } from "../../../../constants/browserLifecycle.js";
 import { isRemotionSpec } from "../../../../lib/motionVisual.js";
 import type { MotionRenderSpec } from "../../../../types/motionVisual.js";
 import { MOTION_VISUAL as VISUAL } from "../../../../constants/motionVisual.js";
-import { renderRemotionVideo, renderRemotionStill } from "./motionRemotionRenderService.js";
+import { motionCachedSegments, motionRemotionSegments, motionSegmentFile, pruneMotionSegments, renderMotionSegmentsToCache } from "./motionRemotionSegmentCache.js";
+import { waitMotionSegmentPrerender } from "./motionSegmentPrerender.js";
 import { validateRemotionSpec } from "../../../../lib/motionRemotion.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
-import { motionRemotionRenderConcurrency } from "../../../../lib/motionRemotionPerformance.js";
+import { motionHtmlRenderLanes, motionRemotionRenderConcurrency, motionRemotionRenderLanes } from "../../../../lib/motionRemotionPerformance.js";
 import { MOTION_REMOTION_RENDER } from "../../../../constants/motionRemotionRender.js";
 import { MOTION_SOUND_CONFIG } from "../../../../constants/motionSound.js";
 import * as MR from "../../../../constants/motionRuntime.js";
@@ -194,10 +197,12 @@ import { getFfmpegPath } from "../../../../server/services/shortsPreprocessServi
 const ABORTED = MOTION_TEXT_MOTION_RENDER_ABORTED;
 const jobs = new Map<string, MotionJobState & { controller: AbortController }>();
 let encoderCache: string[] | null = null;
-const runFfmpegCollect = (args: string[], signal?: AbortSignal): Promise<{ code: number; stderr: string }> =>
+const runFfmpegCollect = (args: string[], signal?: AbortSignal, keep?: RegExp): Promise<{ code: number; stderr: string }> =>
   new Promise((resolve, reject) => {
     const child = spawn(getFfmpegPath(), args, { windowsHide: true });
     let stderr: string = MR.MOTION_TEXT_EMPTY;
+    let partial: string = MR.MOTION_TEXT_EMPTY;
+    const kept: string[] = [];
     const onAbort = () => {
       try {
         child.kill(MOTION_TEXT_SIGKILL);
@@ -205,7 +210,12 @@ const runFfmpegCollect = (args: string[], signal?: AbortSignal): Promise<{ code:
     };
     signal?.addEventListener(MOTION_TEXT_ABORT, onAbort, { once: true });
     child.stderr.on(MOTION_TEXT_DATA, (d: Buffer) => {
-      stderr = MR.MOTION_TEMPLATE_SYMBOL_230(stderr, d.toString()).slice(-6000);
+      const chunk = d.toString();
+      stderr = MR.MOTION_TEMPLATE_SYMBOL_230(stderr, chunk).slice(-6000);
+      if (!keep) return;
+      const lines = (partial + chunk).split(MOTION_LOUDNESS.LINE_SPLIT);
+      partial = lines.pop() || MR.MOTION_TEXT_EMPTY;
+      kept.push(...lines.filter((line) => keep.test(line)));
     });
     child.on(MOTION_TEXT_ERROR, (e) => {
       signal?.removeEventListener(MOTION_TEXT_ABORT, onAbort);
@@ -214,7 +224,8 @@ const runFfmpegCollect = (args: string[], signal?: AbortSignal): Promise<{ code:
     child.on(MOTION_TEXT_CLOSE, (code) => {
       signal?.removeEventListener(MOTION_TEXT_ABORT, onAbort);
       if (signal?.aborted) reject(new Error(ABORTED));
-      else resolve({ code: code ?? 1, stderr });
+      else if (!keep) resolve({ code: code ?? 1, stderr });
+      else resolve({ code: code ?? 1, stderr: [...kept, ...[partial].filter((line) => keep.test(line)), ...stderr.split(MOTION_LOUDNESS.LINE_SPLIT).filter((line) => !keep.test(line))].join(MOTION_LOUDNESS.LINE_JOIN) });
     });
   });
 const measureLoudness = async (file: string, signal?: AbortSignal): Promise<Record<string, string> | undefined> => {
@@ -228,12 +239,12 @@ const measureLoudness = async (file: string, signal?: AbortSignal): Promise<Reco
   }
 };
 const checkOutput = async (file: string, spec: MotionRenderSpec, options: MotionRenderOptions, signal?: AbortSignal): Promise<string[]> => {
-  const { code, stderr } = await runFfmpegCollect([VALIDATION.STRICT, MOTION_TEXT_I, file, MOTION_TEXT_VF, MOTION_LOUDNESS.BLACK_FILTER, MR.MOTION_TEXT_AF, [MOTION_LOUDNESS.SILENCE_FILTER, MOTION_LOUDNESS.EBUR_FILTER].join(MOTION_LOUDNESS.CHAIN), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal);
+  const { code, stderr } = await runFfmpegCollect([VALIDATION.STRICT, MOTION_TEXT_I, file, MOTION_TEXT_VF, MOTION_LOUDNESS.BLACK_FILTER, MR.MOTION_TEXT_AF, [MOTION_LOUDNESS.SILENCE_FILTER, MOTION_LOUDNESS.EBUR_FILTER].join(MOTION_LOUDNESS.CHAIN), MOTION_TEXT_F, MOTION_LOUDNESS.NULL_FORMAT, MOTION_LOUDNESS.NULL_TARGET], signal, MOTION_LOUDNESS.KEEP_LINES);
   if (code !== 0) throw new Error(PRODUCTION.OUTPUT_INVALID);
   const qualityErrors = motionOutputQualityIssues(stderr, spec, options.speechRanges || (options.requireAudio ? spec.subtitles : undefined));
   if (qualityErrors.length) throw new Error([PRODUCTION.OUTPUT_INVALID, ...qualityErrors].join(PRODUCTION.SEPARATOR));
   const loud = [...stderr.matchAll(MOTION_LOUDNESS.EBUR_RE)].pop()?.[1],
-    black = (stderr.match(MOTION_LOUDNESS.BLACK_RE) || []).length,
+    black = [...stderr.matchAll(VALIDATION.BLACK_INTERVAL)].map((match) => MOTION_LOUDNESS.LOG.RANGE(Number(match[1]), Number(match[2]))).join(MOTION_LOUDNESS.LOG.RANGE_JOIN),
     silence = (stderr.match(MOTION_LOUDNESS.SILENCE_RE) || []).length;
   return _.compact([loud ? MOTION_LOUDNESS.LOG.LOUDNESS(loud) : undefined, black ? MOTION_LOUDNESS.LOG.BLACK(black) : undefined, silence ? MOTION_LOUDNESS.LOG.SILENCE(silence) : undefined]);
 };
@@ -444,13 +455,14 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
     let cacheDir: string | undefined;
     const silent = path.join(work, MOTION_TEXT_VIDEO_MP4);
     if (isRemotionSpec(spec)) {
+      if (spec.renderer === RT_MAINTENANCE.HTML_CANVAS) refreshMotionHtmlArtifacts(spec);
       if (options.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
       if (spec.fps !== fps || spec.aspect !== aspect) throw new Error(VISUAL.SETTINGS_CHANGED);
       duration = spec.duration;
       totalFrames = Math.ceil(duration * fps);
       encoder = MOTION_TEXT_LIBX264;
       job.encoder = encoder;
-      job.browser = VISUAL.MODES.REMOTION;
+      job.browser = spec.renderer === RT_MAINTENANCE.HTML_CANVAS ? RT_MAINTENANCE.HTML_CANVAS_CHROME : VISUAL.MODES.REMOTION;
       job.framesTotal = totalFrames;
       job.workers = motionRemotionRenderConcurrency(os.cpus().length, os.freemem());
       job.status = MotionJobStatus.RENDERING;
@@ -464,27 +476,45 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       }
       const renderStarted = Date.now();
       let loggedPercent = 0;
-      await renderRemotionVideo(spec, silent, {
-        width,
-        height,
-        crf: preset.crf,
-        log: (line) => pushLog(job, line),
-        concurrency: job.workers,
+      const encoding = { width, height, crf: preset.crf };
+      const segments = motionRemotionSegments(spec, encoding);
+      pruneMotionSegments();
+      await waitMotionSegmentPrerender(options.editorialSessionId, signal);
+      const cached = await motionCachedSegments(spec, segments, encoding, signal);
+      const fileOf = motionSegmentFile;
+      const frames = (segment: (typeof segments)[number]) => segment.end - segment.start + 1;
+      const todo = segments.filter((segment) => !cached.has(segment.key));
+      const plan = (spec.renderer === RT_MAINTENANCE.HTML_CANVAS && spec.scenes.every((scene) => scene.renderer === RT_MAINTENANCE.HTML_CANVAS) ? motionHtmlRenderLanes : motionRemotionRenderLanes)(os.cpus().length, os.freemem(), todo.length);
+      job.workers = plan.lanes * plan.perLane;
+      pushLog(job, MOTION_REMOTION_RENDER.SEGMENTS(segments.length, segments.length - todo.length, plan.lanes, plan.perLane));
+      const reused = segments.filter((segment) => cached.has(segment.key)).reduce((sum, segment) => sum + frames(segment), 0);
+      let rendered = 0;
+      const report = () => {
+        const done = reused + rendered;
+        job.framesDone = done;
+        job.progress = Math.min(0.94, (done / totalFrames) * 0.94);
+        const seconds = (Date.now() - renderStarted) / 1000;
+        job.fpsRender = seconds > 0 ? (done - reused) / seconds : 0;
+        job.etaSeconds = job.fpsRender ? Math.max(0, (totalFrames - done) / job.fpsRender) : undefined;
+        const percent = Math.floor(((done / totalFrames) * 100) / MOTION_REMOTION_RENDER.PROGRESS_STEP) * MOTION_REMOTION_RENDER.PROGRESS_STEP;
+        if (percent > loggedPercent && percent < 100) {
+          loggedPercent = percent;
+          pushLog(job, MOTION_REMOTION_RENDER.PROGRESS(percent, job.fpsRender));
+        }
+        persistRenderJob(job);
+      };
+      await renderMotionSegmentsToCache(spec, todo, encoding, {
         signal,
-        onProgress: (frames, total) => {
-          job.framesDone = frames;
-          job.progress = Math.min(0.94, (frames / total) * 0.94);
-          const seconds = (Date.now() - renderStarted) / 1000;
-          job.fpsRender = seconds > 0 ? frames / seconds : 0;
-          job.etaSeconds = job.fpsRender ? Math.max(0, (total - frames) / job.fpsRender) : undefined;
-          const percent = Math.floor((frames / total) * 100 / MOTION_REMOTION_RENDER.PROGRESS_STEP) * MOTION_REMOTION_RENDER.PROGRESS_STEP;
-          if (percent > loggedPercent && percent < 100) {
-            loggedPercent = percent;
-            pushLog(job, MOTION_REMOTION_RENDER.PROGRESS(percent, job.fpsRender));
-          }
-          persistRenderJob(job);
+        lanes: plan,
+        log: (line) => pushLog(job, line),
+        onFrames: (value) => {
+          rendered = value;
+          report();
         },
       });
+      const list = path.join(work, MOTION_TEXT_PARTS_TXT);
+      fs.writeFileSync(list, _.map(segments, (segment) => MOTION_TEMPLATE_FILE(String(fileOf(segment).replace(MP.BACKSLASH, MOTION_TEXT_SYMBOL_16).replace(MP.SINGLE_QUOTE, MOTION_TEXT_SYMBOL_38)))).join(MOTION_TEXT_SYMBOL_27));
+      await ffmpegOrThrow([MOTION_TEXT_F, MOTION_TEXT_CONCAT, MOTION_TEXT_SAFE, MOTION_TEXT_0, MOTION_TEXT_I, list, MOTION_TEXT_C, MOTION_TEXT_COPY, silent], signal);
       pushLog(job, MOTION_REMOTION_RENDER.COMPLETE((Date.now() - renderStarted) / 1000));
       await validateMotionMedia(silent, { seconds: duration, width, height, fps, frames: totalFrames }, signal);
       job.status = MotionJobStatus.ENCODING;
@@ -772,13 +802,7 @@ export const cancelMotionJob = (id?: string): boolean => {
 export const checkMotionSpec = async (spec: MotionRenderSpec): Promise<{ duration: number; errors: { t: number; shot: string; error: string }[] }> => {
   if (isRemotionSpec(spec)) {
     validateRemotionSpec(spec);
-    const work = getMotionWorkDirectory(randomUUID());
-    try {
-      for (const frame of [...new Set([0, Math.floor((spec.duration * spec.fps) / 2), Math.ceil(spec.duration * spec.fps) - 1])]) await renderRemotionStill(spec, path.join(work, `${frame}${RT_SERVER.PNG_B98B80}`), frame);
-      return { duration: spec.duration, errors: [] };
-    } finally {
-      await fs.promises.rm(work, { recursive: true, force: true });
-    }
+    return { duration: spec.duration, errors: [] };
   }
   const html = buildMotionRenderHtml(spec);
   const { browser } = await launchBrowser();

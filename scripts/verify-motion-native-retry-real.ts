@@ -1,0 +1,44 @@
+import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { chromium } from "playwright";
+import { findNativeChrome } from "../src/server/services/nativeProxyBrowser.ts";
+import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../src/constants/cinematicConstants.ts";
+import { clickCurrentChatRetry } from "../src/server/services/chatRoomRecovery.ts";
+import { normalizeFirstSceneComposition } from "../src/lib/motionSceneComposition.ts";
+import { compositionRepairDraft } from "../src/lib/motionCompositionRepair.ts";
+import { selectGeminiThinkingModel } from "../src/server/services/geminiModelService.ts";
+const out = path.resolve("scratch/motion-real-recovery-20261105");
+process.env.VIDIFY_STORAGE_DIR = path.join(out, "native-retry-storage");
+delete process.env.APP_DATA_DIR;
+const { getChatResponseSnapshots, waitForStableResponse } = await import("../src/server/services/chatUiPlanningService.ts");
+const source = JSON.parse(await fs.readFile(path.join(out, "gemini-live-results.json"), "utf8"));
+assert.equal(source.receivedValidComposition, true);
+const manifest = JSON.parse(await fs.readFile(path.join(out, "baseline/manifest.json"), "utf8"));
+const script = JSON.parse(await fs.readFile(path.join(out, `baseline/output/motion-video/story-jobs/${manifest.jobId}.json`), "utf8")).job.result;
+const scene: any = Object.values(script.gen.remotion.scenes).flat().find((item: any) => item.id === "c3_event_320edfaa76a9:1");
+const context = await chromium.launchPersistentContext("C:/chrome_debug_profile", { executablePath: findNativeChrome(), headless: false, args: ["--profile-directory=Profile 2"] });
+const report: any = { at: new Date().toISOString(), sourceRequestId: source.requestId, url: source.url, liveGemini: true, sentUserMessages: 0 };
+try {
+  const page = await context.newPage();
+  await page.goto(source.url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.locator("model-response .model-response-text").last().waitFor({ state: "visible", timeout: 60000 });
+  const signal = AbortSignal.timeout(240000);
+  await selectGeminiThinkingModel(page, "gemini-flash::medium", signal);
+  const snapshots = await getChatResponseSnapshots(page, C.GEMINI_RESPONSE_SELECTOR, "motion_remotion_composition");
+  const userMessages = await page.locator("user-query").count();
+  const clicked = await clickCurrentChatRetry(page, signal);
+  assert.equal(clicked, true, "The production helper must activate actual Gemini regeneration");
+  report.nativeActionClicked = true;
+  const text = await waitForStableResponse(page, C.GEMINI_RESPONSE_SELECTOR, C.GEMINI_BUSY_SELECTOR, snapshots.length, [], snapshots, undefined, "motion_remotion_composition", source.requestId, signal, undefined, undefined, true);
+  assert.equal(await page.locator("user-query").count(), userMessages, "Native Retry must not append another user message");
+  const raw = JSON.parse(text);
+  const built = normalizeFirstSceneComposition(compositionRepairDraft(raw), "native-qa", "native-qa", scene.purpose, scene.nodes, new Set(scene.nodes.map((node: any) => node.entityId).filter(Boolean)), 1280, 720);
+  assert.ok(built.asset.svg);
+  await fs.writeFile(path.join(out, "native-live-response.json"), text);
+  await page.screenshot({ path: path.join(out, "native-retry-live-result.png") });
+  report.receivedNewValidComposition = true;
+  report.chromeVersion = context.browser()?.version();
+  process.stdout.write(String(JSON.stringify(report)) + "\n");
+} catch (error) { report.error = String(error); process.exitCode = 1; process.stderr.write(String(report.error) + "\n"); }
+finally { await fs.writeFile(path.join(out, "native-retry-live-results.json"), JSON.stringify(report, null, 2)); await context.close(); }

@@ -1,4 +1,4 @@
-import { forwardRef, type HTMLAttributes, type FieldsetHTMLAttributes, type ButtonHTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState, type ChangeEvent, type FocusEvent, type HTMLAttributes, type FieldsetHTMLAttributes, type ButtonHTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, Disc3, SlidersHorizontal, Sparkles, type LucideIcon } from "lucide-react";
 import { STUDIO_UI as S } from "../../constants/studioTheme.js";
 import { cn } from "../../lib/utils.js";
@@ -20,9 +20,47 @@ export const StudioPage = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
 export const StudioCanvas = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CANVAS, className)} />);
 export const StudioCard = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div {...props} ref={ref} className={cn(S.CARD, className)} />);
 export const StudioFieldset = forwardRef<HTMLFieldSetElement, FieldsetHTMLAttributes<HTMLFieldSetElement>>(({ className, ...props }, ref) => <fieldset {...props} ref={ref} className={cn(S.FIELDSET, className)} />);
-export const StudioInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => <input {...props} ref={ref} className={studioControlClassName(cn(S.INPUT, className))} />);
+type Deferred = { deferred?: boolean };
+const useDeferredValue = <E extends HTMLInputElement | HTMLTextAreaElement>(deferred: boolean | undefined, value: unknown, onChange?: (event: ChangeEvent<E>) => void, onBlur?: (event: FocusEvent<E>) => void) => {
+  const [local, setLocal] = useState(value);
+  const pending = useRef<ChangeEvent<E> | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const latest = useRef(onChange);
+  latest.current = onChange;
+  const flush = useCallback(() => {
+    clearTimeout(timer.current);
+    const event = pending.current;
+    pending.current = null;
+    if (event) latest.current?.(event);
+  }, []);
+  useEffect(() => {
+    if (!pending.current) setLocal(value);
+  }, [value]);
+  useEffect(() => flush, [flush]);
+  if (!deferred) return { value, onChange, onBlur };
+  return {
+    value: local as typeof value,
+    onChange: (event: ChangeEvent<E>) => {
+      setLocal(event.target.value);
+      pending.current = event;
+      clearTimeout(timer.current);
+      timer.current = setTimeout(flush, S.DEFER_MS);
+    },
+    onBlur: (event: FocusEvent<E>) => {
+      flush();
+      onBlur?.(event);
+    },
+  };
+};
+export const StudioInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & Deferred>(({ className, deferred, value, onChange, onBlur, ...props }, ref) => {
+  const field = useDeferredValue<HTMLInputElement>(deferred, value, onChange, onBlur);
+  return <input {...props} value={field.value as InputHTMLAttributes<HTMLInputElement>["value"]} onChange={field.onChange} onBlur={field.onBlur} ref={ref} className={studioControlClassName(cn(S.INPUT, className))} />;
+});
 export const StudioSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(({ className, ...props }, ref) => <select {...props} ref={ref} className={studioControlClassName(cn(S.SELECT, className))} />);
-export const StudioTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(({ className, ...props }, ref) => <textarea {...props} ref={ref} className={studioControlClassName(cn(S.TEXTAREA, className))} />);
+export const StudioTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & Deferred>(({ className, deferred, value, onChange, onBlur, ...props }, ref) => {
+  const field = useDeferredValue<HTMLTextAreaElement>(deferred, value, onChange, onBlur);
+  return <textarea {...props} value={field.value as TextareaHTMLAttributes<HTMLTextAreaElement>["value"]} onChange={field.onChange} onBlur={field.onBlur} ref={ref} className={studioControlClassName(cn(S.TEXTAREA, className))} />;
+});
 export const StudioSegmentedControl = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => <div role={S.GROUP_ROLE} {...props} ref={ref} className={cn(S.SEGMENTED, className)} />);
 export const StudioSegmentButton = ({ selected, className, ...props }: Omit<IBaseButtonProps, "variant"> & { selected: boolean }) => <Button {...props} type={props.type ?? S.BUTTON_TYPE} variant={S.UNSTYLED} aria-pressed={selected} className={cn(S.SEGMENT, className)} />;
 export const StudioIcon = ({ icon: Icon }: { icon: LucideIcon }) => (

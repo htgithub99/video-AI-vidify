@@ -12,6 +12,28 @@ export const waitMotionProviderCooldown = async (remaining: () => number, wait: 
     await wait(Math.min(ms, R.WAIT_LOG_MS));
   }
 };
+export const waitMotionProviderReady = async (remaining: () => number, wait: (ms: number) => Promise<void>, probe: () => Promise<void>, events: { waiting: (ms: number) => void; checking: (round: number) => void; ready: () => void; notReady: (error: unknown) => void }, signal?: AbortSignal): Promise<boolean> => {
+  let waited = false;
+  for (let round = 0; ; round++) {
+    signal?.throwIfAborted();
+    const ms = remaining();
+    if (ms <= 0) return waited;
+    waited = true;
+    const pause = Math.min(ms, R.PROBE_INTERVALS_MS[Math.min(round, R.PROBE_INTERVALS_MS.length - 1)]);
+    events.waiting(pause);
+    await wait(pause);
+    if (remaining() <= 0) return true;
+    events.checking(round + 1);
+    try {
+      await probe();
+      events.ready();
+      return true;
+    } catch (error) {
+      signal?.throwIfAborted();
+      events.notReady(error);
+    }
+  }
+};
 export class MotionProviderRecovery {
   private entries = new Map<string, Recovery>();
   private current(key: string): Recovery | undefined {

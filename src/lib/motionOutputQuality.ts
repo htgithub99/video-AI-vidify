@@ -34,7 +34,7 @@ export const motionOutputQualityIssues = (stderr: string, spec: MotionRenderSpec
       }),
   ]);
   const errors: string[] = [];
-  for (const match of stderr.matchAll(V.BLACK_INTERVAL)) {
+  for (const match of remotion ? [] : stderr.matchAll(V.BLACK_INTERVAL)) {
     const range = { start: Number(match[1]), end: Number(match[2]) };
     const allowed = intentionalBlack.reduce((total, intentional) => total + overlap(range, intentional), 0);
     if (range.end - range.start - allowed >= V.UNEXPECTED_BLACK_SECONDS) errors.push(V.QUALITY_BLACK(range.start, range.end));

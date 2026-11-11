@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
@@ -5,8 +6,12 @@ import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
 import { normalizeMotionVector } from "./motionVectorAsset.js";
 import { normalizeMotionSceneDesign } from "./motionSceneDesign.js";
-import { motionActorTracks } from "./motionActorTracks.js";
+import { normalizeSceneRenderIds } from "./motionSceneRenderIds.js";
+import { motionActorTracks, motionAnimationTracks } from "./motionActorTracks.js";
 import { MOTION_SCENE_DESIGN as D } from "../constants/motionSceneDesign.js";
+import { MOTION_CLIP } from "../constants/motionClip.js";
+import { MOTION_CLIP_DIRECTOR } from "../constants/motionClipDirector.js";
+import { motionClipFrameSvg } from "./motionClipCompiler.js";
 import type { MotionSceneAnimation, MotionSceneComposition, MotionSceneLayer, MotionRemotionNode, MotionRenderBehavior, MotionVectorAsset, MotionRemotionScene } from "../types/motionVisual.js";
 export const motionCompositionMissingChannels = (scene: MotionRemotionScene, behavior?: MotionRenderBehavior): ("actor" | "effect")[] =>
   ([RT_CORE.ACTOR, RT_CORE.EFFECT] as const).filter(
@@ -24,7 +29,8 @@ export const compositionElements = (svg: string): Map<string, Element> => {
     }
     const attrs = attributes(match[0]);
     if (attrs.id) {
-      if (!C.ID.test(attrs.id) || elements.has(attrs.id)) throw new Error(C.ERROR(attrs.id, C.IDS));
+      if (!C.ID.test(attrs.id)) throw new Error(C.ERROR(attrs.id, C.INVALID_ID));
+      if (elements.has(attrs.id)) throw new Error(C.ERROR(attrs.id, C.DUPLICATE_ID));
       elements.set(attrs.id, { tag: match[2], attributes: attrs, ancestors: stack.flatMap((entry) => (entry.id ? [entry.id] : [])), lineage: [...stack, { id: attrs.id, transform: attrs.transform }] });
     }
     if (!/\/\s*>$/.test(match[0])) stack.push({ id: attrs.id, transform: attrs.transform });
@@ -67,7 +73,8 @@ export const validateSceneComposition = (composition: MotionSceneComposition, as
   if (composition.design) normalizeMotionSceneDesign(composition.design, nodes);
   const ids = new Set<string>();
   for (const layer of composition.layers) {
-    const anonymous = layer?.anonymous === true && !layer.entityId && nodes.some((node) => node.id === layer.id && node.kind === RT_SHARED.CHARACTER && node.anonymous === true);
+    const sourceNode = nodes.find((node) => node.id === layer?.id);
+    const anonymous = layer?.anonymous === true && !layer.entityId && ((sourceNode?.kind === RT_SHARED.CHARACTER && sourceNode.anonymous === true) || (composition.animationSource === RT_MAINTENANCE.AI_COMPLETE && !sourceNode?.entityId));
     if (layer?.id && elements.get(layer.id)?.tag !== RT_CORE.G) throw new Error(C.ERROR(layer.id, C.SVG_GROUP_MISSING));
     if (!layer || !C.ID.test(layer.id) || ids.has(layer.id) || elements.get(layer.id)?.tag !== RT_CORE.G || !(C.KINDS as readonly string[]).includes(layer.kind) || (layer.kind === RT_SHARED.CHARACTER && !anonymous && (!layer.entityId || (cast && !cast.has(layer.entityId))))) throw new Error(C.ERROR(layer?.id || RT_CORE.LAYERS, C.IDS));
     ids.add(layer.id);
@@ -76,7 +83,7 @@ export const validateSceneComposition = (composition: MotionSceneComposition, as
   const missing = nodes.filter((node) => node.kind !== RT_SHARED.LABEL && !composition.layers.some((layer) => layer.id === node.id && (layer.kind === node.kind || (node.kind === RT_SHARED.PROP && layer.kind === RT_CORE.EFFECT)) && (node.kind !== RT_SHARED.CHARACTER || layer.entityId === node.entityId)));
   if (missing.length && !composition.unchecked) throw new Error(C.MISSING(missing.map((node) => node.id)));
   const animated = new Set<string>();
-  for (const animation of composition.animations) {
+  for (const animation of motionAnimationTracks(composition.animations)) {
     const element = elements.get(animation.target),
       layer = owner(animation.target, elements, composition.layers);
     const key = `${animation.target}${RT_SHARED.SYMBOL_E7AC07}${animation.attribute}`;
@@ -102,10 +109,16 @@ export const validateSceneComposition = (composition: MotionSceneComposition, as
       if (!Number.isFinite(frame.at) || frame.at <= previous || frame.at > C.MAX_SECONDS || !valid || structure(frame.value) !== structure(first) || numbers(frame.value).some((n) => !Number.isFinite(n) || Math.abs(n) > 32768)) throw new Error(C.ERROR(animation.target, C.MOTION));
       previous = frame.at;
     }
-    if (animation.keyframes[0].at !== 0 || (animation.attribute === RT_CORE.D && element.tag !== RT_CORE.PATH) || (animation.period !== undefined && (!Number.isFinite(animation.period) || animation.period < 0.2 || animation.period > C.MAX_SECONDS || animation.period < previous || animation.keyframes.at(-1)!.value !== first))) throw new Error(C.ERROR(animation.target, C.MOTION));
+    if (animation.keyframes[0].at !== 0) throw new Error(C.ERROR(animation.target, C.MOTION_START));
+    if (animation.attribute === RT_CORE.D && element.tag !== RT_CORE.PATH) throw new Error(C.ERROR(animation.target, C.MOTION_PATH));
+    if (animation.period !== undefined) {
+      if (!Number.isFinite(animation.period) || animation.period < 0.2 || animation.period > C.MAX_SECONDS || animation.period < previous) throw new Error(C.ERROR(animation.target, C.MOTION_PERIOD));
+      if (animation.keyframes.at(-1)!.value !== first) throw new Error(C.ERROR(animation.target, C.MOTION_LOOP));
+    }
   }
 };
-export const normalizeSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number) => {
+export const normalizeSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number, complete = false) => {
+  raw = normalizeSceneRenderIds(raw, nodes);
   const asset = normalizeMotionVector(raw?.svg, key, inputKey, description, true);
   const viewBox = asset.svg
     .match(/\bviewBox\s*=\s*["']([^"']+)["']/)?.[1]
@@ -115,12 +128,34 @@ export const normalizeSceneComposition = (raw: any, key: string, inputKey: strin
   if (!viewBox || viewBox[0] !== 0 || viewBox[1] !== 0 || asset.width !== width || asset.height !== height) throw new Error(C.VIEWBOX);
   const elements = compositionElements(asset.svg);
   const required = new Set(nodes.filter((node) => node.kind !== RT_SHARED.LABEL).map((node) => node.id));
-  const layers = Array.isArray(raw?.layers) ? raw.layers.filter((layer: MotionSceneLayer) => !layer || typeof layer.id !== "string" || required.has(layer.id) || elements.has(layer.id)) : raw?.layers;
-  const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, layers, animations: raw?.animations || [], ...(raw?.design ? { design: normalizeMotionSceneDesign(raw.design, nodes, { width, height }) } : {}), ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
+  const layers =
+    complete && Array.isArray(raw?.layers)
+      ? raw.layers.map((layer: MotionSceneLayer) => {
+          const source = nodes.find((node) => node.id === layer?.id);
+          if (source?.kind === RT_MAINTENANCE.PROP && layer.kind === RT_MAINTENANCE.CHARACTER) return { ...layer, kind: RT_MAINTENANCE.PROP, entityId: undefined, anonymous: undefined };
+          return source?.kind === RT_MAINTENANCE.CHARACTER && layer.kind === RT_MAINTENANCE.CHARACTER ? { ...layer, entityId: source.entityId, anonymous: !source.entityId && source.anonymous === true } : layer;
+        })
+      : complete
+        ? raw?.layers
+        : Array.isArray(raw?.layers)
+          ? raw.layers.filter((layer: MotionSceneLayer) => !layer || typeof layer.id !== "string" || required.has(layer.id) || elements.has(layer.id))
+          : raw?.layers;
+  if (complete && !Array.isArray(raw?.animations)) throw new Error(C.ERROR(RT_MAINTENANCE.ANIMATIONS, C.INVALID));
+  const composition: MotionSceneComposition = {
+    revision: C.REVISION,
+    assetKey: key,
+    inputKey,
+    ...(complete ? { animationSource: RT_MAINTENANCE.AI_COMPLETE, unchecked: true } : {}),
+    layers,
+    animations: raw?.animations || [],
+    ...(raw?.design ? { design: normalizeMotionSceneDesign(raw.design, nodes, { width, height }) } : {}),
+    ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}),
+  };
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
 };
 export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: string, description: string, nodes: MotionRemotionNode[], cast: Set<string>, width: number, height: number) => {
+  raw = normalizeSceneRenderIds(raw, nodes);
   let asset = normalizeMotionVector(raw?.svg, key, inputKey, description, true);
   if (asset.width !== width || asset.height !== height || !/^0[\s,]+0[\s,]/.test(asset.svg.match(/\bviewBox\s*=\s*["']([^"']+)["']/)?.[1]?.trim() || "")) {
     const fitted = asset.svg.replace(/^<svg\b[^>]*>/, (root) => `${root.replace(/\s(?:width|height|x|y|preserveAspectRatio)\s*=\s*(?:"[^"]*"|'[^']*')/g, "").slice(0, -1)}${RUNTIME_VALUES.WIDTH_100_HEIGHT_100_X_0_Y_0_PRESERVEASPECTRATIO_XMIDYMID_MEET_0F54C243}`);
@@ -139,9 +174,9 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
       kind: layer.kind,
       ...(layer.kind === RUNTIME_VALUES.CHARACTER_4BCEF3DE ? (anonymous ? { anonymous: true } : { entityId: layer.entityId }) : {}),
       ...(typeof layer.description === "string" ? { description: layer.description.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
-      ...(layer.kind === "character" && typeof layer.appearance === "string" ? { appearance: layer.appearance.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
-      ...(layer.kind === "effect" && ["rain", "smoke", "steam", "flame", "fog", "sway", "highlight", "wind", "water"].includes(layer.effectKind) ? { effectKind: layer.effectKind } : {}),
-      ...(layer.kind === "effect" && typeof layer.sourceId === "string" && C.ID.test(layer.sourceId) ? { sourceId: layer.sourceId } : {}),
+      ...(layer.kind === RT_MAINTENANCE.CHARACTER && typeof layer.appearance === "string" ? { appearance: layer.appearance.slice(0, C.LAYER_DESCRIPTION_LIMIT) } : {}),
+      ...(layer.kind === RT_MAINTENANCE.EFFECT && ([RT_MAINTENANCE.RAIN, RT_MAINTENANCE.SMOKE, RT_MAINTENANCE.STEAM, RT_MAINTENANCE.FLAME, RT_MAINTENANCE.FOG, RT_MAINTENANCE.SWAY, RT_MAINTENANCE.HIGHLIGHT, RT_MAINTENANCE.WIND, RT_MAINTENANCE.WATER] as string[]).includes(layer.effectKind) ? { effectKind: layer.effectKind } : {}),
+      ...(layer.kind === RT_MAINTENANCE.EFFECT && typeof layer.sourceId === "string" && C.ID.test(layer.sourceId) ? { sourceId: layer.sourceId } : {}),
     });
   }
   const composition: MotionSceneComposition = { revision: C.REVISION, assetKey: key, inputKey, unchecked: true, layers, animations: [], ...(typeof raw?.continuityNotes === "string" ? { continuityNotes: raw.continuityNotes.slice(0, C.CONTINUITY_TEXT_LIMIT) } : {}) };
@@ -161,7 +196,6 @@ export const normalizeFirstSceneComposition = (raw: any, key: string, inputKey: 
   validateSceneComposition(composition, asset, nodes, cast);
   return { asset, composition };
 };
-export const failedSceneComposition = (key: string, inputKey: string, width: number, height: number) => normalizeFirstSceneComposition({ svg: C.PLACEHOLDER_SVG(width, height) }, key, inputKey, C.PLACEHOLDER, [], new Set(), width, height);
 export const mergeSceneCompositionDraft = (previous: unknown, raw: unknown): Record<string, unknown> => {
   const merged: Record<string, any> = { ...(previous && typeof previous === "object" && !Array.isArray(previous) ? previous : {}), ...(raw && typeof raw === "object" && !Array.isArray(raw) ? Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== undefined)) : {}) };
   if (merged.groupPatches !== undefined) {
@@ -236,16 +270,25 @@ const compositionFrameStep = (composition: MotionSceneComposition, tracks: Motio
   }
   return fine ? C.FRAME_STEP.FINE : C.FRAME_STEP.LOOP;
 };
-export const motionCompositionFrameTime = (composition: MotionSceneComposition, height: number, seconds: number): number => {
-  const step = compositionFrameStep(composition, motionActorTracks(composition, height));
-  return Math.round(seconds / step) * step;
+export const motionAuthoredTime = (composition: MotionSceneComposition, seconds: number, sceneSeconds?: number): number => (composition.animationSource === RT_MAINTENANCE.AI_COMPLETE && Number.isFinite(composition.duration) && composition.duration! > 0 && Number.isFinite(sceneSeconds) && sceneSeconds! > 0 ? (seconds * composition.duration!) / sceneSeconds! : seconds);
+export const motionCompositionDirected = (composition: MotionSceneComposition): boolean => composition.motion?.revision === MOTION_CLIP_DIRECTOR.REVISION && Array.isArray(composition.motion.clips);
+const speechTracks = new WeakMap<MotionSceneComposition, MotionSceneAnimation[]>();
+const directedTracks = (composition: MotionSceneComposition, height: number): MotionSceneAnimation[] => {
+  let known = speechTracks.get(composition);
+  if (!known) speechTracks.set(composition, (known = motionActorTracks(composition, height).filter((track) => track.channel === RT_CORE.SPEECH)));
+  return known;
 };
-export const compositionFrameSvg = (asset: MotionVectorAsset, composition: MotionSceneComposition, seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>, _profile?: import("../types/motionVisual.js").MotionRemotionProfile): string => {
+export const compositionFrameSvg = (asset: MotionVectorAsset, composition: MotionSceneComposition, seconds: number, behavior: MotionRenderBehavior, speakers: ReadonlySet<string>, _profile?: import("../types/motionVisual.js").MotionRemotionProfile, sceneSeconds?: number): string => {
   if (behavior.actors === RT_SHARED.FIXED) return asset.svg;
+  if (motionCompositionDirected(composition)) {
+    const speech = directedTracks(composition, asset.height);
+    const mouths = speech.length && speakers.size ? compositionFrameSvgAt(asset, composition, speech, Math.round(seconds / C.FRAME_STEP.FINE) * C.FRAME_STEP.FINE, behavior, speakers) : asset.svg;
+    return motionClipFrameSvg(composition.motion!, asset.svg, seconds, sceneSeconds ?? composition.motion!.duration ?? MOTION_CLIP.TRAVEL_SECONDS, mouths, behavior.sceneEffects !== RT_SHARED.OFF);
+  }
   const tracks = motionActorTracks(composition, asset.height);
   if (!tracks.length) return asset.svg;
   const step = compositionFrameStep(composition, tracks);
-  const time = Math.round(seconds / step) * step;
+  const time = composition.animationSource === RT_MAINTENANCE.AI_COMPLETE ? motionAuthoredTime(composition, seconds, sceneSeconds) : Math.round(seconds / step) * step;
   const cacheKey = [time.toFixed(4), behavior.sceneEffects, [...speakers].sort().join(RT_SHARED.SYMBOL_D03502)].join(RT_SHARED.SYMBOL_01BA47);
   let cached = frameCache.get(composition);
   if (!cached) {

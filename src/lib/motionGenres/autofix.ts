@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import _ from "lodash";
 import { MOTION_GENRE_AUTOFIX as A } from "../../constants/motionGenreAutofix.js";
 import { MOTION_GENRE_VOCABULARY as X } from "../../constants/motionGenres/vocabulary.js";
@@ -36,7 +37,7 @@ export const motionSplitReportedSpeech = (beat: MotionBeat, analysis: Pick<Motio
     .sort((a, b) => b.at - a.at)[0];
   if (!speaker) return undefined;
   const base = beat.utterances?.[0];
-  const line = (index: number, role: MotionUtterance["role"], who: string, text: string): MotionUtterance => ({ id: `${beat.id}_${index}`, speaker: who, role, text, emotion: base?.emotion || A.SPEECH.NEUTRAL, speed: base?.speed ?? A.SPEECH.SPEED, pauseBefore: base?.pauseBefore ?? 0, pauseAfter: base?.pauseAfter ?? 0, emphasis: [] });
+  const line = (index: number, role: MotionUtterance["role"], who: string, text: string): MotionUtterance => ({ id: `${beat.id}${RT_MAINTENANCE.UNDERSCORE}${index}`, speaker: who, role, text, emotion: base?.emotion || A.SPEECH.NEUTRAL, speed: base?.speed ?? A.SPEECH.SPEED, pauseBefore: base?.pauseBefore ?? 0, pauseAfter: base?.pauseAfter ?? 0, emphasis: [] });
   const utterances = [line(1, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.before.trim()), line(2, A.SPEECH.DIALOGUE, speaker.key, quote.trim()), ...(groups.after.trim() ? [line(3, A.SPEECH.NARRATION, A.SPEECH.NARRATOR, groups.after.trim())] : [])];
   return { ...beat, utterances, cast: (beat.cast || []).includes(speaker.key) ? beat.cast : [...(beat.cast || []), speaker.key] };
 };
@@ -89,8 +90,8 @@ export const motionGenreShotMix = (beats: MotionBeat[], genre: unknown): string 
   const total = Math.max(1, beats.length);
   const counts = _.countBy(beats, (beat) => (beat.visual && beat.visual !== X.VISUALS.SCENE ? beat.visual : beat.shot || S.MEDIUM));
   return Object.keys(spec.GRAMMAR.mix)
-    .map((key) => `${key} ${Math.round(((counts[key] || 0) / total) * 100)}%/${spec.GRAMMAR.mix[key]}%`)
-    .join(", ");
+    .map((key) => `${key}${RT_MAINTENANCE.SPACE}${Math.round(((counts[key] || 0) / total) * 100)}${RT_MAINTENANCE.PERCENT_SLASH}${spec.GRAMMAR.mix[key]}${RT_MAINTENANCE.PERCENT}`)
+    .join(RT_MAINTENANCE.COMMA_SPACE);
 };
 export const motionGenreShotMixOff = (beats: MotionBeat[], genre: unknown): boolean => {
   const spec = motionGenreSpec(genre);
@@ -100,7 +101,7 @@ export const motionGenreShotMixOff = (beats: MotionBeat[], genre: unknown): bool
 };
 export const motionGenreWritingPlan = (analysis: Pick<MotionStoryAnalysis, "videoGenre" | "writingPlan">): MotionWritingPlan | undefined => {
   if (!analysis.writingPlan) return undefined;
-  if (motionVideoGenre(analysis.videoGenre) === "verdict") return analysis.writingPlan;
+  if (motionVideoGenre(analysis.videoGenre) === RT_MAINTENANCE.VERDICT) return analysis.writingPlan;
   return undefined;
 };
 export const motionGenreChapterWriting = (analysis: Pick<MotionStoryAnalysis, "videoGenre">, writing?: MotionWritingChapter): MotionWritingChapter | undefined => {

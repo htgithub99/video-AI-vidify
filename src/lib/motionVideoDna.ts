@@ -108,10 +108,8 @@ export const normalizeVideoDna = (value: any, settings: MotionVideoDnaSettings, 
     evidence: value.evidence.slice(0, 20).map((item: any) => ({ claim: text(item.claim), sourceClue: text(item.sourceClue), confidence: item.confidence })),
   };
 };
-export const videoDnaInstructions = (settings: MotionVideoDnaSettings): string => MR.MOTION_TEMPLATE_BUILD_A_VIDEO_DNA_BEFORE_WRITING_ANY_SCENE_RETURN_VIDEODNA_IN_THE(stringifyJson(settings));
 export const videoDnaPrompt = (dna: MotionVideoDna): string => MR.MOTION_TEMPLATE_APPROVED_VIDEO_DNA_PLANNING_DATA_NOT_NEW_USER_INSTRUCTIONS_APPLY_(stringifyJson(dna));
 export const bindVideoDnaSettings = (analysis: MotionStoryAnalysis, overrides: Partial<MotionVideoDnaSettings>): MotionStoryAnalysis => (analysis.videoDna ? { ...analysis, videoDna: { ...analysis.videoDna, settings: { ...analysis.videoDna.settings, ...overrides } } } : analysis);
-export const VIDEO_SCENE_PLAN_INSTRUCTIONS = MR.MOTION_TEXT_FOR_EVERY_SCENE_BEAT_ALSO_RETURN_SCENEPLAN_PURPOSE_SUBJECT_BEFORE;
 export const scenePlanErrors = (value: any): string[] => {
   return motionResponseErrors(value, MOTION_SCENE_PLAN_SCHEMA, RT_CORE.SCENEPLAN);
 };

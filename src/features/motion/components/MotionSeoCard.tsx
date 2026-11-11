@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
 import * as MR from "../../../constants/motionRuntime.js";
@@ -16,6 +17,7 @@ import { Modal } from "../../../components/ui/Modal";
 import { toast } from "sonner";
 import { saveBlobWithDialog } from "../../../lib/fileUtils";
 import { MOTION_SEO } from "../../../constants/motionSeo.js";
+import { MOTION_SEO_CHAPTER_STYLES as CS } from "../constants/motionSeoChapters.js";
 interface MotionSeoCardProps {
   seo: MotionSeoPack | null;
   busy: boolean;
@@ -70,6 +72,12 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
     />
   );
   const chaptersText = seo ? chapterLines(seo) : "";
+  const chapterRows = chaptersText
+    ? chaptersText.split(RT_SHARED.SYMBOL_01BA47).map((line) => {
+        const separator = line.indexOf(RT_MAINTENANCE.SPACE);
+        return { time: line.slice(0, separator), title: line.slice(separator + 1) };
+      })
+    : [];
   return (
     <StudioCard className={MR.MOTION_TEXT_ROUNDED_2XL_BORDER_BORDER_SLATE_200_90_DARK_BORDER_SLATE_800_80_B}>
       <div className={MR.MOTION_TEXT_FLEX_FLEX_WRAP_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2_BORDER_B_BORDER}>
@@ -318,16 +326,30 @@ export const MotionSeoCard: FC<MotionSeoCardProps> = ({ seo, busy, seoBusy, canG
             })}
           </div>
           {chaptersText && (
-            <StudioCard className={MR.MOTION_TEXT_P_4_ROUNDED_2XL_BG_WHITE_80_DARK_BG_SLATE_955_90_BORDER_BORDER_SL_2}>
-              <div className={MR.MOTION_TEXT_FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2}>
-                <span className={MR.MOTION_TEXT_TEXT_10PX_UPPERCASE_FONT_MONO_FONT_BOLD_TRACKING_WIDER_TEXT_64748}>
-                  <Clock className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_600_DARK_TEXT_PURPLE_400} />
-                  <span>{t.chapters}</span>
-                </span>
-                {renderCopyField(chaptersText, MR.MOTION_TEXT_SEO_CHAPTERS)}
+            <section aria-label={t.chapters} className={CS.PANEL}>
+              <div className={CS.HEADER}>
+                <div className={CS.HEADING}>
+                  <span className={CS.ICON}>
+                    <Clock size={14} />
+                  </span>
+                  <h4 className={CS.TITLE}>
+                    {t.chaptersShort}
+                    <span className={CS.COUNT}>{chapterRows.length}</span>
+                  </h4>
+                </div>
+                <Button variant={MR.MOTION_TEXT_UNSTYLED} type={MR.MOTION_TEXT_BUTTON} className={CS.COPY} title={copiedKey === MR.MOTION_TEXT_SEO_CHAPTERS ? t.copied : t.copy} aria-label={copiedKey === MR.MOTION_TEXT_SEO_CHAPTERS ? t.copied : t.copy} onClick={() => handleCopy(chaptersText, MR.MOTION_TEXT_SEO_CHAPTERS, t.copied)}>
+                  {copiedKey === MR.MOTION_TEXT_SEO_CHAPTERS ? <Check size={13} /> : <Copy size={13} />}
+                </Button>
               </div>
-              <pre className={MR.MOTION_TEXT_P_3_ROUNDED_XL_BG_SLATE_50_90_DARK_BG_SLATE_900_60_BORDER_BORDER__3}>{chaptersText}</pre>
-            </StudioCard>
+              <ol className={CS.LIST}>
+                {chapterRows.map((chapter, index) => (
+                  <li key={index} className={CS.ROW}>
+                    <span className={CS.TIME}>{chapter.time}</span>
+                    <span className={CS.CHAPTER}>{chapter.title}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
           )}
         </div>
       )}

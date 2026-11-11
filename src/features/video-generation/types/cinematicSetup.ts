@@ -1,5 +1,6 @@
 import type { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider, ProjectLanguage } from "../../../types.js";
 import type { Lang } from "../../../lib/lang.js";
+import type { ChatExecutionPolicyProps } from "../../../hooks/useChatExecutionPolicy.js";
 export interface CinematicSetupProps {
   idea: string;
   setIdea: (value: string) => void;
@@ -15,5 +16,6 @@ export interface CinematicSetupProps {
   setPlanningExecutionMode: (value: AiPlanningExecutionMode) => void;
   planningChromeHeadless: boolean;
   setPlanningChromeHeadless: (value: boolean) => void;
+  chatPolicyProps?: ChatExecutionPolicyProps;
   currentLang?: Lang;
 }

@@ -11,6 +11,7 @@ import { ProjectInputType } from "../../../types";
 import { REFACTOR_CONSTANTS } from "../../../constants";
 import { PIPELINE_STEPS } from "../../../constants/enums";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { STUDIO_UI } from "../../../constants/studioTheme.js";
 interface ProjectInputSectionProps {
   inputType: ProjectInputType;
   setInputType: (type: ProjectInputType) => void;
@@ -27,7 +28,7 @@ export const ProjectInputSection: React.FC<ProjectInputSectionProps> = ({ inputT
   ] as const;
   return (
     <StudioCard className={cn(RT_VIDEO_GENERATION.GLASS_CARD_ROUNDED_3XL_P_5_SM_P_6_SPACE)}>
-      <div className={cn(RT_VIDEO_GENERATION.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_RELATIVE_Z_10)}>
+      <div className={cn(STUDIO_UI.HEADER_BADGE_ROW, RT_VIDEO_GENERATION.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_RELATIVE_Z_10)}>
         <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_2_5)}>
           <span className={cn(RT_VIDEO_GENERATION.W_6_H_6_ROUNDED_XL_BG_AMBER_500_15)}>{PIPELINE_STEPS.STEP_1}</span>
           <h3 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100)} title={T.sec1TitleTooltip}>

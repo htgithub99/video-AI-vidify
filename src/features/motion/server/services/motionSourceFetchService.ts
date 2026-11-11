@@ -10,6 +10,7 @@ const URL_RE = /https?:\/\/[^\s<>"')\]]+/gi;
 export interface FetchedSource {
   ok: boolean;
   kind: "youtube" | "page";
+  meta?: { author?: string; keywords?: string[]; description?: string };
   url: string;
   title: string;
   raw: string;
@@ -151,7 +152,7 @@ const fetchYoutube = async (url: string, id: string, signal?: AbortSignal): Prom
     }
   } else note = MR.MOTION_TEXT_VIDEO_KHONG_CO_PHU_DE;
   const raw = lines.length ? MR.MOTION_TEMPLATE_TRANSCRIPT(title, url, lines.join(RT_SHARED.SYMBOL_01BA47)) : MR.MOTION_TEMPLATE_SYMBOL_277(title, url, description || title);
-  return { ok: lines.length > 0 || description.length > 40, kind: MR.MOTION_TEXT_YOUTUBE, url, title, raw: raw.slice(0, MAX_TEXT), note: lines.length ? note : MR.MOTION_TEMPLATE_CHI_DUNG_TIEU_DE_MO_TA(note) };
+  return { ok: lines.length > 0 || description.length > 40, kind: MR.MOTION_TEXT_YOUTUBE, url, title, meta: { author: String(details.author || "").trim(), keywords: Array.isArray(details.keywords) ? details.keywords.map(String).slice(0, 30) : [], description }, raw: raw.slice(0, MAX_TEXT), note: lines.length ? note : MR.MOTION_TEMPLATE_CHI_DUNG_TIEU_DE_MO_TA(note) };
 };
 const fetchPage = async (url: string, signal?: AbortSignal): Promise<FetchedSource> => {
   const html = await get(url, signal);

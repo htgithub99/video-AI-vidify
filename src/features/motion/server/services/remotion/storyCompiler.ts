@@ -1,12 +1,13 @@
+import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionLanguage } from "../../../../../lib/motionLanguage.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemotionLayout.js";
-import { motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
+import { motionPlanSettings, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { layoutRemotionNodes, validateRemotionSpec, remotionStateMissingScenes } from "../../../../../lib/motionRemotion.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSceneComposition.js";
-import { puppetBeatLines } from "../../../../../lib/motionPuppet.js";
+import { motionBeatLines } from "../../../../../lib/motionBeatLines.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_ASPECT_BASE } from "../../../../../constants/motionVideo.js";
 import type { MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../../../../../types/motionVideo.js";
@@ -17,12 +18,12 @@ import { remotionStoryRenderable, remotionPlanGroups } from "./sceneKeys.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionScenePacing.js";
 import { compileRemotionSound } from "./soundCompiler.js";
 import { motionMusicMood, motionMusicSegments } from "../motionMusicService.js";
-import type { PuppetLine } from "../../../../../lib/motionPuppet.js";
+import type { MotionBeatLine } from "../../../../../lib/motionBeatLines.js";
 export const compileRemotionStory = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect?: string; fps?: number; durations?: number[]; voiceTrack?: MotionVoiceTrack; characterMotion?: boolean; renderBehavior?: MotionRenderBehavior; review?: boolean; subtitles?: boolean }) => {
   const behavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, opts.characterMotion ?? script.gen?.characterMotion);
   const settings = motionVisualSettingsFor({ analysis, script });
   const state = script.gen?.remotion;
-  if (settings.mode !== RT_SHARED.REMOTION || !state || stringifyJson(settings) !== stringifyJson(state.settings)) throw new Error(V.SETTINGS_CHANGED);
+  if (settings.mode !== RT_SHARED.REMOTION || !state || stringifyJson(motionPlanSettings(settings)) !== stringifyJson(motionPlanSettings(state.settings))) throw new Error(V.SETTINGS_CHANGED);
   const owners = state.pacingRevision === PACING.REVISION ? (analysis ? remotionPlanGroups(script, analysis, state).map((group) => group.id) : Object.keys(state.scenes)) : script.beats.map((beat) => beat.id);
   const missing = [...new Set([...owners.filter((id) => !state.scenes[id]?.length), ...remotionStateMissingScenes(state)])];
   if (!opts.review && missing.length) throw new Error(C.INCOMPLETE(missing));
@@ -35,9 +36,9 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   const duration = Math.ceil(timeline.total * fps) / fps;
   const scenes: MotionRemotionTimedScene[] = [];
   const subtitles: MotionRemotionSpec["subtitles"] = [];
-  const timedLines: { line: PuppetLine; start: number; end: number }[] = [];
+  const timedLines: { line: MotionBeatLine; start: number; end: number }[] = [];
   script.beats.forEach((beat, index) => {
-    const lines = puppetBeatLines(beat, motionNarratorCastKey(analysis));
+    const lines = motionBeatLines(beat, motionNarratorCastKey(analysis));
     const clips = opts.voiceTrack?.clips?.filter((clip) => clip.beatId === beat.id) || [];
     const beatEnd = index === script.beats.length - 1 ? Math.ceil(duration * fps) : Math.round(timeline.starts[index + 1] * fps);
     const weights = lines.map((line) => Math.max(1, line.text.trim().split(/\s+/u).length));
@@ -89,12 +90,20 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
         lastFrame = Math.min(endFrame, Math.round(end * fps));
       return lastFrame > startFrame ? [{ entityId: line.speaker, startFrame, endFrame: lastFrame }] : [];
     });
-    scenes.push({ ...scene, sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))], startFrame: frame, endFrame, speaking, nodes: scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]) });
+    scenes.push({
+      ...scene,
+      sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))],
+      startFrame: frame,
+      endFrame,
+      speaking,
+      nodes: scene.renderer === RT_MAINTENANCE.HTML_CANVAS ? [] : scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]),
+    });
     frame = endFrame;
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
+    ...(state.renderer ? { renderer: state.renderer } : {}),
     engine: RT_SHARED.REMOTION,
     version: V.VERSION,
     title: script.title,

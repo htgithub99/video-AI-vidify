@@ -1,3 +1,4 @@
+import "./src/server/runtimeToolsBootstrap.js";
 import { recoverMotionProductions } from "./src/features/motion/server/services/motionProductionService.js";
 import { recoverMotionRenderPublications } from "./src/features/motion/server/services/motionRenderPublication.js";
 import { exec } from "child_process";
@@ -58,6 +59,7 @@ import {
 } from "./src/constants/motionRuntime.js";
 import "./src/server/storageBootstrap.js";
 import { API_ROUTES } from "./src/constants/apiRoutes.js";
+import { MUSIC_MIXER_SERVER } from "./src/constants/musicMixer.js";
 import { SecurityConstants } from "./src/constants/security.js";
 import { SHORTS_CONSTANTS } from "./src/constants/shorts.js";
 import { logger } from "./src/lib/logger.js";
@@ -71,6 +73,7 @@ import { closeActiveBrowser } from "./src/server/services/imageGeneratorService.
 import { closeProxySessions } from "./src/server/services/proxyService.js";
 import { getDataDirectory } from "./src/server/utils/paths.js";
 import { requestContext } from "./src/server/utils/requestContext.js";
+import { CHAT_EXECUTION_POLICY } from "./src/constants/chatExecutionPolicy.js";
 import { AiPlanningExecutionMode, AiPlanningFallbackProvider } from "./src/types.js";
 const SERVER_CONFIG = {
   PORT: 3002,
@@ -86,7 +89,7 @@ const SERVER_CONFIG = {
   SPA_TYPE: MOTION_TEXT_SPA,
   CORS_ORIGIN: MOTION_TEXT_SYMBOL_34,
   CORS_METHODS: [MOTION_TEXT_GET, MOTION_TEXT_POST, MOTION_TEXT_PUT, MOTION_TEXT_DELETE, MOTION_TEXT_OPTIONS],
-  CORS_HEADERS: [MOTION_TEXT_CONTENT_TYPE, MOTION_TEXT_AUTHORIZATION, MOTION_TEXT_X_API_KEY, MOTION_TEXT_X_GEMINI_API_KEY, MOTION_TEXT_X_CEREBRAS_API_KEY, MOTION_TEXT_X_GROQ_API_KEY, MOTION_TEXT_X_AI33_API_KEY, SecurityConstants.HEADER_LICENSE_KEY, SecurityConstants.HEADER_INTERNAL_TOKEN],
+  CORS_HEADERS: [MOTION_TEXT_CONTENT_TYPE, MOTION_TEXT_AUTHORIZATION, MOTION_TEXT_X_API_KEY, MOTION_TEXT_X_GEMINI_API_KEY, MOTION_TEXT_X_CEREBRAS_API_KEY, MOTION_TEXT_X_GROQ_API_KEY, MOTION_TEXT_X_AI33_API_KEY, SecurityConstants.HEADER_LICENSE_KEY, SecurityConstants.HEADER_INTERNAL_TOKEN, MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN, MUSIC_MIXER_SERVER.HEADER_FILE_NAME],
   LIMIT_500MB: MOTION_TEXT_500MB,
   HEADER_GEMINI_KEY: MOTION_TEXT_X_GEMINI_API_KEY,
   HEADER_CEREBRAS_KEY: MOTION_TEXT_X_CEREBRAS_API_KEY,
@@ -160,7 +163,9 @@ app.use((req, _res, next) => {
   const aiRoomModel = _.get(executionSource, MOTION_TEXT_MODEL) || _.get(req.body, MOTION_TEXT_PLANNINGCHATMODEL) || _.get(configSource, MOTION_TEXT_PLANNINGCHATMODEL) || _.get(visualSource, MOTION_TEXT_PLANNINGCHATMODEL);
   const aiRoomProjectId = _.toString(_.get(executionSource, MOTION_TEXT_PROJECTID) || _.get(req.body, MOTION_TEXT_PROJECTID) || _.get(req.body, MOTION_TEXT_LOCALPROJECTID) || MOTION_TEXT_PIPELINE_ROOM);
   const aiRoomChromeHeadless = Boolean(_.get(executionSource, MOTION_TEXT_CHROMEHEADLESS) ?? _.get(req.body, MOTION_TEXT_PLANNINGCHROMEHEADLESS) ?? _.get(configSource, MOTION_TEXT_PLANNINGCHROMEHEADLESS) ?? _.get(visualSource, MOTION_TEXT_PLANNINGCHROMEHEADLESS));
-  requestContext.run({ geminiKey, cerebrasKey, groqKey, ai33Key, licenseKey, aiExecutionMode: _.includes(Object.values(AiPlanningExecutionMode), aiExecutionMode) ? aiExecutionMode : undefined, aiRoomProvider: _.includes(Object.values(AiPlanningFallbackProvider), aiRoomProvider) ? aiRoomProvider : undefined, aiRoomModel, aiRoomProjectId, aiRoomChromeHeadless }, next);
+  const aiMultiRoom = _.some(CHAT_EXECUTION_POLICY.MULTI_ROOM_PATHS, (key) => _.get(req.body, key) === true);
+  const aiAllowFallback = _.some(CHAT_EXECUTION_POLICY.ALLOW_FALLBACK_PATHS, (key) => _.get(req.body, key) === true);
+  requestContext.run({ geminiKey, cerebrasKey, groqKey, ai33Key, licenseKey, aiExecutionMode: _.includes(Object.values(AiPlanningExecutionMode), aiExecutionMode) ? aiExecutionMode : undefined, aiRoomProvider: _.includes(Object.values(AiPlanningFallbackProvider), aiRoomProvider) ? aiRoomProvider : undefined, aiRoomModel, aiRoomProjectId, aiRoomChromeHeadless, aiMultiRoom, aiAllowFallback }, next);
 });
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SERVER_CONFIG.ASSETS_DIR)));
 app.use(SERVER_CONFIG.ASSETS_ROUTE, express.static(path.join(getDataDirectory(), SHORTS_CONSTANTS.OUTPUT_FOLDER, SHORTS_CONSTANTS.SHORTS_FOLDER)));

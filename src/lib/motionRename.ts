@@ -1,14 +1,8 @@
+import { escapeRegExp as escape } from "./regexUtils.js";
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_RENAME as N, type MotionRenameKind } from "../constants/motionRename.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionRenameEntry } from "../types/motionVideo.js";
-export const motionRenameNormalize = (value: string): string =>
-  value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(N.DIACRITICS, "")
-    .replace(N.D_BAR, N.D_PLAIN)
-    .replace(N.SPACES, N.SPACE)
-    .trim();
-const escape = (value: string) => value.replace(N.ESCAPE_RE, N.ESCAPE_TO);
+export const motionRenameNormalize = (value: string): string => value.toLowerCase().normalize(RT_MAINTENANCE.NFD).replace(N.DIACRITICS, "").replace(N.D_BAR, N.D_PLAIN).replace(N.SPACES, N.SPACE).trim();
 export const normalizeMotionRenameMap = (raw: unknown): MotionRenameEntry[] => {
   if (!Array.isArray(raw)) return [];
   const seen = new Set<string>();
@@ -32,7 +26,7 @@ export const motionRenameLeaks = (text: string | undefined, map: MotionRenameEnt
   return map.filter((entry) => matchable(entry) && pattern(entry.source).test(normalized)).map((entry) => entry.source);
 };
 export const motionRenameMapActive = (analysis: Pick<MotionStoryAnalysis, "renameEntities" | "renameMap">): MotionRenameEntry[] => (analysis.renameEntities ? analysis.renameMap || [] : []);
-export const motionRenamePairs = (map: MotionRenameEntry[]): string => map.map((entry) => `${entry.source} → ${entry.renamed}`).join("; ");
+export const motionRenamePairs = (map: MotionRenameEntry[]): string => map.map((entry) => `${entry.source}${RT_MAINTENANCE.ARROW_SEPARATOR}${entry.renamed}`).join(RT_MAINTENANCE.SEMICOLON_SPACE);
 export interface MotionRenameIssue {
   path: string;
   expected: string;
@@ -46,22 +40,22 @@ export const motionRenameAnalysisIssues = (draft: any): MotionRenameIssue[] => {
   const stem = (value: string) => motionRenameNormalize(value).replace(N.HONORIFIC, "");
   map.forEach((entry, index) => {
     const source = stem(entry.source);
-    if (source.length >= N.MIN_ECHO_CHARS && stem(entry.renamed).includes(source)) issues.push({ path: `renameMap[${index}].renamed`, expected: N.ISSUE.ECHO(entry.source, entry.renamed), actual: entry.renamed, value: entry.renamed });
+    if (source.length >= N.MIN_ECHO_CHARS && stem(entry.renamed).includes(source)) issues.push({ path: `${RT_MAINTENANCE.RENAMEMAP}${index}${RT_MAINTENANCE.RENAMED}`, expected: N.ISSUE.ECHO(entry.source, entry.renamed), actual: entry.renamed, value: entry.renamed });
   });
   const check = (path: string, text: unknown) => {
     if (typeof text !== "string") return;
     const leaks = motionRenameLeaks(text, map);
     if (leaks.length) issues.push({ path, expected: N.ISSUE.EXPECTED(leaks[0]), actual: N.ISSUE.LEAK(leaks), value: text.slice(0, 120) });
   };
-  check("title", draft?.title);
-  check("logline", draft?.logline);
-  (Array.isArray(draft?.cast) ? draft.cast : []).forEach((row: any, index: number) => check(`cast[${index}].name`, row?.name));
-  (Array.isArray(draft?.places) ? draft.places : []).forEach((row: any, index: number) => check(`places[${index}].name`, row?.name));
+  check(RT_MAINTENANCE.TITLE_2, draft?.title);
+  check(RT_MAINTENANCE.LOGLINE, draft?.logline);
+  (Array.isArray(draft?.cast) ? draft.cast : []).forEach((row: any, index: number) => check(`${RT_MAINTENANCE.CAST}${index}${RT_MAINTENANCE.NAME}`, row?.name));
+  (Array.isArray(draft?.places) ? draft.places : []).forEach((row: any, index: number) => check(`${RT_MAINTENANCE.PLACES}${index}${RT_MAINTENANCE.NAME}`, row?.name));
   (Array.isArray(draft?.chapters) ? draft.chapters : []).forEach((row: any, index: number) => {
-    check(`chapters[${index}].title`, row?.title);
-    check(`chapters[${index}].summary`, row?.summary);
-    check(`chapters[${index}].hook`, row?.hook);
-    (Array.isArray(row?.keyPoints) ? row.keyPoints : []).forEach((point: unknown, j: number) => check(`chapters[${index}].keyPoints[${j}]`, point));
+    check(`${RT_MAINTENANCE.CHAPTERS}${index}${RT_MAINTENANCE.TITLE_3}`, row?.title);
+    check(`${RT_MAINTENANCE.CHAPTERS}${index}${RT_MAINTENANCE.SUMMARY}`, row?.summary);
+    check(`${RT_MAINTENANCE.CHAPTERS}${index}${RT_MAINTENANCE.HOOK}`, row?.hook);
+    (Array.isArray(row?.keyPoints) ? row.keyPoints : []).forEach((point: unknown, j: number) => check(`${RT_MAINTENANCE.CHAPTERS}${index}${RT_MAINTENANCE.KEYPOINTS}${j}${RT_MAINTENANCE.CLOSE_BRACKET}`, point));
   });
   return issues;
 };
@@ -72,6 +66,10 @@ const replaceAll = (text: string, map: MotionRenameEntry[]): string => {
     next = next.replace(new RegExp(`${N.BOUND_HEAD}${escape(entry.source)}${N.BOUND_TAIL}`, N.FLAGS), entry.renamed);
   }
   return next;
+};
+export const motionRenameText = (text: string, analysis: Pick<MotionStoryAnalysis, "renameEntities" | "renameMap">): string => {
+  const map = motionRenameMapActive(analysis);
+  return map.length && text ? replaceAll(text, map) : text;
 };
 export const motionRenameAutofix = (beats: MotionBeat[], analysis: Pick<MotionStoryAnalysis, "renameEntities" | "renameMap">): { beats: MotionBeat[]; replaced: number } => {
   const map = motionRenameMapActive(analysis);
@@ -88,8 +86,9 @@ export const motionRenameAutofix = (beats: MotionBeat[], analysis: Pick<MotionSt
       const text = fix(line.text);
       return text === line.text ? line : { ...line, text };
     });
-    const changed = narration !== (beat.narration || "") || (utterances && utterances.some((line, index) => line !== beat.utterances![index]));
-    return changed ? { ...beat, narration, ...(utterances ? { utterances } : {}) } : beat;
+    const sceneTemplateDraft = beat.sceneTemplateDraft ? fix(beat.sceneTemplateDraft) : beat.sceneTemplateDraft;
+    const changed = narration !== (beat.narration || "") || sceneTemplateDraft !== beat.sceneTemplateDraft || (utterances && utterances.some((line, index) => line !== beat.utterances![index]));
+    return changed ? { ...beat, narration, ...(utterances ? { utterances } : {}), ...(sceneTemplateDraft !== beat.sceneTemplateDraft ? { sceneTemplateDraft } : {}) } : beat;
   });
   return { beats: next, replaced };
 };

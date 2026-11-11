@@ -34,9 +34,6 @@ export const GENRE_OPTION_GROUPS = [
 ] as const;
 const GENRE_VALUE_ALIASES: Record<string, string> = { Storytelling: VideoGenre.STORY_DRIVEN_VIDEO_ESSAY, Documentary: "History", Explanation: VideoGenre.NARRATIVE_EXPLAINER, Education: VideoGenre.NARRATIVE_EXPLAINER, Philosophy: "Psychology", "Tâm lý": "Psychology" };
 export const normalizeGenreValue = (genre?: string): string => _.get(GENRE_VALUE_ALIASES, genre || "", genre || VideoGenre.STORY_DRIVEN_VIDEO_ESSAY);
-export const audLabels = { "General Audience": "Khán giả đại chúng", Kids: "Trẻ em", Teenagers: "Thanh thiếu niên", Adults: "Người lớn", Seniors: "Người cao tuổi" } as const;
-export const styleLabels = { Professional: "Chuyên nghiệp", Documentary: "Tài liệu chân thực", Viral: "Lan truyền / Đề xuất", Mystery: "Bí ẩn / Kịch tính", Drama: "Kịch tính / Gây cấn", Educational: "Mang tính giáo dục", Scientific: "Khoa học thực tiễn" } as const;
-export const motionLabels = { "Zoom In": "Phóng to", "Zoom Out": "Thu nhỏ", "Pan Left": "Góc trái", "Pan Right": "Góc phải", "Pan Up": "Góc trên", "Pan Down": "Góc dưới", Drift: "Trôi nhẹ", "Cinematic Arc": "Hình cung", "Push In": "Đẩy vào", "Slow Reveal": "Hé lộ", Static: "Tĩnh" } as const;
 export const stylePresetsKeywords = {
   Stickman: "2D minimalist stick figure illustration, clean uniform bold black outlines on pure solid white background, minimal dot eyes, soft pink circular cheek blush, flat vector without shading",
   "2D Vector": "2D flat vector cartoon illustration, vibrant pastel colors, clean bold outlines, minimalist design, stylized characters",
@@ -55,15 +52,6 @@ export const stylePresetsKeywords = {
   "Low Poly": "3d low-poly geometric artwork, stylized faceted polygons, clean retro rendering, pastel vector gaming assets",
 } as const;
 export const GEMINI_RETRYABLE_ERROR_KEYWORDS = ["429", "quota", "Quota exceeded", "503", "500", "550", "fetch failed", "Timeout", "undici"] as const;
-export const LOG_SUCCESS_KEYWORDS = ["thành công", "success", "hoàn thành"] as const;
-export const CONSOLE_LOG_IGNORED_MESSAGES = ["Warning:", "Maximum update depth exceeded", "setState inside useEffect", "React limits the number of nested updates", "Cannot update a component while rendering"] as const;
-export const VITE_CONNECTION_LOST_KEYWORDS = ["[vite] server connection lost", "server connection lost. polling for restart"] as const;
-export const VITE_HOT_UPDATE_KEYWORDS = ["[vite] hot updated", "[vite] hmr update"] as const;
-export const VITE_FAILED_RELOAD_KEYWORD = "[hmr] failed to reload";
-export const VITE_CONNECTED_KEYWORD = "[vite] connected";
-export const LOG_PENDING_KEYWORDS = ["bắt đầu thực thi", "pending", "đang xử lý", "trigger"] as const;
-export const LOG_WARN_KEYWORDS = ["cảnh báo", "warning", "warn"] as const;
-export const LOG_ERROR_KEYWORDS = ["lỗi", "error", "fail"] as const;
 export const LOG_ERROR_SYMBOLS = ["❌", "💀"] as const;
 export const LOG_WARN_SYMBOLS = ["⚠️", "⏳"] as const;
 export const GEMINI_RETRYABLE_STATUSES = ["RESOURCE_EXHAUSTED", "UNAVAILABLE", 429, "429"] as const;
@@ -89,25 +77,6 @@ export const GEMINI_USER_MESSAGES = {
   },
 } as const;
 export const GEMINI_RETRY_REGEX = /retry in ([\d\.]+)s/i;
-export const AUDIENCE_OPTIONS = ["General Audience", "Kids", "Teenagers", "Adults", "Seniors"] as const;
-export const WRITING_STYLE_OPTIONS = ["Professional", "Documentary", "Viral", "Mystery", "Drama", "Educational", "Scientific"] as const;
-export const HOOK_STRATEGY_OPTIONS = [
-  { value: "Auto", label: "Tự động" },
-  { value: "Mystery", label: "Kỳ bí, tò mò" },
-  { value: "Shock", label: "Gây sốc" },
-  { value: "Drama", label: "Kịch tính" },
-  { value: "Curiosity", label: "Hiếu kỳ" },
-  { value: "Emotional", label: "Cảm xúc" },
-  { value: "Historical", label: "Lịch sử" },
-  { value: "Statistical", label: "Thống kê" },
-  { value: "Question", label: "Đặt câu hỏi" },
-  { value: "Story", label: "Câu chuyện" },
-] as const;
-export const HOOK_POSITION_OPTIONS = [
-  { value: "start", label: "Chỉ mở đầu" },
-  { value: "mid", label: "Mở đầu & Giữa" },
-  { value: "all", label: "Đầu, Giữa & Cuối" },
-] as const;
 export const DURATION_OPTIONS = [
   { val: "2m", label: SCRIPT_DURATION_LABELS.vi["2m"] },
   { val: "5m", label: SCRIPT_DURATION_LABELS.vi["5m"] },
@@ -127,9 +96,9 @@ export const AI_VISUAL_EFFECT_IDS = ["sad_vignette", "vintage", "dreamy", "glitc
 export const AI_LIGHTING_EFFECT_IDS = ["natural_light", "light_leak", "lens_flare", "god_rays", "spotlight", "bokeh", "flicker", "strobe", "exposure_pulse", "golden_glow"] as const;
 export const AI_MODEL_CAPABILITY = { TEXT: "text", VISUAL: "visual", AUDIO: "audio" } as const;
 export const AI_MODEL_REGISTRY = [
-  { id: "gemini-3.7-flash", freeEligible: true, priority: 1, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
-  { id: "gemini-3.6-flash", freeEligible: true, priority: 2, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
-  { id: "gemini-3.5-flash-lite", freeEligible: true, priority: 3, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3.5-flash-lite", freeEligible: true, priority: 1, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3-flash-preview", freeEligible: true, priority: 2, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
+  { id: "gemini-3.1-flash-lite", freeEligible: true, priority: 3, capabilities: [AI_MODEL_CAPABILITY.TEXT, AI_MODEL_CAPABILITY.VISUAL, AI_MODEL_CAPABILITY.AUDIO] },
 ] as const;
 export const AVAILABLE_MODELS = _.map(_.sortBy(_.filter(AI_MODEL_REGISTRY, "freeEligible"), "priority"), "id");
 export const GEMINI_NON_RETRYABLE_MODEL_PATTERNS = ["no longer available", "not found", "model is not found", "unsupported model"] as const;
@@ -159,20 +128,6 @@ export const VOICE_AGE_OPTIONS = [
   { value: "young", labelKey: "Young" },
   { value: "middle_aged", labelKey: "Middle_aged" },
   { value: "old", labelKey: "Elderly" },
-] as const;
-export const GEMINI_CHAT_SPEED_OPTIONS = [
-  { value: "2", labelKey: "GeminiSpeed_2", fallbackLabel: "2" },
-  { value: "3", labelKey: "GeminiSpeed_3", fallbackLabel: "3" },
-  { value: "5", labelKey: "GeminiSpeed_5", fallbackLabel: "5" },
-  { value: "7", labelKey: "GeminiSpeed_7", fallbackLabel: "7" },
-  { value: "10", labelKey: "GeminiSpeed_10", fallbackLabel: "10" },
-] as const;
-export const BATCH_DELAY_OPTIONS = [
-  { value: "default", labelKey: "Batch_Delay_Default" },
-  { value: "1s", labelKey: "Batch_Delay_1s" },
-  { value: "2s", labelKey: "Batch_Delay_2s" },
-  { value: "3s", labelKey: "Batch_Delay_3s" },
-  { value: "random123", labelKey: "Batch_Delay_Random_123" },
 ] as const;
 export const PROJECT_LANGUAGE_OPTIONS = [
   { value: "vi", labelKey: "Ti_ng_Vi_t" },
@@ -222,36 +177,6 @@ export const SPLIT_STRATEGY_OPTIONS = [
 export const VOICE_OWNERSHIP_KEY = "voice_ownership";
 export const VOICE_OWNERSHIP_COMMUNITY = "community";
 export const VBEE_PROVIDER_ID = "vbee";
-export const VOICE_PROVIDER_MAPPINGS = [
-  { prefixes: ["gemini-cloud", "preset-"], provider: "Gemini Speech" },
-  { prefixes: ["elevenlabs"], provider: "ElevenLabs" },
-  { prefixes: ["azure-cloud"], provider: "Azure AI" },
-  { prefixes: ["openai-tts"], provider: "OpenAI TTS" },
-  { prefixes: ["google-cloud"], provider: "Google Cloud" },
-  { prefixes: ["fpt-"], provider: "FPT.AI" },
-  { prefixes: ["zalo-"], provider: "Zalo AI" },
-  { prefixes: ["viettel-"], provider: "Viettel AI" },
-  { prefixes: ["vbee-"], provider: "Vbee" },
-];
-export const VOICE_DESCRIPTION_KEYS: Record<string, string> = {
-  "preset-vi-bac-female": "Northern_female",
-  "preset-vi-bac-male": "Northern_male",
-  "preset-vi-trung-female": "Central_female",
-  "preset-vi-trung-male": "Central_male",
-  "preset-vi-nam-female": "Southern_female",
-  "preset-vi-nam-male": "Southern_male",
-  "preset-vi-kid": "Playful_kids_voiceover",
-  "gcp-vi-female": "Google_free_female",
-  "gcp-vi-male": "Google_free_male",
-  "gcp-en-female": "Google_free_English_femal",
-  "fpt-vi-female": "FPT_female_monthly",
-  "fpt-vi-male": "FPT_male_monthly",
-  "zalo-vi-female": "Zalo_female_daily",
-  "viettel-vi-male": "Viettel_male_yearly",
-  "gemini-cloud-vi-female": "Hifidelity_female_cloud_A",
-  "gemini-cloud-vi-male": "Hifidelity_male_cloud_AI",
-  "gemini-cloud-vi": "Muff_free_cloud_AI_defaul",
-};
 export const VOICE_PAGE_SIZE = "30";
 export const GENDER_OPTIONS = ["", "male", "female"] as const;
 export const AUDIO_PLAYBACK_FAILED_ERR = "AUDIO_PLAYBACK_FAILED";

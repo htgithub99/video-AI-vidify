@@ -20,6 +20,7 @@ import _ from "lodash";
 import { jsonUtils } from "../../../lib/json";
 import { toast } from "sonner";
 import { SettingsSkeleton } from "../../../components/ui/Skeleton";
+import { ChromeBackupSettings } from "./ChromeBackupSettings.js";
 interface SettingsViewProps {
   currentLang: Lang;
   isLoading?: boolean;
@@ -187,6 +188,7 @@ export default function SettingsView({ currentLang, isLoading = false }: Setting
             {settingsExt.ACTIVE_BADGE}
           </span>
         </StudioHeader>
+        <ChromeBackupSettings language={currentLang} />
         <div className={cn(RT_SETTINGS.GRID_GRID_COLS_1_MD_GRID_COLS_2_GAP_6)}>
           <StudioCard className={cn(RT_SETTINGS.GLASS_CARD_ROUNDED_3XL_P_6_SHADOW_MD_FLEX_FLEX)}>
             <div className={cn(RT_SETTINGS.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800)}>

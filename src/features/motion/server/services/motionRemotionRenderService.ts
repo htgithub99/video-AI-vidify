@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import fs from "node:fs";
@@ -14,6 +15,8 @@ import { motionRemotionWebpack } from "./remotion/bundleConfig.js";
 import { motionRemotionRenderConcurrency } from "../../../../lib/motionRemotionPerformance.js";
 import { MOTION_REMOTION_RENDER as R } from "../../../../constants/motionRemotionRender.js";
 import { checkRemotionCutoutLayers } from "./remotion/vectorCutoutInspector.js";
+import { logger } from "../../../../lib/logger.js";
+import { renderMotionHtmlSegments, renderMotionMixedSegments } from "./html/sceneRenderer.js";
 let cached: { key: string; promise: Promise<string> } | undefined;
 export const motionRemotionSourceFingerprint = (entryPoints: string[]): string => {
   const sources = new Map<string, string>();
@@ -59,13 +62,14 @@ export const motionRemotionBundle = async (): Promise<string> => {
     throw error;
   }
 };
-export const checkRemotionRuntime = async (signal?: AbortSignal): Promise<void> => {
+export const checkRemotionRuntime = async (signal?: AbortSignal, renderer?: "html-canvas"): Promise<void> => {
   signal?.throwIfAborted();
   findNativeChrome();
+  if (renderer === RT_MAINTENANCE.HTML_CANVAS) return;
   await motionRemotionBundle();
   signal?.throwIfAborted();
 };
-const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (browser: Awaited<ReturnType<typeof openBrowser>>, serveUrl: string, cancelSignal: ReturnType<typeof makeCancelSignal>["cancelSignal"]) => Promise<T>, log?: (line: string) => void): Promise<T> => {
+const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (browser: Awaited<ReturnType<typeof openBrowser>>, serveUrl: string, cancelSignal: ReturnType<typeof makeCancelSignal>["cancelSignal"]) => Promise<T>, log?: (line: string) => void, headless = true): Promise<T> => {
   signal?.throwIfAborted();
   const serveUrl = await motionRemotionBundle();
   signal?.throwIfAborted();
@@ -76,9 +80,10 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
   let browser: Awaited<ReturnType<typeof openBrowser>> | undefined;
   try {
     const executable = findNativeChrome();
-    browser = await openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless: true, gl: R.GL }, logLevel: RT_SHARED.ERROR }).catch(async () => {
-      (log || console.warn)(R.GL_FALLBACK);
-      return openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless: true }, logLevel: RT_SHARED.ERROR });
+    browser = await openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless, gl: R.GL }, logLevel: RT_SHARED.ERROR }).catch(async () => {
+      if (log) log(R.GL_FALLBACK);
+      else logger.warn(R.GL_FALLBACK);
+      return openBrowser(RT_SERVER.CHROME, { browserExecutable: executable, chromiumOptions: { headless }, logLevel: RT_SHARED.ERROR });
     });
     signal?.throwIfAborted();
     return await run(browser, serveUrl, cancelSignal);
@@ -87,36 +92,53 @@ const withRemotionBrowser = async <T>(signal: AbortSignal | undefined, run: (bro
     await browser?.close({ silent: true });
   }
 };
-export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: string, options: { width: number; height: number; crf: number; signal: AbortSignal; concurrency?: number; onProgress: (frames: number, total: number) => void; log?: (line: string) => void }): Promise<void> => {
+type RemotionRenderOptions = { width: number; height: number; crf: number; signal: AbortSignal; concurrency?: number; headless?: boolean; onProgress: (frames: number, total: number) => void; log?: (line: string) => void };
+export const renderRemotionSegments = async (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], options: RemotionRenderOptions & { onSegment?: (index: number) => Promise<void> | void }): Promise<void> => {
+  if (spec.renderer === RT_MAINTENANCE.HTML_CANVAS && spec.scenes.every((scene) => scene.renderer === RT_MAINTENANCE.HTML_CANVAS)) return renderMotionHtmlSegments(spec, segments, options);
+  if (spec.renderer === RT_MAINTENANCE.HTML_CANVAS) return renderMotionMixedSegments(spec, segments, options, renderRemotionSegments);
   validateRemotionSpec(spec);
   assertRemotionExportable(spec);
   await checkRemotionCutoutLayers(spec, options.signal);
+  if (!segments.length) return;
   const { selectComposition, renderMedia } = await import("@remotion/renderer");
   await withRemotionBrowser(
     options.signal,
     async (browser, serveUrl, cancelSignal) => {
-    const inputProps = { document: spec };
-    const selected = await selectComposition({ serveUrl, id: V.COMPOSITION_ID, inputProps, puppeteerInstance: browser, logLevel: RT_SHARED.ERROR });
-    const total = Math.ceil(spec.duration * spec.fps);
-    fs.mkdirSync(path.dirname(output), { recursive: true });
-    await renderMedia({
-      serveUrl,
-      composition: { ...selected, width: options.width, height: options.height },
-      inputProps,
-      outputLocation: output,
-      codec: RT_SERVER.H264,
-      muted: true,
-      crf: options.crf,
-      pixelFormat: RT_SERVER.YUV420P,
-      concurrency: options.concurrency ?? motionRemotionRenderConcurrency(os.cpus().length, os.freemem()),
-      puppeteerInstance: browser,
-      cancelSignal,
-      logLevel: RT_SHARED.ERROR,
-      onProgress: ({ renderedFrames }) => options.onProgress(Math.min(total, renderedFrames), total),
-    });
+      const inputProps = { document: spec };
+      const selected = await selectComposition({ serveUrl, id: V.COMPOSITION_ID, inputProps, puppeteerInstance: browser, logLevel: RT_SHARED.ERROR });
+      const total = segments.reduce((sum, segment) => sum + segment.end - segment.start + 1, 0);
+      let done = 0;
+      for (const [index, segment] of segments.entries()) {
+        options.signal.throwIfAborted();
+        fs.mkdirSync(path.dirname(segment.output), { recursive: true });
+        await renderMedia({
+          serveUrl,
+          composition: { ...selected, width: options.width, height: options.height },
+          inputProps,
+          outputLocation: segment.output,
+          codec: RT_SERVER.H264,
+          muted: true,
+          crf: options.crf,
+          x264Preset: R.X264_PRESET,
+          pixelFormat: RT_SERVER.YUV420P,
+          frameRange: [segment.start, segment.end],
+          concurrency: options.concurrency ?? motionRemotionRenderConcurrency(os.cpus().length, os.freemem()),
+          puppeteerInstance: browser,
+          cancelSignal,
+          logLevel: RT_SHARED.ERROR,
+          onProgress: ({ renderedFrames }) => options.onProgress(Math.min(total, done + renderedFrames), total),
+        });
+        done += segment.end - segment.start + 1;
+        await options.onSegment?.(index);
+      }
     },
     options.log,
+    options.headless,
   );
+};
+export const renderRemotionVideo = async (spec: MotionRemotionSpec, output: string, options: RemotionRenderOptions): Promise<void> => {
+  const total = Math.ceil(spec.duration * spec.fps);
+  await renderRemotionSegments(spec, [{ start: 0, end: total - 1, output }], options);
 };
 let stillQueue: Promise<unknown> = Promise.resolve();
 export const renderRemotionStill = (spec: MotionRemotionSpec, output: string, frame = 0, signal?: AbortSignal): Promise<void> => {

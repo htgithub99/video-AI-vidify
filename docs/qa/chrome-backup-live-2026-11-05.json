@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-05T05:39:52.142Z",
+  "visibleChrome": true,
+  "quotaSignal": "injected only at handoff boundary; live accounts currently have quota",
+  "concurrentSave": "synthetic saved payload; real coordinator and browser lifecycle",
+  "events": [
+    "Five actual Chrome rooms ready; Flash/medium verified",
+    "Primary live request previously failed with provider_error_response; continuing lifecycle verification without repeating it",
+    "Flash hết hạn mức – ngừng gửi mới, chờ các room nhận và lưu kết quả trước khi chuyển Chrome dự phòng.",
+    "Concurrent result saved",
+    "Các room đã nhận và lưu xong – đóng Chrome cũ, mở Chrome dự phòng.",
+    "Đã mở Chrome dự phòng – khôi phục ngữ cảnh và tiếp tục bằng Flash đã chọn.",
+    "Actual backup Chrome opened; Flash/medium verified",
+    "Backup live request failed: Error: chat_planning_cancelled"
+  ],
+  "failures": [
+    "Error: chat_planning_cancelled"
+  ]
+}

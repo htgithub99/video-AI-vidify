@@ -10,12 +10,17 @@ import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { VIDEO_EXPORT_CONSTANTS } from "../constants/videoExport.js";
 import { VIDEO_EXPORT_TEXTS } from "../../../constants/texts.js";
 import { jsonUtils } from "../../../lib/json.js";
+import { useChatExecutionPolicy } from "../../../hooks/useChatExecutionPolicy.js";
+import { CHAT_EXECUTION_POLICY } from "../../../constants/chatExecutionPolicy.js";
 import { Lang } from "../../../lib/lang.js";
 import { computeVideoExportSlidePlan } from "../lib/videoExportPlan.js";
+import { isPlanningChatModel } from "../../../lib/chatPlanningUtils.js";
 import { AiPlanningChatModel, AiPlanningExecutionMode, AiPlanningFallbackProvider } from "../../../types.js";
 import { VideoExportAudioItem, VideoExportCancelTarget, VideoExportConfig, VideoExportImageItem, VideoExportJobStage, VideoExportJobState, VideoExportJobStatus, VideoExportMultiPreviews, VideoExportPreviewResult, VideoExportResultItem, VideoExportSource, VideoExportSourceTab, VideoExportTransition } from "../types/videoExport.js";
 import { isAbortRequest, loadStoredResults, requestJson, saveStoredResults } from "../components/videoExportUtils.js";
 import { ShortsReframeMode } from "../../../types/shorts.js";
+import { VIDEO_EXPORT_AI_CLIP_CONSTANTS } from "../constants/videoExportAiClip.js";
+import { useVideoExportAiClips } from "./useVideoExportAiClips.js";
 type StoredSettings = Partial<VideoExportConfig> & {
   aiProvider?: AiPlanningFallbackProvider;
   aiModel?: AiPlanningChatModel;
@@ -32,10 +37,18 @@ type StoredSettings = Partial<VideoExportConfig> & {
   savedPreview?: VideoExportPreviewResult | null;
   savedPreviews?: VideoExportMultiPreviews;
   savedPreviewSignature?: string;
+  savedLastJob?: VideoExportJobState | null;
 };
 type RankScore = { index: number; score: number; durationSeconds?: number };
 type MoveDirection = -1 | 1;
 const TERMINAL_STATUSES = [VideoExportJobStatus.COMPLETED, VideoExportJobStatus.ERROR, VideoExportJobStatus.CANCELLED];
+const normalizeStoredExportJob = (raw: VideoExportJobState | null | undefined, hasActiveJobId: boolean): VideoExportJobState | null => {
+  if (!raw || typeof raw !== "object") return null;
+  if (raw.status === VideoExportJobStatus.RENDERING && !hasActiveJobId) {
+    return { ...raw, status: VideoExportJobStatus.CANCELLED };
+  }
+  return raw;
+};
 const readStoredSettings = (): StoredSettings => jsonUtils.getItem<StoredSettings>(VIDEO_EXPORT_CONSTANTS.SETTINGS_STORAGE_KEY, {}) ?? {};
 const restoreConfig = (saved: StoredSettings): VideoExportConfig => resolveVideoExportConfig(saved, { forceEvenSlides: true });
 export function useVideoExporter(lang: Lang) {
@@ -52,9 +65,14 @@ export function useVideoExporter(lang: Lang) {
   const [title, setTitle] = useState<string>(() => _.toString(initialSettings.savedTitle));
   const [sourceTab, setSourceTab] = useState<VideoExportSourceTab>(() => pickStoredEnum(VideoExportSourceTab, initialSettings.sourceTab, VideoExportSourceTab.AUDIO));
   const [aiProvider, setAiProvider] = useState<AiPlanningFallbackProvider>(pickStoredEnum(AiPlanningFallbackProvider, initialSettings.aiProvider, AiPlanningFallbackProvider.GeminiChat));
-  const [aiModel, setAiModel] = useState<AiPlanningChatModel>(pickStoredEnum(AiPlanningChatModel, initialSettings.aiModel, AiPlanningChatModel.GeminiFlash));
+  const [aiModel, setAiModel] = useState<AiPlanningChatModel>(() => (isPlanningChatModel(initialSettings.aiModel) ? initialSettings.aiModel : AiPlanningChatModel.GeminiFlash));
   const [aiExecutionMode, setAiExecutionMode] = useState<AiPlanningExecutionMode>(pickStoredEnum(AiPlanningExecutionMode, initialSettings.aiExecutionMode, AiPlanningExecutionMode.RoomOnly));
   const [aiChromeHeadless, setAiChromeHeadless] = useState<boolean>(initialSettings.aiChromeHeadless !== false);
+  const { policy: chatPolicy, blockProps: chatPolicyProps } = useChatExecutionPolicy(CHAT_EXECUTION_POLICY.SCREENS.VIDEO_EXPORT);
+  const selectedAudios = useMemo(() => _.filter(audios, (item) => _.includes(selectedAudioIds, item.id)), [audios, selectedAudioIds]);
+  const selectedImages = useMemo(() => _.filter(images, (item) => _.includes(selectedImageIds, item.id)), [images, selectedImageIds]);
+  const aiClipRuntimeSettings = useMemo(() => ({ provider: aiProvider, model: aiModel, executionMode: aiExecutionMode, chromeHeadless: aiChromeHeadless }), [aiProvider, aiModel, aiExecutionMode, aiChromeHeadless]);
+  const aiClips = useVideoExportAiClips(text, config.aspectRatio, aiClipRuntimeSettings, selectedImages, source?.folderPath);
   const [isRanking, setIsRanking] = useState<boolean>(false);
   const [previews, setPreviews] = useState<VideoExportMultiPreviews>(() => {
     if (initialSettings.savedPreviews && !_.isEmpty(initialSettings.savedPreviews)) {
@@ -67,38 +85,40 @@ export function useVideoExporter(lang: Lang) {
   });
   const [previewSignature, setPreviewSignature] = useState<string>(() => _.toString(initialSettings.savedPreviewSignature));
   const [isPreviewing, setIsPreviewing] = useState<boolean>(false);
-  const [job, setJob] = useState<VideoExportJobState | null>(null);
+  const [previewError, setPreviewError] = useState<string>("");
   const [activeJobId, setActiveJobId] = useState<string>(_.toString(initialSettings.activeJobId));
+  const [job, setJob] = useState<VideoExportJobState | null>(() => normalizeStoredExportJob(initialSettings.savedLastJob, Boolean(initialSettings.activeJobId)));
   const [results, setResults] = useState<VideoExportResultItem[]>([]);
   const [resultsLoaded, setResultsLoaded] = useState<boolean>(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const rankAbortRef = useRef<AbortController | null>(null);
   const rankProjectIdRef = useRef<string>("");
   const previewAbortRef = useRef<AbortController | null>(null);
+  const lastAutoPreviewSignatureRef = useRef<string>("");
   const isMountedRef = useRef<boolean>(true);
-  const selectedAudios = useMemo(() => _.filter(audios, (item) => _.includes(selectedAudioIds, item.id)), [audios, selectedAudioIds]);
-  const selectedImages = useMemo(() => _.filter(images, (item) => _.includes(selectedImageIds, item.id)), [images, selectedImageIds]);
   const totalAudioSeconds = useMemo(() => _.sumBy(selectedAudios, (item) => item.durationSeconds || 0), [selectedAudios]);
   const totalAudioBytes = useMemo(() => _.sumBy(selectedAudios, (item) => item.sizeBytes || 0), [selectedAudios]);
   const slidePlan = useMemo(() => computeVideoExportSlidePlan(totalAudioSeconds, selectedImages.length, config), [totalAudioSeconds, selectedImages.length, config]);
   const isExporting = job?.status === VideoExportJobStatus.RENDERING;
   const isBusy = isScanning || isRanking || isExporting;
-  const canRender = Boolean(source) && !_.isEmpty(selectedAudios) && !_.isEmpty(selectedImages);
+  const hasVisuals = !_.isEmpty(aiClips.activeClipIds) || !_.isEmpty(selectedImages);
+  const canRender = Boolean(source) && !_.isEmpty(selectedAudios) && hasVisuals && !aiClips.isGenerating;
   const preview = useMemo(() => previews[config.aspectRatio] ?? null, [previews, config.aspectRatio]);
-  const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), ...config }), [source?.token, selectedAudios, selectedImages, config]);
+  const renderPayload = useMemo(() => ({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, aiClipAudioIds: aiClips.activeClipAudioIds, ...config }), [source?.token, selectedAudios, selectedImages, aiClips.activeClipIds, aiClips.activeClipAudioIds, config]);
   const currentPreviewSignature = useMemo(
-    () => stringifyJson({ token: source?.token ?? "", audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: config.effect, transition: config.transition, transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds }),
-    [source?.token, selectedAudios, selectedImages, config.reframeMode, config.effect, config.transition, config.transitionSeconds],
+    () => stringifyJson({ token: source?.token ?? "", aspectRatio: config.aspectRatio, totalAudioSeconds: Math.round(totalAudioSeconds), audioIndexes: _.map(selectedAudios, (item) => item.index), imageIndexes: _.map(selectedImages, (item) => item.index), aiClipIds: aiClips.activeClipIds, aiClipAudioIds: aiClips.activeClipAudioIds, reframeMode: config.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: config.effect, transition: config.transition, transitionSeconds: config.transition === VideoExportTransition.NONE ? 0 : config.transitionSeconds }),
+    [source?.token, config.aspectRatio, totalAudioSeconds, selectedAudios, selectedImages, aiClips.activeClipIds, aiClips.activeClipAudioIds, config.reframeMode, config.effect, config.transition, config.transitionSeconds],
   );
   const isPreviewOutdated = useMemo(() => {
     if (!preview) return false;
+    if (totalAudioSeconds > 0 && Math.abs((preview.durationSeconds || 0) - totalAudioSeconds) > 2) return true;
     if (!previewSignature) return true;
     try {
       const normalize = (raw: any) => {
         if (!raw || typeof raw !== VIDEO_EXPORT_TEXT_OBJECT) return {};
         const audios = Array.isArray(raw.audioIndexes) ? raw.audioIndexes : Array.isArray(raw.audioIds) ? raw.audioIds : [];
         const imgs = Array.isArray(raw.imageIndexes) ? raw.imageIndexes : Array.isArray(raw.imageIds) ? raw.imageIds : [];
-        return { token: _.toString(raw.token), audioIndexes: audios, imageIndexes: imgs, reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: _.toString(raw.effect), transition: _.toString(raw.transition), transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1) };
+        return { token: _.toString(raw.token), aspectRatio: _.toString(raw.aspectRatio), totalAudioSeconds: Number(raw.totalAudioSeconds ?? 0), audioIndexes: audios, imageIndexes: imgs, aiClipIds: Array.isArray(raw.aiClipIds) ? raw.aiClipIds : [], aiClipAudioIds: Array.isArray(raw.aiClipAudioIds) ? raw.aiClipAudioIds : [], reframeMode: raw.reframeMode ?? ShortsReframeMode.BLUR_BACKGROUND, effect: _.toString(raw.effect), transition: _.toString(raw.transition), transitionSeconds: raw.transition === VideoExportTransition.NONE ? 0 : Number(raw.transitionSeconds ?? 1) };
       };
       const savedObj = normalize(parseJson(previewSignature));
       const currentObj = normalize(parseJson(currentPreviewSignature));
@@ -106,7 +126,7 @@ export function useVideoExporter(lang: Lang) {
     } catch {
       return previewSignature !== currentPreviewSignature;
     }
-  }, [preview, previewSignature, currentPreviewSignature]);
+  }, [preview, totalAudioSeconds, previewSignature, currentPreviewSignature]);
   useEffect(() => {
     isMountedRef.current = true;
     loadStoredResults().then((items) => {
@@ -213,8 +233,9 @@ export function useVideoExporter(lang: Lang) {
       savedPreview: preview,
       savedPreviews: previews,
       savedPreviewSignature: previewSignature,
+      savedLastJob: job,
     });
-  }, [sourceLoaded, config, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, activeJobId, sourceTab, source?.folderPath, title, selectedAudioPaths, selectedImagePaths, savedAudioOrder, savedAudioScores, preview, previews, previewSignature]);
+  }, [sourceLoaded, config, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, activeJobId, sourceTab, source?.folderPath, title, selectedAudioPaths, selectedImagePaths, savedAudioOrder, savedAudioScores, preview, previews, previewSignature, job]);
   useEffect(() => {
     if (resultsLoaded) void saveStoredResults(results);
   }, [results, resultsLoaded]);
@@ -230,12 +251,12 @@ export function useVideoExporter(lang: Lang) {
       toast.error(text.ERR_NO_AUDIO);
       return false;
     }
-    if (_.isEmpty(selectedImages)) {
+    if (_.isEmpty(aiClips.activeClipIds) && _.isEmpty(selectedImages)) {
       toast.error(text.ERR_NO_IMAGE);
       return false;
     }
     return true;
-  }, [source, selectedAudios, selectedImages, text]);
+  }, [source, selectedAudios, selectedImages, aiClips.activeClipIds, text]);
   const selectFolder = useCallback(async () => {
     if (isBusy) return;
     setIsScanning(true);
@@ -297,7 +318,7 @@ export function useVideoExporter(lang: Lang) {
     rankProjectIdRef.current = projectId;
     setIsRanking(true);
     try {
-      const data = await requestJson<{ scores?: RankScore[] }>(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, { projectId, tracks: _.map(rankedAudios, (item) => ({ sourcePath: item.sourcePath, title: item.name })), provider: aiProvider, model: aiModel, executionMode: aiExecutionMode, chromeHeadless: aiChromeHeadless }, abortController.signal);
+      const data = await requestJson<{ scores?: RankScore[] }>(API_ROUTES.PIPELINE_MUSIC_MIXER_RANK, { ...chatPolicy, projectId, tracks: _.map(rankedAudios, (item) => ({ sourcePath: item.sourcePath, title: item.name })), provider: aiProvider, model: aiModel, executionMode: aiExecutionMode, chromeHeadless: aiChromeHeadless }, abortController.signal);
       const scoreById = new Map<string, RankScore>();
       _.forEach(data.scores ?? [], (score) => {
         const item = rankedAudios[_.toInteger(score?.index) - 1];
@@ -324,7 +345,7 @@ export function useVideoExporter(lang: Lang) {
         if (isMountedRef.current) setIsRanking(false);
       }
     }
-  }, [isBusy, source, selectedAudios, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, closeRankRooms, text]);
+  }, [isBusy, source, selectedAudios, aiProvider, aiModel, aiExecutionMode, aiChromeHeadless, chatPolicy, closeRankRooms, text]);
   const cancelRanking = useCallback(() => {
     const controller = rankAbortRef.current;
     if (!controller) return;
@@ -341,15 +362,19 @@ export function useVideoExporter(lang: Lang) {
     const signature = currentPreviewSignature;
     previewAbortRef.current = abortController;
     setIsPreviewing(true);
+    setPreviewError("");
     try {
       const data = await requestJson<{ preview?: VideoExportPreviewResult; previews?: VideoExportMultiPreviews }>(API_ROUTES.VIDEO_EXPORT_PREVIEW, renderPayload, abortController.signal);
       const nextPreviews = data.previews || (data.preview ? { [config.aspectRatio]: data.preview } : {});
       if (_.isEmpty(nextPreviews)) throw new Error(text.PREVIEW_ERROR);
       setPreviews(nextPreviews);
       setPreviewSignature(signature);
+      setPreviewError("");
     } catch (error: any) {
       if (isAbortRequest(error) || abortController.signal.aborted || error?.status === 499) return;
-      toast.error(`${text.PREVIEW_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim());
+      const errMsg = `${text.PREVIEW_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim();
+      setPreviewError(errMsg);
+      toast.error(errMsg);
     } finally {
       if (previewAbortRef.current === abortController) {
         previewAbortRef.current = null;
@@ -357,6 +382,17 @@ export function useVideoExporter(lang: Lang) {
       }
     }
   }, [isPreviewing, ensureRenderable, currentPreviewSignature, renderPayload, config.aspectRatio, text]);
+  useEffect(() => {
+    const hasAnyPreview = !_.isEmpty(previews);
+    const shouldAutoPreview = sourceLoaded && canRender && !isPreviewing && !isExporting && (isPreviewOutdated || (!preview && (hasAnyPreview || (aiClips.enabled && !_.isEmpty(aiClips.activeClipIds)))));
+    if (!shouldAutoPreview) return;
+    if (lastAutoPreviewSignatureRef.current === currentPreviewSignature) return;
+    const timer = setTimeout(() => {
+      lastAutoPreviewSignatureRef.current = currentPreviewSignature;
+      void generatePreview();
+    }, VIDEO_EXPORT_AI_CLIP_CONSTANTS.AUTO_PREVIEW_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [sourceLoaded, canRender, isPreviewing, isExporting, isPreviewOutdated, preview, previews, aiClips.enabled, aiClips.activeClipIds, currentPreviewSignature, generatePreview]);
   const cancelPreview = useCallback(() => {
     previewAbortRef.current?.abort();
     previewAbortRef.current = null;
@@ -390,7 +426,7 @@ export function useVideoExporter(lang: Lang) {
       } catch (error: any) {
         if (error?.status === 404) {
           setActiveJobId("");
-          setJob(null);
+          setJob((prev) => (prev ? { ...prev, status: VideoExportJobStatus.ERROR, error: prev.error || text.EXPORT_ERROR } : null));
         }
       } finally {
         isPolling = false;
@@ -399,7 +435,7 @@ export function useVideoExporter(lang: Lang) {
     void poll();
     const timer = setInterval(poll, VIDEO_EXPORT_CONSTANTS.POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [activeJobId, handleJobUpdate]);
+  }, [activeJobId, handleJobUpdate, text.EXPORT_ERROR]);
   const startExport = useCallback(async () => {
     if (isExporting || !ensureRenderable()) return;
     try {
@@ -408,7 +444,9 @@ export function useVideoExporter(lang: Lang) {
       setJob({ jobId: data.jobId, status: VideoExportJobStatus.RENDERING, stage: VideoExportJobStage.PREPARING, percent: 0, message: "" });
       setActiveJobId(data.jobId);
     } catch (error: any) {
-      toast.error(`${text.EXPORT_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim());
+      const errMsg = `${text.EXPORT_ERROR}${RT_SHARED.SYMBOL_36A9E7}${error?.message || ""}`.trim();
+      setJob({ jobId: "", status: VideoExportJobStatus.ERROR, stage: VideoExportJobStage.PREPARING, percent: 0, message: text.EXPORT_ERROR, error: errMsg });
+      toast.error(errMsg);
     }
   }, [isExporting, ensureRenderable, renderPayload, title, source?.folderName, text]);
   const stopExport = useCallback(async () => {
@@ -426,7 +464,7 @@ export function useVideoExporter(lang: Lang) {
       if (!result?.fileName) return;
       setDownloadingId(result.id);
       try {
-        const destination = await requestJson<{ cancelled?: boolean; token?: string }>(API_ROUTES.VIDEO_EXPORT_SELECT_SAVE_DESTINATION, { suggestedName: result.fileName });
+        const destination = await requestJson<{ cancelled?: boolean; token?: string }>(API_ROUTES.VIDEO_EXPORT_SELECT_SAVE_DESTINATION, { suggestedName: _.trim(result.title) || result.fileName });
         if (destination.cancelled || !destination.token) {
           toast.info(text.SAVE_CANCELLED);
           return;
@@ -465,8 +503,10 @@ export function useVideoExporter(lang: Lang) {
     aiModel,
     aiExecutionMode,
     aiChromeHeadless,
+    chatPolicyProps,
     isRanking,
     preview,
+    previewError,
     isPreviewing,
     isPreviewOutdated,
     job,
@@ -497,6 +537,7 @@ export function useVideoExporter(lang: Lang) {
     stopExport,
     downloadResult,
     removeResult,
+    aiClips,
   };
 }
 export type VideoExporterState = ReturnType<typeof useVideoExporter>;

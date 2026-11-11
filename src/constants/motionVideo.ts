@@ -1,4 +1,3 @@
-import { PA } from "./motionPuppetAssets.js";
 import { MotionAspect, MotionQuality, MotionStoryLength } from "../types/motionVideo.js";
 export const MOTION_STORY_LENGTH_SECONDS: Partial<Record<MotionStoryLength, number>> = {
   [MotionStoryLength.ONE]: 60,
@@ -51,7 +50,7 @@ export const MOTION_VIDEO_CONSTANTS = {
   TEMPLATE_2D: "gen2d",
   DRAWING_2D: "2d",
   FX_CUE_RE: /^(thunder|explosion)$/,
-  ENGINE_FILES: ["texts.js", "core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js", "puppet2d.js"],
+  ENGINE_FILES: ["texts.js", "core.js", "scenes.js", "geo-data.js", "history.js", "style-finish.js"],
   CLIENT_ONLY_FILES: ["style-finish.js"],
   FONTS_DIR: "fonts",
   FONTS_MANIFEST: "fonts.json",
@@ -100,8 +99,7 @@ export const MOTION_STORY_CONFIG = {
   EDIT_SUPPLEMENTAL: ":supplemental",
   BIBLE_KEY: (generation: number, key: string): string => `${generation}|${key}`,
   BIBLE_WRAP: (bible: string): string => `${bible}\n`,
-  CONTRACT: (contract: { voice: string; opening: string; spine: string; devices: string; closing: string }): string =>
-    `GENRE CONTRACT (techniques of the reference style for this genre; follow them, never copy a sentence of any reference): OPENING ${contract.opening}. SPINE ${contract.spine}. DEVICES ${contract.devices}. CLOSING ${contract.closing}.`,
+  CONTRACT: (contract: { voice: string; opening: string; spine: string; devices: string; closing: string }): string => `GENRE CONTRACT (techniques of the reference style for this genre; follow them, never copy a sentence of any reference): OPENING ${contract.opening}. SPINE ${contract.spine}. DEVICES ${contract.devices}. CLOSING ${contract.closing}.`,
   CHAPTER_RETRY_NOTE: (problems: string, spoken: number, target: number): string =>
     `PREVIOUS ATTEMPT WAS REJECTED: ${problems} Your previous narration had ${spoken} units in total; the whole chapter must total about ${target} units (count every spoken syllable/word across all beats). ${spoken > target ? "Cut descriptive filler and merge beats; keep only the events that move the story." : "Add concrete events and sensory detail from the source."}`,
   VI_SYLLABLES_PER_SECOND: 3.4,
@@ -127,13 +125,16 @@ export const MOTION_STORY_CONFIG = {
   TTS_MAX_CHARS: 900,
   SUBTITLE_MAX_CHARS: 64,
   STORY_STORAGE_KEY: "motion_story_state_v1",
+  STORY_SCRIPT_STORAGE_KEY: "motion_story_state_v1_script",
+  STORY_COMPILED_STORAGE_KEY: "motion_story_state_v1_compiled",
+  STORY_SPLIT_FIELD: "storageSplit",
   STORY_STOP_STORAGE_KEY: "motion_story_stopped_v1",
   GRAPHIC_TRANSITION: "push",
   GRAPHIC_TRANSITION_SECONDS: 0.45,
   ROOM_TIMEOUT_MS: 6 * 60 * 1000,
   ROOM_LONG_TIMEOUT_MS: 12 * 60 * 1000,
   ROOM_SHORT_TIMEOUT_MS: 3 * 60 * 1000,
-  ROOM_SHORT_ARTIFACTS: ["motion-puppet-lib-match", "motion-puppet-cast-match", PA.ARTIFACT, "motion-puppet-set-plan", "motion-audio-casting", "motion-puppet-set-check", "motion-puppet-character-check", "motion-story-seo"] as string[],
+  ROOM_SHORT_ARTIFACTS: ["motion-audio-casting", "motion-story-seo"] as string[],
   ROOM_STUCK_BLOCK_MS: 5 * 60 * 1000,
   ROOM_CLOSED_RE: /Target page, context or browser has been closed|frame was detached|ERR_ABORTED/,
   ROOM_SKIP_LOG: (provider: string, minutes: number): string => `Phòng chat ${provider} đang lỗi – bỏ qua ${provider} trong ${minutes} phút cho các yêu cầu tiếp theo, chuyển ngay sang AI dự phòng.`,
@@ -142,8 +143,16 @@ export const MOTION_STORY_CONFIG = {
   CANNED_REFUSAL_LOG: (provider: string, artifact: string, chars: number): string => `AI ${provider} trả lời từ chối mẫu cho bước ${artifact} (prompt ${chars} ký tự) – thường do prompt quá dài hoặc bị bộ lọc chặn.`,
   AI_PARALLEL: 3,
   WORKER_IDS: ["motion-primary", "motion-second"],
+  PLAN_WORKER_IDS: ["motion-plan", "motion-plan-2"],
+  LIGHT_WORKER_IDS: ["motion-light", "motion-light-2"],
+  ROOM_GROUPS: { SCENE: "scene", CONTENT: "content", PLAN: "plan", LIGHT: "light" },
+  ROOM_IDLE_CLOSE_MS: 90_000,
+  PLAN_ROOM_IDLE_CLOSE_MS: 15_000,
+  ROOM_IDLE_KEY: (projectId: string, workerId: string): string => `${projectId}:${workerId}`,
+  ROOM_IDLE_CLOSED: (tab: string): string => `Đã đóng ${tab} vì đã xong việc, giải phóng bộ nhớ Chrome.`,
   SCENE_WORKER_IDS: ["motion-scene-first", "motion-scene-second", "motion-scene-third"],
   SCENE_ROOMS_PREPARING: "[Dựng cảnh] Đang mở 3 room AI dựng cảnh riêng.",
+  SCENE_ROOMS_PREPARING_COUNT: (count: number): string => `[Dựng cảnh] Đang mở ${count} room AI dựng cảnh riêng.`,
   SCENE_ROOMS_READY: (ready: number, total: number): string => `[Dựng cảnh] Đã sẵn sàng ${ready}/${total} room AI dựng cảnh.`,
   SCENE_ROOM_PENDING: (index: number): string => `[Dựng cảnh] Room ${index} chưa sẵn sàng; sẽ phục hồi khi gửi yêu cầu dựng cảnh.`,
   ROOM_UI_ERROR_RE: /locator\.(fill|click|press|type|focus)|Timeout \d+ms exceeded|chat_planning_composer_content_mismatch|chat_planning_send_button_not_ready|chat_planning_submission_not_confirmed/,
@@ -160,9 +169,9 @@ export const MOTION_STORY_CONFIG = {
   EDIT_KEEP_ROLES: ["dialogue", "offscreen"] as string[],
   EDIT_RATIO_MIN: 0.3,
   EDIT_RATIO_MAX: 1.5,
-  LIMIT_SWITCH: { "gemini-chat": { provider: "chatgpt-ui", model: "chatgpt-auto" }, "chatgpt-ui": { provider: "gemini-chat", model: "gemini-flash" }, "deepseek-chat": { provider: "gemini-chat", model: "gemini-flash" }, "grok-chat": { provider: "gemini-chat", model: "gemini-flash" } } as Record<string, { provider: string; model: string }>,
+  LIMIT_SWITCH: { "gemini-chat": { provider: "chatgpt-ui", model: "chatgpt-auto" }, "chatgpt-ui": { provider: "gemini-chat", model: "gemini-flash" }, "deepseek-chat": { provider: "gemini-chat", model: "gemini-flash" }, "grok-chat": { provider: "gemini-chat", model: "gemini-flash" }, "meta-ai": { provider: "gemini-chat", model: "gemini-flash" } } as Record<string, { provider: string; model: string }>,
   LOOSE_MATCH_MIN: 3,
-  PROVIDER_PARALLEL: { "gemini-chat": 3, "chatgpt-ui": 3, "claude-chat": 1 } as Record<string, number>,
+  PROVIDER_PARALLEL: { "gemini-chat": 3, "chatgpt-ui": 3, "meta-ai": 3, "claude-chat": 1 } as Record<string, number>,
   ROOM_UNAVAILABLE_BLOCK_MS: 10 * 60 * 1000,
   ROOM_UNAVAILABLE_LOG: (from: string, to: string): string => `Phòng chat ${from} không hiện ô nhập (có thể bị chặn tạm, chưa đăng nhập hoặc hết lượt) – tạm chuyển sang ${to} trong 10 phút`,
   ROOM_LIMIT_PATTERN: /you(?:'|’)?ve (?:reached|hit).{0,40}limit|usage (?:limit|cap)|message limit|out of (?:free )?messages|too many (?:messages|requests)|rate limit|limit (?:resets|will reset)|đã (?:đạt|hết).{0,30}giới hạn|hết lượt/i,
@@ -176,7 +185,7 @@ export const MOTION_STORY_CONFIG = {
   ROOM_LIMIT_LOG: (from: string, to: string): string => `${from} đã hết lượt – các yêu cầu còn lại trong phiên chuyển thẳng sang ${to}`,
   API_PROVIDER: "api",
   REQUEST_COUNT_LOG: (counts: Record<string, number>): string =>
-    `Số request đã gửi: ${Object.entries(counts)
+    `Số yêu cầu AI đã khởi chạy (gồm các bước nội dung/hình/chuyển động, chưa tính retry nội bộ): ${Object.entries(counts)
       .map(([provider, count]) => `${provider} ${count}`)
       .join(", ")}`,
   ROOM_FALLBACK_LOG: (provider: string): string => `Phòng chat ${provider} đang bị chặn (xác minh Cloudflare/đăng nhập) – chuyển sang Gemini để chạy tiếp…`,

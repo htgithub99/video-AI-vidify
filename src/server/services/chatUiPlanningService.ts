@@ -1,3 +1,9 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
+import { askChatBridge, isChatBridgeEnabled } from "./chatBridgeService.js";
+import fs from "node:fs";
+import path from "node:path";
+import { CHAT_SPEED } from "../../constants/chatSpeed.js";
+import { getLogsDirectory } from "../utils/paths.js";
 import { deleteProviderConversationHistory } from "./chatHistoryCleanupService.js";
 import { CHAT_HISTORY_CLEANUP } from "../../constants/chatHistoryCleanup.js";
 import { RUNTIME_VALUES } from "../../constants/runtime/values.js";
@@ -12,7 +18,7 @@ import { parseRemotionAssetReply } from "../../lib/motionVectorAsset.js";
 import { parseMotionChapterReply } from "../../lib/motionChapterJson.js";
 import { MOTION_WRITING as MOTION_WRITING_JSON } from "../../constants/motionWriting.js";
 import { chatResponseIdentity } from "./chatResponseIdentity.js";
-import { isFinalChatResponseError, uncertainChatSubmission, type ChatPlanningSubmission, type ChatPendingSubmission } from "./chatSubmissionRecovery.js";
+import { isCompletedChatResponseError, isFinalChatResponseError, uncertainChatSubmission, type ChatPlanningSubmission, type ChatPendingSubmission } from "./chatSubmissionRecovery.js";
 import { observeGeminiGeneration } from "./geminiGenerationObserver.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C, CHAT_JSON_PATTERNS as JP } from "../../constants/chatPlanningRuntime.js";
@@ -20,6 +26,7 @@ import * as ST from "../../constants/sourceText.js";
 import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport } from "../../lib/chatPlanningUtils.js";
 import { motionPromptSingleMessage } from "../../lib/motionPrompt.js";
 import { MOTION_PROMPT } from "../../constants/motionPrompt.js";
+import { MOTION_RESPONSE_SCHEMAS } from "../../constants/motionResponseContract.js";
 import * as MR from "../../constants/motionRuntime.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_683,
@@ -48,8 +55,6 @@ import {
   SOURCE_TEXT_CHAT_PREVIOUS_REQUEST_WAIT_STARTED,
   SOURCE_TEXT_CHAT_PROVIDER_ALERT,
   SOURCE_TEXT_CHAT_PROVIDER_RESPONSE_ERROR,
-  SOURCE_TEXT_CHAT_PROVIDER_RETRY_SAME_ROOM,
-  SOURCE_TEXT_CHAT_PROVIDER_ROOM_RELOAD,
   SOURCE_TEXT_CHAT_REQUEST_FAILED,
   SOURCE_TEXT_CHAT_REQUEST_STARTED,
   SOURCE_TEXT_CHAT_RESPONSE_COMPLETED,
@@ -111,14 +116,16 @@ import {
   SOURCE_TEXT_UNCONFIRMED,
   SOURCE_TEXT_VISIBLE,
 } from "../../constants/sourceText.js";
-import { parseJson } from "../../lib/jsonStringify.js";
 import { createHash } from "crypto";
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
 import _ from "lodash";
+import { MOTION_AI_FALLBACK } from "../../constants/motionAiFallback.js";
+import { CHAT_EXECUTION_POLICY } from "../../constants/chatExecutionPolicy.js";
+import { requestContext } from "../utils/requestContext.js";
 import type { BrowserContext, Locator, Page } from "playwright";
 import { waitForMusicMixerUploads } from "../../features/music-mixer/server/services/musicMixerUploadReadiness.js";
-import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity, SecurityConstants } from "../../constants/index.js";
+import { CINEMATIC_CHAT_MODEL_LABELS, CINEMATIC_CHAT_PLANNING_CONFIG, EXTERNAL_URLS, GEMINI_CHAT_BASE_MODEL_LABELS, GEMINI_CHAT_THINKING_LEVEL_LABELS, normalizeCinematicArtifactIdentity } from "../../constants/index.js";
 import { CHAT_UI_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { MOTION_TEMPLATE_SYMBOL_12, MOTION_TEMPLATE_SYMBOL_26, MOTION_TEXT_ALERT, MOTION_TEXT_RESPONSE, MOTION_TEXT_ROOMPAGE, MOTION_TEXT_SYMBOL_27, MOTION_TEXT_SYMBOL_35, MOTION_TEXT_SYMBOL_36, MOTION_TEXT_SYMBOL_37 } from "../../constants/motionRuntime.js";
 import { jsonUtils } from "../../lib/json.js";
@@ -137,8 +144,18 @@ import { geminiSessionInterruption, waitForGeminiSession, withGeminiSession } fr
 import { selectClaudeChatModel } from "./claudeModelService.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { selectDeepSeekChatModel } from "./deepseekModelService.js";
+import { META_AI_CHAT_CONFIG as M } from "../../constants/metaAiChat.js";
+import { selectMetaAiChatModel } from "./metaAiModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
-import { getGeminiModelButton, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
+import { assertGeminiFlashQuota, geminiModelStillSelected, getGeminiModelButton, markGeminiModel, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
+import { withChromeBackupRecovery, saveChatResponse, isAutoChromeSwitchEnabled, chromeWaitPolicy, earliestProviderReset, activeChromeId, aiFallbackChain } from "./chromeBackupService.js";
+import { classifyAiError, tagAiAvailability, aiAvailabilityOf, isAiExhausted, aiUnavailableUntil, formatAiUntil, waitAiReset } from "./aiAvailabilityService.js";
+import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
+import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
+import { CHAT_ROOM_RECOVERY as RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { clickCurrentChatRetry, isRecoverableChatRefusal } from "./chatRoomRecovery.js";
+import { parseAiJson } from "../../lib/aiJson.js";
+import { claimBlankChatRoom, claimChatRoom, pruneBlankChromePages, releaseChatRoom } from "./sharedChromePage.js";
 import { ChatContextReceipts, confirmChatContextPart, observeChatContextReceipts, parseChatContextReceipt } from "./chatContextReceipt.js";
 import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
@@ -148,6 +165,7 @@ import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserI
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
+import { humanClick, waitHumanSendTurn } from "./humanInteractionService.js";
 interface ChatRoomAttachment {
   name: string;
   mimeType: string;
@@ -160,6 +178,11 @@ interface ChatResponseSnapshot {
 }
 type PendingRoomResponse = ChatPendingSubmission;
 interface ChatPlanningRequest {
+  allowFallback?: boolean;
+  waitOnExhausted?: boolean;
+  oneGeneration?: boolean;
+  onRecovery?: (line: string) => void;
+  restoreContext?: () => string;
   onUploadProgress?: (progress: import("../../types/musicDownloadProgress.js").MusicUploadProgress) => void;
   promptMessageLimit?: number;
   provider: AiPlanningFallbackProvider;
@@ -190,6 +213,7 @@ const grokRooms = new Map<string, Page>();
 const chatGptRooms = new Map<string, Page>();
 const claudeRooms = new Map<string, Page>();
 const deepseekRooms = new Map<string, Page>();
+const metaAiRooms = new Map<string, Page>();
 const pendingRoomResponses = new Map<string, PendingRoomResponse>();
 let activeMusicMixerRequests = 0;
 const scheduleChatBrowserCleanup = (): void => {
@@ -296,6 +320,7 @@ export const repairLooseJson = (text: string): string => {
   return out;
 };
 const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
+  if (artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE) return /<\/html>\s*(?:```)?\s*$/i.test(text.trim()) ? chatResponseIdentity(text) : undefined;
   if (artifactType === CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT) {
     const receipt = parseChatContextReceipt(text);
     if (receipt !== undefined) return receipt;
@@ -306,7 +331,7 @@ const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
   }
   const trimmed = _.trim(text);
   try {
-    return parseJson(trimmed);
+    return parseAiJson(trimmed);
   } catch {
     const start = trimmed.indexOf(MOTION_TEXT_SYMBOL_35);
     const end = trimmed.lastIndexOf(MOTION_TEXT_SYMBOL_36);
@@ -317,7 +342,7 @@ const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
       if (chapter !== undefined) return chapter;
     }
     try {
-      return parseJson(candidate);
+      return parseAiJson(candidate);
     } catch {
       try {
         const cleaned = candidate.replace(JP.JSON_FENCE, MR.MOTION_TEXT_EMPTY).replace(JP.CODE_FENCE, MR.MOTION_TEXT_EMPTY).trim();
@@ -326,9 +351,9 @@ const parseStrictRoomJson = (text: string, artifactType?: string): unknown => {
         if (cleanStart >= 0 && cleanEnd > cleanStart) {
           const body = cleaned.slice(cleanStart, cleanEnd + 1);
           try {
-            return parseJson(body);
+            return parseAiJson(body);
           } catch {
-            return parseJson(repairLooseJson(body));
+            return parseAiJson(repairLooseJson(body));
           }
         }
       } catch {
@@ -345,12 +370,14 @@ const getProviderRooms = (provider: AiPlanningFallbackProvider): Map<string, Pag
   if (_.isEqual(provider, AiPlanningFallbackProvider.ChatGptUi)) return chatGptRooms;
   if (_.isEqual(provider, AiPlanningFallbackProvider.ClaudeChat)) return claudeRooms;
   if (_.isEqual(provider, AiPlanningFallbackProvider.DeepSeekChat)) return deepseekRooms;
+  if (_.isEqual(provider, AiPlanningFallbackProvider.MetaAi)) return metaAiRooms;
   return undefined;
 };
-const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
+const hasActiveChatRooms = (): boolean => _.some([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms, metaAiRooms], (rooms) => _.some([...rooms.values()], (page) => !page.isClosed()));
 export const closeChatBrowserIfIdle = async (log?: (line: string) => void): Promise<boolean> => {
+  if (sharedChromeTasks.switching) return false;
   if (manualCleanupFlights.size || hasActiveChatRooms()) {
-    log?.(MOTION_BROWSER_HANDOFF.ACTIVE_ROOMS(_.flatMap([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms], (rooms) => [...rooms.values()].filter((page) => !page.isClosed()).map((page) => page.url())).join(BROWSER_LIFECYCLE_TEXTS.urlSeparator)));
+    log?.(MOTION_BROWSER_HANDOFF.ACTIVE_ROOMS(_.flatMap([geminiRooms, grokRooms, chatGptRooms, claudeRooms, deepseekRooms, metaAiRooms], (rooms) => [...rooms.values()].filter((page) => !page.isClosed()).map((page) => page.url())).join(BROWSER_LIFECYCLE_TEXTS.urlSeparator)));
     return false;
   }
   const grokClosed = await closeOwnedGrokBrowserIfIdle();
@@ -367,10 +394,29 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, r
   if (!rooms) return;
   const roomKey = getPlanningRoomKey(request);
   const page = rooms.get(roomKey);
-  if (requireClosed && page && !page.isClosed()) await page.close();
+  const openPages =
+    page && !page.isClosed()
+      ? (page
+          .context?.()
+          ?.pages?.()
+          .filter((candidate) => !candidate.isClosed()) ?? [])
+      : [];
+  if (requireClosed && page && !page.isClosed()) {
+    contextReceipts.get(page)?.invalidate();
+    if (openPages.length === 1) await page.goto(RT_MAINTENANCE.ABOUT_BLANK).catch(() => undefined);
+    else await page.close();
+    releaseChatRoom(page);
+  }
   rooms.delete(roomKey);
   pendingRoomResponses.delete(roomKey);
-  if (!requireClosed && page && !page.isClosed()) await page.close().catch(() => undefined);
+  if (!requireClosed && page && !page.isClosed()) {
+    contextReceipts.get(page)?.invalidate();
+    releaseChatRoom(page);
+    if (openPages.length === 1) await page.goto(RT_MAINTENANCE.ABOUT_BLANK).catch(() => undefined);
+    else await page.close().catch(() => undefined);
+  }
+  const context = page && !page.isClosed() ? page.context?.() : openPages[0]?.context?.();
+  if (context) await pruneBlankChromePages(context).catch(() => undefined);
   if (!hasActiveChatRooms()) scheduleChatBrowserCleanup();
 };
 export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">, closeBrowser = true): Promise<void> => {
@@ -383,7 +429,17 @@ export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlannin
       const page = rooms.get(key);
       rooms.delete(key);
       pendingRoomResponses.delete(key);
-      if (page && !page.isClosed()) await page.close().catch(() => undefined);
+      if (page && !page.isClosed()) {
+        contextReceipts.get(page)?.invalidate();
+        releaseChatRoom(page);
+        const openPages =
+          page
+            .context?.()
+            ?.pages?.()
+            .filter((candidate) => !candidate.isClosed()) ?? [];
+        if (!closeBrowser && openPages.length === 1) await page.goto(RT_MAINTENANCE.ABOUT_BLANK).catch(() => undefined);
+        else await page.close().catch(() => undefined);
+      }
     }),
   );
   if (closeBrowser) await closeChatBrowserIfIdle();
@@ -394,12 +450,15 @@ export const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity):
   const page = rooms?.get(roomKey);
   pendingRoomResponses.delete(roomKey);
   if (!page || page.isClosed()) throw new Error(SOURCE_TEXT_CHAT_PLANNING_ROOM_UNAVAILABLE_FOR_RELOAD);
-  await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  contextReceipts.get(page)?.invalidate();
+  if (request.provider === AiPlanningFallbackProvider.GeminiChat && page.url().startsWith(EXTERNAL_URLS.GEMINI_CHAT)) await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  else await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
 };
 const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { url: string } | undefined => {
   if (provider === AiPlanningFallbackProvider.GeminiChat) return { url: EXTERNAL_URLS.GEMINI_CHAT };
   if (provider === AiPlanningFallbackProvider.GrokChat) return { url: EXTERNAL_URLS.GROK_CHAT };
   if (provider === AiPlanningFallbackProvider.ChatGptUi) return { url: EXTERNAL_URLS.CHATGPT };
+  if (provider === AiPlanningFallbackProvider.MetaAi) return { url: EXTERNAL_URLS.META_AI_CHAT };
   return undefined;
 };
 const manualCleanupFlights = new Map<AiPlanningFallbackProvider, Promise<{ closedRoomCount: number; deletedConversationCount: number; deletedAll: boolean }>>();
@@ -439,7 +498,7 @@ const executeClearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
   await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_DELETE_SETTLE_MS);
   let cleanupPage: Page | undefined;
   try {
-    const browser = provider === AiPlanningFallbackProvider.GrokChat ? await getOrLaunchGrokBrowser(false) : await getOrLaunchGlobalBrowser(false, true);
+    const browser = provider === AiPlanningFallbackProvider.GrokChat ? await getOrLaunchGrokBrowser(false) : await getOrLaunchGlobalBrowser(false, true, false);
     cleanupPage = await browser.context.newPage();
     const deletedConversationCount = await deleteProviderConversationHistory(cleanupPage, provider);
     appLog(CHAT_UI_AUTOMATION_MESSAGES.CLEANUP_ALL_ACTIVITY_DELETED(provider));
@@ -453,6 +512,32 @@ const executeClearChatPlanningRooms = async (provider: AiPlanningFallbackProvide
     await Promise.allSettled(_.map(pagesToClose, (page) => (page.isClosed() ? Promise.resolve() : page.close())));
   }
 };
+const activeRooms = new WeakSet<Page>();
+const keepRoomActive = async (page: Page): Promise<void> => {
+  if (activeRooms.has(page) || page.isClosed()) return;
+  activeRooms.add(page);
+  try {
+    const session = await page.context().newCDPSession(page);
+    await session.send(CHAT_SPEED.FOCUS_EMULATION as any, { enabled: true } as any);
+    await session.send(CHAT_SPEED.LIFECYCLE as any, { state: CHAT_SPEED.ACTIVE } as any).catch(() => undefined);
+  } catch {
+    activeRooms.delete(page);
+  }
+};
+const roomTimings = new WeakMap<Page, Record<string, number>>();
+const markRoomTiming = (page: Page, key: string): void => {
+  const marks = roomTimings.get(page) || {};
+  if (marks[key] === undefined) marks[key] = Date.now();
+  roomTimings.set(page, marks);
+};
+const writeGeminiTiming = (page: Page | undefined, request: ChatPlanningRequest, started: number, phases: Record<string, number>, ok: boolean): void => {
+  const marks = (page && roomTimings.get(page)) || {};
+  if (page) roomTimings.delete(page);
+  const at = (value?: number) => (value ? Math.round((value - started) / 100) / 10 : undefined);
+  try {
+    fs.appendFileSync(path.join(getLogsDirectory(), CHAT_SPEED.TIMING_FILE), stringifyJson({ at: new Date().toISOString(), artifact: request.artifactType, worker: request.workerId, model: request.model, ok, tab: at(phases.tab), model_ready: at(phases.model), uploaded: at(marks[CHAT_SPEED.MARK.UPLOADED]), compose: at(marks[CHAT_SPEED.MARK.COMPOSE]), prompt_chars: request.prompt?.length, written: at(marks[CHAT_SPEED.MARK.WRITTEN]), sent: at(marks[CHAT_SPEED.MARK.SENT]), first_text: at(marks[CHAT_SPEED.MARK.FIRST_TEXT]), done: at(phases.done) }) + CHAT_SPEED.NEWLINE);
+  } catch {}
+};
 const getLiveRoom = (rooms: Map<string, Page>, projectId: string): Page | undefined => {
   const room = rooms.get(projectId);
   if (room && !room.isClosed()) return room;
@@ -464,11 +549,20 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   if (provider) await manualCleanupFlights.get(provider);
   throwIfPlanningCancelled(signal);
   const existingRoom = getLiveRoom(rooms, projectId);
-  if (existingRoom) return existingRoom;
-  const page = await context.newPage();
+  if (existingRoom && existingRoom.context() === context) {
+    await keepRoomActive(existingRoom);
+    return existingRoom;
+  }
+  if (existingRoom) {
+    releaseChatRoom(existingRoom);
+    rooms.delete(projectId);
+  }
+  await pruneBlankChromePages(context).catch(() => undefined);
+  const page = (url === EXTERNAL_URLS.GROK_CHAT ? undefined : claimBlankChatRoom(context)) || claimChatRoom(await context.newPage());
   try {
     throwIfPlanningCancelled(signal);
     rooms.set(projectId, page);
+    await keepRoomActive(page);
     await page.goto(url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
     throwIfPlanningCancelled(signal);
     return page;
@@ -493,8 +587,35 @@ const getLastVisibleLocator = async (page: Page, selector: string, timeoutMs: nu
   }
   throw Object.assign(new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND), { [MR.MOTION_TEXT_ROOMPAGE]: page });
 };
-export const getChatResponseSnapshots = async (page: Page, responseSelector: string, artifactType?: string): Promise<ChatResponseSnapshot[]> =>
-  readPlanningUi(
+export const getChatResponseSnapshots = async (page: Page, responseSelector: string, artifactType?: string): Promise<ChatResponseSnapshot[]> => {
+  if (responseSelector === M.RESPONSE) {
+    const clickedExpandOrRaw = await page
+      .locator(responseSelector)
+      .evaluateAll(
+        (elements, selectors) => {
+          let didClick = false;
+          for (const el of elements) {
+            el.querySelectorAll<HTMLElement>(selectors.expandCode).forEach((btn) => {
+              if (btn.getClientRects().length > 0) {
+                btn.click();
+                didClick = true;
+              }
+            });
+            el.querySelectorAll<HTMLElement>(selectors.jsonRaw).forEach((btn) => {
+              if (btn.getClientRects().length > 0 && /^raw$/i.test((btn.textContent || "").trim())) {
+                btn.click();
+                didClick = true;
+              }
+            });
+          }
+          return didClick;
+        },
+        { expandCode: M.EXPAND_CODE_BUTTON, jsonRaw: M.JSON_RAW_BUTTON },
+      )
+      .catch(() => false);
+    if (clickedExpandOrRaw) await delayAsync(150);
+  }
+  return readPlanningUi(
     page
       .locator(responseSelector)
       .evaluateAll(
@@ -516,8 +637,19 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
               const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MOTION_TEXT_EMPTY;
               const identity = messageId || currentMessageId || (testId ? testId + SOURCE_TEXT_SYMBOL_16 + index : identityElement.id);
               const content = browserPayload.contentSelector ? element.querySelector(browserPayload.contentSelector) || element : element;
+              if (browserPayload.jsonRawButtonSelector) {
+                content.querySelectorAll<HTMLElement>(browserPayload.jsonRawButtonSelector).forEach((btn) => {
+                  if (/^raw$/i.test((btn.textContent || MOTION_TEXT_EMPTY).trim())) btn.click();
+                });
+              }
               const codeText = browserPayload.preferCodeBlocks
                 ? Array.from(content.querySelectorAll(browserPayload.codeSelector))
+                    .filter((block) => {
+                      if (!browserPayload.filterVisibleCodeBlocks) return true;
+                      if (!(block instanceof HTMLElement)) return false;
+                      const blockStyle = window.getComputedStyle(block);
+                      return blockStyle.visibility !== SOURCE_TEXT_HIDDEN && blockStyle.display !== SOURCE_TEXT_NONE && block.getClientRects().length > 0;
+                    })
                     .map((block) => block.textContent || MOTION_TEXT_EMPTY)
                     .join(ST.SOURCE_TEXT_SYMBOL_56)
                 : MOTION_TEXT_EMPTY;
@@ -526,10 +658,12 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
             });
         },
         {
-          preferCodeBlocks: AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE,
+          preferCodeBlocks: artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE || responseSelector === M.RESPONSE,
+          filterVisibleCodeBlocks: responseSelector === M.RESPONSE,
           contentSelector: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_CONTENT_SELECTOR : MR.MOTION_TEXT_EMPTY,
           currentMessageIdAttribute: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_ID_ATTRIBUTE : MR.MOTION_TEXT_EMPTY,
-          codeSelector: responseSelector === D.RESPONSE ? D.CODE : C.CODE_BLOCK_SELECTOR,
+          codeSelector: responseSelector === D.RESPONSE ? D.CODE : responseSelector === M.RESPONSE ? M.CODE : C.CODE_BLOCK_SELECTOR,
+          jsonRawButtonSelector: responseSelector === M.RESPONSE ? M.JSON_RAW_BUTTON : MR.MOTION_TEXT_EMPTY,
           payload: {
             selector: responseSelector === D.RESPONSE ? XRT.RESPONSE_ROW_SELECTOR : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_IDENTITY_SELECTOR,
             messageIdAttribute: responseSelector === D.RESPONSE ? XRT.RESPONSE_ROW_ATTRIBUTE : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MESSAGE_ID_ATTRIBUTE,
@@ -545,6 +679,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS,
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_RESPONSE,
   );
+};
 const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): boolean => {
   if (_.isEmpty(text)) return false;
   const parsed = parseStrictRoomJson(text);
@@ -580,6 +715,15 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
     if (alerts.some((alert) => D.RATE_LIMIT.test(alert))) throw new Error(D.RATE_LIMIT_ERROR);
     return;
   }
+  if (busySelector === M.BUSY) {
+    const alerts = await page
+      .locator(SOURCE_TEXT_ROLE_ALERT)
+      .filter({ visible: true })
+      .allTextContents()
+      .catch(() => []);
+    if (alerts.some((alert) => M.RATE_LIMIT_PATTERN.test(alert))) throw new Error(M.RATE_LIMIT_ERROR);
+    return;
+  }
   if (_.isEqual(busySelector, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR)) {
     const alerts = await page
       .locator(C.CLAUDE_USAGE_NOTICE_SELECTOR)
@@ -598,7 +742,7 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
     throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.GROK_RATE_LIMIT_ERROR);
   }
 };
-export const waitForStableResponse = async (page: Page, responseSelector: string, busySelector: string, initialCount: number, expectedSceneIds: string[], initialResponseSnapshots: ChatResponseSnapshot[], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal, prompt?: string, waitForSession?: () => Promise<number>): Promise<string> => {
+export const waitForStableResponse = async (page: Page, responseSelector: string, busySelector: string, initialCount: number, expectedSceneIds: string[], initialResponseSnapshots: ChatResponseSnapshot[], completionMarker?: string, artifactType?: string, requestId?: string, signal?: AbortSignal, prompt?: string, waitForSession?: () => Promise<number>, regenerating = false): Promise<string> => {
   const startedAt = Date.now();
   let absoluteDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_MAX_TIMEOUT_MS;
   let activityDeadline = startedAt + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS;
@@ -615,6 +759,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
   let lastObservedCandidate: string = MR.MOTION_TEXT_EMPTY;
   let busyWaitLogged = false;
   let lastJsonCandidate: string = MR.MOTION_TEXT_EMPTY;
+  let regenerationObserved = false;
   const recoverDeepSeek = busySelector === D.BUSY ? createDeepSeekRetryRecovery(page, prompt, signal) : undefined;
   while (Date.now() < absoluteDeadline) {
     throwIfPlanningCancelled(signal);
@@ -622,6 +767,14 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     const pausedMs = (await waitForSession?.()) || 0;
     absoluteDeadline += pausedMs;
     activityDeadline += pausedMs;
+    if (responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR && /^https?:/.test(page.url()) && new URL(page.url()).origin !== new URL(EXTERNAL_URLS.GEMINI_CHAT).origin) {
+      const error = Object.assign(new Error(`${RT_MAINTENANCE.PHONG_GEMINI_DA_CHUYEN_SANG}${new URL(page.url()).origin}${RT_MAINTENANCE.GIU_YEU_CAU_CU_DE_DOC_LAI_KHONG_GUI_LAP}`), {
+        code: CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE,
+        diagnostics: { responseCount: lastObservedResponseCount, initialCount, candidateChars: lastJsonCandidate.length, busy: lastBusyState, identityMatch: !!lastJsonCandidate, elapsedMs: Date.now() - startedAt, lastCandidate: lastJsonCandidate, unexpectedOrigin: new URL(page.url()).origin },
+      });
+      Object.defineProperty(error, MOTION_TEXT_ROOMPAGE, { value: page, enumerable: false });
+      throw error;
+    }
     await throwIfGrokRateLimited(page, busySelector);
     if (await page.getByText(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_LIMIT_MESSAGE_PATTERN).filter({ visible: true }).count()) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_LIMIT_RESPONSE_ERROR);
     if (await recoverDeepSeek?.()) {
@@ -630,19 +783,19 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
       continue;
     }
-    const visibleAlerts = await page
-      .locator(SOURCE_TEXT_ROLE_ALERT)
+    const alertLocator = responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_RESPONSE_SELECTOR ? page.locator(SOURCE_TEXT_ROLE_ALERT).or(page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_ERROR_SNACKBAR_SELECTOR)) : page.locator(SOURCE_TEXT_ROLE_ALERT);
+    const visibleAlerts = await alertLocator
       .filter({ visible: true })
       .allTextContents()
       .catch(() => []);
     const providerErrorAlert = _.find(visibleAlerts, (alert) => CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(alert));
-    if (providerErrorAlert) {
-      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ALERT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, errorMessage: providerErrorAlert });
-      throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_ALERT, elapsedMs: Date.now() - startedAt, lastCandidate: _.toString(providerErrorAlert) } });
-    }
     const responseSnapshots = await getChatResponseSnapshots(page, responseSelector, artifactType);
     const count = responseSnapshots.length;
     const responseTexts = _.map(responseSnapshots, SOURCE_TEXT_TEXT);
+    if (regenerating) {
+      const busy = await page.locator(busySelector).filter({ visible: true }).count();
+      if (busy || responseSnapshots.length < initialCount || responseSnapshots.some((snapshot) => !initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text))) regenerationObserved = true;
+    }
     const lastResponse = _.trim(_.last(responseTexts) || MR.MOTION_TEXT_EMPTY);
     const changedLastResponse = !_.isEmpty(lastResponse) && !initialResponseSet.has(lastResponse) ? lastResponse : MR.MOTION_TEXT_EMPTY;
     const newResponseTexts = count > initialCount ? _.slice(responseTexts, initialCount) : [];
@@ -651,7 +804,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       _.filter(responseSnapshots, (snapshot) => !_.isEmpty(snapshot.identity) && !initialResponseIdentitySet.has(snapshot.identity)),
       SOURCE_TEXT_TEXT,
     );
-    const freshResponses = newResponseTexts.length ? newResponseTexts : responsesWithNewIdentity.length ? responsesWithNewIdentity : [...responsesNotPresentBeforeSubmission, changedLastResponse];
+    const freshResponses = newResponseTexts.length ? newResponseTexts : responsesWithNewIdentity.length ? responsesWithNewIdentity : regenerating && regenerationObserved ? [lastResponse] : [...responsesNotPresentBeforeSubmission, changedLastResponse];
     const normalizedExpectedRequestId = normalizeCinematicArtifactIdentity(requestId);
     const responseCandidates = _.uniq(_.compact(freshResponses)).filter((candidate) => {
       const identity = normalizeCinematicArtifactIdentity(chatResponseIdentity(candidate).requestId);
@@ -679,6 +832,10 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       .then((visibleCount) => visibleCount > 0)
       .catch(() => false);
     const responseProgressed = count > lastObservedResponseCount || (!_.isEmpty(latestText) && !_.isEqual(latestText, lastObservedCandidate));
+    if (providerErrorAlert && !isBusy && !parseableJsonResponse && (!regenerating || regenerationObserved)) {
+      await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ALERT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, errorMessage: providerErrorAlert });
+      throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_ALERT, busy: false, elapsedMs: Date.now() - startedAt, lastCandidate: _.toString(providerErrorAlert) } });
+    }
     if (responseProgressed || isBusy) {
       activityDeadline = _.min([absoluteDeadline, Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_ACTIVITY_GRACE_MS]) || absoluteDeadline;
     }
@@ -701,6 +858,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
     lastIdentityMatch = belongsToCurrentRequest;
     const isCompleteJson = !_.isUndefined(parsedLatest);
     const isRefusal = !isCompleteJson && CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_PATTERN.test(latestText);
+    if (latestText) markRoomTiming(page, CHAT_SPEED.MARK.FIRST_TEXT);
     if ((_.gte(latestText.length, CINEMATIC_CHAT_PLANNING_CONFIG.MIN_RESPONSE_CHARACTERS) || isRefusal) && !isBusy) {
       stablePolls = _.isEqual(latestText, previousText) ? _.add(stablePolls, 1) : 0;
       previousText = latestText;
@@ -708,14 +866,23 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
         if (isRefusal && !_.isEmpty(responseCandidates)) {
           throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR), { diagnostics: { responseCount: count, initialCount, candidateChars: latestText.length, busy: false, identityMatch: false, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
         }
-        const mayUseUnmarkedJsonFallback = _.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && _.isEmpty(artifactType) && _.isEmpty(normalizedExpectedRequestId) && isCompleteJson;
+        const unmarkedSchemaKeys =
+          isCompleteJson && _.isPlainObject(parsedLatest) && count > initialCount && _.isEmpty(returnedArtifactType) && _.isEmpty(returnedRequestId) && artifactType
+            ? new Set<string>([...Object.keys(MOTION_RESPONSE_SCHEMAS[artifactType]?.properties || {}), ...(MOTION_RESPONSE_SCHEMAS[artifactType]?.anyOf?.flatMap((opt) => Object.keys(opt.properties || {})) || []), ...(artifactType === RT_MAINTENANCE.MOTION_HTML_PLAN ? [RT_MAINTENANCE.SCENES] : [])])
+            : undefined;
+        const isFreshSchemaMatch = !!unmarkedSchemaKeys && _.keys(parsedLatest).length >= 1 && _.keys(parsedLatest).every((k) => unmarkedSchemaKeys.has(k));
+        const mayUseUnmarkedJsonFallback = (_.isEmpty(expectedSceneIds) && _.isEmpty(completionMarker) && _.isEmpty(artifactType) && _.isEmpty(normalizedExpectedRequestId) && isCompleteJson) || isFreshSchemaMatch;
         if (isCompleteJson && (belongsToCurrentRequest || mayUseUnmarkedJsonFallback)) {
           if (!belongsToCurrentRequest) {
             appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RAW_CONTRACT_FALLBACK(_.join(expectedSceneIds, SOURCE_TEXT_SYMBOL_4) || SOURCE_TEXT_NOT_REQUIRED, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
           }
           appLog(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_COMPLETE(latestText.length));
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_UI_CONFIRMED, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseChars: latestText.length, stablePolls, elapsedMs: Date.now() - startedAt, identityMatch: belongsToCurrentRequest });
-          return jsonUtils.safeStringify(parsedLatest);
+          return artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? latestText : jsonUtils.safeStringify(parsedLatest);
+        }
+        if (!isCompleteJson && CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(latestText) && latestText.length < CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_MAX_CHARS) {
+          await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_RESPONSE_ERROR, { stage: artifactType, errorMessage: latestText });
+          throw _.assign(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR), { diagnostics: { source: MOTION_TEXT_RESPONSE, responseCount: count, initialCount, candidateChars: latestText.length, elapsedMs: Date.now() - startedAt, lastCandidate: latestText } });
         }
         if (!isCompleteJson && !_.isEmpty(responseCandidates) && stablePolls >= CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_STABLE_POLLS) {
           appWarn(CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_PREVIEW_LOG(_.truncate(latestText, { length: 800 })));
@@ -734,7 +901,8 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       previousText = latestText;
     }
     if (!isBusy && Date.now() >= activityDeadline) break;
-    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
+    if (!isBusy && count === initialCount && !regenerationObserved && _.isEmpty(responseCandidates) && Date.now() - startedAt >= CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_MS) break;
+    await delayAsync(isBusy ? CHAT_SPEED.BUSY_POLL_MS : CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_POLL_MS);
   }
   appWarn(CHAT_UI_AUTOMATION_MESSAGES.PLANNING_RESPONSE_TIMEOUT_LOG(lastResponseCount, initialCount, lastCandidateLength, lastBusyState, lastIdentityMatch, completionMarker || SOURCE_TEXT_NOT_REQUIRED));
   await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_TIMEOUT, { runId: requestId ? createHash(SOURCE_TEXT_SHA256).update(requestId).digest(SOURCE_TEXT_HEX).slice(0, 12) : undefined, stage: artifactType, responseCount: lastResponseCount, candidateChars: lastCandidateLength, busy: lastBusyState, identityMatch: lastIdentityMatch, elapsedMs: Date.now() - startedAt });
@@ -863,10 +1031,10 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
   if (!uploaded) throw new Error(MOTION_TEMPLATE_SYMBOL_12(SOURCE_TEMPLATE_SYMBOL_86(String(CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_FALLBACK_ERROR_PREFIX)), SOURCE_TEMPLATE_SYMBOL_86(String(_.toString(_.get(lastUploadError, SOURCE_TEXT_MESSAGE, MR.MOTION_TEXT_EMPTY))))).trim());
   if (scopedComposer) await page.keyboard.press(SOURCE_TEXT_ESCAPE);
 };
-const getComposerReadings = async (input: Locator): Promise<string[]> => {
+const getComposerReadings = async (input: Locator, signal?: AbortSignal): Promise<string[]> => {
   return readPlanningUi(
-    input.evaluate((element, empty) => [element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value : empty, element.textContent || empty], MR.MOTION_TEXT_EMPTY),
-    undefined,
+    input.evaluate((element, empty) => [element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement ? element.value : empty, element.textContent || empty], MR.MOTION_TEXT_EMPTY, { timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS }),
+    signal,
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS,
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_COMPOSER,
   );
@@ -928,7 +1096,7 @@ const waitPageResponsive = async (page: Page, signal?: AbortSignal, deadline: nu
       page
         .evaluate(() => true)
         .then(() => true)
-        .catch(() => true),
+        .catch(() => false),
       delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS).then(() => false),
     ]);
     if (answered) return;
@@ -943,7 +1111,7 @@ const waitComposerFilled = async (input: Locator, prompt: string, directive: str
   let afterSettle = 0;
   while (Date.now() < deadline) {
     throwIfPlanningCancelled(signal);
-    if (assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input)).valid) return true;
+    if (assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid) return true;
     if (settled() && ++afterSettle > CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_SETTLE_POLLS) return false;
     await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
   }
@@ -955,23 +1123,60 @@ const writeComposer = async (page: Page, input: Locator, prompt: string, directi
     await waitPageResponsive(page, signal, deadline);
     const cap = Math.max(CINEMATIC_CHAT_PLANNING_CONFIG.UI_PROBE_MS, Math.min(uiActionCap(prompt.length), deadline - Date.now()));
     if (pass) appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_REWRITE_LOG);
-    let settled = false;
-    const write = pass
-      ? input
-          .focus({ timeout: cap })
-          .then(() => page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY))
-          .then(() => page.keyboard.insertText(prompt))
-      : input.fill(prompt, { timeout: cap });
-    void write.catch(_.noop).finally(() => (settled = true));
-    if (await waitComposerFilled(input, prompt, directive, requestId, Date.now() + cap, () => settled, signal)) return;
+    const hasInlineImage = (await input.locator(M.INLINE_IMAGE_NODE).count().catch(() => 0)) > 0;
+    if (hasInlineImage) {
+      await input
+        .evaluate((el, inlineImgSel) => {
+          Array.from(el.querySelectorAll("p, span[data-lexical-text]")).forEach((node) => {
+            if (!node.querySelector(inlineImgSel) && !node.closest(inlineImgSel)) {
+              node.textContent = "";
+            }
+          });
+        }, M.INLINE_IMAGE_NODE)
+        .catch(() => undefined);
+      await input.focus({ timeout: cap });
+      await page.keyboard.press("End").catch(() => undefined);
+      await page.keyboard.insertText(prompt);
+    } else if (pass) {
+      await input.focus({ timeout: cap });
+      await page.keyboard.press(CINEMATIC_CHAT_PLANNING_CONFIG.SELECT_ALL_KEY);
+      await page.keyboard.insertText(prompt);
+    } else {
+      await humanClick(page, input, cap).catch(() => undefined);
+      await input.fill(prompt, { timeout: cap });
+    }
+    throwIfPlanningCancelled(signal);
+    if (await waitComposerFilled(input, prompt, directive, requestId, Math.min(deadline, Date.now() + cap), () => true, signal)) return;
   }
+  throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
 };
 const clickSendButton = async (page: Page, button: Locator, signal?: AbortSignal): Promise<void> => {
   await waitPageResponsive(page, signal);
   throwIfPlanningCancelled(signal);
-  await button.click({ noWaitAfter: true, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS });
+  await humanClick(page, button, CINEMATIC_CHAT_PLANNING_CONFIG.UI_ACTION_BASE_MS);
 };
-const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input)).valid;
+const composerStillHolds = async (input: Locator, prompt: string, directive: string, requestId: string | undefined, signal?: AbortSignal): Promise<boolean> => assessChatComposerContent(prompt, directive, requestId, await getComposerReadings(input, signal)).valid;
+const canRegenerateChatResponse = (error: unknown): boolean => {
+  const message = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
+  return message === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR || message === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_RESPONSE_ERROR || isRecoverableChatRefusal(error) || isResponseTimeoutError(error);
+};
+const regenerateProviderError = async (page: Page, responseSelector: string, busySelector: string, artifactType: string, requestId: string, signal: AbortSignal | undefined, send: () => Promise<string>, onRegenerate?: (line: string) => void): Promise<string> => {
+  let run = send;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (!canRegenerateChatResponse(error) || attempt >= RECOVERY.REGENERATE_LIMIT || page.isClosed()) throw error;
+      if (CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS > 0) await delayAsync(RECOVERY.RETRY_CLICK_COOLDOWN_MS * (attempt + 1));
+      throwIfPlanningCancelled(signal);
+      const snapshots = await getChatResponseSnapshots(page, responseSelector, artifactType).catch(() => []);
+      if (!(await clickCurrentChatRetry(page, signal).catch(() => false))) throw error;
+      onRegenerate?.(RECOVERY.CLICK_LOG);
+      appLog(RECOVERY.CLICK_LOG);
+      run = () => waitForStableResponse(page, responseSelector, busySelector, snapshots.length, [], snapshots, undefined, artifactType, requestId, signal, undefined, undefined, true);
+    }
+  }
+};
 const contextReceipts = new WeakMap<Page, ChatContextReceipts>();
 const roomContextReceipts = (page: Page): ChatContextReceipts => {
   let receipts = contextReceipts.get(page);
@@ -1002,7 +1207,7 @@ const submitPrompt = async (
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
   const isDeepSeek = inputSelector === D.INPUT;
   const singleMessage = motionPromptSingleMessage(artifactType);
-  const responseDirective = singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
+  const responseDirective = artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? RT_MAINTENANCE.RETURN_THE_COMPLETE_HTML_DOCUMENT_IN_ONE_HTML_CODE_BLOCK : singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(String(normalizedPrompt)), SOURCE_TEMPLATE_SYMBOL_86(String(responseDirective)));
   const { limit, parts } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit, singleMessage);
@@ -1022,7 +1227,24 @@ const submitPrompt = async (
         CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_PART(id, request, index + 1, parts.length, parts[index]),
         id,
         index + 1,
-        async (question) => parseStrictRoomJson(await submitPrompt(page, roomKey, question, inputSelector, sendSelector, responseSelector, busySelector, [], [], undefined, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT, id, signal, undefined, limit)),
+        async (question) =>
+          parseStrictRoomJson(
+            await regenerateProviderError(
+              page,
+              responseSelector,
+              busySelector,
+              CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT,
+              id,
+              signal,
+              () => submitPrompt(page, roomKey, question, inputSelector, sendSelector, responseSelector, busySelector, [], [], undefined, CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT, id, signal, undefined, limit),
+              isDeepSeek
+                ? undefined
+                : (line) => {
+                    submission?.onContextProgress?.();
+                    submission?.onRegenerate?.(line);
+                  },
+            ),
+          ),
         signal,
         async (attempt) => {
           submission?.onContextProgress?.();
@@ -1102,6 +1324,7 @@ const submitPrompt = async (
       let submissionConfirmed = false;
       let initialUserQueries = 0;
       const markPendingSubmission = (): void => {
+        if (sharedChromeTasks.switching) throw new Error(BACKUP.QUOTA);
         pendingRoomResponses.set(roomKey, { page, prompt: submittedPrompt, initialCount, initialResponseSnapshots, expectedSceneIds: _.clone(expectedSceneIds), completionMarker, artifactType, requestId, responseSelector, busySelector, url: page.url() });
         if (submission) {
           submission.attempted = true;
@@ -1120,9 +1343,10 @@ const submitPrompt = async (
         initialResponseSnapshots = await getChatResponseSnapshots(page, responseSelector);
         initialCount = initialResponseSnapshots.length;
         if (isGemini && attachments.length) initialUserQueries = await page.locator(RT_SERVER.USER_QUERY).count();
+        const isMetaAi = inputSelector === M.INPUT;
         const uploadPolicy = isGemini ? geminiUploadPolicy : isChatGpt ? chatGptUploadPolicy : undefined;
         const scopedComposer = isClaude || uploadPolicy ? await getClaudeComposerScope(input, uploadPolicy) : isDeepSeek ? await getDeepSeekComposerScope(input) : undefined;
-        const removeSelector = isDeepSeek ? D.REMOVE : uploadPolicy?.remove;
+        const removeSelector = isDeepSeek ? D.REMOVE : isMetaAi ? M.REMOVE : uploadPolicy?.remove;
         if (!_.isEmpty(attachments)) {
           throwIfPlanningCancelled(signal);
           await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTACHMENT_STARTED, { runId: diagnosticRunId, stage: artifactType, attachmentCount: attachments.length });
@@ -1217,13 +1441,19 @@ const submitPrompt = async (
           await clearQueuedRoomAttachments(page, scopedComposer, removeSelector);
           if (isDeepSeek) await waitForDeepSeekUploads(input, [], CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation);
           else await waitForClaudeUploads(input, [], CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, uploadObservation, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_UPLOAD_STABLE_MS, false, uploadPolicy);
+        } else if (isMetaAi) {
+          await clearQueuedRoomAttachments(page, input, M.REMOVE).catch(() => undefined);
         }
+        markRoomTiming(page, CHAT_SPEED.MARK.UPLOADED);
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_INPUT_SETTLE_MS);
         await withComposerGate(roomKey, signal, async () => {
+          await waitHumanSendTurn(page, signal);
+          markRoomTiming(page, CHAT_SPEED.MARK.COMPOSE);
           await writeComposer(page, input, submittedPrompt, responseDirective, requestId, signal);
+          markRoomTiming(page, CHAT_SPEED.MARK.WRITTEN);
           await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
           await page.waitForTimeout(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_SUBMIT_SETTLE_MS);
-          const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input));
+          const composerAssessment = assessChatComposerContent(submittedPrompt, responseDirective, requestId, await getComposerReadings(input, signal));
           if (!composerAssessment.valid) {
             await writeMusicDiagnostic(SOURCE_TEXT_CHAT_COMPOSER_MISMATCH, { runId: diagnosticRunId, stage: artifactType, expectedChars: submittedPrompt.length, actualChars: composerAssessment.actualChars, status: composerAssessment.reason });
             throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.COMPOSER_CONTENT_MISMATCH_ERROR);
@@ -1244,22 +1474,23 @@ const submitPrompt = async (
               }
               markPendingSubmission();
               await clickSendButton(page, sendButton, signal);
+              markRoomTiming(page, CHAT_SPEED.MARK.SENT);
             } else throw new Error(_.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_NOT_READY_ERROR : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMIT_BLOCKED_ERROR);
             submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_SUBMISSION_VERIFY_TIMEOUT_MS, signal);
-            if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId))) {
+            if (!submission && !submissionConfirmed && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CINEMATIC_CHAT_PLANNING_CONFIG.UI_CLICK_FALLBACK_LOG);
               await waitPageResponsive(page, signal);
-              await Promise.race([sendButton.evaluate((element: HTMLElement) => element.click()).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
+              await Promise.race([humanClick(page, sendButton, CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS).catch(_.noop), delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_CLICK_WAIT_MS)]);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             }
-            if (!submission && !submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId))) {
+            if (!submission && !submissionConfirmed && !isClaude && !isDeepSeek && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
               appLog(CHAT_UI_AUTOMATION_MESSAGES.SUBMIT_ENTER_FALLBACK);
               await input.focus().catch(() => undefined);
               await input.press(ST.SOURCE_TEXT_ENTER).catch(() => undefined);
               submissionConfirmed = await waitForSubmissionConfirmation(input, page, responseSelector, initialResponseSnapshots, CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_VERIFY_TIMEOUT_MS, signal);
             }
             await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SUBMISSION_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: submissionConfirmed ? SOURCE_TEXT_CONFIRMED : SOURCE_TEXT_UNCONFIRMED, attachmentCount: attachments.length });
-            if (submission?.pending) submission.pending.url = page.url();
+            if (submission?.pending && new URL(submission.pending.url).origin === new URL(page.url()).origin) submission.pending.url = page.url();
           }
         });
       }
@@ -1293,8 +1524,8 @@ const submitPrompt = async (
       }
     } catch (error) {
       await waitForSession?.();
-      if (submission?.pending) submission.pending.url = page.url();
-      if (submission && isFinalChatResponseError(error)) submission.completed = true;
+      if (submission?.pending && new URL(submission.pending.url).origin === new URL(page.url()).origin) submission.pending.url = page.url();
+      if (submission && isCompletedChatResponseError(error)) submission.completed = true;
       throw error;
     } finally {
       uploadObservation?.dispose();
@@ -1303,7 +1534,7 @@ const submitPrompt = async (
   try {
     return generation ? await generation.run(perform()) : await perform();
   } catch (error) {
-    if (isFinalChatResponseError(error)) {
+    if (isCompletedChatResponseError(error)) {
       pendingRoomResponses.delete(roomKey);
       if (submission) submission.completed = true;
     }
@@ -1312,33 +1543,39 @@ const submitPrompt = async (
     generation?.dispose();
   }
 };
-export const resumeChatPlanningResponse = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+const resumeChatPlanningResponseTask = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   const submission = request.submission;
   const pending = submission?.pending;
   if (!submission || !pending) throw uncertainChatSubmission(request.provider);
   throwIfPlanningCancelled(request.signal);
-  let page = pending.page;
-  const wasClosed = page.isClosed();
+  const rooms = getProviderRooms(request.provider);
+  let page: Page | undefined = pending.page;
+  if (!page || page.isClosed()) page = rooms && getLiveRoom(rooms, getPlanningRoomKey(request));
+  const wasClosed = !page || page.isClosed();
   if (wasClosed) {
     const base = getProviderConversationSelectors(request.provider)?.url;
     const url = new URL(pending.url);
     if (!base || url.origin !== new URL(base).origin || !AIR.CONVERSATION_PATH.test(url.pathname)) throw uncertainChatSubmission(request.provider);
     await prepareChatPlanningRoom(request);
     page = getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
-    if (!page) throw uncertainChatSubmission(request.provider);
   }
+  if (!page) throw uncertainChatSubmission(request.provider);
   const releaseActivity = request.provider === AiPlanningFallbackProvider.GeminiChat ? await acquireGeminiActivityUse(page.context(), request.signal) : _.noop;
   try {
     if (wasClosed) await page.goto(pending.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
-    if (request.reloadPendingResponse && !wasClosed) await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+    if (request.reloadPendingResponse && !wasClosed) {
+      if (new URL(page.url()).origin !== new URL(pending.url).origin) await page.goto(pending.url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+      else await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+    }
     pending.page = page;
-    pending.url = page.url();
-    const text = await waitForStableResponse(page, pending.responseSelector, pending.busySelector, pending.initialCount, pending.expectedSceneIds, pending.initialResponseSnapshots, pending.completionMarker, pending.artifactType, pending.requestId, request.signal, pending.prompt);
+    if (new URL(pending.url).origin === new URL(page.url()).origin) pending.url = page.url();
+    const text = await waitForStableResponse(page, pending.responseSelector, pending.busySelector, pending.initialCount, pending.expectedSceneIds, pending.initialResponseSnapshots, pending.completionMarker, pending.artifactType, pending.requestId, request.signal, pending.prompt, undefined, pending.regenerating);
     submission.completed = true;
     pendingRoomResponses.delete(getPlanningRoomKey(request));
+    saveChatResponse({ projectId: request.projectId, workerId: request.workerId, requestId: request.requestId, artifactType: request.artifactType }, text);
     return { text, provider: request.provider };
   } catch (error) {
-    if (isFinalChatResponseError(error)) submission.completed = true;
+    if (isCompletedChatResponseError(error)) submission.completed = true;
     throw error;
   } finally {
     releaseActivity();
@@ -1419,13 +1656,15 @@ const selectChatModel = async (page: Page, model: AiPlanningChatModel | undefine
 };
 const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | undefined, allowDefaultModel = false, signal?: AbortSignal): Promise<void> => {
   if (!model) return;
+  if (parseGeminiChatModel(model)?.model === AiPlanningChatModel.GeminiFlash) allowDefaultModel = false;
   if (parseGeminiChatModel(model)?.level) {
     await selectGeminiThinkingModel(page, model, signal);
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_SELECTED_WITH_THINKING_LEVEL });
     return;
   }
-  await waitForGeminiModelUi(page, signal);
   const requestedModelLabel = CINEMATIC_CHAT_MODEL_LABELS[model];
+  if (requestedModelLabel && (await geminiModelStillSelected(page, model, requestedModelLabel))) return;
+  await waitForGeminiModelUi(page, signal);
   const baseModelLabel = GEMINI_CHAT_BASE_MODEL_LABELS[model];
   if (!baseModelLabel) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.GEMINI_MODEL_UNAVAILABLE);
   let modelButton = await getGeminiModelButton(page).catch(() => undefined);
@@ -1437,12 +1676,23 @@ const selectGeminiChatModel = async (page: Page, model: AiPlanningChatModel | un
   }
   const currentModelLabel = _.trim(await modelButton.innerText().catch(() => MR.MOTION_TEXT_EMPTY));
   if (requestedModelLabel.test(currentModelLabel)) {
+    if (parseGeminiChatModel(model)?.model === AiPlanningChatModel.GeminiFlash) {
+      await clickPlanningControl(modelButton, signal);
+      try {
+        await assertGeminiFlashQuota(page, model);
+      } finally {
+        await page.keyboard.press(SOURCE_TEXT_ESCAPE).catch(() => undefined);
+      }
+    }
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_ALREADY_SELECTED });
+    markGeminiModel(page, model);
     return;
   }
   await clickPlanningControl(modelButton, signal);
+  await assertGeminiFlashQuota(page, model);
   if ((await clickChatModelOption(page, requestedModelLabel)) && (await waitForSelectedModelLabel(page, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_MODEL_BUTTON_SELECTOR, requestedModelLabel))) {
     await writeMusicDiagnostic(SOURCE_TEXT_CHAT_MODEL_SELECTED, { provider: AiPlanningFallbackProvider.GeminiChat, model, status: SOURCE_TEXT_SELECTED });
+    markGeminiModel(page, model);
     return;
   }
   const thinkingLevelLabel = GEMINI_CHAT_THINKING_LEVEL_LABELS[model];
@@ -1574,7 +1824,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
   else if (await cookieFallbackControl.isVisible().catch(() => false)) await cookieFallbackControl.click();
   const loginControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_LOGIN_SELECTOR).first();
   if (await loginControl.isVisible().catch(() => false)) {
-    await loginControl.evaluate((element: HTMLElement) => element.click());
+    await humanClick(page, loginControl);
     await page.waitForLoadState(SOURCE_TEXT_DOMCONTENTLOADED).catch(() => {});
   }
   const googleLoginControl = page.locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_GOOGLE_LOGIN_SELECTOR).first();
@@ -1583,7 +1833,7 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
       .context()
       .waitForEvent(SOURCE_TEXT_PAGE, { timeout: 5000 })
       .catch(() => undefined);
-    await googleLoginControl.evaluate((element: HTMLElement) => element.click());
+    await humanClick(page, googleLoginControl);
     const authPage = (await popupPromise) || page;
     await authPage.waitForLoadState(SOURCE_TEXT_DOMCONTENTLOADED).catch(() => {});
     const accountControl = authPage.getByText(accountEmail, { exact: false }).first();
@@ -1598,21 +1848,28 @@ const ensureChatGptReady = async (page: Page, accountEmail: string): Promise<voi
 };
 const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const started = Date.now();
+  const phases: Record<string, number> = {};
+  let room: Page | undefined;
+  let ok = false;
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
   try {
-    const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
+    const activeRoom = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
+    room = activeRoom;
+    phases.tab = Date.now();
     await withGeminiSession(
-      room,
+      activeRoom,
       async () => {
-        await getLastVisibleLocator(room, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
+        await getLastVisibleLocator(activeRoom, CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR, request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 120000 : CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS);
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);
-        await selectGeminiChatModel(room, request.model, request.allowDefaultGeminiModel, request.signal);
+        await selectGeminiChatModel(activeRoom, request.model, request.allowDefaultGeminiModel, request.signal);
       },
       { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser },
     );
+    phases.model = Date.now();
     const response = await submitPrompt(
-      room,
+      activeRoom,
       getPlanningRoomKey(request),
       request.prompt,
       CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR,
@@ -1630,8 +1887,11 @@ const generateWithGeminiChat = async (request: ChatPlanningRequest): Promise<str
       request.onUploadProgress,
     );
     scheduleChatBrowserCleanup();
+    ok = true;
     return response;
   } finally {
+    phases.done = Date.now();
+    writeGeminiTiming(room, request, started, phases, ok);
     releaseActivity();
   }
 };
@@ -1656,7 +1916,7 @@ const ensureDeepSeekReady = async (room: Page, request: ChatPlanningRequest): Pr
 };
 const generateWithDeepSeekChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
   await ensureDeepSeekReady(room, request);
   await selectDeepSeekChatModel(room, request.model, request.signal);
@@ -1685,7 +1945,7 @@ const ensureClaudeReady = async (room: Page, request: ChatPlanningRequest): Prom
 };
 const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
   await ensureClaudeReady(room, request);
   await selectClaudeChatModel(room, request.model, request.signal);
@@ -1709,35 +1969,89 @@ const generateWithClaudeChat = async (request: ChatPlanningRequest): Promise<str
   scheduleChatBrowserCleanup();
   return response;
 };
+const ensureMetaAiReady = async (room: Page, request: ChatPlanningRequest): Promise<void> => {
+  const input = room.locator(M.INPUT).filter({ visible: true }).last();
+  const loginBtn = room.locator(M.LOGIN_BUTTON).filter({ visible: true }).first();
+  const ready = await input
+    .waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS })
+    .then(async () => !(await loginBtn.isVisible().catch(() => false)))
+    .catch(() => false);
+  throwIfPlanningCancelled(request.signal);
+  if (ready) return;
+  if (request.chromeHeadless !== false) throw new Error(M.LOGIN_ERROR);
+  appWarn(M.LOGIN_WAIT_LOG);
+  const deadline = Date.now() + CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_LOGIN_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    throwIfPlanningCancelled(request.signal);
+    if (room.isClosed()) throw new Error(M.LOGIN_ERROR);
+    const inputVisible = await input.isVisible().catch(() => false);
+    const loginVisible = await loginBtn.isVisible().catch(() => false);
+    if (inputVisible && !loginVisible) return;
+    await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.SUBMISSION_POLL_MS);
+  }
+  throw new Error(M.LOGIN_ERROR);
+};
+const generateWithMetaAiChat = async (request: ChatPlanningRequest): Promise<string> => {
+  throwIfPlanningCancelled(request.signal);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+  const room = await createRoom(browser.context, EXTERNAL_URLS.META_AI_CHAT, metaAiRooms, getPlanningRoomKey(request), request.signal);
+  await ensureMetaAiReady(room, request);
+  await selectMetaAiChatModel(room, request.model);
+  const response = await submitPrompt(
+    room,
+    getPlanningRoomKey(request),
+    request.prompt,
+    M.INPUT,
+    M.SEND,
+    M.RESPONSE,
+    M.BUSY,
+    request.expectedSceneIds || [],
+    request.attachments || [],
+    request.completionMarker,
+    request.artifactType,
+    request.requestId,
+    request.signal,
+    request.submission,
+    request.promptMessageLimit,
+  );
+  scheduleChatBrowserCleanup();
+  return response;
+};
 export const getChatPlanningRoom = (request: ChatPlanningRoomIdentity): Page | undefined => getProviderRooms(request.provider)?.get(getPlanningRoomKey(request));
-export const prepareChatPlanningRoom = async (request: ChatPlanningRequest): Promise<void> => {
+const prepareChatPlanningRoomTask = async (request: ChatPlanningRequest): Promise<void> => {
   await manualCleanupFlights.get(request.provider);
   throwIfPlanningCancelled(request.signal);
+  if (_.isEqual(request.provider, AiPlanningFallbackProvider.MetaAi)) {
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
+    const room = await createRoom(browser.context, EXTERNAL_URLS.META_AI_CHAT, metaAiRooms, getPlanningRoomKey(request), request.signal);
+    await ensureMetaAiReady(room, request);
+    return;
+  }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.DeepSeekChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const room = await createRoom(browser.context, EXTERNAL_URLS.DEEPSEEK_CHAT, deepseekRooms, getPlanningRoomKey(request), request.signal);
     await ensureDeepSeekReady(room, request);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ClaudeChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const room = await createRoom(browser.context, EXTERNAL_URLS.CLAUDE_CHAT, claudeRooms, getPlanningRoomKey(request), request.signal);
     await ensureClaudeReady(room, request);
     return;
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.GeminiChat)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const releaseActivity = await acquireGeminiActivityUse(browser.context, request.signal);
     try {
       const room = await createRoom(browser.context, EXTERNAL_URLS.GEMINI_CHAT, geminiRooms, getPlanningRoomKey(request), request.signal);
-      await withGeminiSession(room, () => waitForGeminiModelUi(room, request.signal), { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
+      await withGeminiSession(room, () => waitForGeminiModelUi(room, request.signal, AIR.READINESS_TIMEOUT_MS), { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
       return;
     } finally {
       releaseActivity();
     }
   }
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.ChatGptUi)) {
-    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+    const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
     const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
     await ensureChatGptReady(room, browser.account.email);
     return;
@@ -1787,7 +2101,7 @@ const generateWithGrokChat = async (request: ChatPlanningRequest): Promise<strin
 };
 const generateWithChatGptUi = async (request: ChatPlanningRequest): Promise<string> => {
   throwIfPlanningCancelled(request.signal);
-  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true);
+  const browser = await getOrLaunchGlobalBrowser(request.chromeHeadless, true, false);
   const room = await createRoom(browser.context, EXTERNAL_URLS.CHATGPT, chatGptRooms, getPlanningRoomKey(request), request.signal);
   await ensureChatGptReady(room, browser.account.email);
   const response = await submitPrompt(
@@ -1816,6 +2130,7 @@ const providerNames: Record<AiPlanningFallbackProvider, string> = {
   [AiPlanningFallbackProvider.ChatGptUi]: SOURCE_TEXT_CHATGPT,
   [AiPlanningFallbackProvider.ClaudeChat]: C.CLAUDE,
   [AiPlanningFallbackProvider.DeepSeekChat]: XRT.DEEPSEEK_NAME,
+  [AiPlanningFallbackProvider.MetaAi]: M.NAME,
   [AiPlanningFallbackProvider.Disabled]: SOURCE_TEXT_DISABLED,
 };
 const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: ChatPlanningRequest) => Promise<string>>> = {
@@ -1824,8 +2139,9 @@ const providerGenerators: Partial<Record<AiPlanningFallbackProvider, (request: C
   [AiPlanningFallbackProvider.ChatGptUi]: generateWithChatGptUi,
   [AiPlanningFallbackProvider.ClaudeChat]: generateWithClaudeChat,
   [AiPlanningFallbackProvider.DeepSeekChat]: generateWithDeepSeekChat,
+  [AiPlanningFallbackProvider.MetaAi]: generateWithMetaAiChat,
 };
-export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   if (_.isEqual(request.provider, AiPlanningFallbackProvider.Disabled)) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_DISABLED);
   throwIfPlanningCancelled(request.signal);
   await manualCleanupFlights.get(request.provider);
@@ -1837,7 +2153,7 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
   const release = await planningMutex.acquire();
   let cancelledRoomCleanup: Promise<void> | undefined;
   const closeCancelledRoom = () => {
-    if (request.submission?.attempted && request.signal?.reason === AIR.TIMEOUT_REASON) return;
+    if (request.submission?.attempted && (request.signal?.reason === AIR.TIMEOUT_REASON || request.signal?.reason === AIR.READINESS_TIMEOUT_REASON)) return;
     cancelledRoomCleanup ??= closeChatPlanningRoom(request)
       .then(() => closeChatBrowserIfIdle())
       .then(() => undefined)
@@ -1855,45 +2171,105 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
     const generator = providerGenerators[request.provider];
     if (!generator) throw new Error(CHAT_UI_AUTOMATION_MESSAGES.FALLBACK_UNSUPPORTED);
     let lastError: unknown;
-    const maxRecoveryAttempts = request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING ? 3 : CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
-    for (let recoveryAttempt = 0; recoveryAttempt <= maxRecoveryAttempts; recoveryAttempt++) {
+    let roomRetryClicks = request.submission?.pending?.retryClicks || 0;
+    const maxRecoveryAttempts = RECOVERY.SAME_ROOM_RETRIES + 1;
+    for (let recoveryAttempt = request.submission?.pending?.recoveryAttempt || 0; recoveryAttempt <= maxRecoveryAttempts; recoveryAttempt++) {
       try {
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTEMPT_STARTED, { ...diagnosticBase, attempt: recoveryAttempt + 1 });
         await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS);
         throwIfPlanningCancelled(request.signal);
-        const text = await generator(request);
+        if (sharedChromeTasks.switching && !request.submission?.attempted) throw new Error(BACKUP.QUOTA);
+        const text = request.submission?.attempted && !request.submission.completed ? (await resumeChatPlanningResponseTask({ ...request, reloadPendingResponse: false })).text : await generator(request);
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: text.length, elapsedMs: Date.now() - mutexStartedAt });
         providerErrorCounts.delete(roomKey);
+        saveChatResponse({ projectId: request.projectId, workerId: request.workerId, requestId: request.requestId, artifactType: request.artifactType }, text);
         responseCompleted = true;
         return { text, provider: request.provider };
       } catch (error) {
         await writeMusicDiagnostic(SOURCE_TEXT_CHAT_ATTEMPT_FAILED, { ...diagnosticBase, attempt: recoveryAttempt + 1, ...musicErrorDetails(error) });
         lastError = error;
+        if (request.submission?.pending) Object.assign(request.submission.pending, { retryClicks: roomRetryClicks, recoveryAttempt });
         throwIfPlanningCancelled(request.signal);
+        if ((await aiOutage(error, request.provider)) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw error;
         if (request.provider === AiPlanningFallbackProvider.GeminiChat) {
           const interruptedRoom = geminiRooms.get(roomKey);
           if (interruptedRoom) await waitForGeminiSession(interruptedRoom, { signal: request.signal, expected: request.attachments?.length, onProgress: request.onUploadProgress, retainBrowser: retainGlobalBrowser });
         }
-        const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
-        const isRetryableMusicResponseError = request.artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING && (errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_ERROR || errorMessage === CINEMATIC_CHAT_PLANNING_CONFIG.INVALID_JSON_RESPONSE_ERROR);
-        if (isRetryableMusicResponseError) {
-          if (recoveryAttempt < 2) {
-            await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_RETRY_SAME_ROOM, { ...diagnosticBase, attempt: recoveryAttempt + 2 });
-            await delayAsync(1500);
-            continue;
+        if (request.oneGeneration && request.artifactType?.startsWith(RT_MAINTENANCE.MOTION_HTML) && (request.submission?.attempted || isFinalChatResponseError(error))) {
+          const completedFailure = isCompletedChatResponseError(error);
+          if (request.submission && completedFailure) request.submission.completed = true;
+          if (!(canRegenerateChatResponse(error) && (completedFailure || request.submission?.completed))) {
+            const failure = request.submission?.attempted && !request.submission.completed ? uncertainChatSubmission(request.provider) : error instanceof Error ? error : new Error(String(error));
+            throw Object.assign(failure, { [RECOVERY.COMPLETE]: true, ...(failure !== error ? { cause: error } : {}) });
           }
-          if (recoveryAttempt === 2) {
-            await writeMusicDiagnostic(SOURCE_TEXT_CHAT_PROVIDER_ROOM_RELOAD, { ...diagnosticBase, attempt: recoveryAttempt + 2 });
-            await reloadChatPlanningRoom(request);
-            await delayAsync(2000);
-            continue;
-          }
-          throw error;
         }
-        const canRecoverClosedRoom = !request.submission && !(error instanceof ChatUploadError && !error.retryable) && CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_ERROR_PATTERN.test(errorMessage) && recoveryAttempt < CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_ATTEMPTS;
-        if (!canRecoverClosedRoom) throw error;
-        appWarn(_.replace(CINEMATIC_CHAT_PLANNING_CONFIG.CLOSED_ROOM_RECOVERY_LOG, SecurityConstants.PLACEHOLDER_0, providerNames[request.provider]));
-        await closeChatPlanningRoom(request);
+        const errorMessage = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
+        const retryable = AIR.TRANSPORT.test(errorMessage) || RECOVERY.RETRY_PATTERN.test(errorMessage) || isRecoverableChatRefusal(error) || isResponseTimeoutError(error) || errorMessage === D.RETRY_EXHAUSTED || errorMessage === CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND || (error instanceof ChatUploadError && error.retryable);
+        if (!retryable) throw error;
+        if (errorMessage === D.RETRY_EXHAUSTED && request.submission) request.submission.completed = true;
+        const page = getProviderRooms(request.provider)?.get(roomKey);
+        const pending = request.submission?.pending;
+        if (request.provider !== AiPlanningFallbackProvider.DeepSeekChat && pending && page && !page.isClosed()) {
+          for (let retryClick = 0; roomRetryClicks < RECOVERY.REGENERATE_LIMIT; retryClick++) {
+            if (await page.locator(pending.busySelector).filter({ visible: true }).count()) {
+              request.submission!.completed = false;
+              throw Object.assign(uncertainChatSubmission(request.provider), { [RECOVERY.COMPLETE]: true, cause: lastError });
+            }
+            const snapshots = await getChatResponseSnapshots(page, pending.responseSelector, request.artifactType).catch(() => []);
+            const currentResponse = snapshots.length > pending.initialCount || snapshots.some((snapshot) => !pending.initialResponseSnapshots.some((initial) => initial.identity === snapshot.identity && initial.text === snapshot.text));
+            if (retryClick === 0 && !currentResponse) break;
+            if (CINEMATIC_CHAT_PLANNING_CONFIG.ROOM_REQUEST_COOLDOWN_MS > 0) await delayAsync(RECOVERY.RETRY_CLICK_COOLDOWN_MS * (roomRetryClicks + 1));
+            throwIfPlanningCancelled(request.signal);
+            if (!(await clickCurrentChatRetry(page, request.signal).catch(() => false))) {
+              request.onRecovery?.(RECOVERY.CLICK_UNAVAILABLE);
+              break;
+            }
+            pending.retryClicks = ++roomRetryClicks;
+            request.submission!.completed = false;
+            pending.initialCount = snapshots.length;
+            pending.initialResponseSnapshots = snapshots;
+            pending.regenerating = true;
+            request.onRecovery?.(RECOVERY.CLICK_LOG);
+            appLog(RECOVERY.CLICK_LOG);
+            try {
+              const result = await resumeChatPlanningResponseTask({ ...request, reloadPendingResponse: false });
+              providerErrorCounts.delete(roomKey);
+              await writeMusicDiagnostic(SOURCE_TEXT_CHAT_RESPONSE_COMPLETED, { ...diagnosticBase, attempt: recoveryAttempt + 1, responseChars: result.text.length, elapsedMs: Date.now() - mutexStartedAt });
+              responseCompleted = true;
+              return result;
+            } catch (retryError) {
+              throwIfPlanningCancelled(request.signal);
+              if ((await aiOutage(retryError, request.provider)) || (retryError as Record<string, unknown>)?.[BACKUP.ERROR_FLAG]) throw retryError;
+              request.submission!.completed = isCompletedChatResponseError(retryError);
+              if (!request.submission!.completed) throw Object.assign(uncertainChatSubmission(request.provider), { [RECOVERY.COMPLETE]: true, cause: retryError });
+              if ((retryError as Error).message === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR && !isRecoverableChatRefusal(retryError)) throw retryError;
+              lastError = retryError;
+            }
+          }
+        }
+        if (recoveryAttempt >= maxRecoveryAttempts) throw Object.assign(lastError instanceof Error ? lastError : new Error(errorMessage), { [RECOVERY.COMPLETE]: true });
+        if (request.submission?.attempted && !request.submission.completed) {
+          if (recoveryAttempt >= RECOVERY.SAME_ROOM_RETRIES) throw Object.assign(uncertainChatSubmission(request.provider), { [RECOVERY.COMPLETE]: true, cause: lastError });
+          request.onRecovery?.(RECOVERY.RETRY_LOG(recoveryAttempt + 1));
+          continue;
+        }
+        if (recoveryAttempt < RECOVERY.SAME_ROOM_RETRIES) {
+          const retryLog = page && !page.isClosed() ? RECOVERY.RETRY_LOG(recoveryAttempt + 1) : RECOVERY.RECONNECT_LOG(recoveryAttempt + 1);
+          request.onRecovery?.(retryLog);
+          appLog(retryLog);
+          try {
+            if (page && !page.isClosed()) await reloadChatPlanningRoom(request);
+          } catch (reloadError) {
+            request.onRecovery?.(RECOVERY.RELOAD_FAILED(String((reloadError as Error).message)));
+          }
+        } else {
+          request.onRecovery?.(RECOVERY.REPLACE_LOG);
+          appLog(RECOVERY.REPLACE_LOG);
+          await closeChatPlanningRoom(request, true);
+          roomRetryClicks = 0;
+        }
+        if (request.restoreContext) request.prompt = request.restoreContext();
+        if (request.submission) Object.assign(request.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
       }
     }
     throw lastError;
@@ -1922,4 +2298,137 @@ export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): 
       }
     }
   }
+};
+const probeBusySelectors: Partial<Record<AiPlanningFallbackProvider, string>> = {
+  [AiPlanningFallbackProvider.ChatGptUi]: CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR,
+  [AiPlanningFallbackProvider.DeepSeekChat]: D.BUSY,
+  [AiPlanningFallbackProvider.ClaudeChat]: CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR,
+  [AiPlanningFallbackProvider.GrokChat]: CINEMATIC_CHAT_PLANNING_CONFIG.GROK_BUSY_SELECTOR,
+  [AiPlanningFallbackProvider.MetaAi]: M.BUSY,
+};
+export const probeChatPlanningRoomReady = async (request: ChatPlanningRequest): Promise<void> => {
+  if (isChatBridgeEnabled()) return;
+  await prepareChatPlanningRoomTask(request);
+  const page = getChatPlanningRoom(request);
+  const busySelector = probeBusySelectors[request.provider];
+  if (page && !page.isClosed() && busySelector) await throwIfGrokRateLimited(page, busySelector);
+};
+export const prepareChatPlanningRoom = (request: ChatPlanningRequest): Promise<void> =>
+  isChatBridgeEnabled()
+    ? Promise.resolve()
+    : withChromeBackupRecovery(
+    async () => {
+      for (let attempt = 0; ; attempt++) {
+        try {
+          return await prepareChatPlanningRoomTask(request);
+        } catch (error) {
+          throwIfPlanningCancelled(request.signal);
+          const message = String((error as Error).message);
+          if ((await aiOutage(error, request.provider)) || (error as Record<string, unknown>)?.[BACKUP.ERROR_FLAG] || !(AIR.TRANSPORT.test(message) || RECOVERY.RETRY_PATTERN.test(message))) throw error;
+          if (attempt >= RECOVERY.SAME_ROOM_RETRIES + 1) throw Object.assign(error as Error, { [RECOVERY.COMPLETE]: true });
+          const page = getChatPlanningRoom(request);
+          const line = attempt >= RECOVERY.SAME_ROOM_RETRIES ? RECOVERY.REPLACE_LOG : page && !page.isClosed() ? RECOVERY.RETRY_LOG(attempt + 1) : RECOVERY.RECONNECT_LOG(attempt + 1);
+          request.onRecovery?.(line);
+          appLog(line);
+          if (attempt >= RECOVERY.SAME_ROOM_RETRIES) await closeChatPlanningRoom(request, true);
+          else if (page && !page.isClosed()) await reloadChatPlanningRoom(request).catch((reloadError) => request.onRecovery?.(RECOVERY.RELOAD_FAILED(String(reloadError))));
+        }
+      }
+    },
+    request.signal,
+    request.onRecovery,
+    request.provider,
+  );
+const trackChatResponse = async <T>(request: ChatPlanningRequest, work: () => Promise<T>): Promise<T> => {
+  try {
+    return await work();
+  } finally {
+    sharedChromeTasks.trackResponse(getPlanningRoomKey(request), !!request.submission?.attempted && !request.submission.completed && !request.signal?.aborted);
+  }
+};
+export const resumeChatPlanningResponse = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => isChatBridgeEnabled() ? askChatBridge(request) : sharedChromeTasks.run(() => trackChatResponse(request, () => resumeChatPlanningResponseTask(request)), request.signal);
+const blockedFallbackProviders = new Map<string, number>();
+const aiOutage = async (error: unknown, provider: string): Promise<boolean> => {
+  const found = await classifyAiError(error, provider);
+  if (found) tagAiAvailability(error, found);
+  return !!found;
+};
+const providerBlockedUntil = (provider: string): number => Math.max(blockedFallbackProviders.get(provider) || 0, isAutoChromeSwitchEnabled() ? earliestProviderReset(provider) : aiUnavailableUntil(activeChromeId(), provider));
+const stopsFallback = (error: unknown, request: ChatPlanningRequest): boolean =>
+  !!request.signal?.aborted ||
+  !!_.get(error, BACKUP.ERROR_FLAG) ||
+  !!_.get(error, AIR.UNCERTAIN_FLAG) ||
+  _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR ||
+  _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR;
+export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+  for (;;) {
+    try {
+      return await generatePlanningWithChatUiRoutes(request);
+    } catch (error) {
+      const found = aiAvailabilityOf(error);
+      if (!found || !isAiExhausted(error) || request.signal?.aborted || request.waitOnExhausted === false || chromeWaitPolicy() !== AI_AVAILABILITY.WAIT_POLICY.WAIT) throw error;
+      const until = Math.max(Date.now() + AI_AVAILABILITY.MIN_MS, found.until);
+      const line = AI_AVAILABILITY.LOG.WAIT(found.provider, formatAiUntil(until));
+      request.onRecovery?.(line);
+      appLog(line);
+      await waitAiReset(until, request.signal);
+      const resume = AI_AVAILABILITY.LOG.RESUME(found.provider);
+      request.onRecovery?.(resume);
+      appLog(resume);
+    }
+  }
+};
+const generatePlanningWithChatUiRoutes = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+  if (!(request.allowFallback ?? requestContext.getStore()?.aiAllowFallback) || isChatBridgeEnabled()) return generatePlanningWithChatUiOnce(request);
+  const routes = [{ provider: request.provider, model: request.model }, ...aiFallbackChain().filter((route) => route.provider !== request.provider)];
+  let failure: unknown;
+  for (const [index, route] of routes.entries()) {
+    const blockedUntil = providerBlockedUntil(route.provider);
+    const outage = aiUnavailableUntil(activeChromeId(), route.provider);
+    if (blockedUntil > Date.now() && (index > 0 || outage)) {
+      if (outage) {
+        const line = AI_AVAILABILITY.LOG.SKIP(String(route.provider), formatAiUntil(blockedUntil));
+        request.onRecovery?.(line);
+        appLog(line);
+      }
+      continue;
+    }
+    try {
+      return await generatePlanningWithChatUiOnce({ ...request, provider: route.provider as AiPlanningFallbackProvider, model: route.model as AiPlanningChatModel, submission: index === 0 ? request.submission : undefined });
+    } catch (error) {
+      if (stopsFallback(error, request)) throw error;
+      if (!failure || (isAiExhausted(error) && (!isAiExhausted(failure) || (aiAvailabilityOf(error)?.until || 0) < (aiAvailabilityOf(failure)?.until || 0)))) failure = error;
+      if (!aiAvailabilityOf(error)) blockedFallbackProviders.set(route.provider, Date.now() + CHAT_EXECUTION_POLICY.PROVIDER_BLOCK_MS);
+      const next = routes.slice(index + 1).find((candidate) => providerBlockedUntil(candidate.provider) <= Date.now());
+      if (next) {
+        const line = MOTION_AI_FALLBACK.LOG_SWITCH(String(route.provider), String(next.provider), _.truncate(_.toString(_.get(error, SOURCE_TEXT_MESSAGE)), { length: MOTION_AI_FALLBACK.REASON_MAX }));
+        request.onRecovery?.(line);
+        appLog(line);
+      }
+    }
+  }
+  if (!failure) return generatePlanningWithChatUiOnce(request);
+  throw failure;
+};
+const generatePlanningWithChatUiOnce = (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+  if (isChatBridgeEnabled()) return askChatBridge({ ...request, submission: request.submission || { attempted: false, completed: false } });
+  if (sharedChromeTasks.switching) request.onRecovery?.(BACKUP.WAIT);
+  const execution = { ...request, submission: request.submission || { attempted: false, completed: false } };
+  let generation = sharedChromeTasks.generation;
+  return withChromeBackupRecovery(
+    () => {
+      const room = getChatPlanningRoom(request);
+      if (generation !== sharedChromeTasks.generation) {
+        generation = sharedChromeTasks.generation;
+        execution.prompt = request.restoreContext?.() || request.prompt;
+        Object.assign(execution.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
+        pendingRoomResponses.delete(getPlanningRoomKey(request));
+        request.onRecovery?.(BACKUP.SWITCHED);
+      } else if (!execution.submission.attempted && (!room || room.isClosed()) && request.restoreContext) execution.prompt = request.restoreContext();
+      return trackChatResponse(execution, () => generatePlanningWithChatUiTask(execution));
+    },
+    request.signal,
+    request.onRecovery,
+    request.provider,
+  );
 };

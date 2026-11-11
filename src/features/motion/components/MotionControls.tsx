@@ -13,7 +13,7 @@ import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../../components/ui/Button";
 import { formatMotionProgress, formatSeconds } from "./motionApi.js";
-import { motionLogSections, type MotionLogSection } from "../lib/motionLogSections.js";
+import { motionDurationText, motionLogSections, type MotionLogSection } from "../lib/motionLogSections.js";
 import { MOTION_LOG_SECTIONS as LOG } from "../constants/motionLogSections.js";
 export const MotionAiStatusLine: FC<{ activities?: Record<string, MotionAiActivity> }> = ({ activities }) => {
   const groups = new Map<string, { provider: string; model: string; phases: Map<string, number> }>();
@@ -35,7 +35,7 @@ export const MotionAiStatusLine: FC<{ activities?: Record<string, MotionAiActivi
     </p>
   );
 };
-export const StepHeader: FC<{ n: string; icon: typeof Film; title: string; badge?: string; right?: React.ReactNode }> = ({ n, icon: Icon, title, badge, right }) => (
+export const StepHeader: FC<{ n: string; icon: typeof Film; title: string; badge?: string; hint?: React.ReactNode; right?: React.ReactNode }> = ({ n, icon: Icon, title, badge, hint, right }) => (
   <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_BORDER_B_BORDER_SLATE_800_PB_3_FLEX_WRAP}>
     <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2_5_MIN_W_0}>
       <div className={MOTION_STYLES.W_8_H_8_ROUNDED_LG_BG_GRADIENT_TO_TR_FROM_PURPLE_500_TO_PINK_600_P_0_5}>
@@ -47,6 +47,7 @@ export const StepHeader: FC<{ n: string; icon: typeof Film; title: string; badge
         <span className={MOTION_STYLES.W_5_H_5_ROUNDED_LG_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_TEXT_PURPLE_400}>{n}</span>
         <h2 className={MOTION_STYLES.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100_FONT_MONO_FLEX}>{title}</h2>
         {badge && <span className={MOTION_STYLES.PX_2_PY_0_5_ROUNDED_FULL_BG_PURPLE_500_15_BORDER_BORDER_PURPLE_500_30_TEXT_PURPLE_300}>{badge}</span>}
+        {hint}
       </div>
     </div>
     {right && <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_GAP_2}>{right}</div>}
@@ -93,6 +94,7 @@ const MotionLogSectionCard: FC<{ section: MotionLogSection; lang: "vi" | "en"; i
       <Button variant={MR.MOTION_TEXT_UNSTYLED} type={RT_SHARED.BUTTON} className={LOG.UI.HEADER} aria-expanded={open} aria-controls={bodyId} onClick={() => setExpanded(!open)}>
         <span className={LOG.UI.NUMBER}>{index + 1}</span>
         <span className={LOG.UI.TITLE}>{LOG.LABELS[lang][section.key as keyof typeof LOG.LABELS.vi]}</span>
+        {section.durationMs !== undefined && <span className={LOG.UI.DURATION}>{text.duration(motionDurationText(section.durationMs, lang))}</span>}
         <span className={cn(LOG.UI.BADGE, LOG.UI.STATES[section.state])}>{text[section.state as "waiting" | "active" | "done" | "error" | "previous_error" | "cancelled" | "recorded"]}</span>
         <Icon className={LOG.UI.CHEVRON} aria-hidden={true} />
       </Button>

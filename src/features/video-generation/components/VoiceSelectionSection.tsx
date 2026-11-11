@@ -14,6 +14,7 @@ import { Lang } from "../../../lib/lang";
 import { PIPELINE_STEPS } from "../../../constants/enums";
 import { AUTO_VIDEO_UI_TEXTS } from "../../../constants/texts";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { STUDIO_UI } from "../../../constants/studioTheme.js";
 interface VoiceSelectionSectionProps {
   voiceName: string;
   voiceURI: string;
@@ -31,7 +32,7 @@ export const VoiceSelectionSection: React.FC<VoiceSelectionSectionProps> = ({ vo
   const displayVoiceName = voiceName || voiceURI;
   return (
     <StudioCard className={cn(RT_VIDEO_GENERATION.BG_SLATE_900_60_BORDER_BORDER_SLATE_800_80_ROUNDED)}>
-      <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
+      <div className={cn(STUDIO_UI.HEADER_BADGE_ROW, RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN)}>
         <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_2)}>
           <span className={cn(RT_VIDEO_GENERATION.W_6_H_6_ROUNDED_LG_BG_AMBER_500_15)}>{PIPELINE_STEPS.STEP_2}</span>
           <h3 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_UPPERCASE_TRACKING_WIDER_TEXT_SLATE_100)} title={T.sec2TitleTooltip}>

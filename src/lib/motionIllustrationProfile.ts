@@ -1,9 +1,10 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_ILLUSTRATION_PROFILES, type MotionIllustrationStage } from "../constants/motionIllustrationProfiles.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
 import { SCENE_DEVICES, SCENE_FRAMING, SCENE_FRAMING_PLANNING, type MotionSceneFormat, type MotionSceneView } from "../constants/motionProfiles/framing.js";
 import type { MotionRemotionProfile } from "../types/motionVisual.js";
-const WIDE: MotionSceneView = "wide";
-const ILLUSTRATION: MotionSceneFormat = "illustration";
+const WIDE: MotionSceneView = RT_MAINTENANCE.WIDE;
+const ILLUSTRATION: MotionSceneFormat = RT_MAINTENANCE.ILLUSTRATION;
 export const motionProfileFraming = (id: MotionRemotionProfile, view?: MotionSceneView): string => {
   const profile = MOTION_ILLUSTRATION_PROFILES[id];
   const key = view && Object.hasOwn(SCENE_FRAMING, view) ? view : WIDE;
@@ -24,19 +25,7 @@ export const motionIllustrationDirection = (id: MotionRemotionProfile, stage: Mo
     grammar: profile.grammar,
     storyContract: profile.storyContract,
     rules: profile[stage],
-    ...(stage === "planning" ? { views: SCENE_FRAMING_PLANNING } : {}),
-    ...(stage === "drawing"
-      ? {
-          hardRules: profile.hardRules,
-          framing: motionProfileFraming(id, view),
-          ...(device ? { device } : {}),
-          identity: profile.identity,
-          closeUps: profile.closeUps,
-          text: profile.text,
-          ...(view === WIDE && !device ? { staging: profile.staging } : {}),
-          anatomy: profile.anatomy,
-          motion: profile.motion,
-        }
-      : {}),
+    ...(stage === RT_MAINTENANCE.PLANNING ? { views: SCENE_FRAMING_PLANNING } : {}),
+    ...(stage === RT_MAINTENANCE.DRAWING ? { hardRules: profile.hardRules, framing: motionProfileFraming(id, view), ...(device ? { device } : {}), identity: profile.identity, closeUps: profile.closeUps, text: profile.text, ...(view === WIDE && !device ? { staging: profile.staging } : {}), anatomy: profile.anatomy, motion: profile.motion } : {}),
   };
 };

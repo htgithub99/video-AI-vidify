@@ -3,7 +3,7 @@ export const MUSIC_STYLE_TITLE_LIMITS = { MAX_CHARS: 32, MAX_WORDS: 6 } as const
 export const MUSIC_STYLE_TITLE_GUIDANCE = `Also return title as a short musical style name in Vietnamese, preserving conventional genre names such as R&B, Jazz or Bolero. Prefer 2-${MUSIC_STYLE_TITLE_LIMITS.MAX_WORDS} words and at most ${MUSIC_STYLE_TITLE_LIMITS.MAX_CHARS} characters. Name the source-derived core genre, optionally with one defining mood, sound or regional tradition. Examples of naming format only: "R&B đêm khuya", "Bolero trữ tình", "Dân ca Nghệ Tĩnh", "Jazz mộc". Derive the name from this reference and sunoStylePrompt, never from an example preset or source/channel/artist/song title. No headings, explanations, tempo, BPM, key, URLs, playlist names or numbered suffixes such as _1. A genre name alone is enough when the source supports no further distinction.`;
 export const MUSIC_SUNO_STYLE_FORMAT_EXAMPLE = "Alternative R&B, dark bedroom pop, sensual breathy female vocals, slow jam, 70 bpm, heavy 808 sub bass, drenched reverb electric guitar, nocturnal, ambient trap soul, low male vocal texture, dark romance";
 export const MUSIC_PLANNING = {
-  SUNO_STYLE_GUIDANCE: `Return sunoStylePrompt as one cohesive, reusable production direction ready to paste directly into Suno Styles. Write this field in English, regardless of the listener language used elsewhere. Use one comma-separated line of concise musical descriptors, preferably 150-500 characters. Describe the dominant musical identity of the reference, not a catalogue of every genre or song in a playlist. Follow this practical descriptor order where supported: core genre and compatible subgenre, mood, lead vocal gender and delivery or instrumental character, groove and tempo feel, distinctive bass/drums and lead/accompaniment instruments, arrangement, effects and mix atmosphere, secondary vocal texture if present. Name concrete timbres, playing styles and production treatments rather than only saying emotional, modern, pop or R&B. Do not force every category or invent details merely to fill the template. Include a BPM or key only when supported; otherwise describe the feel. Lyrics, video titles and URLs alone do not establish measured tempo, instruments or vocal timbre. Where audio is unavailable, use supported qualitative traits and a coherent creative production direction without claiming to have heard it. Use musical terms rather than paragraphs. No headings, labels, JSON, lyrics, song titles, transcript quotations, audience or geography analysis, evidence, confidence, caveats, artist names or songwriting rules inside sunoStylePrompt. Keep source limitations outside this field, in uncertainties only if the requested schema provides it. Preserve any explicitly requested musical exclusions such as "no pop drums". The existing obsessrnb preset demonstrates the desired specificity and output format only: "${MUSIC_SUNO_STYLE_FORMAT_EXAMPLE}". Derive the actual genre, voice, rhythm and instruments from the new reference; do not reuse R&B, female vocals, 70 bpm, 808 bass or reverb guitar for unrelated sources. Return one usable musical direction, not several alternative styles.`,
+  SUNO_STYLE_GUIDANCE: `Return sunoStylePrompt as one cohesive, reusable production direction ready to paste directly into Suno Styles. Write this field in English, regardless of the listener language used elsewhere. Use one comma-separated line of concise musical descriptors, preferably 150-500 characters. Describe the dominant musical identity of the reference, not a catalogue of every genre or song in a playlist. Actively deduce the exact musical style from all clues in the reference source—including song titles, playlist/channel context, cultural/regional idioms, poetic meter, rhyme cadence, stanza form, emotional register and explicit style descriptors. Follow this practical descriptor order: exact core genre and authentic subgenre/regional tradition, mood and emotional atmosphere, lead vocal gender, timbre, vibrato and delivery style (or instrumental lead character), rhythmic groove, time-signature feel and concrete tempo BPM, signature bass/drums and lead/accompaniment instruments, harmonic mood, arrangement and mix/reverb space, plus secondary vocal texture if appropriate. Name concrete timbres, playing styles and production treatments rather than only saying emotional, modern, pop or R&B. When only lyrics, titles or text are supplied without audio, deduce the canonical genre, subgenre, vocal delivery, tempo feel/BPM range and signature instrumentation that authentically belong to that musical tradition so Suno reproduces the true sonic style of the reference source, without claiming to have heard audio. Use musical terms rather than paragraphs. No headings, labels, JSON, lyrics, song titles, transcript quotations, audience or geography analysis, evidence, confidence, caveats, artist names or songwriting rules inside sunoStylePrompt. Keep source limitations outside this field, in uncertainties only if the requested schema provides it. Preserve any explicitly requested musical exclusions such as "no pop drums". The existing obsessrnb preset demonstrates the desired specificity and output format only: "${MUSIC_SUNO_STYLE_FORMAT_EXAMPLE}". Derive the actual genre, voice, rhythm and instruments from the new reference; do not reuse R&B, female vocals, 70 bpm, 808 bass or reverb guitar for unrelated sources. Return one usable musical direction, not several alternative styles.`,
   STREAM_TYPE: "application/x-ndjson",
   STREAM_HEADER: "content-type",
   STREAM_CACHE: "no-cache, no-transform",
@@ -16,7 +16,7 @@ export const MUSIC_PLANNING = {
   REVIEW_ATTEMPTS: 2,
   RANKING_ATTEMPTS: 2,
   REVIEW_VERSION: 1,
-  SOURCE_EXCERPT_CHARS: 4000,
+  SOURCE_EXCERPT_CHARS: 8000,
   SONG_EXCERPT_CHARS: 160,
   REVIEW_RULE:
     'After composing each complete song, audit its full lyrics against the approved Music DNA and the same absolute 0-100 rubric across all batches. Include editorialReview:{version:1,impact:0,wording:0,singability:0,originality:0,fit:0,hook:"",strength:"",risk:""}. Use integer scores; explain the hook, strongest quality and main weakness in at most 80 characters each. Do not inflate scores or use the batch order as a quality signal. This review never replaces the complete lyrics.',
@@ -60,4 +60,35 @@ export const MUSIC_PLANNING = {
       attempt: (attempt: number) => `Attempt ${attempt}`,
     },
   },
+} as const;
+export const MUSIC_REFERENCE_SOURCE = {
+  URL_RE: /https?:\/\/[^\s<>"')\]]+/gi,
+  TIMESTAMP_RE: /^\(\d{1,2}:\d{2}(?::\d{2})?\)\s*/gm,
+  MAX_LINKS: 12,
+  MAX_DESCRIPTION_CHARS: 1500,
+  MAX_LYRICS_CHARS: 6000,
+  MAX_TOTAL_CHARS: 40000,
+  USER_NOTES: "USER-PASTED REFERENCE (lyrics, notes):",
+  SOURCE: (index: number, total: number) => `REFERENCE TRACK ${index}/${total}`,
+  TITLE: "Title:",
+  CHANNEL: "Channel/artist:",
+  TAGS: "Tags:",
+  URL: "URL:",
+  DESCRIPTION: "Description:",
+  LYRICS: "Lyrics/captions:",
+  PAGE_TEXT: "Page text:",
+  UNREADABLE: "(link could not be read; only the URL is known)",
+  JOIN: "\n",
+  BLOCK_JOIN: "\n\n",
+} as const;
+export const MUSIC_STYLE_EVIDENCE_PRIORITY =
+  "EVIDENCE PRIORITY for the musical style: (1) explicit genre/style words in track tags, descriptions, Suno style text or the user notes; (2) channel/artist and playlist identity; (3) the language, dialect, register and meter of the lyrics; (4) titles. Describe the single style shared by most reference tracks, not a blend of every possibility. Name the concrete subgenre and regional tradition, the lead vocal gender and delivery, the tempo range and the 3-5 signature instruments that the evidence supports. Never fall back to a generic pop/ballad label when the evidence points to a specific tradition.";
+export const MUSIC_LYRIC_QUALITY = {
+  NGRAM_WORDS: 6,
+  WORD_RE: /[\p{L}\p{N}']+/gu,
+  PRODUCTION_TERMS_RE: /\b(?:sub[- ]?bass|808s?|synth(?:s|esizer|esizers)?|reverb|bpm|hi-?hats?|ad-?libs?|fender|rhodes|sidechain|auto-?tune|drum machine|trap beat|mixdown|stereo|eq|compressor|vocal chops?)\b/i,
+  STAGE_DIRECTION_RE: /\(([^)]*(?::|whisper|ad-?lib|instrumental|beat|drums?|guitar|piano|synth|bass|chords?|drone|fade|sigh|breath|nhạc dạo|tiếng đàn|hòa âm)[^)]*)\)/i,
+  COPIED: (label: string, phrase: string) => `${label} copies a reference phrase verbatim ("${phrase}"); rewrite it with new wording and a new image`,
+  JARGON: (label: string, term: string) => `${label} lyrics contain production/instrument wording ("${term}") that a singer would sing; remove all production terms from the lyrics`,
+  DIRECTION: (label: string, text: string) => `${label} lyrics contain a stage direction "(${text})"; Suno would sing it, so keep only singable words and [Section] labels`,
 } as const;

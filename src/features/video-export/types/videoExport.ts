@@ -109,7 +109,6 @@ export type VideoExportAudioItem = { id: string; index: number; name: string; re
 export type VideoExportImageItem = { id: string; index: number; name: string; relativePath: string; sourcePath: string; url: string; sizeBytes: number };
 export type VideoExportSource = { token: string; folderName: string; folderPath: string; audios: VideoExportAudioItem[]; images: VideoExportImageItem[] };
 export type VideoExportConfig = { aspectRatio: VideoExportAspectRatio; reframeMode?: ShortsReframeMode; effect: VideoExportEffect; transition: VideoExportTransition; slideMode: VideoExportSlideMode; slideSeconds: number; transitionSeconds: number; resolution: VideoExportResolution; fps: VideoExportFps; bitrate: VideoExportBitrate; codec: VideoExportCodec };
-export type VideoExportRenderRequest = VideoExportConfig & { token: string; title: string; audioIndexes: number[]; imageIndexes: number[] };
 export type VideoExportResultItem = { id: string; title: string; fileName: string; outputVideoPath: string; videoUrl: string; durationSeconds: number; sizeBytes: number; trackCount: number; imageCount: number; aspectRatio: VideoExportAspectRatio; createdAt: string };
 export type VideoExportJobState = { jobId: string; status: VideoExportJobStatus; stage: VideoExportJobStage; percent: number; message: string; error?: string; result?: VideoExportResultItem };
 export type VideoExportPreviewResult = { previewUrl: string; durationSeconds: number };
@@ -118,3 +117,13 @@ export enum VideoExportSourceTab {
   AUDIO = "audio",
   IMAGE = "image",
 }
+export enum VideoExportAiClipJobStatus {
+  RUNNING = "running",
+  COMPLETED = "completed",
+  ERROR = "error",
+  CANCELLED = "cancelled",
+}
+export type VideoExportAiClip = { id: string; sourceImageId?: string; name: string; url: string; durationSeconds: number; keepAudio?: boolean };
+export type VideoExportAiClipInput = { id?: string; name: string; dataUrl: string };
+export type VideoExportAiClipItemError = { imageId?: string; name: string; reason: string };
+export type VideoExportAiClipJobState = { jobId: string; status: VideoExportAiClipJobStatus; done: number; total: number; message: string; clips: VideoExportAiClip[]; errors: string[]; itemErrors?: VideoExportAiClipItemError[]; stopping?: boolean };

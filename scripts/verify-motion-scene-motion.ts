@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { normalizeMotionRenderBehavior, applyMotionRenderBehavior } from "../src/lib/motionRenderBehavior.js";
 import { normalizeFirstSceneComposition, compositionFrameSvg } from "../src/lib/motionSceneComposition.js";
-import { compositionActorMotion, compositionEffectMotion } from "../src/lib/motionCompositionMotion.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../src/constants/motionSceneComposition.js";
 import { motionIllustrationDirection } from "../src/lib/motionIllustrationProfile.js";
 import { motionRemotionRenderConcurrency } from "../src/lib/motionRemotionPerformance.js";
@@ -12,8 +11,9 @@ const on = normalizeMotionRenderBehavior(undefined, true);
 const off = normalizeMotionRenderBehavior({ version: 1, actors: "fixed", sceneEffects: "gentle", camera: "gentle" });
 assert.deepEqual(off, { version: 1, actors: "fixed", sceneEffects: "off", camera: "fixed" });
 assert.equal(on.sceneEffects, "gentle");
-assert.equal(motionRemotionRenderConcurrency(8, 1.9 * 1073741824), 1);
-assert.equal(motionRemotionRenderConcurrency(8, 4 * 1073741824), 2);
+assert.equal(motionRemotionRenderConcurrency(8, 1.9 * 1073741824), 2, "budget = floor(free RAM / 768 MiB per worker)");
+assert.equal(motionRemotionRenderConcurrency(8, 4 * 1073741824), 5);
+assert.equal(motionRemotionRenderConcurrency(4, 16 * 1073741824), 3, "CPU-bound: keep one core for the app");
 assert.equal(motionRemotionRenderConcurrency(1, 4 * 1073741824), 1);
 assert.equal(normalizeMotionRenderBehavior({ ...on, sceneEffects: "off" }).sceneEffects, "gentle");
 const raw = {
@@ -80,16 +80,18 @@ const nodes: any[] = [
 const cast = new Set(["person"]);
 const built = normalizeFirstSceneComposition(raw, "test", "test", "motion fixture", nodes, cast, 1280, 720);
 assert.equal(built.composition.animations.length, 4, "Accept animal, leg, wind and water tracks");
-assert.equal(compositionActorMotion(built.composition, built.asset, nodes, cast, on, "history").removed, 0, "Keep articulated running legs");
-assert.equal(compositionEffectMotion(built.composition, built.asset, nodes, cast, on, "history").added, 0, "Keep authored environment motion");
+assert.deepEqual(built.composition.animations, raw.animations, "Running legs and environment motion are kept exactly as authored");
 for (const t of [0, 0.5, 1, 1.5, 9]) assert.equal(compositionFrameSvg(built.asset, built.composition, t, off, new Set(["person"])), built.asset.svg);
 assert.notEqual(compositionFrameSvg(built.asset, built.composition, 1, on, new Set()), built.asset.svg);
 assert.equal(built.composition.animations.length, 4, "Switching off playback preserves authored tracks for re-enabling");
+// One-pass prompt: motion is authored with the drawing when on; motion off asks for an empty animation list.
 for (const profile of ["history", "explainer", "horror"] as const) {
   const prompt = C.PROMPT({ viewBox: "0 0 1280 720", artDirection: motionIllustrationDirection(profile, "drawing"), renderBehavior: on, scene: { nodes } });
-  assert.match(prompt, /running horse\/person/);
-  assert.match(prompt, /rivers move local ripples\/currents/);
-  assert.match(prompt, /entire scene is frozen/);
+  assert.match(prompt, /COMPLETE MOTION IN THIS DRAWING RESPONSE/);
+  assert.match(prompt, /no separate motion director or revision pass follows/);
+  assert.doesNotMatch(prompt, /SCENE MOTION IS OFF/);
+  const still = C.PROMPT({ viewBox: "0 0 1280 720", artDirection: motionIllustrationDirection(profile, "drawing"), renderBehavior: off, scene: { nodes } });
+  assert.match(still, /SCENE MOTION IS OFF/);
 }
 if (process.argv.includes("--render")) {
   const { renderRemotionStill } = await import("../src/features/motion/server/services/motionRemotionRenderService.js");

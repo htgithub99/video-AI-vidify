@@ -12,6 +12,8 @@ import { MOTION_VOICE_LIBRARY } from "../src/constants/motionVoice.ts";
 import { encodeGeminiChatModel } from "../src/constants/geminiChatModels.ts";
 import { AiPlanningChatModel, AiPlanningFallbackProvider, AiPlanningExecutionMode } from "../src/types.ts";
 import { motionSceneAiExecution, motionMainAiExecution } from "../src/features/motion/lib/motionSceneAi.ts";
+import { motionAiFallbackPolicy } from "../src/lib/motionAiExecution.ts";
+import type { MotionVisualSettings } from "../src/types/motionVisual.ts";
 const mainModel = encodeGeminiChatModel(AiPlanningChatModel.GeminiFlash, RT.LOW);
 const selectedModel = encodeGeminiChatModel(AiPlanningChatModel.GeminiArgon, RT.HIGH);
 const original = { aiProvider: AiPlanningFallbackProvider.GeminiChat, aiModel: mainModel, aiMode: AiPlanningExecutionMode.RoomOnly, aiHeadless: false };
@@ -24,8 +26,21 @@ assert.equal(motionMainAiExecution({ ...original, aiFallback: false }).allowFall
 assert.equal(motionSceneAiExecution({ ...choice, aiFallback: false }).allowFallback, true);
 const sceneOnly = { ...choice, sceneAiFallback: false };
 assert.equal(motionMainAiExecution(sceneOnly).allowFallback, true);
+const visualModes: MotionVisualSettings[] = [
+  { version: 1, mode: "library", engine: "canvas", packId: "fixture" },
+  { version: 1, mode: "remotion", engine: "remotion", profileId: "history", componentRevision: 1 },
+];
+for (const visualSettings of visualModes)
+  for (const sceneAiFallback of [undefined, false, true]) {
+    const state = { ...choice, visualSettings, sceneAiFallback, aiFallback: false };
+    const execution = motionSceneAiExecution(state);
+    assert.equal(execution.allowFallback, sceneAiFallback !== false, visualSettings.mode);
+    assert.equal(execution.model, selectedModel);
+    assert.equal(motionMainAiExecution(state).allowFallback, false);
+    assert.deepEqual(motionAiFallbackPolicy(execution), { allowFallback: sceneAiFallback !== false, strictProvider: sceneAiFallback === false });
+  }
 const script = { title: RT.SCENE_SETTINGS, language: RT.VI, beats: [{ id: RT.B1, visual: RT.SCENE, place: RT.YARD, narration: RT.TEST_SCENE }], gen: { cast: {}, locations: {}, staging: {}, previews: {}, failed: [] } };
-const initial = { ...original, rawText: RT.TEST_STORY_SOURCE, autoExport: true, autoContinue: false, analysis: { title: script.title, logline: RT.TEST_2, cast: [], places: [], chapters: [], facts: [] }, script };
+const initial = { ...original, ...(process.argv.includes("--remotion") ? { visualSettings: visualModes[1] } : {}), rawText: RT.TEST_STORY_SOURCE, autoExport: true, autoContinue: false, analysis: { title: script.title, logline: RT.TEST_2, cast: [], places: [], chapters: [], facts: [] }, script };
 const bundle = await build({ stdin: { loader: RT.TSX, resolveDir: process.cwd(), contents: RF.SCENE_SETTINGS_ENTRY(JSON.stringify(initial)) }, bundle: true, platform: RT.BROWSER, format: RT.IIFE, write: false, define: { "import.meta": RT.EMPTY_2 } });
 const cssName = fs.readdirSync(RT.DIST_ASSETS).find((name) => RT.PATTERN_INDEX_CSS.test(name));
 const css = cssName ? fs.readFileSync(path.join(RT.DIST_ASSETS, cssName), RT.UTF8) : RT.EMPTY;
@@ -118,7 +133,7 @@ try {
   assert.equal(requests[0].aiExecution.allowFallback, true);
   await fallback.click();
   await review.click();
-  await page.waitForFunction(async ({ key }) => (await (window as any).sceneSettingsFixture.saved()).aiReview === false, { key: MOTION_VIDEO_TEXTS.vi.AI_REVIEW });
+  await page.waitForFunction(async () => (await (window as any).sceneSettingsFixture.saved()).aiReview === false);
   await page.reload();
   await page.waitForFunction(() => (window as any).sceneSettingsFixture?.state.aiReview === false);
   assert.equal(await fallback.getAttribute("aria-checked"), "false");

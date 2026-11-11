@@ -1,4 +1,7 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
+import { CHAT_SPEED } from "../../constants/chatSpeed.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
+import { isChatRoomPage, sharedChromeFlowPage } from "./sharedChromePage.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { BROWSER_LIFECYCLE_TEXTS, isDisposableChatBrowserUrl } from "../../constants/browserLifecycle.js";
@@ -284,10 +287,13 @@ import {
   REFERENCE_ASSET_GROUP,
 } from "../../constants";
 import { jsonUtils } from "../../lib/json.js";
+import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
+import { CINEMATIC_CHAT_MODEL_LABELS } from "../../constants/cinematicConstants.js";
 import { FLOW_AUTOMATION_MESSAGES, GROK_AUTOMATION_MESSAGES } from "../../constants/messages.js";
 import { appError, appLog, createAppError } from "../../lib/logger.js";
 import { randomDelay, getBatchDelayMs, delayAsync } from "../../lib/shared-utils.js";
-import { GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, ProjectLanguage, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
+import { AiPlanningChatModel, GenerateType, ImageGeneratorEngine, PromptInputMethod, ImageGenerationMode, GeminiChatModelName, GeminiChatSelector, GeminiChatTextOption, GeminiChatSpeed, GEMINI_CHAT_SPEED_TAB_COUNT, AspectRatio, ProjectLanguage, GEMINI_CHAT_MEDIA_SELECTORS, VisualConfig } from "../../types.js";
+import { selectGeminiThinkingModel } from "./geminiModelService.js";
 import { Browser, BrowserContext, Locator, Page } from "playwright";
 import { spawn } from "child_process";
 import _ from "lodash";
@@ -304,6 +310,15 @@ import { distributeItemsByContinuity } from "../../services/imageGenerationConti
 import { normalizeVideoModelSettings } from "../../services/videoModelCapabilityService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
+import { CHAT_ROOM_RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
+import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure, withChromeBackupRecovery, chromeWaitPolicy, activeChromeId, chromeProfilePath, chromeDebugPort, chromeBackupAccountEmail, chromeSessionMismatch, sessionChromeId } from "./chromeBackupService.js";
+import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
+import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
+import { classifyAiError, classifyAiText, tagAiAvailability, aiAvailabilityOf, isAiExhausted, formatAiUntil, type AiAvailabilityClass } from "./aiAvailabilityService.js";
+import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
+import { findNativeChrome } from "./nativeProxyBrowser.js";
+import { humanClick, waitHumanSendTurn } from "./humanInteractionService.js";
 chromium.use(stealthPlugin());
 interface BrowserSession {
   context: BrowserContext;
@@ -311,6 +326,7 @@ interface BrowserSession {
   account: GoogleAccount;
   ownsContext?: boolean;
   preserveExternalPages?: boolean;
+  closeBrowser?: () => Promise<void>;
 }
 type GeminiVisualConfig = Partial<VisualConfig>;
 const FLOW_PROMPT_SELECTORS = [SOURCE_TEXT_CONTENTEDITABLE_TRUE_ROLE_TEXTBOX, SOURCE_TEXT_TEXTAREA_PLACEHOLDER_PROMPT_I, SOURCE_TEXT_TEXTAREA_PLACEHOLDER_MO_TA_I, SOURCE_TEXT_TEXTAREA, SOURCE_TEXT_CONTENTEDITABLE_TRUE];
@@ -1193,7 +1209,7 @@ export interface FlowVideoRecoveryOptions {
   chromeHeadless?: boolean;
   retainBrowserSession?: boolean;
 }
-export const recoverExistingFlowVideo = async (options: FlowVideoRecoveryOptions): Promise<ImageGeneratorResult> => {
+const recoverExistingFlowVideoTask = async (options: FlowVideoRecoveryOptions): Promise<ImageGeneratorResult> => {
   const flowProjectId = normalizeFlowProjectId(options.flowProjectId);
   const mediaId = normalizeFlowMediaId(options.mediaId);
   if (_.some([flowProjectId, mediaId], _.isEmpty)) {
@@ -1570,30 +1586,6 @@ export async function humanType(page: Page, text: string) {
     await delayAsync(delay);
   }
 }
-export const getImgIdSafe = (url: string): string => {
-  if (!url) return XRT.EMPTY;
-  try {
-    const baseUrl = _.startsWith(url, COMMON_STRINGS.SLASH_PREFIX) ? COMMON_STRINGS.RELATIVE_URL_PARSE_BASE : undefined;
-    const u = new URL(url, baseUrl);
-    let foundId: string = XRT.EMPTY;
-    const hasId = _.some(URL_CONSTANTS.ID_PARAMS, (param) => {
-      const idValue = u.searchParams.get(param);
-      if (idValue) {
-        foundId = idValue;
-        return true;
-      }
-      return false;
-    });
-    if (hasId) return foundId;
-    _.forEach(URL_CONSTANTS.IGNORED_PARAMS, (p) => u.searchParams.delete(p));
-    return u.toString();
-  } catch (error) {
-    appError(BACKEND_MESSAGES.PARSE_URL_ERR, error);
-    const match = url.match(IMAGE_ID_URL_REGEX);
-    if (match && match[2]) return match[2];
-    return url;
-  }
-};
 export const browserGetImgIdSafeStr = SOURCE_TEMPLATE_FUNCTION_URL_IF_URL_RETURN_TRY(`${COMMON_STRINGS.SLASH_PREFIX}`, `${COMMON_STRINGS.RELATIVE_URL_PARSE_BASE}`, `${jsonUtils.safeStringify(URL_CONSTANTS.ID_PARAMS)}`, `${jsonUtils.safeStringify(URL_CONSTANTS.IGNORED_PARAMS)}`, `${IMAGE_ID_URL_REGEX.toString()}`);
 export class SimpleMutex {
   private queue: (() => void)[] = [];
@@ -1652,9 +1644,11 @@ export interface ImageGeneratorOptions {
   visualConfig?: {
     chromeHeadless?: boolean;
     generateType?: GenerateType;
+    skipGenerateTypeSelection?: boolean;
     aspectRatio?: string;
     generateCount?: number;
     imageGeneratorEngine?: ImageGeneratorEngine;
+    planningChatModel?: AiPlanningChatModel;
     promptInputMethod?: PromptInputMethod;
     generationMode?: ImageGenerationMode;
     geminiChatSpeed?: GeminiChatSpeed;
@@ -1699,23 +1693,51 @@ export interface FlowVideoPromptBatchResult extends ImageGeneratorResult {
 }
 let lastUsedEmail: string | undefined = undefined;
 const connectToSharedChromeBrowser = async (logConnectionError: boolean = true): Promise<BrowserSession | null> => {
-  try {
-    const browser = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP);
-    const context = _.first(browser.contexts());
-    if (!context) return null;
-    const existingPages = context.pages();
-    const page = _.find(existingPages, (candidate) => FLOW_DIRECT_VIDEO_CONFIG.PROJECT_URL_PATTERN.test(candidate.url())) || _.find(existingPages, (candidate) => _.some([EXTERNAL_URLS.GOOGLE_LABS, EXTERNAL_URLS.GOOGLE_ACCOUNTS], (url) => _.startsWith(candidate.url(), url))) || _.first(existingPages) || (await context.newPage());
-    appLog(FLOW_AUTOMATION_MESSAGES.FLOW_NO_ROTATING_ACCOUNT_FALLBACK);
-    return { context, page, account: { email: SOURCE_TEXT_SHARED_CHROME_SESSION }, ownsContext: false, preserveExternalPages: true };
-  } catch (error) {
-    if (logConnectionError) appError(FLOW_AUTOMATION_MESSAGES.FLOW_CONNECT_PORT_FAILED, error);
-    return null;
+  const endpoints = isBackupChromeActive() ? [EXTERNAL_URLS.PLAYWRIGHT_CDP] : [EXTERNAL_URLS.PLAYWRIGHT_CDP, REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT];
+  let lastError: unknown;
+  for (const endpoint of endpoints) {
+    try {
+      const browser = await chromium.connectOverCDP(endpoint);
+      const context = _.first(browser.contexts());
+      if (!context) continue;
+      const page = await sharedChromeFlowPage(context);
+      appLog(FLOW_AUTOMATION_MESSAGES.FLOW_NO_ROTATING_ACCOUNT_FALLBACK);
+      return { context, page, account: { email: SOURCE_TEXT_SHARED_CHROME_SESSION }, ownsContext: false, preserveExternalPages: true };
+    } catch (error) {
+      lastError = error;
+    }
   }
+  if (logConnectionError && lastError) appError(FLOW_AUTOMATION_MESSAGES.FLOW_CONNECT_PORT_FAILED, lastError);
+  return null;
 };
 let sharedChromeLaunchedByApp = false;
-const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
+let sharedChromeLaunch: Promise<BrowserSession | null> | null = null;
+const sharedChromeRunning = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${EXTERNAL_URLS.PLAYWRIGHT_CDP}${REFACTOR_CONSTANTS.SHARED_CHROME_VERSION_PATH}`, { signal: AbortSignal.timeout(REFACTOR_CONSTANTS.SHARED_CHROME_PROBE_TIMEOUT_MS) });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+const launchSharedChromeBrowser = (chromeHeadless?: boolean): Promise<BrowserSession | null> => {
+  sharedChromeLaunch ||= launchSharedChromeBrowserOnce(chromeHeadless).finally(() => {
+    sharedChromeLaunch = null;
+  });
+  return sharedChromeLaunch;
+};
+const launchSharedChromeBrowserOnce = async (chromeHeadless?: boolean): Promise<BrowserSession | null> => {
   if (!_.isEqual(process.platform, SOURCE_TEXT_WIN32) || !fs.existsSync(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH)) return null;
+  if (await sharedChromeRunning()) {
+    for (let attempt = 0; attempt < REFACTOR_CONSTANTS.SHARED_CHROME_READY_ATTEMPTS; attempt += 1) {
+      const sharedBrowser = await connectToSharedChromeBrowser(false);
+      if (sharedBrowser) return sharedBrowser;
+      await delayAsync(REFACTOR_CONSTANTS.SHARED_CHROME_READY_INTERVAL_MS);
+    }
+    return null;
+  }
   const sharedProfilePath = path.join(process.env.SystemDrive || SOURCE_TEXT_C, REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_DIR);
+  const headless = chromeHeadless !== false;
   spawn(
     REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH,
     [
@@ -1725,8 +1747,10 @@ const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
       SOURCE_TEMPLATE_PROFILE_DIRECTORY(`${REFACTOR_CONSTANTS.SHARED_CHROME_PROFILE_NAME}`),
       REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
       REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
+      ...(headless ? [REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG] : []),
+      ...CHAT_SPEED.CHROME_ARGS,
     ],
-    { windowsHide: false, detached: true, stdio: SOURCE_TEXT_IGNORE },
+    { windowsHide: headless, detached: true, stdio: SOURCE_TEXT_IGNORE },
   ).unref();
   for (let attempt = 0; attempt < REFACTOR_CONSTANTS.SHARED_CHROME_READY_ATTEMPTS; attempt += 1) {
     await delayAsync(REFACTOR_CONSTANTS.SHARED_CHROME_READY_INTERVAL_MS);
@@ -1739,20 +1763,27 @@ const launchSharedChromeBrowser = async (): Promise<BrowserSession | null> => {
   return null;
 };
 export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
+  if (isBackupChromeActive()) return launchBackupChrome(chromeHeadless !== false);
+  const requestedHeadless = chromeHeadless !== false;
   let attempts = 0;
   const maxAttempts = 3;
   let account: GoogleAccount | null = null;
   let context: BrowserContext | null = null;
   let page: Page | null = null;
   if (preferSharedChrome) {
-    const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser() : null);
+    const runningHeadless = await getSharedChromeHeadlessMode();
+    if (runningHeadless !== null && runningHeadless !== requestedHeadless) {
+      await closeIdleSharedChrome(true).catch(() => false);
+      await closeAppBrowserAfterTask(true, true).catch(() => false);
+    }
+    const sharedBrowser = (await connectToSharedChromeBrowser()) || (await launchSharedChromeBrowser(chromeHeadless));
     if (sharedBrowser) return sharedBrowser;
   }
   while (attempts < maxAttempts) {
     attempts++;
     account = await getNextAccount(lastUsedEmail);
     if (!account) {
-      const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser() : null);
+      const sharedBrowser = (await connectToSharedChromeBrowser()) || (preferSharedChrome || chromeHeadless === false ? await launchSharedChromeBrowser(chromeHeadless) : null);
       if (sharedBrowser) return sharedBrowser;
       throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
     }
@@ -1761,9 +1792,9 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
     const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
     try {
       try {
-        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, channel: SOURCE_TEXT_CHROME, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
+        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, channel: SOURCE_TEXT_CHROME, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED, ...CHAT_SPEED.CHROME_ARGS] });
       } catch (chromeErr) {
-        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED] });
+        context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED, ...CHAT_SPEED.CHROME_ARGS] });
       }
       page = context.pages()[0] || (await context.newPage());
       try {
@@ -1790,7 +1821,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
       }
     }
   }
-  const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser() : null);
+  const sharedBrowser = (await connectToSharedChromeBrowser()) || (chromeHeadless === false ? await launchSharedChromeBrowser(chromeHeadless) : null);
   if (sharedBrowser) return sharedBrowser;
   throw new Error(REFACTOR_CONSTANTS.MSG_ALL_ACC_FAILED);
 }
@@ -1812,14 +1843,17 @@ export const retainGlobalBrowser = (): (() => void) => {
   cancelGlobalBrowserCleanup();
   return () => browserRetainers.delete(owner);
 };
-const isSharedChromeRunning = async (): Promise<boolean> => {
+const getSharedChromeHeadlessMode = async (): Promise<boolean | null> => {
   try {
     const response = await fetch(SOURCE_TEMPLATE_JSON_VERSION(`${EXTERNAL_URLS.LOCALHOST}`, `${REFACTOR_CONSTANTS.SHARED_CHROME_DEBUG_PORT}`), { signal: AbortSignal.timeout(1500) });
-    return response.ok;
+    if (!response.ok) return null;
+    const data = (await response.json()) as Record<string, unknown>;
+    return /HeadlessChrome/i.test(_.toString(data["User-Agent"]));
   } catch {
-    return false;
+    return null;
   }
 };
+const isSharedChromeRunning = async (): Promise<boolean> => (await getSharedChromeHeadlessMode()) !== null;
 const waitForSharedChromeExit = async (): Promise<boolean> => {
   for (let attempt = 0; attempt < 6; attempt += 1) {
     if (!(await isSharedChromeRunning())) return true;
@@ -1856,7 +1890,7 @@ export async function closeActiveBrowser(skipActivityCleanup = false) {
           }
         } else if (sharedChromeLaunchedByApp) {
           appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
-          return;
+          if (!isBackupChromeActive()) return;
         } else {
           appLog(FLOW_AUTOMATION_MESSAGES.FLOW_KEEP_SHARED_TABS);
         }
@@ -1864,6 +1898,8 @@ export async function closeActiveBrowser(skipActivityCleanup = false) {
         const geminiPages = _.filter(globalBatchPages, (page) => !page.isClosed() && !_.includes(page.url(), SOURCE_TEXT_GROK_COM));
         await Promise.allSettled(_.map(geminiPages, (page) => page.close()));
         if (!activeBrowserInstance.page.isClosed() && !_.includes(activeBrowserInstance.page.url(), SOURCE_TEXT_GROK_COM)) await activeBrowserInstance.page.close();
+      } else if (activeBrowserInstance.closeBrowser) {
+        await activeBrowserInstance.closeBrowser();
       } else {
         await activeBrowserInstance.context.close();
       }
@@ -1873,6 +1909,7 @@ export async function closeActiveBrowser(skipActivityCleanup = false) {
   activeBrowserHeadless = undefined;
 }
 export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = false, skipActivityCleanup = false): Promise<boolean> {
+  if (sharedChromeTasks.switching) return false;
   if (browserRetainers.size) return false;
   if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise.catch(() => undefined);
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) {
@@ -1930,6 +1967,7 @@ export async function closeAppBrowserAfterTask(closeOrphanChatTabs: boolean = fa
   return true;
 }
 export async function closeIdleSharedChrome(skipActivityCleanup = false): Promise<boolean> {
+  if (sharedChromeTasks.switching) return false;
   if (browserRetainers.size) return false;
   if (_.gt(activeFlowVideoGenerationCount, SecurityConstants.ZERO) || _.some(globalBatchPages, (page) => !page.isClosed())) return false;
   if (!(await isSharedChromeRunning())) return true;
@@ -1972,6 +2010,7 @@ export function cancelGlobalBrowserCleanup() {
   activeBrowserTimeout = null;
 }
 export function scheduleGlobalBrowserCleanup() {
+  if (sharedChromeTasks.switching) return;
   if (activeBrowserTimeout) clearTimeout(activeBrowserTimeout);
   activeBrowserTimeout = null;
   if (browserRetainers.size) return;
@@ -1986,12 +2025,16 @@ export function scheduleGlobalBrowserCleanup() {
   }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
 export const getExistingGlobalBrowser = async (): Promise<BrowserSession | null> => {
-  if (activeBrowserInstance) return activeBrowserInstance;
+  if (activeBrowserInstance) {
+    if (chromeSessionMismatch(activeBrowserInstance.account?.email)) return null;
+    return activeBrowserInstance;
+  }
+  if (isBackupChromeActive()) return null;
   const existing = await connectToSharedChromeBrowser(false);
   if (existing) activeBrowserInstance = existing;
   return existing;
 };
-export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = true): Promise<BrowserSession> {
+export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferSharedChrome: boolean = true, needsPage: boolean = true): Promise<BrowserSession> {
   await waitForGeminiBrowserClose();
   if (activeBrowserTimeout) {
     clearTimeout(activeBrowserTimeout);
@@ -2000,21 +2043,31 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
   const requestedHeadless = chromeHeadless !== false;
   if (activeBrowserLaunchPromise) {
     const launchedBrowser = await activeBrowserLaunchPromise;
-    if (preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
+    if (chromeSessionMismatch(launchedBrowser.account?.email)) {
       await closeActiveBrowser();
-    } else if (activeBrowserHeadless === requestedHeadless || (activeBrowserHeadless === false && requestedHeadless)) {
+    } else if (!isBackupChromeActive() && preferSharedChrome && !launchedBrowser.preserveExternalPages && (await isSharedChromeRunning())) {
+      await closeActiveBrowser();
+    } else if (activeBrowserHeadless !== undefined && activeBrowserHeadless !== requestedHeadless) {
+      await closeAppBrowserAfterTask(true, true).catch(() => undefined);
+      if (activeBrowserInstance && !activeBrowserInstance.preserveExternalPages) await closeActiveBrowser();
+    } else if (activeBrowserHeadless === requestedHeadless) {
       return launchedBrowser;
     }
   }
   if (activeBrowserInstance) {
-    if (preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
+    if (chromeSessionMismatch(activeBrowserInstance.account?.email)) {
+      await closeActiveBrowser();
+    } else if (!isBackupChromeActive() && preferSharedChrome && !activeBrowserInstance.preserveExternalPages && (await isSharedChromeRunning())) {
       appLog(FLOW_AUTOMATION_MESSAGES.FLOW_SWITCH_TO_SHARED_CHROME);
       await closeActiveBrowser();
-    } else if (!activeBrowserInstance.preserveExternalPages && activeBrowserHeadless === true && !requestedHeadless) {
+    } else if (activeBrowserHeadless !== undefined && activeBrowserHeadless !== requestedHeadless) {
       appLog(ImageGenMessages.CHROME_MODE_CHANGED, activeBrowserHeadless, requestedHeadless);
-      await closeActiveBrowser();
+      await closeAppBrowserAfterTask(true, true).catch(() => undefined);
+      if (activeBrowserInstance && !activeBrowserInstance.preserveExternalPages) await closeActiveBrowser();
     } else {
       try {
+        if (needsPage && (activeBrowserInstance.page.isClosed() || isChatRoomPage(activeBrowserInstance.page))) activeBrowserInstance.page = await sharedChromeFlowPage(activeBrowserInstance.context);
+        if (needsPage ? activeBrowserInstance.page.isClosed() : activeBrowserInstance.context.browser()?.isConnected() === false) throw new Error(BACKUP.CLOSE_FAILED);
         await activeBrowserInstance.page.url();
         appLog(ImageGenMessages.REUSING_GLOBAL_CHROME);
         return activeBrowserInstance;
@@ -2032,7 +2085,7 @@ export async function getOrLaunchGlobalBrowser(chromeHeadless?: boolean, preferS
     try {
       launchedBrowser.context.on(SOURCE_TEXT_CLOSE_2, () => {
         if (!_.isEqual(activeBrowserInstance, launchedBrowser)) return;
-        appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
+        if (!sharedChromeTasks.switching) appLog(ImageGenMessages.GLOBAL_CHROME_CLOSED_EXTERNAL);
         activeBrowserInstance = null;
         activeBrowserHeadless = undefined;
       });
@@ -2298,7 +2351,7 @@ const createFlowCharacter = async (page: Page, projectId: string, localProjectId
   }
   throw lastError instanceof Error ? lastError : createAppError(FLOW_CHARACTER_CONFIG.VI_CREATE_FAILED.replace(FLOW_CHARACTER_CONFIG.NAME_TOKEN, character.name));
 };
-export const ensureFlowCharacters = async (options: EnsureFlowCharactersOptions): Promise<EnsureFlowCharactersResult> => {
+const ensureFlowCharactersTask = async (options: EnsureFlowCharactersOptions): Promise<EnsureFlowCharactersResult> => {
   const selectedCharacters = options.characters;
   if (_.gt(selectedCharacters.length, CINEMATIC_CHARACTER_PACK_CONFIG.MAX_CHARACTERS) || _.uniq(_.map(selectedCharacters, SOURCE_TEXT_ID)).length !== selectedCharacters.length || _.some(selectedCharacters, (character) => _.some([character.id, character.name, character.prompt], (value) => _.isEmpty(_.trim(value))))) {
     throw createAppError(SOURCE_TEXT_INVALID_AI_CHARACTER_ARTIFACT);
@@ -2392,28 +2445,43 @@ const waitForVisibleGrokVerificationBeforeAutomation = async (): Promise<void> =
   }
   throw new Error(REFACTOR_CONSTANTS.GROK_PRECONNECT_TIMEOUT_ERROR);
 };
+let grokBrowserChromeId: string = AI_AVAILABILITY.MAIN;
 const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
-  const account = await getNextAccount();
+  const useBackup = isBackupChromeActive();
+  const account = useBackup ? ({ email: chromeBackupAccountEmail() } as GoogleAccount) : await getNextAccount();
   if (!account) throw new Error(REFACTOR_CONSTANTS.MSG_NO_ACC_AVAIL_CONFIG);
   await closeActiveBrowser();
-  const emailHash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(account.email).digest(REFACTOR_CONSTANTS.ENCODING_HEX);
-  const profilePath = path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
-  const chromeArgs = [REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG.replace(SOURCE_TEXT_0_2, _.toString(REFACTOR_CONSTANTS.GROK_REMOTE_DEBUGGING_PORT)), REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace(SOURCE_TEXT_0_2, profilePath), REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG, REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG, EXTERNAL_URLS.GROK_CHAT];
-  if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
-  spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: SOURCE_TEXT_IGNORE }).unref();
-  await waitForGrokChrome();
-  if (chromeHeadless === false) await waitForVisibleGrokVerificationBeforeAutomation();
-  else await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * REFACTOR_CONSTANTS.GROK_CDP_POST_LAUNCH_SETTLE_MULTIPLIER);
-  grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
-  const context = _.first(grokBrowser.contexts());
-  if (!context) throw new Error(GROK_AUTOMATION_MESSAGES.NO_SESSION_CREATED);
+  let context: BrowserContext | undefined;
+  if (useBackup) {
+    const started = await startBackupChrome(activeChromeId(), chromeHeadless !== false);
+    grokBrowser = started.browser;
+    context = started.context;
+  } else {
+    const emailHash = crypto.createHash(REFACTOR_CONSTANTS.HASH_MD5).update(account.email).digest(REFACTOR_CONSTANTS.ENCODING_HEX);
+    const profilePath = useBackup ? backupProfilePath() : path.join(getDataDirectory(), REFACTOR_CONSTANTS.DIR_GOOGLE_PROFILES, `${REFACTOR_CONSTANTS.PROFILE_PREFIX}${emailHash}`);
+    const chromeArgs = [REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG.replace(SOURCE_TEXT_0_2, _.toString(REFACTOR_CONSTANTS.GROK_REMOTE_DEBUGGING_PORT)), REFACTOR_CONSTANTS.CHROME_USER_DATA_ARG.replace(SOURCE_TEXT_0_2, profilePath), REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG, REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG, EXTERNAL_URLS.GROK_CHAT];
+    if (chromeHeadless !== false) chromeArgs.push(REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG);
+    spawn(REFACTOR_CONSTANTS.WINDOWS_CHROME_PATH, chromeArgs, { windowsHide: chromeHeadless !== false, stdio: SOURCE_TEXT_IGNORE }).unref();
+    await waitForGrokChrome();
+    if (chromeHeadless === false) await waitForVisibleGrokVerificationBeforeAutomation();
+    else await delayAsync(REFACTOR_CONSTANTS.GROK_CDP_READY_INTERVAL_MS * REFACTOR_CONSTANTS.GROK_CDP_POST_LAUNCH_SETTLE_MULTIPLIER);
+    grokBrowser = await chromium.connectOverCDP(REFACTOR_CONSTANTS.GROK_CDP_ENDPOINT);
+    context = _.first(grokBrowser.contexts());
+    if (!context) throw new Error(GROK_AUTOMATION_MESSAGES.NO_SESSION_CREATED);
+  }
   grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), SOURCE_TEXT_GROK_COM)) || (await context.newPage());
+  grokBrowserChromeId = activeChromeId();
   activeBrowserInstance = { context, page: grokPage, account, ownsContext: false };
   activeBrowserHeadless = chromeHeadless !== false;
   appLog(GROK_AUTOMATION_MESSAGES.USING_ACCOUNT(account.email));
   return { context, page: grokPage };
 };
 export const getOrLaunchGrokBrowser = async (chromeHeadless?: boolean): Promise<{ context: BrowserContext; page: Page }> => {
+  if (grokBrowser?.isConnected() && grokBrowserChromeId !== activeChromeId()) {
+    await closeOwnedGrokBrowserIfIdle(true).catch(() => undefined);
+    grokBrowser = null;
+    grokPage = null;
+  }
   if (grokBrowser?.isConnected() && grokPage && !grokPage.isClosed()) {
     const duplicateGrokPages = _.filter(grokPage.context().pages(), (page) => page !== grokPage && _.includes(page.url(), SOURCE_TEXT_GROK_COM_IMAGINE));
     await Promise.allSettled(_.map(duplicateGrokPages, (page) => page.close()));
@@ -2608,7 +2676,7 @@ const generateMediaWithGrokImagine = async (options: ImageGeneratorOptions): Pro
     release();
   }
 };
-export async function generateImageWithPlaywright(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
+async function generateImageWithPlaywrightTask(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
   const { prompt, sandboxConfig = {} } = options;
   const requestedVisualConfig = options.visualConfig;
@@ -3158,7 +3226,7 @@ export const assignFlowVideoBatchMediaIds = (items: FlowVideoPromptBatchItem[], 
   findBestAssignment(SecurityConstants.ZERO, _.range(uniqueCandidates.length), new Map(), SecurityConstants.ZERO);
   return _.map(items, (item) => ({ sceneId: item.sceneId, mediaId: bestAssignments.get(item.sceneId) }));
 };
-export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVideoPromptBatchOptions): Promise<FlowVideoPromptBatchResult[]> {
+async function generateFlowVideoPromptBatchWithPlaywrightTask(options: FlowVideoPromptBatchOptions): Promise<FlowVideoPromptBatchResult[]> {
   const items = options.items;
   if (_.isEmpty(items)) return [];
   if (_.gt(items.length, FLOW_DIRECT_VIDEO_CONFIG.PROMPTS_PER_BATCH) || _.some(items, (item) => _.isEmpty(_.trim(item.sceneId)) || _.isEmpty(_.trim(item.prompt))) || _.uniq(_.map(items, SOURCE_TEXT_SCENEID)).length !== items.length) {
@@ -3298,8 +3366,9 @@ export async function generateFlowVideoPromptBatchWithPlaywright(options: FlowVi
   }
 }
 const getGeminiWorkspaceUrl = (_generateType?: GenerateType): string => EXTERNAL_URLS.GEMINI_CHAT;
-export async function generateImageWithGeminiChat(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
+async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): Promise<ImageGeneratorResult> {
   const generationRevision = mediaGenerationRevision;
+  let mediaOutage: AiAvailabilityClass | null = null;
   const { prompt, visualConfig } = options;
   const finalPrompt = prompt || XRT.EMPTY;
   const release = await geminiBatchMutex.acquire();
@@ -3307,7 +3376,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
   let success = false;
   let base64Result: string | null = null;
   let roomAttempts = SecurityConstants.ZERO;
-  const maxRoomAttempts = _.isEqual(visualConfig.generateType, GenerateType.Video) ? 2 : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
+  const isVideoGeneration = _.isEqual(visualConfig.generateType, GenerateType.Video);
+  const maxRoomAttempts = isVideoGeneration ? GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ROOMS_PER_ITEM;
   let browserInstance: BrowserSession | null = null;
   let activePage: Page | null = null;
   let ownsActivePage = false;
@@ -3325,27 +3395,37 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         }
       }
       if (!detectedRatio) detectedRatio = SOURCE_TEXT_9_16;
-      const currentConfigState = jsonUtils.safeStringify({ generateType: visualConfig?.generateType || GenerateType.Image, imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3, aspectRatio: detectedRatio });
+      const currentConfigState = jsonUtils.safeStringify({ generateType: visualConfig?.generateType || GenerateType.Image, skipGenerateTypeSelection: Boolean(visualConfig?.skipGenerateTypeSelection), imageGeneratorEngine: visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3, planningChatModel: visualConfig?.planningChatModel || XRT.EMPTY, aspectRatio: detectedRatio });
       const isConfigChanged = currentConfigState !== lastGeminiConfigState;
       let needNewRoom = _.gt(roomAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
       try {
         if (!browserInstance) {
           browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
           releaseActivity = await acquireGeminiActivityUse(browserInstance.context);
+          const openPages = browserInstance.context.pages().filter((candidate) => !candidate.isClosed());
           if (options.forceNewPage) {
             activePage = await browserInstance.context.newPage();
-            ownsActivePage = true;
+            ownsActivePage = openPages.length > 0;
           } else {
-            activePage = browserInstance.page;
+            activePage = !browserInstance.page.isClosed() ? browserInstance.page : openPages[0] || (await browserInstance.context.newPage());
+            browserInstance.page = activePage;
           }
           if (_.includes(activePage.url(), SOURCE_TEXT_GROK_COM)) {
             activePage = await browserInstance.context.newPage();
             ownsActivePage = true;
           }
+          if (visualConfig?.chromeHeadless === false) {
+            await activePage.bringToFront().catch(() => undefined);
+          }
         }
         const currentUrl = activePage!.url();
+        const isCurrentlyGenerating = _.includes(currentUrl, SOURCE_TEXT_GEMINI_GOOGLE_COM) && (await isGeminiPageActivelyGenerating(activePage!));
         if (!_.includes(currentUrl, SOURCE_TEXT_GEMINI_GOOGLE_COM)) {
           needNewRoom = true;
+        } else if (isVideoGeneration && (await hasGeminiRoomResponses(activePage!))) {
+          needNewRoom = true;
+        } else if (isCurrentlyGenerating) {
+          needNewRoom = false;
         } else if (consecutiveGeminiErrors >= GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM) {
           needNewRoom = true;
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_ROOM_FORCED);
@@ -3376,8 +3456,8 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
         continue;
       }
       let reloadAttempts = SecurityConstants.ZERO;
-      const maxReloadAttempts = _.isEqual(visualConfig.generateType, GenerateType.Video) ? 1 : 2;
-      while (reloadAttempts < maxReloadAttempts && !success) {
+      const maxReloadAttempts = isVideoGeneration ? GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT : GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
+      while (reloadAttempts < maxReloadAttempts && !success && !isMediaGenerationCancelled(generationRevision)) {
         reloadAttempts++;
         if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
           appLog(BACKEND_MESSAGES.GEMINI_CHAT_RELOAD.replace(SOURCE_TEXT_0_2, _.toString(_.subtract(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT))));
@@ -3391,37 +3471,46 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           }
         }
         try {
-          await waitForGeminiPageIdle(activePage!, visualConfig);
-          const isPageReady = await waitForGeminiReadyOrCaptchaSolved(activePage!);
-          if (!isPageReady) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-          const forceSetting = needNewRoom || isConfigChanged || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
-          const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
-          if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
-          const generateTypeConfigured = await configureGeminiGenerateType(activePage!, visualConfig);
-          if (!generateTypeConfigured) {
-            throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace(SOURCE_TEXT_0_2, _.isEqual(visualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
-          }
-          await configureGeminiMediaInput(activePage!, visualConfig);
-          if (forceSetting) lastGeminiConfigState = currentConfigState;
-          await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
-          const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
-          await waitForGeminiRequestSlot(reloadAttempts);
-          const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
-          let clicked = false;
-          try {
-            if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
-              await sendBtn.click();
-              clicked = true;
-              appLog(BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND);
+          if (isVideoGeneration && (await isGeminiPageActivelyGenerating(activePage!))) {
+            appLog(BACKEND_MESSAGES.GEMINI_CHAT_BUSY_WAIT);
+            base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig);
+          } else {
+            await waitForGeminiPageIdle(activePage!, visualConfig);
+            const isPageReady = await waitForGeminiReadyOrCaptchaSolved(activePage!);
+            if (!isPageReady) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+            const forceSetting = needNewRoom || isConfigChanged || _.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT);
+            const modelConfigured = await configureGeminiModel(activePage!, visualConfig);
+            if (!modelConfigured) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
+            const generateTypeConfigured = await configureGeminiGenerateType(activePage!, visualConfig);
+            if (!generateTypeConfigured) {
+              throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_GEN_TYPE_NOT_FOUND.replace(SOURCE_TEXT_0_2, _.isEqual(visualConfig.generateType, GenerateType.Video) ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi));
             }
-          } catch (error: unknown) {
-            appError(BACKEND_MESSAGES.GEMINI_CHAT_CLICK_SEND_FAILED.replace(SOURCE_TEXT_0_2, getErrorMessage(error)));
+            await configureGeminiMediaInput(activePage!, visualConfig);
+            if (forceSetting) lastGeminiConfigState = currentConfigState;
+            await enterGeminiPrompt(activePage!, finalPrompt, visualConfig);
+            if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
+            const initialResponseCount = await activePage!.locator(GeminiChatSelector.Response).count();
+            await waitForGeminiRequestSlot(reloadAttempts);
+            await waitHumanSendTurn(activePage!);
+            if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
+            const sendBtn = activePage!.locator(GeminiChatSelector.SendButton).first();
+            let clicked = false;
+            try {
+              if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
+                await humanClick(activePage!, sendBtn);
+                clicked = true;
+                appLog(BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND);
+              }
+            } catch (error: unknown) {
+              appError(BACKEND_MESSAGES.GEMINI_CHAT_CLICK_SEND_FAILED.replace(SOURCE_TEXT_0_2, getErrorMessage(error)));
+            }
+            if (!clicked) {
+              await activePage!.keyboard.press(SOURCE_TEXT_ENTER);
+              appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
+            }
+            roomReferenceSignatureMap.delete(activePage!);
+            base64Result = await waitForGeminiMediaWithRetryClicks(activePage!, visualConfig, initialResponseCount);
           }
-          if (!clicked) {
-            await activePage!.keyboard.press(SOURCE_TEXT_ENTER);
-            appLog(BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER);
-          }
-          base64Result = await waitForDownloadAndGetBase64(activePage!, visualConfig, initialResponseCount);
           if (base64Result) {
             success = true;
             consecutiveGeminiErrors = 0;
@@ -3432,12 +3521,14 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
           }
           if (!base64Result) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
         } catch (error: unknown) {
+          if (isMediaGenerationCancelled(generationRevision)) break;
+          mediaOutage = await detectMediaOutage(activePage, error);
+          if (mediaOutage) throw error;
           consecutiveGeminiErrors++;
           const errorMessage = getErrorMessage(error);
           appError(BACKEND_MESSAGES.GEMINI_CHAT_ATTEMPT_FAILED.replace(SOURCE_TEXT_0_2, reloadAttempts.toString()).replace(SOURCE_TEXT_1_3, roomAttempts.toString()).replace(SOURCE_TEXT_2_2, errorMessage));
           if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(errorMessage)) {
             terminalWarning = errorMessage;
-            throw error;
           }
         }
       }
@@ -3447,7 +3538,14 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(failureReason)) terminalWarning = failureReason;
     appError(BACKEND_MESSAGES.GEMINI_CHAT_FAILED_COMPLETELY.replace(SOURCE_TEXT_0_2, failureReason));
   } finally {
-    if (ownsActivePage && activePage && !activePage.isClosed()) await activePage.close().catch(() => undefined);
+    if (ownsActivePage && activePage && !activePage.isClosed()) {
+      const openPages = activePage
+        .context()
+        .pages()
+        .filter((candidate) => !candidate.isClosed());
+      if (openPages.length > 1) await activePage.close().catch(() => undefined);
+      else if (browserInstance) browserInstance.page = activePage;
+    }
     releaseActivity?.();
     if (browserInstance) {
       if (options.retainBrowserSession) scheduleGlobalBrowserCleanup();
@@ -3459,6 +3557,7 @@ export async function generateImageWithGeminiChat(options: ImageGeneratorOptions
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MUTEX_DELAY.replace(SOURCE_TEXT_0_2, delayTime.toString()));
     release();
   }
+  if (mediaOutage) throw tagAiAvailability(new Error(mediaOutage.notice), mediaOutage);
   if (success && base64Result) {
     return { success: true, base64: base64Result, fallbackUrl: `${COMMON_STRINGS.BASE64_JPEG_PREFIX}${base64Result}` };
   }
@@ -3541,7 +3640,8 @@ export async function cancelAllActiveMediaGeneration(): Promise<void> {
     }),
   );
   if (activeBrowserInstance?.ownsContext !== false) {
-    await activeBrowserInstance?.context.close().catch(() => undefined);
+    if (activeBrowserInstance?.closeBrowser) await activeBrowserInstance.closeBrowser().catch(() => undefined);
+    else await activeBrowserInstance?.context.close().catch(() => undefined);
   }
   await closeOwnedGrokBrowserIfIdle(true);
   if (grokBrowser?.isConnected()) await grokBrowser.close().catch(() => undefined);
@@ -3582,8 +3682,9 @@ const prepareGeminiBatchPage = async (page: Page, index: number, generateType: G
     throw error;
   }
 };
-export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[], visualConfig: GeminiVisualConfig, style?: string, onProgress?: (result: BatchImageResult) => void, retainBrowserSession = false): Promise<BatchImageResult[]> {
+async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], visualConfig: GeminiVisualConfig, style?: string, onProgress?: (result: BatchImageResult) => void, retainBrowserSession = false): Promise<BatchImageResult[]> {
   const generationRevision = mediaGenerationRevision;
+  let batchOutage: AiAvailabilityClass | null = null;
   if (!items || items.length === 0) return [];
   const requestedSpeed = _.toString(visualConfig?.geminiChatSpeed);
   const speed = _.isEqual(requestedSpeed, SOURCE_TEXT_1) ? GeminiChatSpeed.Slow : ((_.includes(_.values(GeminiChatSpeed), requestedSpeed as GeminiChatSpeed) ? requestedSpeed : GeminiChatSpeed.Slow) as GeminiChatSpeed);
@@ -3620,7 +3721,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     browserInstance = await getOrLaunchGlobalBrowser(visualConfig?.chromeHeadless, true);
     releaseActivity = await acquireGeminiActivityUse(browserInstance.context);
     const context = browserInstance.context;
-    const reusablePages = _.uniq(_.filter(_.concat(globalBatchPages, context.pages()), (page) => (!retainBrowserSession || page !== browserInstance!.page) && !page.isClosed() && !_.includes(page.url(), SOURCE_TEXT_GROK_COM) && (_.isEqual(page.url(), SOURCE_TEXT_ABOUT_BLANK) || _.includes(page.url(), SOURCE_TEXT_GEMINI_GOOGLE_COM))));
+    const reusablePages = _.uniq(_.filter(_.concat(globalBatchPages, context.pages()), (page) => (!retainBrowserSession || page !== browserInstance!.page) && !page.isClosed() && !isChatRoomPage(page) && !_.includes(page.url(), SOURCE_TEXT_GROK_COM) && (_.isEqual(page.url(), SOURCE_TEXT_ABOUT_BLANK) || _.includes(page.url(), SOURCE_TEXT_GEMINI_GOOGLE_COM))));
     const candidates = _.take(reusablePages, maxTabs);
     const surplusPages = _.drop(reusablePages, maxTabs);
     await Promise.allSettled(_.map(surplusPages, (page) => page.close()));
@@ -3664,6 +3765,8 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
           let needNewRoom = false;
           if (!_.includes(currentUrl, SOURCE_TEXT_GEMINI_GOOGLE_COM)) {
             needNewRoom = true;
+          } else if (_.isEqual(itemVisualConfig.generateType, GenerateType.Video) && (await hasGeminiRoomResponses(page))) {
+            needNewRoom = true;
           } else if (consecutiveErrors >= GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM) {
             needNewRoom = true;
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_FORCED_NEW_ROOM.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()).replace(SOURCE_TEXT_1_3, consecutiveErrors.toString()));
@@ -3689,7 +3792,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
             appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_ROOM_REUSE.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()));
           }
           let reloadAttempts = SecurityConstants.ZERO;
-          const maxReloadAttempts = _.isEqual(itemVisualConfig.generateType, GenerateType.Video) ? 1 : 2;
+          const maxReloadAttempts = GEMINI_CHAT_RECOVERY_CONFIG.MAX_ATTEMPTS_PER_ROOM;
           while (reloadAttempts < maxReloadAttempts && !success) {
             reloadAttempts++;
             if (_.gt(reloadAttempts, GEMINI_CHAT_RECOVERY_CONFIG.FIRST_ATTEMPT)) {
@@ -3723,11 +3826,12 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
               await enterGeminiPrompt(page, finalPrompt, itemVisualConfig);
               const initialResponseCount = await page.locator(GeminiChatSelector.Response).count();
               await waitForGeminiRequestSlot(reloadAttempts);
+              await waitHumanSendTurn(page);
               const sendBtn = page.locator(GeminiChatSelector.SendButton).first();
               let clicked = false;
               try {
                 if ((await sendBtn.isVisible()) && !(await sendBtn.isDisabled())) {
-                  await sendBtn.click();
+                  await humanClick(page, sendBtn);
                   clicked = true;
                   appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()).replace(SOURCE_TEXT_1_3, SOURCE_TEMPLATE_SYMBOL_20(`${item.sceneId}`, `${BACKEND_MESSAGES.GEMINI_CHAT_CLICKED_SEND}`)));
                 }
@@ -3738,7 +3842,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
                 await page.keyboard.press(SOURCE_TEXT_ENTER);
                 appLog(BACKEND_MESSAGES.GEMINI_CHAT_BATCH_TAB_START.replace(SOURCE_TEXT_0_2, (tabIndex + 1).toString()).replace(SOURCE_TEXT_1_3, SOURCE_TEMPLATE_SYMBOL_20(`${item.sceneId}`, `${BACKEND_MESSAGES.GEMINI_CHAT_PRESSED_ENTER}`)));
               }
-              base64Result = await waitForDownloadAndGetBase64(page, itemVisualConfig, initialResponseCount);
+              base64Result = await waitForGeminiMediaWithRetryClicks(page, itemVisualConfig, initialResponseCount);
               if (base64Result) {
                 success = true;
                 batchPagesErrors.set(page, 0);
@@ -3749,6 +3853,11 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
               }
               if (!base64Result) throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
             } catch (err: any) {
+              const outage = await detectMediaOutage(page, err);
+              if (outage) {
+                batchOutage = outage;
+                throw err;
+              }
               batchPagesErrors.set(page, (batchPagesErrors.get(page) || 0) + 1);
               const errorMessage = getErrorMessage(err);
               appError(
@@ -3758,7 +3867,6 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
               );
               if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(errorMessage)) {
                 terminalWarning = errorMessage;
-                throw err;
               }
             }
           }
@@ -3787,13 +3895,14 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     };
     const runWorker = async (page: Page, tabIndex: number, workerQueue: BatchImageItem[]) => {
       let workerPage = page;
-      while (workerQueue.length > 0 && !isMediaGenerationCancelled(generationRevision)) {
+      while (workerQueue.length > 0 && !isMediaGenerationCancelled(generationRevision) && !batchOutage) {
         const item = workerQueue.shift();
         if (!item) break;
         let itemSucceeded = false;
         try {
           const res = await generateOnTab(workerPage, item, tabIndex);
           itemSucceeded = res.success;
+          if (!res.success && batchOutage) break;
           results.push(res);
           if (onProgress) onProgress(res);
         } catch (err: any) {
@@ -3823,7 +3932,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     const workers = _.map(activePages, (page, index) => runWorker(page, index, workerQueues[index] || []));
     await Promise.all(workers);
     _.forEach(
-      _.filter(items, (item) => !_.some(results, { sceneId: item.sceneId })),
+      _.filter(items, (item) => !batchOutage && !_.some(results, { sceneId: item.sceneId })),
       (item) => {
         const res = { sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: BACKEND_MESSAGES.GEMINI_CHAT_FALLBACK_WARNING, assetType: resolveBatchAssetType(item) };
         results.push(res);
@@ -3858,6 +3967,7 @@ export async function generateBatchImagesWithGeminiChat(items: BatchImageItem[],
     }
     release();
   }
+  if (batchOutage) throw tagAiAvailability(new Error(batchOutage.notice), batchOutage);
   return results;
 }
 const openGeminiModelMenu = async (page: Page, picker: Locator): Promise<Locator | null> => {
@@ -3877,12 +3987,30 @@ const closeGeminiModelMenu = async (picker: Locator, menu: Locator): Promise<voi
 const isGeminiModelOptionSelected = (option: Locator): Promise<boolean> =>
   option
     .evaluate(
-      (element, browserPayload) => {
+      (element, { payload: browserPayload, maintenanceTexts: RT_MAINTENANCE }) => {
         const { SOURCE_TEXT_SYMBOL_23 } = browserPayload.texts;
-        const selectedClass = browserPayload.payload;
-        return element.classList.contains(selectedClass) || Boolean(element.querySelector(`${SOURCE_TEXT_SYMBOL_23}${selectedClass}`));
+        const { selectedClass, activeAttr, activeVal } = browserPayload.payload;
+        return (
+          element.classList.contains(selectedClass) ||
+          element.classList.contains(RT_MAINTENANCE.ACTIVE) ||
+          element.getAttribute(activeAttr) === activeVal ||
+          element.getAttribute(RT_MAINTENANCE.ARIA_CHECKED) === activeVal ||
+          element.getAttribute(RT_MAINTENANCE.ARIA_SELECTED) === activeVal ||
+          Boolean(element.querySelector(`${SOURCE_TEXT_SYMBOL_23}${selectedClass}${RT_MAINTENANCE.ACTIVE_2}${activeAttr}${RT_MAINTENANCE.ATTRIBUTE_EQUALS_QUOTE}${activeVal}${RT_MAINTENANCE.ARIA_CHECKED_2}${activeVal}${RT_MAINTENANCE.DATA_MAT_ICON_NAME_CHECK_FONTICON_CHECK_INPUT_CHECKED}`))
+        );
       },
-      { payload: GEMINI_MODEL_SELECTION_CONFIG.SELECTED_CLASS, texts: { SOURCE_TEXT_SYMBOL_23 } },
+      {
+        payload: { payload: { selectedClass: GEMINI_MODEL_SELECTION_CONFIG.SELECTED_CLASS, activeAttr: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_ATTRIBUTE, activeVal: GEMINI_MODEL_SELECTION_CONFIG.ACTIVE_VALUE }, texts: { SOURCE_TEXT_SYMBOL_23 } },
+        maintenanceTexts: {
+          ACTIVE: RT_MAINTENANCE.ACTIVE,
+          ARIA_CHECKED: RT_MAINTENANCE.ARIA_CHECKED,
+          ARIA_SELECTED: RT_MAINTENANCE.ARIA_SELECTED,
+          ACTIVE_2: RT_MAINTENANCE.ACTIVE_2,
+          ATTRIBUTE_EQUALS_QUOTE: RT_MAINTENANCE.ATTRIBUTE_EQUALS_QUOTE,
+          ARIA_CHECKED_2: RT_MAINTENANCE.ARIA_CHECKED_2,
+          DATA_MAT_ICON_NAME_CHECK_FONTICON_CHECK_INPUT_CHECKED: RT_MAINTENANCE.DATA_MAT_ICON_NAME_CHECK_FONTICON_CHECK_INPUT_CHECKED,
+        },
+      },
     )
     .catch(() => false);
 const waitForGeminiModelOptionSelected = async (option: Locator): Promise<boolean> => {
@@ -3893,17 +4021,20 @@ const waitForGeminiModelOptionSelected = async (option: Locator): Promise<boolea
   }
   return false;
 };
+const readGeminiOptionLabel = async (option: Locator): Promise<string> => {
+  const labelNode = option.locator(GeminiChatSelector.ModelLabel).first();
+  if ((await labelNode.count().catch(() => 0)) > 0) {
+    const text = _.trim(await labelNode.textContent().catch(() => XRT.EMPTY));
+    if (text) return text;
+  }
+  return _.trim(await option.textContent().catch(() => XRT.EMPTY));
+};
 const findGeminiModelOption = async (menu: Locator, modelRegex: RegExp): Promise<Locator | null> => {
   const options = menu.locator(GeminiChatSelector.ModelOption);
   const optionCount = await options.count();
   for (let index = SecurityConstants.ZERO; index < optionCount; index++) {
     const option = options.nth(index);
-    const label = _.trim(
-      await option
-        .locator(GeminiChatSelector.ModelLabel)
-        .textContent()
-        .catch(() => XRT.EMPTY),
-    );
+    const label = await readGeminiOptionLabel(option);
     const matches = modelRegex.test(label);
     modelRegex.lastIndex = SecurityConstants.ZERO;
     if (matches) return option;
@@ -3916,23 +4047,47 @@ const getSelectedGeminiModelLabel = async (menu: Locator): Promise<string> => {
   for (let index = SecurityConstants.ZERO; index < optionCount; index++) {
     const option = options.nth(index);
     if (await isGeminiModelOptionSelected(option)) {
-      return _.trim(
-        await option
-          .locator(GeminiChatSelector.ModelLabel)
-          .textContent()
-          .catch(() => XRT.EMPTY),
-      );
+      return await readGeminiOptionLabel(option);
     }
   }
   return REFACTOR_CONSTANTS.VD_EMPTY_STRING;
 };
 async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig): Promise<boolean> {
+  const planningModel = visualConfig?.planningChatModel;
+  const geminiSelection = planningModel ? parseGeminiChatModel(planningModel) : undefined;
+  if (planningModel && geminiSelection?.level) {
+    try {
+      await selectGeminiThinkingModel(page, planningModel);
+      return true;
+    } catch {
+      // Fall through to base model selection if thinking level UI is unavailable.
+    }
+  }
   const engine = visualConfig?.imageGeneratorEngine || ImageGeneratorEngine.Veo3;
   let targetModelText = GeminiChatModelName.Pro;
   let targetModelRegex = GEMINI_MODEL_PRO_REGEX;
   let fallbackModelRegex: RegExp | null = null;
   const isImageGeneration = !_.isEqual(visualConfig?.generateType, GenerateType.Video);
-  if (isImageGeneration) {
+  if (planningModel) {
+    const basePlanningModel = geminiSelection?.model || planningModel;
+    if (basePlanningModel === AiPlanningChatModel.GeminiFlashLite) {
+      targetModelText = GeminiChatModelName.FlashLite;
+      targetModelRegex = GEMINI_MODEL_FLASH_LITE_REGEX;
+      fallbackModelRegex = null;
+    } else if (basePlanningModel === AiPlanningChatModel.GeminiFlash) {
+      targetModelText = GeminiChatModelName.Flash;
+      targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
+      fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
+    } else if (basePlanningModel === AiPlanningChatModel.GeminiArgon) {
+      targetModelText = GeminiChatModelName.Pro;
+      targetModelRegex = CINEMATIC_CHAT_MODEL_LABELS[AiPlanningChatModel.GeminiArgon];
+      fallbackModelRegex = GEMINI_MODEL_PRO_REGEX;
+    } else if (basePlanningModel === AiPlanningChatModel.GeminiPro || basePlanningModel === AiPlanningChatModel.GeminiThinking || basePlanningModel === AiPlanningChatModel.GeminiDeepThink) {
+      targetModelText = GeminiChatModelName.Pro;
+      targetModelRegex = GEMINI_MODEL_PRO_REGEX;
+      fallbackModelRegex = null;
+    }
+  } else if (isImageGeneration) {
     targetModelText = GeminiChatModelName.Flash;
     targetModelRegex = GEMINI_MODEL_FLASH_REGEX;
     fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
@@ -3950,6 +4105,15 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     return false;
   }
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_CONFIG_MODEL.replace(SOURCE_TEXT_0_2, targetModelText));
+  const initialButtonLabel = _.trim(await modelPickerBtn.innerText().catch(() => XRT.EMPTY));
+  const buttonMatchesTarget = targetModelRegex.test(initialButtonLabel);
+  targetModelRegex.lastIndex = SecurityConstants.ZERO;
+  const buttonMatchesFallback = Boolean(fallbackModelRegex?.test(initialButtonLabel));
+  if (fallbackModelRegex) fallbackModelRegex.lastIndex = SecurityConstants.ZERO;
+  if (buttonMatchesTarget || buttonMatchesFallback) {
+    appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_CORRECT);
+    return true;
+  }
   for (let attempt = 0; attempt < GEMINI_MODEL_SELECTION_CONFIG.MAX_ATTEMPTS; attempt++) {
     const modelMenu = await openGeminiModelMenu(page, modelPickerBtn);
     if (!modelMenu) continue;
@@ -3977,6 +4141,13 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     }
     await matchingOption.click();
     await modelPickerBtn.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: GEMINI_MODEL_SELECTION_CONFIG.OPTION_TIMEOUT_MS });
+    const updatedButtonLabel = _.trim(await modelPickerBtn.innerText().catch(() => XRT.EMPTY));
+    const updatedButtonMatches = selectedModelRegex.test(updatedButtonLabel);
+    selectedModelRegex.lastIndex = SecurityConstants.ZERO;
+    if (updatedButtonMatches) {
+      appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_SUCCESS.replace(SOURCE_TEXT_0_2, targetModelText));
+      return true;
+    }
     const verificationMenu = await openGeminiModelMenu(page, modelPickerBtn);
     if (!verificationMenu) continue;
     const selectedOption = await findGeminiModelOption(verificationMenu, selectedModelRegex);
@@ -3991,20 +4162,34 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
   return false;
 }
 export async function configureGeminiGenerateType(page: Page, visualConfig: GeminiVisualConfig): Promise<boolean> {
+  if (visualConfig?.skipGenerateTypeSelection) {
+    const selectedModeChip = page.locator(SOURCE_TEXT_GEM_BUTTON_DATA_TEST_ID_DESELECT).first();
+    if (await selectedModeChip.isVisible().catch(() => false)) {
+      await selectedModeChip.click().catch(() => undefined);
+      await randomDelay(300, 600);
+    }
+    return true;
+  }
   const isVideo = visualConfig?.generateType === GenerateType.Video;
   const targetText = isVideo ? GeminiChatTextOption.CreateVideoVi : GeminiChatTextOption.CreateImageVi;
   const activeModeRegex = isVideo ? GEMINI_ACTIVE_VIDEO_MODE_REGEX : GEMINI_ACTIVE_IMAGE_MODE_REGEX;
   const hasActiveGenerateType = async (): Promise<boolean> => {
     const selectedModeChip = page.locator(SOURCE_TEXT_GEM_BUTTON_DATA_TEST_ID_DESELECT).first();
-    if (await selectedModeChip.isVisible().catch(() => false)) {
-      const selectedModeLabel = _.trim(await selectedModeChip.innerText().catch(() => XRT.EMPTY));
-      if (activeModeRegex.test(selectedModeLabel)) return true;
+    if ((await selectedModeChip.count().catch(() => SecurityConstants.ZERO)) > SecurityConstants.ZERO) {
+      const chipTexts = [
+        _.trim(await selectedModeChip.innerText().catch(() => XRT.EMPTY)),
+        _.trim((await selectedModeChip.textContent().catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+        _.trim((await selectedModeChip.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+        _.trim((await selectedModeChip.locator('button').first().getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+      ];
+      if (_.some(chipTexts, (text) => Boolean(text) && activeModeRegex.test(text))) return true;
     }
     const candidates = page.locator(GeminiChatSelector.ActiveGenerateType);
     const candidateCount = await candidates.count();
     for (let index = SecurityConstants.ZERO; index < candidateCount; index++) {
       const candidate = candidates.nth(index);
-      if (!(await candidate.isVisible().catch(() => false))) continue;
+      const isCandidateVisible = (await candidate.isVisible().catch(() => false)) || (await candidate.locator('button').first().isVisible().catch(() => false));
+      if (!isCandidateVisible) continue;
       const belongsToNavigation = await candidate
         .evaluate(
           (element: HTMLElement, browserPayload) => {
@@ -4015,8 +4200,12 @@ export async function configureGeminiGenerateType(page: Page, visualConfig: Gemi
         )
         .catch(() => false);
       if (belongsToNavigation) continue;
-      const label = _.trim(_.join([await candidate.innerText().catch(() => XRT.EMPTY), await candidate.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)], SRT.SOURCE_TEXT_SYMBOL_52));
-      if (activeModeRegex.test(label)) return true;
+      const candidateTexts = [
+        _.trim(await candidate.innerText().catch(() => XRT.EMPTY)),
+        _.trim((await candidate.textContent().catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+        _.trim((await candidate.getAttribute(SOURCE_TEXT_ARIA_LABEL).catch(() => XRT.EMPTY)) ?? XRT.EMPTY),
+      ];
+      if (_.some(candidateTexts, (text) => Boolean(text) && activeModeRegex.test(text))) return true;
     }
     return false;
   };
@@ -4176,12 +4365,15 @@ const configureGeminiAspectRatio = async (page: Page, targetRatio: AspectRatio):
 };
 async function configureGeminiMediaInput(page: Page, visualConfig: GeminiVisualConfig) {
   await page.bringToFront().catch(() => {});
-  await configureGeminiAspectRatio(page, (visualConfig?.aspectRatio || AspectRatio.SixteenNine) as AspectRatio);
+  if (!visualConfig?.skipGenerateTypeSelection) {
+    await configureGeminiAspectRatio(page, (visualConfig?.aspectRatio || AspectRatio.SixteenNine) as AspectRatio);
+  }
   const rawReferences = !_.isEmpty(visualConfig?.referenceImages) ? visualConfig.referenceImages : !_.isEmpty(visualConfig?.sceneReferenceImages) ? visualConfig.sceneReferenceImages : visualConfig?.styleReferenceImages;
   const allReferenceFiles = createGeminiReferenceFiles(rawReferences, visualConfig?.referenceImageNames);
   const nextSignature = createReferenceSignature(allReferenceFiles);
-  const currentChipCount = await page
-    .locator(GEMINI_CHAT_VIDEO_SELECTORS.REFERENCE_CHIPS)
+  const composerContainer = page.locator(SOURCE_TEXT_INPUT_AREA_CHAT_INPUT_INPUT_AREA).first();
+  const currentChipCount = await composerContainer
+    .locator('uploader-file-preview, .attachment-preview-wrapper, gem-media-attachment, img.gem-attachment-style-img, [data-test-id*="attachment" i]')
     .count()
     .catch(() => 0);
   if (_.isEqual(roomReferenceSignatureMap.get(page), nextSignature) && (_.isEmpty(allReferenceFiles) || _.gte(currentChipCount, allReferenceFiles.length))) {
@@ -4302,21 +4494,70 @@ const waitForGeneratedImageReady = async (media: Locator): Promise<void> => {
     await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.IMAGE_READY_POLL_MS);
   }
 };
+const GEMINI_VIDEO_IN_PROGRESS_TEXT_REGEX =
+  /(?:tôi đang tạo video|đang tạo video|quá trình này có thể mất vài phút|kiểm tra lại để biết video đã sẵn sàng|i'm generating (?:the |your )?video|generating (?:the |your )?video|this may take a few minutes|check back to see if it's ready|adding .* effects)/i;
+const GEMINI_VIDEO_READY_TEXT_REGEX = /(?:video của bạn đã sẵn sàng|your video is ready)/i;
+const GEMINI_SCREEN_READER_PREFIX_REGEX = /^\s*(?:gemini đã nói|gemini said)\s*|\s*(?:gemini đã nói|gemini said)\s*$/gi;
+const GEMINI_RESPONSE_TURN_COMPLETE_SELECTOR =
+  'gem-icon-button[data-test-id="regenerate-button"], [data-test-id="regenerate-button"], gem-icon-button[data-test-id="thumb-up-button"], [data-test-id="thumb-up-button"], gem-icon-button[data-test-id="more-menu-button"], [data-test-id="more-menu-button"]';
+const hasGeminiRoomResponses = async (page: Page): Promise<boolean> => !page.isClosed() && (await page.locator(GeminiChatSelector.Response).count().catch(() => SecurityConstants.ZERO)) > SecurityConstants.ZERO;
+const isGeminiPageActivelyGenerating = async (page: Page): Promise<boolean> => {
+  if (page.isClosed()) return false;
+  try {
+    const visibleStopCount = await page
+      .locator(GeminiChatSelector.GenerationBusy)
+      .filter({ visible: true })
+      .count()
+      .catch(() => SecurityConstants.ZERO);
+    if (visibleStopCount > SecurityConstants.ZERO) return true;
+    const stopHostCount = await page
+      .locator('gem-icon-button.send-button.stop:not([disabled]):not([aria-disabled="true"])')
+      .count()
+      .catch(() => SecurityConstants.ZERO);
+    if (stopHostCount > SecurityConstants.ZERO) return true;
+    const responses = page.locator(GeminiChatSelector.Response);
+    const responseCount = await responses.count().catch(() => SecurityConstants.ZERO);
+    if (responseCount === SecurityConstants.ZERO) return false;
+    const latestResponse = responses.last();
+    const busyIndicatorCount = await latestResponse
+      .locator(GeminiChatSelector.ResponseGenerationBusy)
+      .count()
+      .catch(() => SecurityConstants.ZERO);
+    if (busyIndicatorCount > SecurityConstants.ZERO) return true;
+    const hasCompletedActionFooter =
+      (await latestResponse
+        .locator(GEMINI_RESPONSE_TURN_COMPLETE_SELECTOR)
+        .count()
+        .catch(() => SecurityConstants.ZERO)) > SecurityConstants.ZERO;
+    if (!hasCompletedActionFooter) {
+      return true;
+    }
+    const hasVideoElement =
+      (await latestResponse
+        .locator(GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO)
+        .count()
+        .catch(() => SecurityConstants.ZERO)) > SecurityConstants.ZERO;
+    if (!hasVideoElement) {
+      const responseText = _.trim(await latestResponse.innerText().catch(() => XRT.EMPTY));
+      if (GEMINI_VIDEO_IN_PROGRESS_TEXT_REGEX.test(responseText)) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
 const waitForGeminiPageIdle = async (page: Page, visualConfig: GeminiVisualConfig): Promise<void> => {
-  const mediaType = _.isEqual(visualConfig.generateType, GenerateType.Video) ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
-  await page
-    .waitForFunction(
-      ({ responseSelector, globalBusySelector, responseBusySelector, lastResponseOffset }) => {
-        const responses = document.querySelectorAll(responseSelector);
-        const latestResponse = responses.item(responses.length - lastResponseOffset);
-        return !document.querySelector(globalBusySelector) && !latestResponse?.querySelector(responseBusySelector);
-      },
-      { responseSelector: GeminiChatSelector.Response, globalBusySelector: GeminiChatSelector.GenerationBusy, responseBusySelector: GeminiChatSelector.ResponseGenerationBusy, lastResponseOffset: SecurityConstants.DEFAULT_AMOUNT },
-      { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.PAGE_IDLE_TIMEOUT_MS },
-    )
-    .catch(() => {
-      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, mediaType));
-    });
+  const isVideoGeneration = _.isEqual(visualConfig.generateType, GenerateType.Video);
+  const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
+  const timeoutMs = isVideoGeneration ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS : GEMINI_MEDIA_EXTRACTION_CONFIG.PAGE_IDLE_TIMEOUT_MS;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await isGeminiPageActivelyGenerating(page))) return;
+    await delayAsync(GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS);
+  }
+  throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_TIMEOUT_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, mediaType));
 };
 export const isDownloadedVideoBuffer = (buffer: Buffer): boolean => {
   if (_.lt(buffer.length, 12)) return false;
@@ -4356,13 +4597,37 @@ const tryDownloadViaButton = async (page: Page, container: Locator, requireVideo
   }
   return null;
 };
-async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number) {
+async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number, previousErrorText?: string) {
+  const generationRevision = mediaGenerationRevision;
+  const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
+  const mediaReadyTimeout = isVideoGeneration ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS : GEMINI_CHAT_VIDEO_INPUT_CONFIG.MEDIA_READY_TIMEOUT_MS;
+  const pollIntervalMs = GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS;
   appLog(BACKEND_MESSAGES.GEMINI_CHAT_WAITING_RESPONSE);
   await captureGeminiDomState(page, SOURCE_TEXT_WAITING_FOR_RESPONSE);
   if (!_.isUndefined(initialResponseCount)) {
-    try {
-      await page.waitForFunction(({ expectedResponseCount, responseSelector }) => document.querySelectorAll(responseSelector).length >= expectedResponseCount, { expectedResponseCount: _.add(initialResponseCount, SecurityConstants.DEFAULT_AMOUNT), responseSelector: GeminiChatSelector.Response }, { timeout: GEMINI_MEDIA_EXTRACTION_CONFIG.NEW_RESPONSE_TIMEOUT_MS });
-    } catch (e) {
+    const expectedResponseCount = _.add(initialResponseCount, SecurityConstants.DEFAULT_AMOUNT);
+    const maxWaitStartMs = Date.now();
+    let idleSinceMs = Date.now();
+    let hasNewResponse = false;
+    while (Date.now() - maxWaitStartMs < mediaReadyTimeout) {
+      if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
+      const currentCount = await page
+        .locator(GeminiChatSelector.Response)
+        .count()
+        .catch(() => SecurityConstants.ZERO);
+      if (currentCount >= expectedResponseCount) {
+        hasNewResponse = true;
+        break;
+      }
+      const isBusy = await isGeminiPageActivelyGenerating(page);
+      if (isBusy) {
+        idleSinceMs = Date.now();
+      } else if (Date.now() - idleSinceMs >= GEMINI_MEDIA_EXTRACTION_CONFIG.NEW_RESPONSE_TIMEOUT_MS) {
+        break;
+      }
+      await delayAsync(pollIntervalMs);
+    }
+    if (!hasNewResponse) {
       appError(BACKEND_MESSAGES.GEMINI_CHAT_WAIT_NEW_RESPONSE_TIMEOUT);
       throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_NO_NEW_RESPONSE);
     }
@@ -4374,7 +4639,6 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_NO_RESPONSE);
   }
   await captureGeminiDomState(page, SOURCE_TEXT_RESPONSE_DETECTED);
-  const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const mediaSelector = isVideoGeneration ? GEMINI_CHAT_VIDEO_SELECTORS.GENERATED_VIDEO : GEMINI_CHAT_MEDIA_SELECTORS.image;
   const mediaContainer = latestResponse.locator(mediaSelector).first();
   await captureGeminiDomState(page, isVideoGeneration ? SOURCE_TEXT_VIDEO_LOADING : SOURCE_TEXT_IMAGE_LOADING);
@@ -4387,12 +4651,16 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
       appLog(BACKEND_MESSAGES.GEMINI_CHAT_THINKING_DETACHED);
     }
   }
-  const mediaReadyTimeout = isVideoGeneration ? GEMINI_CHAT_VIDEO_INPUT_CONFIG.VIDEO_READY_TIMEOUT_MS : GEMINI_CHAT_VIDEO_INPUT_CONFIG.MEDIA_READY_TIMEOUT_MS;
-  const pollIntervalMs = GEMINI_MEDIA_EXTRACTION_CONFIG.FINISH_POLL_INTERVAL_MS;
-  const maxAttempts = Math.ceil(mediaReadyTimeout / pollIntervalMs);
   let isMediaFound = false;
   const generationFailurePattern = GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN;
-  for (let i = SecurityConstants.ZERO; i < maxAttempts; i++) {
+  const startedAtMs = Date.now();
+  const absoluteMaxDeadlineMs = startedAtMs + mediaReadyTimeout * 2;
+  let deadlineMs = startedAtMs + mediaReadyTimeout;
+  let idlePollsWithoutMedia = SecurityConstants.ZERO;
+  let pollIndex = SecurityConstants.ZERO;
+  while (Date.now() < deadlineMs && Date.now() < absoluteMaxDeadlineMs) {
+    pollIndex++;
+    if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
     const hasDownloadBtn = await latestResponse
       .locator(_.join(GEMINI_MEDIA_EXTRACTION_CONFIG.DOWNLOAD_BUTTON_SELECTORS, SOURCE_TEXT_SYMBOL_10))
       .first()
@@ -4403,15 +4671,33 @@ async function waitForGeminiFinished(page: Page, visualConfig: GeminiVisualConfi
       isMediaFound = true;
       break;
     }
-    const responseText = await latestResponse.innerText().catch(() => XRT.EMPTY);
+    const isBusy = await isGeminiPageActivelyGenerating(page);
+    if (isBusy) {
+      idlePollsWithoutMedia = SecurityConstants.ZERO;
+      deadlineMs = Math.max(deadlineMs, Date.now() + 60_000);
+      await delayAsync(pollIntervalMs);
+      continue;
+    }
+    const rawResponseText = _.trim(await latestResponse.innerText().catch(() => XRT.EMPTY));
+    const responseText = _.trim(rawResponseText.replace(GEMINI_SCREEN_READER_PREFIX_REGEX, XRT.EMPTY));
+    if (previousErrorText && rawResponseText === previousErrorText && pollIndex < 15) {
+      await delayAsync(pollIntervalMs);
+      continue;
+    }
+    if (GEMINI_VIDEO_IN_PROGRESS_TEXT_REGEX.test(responseText) || GEMINI_VIDEO_READY_TEXT_REGEX.test(responseText)) {
+      idlePollsWithoutMedia = SecurityConstants.ZERO;
+      await delayAsync(pollIntervalMs);
+      continue;
+    }
     if (generationFailurePattern.test(responseText)) {
       await captureGeminiDomState(page, isVideoGeneration ? SOURCE_TEXT_VIDEO_GENERATION_REJECTED : SOURCE_TEXT_IMAGE_GENERATION_REJECTED);
-      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace(SOURCE_TEXT_ERROR_2, _.trim(responseText)));
+      throw new Error(GEMINI_MEDIA_ERRORS.GENERATION_REJECTED_TEMPLATE.replace(SOURCE_TEXT_ERROR_2, responseText));
     }
-    const isBusy = await latestResponse.evaluate((el: HTMLElement, busySelector: string) => Boolean(el.querySelector(busySelector)), GEMINI_MEDIA_EXTRACTION_CONFIG.BUSY_ELEMENT_SELECTOR).catch(() => false);
-    if (!isVideoGeneration && !isBusy && _.gt(i, 5) && !_.isEmpty(_.trim(responseText))) {
-      await captureGeminiDomState(page, SOURCE_TEXT_IMAGE_TEXT_ONLY_RESPONSE);
-      throw new Error(GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE).replace(SOURCE_TEXT_ERROR_2, _.truncate(_.trim(responseText), { length: 500 })));
+    idlePollsWithoutMedia++;
+    if (idlePollsWithoutMedia >= 5 && !_.isEmpty(responseText)) {
+      await captureGeminiDomState(page, isVideoGeneration ? SOURCE_TEXT_VIDEO_GENERATION_REJECTED : SOURCE_TEXT_IMAGE_TEXT_ONLY_RESPONSE);
+      const mediaType = isVideoGeneration ? GEMINI_MEDIA_ERRORS.VIDEO_MEDIA_TYPE : GEMINI_MEDIA_ERRORS.IMAGE_MEDIA_TYPE;
+      throw new Error(GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.replace(SOURCE_TEXT_MEDIATYPE, mediaType).replace(SOURCE_TEXT_ERROR_2, _.truncate(responseText, { length: 500 })));
     }
     await delayAsync(pollIntervalMs);
   }
@@ -4570,8 +4856,40 @@ async function getBase64FromBlobUrl(page: Page, mediaElement: Locator): Promise<
   }
   return null;
 }
-async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
-  await waitForGeminiFinished(page, visualConfig, initialResponseCount);
+async function waitForGeminiMediaWithRetryClicks(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number): Promise<string | null> {
+  const generationRevision = mediaGenerationRevision;
+  let lastError: unknown;
+  let previousErrorText: string = XRT.EMPTY;
+  for (let retryClick = SecurityConstants.ZERO; retryClick <= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT; retryClick++) {
+    try {
+      if (isMediaGenerationCancelled(generationRevision)) throw createAppError(GEMINI_CHAT_RECOVERY_CONFIG.CANCELLED_ERROR);
+      if (retryClick > SecurityConstants.ZERO) {
+        const retryWaitDeadline = Date.now() + 12_000;
+        while (Date.now() < retryWaitDeadline) {
+          if (await isGeminiPageActivelyGenerating(page)) break;
+          const currentText = _.trim(await page.locator(GeminiChatSelector.Response).last().innerText().catch(() => XRT.EMPTY));
+          if (currentText && currentText !== previousErrorText) break;
+          await delayAsync(400);
+        }
+      }
+      return await waitForDownloadAndGetBase64(page, visualConfig, retryClick === SecurityConstants.ZERO ? initialResponseCount : undefined, retryClick > SecurityConstants.ZERO ? previousErrorText : undefined);
+    } catch (error) {
+      lastError = error;
+      if (isMediaGenerationCancelled(generationRevision) || page.isClosed()) throw error;
+      if (await isGeminiPageActivelyGenerating(page)) {
+        retryClick--;
+        continue;
+      }
+      if (retryClick >= CHAT_ROOM_RECOVERY.REGENERATE_LIMIT) throw error;
+      previousErrorText = _.trim(await page.locator(GeminiChatSelector.Response).last().innerText().catch(() => XRT.EMPTY));
+      if (!(await clickCurrentChatRetry(page).catch(() => false))) throw error;
+      appLog(CHAT_ROOM_RECOVERY.CLICK_LOG);
+    }
+  }
+  throw lastError;
+}
+async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisualConfig, initialResponseCount?: number, previousErrorText?: string): Promise<string | null> {
+  await waitForGeminiFinished(page, visualConfig, initialResponseCount, previousErrorText);
   const isVideoGeneration = _.isEqual(visualConfig?.generateType, GenerateType.Video);
   const finalizeVideo = (value: string): Promise<string> => (visualConfig?.preserveVideoAudio ? Promise.resolve(value) : removeVideoAudioTrack(value));
   const latestResponse = page.locator(GeminiChatSelector.Response).last();
@@ -4583,7 +4901,7 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
     return isVideoGeneration ? finalizeVideo(base64) : base64;
   }
-  const buttonDownloadedBase64 = isVideoGeneration ? null : await tryDownloadViaButton(page, latestResponse, false);
+  const buttonDownloadedBase64 = await tryDownloadViaButton(page, latestResponse, isVideoGeneration);
   if (buttonDownloadedBase64) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_SUCCESS);
     return isVideoGeneration ? finalizeVideo(buttonDownloadedBase64) : buttonDownloadedBase64;
@@ -4646,3 +4964,284 @@ async function waitForDownloadAndGetBase64(page: Page, visualConfig: GeminiVisua
   }
   throw new Error(BACKEND_MESSAGES.GEMINI_CHAT_EXTRACT_ERR_THROW);
 }
+const backupConnections = new Map<string, Browser>();
+const backupHeadless = new Map<string, boolean>();
+const backupPreparations = new Map<string, Promise<ReturnType<typeof readChromeBackupSettings>>>();
+const backupProfilePath = (id = activeChromeId()) => chromeProfilePath(id);
+const backupRunning = async (id: string): Promise<boolean> => {
+  try {
+    const response = await fetch(SOURCE_TEMPLATE_JSON_VERSION(EXTERNAL_URLS.LOCALHOST, String(chromeDebugPort(id))), { signal: AbortSignal.timeout(REFACTOR_CONSTANTS.SHARED_CHROME_PROBE_TIMEOUT_MS) });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+const startBackupChrome = async (id: string, headless: boolean, urls: readonly string[] = []): Promise<{ browser: Browser; context: BrowserContext }> => {
+  const running = await backupRunning(id);
+  if (!running) {
+    await fs.promises.mkdir(backupProfilePath(id), { recursive: true });
+    spawn(
+      findNativeChrome(),
+      [
+        _.replace(REFACTOR_CONSTANTS.CHROME_REMOTE_DEBUGGING_ARG, SOURCE_TEXT_0_2, String(chromeDebugPort(id))),
+        SOURCE_TEXT_REMOTE_ALLOW_ORIGINS,
+        SOURCE_TEMPLATE_USER_DATA_DIR(backupProfilePath(id)),
+        REFACTOR_CONSTANTS.CHROME_NO_FIRST_RUN_ARG,
+        REFACTOR_CONSTANTS.CHROME_NO_DEFAULT_BROWSER_ARG,
+        ...(headless ? [REFACTOR_CONSTANTS.CHROME_HEADLESS_NEW_ARG] : []),
+        ...CHAT_SPEED.CHROME_ARGS,
+        ...urls,
+      ],
+      { windowsHide: headless, detached: true, stdio: SOURCE_TEXT_IGNORE },
+    ).unref();
+    backupHeadless.set(id, headless);
+    let ready = false;
+    for (let attempt = 0; attempt < REFACTOR_CONSTANTS.SHARED_CHROME_READY_ATTEMPTS && !ready; attempt += 1) {
+      await delayAsync(REFACTOR_CONSTANTS.SHARED_CHROME_READY_INTERVAL_MS);
+      ready = await backupRunning(id);
+    }
+    if (!ready) throw backupChromeFailure(BACKUP.START_FAILED);
+  }
+  let browser = backupConnections.get(id);
+  if (!browser?.isConnected()) {
+    const connected = await chromium.connectOverCDP(SOURCE_TEMPLATE_JSON_VERSION(EXTERNAL_URLS.LOCALHOST, String(chromeDebugPort(id))).replace(BACKUP.VERSION_PATH, SecurityConstants.EMPTY_STRING));
+    backupConnections.set(id, connected);
+    connected.on(BACKUP.DISCONNECTED, () => {
+      if (backupConnections.get(id) === connected) backupConnections.delete(id);
+    });
+    browser = connected;
+  }
+  const context = _.first(browser.contexts());
+  if (!context) throw backupChromeFailure(BACKUP.START_FAILED);
+  if (running) {
+    for (const url of urls) {
+      if (context.pages().some((page) => !page.isClosed() && page.url().startsWith(new URL(url).origin))) continue;
+      const page = await context.newPage();
+      await page.goto(url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: BACKUP.READY_MS }).catch(() => undefined);
+    }
+  }
+  return { browser, context };
+};
+const stopBackupChrome = async (id: string): Promise<boolean> => {
+  try {
+    const browser = backupConnections.get(id)?.isConnected() ? backupConnections.get(id)! : (await backupRunning(id)) ? (await startBackupChrome(id, true)).browser : undefined;
+    if (browser) {
+      const cdp = await browser.newBrowserCDPSession();
+      await cdp.send(SOURCE_TEXT_BROWSER_CLOSE as any).catch(() => undefined);
+    }
+  } catch {
+    _.noop();
+  }
+  for (let attempt = 0; attempt < REFACTOR_CONSTANTS.SHARED_CHROME_READY_ATTEMPTS; attempt += 1) {
+    if (!(await backupRunning(id))) {
+      backupConnections.delete(id);
+      backupHeadless.delete(id);
+      return true;
+    }
+    await delayAsync(REFACTOR_CONSTANTS.SHARED_CHROME_READY_INTERVAL_MS);
+  }
+  return false;
+};
+const backupSignedIn = async (context: BrowserContext): Promise<boolean | undefined> => {
+  let seen = false;
+  for (const page of context.pages()) {
+    if (page.isClosed() || !BACKUP.LOGIN_URLS.some((url) => page.url().startsWith(new URL(url).origin))) continue;
+    seen = true;
+    if (AI_AVAILABILITY.PAGE.loginUrl.test(page.url())) continue;
+    if (await page.locator(BACKUP.COMPOSER_SELECTOR).filter({ visible: true }).count().catch(() => 0)) return true;
+  }
+  return seen ? false : undefined;
+};
+const saveSignedIn = async (context: BrowserContext, readyId: string) => {
+  const ready = await backupSignedIn(context);
+  return ready === undefined ? readChromeBackupSettings() : saveChromeBackupSettings({ ready, readyId });
+};
+const assertBackupChrome = (id: string) => {
+  if (!readChromeBackupSettings().chromes.some((chrome) => chrome.id === id)) throw new Error(BACKUP.NOT_FOUND);
+};
+const openLoginPages = async (context: BrowserContext) => {
+  for (const url of BACKUP.LOGIN_URLS) {
+    if (context.pages().some((page) => !page.isClosed() && page.url().startsWith(new URL(url).origin))) continue;
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: BACKUP.READY_MS }).catch(() => undefined);
+  }
+};
+let mainChromeConnection: Browser | undefined;
+const mainChromeContext = async (): Promise<BrowserContext | undefined> => {
+  if (activeBrowserInstance?.preserveExternalPages) return activeBrowserInstance.context;
+  if (!mainChromeConnection?.isConnected()) mainChromeConnection = await chromium.connectOverCDP(EXTERNAL_URLS.PLAYWRIGHT_CDP).catch(() => undefined);
+  return mainChromeConnection ? _.first(mainChromeConnection.contexts()) : undefined;
+};
+const prepareMainChromeTask = async () => {
+  if (sharedChromeTasks.switching || isBackupChromeActive()) throw backupChromeFailure(BACKUP.MAIN_BUSY);
+  if ((await getSharedChromeHeadlessMode()) === true && !(await closeIdleSharedChrome(true))) throw backupChromeFailure(BACKUP.MAIN_BUSY);
+  if (!(await isSharedChromeRunning()) && !(await launchSharedChromeBrowser(false))) throw backupChromeFailure(BACKUP.START_FAILED);
+  const context = await mainChromeContext();
+  if (!context) throw backupChromeFailure(BACKUP.START_FAILED);
+  await openLoginPages(context);
+  return saveSignedIn(context, AI_AVAILABILITY.MAIN);
+};
+const checkMainChrome = async () => {
+  if (!(await isSharedChromeRunning())) return;
+  const context = await mainChromeContext();
+  if (context) await saveSignedIn(context, AI_AVAILABILITY.MAIN);
+};
+const prepareBackupChromeTask = async (id: string) => {
+  if (id === AI_AVAILABILITY.MAIN) return prepareMainChromeTask();
+  assertBackupChrome(id);
+  if (sharedChromeTasks.switching) throw backupChromeFailure(BACKUP.PREPARE_BUSY);
+  if ((await backupRunning(id)) && backupHeadless.get(id) !== false) {
+    if (sessionChromeId(activeBrowserInstance?.account?.email) === id) await closeActiveBrowser(true).catch(() => undefined);
+    await stopBackupChrome(id);
+  }
+  const { context } = await startBackupChrome(id, false, BACKUP.LOGIN_URLS);
+  return saveSignedIn(context, id);
+};
+export const prepareBackupChrome = (id = readChromeBackupSettings().chromes[0]?.id || BACKUP.LEGACY_ID) => {
+  const running = backupPreparations.get(id);
+  if (running) return running;
+  const preparation = prepareBackupChromeTask(id).finally(() => {
+    backupPreparations.delete(id);
+  });
+  backupPreparations.set(id, preparation);
+  return preparation;
+};
+export const checkBackupChrome = async (id?: string) => {
+  if (!id || id === AI_AVAILABILITY.MAIN) await checkMainChrome().catch(() => undefined);
+  const ids = id === AI_AVAILABILITY.MAIN ? [] : id ? [id] : readChromeBackupSettings().chromes.map((chrome) => chrome.id);
+  for (const chromeId of ids) {
+    if (!(await backupRunning(chromeId))) continue;
+    const { context } = await startBackupChrome(chromeId, backupHeadless.get(chromeId) !== false);
+    await saveSignedIn(context, chromeId);
+  }
+  return readChromeBackupSettings();
+};
+const launchBackupChrome = async (headless = true, id = activeChromeId()): Promise<BrowserSession> => {
+  const preparation = backupPreparations.get(id);
+  if (preparation) await preparation.catch(() => undefined);
+  const { context } = await startBackupChrome(id, headless);
+  const page = _.find(context.pages(), (candidate) => !candidate.isClosed()) || (await context.newPage());
+  return { context, page, account: { email: chromeBackupAccountEmail(id) } as GoogleAccount, ownsContext: true, closeBrowser: async () => void (await stopBackupChrome(id)) };
+};
+registerChromeBackupSwitch(async (targetId: string) => {
+  cancelGlobalBrowserCleanup();
+  const preparation = backupPreparations.get(targetId);
+  if (preparation) await preparation;
+  if (activeBrowserLaunchPromise) await activeBrowserLaunchPromise;
+  const session = activeBrowserInstance;
+  const headless = activeBrowserHeadless;
+  if (activeFlowVideoGenerationCount || globalBatchPages.some((page) => !page.isClosed())) throw backupChromeFailure(BACKUP.DRAIN_FAILED);
+  if (session) {
+    if (session.preserveExternalPages) {
+      if (session.context.pages().some((page) => !page.isClosed() && !isDisposableChatBrowserUrl(page.url()))) throw backupChromeFailure(BACKUP.CLOSE_FAILED);
+      const page = session.context.pages().find((page) => !page.isClosed()) || (await session.context.newPage());
+      const cdp = await session.context.newCDPSession(page);
+      await cdp.send(SOURCE_TEXT_BROWSER_CLOSE as any).catch(() => undefined);
+      if (!(await waitForSharedChromeExit())) throw backupChromeFailure(BACKUP.CLOSE_FAILED);
+      sharedChromeLaunchedByApp = false;
+    } else {
+      if (session.ownsContext === false) throw backupChromeFailure(BACKUP.CLOSE_FAILED);
+      if (session.closeBrowser) await session.closeBrowser();
+      else await session.context.close();
+    }
+    activeBrowserInstance = null;
+    activeBrowserHeadless = undefined;
+  }
+  if (grokBrowser?.isConnected() && grokBrowserChromeId !== targetId) {
+    await closeOwnedGrokBrowserIfIdle(true).catch(() => undefined);
+    grokBrowser = null;
+    grokPage = null;
+  }
+  if (targetId === AI_AVAILABILITY.MAIN) return;
+  activeBrowserInstance = await launchBackupChrome(headless, targetId);
+  activeBrowserHeadless = headless;
+  const backup = activeBrowserInstance;
+  backup.context.on(SOURCE_TEXT_CLOSE_2, () => {
+    if (activeBrowserInstance === backup) {
+      activeBrowserInstance = null;
+      activeBrowserHeadless = undefined;
+    }
+  });
+});
+registerChromeBackupModeSync(async () => {
+  cancelGlobalBrowserCleanup();
+  if (activeBrowserInstance && chromeSessionMismatch(activeBrowserInstance.account?.email)) {
+    await closeAppBrowserAfterTask(true, true).catch(() => undefined);
+    if (activeBrowserInstance && chromeSessionMismatch(activeBrowserInstance.account?.email)) {
+      await closeActiveBrowser(true).catch(() => undefined);
+      activeBrowserInstance = null;
+      activeBrowserHeadless = undefined;
+    }
+  }
+  if (grokBrowser?.isConnected() && grokBrowserChromeId !== activeChromeId()) {
+    await closeOwnedGrokBrowserIfIdle(true).catch(() => undefined);
+    grokBrowser = null;
+    grokPage = null;
+  }
+});
+export const recoverExistingFlowVideo = (...args: Parameters<typeof recoverExistingFlowVideoTask>) => sharedChromeTasks.run(() => recoverExistingFlowVideoTask(...args));
+export const ensureFlowCharacters = (...args: Parameters<typeof ensureFlowCharactersTask>) => sharedChromeTasks.run(() => ensureFlowCharactersTask(...args));
+export const generateImageWithPlaywright = (...args: Parameters<typeof generateImageWithPlaywrightTask>) => sharedChromeTasks.run(() => generateImageWithPlaywrightTask(...args));
+export const generateFlowVideoPromptBatchWithPlaywright = (...args: Parameters<typeof generateFlowVideoPromptBatchWithPlaywrightTask>) => sharedChromeTasks.run(() => generateFlowVideoPromptBatchWithPlaywrightTask(...args));
+const detectMediaOutage = async (page: Page | null | undefined, error: unknown): Promise<AiAvailabilityClass | null> => {
+  if (!page || page.isClosed()) return null;
+  const probe = error instanceof Error ? error : new Error(getErrorMessage(error));
+  if (!_.get(probe, MOTION_TEXT_ROOMPAGE)) Object.defineProperty(probe, MOTION_TEXT_ROOMPAGE, { value: page, enumerable: false, configurable: true });
+  const found = await classifyAiError(probe, AI_AVAILABILITY.MEDIA_PROVIDER);
+  if (found) return found;
+  const reply = await page.locator(AI_AVAILABILITY.MEDIA_RESPONSE_SELECTOR).last().innerText({ timeout: AI_AVAILABILITY.NOTICE_TIMEOUT_MS }).catch(() => SecurityConstants.EMPTY_STRING);
+  return classifyAiText(reply.slice(-AI_AVAILABILITY.MEDIA_REPLY_MAX), AI_AVAILABILITY.MEDIA_PROVIDER);
+};
+const mediaWaitTarget = (error: unknown): AiAvailabilityClass | null => {
+  const found = aiAvailabilityOf(error);
+  return found && isAiExhausted(error) && chromeWaitPolicy() === AI_AVAILABILITY.WAIT_POLICY.WAIT ? { ...found, until: Math.max(Date.now() + AI_AVAILABILITY.MIN_MS, found.until) } : null;
+};
+const waitMediaReset = async (found: AiAvailabilityClass, revision: number): Promise<boolean> => {
+  appLog(AI_AVAILABILITY.LOG.WAIT(found.provider, formatAiUntil(found.until)));
+  while (Date.now() < found.until) {
+    if (isMediaGenerationCancelled(revision)) return false;
+    await delayAsync(Math.min(AI_AVAILABILITY.WAIT_TICK_MS, Math.max(0, found.until - Date.now())));
+  }
+  appLog(AI_AVAILABILITY.LOG.RESUME(found.provider));
+  return !isMediaGenerationCancelled(revision);
+};
+export const generateImageWithGeminiChat = async (...args: Parameters<typeof generateImageWithGeminiChatTask>): Promise<ImageGeneratorResult> => {
+  if (sharedChromeTasks.nested) return generateImageWithGeminiChatTask(...args);
+  const revision = mediaGenerationRevision;
+  for (;;) {
+    try {
+      return await withChromeBackupRecovery(() => generateImageWithGeminiChatTask(...args), undefined, appLog, AI_AVAILABILITY.MEDIA_PROVIDER);
+    } catch (error) {
+      const target = mediaWaitTarget(error);
+      if (target && (await waitMediaReset(target, revision))) continue;
+      if (!aiAvailabilityOf(error)) throw error;
+      return { success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: getErrorMessage(error) };
+    }
+  }
+};
+export const generateBatchImagesWithGeminiChat = async (...args: Parameters<typeof generateBatchImagesWithGeminiChatTask>): Promise<BatchImageResult[]> => {
+  if (sharedChromeTasks.nested) return generateBatchImagesWithGeminiChatTask(...args);
+  const [items, visualConfig, style, onProgress, ...rest] = args;
+  const revision = mediaGenerationRevision;
+  const done = new Map<string, BatchImageResult>();
+  const track = (result: BatchImageResult) => {
+    if (result.success) done.set(result.sceneId, result);
+    onProgress?.(result);
+  };
+  for (;;) {
+    try {
+      const results = await withChromeBackupRecovery(() => generateBatchImagesWithGeminiChatTask(_.filter(items, (item) => !done.has(item.sceneId)), visualConfig, style, track, ...rest), undefined, appLog, AI_AVAILABILITY.MEDIA_PROVIDER);
+      return [...done.values(), ..._.filter(results, (result) => !done.has(result.sceneId))];
+    } catch (error) {
+      const target = mediaWaitTarget(error);
+      if (target && (await waitMediaReset(target, revision))) continue;
+      if (!aiAvailabilityOf(error)) throw error;
+      const failed = _.map(
+        _.filter(items, (item) => !done.has(item.sceneId)),
+        (item): BatchImageResult => ({ sceneId: item.sceneId, success: false, base64: null, fallbackUrl: SecurityConstants.EMPTY_STRING, warning: getErrorMessage(error), assetType: resolveBatchAssetType(item) }),
+      );
+      _.forEach(failed, (result) => onProgress?.(result));
+      return [...done.values(), ...failed];
+    }
+  }
+};

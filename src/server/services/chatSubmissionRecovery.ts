@@ -3,6 +3,7 @@ import { CINEMATIC_CHAT_PLANNING_CONFIG as C } from "../../constants/cinematicCo
 import { MOTION_AI_RECOVERY as R } from "../../constants/motionAiRecovery.js";
 import { DEEPSEEK_CHAT_CONFIG as D } from "../../constants/deepseekChat.js";
 import { MOTION_PRODUCTION as P } from "../../constants/motionProduction.js";
+import { CHROME_BACKUP } from "../../constants/chromeBackup.js";
 export interface ChatPendingSubmission {
   page: Page;
   prompt: string;
@@ -15,11 +16,15 @@ export interface ChatPendingSubmission {
   responseSelector: string;
   busySelector: string;
   url: string;
+  regenerating?: boolean;
+  retryClicks?: number;
+  recoveryAttempt?: number;
 }
 export interface ChatPlanningSubmission {
   onAttempt?: () => void;
   onContextProgress?: () => void;
   onContextRetry?: (part: number, total: number, attempt: number, max: number) => void;
+  onRegenerate?: (line: string) => void;
   attempted: boolean;
   completed: boolean;
   abandoned?: boolean;
@@ -34,6 +39,11 @@ export const isFinalChatResponseError = (error: unknown): boolean => {
   return [C.REFUSAL_RESPONSE_ERROR, C.INVALID_JSON_RESPONSE_ERROR, C.PROVIDER_ERROR_RESPONSE_ERROR, C.PROMPT_LIMIT_RESPONSE_ERROR, C.CHATGPT_UPLOAD_UNAVAILABLE_ERROR, C.CHATGPT_RATE_LIMIT_ERROR, C.CLAUDE_RATE_LIMIT_ERROR, C.GROK_RATE_LIMIT_ERROR, D.RATE_LIMIT_ERROR, D.ACCOUNT_UNAVAILABLE_ERROR].some((code) => message === code);
 };
 export const isMotionContentResponseError = (error: unknown): boolean => error instanceof Error && error.message === C.INVALID_JSON_RESPONSE_ERROR;
+export const isCompletedChatResponseError = (error: unknown): boolean => {
+  const failure = error as { message?: string; diagnostics?: { responseCount?: number; initialCount?: number; busy?: boolean } } | undefined;
+  if (failure?.diagnostics?.busy) return false;
+  return isFinalChatResponseError(error) || (failure?.message === C.INVALID_RESPONSE_ERROR && (failure.diagnostics?.responseCount ?? 0) > (failure.diagnostics?.initialCount ?? 0));
+};
 export const exhaustedMotionRoom = (provider: string): Error => Object.assign(new Error(R.EXHAUSTED(provider)), { [R.EXHAUSTED_FLAG]: true });
-export const isTerminalMotionAiError = (error: unknown, signal?: AbortSignal): boolean => !!signal?.aborted || !!(error as Record<string, unknown> | null)?.[R.UNCERTAIN_FLAG] || !!(error as Record<string, unknown> | null)?.[R.EXHAUSTED_FLAG] || !!(error as Record<string, unknown> | null)?.[P.CONTRACT_EXHAUSTED];
+export const isTerminalMotionAiError = (error: unknown, signal?: AbortSignal): boolean => !!signal?.aborted || !!(error as Record<string, unknown> | null)?.[CHROME_BACKUP.ERROR_FLAG] || !!(error as Record<string, unknown> | null)?.[R.UNCERTAIN_FLAG] || !!(error as Record<string, unknown> | null)?.[R.EXHAUSTED_FLAG] || !!(error as Record<string, unknown> | null)?.[P.CONTRACT_EXHAUSTED];
 export const uncertainChatSubmission = (provider: string): Error => Object.assign(new Error(R.UNCERTAIN(provider)), { [R.UNCERTAIN_FLAG]: true });

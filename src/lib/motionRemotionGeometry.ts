@@ -28,13 +28,6 @@ export const remotionNodeFitsFrame = (node: MotionRemotionPlacedNode, asset: Mot
   const bottom = height * (remotionRole(node) === RT_SHARED.FIXTURE ? 1 : L.SUBJECT_BOTTOM);
   return r.x >= -L.FRAME_TOLERANCE && r.y >= -L.FRAME_TOLERANCE && r.x + r.width <= width + L.FRAME_TOLERANCE && r.y + r.height <= bottom + L.FRAME_TOLERANCE;
 };
-export const remotionRegions = (raw: unknown): Record<string, MotionVisualRect> =>
-  Object.fromEntries(
-    Object.entries(raw && typeof raw === "object" ? raw : {}).flatMap(([key, value]) => {
-      const r = remotionRect(value);
-      return r && /^[a-z][a-z0-9_-]{0,48}$/i.test(key) ? [[key, r]] : [];
-    }),
-  );
 export const remotionMount = (node: MotionRemotionNode): string => node.mount || (L.PILLAR.test(node.description) ? RT_CORE.PILLAR : L.THRESHOLD.test(node.description) ? RT_SHARED.FLOOR : L.WINDOW.test(node.description) ? RT_CORE.WALL : RT_CORE.DOORWAY);
 export const remotionMountSocket = (node: MotionRemotionNode): string => {
   if (node.layoutSocket) return node.layoutSocket;

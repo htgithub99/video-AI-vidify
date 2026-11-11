@@ -41,7 +41,9 @@ export const StoryComposition: FC<StoryCompositionProps> = ({ document }) => {
       <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.SCALE_0E0502}${width / w}${RT_SHARED.SYMBOL_D03502}${height / h}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
         <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RUNTIME_VALUES.TRANSLATE_59C8632A}${camera.x}${RUNTIME_VALUES.PX_2AFF6F79}${camera.y}${RUNTIME_VALUES.PX_SCALE_02D041CE}${camera.scale}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_12}`, transformOrigin: RT_MOTION.CENTER_CENTER }}>
           <div style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h, transform: `${RT_MOTION.TRANSLATE}${view.x}${RT_MOTION.PX}${view.y}${RT_MOTION.PX_SCALE}${view.scale}${RT_SHARED.SYMBOL_BA5EC5}`, transformOrigin: RT_MOTION.TOP_LEFT }}>
-            {compositionAsset && scene?.composition && <Img src={motionVectorSource(((svg) => (sourceScene?.crop ? motionCropSvg(svg, sourceScene.crop) : svg))(compositionFrameSvg(compositionAsset, scene.composition, (frame - scene.startFrame) / document.fps, behavior, speakers, document.profileId)))} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}
+            {compositionAsset && scene?.composition && (
+              <Img src={motionVectorSource(((svg) => (sourceScene?.crop ? motionCropSvg(svg, sourceScene.crop) : svg))(compositionFrameSvg(compositionAsset, scene.composition, (frame - scene.startFrame) / document.fps, behavior, speakers, document.profileId, (scene.endFrame - scene.startFrame) / document.fps)))} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />
+            )}
             {!scene?.composition && scene?.backgroundKey && document.assets[scene.backgroundKey] && <Img src={motionVectorSource(document.assets[scene.backgroundKey].svg, true)} style={{ position: RT_MOTION.ABSOLUTE, width: w, height: h }} />}
             {!scene?.composition && scene && <SceneEffects document={document} scene={scene} frame={frame} behind />}
             {!scene?.composition &&

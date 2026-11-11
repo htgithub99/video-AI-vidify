@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { MOTION_STORY_TIMELINE as T } from "../constants/motionStoryTimeline.js";
 import { motionVideoGenre, motionVideoGenreMerges, motionVideoGenreStages } from "../constants/motionGenre.js";
@@ -83,7 +84,7 @@ export const motionChapterKeyPoints = (chapters: MotionChapter[], sourceSeconds?
   return { chapters: moved || invented ? next : chapters, moved, invented };
 };
 export const motionChapterContentBeats = (sourceText: string, keyPoints: number, wanted: number, expansion = 1): number => {
-  const words = (sourceText.replace(T.CONTENT.STAMP, " ").match(T.CONTENT.WORD) || []).length;
+  const words = (sourceText.replace(T.CONTENT.STAMP, RT_MAINTENANCE.SPACE).match(T.CONTENT.WORD) || []).length;
   if (!words) return wanted;
   const content = Math.max(T.CONTENT.MIN_BEATS, Math.ceil((words * Math.max(1, expansion)) / T.CONTENT.SOURCE_WORDS_PER_BEAT), keyPoints * T.CONTENT.POINT_BEATS);
   return Math.min(wanted, content);
@@ -94,7 +95,7 @@ export const motionSourceCapacitySeconds = (slices: { text: string; keyPoints: n
     return sum + motionChapterContentBeats(slice.text, slice.keyPoints, wanted, expansion) * beatSeconds;
   }, 0);
 export const motionRepetitionFindings = (beats: MotionBeat[], language: string, motifs: string[] = []): MotionStoryTimelineFinding[] => {
-  const size = T.REPEAT.SIZE[T.REPEAT.VI.test(language.trim()) ? "vi" : "en"];
+  const size = T.REPEAT.SIZE[T.REPEAT.VI.test(language.trim()) ? RT_MAINTENANCE.VI : RT_MAINTENANCE.EN];
   const motifWords = motifs.map((motif) => new Set((motif.toLowerCase().match(T.REPEAT.WORD) || []) as string[]));
   const seen = new Map<string, { index: number; chapter: string }[]>();
   const findings: MotionStoryTimelineFinding[] = [];
@@ -104,7 +105,7 @@ export const motionRepetitionFindings = (beats: MotionBeat[], language: string, 
     for (let at = 0; at + size <= words.length; at++) {
       const gram = words.slice(at, at + size);
       if (motifWords.some((set) => gram.every((word) => set.has(word) || T.REPEAT.STOP.test(word)))) continue;
-      if (gram.filter((word) => !T.REPEAT.STOP.test(word) && !motifWords.some((set) => set.has(word))).length >= T.REPEAT.CONTENT_WORDS) grams.add(gram.join(" "));
+      if (gram.filter((word) => !T.REPEAT.STOP.test(word) && !motifWords.some((set) => set.has(word))).length >= T.REPEAT.CONTENT_WORDS) grams.add(gram.join(RT_MAINTENANCE.SPACE));
     }
     let flagged = false;
     for (const gram of grams) {
@@ -129,7 +130,7 @@ export const motionMergeShortChapters = (chapters: MotionChapter[], genre?: unkn
     const midHook = a.hook && b.hook && b.hook !== a.hook ? STAGE.MID_HOOK(b.hook) : "";
     return {
       ...a,
-      ...(a.writing || b.writing ? { writing: { ...a.writing, ...b.writing, purpose: [a.writing?.purpose, b.writing?.purpose].filter(Boolean).join(" "), startState: a.writing?.startState || b.writing?.startState || "", endState: b.writing?.endState || a.writing?.endState || "", events: [...(a.writing?.events || []), ...(b.writing?.events || [])] } } : {}),
+      ...(a.writing || b.writing ? { writing: { ...a.writing, ...b.writing, purpose: [a.writing?.purpose, b.writing?.purpose].filter(Boolean).join(RT_MAINTENANCE.SPACE), startState: a.writing?.startState || b.writing?.startState || "", endState: b.writing?.endState || a.writing?.endState || "", events: [...(a.writing?.events || []), ...(b.writing?.events || [])] } } : {}),
       from: Math.min(a.from ?? b.from ?? 0, b.from ?? a.from ?? 0),
       to: Math.max(a.to ?? b.to ?? 0, b.to ?? a.to ?? 0),
       summary: [a.summary, midHook, b.summary].filter(Boolean).join(T.MERGE.SUMMARY_JOIN),

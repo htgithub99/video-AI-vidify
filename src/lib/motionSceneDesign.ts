@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_SCENE_DESIGN as D, MOTION_SCENE_PLACEMENT_SCHEMA } from "../constants/motionSceneDesign.js";
@@ -11,8 +12,8 @@ const toCanvasShare = (design: MotionSceneDesign, size?: { width: number; height
   if (!values.some((value) => Math.abs(value) > D.PIXEL_LIMIT)) return design;
   const scale = (point: any) => {
     if (!point || typeof point !== "object") return;
-    for (const key of ["x", "width"] as const) if (typeof point[key] === "number") point[key] /= size.width;
-    for (const key of ["y", "height"] as const) if (typeof point[key] === "number") point[key] /= size.height;
+    for (const key of [RT_MAINTENANCE.X, RT_MAINTENANCE.WIDTH_2] as const) if (typeof point[key] === "number") point[key] /= size.width;
+    for (const key of [RT_MAINTENANCE.Y_2, RT_MAINTENANCE.HEIGHT_2] as const) if (typeof point[key] === "number") point[key] /= size.height;
   };
   points.forEach(scale);
   if (design.floor && typeof design.floor.horizon === "number" && Math.abs(design.floor.horizon) > D.PIXEL_LIMIT) design.floor.horizon /= size.height;

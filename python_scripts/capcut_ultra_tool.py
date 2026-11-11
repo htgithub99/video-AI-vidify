@@ -3,6 +3,10 @@ if __package__:
 else:
     from runtime_text import RuntimeText as _CODE_TEXT
 import logging
+try:
+    from .dialog_focus import open_dialog_root
+except ImportError:
+    from dialog_focus import open_dialog_root
 logging.basicConfig(level=logging.INFO, format=_CODE_TEXT.ASCTIME_S_LEVELNAME_S_MESSAGE_S)
 import os
 import json
@@ -13,6 +17,10 @@ import sys
 import string
 import copy
 import urllib.request
+if hasattr(sys.stdout, _CODE_TEXT.RECONFIGURE):
+    sys.stdout.reconfigure(encoding=_CODE_TEXT.UTF_8)
+if hasattr(sys.stderr, _CODE_TEXT.RECONFIGURE):
+    sys.stderr.reconfigure(encoding=_CODE_TEXT.UTF_8)
 PUNCTUATION_TO_REMOVE = string.punctuation + _CODE_TEXT.SYMBOL_5AA8AE
 REGEX_SONG_SUFFIX = _CODE_TEXT.D_9A45F1
 LOG_START_PROCESS = _CODE_TEXT.B_T_U_X_L_T_I_U_H_A_CAPCUT_CHO_T_P_TIN
@@ -108,9 +116,7 @@ def save_file_dialog(source_path, suggested_name, extension):
     import shutil
     import tkinter as tk
     from tkinter import filedialog
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes(_CODE_TEXT.TOPMOST, True)
+    root = open_dialog_root()
     normalized_extension = extension if extension.startswith(_CODE_TEXT.SYMBOL_CDB4EE) else _CODE_TEXT.SYMBOL_CDB4EE + extension
     target_path = filedialog.asksaveasfilename(title=_CODE_TEXT.L_U_T_P, initialfile=suggested_name, defaultextension=normalized_extension, filetypes=[(f'{normalized_extension.upper()}{_CODE_TEXT.FILES}', f'{_CODE_TEXT.SYMBOL_684888}{normalized_extension}'), (ALL_EXT, ALL_EXT)])
     root.destroy()
@@ -120,19 +126,7 @@ def save_file_dialog(source_path, suggested_name, extension):
 def select_save_file_dialog(suggested_name, extension):
     import tkinter as tk
     from tkinter import filedialog
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes(_CODE_TEXT.TOPMOST, True)
-    target_path = filedialog.asksaveasfilename(title=_CODE_TEXT.L_U_T_P, initialfile=suggested_name, defaultextension=extension, filetypes=[(_CODE_TEXT.ZIP_FILES, _CODE_TEXT.ZIP_B500A0), (ALL_EXT, ALL_EXT)])
-    root.destroy()
-    if target_path:
-        print(os.path.normpath(target_path), end="")
-def select_save_file_dialog(suggested_name, extension):
-    import tkinter as tk
-    from tkinter import filedialog
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes(_CODE_TEXT.TOPMOST, True)
+    root = open_dialog_root()
     normalized_extension = extension if extension.startswith(_CODE_TEXT.SYMBOL_CDB4EE) else _CODE_TEXT.SYMBOL_CDB4EE + extension
     target_path = filedialog.asksaveasfilename(title=_CODE_TEXT.L_U_T_P, initialfile=suggested_name, defaultextension=normalized_extension, filetypes=[(f'{normalized_extension.upper()}{_CODE_TEXT.FILES}', f'{_CODE_TEXT.SYMBOL_684888}{normalized_extension}'), (ALL_EXT, ALL_EXT)])
     root.destroy()
@@ -337,9 +331,7 @@ def open_file_dialog():
     try:
         import tkinter as tk
         from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes(_CODE_TEXT.TOPMOST, True)
+        root = open_dialog_root()
         file_path = filedialog.askopenfilename(title=DIALOG_FILE_TITLE, filetypes=[(JSON_FILE_TYPES_LABEL, JSON_EXT), (ALL_EXT, ALL_EXT)])
         if file_path:
             print(os.path.normpath(file_path), end="")
@@ -371,9 +363,7 @@ def open_folder_dialog():
     try:
         import tkinter as tk
         from tkinter import filedialog
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes(_CODE_TEXT.TOPMOST, True)
+        root = open_dialog_root()
         dir_path = filedialog.askdirectory(title=DIALOG_FOLDER_TITLE)
         if dir_path:
             print(os.path.normpath(dir_path), end="")
@@ -1284,6 +1274,12 @@ def export_video_with_ffmpeg(draft_json_path, opts):
             ffmpeg_cmd[0] = static_ffmpeg1
         elif os.path.exists(static_ffmpeg2):
             ffmpeg_cmd[0] = static_ffmpeg2
+        else:
+            for root in (os.getcwd(), os.path.dirname(os.path.dirname(__file__))):
+                tool = os.path.join(root, 'tools', 'ffmpeg', ffmpeg_exe)
+                if os.path.isfile(tool):
+                    ffmpeg_cmd[0] = tool
+                    break
         process = subprocess.Popen(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding=_CODE_TEXT.UTF_8, errors=_CODE_TEXT.REPLACE)
         for line in iter(process.stdout.readline, ''):
             if line.strip():
@@ -1319,9 +1315,6 @@ if __name__ == _CODE_TEXT.MAIN:
             logging.info(ERR_CLI_USAGE)
             sys.exit(1)
         save_file_dialog(sys.argv[2], sys.argv[3], sys.argv[4])
-        sys.exit(0)
-    elif cmd_arg == CMD_SELECT_SAVE_FILE:
-        select_save_file_dialog(sys.argv[2], sys.argv[3])
         sys.exit(0)
     elif cmd_arg == CMD_SELECT_SAVE_FILE:
         if len(sys.argv) < 4:

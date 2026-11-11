@@ -1,6 +1,7 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_CAST_IDENTITY as I } from "../constants/motionCastIdentity.js";
 import type { MotionAnalysisGroup } from "../types/motionVideo.js";
-export const motionCleanLook = (look?: string): string => I.TIDY.reduce((text, pattern, index) => text.replace(pattern, index === 2 ? " " : ""), (look || "").replace(I.CONSTRUCTION, "")).trim();
+export const motionCleanLook = (look?: string): string => I.TIDY.reduce((text, pattern, index) => text.replace(pattern, index === 2 ? RT_MAINTENANCE.SPACE : ""), (look || "").replace(I.CONSTRUCTION, "")).trim();
 const field = (value: unknown, max: number): string | undefined => {
   const text = typeof value === "string" ? value.trim().slice(0, max) : "";
   return text || undefined;
@@ -10,6 +11,16 @@ export const motionCastMarks = (marks: unknown): string[] => {
   return listed.slice(0, I.MARKS_MAX);
 };
 export const motionCastSkin = (skin: unknown, look?: string): string | undefined => field(skin, I.FIELD_CHARS) || (look || "").match(I.SKIN_WORDS)?.[1]?.trim();
+export const motionCastCarries = (carries: unknown): string[] =>
+  (Array.isArray(carries) ? carries : [])
+    .filter((item): item is string => typeof item === "string" && !!item.trim())
+    .map((item) => item.trim().slice(0, I.MARK_CHARS))
+    .slice(0, I.CARRIES_MAX);
+export const motionSkinHex = (skin: string | undefined, fallback: string): string => {
+  const text = (skin || "").trim();
+  if (I.HEX.test(text)) return text.toLowerCase();
+  return I.SKIN_TONES.find(([pattern]) => pattern.test(text))?.[1] || fallback;
+};
 export const motionAnalysisGroups = (raw: unknown): MotionAnalysisGroup[] | undefined => {
   if (!Array.isArray(raw)) return undefined;
   const used = new Set<string>();
@@ -31,28 +42,3 @@ export const motionAnalysisGroups = (raw: unknown): MotionAnalysisGroup[] | unde
   return groups.length ? groups : undefined;
 };
 export const motionCastIdentity = <T extends { key: string; look?: string }>(cast: T[]): T[] => cast.map((member) => ({ ...member, ...(member.look ? { look: motionCleanLook(member.look) } : {}) }));
-export const motionIdentityContrast = (members: { key: string; name: string; look?: string }[], contrast: { SPLIT: RegExp; WORD: RegExp; SHARE: number; PHRASE_SHARE: number; KEY: RegExp; MAX_TRAITS: number; MIN_WORDS: number; SKIP: RegExp }): { entityId: string; name: string; traits: string[] }[] => {
-  const words = (text: string) => new Set((text.toLowerCase().match(contrast.WORD) || []) as string[]);
-  const people = members
-    .filter((member) => member.look?.trim())
-    .map((member) => ({
-      member,
-      all: words(member.look!),
-      phrases: member
-        .look!.split(contrast.SPLIT)
-        .map((phrase) => phrase.trim())
-        .filter((phrase) => (phrase.match(contrast.WORD) || []).length >= contrast.MIN_WORDS && !contrast.SKIP.test(phrase)),
-    }));
-  const overlap = (a: Set<string>, b: Set<string>) => [...a].filter((word) => b.has(word)).length / Math.max(1, Math.min(a.size, b.size));
-  const similar = people.filter((person) => people.some((other) => other !== person && overlap(person.all, other.all) >= contrast.SHARE));
-  if (similar.length < 2) return [];
-  return similar
-    .map((person) => {
-      const others = similar.filter((other) => other !== person).flatMap((other) => other.phrases.map(words));
-      const same = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every((word) => b.has(word));
-      const own = person.phrases.filter((phrase) => (contrast.KEY.test(phrase) ? !others.some((set) => same(words(phrase), set)) : !others.some((set) => overlap(words(phrase), set) >= contrast.PHRASE_SHARE)));
-      const traits = [...own.filter((phrase) => contrast.KEY.test(phrase)), ...own.filter((phrase) => !contrast.KEY.test(phrase))].slice(0, contrast.MAX_TRAITS);
-      return { entityId: person.member.key, name: person.member.name, traits };
-    })
-    .filter((entry) => entry.traits.length);
-};

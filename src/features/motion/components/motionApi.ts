@@ -1,3 +1,4 @@
+import { delayAsync } from "../../../lib/asyncUtils.js";
 import _ from "lodash";
 import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { MOTION_JOB_POLLING as POLL } from "../constants/motionJobPolling.js";
@@ -36,7 +37,6 @@ export interface MotionEngineGlobal {
   fontsReady?: Promise<unknown>;
   registry: { templates: Record<string, any> };
   createRenderer: (canvas: HTMLCanvasElement, spec: unknown, opts?: Record<string, unknown>) => { duration: number; drawFrame: (t: number) => void; width: number; height: number };
-  PUPPET_PRELOAD?: (spec: unknown) => Promise<void>;
 }
 declare global {
   interface Window {
@@ -56,7 +56,7 @@ export const loadMotionEngineClient = (): Promise<MotionEngineGlobal> => {
     document.head.appendChild(script);
     const ME = window.MotionEngine;
     if (!ME?.createRenderer) throw new Error(MOTION_TEXT_MOTION_ENGINE_LOI_KHOI_TAO);
-    await Promise.race([ME.fontsReady || Promise.resolve(), new Promise((r) => setTimeout(r, 4000))]);
+    await Promise.race([ME.fontsReady || Promise.resolve(), delayAsync(4000)]);
     return ME;
   })().catch((e) => {
     enginePromise = null;

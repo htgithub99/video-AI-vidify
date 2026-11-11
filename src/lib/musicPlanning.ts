@@ -29,8 +29,8 @@ export const musicSeoSongs = (songs: any[]) => compactMusicSongs(songs).map((son
 export const musicSettingsSongs = (songs: any[]) => compactMusicSongs(songs).map(({ songId, title, genre, mood, tempoBpm, editorialReview }) => ({ songId, title, genre, mood, tempoBpm, hook: editorialReview?.hook }));
 export const compactMusicProfile = (profile: unknown): unknown => {
   const compact = (value: unknown, depth: number): unknown => {
-    if (typeof value === "string") return text(value, 140);
-    if (Array.isArray(value)) return value.slice(0, 5).map((item) => compact(item, depth + 1));
+    if (typeof value === "string") return text(value, 240);
+    if (Array.isArray(value)) return value.slice(0, 8).map((item) => compact(item, depth + 1));
     if (value && typeof value === "object" && depth < 4)
       return Object.fromEntries(
         Object.entries(value)

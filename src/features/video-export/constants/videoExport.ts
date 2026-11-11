@@ -129,16 +129,15 @@ export const VIDEO_EXPORT_CONSTANTS = {
   MAX_POPULAR_ITEMS: 4,
   MAX_DEFAULT_QUICK_OPTIONS: 5,
 } as const;
-export const VIDEO_EXPORT_DIMENSIONS: Record<VideoExportAspectRatio, { width: number; height: number }> = { [VideoExportAspectRatio.HORIZONTAL_16_9]: { width: 1920, height: 1080 }, [VideoExportAspectRatio.VERTICAL_9_16]: { width: 1080, height: 1920 }, [VideoExportAspectRatio.SQUARE_1_1]: { width: 1080, height: 1080 } };
 export const VIDEO_EXPORT_RESOLUTIONS: Record<VideoExportAspectRatio, Record<VideoExportResolution, { width: number; height: number }>> = {
   [VideoExportAspectRatio.HORIZONTAL_16_9]: { [VideoExportResolution.RES_720P]: { width: 1280, height: 720 }, [VideoExportResolution.RES_1080P]: { width: 1920, height: 1080 }, [VideoExportResolution.RES_2K]: { width: 2560, height: 1440 }, [VideoExportResolution.RES_4K]: { width: 3840, height: 2160 } },
   [VideoExportAspectRatio.VERTICAL_9_16]: { [VideoExportResolution.RES_720P]: { width: 720, height: 1280 }, [VideoExportResolution.RES_1080P]: { width: 1080, height: 1920 }, [VideoExportResolution.RES_2K]: { width: 1440, height: 2560 }, [VideoExportResolution.RES_4K]: { width: 2160, height: 3840 } },
   [VideoExportAspectRatio.SQUARE_1_1]: { [VideoExportResolution.RES_720P]: { width: 720, height: 720 }, [VideoExportResolution.RES_1080P]: { width: 1080, height: 1080 }, [VideoExportResolution.RES_2K]: { width: 1440, height: 1440 }, [VideoExportResolution.RES_4K]: { width: 2160, height: 2160 } },
 };
-export const VIDEO_EXPORT_CODEC_MAP: Record<VideoExportCodec, string> = { [VideoExportCodec.H264]: "libx264", [VideoExportCodec.HEVC]: "libx265" };
+export const VIDEO_EXPORT_CODEC_MAP: Record<VideoExportCodec, string> = { [VideoExportCodec.H264]: "libx264", [VideoExportCodec.HEVC]: "libx264" };
 export const VIDEO_EXPORT_BITRATE_CRF: Record<VideoExportBitrate, string> = { [VideoExportBitrate.STANDARD]: "20", [VideoExportBitrate.HIGH]: "16" };
 export const VIDEO_EXPORT_PREVIEW_DIMENSIONS: Record<VideoExportAspectRatio, { width: number; height: number }> = { [VideoExportAspectRatio.HORIZONTAL_16_9]: { width: 854, height: 480 }, [VideoExportAspectRatio.VERTICAL_9_16]: { width: 480, height: 854 }, [VideoExportAspectRatio.SQUARE_1_1]: { width: 480, height: 480 } };
-export const VIDEO_EXPORT_REGEX = { AUDIO_EXT: /\.(mp3|wav|m4a|aac|flac|ogg|opus)$/i, IMAGE_EXT: /\.(jpg|jpeg|png|webp|bmp)$/i, DURATION: /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/, OUT_TIME: /out_time_(?:us|ms)=(\d+)/g, UNSAFE_FILENAME: /[^a-zA-Z0-9_-]+/g, TRIM_UNDERSCORE: /^_+|_+$/g, EXTENSION: /\.[^.]+$/, CONCAT_QUOTE: /'/g } as const;
+export const VIDEO_EXPORT_REGEX = { SAVE_NAME_ILLEGAL: /[<>:"/\\|?*\u0000-\u001f]/g, SAVE_NAME_SPACES: /\s+/g, SAVE_NAME_TRAILING: /[. ]+$/, SAVE_NAME_MP4: /\.mp4$/i, AUDIO_EXT: /\.(mp3|wav|m4a|aac|flac|ogg|opus)$/i, IMAGE_EXT: /\.(jpg|jpeg|png|webp|bmp)$/i, DURATION: /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/, AUDIO_STREAM: /Stream #\d+:\d+.*Audio:/i, OUT_TIME: /out_time_(?:us|ms)=(\d+)/g, UNSAFE_FILENAME: /[^a-zA-Z0-9_-]+/g, TRIM_UNDERSCORE: /^_+|_+$/g, EXTENSION: /\.[^.]+$/, CONCAT_QUOTE: /'/g } as const;
 export const VIDEO_EXPORT_SERVER_TEXTS = {
   ERR_SOURCE_MISSING: "Không tìm thấy nguồn đã chọn. Vui lòng chọn lại folder.",
   ERR_EMPTY_AUDIO: "Folder không có file nhạc hợp lệ (mp3, wav, m4a, aac, flac, ogg, opus).",

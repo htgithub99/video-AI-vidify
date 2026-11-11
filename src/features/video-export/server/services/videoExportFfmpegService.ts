@@ -86,3 +86,28 @@ export const probeMediaDurationSeconds = (filePath: string): Promise<number> =>
       finish(Number.isFinite(seconds) && seconds > 0 ? seconds : 0);
     });
   });
+export const probeMediaHasAudio = (filePath: string): Promise<boolean> =>
+  new Promise((resolve) => {
+    const child = spawn(getFfmpegPath(), [VIDEO_EXPORT_TEXT_HIDE_BANNER, VIDEO_EXPORT_TEXT_I, filePath], { windowsHide: true });
+    let stderr = "";
+    let settled = false;
+    const finish = (hasAudio: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(hasAudio);
+    };
+    const timeout = setTimeout(() => {
+      try {
+        child.kill(VIDEO_EXPORT_TEXT_SIGKILL);
+      } catch {}
+      finish(false);
+    }, VIDEO_EXPORT_CONSTANTS.DURATION_PROBE_TIMEOUT_MS);
+    child.stderr.on(VIDEO_EXPORT_TEXT_DATA, (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+    child.on(VIDEO_EXPORT_TEXT_ERROR, () => finish(false));
+    child.on(VIDEO_EXPORT_TEXT_CLOSE, () => {
+      finish(VIDEO_EXPORT_REGEX.AUDIO_STREAM.test(stderr));
+    });
+  });

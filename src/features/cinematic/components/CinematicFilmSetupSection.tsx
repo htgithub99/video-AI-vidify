@@ -11,7 +11,7 @@ import ChatPlanningSettingsBlock from "../../../components/common/ChatPlanningSe
 import _ from "lodash";
 const SELECT_BASE_CLASSNAME = SOURCE_TEXT_FLEX_1_BG_TRANSPARENT_TEXT_SLATE;
 const FIELD_BASE_CLASSNAME = SOURCE_TEXT_RELATIVE_FLEX_ITEMS_CENTER_BG_SLATE_2;
-export default function CinematicFilmSetupSection({ idea, setIdea, language, setLanguage, duration, setDuration, planningFallbackProvider, setPlanningFallbackProvider, planningChatModel, setPlanningChatModel, planningExecutionMode, setPlanningExecutionMode, planningChromeHeadless, setPlanningChromeHeadless, currentLang = SOURCE_TEXT_VI }: CinematicSetupProps) {
+export default function CinematicFilmSetupSection({ idea, setIdea, language, setLanguage, duration, setDuration, planningFallbackProvider, setPlanningFallbackProvider, planningChatModel, setPlanningChatModel, planningExecutionMode, setPlanningExecutionMode, planningChromeHeadless, setPlanningChromeHeadless, chatPolicyProps, currentLang = SOURCE_TEXT_VI }: CinematicSetupProps) {
   const texts = _.get(CINEMATIC_SETUP_TEXTS, currentLang, CINEMATIC_SETUP_TEXTS.vi);
   const common = _.get(UI_COMMON_TEXTS, currentLang, UI_COMMON_TEXTS.vi);
   return (
@@ -95,6 +95,7 @@ export default function CinematicFilmSetupSection({ idea, setIdea, language, set
         onExecutionModeChange={setPlanningExecutionMode}
         chromeHeadless={planningChromeHeadless}
         onChromeHeadlessChange={setPlanningChromeHeadless}
+        {...chatPolicyProps}
         currentLang={currentLang}
         allowHybrid={false}
         title={texts.AI_DIRECTOR_TITLE}

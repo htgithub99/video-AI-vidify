@@ -12,5 +12,8 @@ export interface RequestKeys {
   aiRoomModel?: AiPlanningChatModel;
   aiRoomProjectId?: string;
   aiRoomChromeHeadless?: boolean;
+  aiMultiRoom?: boolean;
+  aiAllowFallback?: boolean;
 }
 export const requestContext = new AsyncLocalStorage<RequestKeys>();
+export const currentChatPolicy = () => ({ multiRoom: requestContext.getStore()?.aiMultiRoom === true, allowFallback: requestContext.getStore()?.aiAllowFallback === true });

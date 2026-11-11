@@ -6,16 +6,18 @@ export interface MotionAiRoute {
   provider: string;
   model: string;
 }
-export const MOTION_AI_ROLE = { MAIN: "main", DRAW: "draw" } as const;
+export const MOTION_AI_ROLE = { MAIN: "main", DRAW: "draw", PLAN: "plan", LIGHT: "light" } as const;
+export const MOTION_LIGHT_ARTIFACTS: readonly string[] = ["motion-story-seo", "motion-story-thumbnail-prompt", "motion-sound-direction", "motion-voice-direction", "motion-audio-casting", "motion-illustration-need-repair", "motion-illustration-plan-repair", "motion-story-originality"];
 const GEMINI: MotionAiRoute = { provider: AiPlanningFallbackProvider.GeminiChat, model: encodeGeminiChatModel(AiPlanningChatModel.GeminiFlash, "medium") };
 const CHATGPT: MotionAiRoute = { provider: AiPlanningFallbackProvider.ChatGptUi, model: AiPlanningChatModel.ChatGptAuto };
 const DEEPSEEK: MotionAiRoute = { provider: AiPlanningFallbackProvider.DeepSeekChat, model: AiPlanningChatModel.DeepSeekStandard };
 const SITE_DEFAULT_MODEL = "";
 const GROK: MotionAiRoute = { provider: AiPlanningFallbackProvider.GrokChat, model: SITE_DEFAULT_MODEL };
 const CLAUDE: MotionAiRoute = { provider: AiPlanningFallbackProvider.ClaudeChat, model: encodeClaudeChatModel(MOTION_SCENE_AI.MODEL, MOTION_SCENE_AI.EFFORT) };
+const META_AI: MotionAiRoute = { provider: AiPlanningFallbackProvider.MetaAi, model: AiPlanningChatModel.MetaAiAuto };
 export const MOTION_AI_FALLBACK = {
-  MAIN: [GEMINI, DEEPSEEK, CHATGPT, GROK, CLAUDE],
-  DRAW: [GEMINI, DEEPSEEK, CHATGPT, GROK],
+  MAIN: [GEMINI, DEEPSEEK, CHATGPT, META_AI, GROK, CLAUDE],
+  DRAW: [GEMINI, DEEPSEEK, CHATGPT, META_AI, GROK],
   FALLBACK_TURNS: 2,
   LOG_SWITCH: (from: string, to: string, reason: string): string => `AI ${from} lỗi (${reason}) – chuyển sang ${to}.`,
   LOG_TRY: (index: number, total: number, provider: string): string => `AI ${index}/${total}: ${provider}`,

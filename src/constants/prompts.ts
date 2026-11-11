@@ -467,9 +467,6 @@ export const VISUAL_BIBLE_REFERENCE_PROMPT =
 export const THUMBNAIL_IMAGE_REFERENCE_PROMPT =
   "\n\nCRITICAL MULTIMODAL THUMBNAIL REFERENCE DIRECTIVE:\nReference 1, when supplied, is the authoritative scene Style Core for all character construction. A thumbnail sample may influence only broad background treatment and contrast, never character anatomy, medium, line language or coloring. The selected layout controls geometry and typography through the closed eight-template catalog. Render the exact requested headline and required arrow directly in the generated image. Never copy sample people, location, lighting, words, logos, poses, objects, story details or arrangement.";
 export const TEMPLATE_TMP_CONTENT = (projectName: string) => `[AI VIDEO GENERATED TEMPLATE FILE]\nDate: ${new Date().toISOString()}\nProject: ${projectName}`;
-export const CAMERA_ANGLES = ["low-angle shot, looking up", "high-angle shot, looking down", "close-up portrait shot focusing on expression", "wide-angle panoramic view establishing the environment", "medium shot from side profile", "dramatic over-the-shoulder shot", "extreme close-up shot focusing on details", "three-quarter angle shot showing action"];
-export const BORDERLESS_KEYWORD = "borderless, no frame, no borders";
-export const getDuplicateScenePromptDirective = (sceneScript: string, cameraAngle: string): string => `unique narrative beat showing specifically: ${sceneScript}, visibly different subject action and composition, alternate camera shot: ${cameraAngle}, distinct scene progression`;
 export const getSceneDetailBatchPrompt = (
   scenesJson: string,
   visualStyle: string,

@@ -1078,9 +1078,8 @@ ol[data-sonner-toaster] {
     0 2px 6px -1px rgba(120, 70, 10, 0.04) !important;
 }
 .header-badge,
-div:has(> .header-badge),
-div:has(> .header-badge) *,
-.creation-workspace .flex:has(> .header-badge) {
+.header-badge-row,
+.header-badge-row * {
   box-shadow: none !important;
   border: none !important;
 }

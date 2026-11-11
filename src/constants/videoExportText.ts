@@ -40,7 +40,6 @@ export const VIDEO_EXPORT_TEXT_TEXT_INDIGO_600_DARK_TEXT_INDIGO = "text-indigo-6
 export const VIDEO_EXPORT_TEXT_GRID_COLS_2 = "grid-cols-2" as const;
 export const VIDEO_EXPORT_TEXT_GRID_COLS_3 = "grid-cols-3" as const;
 export const VIDEO_EXPORT_TEXT_GRID_COLS_4 = "grid-cols-4" as const;
-export const VIDEO_EXPORT_TEMPLATE_SYMBOL_2 = (value0: string): string => "— " + value0 + " —";
 export const VIDEO_EXPORT_TEXT_METADATA = "metadata" as const;
 export const VIDEO_EXPORT_TEXT_SYMBOL_3 = " • " as const;
 export const VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW_CANCEL = "video-export-preview-cancel" as const;
@@ -130,9 +129,6 @@ export const VIDEO_EXPORT_TEXT_KHONG_TIM_THAY_HIEU_UNG_PHU = "Không tìm thấy
 export const VIDEO_EXPORT_TEXT_FROM_INDIGO_600_VIA_PURPLE_600 = "from-indigo-600 via-purple-600 to-pink-600" as const;
 export const VIDEO_EXPORT_TEXT_DA_CHON = "ĐÃ CHỌN" as const;
 export const VIDEO_EXPORT_TEXT_APPLICATION_JSON = "application/json" as const;
-export const VIDEO_EXPORT_TEXT_0_MB = "0 MB" as const;
-export const VIDEO_EXPORT_TEMPLATE_GB = (value0: string): string => value0 + " GB";
-export const VIDEO_EXPORT_TEMPLATE_MB = (value0: string): string => value0 + " MB";
 export const VIDEO_EXPORT_TEXT_POST = "POST" as const;
 export const VIDEO_EXPORT_TEXT_NAME = "name" as const;
 export const VIDEO_EXPORT_TEXT_ABORTERROR = "AbortError" as const;

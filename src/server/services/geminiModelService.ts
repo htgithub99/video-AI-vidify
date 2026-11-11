@@ -1,10 +1,26 @@
+import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import type { Locator, Page } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG, GEMINI_CHAT_BASE_MODEL_LABELS } from "../../constants/cinematicConstants.js";
 import { GEMINI_MODEL_ENCODING, GEMINI_MODEL_UI as UI, GEMINI_THINKING_LEVEL_OPTIONS, parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../../constants/chatPlanningRuntime.js";
 import { clickPlanningControl, throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
 import type { AiPlanningChatModel } from "../../types.js";
+import { AiPlanningChatModel as Models } from "../../types.js";
+import { CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
+import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
+import { CHAT_SPEED } from "../../constants/chatSpeed.js";
+const selectedModels = new WeakMap<Page, { model: AiPlanningChatModel; at: number }>();
+export const markGeminiModel = (page: Page, model: AiPlanningChatModel): void => {
+  selectedModels.set(page, { model, at: Date.now() });
+};
+export async function geminiModelStillSelected(page: Page, model: AiPlanningChatModel, ...labels: RegExp[]): Promise<boolean> {
+  const last = selectedModels.get(page);
+  if (!last || last.model !== model || Date.now() - last.at > CHAT_SPEED.MODEL_REUSE_MS) return false;
+  const button = await getGeminiModelButton(page).catch(() => undefined);
+  const text = button ? (await button.innerText().catch(() => "")).trim() : "";
+  return !!text && labels.every((label) => label.test(text));
+}
 const waitUntil = async (page: Page, test: () => Promise<boolean>, signal?: AbortSignal, timeout: number = CONFIG.MODEL_PICKER_TIMEOUT_MS) => {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
@@ -25,6 +41,18 @@ const editableInput = async (input: Locator): Promise<boolean> => {
   return input.evaluate((element) => (element as HTMLElement).isContentEditable || element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement).catch(() => false);
 };
 const optionFor = (page: Page, name: RegExp): Locator => page.getByRole(UI.MENU_ITEM_RADIO, { name }).or(page.getByRole(UI.MENU_ITEM, { name })).or(page.getByRole(UI.OPTION, { name })).filter({ visible: true }).first();
+const quotaError = (model: AiPlanningChatModel | undefined, text: string): Error => (parseGeminiChatModel(model)?.model === Models.GeminiFlash ? new Error(BACKUP.QUOTA + AI_AVAILABILITY.SPACE + text) : new Error(AI_AVAILABILITY.GEMINI_QUOTA(String(model), text)));
+export const assertGeminiFlashQuota = async (page: Page, model?: AiPlanningChatModel): Promise<void> => {
+  const selection = parseGeminiChatModel(model);
+  const label = selection && GEMINI_CHAT_BASE_MODEL_LABELS[selection.model];
+  if (!label) return;
+  const text = await optionFor(page, label).innerText({ timeout: UI.POLL_MS }).catch(() => AI_AVAILABILITY.EMPTY);
+  if (BACKUP.RESET_PATTERN.test(text)) throw quotaError(model, text);
+};
+const unavailableFor = async (option: Locator, model: AiPlanningChatModel): Promise<Error> => {
+  const text = await option.innerText({ timeout: UI.POLL_MS }).catch(() => AI_AVAILABILITY.EMPTY);
+  return BACKUP.RESET_PATTERN.test(text) ? quotaError(model, text) : new Error(GEMINI_MODEL_ENCODING.UNAVAILABLE(model));
+};
 const available = async (option: Locator): Promise<boolean> => (await visible(option)) && (await option.isEnabled().catch(() => false)) && (await option.getAttribute(UI.ARIA_DISABLED)) !== UI.TRUE && (await option.getAttribute(C.DATA_DISABLED)) === null;
 const disabled = async (option: Locator): Promise<boolean> => (await visible(option)) && (!(await option.isEnabled()) || (await option.getAttribute(UI.ARIA_DISABLED)) === UI.TRUE || (await option.getAttribute(C.DATA_DISABLED)) !== null);
 export const getGeminiModelButton = async (page: Page): Promise<Locator> => {
@@ -39,7 +67,7 @@ const uiError = (page: Page, phase: string, model?: AiPlanningChatModel, cause?:
   Object.defineProperty(error, MOTION_TEXT_ROOMPAGE, { value: page });
   return Object.assign(error, { [GEMINI_MODEL_ENCODING.DIAGNOSTICS]: { phase, model, reason: cause instanceof Error ? cause.message : undefined, readiness: readiness || previous?.readiness } });
 };
-export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal): Promise<void> => {
+export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal, timeout: number = CONFIG.PAGE_READY_TIMEOUT_MS): Promise<void> => {
   const inputs = page
     .locator(UI.PRIMARY_INPUT_SELECTOR)
     .or(page.locator(CONFIG.GEMINI_INPUT_SELECTOR).and(page.locator(UI.EDITABLE_INPUT_SELECTOR)))
@@ -85,13 +113,19 @@ export const waitForGeminiModelUi = async (page: Page, signal?: AbortSignal): Pr
       return stable >= UI.READY_POLLS;
     },
     signal,
-    CONFIG.PAGE_READY_TIMEOUT_MS,
+    timeout,
   );
   if (!ready) throw uiError(page, UI.PHASE.READY, undefined, undefined, { ...readiness, elapsedMs: Date.now() - started });
 };
 const checked = async (option: Locator): Promise<boolean> => {
   const hasAttribute = async (name: string, value: string): Promise<boolean> => (await option.getAttribute(name).catch(() => null)) === value;
-  if ((await hasAttribute(UI.ARIA_CHECKED, UI.TRUE)) || (await hasAttribute(UI.ARIA_SELECTED, UI.TRUE)) || (await hasAttribute(UI.DATA_STATE, UI.CHECKED))) return true;
+  if ((await hasAttribute(UI.ARIA_CHECKED, UI.TRUE)) || (await hasAttribute(UI.ARIA_SELECTED, UI.TRUE)) || (await hasAttribute(UI.DATA_STATE, UI.CHECKED)) || (await hasAttribute(UI.DATA_ACTIVE, UI.TRUE))) return true;
+  if (
+    await option
+      .evaluate((node, RT_MAINTENANCE) => node.classList.contains(RT_MAINTENANCE.SELECTED) || node.classList.contains(RT_MAINTENANCE.ACTIVE) || Boolean(node.querySelector(RT_MAINTENANCE.SELECTED_ACTIVE_DATA_ACTIVE_TRUE)), { SELECTED: RT_MAINTENANCE.SELECTED, ACTIVE: RT_MAINTENANCE.ACTIVE, SELECTED_ACTIVE_DATA_ACTIVE_TRUE: RT_MAINTENANCE.SELECTED_ACTIVE_DATA_ACTIVE_TRUE })
+      .catch(() => false)
+  )
+    return true;
   return await option
     .locator(UI.CHECK_ICON_SELECTOR)
     .filter({ visible: true })
@@ -115,6 +149,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
   const baseLabel = selection && GEMINI_CHAT_BASE_MODEL_LABELS[selection.model];
   const unavailable = () => new Error(GEMINI_MODEL_ENCODING.UNAVAILABLE(model));
   if (!selection || !level || !baseLabel) throw unavailable();
+  if (await geminiModelStillSelected(page, model, baseLabel)) return;
   for (let attempt = 0; attempt < UI.SELECTION_ATTEMPTS; attempt++) {
     let phase: string = UI.PHASE.READY;
     try {
@@ -122,12 +157,19 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       await waitForGeminiModelUi(page, signal);
       const button = await getGeminiModelButton(page);
       await closeMenus(page);
+      if (selection.model === Models.GeminiFlash) {
+        await clickPlanningControl(button, signal);
+        await assertGeminiFlashQuota(page, model);
+        await closeMenus(page);
+      }
       if (!baseLabel.test((await button.innerText()).trim())) {
         phase = UI.PHASE.BASE;
         await clickPlanningControl(button, signal);
         const option = optionFor(page, baseLabel);
+        await assertGeminiFlashQuota(page, model);
         if (!(await waitUntil(page, () => available(option), signal))) {
-          if (await disabled(option)) throw unavailable();
+          await assertGeminiFlashQuota(page, model);
+          if (await disabled(option)) throw await unavailableFor(option, model);
           throw uiError(page, phase, model);
         }
         await clickPlanningControl(option, signal);
@@ -139,7 +181,7 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       const option = optionFor(page, level.pattern);
       if (!(await openThinkingMenu(page, button, option, signal))) throw uiError(page, phase, model);
       if (!(await waitUntil(page, () => available(option), signal))) {
-        if (await disabled(option)) throw unavailable();
+        if (await disabled(option)) throw await unavailableFor(option, model);
         throw uiError(page, phase, model);
       }
       if (!(await checked(option))) {
@@ -151,9 +193,11 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       phase = UI.PHASE.BASE_VERIFY;
       if (!baseLabel.test((await button.innerText()).trim())) throw uiError(page, phase, model);
       throwIfPlanningCancelled(signal);
+      markGeminiModel(page, model);
       return;
     } catch (error) {
       throwIfPlanningCancelled(signal);
+      if (error instanceof Error && (error.message.startsWith(BACKUP.QUOTA_CODE) || error.message.startsWith(AI_AVAILABILITY.GEMINI_QUOTA_CODE))) throw Object.assign(error, { [MOTION_TEXT_ROOMPAGE]: page });
       if (error instanceof Error && error.message.includes(GEMINI_MODEL_ENCODING.UNAVAILABLE_CODE)) throw Object.assign(error, { [MOTION_TEXT_ROOMPAGE]: page, [GEMINI_MODEL_ENCODING.DIAGNOSTICS]: { phase, model } });
       if (attempt + 1 === UI.SELECTION_ATTEMPTS) throw uiError(page, phase, model, error);
     } finally {

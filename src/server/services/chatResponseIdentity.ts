@@ -1,6 +1,8 @@
 import * as COMMON_RUNTIME from "../../constants/sourceText.js";
 import { parseJson } from "../../lib/jsonStringify.js";
 export const chatResponseIdentity = (text: string): { artifactType?: string; requestId?: string } => {
+  const root = text.trim().match(/^(?:```(?:html)?\s*)?(?:<!doctype\s+html>\s*)?(<html\b[^>]*>)/i)?.[1];
+  if (root) return { artifactType: root.match(/data-artifact\s*=\s*["']([^"']+)["']/i)?.[1], requestId: root.match(/data-request-id\s*=\s*["']([^"']+)["']/i)?.[1] };
   const result: { artifactType?: string; requestId?: string } = {};
   const start = text.indexOf(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_42);
   if (start < 0) return result;

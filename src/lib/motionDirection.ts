@@ -30,7 +30,13 @@ export const storyDirectionPrompt = (analysis?: MotionDirection | null, chapter 
       mustNotCopy: dna.mustNotCopy,
       ...(analysis?.videoDna
         ? chapter
-          ? { audience: { dialect: analysis.videoDna.audienceProfile?.dialect, suitability: analysis.videoDna.audienceProfile?.suitability }, vocabulary: analysis.videoDna.narrativeDna?.vocabulary === dna.narrative?.voice ? undefined : analysis.videoDna.narrativeDna?.vocabulary, callbacks: analysis.videoDna.narrativeDna?.callbacks?.length ? analysis.videoDna.narrativeDna.callbacks : undefined, factual: analysis.videoDna.format?.factual, era: analysis.videoDna.era?.storyPeriod }
+          ? {
+              audience: { dialect: analysis.videoDna.audienceProfile?.dialect, suitability: analysis.videoDna.audienceProfile?.suitability },
+              vocabulary: analysis.videoDna.narrativeDna?.vocabulary === dna.narrative?.voice ? undefined : analysis.videoDna.narrativeDna?.vocabulary,
+              callbacks: analysis.videoDna.narrativeDna?.callbacks?.length ? analysis.videoDna.narrativeDna.callbacks : undefined,
+              factual: analysis.videoDna.format?.factual,
+              era: analysis.videoDna.era?.storyPeriod,
+            }
           : { audienceProfile: analysis.videoDna.audienceProfile, narrativeDna: analysis.videoDna.narrativeDna, format: analysis.videoDna.format, era: analysis.videoDna.era, narration: analysis.videoDna.audioText?.narration }
         : {}),
     })

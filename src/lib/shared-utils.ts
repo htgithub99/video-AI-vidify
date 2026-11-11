@@ -1,4 +1,3 @@
-import { SOURCE_TEXT_SYSTEM_ACTION_START } from "../constants/sourceText";
 import { appLog, appError } from "./logger";
 import { STORAGE_KEYS, LOG_ERROR_SYMBOLS, LOG_WARN_SYMBOLS, ERROR_MESSAGES, API_HEADERS, REFACTOR_CONSTANTS, SYSTEM_FETCH_CONFIG, SecurityConstants } from "../constants";
 import { BatchDelayOption } from "../types";
@@ -104,9 +103,6 @@ export { delayAsync } from "./asyncUtils";
 export const randomDelay = (min: number = 1000, max: number = 2000): Promise<number> => {
   const ms = _.random(min, max);
   return new Promise((resolve) => setTimeout(() => resolve(ms), ms));
-};
-export const logSystemAction = (actionName: string) => {
-  appLog(SOURCE_TEXT_SYSTEM_ACTION_START, actionName);
 };
 export const getBatchDelayMs = (option?: BatchDelayOption | string): number => {
   const opt = (option || BatchDelayOption.Default) as BatchDelayOption;

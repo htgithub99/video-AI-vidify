@@ -11,16 +11,8 @@ export const MOTION_SCENE_PACING = {
   GROUPING_PREVIOUS: 2,
   GENRE_DEFAULT: { pov: "medium", witness: "medium", chronicle: "many", verdict: "medium" } as Record<string, "few" | "medium" | "many">,
   FIELD: "pacing",
-  LEVELS: {
-    few: { groupSeconds: 60, groupBeats: 12, groupLines: 48, placeHold: 14 },
-    medium: { groupSeconds: 60, groupBeats: 12, groupLines: 48, placeHold: 0 },
-    many: { groupSeconds: 45, groupBeats: 10, groupLines: 40, placeHold: 0 },
-  },
-  LEVELS_PREVIOUS: {
-    few: { groupSeconds: 60, groupBeats: 10, groupLines: 40, placeHold: 14 },
-    medium: { groupSeconds: 45, groupBeats: 8, groupLines: 32, placeHold: 0 },
-    many: { groupSeconds: 30, groupBeats: 6, groupLines: 24, placeHold: 0 },
-  },
+  LEVELS: { few: { groupSeconds: 60, groupBeats: 12, groupLines: 48, placeHold: 14 }, medium: { groupSeconds: 60, groupBeats: 12, groupLines: 48, placeHold: 0 }, many: { groupSeconds: 45, groupBeats: 10, groupLines: 40, placeHold: 0 } },
+  LEVELS_PREVIOUS: { few: { groupSeconds: 60, groupBeats: 10, groupLines: 40, placeHold: 14 }, medium: { groupSeconds: 45, groupBeats: 8, groupLines: 32, placeHold: 0 }, many: { groupSeconds: 30, groupBeats: 6, groupLines: 24, placeHold: 0 } },
   OVER_RATIO: 1.5,
   TEXT: {
     vi: {
@@ -40,8 +32,7 @@ export const MOTION_SCENE_PACING = {
   },
   RULE: (seconds: number, count: number) =>
     `Visual pacing: a picture is held for roughly ${seconds} seconds on average; about ${count} pictures for this request is SOFT guidance, never a quota or acceptance gate. Each beat carries a requested shot (its view) and a subject: give a new picture when the view or the subject changes, when an object, a clue or an emotion becomes the point of the sentence, or when place or time changes. Consecutive beats with the same view and the same subject share one picture. Never repeat two near-identical pictures and never hold a picture through a physical contradiction. Preserve every supplied speech line once in order.`,
-  BRIEF_PLACES: (seconds: number) =>
-    ` These beats may move between places (see each beat's place and context.places). A brief switch to another place inside the same continuous action can stay in the current picture or in one wider view that shows both; give a different place its own picture only when it lasts roughly ${seconds} seconds or more, or when the source clearly moves the scene there.`,
+  BRIEF_PLACES: (seconds: number) => ` These beats may move between places (see each beat's place and context.places). A brief switch to another place inside the same continuous action can stay in the current picture or in one wider view that shows both; give a different place its own picture only when it lasts roughly ${seconds} seconds or more, or when the source clearly moves the scene there.`,
   OVER_LOG: (group: number, scenes: number, suggested: number, label: string) => `Nhịp đổi hình ${label}: nhóm ${group} lập ${scenes} hình (gợi ý khoảng ${suggested}); chỉ ghi nhận, không gọi lại AI.`,
   LOG: (count: number, beats: number, label: string) => `Nhịp hình ${label}: lập phân cảnh theo ${count} nhóm cho ${beats} nhịp kể; một hình có thể phủ nhiều nhịp.`,
   SHORT_LOG: (count: number) => `Có ${count} cảnh dưới 3 giây theo giọng thực. Giữ mốc lời kể và manh mối; không dừng video vì cảnh ngắn.`,

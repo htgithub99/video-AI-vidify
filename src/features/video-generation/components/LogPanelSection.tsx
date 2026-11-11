@@ -12,6 +12,7 @@ import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
 import { isProgressLogVisible, ProgressLogContext } from "../../../constants/progressLog";
 import { formatUserFacingLogs } from "../../../lib/userLogFormatter";
 import { Button } from "../../../components/ui/Button";
+import { STUDIO_UI } from "../../../constants/studioTheme.js";
 interface LogPanelSectionProps {
   logs: string[];
   theme: AppTheme;
@@ -46,7 +47,7 @@ export const LogPanelSection: React.FC<LogPanelSectionProps> = ({ logs, theme, T
           </span>
           {T.logHeaderTitle}
         </span>
-        <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_GAP_2)}>
+        <div className={cn(STUDIO_UI.HEADER_BADGE_ROW, RT_SHARED.FLEX_ITEMS_CENTER_GAP_2)}>
           {!_.isEmpty(visibleLogs) && (
             <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={scrollToLatest} className={cn(RT_VIDEO_GENERATION.HEADER_ACTION_BTN_FLEX_ITEMS_CENTER_GAP_1_TEXT_11PX)} title={T.logScrollLatestTooltip}>
               <ArrowDown className={cn(RT_SHARED.W_3_5_H_3_5)} />

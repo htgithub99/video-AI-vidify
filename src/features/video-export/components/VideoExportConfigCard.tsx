@@ -67,6 +67,7 @@ import {
   PanelLeft,
   PanelRight,
   PartyPopper,
+  RotateCcw,
   RotateCw,
   Rows3,
   Shuffle,
@@ -93,7 +94,8 @@ import { ShortsReframeMode } from "../../../types/shorts.js";
 import { VideoExportAspectRatio, VideoExportBitrate, VideoExportCodec, VideoExportEffect, VideoExportFps, VideoExportJobStatus, VideoExportResolution, VideoExportTransition } from "../types/videoExport.js";
 import { VideoExportOptionGrid, VideoExportOptionItem, VideoExportOptionSection, VideoExportOptionTone } from "./VideoExportOptionGrid.js";
 import { VideoExportVisualSelector } from "./VideoExportVisualSelector.js";
-type VideoExportConfigCardProps = { exporter: Pick<VideoExporterState, "text" | "config" | "title" | "slidePlan" | "totalAudioSeconds" | "job" | "isExporting" | "canRender" | "isRanking" | "isScanning" | "updateConfig" | "setTitle" | "startExport" | "stopExport"> };
+import { VideoExportAiClipPanel } from "./VideoExportAiClipPanel.js";
+type VideoExportConfigCardProps = { exporter: Pick<VideoExporterState, "text" | "config" | "title" | "slidePlan" | "totalAudioSeconds" | "job" | "isExporting" | "canRender" | "isRanking" | "isScanning" | "aiClips" | "updateConfig" | "setTitle" | "startExport" | "stopExport"> };
 export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter }) => {
   const { text, config, title, slidePlan, totalAudioSeconds, job, isExporting, canRender, isRanking, isScanning } = exporter;
   const isDisabled = isExporting;
@@ -108,6 +110,14 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
   );
   const effectSections = useMemo<VideoExportOptionSection<VideoExportEffect>[]>(
     () => [
+      {
+        key: VIDEO_EXPORT_TEXT_BASIC,
+        label: text.EFFECT_GROUP_BASIC,
+        options: [
+          { value: VideoExportEffect.NONE, label: text.EFFECT_NONE, icon: ImageIcon },
+          { value: VideoExportEffect.RANDOM, label: text.EFFECT_RANDOM, icon: Shuffle },
+        ],
+      },
       {
         key: VIDEO_EXPORT_TEXT_CAPCUT_HOT,
         label: text.EFFECT_GROUP_CAPCUT_HOT,
@@ -160,14 +170,6 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
           { value: VideoExportEffect.SHAKE, label: text.EFFECT_SHAKE, icon: Vibrate },
           { value: VideoExportEffect.SWING, label: text.EFFECT_SWING, icon: Waves },
           { value: VideoExportEffect.ZOOM_ROTATE, label: text.EFFECT_ZOOM_ROTATE, icon: RotateCw },
-        ],
-      },
-      {
-        key: VIDEO_EXPORT_TEXT_BASIC,
-        label: text.EFFECT_GROUP_BASIC,
-        options: [
-          { value: VideoExportEffect.NONE, label: text.EFFECT_NONE, icon: ImageIcon },
-          { value: VideoExportEffect.RANDOM, label: text.EFFECT_RANDOM, icon: Shuffle },
         ],
       },
     ],
@@ -345,6 +347,7 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         <VideoExportVisualSelector text={text} label={text.EFFECT_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_MOTION} sections={effectSections} value={config.effect} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_EFFECT, value)} />
         <VideoExportVisualSelector text={text} label={text.TRANSITION_LABEL} badge={VIDEO_EXPORT_CONSTANTS.FFMPEG_BADGE_TRANSITION} sections={transitionSections} value={config.transition} accentColor={VIDEO_EXPORT_CONSTANTS.COLOR_PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITION, value)} />
         {config.transition !== VideoExportTransition.NONE && <VideoExportOptionGrid label={text.TRANSITION_DURATION_LABEL} options={toSecondOptions(VIDEO_EXPORT_CONSTANTS.TRANSITION_SECONDS_OPTIONS)} value={config.transitionSeconds} columns={4} tone={VideoExportOptionTone.PURPLE} disabled={isDisabled} onChange={(value) => exporter.updateConfig(VIDEO_EXPORT_TEXT_TRANSITIONSECONDS, value)} />}
+        <VideoExportAiClipPanel text={text} aiClips={exporter.aiClips} disabled={isDisabled} />
         <div className={cn(RT_VIDEO_EXPORT.P_3_5_ROUNDED_2XL_BG_SLATE_50_80_DARK)}>
           <div className={cn(RT_VIDEO_EXPORT.TEXT_XS_FONT_BOLD_FONT_MONO_UPPERCASE_TRACKING_WIDER_TEXT)}>
             <span>{text.EXPORT_SETTINGS_LABEL}</span>
@@ -383,10 +386,17 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
         <div className={cn(RT_VIDEO_EXPORT.P_2_5_ROUNDED_XL_BG_WHITE_DARK_BG_SLATE)}>
           <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_GAP_2)}>
             <span className={cn(RT_VIDEO_EXPORT.TEXT_SLATE_700_DARK_TEXT_SLATE_300_FONT_BOLD_TRUNCATE)}>{job.status === VideoExportJobStatus.ERROR ? job.error || text.EXPORT_ERROR : job.message || text.EXPORTING_BTN}</span>
-            <span className={cn(RT_VIDEO_EXPORT.FONT_BOLD_TEXT_PURPLE_700_DARK_TEXT_PURPLE_300_SHRINK)}>
-              {progressPercent}
-              {VIDEO_EXPORT_TEXT_SYMBOL_2}
-            </span>
+            {!isExporting && (job.status === VideoExportJobStatus.ERROR || job.status === VideoExportJobStatus.CANCELLED) ? (
+              <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={!canStart} onClick={exporter.startExport} className={cn(RT_VIDEO_EXPORT.EXPORT_RETRY_INLINE_BTN)}>
+                <RotateCcw className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
+                <span>{text.AI_CLIP_RETRY_BTN}</span>
+              </Button>
+            ) : (
+              <span className={cn(RT_VIDEO_EXPORT.FONT_BOLD_TEXT_PURPLE_700_DARK_TEXT_PURPLE_300_SHRINK)}>
+                {progressPercent}
+                {VIDEO_EXPORT_TEXT_SYMBOL_2}
+              </span>
+            )}
           </div>
           <div className={cn(RT_VIDEO_EXPORT.W_FULL_BG_SLATE_100_DARK_BG_SLATE_950_ROUNDED)}>
             <div
@@ -408,8 +418,8 @@ export const VideoExportConfigCard: FC<VideoExportConfigCardProps> = ({ exporter
             "bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:via-purple-500 hover:to-indigo-500 border-rose-400/40 shadow-rose-600/25 active:scale-[0.98] text-white cursor-pointer": !isExporting && canStart,
             "bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed shadow-none": !isExporting && !canStart,
           })}>
-          {isExporting ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_4_H_4_ANIMATE_SPIN_SHRINK_0)} /> : <Clapperboard className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} />}
-          <span className={cn(RT_SHARED.TRUNCATE)}>{isExporting ? text.EXPORTING_BTN : text.EXPORT_BTN}</span>
+          {isExporting ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_4_H_4_ANIMATE_SPIN_SHRINK_0)} /> : job?.status === VideoExportJobStatus.ERROR ? <RotateCcw className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} /> : <Clapperboard className={cn(RT_SHARED.W_4_H_4_SHRINK_0)} />}
+          <span className={cn(RT_SHARED.TRUNCATE)}>{isExporting ? text.EXPORTING_BTN : job?.status === VideoExportJobStatus.ERROR ? text.EXPORT_RETRY_BTN : text.EXPORT_BTN}</span>
         </Button>
         {isExporting && (
           <Button id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_STOP} variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={exporter.stopExport} className={cn(RT_SHARED.H_11_MIN_H_44PX_PX_4_ROUNDED_XL_BORDER)}>

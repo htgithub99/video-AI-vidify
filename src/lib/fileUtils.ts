@@ -19,15 +19,6 @@ export const saveBlobWithDialog = async (blob: Blob, suggestedName: string): Pro
   if (!response.ok || !result.success) throw new Error(result.error || SUNO_AUTOMATION_TEXTS.SAVE_FILE_FAILED_ERR);
   return !result.cancelled;
 };
-export const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
-  const binaryString = window.atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; _.lt(i, len); i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-};
 export const blobToBase64 = async (blob: Blob): Promise<string> => {
   const dataUrl = await readBlobAsDataUrl(blob);
   return dataUrl.split(SOURCE_TEXT_SYMBOL_4)[1] || dataUrl;

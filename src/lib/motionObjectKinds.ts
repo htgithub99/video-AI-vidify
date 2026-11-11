@@ -1,8 +1,9 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_OBJECT_KINDS, MOTION_OBJECT_KIND_CLASS, MOTION_OBJECT_KIND_MATCH, MOTION_OBJECT_KIND_PARTS, type MotionObjectKind } from "../constants/motionObjectKinds.js";
 import { MOTION_OBJECT_CLASS_PARTS } from "../constants/motionObjectClasses.js";
 import { MOTION_SCENE_SPEC as SPEC, type MotionAnimal } from "../constants/motionProfiles/sceneSpec.js";
 import type { MotionSceneObject } from "../types/motionVisual.js";
-const PART = (name: string): RegExp => new RegExp(`(?:^|[_-])(?:${name})s?(?:[_-]|$)`, "i");
+const PART = (name: string): RegExp => new RegExp(`${RT_MAINTENANCE.NAME_WORD_PREFIX}${name}${RT_MAINTENANCE.S_2}`, RT_MAINTENANCE.I);
 export const motionObjectKind = (item: Pick<MotionSceneObject, "kind" | "term" | "description" | "class">): MotionObjectKind | undefined => {
   if (item.kind && (MOTION_OBJECT_KINDS as readonly string[]).includes(item.kind)) return item.kind;
   for (const text of [item.description || "", item.term || ""]) {

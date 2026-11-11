@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_WRITING as W } from "../constants/motionWriting.js";
 import { MOTION_SPOKEN_NUMBERS as N } from "../constants/motionSpokenNumbers.js";
 import { motionWritingQuantities } from "./motionWritingNumbers.js";
@@ -36,16 +37,13 @@ export const motionUnsupportedNames = (text: string, known: string, language: st
   if (W.FIGURES.NAME_CASELESS.test(language)) return [];
   const index = vocabulary(known);
   return [
-    ...new Set(
+    ...new Set<string>(
       [...text.matchAll(W.FIGURES.NAME)].flatMap((match) => {
         const missing = (match[0].match(W.FIGURES.NAME_WORD) || []).filter((word) => word.length >= W.FIGURES.NAME_MIN && !W.FIGURES.NAME_STOP.test(word) && !knownWord(word, index));
-        return missing.length ? [missing.join(" ")] : [];
+        return missing.length ? [missing.join(RT_MAINTENANCE.SPACE)] : [];
       }),
     ),
   ];
 };
 const numberWords = new Set<string>([...N.EN, ...N.TENS, N.HUNDRED.en, ...N.SCALES.en].filter(Boolean).map((word) => word.toLowerCase()));
-export const motionGarbledNumbers = (text: string): string[] =>
-  (text.match(W.FIGURES.TOKEN) || [])
-    .map((token) => token.replace(W.FIGURES.EDGE, ""))
-    .filter((token) => W.FIGURES.GARBLED.test(token) && token.split(W.FIGURES.HYPHEN).every((part) => numberWords.has(part.toLowerCase())) && !motionWritingQuantities(token).some((quantity) => quantity.raw === token));
+export const motionGarbledNumbers = (text: string): string[] => (text.match(W.FIGURES.TOKEN) || []).map((token) => token.replace(W.FIGURES.EDGE, "")).filter((token) => W.FIGURES.GARBLED.test(token) && token.split(W.FIGURES.HYPHEN).every((part) => numberWords.has(part.toLowerCase())) && !motionWritingQuantities(token).some((quantity) => quantity.raw === token));

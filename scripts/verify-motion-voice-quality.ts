@@ -82,6 +82,7 @@ const deps: any = {
 };
 try {
   const track = await buildMotionVoiceTrack(script, null, options, deps);
+  assert.deepEqual(track.asr, { version: C.ASR.VERSION, checked: true });
   assert.equal(synthesized, C.ASR.RETRIES + 1);
   assert.equal(track.clips![0].quality?.status, Q.STATUS.REVIEW);
   assert.equal(track.clips![0].quality?.heard, line.text.split(" ").slice(0, 4).join(" "));
@@ -103,6 +104,7 @@ try {
     },
   );
   assert.equal(attempts, 2);
+  assert.deepEqual(recovered.asr, { version: C.ASR.VERSION, checked: false });
   assert.ok(recovered.totalSeconds > 0);
   const settingsFile = motionVoiceLibraryFile(SPEED.FILE);
   fs.writeFileSync(settingsFile, JSON.stringify({ target: { rate: 3.7 }, correction: 1, rates: {} }));

@@ -1,4 +1,3 @@
-import * as COMMON_RUNTIME from "../../../../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
@@ -9,15 +8,30 @@ export interface SunoBulkSelection {
   nameInput: Locator;
   selectedIds: string[];
 }
+const setClipRowSelected = async (clip: Locator, shouldSelect: boolean): Promise<void> => {
+  const legacyButton = clip.getByRole(RT_SHARED.BUTTON, { name: shouldSelect ? RT_SERVER.SELECT_CLIP : RT_SERVER.DESELECT_CLIP, exact: true });
+  if (await legacyButton.count()) {
+    await legacyButton.click();
+    return;
+  }
+  await clip.hover().catch(() => undefined);
+  const checkbox = clip.locator(RT_SERVER.ROLE_CHECKBOX).first();
+  if (await checkbox.isVisible().catch(() => false)) {
+    await checkbox.click({ timeout: 2000 }).catch(async () => {
+      await checkbox.evaluate((element: HTMLElement) => element.click());
+    });
+  } else {
+    await checkbox.evaluate((element: HTMLElement) => element.click());
+  }
+};
 export const openSunoBulkPlaylistDialog = async (page: Page, songIds: string[], runId: string, ensureActive: () => void = () => {}): Promise<SunoBulkSelection> => {
   const wanted = new Set(songIds);
   if (!wanted.size) throw new Error(RT_SERVER.KHONG_CO_BAN_NHAC_CAN_THEM_PLAYLIST);
   await page.goto(`${SUNO_AUTOMATION_CONFIG.SUNO_BASE_URL}${RT_SERVER.CREATE}`, { waitUntil: RT_SERVER.DOMCONTENTLOADED, timeout: SUNO_AUTOMATION_CONFIG.GOTO_PAGE_TIMEOUT_MS });
-  const search = page.getByRole(RT_SERVER.TEXTBOX, { name: RT_SERVER.SEARCH_CLIPS, exact: true });
-  await search.waitFor({ state: RT_SERVER.VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
-  if (await search.inputValue()) await search.fill("");
   const scroller = page.locator(RT_SERVER.CLIP_BROWSER_LIST_SCROLLER);
   await scroller.waitFor({ state: RT_SERVER.VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
+  const search = page.getByRole(RT_SERVER.TEXTBOX, { name: RT_SERVER.SEARCH_CLIPS, exact: true });
+  if ((await search.isVisible().catch(() => false)) && (await search.inputValue())) await search.fill("");
   for (let pageIndex = 0; pageIndex < 100; pageIndex++) {
     ensureActive();
     const selected = new Set<string>();
@@ -46,10 +60,10 @@ export const openSunoBulkPlaylistDialog = async (page: Page, songIds: string[], 
       for (const row of rows) {
         if (!row.id) continue;
         const clip = page.getByTestId(RT_SERVER.CLIP_ROW).filter({ has: page.locator(`${RT_SERVER.A_HREF_SONG_0428E3}${row.id}${RT_SERVER.SYMBOL_9980A6}`) });
-        if (row.selected && !wanted.has(row.id)) await clip.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.DESELECT_CLIP, exact: true }).click();
+        if (row.selected && !wanted.has(row.id)) await setClipRowSelected(clip, false);
         if (!wanted.has(row.id) || selected.has(row.id)) continue;
-        if (!row.selected) await clip.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.SELECT_CLIP, exact: true }).click();
-        await clip.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.DESELECT_CLIP, exact: true }).waitFor({ state: RT_SERVER.ATTACHED });
+        if (!row.selected) await setClipRowSelected(clip, true);
+        await clip.locator(RT_SERVER.BUTTON_ARIA_LABEL_DESELECT_CLIP).first().waitFor({ state: RT_SERVER.ATTACHED });
         selected.add(row.id);
       }
       if (selected.size === wanted.size) break;
@@ -79,7 +93,7 @@ export const openSunoBulkPlaylistDialog = async (page: Page, songIds: string[], 
         await page.waitForTimeout(100);
         const checked = await page
           .getByTestId(RUNTIME_VALUES.CLIP_ROW_D9C21895)
-          .filter({ has: page.getByRole(COMMON_RUNTIME.SOURCE_TEXT_BUTTON, { name: RUNTIME_VALUES.DESELECT_CLIP_5F2088CA, exact: true }) })
+          .filter({ has: page.locator(RT_SERVER.BUTTON_ARIA_LABEL_DESELECT_CLIP) })
           .evaluateAll(
             (elements, __runtimePayload) => {
               const { RT_SERVER } = __runtimePayload.texts;
@@ -116,10 +130,13 @@ export const openSunoBulkPlaylistDialog = async (page: Page, songIds: string[], 
       for (let scan = 0; scan < 100; scan++) {
         const chosen = page
           .getByTestId(RT_SERVER.CLIP_ROW)
-          .filter({ has: page.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.DESELECT_CLIP, exact: true }) })
+          .filter({ has: page.locator(RT_SERVER.BUTTON_ARIA_LABEL_DESELECT_CLIP) })
           .first();
         if (await chosen.count()) {
-          await chosen.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.MORE_OPTIONS, exact: true }).click();
+          await chosen.hover().catch(() => undefined);
+          const moreOptions = chosen.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.MORE_OPTIONS, exact: true });
+          if (await moreOptions.isVisible().catch(() => false)) await moreOptions.click();
+          else await moreOptions.evaluate((element: HTMLElement) => element.click());
           break;
         }
         await scroller.evaluate((element) => {
@@ -127,14 +144,14 @@ export const openSunoBulkPlaylistDialog = async (page: Page, songIds: string[], 
         });
         await page.waitForTimeout(100);
       }
-      await page.getByRole(RT_SERVER.MENUITEM, { name: RT_SERVER.ADD_TO_PLAYLIST, exact: true }).click();
-      const nameInput = page.getByRole(RT_SERVER.DIALOG, { name: RT_SERVER.ADD_TO_PLAYLIST, exact: true }).getByPlaceholder(RT_SERVER.PLAYLIST_NAME);
+      await page.getByRole(RT_SERVER.MENUITEM, { name: /^Add to Playlist$/i }).click();
+      const nameInput = page.getByRole(RT_SERVER.DIALOG, { name: /^Add to Playlist$/i }).getByPlaceholder(RT_SERVER.PLAYLIST_NAME);
       await nameInput.waitFor({ state: RT_SERVER.VISIBLE, timeout: SUNO_AUTOMATION_CONFIG.SONG_PAGE_READY_TIMEOUT_MS });
       await writeMusicDiagnostic(RT_SERVER.SUNO_PLAYLIST_BULK_SELECTED, { runId, selectedCount: selected.size, songCount: wanted.size, batch: pageIndex + 1 });
       return { nameInput, selectedIds: [...selected] };
     }
     const next = page.getByRole(RT_SHARED.BUTTON, { name: RT_SERVER.NEXT_PAGE, exact: true });
-    if (!(await next.isEnabled())) break;
+    if (!(await next.count()) || !(await next.isEnabled())) break;
     const current = page.getByRole(RT_SERVER.TEXTBOX, { name: RT_SERVER.CURRENT_PAGE_NUMBER, exact: true });
     const previous = await current.inputValue();
     await next.click();

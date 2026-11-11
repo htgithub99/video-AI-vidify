@@ -44,6 +44,18 @@ const fixture = {
         return Promise.resolve(track);
       case "buildRemotionScenes":
         return Promise.resolve({ ...structuredClone(script), gen: { ...structuredClone(script.gen), remotion: { failures: {}, scenes: {}, assets: {} } } });
+      case "motionInputKey":
+        return "fixture-input-key";
+      case "remotionStateMissingScenes":
+        return [];
+      case "motionTaskCheckpoint":
+        return { read: () => undefined, save: () => {} };
+      case "seoScriptKey":
+        return "seo-key";
+      case "motionEditorialContext":
+        return "Accepted narration";
+      case "generateMotionSeo":
+        return Promise.resolve({ options: [{ id: "one" }], chapters: [], scriptKey: "seo-key" });
       case VT.SEEDPUPPETKIT:
         return Promise.resolve({ sets: 0, props: 0 });
       case VT.RECORDSPEECHRATE:
@@ -61,7 +73,7 @@ const fixture = {
 const output = path.resolve(V.BUNDLE(process.pid));
 try {
   const bundled = await build({
-    stdin: { contents: V.ENTRY, loader: VT.TS, resolveDir: process.cwd() },
+    stdin: { contents: V.ENTRY + ' export { seoMotionStoryInput as seoMotionStory } from "./src/features/motion/server/services/motionProductionActions.ts";', loader: VT.TS, resolveDir: process.cwd() },
     bundle: true,
     platform: VT.NODE,
     format: VT.ESM,
@@ -127,6 +139,8 @@ try {
   expectExec(VT.BUILDMOTIONVOICETRACK, 2, { ...mainExpected, strictProvider: true });
   await invoke(controller.scenesMotionStory, { visualSettings: { version: 1, mode: "remotion", engine: "remotion", profileId: "horror", componentRevision: 1 } });
   assert.deepEqual(expectExec("buildRemotionScenes", 2, expected).mainExec, mainExpected);
+  await invoke(controller.seoMotionStory, { editorialSessionId: "parallel-seo", source: { kind: "brief", title: V.TITLE, text: "A woman stands beside a bed.", segments: [{ t: 0, text: "A woman stands beside a bed." }] }, analysis: { ...analysis, chapters: [{ id: "c1", targetSeconds: 2 }] }, script: { ...script, beats: script.beats.map((beat) => ({ ...beat, chapterId: "c1" })) } });
+  assert.equal(calls.find((call) => call.name === VT.STARTSTORYJOB)?.args[3]?.worker, true, "SEO must share the worker pool without waiting for the whole writing session to finish");
   process.stdout.write(V.PASSED);
 } finally {
   delete (globalThis as any).__motionSceneRouting;

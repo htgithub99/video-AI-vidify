@@ -6,19 +6,20 @@ import { AiTaskCapability, blockModel, recordModelSuccess, routeAiTask } from ".
 const assert = (value: unknown, message: string): void => {
   if (!value) throw new Error(message);
 };
-assert(AVAILABLE_MODELS[0] === "gemini-3.7-flash" && AVAILABLE_MODELS.includes("gemini-3.5-flash-lite"), "Gemini visual fallback order is invalid");
+assert(AVAILABLE_MODELS[0] === "gemini-3.5-flash-lite" && AVAILABLE_MODELS.includes("gemini-3-flash-preview") && AVAILABLE_MODELS.includes("gemini-3.1-flash-lite"), "Gemini visual fallback order is invalid");
 assert(new Set(AVAILABLE_MODELS).size === AVAILABLE_MODELS.length, "Gemini models were duplicated");
 assert(!AVAILABLE_MODELS.includes("gemini-2.5-flash" as never), "retired model remained enabled");
 assert(!AVAILABLE_MODELS.includes("gemini-3.1-pro-preview" as never), "zero-quota preview remained enabled");
+assert(!AVAILABLE_MODELS.includes("gemini-3.7-flash" as never), "timed-out model remained enabled");
 assert(classifyGeminiError({ status: 404, message: "model no longer available" }).category === GeminiErrorCategory.UnsupportedModel, "404 classification failed");
 assert(classifyGeminiError({ status: 429, message: "free_tier_requests, limit: 0" }).category === GeminiErrorCategory.ZeroQuota, "zero quota classification failed");
 assert(!classifyGeminiError({ status: 429, message: "requests per day quota" }).retryable, "daily quota was retryable");
 assert(classifyGeminiError({ status: 429, message: "retry in 3s" }).retryLimit === 1, "rate limit retry policy failed");
 assert(getGeminiUserMessage({ status: 429, message: "free_tier_requests, limit: 0" }, true).includes("hạn mức"), "localized quota message failed");
 const textRoute = routeAiTask({ capability: AiTaskCapability.FactualReview, estimatedInputTokens: 100, maxOutputTokens: 100 });
-assert(textRoute.models[0] === "gemini-3.7-flash" && textRoute.models.includes("gemini-3.5-flash-lite"), "text routing excluded stable production models");
+assert(textRoute.models[0] === "gemini-3.5-flash-lite" && textRoute.models.includes("gemini-3-flash-preview"), "text routing excluded stable production models");
 const visualRoute = routeAiTask({ capability: AiTaskCapability.StyleExtraction, estimatedInputTokens: 100, mediaInputCount: 1, maxOutputTokens: 100 });
-assert(visualRoute.models[0] === "gemini-3.7-flash" && visualRoute.models.length === 3, "visual routing excluded the preferred model or fallback");
+assert(visualRoute.models[0] === "gemini-3.5-flash-lite" && visualRoute.models.length === 3, "visual routing excluded the preferred model or fallback");
 AVAILABLE_MODELS.forEach((model) => blockModel(model, 60_000));
 const recoveryRoute = routeAiTask({ capability: AiTaskCapability.TextPlanning, estimatedInputTokens: 100, maxOutputTokens: 100 });
 assert(recoveryRoute.models.length === AVAILABLE_MODELS.length, "open circuits prevented the mandatory recovery route");

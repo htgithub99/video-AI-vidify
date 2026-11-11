@@ -1,3 +1,7 @@
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
+import { motionStepElapsedMs, motionStepSegment } from "../../../../lib/motionStepTime.js";
+import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
+import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -11,28 +15,24 @@ import { MOTION_PROGRESS as PROGRESS } from "../../../../constants/motionProgres
 import { motionDurationQa } from "../../../../lib/motionQa.js";
 import { MOTION_VOICE_LIBRARY } from "../../../../constants/motionVoice.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
-import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState, type MotionStoryAnalysis, type MotionStoryScript, type MotionVoiceTrack, type MotionSeoPack, type MotionResultItem, type MotionProductionResult } from "../../../../types/motionVideo.js";
+import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState, type MotionStoryAnalysis, type MotionStoryScript, type MotionVoiceTrack, type MotionSeoPack, type MotionResultItem, type MotionProductionResult, type MotionProductionJobState } from "../../../../types/motionVideo.js";
 import { logger } from "../../../../lib/logger.js";
 import { checkMotionMediaTools } from "./motionMediaValidation.js";
 import { checkMotionProductionVoice } from "./motionProductionPreflight.js";
 import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.js";
-import { assertMotionScriptComplete, assertMotionProductionMode, motionDurationRepairChapters } from "../../../../lib/motionProduction.js";
+import { assertMotionScriptComplete, assertMotionProductionMode, mergeMotionRemotionState, mergeMotionScriptProgress, motionScriptReadyForParallelMedia, motionDurationRepairChapters, motionEarlyHtmlSceneInput } from "../../../../lib/motionProduction.js";
+import { enqueueMotionHtmlScenes } from "./html/scenePipeline.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionSeriesStart } from "../../../../lib/motionParts.js";
-import { motionVoiceSignature, withMotionVoiceMode } from "../../../../lib/motionVoice.js";
+import { motionVoiceSignature, withMotionVoiceMode, motionVoiceAsrSatisfied } from "../../../../lib/motionVoice.js";
 import { motionInputKey } from "./motionFileUtils.js";
 import { getMotionRootDirectory } from "./motionLibraryService.js";
 import { getStoryJob, cancelStoryJob } from "./motionStoryJobService.js";
 import { getMotionJob, cancelMotionJob, detectEncoders } from "./motionRenderService.js";
 import { MotionProductionStore, motionProcessAlive, type MotionProductionOwner } from "./motionProductionStore.js";
-import { puppetPackStoryCapabilities } from "./puppet/packCatalog.js";
-import { closedPuppetPackId } from "./puppet/packPolicy.js";
-import { type PuppetPlanReadiness } from "./puppet/planReadiness.js";
-import { recoverMotionIllustrationPlan, type MotionPlanRecoveryState } from "./motionPlanRecoveryService.js";
 import { retimeMotionSeo, seoScriptKey } from "./motionSeoService.js";
 import { MotionLogStore } from "./motionLogStore.js";
-import { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, editorialSession, aiExec } from "./motionProductionActions.js";
-import { runInMotionAiSession } from "./motionStoryService.js";
+import { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput } from "./motionProductionActions.js";
 import { motionVisualRequest, motionVisualSettingsFor, isRemotionSpec } from "../../../../lib/motionVisual.js";
 import { MOTION_VISUAL as VISUAL } from "../../../../constants/motionVisual.js";
 import { motionRenderBehaviorFor } from "../../../../lib/motionRenderBehavior.js";
@@ -43,21 +43,27 @@ import { remotionStateMissingScenes } from "../../../../lib/motionRemotion.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../constants/motionSceneComposition.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../constants/motionRemotionLayout.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../../constants/motionScenePacing.js";
+import { motionOutputSettings } from "../../../../lib/motionOutputSettings.js";
+import { motionOutputConformance } from "../../../../lib/motionOutputConformance.js";
+import { scheduleMotionSegmentPrerender, stopMotionSegmentPrerender } from "./motionSegmentPrerender.js";
+import { createMotionEarlyScenes, type MotionEarlyScenes } from "./motionEarlyScenes.js";
+import { MOTION_OUTPUT_CONFORMANCE as CONFORMANCE } from "../../../../constants/motionOutputConformance.js";
+import { MOTION_SETTINGS_COMPATIBILITY } from "../../../../constants/motionSettingsCompatibility.js";
+const productionAiOverride = (value?: Record<string, any>): Record<string, any> | undefined => (value && typeof value === "object" && value.provider ? value : undefined);
 interface ProductionRecord {
-  illustration?: PuppetPlanReadiness;
-  illustrationRecovery?: MotionPlanRecoveryState;
   durationRepair?: { round: number; rate: number; chapters?: string[]; done?: boolean };
+  voiceCastChapters?: string[];
   version: number;
   input: Record<string, any>;
   inputKey: string;
   job: MotionStoryJobState;
   result: MotionProductionResult;
-  steps: Record<string, { id: string; done?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean }>;
+  steps: Record<string, { id: string; done?: boolean; partial?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean; elapsedMs?: number; segmentAt?: number }>;
   owner?: MotionProductionOwner;
 }
-const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan };
+const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime };
 export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS, seoWaitMs: number = P.SEO_WAIT_MS) => {
-  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime, recoverMotionIllustrationPlan } = {
+  const { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime } = {
     ...productionDependencies,
     ...dependencies,
   };
@@ -69,37 +75,57 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   const seoMatches = (seo: any, script?: MotionStoryScript): seo is MotionSeoPack => !!script && Array.isArray(seo?.options) && seo.options.length > 0 && Array.isArray(seo.chapters) && seo.scriptKey === seoScriptKey(script);
   const read = (id: string): ProductionRecord | undefined => {
     const record = failedSnapshots.get(id) || store.read(id);
+    if (record?.job) delete record.job.result;
     return record?.version === P.RUN_VERSION && record.job?.id === id && record.input && record.inputKey === motionInputKey(record.input) ? record : undefined;
   };
+  const logFilters = new WeakMap<ProductionRecord, ReturnType<typeof createMotionLogFilter>>();
   const log = (record: ProductionRecord, line: string): void => {
-    const entry = PROGRESS.TIME.test(line) ? line : PROGRESS.STAMP(line);
+    const filter = logFilters.get(record) || createMotionLogFilter();
+    logFilters.set(record, filter);
+    const shown = filter(line);
+    if (!shown) return;
+    const entry = PROGRESS.TIME.test(shown) ? shown : PROGRESS.STAMP(shown);
     const prior = record.job.log;
     record.job.log = [...prior, entry].slice(-MOTION_VIDEO_CONSTANTS.MAX_LOG_LINES);
     logs.seed(record.job.id, prior);
     logs.append(record.job.id, entry);
   };
-  const publicJob = (record: ProductionRecord): MotionStoryJobState => {
+  const publicJob = (record: ProductionRecord): MotionProductionJobState => {
     const job = structuredClone({ ...record.job, result: record.result });
-    job.stepStates = Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error }]] : [])));
-    if (job.result.rendered) job.result.renderSettings = { quality: record.input.quality, encoder: record.input.encoder, musicMood: record.input.musicMood, musicVolume: record.input.musicVolume };
+    job.stepStates = Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error, elapsedMs: task.segmentAt ? task.elapsedMs || 0 : motionStepElapsedMs(task), segmentAt: task.segmentAt }]] : [])));
+    job.result.outputSettings = motionOutputSettings(record.input, job.result);
+    if (job.result.rendered) {
+      const settings = job.result.outputSettings;
+      job.result.renderSettings = { quality: settings.quality, encoder: settings.encoder, musicMood: settings.musicMood, musicVolume: settings.musicVolume };
+    }
     if (record.steps[P.STAGES.SEO]?.done) delete job.result.seoJobId;
     return job;
   };
   const run = async (record: ProductionRecord, controller: AbortController, owner: MotionProductionOwner, seoOnly = false): Promise<void> => {
     const signal = controller.signal;
+    let early: MotionEarlyScenes | undefined;
+    let earlyVoice: MotionEarlyScenes | undefined;
     try {
       const base: Record<string, any> = { ...structuredClone(record.input), productionId: record.job.id, editorialSessionId: record.job.id, keepBrowser: true };
       base.renderBehavior = motionRenderBehaviorFor(base);
       base.characterMotion = base.renderBehavior.actors === RT_SHARED.SIMPLE;
       log(record, B.LOG(base.renderBehavior.actors, base.renderBehavior.sceneEffects, base.renderBehavior.camera));
       const result = record.result;
+      if (result.voice && !motionVoiceAsrSatisfied(result.voice, base.asrCheck === true)) {
+        log(record, MOTION_SETTINGS_COMPATIBILITY.vi.voiceRecheck);
+        delete result.voice;
+        delete result.compiled;
+        delete result.rendered;
+        if (result.script) delete result.script.voiceTrack;
+        for (const name of Object.keys(record.steps)) if (name === P.STAGES.VOICE || name.startsWith(P.STAGES.VOICE + RT_SHARED.SYMBOL_588DA4) || name === P.STAGES.RENDER) delete record.steps[name];
+      }
       const save = (): void => {
         signal.throwIfAborted();
         if (store.read(record.job.id)?.job.status === S.CANCELLED) {
           controller.abort();
           signal.throwIfAborted();
         }
-        record.job.result = result;
+        delete record.job.result;
         store.save(record.job.id, record, owner);
       };
       const running = new Set<string>();
@@ -108,7 +134,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const activities = new Map<string, MotionStoryJobState["activeAi"]>();
       const syncStep = (name: string, state: Pick<MotionStoryJobState, "id" | "status" | "stage" | "progress" | "startedAt" | "error">): void => {
         const task = record.steps[name];
-        if (task) Object.assign(task, { status: state.status, stage: state.stage, progress: state.progress, startedAt: state.startedAt, updatedAt: Date.now(), error: state.error });
+        if (task) Object.assign(task, { ...motionStepSegment(task, state.id), status: state.status, stage: state.stage, progress: state.progress, startedAt: task.startedAt || state.startedAt, updatedAt: Date.now(), error: state.error });
       };
       const mediaProgress = { scenes: 0, voice: 0 };
       const syncSeo = (): void => {
@@ -237,10 +263,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
             delete pending.retryAt;
             waiting.delete(name);
           }
-          let state = record.steps[name] && get(record.steps[name].id);
+          let state = record.steps[name] && !record.steps[name].partial && get(record.steps[name].id);
           if (!state || state.status === S.ERROR || state.status === S.CANCELLED) {
             const response = await start();
-            record.steps[name] = { ...record.steps[name], id: response.job.id, log: [], done: false, status: S.QUEUED, error: undefined, startedAt: Date.now() };
+            record.steps[name] = { ...record.steps[name], ...motionStepSegment(record.steps[name], response.job.id), id: response.job.id, log: [], done: false, partial: false, status: S.QUEUED, error: undefined, startedAt: record.steps[name]?.startedAt || Date.now(), updatedAt: Date.now() };
             if (signal.aborted) {
               cancelStoryJob(response.job.id);
               cancelMotionJob(response.job.id);
@@ -305,6 +331,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (record.input.visualSettings || record.input.analysis?.visualSettings || record.input.script?.visualSettings) Object.assign(base, motionVisualRequest(record.input));
       const visualSettings = motionVisualSettingsFor(base);
       const buildStatus = visualSettings.mode === RT_SHARED.REMOTION && result.script && result.analysis ? remotionStoryBuildStatus(result.script, result.analysis) : RT_SHARED.READY;
+      if (visualSettings.mode === RT_SHARED.REMOTION && result.script && result.analysis && usesMotionHtml(result.script) && !motionHtmlPlanCurrent(result.script, result.analysis)) {
+        delete record.steps[P.STAGES.SCRIPT];
+        log(record, RT_MAINTENANCE.KHOI_PHUC_BUOC_PHAN_CANH_TU_LOI_DAN_DA_LUU);
+      }
       if (result.script && buildStatus !== RT_SHARED.READY) {
         for (const name of Object.keys(record.steps)) if (name === P.STAGES.SCENES || name.startsWith(P.STAGES.SCENES + RT_SHARED.SYMBOL_588DA4) || name === P.STAGES.RENDER) delete record.steps[name];
         delete result.compiled;
@@ -318,11 +348,11 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const directory = getMotionRootDirectory();
       fs.accessSync(directory, fs.constants.W_OK);
       const disk = fs.statfsSync(directory);
-      if (!base.source?.segments?.length || disk.bavail * disk.bsize < P.MIN_FREE_BYTES || (visualSettings.mode === RT_SHARED.LIBRARY && closedPuppetPackId(base.stylePreset) && !puppetPackStoryCapabilities(base.stylePreset))) throw new Error(P.PREFLIGHT_FAILED);
+      if (!base.source?.segments?.length || disk.bavail * disk.bsize < P.MIN_FREE_BYTES) throw new Error(P.PREFLIGHT_FAILED);
       log(record, VISUAL.LOG_MODE(visualSettings.mode));
       if (visualSettings.mode === RT_SHARED.REMOTION) {
         if (base.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
-        await checkRemotionRuntime(signal);
+        await checkRemotionRuntime(signal, record.result.script?.gen?.remotion && record.result.script.gen.remotion.renderer !== RT_MAINTENANCE.HTML_CANVAS ? undefined : RT_MAINTENANCE.HTML_CANVAS);
       }
       if (!base.analyzeOnly) {
         await checkMotionMediaTools(signal);
@@ -336,6 +366,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         () => analyzeMotionStoryInput(base),
         (full) => {
           if (!result.analysis) Object.assign(result, motionSeriesStart(full, Number(base.parts) || 1, base.language));
+          const effective = result.series?.parts.length || 1;
+          if (effective !== (Number(base.parts) || 1)) log(record, `${RT_MAINTENANCE.NGUON_DUOC_AI_LAP_THANH}${effective}${RT_MAINTENANCE.PHAN_CO_NOI_DUNG_SO_VOI}${base.parts}${RT_MAINTENANCE.PHAN_DA_CHON_GIU_KE_HOACH_THUC_TE_VA_GHI}`);
         },
         0,
         0.1,
@@ -346,67 +378,117 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         record.job.stage = P.ANALYSIS_DONE;
         return;
       }
-      if (visualSettings.mode === RT_SHARED.LIBRARY) {
-        record.steps[P.INVENTORY_STAGE] = { id: record.job.id, status: S.RENDERING, startedAt: Date.now() };
-        record.job.stage = P.INVENTORY_STAGE;
-        save();
-        let ready: Awaited<ReturnType<typeof recoverMotionIllustrationPlan>>;
-        try {
-          ready = await runInMotionAiSession(
-            record.job.id,
-            () =>
-              recoverMotionIllustrationPlan(
-                { ...result.analysis!, stylePreset: base.stylePreset || result.analysis?.stylePreset },
-                {
-                  verifyCoverage: true,
-                  exec: base.aiExecution || {},
-                  signal,
-                  log: (line) => log(record, line),
-                  state: (record.illustrationRecovery ||= { attempts: 0, errors: [] }),
-                  save: (analysis) => {
-                    result.analysis = analysis;
-                    save();
-                  },
-                },
-              ),
-            (line) => log(record, line),
-            true,
-            signal,
-            editorialSession(base, base.source, aiExec(base.aiExecution)),
-          );
-          Object.assign(record.steps[P.INVENTORY_STAGE], { done: true, status: S.COMPLETED, updatedAt: Date.now() });
-        } catch (error) {
-          Object.assign(record.steps[P.INVENTORY_STAGE], { status: signal.aborted ? S.CANCELLED : S.ERROR, error: String((error as Error).message), updatedAt: Date.now() });
-          throw error;
-        }
-        record.illustration = ready.illustration;
-        result.analysis = ready.analysis;
-      } else result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
+      result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
+      const sceneInput = (analysis: MotionStoryAnalysis, script: MotionStoryScript, sheetCarry: boolean) => ({ ...base, analysis, script, sheetCarry, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false });
+      if (visualSettings.mode === RT_SHARED.REMOTION && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair && !(globalThis as any).__motionHtmlStages)
+        early = createMotionEarlyScenes({
+          stage: P.STAGES.SCENES,
+          text: P.EARLY_SCENES,
+          analysis: () => result.analysis,
+          extractInput: motionEarlyHtmlSceneInput,
+          enqueueRunning: (input) => enqueueMotionHtmlScenes(record.job.id, input.script),
+          onUpdate: (job) => {
+            const prior = record.steps[P.STAGES.SCENES];
+            record.steps[P.STAGES.SCENES] = { ...prior, ...motionStepSegment(prior, job.id), id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            activities.set(P.STAGES.SCENES, terminal(job.status) ? {} : job.activeAi || {});
+            record.job.activeAi = Object.assign({}, ...activities.values());
+            const partialScript = job.result as MotionStoryScript | undefined;
+            if (partialScript?.gen?.remotion && result.script) {
+              result.script = { ...result.script, gen: { ...(result.script.gen || partialScript.gen), remotion: mergeMotionRemotionState(result.script.gen?.remotion, partialScript.gen.remotion) } };
+            }
+            syncSeo();
+            save();
+          },
+          start: (input, first) => scenesMotionStoryInput({ ...sceneInput(input.analysis, input.script, !first), sfx: base.sfx !== false }),
+          getJob: getStoryJob,
+          cancel: cancelStoryJob,
+          log: (line) => log(record, line),
+          signal,
+          pollMs,
+        });
+      const voiceScript = (script: MotionStoryScript): MotionStoryScript => {
+        const voiced = base.voiceChannel ? { ...script, voiceChannel: base.voiceChannel } : script;
+        return typeof base.multiVoice === "boolean" ? withMotionVoiceMode(voiced, base.multiVoice) : voiced;
+      };
+      if (!record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair)
+        earlyVoice = createMotionEarlyScenes({
+          stage: P.STAGES.VOICE,
+          text: P.EARLY_VOICE,
+          analysis: () => result.analysis,
+          onUpdate: (job) => {
+            const prior = record.steps[P.STAGES.VOICE];
+            record.steps[P.STAGES.VOICE] = { ...prior, ...motionStepSegment(prior, job.id), id: job.id, done: false, partial: true, status: S.RENDERING, stage: job.stage, progress: job.progress, startedAt: prior?.startedAt || job.startedAt || Date.now(), updatedAt: Date.now() };
+            activities.set(P.STAGES.VOICE, terminal(job.status) ? {} : job.activeAi || {});
+            record.job.activeAi = Object.assign({}, ...activities.values());
+            save();
+          },
+          start: (input) => {
+            record.voiceCastChapters ||= input.analysis.chapters.map((chapter) => chapter.id);
+            return voiceMotionStoryInput({ ...base, analysis: input.analysis, script: voiceScript(input.script), aiExecution: base.aiExecution, castChapterIds: record.voiceCastChapters, voiceWarmup: true });
+          },
+          getJob: getStoryJob,
+          cancel: cancelStoryJob,
+          log: (line) => log(record, line),
+          signal,
+          pollMs,
+        });
       await step<MotionStoryScript>(
         P.STAGES.SCRIPT,
         () => scriptMotionStoryInput({ ...base, analysis: result.analysis, resume: true, beats: result.script?.beats || [], gen: result.script?.gen, chapterDrafts: result.script?.chapterDrafts, voiceSettings: result.script?.voiceSettings, carryGen: base.carryGen }),
         (script) => {
-          result.script = script;
+          result.script = mergeMotionScriptProgress(result.script, script);
+          early?.offer(result.script);
+          earlyVoice?.offer(result.script);
+          if (motionScriptReadyForParallelMedia(result.script, result.analysis)) startSeo();
         },
         0.1,
         0.2,
       );
-      if (base.voiceChannel) result.script!.voiceChannel = base.voiceChannel;
-      if (typeof base.multiVoice === "boolean") result.script = withMotionVoiceMode(result.script!, base.multiVoice);
+      result.script = voiceScript(result.script!);
+      let prerenderKey = "";
+      const prerender = (): void => {
+        if (base.autoExport === false || !result.script?.gen?.remotion || !result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis)) return;
+        if (motionVisualSettingsFor(base).mode !== RT_SHARED.REMOTION) return;
+        const ready = Object.values(result.script.gen.remotion.scenes || {})
+          .flat()
+          .filter((scene) => scene.build?.status === RT_SERVER.ACCEPTED && (scene.composition || scene.html))
+          .map((scene) => scene.id);
+        const key = ready.join(RT_SHARED.SYMBOL_01BA47);
+        if (!ready.length || key === prerenderKey) return;
+        prerenderKey = key;
+        void (async () => {
+          try {
+            const compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice!.durations, audioId: result.voice!.audioId, sfx: false, previewOnly: true });
+            if (!isRemotionSpec(compiled.spec)) return;
+            const spec = { ...compiled.spec, fps: base.fps || compiled.spec.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
+            scheduleMotionSegmentPrerender(record.job.id, spec, ready, base.quality, (line) => log(record, line));
+          } catch {}
+        })();
+      };
       const buildMedia = async (round = 0, media: "both" | "voice" | "scenes" = RT_SERVER.BOTH) => {
         assertMotionScriptComplete(result.script!, result.analysis);
         startSeo();
         const voicedScript = structuredClone(result.script!);
         const stage = (name: string) => (round ? P.DURATION_STEP(name, round) : name);
+        if (!round && early && record.steps[P.STAGES.SCENES]) record.steps[P.STAGES.SCENES].partial = true;
+        if (!round && earlyVoice && record.steps[P.STAGES.VOICE]) record.steps[P.STAGES.VOICE].partial = true;
         const jobs: Promise<void>[] = [];
         if (media !== RT_SHARED.VOICE)
           jobs.push(
             step<MotionStoryScript>(
               stage(P.STAGES.SCENES),
-              () => scenesMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, illustration: record.illustration, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false }),
+              async () => {
+                if (result.script) enqueueMotionHtmlScenes(record.job.id, result.script);
+                const gen = await early?.settle();
+                if (gen?.remotion && result.script) {
+                  result.script = { ...result.script, gen: { ...(result.script.gen || gen), remotion: mergeMotionRemotionState(result.script.gen?.remotion, gen.remotion) } };
+                }
+                return scenesMotionStoryInput(sceneInput(result.analysis!, result.script!, !!gen));
+              },
               (script) => {
-                result.script = { ...script, ...(result.voice ? { voiceTrack: result.voice } : {}) };
+                result.script = { ...mergeMotionScriptProgress(result.script, script), ...(result.voice ? { voiceTrack: result.voice } : {}) };
+                prerender();
               },
               0.3,
               0.3,
@@ -418,10 +500,14 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           jobs.push(
             step<MotionVoiceTrack>(
               stage(P.STAGES.VOICE),
-              () => voiceMotionStoryInput({ ...base, analysis: result.analysis, script: voicedScript, aiExecution: base.aiExecution }),
+              async () => {
+                await earlyVoice?.settle();
+                return voiceMotionStoryInput({ ...base, analysis: result.analysis, script: voicedScript, aiExecution: base.aiExecution, castChapterIds: record.voiceCastChapters });
+              },
               (voice) => {
                 result.voice = voice;
                 if (result.script) result.script.voiceTrack = voice;
+                prerender();
               },
               0.3,
               0.3,
@@ -434,11 +520,12 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           jobs.map((job) =>
             job.catch((error) => {
               firstFailure ??= error;
-              for (const task of Object.values(record.steps))
-                if (!task.done) {
-                  cancelStoryJob(task.id);
-                  cancelMotionJob(task.id);
-                }
+              if (signal.aborted)
+                for (const task of Object.values(record.steps))
+                  if (!task.done) {
+                    cancelStoryJob(task.id);
+                    cancelMotionJob(task.id);
+                  }
               throw error;
             }),
           ),
@@ -449,13 +536,13 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (!record.durationRepair || record.durationRepair.done) await buildMedia();
       const targetSeconds = result.analysis!.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0);
       const durationTolerance = Q.DURATION_TOLERANCE;
-      const durationFits = () => Number.isFinite(result.voice!.totalSeconds) && result.voice!.totalSeconds > 0;
+      const hasAudioDuration = () => Number.isFinite(result.voice!.totalSeconds) && result.voice!.totalSeconds > 0;
       const repairMediaPending = () => {
         const repair = record.durationRepair;
         if (!repair || repair.done) return false;
         return (record.steps[P.DURATION_STEP(P.STAGES.SCRIPT, repair.round)]?.done && (!record.steps[P.DURATION_STEP(P.STAGES.SCENES, repair.round)]?.done || !record.steps[P.DURATION_STEP(P.STAGES.VOICE, repair.round)]?.done)) || result.voice?.signature !== motionVoiceSignature(result.script, result.analysis);
       };
-      while (!durationFits() || repairMediaPending()) {
+      while (!hasAudioDuration() || repairMediaPending()) {
         if (!Number.isFinite(result.voice!.totalSeconds) || result.voice!.totalSeconds <= 0) throw new Error(P.AUDIO_REQUIRED);
         const previous = record.durationRepair;
         if (!previous || previous.done) {
@@ -490,7 +577,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           0.2,
         );
         await buildMedia(repair.round, RT_SHARED.VOICE);
-        if (durationFits()) await buildMedia(repair.round, RT_SHARED.SCENES);
+        if (hasAudioDuration()) await buildMedia(repair.round, RT_SHARED.SCENES);
         repair.done = true;
         save();
       }
@@ -499,10 +586,13 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         save();
       }
       if (motionDurationQa(result.voice!.totalSeconds, targetSeconds) !== Q.LEVEL.OK) log(record, Q.DURATION_WARNING(result.voice!.totalSeconds, targetSeconds));
+      const selectedSeconds = result.analysis!.authoringSettings?.selectedTargetSeconds || targetSeconds;
+      result.durationReport = { selectedSeconds, plannedSeconds: targetSeconds, audioSeconds: result.voice!.totalSeconds, ratio: result.voice!.totalSeconds / Math.max(1, targetSeconds), authoring: result.script!.authoringTiming };
+      log(record, `${RT_MAINTENANCE.THOI_LUONG_DA_CHON}${Math.round(selectedSeconds)}${RT_MAINTENANCE.S_TONG_PHAN_NAY_DU_KIEN}${Math.round(targetSeconds)}${RT_MAINTENANCE.S_AUDIO_THUC}${result.voice!.totalSeconds.toFixed(1)}${RT_MAINTENANCE.S_5}`);
       await finishSeo();
       signal.throwIfAborted();
       record.job.stage = P.STAGES.COMPILE;
-      if (!result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis)) throw new Error(P.AUDIO_REQUIRED);
+      if (!result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis) || !motionVoiceAsrSatisfied(result.voice, base.asrCheck === true)) throw new Error(P.AUDIO_REQUIRED);
       result.compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice.durations, audioId: result.voice.audioId });
       if (isRemotionSpec(result.compiled.spec) && base.fps && result.compiled.spec.fps !== base.fps) throw new Error(VISUAL.SETTINGS_CHANGED);
       result.compiled.spec = { ...result.compiled.spec, fps: base.fps || result.compiled.spec.fps, ...(base.subtitles === false ? { subtitles: [] } : {}) };
@@ -542,6 +632,16 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           P.RENDER_PROGRESS.SIZE,
           true,
         );
+      if (result.rendered && result.compiled) {
+        const chosen = motionOutputSettings({ ...record.input, fps: record.input.fps || result.compiled.spec.fps, aspect: record.input.aspect || result.compiled.spec.aspect }, result);
+        const issues = motionOutputConformance(chosen, result.compiled.spec, result.rendered, base.subtitles !== false && !!result.compiled.spec.subtitles?.length);
+        if (issues.length) {
+          delete record.steps[P.STAGES.RENDER];
+          delete result.rendered;
+          throw new Error(CONFORMANCE.FAILED(issues));
+        }
+        log(record, CONFORMANCE.PASSED);
+      }
       signal.throwIfAborted();
       record.job.status = S.COMPLETED;
       record.job.progress = 1;
@@ -555,6 +655,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         logger.error(P.SAVE_FAILED, failure);
       }
     } finally {
+      early?.stop();
+      earlyVoice?.stop();
+      stopMotionSegmentPrerender(record.job.id);
       const seo = record.steps[P.STAGES.SEO];
       try {
         if (seo?.id && !seo.done) cancelStoryJob(seo.id);
@@ -591,7 +694,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       if (active.get(record.job.id)?.owner.token === owner.token) active.delete(record.job.id);
     }
   };
-  const launch = (record: ProductionRecord, seoOnly = false): MotionStoryJobState => {
+  const launch = (record: ProductionRecord, seoOnly = false): MotionProductionJobState => {
     const owner = store.acquire(record.job.id);
     const controller = new AbortController();
     record.owner = owner;
@@ -626,7 +729,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     });
     return publicJob(record);
   };
-  const startMotionProduction = (input: Record<string, any>, resume = false): MotionStoryJobState => {
+  const startMotionProduction = (input: Record<string, any>, resume = false): MotionProductionJobState => {
     assertMotionProductionMode(input);
     const id = String(input.productionId || randomUUID());
     const existing = read(id);
@@ -652,7 +755,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     if (previous) {
       if (previous.inputKey !== key) throw new Error(P.INVALID_RUN);
       const outdatedRemotion = previous.result.script && previous.result.analysis && motionVisualSettingsFor({ script: previous.result.script, analysis: previous.result.analysis }).mode === RT_SHARED.REMOTION && !remotionStoryRenderable(previous.result.script, previous.result.analysis);
-      const seoOnly = previous.job.status === S.COMPLETED && !outdatedRemotion;
+      const voiceNeedsCheck = previous.result.voice && !motionVoiceAsrSatisfied(previous.result.voice, previous.input.asrCheck === true);
+      const seoOnly = previous.job.status === S.COMPLETED && !outdatedRemotion && !voiceNeedsCheck;
       if (!resume || (seoOnly && (previous.input.seo === false || seoMatches(previous.result.seo, previous.result.script)))) return publicJob(previous);
       const seo = previous.steps[P.STAGES.SEO];
       if (seo && !seoMatches(previous.result.seo, previous.result.script)) {
@@ -674,7 +778,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return launch(record);
   };
-  const getMotionProduction = (id: string): MotionStoryJobState | undefined => {
+  const getMotionProduction = (id: string): MotionProductionJobState | undefined => {
     const record = active.get(id)?.record || read(id);
     if (!record) {
       if (!store.exists(id)) return undefined;
@@ -701,15 +805,23 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return publicJob(record);
   };
-  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean): MotionStoryJobState => {
+  const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean, aiOverrides?: { aiExecution?: Record<string, any>; sceneAiExecution?: Record<string, any>; planAiExecution?: Record<string, any> }): MotionProductionJobState => {
     let record = read(id);
     if (!record) throw new Error(P.INVALID_RUN);
-    if (typeof clearGeminiChatsBeforeExport === "boolean" && !active.has(id) && record.input.clearGeminiChatsBeforeExport !== clearGeminiChatsBeforeExport) {
+    const hasClearOverride = typeof clearGeminiChatsBeforeExport === "boolean" && record.input.clearGeminiChatsBeforeExport !== clearGeminiChatsBeforeExport;
+    const nextAi = productionAiOverride(aiOverrides?.aiExecution);
+    const nextSceneAi = productionAiOverride(aiOverrides?.sceneAiExecution);
+    const nextPlanAi = productionAiOverride(aiOverrides?.planAiExecution);
+    const hasAiOverride = (!!nextAi && stringifyJson(record.input.aiExecution) !== stringifyJson(nextAi)) || (!!nextSceneAi && stringifyJson(record.input.sceneAiExecution) !== stringifyJson(nextSceneAi)) || (!!nextPlanAi && stringifyJson(record.input.planAiExecution) !== stringifyJson(nextPlanAi));
+    if ((hasClearOverride || hasAiOverride) && !active.has(id)) {
       const owner = store.acquire(id);
       try {
         record = read(id);
         if (!record) throw new Error(P.INVALID_RUN);
-        record.input.clearGeminiChatsBeforeExport = clearGeminiChatsBeforeExport;
+        if (typeof clearGeminiChatsBeforeExport === "boolean") record.input.clearGeminiChatsBeforeExport = clearGeminiChatsBeforeExport;
+        if (nextAi) record.input.aiExecution = nextAi;
+        if (nextSceneAi) record.input.sceneAiExecution = nextSceneAi;
+        if (nextPlanAi) record.input.planAiExecution = nextPlanAi;
         record.inputKey = motionInputKey(record.input);
         store.save(id, record, owner);
       } finally {

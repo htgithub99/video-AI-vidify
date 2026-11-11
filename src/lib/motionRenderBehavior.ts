@@ -15,5 +15,5 @@ export const applyMotionRenderBehavior = <T extends MotionRenderSpec>(spec: T, b
   behavior = normalizeMotionRenderBehavior(behavior);
   if (RT_CORE.ENGINE in spec && spec.engine === RT_SHARED.REMOTION) return { ...spec, renderBehavior: behavior, ...(spec.resolvedSettings ? { resolvedSettings: { ...spec.resolvedSettings, behavior } } : {}), motion: behavior.actors === RT_SHARED.SIMPLE };
   const legacy = spec as MotionSpec;
-  return { ...spec, renderBehavior: behavior, ...(legacy.kit ? { kit: { ...legacy.kit, motion: behavior.actors === RT_SHARED.SIMPLE, renderBehavior: behavior } } : {}), ...(legacy.gen ? { gen: { ...legacy.gen, characterMotion: behavior.actors === RT_SHARED.SIMPLE, renderBehavior: behavior } } : {}) };
+  return { ...spec, renderBehavior: behavior, ...(legacy.gen ? { gen: { ...legacy.gen, characterMotion: behavior.actors === RT_SHARED.SIMPLE, renderBehavior: behavior } } : {}) };
 };

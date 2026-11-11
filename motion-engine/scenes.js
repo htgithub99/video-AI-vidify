@@ -18,24 +18,7 @@
     }
     g.globalAlpha = 1;
   };
-  const bgApi = (st) => (st && st.puppet ? ME.PUPPET2D : null);
-  const bgScene = (ctx) => {
-    const pup = ctx.params.bgPuppet;
-    return pup && ME.PUPPET2D && ME.PUPPET2D.bgInit ? ME.PUPPET2D.bgInit(ctx, pup) : null;
-  };
-  const drawBg = (g, ctx, st, darken = 0.55) => {
-    const api = bgApi(st);
-    if (st && api) {
-      try {
-        api.bgDraw(g, ctx, st);
-        g.setTransform(1, 0, 0, 1, 0, 0);
-        g.fillStyle = MF.RGBA_4_6_10(`${darken}`);
-        g.fillRect(0, 0, ctx.W, ctx.H);
-        return;
-      } catch (e) {
-        void e;
-      }
-    }
+  const drawBg = (g, ctx) => {
     const gr = g.createRadialGradient(ctx.W / 2, ctx.H * 0.45, 0, ctx.W / 2, ctx.H / 2, Math.max(ctx.W, ctx.H) * 0.75);
     gr.addColorStop(0, ctx.params.bgInner || MT.VALUE_1C2433);
     gr.addColorStop(1, ctx.params.bgOuter || MT.VALUE_040609);
@@ -43,15 +26,13 @@
     g.fillRect(0, 0, ctx.W, ctx.H);
     dust(g, ctx.W, ctx.H, ctx.t, ctx.unit, 0.25);
   };
-  const bgDispose = (st) => void st;
   const accentOf = (ctx) => ctx.params.accent || (ctx.spec && ctx.spec.accent) || MT.FFB070;
   ME.registerTemplate(MT.TITLE, {
     name: MT.TIEU_DE_MO_DAU,
     category: MT.TEXT,
     description: MT.TIEU_DE_LON_CO_HIEU_UNG_CHU_KICKER,
     init: (ctx) => {
-      const bg = bgScene(ctx);
-      return { bg, dispose: () => bgDispose(bg) };
+      return {};
     },
     draw(g, ctx) {
       const p = ctx.params,
@@ -59,7 +40,7 @@
         H = ctx.H,
         t = ctx.t,
         un = ctx.unit;
-      drawBg(g, ctx, ctx.state.bg, 0.5);
+      drawBg(g, ctx);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const portrait = H > W;
       const acc = accentOf(ctx);
@@ -92,8 +73,7 @@
     category: MT.TEXT,
     description: MT.SO_CHUONG_TEN_CHUONG,
     init: (ctx) => {
-      const bg = bgScene(ctx);
-      return { bg, dispose: () => bgDispose(bg) };
+      return {};
     },
     draw(g, ctx) {
       const p = ctx.params,
@@ -101,7 +81,7 @@
         H = ctx.H,
         t = ctx.t,
         un = ctx.unit;
-      drawBg(g, ctx, ctx.state.bg, 0.62);
+      drawBg(g, ctx);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
       const portrait = H > W;
@@ -128,8 +108,7 @@
     category: MT.TEXT,
     description: MT.CAU_TRICH_DAN_LON_KIEU_SERIF_TU_KHOA,
     init: (ctx) => {
-      const bg = bgScene(ctx);
-      return { bg, dispose: () => bgDispose(bg) };
+      return {};
     },
     draw(g, ctx) {
       const p = ctx.params,
@@ -137,7 +116,7 @@
         H = ctx.H,
         t = ctx.t,
         un = ctx.unit;
-      drawBg(g, ctx, ctx.state.bg, 0.62);
+      drawBg(g, ctx);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
       const portrait = H > W;
@@ -178,8 +157,7 @@
     category: MT.INFOGRAPHIC,
     description: MT.VALUE_1_4_CON_SO_LON_CHAY_DEM_8,
     init: (ctx) => {
-      const bg = bgScene(ctx);
-      return { bg, dispose: () => bgDispose(bg) };
+      return {};
     },
     draw(g, ctx) {
       const p = ctx.params,
@@ -187,7 +165,7 @@
         H = ctx.H,
         t = ctx.t,
         un = ctx.unit;
-      drawBg(g, ctx, ctx.state.bg, 0.66);
+      drawBg(g, ctx);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
       const items = (p.items || []).slice(0, 4);
@@ -225,8 +203,7 @@
     category: MT.INFOGRAPHIC,
     description: MT.SO_DEM_LON_KIEU_DONG_HO_DEM_NGAY,
     init: (ctx) => {
-      const bg = bgScene(ctx);
-      return { bg, dispose: () => bgDispose(bg) };
+      return {};
     },
     draw(g, ctx) {
       const p = ctx.params,
@@ -234,7 +211,7 @@
         H = ctx.H,
         t = ctx.t,
         un = ctx.unit;
-      drawBg(g, ctx, ctx.state.bg, 0.6);
+      drawBg(g, ctx);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const acc = accentOf(ctx);
       const k = U.clamp((t - 0.3) / Math.max(0.5, ctx.dur - 1.2));
@@ -413,7 +390,7 @@
         t = ctx.t,
         un = ctx.unit,
         u = ctx.u;
-      drawBg(g, ctx, null);
+      drawBg(g, ctx);
       const acc = accentOf(ctx);
       const ev = p.events || [];
       const n = ev.length || 1;
@@ -552,7 +529,7 @@
         t = ctx.t,
         un = ctx.unit,
         u = ctx.u;
-      drawBg(g, ctx, null);
+      drawBg(g, ctx);
       const acc = accentOf(ctx);
       const rows = p.rows || [];
       const nr = rows.length || 1,
@@ -626,8 +603,7 @@
     category: MT.TEXT,
     description: MT.CAU_KET_CHAM_VA_TOI_DAN,
     init: (ctx) => {
-      const bg = bgScene(ctx);
-      return { bg, dispose: () => bgDispose(bg) };
+      return {};
     },
     draw(g, ctx) {
       const p = ctx.params,
@@ -635,7 +611,7 @@
         H = ctx.H,
         t = ctx.t,
         un = ctx.unit;
-      drawBg(g, ctx, ctx.state.bg, 0.55);
+      drawBg(g, ctx);
       g.setTransform(1, 0, 0, 1, 0, 0);
       const size = (H > W ? 54 : 58) * un;
       const lines = ME.wrap(g, p.text || "", W * 0.74, ME.font(700, size, MT.SERIF, MT.ITALIC));

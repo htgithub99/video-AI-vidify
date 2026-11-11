@@ -3,11 +3,9 @@ import { AspectRatio, ImageGenerationMode, ImageGeneratorEngine, SubtitleMode } 
 import { CINEMATIC_ROOM_STAGE } from "./cinematicConstants";
 import { REFACTOR_CONSTANTS } from "./refactor";
 import { THUMBNAILS_PREVIEW_TEXTS, REGENERATION_TARGET_TEXTS } from "./texts";
-export const APP_CONFIG = { TOAST_DURATION: 3000 };
 export const TECHNICAL_RESPONSE_RETRY_CONFIG = { MAX_ATTEMPTS: 2 } as const;
 export const PIPELINE_FETCH_FAILURE_KEY = { SCRIPT: "script_request_failed", STORYBOARD: "storyboard_request_failed" } as const;
 export const ADVISORY_QA_CONFIG = { SCRIPT_SKIPPED_WARNING: "script_qa_skipped_for_speed", SCRIPT_DURATION_WARNING: "script_duration_out_of_target", STORYBOARD_SKIPPED_WARNING: "storyboard_qa_skipped_for_speed", THUMBNAIL_PLANNING_WARNING_PREFIX: "thumbnail_planning_advisory:" } as const;
-export const SEO_FALLBACK_CONFIG = { DEFAULT_TITLE_COUNT: 3, DEFAULT_DESCRIPTION_COUNT: 2, DEFAULT_HASHTAG_COUNT: 5, DEFAULT_TAG_COUNT: 6, TITLE_MAX_LENGTH: 100, DESCRIPTION_MAX_LENGTH: 500, TAG_MIN_LENGTH: 4, UNKNOWN_SCORE: -1, WARNING: "seo_source_fallback_used" } as const;
 export const PIPELINE_CONFIG = {
   BATCH_CHUNK_SIZE_REWRITE: 25,
   BATCH_CHUNK_SIZE_OPTIMIZE: 8,
@@ -97,11 +95,6 @@ export const IMAGE_FOCUS_MODE_CONFIG = {
   },
 } as const;
 export const PROJECT_ASSET_GROUP = { VOICES: "voices", IMAGES: "images", VIDEOS: "videos", VISUALS: "visuals" } as const;
-export const SCENE_TEXT_MODE_UI_CONFIG = {
-  LABELS: { vi: "Chữ trong ảnh", en: "Image text" },
-  VALUES: { NO_TEXT: "no_text", WITH_TEXT: "with_text" },
-  OPTIONS: { vi: { no_text: "Không chữ — Tạo ảnh sạch, không có ký tự", with_text: "Có chữ — Dùng đúng ngôn ngữ đã chọn" }, en: { no_text: "No text — Create a clean image without characters", with_text: "With text — Use the selected language" } },
-} as const;
 export const PROJECT_VISUAL_ASSET_CONFIG = { THUMBNAILS_DIRECTORY: "thumbnails", REFERENCES_DIRECTORY: "references" } as const;
 export const THUMBNAIL_TEXT_MODE_CONFIG = {
   DEFAULT: "headline",
@@ -291,8 +284,6 @@ export const VISUAL_CONTINUITY_CONFIG = {
   ERROR_PREFIXES: { UNKNOWN_CHARACTER: "unknown_character:", UNKNOWN_LOCATION: "unknown_location:", UNKNOWN_PROP: "unknown_prop:" },
 } as const;
 export const IMAGE_GENERATION_CONTINUITY_CONFIG = { CHARACTER_PREFIX: "character:", SUPPORTING_LANE: "characters:supporting", ENVIRONMENT_LANE: "scene:environment", THUMBNAIL_LANE: "thumbnail", SUPPORTING_ROLE_PATTERN: /\b(?:mentor|client|supporting|advisor|customer)\b/i, MIN_WORKER_COUNT: 1 } as const;
-export const IMAGE_PROMPT_METADATA_CONFIG = { DEFAULT_LAYOUT: "single_frame", DEFAULT_TEXT_ALLOWED: false, DEFAULT_BACKGROUND_PEOPLE_ALLOWED: false, MIN_SUBJECT_COUNT: 0, MAX_SUBJECT_COUNT: 12, ALLOWED_LAYOUTS: ["single_frame", "split_screen", "collage"] } as const;
-export const UI_MESSAGE_DURATION = { STANDARD_MS: 3000, EXTENDED_MS: 4000, OBJECT_URL_REVOKE_MS: 100 } as const;
 export const JSON_UTILS_CONFIG = { PREVIEW_LENGTH: 100, EMPTY_FALLBACK: "", PARSE_ERROR_EVENT: "ERROR_PARSING_JSON", STRINGIFY_ERROR_EVENT: "ERROR_STRINGIFYING_JSON" } as const;
 export const GEMINI_REQUEST_POLICY = {
   REQUEST_TIMEOUT_MS: 60_000,
@@ -319,8 +310,8 @@ export const GEMINI_REQUEST_POLICY = {
 } as const;
 export const FREE_AI_PROVIDER_CONFIG = {
   MAX_MODELS_PER_PROVIDER: 3,
-  CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["gpt-oss-120b", "zai-glm-4.7"] },
-  GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "qwen/qwen3.6-27b"], scriptModels: ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b"], toolModels: ["groq/compound-mini", "groq/compound"] },
+  CEREBRAS: { id: "cerebras", url: "https://api.cerebras.ai/v1/chat/completions", models: ["zai-glm-4.7"] },
+  GROQ: { id: "groq", url: "https://api.groq.com/openai/v1/chat/completions", models: ["openai/gpt-oss-20b"], scriptModels: ["openai/gpt-oss-20b"], toolModels: ["groq/compound-mini", "groq/compound"] },
   AUTHORIZATION_HEADER: "Authorization",
   BEARER_PREFIX: "Bearer ",
   CONTENT_TYPE_HEADER: "Content-Type",
@@ -611,9 +602,9 @@ export const GEMINI_CHAT_VIDEO_SELECTORS = {
   REFERENCE_CHIPS:
     'input-area .attachment-container, .input-area .attachment-container, input-companion-uploader .attachment-container, .attachment-preview-wrapper, uploader-file-preview, gem-media-attachment, img.gem-attachment-style-img, input-area [data-test-id*="attachment"], .input-area [data-test-id*="attachment"], input-area async-processing-chip, .input-area async-processing-chip, input-area .image-preview, .input-area .image-preview, input-area input-companion-chip, .input-area input-companion-chip, input-area [aria-label*="xóa" i], .input-area [aria-label*="xóa" i], input-area [aria-label*="remove" i], .input-area [aria-label*="remove" i]',
   PLUS_BUTTON:
-    'button:has(mat-icon[data-mat-icon-name="add"]), button:has(mat-icon[fonticon="add"]), button:has(mat-icon:has-text("add")), button:has(mat-icon[data-mat-icon-name="attach_file"]), button:has(mat-icon[fonticon="attach_file"]), button[aria-label*="Nội dung tải lên" i], button[aria-label*="Upload content" i], button[aria-label*="Mở rộng menu" i], button[aria-label*="Tuỳ chọn" i], button[aria-label*="Tải lên" i], button[aria-label*="Thêm tệp" i], button[aria-label*="Upload" i], button[data-test-id*="plus" i], button[data-test-id*="attach" i], input-area button:first-child, .input-area button:first-child',
+    'simplified-input-menu button, button:has(mat-icon[data-mat-icon-name="plus"]), button:has(mat-icon[fonticon="plus"]), button:has(mat-icon[data-mat-icon-name="add"]), button:has(mat-icon[fonticon="add"]), button:has(mat-icon:has-text("add")), button:has(mat-icon[data-mat-icon-name="attach_file"]), button:has(mat-icon[fonticon="attach_file"]), button[aria-label*="Nội dung tải lên" i], button[aria-label*="Upload content" i], button[aria-label*="Mở rộng menu" i], button[aria-label*="Tuỳ chọn" i], button[aria-label*="Tải lên" i], button[aria-label*="Thêm tệp" i], button[aria-label*="Upload" i], button[data-test-id*="plus" i], button[data-test-id*="attach" i], input-area-v2 button:first-child, input-area button:first-child, .input-area button:first-child',
   UPLOAD_MENU_ITEM:
-    'button[data-test-id="local-images-files-uploader-button"], images-files-uploader button, button[aria-label*="Tải tệp lên" i], [data-test-id="uploader-images-files-button-advanced"] button, button[data-test-id="hidden-local-image-upload-button"], button.hidden-local-file-image-selector-button, [role="menuitem"]:has-text("Tải tệp"), [role="menuitem"]:has-text("Upload"), button:has-text("Tải tệp")',
+    'gem-menu-item[role="menuitem"]:has-text("Tải tệp"), gem-menu-item[role="menuitem"]:has-text("Upload"), button[data-test-id="local-images-files-uploader-button"], images-files-uploader button, button[aria-label*="Tải tệp lên" i], [data-test-id="uploader-images-files-button-advanced"] button, button[data-test-id="hidden-local-image-upload-button"], button.hidden-local-file-image-selector-button, [role="menuitem"]:has-text("Tải tệp"), [role="menuitem"]:has-text("Upload"), button:has-text("Tải tệp")',
   PROCESSING: "async-processing-chip",
   GENERATED_VIDEO: "generated-video video[src], generated-video source[src], model-response video[src], model-response video source[src], model-response video, generated-video video",
 } as const;
@@ -697,7 +688,7 @@ export const GEMINI_MEDIA_EXTRACTION_CONFIG = {
     "a[download]",
   ],
   EXCLUDED_IMAGE_SELECTOR: "img:not(.gb_X):not(.sparkle-image):not(.mavatar-image):not(.user-icon), img.image",
-  BUSY_ELEMENT_SELECTOR: '[aria-busy="true"], thinking-overlay, async-processing-chip',
+  BUSY_ELEMENT_SELECTOR: '[aria-busy="true"], [data-test-id="image-loading-overlay"]:not(.done-generating), thinking-overlay thinking-dots-animation, thinking-overlay .animated-thinking-content, async-processing-chip',
   BUTTON_DOWNLOAD_LOG: "[GeminiChat] Tải media thành công qua nút Download của Gemini.",
   GENERATION_ERROR_PATTERNS: ["i'm unable to create images", "i am unable to create images", "i can't create images", "unable to generate", "couldn't generate", "something went wrong", "không thể tạo hình ảnh", "không thể tạo video"],
 } as const;
@@ -849,53 +840,6 @@ export const AUTO_GENERATOR_CONSTANTS = {
   LOG_THUMBNAILS_BATCH_FALLBACK_ITEM: "Đang xử lý lại ảnh bìa {0}/{1}...",
   LOG_THUMBNAILS_WARNING_SINGLE: "Cảnh báo: Lỗi khi tạo ảnh bìa thứ {0}",
 } as const;
-export const RENDER_LOGIC_CONSTANTS = {
-  MOTION_STATIC: "Static",
-  TRANSITION_CUT: "Cut",
-  NONE: "none",
-  DEFAULT: "default",
-  SCENE_ID_PREFIX: "sc_",
-  ZOOM_IN: "Zoom In",
-  ZOOM_OUT: "Zoom Out",
-  PAN_LEFT: "Pan Left",
-  PAN_RIGHT: "Pan Right",
-  PAN_UP: "Pan Up",
-  PAN_DOWN: "Pan Down",
-  DRIFT: "Drift",
-  CINEMATIC_ARC: "Cinematic Arc",
-  PUSH_IN: "Push In",
-  SLOW_REVEAL: "Slow Reveal",
-  CROSS_DISSOLVE: "Cross Dissolve",
-  BLUR_DISSOLVE: "Blur Dissolve",
-  BRIGHTNESS_FADE: "Brightness Fade",
-  SLIDE: "Slide",
-  ZOOM_TRANSITION: "Zoom transition",
-  ANONYMOUS: "anonymous",
-  CONTEXT_2D: "2d",
-  DEFAULT_VIDEO_TYPE: "video/webm",
-  AUDIO_TYPE: "audio",
-  MIME_WEBM: "video/webm",
-  FONT_HEADER: "bold 36px monospace",
-  FONT_SUBHEADER: "bold 18px monospace",
-  FONT_BODY: "italic 16px sans-serif",
-  FONT_SUBTITLE: "bold 22px sans-serif",
-  COLOR_WHITE: "#ffffff",
-  COLOR_ROSE: "#f43f5e",
-  COLOR_SLATE: "#cbd5e1",
-  COLOR_YELLOW: "#fef08a",
-  COLOR_GRID: "rgba(255, 255, 255, 0.04)",
-  COLOR_GLOW: "rgba(255, 255, 255, 0.03)",
-  COLOR_SUB_BG: "rgba(0, 0, 0, 0.7)",
-  COLOR_ALT_START: "#0f172a",
-  COLOR_ALT_END: "#e11d48",
-  COLOR_DEFAULT_START: "#1e1b4b",
-  COLOR_DEFAULT_END: "#311042",
-  TEXT_REPRESENTATION: "SCENE PROMPT REPRESENTATION",
-  EMPTY_STRING: "",
-  SPACE_CHAR: " ",
-  PROMPT_LABEL: "SCENE ID: {0} | DURATION: {1}s",
-  DEFAULT_PROVIDER: "AI33Pro",
-} as const;
 export const GEMINI_MODEL_SELECTION_CONFIG = {
   MAX_ATTEMPTS: 2,
   MENU_TIMEOUT_MS: 10_000,
@@ -919,7 +863,6 @@ export const PIPELINE_COMPLETION_CONFIG = {
   MEDIA_REPAIR_PHASE: "media_generation",
   MEDIA_COMPLETED_PHASE: "media_completed",
 } as const;
-export const MANUAL_REVIEW_CONFIG = { ITEM_NOT_FOUND_ERROR: "Manual review item was not found.", SCOPE_SCENE: "scene", SCOPE_THUMBNAIL: "thumbnail" } as const;
 export const SHADOW_COMPARISON_CONFIG = { MATERIAL_DURATION_DELTA_SECONDS: 30, APPROVED_SCENE_REGRESSION: "approved_scene_count_regressed", SCRIPT_CONTINUITY_REGRESSION: "script_continuity_regressed", HOOK_PAYOFF_REGRESSION: "hook_payoff_regressed", MATERIAL_DURATION_CHANGE: "duration_changed_materially" } as const;
 export const DEPENDENCY_HASH_CONFIG = {
   DATA_URL_PATTERN: /^data:[^;]+;base64,/i,

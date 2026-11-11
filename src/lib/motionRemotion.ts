@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_CORE } from "../constants/runtime/core.js";
 import { MOTION_VISUAL as V } from "../constants/motionVisual.js";
@@ -15,7 +16,8 @@ import { MOTION_ASPECT_BASE } from "../constants/motionVideo.js";
 import { MOTION_REMOTION_SPACE as SPACE } from "../constants/motionRemotionSpace.js";
 import { validateSceneComposition } from "./motionSceneComposition.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../constants/motionSceneComposition.js";
-export const remotionIncompleteScenes = (scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>): string[] => scenes.filter((scene) => scene.build?.status === RT_SHARED.FAILED || (scene.composition && C.PLACEHOLDER_RE.test(assets[scene.composition.assetKey]?.svg || ""))).map((scene) => scene.id);
+export const remotionIncompleteScenes = (scenes: MotionRemotionScene[], assets: Record<string, MotionVectorAsset>): string[] =>
+  scenes.filter((scene) => (scene.renderer === RT_MAINTENANCE.HTML_CANVAS ? !scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) : scene.build?.status === RT_SHARED.FAILED || (scene.composition && C.PLACEHOLDER_RE.test(assets[scene.composition.assetKey]?.svg || "")))).map((scene) => scene.id);
 export const assertRemotionExportable = (spec: MotionRemotionSpec): void => {
   const missing = remotionIncompleteScenes(spec.scenes, spec.assets);
   if (missing.length) throw new Error(C.INCOMPLETE(missing));
@@ -32,6 +34,31 @@ export const remotionAssetAnchors = (raw: unknown, required: string[] = []): Mot
   return anchors;
 };
 export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
+  if (scene.renderer === RT_MAINTENANCE.HTML_CANVAS) {
+    if (!scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) || !state || state.settings.mode !== RT_MAINTENANCE.REMOTION) return { error: scene.htmlRequest?.error };
+    const aspect = scene.aspect || RT_MAINTENANCE.VALUE_16_9;
+    const { w: width, h: height } = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE[RT_MAINTENANCE.VALUE_16_9];
+    const frames = Math.max(1, Math.ceil(scene.html.duration * 30));
+    return {
+      preview: {
+        renderer: RT_MAINTENANCE.HTML_CANVAS,
+        engine: RT_MAINTENANCE.REMOTION,
+        version: 1,
+        title: scene.purpose,
+        aspect,
+        fps: 30,
+        width,
+        height,
+        duration: frames / 30,
+        motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE,
+        renderBehavior: state.renderBehavior,
+        profileId: state.settings.profileId,
+        assets: {},
+        scenes: [{ ...scene, nodes: [], startFrame: 0, endFrame: frames }],
+        subtitles: [],
+      },
+    };
+  }
   if (scene.composition) {
     const asset = state?.assets[scene.composition.assetKey];
     if (!state || state.settings.mode !== RT_SHARED.REMOTION || !asset) return { missingBackground: true };
@@ -39,6 +66,7 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
       validateSceneComposition(scene.composition, asset, scene.nodes);
       const aspect = scene.aspect || RT_SHARED.VALUE_16_9;
       const { w: width, h: height } = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE[RT_SHARED.VALUE_16_9];
+      const previewFrames = scene.composition.animationSource === RT_MAINTENANCE.AI_COMPLETE && Number.isFinite(scene.composition.duration) && scene.composition.duration! > 0 ? Math.max(1, Math.ceil(scene.composition.duration! * 30)) : 30;
       return {
         preview: {
           engine: RT_SHARED.REMOTION,
@@ -46,14 +74,14 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
           title: scene.purpose,
           aspect,
           fps: 30,
-          duration: 1,
+          duration: previewFrames / 30,
           width,
           height,
           motion: state.renderBehavior?.actors === RT_SHARED.SIMPLE,
           renderBehavior: state.renderBehavior,
           profileId: state.settings.profileId,
           assets: { [asset.key]: asset },
-          scenes: [{ ...scene, nodes: scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width, height, depth })), startFrame: 0, endFrame: 30 }],
+          scenes: [{ ...scene, nodes: scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width, height, depth })), startFrame: 0, endFrame: previewFrames }],
           subtitles: [],
         },
       };
@@ -95,7 +123,6 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
     return { error: String((error as Error).message) };
   }
 };
-export const remotionScenePreview = (scene: MotionRemotionScene, state?: MotionRemotionState): MotionRemotionSpec | undefined => remotionSceneReadiness(scene, state).preview;
 export const normalizeRemotionPlacement = (nodes: MotionRemotionNode[]): MotionRemotionNode[] =>
   normalizeRemotionRelations(nodes).map((node) => {
     if (node.kind !== RT_SHARED.PROP || node.relation || node.mount || !L.PORTRAIT.test(node.description) || !L.ON_SUPPORT.test(node.description)) return node;
@@ -312,6 +339,7 @@ export const layoutRemotionNodes = (nodes: MotionRemotionNode[], assets: Record<
 };
 export const validateRemotionSpec = (raw: unknown): MotionRemotionSpec => {
   const spec = raw as MotionRemotionSpec;
+  if (spec?.renderer === RT_MAINTENANCE.HTML_CANVAS) return spec;
   if (
     !spec ||
     spec.engine !== RT_SHARED.REMOTION ||

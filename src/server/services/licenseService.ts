@@ -8,6 +8,7 @@ import nodeMachineId from "node-machine-id";
 import { SecurityConstants, SecurityMessages, GasActions, FeatureType, LicenseStatus, PlanType } from "../../constants/security.js";
 import { jsonUtils } from "../../lib/json.js";
 import { appError } from "../../lib/logger.js";
+import { getDataDirectory } from "../utils/paths.js";
 const { machineIdSync } = nodeMachineId;
 const readHardwareIdentifier = (): string => {
   try {
@@ -18,7 +19,8 @@ const readHardwareIdentifier = (): string => {
   }
 };
 const readPersistedDeviceId = (): string => {
-  const deviceIdFile = path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
+  const storedFile = path.join(getDataDirectory(), SecurityConstants.DEVICE_ID_FILE_NAME);
+  const deviceIdFile = fs.existsSync(storedFile) ? storedFile : path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME);
   if (!fs.existsSync(deviceIdFile)) return SecurityConstants.EMPTY_STRING;
   try {
     return _.get(jsonUtils.safeParse(fs.readFileSync(deviceIdFile, SecurityConstants.UTF8_ENCODING as BufferEncoding), {}), SecurityConstants.DEVICE_ID_KEY, SecurityConstants.EMPTY_STRING);
@@ -29,7 +31,7 @@ const readPersistedDeviceId = (): string => {
 const generateAndPersistDeviceId = (): string => {
   const rawId = crypto.randomUUID();
   try {
-    fs.writeFileSync(path.join(process.cwd(), SecurityConstants.DEVICE_ID_FILE_NAME), jsonUtils.safeStringify({ [SecurityConstants.DEVICE_ID_KEY]: rawId }), SecurityConstants.UTF8_ENCODING as BufferEncoding);
+    fs.writeFileSync(path.join(getDataDirectory(), SecurityConstants.DEVICE_ID_FILE_NAME), jsonUtils.safeStringify({ [SecurityConstants.DEVICE_ID_KEY]: rawId }), SecurityConstants.UTF8_ENCODING as BufferEncoding);
   } catch {}
   return rawId;
 };

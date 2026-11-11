@@ -1,10 +1,44 @@
 import { MOTION_CAMERA } from "./motionCamera.js";
 import type { MotionRemotionProfile } from "../types/motionVisual.js";
 export type MotionProfileCameraMode = "follow" | "push" | "pull" | "hold";
-export interface MotionProfileCamera { MAX_ZOOM: number; SPEED: number; MIN_ZOOM: number; TRACK: number; RAMP: number; SMOOTH: number; FOLLOW_SPEED: number; PART_WEIGHT: number; HOLD_SUBJECT: MotionProfileCameraMode }
-export interface MotionProfileSway { degrees: number; seconds: number; maxHeight: number; stride: number }
-export interface MotionProfileAnimal { tail: number; head: number; rock: number; seconds: number }
-export interface MotionProfileMotion { sway: MotionProfileSway; animal: MotionProfileAnimal; freeParts?: RegExp; breathScale: number; headSuffixes: readonly string[]; headBob: number; bodyFallback: boolean; minRotate: number; effectOpacity: number; effectTravel: number; effectSeconds?: number; prompt: string; camera: MotionProfileCamera }
+export interface MotionProfileCamera {
+  MAX_ZOOM: number;
+  SPEED: number;
+  MIN_ZOOM: number;
+  TRACK: number;
+  RAMP: number;
+  SMOOTH: number;
+  FOLLOW_SPEED: number;
+  PART_WEIGHT: number;
+  HOLD_SUBJECT: MotionProfileCameraMode;
+}
+export interface MotionProfileSway {
+  degrees: number;
+  seconds: number;
+  maxHeight: number;
+  stride: number;
+}
+export interface MotionProfileAnimal {
+  tail: number;
+  head: number;
+  rock: number;
+  seconds: number;
+}
+export interface MotionProfileMotion {
+  sway: MotionProfileSway;
+  animal: MotionProfileAnimal;
+  freeParts?: RegExp;
+  breathScale: number;
+  headSuffixes: readonly string[];
+  headBob: number;
+  bodyFallback: boolean;
+  minRotate: number;
+  effectOpacity: number;
+  effectTravel: number;
+  effectSeconds?: number;
+  prompt: string;
+  camera: MotionProfileCamera;
+}
 const ORIGINAL: MotionProfileMotion = {
   sway: { degrees: 0, seconds: 5, maxHeight: 0, stride: 0.37 },
   animal: { tail: 0, head: 0, rock: 0, seconds: 4 },

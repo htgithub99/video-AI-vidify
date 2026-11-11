@@ -17,12 +17,15 @@ for (const [index, brief] of briefs.entries()) {
   assert.ok(quotedBrief);
   assert.equal(JSON.parse(quotedBrief).imageBrief, brief);
   assert.ok(brief.includes(note));
-  assert.ok(brief.includes("Việt Nam"));
+  assert.ok(brief.startsWith("Create the image now"));
+  assert.ok(brief.length < note.length + 700);
   assert.ok(request.endsWith(`Return only the JSON object with artifactType "music_image_prompt", requestId "${requestId}" and imagePrompt.`));
   assert.match(request, /100 and 4000/);
 }
 assert.match(briefs[2], /01\. Đêm Thành Phố\n02\. Chờ Bình Minh/);
-assert.match(briefs[3], /Do not render any song title or track list/);
+assert.match(briefs[3], /Do not write any song titles/);
+assert.match(briefs[0], /attached image as the reference/);
+assert.doesNotMatch(briefs[1], /attached image/);
 for (const purpose of ["cover", SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO]) {
   const request = prompts.buildMusicImageNoteNormalizationPrompt(note, purpose, true, true, "note-regression", market);
   const quotedNote = request.split("\n").find((line) => line.startsWith('{"note":'));

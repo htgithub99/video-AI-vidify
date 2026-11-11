@@ -1,6 +1,5 @@
 import type { MotionSpec } from "./motionVideo.js";
 import type { MotionSceneFormat, MotionSceneView } from "../constants/motionProfiles/framing.js";
-export type MotionVisualMode = "library" | "remotion";
 export type MotionRemotionProfile = "history" | "horror" | "explainer";
 export type MotionScenePacing = "few" | "medium" | "many";
 export interface MotionRenderBehavior {
@@ -26,7 +25,7 @@ export interface MotionRemotionEffect {
   direction?: "up" | "ground" | "left" | "right";
   intensity?: number;
 }
-export type MotionVisualSettings = ({ version: 1; mode: "library"; engine: "canvas"; packId: string } | { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number }) & { pacing?: MotionScenePacing };
+export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; figureKit?: boolean; pacing?: MotionScenePacing };
 export interface MotionVectorAsset {
   key: string;
   inputKey: string;
@@ -116,7 +115,25 @@ export interface MotionSceneCrop {
   width: number;
   height: number;
 }
+export interface MotionSceneActionPlan {
+  start: string;
+  subjects: { nodeId: string; action: string; parts: { name: string; change: string }[]; phases: { phase: string; description: string }[]; end: string }[];
+  interactions: string[];
+  end: string;
+  environment: string;
+  camera: string;
+}
 export interface MotionRemotionScene {
+  renderer?: "html-canvas";
+  sceneTemplate?: string;
+  continuityIn?: string;
+  continuityOut?: string;
+  soundEvents?: import("./motionVideo.js").MotionSoundEvent[];
+  html?: import("./motionHtmlScene.js").MotionHtmlArtifact;
+  htmlRequest?: import("./motionHtmlScene.js").MotionHtmlRequest;
+  htmlRebuildKey?: string;
+  actionPlan?: MotionSceneActionPlan;
+  motionIntent?: string;
   format?: MotionSceneDesign["format"];
   id: string;
   beatId: string;
@@ -154,10 +171,12 @@ export interface MotionRemotionScene {
   continuityDraft?: { nodes: MotionRemotionNode[]; resolvedKey: string };
   removedObjects?: string[];
   composition?: MotionSceneComposition;
+  generation?: { revision: 1; inputKey: string; status: "running" | "accepted" | "failed"; error?: string; promptRevision?: number; requestKey?: string; attempts?: number; score?: number; warnings?: string[] };
   build?: { inputKey: string; status: "accepted" | "failed"; review: boolean; error?: string; attempts?: number };
   failStreak?: number;
   deferred?: boolean;
   drawingNote?: string;
+  writtenMotionKey?: string;
   requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
 }
@@ -173,14 +192,17 @@ export interface MotionSceneLayer {
 }
 export interface MotionSceneAnimation {
   target: string;
+  targets?: string[];
   channel: "actor" | "effect" | "speech";
   attribute: "transform" | "d" | "opacity";
   period?: number;
   keyframes: { at: number; value: string | number }[];
   source?: "sway";
 }
-export type MotionMeasuredRect = MotionVisualRect & { local?: MotionVisualRect };
 export interface MotionSceneComposition {
+  animationSource?: "ai-complete";
+  duration?: number;
+  motion?: import("./motionClip.js").MotionSceneMotion;
   profileId?: MotionRemotionProfile;
   profileRevision?: number;
   unchecked?: boolean;
@@ -203,15 +225,21 @@ export interface MotionSceneDesign {
   continuityNotes?: string;
 }
 export interface MotionRemotionState {
+  renderer?: "html-canvas";
+  htmlPlanSources?: Record<string, string>;
+  htmlSfx?: boolean;
   version: number;
   settings: MotionVisualSettings;
   assets: Record<string, MotionVectorAsset>;
   sheet?: Record<string, MotionObjectSheetEntry>;
+  sheetRequests?: number;
   sheetKey?: string;
   scenes: Record<string, MotionRemotionScene[]>;
   inputKeys: Record<string, string>;
   failures: Record<string, string>;
   drafts?: Record<string, unknown[]>;
+  motionBible?: Record<string, string>;
+  motionTried?: Record<string, string>;
   planRecoveryRevision?: number;
   notes?: Record<string, string>;
   updatedAt?: number;
@@ -239,6 +267,7 @@ export interface MotionRemotionTimedScene extends Omit<MotionRemotionScene, "nod
   nodes: MotionRemotionPlacedNode[];
 }
 export interface MotionRemotionSpec {
+  renderer?: "html-canvas";
   engine: "remotion";
   version: number;
   title: string;

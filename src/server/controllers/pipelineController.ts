@@ -248,7 +248,6 @@ import {
   SOURCE_TEXT_ADJACENTASSETURLS,
   SOURCE_TEXT_AGERANGE,
   SOURCE_TEXT_AI_CHUA_TRA_DU_TEN_VA,
-  SOURCE_TEXT_AI_CHUA_TRA_VE_PROMPT_TAO,
   SOURCE_TEXT_AI_GENERATED,
   SOURCE_TEXT_AI_ROUTER,
   SOURCE_TEXT_AI_VIDEO_DRAFT,
@@ -536,9 +535,6 @@ import {
   SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED,
   SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS,
   SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT,
-  SOURCE_TEXT_MUSIC_IMAGE_PROMPT_COMPLETED,
-  SOURCE_TEXT_MUSIC_IMAGE_PROMPT_FAILED,
-  SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED,
   SOURCE_TEXT_MUSIC_MIXER_MANIFEST,
   SOURCE_TEXT_MUSTNOTCOPY,
   SOURCE_TEXT_MUSTPRESERVE,
@@ -1049,13 +1045,15 @@ import { validateFactPack } from "../services/factPackValidationService.js";
 import { classifyGeminiError, getGeminiUserMessage } from "../services/geminiErrorClassifier.js";
 import { generateContentWithRetry, isAiProviderAvailable } from "../services/geminiService.js";
 import { hasValidImages, readEncodedProjectImage, readStyleReferenceImage, resolveLocalProjectAssetPath } from "../services/imageAssetService.js";
-import { cancelAllActiveMediaGeneration, closeAllBatchPages, ensureFlowCharacters, generateBatchImagesWithGeminiChat, generateFlowVideoPromptBatchWithPlaywright, generateImageWithPlaywright, getOrLaunchGlobalBrowser, recoverExistingFlowVideo, scheduleGlobalBrowserCleanup } from "../services/imageGeneratorService.js";
+import { cancelAllActiveMediaGeneration, closeAllBatchPages, ensureFlowCharacters, generateBatchImagesWithGeminiChat, generateFlowVideoPromptBatchWithPlaywright, generateImageWithPlaywright, getOrLaunchGlobalBrowser, recoverExistingFlowVideo, retainGlobalBrowser, scheduleGlobalBrowserCleanup } from "../services/imageGeneratorService.js";
 import { createBatchContinuityContext, createPromptCharacterCards, createScopedVisualBibleContext, createVisualPlanningPayload, getVisualShotPlanIssues } from "../services/imagePromptPlanningService.js";
 import { LicenseService } from "../services/licenseService.js";
 import { MUSIC_PLANNING as MUSIC_PLAN } from "../../constants/musicPlanning.js";
 import { MUSIC_CREATION_OPTIONS as MUSIC_OPTIONS } from "../../features/music/constants/musicCreationOptions.js";
 import { musicStyleRouter } from "../../features/music/server/routes/musicStyleRouter.js";
 import { validMusicEditorialReview, musicReviewOrder } from "../../lib/musicPlanning.js";
+import { musicLyricQualityIssues } from "../../lib/musicLyricQuality.js";
+import { resolveMusicReferenceSource } from "../../features/music/server/services/musicReferenceSourceService.js";
 import { musicPlanReporter } from "../../features/music/server/services/musicPlanProgress.js";
 import { reviewMusicSongBatch } from "../../features/music/server/services/musicSongReviewService.js";
 import { musicErrorDetails, writeMusicDiagnostic } from "../services/musicDiagnosticService.js";
@@ -1085,6 +1083,7 @@ import { renderQueueService } from "../services/renderQueueService.js";
 import { ResponseContractName, assertResponseContract } from "../services/responseContractService.js";
 import { assertResponseSchema } from "../services/responseSchemaValidationService.js";
 import { getRoomOnlyScriptError } from "../services/roomOnlyErrorService.js";
+import { CHAT_ROOM_RECOVERY, CHROME_BACKUP } from "../../constants/chromeBackup.js";
 import { normalizeScriptPlan, requestValidScriptPlan, resolveScriptPlanChapterCount } from "../services/scriptPlanResponseService.js";
 import { cancelActiveSunoCreation, createSunoPlaylist, downloadSunoTracksToFolder, getSunoPlaylistSongIds, launchSunoLoginBrowser } from "../../features/music/server/services/sunoAutomationService.js";
 import { sunoCreationReporter } from "../../features/music/server/services/sunoCreationProgress.js";
@@ -1097,7 +1096,9 @@ import { getProjectDetailFromDb, saveProjectDetailToDb } from "../utils/db.js";
 import { validateFFmpegRenderOptions } from "../utils/ffmpegRender.js";
 import { formatTime, safeParseJSON } from "../utils/helpers.js";
 import { getDataDirectory, getLogsDirectory, getPythonCommand, getStaticResourcePath, getTempDirectory } from "../utils/paths.js";
-import { requestContext } from "../utils/requestContext.js";
+import { requestContext, currentChatPolicy } from "../utils/requestContext.js";
+import { chatRoomLanes, runInChatRoomLanes } from "../../lib/chatExecutionPolicy.js";
+import { CHAT_EXECUTION_POLICY } from "../../constants/chatExecutionPolicy.js";
 import { getSafeFolderName } from "./projectController.js";
 const ffmpegBinary = getStaticResourcePath(SOURCE_TEXT_FFMPEG_EXE);
 if (fs.existsSync(ffmpegBinary)) {
@@ -1258,106 +1259,83 @@ const generateMusicThumbnailAsset = async (input: {
       ? SUNO_AUTOMATION_TEXTS.buildMusicVideoBackgroundPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.showTrackList !== false, input.styleAnalysis)
       : SUNO_AUTOMATION_TEXTS.buildMusicThumbnailPrompt(input.songs, input.style, input.description, !_.isEmpty(input.reference), input.sourceContext, input.styleAnalysis);
   const promptRequestId = SOURCE_TEMPLATE_MUSIC_IMAGE_PROMPT(SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
-  const planningProvider = _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat], input.planningProvider) ? input.planningProvider! : AiPlanningFallbackProvider.GeminiChat;
-  const planningRun = beginChatPlanningRun(promptRequestId, Date.now(), SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE, planningProvider);
-  let prompt: string = C.EMPTY;
+  const releaseBrowser = retainGlobalBrowser();
+  const prompt: string = imageBrief;
   try {
-    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_STARTED, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, provider: planningProvider, model: input.planningModel, promptRevision: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_REVISION });
-    const response = await generatePlanningWithChatUi({
-      provider: planningProvider,
-      model: input.planningModel,
-      prompt: SUNO_AUTOMATION_TEXTS.buildMusicImagePromptPlanningPrompt(imageBrief, input.assetPurpose || SOURCE_TEXT_COVER, promptRequestId),
-      projectId: promptRequestId,
-      workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE,
-      chromeHeadless: input.chromeHeadless,
-      artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT,
-      requestId: promptRequestId,
-      signal: input.signal ? AbortSignal.any([planningRun.signal, input.signal]) : planningRun.signal,
-      closeRoomOnComplete: false,
-    });
-    const parsed = jsonUtils.safeParse(response.text, null);
-    prompt = _.trim(_.toString(parsed?.imagePrompt));
-    if (parsed?.artifactType !== SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_PROMPT || parsed?.requestId !== promptRequestId || prompt.length < 100 || prompt.length > 4000) {
-      throw new Error(SOURCE_TEXT_AI_CHUA_TRA_VE_PROMPT_TAO);
-    }
-    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_COMPLETED, { runId: promptRequestId, promptChars: prompt.length });
-  } catch (error) {
-    input.signal?.throwIfAborted();
-    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_PROMPT_FAILED, { runId: promptRequestId, ...musicErrorDetails(error) });
-    return { thumbnail: null, warning: _.toString(_.get(error, SOURCE_TEXT_MESSAGE, MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR)) };
-  } finally {
-    planningRun.complete();
-    await closeChatPlanningRoom({ provider: planningProvider, projectId: promptRequestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PROMPT_WORKER_TYPE }).catch(() => undefined);
-  }
-  await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, originalNoteChars: _.trim(input.description).length, plannedPromptChars: prompt.length, hasReference: !_.isEmpty(input.reference) });
-  let transientErrorCount = 0;
-  const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
-  for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
-    input.signal?.throwIfAborted();
-    try {
-      logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_START_ATTEMPT_SONGS_HASREFERENCE(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${input.songs.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${!_.isEmpty(input.reference)}`)));
-      const result = await generateImageWithPlaywright({
-        prompt,
-        style: input.style,
-        retainBrowserSession: true,
-        forceNewPage: true,
-        visualConfig: {
-          chromeHeadless: input.chromeHeadless,
-          generateType: GenerateType.Image,
-          aspectRatio: AspectRatio.SixteenNine,
-          generateCount: 1,
-          imageGeneratorEngine: ImageGeneratorEngine.Imagen,
-          generationMode: ImageGenerationMode.GeminiChat,
-          promptInputMethod: PromptInputMethod.Paste,
-          referenceImages: _.isEmpty(input.reference) ? [] : [input.reference],
-          referenceImageNames: _.isEmpty(input.reference) ? [] : [input.referenceName],
-        },
-      });
+    await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_REQUIREMENTS, { runId: promptRequestId, purpose: input.assetPurpose || SOURCE_TEXT_COVER, originalNoteChars: _.trim(input.description).length, plannedPromptChars: prompt.length, hasReference: !_.isEmpty(input.reference) });
+    let transientErrorCount = 0;
+    const transientImageError = /(?:seem to be encountering an error|can i try something else for you|something went wrong|try again later)/i;
+    for (let attempt = 0; attempt < SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS; attempt += 1) {
       input.signal?.throwIfAborted();
-      if (!result.success) {
-        lastWarning = result.warning || lastWarning;
-        await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, errorMessage: lastWarning });
+      try {
+        logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_START_ATTEMPT_SONGS_HASREFERENCE(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${input.songs.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${!_.isEmpty(input.reference)}`)));
+        const result = await generateImageWithPlaywright({
+          prompt,
+          style: input.style,
+          retainBrowserSession: true,
+          forceNewPage: false,
+          visualConfig: {
+            chromeHeadless: input.chromeHeadless,
+            generateType: GenerateType.Image,
+            skipGenerateTypeSelection: true,
+            aspectRatio: AspectRatio.SixteenNine,
+            generateCount: 1,
+            imageGeneratorEngine: ImageGeneratorEngine.Imagen,
+            generationMode: ImageGenerationMode.GeminiChat,
+            promptInputMethod: PromptInputMethod.Paste,
+            referenceImages: _.isEmpty(input.reference) ? [] : [input.reference],
+            referenceImageNames: _.isEmpty(input.reference) ? [] : [input.referenceName],
+          },
+        });
+        input.signal?.throwIfAborted();
+        if (!result.success) {
+          lastWarning = result.warning || lastWarning;
+          await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, errorMessage: lastWarning });
+          if (transientImageError.test(lastWarning)) {
+            transientErrorCount += 1;
+            if (transientErrorCount < 2) continue;
+            break;
+          }
+          if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning) || _.includes(lastWarning, GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.split(SOURCE_TEXT_SYMBOL_16)[0])) break;
+          continue;
+        }
+        const encodedImage = _.toString(result.base64);
+        const mimeType = getDownloadedImageMimeType(Buffer.from(encodedImage, SOURCE_TEXT_BASE64));
+        if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES || !mimeType) {
+          lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
+          logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_INVALID_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
+          await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT, { runId: promptRequestId, attempt: attempt + 1, bytes: encodedImage.length });
+          continue;
+        }
+        const thumbnail = SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage);
+        if (thumbnail) {
+          logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_SUCCESS_ATTEMPT_BYTES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
+          return { thumbnail };
+        }
+        lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
+        logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_NO_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
+      } catch (error) {
+        input.signal?.throwIfAborted();
+        logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
+        lastWarning = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, lastWarning));
+        logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_FAILED_ATTEMPT_REASON(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
+        await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, ...musicErrorDetails(error) });
         if (transientImageError.test(lastWarning)) {
           transientErrorCount += 1;
           if (transientErrorCount < 2) continue;
           break;
         }
-        if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning) || _.includes(lastWarning, GEMINI_MEDIA_ERRORS.TEXT_ONLY_RESPONSE_TEMPLATE.split(SOURCE_TEXT_SYMBOL_16)[0])) break;
-        continue;
+        if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning)) break;
       }
-      const encodedImage = _.toString(result.base64);
-      const mimeType = getDownloadedImageMimeType(Buffer.from(encodedImage, SOURCE_TEXT_BASE64));
-      if (_.isEmpty(encodedImage) || encodedImage.length < SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_MIN_BYTES || !mimeType) {
-        lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-        logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_INVALID_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
-        await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_INVALID_RESULT, { runId: promptRequestId, attempt: attempt + 1, bytes: encodedImage.length });
-        continue;
-      }
-      const thumbnail = SUNO_AUTOMATION_TEXTS.formatDataUrl(mimeType, encodedImage);
-      if (thumbnail) {
-        logger.info(SOURCE_TEMPLATE_MUSICTHUMBNAIL_SUCCESS_ATTEMPT_BYTES(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${encodedImage.length}`)));
-        return { thumbnail };
-      }
-      lastWarning = MUSIC_CREATOR_TEXTS.vi.THUMBNAIL_GENERATE_ERROR;
-      logger.warn(SOURCE_TEMPLATE_MUSICTHUMBNAIL_GEMINI_RETURNED_NO_IMAGE_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
-    } catch (error) {
-      input.signal?.throwIfAborted();
-      logger.error(SUNO_AUTOMATION_TEXTS.LOG_MUSIC_COVER_FAILED, error);
-      lastWarning = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, lastWarning));
-      logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_FAILED_ATTEMPT_REASON(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_THUMBNAIL_ATTEMPTS}`), SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
-      await writeMusicDiagnostic(SOURCE_TEXT_MUSIC_IMAGE_GENERATION_FAILED, { runId: promptRequestId, attempt: attempt + 1, ...musicErrorDetails(error) });
-      if (transientImageError.test(lastWarning)) {
-        transientErrorCount += 1;
-        if (transientErrorCount < 2) continue;
-        break;
-      }
-      if (GEMINI_MEDIA_ERRORS.PROVIDER_REJECTION_PATTERN.test(lastWarning)) break;
     }
+    logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_EXHAUSTED_ATTEMPTS_WARNING(SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
+    return { thumbnail: null, warning: lastWarning };
+  } finally {
+    releaseBrowser();
   }
-  logger.error(SOURCE_TEMPLATE_MUSICTHUMBNAIL_EXHAUSTED_ATTEMPTS_WARNING(SOURCE_TEMPLATE_SYMBOL_86(`${lastWarning}`)));
-  return { thumbnail: null, warning: lastWarning };
 };
 const isRetryableMusicRoomError = (error: unknown): boolean => {
+  if (_.get(error, CHAT_ROOM_RECOVERY.COMPLETE) || _.get(error, CHROME_BACKUP.ERROR_FLAG)) return false;
   if (_.isEqual(_.toString(_.get(error, SOURCE_TEXT_CODE)), CINEMATIC_CHAT_PLANNING_CONFIG.RESPONSE_TIMEOUT_CODE)) return false;
   const message = _.toString(_.get(error, SOURCE_TEXT_MESSAGE, error));
   return !SUNO_AUTOMATION_TEXTS.MUSIC_ROOM_NON_RETRYABLE_ERROR.test(message);
@@ -1627,9 +1605,9 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     res.once(RT_SERVER.CLOSE, () => {
       if (!res.writableEnded) planningRun.cancel();
     });
-    const generateRoomResponse = (prompt: string, artifactType: string, responseRequestId: string, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE) =>
-      generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId: responseRequestId, signal: planningRun.signal, closeRoomOnComplete: false });
-    const referenceSource = _.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER);
+    const generateRoomResponse = (prompt: string, artifactType: string, responseRequestId: string, workerId: string = SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, restoreContext?: () => string) =>
+      generatePlanningWithChatUi({ provider, model: execution.model, prompt, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, artifactType, requestId: responseRequestId, signal: planningRun.signal, closeRoomOnComplete: false, restoreContext });
+    const referenceSource = await resolveMusicReferenceSource(_.join(referenceSongs, SUNO_AUTOMATION_CONFIG.REFERENCE_SOURCE_CHUNK_DIVIDER), planningRun.signal);
     const analysisRequestId = SOURCE_TEMPLATE_STYLE_ANALYSIS(SOURCE_TEMPLATE_SYMBOL_86(`${requestId}`));
     currentStage = SUNO_AUTOMATION_CONFIG.STAGE_STYLE_ANALYSIS;
     report.progress(currentStage);
@@ -1642,7 +1620,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       const prompt = attempt === 0 || analysisRoomWasReloaded ? SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, referenceSource, analysisRequestId) : SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisCorrectionPrompt(analysisRequestId, styleAnalysisIssues);
       analysisRoomWasReloaded = false;
       try {
-        const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId);
+        const response = await generateRoomResponse(prompt, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_STYLE_ANALYSIS, analysisRequestId, SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, () => SUNO_AUTOMATION_TEXTS.buildMusicStyleAnalysisPrompt(creativeStyle, referenceSource, analysisRequestId));
         styleAnalysisParsed = jsonUtils.safeParse(response.text, null);
         await writeMusicDiagnostic(SOURCE_TEXT_PLAN_STYLE_RESPONSE, { runId: requestId, stage: currentStage, attempt: attempt + 1, responseChars: response.text.length, status: styleAnalysisParsed ? SOURCE_TEXT_PARSED : SOURCE_TEXT_INVALID_JSON });
         if (!styleAnalysisParsed) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_STYLE_ANALYSIS_JSON_PARSE_FAILED(SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${response.text.length}`), SOURCE_TEMPLATE_SYMBOL_86(`${prompt.length}`)));
@@ -1683,10 +1661,12 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         report.progress(currentStage, undefined, { attempt: attempt + 1 });
         const prompt =
-          attempt === 0 || roomWasReloaded ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE) : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues, styleAnalysisParsed);
+          attempt === 0 || roomWasReloaded
+            ? SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, referenceSource)
+            : SUNO_AUTOMATION_TEXTS.buildMusicPlanCorrectionPrompt(batchCount, startIndex, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, batchIssues, styleAnalysisParsed, referenceSource);
         roomWasReloaded = false;
         try {
-          const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, workerId);
+          const response = await generateRoomResponse(prompt, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, batchRequestId, workerId, () => SUNO_AUTOMATION_TEXTS.buildMusicPlanPrompt(batchCount, startIndex, requestedSongCount, creativeStyle, styleAnalysisParsed, batchRequestId, MUSIC_CREATOR_CONSTANTS.ARTIFACT_TYPE, referenceSource));
           responseProvider = response.provider;
           batchParsed = jsonUtils.safeParse(response.text, null);
           await writeMusicDiagnostic(SOURCE_TEXT_PLAN_BATCH_RESPONSE, { runId: requestId, stage: currentStage, batch: startIndex, batchSize: batchCount, attempt: attempt + 1, responseChars: response.text.length, status: batchParsed ? SOURCE_TEXT_PARSED : SOURCE_TEXT_INVALID_JSON });
@@ -1705,8 +1685,12 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
           if (_.uniq(titles).length !== titles.length || _.some(titles, (title) => completedSongTitles.has(title))) {
             batchIssues.push(SUNO_AUTOMATION_TEXTS.CONTRACT_DUPLICATE_SONG_TITLE_ISSUE);
           } else {
-            _.forEach(titles, (title) => completedSongTitles.add(title));
-            return batchParsed.songs;
+            const qualityIssues = attempt < maxAttempts - 1 ? musicLyricQualityIssues(batchParsed.songs, referenceSource) : [];
+            if (qualityIssues.length) batchIssues.push(...qualityIssues);
+            else {
+              _.forEach(titles, (title) => completedSongTitles.add(title));
+              return batchParsed.songs;
+            }
           }
         }
         if (!_.isEmpty(batchIssues)) logger.warn(SOURCE_TEMPLATE_MUSICPLAN_SONG_COMPOSITION_CONTRACT_BATCH_ATTEMPT(SOURCE_TEMPLATE_SYMBOL_86(`${startIndex}`), SOURCE_TEMPLATE_SYMBOL_86(`${attempt + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${batchIssues.join(SOURCE_TEXT_SYMBOL_34)}`)));
@@ -1746,7 +1730,7 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
     let compositionFailure: unknown;
     const publishSongs = (stage = SUNO_AUTOMATION_CONFIG.STAGE_SONG_COMPOSITION) => report.progress(stage, { songs: _.flatten(composedBatchResults) });
     publishSongs();
-    const compositionWorkerIds = _.take([SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_THIRD_ROOM_WORKER_TYPE], Math.min(SUNO_AUTOMATION_CONFIG.MUSIC_COMPOSITION_ROOM_CONCURRENCY, pendingCompositionBatches.length));
+    const compositionWorkerIds = _.take([SUNO_AUTOMATION_CONFIG.MUSIC_PLAN_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_SECOND_ROOM_WORKER_TYPE, SUNO_AUTOMATION_CONFIG.MUSIC_THIRD_ROOM_WORKER_TYPE], Math.min(chatRoomLanes(currentChatPolicy()), pendingCompositionBatches.length));
     const roomPreparations = _.map(compositionWorkerIds, (workerId) => prepareChatPlanningRoom({ provider, model: execution.model, prompt: C.EMPTY, projectId, workerId, chromeHeadless: execution.chromeHeadless !== false, signal: planningRun.signal }));
     const runCompositionWorker = async (workerId: string, workerIndex: number): Promise<void> => {
       await roomPreparations[workerIndex];
@@ -2392,7 +2376,7 @@ router.post(ROUTER_PATHS.MUSIC_SUNO_DOWNLOAD, async (req: Request, res: Response
       planningRun.signal.throwIfAborted();
       await writeSunoCuratedLog(SOURCE_TEXT_EVALUATION_AUDIO_READY, { evaluationRunId, trackCount: evaluationAudio.size, elapsedMs: Date.now() - preparationStarted });
       report.progress({ phase: RT_SERVER.PREPARING, expected: pendingTrackCount, ready: evaluationAudio.size, message: pendingTrackCount ? RT_MUSIC.ALL_AUDIO_READY : MUSIC_RECOVERY.ALL_SELECTIONS_READY });
-      const evaluationSlots = new AsyncTaskLimiter(SUNO_AUTOMATION_CONFIG.EVALUATION_ROOM_CONCURRENCY);
+      const evaluationSlots = new AsyncTaskLimiter(chatRoomLanes(currentChatPolicy()));
       const evaluationResults = await Promise.allSettled(
         _.map(groupsByChunk, async (groups, chunkIndex) => {
           const roomProgress = (progress: Omit<MusicDownloadProgress, "room" | "rooms">) => report.progress({ ...progress, room: chunkIndex + 1, rooms: groupsByChunk.length });
@@ -5938,8 +5922,7 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
     );
     if (_.some(availableFiles, (available) => !available)) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_SOURCE_MISSING });
     planningRun.signal.throwIfAborted();
-    const scores: Array<{ index: number; score: number; durationSeconds: number }> = [];
-    for (const [chunkIndex, chunk] of _.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST).entries()) {
+    const chunkScores = await runInChatRoomLanes(_.chunk(items, MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST), currentChatPolicy(), async (chunk, chunkIndex, lane) => {
       const requestId = SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${rankingId}`), SOURCE_TEMPLATE_SYMBOL_86(`${chunkIndex + 1}`));
       const offset = chunkIndex * MUSIC_MIXER_SERVER.MAX_ATTACHMENTS_PER_ROOM_REQUEST;
       const attachments = _.map(chunk, (item: any, index: number) => ({ name: SOURCE_TEMPLATE_SYMBOL_51(SOURCE_TEMPLATE_SYMBOL_86(`${offset + index + 1}`), SOURCE_TEMPLATE_SYMBOL_86(`${path.basename(item.sourcePath)}`)), mimeType: path.extname(item.sourcePath).toLowerCase() === SOURCE_TEXT_WAV_2 ? SOURCE_TEXT_AUDIO_WAV : SOURCE_TEXT_AUDIO_MPEG, path: item.sourcePath }));
@@ -5947,13 +5930,14 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_ANALYZE, async (req: Request, res: Response
         _.map(chunk, (item: any, index: number) => ({ index: offset + index + 1, title: item.title })),
         requestId,
       );
-      const result = await generatePlanningWithChatUi({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, model: req.body?.model, prompt, projectId: rankingId, signal: planningRun.signal, chromeHeadless: req.body?.chromeHeadless === true, attachments, artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT, requestId, closeRoomOnComplete: false, allowDefaultGeminiModel: true });
+      const result = await generatePlanningWithChatUi({ provider: req.body?.provider || AiPlanningFallbackProvider.GeminiChat, model: req.body?.model, prompt, projectId: rankingId, workerId: lane === 0 ? undefined : CHAT_EXECUTION_POLICY.WORKER_ID(MUSIC_MIXER_SERVER.ANALYZE_RUN_PREFIX, lane), signal: planningRun.signal, chromeHeadless: req.body?.chromeHeadless === true, attachments, artifactType: MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT, requestId, closeRoomOnComplete: false, allowDefaultGeminiModel: true });
       const parsed = parseJson(result.text.replace(/^```(?:json)?\s*|\s*```$/g, C.EMPTY));
       const validScores = parsed.artifactType === MUSIC_MIXER_SERVER.ANALYZE_ARTIFACT && parsed.requestId === requestId && Array.isArray(parsed.scores) && parsed.scores.length === chunk.length && parsed.scores.every((item: any) => Number.isInteger(item.index) && item.index >= offset + 1 && item.index <= offset + chunk.length && Number.isInteger(item.score) && item.score >= 0 && item.score <= 100);
       if (!validScores) throw new Error(MUSIC_MIXER_SERVER.ERROR_RANKING_RESPONSE);
       const durations = await Promise.all(_.map(chunk, (item: any) => readMediaDurationSeconds(item.sourcePath)));
-      scores.push(...parsed.scores.map((item: any) => ({ ...item, durationSeconds: durations[item.index - offset - 1] || 0 })));
-    }
+      return parsed.scores.map((item: any) => ({ ...item, durationSeconds: durations[item.index - offset - 1] || 0 }));
+    });
+    const scores: Array<{ index: number; score: number; durationSeconds: number }> = _.flatten(chunkScores);
     planningRun.signal.throwIfAborted();
     return res.json({ success: true, scores, roomId: rankingId });
   } catch (error) {
@@ -6006,25 +5990,62 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_SEO, async (req: Request, res: Response) =>
   }
 });
 const musicMixerZipDestinations = new Map<string, string>();
+const musicMixerStagedDirs = new Map<string, string>();
+const cleanupMusicMixerStagedDir = async (token: string): Promise<void> => {
+  const stagedDir = musicMixerStagedDirs.get(token);
+  if (!stagedDir) return;
+  musicMixerStagedDirs.delete(token);
+  await fs.promises.rm(stagedDir, { recursive: true, force: true }).catch(() => undefined);
+};
 router.post(MUSIC_MIXER_SERVER.ROUTE_SELECT_ZIP_DESTINATION, (req: Request, res: Response) => {
   const name = path.basename(String(req.body?.suggestedName || MUSIC_MIXER_SERVER.DEFAULT_ZIP_NAME));
-  execFile(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SOURCE_TEXT_SELECT_SAVE_FILE, name, MUSIC_MIXER_SERVER.ZIP_EXTENSION], { windowsHide: true }, (error, stdout) => {
+  execFile(getPythonCommand(), [getStaticResourcePath(SUNO_AUTOMATION_CONFIG.CAPCUT_ULTRA_TOOL_SCRIPT), SOURCE_TEXT_SELECT_SAVE_FILE, name, MUSIC_MIXER_SERVER.ZIP_EXTENSION], { windowsHide: true, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } }, (error, stdout) => {
     if (error) return res.status(500).json({ success: false, error: error.message });
     const target = stdout.trim();
     if (!target) return res.json({ success: true, cancelled: true });
     const token = randomUUID();
     musicMixerZipDestinations.set(token, target);
-    setTimeout(() => musicMixerZipDestinations.delete(token), 900000).unref();
+    setTimeout(() => {
+      musicMixerZipDestinations.delete(token);
+      void cleanupMusicMixerStagedDir(token);
+    }, MUSIC_MIXER_SERVER.ZIP_TOKEN_TTL_MS).unref();
     return res.json({ success: true, token });
   });
 });
+router.post(MUSIC_MIXER_SERVER.ROUTE_STAGE_ZIP_FILE, async (req: Request, res: Response) => {
+  req.setTimeout(0);
+  res.setTimeout(0);
+  const token = req.header(MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN) || C.EMPTY;
+  if (!token || !musicMixerZipDestinations.has(token)) {
+    return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
+  }
+  const rawName = decodeURIComponent(req.header(MUSIC_MIXER_SERVER.HEADER_FILE_NAME) || C.EMPTY);
+  const ext = path.extname(path.basename(rawName)) || EXPORT_ZIP_CONFIG.WAV_EXT;
+  try {
+    let stagedDir = musicMixerStagedDirs.get(token);
+    if (!stagedDir) {
+      stagedDir = await fs.promises.mkdtemp(path.join(getTempDirectory(), MUSIC_MIXER_SERVER.STAGE_DIR_PREFIX));
+      musicMixerStagedDirs.set(token, stagedDir);
+    }
+    const stagedFilePath = path.join(stagedDir, SOURCE_TEMPLATE_SYMBOL_75(`${randomUUID()}`, `${ext}`));
+    await streamPipeline(req, fs.createWriteStream(stagedFilePath, { flags: SOURCE_TEXT_WX }));
+    return res.json({ success: true, sourcePath: stagedFilePath });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: getErrorMessage(error, MUSIC_MIXER_SERVER.SOURCE_READ_ERROR) });
+  }
+});
 router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Response) => {
+  req.setTimeout(0);
+  res.setTimeout(0);
   const token = typeof req.body?.token === MOTION_TEXT_STRING ? req.body.token : C.EMPTY;
   const target = musicMixerZipDestinations.get(token);
   if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
   musicMixerZipDestinations.delete(token);
   const folders = Array.isArray(req.body?.folders) ? req.body.folders : [];
-  if (!folders.length) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_NO_FOLDERS_ZIP });
+  if (!folders.length) {
+    await cleanupMusicMixerStagedDir(token);
+    return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ERROR_NO_FOLDERS_ZIP });
+  }
   const tempManifestDir = await fs.promises.mkdtemp(path.join(getTempDirectory(), SOURCE_TEXT_MUSIC_MIXER_MANIFEST));
   const tempManifestPath = path.join(tempManifestDir, SOURCE_TEXT_MANIFEST_JSON);
   try {
@@ -6038,16 +6059,22 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
     };
     await fs.promises.writeFile(tempManifestPath, stringifyJson(manifest), SOURCE_TEXT_UTF_8);
     const result = await new Promise<{ success: boolean; path?: string; error?: string }>((resolve) => {
-      execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath], { windowsHide: true }, (error, stdout, stderr) => {
+      execFile(getPythonCommand(), [getStaticResourcePath(MUSIC_MIXER_SERVER.ZIP_BUILDER_SCRIPT), tempManifestPath], { windowsHide: true, maxBuffer: MUSIC_MIXER_SERVER.ZIP_BUILDER_MAX_BUFFER_BYTES, env: { ...process.env, PYTHONIOENCODING: SOURCE_TEXT_UTF_8, PYTHONUTF8: SOURCE_TEXT_1 } }, (error, stdout, stderr) => {
+        const trimmedStdout = String(stdout || C.EMPTY).trim();
+        if (trimmedStdout) {
+          try {
+            const parsed = parseJson(trimmedStdout);
+            if (parsed && typeof parsed.success === "boolean") {
+              return resolve(parsed);
+            }
+          } catch {
+            // Fall through to error handling below
+          }
+        }
         if (error) {
-          return resolve({ success: false, error: error.message || stderr || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
+          return resolve({ success: false, error: stderr?.trim() || error.message || MUSIC_MIXER_SERVER.ERROR_ZIP_BUILD_FAILED });
         }
-        try {
-          const parsed = parseJson(stdout.trim());
-          return resolve(parsed);
-        } catch {
-          return resolve({ success: true, path: target });
-        }
+        return resolve({ success: true, path: target });
       });
     });
     if (!result.success) {
@@ -6059,9 +6086,12 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_BUILD_ZIP, async (req: Request, res: Respon
     return res.status(500).json({ success: false, error: getErrorMessage(error, MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR) });
   } finally {
     await fs.promises.rm(tempManifestDir, { recursive: true, force: true }).catch(() => undefined);
+    await cleanupMusicMixerStagedDir(token);
   }
 });
 router.post(MUSIC_MIXER_SERVER.ROUTE_WRITE_ZIP, async (req: Request, res: Response) => {
+  req.setTimeout(0);
+  res.setTimeout(0);
   const token = req.header(MUSIC_MIXER_SERVER.HEADER_ZIP_TOKEN) || C.EMPTY;
   const target = musicMixerZipDestinations.get(token);
   if (!target) return res.status(400).json({ success: false, error: MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR });
@@ -6077,6 +6107,8 @@ router.post(MUSIC_MIXER_SERVER.ROUTE_WRITE_ZIP, async (req: Request, res: Respon
   } catch (error) {
     await fs.promises.rm(temp, { force: true }).catch(() => undefined);
     return res.status(500).json({ success: false, error: getErrorMessage(error, MUSIC_MIXER_SERVER.ZIP_SAVE_ERROR) });
+  } finally {
+    await cleanupMusicMixerStagedDir(token);
   }
 });
 router.post(ROUTER_PATHS.SAVE_FILE, async (req: Request, res: Response) => {
@@ -6600,7 +6632,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, C
   const cleanupTasks: Promise<unknown>[] = [cancelAllActiveMediaGeneration()];
   const roomProvider = _.toString(req.body?.roomProvider) as AiPlanningFallbackProvider;
   const roomProjectId = _.trim(_.toString(req.body?.roomProjectId));
-  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
+  const closeMusicRooms = req.body?.closeBrowser === true && _.includes([AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat, AiPlanningFallbackProvider.MetaAi], roomProvider) && !_.isEmpty(roomProjectId) && _.isEqual(roomProjectId, pipelineRunId);
   if (closeMusicRooms) {
     cleanupTasks.push(closeChatPlanningRoomsForProject({ provider: roomProvider, projectId: roomProjectId }));
   }
@@ -6616,7 +6648,7 @@ router.post(API_ROUTES.PIPELINE_CANCEL_ACTIVE_RUN.replace(API_ROUTES.PIPELINE, C
 });
 router.post(API_ROUTES.PIPELINE_CLEAR_CHAT_ROOMS.replace(API_ROUTES.PIPELINE, C.EMPTY), async (req: Request, res: Response) => {
   const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
-  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi];
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.MetaAi];
   if (!_.includes(supportedProviders, provider)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
   try {
     const cleanupResult = await clearChatPlanningRooms(provider);
@@ -6630,7 +6662,7 @@ router.post(API_ROUTES.PIPELINE_CLOSE_CHAT_PLANNING_ROOMS.replace(API_ROUTES.PIP
   const provider = _.toString(req.body?.provider) as AiPlanningFallbackProvider;
   const projectId = _.toString(req.body?.projectId);
   const workerIds = _.uniq(_.compact(_.map(_.castArray(req.body?.workerIds || []), _.toString)));
-  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat];
+  const supportedProviders = [AiPlanningFallbackProvider.GeminiChat, AiPlanningFallbackProvider.GrokChat, AiPlanningFallbackProvider.ChatGptUi, AiPlanningFallbackProvider.ClaudeChat, AiPlanningFallbackProvider.DeepSeekChat, AiPlanningFallbackProvider.MetaAi];
   if (!_.includes(supportedProviders, provider) || _.isEmpty(projectId)) return res.status(HTTP_STATUS_CODES.BAD_REQUEST).json({ success: false });
   await Promise.allSettled(_.map(workerIds, (workerId) => closeChatPlanningRoom({ provider, projectId, workerId })));
   await closeChatBrowserIfIdle();

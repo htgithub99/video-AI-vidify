@@ -436,10 +436,12 @@
   color: var(--studio-text) !important;
   border-color: var(--studio-border) !important;
 }
-@media (max-width: 639px) {
+@media (max-width: 1023px) {
   .studio-header .studio-header-actions {
     width: 100%;
   }
+}
+@media (max-width: 639px) {
   .studio-app-header-title {
     display: none;
   }

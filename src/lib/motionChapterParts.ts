@@ -25,7 +25,13 @@ export const motionChapterParts = (chapter: MotionChapter, analysis: MotionStory
   points.forEach((point, order) => {
     const match = [...point.matchAll(P.CHAPTER_PART_STAMP)][0];
     const at = match ? stamp(match) : undefined;
-    const index = at === undefined ? Math.min(groups.length - 1, Math.floor((order * groups.length) / points.length)) : Math.max(0, starts.reduce((best, start, part) => (start >= 0 && start <= at ? part : best), 0));
+    const index =
+      at === undefined
+        ? Math.min(groups.length - 1, Math.floor((order * groups.length) / points.length))
+        : Math.max(
+            0,
+            starts.reduce((best, start, part) => (start >= 0 && start <= at ? part : best), 0),
+          );
     owned[index].push(point);
   });
   return groups.map((group, index) => ({ points: owned[index], source: group.join(RT_SHARED.SYMBOL_36A9E7), seconds: ((chapter.targetSeconds || 120) * weights[index]) / total }));

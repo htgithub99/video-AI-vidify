@@ -1,0 +1,16 @@
+export const CHAT_BRIDGE = {
+  DIR: "claude-bridge",
+  FLAG: "enabled",
+  INBOX: "inbox",
+  OUTBOX: "outbox",
+  DONE: "done",
+  PROMPT_EXT: ".md",
+  REPLY_EXT: ".txt",
+  POLL_MS: 1500,
+  TIMEOUT_MS: 6 * 60 * 60 * 1000,
+  SAFE_NAME: /[^a-z0-9._-]+/gi,
+  DASH: "-",
+  HEADER: (meta: string): string => `<!-- ${meta} -->\n\n`,
+  ENCODING: "utf8",
+  ABORTED: "chat_planning_cancelled",
+} as const;

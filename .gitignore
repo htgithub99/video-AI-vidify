@@ -63,6 +63,9 @@ pnpm-debug.log*
 
 # Scratch & temporary workspaces
 scratch/
+/scratch_*.txt
+/scratch_*.log
+/scratch-*.log
 workspace/
 tmp/
 .tmp/
@@ -92,6 +95,7 @@ ms-playwright/
 
 # Generated media and binaries
 ffmpeg.exe
+/tools/ffmpeg/*.exe
 package-lock.json
 *.mp4
 *.m4a
@@ -104,3 +108,4 @@ package-lock.json
 /docs/video-references/**/*.jpeg
 /docs/video-references/**/*.png
 /docs/video-references/**/*.webp
+.kilo/

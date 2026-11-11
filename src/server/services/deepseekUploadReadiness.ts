@@ -1,3 +1,4 @@
+import { delayAsync } from "../../lib/asyncUtils.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import * as SRT from "../../constants/sourceText.js";
 import { observeChatUploads } from "./chatUploadObserver.js";
@@ -67,7 +68,7 @@ export const waitForDeepSeekUploads = async (input: Locator, attachments: Attach
       readySince ||= Date.now();
       if (Date.now() - readySince >= D.UPLOAD_STABLE_MS) return;
     } else readySince = 0;
-    await new Promise<void>((resolve) => setTimeout(resolve, 100));
+    await delayAsync(100);
   }
   throwIfPlanningCancelled(signal);
   throw new Error(D.UPLOAD_NOT_READY);

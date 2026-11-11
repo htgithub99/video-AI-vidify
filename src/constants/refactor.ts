@@ -208,6 +208,8 @@ export const REFACTOR_CONSTANTS = {
   GROK_PRECONNECT_TIMEOUT_ERROR: "Grok chưa hoàn tất xác minh trong cửa sổ Chrome hiển thị.",
   WINDOWS_CHROME_PATH: "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
   SHARED_CHROME_DEBUG_PORT: 9222,
+  SHARED_CHROME_VERSION_PATH: "/json/version",
+  SHARED_CHROME_PROBE_TIMEOUT_MS: 2000,
   SHARED_CHROME_PROFILE_DIR: "chrome_debug_profile",
   SHARED_CHROME_PROFILE_NAME: "Profile 2",
   SHARED_CHROME_READY_ATTEMPTS: 40,

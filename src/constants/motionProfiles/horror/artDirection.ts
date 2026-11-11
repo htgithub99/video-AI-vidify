@@ -15,7 +15,12 @@ export const HORROR_ART_DIRECTION: MotionIllustrationProfile = {
     detail: "FRAMING detail: the named household or taboo object alone in a small pool of lamp or moon light, the rest of the frame in muted dark tones; hands with the mask-body construction only when the narration has someone hold it.",
     establishing: "FRAMING establishing: no people; the house, yard, river, bridge or lane under the stated hour, lit by one source (lamp, moon, dawn), muted cold tones, main shapes readable.",
   },
-  devices: { card: "DEVICE card: a panel of rough dó paper or coarse cloth with the exact text in a plain handwritten-looking serif on a dark ground.", comparison: "DEVICE comparison: a simple wooden balance or offering tray on a dark table with the compared items placed on it; exact labels on paper tags.", map: "DEVICE map: a hand-drawn village sketch on dó paper with the few named places marked.", timeline: "DEVICE timeline: a line of lunar months or years written on a paper strip, the current one circled." },
+  devices: {
+    card: "DEVICE card: a panel of rough dó paper or coarse cloth with the exact text in a plain handwritten-looking serif on a dark ground.",
+    comparison: "DEVICE comparison: present the supplied people, objects or evidence in comparable positions with exact supplied labels, using the folk-horror visual style and the light required by the story. Choose the layout from the actual comparison. Add a physical scale, offering tray or other symbolic prop only when the source or explicit scene brief requests that object.",
+    map: "DEVICE map: a hand-drawn village sketch on dó paper with the few named places marked.",
+    timeline: "DEVICE timeline: a line of lunar months or years written on a paper strip, the current one circled.",
+  },
   drawing: "Draw the complete folk-horror scene yourself using the mask-head rounded-body construction. Muted cold surroundings, flat matte fills, simple outlined architecture and props. Adapt daylight/night to the story; atmospheric darkness must leave the main action readable. No compulsory vignette or haunted-room template.",
   anatomy: H.anatomy,
   staging: S.layout,

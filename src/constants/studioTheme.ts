@@ -1,4 +1,6 @@
 export const STUDIO_UI = {
+  DEFER_MS: 250,
+  HEADER_BADGE_ROW: "header-badge-row",
   STATUS_ROLE: "status",
   POLITE_LIVE: "polite",
   GROUP_ROLE: "group",
@@ -16,7 +18,7 @@ export const STUDIO_UI = {
   CANVAS: "studio-canvas w-full min-w-0 rounded-2xl p-4 sm:p-6 space-y-5 relative",
   CARD: "studio-card glass-card min-w-0 rounded-2xl",
   FIELDSET: "studio-card glass-card min-w-0 rounded-2xl p-4 space-y-4",
-  HEADER: "studio-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5",
+  HEADER: "studio-header flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 sm:p-5",
   HEADER_CONTENT: "flex items-center gap-3 min-w-0",
   ICON_FRAME: "studio-icon-frame w-10 h-10 rounded-xl p-0.5 shrink-0",
   ICON_INNER: "studio-icon-inner w-full h-full rounded-[10px] flex items-center justify-center",
@@ -24,7 +26,7 @@ export const STUDIO_UI = {
   TITLE_ROW: "flex items-center gap-2 flex-wrap",
   TITLE: "studio-title text-base sm:text-lg font-black tracking-tight",
   DESCRIPTION: "studio-description text-[11px] mt-0.5 leading-relaxed",
-  ACTIONS: "studio-header-actions flex items-center gap-2 flex-wrap self-start sm:self-auto shrink-0",
+  ACTIONS: "studio-header-actions flex items-center gap-2 flex-wrap w-full lg:w-auto self-start lg:self-auto shrink-0",
   BADGE: "studio-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold",
   BADGE_ICON: "w-2.5 h-2.5 shrink-0",
   MIN_WIDTH: "min-w-0",
@@ -49,7 +51,15 @@ export const STUDIO_UI = {
   APP_HEADER_ACTIONS: "studio-app-header-actions flex items-center justify-end gap-1.5 sm:gap-2 shrink-0",
   MENU_BUTTON: "studio-menu-button header-control-item w-8 min-w-[32px] p-0 rounded-xl flex items-center justify-center lg:hidden",
 } as const;
-export const STUDIO_PAGINATION = { FIRST_PAGE: 1, VISIBLE_PAGES: 5, ROOT: "flex min-w-0 flex-nowrap items-center justify-between gap-2 pt-4", SUMMARY: "min-w-0 truncate text-xs text-slate-400", CONTROLS: "flex shrink-0 flex-nowrap items-center gap-0.5", BUTTON: "studio-pagination-button !h-8 !min-h-8 !max-h-8 min-w-8 !px-1 shrink-0 whitespace-nowrap text-xs font-bold inline-flex items-center justify-center rounded-lg", ICON: "w-4 h-4 shrink-0" } as const;
+export const STUDIO_PAGINATION = {
+  FIRST_PAGE: 1,
+  VISIBLE_PAGES: 5,
+  ROOT: "flex min-w-0 flex-nowrap items-center justify-between gap-2 pt-4",
+  SUMMARY: "min-w-0 truncate text-xs text-slate-400",
+  CONTROLS: "flex shrink-0 flex-nowrap items-center gap-0.5",
+  BUTTON: "studio-pagination-button !h-8 !min-h-8 !max-h-8 min-w-8 !px-1 shrink-0 whitespace-nowrap text-xs font-bold inline-flex items-center justify-center rounded-lg",
+  ICON: "w-4 h-4 shrink-0",
+} as const;
 export const STUDIO_PAGINATION_TEXT = {
   vi: { LABEL: "Phân trang", PREVIOUS: "Trang trước", NEXT: "Trang sau", PAGE: (page: number, total: number): string => `Trang ${page} / ${total}`, RANGE: (start: number, end: number, total: number): string => `${start}–${end} / ${total}`, SUMMARY: (start: number, end: number, total: number): string => `Hiển thị ${start}–${end} / ${total} mục` },
   en: { LABEL: "Pagination", PREVIOUS: "Previous page", NEXT: "Next page", PAGE: (page: number, total: number): string => `Page ${page} / ${total}`, RANGE: (start: number, end: number, total: number): string => `${start}–${end} / ${total}`, SUMMARY: (start: number, end: number, total: number): string => `Showing ${start}–${end} of ${total} items` },

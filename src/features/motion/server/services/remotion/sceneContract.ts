@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../../../../../constants/sourceText.js";
 import { MOTION_OBJECT_CLASSES } from "../../../../../constants/motionObjectClasses.js";
 import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
@@ -16,9 +17,9 @@ const addImpliedHolders = (nodes: MotionRemotionNode[]): MotionRemotionNode[] =>
   const added: MotionRemotionNode[] = [];
   for (const node of nodes) {
     if (node.kind === H.KIND || (node.relation === H.RELATION && nodes.some((other) => other.id === node.target))) continue;
-    const match = H.IMPLIED.exec(`${node.pose || ""} ${node.description || ""}`);
+    const match = H.IMPLIED.exec(`${node.pose || ""}${RT_MAINTENANCE.SPACE}${node.description || ""}`);
     const who = match?.[1] || match?.[2];
-    if (!who || nodes.some((other) => other.kind === H.KIND && `${other.id} ${other.description}`.toLowerCase().includes(who.toLowerCase()))) continue;
+    if (!who || nodes.some((other) => other.kind === H.KIND && `${other.id}${RT_MAINTENANCE.SPACE}${other.description}`.toLowerCase().includes(who.toLowerCase()))) continue;
     const id = H.ID(node.id);
     if (nodes.some((other) => other.id === id)) continue;
     added.push({ id, kind: H.KIND, anonymous: true, description: H.DESCRIPTION(who, node.id), pose: H.POSE, slot: node.slot, evidence: node.evidence } as MotionRemotionNode);
@@ -72,7 +73,18 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
       else delete item[field];
     }
     for (const [field, values] of Object.entries(P.SCENE_ENUMS)) if (!values.includes(item[field])) delete item[field];
-    if (Array.isArray(item.objects)) item.objects = item.objects.filter((entry: any) => entry && typeof entry === "object" && typeof entry.id === "string" && entry.id.trim() && (MOTION_OBJECT_CLASSES as readonly string[]).includes(entry.class)).map((entry: any) => ({ id: entry.id.trim(), class: entry.class, description: typeof entry.description === "string" ? entry.description.trim().slice(0, P.SCENE_TEXT_CHARS) : "", ...(typeof entry.term === "string" && entry.term.trim() ? { term: entry.term.trim().toLowerCase().slice(0, P.TERM_CHARS) } : {}), ...(P.OBJECT_KINDS.includes(entry.kind) ? { kind: entry.kind } : {}), ...(typeof entry.owner === "string" && entry.owner.trim() ? { owner: entry.owner.trim().slice(0, P.TERM_CHARS) } : {}), ...(P.OBJECT_SIZES.includes(entry.size) ? { size: entry.size } : {}) }));
+    if (Array.isArray(item.objects))
+      item.objects = item.objects
+        .filter((entry: any) => entry && typeof entry === "object" && typeof entry.id === "string" && entry.id.trim() && (MOTION_OBJECT_CLASSES as readonly string[]).includes(entry.class))
+        .map((entry: any) => ({
+          id: entry.id.trim(),
+          class: entry.class,
+          description: typeof entry.description === "string" ? entry.description.trim().slice(0, P.SCENE_TEXT_CHARS) : "",
+          ...(typeof entry.term === "string" && entry.term.trim() ? { term: entry.term.trim().toLowerCase().slice(0, P.TERM_CHARS) } : {}),
+          ...(P.OBJECT_KINDS.includes(entry.kind) ? { kind: entry.kind } : {}),
+          ...(typeof entry.owner === "string" && entry.owner.trim() ? { owner: entry.owner.trim().slice(0, P.TERM_CHARS) } : {}),
+          ...(P.OBJECT_SIZES.includes(entry.size) ? { size: entry.size } : {}),
+        }));
     else delete item.objects;
     if (Array.isArray(item.nodes))
       for (const node of item.nodes) {
@@ -80,10 +92,10 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
         for (const key of [RUNTIME_VALUES.ENTITYID_556EB4FE, RUNTIME_VALUES.RELATION_FC8FBB48, RUNTIME_VALUES.TARGET_34A04005, COMMON_RUNTIME.SOURCE_TEXT_EVIDENCE, RUNTIME_VALUES.ESSENTIAL_A55751CE, RUNTIME_VALUES.APPEARANCECHANGED_C145E98D, RUNTIME_VALUES.POSEESSENTIAL_6DEE91EC] as string[]) if (node[key] === null || node[key] === "") delete node[key];
         node.pose ||= RT_SHARED.STANDING;
         if (node.crowd && typeof node.crowd === "object") {
-          if (node.kind !== "character" || !["foreground", "midground", "background"].includes(node.crowd.depth)) delete node.crowd;
+          if (node.kind !== RT_MAINTENANCE.CHARACTER || !([RT_MAINTENANCE.FOREGROUND, RT_MAINTENANCE.MIDGROUND, RT_MAINTENANCE.BACKGROUND] as string[]).includes(node.crowd.depth)) delete node.crowd;
           else {
-            for (const field of ["groupKey", "faction", "appearance", "facing"]) if (typeof node.crowd[field] !== "string" || !node.crowd[field].trim()) delete node.crowd[field];
-            for (const field of ["rows", "count"]) if (!Number.isFinite(node.crowd[field]) || node.crowd[field] < 1) delete node.crowd[field];
+            for (const field of [RT_MAINTENANCE.GROUPKEY, RT_MAINTENANCE.FACTION, RT_MAINTENANCE.APPEARANCE, RT_MAINTENANCE.FACING]) if (typeof node.crowd[field] !== "string" || !node.crowd[field].trim()) delete node.crowd[field];
+            for (const field of [RT_MAINTENANCE.ROWS, RT_MAINTENANCE.COUNT]) if (!Number.isFinite(node.crowd[field]) || node.crowd[field] < 1) delete node.crowd[field];
             if (node.crowd.rows) node.crowd.rows = Math.min(8, Math.round(node.crowd.rows));
             if (!cast.has(node.entityId)) {
               node.anonymous = true;
@@ -200,7 +212,7 @@ export const mergeRemotionSceneDraft = (raw: any, previous: unknown[], lines: { 
   return { value: { scenes: errors.length ? [...drafts.values()] : scenes }, errors: [...new Set(errors)], accepted: scenes, drafts: [...drafts.values()] };
 };
 export const mergeEquivalentRemotionDrafts = (scenes: any[]) => {
-  const signature = (scene: any) => stringifyJson([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.format, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node)]);
+  const signature = (scene: any) => stringifyJson([scene.purpose, scene.environment, scene.time, scene.weather, scene.view, scene.format, scene.focus, scene.effects, scene.removedObjects, scene.nodes.map(({ evidence, ...node }: MotionRemotionNode) => node), ...(scene.motionIntent !== undefined ? [scene.motionIntent] : []), ...(scene.actionPlan !== undefined ? [scene.actionPlan] : [])]);
   const merged: any[] = [];
   for (const scene of scenes) {
     const previous = merged.at(-1);

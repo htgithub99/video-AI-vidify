@@ -1,3 +1,4 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import * as COMMON_RUNTIME from "../constants/sourceText.js";
 import { RUNTIME_VALUES } from "../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../constants/runtime/shared.js";
@@ -185,22 +186,22 @@ const expandMotionSvgUses = (svg: string): string => {
   let text = svg;
   for (let pass = 0; pass < SAN.PASSES && SAN.USE.test(text); pass++) {
     const source = text;
-    text = source.replace(new RegExp(SAN.USE.source, "gi"), (_whole, attrs: string) => {
+    text = source.replace(new RegExp(SAN.USE.source, RT_MAINTENANCE.GI), (_whole, attrs: string) => {
       const href = attrs.match(SAN.HREF)?.[1];
       const open = href ? SAN.ID_OPEN(href).exec(source) : null;
       if (!open) return "";
       const tag = open[1];
       const closed = open[3] ? undefined : elementEnd(source, tag, open.index + open[0].length);
       if (!open[3] && !closed) return "";
-      const body = (tag.toLowerCase() === SAN.SYMBOL ? closed!.inner : open[0].replace(SAN.ID_ATTR, "") + (closed ? closed.inner + `</${tag}>` : "")).replace(new RegExp(SAN.ID_ATTR.source, "g"), "");
+      const body = (tag.toLowerCase() === SAN.SYMBOL ? closed!.inner : open[0].replace(SAN.ID_ATTR, "") + (closed ? closed.inner + `${RT_MAINTENANCE.CLOSING_TAG_PREFIX}${tag}${RT_MAINTENANCE.CLOSE_TAG}` : "")).replace(new RegExp(SAN.ID_ATTR.source, RT_MAINTENANCE.REGEXP_GLOBAL), "");
       const value = (name: string) => attrs.match(SAN.ATTR(name))?.[2];
-      const shift = value("x") || value("y") ? `translate(${Number(value("x")) || 0} ${Number(value("y")) || 0}) ` : "";
-      const transform = `${shift}${value("transform") || ""}`.trim();
-      const copied = SAN.COPY_ATTRS.map((name) => (value(name) ? ` ${name}="${value(name)}"` : "")).join("");
-      return `<g${transform ? ` transform="${transform}"` : ""}${copied}>${body}</g>`;
+      const shift = value(RT_MAINTENANCE.X) || value(RT_MAINTENANCE.Y_2) ? `${RT_MAINTENANCE.TRANSLATE}${Number(value(RT_MAINTENANCE.X)) || 0}${RT_MAINTENANCE.SPACE}${Number(value(RT_MAINTENANCE.Y_2)) || 0}${RT_MAINTENANCE.CLOSE_PAREN_SPACE}` : "";
+      const transform = `${shift}${value(RT_MAINTENANCE.TRANSFORM_3) || ""}`.trim();
+      const copied = SAN.COPY_ATTRS.map((name) => (value(name) ? `${RT_MAINTENANCE.SPACE}${name}${RT_MAINTENANCE.ATTRIBUTE_EQUALS_QUOTE}${value(name)}${RT_MAINTENANCE.DOUBLE_QUOTE}` : "")).join("");
+      return `${RT_MAINTENANCE.SVG_GROUP_PREFIX}${transform ? `${RT_MAINTENANCE.TRANSFORM_2}${transform}${RT_MAINTENANCE.DOUBLE_QUOTE}` : ""}${copied}${RT_MAINTENANCE.CLOSE_TAG}${body}${RT_MAINTENANCE.SVG_GROUP_END}`;
     });
   }
-  return text.replace(new RegExp(SAN.USE.source, "gi"), "");
+  return text.replace(new RegExp(SAN.USE.source, RT_MAINTENANCE.GI), "");
 };
 export const sanitizeMotionCompositionSvg = (svg: string, allowed: Set<string>): string => {
   const text = expandMotionSvgUses(svg);
@@ -227,7 +228,7 @@ export const sanitizeMotionCompositionSvg = (svg: string, allowed: Set<string>):
   const emptyFilters = new Set<string>();
   out = out.replace(SAN.FILTER, (whole, attrs: string, body?: string) => {
     if (body && SAN.FILTER_PRIMITIVE.test(body)) return whole;
-    const id = attrs.match(SAN.ATTR("id"))?.[2];
+    const id = attrs.match(SAN.ATTR(RT_MAINTENANCE.ID))?.[2];
     if (id) emptyFilters.add(id);
     return "";
   });

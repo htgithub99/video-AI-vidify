@@ -49,7 +49,7 @@ Literal có vai trò cú pháp và hợp đồng dữ liệu như module specifi
 
 ```sh
 npm run format:code
-python -m pip install -r requirements-dev.txt
+python -m pip install -r scripts/setup/requirements-dev.txt
 npm run format:python
 npm run check:refactor
 ```

@@ -1,10 +1,11 @@
+import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_UNITS, MOTION_UNIT_BY_ANIMAL, MOTION_UNIT_BY_KIND, MOTION_UNIT_LEAD, type MotionUnit } from "../constants/motionUnits.js";
 import { motionObjectKind } from "./motionObjectKinds.js";
 import type { MotionRemotionNode, MotionRemotionScene } from "../types/motionVisual.js";
-const MOUNTED = "mounted";
-const LEAD = "lead";
-const CHARACTER = "character";
-export const motionUnitPart = (name: string): RegExp => new RegExp(`(?:^|[_-])${name}(?:[_-]|$)`, "i");
+const MOUNTED = RT_MAINTENANCE.MOUNTED;
+const LEAD = RT_MAINTENANCE.LEAD;
+const CHARACTER = RT_MAINTENANCE.CHARACTER;
+export const motionUnitPart = (name: string): RegExp => new RegExp(`${RT_MAINTENANCE.WORD_BOUNDARY_PREFIX}${name}${RT_MAINTENANCE.WORD_BOUNDARY_SUFFIX}`, RT_MAINTENANCE.I);
 export const motionNodeUnit = (node: MotionRemotionNode, scene: Pick<MotionRemotionScene, "nodes" | "objects">): MotionUnit | undefined => {
   if (node.kind !== CHARACTER || node.animal) return undefined;
   if (node.unit && (MOTION_UNITS as readonly string[]).includes(node.unit)) return node.unit;

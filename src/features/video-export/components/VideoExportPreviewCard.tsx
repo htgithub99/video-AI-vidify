@@ -4,14 +4,14 @@ import { StudioCard } from "../../../components/ui/Studio.js";
 import { VIDEO_EXPORT_TEMPLATE_SYMBOL_3, VIDEO_EXPORT_TEMPLATE_SYMBOL_4, VIDEO_EXPORT_TEXT_BUTTON, VIDEO_EXPORT_TEXT_SYMBOL_3, VIDEO_EXPORT_TEXT_UNSTYLED, VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW, VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW_CANCEL } from "../../../constants/videoExportText";
 import { VIDEO_EXPORT_FRAME_CLASSNAMES } from "../constants/videoExport";
 import { FC } from "react";
-import { AlertTriangle, Eye, MonitorPlay, RefreshCw, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Eye, MonitorPlay, RefreshCw, RotateCcw, Sparkles, X } from "lucide-react";
 import { Button } from "../../../components/ui/Button.js";
 import { cn } from "../../../lib/utils.js";
 import { VideoExporterState } from "../hooks/useVideoExporter.js";
 import { VideoExportPlayer } from "./VideoExportPlayer.js";
-type VideoExportPreviewCardProps = { exporter: Pick<VideoExporterState, "text" | "preview" | "isPreviewing" | "isPreviewOutdated" | "canRender" | "isExporting" | "config" | "generatePreview" | "cancelPreview"> };
+type VideoExportPreviewCardProps = { exporter: Pick<VideoExporterState, "text" | "preview" | "previewError" | "isPreviewing" | "isPreviewOutdated" | "canRender" | "isExporting" | "config" | "generatePreview" | "cancelPreview"> };
 export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ exporter }) => {
-  const { text, preview, isPreviewing, isPreviewOutdated, canRender, isExporting, config } = exporter;
+  const { text, preview, previewError, isPreviewing, isPreviewOutdated, canRender, isExporting, config } = exporter;
   return (
     <StudioCard className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_SM_ROUNDED_3XL_P_5_SPACE)}>
       <div className={cn(RT_VIDEO_EXPORT.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_FLEX_WRAP_GAP_2)}>
@@ -31,8 +31,8 @@ export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ export
           </Button>
         ) : (
           <Button id={VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW} variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={exporter.generatePreview} disabled={!canRender || isExporting} className={cn(RT_VIDEO_EXPORT.H_8_PX_3_ROUNDED_XL_BORDER_TEXT_XS_FONT)}>
-            {preview ? <RefreshCw className={cn(RT_SHARED.W_3_5_H_3_5)} /> : <MonitorPlay className={cn(RT_SHARED.W_3_5_H_3_5)} />}
-            <span>{preview ? text.PREVIEW_REFRESH_BTN : text.PREVIEW_BTN}</span>
+            {previewError ? <RotateCcw className={cn(RT_SHARED.W_3_5_H_3_5)} /> : preview ? <RefreshCw className={cn(RT_SHARED.W_3_5_H_3_5)} /> : <MonitorPlay className={cn(RT_SHARED.W_3_5_H_3_5)} />}
+            <span>{previewError ? text.PREVIEW_RETRY_BTN : preview ? text.PREVIEW_REFRESH_BTN : text.PREVIEW_BTN}</span>
           </Button>
         )}
       </div>
@@ -43,12 +43,18 @@ export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ export
           <div className={cn(RT_VIDEO_EXPORT.RELATIVE_ROUNDED_2XL_OVERFLOW_HIDDEN_BG_SLATE_950_BORDER_BORDER_402787, VIDEO_EXPORT_FRAME_CLASSNAMES[config.aspectRatio])}>
             <div className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_P)}>
               <div className={cn(RT_VIDEO_EXPORT.W_12_H_12_ROUNDED_2XL_BORDER_FLEX_ITEMS_CENTER, isPreviewing ? RT_VIDEO_EXPORT.BG_PURPLE_500_15_BORDER_PURPLE_500_30_SHADOW_PURPLE : RT_VIDEO_EXPORT.BG_SLATE_800_80_BORDER_SLATE_700_80)}>
-                {isPreviewing ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_6_H_6_TEXT_PURPLE_400_ANIMATE_SPIN)} /> : <MonitorPlay className={cn(RT_VIDEO_EXPORT.W_6_H_6_TEXT_PURPLE_400_80)} />}
+                {isPreviewing ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_6_H_6_TEXT_PURPLE_400_ANIMATE_SPIN)} /> : previewError ? <AlertTriangle className={cn(RT_VIDEO_EXPORT.W_6_H_6_TEXT_PURPLE_400_80)} /> : <MonitorPlay className={cn(RT_VIDEO_EXPORT.W_6_H_6_TEXT_PURPLE_400_80)} />}
               </div>
               <div className={cn(RT_SHARED.SPACE_Y_1_MAX_W_SM)}>
-                <p className={cn(RT_SHARED.TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200)}>{isPreviewing ? text.PREVIEW_GENERATING : text.PREVIEW_EMPTY_TITLE}</p>
-                {!isPreviewing && <p className={cn(RT_SHARED.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED)}>{text.PREVIEW_EMPTY_DESC}</p>}
+                <p className={cn(RT_SHARED.TEXT_SM_FONT_EXTRABOLD_TEXT_SLATE_200)}>{isPreviewing ? text.PREVIEW_GENERATING : previewError ? text.PREVIEW_ERROR : text.PREVIEW_EMPTY_TITLE}</p>
+                {!isPreviewing && <p className={cn(previewError ? RT_VIDEO_EXPORT.PREVIEW_ERROR_TEXT : RT_SHARED.TEXT_XS_TEXT_SLATE_400_LEADING_RELAXED)}>{previewError || text.PREVIEW_EMPTY_DESC}</p>}
               </div>
+              {!isPreviewing && previewError && (
+                <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={!canRender || isExporting} onClick={exporter.generatePreview} className={cn(RT_VIDEO_EXPORT.PREVIEW_RETRY_BTN_CLS)}>
+                  <RotateCcw className={cn(RT_SHARED.W_3_5_H_3_5)} />
+                  <span>{text.PREVIEW_RETRY_BTN}</span>
+                </Button>
+              )}
             </div>
           </div>
         )}
