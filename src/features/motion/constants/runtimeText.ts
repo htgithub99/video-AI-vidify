@@ -9,6 +9,8 @@ export const RUNTIME_TEXT = {
   BEAT: SOURCE_TEXT_BEAT,
   BLOCK_W_FULL_ROUNDED_XL_BG_BLACK: "block w-full rounded-xl bg-black",
   VALUE_100: "100%",
+  LAZY: "lazy" as const,
+  BLOCK: "block",
   VALUE_111: "#111",
   CAPTION_SEPARATOR: MOTION_TEXT_SYMBOL_10,
   ALERT: SOURCE_TEXT_ALERT,

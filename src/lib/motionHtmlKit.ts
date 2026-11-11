@@ -34,3 +34,4 @@ export const motionHtmlKitRefresh = (html: string): string => {
   const used = [...html.slice(start, end).matchAll(K.STYLE_USED)].pop()?.[1] || K.STYLE_FALLBACK;
   return html.slice(0, start) + K.SCRIPT_TAG + K.SCRIPT + K.SET_STYLE(used) + K.TIME_HOOK + html.slice(end);
 };
+export const motionHtmlKitStale = (html: string): boolean => html.includes(K.SCRIPT_TAG) && !html.includes(K.SCRIPT);
