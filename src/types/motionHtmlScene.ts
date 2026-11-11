@@ -56,6 +56,7 @@ export interface MotionHtmlFrameInput {
   seed: string;
   speaking: { entityId: string; start: number; end: number }[];
   places?: string[];
+  header?: boolean;
 }
 export interface MotionAuthoringSettings {
   version: 1;

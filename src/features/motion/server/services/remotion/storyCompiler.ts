@@ -10,7 +10,8 @@ import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSc
 import { motionBeatLines } from "../../../../../lib/motionBeatLines.js";
 import { motionNarratorCastKey } from "../../../../../lib/motionVoice.js";
 import { MOTION_ASPECT_BASE } from "../../../../../constants/motionVideo.js";
-import type { MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../../../../../types/motionVideo.js";
+import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionVoiceTrack } from "../../../../../types/motionVideo.js";
+import { motionSceneOnScreen } from "../../../../../lib/motionHtmlScene.js";
 import type { MotionRemotionSpec, MotionRemotionTimedScene, MotionRenderBehavior } from "../../../../../types/motionVisual.js";
 import { normalizeMotionRenderBehavior } from "../../../../../lib/motionRenderBehavior.js";
 import { buildSubtitles, computeBeatTimeline, estimateBeatSeconds } from "../motionDirectorService.js";
@@ -93,7 +94,6 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     scenes.push({
       ...scene,
       sourceBeatIds: [...new Set(covered.map(({ line }) => line.beatId))],
-      places: scene.places?.length ? scene.places : [...new Set(covered.map(({ line }) => analysis?.places.find((place) => place.key === script.beats.find((beat) => beat.id === line.beatId)?.place)?.name).filter((name): name is string => !!name))],
       startFrame: frame,
       endFrame,
       speaking,
@@ -102,6 +102,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     frame = endFrame;
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
+  if (analysis) motionSceneOnScreen(scenes.map((scene) => ({ scene, beats: (scene.sourceBeatIds || []).map((id) => script.beats.find((beat) => beat.id === id)).filter((beat): beat is MotionBeat => !!beat) })), analysis);
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
     ...(state.renderer ? { renderer: state.renderer } : {}),

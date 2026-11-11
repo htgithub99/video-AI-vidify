@@ -195,6 +195,19 @@ export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionS
     sceneEffectsEnabled: enabled && spec.renderBehavior?.sceneEffects !== RT_MAINTENANCE.OFF,
     seed: scene.html?.seed || scene.id,
     speaking: enabled ? (scene.speaking || []).map((span) => ({ entityId: span.entityId, start: (span.startFrame - scene.startFrame) / spec.fps, end: (span.endFrame - scene.startFrame) / spec.fps })) : [],
-    places: scene.places || [],
+    places: scene.places,
+    header: scene.places ? !!scene.timeLabel : undefined,
   };
+};
+export const motionSceneOnScreen = (items: { scene: MotionRemotionScene; beats: MotionBeat[] }[], analysis: MotionStoryAnalysis): void => {
+  let lastPlaces: string[] = [];
+  let lastTime = "";
+  for (const { scene, beats } of items) {
+    const names = [...new Set(beats.map((beat) => analysis.places.find((place) => place.key === beat.place)?.name).filter((name): name is string => !!name))];
+    const time = beats.map((beat) => beat.time?.trim() || "").find(Boolean) || "";
+    scene.places = names.filter((name) => !lastPlaces.includes(name));
+    scene.timeLabel = time && time !== lastTime ? time : undefined;
+    if (names.length) lastPlaces = names;
+    if (time) lastTime = time;
+  }
 };
