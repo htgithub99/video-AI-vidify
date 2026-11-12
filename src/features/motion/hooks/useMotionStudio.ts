@@ -71,7 +71,7 @@ import {
 import { retimeSeoPack } from "../../../lib/motionSeo.js";
 import { MOTION_PARTS } from "../../../constants/motionParts.js";
 import { motionCarryGen, motionPartAnalysis, motionSeriesStart } from "../../../lib/motionParts.js";
-import { motionMainAiExecution, motionPlanAiExecution, motionSceneAiExecution, type MotionAiChoice, type MotionLightAiChoice, type MotionPlanAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
+import { motionMainAiExecution, motionPlanAiExecution, motionSceneAiExecution, motionScriptAiExecution, type MotionAiChoice, type MotionLightAiChoice, type MotionPlanAiChoice, type MotionSceneAiChoice, type MotionScriptAiChoice } from "../lib/motionSceneAi.js";
 import { MOTION_SCENE_AI } from "../../../constants/motionSceneLibrary.js";
 import { motionVisualRequest, normalizeMotionVisualSettings, isRemotionSpec } from "../../../lib/motionVisual.js";
 import { MOTION_VISUAL } from "../../../constants/motionVisual.js";
@@ -104,7 +104,7 @@ const reportStoryError = (error: unknown): void => {
   if (message === MOTION_TEXT_CANCELLED) toast.info(STOPPED_TOAST);
   else toast.error(message);
 };
-interface PersistedState extends MotionSceneAiChoice, MotionAiChoice, MotionPlanAiChoice, MotionLightAiChoice {
+interface PersistedState extends MotionSceneAiChoice, MotionAiChoice, MotionPlanAiChoice, MotionLightAiChoice, MotionScriptAiChoice {
   visualDrafts?: Record<string, MotionVisualDraft>;
   visualSettings: MotionVisualSettings;
   renderBehavior: MotionRenderBehavior;
@@ -771,7 +771,7 @@ export function useMotionStudio() {
             if (now.activeRenderJobId) await motionRequest(API_ROUTES.MOTION_VIDEO_CANCEL, { jobId: now.activeRenderJobId });
           } else patch({ autoRun: true, productionId: id, editorialSessionId: id });
           const body = resumeId
-            ? { productionId: resumeId, clearGeminiChatsBeforeExport: now.clearGeminiChatsBeforeExport === true, aiExecution: motionMainAiExecution(now), sceneAiExecution: motionSceneAiExecution(now), planAiExecution: motionPlanAiExecution(now) }
+            ? { productionId: resumeId, clearGeminiChatsBeforeExport: now.clearGeminiChatsBeforeExport === true, aiExecution: motionMainAiExecution(now), sceneAiExecution: motionSceneAiExecution(now), planAiExecution: motionPlanAiExecution(now), scriptAiExecution: motionScriptAiExecution(now) }
             : {
                 source: now.source,
                 productionId: id,
@@ -784,6 +784,7 @@ export function useMotionStudio() {
                 aiExecution: motionMainAiExecution(now),
                 sceneAiExecution: motionSceneAiExecution(now),
                 planAiExecution: motionPlanAiExecution(now),
+                scriptAiExecution: motionScriptAiExecution(now),
                 videoGenre: motionVideoGenre(now.videoGenre),
                 storytelling: motionStorytelling(now.storytelling),
                 renameEntities: now.renameEntities === true,
@@ -849,6 +850,7 @@ export function useMotionStudio() {
               aiExecution: motionMainAiExecution(now),
               sceneAiExecution: motionSceneAiExecution(now),
               planAiExecution: motionPlanAiExecution(now),
+              scriptAiExecution: motionScriptAiExecution(now),
               keepBrowser: chainOn(stateRef.current),
               voiceChannel: selectedChannelRef(now, channelsRef.current),
               multiVoice: now.multiVoice !== false,
@@ -1004,7 +1006,7 @@ export function useMotionStudio() {
       if (result && !failed && automaticExport && exportOn(stateRef.current) && !flowCancelled.current) await exportBuiltScenes.current?.();
       return result;
     },
-    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneAiMultiRoom, state.planAiProvider, state.planAiModel, state.planAiHeadless, state.planAiFallback, state.planAiMultiRoom, state.aiMultiRoom, state.lightAiMultiRoom, state.lightAiProvider, state.lightAiModel, state.lightAiHeadless, state.lightAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
+    [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneAiMultiRoom, state.planAiProvider, state.planAiModel, state.planAiHeadless, state.planAiFallback, state.planAiMultiRoom, state.scriptAiProvider, state.scriptAiModel, state.scriptAiHeadless, state.scriptAiFallback, state.scriptAiMultiRoom, state.aiMultiRoom, state.lightAiMultiRoom, state.lightAiProvider, state.lightAiModel, state.lightAiHeadless, state.lightAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
   const deleteScenes = useCallback(
     (ids?: string[]): number => {

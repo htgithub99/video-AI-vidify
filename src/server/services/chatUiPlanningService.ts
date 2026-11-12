@@ -23,7 +23,7 @@ import { observeGeminiGeneration } from "./geminiGenerationObserver.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C, CHAT_JSON_PATTERNS as JP } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
-import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport, promptReferenceDocs } from "../../lib/chatPlanningUtils.js";
+import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport, promptReferenceChat, promptReferenceDocs } from "../../lib/chatPlanningUtils.js";
 import { motionPromptSingleMessage } from "../../lib/motionPrompt.js";
 import { MOTION_PROMPT } from "../../constants/motionPrompt.js";
 import { MOTION_RESPONSE_SCHEMAS } from "../../constants/motionResponseContract.js";
@@ -1243,6 +1243,7 @@ const roomContextReceipts = (page: Page): ChatContextReceipts => {
   }
   return receipts;
 };
+const referenceDocsByChat = new Map<string, Set<string>>();
 const submitPrompt = async (
   page: Page,
   roomKey: string,
@@ -1261,11 +1262,14 @@ const submitPrompt = async (
   promptMessageLimit?: number,
   onUploadProgress?: (progress: import("../../types/musicDownloadProgress.js").MusicUploadProgress) => void,
 ): Promise<string> => {
+  let referenceKeys: string[] = [];
   if (inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR) {
-    const reference = promptReferenceDocs(prompt);
-    if (reference.attachments.length) {
+    const chat = promptReferenceChat(page.url());
+    const reference = promptReferenceDocs(prompt, (chat && referenceDocsByChat.get(chat)) || undefined);
+    if (reference.prompt !== prompt) {
       prompt = reference.prompt;
       attachments = [...attachments, ...reference.attachments];
+      referenceKeys = reference.keys;
     }
   }
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
@@ -1597,7 +1601,10 @@ const submitPrompt = async (
     }
   };
   try {
-    return generation ? await generation.run(perform()) : await perform();
+    const result = generation ? await generation.run(perform()) : await perform();
+    const chat = referenceKeys.length ? promptReferenceChat(page.url()) : undefined;
+    if (chat) referenceDocsByChat.set(chat, new Set([...(referenceDocsByChat.get(chat) || []), ...referenceKeys]));
+    return result;
   } catch (error) {
     if (isCompletedChatResponseError(error)) {
       pendingRoomResponses.delete(roomKey);

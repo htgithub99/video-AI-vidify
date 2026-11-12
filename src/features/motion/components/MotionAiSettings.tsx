@@ -5,16 +5,17 @@ import { MOTION_AI_SETTINGS_TEXT } from "../../../constants/motionSceneLibrary.j
 import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { AiPlanningExecutionMode } from "../../../types.js";
 import type { Lang } from "../../../lib/lang.js";
-import { motionLightAiExecution, motionPlanAiExecution, motionSceneAiExecution, resolveMotionSceneExecution, type MotionAiChoice, type MotionLightAiChoice, type MotionPlanAiChoice, type MotionSceneAiChoice } from "../lib/motionSceneAi.js";
+import { motionLightAiExecution, motionPlanAiExecution, motionSceneAiExecution, motionScriptAiExecution, resolveMotionSceneExecution, type MotionAiChoice, type MotionLightAiChoice, type MotionPlanAiChoice, type MotionSceneAiChoice, type MotionScriptAiChoice } from "../lib/motionSceneAi.js";
 import type { MotionVisualSettings } from "../../../types/motionVisual.js";
-export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice & MotionPlanAiChoice & MotionLightAiChoice & { visualSettings?: MotionVisualSettings }; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice & MotionPlanAiChoice & MotionLightAiChoice>) => void; currentLang: Lang }) {
+export function MotionAiSettings({ state, patch, currentLang }: { state: MotionAiChoice & MotionSceneAiChoice & MotionPlanAiChoice & MotionLightAiChoice & MotionScriptAiChoice & { visualSettings?: MotionVisualSettings }; patch: (value: Partial<MotionAiChoice & MotionSceneAiChoice & MotionPlanAiChoice & MotionLightAiChoice & MotionScriptAiChoice>) => void; currentLang: Lang }) {
   const text = MOTION_AI_SETTINGS_TEXT[currentLang === MR.MOTION_TEXT_EN ? MR.MOTION_TEXT_EN : MR.MOTION_TEXT_VI];
   const scene = motionSceneAiExecution(state);
   const plan = motionPlanAiExecution(state);
   const light = motionLightAiExecution(state);
+  const script = motionScriptAiExecution(state);
   const onePass = state.visualSettings?.mode === RT_MAINTENANCE.REMOTION;
   const patchMain = (value: Partial<MotionAiChoice>) =>
-    patch({ ...value, lightAiProvider: light.provider, lightAiModel: light.model, lightAiHeadless: light.chromeHeadless, lightAiFallback: light.allowFallback, planAiProvider: plan.provider, planAiModel: plan.model, planAiHeadless: plan.chromeHeadless, planAiFallback: plan.allowFallback, sceneAiHeadless: scene.chromeHeadless });
+    patch({ ...value, lightAiProvider: light.provider, lightAiModel: light.model, lightAiHeadless: light.chromeHeadless, lightAiFallback: light.allowFallback, planAiProvider: plan.provider, planAiModel: plan.model, planAiHeadless: plan.chromeHeadless, planAiFallback: plan.allowFallback, scriptAiProvider: script.provider, scriptAiModel: script.model, scriptAiHeadless: script.chromeHeadless, scriptAiFallback: script.allowFallback, scriptAiMultiRoom: script.multiRoom, sceneAiHeadless: scene.chromeHeadless });
   const selectSceneProvider = (provider: MotionSceneAiChoice["sceneAiProvider"]) => {
     const next = resolveMotionSceneExecution({ provider });
     patch({ sceneAiProvider: next.provider, sceneAiModel: next.model });
@@ -39,6 +40,26 @@ export function MotionAiSettings({ state, patch, currentLang }: { state: MotionA
           onMultiRoomChange={(value) => patchMain({ aiMultiRoom: value })}
           allowFallback={state.aiFallback !== false}
           onAllowFallbackChange={(value) => patchMain({ aiFallback: value })}
+        />
+      </section>
+      <section aria-label={text.SCRIPT_TITLE}>
+        <ChatPlanningSettingsBlock
+          title={text.SCRIPT_TITLE}
+          note={text.SCRIPT_NOTE}
+          provider={script.provider}
+          model={script.model}
+          executionMode={AiPlanningExecutionMode.RoomOnly}
+          chromeHeadless={script.chromeHeadless}
+          onProviderChange={(value) => patch({ scriptAiProvider: value, scriptAiModel: undefined, scriptAiHeadless: script.chromeHeadless })}
+          onModelChange={(value) => patch({ scriptAiProvider: script.provider, scriptAiModel: value })}
+          onExecutionModeChange={() => undefined}
+          onChromeHeadlessChange={(value) => patch({ scriptAiProvider: script.provider, scriptAiModel: script.model, scriptAiHeadless: value })}
+          currentLang={currentLang}
+          roomOnly
+          multiRoom={script.multiRoom}
+          onMultiRoomChange={(value) => patch({ scriptAiProvider: script.provider, scriptAiModel: script.model, scriptAiMultiRoom: value })}
+          allowFallback={script.allowFallback}
+          onAllowFallbackChange={(value) => patch({ scriptAiProvider: script.provider, scriptAiModel: script.model, scriptAiFallback: value })}
         />
       </section>
       <section aria-label={text.LIGHT_TITLE}>

@@ -810,7 +810,7 @@ export const THIS_PART_OPENS_THE_CHAPTER_ESTABLISH_THE_CHAPTER_HOOK_IMMEDIATELY 
 export const CONTINUE_SEAMLESSLY_FROM_THE_LAST_BEAT_IN_ALREADYWRITTEN_WITHOUT_REPEATING = "Continue seamlessly from the last beat in alreadyWritten without repeating earlier hooks, facts, or scenes." as const;
 export const STOP_AT_THE_END_OF_THIS_PART_S_SOURCE_SLICE = "Stop at the end of this part's source slice; reserve the chapter's closing payoff/handoff for the final part." as const;
 export const THIS_IS_THE_FINAL_PART_OF_THE_CHAPTER_DELIVER_THE = "This is the final part of the chapter: deliver the chapter's closing payoff or handoff cleanly." as const;
-export const PARTPROMPT = "Write the requested chapter part in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,sceneTemplateDraft,utterances?}]}. Stable IDs identify source events. visual is scene/map/diagram/process/timeline/comparison/card as appropriate. Do not turn a sentence into a separate picture by default." as const;
+export const PARTPROMPT = "Write the requested chapter part in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,sceneTemplateDraft,utterances?}]}. Stable IDs identify source events. visual is scene/map/diagram/process/timeline/comparison/card as appropriate; map only for routes, positions or movement across a region, while an event at one place (an attack, siege, sack, battle moment or arrival) is a scene. Do not turn a sentence into a separate picture by default." as const;
 export const LANGUAGE_2 = "Language=" as const;
 export const THIS_CHAPTER_PART = ". THIS CHAPTER PART (" as const;
 export const HAS_APPROXIMATELY = ") has approximately " as const;
@@ -837,7 +837,7 @@ export const CANH = " cảnh, ~" as const;
 export const AM_TIET = " âm tiết)…" as const;
 export const MOTION_STORY_CHAPTER = "motion-story-chapter" as const;
 export const KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN = "Không đọc được danh sách lời của chương từ phản hồi AI." as const;
-export const PROMPT = "Write the requested chapter in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,sceneTemplateDraft,utterances?}]}. Stable IDs identify source events. visual is scene/map/diagram/process/timeline/comparison/card as appropriate. Do not turn a sentence into a separate picture by default." as const;
+export const PROMPT = "Write the requested chapter in the selected spoken language. Return JSON {chapterId,beats:[{id,narration,visual,place?,cast?,sceneTemplateDraft,utterances?}]}. Stable IDs identify source events. visual is scene/map/diagram/process/timeline/comparison/card as appropriate; map only for routes, positions or movement across a region, while an event at one place (an attack, siege, sack, battle moment or arrival) is a scene. Do not turn a sentence into a separate picture by default." as const;
 export const THIS_CHAPTER_HAS_APPROXIMATELY = ". THIS CHAPTER has approximately " as const;
 export const SPOKEN_WORDS_SYLLABLES_ACROSS_ROUGHLY = " spoken words/syllables across roughly " as const;
 export const S_PER_SCENE_THIS_IS_NOT_PER_BEAT_THE_FULL = "s per scene). This is not per beat. The full part has " as const;

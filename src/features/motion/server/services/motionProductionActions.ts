@@ -225,6 +225,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
   const exec = aiExec(body?.aiExecution);
   const sceneExec = drawExec(body?.sceneAiExecution || body?.aiExecution);
   const planExec = body?.planAiExecution ? { ...aiExec(body.planAiExecution), role: MOTION_AI_ROLE.PLAN } : undefined;
+  const scriptExec: MotionAiExecution = body?.scriptAiExecution ? { ...aiExec(body.scriptAiExecution), role: MOTION_AI_ROLE.SCRIPT } : exec;
   const only: string[] = _.map(_.castArray(body?.chapterIds || []), _.toString);
   const existing: MotionBeat[] = _.castArray(body?.beats || []);
   const speechRate = body?.durationRepair && Number(body?.speechRate) > 0 ? Number(body.speechRate) : motionSpeechRate(body?.voiceChannel, language);
@@ -263,7 +264,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) }) : undefined;
       if (htmlStreamer) {
         keepGen = { ...(keepGen || emptyGen()), remotion: htmlStreamer.getState() };
-        void prepareMotionContentRooms(exec, ctx.signal, ctx.log).catch(_.noop);
+        void prepareMotionContentRooms(scriptExec, ctx.signal, ctx.log).catch(_.noop);
         if (existing.length > 0) {
           htmlStreamer.push(
             _.flatMap(chapters, (c) => byChapter[c.id] || []),
@@ -296,7 +297,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           analysis,
           language,
           source.text,
-          (current, focusIds, supplemental) => editScript(source, analysis, current, { language, exec, signal: ctx.signal, log: ctx.log, scope: editScope + MOTION_STORY_CONFIG.EDIT_SCOPE(chapter.id) + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
+          (current, focusIds, supplemental) => editScript(source, analysis, current, { language, exec: scriptExec, signal: ctx.signal, log: ctx.log, scope: editScope + MOTION_STORY_CONFIG.EDIT_SCOPE(chapter.id) + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
           ctx.log,
           new Set([chapter.id]),
         )
@@ -326,7 +327,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, {
             language,
             multiVoice,
-            exec,
+            exec: scriptExec,
             signal: ctx.signal,
             log: ctx.log,
             previous,
@@ -411,8 +412,8 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             chapterDrafts[chapter.id] ||= { inputKey: "", rows: [], pending: [{ id: RT_MAINTENANCE.VALUE_0_2, fields: [RT_MAINTENANCE.NARRATION] as any }] };
           }
         }
-        void prepareMotionContentRooms(exec, ctx.signal, ctx.log).catch(_.noop);
-        await mapMotionAiPool(todo, async (chapter) => writeOne(chapter), motionContentWorkerIds(exec).length);
+        void prepareMotionContentRooms(scriptExec, ctx.signal, ctx.log).catch(_.noop);
+        await mapMotionAiPool(todo, async (chapter) => writeOne(chapter), motionContentWorkerIds(scriptExec).length);
       } else {
         for (const chapter of todo) await writeOne(chapter);
       }
@@ -428,7 +429,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             analysis,
             language,
             source.text,
-            (current, focusIds, supplemental) => editScript(source, analysis, current, { language, exec, signal: ctx.signal, log: ctx.log, scope: editScope + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
+            (current, focusIds, supplemental) => editScript(source, analysis, current, { language, exec: scriptExec, signal: ctx.signal, log: ctx.log, scope: editScope + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
             ctx.log,
             pipelined ? new Set(chapters.filter((chapter: MotionChapter) => !chapterEdits.has(chapter.id)).map((chapter: MotionChapter) => chapter.id)) : undefined,
           );

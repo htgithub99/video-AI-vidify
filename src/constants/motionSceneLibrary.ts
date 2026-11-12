@@ -3,7 +3,9 @@ export const MOTION_SCENE_AI = { MODEL: AiPlanningChatModel.ClaudeSonnet55, EFFO
 export const MOTION_AI_SETTINGS_TEXT = {
   vi: {
     MAIN_TITLE: "AI hỗ trợ nội dung",
-    MAIN_NOTE: "Phân tích truyện, viết kịch bản, chia cảnh, chọn tài nguyên, duyệt ảnh khi bật, phân vai giọng, lập âm thanh và tạo SEO.",
+    MAIN_NOTE: "Phân tích nguồn và lập dàn ý: DNA video, chương, nhân vật, bối cảnh. Duyệt ảnh cảnh khi bật, chọn tài nguyên minh họa ở chế độ không dựng HTML, và là AI mặc định cho bước chưa chọn AI riêng.",
+    SCRIPT_TITLE: "AI viết kịch bản",
+    SCRIPT_NOTE: "Viết lời dẫn và mô tả cảnh cho từng chương, rồi biên tập kịch bản. Bước quyết định độ cuốn hút của video nên chọn AI mạnh, nhận được prompt dài (Gemini, ChatGPT, Claude). Meta AI chỉ nhận tin ngắn nên phải chia nhỏ, chậm hơn nhiều.",
     DRAW_TITLE: "AI dựng cảnh",
     PLAN_TITLE: "AI tạo prompt cảnh",
     LIGHT_TITLE: "AI việc phụ",
@@ -21,7 +23,9 @@ export const MOTION_AI_SETTINGS_TEXT = {
   },
   en: {
     MAIN_TITLE: "Content AI",
-    MAIN_NOTE: "Analyze stories, write scripts, plan shots, select assets, review images when enabled, cast voices, plan sound and create SEO.",
+    MAIN_NOTE: "Analyze the source and build the outline: video DNA, chapters, cast and places. Reviews scene images when enabled, selects illustration assets outside HTML mode, and is the default for any step without its own AI.",
+    SCRIPT_TITLE: "Script AI",
+    SCRIPT_NOTE: "Writes narration and scene descriptions for each chapter, then edits the script. This step decides how gripping the video is, so pick a strong AI that accepts long prompts (Gemini, ChatGPT, Claude). Meta AI only accepts short messages, so requests are split and run much slower.",
     DRAW_TITLE: "Scene AI",
     PLAN_TITLE: "Scene prompt AI",
     LIGHT_TITLE: "Support AI",

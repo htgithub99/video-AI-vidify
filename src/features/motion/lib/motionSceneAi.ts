@@ -25,6 +25,13 @@ export interface MotionPlanAiChoice {
   planAiFallback?: boolean;
   planAiMultiRoom?: boolean;
 }
+export interface MotionScriptAiChoice {
+  scriptAiProvider?: AiPlanningFallbackProvider;
+  scriptAiModel?: AiPlanningChatModel;
+  scriptAiHeadless?: boolean;
+  scriptAiFallback?: boolean;
+  scriptAiMultiRoom?: boolean;
+}
 export interface MotionLightAiChoice {
   lightAiProvider?: AiPlanningFallbackProvider;
   lightAiModel?: AiPlanningChatModel;
@@ -43,6 +50,12 @@ export const motionPlanAiExecution = (state: MotionAiChoice & MotionPlanAiChoice
   const requested = state.planAiProvider ? state.planAiModel : state.aiModel;
   const model = CINEMATIC_CHAT_MODEL_OPTIONS[provider]?.find((option) => option.value === requested)?.value || CINEMATIC_CHAT_DEFAULT_MODELS[provider] || requested;
   return { provider, model, mode: AiPlanningExecutionMode.RoomOnly, chromeHeadless: state.planAiHeadless ?? state.aiHeadless, allowFallback: (state.planAiFallback ?? state.aiFallback) !== false, multiRoom: state.planAiMultiRoom === true };
+};
+export const motionScriptAiExecution = (state: MotionAiChoice & MotionScriptAiChoice) => {
+  const provider = state.scriptAiProvider && state.scriptAiProvider !== AiPlanningFallbackProvider.Disabled && Object.hasOwn(CINEMATIC_CHAT_MODEL_OPTIONS, state.scriptAiProvider) ? state.scriptAiProvider : state.aiProvider;
+  const requested = state.scriptAiProvider ? state.scriptAiModel : state.aiModel;
+  const model = CINEMATIC_CHAT_MODEL_OPTIONS[provider]?.find((option) => option.value === requested)?.value || CINEMATIC_CHAT_DEFAULT_MODELS[provider] || requested;
+  return { provider, model, mode: state.scriptAiProvider ? AiPlanningExecutionMode.RoomOnly : state.aiMode, chromeHeadless: state.scriptAiHeadless ?? state.aiHeadless, allowFallback: (state.scriptAiFallback ?? state.aiFallback) !== false, multiRoom: (state.scriptAiMultiRoom ?? state.aiMultiRoom) === true };
 };
 export const motionMainAiExecution = (state: MotionAiChoice & MotionLightAiChoice) => ({ provider: state.aiProvider, model: state.aiModel, mode: state.aiMode, chromeHeadless: state.aiHeadless, allowFallback: state.aiFallback !== false, multiRoom: state.aiMultiRoom === true, ...(state.lightAiProvider ? { light: motionLightAiExecution(state) } : {}) });
 export const resolveMotionSceneExecution = (exec: MotionAiExecution) => {
