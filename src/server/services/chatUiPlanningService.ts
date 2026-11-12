@@ -10,7 +10,7 @@ import { RUNTIME_VALUES } from "../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
-import { BROWSER_LIFECYCLE_TEXTS, MOTION_BROWSER_HANDOFF } from "../../constants/browserLifecycle.js";
+import { BROWSER_DEAD_PAGE, BROWSER_LIFECYCLE_TEXTS, MOTION_BROWSER_HANDOFF } from "../../constants/browserLifecycle.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../constants/motionAiRecovery.js";
 import { MOTION_VISUAL } from "../../constants/motionVisual.js";
 import { MOTION_SCENE_COMPOSITION } from "../../constants/motionSceneComposition.js";
@@ -457,6 +457,14 @@ export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlannin
   );
   if (closeBrowser) await closeChatBrowserIfIdle();
 };
+const providerRoomUrls: Partial<Record<AiPlanningFallbackProvider, string>> = {
+  [AiPlanningFallbackProvider.GeminiChat]: EXTERNAL_URLS.GEMINI_CHAT,
+  [AiPlanningFallbackProvider.GrokChat]: EXTERNAL_URLS.GROK_CHAT,
+  [AiPlanningFallbackProvider.ChatGptUi]: EXTERNAL_URLS.CHATGPT,
+  [AiPlanningFallbackProvider.ClaudeChat]: EXTERNAL_URLS.CLAUDE_CHAT,
+  [AiPlanningFallbackProvider.DeepSeekChat]: EXTERNAL_URLS.DEEPSEEK_CHAT,
+  [AiPlanningFallbackProvider.MetaAi]: EXTERNAL_URLS.META_AI_CHAT,
+};
 export const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity): Promise<void> => {
   const rooms = getProviderRooms(request.provider);
   const roomKey = getPlanningRoomKey(request);
@@ -464,7 +472,9 @@ export const reloadChatPlanningRoom = async (request: ChatPlanningRoomIdentity):
   pendingRoomResponses.delete(roomKey);
   if (!page || page.isClosed()) throw new Error(SOURCE_TEXT_CHAT_PLANNING_ROOM_UNAVAILABLE_FOR_RELOAD);
   contextReceipts.get(page)?.invalidate();
-  if (request.provider === AiPlanningFallbackProvider.GeminiChat && page.url().startsWith(EXTERNAL_URLS.GEMINI_CHAT)) await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
+  const roomUrl = providerRoomUrls[request.provider];
+  if (roomUrl && BROWSER_DEAD_PAGE.test(page.url())) await page.goto(roomUrl, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
+  else if (request.provider === AiPlanningFallbackProvider.GeminiChat && page.url().startsWith(EXTERNAL_URLS.GEMINI_CHAT)) await page.goto(EXTERNAL_URLS.GEMINI_CHAT, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
   else await page.reload({ waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.PAGE_READY_TIMEOUT_MS });
 };
 const getProviderConversationSelectors = (provider: AiPlanningFallbackProvider): { url: string } | undefined => {
@@ -564,6 +574,7 @@ const createRoom = async (context: BrowserContext, url: string, rooms: Map<strin
   const existingRoom = getLiveRoom(rooms, projectId);
   if (existingRoom && existingRoom.context() === context) {
     await keepRoomActive(existingRoom);
+    if (BROWSER_DEAD_PAGE.test(existingRoom.url())) await existingRoom.goto(url, { waitUntil: SOURCE_TEXT_DOMCONTENTLOADED, timeout: CINEMATIC_CHAT_PLANNING_CONFIG.NAVIGATION_TIMEOUT_MS });
     return existingRoom;
   }
   if (existingRoom) {
