@@ -45,6 +45,18 @@ let syncBrowserMode: (() => Promise<void>) | undefined;
 const recentProviders = new Map<string, number>();
 const providerRoutes = new Map<string, string>();
 const routeGenerations = new Map<string, number>();
+const routeListeners: ((provider: string, from: string, to: string) => void)[] = [];
+const exhaustedListeners: ((provider: string) => void)[] = [];
+export const onProviderExhausted = (listener: (provider: string) => void): void => {
+  exhaustedListeners.push(listener);
+};
+const providerExhausted = (provider: string): void => {
+  if (providerRoutes.delete(provider)) routeGenerations.set(provider, (routeGenerations.get(provider) || 0) + 1);
+  for (const listener of exhaustedListeners) listener(provider);
+};
+export const onProviderRouted = (listener: (provider: string, from: string, to: string) => void): void => {
+  routeListeners.push(listener);
+};
 export const registerChromeBackupSwitch = (change: (targetId: string) => Promise<void>): void => {
   changeBrowser = change;
 };
@@ -188,9 +200,11 @@ export const pickChromeFor = (provider: string, current = activeChromeId()): str
 const isRoutedProvider = (provider?: string): provider is string => !!provider && provider !== A.MEDIA_PROVIDER;
 export const providerRouteGeneration = (provider: string): number => routeGenerations.get(provider) || 0;
 const routeProvider = (provider: string, target: string): void => {
+  const from = providerRoutes.get(provider) || activeChromeId();
   if (target === activeChromeId()) providerRoutes.delete(provider);
   else providerRoutes.set(provider, target);
   routeGenerations.set(provider, providerRouteGeneration(provider) + 1);
+  if (from !== target) for (const listener of routeListeners) listener(provider, from, target);
 };
 export const providerChromeId = (provider?: string): string => {
   const active = activeChromeId();
@@ -263,6 +277,7 @@ export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal
         const target = pickProviderChrome(provider, chromeId);
         if (!target) {
           log?.(A.LOG.NO_CHROME(provider, A.KIND_LABEL[found.kind]));
+          providerExhausted(provider);
           throw tagAiAvailability(error, { ...found, until: earliestProviderReset(provider) }, true);
         }
         log?.(A.LOG.ROUTE(provider, chromeName(chromeId), chromeName(target), A.KIND_LABEL[found.kind]));
@@ -303,6 +318,7 @@ export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal
       }
       if (!moved) {
         log?.(A.LOG.NO_CHROME(provider, A.KIND_LABEL[found.kind]));
+        providerExhausted(provider);
         throw tagAiAvailability(error, { ...found, until: earliestProviderReset(provider) }, true);
       }
     }

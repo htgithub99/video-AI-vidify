@@ -1,4 +1,6 @@
 export const CHROME_BACKUP = {
+  UNUSED_CLOSE_MS: 3000,
+  UNUSED_CLOSED: (name: string) => `Đã đóng ${name} vì không còn AI nào dùng.`,
   SETTINGS_FILE: "chrome-backup-settings.json",
   PROFILE: "gemini_backup_profile",
   PROFILES_DIR: "chrome_backup_profiles",

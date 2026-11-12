@@ -312,7 +312,7 @@ import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
 import { CHAT_ROOM_RECOVERY, CHROME_BACKUP as BACKUP } from "../../constants/chromeBackup.js";
 import { clickCurrentChatRetry } from "./chatRoomRecovery.js";
-import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure, withChromeBackupRecovery, chromeWaitPolicy, activeChromeId, chromeProfilePath, chromeDebugPort, chromeBackupAccountEmail, chromeSessionMismatch, sessionChromeId, providerChromeId, routedChromeIds } from "./chromeBackupService.js";
+import { isBackupChromeActive, registerChromeBackupSwitch, registerChromeBackupModeSync, saveChromeBackupSettings, readChromeBackupSettings, backupChromeFailure, withChromeBackupRecovery, chromeWaitPolicy, activeChromeId, chromeProfilePath, chromeDebugPort, chromeBackupAccountEmail, chromeSessionMismatch, sessionChromeId, providerChromeId, routedChromeIds, onProviderRouted, onProviderExhausted, chromeName } from "./chromeBackupService.js";
 import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { MOTION_TEXT_ROOMPAGE } from "../../constants/motionRuntime.js";
 import { classifyAiError, classifyAiText, tagAiAvailability, aiAvailabilityOf, isAiExhausted, formatAiUntil, type AiAvailabilityClass } from "./aiAvailabilityService.js";
@@ -2022,6 +2022,7 @@ export function scheduleGlobalBrowserCleanup() {
     }
     appLog(ImageGenMessages.AUTO_RELEASE_CHROME_IDLE);
     await closeAppBrowserAfterTask();
+    for (const id of [...backupConnections.keys()]) await closeChromeIfUnused(id);
   }, FLOW_VIDEO_MEDIA_CONFIG.GLOBAL_BROWSER_IDLE_TIMEOUT_MS);
 }
 export const getExistingGlobalBrowser = async (): Promise<BrowserSession | null> => {
@@ -5139,6 +5140,41 @@ export const getOrLaunchProviderBrowser = async (provider: string, chromeHeadles
   routedSharedSessions.set(id, session);
   return session;
 };
+const chromeInUse = (context: BrowserContext, ignore?: Page): boolean => context.pages().some((page) => page !== ignore && !page.isClosed() && (isChatRoomPage(page) || !isDisposableChatBrowserUrl(page.url())));
+const closeChromeIfUnused = async (id: string): Promise<void> => {
+  if (sharedChromeTasks.switching || routedChromeIds().includes(id)) return;
+  if (id === activeChromeId()) {
+    if (browserRetainers.size || activeFlowVideoGenerationCount > SecurityConstants.ZERO || globalBatchPages.some((page) => !page.isClosed())) return;
+    const session = activeBrowserInstance || (id === AI_AVAILABILITY.MAIN && sharedChromeLaunchedByApp ? await connectToSharedChromeBrowser(false) : null);
+    if (!session || chromeInUse(session.context, session.page)) return;
+    if (await closeAppBrowserAfterTask(true)) appLog(BACKUP.UNUSED_CLOSED(chromeName(id)));
+    return;
+  }
+  if (id === AI_AVAILABILITY.MAIN) {
+    const session = routedSharedSessions.get(id);
+    routedSharedSessions.delete(id);
+    const browser = session?.context.browser();
+    if (!session || !browser?.isConnected() || chromeInUse(session.context)) return;
+    const cdp = await browser.newBrowserCDPSession();
+    await cdp.send(SOURCE_TEXT_BROWSER_CLOSE as any).catch(() => undefined);
+    if (await waitForSharedChromeExit()) {
+      sharedChromeLaunchedByApp = false;
+      appLog(BACKUP.UNUSED_CLOSED(chromeName(id)));
+    }
+    return;
+  }
+  const browser = backupConnections.get(id);
+  if (!browser?.isConnected() || browser.contexts().some((context) => chromeInUse(context))) return;
+  if (await stopBackupChrome(id)) appLog(BACKUP.UNUSED_CLOSED(chromeName(id)));
+};
+onProviderRouted((_provider, from) => {
+  setTimeout(() => void closeChromeIfUnused(from).catch(() => undefined), BACKUP.UNUSED_CLOSE_MS);
+});
+onProviderExhausted(() => {
+  setTimeout(async () => {
+    for (const id of _.uniq([...routedSharedSessions.keys(), ...backupConnections.keys(), activeChromeId()])) await closeChromeIfUnused(id).catch(() => undefined);
+  }, BACKUP.UNUSED_CLOSE_MS);
+});
 registerChromeBackupSwitch(async (targetId: string) => {
   cancelGlobalBrowserCleanup();
   const preparation = backupPreparations.get(targetId);

@@ -148,7 +148,7 @@ import { META_AI_CHAT_CONFIG as M } from "../../constants/metaAiChat.js";
 import { selectMetaAiChatModel } from "./metaAiModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { assertGeminiFlashQuota, geminiModelStillSelected, getGeminiModelButton, markGeminiModel, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
-import { withChromeBackupRecovery, saveChatResponse, isAutoChromeSwitchEnabled, chromeWaitPolicy, earliestProviderReset, activeChromeId, aiFallbackChain, providerChromeId, providerRouteGeneration } from "./chromeBackupService.js";
+import { withChromeBackupRecovery, saveChatResponse, isAutoChromeSwitchEnabled, chromeWaitPolicy, earliestProviderReset, activeChromeId, aiFallbackChain, providerChromeId, providerRouteGeneration, onProviderRouted, onProviderExhausted } from "./chromeBackupService.js";
 import { classifyAiError, tagAiAvailability, aiAvailabilityOf, isAiExhausted, aiUnavailableUntil, formatAiUntil, waitAiReset } from "./aiAvailabilityService.js";
 import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
 import { sharedChromeTasks } from "./chromeTaskCoordinator.js";
@@ -390,6 +390,18 @@ export const closeChatBrowserIfIdle = async (log?: (line: string) => void): Prom
   if (!closed) log?.(MOTION_BROWSER_HANDOFF.SHARED_BUSY);
   return closed;
 };
+const closeProviderRooms = (provider: string): void => {
+  const rooms = getProviderRooms(provider as AiPlanningFallbackProvider);
+  if (!rooms) return;
+  for (const [key, page] of [...rooms]) {
+    rooms.delete(key);
+    pendingRoomResponses.delete(key);
+    releaseChatRoom(page);
+    if (!page.isClosed()) void page.close().catch(() => undefined);
+  }
+};
+onProviderRouted(closeProviderRooms);
+onProviderExhausted(closeProviderRooms);
 export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, requireClosed = false): Promise<void> => {
   const rooms = getProviderRooms(request.provider);
   if (!rooms) return;
