@@ -77,7 +77,7 @@ export const MOTION_PRODUCTION = {
   TASK_VERSION: 1,
   TASK_INVALID: "Bản nháp AI không hợp lệ; giữ file để phục hồi, không đặt lại số lần sửa hoặc ghi đè nội dung.",
   ATOMIC_RETRY_CODES: ["EPERM", "EACCES", "EBUSY"] as readonly string[],
-  ATOMIC_RETRY_DELAYS: [10, 20, 40, 80, 160, 200] as readonly number[],
+  ATOMIC_RETRY_DELAYS: [10, 20, 40, 80, 160, 320, 640, 1000, 1500, 2000] as readonly number[],
   ILLUSTRATION_VERSION: 1,
   ILLUSTRATION_READY: (characters: number, places: number): string => `Kiểm kế hoạch minh họa: ${characters} nhân vật, ${places} địa điểm có lựa chọn trong gói. Tư thế, chủ vật và hình học sẽ được kiểm theo từng cảnh.`,
   SNAPSHOT_VERSION: 1,

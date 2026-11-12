@@ -22,6 +22,7 @@ import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
 import { motionHtmlKitDoc, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../../lib/motionHtmlKit.js";
 import { MOTION_HTML_KIT } from "../../../../../constants/motionHtmlKit.js";
 import { motionHtmlMechanics } from "../../../../../lib/motionHtmlMechanics.js";
+import { motionHtmlDrawIssue, motionHtmlGraphics, motionHtmlOutput } from "../../../../../lib/motionHtmlPrompt.js";
 import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extractJson, motionAiRoutes } from "../motionStoryService.js";
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
@@ -240,9 +241,10 @@ const htmlSceneRoute = (exec: MotionAiExecution | undefined, missed: number): Mo
   return route.provider === exec.provider ? exec : { ...exec, provider: route.provider, model: route.model, mode: route.mode };
 };
 export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settings: { width: number; height: number; seconds: number; profile: string; figureKit?: boolean; scope?: string; language?: string; cast?: string; continuity?: string }, opts: Pick<RemotionSceneOptions, "exec" | "ai" | "signal" | "log"> & { pool?: MotionPriorityPool; priority?: number }, save: () => void = () => undefined): Promise<void> => {
-  const graphics = MOTION_HTML.PROFILE_GRAPHICS[settings.profile] || MOTION_HTML.GRAPHICS;
+  const graphics = motionHtmlGraphics(settings.profile, settings.figureKit === true);
+  const output = motionHtmlOutput(settings.figureKit === true);
   const figureDoc = settings.figureKit ? motionHtmlKitDoc(settings.profile) : motionHtmlFigureDoc(settings.profile);
-  const key = motionInputKey([MOTION_HTML.VERSION, MOTION_HTML.OUTPUT, graphics, figureDoc, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity, ...(settings.figureKit ? [MOTION_HTML_KIT.VERSION] : [])]);
+  const key = motionInputKey([MOTION_HTML.VERSION, output, graphics, figureDoc, scene.sceneTemplate, settings.width, settings.height, settings.profile, scene.drawingNote, settings.language, settings.cast, settings.continuity, ...(settings.figureKit ? [MOTION_HTML_KIT.VERSION] : [])]);
   const store = motionHtmlStore(settings.scope, scene.id, key);
   const saved = store.read();
   if (!scene.htmlRequest && saved) {
@@ -251,7 +253,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   }
   if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
   let prompt = [
-    MOTION_HTML.OUTPUT,
+    output,
     motionHtmlMechanics([scene.sceneTemplate, settings.continuity].join("\n")),
     graphics,
     figureDoc,
@@ -280,7 +282,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       routed = target?.provider;
     }
     const priorPrompt = scene.htmlRequest?.submission?.pending?.prompt;
-    const prior = scene.htmlRequest && ((scene.htmlRequest.submission?.attempted && !scene.htmlRequest.submission.completed && !scene.htmlRequest.submission.abandoned) || !priorPrompt || (priorPrompt.startsWith(MOTION_HTML.OUTPUT) && priorPrompt.includes(graphics))) ? scene.htmlRequest : undefined;
+    const prior = scene.htmlRequest && ((scene.htmlRequest.submission?.attempted && !scene.htmlRequest.submission.completed && !scene.htmlRequest.submission.abandoned) || !priorPrompt || (priorPrompt.startsWith(output) && priorPrompt.includes(graphics))) ? scene.htmlRequest : undefined;
     const attempt = prior && (prior.status === RT_MAINTENANCE.RUNNING || prior.status === RT_MAINTENANCE.RECEIVED || prior.status === RT_MAINTENANCE.WAITING_EXTERNAL) ? prior : { id: randomUUID(), attempt: (scene.htmlRequest?.attempt || 0) + 1, status: RT_MAINTENANCE.RUNNING, submission: { attempted: false, completed: false } };
     scene.htmlRequest = attempt;
     attempt.status = RT_MAINTENANCE.RUNNING;
@@ -335,9 +337,11 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       store.raw(attempt.attempt, attempt.raw!);
       const source = motionHtmlSource(attempt.raw);
       const kitIssue = settings.figureKit ? motionHtmlKitIssue(source) : undefined;
-      if (kitIssue) {
-        if (!prompt.includes(MOTION_HTML_KIT.RETRY)) prompt = [prompt, MOTION_HTML_KIT.RETRY].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
-        throw Object.assign(new Error(kitIssue), { motionHtmlExecution: true });
+      const drawIssue = kitIssue || motionHtmlDrawIssue(source);
+      if (drawIssue) {
+        const retry = kitIssue ? MOTION_HTML_KIT.RETRY : MOTION_HTML.ERASE_RETRY;
+        if (!prompt.includes(retry)) prompt = [prompt, retry].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+        throw Object.assign(new Error(drawIssue), { motionHtmlExecution: true });
       }
       const html = settings.figureKit ? motionHtmlWithKit(source, settings.profile) : source;
       scene.html = {

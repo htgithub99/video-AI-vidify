@@ -40,6 +40,25 @@ const editableInput = async (input: Locator): Promise<boolean> => {
   if (!(await input.isEditable().catch(() => false))) return false;
   return input.evaluate((element) => (element as HTMLElement).isContentEditable || element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement).catch(() => false);
 };
+const menuSnapshot = (page: Page): Promise<string> =>
+  page
+    .evaluate(
+      ({ selector, max, sep, overlay, model }) => {
+        const items = Array.from(document.querySelectorAll(selector))
+          .filter((node) => (node as HTMLElement).offsetParent !== null)
+          .slice(0, max)
+          .map((node) => `${node.getAttribute("role") || node.tagName}:${(node.textContent || "").replace(/\s+/g, " ").trim()}`);
+        const layer = document.querySelector(overlay) as HTMLElement | null;
+        const button = document.querySelector(model);
+        const pickers = Array.from(document.querySelectorAll("button"))
+          .filter((node) => node.offsetParent !== null && (node.hasAttribute("aria-haspopup") || /flash|pro|fast|thinking|tư duy|nhanh|mode|model/i.test(`${node.textContent} ${node.getAttribute("aria-label")}`)) && (node.textContent || "").trim().length < 50)
+          .slice(0, 12)
+          .map((node) => `${node.getAttribute("data-test-id") || node.getAttribute("data-testid") || ""}#${node.getAttribute("aria-label") || ""}#${node.getAttribute("aria-haspopup") || ""}#${node.getAttribute("aria-expanded") || ""}#${(node.textContent || "").replace(/\s+/g, " ").trim()}`);
+        return [`pickers:${pickers.join(" ; ")}`, items.join(sep), `overlay:${(layer?.innerText || "").replace(/\s+/g, " ").trim()}`, `button:${button?.getAttribute("aria-expanded")}:${(button?.textContent || "").replace(/\s+/g, " ").trim()}`].join(sep);
+      },
+      { selector: UI.MENU_SNAPSHOT_SELECTOR, max: UI.MENU_SNAPSHOT_MAX, sep: UI.MENU_SNAPSHOT_SEP, overlay: UI.MENU_OVERLAY_SELECTOR, model: UI.PRIMARY_MODEL_SELECTOR },
+    )
+    .catch(() => C.EMPTY);
 const optionFor = (page: Page, name: RegExp): Locator => page.getByRole(UI.MENU_ITEM_RADIO, { name }).or(page.getByRole(UI.MENU_ITEM, { name })).or(page.getByRole(UI.OPTION, { name })).filter({ visible: true }).first();
 const quotaError = (model: AiPlanningChatModel | undefined, text: string): Error => (parseGeminiChatModel(model)?.model === Models.GeminiFlash ? new Error(BACKUP.QUOTA + AI_AVAILABILITY.SPACE + text) : new Error(AI_AVAILABILITY.GEMINI_QUOTA(String(model), text)));
 export const assertGeminiFlashQuota = async (page: Page, model?: AiPlanningChatModel): Promise<void> => {
@@ -178,17 +197,22 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
       phase = UI.PHASE.BASE_VERIFY;
       if (!(await waitUntil(page, async () => baseLabel.test((await button.innerText()).trim()), signal))) throw uiError(page, phase, model);
       phase = UI.PHASE.LEVEL;
+      const shown = `${(await button.innerText().catch(() => C.EMPTY)).replace(/\s+/g, " ")} ${(await button.getAttribute(UI.ARIA_LABEL).catch(() => null)) || C.EMPTY}`;
+      if (level.current.test(shown)) {
+        markGeminiModel(page, model);
+        return;
+      }
       const option = optionFor(page, level.pattern);
-      if (!(await openThinkingMenu(page, button, option, signal))) throw uiError(page, phase, model);
+      if (!(await openThinkingMenu(page, button, option, signal))) throw uiError(page, phase, model, undefined, { menu: await menuSnapshot(page) });
       if (!(await waitUntil(page, () => available(option), signal))) {
         if (await disabled(option)) throw await unavailableFor(option, model);
-        throw uiError(page, phase, model);
+        throw uiError(page, phase, model, undefined, { menu: await menuSnapshot(page) });
       }
       if (!(await checked(option))) {
         await clickPlanningControl(option, signal);
         await closeMenus(page);
         phase = UI.PHASE.LEVEL_VERIFY;
-        if (!(await openThinkingMenu(page, button, option, signal)) || !(await waitUntil(page, () => checked(option), signal))) throw uiError(page, phase, model);
+        if (!(await openThinkingMenu(page, button, option, signal)) || !(await waitUntil(page, () => checked(option), signal))) throw uiError(page, phase, model, undefined, { menu: await menuSnapshot(page) });
       }
       phase = UI.PHASE.BASE_VERIFY;
       if (!baseLabel.test((await button.innerText()).trim())) throw uiError(page, phase, model);

@@ -6,6 +6,8 @@ export const CHAT_PLANNING_RUNTIME = {
   CLAUDE: "Claude",
   CLAUDE_MODEL_UNAVAILABLE_CODE: "claude_model_unavailable",
   CLAUDE_EFFORT_UNAVAILABLE_CODE: "claude_effort_unavailable",
+  MODEL_UI_NOT_READY: "claude_model_ui_not_ready – Chưa thấy nút chọn mô hình của Claude (trang chưa tải xong); thử lại, chưa gửi yêu cầu.",
+  UI_TRANSIENT: /Timeout \d+ms exceeded|has been closed|frame was detached|Execution context was destroyed|net::ERR_/i,
   MODEL_PHASE: "base_model",
   EFFORT_PHASE: "effort_level",
   MODEL_LABEL_PATTERN: (escapedLabel: string): string => `^${escapedLabel}(?:\\s|$)`,

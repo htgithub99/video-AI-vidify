@@ -4,13 +4,18 @@ export const GEMINI_MODEL_UI = {
   LEVEL_FLAGS: "iu",
   READY_POLLS: 3,
   COLLAPSED_COMPOSER_SELECTOR: "rich-textarea.simplified-input",
-  PRIMARY_MODEL_SELECTOR: 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"]',
+  PRIMARY_MODEL_SELECTOR: 'button[data-test-id="bard-mode-menu-button"], button[data-testid="bard-mode-menu-button"], button[aria-label^="Mở công cụ chọn chế độ"], button[aria-label^="Open mode picker" i]',
+  ARIA_LABEL: "aria-label",
   EDITABLE_INPUT_SELECTOR: "textarea, input, [contenteditable]:not(.ql-clipboard)",
   PRIMARY_INPUT_SELECTOR: "rich-textarea [contenteditable]:not(.ql-clipboard), rich-textarea textarea, rich-textarea input",
   FOCUS_ATTEMPTS: 3,
   FOCUS_RETRY_MS: 1000,
   FOCUS_TIMEOUT_MS: 1000,
-  READINESS_KEYS: { inputVisible: "selectionInputVisible", inputEditable: "selectionInputEditable", modelVisible: "selectionModelVisible", modelEnabled: "selectionModelEnabled", modelLabel: "selectionModelLabel", stablePolls: "selectionStablePolls", focusAttempts: "selectionFocusAttempts", elapsedMs: "selectionElapsedMs", pageClosed: "selectionPageClosed" },
+  READINESS_KEYS: { inputVisible: "selectionInputVisible", inputEditable: "selectionInputEditable", modelVisible: "selectionModelVisible", modelEnabled: "selectionModelEnabled", modelLabel: "selectionModelLabel", stablePolls: "selectionStablePolls", focusAttempts: "selectionFocusAttempts", elapsedMs: "selectionElapsedMs", pageClosed: "selectionPageClosed", menu: "selectionMenu" },
+  MENU_SNAPSHOT_SELECTOR: '[role="menuitem"], [role="menuitemradio"], [role="option"], [role="menu"] button',
+  MENU_SNAPSHOT_SEP: " | ",
+  MENU_SNAPSHOT_MAX: 40,
+  MENU_OVERLAY_SELECTOR: ".cdk-overlay-container",
   SELECTION_ATTEMPTS: 2,
   PHASE: { READY: "page_ready", BASE: "base_model", BASE_VERIFY: "base_model_verify", LEVEL: "thinking_level", LEVEL_VERIFY: "thinking_level_verify" },
   ESCAPE: "Escape",
@@ -33,9 +38,9 @@ export const GEMINI_MODEL_UI = {
   MODEL_BUTTON_SELECTOR: 'button:not([role="menuitem"]):not([role="menuitemradio"]):not([role="option"])',
 } as const;
 export const GEMINI_THINKING_LEVEL_OPTIONS = [
-  { value: "low", label: "Thấp", labelEn: "Low", pattern: /^(?:(?:Đã chọn|Selected)\s+)?(?:Thấp|Low)(?:\s|$)/i },
-  { value: "medium", label: "Trung bình", labelEn: "Medium", pattern: /^(?:(?:Đã chọn|Selected)\s+)?(?:Trung bình|Medium)(?:\s|$)/i },
-  { value: "high", label: "Cao", labelEn: "High", pattern: /^(?:(?:Đã chọn|Selected)\s+)?(?:Cao|High)(?:\s|$)/i },
+  { value: "low", label: "Thấp", labelEn: "Low", pattern: /^(?:(?:Đã chọn|Selected)\s+)?(?:Thấp|Low)(?:\s|$)/i, current: /(?:^|[\s,])(?:Thấp|Low)(?:[\s,.]|$)/i },
+  { value: "medium", label: "Trung bình", labelEn: "Medium", pattern: /^(?:(?:Đã chọn|Selected)\s+)?(?:Trung bình|Medium)(?:\s|$)/i, current: /(?:^|[\s,])(?:Trung bình|Medium)(?:[\s,.]|$)/i },
+  { value: "high", label: "Cao", labelEn: "High", pattern: /^(?:(?:Đã chọn|Selected)\s+)?(?:Cao|High)(?:\s|$)/i, current: /(?:^|[\s,])(?:Cao|High)(?:[\s,.]|$)/i },
 ] as const;
 export type GeminiThinkingLevel = (typeof GEMINI_THINKING_LEVEL_OPTIONS)[number]["value"];
 export const GEMINI_MODEL_ENCODING = {

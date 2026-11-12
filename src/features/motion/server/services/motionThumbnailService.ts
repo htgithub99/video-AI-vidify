@@ -25,7 +25,7 @@ import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis, MotionSto
 import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
 import { motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
-import { MOTION_HTML } from "../../../../constants/motionHtmlTemplate.js";
+import { motionHtmlDrawIssue, motionHtmlGraphics } from "../../../../lib/motionHtmlPrompt.js";
 import { motionHtmlKitDoc, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../lib/motionHtmlKit.js";
 import { motionHtmlSource } from "../../../../lib/motionHtmlScene.js";
 import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
@@ -78,13 +78,13 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       if (settings.figureKit === true) {
         opts.log?.(T.LOG_KIT);
         const htmlExec: MotionAiExecution = { ...exec, outputFormat: RT_MAINTENANCE.HTML, singleResponse: true };
-        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, MOTION_HTML.PROFILE_GRAPHICS[settings.profileId] || MOTION_HTML.GRAPHICS, motionHtmlKitDoc(settings.profileId), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
+        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, motionHtmlGraphics(settings.profileId, true), motionHtmlKitDoc(settings.profileId), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
         let reason = "";
         for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
           opts.signal?.throwIfAborted();
           const prompt = reason ? [base, T.HTML_RETRY(reason)].join(RT_MAINTENANCE.NEWLINE) : base;
           const source = motionHtmlSource(await deps.runMotionAi(prompt, T.HTML_ARTIFACT, htmlExec, opts.signal, opts.log, images));
-          const issue = motionHtmlKitIssue(source);
+          const issue = motionHtmlKitIssue(source) || motionHtmlDrawIssue(source);
           if (issue) {
             reason = issue;
             opts.log?.(T.LOG_KIT_RETRY(attempt, issue));

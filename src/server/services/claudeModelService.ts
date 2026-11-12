@@ -57,7 +57,7 @@ export const selectClaudeChatModel = async (page: Page, model?: AiPlanningChatMo
   const { spec, effort } = selection;
   const button = page.locator(CONFIG.CLAUDE_MODEL_BUTTON_SELECTOR).filter({ visible: true }).last();
   checkCancelled(signal);
-  if (!(await waitUntil(page, () => button.isVisible().catch(() => false), signal))) throw unavailable(spec.label);
+  if (!(await waitUntil(page, () => button.isVisible().catch(() => false), signal))) throw new Error(C.MODEL_UI_NOT_READY);
   let phase: string = C.MODEL_PHASE;
   try {
     const label = modelLabelPattern(spec.label);
@@ -95,6 +95,7 @@ export const selectClaudeChatModel = async (page: Page, model?: AiPlanningChatMo
   } catch (error) {
     checkCancelled(signal);
     if (error instanceof Error && (error.message.includes(C.CLAUDE_MODEL_UNAVAILABLE_CODE) || error.message.includes(C.CLAUDE_EFFORT_UNAVAILABLE_CODE))) throw error;
+    if (error instanceof Error && C.UI_TRANSIENT.test(error.message)) throw error;
     throw Object.assign(unavailable(effort && phase === C.EFFORT_PHASE ? C.MODEL_EFFORT_LABEL(spec.label, CLAUDE_EFFORT_OPTIONS.find((entry) => entry.value === effort)!.label) : spec.label, phase), { cause: error });
   } finally {
     if (!page.isClosed()) await closeMenu(page).catch(() => undefined);

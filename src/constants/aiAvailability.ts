@@ -48,10 +48,11 @@ export const AI_AVAILABILITY = {
     '[role="alert"], [role="status"], [role="alertdialog"], [role="dialog"], [aria-live="polite"], [aria-live="assertive"], aside[role="status"], [data-testid="usage-limit-banner"], [data-testid*="limit" i], [class*="limit" i], [class*="quota" i], [class*="banner" i], mat-snack-bar-container, bard-simple-snack-bar, .ds-toast, .cf-error-details, #challenge-running, #challenge-stage',
   CODES: {
     quota: ["chatgpt_rate_limited", "deepseek_rate_limited", "gemini_flash_quota_exhausted", "gemini_quota_exhausted", "META_AI_RATE_LIMITED", "Claude đã hết lượt sử dụng", "Grok đã hết lượt sử dụng"],
-    blocked: ["deepseek_account_unavailable", "chưa được xác minh sau"],
+    blocked: ["deepseek_account_unavailable", "chưa được xác minh sau", "title=Chờ một chút", "title=Just a moment"],
     login: ["claude_login_required", "deepseek_login_required", "chưa hoàn tất đăng nhập"],
     plan: ["gemini_thinking_unavailable", "claude_model_unavailable", "deepseek_model_unavailable", "base_model_unavailable"],
   } as Record<string, readonly string[]>,
+  TRANSIENT_CAUSE: /Timeout \d+ms exceeded|has been closed|frame was detached|Execution context was destroyed|net::ERR_/i,
   PAGE: {
     quota:
       /you(?:'|’)?ve (?:reached|hit|used up).{0,60}(?:limit|quota|cap)|you have reached.{0,60}(?:limit|quota)|(?:usage|message|daily|hourly|free|image|video|generation|request)[ -](?:limit|cap|quota)s?\b.{0,80}(?:reached|resets?|try again|until|exceeded|hit)|quota (?:exceeded|exhausted)|out of (?:free )?(?:messages|credits|uses|generations)|too many (?:messages|requests)|messages too frequent|limit (?:resets|will reset|reached|is gone)|before limit is gone|resets? (?:at|in|on|tomorrow)\b|try again (?:in|after|at) \d|hạn mức.{0,60}(?:hết|đạt|đặt lại|khôi phục)|(?:hết|đạt).{0,20}hạn mức|hết lượt|đã (?:đạt|hết|dùng hết).{0,40}(?:giới hạn|lượt)|giới hạn.{0,60}(?:đặt lại|thử lại (?:sau|vào|lúc))|(?:can(?:'|’)?t|cannot|unable to) (?:create|generate|make) (?:any )?more (?:images|videos|pictures)|try again tomorrow|không thể tạo thêm (?:ảnh|hình|video)|thử lại vào ngày mai|quá nhiều yêu cầu|tin nhắn quá thường xuyên|消息过于频繁|操作频繁|使用上限/iu,

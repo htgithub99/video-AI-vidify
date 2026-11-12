@@ -160,7 +160,7 @@ export const classifyAiError = async (error: unknown, provider: string): Promise
   if (codeMatch(A.KIND.QUOTA, message)) return found(A.KIND.QUOTA, pageHit(A.PAGE.quota) || message);
   if (record[MOTION_CAPTCHA.FLAG] || codeMatch(A.KIND.BLOCKED, message) || MOTION_CAPTCHA.PATTERN.test(message)) return found(A.KIND.BLOCKED, pageHit(A.PAGE.blocked) || message);
   if (codeMatch(A.KIND.LOGIN, message)) return found(A.KIND.LOGIN, message);
-  if (codeMatch(A.KIND.PLAN, message)) {
+  if (codeMatch(A.KIND.PLAN, message) && !A.TRANSIENT_CAUSE.test(String(record.cause?.message || A.EMPTY))) {
     const reset = pageHit(A.PAGE.planReset) || (A.PAGE.planReset.test(message) ? message : undefined);
     return reset ? found(A.KIND.QUOTA, reset) : found(A.KIND.PLAN, message);
   }
