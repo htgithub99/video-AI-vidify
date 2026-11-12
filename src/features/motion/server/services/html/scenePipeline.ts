@@ -259,7 +259,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     settings.cast,
     settings.continuity,
     MOTION_HTML.SCENE_LABEL + scene.sceneTemplate,
-    MOTION_HTML.ON_SCREEN_TEXT(scene.places || [], scene.timeLabel),
+    MOTION_HTML.ON_SCREEN_TEXT(scene.places || [], scene.timeLabel, settings.figureKit === true),
     scene.drawingNote ? RT_MAINTENANCE.USER_NOTES_SOURCE_DATA + scene.drawingNote : undefined,
     `${RT_MAINTENANCE.RUNTIME}${stringifyJson({ width: settings.width, height: settings.height, estimatedDuration: Number(settings.seconds.toFixed(1)), profile: settings.profile })}`,
   ]

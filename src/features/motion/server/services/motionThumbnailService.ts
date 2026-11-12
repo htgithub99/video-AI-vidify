@@ -25,7 +25,11 @@ import type { MotionAiExecution, MotionSeoOption, MotionStoryAnalysis, MotionSto
 import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
 import { motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
-const dependencies = { runMotionAi, rasterizeMotionSvgs, prepareMotionThumbnailReferences };
+import { MOTION_HTML } from "../../../../constants/motionHtmlTemplate.js";
+import { motionHtmlKitDoc, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../lib/motionHtmlKit.js";
+import { motionHtmlSource } from "../../../../lib/motionHtmlScene.js";
+import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
+const dependencies = { runMotionAi, rasterizeMotionSvgs, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
 export const createMotionThumbnailService = (overrides: Partial<typeof dependencies> = {}) => {
   const deps = { ...dependencies, ...overrides };
   return async (analysis: MotionStoryAnalysis, seo: MotionSeoOption | undefined, opts: { language: string; aspect?: string; note?: string; script?: MotionStoryScript; visualSettings?: MotionVisualSettings; exec: MotionAiExecution; chromeHeadless?: boolean; signal?: AbortSignal; log?: (s: string) => void }): Promise<{ thumbnail: string; prompt: string }> => {
@@ -71,6 +75,46 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
         userNote: opts.note || "",
         ...(motionRenameMapActive(analysis).length ? { renaming: RENAME.PROMPT.THUMBNAIL } : {}),
       };
+      if (settings.figureKit === true) {
+        opts.log?.(T.LOG_KIT);
+        const htmlExec: MotionAiExecution = { ...exec, outputFormat: RT_MAINTENANCE.HTML, singleResponse: true };
+        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, MOTION_HTML.PROFILE_GRAPHICS[settings.profileId] || MOTION_HTML.GRAPHICS, motionHtmlKitDoc(settings.profileId), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
+        let reason = "";
+        for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
+          opts.signal?.throwIfAborted();
+          const prompt = reason ? [base, T.HTML_RETRY(reason)].join(RT_MAINTENANCE.NEWLINE) : base;
+          const source = motionHtmlSource(await deps.runMotionAi(prompt, T.HTML_ARTIFACT, htmlExec, opts.signal, opts.log, images));
+          const issue = motionHtmlKitIssue(source);
+          if (issue) {
+            reason = issue;
+            opts.log?.(T.LOG_KIT_RETRY(attempt, issue));
+            continue;
+          }
+          const html = motionHtmlWithKit(source, settings.profileId);
+          const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
+          await fs.promises.writeFile(file.replace(/\.png$/u, T.HTML_FILE_EXT), html);
+          opts.log?.(T.RENDER_LOG);
+          const runtime = await deps.openMotionHtmlRuntime(html, opts.signal);
+          try {
+            const buffer = await runtime.render({ time: 0, progress: 0, frame: 0, fps: T.REFERENCE_FPS, duration: T.REFERENCE_SECONDS, width, height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: false, sceneEffectsEnabled: true, seed: requestId, speaking: [] } as Parameters<typeof runtime.render>[0]);
+            const base64 = buffer.toString(RT_MAINTENANCE.BASE64);
+            const dimensions = readBase64ImageDimensions(base64);
+            if (dimensions?.width === width && dimensions.height === height) {
+              await fs.promises.writeFile(file, buffer);
+              opts.log?.(MR.MOTION_TEXT_THUMBNAIL_XONG);
+              return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt };
+            }
+            reason = T.VIEWBOX_ERROR;
+          } catch (error) {
+            opts.signal?.throwIfAborted();
+            reason = String((error as Error).message);
+          } finally {
+            await runtime.close();
+          }
+          opts.log?.(T.LOG_KIT_RETRY(attempt, reason));
+        }
+        throw new Error(T.HTML_ERROR(reason));
+      }
       const prompt = withMotionResponsePrompt(T.ARTIFACT, [T.DRAW_TASK, T.LAYOUT, T.REFERENCE_RULE, T.STYLE_RULE + style, stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE));
       const contract: MotionAiResponseContract = {
         schema: MOTION_RESPONSE_SCHEMAS[T.ARTIFACT],
