@@ -1267,7 +1267,7 @@ const submitPrompt = async (
   const responseDirective = artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE ? RT_MAINTENANCE.RETURN_THE_COMPLETE_HTML_DOCUMENT_IN_ONE_HTML_CODE_BLOCK : singleMessage ? MOTION_PROMPT.SCENE_RESPONSE_DIRECTIVE : isDeepSeek ? D.DIRECTIVE : isClaude ? CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INLINE_RESPONSE_DIRECTIVE : CINEMATIC_CHAT_PLANNING_CONFIG.JSON_ONLY_DIRECTIVE;
   const normalizedPrompt = normalizeRoomPrompt(prompt);
   const submittedPrompt = MOTION_TEMPLATE_SYMBOL_26(SOURCE_TEMPLATE_SYMBOL_86(String(normalizedPrompt)), SOURCE_TEMPLATE_SYMBOL_86(String(responseDirective)));
-  const { limit, parts } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit, singleMessage);
+  const { limit, parts, final } = planningPromptTransport(prompt, submittedPrompt.length, promptMessageLimit, singleMessage, inputSelector === M.INPUT && artifactType !== CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ARTIFACT);
   if (parts.length) {
     const request = requestId || createHash(SOURCE_TEXT_SHA256).update(prompt).digest(SOURCE_TEXT_HEX).slice(0, 12);
     await writeMusicDiagnostic(CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_DIAGNOSTIC, { runId: request, stage: artifactType, promptChars: prompt.length, submittedChars: submittedPrompt.length, messageLimit: limit, chunkCount: parts.length, attachmentCount: attachments.length, status: CINEMATIC_CHAT_PLANNING_CONFIG.PROMPT_ATOMIC });
@@ -1319,6 +1319,7 @@ const submitPrompt = async (
       }
       receipts.accept(index + 1);
     }
+    if (final !== undefined) return submitPrompt(page, roomKey, final, inputSelector, sendSelector, responseSelector, busySelector, expectedSceneIds, attachments, completionMarker, artifactType, requestId, signal, submission, limit, onUploadProgress);
     const executionPrompt = [CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_EXECUTE(request, artifactType, parts.length), AIR.VECTOR_ARTIFACT.test(artifactType || MR.MOTION_TEXT_EMPTY) ? AIR.VECTOR_INSTRUCTION : MR.MOTION_TEXT_EMPTY].filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27);
     return submitPrompt(page, roomKey, executionPrompt, inputSelector, sendSelector, responseSelector, busySelector, expectedSceneIds, attachments, completionMarker, artifactType, requestId, signal, submission, limit, onUploadProgress);
   }

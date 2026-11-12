@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
+import { PROMPT_SOURCE_DATA } from "../../../../../constants/promptSourceData.js";
 import { runMotionAi, normalizeBeats, sourceSlice, mapMotionAiPool } from "../motionStoryService.js";
 import { normalizeMotionChapterMetadata } from "../../../../../lib/motionEditorialMetadata.js";
 import { motionHtmlWritingDirection, motionHtmlChapterBudget } from "../../../../../lib/motionHtmlAuthoring.js";
@@ -173,7 +174,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
           last: opts.isLast && index === parts.length - 1,
           section: partSection,
         }),
-        RT_MAINTENANCE.SOURCE_2 + part.source,
+        PROMPT_SOURCE_DATA.WRAP(part.source),
       ].join(RT_MAINTENANCE.NEWLINE);
       const partKey = motionInputKey(partPrompt);
       const savedPart = drafts[String(index)];
@@ -200,7 +201,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
     opts.multiVoice === false ? RT_MAINTENANCE.ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED : RT_MAINTENANCE.USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR,
     RT_MAINTENANCE.PARTPROMPT_2,
     JSON.stringify({ title: analysis.title, chapter, outline: compactOutline, ...motionHtmlIdentities(analysis), previous: previousTail, first: opts.isFirst, last: opts.isLast, section: opts.section }),
-    RT_MAINTENANCE.SOURCE_2 + slice,
+    PROMPT_SOURCE_DATA.WRAP(slice),
   ].join(RT_MAINTENANCE.NEWLINE);
   const key = motionInputKey(prompt);
   const raw = opts.draft?.inputKey === key && opts.draft.rows.length ? { beats: opts.draft.rows } : opts.ai ? await opts.ai(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : await runMotionAi(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log);

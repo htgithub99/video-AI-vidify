@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
+import { PROMPT_SOURCE_DATA } from "../constants/promptSourceData.js";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../constants/motionHtmlTemplate.js";
 import { motionVideoGenre } from "../constants/motionGenre.js";
 import { motionStorytelling } from "./motionStorytelling.js";
@@ -31,7 +32,7 @@ export const motionHtmlAnalysisPrompt = (input: { title: string; seconds: number
     `${RT_MAINTENANCE.TITLE}${input.title}${RT_MAINTENANCE.LANGUAGE}${input.language}${RT_MAINTENANCE.TOTAL_BUDGET}${input.seconds}${RT_MAINTENANCE.S_AIM_FOR_ABOUT}${input.chapters}${RT_MAINTENANCE.MEANINGFUL_CHAPTERS_SCALING_TO_SOURCE_AND_BUDGET_SO_CHAPTER_TARGETSECONDS}${input.seconds}${RT_MAINTENANCE.MOTIONHTMLANALYSISPROMPT_TEMPLATE_PART_6}`,
     motionHtmlPacingDirection({ pacing: input.pacing || RT_MAINTENANCE.FEW } as MotionVisualSettings, input.seconds),
     RT_MAINTENANCE.MOTIONHTMLANALYSISPROMPT_2,
-    RT_MAINTENANCE.SOURCE_2 + input.transcript,
+    PROMPT_SOURCE_DATA.WRAP(input.transcript),
   ].join(RT_MAINTENANCE.NEWLINE);
 export const motionHtmlGenreDirection = (genre: unknown, seconds: number, mode: unknown): string => {
   const selected = motionVideoGenre(genre);

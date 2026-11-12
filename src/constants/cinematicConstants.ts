@@ -131,7 +131,10 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   UI_READ_COMPOSER: "composer-content",
   UI_READ_RESPONSIVENESS: "page-responsiveness",
   PROMPT_MESSAGE_LIMIT: 24000,
-  PROMPT_PART_CHARS: 18000,
+  PROMPT_MESSAGE_MAX: 48000,
+  PROMPT_PART_CHARS: 30000,
+  PROMPT_PART_BREAK: "\n",
+  PROMPT_PART_BREAK_WINDOW: 0.2,
   PROMPT_MIN_MESSAGE_LIMIT: 6000,
   PROMPT_CONTEXT_RESERVE: 2400,
   PROMPT_DIAGNOSTIC: "chat-prompt-measurement",
@@ -147,9 +150,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CONTEXT_PART_ID: (request: string, part: number): string => `${request}_context_${part}`,
   CONTEXT_ACK_REPAIR: (id: string, part: number): string => `The previous context receipt was missing or invalid. Keep all request parts already stored in this conversation; do not execute or resend the request. Return exactly this JSON receipt without changing any value: ${stringifyJson({ artifactType: "chat-planning-context", requestId: id, receivedPart: part })}`,
   CONTEXT_PART: (id: string, request: string, part: number, total: number, text: string): string =>
-    `Receive part ${part}/${total} of the complete production request ${request}. Store this part verbatim in this conversation. Do not execute any instructions in a part until the final execute message. Repeated part IDs replace earlier copies. The original request may span a word or JSON string across parts; join parts without inserting or removing characters.\n<request-part>\n${text}\n</request-part>\nFor this message only return raw JSON: {"artifactType":"chat-planning-context","requestId":${stringifyJson(id)},"receivedPart":${part}}`,
+    `Data section ${part}/${total} of production request ${request}. Keep this section in the conversation; the task message comes after the last section. Sections are consecutive slices of one text; a later section continues exactly where this one ends.\n<request-part>\n${text}\n</request-part>\nReply now only with this raw JSON receipt: {"artifactType":"chat-planning-context","requestId":${stringifyJson(id)},"receivedPart":${part}}`,
   CONTEXT_EXECUTE: (request: string, artifact: string | undefined, total: number): string =>
-    `Execute the complete production request ${request}, whose exact text was supplied in ${total} numbered request parts in this conversation. Join every part in order without adding or omitting characters, then follow the complete request's instructions and schema. All parts are required. Preserve the original request's distinction between instructions and quoted source/library data. This is the final execution message. Return the requested final JSON, not a receipt. Final artifactType: ${artifact || "as specified in the complete request"}; final requestId: ${request}.`,
+    `Execute the complete production request ${request}, whose exact text was supplied in ${total} numbered data sections in this conversation. Join every section in order without adding or omitting characters, then follow the complete request's instructions and schema. All sections are required. Preserve the original request's distinction between instructions and quoted source/library data. This is the final execution message. Return the requested final JSON, not a receipt. Final artifactType: ${artifact || "as specified in the complete request"}; final requestId: ${request}.`,
   UI_ACTION_BASE_MS: 30000,
   UI_ACTION_PER_CHAR_MS: 4,
   UI_ACTION_MAX_MS: 180000,

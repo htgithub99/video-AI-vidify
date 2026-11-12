@@ -3,7 +3,7 @@ import { motionResponsePrompt } from "../lib/motionResponseContract.js";
 export const MOTION_PROMPT = {
   TARGET_CHARS: 16000,
   WRAPPER_RESERVE: 2400,
-  ROUTE_BUDGETS: { "gemini-chat": 16000, "deepseek-chat": 16000, "chatgpt-ui": 16000, "claude-chat": 16000, "grok-chat": 16000, "meta-ai": 16000 } as Record<string, number>,
+  ROUTE_BUDGETS: { "gemini-chat": 48000, "deepseek-chat": 48000, "chatgpt-ui": 32000, "claude-chat": 24000, "grok-chat": 24000, "meta-ai": 32000 } as Record<string, number>,
   MODEL_BUDGETS: {} as Record<string, number>,
   ARTIFACT_BUDGETS: {} as Record<string, number>,
   SELF_CONTAINED_ARTIFACTS: ["motion-html-scene", "motion-html-plan", "motion-story-chapter", "motion-story-edit", "motion_remotion_scene", "motion_remotion_composition", "motion_remotion_thumbnail", "motion-html-thumbnail", "motion_remotion_sheet", "motion_remotion_motion"] as readonly string[],
