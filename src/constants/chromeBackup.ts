@@ -162,6 +162,8 @@ export const CHROME_BACKUP = {
 } as const;
 export const CHAT_ROOM_RECOVERY = {
   SAME_ROOM_RETRIES: 2,
+  HUNG_PAGE: /Timeout \d+ms exceeded|chat_planning_page_unresponsive|chat_planning_ui_read_timeout|\(page_ready/,
+  HUNG_LOG: "Tab AI bị treo (trang không phản hồi) – đóng tab treo và mở tab mới thay vì tải lại tại chỗ.",
   REGENERATE_LIMIT: 5,
   RETRY_CLICK_COOLDOWN_MS: 2500,
   BUTTON: "button",

@@ -1,5 +1,5 @@
 import { CINEMATIC_CHAT_PLANNING_CONFIG } from "../constants/cinematicConstants.js";
-import { PROMPT_SOURCE_DATA } from "../constants/promptSourceData.js";
+import { PROMPT_REFERENCE_DOC, PROMPT_SOURCE_DATA } from "../constants/promptSourceData.js";
 import { CHAT_PLANNING_RUNTIME as C } from "../constants/chatPlanningRuntime.js";
 import { parseClaudeChatModel } from "../constants/claudeChatModels.js";
 import { parseGeminiChatModel } from "../constants/geminiChatModels.js";
@@ -40,6 +40,14 @@ export const planningPromptTransport = (prompt: string, submittedChars: number, 
     if (submittedChars - (prompt.length - final.length) <= limit) return { limit, parts, final };
   }
   return { limit, parts: submittedChars > limit ? slices(prompt) : [] };
+};
+export const promptReferenceDocs = (prompt: string): { prompt: string; attachments: { name: string; mimeType: string; buffer: Buffer }[] } => {
+  const attachments: { name: string; mimeType: string; buffer: Buffer }[] = [];
+  const next = prompt.replace(PROMPT_REFERENCE_DOC.BLOCK, (_match: string, name: string, body: string) => {
+    attachments.push({ name, mimeType: PROMPT_REFERENCE_DOC.MIME, buffer: Buffer.from(body, PROMPT_REFERENCE_DOC.ENCODING) });
+    return PROMPT_REFERENCE_DOC.REF(name);
+  });
+  return { prompt: next, attachments };
 };
 export const readPlanningUi = <T>(task: Promise<T>, signal?: AbortSignal, timeout: number = CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS, operation?: string): Promise<T> => {
   throwIfPlanningCancelled(signal);

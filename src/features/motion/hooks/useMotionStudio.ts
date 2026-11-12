@@ -1006,6 +1006,49 @@ export function useMotionStudio() {
     },
     [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneAiMultiRoom, state.planAiProvider, state.planAiModel, state.planAiHeadless, state.planAiFallback, state.planAiMultiRoom, state.aiMultiRoom, state.lightAiMultiRoom, state.lightAiProvider, state.lightAiModel, state.lightAiHeadless, state.lightAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
+  const deleteScenes = useCallback(
+    (ids?: string[]): number => {
+      const now = stateRef.current;
+      const script = now.script;
+      const remotion = script?.gen?.remotion;
+      if (!script || !remotion) return 0;
+      const currentRender = visualRuntime.current.renderJob;
+      if (sceneBuildPending.current || now.activeStoryJobId || now.activeRenderJobId || (currentRender && !isMotionJobTerminal(currentRender.status))) {
+        toast.error(MOTION_VISUAL.DELETE_BUSY);
+        return 0;
+      }
+      const pick = ids?.length ? new Set(ids) : undefined;
+      const deletedText = MOTION_VISUAL.TEXT[now.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI].sceneDeleted;
+      const removed = new Set<string>();
+      const scenes = Object.fromEntries(
+        Object.entries(remotion.scenes || {}).map(([group, list]) => [
+          group,
+          (list || []).map((scene) => {
+            if ((pick && !pick.has(scene.id)) || (!scene.html && !scene.build && (!scene.htmlRequest || scene.htmlRequest.error === deletedText))) return scene;
+            removed.add(scene.id);
+            removed.add(group);
+            const { html, build, htmlRebuildKey, ...rest } = scene;
+            return { ...rest, htmlRequest: { id: crypto.randomUUID(), attempt: html?.attempts || scene.htmlRequest?.attempt || 0, status: MOTION_VISUAL.DELETED_STATUS, error: deletedText } };
+          }),
+        ]),
+      ) as typeof remotion.scenes;
+      if (!removed.size) return 0;
+      const failures = Object.fromEntries(Object.entries(remotion.failures || {}).filter(([key]) => !removed.has(key)));
+      const failed = (script.gen?.failed || []).filter((id) => !removed.has(id));
+      renderPollAbort.current?.abort();
+      compileRevision.current++;
+      compiledSig.current = MR.MOTION_TEXT_EMPTY;
+      visualRuntime.current = { compiled: null, renderJob: null };
+      setCompiled(null);
+      setRenderJob(null);
+      setCompileError(MR.MOTION_TEXT_EMPTY);
+      const count = Object.values(scenes).flat().filter((scene) => removed.has(scene.id)).length;
+      patch({ ...invalidateMotionVisualDraftOutput(now), script: { ...script, gen: { ...script.gen!, failed, remotion: { ...remotion, scenes, failures } } } });
+      toast.success(MOTION_VISUAL.SCENES_DELETED(count));
+      return count;
+    },
+    [patch],
+  );
   const voicePending = useRef<{ signature: string; asrCheck: boolean; promise: Promise<MotionVoiceTrack | undefined> } | null>(null);
   useEffect(() => {
     const pending = new Set<string>();
@@ -1417,6 +1460,7 @@ export function useMotionStudio() {
     resumeProduction,
     writeScript,
     buildScenes,
+    deleteScenes,
     compile,
     generateSeo,
     generateThumbnail,

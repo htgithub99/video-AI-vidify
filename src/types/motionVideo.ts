@@ -833,6 +833,7 @@ export interface MotionAiExecution {
   worker?: string;
   workerAssigned?: (workerId: string) => void;
   avoidWorker?: string;
+  renderRecovery?: boolean;
   light?: { provider: string; model: string; chromeHeadless: boolean; allowFallback: boolean; multiRoom?: boolean };
 }
 export interface MotionAiActivity {

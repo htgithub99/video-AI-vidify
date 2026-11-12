@@ -12,6 +12,9 @@ import type { MotionBeat, MotionChapter, MotionStoryAnalysis, MotionStorySource 
 import type { MotionChapterWriteOptions } from "../motionStoryService.js";
 import { motionRenameAutofix } from "../../../../../lib/motionRename.js";
 import { MOTION_RENAME } from "../../../../../constants/motionRename.js";
+import { MOTION_STORYTELLING as STORYTELLING } from "../../../../../constants/motionStorytelling.js";
+import { motionGenreSpec } from "../../../../../constants/motionGenre.js";
+import { motionStorytellingExpansion } from "../../../../../lib/motionStorytelling.js";
 const renamedBeats = (beats: MotionBeat[], analysis: MotionStoryAnalysis, log?: (line: string) => void): MotionBeat[] => {
   const fixed = motionRenameAutofix(beats, analysis);
   if (fixed.replaced) log?.(MOTION_RENAME.LOG.AUTOFIX(fixed.replaced));
@@ -108,6 +111,14 @@ export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, tot
   });
   return groups.map((group, index) => ({ points: ownedPoints[index], source: group.join(RT_MAINTENANCE.NEWLINE), weight: weights[index] / totalWeight, seconds: Number((totalSeconds * (weights[index] / totalWeight)).toFixed(1)) }));
 };
+const thinSourceDirective = (analysis: MotionStoryAnalysis, chapter: MotionChapter, slice: string, units: number, log?: (line: string) => void): string | null => {
+  const sourceUnits = Math.max(1, speechUnits(slice.replace(STORYTELLING.SOURCE_TIMESTAMP, RT_MAINTENANCE.SPACE)));
+  const needed = units / sourceUnits;
+  if (needed < STORYTELLING.THIN_TRIGGER) return null;
+  const allowed = motionStorytellingExpansion(analysis.storytelling, analysis.videoGenre);
+  log?.(RT_MAINTENANCE.THIN_SOURCE_LOG(String(chapter.id), sourceUnits, units, needed, allowed));
+  return [allowed > 1 ? STORYTELLING.PROMPT.EXPANSION(Math.min(needed, allowed), motionGenreSpec(analysis.videoGenre).EXPANSION_RULE) : null, needed > allowed ? STORYTELLING.PROMPT.DEPTH(needed, allowed) : null].filter(Boolean).join(RT_MAINTENANCE.SPACE);
+};
 export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
   const rate = opts.speechRate || motionLanguageRate(opts.language);
   const total = analysis.chapters.reduce((sum, item) => sum + (item.targetSeconds || 0), 0);
@@ -118,6 +129,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   const maxUnits = Math.max(minUnits, Math.round(units * 1.1));
   const unitsPerScene = Math.max(6, Math.round(units / targetScenes));
   const slice = sourceSlice(source, chapter.from, chapter.to);
+  const stretch = thinSourceDirective(analysis, chapter, slice, units, opts.log);
   const compactOutline = analysis.chapters.map(({ id, title, summary, from, to, targetSeconds }) => ({ id, title, summary, from, to, targetSeconds }));
   const previousTail = opts.previous?.slice(-5).map((beat) => beat.narration) || opts.previousSummary;
   const exec = { ...opts.exec, responseSchema: RT_MAINTENANCE.MOTION_HTML_CHAPTER };
@@ -158,6 +170,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       const partPrompt = [
         RT_MAINTENANCE.PARTPROMPT,
         motionHtmlWritingDirection(analysis, opts.language),
+        ...(stretch ? [stretch] : []),
         `${RT_MAINTENANCE.LANGUAGE_2}${opts.language}${RT_MAINTENANCE.THIS_CHAPTER_PART}${index + 1}${RT_MAINTENANCE.SLASH}${parts.length}${RT_MAINTENANCE.HAS_APPROXIMATELY}${partSeconds.toFixed(1)}${RT_MAINTENANCE.SECONDS_OF_SPEECH_AT}${rate.toFixed(2)}${RT_MAINTENANCE.SPOKEN_UNITS_SECOND_APPROXIMATELY}${partUnits}${RT_MAINTENANCE.UNITS_TOTAL_ACROSS_ALL_ITS_BEATS_TARGET_WINDOW}${partMinUnits}${RT_MAINTENANCE.EN_DASH}${partMaxUnits}${RT_MAINTENANCE.SPOKEN_WORDS_SYLLABLES_ACROSS}${partScenes}${RT_MAINTENANCE.BEATS_OF}${partUnitsPerScene}${RT_MAINTENANCE.UNITS_EACH_HOLDING}${targetPictureSeconds}${RT_MAINTENANCE.S_PER_SCENE_FULL_CHAPTER_BUDGET_IS}${seconds.toFixed(1)}${RT_MAINTENANCE.S_6}${units}${RT_MAINTENANCE.UNITS_ACROSS}${targetScenes}${RT_MAINTENANCE.SCENES_FULL_VIDEO_PART_HAS}${total}${RT_MAINTENANCE.S_WITH}${pause}${RT_MAINTENANCE.S_RESERVED_FOR_PAUSES_SUMMARIZE_THIS_PART_S_CAUSAL_ARC}${partMinUnits}${RT_MAINTENANCE.EN_DASH}${partMaxUnits}${RT_MAINTENANCE.SPOKEN_UNITS_DO_NOT_NARRATE_EVERY_SOURCE_SENTENCE}`,
         opts.multiVoice === false ? RT_MAINTENANCE.ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED : RT_MAINTENANCE.USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR,
         RT_MAINTENANCE.PARTPROMPT_2,
@@ -197,6 +210,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   const prompt = [
     RT_MAINTENANCE.PROMPT,
     motionHtmlWritingDirection(analysis, opts.language),
+    ...(stretch ? [stretch] : []),
     `${RT_MAINTENANCE.LANGUAGE_2}${opts.language}${RT_MAINTENANCE.THIS_CHAPTER_HAS_APPROXIMATELY}${seconds.toFixed(1)}${RT_MAINTENANCE.SECONDS_OF_SPEECH_AT}${rate.toFixed(2)}${RT_MAINTENANCE.SPOKEN_UNITS_SECOND_APPROXIMATELY}${units}${RT_MAINTENANCE.UNITS_TOTAL_ACROSS_ALL_ITS_BEATS_TARGET_WINDOW}${minUnits}${RT_MAINTENANCE.EN_DASH}${maxUnits}${RT_MAINTENANCE.SPOKEN_WORDS_SYLLABLES_ACROSS_ROUGHLY}${targetScenes}${RT_MAINTENANCE.BEATS_OF}${unitsPerScene}${RT_MAINTENANCE.UNITS_EACH_HOLDING}${targetPictureSeconds}${RT_MAINTENANCE.S_PER_SCENE_THIS_IS_NOT_PER_BEAT_THE_FULL}${total}${RT_MAINTENANCE.S_RESERVE}${pause}${RT_MAINTENANCE.S_FOR_PAUSES_HERE_SUMMARIZE_THE_SOURCE_S_CAUSAL_ARC}`,
     opts.multiVoice === false ? RT_MAINTENANCE.ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED : RT_MAINTENANCE.USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR,
     RT_MAINTENANCE.PARTPROMPT_2,

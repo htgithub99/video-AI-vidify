@@ -25,8 +25,8 @@ const reservation = () => {
 export class MotionBrowserLifecycle {
   private sessions = new Set<Promise<void>>();
   private render?: ReturnType<typeof reservation>;
-  async acquireSession(signal?: AbortSignal): Promise<() => void> {
-    while (this.render) await waitForMotionBrowser(this.render.done, signal);
+  async acquireSession(signal?: AbortSignal, duringRender = false): Promise<() => void> {
+    while (this.render && !duringRender) await waitForMotionBrowser(this.render.done, signal);
     signal?.throwIfAborted();
     const session = reservation();
     this.sessions.add(session.done);

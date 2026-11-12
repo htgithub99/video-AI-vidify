@@ -365,6 +365,10 @@ export const MOTION_STYLES = {
 } as const;
 export const MOTION_REMOTION_STYLES = {
   RETRY: "m-2 px-2 py-1 text-[11px] rounded border border-slate-600 text-purple-300 hover:bg-slate-800 disabled:opacity-40",
+  ACTIONS: "flex flex-wrap items-center gap-1 px-2 pb-2",
+  ACTION: "px-2 py-1 text-[11px] rounded border border-slate-600 text-purple-300 hover:bg-slate-800 disabled:opacity-40",
+  DELETE: "px-2 py-1 text-[11px] rounded border border-rose-700/60 text-rose-300 hover:bg-rose-950/40 disabled:opacity-40",
+  HEAD: "flex flex-wrap items-center justify-between gap-2",
   FAILURE: "mx-2 my-1 min-w-0 max-h-8 text-[10px] leading-4 text-amber-300 line-clamp-2 [overflow-wrap:anywhere]",
   PANEL: "space-y-2 min-w-0 font-sans not-italic",
   COUNT: "text-xs text-slate-400",

@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { RETENTION_CRAFT } from "./runtime/maintenance.js";
 import { MOTION_GENRE_SPECS } from "./motionGenres/index.js";
 import type { MotionGenreSpec } from "./motionGenres/types.js";
 import { MOTION_GENRE_STAGE as STAGE } from "./motionGenreStage.js";
@@ -37,7 +38,7 @@ export const motionGenreSpec = (value: unknown): MotionGenreSpec => PROFILES[mot
 export const motionVideoGenrePackaging = (value: unknown): string => GENRE_TEXT.PACKAGING + PROFILES[motionVideoGenre(value)].PACKAGING;
 export const motionVideoGenreWritingProfile = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
-  return profile.PROFILE + " " + profile.TIMELINE + GENRE_TEXT.CHECK + profile.CHECK;
+  return profile.PROFILE + " " + profile.TIMELINE + GENRE_TEXT.CHECK + profile.CHECK + " " + RETENTION_CRAFT;
 };
 export const motionVideoGenreDirective = (value: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
@@ -55,7 +56,9 @@ export const motionVideoGenreDirective = (value: unknown): string => {
     profile.TIMELINE +
     " " +
     profile.SIGNATURE +
-    GENRE_TEXT.CAST
+    GENRE_TEXT.CAST +
+    " " +
+    RETENTION_CRAFT
   );
 };
 export const motionVideoGenreStages = (value: unknown): Record<string, MotionVideoGenreStage> => PROFILES[motionVideoGenre(value)].STAGES;

@@ -20,6 +20,8 @@ export const MOTION_STORYTELLING = {
   PRESETS: { plain: { shortSource: "strict", hooks: "off", dramaticAudio: false, texture: 0 }, lively: { shortSource: "genre", hooks: "light", dramaticAudio: true, texture: 1 }, gripping: { shortSource: "fill", hooks: "full", dramaticAudio: true, texture: 2 } } as Record<MotionStorytellingMode, MotionStorytellingPreset>,
   EXPANSION: { genre: { pov: 2.5, witness: 2.5, chronicle: 1.2, verdict: 1.5 } as Record<string, number>, fill: { pov: 3, witness: 3, chronicle: 1.5, verdict: 2 } as Record<string, number> },
   EXPANSION_MAX_BEATS_PER_EVENT: 4,
+  SOURCE_TIMESTAMP: /^\(\d+:\d{2}\)\s*/gm,
+  THIN_TRIGGER: 1.3,
   SILENT: { genre: { chapterCard: 2.5, emphasis: 1, chapterEnd: 1.5, videoEnd: 3 }, fill: { chapterCard: 4, emphasis: 1.5, chapterEnd: 2.5, videoEnd: 4 } } as Record<string, MotionStorytellingSilent>,
   LENGTH_FLOOR_RATIO: 0.9,
   BREAK_EVERY_BEATS: 12,
@@ -53,6 +55,7 @@ export const MOTION_STORYTELLING = {
   VIEWER_QUESTION: /[?？]\s*$/u,
   PROMPT: {
     FLOOR: (ratio: number): string => `LENGTH FLOOR: the source is rich enough for this chapter, so deliver at least ${Math.round(ratio * 100)}% of the requested units. If the first draft runs short, tell the same events more slowly in the genre's own way (senses, objects, reactions, comparisons, weighing); never add an event, number, quote or real person the source does not supply.`,
+    DEPTH: (needed: number, allowed: number): string => `SHORT SOURCE, DEPTH ×${needed.toFixed(1)}: this chapter's source is about ${needed.toFixed(1)} times shorter than its requested length${allowed > 1 ? `, beyond the ×${allowed.toFixed(1)} slow-telling stretch` : ""}. Fill the rest with depth, never with repetition or padding: explain how and why each source event worked (the mechanism, the constraint, the cost, what was at stake for each side), what it changed afterwards, and why it still matters, using only facts the source states or broadly established background about the same place, period and subject. Each added beat must teach the viewer something not yet said; never invent events, numbers, quotes, deaths or real people, never restate an earlier beat in new words, and keep every added beat in this genre's voice.`,
     EXPANSION: (factor: number, rule: string): string => `SHORT SOURCE, STRETCH ×${factor.toFixed(1)}: the transcript is thinner than the requested length. Reach the requested units by telling each source event across up to four beats in this genre's slow-telling manner: ${rule} Never invent events, numbers, quotes, deaths, ceremonies or real people; repeat nothing word for word.`,
     SILENT: "Pauses, chapter cards and held pictures add to the running time; do not pad speech to fill them.",
     TEXTURE: (perEvent: number, kinds: string): string =>

@@ -13,6 +13,8 @@ export interface MotionHtmlArtifact {
   duration: number;
   attempts: number;
   figureKit?: boolean;
+  cast?: string;
+  continuity?: string;
   status: "received" | "ready" | "rendered" | "retry_wait" | "waiting_external";
   error?: string;
 }

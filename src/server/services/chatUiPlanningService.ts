@@ -23,7 +23,7 @@ import { observeGeminiGeneration } from "./geminiGenerationObserver.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C, CHAT_JSON_PATTERNS as JP } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
-import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport } from "../../lib/chatPlanningUtils.js";
+import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport, promptReferenceDocs } from "../../lib/chatPlanningUtils.js";
 import { motionPromptSingleMessage } from "../../lib/motionPrompt.js";
 import { MOTION_PROMPT } from "../../constants/motionPrompt.js";
 import { MOTION_RESPONSE_SCHEMAS } from "../../constants/motionResponseContract.js";
@@ -1261,6 +1261,13 @@ const submitPrompt = async (
   promptMessageLimit?: number,
   onUploadProgress?: (progress: import("../../types/musicDownloadProgress.js").MusicUploadProgress) => void,
 ): Promise<string> => {
+  if (inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.GEMINI_INPUT_SELECTOR) {
+    const reference = promptReferenceDocs(prompt);
+    if (reference.attachments.length) {
+      prompt = reference.prompt;
+      attachments = [...attachments, ...reference.attachments];
+    }
+  }
   const isClaude = inputSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_INPUT_SELECTOR;
   const isDeepSeek = inputSelector === D.INPUT;
   const singleMessage = motionPromptSingleMessage(artifactType);
@@ -2306,6 +2313,16 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
           }
         }
         if (recoveryAttempt >= maxRecoveryAttempts) throw Object.assign(lastError instanceof Error ? lastError : new Error(errorMessage), { [RECOVERY.COMPLETE]: true });
+        const hungPage = RECOVERY.HUNG_PAGE.test(errorMessage);
+        if (hungPage) {
+          request.onRecovery?.(RECOVERY.HUNG_LOG);
+          appLog(RECOVERY.HUNG_LOG);
+          await closeChatPlanningRoom(request, true);
+          roomRetryClicks = 0;
+          if (request.restoreContext) request.prompt = request.restoreContext();
+          if (request.submission) Object.assign(request.submission, { attempted: false, completed: false, abandoned: false, pending: undefined });
+          continue;
+        }
         if (request.submission?.attempted && !request.submission.completed) {
           if (recoveryAttempt >= RECOVERY.SAME_ROOM_RETRIES) throw Object.assign(uncertainChatSubmission(request.provider), { [RECOVERY.COMPLETE]: true, cause: lastError });
           request.onRecovery?.(RECOVERY.RETRY_LOG(recoveryAttempt + 1));

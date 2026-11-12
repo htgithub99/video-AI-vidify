@@ -1,5 +1,6 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionAiFallbackPolicy, motionSceneWorkerIds } from "../../../../../lib/motionAiExecution.js";
+import { PROMPT_REFERENCE_DOC } from "../../../../../constants/promptSourceData.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import type { ChatPendingSubmission, ChatPlanningSubmission } from "../../../../../server/services/chatSubmissionRecovery.js";
 import { randomUUID } from "node:crypto";
@@ -256,7 +257,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     output,
     motionHtmlMechanics([scene.sceneTemplate, settings.continuity].join("\n")),
     graphics,
-    figureDoc,
+    PROMPT_REFERENCE_DOC.WRAP(settings.figureKit ? PROMPT_REFERENCE_DOC.KIT_NAME : PROMPT_REFERENCE_DOC.FIGURE_NAME, figureDoc),
     motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
     settings.cast,
     settings.continuity,
@@ -357,8 +358,10 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         duration: settings.seconds,
         attempts: attempt.attempt,
         figureKit: settings.figureKit === true,
+        cast: settings.cast,
+        continuity: settings.continuity,
         status: RT_MAINTENANCE.RECEIVED,
-        execution: { ...target, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) },
+        execution: { ...target, renderRecovery: undefined, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) },
       };
       persist();
       const runtime = await openMotionHtmlRuntime(html, opts.signal);

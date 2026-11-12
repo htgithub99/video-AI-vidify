@@ -964,7 +964,7 @@ export const prepareMotionContentRooms = async (exec: MotionAiExecution, signal?
   const linked = AbortSignal.any(_.compact([signal, run.signal]));
   if (!run.scenePreparations.has(key)) {
     const preparation = (async () => {
-      const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
+      const releaseSession = await motionBrowserLifecycle.acquireSession(linked, exec.renderRecovery === true);
       releaseMotionBrowser ||= retainGlobalBrowser();
       try {
         log?.(`${RT_MAINTENANCE.DANG_MO}${motionContentWorkerIds(exec).length}${RT_MAINTENANCE.ROOM_AI_NOI_DUNG}`);
@@ -1010,7 +1010,7 @@ export const prepareMotionSceneRooms = async (exec: MotionAiExecution, signal?: 
   if (!run.scenePreparations.has(key)) {
     const sceneLog = (line: string) => log?.(line && !/^\s*\[[^\]]+\]/u.test(line) ? `${RT_MAINTENANCE.OPEN_BRACKET}${MOTION_PRODUCTION.STAGES.SCENES}${RT_MAINTENANCE.CLOSE_BRACKET_SPACE}${line}` : line);
     const preparation = (async () => {
-      const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
+      const releaseSession = await motionBrowserLifecycle.acquireSession(linked, exec.renderRecovery === true);
       releaseMotionBrowser ||= retainGlobalBrowser();
       try {
         sceneLog(MOTION_STORY_CONFIG.SCENE_ROOMS_PREPARING_COUNT(workerIds.length));
@@ -1065,7 +1065,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const seat = { pin: exec.worker && (workerIds as readonly string[]).includes(exec.worker) ? exec.worker : undefined, avoid: exec.avoidWorker && workerIds.length > 1 ? exec.avoidWorker : undefined };
   const pending = (async () => {
     const linked = AbortSignal.any(_.compact([signal, run.signal]));
-    const releaseSession = await motionBrowserLifecycle.acquireSession(linked);
+    const releaseSession = await motionBrowserLifecycle.acquireSession(linked, exec.renderRecovery === true);
     let slot: Awaited<ReturnType<MotionAiWorkerPool["acquire"]>>;
     const queueId = poolKey + randomUUID();
     try {
