@@ -1779,7 +1779,7 @@ export const analyzeStory = async (
   };
   const renameErrors = (value: any): string[] => (rename ? motionRenameAnalysisIssues(value).map((issue) => MOTION_RESPONSE_TEXT.EXPECTED(issue.path, issue.expected, issue.actual)) : []);
   const genreDirective =
-    opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) + `${RT_MAINTENANCE.PLAN_ABOUT}${chapterCount}${RT_MAINTENANCE.CHAPTERS_WITHIN}${target}${RT_MAINTENANCE.S_TOTAL_ALLOWING_STAGES_TO_SHARE_CHAPTERS_AT_LEAST}${opts.parts || 1}${RT_MAINTENANCE.GENREDIRECTIVE_TEMPLATE_PART_4}` : motionVideoGenreDirective(opts.videoGenre);
+    opts.visualSettings?.mode === RT_MAINTENANCE.REMOTION ? motionHtmlGenreDirection(opts.videoGenre, target, opts.storytelling) + `${RT_MAINTENANCE.PLAN_ABOUT}${chapterCount}${RT_MAINTENANCE.CHAPTERS_WITHIN}${target}${RT_MAINTENANCE.S_TOTAL_ALLOWING_STAGES_TO_SHARE_CHAPTERS_AT_LEAST}${opts.parts || 1}${RT_MAINTENANCE.GENREDIRECTIVE_TEMPLATE_PART_4}` : motionVideoGenreDirective(opts.videoGenre, opts.storytelling);
   const fullRequest = withMotionResponsePrompt(
     MOTION_STORY_CONFIG.ARTIFACT_ANALYSIS,
     ([WRITING.TEXT_TASK, prompt, PROMPT.DNA_CORE + stringifyJson(settings), EDITORIAL_POLICY.COMPACT, WRITING.PLAN, WRITING.BOOKENDS, SOURCE_READING_RULES, sourceDirections(source), briefNote, rename ? RENAME.PROMPT.ANALYSIS : MR.MOTION_TEXT_EMPTY] as string[]).filter(Boolean).join(MR.MOTION_TEXT_SYMBOL_27) +
@@ -1844,7 +1844,7 @@ export const editScript = async (
 ): Promise<{ beats: MotionBeat[]; edit: NonNullable<MotionStoryScript["edit"]> }> => {
   if (analysis.authoringSettings) return editMotionHtmlScript(source, analysis, beats, opts);
   const dna = analysis.videoDna;
-  const writingProfile = opts.focusIds ? motionVideoGenreEditorProfile(analysis.videoGenre) : motionVideoGenreWritingProfile(analysis.videoGenre);
+  const writingProfile = opts.focusIds ? motionVideoGenreEditorProfile(analysis.videoGenre) : motionVideoGenreWritingProfile(analysis.videoGenre, analysis.storytelling);
   const motifs = motionWritingProtectedMotifs(analysis);
   let requests = 0;
   let motifKept = 0;
@@ -2482,7 +2482,7 @@ const writeChapterBeatsPart = async (source: MotionStorySource, analysis: Motion
             opts.multiVoice,
           ),
           multiVoice: opts.multiVoice !== false,
-          ...(!opts.durationRepair ? { writingProfile: motionVideoGenreWritingProfile(analysis.videoGenre) } : {}),
+          ...(!opts.durationRepair ? { writingProfile: motionVideoGenreWritingProfile(analysis.videoGenre, analysis.storytelling) } : {}),
           ...(factual && draft.pending.some((item) => missingNarration(draft!.rows.find((row) => row.id === item.id))) ? { source: sourceSlice(source, chapter.from, chapter.to) } : {}),
         })
       : request;

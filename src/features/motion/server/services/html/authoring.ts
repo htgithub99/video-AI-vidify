@@ -111,25 +111,31 @@ export const splitHtmlChapterParts = (chapter: MotionChapter, slice: string, tot
   });
   return groups.map((group, index) => ({ points: ownedPoints[index], source: group.join(RT_MAINTENANCE.NEWLINE), weight: weights[index] / totalWeight, seconds: Number((totalSeconds * (weights[index] / totalWeight)).toFixed(1)) }));
 };
-const thinSourceDirective = (analysis: MotionStoryAnalysis, chapter: MotionChapter, slice: string, units: number, log?: (line: string) => void): string | null => {
+const chapterLengthPlan = (analysis: MotionStoryAnalysis, chapter: MotionChapter, slice: string, seconds: number, units: number, log?: (line: string) => void): { seconds: number; units: number; directive: string | null } => {
   const sourceUnits = Math.max(1, speechUnits(slice.replace(STORYTELLING.SOURCE_TIMESTAMP, RT_MAINTENANCE.SPACE)));
   const needed = units / sourceUnits;
-  if (needed < STORYTELLING.THIN_TRIGGER) return null;
+  if (needed < STORYTELLING.THIN_TRIGGER) return { seconds, units, directive: null };
   const allowed = motionStorytellingExpansion(analysis.storytelling, analysis.videoGenre);
+  if (allowed <= 1) {
+    const faithful = Math.min(units, Math.max(1, Math.round(sourceUnits * STORYTELLING.FAITHFUL_FILL)));
+    log?.(RT_MAINTENANCE.THIN_SOURCE_FAITHFUL_LOG(String(chapter.id), sourceUnits, units, faithful));
+    return { seconds: Math.max(1, (seconds * faithful) / units), units: faithful, directive: STORYTELLING.PROMPT.FAITHFUL(faithful) };
+  }
   log?.(RT_MAINTENANCE.THIN_SOURCE_LOG(String(chapter.id), sourceUnits, units, needed, allowed));
-  return [allowed > 1 ? STORYTELLING.PROMPT.EXPANSION(Math.min(needed, allowed), motionGenreSpec(analysis.videoGenre).EXPANSION_RULE) : null, needed > allowed ? STORYTELLING.PROMPT.DEPTH(needed, allowed) : null].filter(Boolean).join(RT_MAINTENANCE.SPACE);
+  return { seconds, units, directive: [STORYTELLING.PROMPT.EXPANSION(Math.min(needed, allowed), motionGenreSpec(analysis.videoGenre).EXPANSION_RULE), needed > allowed ? STORYTELLING.PROMPT.DEPTH(needed, allowed) : null].filter(Boolean).join(RT_MAINTENANCE.SPACE) };
 };
 export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
   const rate = opts.speechRate || motionLanguageRate(opts.language);
   const total = analysis.chapters.reduce((sum, item) => sum + (item.targetSeconds || 0), 0);
-  const { pause, seconds, units } = motionHtmlChapterBudget(analysis, chapter, rate, opts.isFirst, opts.isLast);
+  const budget = motionHtmlChapterBudget(analysis, chapter, rate, opts.isFirst, opts.isLast);
+  const pause = budget.pause;
+  const slice = sourceSlice(source, chapter.from, chapter.to);
+  const { seconds, units, directive: stretch } = chapterLengthPlan(analysis, chapter, slice, budget.seconds, budget.units, opts.log);
   const targetPictureSeconds = analysis.authoringSettings?.targetPictureSeconds || 14;
   const targetScenes = Math.max(1, Math.round(seconds / targetPictureSeconds));
   const minUnits = Math.max(1, Math.round(units * 0.9));
   const maxUnits = Math.max(minUnits, Math.round(units * 1.1));
   const unitsPerScene = Math.max(6, Math.round(units / targetScenes));
-  const slice = sourceSlice(source, chapter.from, chapter.to);
-  const stretch = thinSourceDirective(analysis, chapter, slice, units, opts.log);
   const compactOutline = analysis.chapters.map(({ id, title, summary, from, to, targetSeconds }) => ({ id, title, summary, from, to, targetSeconds }));
   const previousTail = opts.previous?.slice(-5).map((beat) => beat.narration) || opts.previousSummary;
   const exec = { ...opts.exec, responseSchema: RT_MAINTENANCE.MOTION_HTML_CHAPTER };
@@ -228,7 +234,8 @@ export const editMotionHtmlScript = async (source: MotionStorySource, analysis: 
   const targets = opts.focusIds ? beats.filter((beat) => opts.focusIds!.includes(beat.id)) : beats;
   const rate = motionLanguageRate(opts.language);
   const chapterBudgets = analysis.chapters.map((chapter, index) => {
-    const budget = motionHtmlChapterBudget(analysis, chapter, rate, index === 0, index === analysis.chapters.length - 1);
+    const base = motionHtmlChapterBudget(analysis, chapter, rate, index === 0, index === analysis.chapters.length - 1);
+    const budget = chapterLengthPlan(analysis, chapter, sourceSlice(source, chapter.from, chapter.to), base.seconds, base.units);
     const chapterBeats = targets.filter((beat) => beat.chapterId === chapter.id);
     const currentUnits = countChapterUnits(chapterBeats);
     return { chapterId: chapter.id, targetSeconds: budget.seconds, targetUnits: budget.units, minUnits: Math.round(budget.units * 0.9), maxUnits: Math.round(budget.units * 1.1), currentUnits };

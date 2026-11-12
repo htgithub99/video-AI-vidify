@@ -1,10 +1,9 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { PROMPT_SOURCE_DATA } from "../constants/promptSourceData.js";
 import { MOTION_HTML, MOTION_HTML_STYLES } from "../constants/motionHtmlTemplate.js";
-import { motionVideoGenre } from "../constants/motionGenre.js";
+import { motionRetentionCraft, motionVideoGenre } from "../constants/motionGenre.js";
 import { motionStorytelling } from "./motionStorytelling.js";
 import { motionStorytellingSilent } from "./motionStorytelling.js";
-import { MOTION_STORYTELLING_MODES } from "../constants/motionStorytelling.js";
 import { MOTION_SCENE_PACING } from "../constants/motionScenePacing.js";
 import { MOTION_RENAME } from "../constants/motionRename.js";
 import { motionRenameMapActive, motionRenamePairs } from "./motionRename.js";
@@ -40,7 +39,7 @@ export const motionHtmlGenreDirection = (genre: unknown, seconds: number, mode: 
   const storytelling = motionStorytelling(mode);
   const voices = { pov: RT_MAINTENANCE.POV, witness: RT_MAINTENANCE.WITNESS, chronicle: RT_MAINTENANCE.CHRONICLE, verdict: RT_MAINTENANCE.VERDICT_2 };
   const telling = { plain: RT_MAINTENANCE.PLAIN, lively: RT_MAINTENANCE.LIVELY_2, gripping: RT_MAINTENANCE.GRIPPING };
-  return `${RT_MAINTENANCE.ONE_AUTHORING_CONTRACT_GENRE}${selected}${RT_MAINTENANCE.STORYTELLING}${storytelling}${RT_MAINTENANCE.TOTAL_VIDEO_BUDGET_APPROXIMATELY}${Math.round(seconds)}${RT_MAINTENANCE.SECONDS}${voices[selected]}${RT_MAINTENANCE.SPACE}${telling[storytelling]}${RT_MAINTENANCE.SPACE}${storytelling === MOTION_STORYTELLING_MODES.PLAIN ? RT_MAINTENANCE.RETENTION_CRAFT_PLAIN : RT_MAINTENANCE.RETENTION_CRAFT}${RT_MAINTENANCE.MOTIONHTMLGENREDIRECTION_TEMPLATE_PART_6}`;
+  return `${RT_MAINTENANCE.ONE_AUTHORING_CONTRACT_GENRE}${selected}${RT_MAINTENANCE.STORYTELLING}${storytelling}${RT_MAINTENANCE.TOTAL_VIDEO_BUDGET_APPROXIMATELY}${Math.round(seconds)}${RT_MAINTENANCE.SECONDS}${voices[selected]}${RT_MAINTENANCE.SPACE}${telling[storytelling]}${RT_MAINTENANCE.SPACE}${motionRetentionCraft(storytelling)}${RT_MAINTENANCE.MOTIONHTMLGENREDIRECTION_TEMPLATE_PART_6}`;
 };
 export const motionHtmlWritingDirection = (analysis: MotionStoryAnalysis, language = analysis.authoringSettings?.language): string => {
   const a = analysis.authoringSettings!;
