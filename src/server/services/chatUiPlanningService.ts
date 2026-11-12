@@ -611,7 +611,8 @@ const getLastVisibleLocator = async (page: Page, selector: string, timeoutMs: nu
   }
   throw Object.assign(new Error(CHAT_UI_AUTOMATION_MESSAGES.INPUT_AREA_NOT_FOUND), { [MR.MOTION_TEXT_ROOMPAGE]: page });
 };
-export const getChatResponseSnapshots = async (page: Page, responseSelector: string, artifactType?: string): Promise<ChatResponseSnapshot[]> => {
+export const getChatResponseSnapshots = async (page: Page, responseSelector: string, artifactType?: string, known?: readonly ChatResponseSnapshot[]): Promise<ChatResponseSnapshot[]> => {
+  const knownText = new Map((known || []).filter((snapshot) => snapshot.identity).map((snapshot) => [snapshot.identity, snapshot.text]));
   if (responseSelector === M.RESPONSE) {
     const clickedExpandOrRaw = await page
       .locator(responseSelector)
@@ -639,7 +640,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
       .catch(() => false);
     if (clickedExpandOrRaw) await delayAsync(150);
   }
-  return readPlanningUi(
+  const snapshots = await readPlanningUi(
     page
       .locator(responseSelector)
       .evaluateAll(
@@ -647,6 +648,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
           const { ST } = browserPayload.sharedTexts;
           const { SOURCE_TEXT_HIDDEN, SOURCE_TEXT_NONE, SOURCE_TEXT_SYMBOL_16, MOTION_TEXT_EMPTY } = browserPayload.texts;
           const identityConfig = browserPayload.payload;
+          const knownIds = new Set(browserPayload.knownIds);
           return elements
             .filter((element) => {
               if (elements.some((other) => other !== element && element.contains(other))) return false;
@@ -654,12 +656,13 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
               const style = window.getComputedStyle(element);
               return style.visibility !== SOURCE_TEXT_HIDDEN && style.display !== SOURCE_TEXT_NONE && element.getClientRects().length > 0;
             })
-            .map((element, index) => {
+            .map((element, index, visible) => {
               const identityElement = element.closest(identityConfig.selector) || element;
               const messageId = identityElement.getAttribute(identityConfig.messageIdAttribute) || MOTION_TEXT_EMPTY;
               const currentMessageId = browserPayload.currentMessageIdAttribute ? element.getAttribute(browserPayload.currentMessageIdAttribute) || MOTION_TEXT_EMPTY : MOTION_TEXT_EMPTY;
               const testId = identityElement.getAttribute(identityConfig.testIdAttribute) || identityElement.getAttribute(identityConfig.legacyTestIdAttribute) || MOTION_TEXT_EMPTY;
               const identity = messageId || currentMessageId || (testId ? testId + SOURCE_TEXT_SYMBOL_16 + index : identityElement.id);
+              if (identity && index < visible.length - 1 && knownIds.has(identity)) return { identity, text: null as string | null };
               const content = browserPayload.contentSelector ? element.querySelector(browserPayload.contentSelector) || element : element;
               if (browserPayload.jsonRawButtonSelector) {
                 content.querySelectorAll<HTMLElement>(browserPayload.jsonRawButtonSelector).forEach((btn) => {
@@ -678,10 +681,11 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
                     .join(ST.SOURCE_TEXT_SYMBOL_56)
                 : MOTION_TEXT_EMPTY;
               const visibleText = codeText.trim() || (content instanceof HTMLElement ? content.innerText : content.textContent || MOTION_TEXT_EMPTY);
-              return { identity, text: visibleText.trim() };
+              return { identity, text: visibleText.trim() as string | null };
             });
         },
         {
+          knownIds: [...knownText.keys()],
           preferCodeBlocks: artifactType === RT_MAINTENANCE.MOTION_HTML_SCENE || AIR.VECTOR_ARTIFACT.test(artifactType || "") || responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RESPONSE_SELECTOR || responseSelector === D.RESPONSE || responseSelector === M.RESPONSE,
           filterVisibleCodeBlocks: responseSelector === M.RESPONSE,
           contentSelector: responseSelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_SELECTOR ? CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_RESPONSE_CONTENT_SELECTOR : MR.MOTION_TEXT_EMPTY,
@@ -703,6 +707,7 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_MS,
     CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_RESPONSE,
   );
+  return snapshots.map((snapshot) => ({ identity: snapshot.identity, text: snapshot.text ?? knownText.get(snapshot.identity) ?? MR.MOTION_TEXT_EMPTY }));
 };
 const isPlanningResponseForScenes = (text: string, expectedSceneIds: string[]): boolean => {
   if (_.isEmpty(text)) return false;
@@ -842,7 +847,7 @@ export const waitForStableResponse = async (page: Page, responseSelector: string
       .catch(() => []);
     const providerErrorAlert = _.find(visibleAlerts, (alert) => CINEMATIC_CHAT_PLANNING_CONFIG.PROVIDER_ERROR_RESPONSE_PATTERN.test(alert));
     const metaTurnError = busySelector === M.BUSY ? (await metaLastTurnError(page)) || (await metaTurnFailed(page, prompt)) : undefined;
-    const responseSnapshots = await getChatResponseSnapshots(page, responseSelector, artifactType);
+    const responseSnapshots = await getChatResponseSnapshots(page, responseSelector, artifactType, initialResponseSnapshots);
     const count = responseSnapshots.length;
     const responseTexts = _.map(responseSnapshots, SOURCE_TEXT_TEXT);
     if (regenerating) {

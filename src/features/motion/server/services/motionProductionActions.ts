@@ -7,7 +7,7 @@ import { motionHtmlChapterBudget } from "../../../../lib/motionHtmlAuthoring.js"
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
-import { assertMotionScriptComplete, assertMotionProductionMode } from "../../../../lib/motionProduction.js";
+import { assertMotionScriptComplete, assertMotionProductionMode, missingMotionChapters, motionEarlyHtmlSceneInput, mergeMotionRemotionState } from "../../../../lib/motionProduction.js";
 import { MOTION_CHAPTER_REPAIR } from "../../../../constants/motionChapterRepair.js";
 import { MOTION_PRODUCTION } from "../../../../constants/motionProduction.js";
 import { motionVisualSettingsFor, isRemotionSpec } from "../../../../lib/motionVisual.js";
@@ -501,9 +501,13 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
   const visualSettings = motionVisualSettingsFor(body);
   const raw = body?.analysis as MotionStoryAnalysis;
   const analysis = (raw ? { ...raw, visualSettings, stylePreset: undefined } : raw) as MotionStoryAnalysis;
-  const script = body?.script as MotionStoryScript;
-  if (!analysis?.places || !script?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
-  assertMotionScriptComplete(script, analysis);
+  const fullScript = body?.script as MotionStoryScript;
+  if (!analysis?.places || !fullScript?.beats?.length) throw new Error(MOTION_TEXT_CAN_VIET_LOI_DAN_PHAN_CANH_TRUOC);
+  const missingChapters = missingMotionChapters(fullScript, analysis);
+  const ready = missingChapters.length ? motionEarlyHtmlSceneInput(fullScript, analysis) : undefined;
+  const script = ready ? ready.script : fullScript;
+  assertMotionScriptComplete(script, ready ? ready.analysis : analysis);
+  const withFull = (built: MotionStoryScript): MotionStoryScript => (ready ? { ...fullScript, gen: { ...(fullScript.gen || built.gen), ...built.gen, remotion: mergeMotionRemotionState(built.gen?.remotion, fullScript.gen?.remotion) } } : built);
   const exec = drawExec(body?.aiExecution);
   const mainExec = { ...aiExec(body?.mainAiExecution || body?.aiExecution), role: MOTION_AI_ROLE.MAIN };
   const onlyBeats: string[] = _.map(_.castArray(body?.beats || []), _.toString);
@@ -514,13 +518,14 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
     body?.keepBrowser === true,
     MotionStoryJobKind.SCENES,
     async (ctx) => {
-      const result = await buildRemotionScenes({ ...script, visualSettings }, analysis, {
+      if (ready) ctx.log(MOTION_PRODUCTION.PARTIAL_SCENES(ready.ready, ready.total, missingChapters.map((chapter) => chapter.title || chapter.id).join(MOTION_PRODUCTION.SEPARATOR)));
+      const result = await buildRemotionScenes({ ...script, visualSettings }, ready ? ready.analysis : analysis, {
         exec,
         mainExec,
         signal: ctx.signal,
         log: ctx.log,
         progress: ctx.progress,
-        partial: ctx.partial,
+        partial: (draft: MotionStoryScript) => ctx.partial(withFull(draft)),
         scope: body.productionId || body.editorialSessionId,
         aspect: body.aspect,
         renderBehavior: motionRenderBehaviorFor(body),
@@ -534,11 +539,11 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
         onlyLocations,
         note: note || undefined,
       });
-      ctx.partial(result);
+      ctx.partial(withFull(result));
       const selectedScenes = _.map(_.castArray(body?.scenes || []), _.toString);
       const missing = remotionStateMissingScenes(result.gen!.remotion!).filter((id) => !selectedScenes.length || selectedScenes.includes(id));
       if (missing.length) throw new Error(C.INCOMPLETE(missing));
-      return result;
+      return withFull(result);
     },
     (() => {
       const session = editorialSession(body, body.source, mainExec);

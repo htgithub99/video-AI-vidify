@@ -985,7 +985,7 @@ export function useMotionStudio() {
             },
             (partial) => partial?.beats && patch({ script: partial }),
           )) as MotionStoryScript;
-          if (!flowCancelled.current && !stateRef.current.automationPaused) requestVoice(result, analysis);
+          if (!flowCancelled.current && !stateRef.current.automationPaused && !missingMotionChapters(result, analysis).length) requestVoice(result, analysis);
           patch({ script: result });
           setCompiled(null);
           failed = new Set([
@@ -1004,7 +1004,7 @@ export function useMotionStudio() {
           sceneBuildPending.current = false;
         }
       });
-      if (result && !failed && automaticExport && exportOn(stateRef.current) && !flowCancelled.current) await exportBuiltScenes.current?.();
+      if (result && !failed && automaticExport && exportOn(stateRef.current) && !flowCancelled.current && !missingMotionChapters(result, analysis).length) await exportBuiltScenes.current?.();
       return result;
     },
     [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneAiMultiRoom, state.planAiProvider, state.planAiModel, state.planAiHeadless, state.planAiFallback, state.planAiMultiRoom, state.scriptAiProvider, state.scriptAiModel, state.scriptAiHeadless, state.scriptAiFallback, state.scriptAiMultiRoom, state.aiMultiRoom, state.lightAiMultiRoom, state.lightAiProvider, state.lightAiModel, state.lightAiHeadless, state.lightAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],

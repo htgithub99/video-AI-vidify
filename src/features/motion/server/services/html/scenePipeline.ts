@@ -28,7 +28,7 @@ import { runMotionAi, prepareMotionContentRooms, prepareMotionSceneRooms, extrac
 import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
 import { MotionPriorityPool } from "../motionPriorityPool.js";
-import { openMotionHtmlRuntime } from "./sceneRuntime.js";
+import { openMotionHtmlRuntime, withMotionThumbnailBrowser } from "./sceneRuntime.js";
 import { motionHtmlStore } from "./sceneStore.js";
 import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
@@ -364,13 +364,15 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         execution: { ...target, renderRecovery: undefined, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) },
       };
       persist();
-      const runtime = await openMotionHtmlRuntime(html, opts.signal);
-      try {
-        const image = await runtime.render({ time: 0, progress: 0, frame: 0, fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });
-        scene.html.thumbnail = `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`;
-      } finally {
-        await runtime.close();
-      }
+      const image = await withMotionThumbnailBrowser(MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
+        const runtime = await openMotionHtmlRuntime(html, opts.signal, true, browser);
+        try {
+          return await runtime.render({ time: 0, progress: 0, frame: 0, fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });
+        } finally {
+          await runtime.close();
+        }
+      });
+      scene.html.thumbnail = `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`;
       scene.html.status = RT_MAINTENANCE.READY;
       delete scene.html.error;
       scene.build = { status: RT_MAINTENANCE.ACCEPTED, inputKey: key, review: false, attempts: attempt.attempt };

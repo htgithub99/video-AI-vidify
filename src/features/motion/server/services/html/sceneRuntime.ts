@@ -1,10 +1,36 @@
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
-import { chromium, type Browser } from "playwright";
+import { chromium, type Browser, type Page } from "playwright";
 import { createHash, randomUUID } from "node:crypto";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { motionHtmlHostDocument } from "../../../../../lib/motionHtmlHost.js";
 import type { MotionHtmlFrameInput } from "../../../../../types/motionHtmlScene.js";
 const timedOutFrames = new Map<string, number>();
+let thumbnailBrowser: Promise<Browser> | undefined;
+let thumbnailUsers = 0;
+let thumbnailIdle: ReturnType<typeof setTimeout> | undefined;
+export const withMotionThumbnailBrowser = async <T>(idleMs: number, use: (browser: Browser) => Promise<T>): Promise<T> => {
+  if (thumbnailIdle) clearTimeout(thumbnailIdle);
+  thumbnailUsers++;
+  try {
+    let browser = await (thumbnailBrowser ||= chromium.launch({ executablePath: findNativeChrome(), headless: true }));
+    if (!browser.isConnected()) {
+      thumbnailBrowser = chromium.launch({ executablePath: findNativeChrome(), headless: true });
+      browser = await thumbnailBrowser;
+    }
+    return await use(browser);
+  } catch (error) {
+    if (thumbnailBrowser && !(await thumbnailBrowser.then((browser) => browser.isConnected()).catch(() => false))) thumbnailBrowser = undefined;
+    throw error;
+  } finally {
+    thumbnailUsers--;
+    if (!thumbnailUsers)
+      thumbnailIdle = setTimeout(() => {
+        const closing = thumbnailBrowser;
+        thumbnailBrowser = undefined;
+        void closing?.then((browser) => browser.close()).catch(() => undefined);
+      }, idleMs);
+  }
+};
 export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, headless = true, shared?: Browser) => {
   signal?.throwIfAborted();
   let owned = !shared?.isConnected();
@@ -14,9 +40,11 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
     if (owned) void browser.close().catch(() => undefined);
   };
   signal?.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
+  const opened: Page[] = [];
   try {
     const openPage = async () => {
       const next = await browser.newPage();
+      opened.push(next);
       await next.route(RT_MAINTENANCE.ALL_REQUESTS_PATTERN, (route) => route.abort());
       await next.setContent(motionHtmlHostDocument(html, randomUUID()), { waitUntil: RT_MAINTENANCE.LOAD });
       return next;
@@ -143,7 +171,8 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
     };
   } catch (error) {
     signal?.removeEventListener(RT_MAINTENANCE.ABORT, stop);
-    await browser.close().catch(() => undefined);
+    if (owned) await browser.close().catch(() => undefined);
+    else await Promise.all(opened.map((open) => open.close().catch(() => undefined)));
     throw error;
   }
 };
