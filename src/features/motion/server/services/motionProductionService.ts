@@ -40,6 +40,7 @@ import { MOTION_RENDER_BEHAVIOR as B } from "../../../../constants/motionRenderB
 import { checkRemotionRuntime } from "./motionRemotionRenderService.js";
 import { remotionStoryRenderable, remotionStoryBuildStatus } from "./remotion/sceneKeys.js";
 import { remotionStateMissingScenes } from "../../../../lib/motionRemotion.js";
+import { motionDeleteScenes } from "../../../../lib/motionSceneDelete.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../constants/motionSceneComposition.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../constants/motionRemotionLayout.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../../constants/motionScenePacing.js";
@@ -868,12 +869,35 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       }
     }
   };
+  const deleteMotionProductionScenes = (id: string, ids: string[] | undefined, reason: string): number => {
+    if (active.has(id)) throw new Error(P.BUSY_RUN);
+    const current = read(id);
+    if (!current) throw new Error(P.INVALID_RUN);
+    if (current.owner && motionProcessAlive(current.owner.pid)) throw new Error(P.BUSY_RUN);
+    const owner = store.acquire(id);
+    try {
+      const record = read(id);
+      if (!record) throw new Error(P.INVALID_RUN);
+      if (!record.result.script) return 0;
+      const next = motionDeleteScenes(record.result.script, ids, reason, randomUUID);
+      if (!next.count) return 0;
+      record.result.script = next.script;
+      delete record.result.compiled;
+      delete record.result.rendered;
+      for (const name of Object.keys(record.steps)) if (name === P.STAGES.SCENES || name.startsWith(P.STAGES.SCENES + RT_SHARED.SYMBOL_588DA4) || name === P.STAGES.RENDER) delete record.steps[name];
+      log(record, VISUAL.LOG_SCENES_DELETED(next.count));
+      store.save(id, record, owner);
+      return next.count;
+    } finally {
+      store.release(id, owner);
+    }
+  };
   const getMotionProductionLogs = (id: string, after = 0) => {
     const record = active.get(id)?.record || read(id);
     if (!record) return undefined;
     logs.seed(id, record.job.log);
     return logs.read(id, after);
   };
-  return { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs };
+  return { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes };
 };
-export const { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs } = createMotionProductionService();
+export const { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes } = createMotionProductionService();

@@ -4,6 +4,7 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js"
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { MOTION_PROGRESS as MOTION_LOG_PROGRESS } from "../../../constants/motionProgress.js";
 import { MOTION_PRODUCTION } from "../../../constants/motionProduction.js";
+import { motionDeleteScenes } from "../../../lib/motionSceneDelete.js";
 import type { MotionProductionResult } from "../../../types/motionVideo.js";
 import { createMotionEditorialId } from "../lib/motionEditorial.js";
 import { MOTION_EDITORIAL } from "../../../constants/motionEditorial.js";
@@ -1009,34 +1010,37 @@ export function useMotionStudio() {
     [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneAiMultiRoom, state.planAiProvider, state.planAiModel, state.planAiHeadless, state.planAiFallback, state.planAiMultiRoom, state.scriptAiProvider, state.scriptAiModel, state.scriptAiHeadless, state.scriptAiFallback, state.scriptAiMultiRoom, state.aiMultiRoom, state.lightAiMultiRoom, state.lightAiProvider, state.lightAiModel, state.lightAiHeadless, state.lightAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
   const deleteScenes = useCallback(
-    (ids?: string[]): number => {
-      const now = stateRef.current;
-      const script = now.script;
-      const remotion = script?.gen?.remotion;
-      if (!script || !remotion) return 0;
-      const currentRender = visualRuntime.current.renderJob;
-      if (sceneBuildPending.current || now.activeStoryJobId || now.activeRenderJobId || (currentRender && !isMotionJobTerminal(currentRender.status))) {
+    async (ids?: string[]): Promise<number> => {
+      const busy = () => {
+        const now = stateRef.current;
+        const currentRender = visualRuntime.current.renderJob;
+        return sceneBuildPending.current || !!now.activeStoryJobId || !!now.activeRenderJobId || !!(currentRender && !isMotionJobTerminal(currentRender.status));
+      };
+      const before = stateRef.current;
+      if (!before.script?.gen?.remotion) return 0;
+      if (busy()) {
         toast.error(MOTION_VISUAL.DELETE_BUSY);
         return 0;
       }
-      const pick = ids?.length ? new Set(ids) : undefined;
-      const deletedText = MOTION_VISUAL.TEXT[now.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI].sceneDeleted;
-      const removed = new Set<string>();
-      const scenes = Object.fromEntries(
-        Object.entries(remotion.scenes || {}).map(([group, list]) => [
-          group,
-          (list || []).map((scene) => {
-            if ((pick && !pick.has(scene.id)) || (!scene.html && !scene.build && (!scene.htmlRequest || scene.htmlRequest.error === deletedText))) return scene;
-            removed.add(scene.id);
-            removed.add(group);
-            const { html, build, htmlRebuildKey, ...rest } = scene;
-            return { ...rest, htmlRequest: { id: crypto.randomUUID(), attempt: html?.attempts || scene.htmlRequest?.attempt || 0, status: MOTION_VISUAL.DELETED_STATUS, error: deletedText } };
-          }),
-        ]),
-      ) as typeof remotion.scenes;
-      if (!removed.size) return 0;
-      const failures = Object.fromEntries(Object.entries(remotion.failures || {}).filter(([key]) => !removed.has(key)));
-      const failed = (script.gen?.failed || []).filter((id) => !removed.has(id));
+      const language = before.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI;
+      const deletedText = MOTION_VISUAL.TEXT[language].sceneDeleted;
+      if (!motionDeleteScenes(before.script, ids, deletedText, () => crypto.randomUUID()).count) return 0;
+      const productionId = before.productionId || before.editorialSessionId;
+      if (productionId) {
+        try {
+          await motionRequest(API_ROUTES.MOTION_PRODUCTION_DELETE_SCENES, { productionId, sceneIds: ids, language });
+        } catch (error) {
+          const message = _.toString((error as Error)?.message);
+          if (message !== MOTION_PRODUCTION.INVALID_RUN) {
+            toast.error(message === MOTION_PRODUCTION.BUSY_RUN ? MOTION_VISUAL.DELETE_BUSY : MOTION_VISUAL.DELETE_SYNC_FAILED + message);
+            return 0;
+          }
+        }
+      }
+      const now = stateRef.current;
+      if (!now.script || busy()) return 0;
+      const next = motionDeleteScenes(now.script, ids, deletedText, () => crypto.randomUUID());
+      if (!next.count) return 0;
       renderPollAbort.current?.abort();
       compileRevision.current++;
       compiledSig.current = MR.MOTION_TEXT_EMPTY;
@@ -1044,10 +1048,9 @@ export function useMotionStudio() {
       setCompiled(null);
       setRenderJob(null);
       setCompileError(MR.MOTION_TEXT_EMPTY);
-      const count = Object.values(scenes).flat().filter((scene) => removed.has(scene.id)).length;
-      patch({ ...invalidateMotionVisualDraftOutput(now), script: { ...script, gen: { ...script.gen!, failed, remotion: { ...remotion, scenes, failures } } } });
-      toast.success(MOTION_VISUAL.SCENES_DELETED(count));
-      return count;
+      patch({ ...invalidateMotionVisualDraftOutput(now), script: next.script });
+      toast.success(MOTION_VISUAL.SCENES_DELETED(next.count));
+      return next.count;
     },
     [patch],
   );

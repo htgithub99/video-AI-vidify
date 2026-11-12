@@ -119,6 +119,8 @@ export const MOTION_VISUAL = {
   SVG_CLOSE_MISMATCH: (expected: string | undefined, actual: string) => `Thẻ đóng </${actual}> không khớp ${expected ? `<${expected}>` : "thẻ đang mở"}.`,
   ANCHORS_MISSING: (keys: string[]) => `Chỉ bổ sung điểm đặt anchors: ${keys.join(", ")}. Giữ nguyên SVG đã đạt.`,
   LOG_REUSE: (name: string) => `Dùng lại hình nhân vật đã đạt: ${name}.`,
+  LOG_SCENES_DELETED: (count: number) => `Đã xóa ${count} cảnh theo yêu cầu; lượt tiếp theo sẽ dựng lại các cảnh này.`,
+  DELETE_SYNC_FAILED: "Không lưu được thao tác xóa cảnh lên máy chủ: ",
   LOG_CONTINUE: "Tiếp tục dựng các cảnh còn thiếu; giữ bố cục và hình đã đạt.",
   LOG_INVALID_SCENES: "Kiểm tra và sửa riêng cảnh chưa hợp lệ; giữ các cảnh đã đạt.",
   STYLE_REFRESH_REASON: "Hình thuộc phiên bản nét vẽ cũ; cần dựng lại theo kiểu hình đã cập nhật.",

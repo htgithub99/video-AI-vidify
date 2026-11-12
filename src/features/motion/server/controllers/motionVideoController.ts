@@ -1,5 +1,7 @@
+import { MOTION_VISUAL } from "../../../../constants/motionVisual.js";
+import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { stringifyJson } from "../../../../lib/jsonStringify.js";
-import { startMotionProduction, resumeMotionProduction, getMotionProduction, cancelMotionProduction, getMotionProductionLogs } from "../services/motionProductionService.js";
+import { startMotionProduction, resumeMotionProduction, getMotionProduction, cancelMotionProduction, getMotionProductionLogs, deleteMotionProductionScenes } from "../services/motionProductionService.js";
 import { motionStoryLogs } from "../services/motionLogStore.js";
 import { motionVisualSettingsFor } from "../../../../lib/motionVisual.js";
 import { analyzeMotionStoryInput, scriptMotionStoryInput, seoMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, readStorySource, storyLanguage, drawExec, validateSpec } from "../services/motionProductionActions.js";
@@ -362,6 +364,7 @@ export const registerMotionVoice = async (req: Request, res: Response): Promise<
 export const compileMotionStory = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, compileMotionStoryInput);
 export const createMotionProduction = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, job: startMotionProduction(body) }));
 export const continueMotionProduction = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, job: resumeMotionProduction(String(body.productionId), body.clearGeminiChatsBeforeExport, { aiExecution: body.aiExecution, sceneAiExecution: body.sceneAiExecution, planAiExecution: body.planAiExecution, scriptAiExecution: body.scriptAiExecution }) }));
+export const deleteMotionProductionScenesHandler = (req: Request, res: Response): Promise<void> => respondMotionAction(req, res, (body) => ({ success: true, deleted: deleteMotionProductionScenes(String(body.productionId), Array.isArray(body.sceneIds) ? body.sceneIds.map(String) : undefined, MOTION_VISUAL.TEXT[body.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI].sceneDeleted) }));
 export const getMotionStoryStatus = (req: Request, res: Response): void => {
   const job = getMotionProduction(_.toString(req.params.jobId)) || getStoryJob(_.toString(req.params.jobId));
   if (!job) return void fail(res, 404, MOTION_TEXT_KHONG_TIM_THAY_TIEN_TRINH);
