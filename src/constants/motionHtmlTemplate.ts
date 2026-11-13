@@ -52,6 +52,7 @@ export const MOTION_HTML = {
   } as Record<string, string>,
   RETRY_MS: [2000, 5000, 10000, 20000, 30000],
   THUMBNAIL_BROWSER_IDLE_MS: 90_000,
+  SAVE_THROTTLE_MS: 1000,
   THUMBNAIL_STILL: { width: 960, quality: 0.82, mime: "image/jpeg", canvas: "canvas", context: "2d", smoothing: "high" },
   ABANDON_LOG: (id: string): string => `Cảnh HTML ${id}: tab dựng không trả kết quả sau khi tự phục hồi – bỏ lượt cũ, gửi lại ở tab dựng đang trống.`,
   LANGUAGE_POLICY:

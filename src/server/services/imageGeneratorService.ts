@@ -1,5 +1,7 @@
 import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
 import { machineTabs } from "./lowSpecPolicy.js";
+import { watchHungPage } from "./pageWatchdog.js";
+import { PAGE_WATCHDOG } from "../../constants/pageWatchdog.js";
 import { CHAT_SPEED } from "../../constants/chatSpeed.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { isChatRoomPage, sharedChromeFlowPage } from "./sharedChromePage.js";
@@ -1797,7 +1799,7 @@ export async function launchBrowserForAccount(chromeHeadless?: boolean, preferSh
       } catch (chromeErr) {
         context = await chromium.launchPersistentContext(profilePath, { headless: chromeHeadless !== false, ignoreDefaultArgs: [SOURCE_TEXT_ENABLE_AUTOMATION], args: [REFACTOR_CONSTANTS.ARG_NO_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_SETUID_SANDBOX, REFACTOR_CONSTANTS.ARG_DISABLE_AUTOMATION_CONTROLLED, ...CHAT_SPEED.CHROME_ARGS] });
       }
-      page = context.pages()[0] || (await context.newPage());
+      page = watchHungPage(context.pages()[0] || (await context.newPage()), PAGE_WATCHDOG.LABEL.SESSION);
       try {
         await page.addInitScript(SOURCE_TEXT_IF_TYPEOF_WINDOW_UNDEFINED_IF_WINDOW_2);
       } catch (e) {}
@@ -2471,7 +2473,7 @@ const launchNativeGrokBrowser = async (chromeHeadless?: boolean): Promise<{ cont
     context = _.first(grokBrowser.contexts());
     if (!context) throw new Error(GROK_AUTOMATION_MESSAGES.NO_SESSION_CREATED);
   }
-  grokPage = _.find(context.pages(), (candidate) => _.includes(candidate.url(), SOURCE_TEXT_GROK_COM)) || (await context.newPage());
+  grokPage = watchHungPage(_.find(context.pages(), (candidate) => _.includes(candidate.url(), SOURCE_TEXT_GROK_COM)) || (await context.newPage()), PAGE_WATCHDOG.LABEL.GROK);
   grokBrowserChromeId = activeChromeId();
   activeBrowserInstance = { context, page: grokPage, account, ownsContext: false };
   activeBrowserHeadless = chromeHeadless !== false;
@@ -3420,6 +3422,7 @@ async function generateImageWithGeminiChatTask(options: ImageGeneratorOptions): 
             activePage = await browserInstance.context.newPage();
             ownsActivePage = true;
           }
+          watchHungPage(activePage, PAGE_WATCHDOG.LABEL.IMAGE);
           if (visualConfig?.chromeHeadless === false) {
             await activePage.bringToFront().catch(() => undefined);
           }
@@ -3663,7 +3666,7 @@ async function applyBatchDelay(visualConfig: GeminiVisualConfig): Promise<number
   await delayAsync(ms);
   return ms;
 }
-const createGeminiBatchPage = async (context: BrowserContext): Promise<Page> => context.newPage();
+const createGeminiBatchPage = async (context: BrowserContext): Promise<Page> => watchHungPage(await context.newPage(), PAGE_WATCHDOG.LABEL.BATCH);
 const createPreparedGeminiBatchPage = async (context: BrowserContext, tabIndex: number, generateType: GenerateType = GenerateType.Image): Promise<Page> => {
   const page = await createGeminiBatchPage(context);
   try {

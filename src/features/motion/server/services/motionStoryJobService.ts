@@ -92,12 +92,7 @@ export const startStoryJob = (keepBrowser: boolean, kind: MotionStoryJobKind, ru
     partial: (result) => {
       if (job.controller.signal.aborted || !_.includes(ACTIVE, job.status)) return;
       job.result = result;
-      try {
-        save();
-      } catch (error) {
-        failedSave(error);
-        throw error;
-      }
+      scheduleSave();
     },
   };
   const stopped = new Promise<never>((_resolve, reject) => job.controller.signal.addEventListener(MOTION_TEXT_ABORT, () => reject(new Error(MOTION_TEXT_CANCELLED)), { once: true }));

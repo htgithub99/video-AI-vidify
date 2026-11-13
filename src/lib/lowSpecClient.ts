@@ -19,4 +19,4 @@ export const loadLowSpec = async (): Promise<void> => {
     if (response.ok) setLowSpecEnabled((await response.json())?.lowSpec === true);
   } catch {}
 };
-export const lowSpecPollMs = (ms: number): number => (enabled ? Math.round(ms * L.POLL_FACTOR * (typeof document !== "undefined" && document.hidden ? L.HIDDEN_FACTOR : 1)) : ms);
+export const lowSpecPollMs = (ms: number): number => Math.round(ms * (enabled ? L.POLL_FACTOR : 1) * (typeof document !== "undefined" && document.hidden ? L.HIDDEN_FACTOR : 1));

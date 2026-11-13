@@ -1,5 +1,7 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
+import { watchHungPage } from "../../../../server/services/pageWatchdog.js";
+import { PAGE_WATCHDOG } from "../../../../constants/pageWatchdog.js";
 import {
   SOURCE_BROWSER_TEXT_CHANGE,
   SOURCE_TEMPLATE_API_CLIP,
@@ -851,7 +853,7 @@ const continueSunoCreation = async (checkpoint: SunoCreationCheckpoint, runId: s
     if (!browser) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
     const context = browser.contexts()[0];
     if (!context) throw new Error(SUNO_AUTOMATION_TEXTS.CONNECT_CDP_ERR);
-    const page: Page = context.pages()[0] || (await context.newPage());
+    const page: Page = watchHungPage(context.pages()[0] || (await context.newPage()), PAGE_WATCHDOG.LABEL.SUNO);
     cleanupPage = page;
     activeSunoPage = page;
     stage = SOURCE_TEXT_OPEN_CREATE_PAGE;

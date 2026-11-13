@@ -107,7 +107,7 @@ export class LicenseService {
     }
     const cached = licenseCache.get(licenseKey);
     if (cached && _.lt(_.subtract(Date.now(), cached.timestamp), SecurityConstants.LICENSE_CACHE_TTL_MS)) return cached.info;
-    if (inFlightValidations.has(licenseKey)) return inFlightValidations.get(licenseKey)!;
+    if (inFlightValidations.has(licenseKey)) return cached ? cached.info : inFlightValidations.get(licenseKey)!;
     const promise = (async () => {
       const deviceId = getHardwareId();
       try {
@@ -129,7 +129,11 @@ export class LicenseService {
       }
     })();
     inFlightValidations.set(licenseKey, promise);
-    return promise;
+    if (!cached) return promise;
+    promise.catch((error: unknown) => {
+      if (error instanceof LicenseValidationError) licenseCache.delete(licenseKey);
+    });
+    return cached.info;
   }
   static async incrementUsage(licenseKey: string, feature: FeatureType, amount: number = SecurityConstants.DEFAULT_AMOUNT): Promise<boolean> {
     if (_.isEmpty(licenseKey)) return false;

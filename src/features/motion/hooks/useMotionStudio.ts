@@ -264,11 +264,13 @@ export function useMotionStudio() {
   const logHistoryRef = useRef<MotionLogEntry[]>([]);
   const logCursors = useRef(new Map<string, { cursor: number; loading: boolean; queued: boolean; lines: string[]; events: NonNullable<MotionLogEntry["events"]> }>());
   const settledSeoJobs = useRef(new Set<string>());
+  const writeLogs = useMemo(() => _.throttle((value: MotionLogEntry[]) => jsonUtils.setItem(MOTION_EDITORIAL.LOG_STORAGE_KEY, value), MOTION_EDITORIAL.LOG_WRITE_MS, { leading: false, trailing: true }), []);
+  useEffect(() => () => writeLogs.flush(), [writeLogs]);
   const trackLog = useCallback((id: string, kind: string, lines: string[] | undefined, startedAt?: number, job?: Pick<MotionLogEntry, "status" | "stage" | "error" | "stepStates">) => {
     const next = mergeMotionLogHistory(logHistoryRef.current, id, kind, lines, startedAt, job && { status: job.status, stage: job.stage, error: job.error, stepStates: job.stepStates });
     if (next !== logHistoryRef.current) {
       logHistoryRef.current = next;
-      jsonUtils.setItem(MOTION_EDITORIAL.LOG_STORAGE_KEY, next);
+      writeLogs(next);
       setLogHistory(next);
     }
     const session = stateRef.current.editorialSessionId;
@@ -304,7 +306,7 @@ export function useMotionStudio() {
       cursor.lines = canonical;
       cursor.events = entry.events;
       logHistoryRef.current = updated;
-      jsonUtils.setItem(MOTION_EDITORIAL.LOG_STORAGE_KEY, updated);
+      writeLogs(updated);
       setLogHistory(updated);
     })()
       .catch(() => {})
@@ -733,6 +735,7 @@ export function useMotionStudio() {
             compileRevision.current++;
             restoredRenderJob.current = undefined;
             visualRuntime.current = { compiled: null, renderJob: null };
+            writeLogs.cancel();
             jsonUtils.setItem(MOTION_EDITORIAL.LOG_STORAGE_KEY, []);
             setLogHistory([]);
             setStoryJob(null);

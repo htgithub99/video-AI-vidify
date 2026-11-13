@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { MOTION_PRODUCTION as P } from "../../../../constants/motionProduction.js";
-import { writeMotionJsonAtomic } from "./motionFileUtils.js";
+import { writeMotionJsonAtomic, writeMotionTextAtomic } from "./motionFileUtils.js";
+import { createHash } from "node:crypto";
 export interface MotionProductionOwner {
   pid: number;
   token: string;
@@ -17,7 +18,7 @@ export const motionProcessAlive = (pid: number): boolean => {
     return false;
   }
 };
-export class MotionProductionStore<T extends { owner?: MotionProductionOwner; rev?: number }> {
+export class MotionProductionStore<T extends { owner?: MotionProductionOwner; rev?: number; resultRev?: string; result?: unknown }> {
   constructor(private readonly directory: string) {}
   private file(id: string, extension: string = P.EXT): string {
     if (!P.ID_RE.test(id)) throw new Error(P.INVALID_RUN);
@@ -98,7 +99,11 @@ export class MotionProductionStore<T extends { owner?: MotionProductionOwner; re
     if (!this.owns(id, owner)) throw new Error(P.LOCK_LOST);
     owner.updated = Date.now();
     value.rev = (value.rev || 0) + 1;
-    writeMotionJsonAtomic(this.file(id), value);
+    const { [P.RESULT_KEY]: result, ...rest } = value;
+    const body = result === undefined ? undefined : stringifyJson(result);
+    if (body !== undefined) value.resultRev = createHash(P.REV_HASH).update(body).digest(P.REV_ENCODING).slice(0, P.REV_LENGTH);
+    const head = stringifyJson({ ...rest, resultRev: value.resultRev });
+    writeMotionTextAtomic(this.file(id), body === undefined ? head : head.slice(0, -1) + P.RESULT_FIELD + body + P.OBJECT_CLOSE);
     writeMotionJsonAtomic(this.file(id, P.LOCK_EXT), owner);
   }
   release(id: string, owner: MotionProductionOwner): void {

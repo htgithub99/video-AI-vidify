@@ -1,3 +1,4 @@
+import _ from "lodash";
 import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { motionAiFallbackPolicy, motionSceneWorkerIds } from "../../../../../lib/motionAiExecution.js";
 import { PROMPT_REFERENCE_DOC } from "../../../../../constants/promptSourceData.js";
@@ -516,11 +517,11 @@ export const createMotionHtmlSceneStreamer = (initialAnalysis: MotionStoryAnalys
   const groupPromises = new Map<string, Promise<void>>();
   const chapterGroupPromises = new Map<string, Promise<void>[]>();
   let latestOnUpdate: ((remotion: MotionRemotionState) => void) | undefined;
-  const save = () => {
+  const save = _.throttle(() => {
     if (opts.signal?.aborted) return;
     state.updatedAt = Date.now();
     latestOnUpdate?.(structuredClone(state));
-  };
+  }, MOTION_HTML.SAVE_THROTTLE_MS);
   const push = (beats: MotionBeat[], chapterDrafts: Record<string, any> | undefined, allChaptersDone = false, onUpdate?: (remotion: MotionRemotionState) => void) => {
     if (onUpdate) latestOnUpdate = onUpdate;
     if (!beats.length || opts.signal?.aborted) return;
@@ -589,12 +590,12 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
   state.groupingRevision = 1001;
   state.pacingRevision = 1;
   const result = { ...script, visualSettings: settings, gen: { ...(script.gen || { cast: {}, locations: {} }), remotion: state } } as MotionStoryScript;
-  const save = () => {
+  const save = _.throttle(() => {
     if (opts.signal?.aborted) return;
     state.updatedAt = Date.now();
     checkpoint.save(state);
     opts.partial?.(structuredClone(result));
-  };
+  }, MOTION_HTML.SAVE_THROTTLE_MS);
   const groups = motionVisualBeatGroups(result, 1001, settings.pacing);
   const slots = opts.slots || new MotionPriorityPool(MOTION_STORY_CONFIG.WORKER_IDS.length);
   let done = 0;
@@ -634,11 +635,11 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
   const aspect = opts.aspect || RT_MAINTENANCE.VALUE_16_9;
   const [width, height] = aspect === RT_MAINTENANCE.VALUE_9_16 ? [720, 1280] : aspect === RT_MAINTENANCE.VALUE_1_1 ? [1000, 1000] : aspect === RT_MAINTENANCE.VALUE_4_5 ? [800, 1000] : [1280, 720];
   state.renderBehavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, script.gen?.characterMotion);
-  const save = () => {
+  const save = _.throttle(() => {
     if (opts.signal?.aborted) return;
     state.updatedAt = Date.now();
     opts.partial?.(structuredClone(result));
-  };
+  }, MOTION_HTML.SAVE_THROTTLE_MS);
   const slots = new MotionPriorityPool(motionSceneWorkerIds(opts.exec).length);
   const rebuildKey = opts.rebuildKey || randomUUID();
   const startedScenes = new Map<string, Promise<void>>();

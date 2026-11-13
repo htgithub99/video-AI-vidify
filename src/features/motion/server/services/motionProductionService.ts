@@ -64,6 +64,7 @@ interface ProductionRecord {
   steps: Record<string, { id: string; done?: boolean; partial?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean; elapsedMs?: number; segmentAt?: number }>;
   owner?: MotionProductionOwner;
   rev?: number;
+  resultRev?: string;
 }
 const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime };
 export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS, seoWaitMs: number = P.SEO_WAIT_MS) => {
@@ -97,7 +98,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   };
   const publicSteps = (record: ProductionRecord): MotionProductionJobState["stepStates"] => Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error, elapsedMs: task.segmentAt ? task.elapsedMs || 0 : motionStepElapsedMs(task), segmentAt: task.segmentAt }]] : [])));
   const publicJob = (record: ProductionRecord, knownRev?: string): MotionProductionJobState => {
-    const resultRev = String(record.rev || 0);
+    const resultRev = record.resultRev || String(record.rev || 0);
     if (knownRev === resultRev && !terminal(record.job.status)) {
       const job: MotionProductionJobState = { ...structuredClone(record.job), result: undefined, resultRev, resultSame: true };
       job.stepStates = publicSteps(record);
