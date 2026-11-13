@@ -873,6 +873,8 @@ export interface MotionStoryJobState {
   activeAi?: Record<string, MotionAiActivity>;
   error?: string;
   result?: unknown;
+  resultRev?: string;
+  resultSame?: boolean;
   startedAt: number;
 }
 export interface MotionOutputSettings {

@@ -126,7 +126,7 @@ export const CHROME_BACKUP = {
   SUBTITLE: { vi: "Chrome chính và các Chrome dự phòng dùng chung cho mọi màn; tự chuyển khi AI hết lượt hoặc bị chặn", en: "Primary and backup Chrome profiles shared by every screen; switches automatically when an AI is out of quota or blocked" },
   LABEL: { vi: "Tự chuyển Chrome khi AI hết lượt hoặc bị chặn", en: "Switch Chrome when an AI is out of quota or blocked" },
   LOW_SPEC_LABEL: { vi: "Hỗ trợ máy yếu", en: "Low-spec machine mode" },
-  LOW_SPEC_DESCRIPTION: { vi: "Tối đa 2 tab AI cùng lúc, tạo giọng sau khi dựng cảnh. Tắt khi máy khỏe.", en: "At most 2 AI tabs at once; voice runs after scenes. Turn off on a strong machine." },
+  LOW_SPEC_DESCRIPTION: { vi: "Áp dụng toàn tool: tối đa 2 tab AI, render ít luồng, giảm hiệu ứng. Tắt khi máy khỏe.", en: "Whole tool: at most 2 AI tabs, fewer render threads, lighter effects. Turn off on fast machines." },
   FORCE_LABEL: { vi: "Luôn dùng Chrome dự phòng", en: "Always use backup Chrome" },
   FORCE_DESCRIPTION: { vi: "Chạy mọi tính năng trên Chrome dự phòng; tắt để về Chrome chính.", en: "Runs all features on backup Chrome; turn off for primary Chrome." },
   DESCRIPTION: { vi: "Đổi Chrome khi AI hết lượt, bị chặn, mất đăng nhập hoặc lỗi liên tục.", en: "Switches Chrome when an AI is out of quota, blocked, signed out or keeps failing." },

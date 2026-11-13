@@ -20,7 +20,7 @@ import { MOTION_AI_RECOVERY } from "../../../../../constants/motionAiRecovery.js
 import { motionRenameText } from "../../../../../lib/motionRename.js";
 import { motionHtmlCastCards, motionHtmlContinuity } from "../../../../../lib/motionHtmlCast.js";
 import { motionHtmlFigureDoc } from "../../../../../lib/motionHtmlFigure.js";
-import { motionHtmlKitDoc, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../../lib/motionHtmlKit.js";
+import { motionHtmlKitCompact, motionHtmlKitDoc, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../../lib/motionHtmlKit.js";
 import { MOTION_HTML_KIT } from "../../../../../constants/motionHtmlKit.js";
 import { motionHtmlMechanics } from "../../../../../lib/motionHtmlMechanics.js";
 import { motionHtmlDrawIssue, motionHtmlGraphics, motionHtmlOutput } from "../../../../../lib/motionHtmlPrompt.js";
@@ -349,7 +349,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       const html = settings.figureKit ? motionHtmlWithKit(source, settings.profile) : source;
       scene.html = {
         version: 1,
-        html,
+        html: motionHtmlKitCompact(html),
         hash: motionInputKey(html),
         prompt,
         file: store.html(attempt.attempt, html),
@@ -369,12 +369,12 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
       const image = await withMotionThumbnailBrowser(isLowSpecMode() ? AI_LOAD.THUMBNAIL_IDLE_MS : MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
         const runtime = await openMotionHtmlRuntime(html, opts.signal, true, browser);
         try {
-          return await runtime.render({ time: 0, progress: 0, frame: 0, fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });
+          return await runtime.still(await runtime.render({ time: 0, progress: 0, frame: 0, fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] }), MOTION_HTML.THUMBNAIL_STILL);
         } finally {
           await runtime.close();
         }
       });
-      scene.html.thumbnail = `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`;
+      scene.html.thumbnail = image;
       scene.html.status = RT_MAINTENANCE.READY;
       delete scene.html.error;
       scene.build = { status: RT_MAINTENANCE.ACCEPTED, inputKey: key, review: false, attempts: attempt.attempt };

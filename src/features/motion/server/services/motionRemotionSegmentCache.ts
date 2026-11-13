@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
+import { machineCpus } from "../../../../server/services/lowSpecPolicy.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -44,7 +45,7 @@ export const pruneMotionSegments = (): void => {
   }
 };
 export const renderMotionSegmentsToCache = async (spec: MotionRemotionSpec, todo: MotionRemotionSegment[], encoding: MotionSegmentEncoding, options: { signal: AbortSignal; lanes?: { lanes: number; perLane: number }; log?: (line: string) => void; onFrames?: (rendered: number) => void; onSegment?: (segment: MotionRemotionSegment) => void }): Promise<{ lanes: number; perLane: number }> => {
-  const plan = options.lanes || motionRemotionRenderLanes(os.cpus().length, os.freemem(), todo.length);
+  const plan = options.lanes || motionRemotionRenderLanes(machineCpus(), os.freemem(), todo.length);
   if (!todo.length) return plan;
   fs.mkdirSync(motionSegmentRoot(), { recursive: true });
   const laneFrames = new Array(plan.lanes).fill(0);

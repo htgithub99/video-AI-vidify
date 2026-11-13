@@ -217,3 +217,4 @@ export const PROXY_TEXTS = {
     specsTitle: "Network Specs",
   },
 } as const;
+export const PROXY_REFRESH_MS = 5000;

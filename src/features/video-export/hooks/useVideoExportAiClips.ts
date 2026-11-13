@@ -1,4 +1,5 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lowSpecPollMs } from "../../../lib/lowSpecClient.js";
 import { toast } from "sonner";
 import _ from "lodash";
 import { API_ROUTES } from "../../../constants/apiRoutes.js";
@@ -222,7 +223,7 @@ export function useVideoExportAiClips(text: VideoExportTexts, aspectRatio: Video
       }
     };
     void poll();
-    const timer = setInterval(poll, VIDEO_EXPORT_AI_CLIP_CONSTANTS.POLL_INTERVAL_MS);
+    const timer = setInterval(poll, lowSpecPollMs(VIDEO_EXPORT_AI_CLIP_CONSTANTS.POLL_INTERVAL_MS));
     return () => clearInterval(timer);
   }, [jobId, text]);
   const addFiles = useCallback(

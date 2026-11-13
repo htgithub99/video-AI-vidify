@@ -164,6 +164,24 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
         blankRun = true;
         return draw(input, subtitle, fontFamily, true);
       },
+      async still(image: Buffer, opts: { width: number; quality: number; mime: string; canvas: string; context: string; smoothing: string }): Promise<string> {
+        return page.evaluate(
+          async ({ source, opts }) => {
+            const img = new Image();
+            img.src = source;
+            await img.decode();
+            const scale = Math.min(1, opts.width / img.naturalWidth);
+            const canvas = document.createElement(opts.canvas) as HTMLCanvasElement;
+            canvas.width = Math.round(img.naturalWidth * scale);
+            canvas.height = Math.round(img.naturalHeight * scale);
+            const ctx = canvas.getContext(opts.context) as CanvasRenderingContext2D;
+            ctx.imageSmoothingQuality = opts.smoothing as ImageSmoothingQuality;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL(opts.mime, opts.quality);
+          },
+          { source: `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`, opts },
+        );
+      },
       async close() {
         signal?.removeEventListener(RT_MAINTENANCE.ABORT, stop);
         await (owned ? browser.close() : page.close()).catch(() => undefined);

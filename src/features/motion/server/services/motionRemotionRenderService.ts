@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
+import { machineCpus } from "../../../../server/services/lowSpecPolicy.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import fs from "node:fs";
@@ -122,7 +123,7 @@ export const renderRemotionSegments = async (spec: MotionRemotionSpec, segments:
           x264Preset: R.X264_PRESET,
           pixelFormat: RT_SERVER.YUV420P,
           frameRange: [segment.start, segment.end],
-          concurrency: options.concurrency ?? motionRemotionRenderConcurrency(os.cpus().length, os.freemem()),
+          concurrency: options.concurrency ?? motionRemotionRenderConcurrency(machineCpus(), os.freemem()),
           puppeteerInstance: browser,
           cancelSignal,
           logLevel: RT_SHARED.ERROR,

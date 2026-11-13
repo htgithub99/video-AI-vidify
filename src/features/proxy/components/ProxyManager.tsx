@@ -1,4 +1,5 @@
 import { StudioHeader, StudioPage, StudioCanvas, StudioCard, StudioInput, StudioSelect, StudioTextarea } from "../../../components/ui/Studio.js";
+import { lowSpecPollMs } from "../../../lib/lowSpecClient.js";
 import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
 import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
 import { recordWorkflowActivity } from "../../../services/workflowActivity";
@@ -348,7 +349,7 @@ import { getErrorMessage } from "../../../utils/errorUtils";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Activity, AlertTriangle, ArrowUpRight, Check, CheckCircle2, ChevronRight, Clapperboard, Copy, Download, Eye, EyeOff, FileText, Globe, KeyRound, Layers, Monitor, Pencil, Play, Plus, RefreshCw, Search, Shield, ShieldCheck, Sparkles, Trash2, X, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import { PROXY_TEXTS } from "../../../constants/proxy";
+import { PROXY_REFRESH_MS, PROXY_TEXTS } from "../../../constants/proxy";
 import { parseProxyImport, proxyServer, validateProxyInput } from "../../../lib/proxyValidation";
 import type { ProxyCheck, ProxyInput, ProxyOpenResult, ProxyProfile } from "../../../types/proxy";
 import type { Lang } from "../../../lib/lang";
@@ -413,7 +414,7 @@ export default function ProxyManager({ currentLang = SOURCE_TEXT_VI }: { current
           if (mounted.current) setLoadError(t.loadError);
         });
       }
-    }, 5000);
+    }, lowSpecPollMs(PROXY_REFRESH_MS));
     return () => {
       mounted.current = false;
       clearInterval(timer);

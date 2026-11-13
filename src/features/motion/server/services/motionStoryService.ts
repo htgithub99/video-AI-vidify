@@ -1407,6 +1407,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       if (!submission.attempted) await staggerMotionSend(provider, roomCtrl.signal);
       countMotionRequest(provider, log);
       const r = await settleOrStuck(generatePlanningWithChatUi({
+        loadHeld: true,
         provider,
         model,
         prompt: fullPrompt,

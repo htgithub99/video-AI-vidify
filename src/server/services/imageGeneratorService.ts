@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../../constants/runtime/maintenance.js";
+import { machineTabs } from "./lowSpecPolicy.js";
 import { CHAT_SPEED } from "../../constants/chatSpeed.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { isChatRoomPage, sharedChromeFlowPage } from "./sharedChromePage.js";
@@ -3694,7 +3695,7 @@ async function generateBatchImagesWithGeminiChatTask(items: BatchImageItem[], vi
   const requestedSpeed = _.toString(visualConfig?.geminiChatSpeed);
   const speed = _.isEqual(requestedSpeed, SOURCE_TEXT_1) ? GeminiChatSpeed.Slow : ((_.includes(_.values(GeminiChatSpeed), requestedSpeed as GeminiChatSpeed) ? requestedSpeed : GeminiChatSpeed.Slow) as GeminiChatSpeed);
   const concurrency = GEMINI_CHAT_SPEED_TAB_COUNT[speed] || 5;
-  const maxTabs = resolveBatchTabCount(items.length, concurrency, visualConfig?.batchTabCount);
+  const maxTabs = machineTabs(resolveBatchTabCount(items.length, concurrency, visualConfig?.batchTabCount));
   if (maxTabs === 1 && !retainBrowserSession) {
     const results: BatchImageResult[] = [];
     try {

@@ -34,4 +34,25 @@ export const motionHtmlKitRefresh = (html: string): string => {
   const used = [...html.slice(start, end).matchAll(K.STYLE_USED)].pop()?.[1] || K.STYLE_FALLBACK;
   return html.slice(0, start) + K.SCRIPT_TAG + K.SCRIPT + K.SET_STYLE(used) + K.TIME_HOOK + html.slice(end);
 };
-export const motionHtmlKitStale = (html: string): boolean => html.includes(K.SCRIPT_TAG) && !html.includes(K.SCRIPT);
+let kitRef = "";
+const motionHtmlKitRef = (): string => {
+  if (kitRef) return kitRef;
+  let hash: number = K.HASH_SEED;
+  for (let i = 0; i < K.SCRIPT.length; i++) hash = Math.imul(hash ^ K.SCRIPT.charCodeAt(i), K.HASH_PRIME);
+  kitRef = K.REF((hash >>> 0).toString(K.HASH_RADIX) + K.SCRIPT.length.toString(K.HASH_RADIX));
+  return kitRef;
+};
+export const motionHtmlKitCompact = (html: string): string => {
+  const start = html.indexOf(K.SCRIPT_TAG);
+  if (start < 0) return html;
+  const end = html.indexOf(K.SCRIPT_CLOSE, start);
+  if (end < 0) return html;
+  const body = html.slice(start + K.SCRIPT_TAG.length, end);
+  if (!body.includes(K.SCRIPT)) return html;
+  const used = [...body.matchAll(K.STYLE_USED)].pop()?.[1] || K.STYLE_FALLBACK;
+  return html.slice(0, start) + K.SCRIPT_TAG + motionHtmlKitRef() + K.SET_STYLE(used) + K.TIME_HOOK + html.slice(end);
+};
+export const motionCompactSceneHtml = (scenes: Record<string, Array<{ html?: { html?: string } }> | undefined> | undefined): void => {
+  for (const list of Object.values(scenes || {})) for (const scene of list || []) if (scene?.html?.html) scene.html.html = motionHtmlKitCompact(scene.html.html);
+};
+export const motionHtmlKitStale = (html: string): boolean => html.includes(K.SCRIPT_TAG) && !html.includes(K.SCRIPT) && !html.includes(motionHtmlKitRef());

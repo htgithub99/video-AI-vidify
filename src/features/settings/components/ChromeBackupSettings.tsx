@@ -7,6 +7,7 @@ import { ToggleIndicator } from "../../../components/common/ToggleIndicator.js";
 import { LoadingIcon } from "../../../components/common/LoadingIcon.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { cn } from "../../../lib/utils.js";
+import { lowSpecPollMs, setLowSpecEnabled } from "../../../lib/lowSpecClient.js";
 import { BUTTON_CLASS_NAME } from "../../../constants/ui.js";
 import { CHROME_BACKUP as C } from "../../../constants/chromeBackup.js";
 import { CHROME_MANAGER_UI as U } from "../../../constants/chromeManagerUi.js";
@@ -33,6 +34,7 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
     const value = await response.json();
     if (!response.ok) throw new Error(value.error || response.statusText);
     setSettings(value);
+    setLowSpecEnabled(value.lowSpec === true);
   };
   const run = async (task: Task, work: () => Promise<void>) => {
     setPending(task);
@@ -62,7 +64,7 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
   }, []);
   useEffect(() => {
     if (dragIndex !== null) return;
-    const timer = setInterval(() => void call().catch(() => undefined), C.REFRESH_MS);
+    const timer = setInterval(() => void call().catch(() => undefined), lowSpecPollMs(C.REFRESH_MS));
     return () => clearInterval(timer);
   }, [dragIndex]);
   const busy = pending !== null;

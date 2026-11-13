@@ -1,4 +1,5 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { lowSpecPollMs } from "../../../lib/lowSpecClient.js";
 import { parseJson } from "../../../lib/jsonStringify.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { VIDEO_EXPORT_TEXT_APPLICATION_JSON, VIDEO_EXPORT_TEXT_DESC, VIDEO_EXPORT_TEXT_OBJECT, VIDEO_EXPORT_TEXT_POST } from "../../../constants/videoExportText";
@@ -433,7 +434,7 @@ export function useVideoExporter(lang: Lang) {
       }
     };
     void poll();
-    const timer = setInterval(poll, VIDEO_EXPORT_CONSTANTS.POLL_INTERVAL_MS);
+    const timer = setInterval(poll, lowSpecPollMs(VIDEO_EXPORT_CONSTANTS.POLL_INTERVAL_MS));
     return () => clearInterval(timer);
   }, [activeJobId, handleJobUpdate, text.EXPORT_ERROR]);
   const startExport = useCallback(async () => {

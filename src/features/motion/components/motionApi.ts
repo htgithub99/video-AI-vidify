@@ -21,6 +21,7 @@ import {
 } from "../../../constants/motionRuntime.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { readBlobAsDataUrl } from "../../../lib/fileUtils.js";
+import { lowSpecPollMs } from "../../../lib/lowSpecClient.js";
 import { formatMediaFileSize } from "../../../lib/mediaFormat.js";
 export const motionRequest = async <T = any>(url: string, body?: unknown, method?: string, signal?: AbortSignal): Promise<T> => {
   const init: RequestInit = body === undefined && !method ? { signal } : { method: method || MOTION_TEXT_POST, headers: { "Content-Type": MOTION_TEXT_APPLICATION_JSON }, body: body === undefined ? undefined : stringifyJson(body), signal };
@@ -77,15 +78,19 @@ const waitForMotionPoll = (ms: number, signal?: AbortSignal): Promise<void> =>
     if (signal?.aborted) stop();
     else signal?.addEventListener(MOTION_TEXT_ABORT, stop, { once: true });
   });
-export const pollMotionJob = async <T extends { id: string; status: string }>(statusUrl: string, onUpdate: (job: T) => void, isDone: (job: T) => boolean, signal?: AbortSignal, intervalMs = 1000, onReconnect?: () => void): Promise<T> => {
+export const pollMotionJob = async <T extends { id: string; status: string; result?: unknown; resultRev?: string; resultSame?: boolean }>(statusUrl: string, onUpdate: (job: T) => void, isDone: (job: T) => boolean, signal?: AbortSignal, intervalMs = 1000, onReconnect?: () => void): Promise<T> => {
   let failures = 0;
+  let last: T | undefined;
   for (;;) {
     if (signal?.aborted) throw new DOMException(MOTION_TEXT_ABORTED, MOTION_TEXT_ABORTERROR);
     let data: { job: T };
     try {
       const timeout = AbortSignal.timeout(POLL.REQUEST_TIMEOUT_MS);
-      data = await motionRequest<{ job: T }>(statusUrl, undefined, undefined, signal ? AbortSignal.any([signal, timeout]) : timeout);
+      const url = last?.resultRev && last.result !== undefined ? `${statusUrl}${POLL.REV_QUERY}${encodeURIComponent(last.resultRev)}` : statusUrl;
+      data = await motionRequest<{ job: T }>(url, undefined, undefined, signal ? AbortSignal.any([signal, timeout]) : timeout);
       if (!data?.job || typeof data.job.id !== "string" || typeof data.job.status !== "string") throw new Error(POLL.INVALID_RESPONSE);
+      if (data.job.resultSame && last) data.job.result = last.result;
+      last = data.job;
       failures = 0;
     } catch (error) {
       if (signal?.aborted) throw new DOMException(MOTION_TEXT_ABORTED, MOTION_TEXT_ABORTERROR);
@@ -98,7 +103,7 @@ export const pollMotionJob = async <T extends { id: string; status: string }>(st
     }
     onUpdate(data.job);
     if (isDone(data.job)) return data.job;
-    await waitForMotionPoll(intervalMs, signal);
+    await waitForMotionPoll(lowSpecPollMs(intervalMs), signal);
   }
 };
 export const formatSeconds = (s?: number): string => {

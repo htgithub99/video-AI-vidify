@@ -52,6 +52,7 @@ export const MOTION_HTML = {
   } as Record<string, string>,
   RETRY_MS: [2000, 5000, 10000, 20000, 30000],
   THUMBNAIL_BROWSER_IDLE_MS: 90_000,
+  THUMBNAIL_STILL: { width: 960, quality: 0.82, mime: "image/jpeg", canvas: "canvas", context: "2d", smoothing: "high" },
   ABANDON_LOG: (id: string): string => `Cảnh HTML ${id}: tab dựng không trả kết quả sau khi tự phục hồi – bỏ lượt cũ, gửi lại ở tab dựng đang trống.`,
   LANGUAGE_POLICY:
     "PRODUCTION LANGUAGE: Write all production descriptions, sceneTemplateDraft, sceneTemplate, continuity notes and sound-event descriptions in English. Use English section headings. Generated code must contain no comments. Narration, utterance text, audience-facing titles and visible text inside the video must remain in the selected video language. Preserve proper names, IDs, source quotations and exact display strings. Supplied source material, saved drafts and user notes may be in another language: treat them as data and express their production meaning in English within this same response. Do not add a separate translation request. Do not translate audience-facing content into English unless English is the selected video language.",

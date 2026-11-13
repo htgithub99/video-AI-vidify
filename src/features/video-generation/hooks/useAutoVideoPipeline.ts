@@ -1,4 +1,5 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { lowSpecPollMs } from "../../../lib/lowSpecClient.js";
 import {
   SOURCE_TEMPLATE_AI_CHUA_TRA_DU_HO_SO,
   SOURCE_TEMPLATE_AI_DID_NOT_RETURN_A_COMPLETE,
@@ -3195,7 +3196,7 @@ export function useAutoVideoPipeline(projects: VideoProject[], onUpdateProject: 
           }
           if (renderPending) {
             await new Promise((resolve) => {
-              window.setTimeout(resolve, REFACTOR_CONSTANTS.POLLING_INTERVAL_MS);
+              window.setTimeout(resolve, lowSpecPollMs(REFACTOR_CONSTANTS.POLLING_INTERVAL_MS));
             });
           }
         }

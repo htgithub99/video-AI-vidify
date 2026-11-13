@@ -21,7 +21,7 @@ const releaser = (): (() => void) => {
     pump();
   };
 };
-export const aiLoadPriority = (artifact: string): number => AI_LOAD.PRIORITY[artifact] ?? AI_LOAD.DEFAULT_PRIORITY;
+export const aiLoadPriority = (artifact?: string): number => (artifact ? AI_LOAD.PRIORITY[artifact] : undefined) ?? AI_LOAD.DEFAULT_PRIORITY;
 export const acquireAiLoadSlot = (priority: number, signal?: AbortSignal): Promise<() => void> => {
   signal?.throwIfAborted();
   if (!queue.length && active < capacity()) {

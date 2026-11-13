@@ -586,7 +586,7 @@ export function useMotionStudio() {
             if (!mounted.current || ctrl.signal.aborted || stateRef.current.activeStoryJobId !== job.id) return;
             setStoryJob(j);
             trackLog(j.id, j.kind, j.log, j.startedAt, j);
-            if (onPartial && j.result && stateRef.current.activeStoryJobId === job.id) onPartial(j.result);
+            if (onPartial && j.result && !j.resultSame && stateRef.current.activeStoryJobId === job.id) onPartial(j.result);
           },
           (j) => isMotionJobTerminal(j.status),
           ctrl.signal,
@@ -615,7 +615,7 @@ export function useMotionStudio() {
   );
   const applyProduction = useCallback(
     (job: MotionStoryJobState) => {
-      if (job.kind !== MotionStoryJobKind.PRODUCTION || job.productionId !== stateRef.current.editorialSessionId) return;
+      if (job.kind !== MotionStoryJobKind.PRODUCTION || job.productionId !== stateRef.current.editorialSessionId || (job.resultSame && !isMotionJobTerminal(job.status))) return;
       const result = job.result as MotionProductionResult | undefined;
       if (!result) return;
       patch({

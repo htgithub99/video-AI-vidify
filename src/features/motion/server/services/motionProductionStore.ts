@@ -17,7 +17,7 @@ export const motionProcessAlive = (pid: number): boolean => {
     return false;
   }
 };
-export class MotionProductionStore<T extends { owner?: MotionProductionOwner }> {
+export class MotionProductionStore<T extends { owner?: MotionProductionOwner; rev?: number }> {
   constructor(private readonly directory: string) {}
   private file(id: string, extension: string = P.EXT): string {
     if (!P.ID_RE.test(id)) throw new Error(P.INVALID_RUN);
@@ -97,6 +97,7 @@ export class MotionProductionStore<T extends { owner?: MotionProductionOwner }> 
   save(id: string, value: T, owner: MotionProductionOwner): void {
     if (!this.owns(id, owner)) throw new Error(P.LOCK_LOST);
     owner.updated = Date.now();
+    value.rev = (value.rev || 0) + 1;
     writeMotionJsonAtomic(this.file(id), value);
     writeMotionJsonAtomic(this.file(id, P.LOCK_EXT), owner);
   }

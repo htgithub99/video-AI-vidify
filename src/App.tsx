@@ -1,4 +1,5 @@
 import { FeatureWorkspace } from "./components/common/FeatureWorkspace.js";
+import { loadLowSpec } from "./lib/lowSpecClient.js";
 import { AutoVideoGenerator, CinematicFilmStudio, DashboardView, FlowVideoCreator, MotionVideoCreator, MusicCreator, MusicMixer, ProjectList, SettingsView, ShortsExtractor, VideoExporter, ProxyManager } from "./features/screens.js";
 import {
   SOURCE_TEMPLATE_SYMBOL_86,
@@ -95,6 +96,9 @@ export default function App() {
       storageUtils.set(STORAGE_KEYS.ACTIVE_TAB, activeTab);
     }
   }, [activeTab]);
+  useEffect(() => {
+    void loadLowSpec();
+  }, []);
   useEffect(() => {
     setLogLanguage(currentLang);
   }, [currentLang]);

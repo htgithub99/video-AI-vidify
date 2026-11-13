@@ -148,6 +148,7 @@ import { META_AI_CHAT_CONFIG as M } from "../../constants/metaAiChat.js";
 import { selectMetaAiChatModel } from "./metaAiModelService.js";
 import { parseGeminiChatModel } from "../../constants/geminiChatModels.js";
 import { assertGeminiFlashQuota, geminiModelStillSelected, getGeminiModelButton, markGeminiModel, selectGeminiThinkingModel, waitForGeminiModelUi } from "./geminiModelService.js";
+import { acquireAiLoadSlot, aiLoadPriority } from "./aiLoadGate.js";
 import { withChromeBackupRecovery, saveChatResponse, isAutoChromeSwitchEnabled, chromeWaitPolicy, earliestProviderReset, activeChromeId, aiFallbackChain, providerChromeId, providerRouteGeneration, onProviderRouted, onProviderExhausted } from "./chromeBackupService.js";
 import { classifyAiError, tagAiAvailability, aiAvailabilityOf, isAiExhausted, aiUnavailableUntil, formatAiUntil, waitAiReset } from "./aiAvailabilityService.js";
 import { AI_AVAILABILITY } from "../../constants/aiAvailability.js";
@@ -178,6 +179,7 @@ interface ChatResponseSnapshot {
 }
 type PendingRoomResponse = ChatPendingSubmission;
 interface ChatPlanningRequest {
+  loadHeld?: boolean;
   allowFallback?: boolean;
   fallbackChain?: readonly string[];
   waitOnExhausted?: boolean;
@@ -2448,6 +2450,15 @@ const stopsFallback = (error: unknown, request: ChatPlanningRequest): boolean =>
   _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.CANCELLED_ERROR ||
   _.get(error, SOURCE_TEXT_MESSAGE) === CINEMATIC_CHAT_PLANNING_CONFIG.REFUSAL_RESPONSE_ERROR;
 export const generatePlanningWithChatUi = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
+  if (request.loadHeld) return generatePlanningWithChatUiWait(request);
+  const release = await acquireAiLoadSlot(aiLoadPriority(request.artifactType), request.signal);
+  try {
+    return await generatePlanningWithChatUiWait(request);
+  } finally {
+    release();
+  }
+};
+const generatePlanningWithChatUiWait = async (request: ChatPlanningRequest): Promise<{ text: string; provider: AiPlanningFallbackProvider }> => {
   for (;;) {
     try {
       return await generatePlanningWithChatUiRoutes(request);

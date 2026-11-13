@@ -1,4 +1,5 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
+import { machineCpus } from "../../../../server/services/lowSpecPolicy.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -464,7 +465,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       job.encoder = encoder;
       job.browser = spec.renderer === RT_MAINTENANCE.HTML_CANVAS ? RT_MAINTENANCE.HTML_CANVAS_CHROME : VISUAL.MODES.REMOTION;
       job.framesTotal = totalFrames;
-      job.workers = motionRemotionRenderConcurrency(os.cpus().length, os.freemem());
+      job.workers = motionRemotionRenderConcurrency(machineCpus(), os.freemem());
       job.status = MotionJobStatus.RENDERING;
       job.stage = VISUAL.LOG_RENDER;
       pushLog(job, VISUAL.LOG_RENDER);
@@ -484,7 +485,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
       const fileOf = motionSegmentFile;
       const frames = (segment: (typeof segments)[number]) => segment.end - segment.start + 1;
       const todo = segments.filter((segment) => !cached.has(segment.key));
-      const plan = (spec.renderer === RT_MAINTENANCE.HTML_CANVAS && spec.scenes.every((scene) => scene.renderer === RT_MAINTENANCE.HTML_CANVAS) ? motionHtmlRenderLanes : motionRemotionRenderLanes)(os.cpus().length, os.freemem(), todo.length);
+      const plan = (spec.renderer === RT_MAINTENANCE.HTML_CANVAS && spec.scenes.every((scene) => scene.renderer === RT_MAINTENANCE.HTML_CANVAS) ? motionHtmlRenderLanes : motionRemotionRenderLanes)(machineCpus(), os.freemem(), todo.length);
       job.workers = plan.lanes * plan.perLane;
       pushLog(job, MOTION_REMOTION_RENDER.SEGMENTS(segments.length, segments.length - todo.length, plan.lanes, plan.perLane));
       const reused = segments.filter((segment) => cached.has(segment.key)).reduce((sum, segment) => sum + frames(segment), 0);
@@ -563,7 +564,7 @@ const runJob = async (job: MotionJobState & { controller: AbortController }, spe
         }
       totalFrames = Math.max(1, Math.round(duration * fps));
       job.framesTotal = totalFrames;
-      const cpuBudget = is3dSoftware ? Math.max(2, Math.floor((os.cpus().length || 2) / 2)) : os.cpus().length || 2;
+      const cpuBudget = is3dSoftware ? Math.max(2, Math.floor(machineCpus() / 2)) : machineCpus();
       const workers = Math.min(is3dSoftware ? 1 : 2, workerCount(cpuBudget, Math.round(os.freemem() / 1048576), totalFrames));
       job.workers = workers;
       const cacheKey = createHash(MOTION_RENDER_CACHE.HASH)

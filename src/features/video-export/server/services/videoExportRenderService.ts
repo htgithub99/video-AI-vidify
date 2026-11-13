@@ -1,4 +1,5 @@
 import { VideoExportQuality } from "../../../../constants/runtime/enums.js";
+import { machineCpus } from "../../../../server/services/lowSpecPolicy.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import {
   VIDEO_EXPORT_TEMPLATE_0_V_SCALE_FORCE_ORIGINAL_ASPECT,
@@ -279,7 +280,7 @@ const prepareConcatenatedAudio = async (audioPaths: string[], outputPath: string
   });
   const totalTracks = audioPaths.length;
   let completedTracks = 0;
-  const audioLanes = Math.max(1, Math.min(8, os.cpus().length, totalTracks));
+  const audioLanes = Math.max(1, Math.min(8, machineCpus(), totalTracks));
   const laneAbort = createLinkedAbort(signal);
   await runVideoExportLanes(audioPaths, audioLanes, async (audioPath, index) => {
     const cachedPath = cachedPaths[index];
@@ -650,7 +651,7 @@ export const renderVideoExport = async (params: RenderVideoExportParams): Promis
     const transitionFrames = plan.segmentCount > 1 ? Math.round(plan.transitionSeconds * profile.fps) : 0;
     const segmentFrames = splitSegmentFrames(totalSeconds, plan.segmentCount, transitionFrames, profile.fps);
     const hasTransitions = transitionFrames > 0;
-    const { lanes, threads } = videoExportRenderLanes(os.cpus().length, os.freemem(), plan.segmentCount, profile.width * profile.height);
+    const { lanes, threads } = videoExportRenderLanes(machineCpus(), os.freemem(), plan.segmentCount, profile.width * profile.height);
     logger.log(VIDEO_EXPORT_SPEED.LANES_LOG(lanes, threads, plan.segmentCount));
     const laneAbort = createLinkedAbort(signal);
     const runLaneFfmpeg = (args: string[], onProgressSeconds?: (seconds: number) => void) =>

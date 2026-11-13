@@ -2,6 +2,7 @@ import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { motionStepElapsedMs, motionStepSegment } from "../../../../lib/motionStepTime.js";
 import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
+import { motionCompactSceneHtml } from "../../../../lib/motionHtmlKit.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -62,6 +63,7 @@ interface ProductionRecord {
   result: MotionProductionResult;
   steps: Record<string, { id: string; done?: boolean; partial?: boolean; log?: string[]; retries?: number; retryAt?: number; inputKey?: string; status?: S; stage?: string; progress?: number; startedAt?: number; updatedAt?: number; error?: string; recoveryStopped?: boolean; elapsedMs?: number; segmentAt?: number }>;
   owner?: MotionProductionOwner;
+  rev?: number;
 }
 const productionDependencies = { analyzeMotionStoryInput, scriptMotionStoryInput, scenesMotionStoryInput, voiceMotionStoryInput, seoMotionStoryInput, compileMotionStoryInput, startMotionVideoRenderInput, getStoryJob, cancelStoryJob, getMotionJob, cancelMotionJob, detectEncoders, checkMotionMediaTools, checkMotionProductionVoice, checkRemotionRuntime };
 export const createMotionProductionService = (dependencies: Partial<typeof productionDependencies> = {}, directory = path.join(getMotionRootDirectory(), P.RUN_FOLDER), pollMs: number = P.POLL_MS, serviceRetryMs: number = P.SERVICE_RETRY_MS, seoWaitMs: number = P.SEO_WAIT_MS) => {
@@ -78,6 +80,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   const read = (id: string): ProductionRecord | undefined => {
     const record = failedSnapshots.get(id) || store.read(id);
     if (record?.job) delete record.job.result;
+    motionCompactSceneHtml(record?.result?.script?.gen?.remotion?.scenes);
     return record?.version === P.RUN_VERSION && record.job?.id === id && record.input && record.inputKey === motionInputKey(record.input) ? record : undefined;
   };
   const logFilters = new WeakMap<ProductionRecord, ReturnType<typeof createMotionLogFilter>>();
@@ -92,9 +95,16 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     logs.seed(record.job.id, prior);
     logs.append(record.job.id, entry);
   };
-  const publicJob = (record: ProductionRecord): MotionProductionJobState => {
-    const job = structuredClone({ ...record.job, result: record.result });
-    job.stepStates = Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error, elapsedMs: task.segmentAt ? task.elapsedMs || 0 : motionStepElapsedMs(task), segmentAt: task.segmentAt }]] : [])));
+  const publicSteps = (record: ProductionRecord): MotionProductionJobState["stepStates"] => Object.fromEntries(Object.entries(record.steps).flatMap(([name, task]) => (task.status || task.done ? [[name, { id: task.id, status: task.done ? S.COMPLETED : task.status!, stage: task.stage, progress: task.progress, startedAt: task.startedAt, updatedAt: task.updatedAt, error: task.error, elapsedMs: task.segmentAt ? task.elapsedMs || 0 : motionStepElapsedMs(task), segmentAt: task.segmentAt }]] : [])));
+  const publicJob = (record: ProductionRecord, knownRev?: string): MotionProductionJobState => {
+    const resultRev = String(record.rev || 0);
+    if (knownRev === resultRev && !terminal(record.job.status)) {
+      const job: MotionProductionJobState = { ...structuredClone(record.job), result: undefined, resultRev, resultSame: true };
+      job.stepStates = publicSteps(record);
+      return job;
+    }
+    const job = structuredClone({ ...record.job, result: record.result, resultRev });
+    job.stepStates = publicSteps(record);
     job.result.outputSettings = motionOutputSettings(record.input, job.result);
     if (job.result.rendered) {
       const settings = job.result.outputSettings;
@@ -123,7 +133,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       }
       const save = (): void => {
         signal.throwIfAborted();
-        if (store.read(record.job.id)?.job.status === S.CANCELLED) {
+        if (record.job.status === S.CANCELLED) {
           controller.abort();
           signal.throwIfAborted();
         }
@@ -781,7 +791,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     }
     return launch(record);
   };
-  const getMotionProduction = (id: string): MotionProductionJobState | undefined => {
+  const getMotionProduction = (id: string, knownRev?: string): MotionProductionJobState | undefined => {
     const record = active.get(id)?.record || read(id);
     if (!record) {
       if (!store.exists(id)) return undefined;
@@ -806,7 +816,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         }
       }
     }
-    return publicJob(record);
+    return publicJob(record, knownRev);
   };
   const resumeMotionProduction = (id: string, clearGeminiChatsBeforeExport?: boolean, aiOverrides?: { aiExecution?: Record<string, any>; sceneAiExecution?: Record<string, any>; planAiExecution?: Record<string, any>; scriptAiExecution?: Record<string, any> }): MotionProductionJobState => {
     let record = read(id);
