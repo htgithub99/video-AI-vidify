@@ -7,6 +7,7 @@ import { ToggleIndicator } from "../../../components/common/ToggleIndicator.js";
 import { LoadingIcon } from "../../../components/common/LoadingIcon.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
 import { cn } from "../../../lib/utils.js";
+import { BUTTON_CLASS_NAME } from "../../../constants/ui.js";
 import { CHROME_BACKUP as C } from "../../../constants/chromeBackup.js";
 import { CHROME_MANAGER_UI as U } from "../../../constants/chromeManagerUi.js";
 import { AI_AVAILABILITY as A } from "../../../constants/aiAvailability.js";
@@ -16,7 +17,7 @@ type ChromeItem = { id: string; name: string; ready: boolean; port?: number };
 type ChainRoute = { provider: string; model: string; enabled: boolean };
 type Availability = { chromeId: string; chromeName: string; provider: string; kind: string; kindLabel: string; untilText: string; notice: string };
 type Task = { keys: string[]; label: string };
-type Settings = { mainReady?: boolean; enabled: boolean; pinned: string | null; waitPolicy: string; activeId: string; chromes: ChromeItem[]; fallbackChain?: ChainRoute[]; switching: boolean; error?: string; availability: Availability[] };
+type Settings = { mainReady?: boolean; enabled: boolean; lowSpec?: boolean; pinned: string | null; waitPolicy: string; activeId: string; chromes: ChromeItem[]; fallbackChain?: ChainRoute[]; switching: boolean; error?: string; availability: Availability[] };
 const STATUS_ROW: Record<string, string> = { [A.KIND.QUOTA]: U.STATUS_QUOTA, [A.KIND.BLOCKED]: U.STATUS_BLOCKED, [A.KIND.LOGIN]: U.STATUS_LOGIN, [A.KIND.PLAN]: U.STATUS_PLAN, [A.KIND.ERROR]: U.STATUS_ERROR };
 const STATUS_KIND: Record<string, string> = { [A.KIND.QUOTA]: U.STATUS_KIND_QUOTA, [A.KIND.BLOCKED]: U.STATUS_KIND_BLOCKED, [A.KIND.LOGIN]: U.STATUS_KIND_LOGIN, [A.KIND.PLAN]: U.STATUS_KIND_PLAN, [A.KIND.ERROR]: U.STATUS_KIND_ERROR };
 export const ChromeBackupSettings = ({ language }: { language: string }) => {
@@ -46,6 +47,16 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
   const send = (task: Task, url: string, method: string, body?: object) => run(task, () => call(url, method, body));
   const save = (key: string, body: object) => send({ keys: [key], label: T.ACTIVITY.SAVE[lang] }, C.API, C.UI.PUT, body);
   const isPending = (key: string) => pending?.keys.includes(key) === true;
+  const quickSave = async (patch: Partial<Settings>) => {
+    const previous = settings;
+    setSettings((current) => (current ? { ...current, ...patch } : current));
+    try {
+      await call(C.API, C.UI.PUT, patch);
+    } catch (error) {
+      setSettings(previous);
+      toast.error(String((error as Error).message));
+    }
+  };
   useEffect(() => {
     void call().catch((error: Error) => toast.error(String(error.message)));
   }, []);
@@ -58,6 +69,7 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
   const locked = busy || !settings || settings.switching;
   const activity = pending?.label || (settings?.switching ? T.ACTIVITY.SWITCHING[lang] : undefined);
   const enabled = settings?.enabled === true;
+  const lowSpec = settings?.lowSpec === true;
   const active = settings?.activeId || A.MAIN;
   const chromes: ChromeItem[] = settings ? [{ id: A.MAIN, name: C.MAIN_NAME, ready: settings.mainReady !== false, port: C.RESERVED_PORTS[0] }, ...(settings.chromes || [])] : [];
   const checkAll = () =>
@@ -124,30 +136,38 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
           <span className={U.SECTION_TITLE}>{T.RULES[lang]}</span>
         </div>
         <div className={U.RULE_GRID}>
-          <Button variant={C.UI.UNSTYLED} role={C.UI.SWITCH} aria-checked={enabled} aria-label={C.LABEL[lang]} disabled={locked} onClick={() => void save(U.KEY.ENABLED, { enabled: !enabled })} className={cn(U.TOGGLE, enabled && U.TOGGLE_ACTIVE)}>
+          <Button variant={C.UI.UNSTYLED} role={C.UI.SWITCH} aria-checked={enabled} aria-label={C.LABEL[lang]} disabled={!settings || settings.switching} onClick={() => void quickSave({ enabled: !enabled })} className={cn(U.TOGGLE, enabled && U.TOGGLE_ACTIVE)}>
             <span className={U.TOGGLE_CONTENT}>
               <span className={U.LABEL_ROW}>
                 <span className={U.LABEL}>{C.LABEL[lang]}</span>
-                {isPending(U.KEY.ENABLED) && <LoadingIcon className={U.SPIN} />}
               </span>
               <span className={U.DESCRIPTION}>{C.DESCRIPTION[lang]}</span>
             </span>
             <ToggleIndicator checked={enabled} />
           </Button>
-          <label className={U.FIELD}>
+          <Button variant={C.UI.UNSTYLED} role={C.UI.SWITCH} aria-checked={lowSpec} aria-label={C.LOW_SPEC_LABEL[lang]} disabled={!settings || settings.switching} onClick={() => void quickSave({ lowSpec: !lowSpec })} className={cn(U.TOGGLE, lowSpec && U.TOGGLE_ACTIVE)}>
+            <span className={U.TOGGLE_CONTENT}>
+              <span className={U.LABEL_ROW}>
+                <span className={U.LABEL}>{C.LOW_SPEC_LABEL[lang]}</span>
+              </span>
+              <span className={U.DESCRIPTION}>{C.LOW_SPEC_DESCRIPTION[lang]}</span>
+            </span>
+            <ToggleIndicator checked={lowSpec} />
+          </Button>
+          <label className={cn(U.FIELD, isPending(U.KEY.POLICY) && BUTTON_CLASS_NAME.LOADING)}>
             <span className={U.LABEL_ROW}>
+              {isPending(U.KEY.POLICY) && <LoadingIcon className={U.PENDING_SPIN} />}
               <span className={U.LABEL}>{M.POLICY_LABEL[lang]}</span>
-              {isPending(U.KEY.POLICY) && <LoadingIcon className={U.SPIN} />}
             </span>
             <StudioSelect className={U.SELECT} disabled={locked} value={settings?.waitPolicy || A.WAIT_POLICY.WAIT} onChange={(event) => void save(U.KEY.POLICY, { waitPolicy: event.target.value })}>
               <option value={A.WAIT_POLICY.WAIT}>{M.POLICY_WAIT[lang]}</option>
               <option value={A.WAIT_POLICY.STOP}>{M.POLICY_STOP[lang]}</option>
             </StudioSelect>
           </label>
-          <label className={U.FIELD}>
+          <label className={cn(U.FIELD, isPending(U.KEY.PINNED) && BUTTON_CLASS_NAME.LOADING)}>
             <span className={U.LABEL_ROW}>
+              {isPending(U.KEY.PINNED) && <LoadingIcon className={U.PENDING_SPIN} />}
               <span className={U.LABEL}>{M.PINNED_LABEL[lang]}</span>
-              {isPending(U.KEY.PINNED) && <LoadingIcon className={U.SPIN} />}
             </span>
             <StudioSelect className={U.SELECT} disabled={locked} value={settings?.pinned || A.MAIN} onChange={(event) => void save(U.KEY.PINNED, { pinned: event.target.value })}>
               {chromes.map((chrome) => (
@@ -238,7 +258,7 @@ export const ChromeBackupSettings = ({ language }: { language: string }) => {
                 setOverIndex(null);
               }}
               onDrop={(event) => dropOn(event, index)}
-              className={cn(U.CHAIN_ROW, dragIndex === index && U.CHAIN_DRAGGING, overIndex === index && dragIndex !== index && U.CHAIN_OVER, !route.enabled && U.CHAIN_OFF)}
+              className={cn(U.CHAIN_ROW, isPending(U.KEY.CHAIN(route.provider)) && BUTTON_CLASS_NAME.LOADING, dragIndex === index && U.CHAIN_DRAGGING, overIndex === index && dragIndex !== index && U.CHAIN_OVER, !route.enabled && U.CHAIN_OFF)}
             >
               <span className={U.HANDLE} title={T.DRAG[lang]}>
                 {isPending(U.KEY.CHAIN(route.provider)) ? <LoadingIcon className={cn(U.HANDLE_ICON, U.SPIN)} /> : <GripVertical className={U.HANDLE_ICON} />}

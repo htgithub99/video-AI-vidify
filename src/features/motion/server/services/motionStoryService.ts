@@ -1,3 +1,4 @@
+import { setTimeout as delay } from "node:timers/promises";
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { isChatBridgeEnabled } from "../../../../server/services/chatBridgeService.js";
 import { CHAT_BRIDGE } from "../../../../constants/chatBridge.js";
@@ -194,6 +195,7 @@ import { beginChatPlanningRun, closeChatBrowserIfIdle, closeChatPlanningRoom, cl
 import { sharedChromeTasks } from "../../../../server/services/chromeTaskCoordinator.js";
 import { CHROME_BACKUP, CHAT_ROOM_RECOVERY } from "../../../../constants/chromeBackup.js";
 import { aiOutageMs, aiFallbackChain } from "../../../../server/services/chromeBackupService.js";
+import { acquireAiLoadSlot, aiLoadPriority } from "../../../../server/services/aiLoadGate.js";
 import { AI_AVAILABILITY } from "../../../../constants/aiAvailability.js";
 import { exhaustedMotionRoom, isChatAttachmentError, isFinalChatResponseError, isMotionContentResponseError, isTerminalMotionAiError, uncertainChatSubmission, type ChatPlanningSubmission } from "../../../../server/services/chatSubmissionRecovery.js";
 import { MOTION_AI_RECOVERY as AIR } from "../../../../constants/motionAiRecovery.js";
@@ -616,6 +618,32 @@ export const acquireMotionRenderBrowser = async (signal?: AbortSignal, log?: (li
     releaseCleanupBrowser();
   }
 };
+const settleOrStuck = <T>(task: Promise<T>, signal: AbortSignal, onStuck: () => Promise<unknown>): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onAbort = () => {
+      timer = setTimeout(() => {
+        void Promise.race([onStuck(), delay(AIR.STUCK_CLOSE_MS)]).catch(_.noop);
+        reject(new Error(CINEMATIC_CHAT_PLANNING_CONFIG.UI_READ_TIMEOUT_ERROR));
+      }, AIR.STUCK_GRACE_MS);
+    };
+    const done = () => {
+      clearTimeout(timer);
+      signal.removeEventListener(MR.MOTION_TEXT_ABORT, onAbort);
+    };
+    if (signal.aborted) onAbort();
+    else signal.addEventListener(MR.MOTION_TEXT_ABORT, onAbort, { once: true });
+    task.then(
+      (value) => {
+        done();
+        resolve(value);
+      },
+      (error) => {
+        done();
+        reject(error);
+      },
+    );
+  });
 const closeMotionAiRoom = async (run: MotionAiRun, workerId: string): Promise<void> => {
   run.bibles?.delete(workerId);
   run.roomTurns?.delete(workerId);
@@ -1284,6 +1312,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
     let roomOk = false;
     let releaseGate: () => void = _.noop;
     let releaseRoom: () => void = _.noop;
+    let releaseLoad: () => void = _.noop;
     let fullPrompt: string = MR.MOTION_TEXT_EMPTY;
     let captchaRetry = false;
     let epoch = captchaEpochs.get(provider) || 0;
@@ -1297,6 +1326,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       epoch = captchaEpochs.get(provider) || 0;
       releaseGate = await acquireProviderGate(provider, roomCtrl.signal, exec.role, exec.multiSceneRooms, exec.multiRoom);
       if (run) releaseRoom = await acquireMotionAiRoom(run, workerId!, provider, roomCtrl.signal);
+      releaseLoad = await acquireAiLoadSlot(aiLoadPriority(artifactType), roomCtrl.signal);
       const preparedPrompt = requestPrompt(true);
       fullPrompt = preparedPrompt.fullPrompt;
       const measurement = preparedPrompt.measurement;
@@ -1376,7 +1406,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       roomCtrl.signal.throwIfAborted();
       if (!submission.attempted) await staggerMotionSend(provider, roomCtrl.signal);
       countMotionRequest(provider, log);
-      const r = await generatePlanningWithChatUi({
+      const r = await settleOrStuck(generatePlanningWithChatUi({
         provider,
         model,
         prompt: fullPrompt,
@@ -1410,6 +1440,10 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
             }, roomTimeout);
         },
         attachments: images?.length ? _.map(images, (im) => ({ name: im.name, mimeType: im.mimeType, path: im.path })) : undefined,
+      }), roomCtrl.signal, async () => {
+        log?.(AIR.STUCK_LOG, { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.RECOVERING });
+        if (run) await closeMotionAiRoom(run, workerId!);
+        else await closeChatPlanningRoom({ provider, projectId, workerId }, true);
       });
       exec.responseReceived?.(r.text);
       const result = exec.outputFormat === RT_MAINTENANCE.HTML ? r.text : extractMotionRoomJson(r.text);
@@ -1521,6 +1555,8 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
         clearTimeout(watchdog);
         releaseGate();
         releaseGate = _.noop;
+        releaseLoad();
+        releaseLoad = _.noop;
         log?.(AIR.SHARED_RECOVERY_WAIT(provider), { workerId: workerId!, provider, model: String(exec.model || MR.MOTION_TEXT_EMPTY), artifact: artifactType, phase: AIR.PHASE.PROVIDER });
         await providerRecoveries.wait(recoveryKey, requestId, AbortSignal.any(_.compact([signal, run?.signal])));
       }
@@ -1562,6 +1598,7 @@ const runMotionAiOnce = async (prompt: string, artifactType: string, exec: Motio
       }
     } finally {
       releaseGate();
+      releaseLoad();
       clearTimeout(watchdog);
       submission.onAttempt = undefined;
       submission.onContextProgress = undefined;

@@ -161,7 +161,7 @@ import { createDeepSeekRetryRecovery } from "./deepseekRetryService.js";
 import { throwIfDeepSeekAccountUnavailable } from "./deepseekAccountService.js";
 import { acquireGeminiActivityUse } from "./geminiActivityCleanupService.js";
 import { getDeepSeekComposerScope, observeDeepSeekUploads, waitForDeepSeekUploads } from "./deepseekUploadReadiness.js";
-import { closeAppBrowserAfterTask, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGrokBrowser, getOrLaunchProviderBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
+import { closeAppBrowserAfterTask, closeIdleProviderChrome, closeIdleSharedChrome, closeOwnedGrokBrowserIfIdle, getOrLaunchGrokBrowser, getOrLaunchProviderBrowser, scheduleGlobalBrowserCleanup, retainGlobalBrowser, SimpleMutex } from "./imageGeneratorService.js";
 import { musicErrorDetails, musicUploadDetails, writeMusicDiagnostic } from "./musicDiagnosticService.js";
 import { reportCaptchaAlert } from "./captchaAlertService.js";
 import { CAPTCHA_ALERT } from "../../constants/captchaAlert.js";
@@ -430,6 +430,7 @@ export const closeChatPlanningRoom = async (request: ChatPlanningRoomIdentity, r
   }
   const context = page && !page.isClosed() ? page.context?.() : openPages[0]?.context?.();
   if (context) await pruneBlankChromePages(context).catch(() => undefined);
+  if (![...rooms.values()].some((open) => !open.isClosed())) closeIdleProviderChrome(String(request.provider));
   if (!hasActiveChatRooms()) scheduleChatBrowserCleanup();
 };
 export const closeChatPlanningRoomsForProject = async (request: Pick<ChatPlanningRoomIdentity, "provider" | "projectId">, closeBrowser = true): Promise<void> => {
@@ -721,7 +722,6 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
   if (busySelector === CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_BUSY_SELECTOR) {
     const notices = await page
       .locator(CINEMATIC_CHAT_PLANNING_CONFIG.CHATGPT_USAGE_NOTICE_SELECTOR)
-      .filter({ visible: true })
       .allTextContents()
       .catch(() => []);
     const composerNotices = await page
@@ -756,7 +756,6 @@ const throwIfGrokRateLimited = async (page: Page, busySelector: string): Promise
   if (_.isEqual(busySelector, CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_BUSY_SELECTOR)) {
     const alerts = await page
       .locator(C.CLAUDE_USAGE_NOTICE_SELECTOR)
-      .filter({ visible: true })
       .allTextContents()
       .catch(() => []);
     if (alerts.some((alert) => CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_PATTERN.test(alert))) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CLAUDE_RATE_LIMIT_ERROR);

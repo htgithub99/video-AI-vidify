@@ -29,6 +29,8 @@ import { motionInputKey } from "../motionFileUtils.js";
 import { motionTaskCheckpoint } from "../motionTaskCheckpoint.js";
 import { MotionPriorityPool } from "../motionPriorityPool.js";
 import { openMotionHtmlRuntime, withMotionThumbnailBrowser } from "./sceneRuntime.js";
+import { isLowSpecMode } from "../../../../../server/services/chromeBackupService.js";
+import { AI_LOAD } from "../../../../../constants/aiLoad.js";
 import { motionHtmlStore } from "./sceneStore.js";
 import type { RemotionSceneOptions } from "../remotion/scenePipeline.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript, MotionAiExecution } from "../../../../../types/motionVideo.js";
@@ -255,7 +257,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   if (scene.html?.status === RT_MAINTENANCE.READY || scene.html?.status === RT_MAINTENANCE.RENDERED) return;
   let prompt = [
     output,
-    motionHtmlMechanics([scene.sceneTemplate, settings.continuity].join("\n")),
+    motionHtmlMechanics([scene.sceneTemplate, settings.continuity].join("\n"), settings.figureKit === true),
     graphics,
     PROMPT_REFERENCE_DOC.WRAP(settings.figureKit ? PROMPT_REFERENCE_DOC.KIT_NAME : PROMPT_REFERENCE_DOC.FIGURE_NAME, figureDoc),
     motionHtmlLanguageDirection(settings.language, { codeOnly: true }),
@@ -364,7 +366,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         execution: { ...target, renderRecovery: undefined, role: RT_MAINTENANCE.DRAW, singleResponse: true, ...motionAiFallbackPolicy(target) },
       };
       persist();
-      const image = await withMotionThumbnailBrowser(MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
+      const image = await withMotionThumbnailBrowser(isLowSpecMode() ? AI_LOAD.THUMBNAIL_IDLE_MS : MOTION_HTML.THUMBNAIL_BROWSER_IDLE_MS, async (browser) => {
         const runtime = await openMotionHtmlRuntime(html, opts.signal, true, browser);
         try {
           return await runtime.render({ time: 0, progress: 0, frame: 0, fps: 30, duration: settings.seconds, width: settings.width, height: settings.height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: key, speaking: [] });

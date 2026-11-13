@@ -2,7 +2,7 @@ export const CHAT_PLANNING_RUNTIME = {
   STRING: "string",
   EMPTY: "",
   CODE_BLOCK_SELECTOR: "pre code",
-  CLAUDE_USAGE_NOTICE_SELECTOR: '[role="alert"], [data-testid="usage-limit-notice"]',
+  CLAUDE_USAGE_NOTICE_SELECTOR: '[role="alert"], [role="status"], [data-testid="usage-limit-notice"]',
   CLAUDE: "Claude",
   CLAUDE_MODEL_UNAVAILABLE_CODE: "claude_model_unavailable",
   CLAUDE_EFFORT_UNAVAILABLE_CODE: "claude_effort_unavailable",

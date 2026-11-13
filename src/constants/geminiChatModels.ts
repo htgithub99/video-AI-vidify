@@ -35,6 +35,7 @@ export const GEMINI_MODEL_UI = {
   CHECK_ICON_SELECTOR: 'input:checked, [data-mat-icon-name="check"], [fonticon="check"], mat-icon',
   CHECK_MARKER_SELECTOR: 'input:checked, [data-mat-icon-name="check"], [fonticon="check"]',
   CHECK_TEXT_PATTERN: /^(?:check|done)$/i,
+  PICKER_HINT: /flash|pro|hydrogen|argon|carbon|fast|thinking|tư duy|nhanh|mode|model/i,
   MODEL_BUTTON_SELECTOR: 'button:not([role="menuitem"]):not([role="menuitemradio"]):not([role="option"])',
 } as const;
 export const GEMINI_THINKING_LEVEL_OPTIONS = [
@@ -55,8 +56,8 @@ export const GEMINI_MODEL_ENCODING = {
 } as const;
 export const GEMINI_CHAT_BASE_MODEL_OPTIONS = [
   { value: AiPlanningChatModel.GeminiFlashLite, label: "3.5 Flash-Lite" },
-  { value: AiPlanningChatModel.GeminiFlash, label: "3.8 Flash" },
-  { value: AiPlanningChatModel.GeminiPro, label: "3.1 Pro" },
+  { value: AiPlanningChatModel.GeminiFlash, label: "4 Hydrogen" },
+  { value: AiPlanningChatModel.GeminiPro, label: "4 Carbon" },
   { value: AiPlanningChatModel.GeminiArgon, label: "4 Argon" },
   { value: AiPlanningChatModel.GeminiThinking, label: "Pro · Tư duy mở rộng" },
   { value: AiPlanningChatModel.GeminiDeepThink, label: "Pro · Deep Think" },

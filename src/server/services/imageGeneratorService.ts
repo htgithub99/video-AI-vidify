@@ -5167,6 +5167,15 @@ const closeChromeIfUnused = async (id: string): Promise<void> => {
   if (!browser?.isConnected() || browser.contexts().some((context) => chromeInUse(context))) return;
   if (await stopBackupChrome(id)) appLog(BACKUP.UNUSED_CLOSED(chromeName(id)));
 };
+export const closeIdleProviderChrome = (provider: string): void => {
+  const id = providerChromeId(provider);
+  if (id === activeChromeId() || id === AI_AVAILABILITY.MAIN) return;
+  setTimeout(async () => {
+    const browser = backupConnections.get(id);
+    if (sharedChromeTasks.switching || !browser?.isConnected() || browser.contexts().some((context) => chromeInUse(context))) return;
+    if (await stopBackupChrome(id)) appLog(BACKUP.UNUSED_CLOSED(chromeName(id)));
+  }, BACKUP.UNUSED_CLOSE_MS);
+};
 onProviderRouted((_provider, from) => {
   setTimeout(() => void closeChromeIfUnused(from).catch(() => undefined), BACKUP.UNUSED_CLOSE_MS);
 });

@@ -40,6 +40,7 @@ import { MOTION_RENDER_BEHAVIOR as B } from "../../../../constants/motionRenderB
 import { checkRemotionRuntime } from "./motionRemotionRenderService.js";
 import { remotionStoryRenderable, remotionStoryBuildStatus } from "./remotion/sceneKeys.js";
 import { remotionStateMissingScenes } from "../../../../lib/motionRemotion.js";
+import { isLowSpecMode } from "../../../../server/services/chromeBackupService.js";
 import { motionDeleteScenes } from "../../../../lib/motionSceneDelete.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../constants/motionSceneComposition.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../constants/motionRemotionLayout.js";
@@ -412,7 +413,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         const voiced = base.voiceChannel ? { ...script, voiceChannel: base.voiceChannel } : script;
         return typeof base.multiVoice === "boolean" ? withMotionVoiceMode(voiced, base.multiVoice) : voiced;
       };
-      if (!record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair)
+      if (!isLowSpecMode() && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair)
         earlyVoice = createMotionEarlyScenes({
           stage: P.STAGES.VOICE,
           text: P.EARLY_VOICE,
@@ -499,7 +500,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           );
         if (media !== RT_SHARED.SCENES)
           jobs.push(
-            step<MotionVoiceTrack>(
+            (isLowSpecMode() ? Promise.allSettled(jobs.slice()) : Promise.resolve()).then(() => step<MotionVoiceTrack>(
               stage(P.STAGES.VOICE),
               async () => {
                 await earlyVoice?.settle();
@@ -514,8 +515,9 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
               0.3,
               false,
               RT_SHARED.VOICE,
-            ),
+            )),
           );
+        if (isLowSpecMode() && media !== RT_SHARED.SCENES && media !== RT_SHARED.VOICE) log(record, P.LOW_SPEC_VOICE_LATER);
         let firstFailure: unknown;
         const outcomes = await Promise.allSettled(
           jobs.map((job) =>

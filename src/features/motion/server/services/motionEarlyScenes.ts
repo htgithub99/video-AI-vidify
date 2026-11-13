@@ -10,7 +10,7 @@ export interface MotionEarlyScenes {
 }
 interface MotionEarlySceneOptions {
   stage: string;
-  text: { START: (ready: number, total: number) => string; WAIT: string; STOPPED: (reason: string) => string };
+  text: { START: (ready: number, total: number) => string; WAIT: string; STOPPED: (reason: string) => string; DONE: (ready: number, total: number) => string };
   analysis: () => MotionStoryAnalysis | undefined;
   extractInput?: (script: MotionStoryScript | undefined, analysis: MotionStoryAnalysis | undefined) => MotionEarlySceneInput | undefined;
   enqueueRunning?: (input: MotionEarlySceneInput) => boolean;
@@ -38,11 +38,11 @@ export const createMotionEarlyScenes = (opts: MotionEarlySceneOptions): MotionEa
   let closed = false;
   let gen: MotionStoryScript["gen"];
   let runs = 0;
-  const follow = async (id: string): Promise<void> => {
+  const follow = async (id: string): Promise<boolean> => {
     let previous: string[] = [];
     for (;;) {
       const job = opts.getJob(id);
-      if (!job) return;
+      if (!job) return false;
       let overlap = Math.min(previous.length, job.log.length);
       while (overlap && previous.slice(-overlap).some((line, index) => line !== job.log[index])) overlap--;
       for (const line of job.log.slice(overlap)) opts.log(PROGRESS.SCOPE(opts.stage, line));
@@ -51,7 +51,7 @@ export const createMotionEarlyScenes = (opts: MotionEarlySceneOptions): MotionEa
       opts.onUpdate?.(job);
       if (TERMINAL.has(job.status)) {
         if (job.status !== S.COMPLETED && !opts.signal.aborted) opts.log(PROGRESS.SCOPE(opts.stage, opts.text.STOPPED(job.error || P.INTERRUPTED)));
-        return;
+        return job.status === S.COMPLETED;
       }
       await delay(opts.pollMs, undefined, { signal: opts.signal });
     }
@@ -69,7 +69,7 @@ export const createMotionEarlyScenes = (opts: MotionEarlySceneOptions): MotionEa
         const mergedGen = mergeGen(input.script.gen, gen);
         jobId = opts.start({ ...input, script: { ...input.script, ...(mergedGen ? { gen: mergedGen } : {}) } }, runs === 0).job.id;
         runs++;
-        await follow(jobId);
+        if ((await follow(jobId)) && !closed && input.ready < input.total) opts.log(PROGRESS.SCOPE(opts.stage, opts.text.DONE(input.ready, input.total)));
         jobId = undefined;
       }
     })()

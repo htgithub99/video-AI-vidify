@@ -29,6 +29,7 @@ interface StoredSettings {
   chromes: BackupChrome[];
   fallbackChain: AiFallbackRoute[];
   mainReady: boolean;
+  lowSpec: boolean;
 }
 export interface ChromeBackupSettings extends StoredSettings {
   activeId: string;
@@ -97,6 +98,7 @@ const parseStored = (): StoredSettings => {
     chromes,
     fallbackChain: normalizeFallbackChain(saved.fallbackChain),
     mainReady: saved.mainReady !== false,
+    lowSpec: saved.lowSpec === true,
   };
 };
 const writeStored = (next: StoredSettings): void => {
@@ -146,13 +148,13 @@ const moveTo = (target: string) => {
   sharedChromeTasks.generation++;
   if (syncBrowserMode) void syncBrowserMode().catch(() => undefined);
 };
-export const saveChromeBackupSettings = (patch: Partial<Pick<StoredSettings, "enabled" | "pinned" | "waitPolicy" | "fallbackChain">> & { useBackup?: boolean; ready?: boolean; readyId?: string }): ChromeBackupSettings => {
+export const saveChromeBackupSettings = (patch: Partial<Pick<StoredSettings, "enabled" | "pinned" | "waitPolicy" | "fallbackChain" | "lowSpec">> & { useBackup?: boolean; ready?: boolean; readyId?: string }): ChromeBackupSettings => {
   const stored = readStored();
   const pinned = patch.useBackup !== undefined ? (patch.useBackup ? stored.chromes[0]?.id || null : null) : patch.pinned !== undefined ? (patch.pinned && knownChrome(stored, patch.pinned) && patch.pinned !== A.MAIN ? patch.pinned : null) : stored.pinned;
   const readyId = patch.readyId || activeChromeId();
   const chromes = patch.ready === undefined ? stored.chromes : stored.chromes.map((chrome) => (chrome.id === readyId ? { ...chrome, ready: patch.ready! } : chrome));
   const mainReady = patch.ready !== undefined && readyId === A.MAIN ? patch.ready : stored.mainReady;
-  writeStored({ enabled: patch.enabled ?? stored.enabled, pinned, waitPolicy: patch.waitPolicy === A.WAIT_POLICY.STOP || patch.waitPolicy === A.WAIT_POLICY.WAIT ? patch.waitPolicy : stored.waitPolicy, chromes, fallbackChain: patch.fallbackChain ? normalizeFallbackChain(patch.fallbackChain) : stored.fallbackChain, mainReady });
+  writeStored({ enabled: patch.enabled ?? stored.enabled, pinned, waitPolicy: patch.waitPolicy === A.WAIT_POLICY.STOP || patch.waitPolicy === A.WAIT_POLICY.WAIT ? patch.waitPolicy : stored.waitPolicy, chromes, fallbackChain: patch.fallbackChain ? normalizeFallbackChain(patch.fallbackChain) : stored.fallbackChain, mainReady, lowSpec: patch.lowSpec ?? stored.lowSpec });
   if (patch.useBackup !== undefined || patch.pinned !== undefined) moveTo(pinned || A.MAIN);
   else if (patch.enabled !== undefined) sharedChromeTasks.resetFailure();
   return readChromeBackupSettings();
@@ -225,6 +227,7 @@ export const earliestProviderReset = (provider: string): number => {
 export const chromeWaitPolicy = (): ChromeWaitPolicy => readStored().waitPolicy;
 export const aiOutageMs = (provider: string): number => (readStored().waitPolicy !== A.WAIT_POLICY.WAIT ? 0 : Math.max(0, (readStored().enabled ? earliestProviderReset(provider) : aiUnavailableUntil(activeChromeId(), provider)) - Date.now()));
 export const isAutoChromeSwitchEnabled = (): boolean => readStored().enabled;
+export const isLowSpecMode = (): boolean => readStored().lowSpec;
 const chainOpen = (provider: string, chain?: readonly string[]): boolean => !!chain?.some((name) => name !== provider && !aiUnavailableUntil(providerChromeId(name), name));
 const routeChain = (provider: string, chain: readonly string[] | undefined, log?: (line: string) => void): void => {
   for (const name of chain || []) {
@@ -247,7 +250,7 @@ export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal
       const current = providerChromeId(provider);
       const target = pickProviderChrome(provider, current);
       const entry = listAiUnavailability().find((item) => item.chromeId === current && item.provider === provider);
-      if (chainOpen(provider, chain)) {
+      if (!target && chainOpen(provider, chain)) {
         if (entry) throw tagAiAvailability(new Error(entry.notice), { kind: entry.kind, until: entry.until, notice: entry.notice, provider });
       } else if (target) {
         if (entry) log?.(A.LOG.ROUTE(provider, chromeName(current), chromeName(target), A.KIND_LABEL[entry.kind]));
@@ -273,9 +276,9 @@ export const withChromeBackupRecovery = async <T>(work: () => Promise<T>, signal
       tagAiAvailability(error, found);
       if (!readStored().enabled || (!routed && !changeBrowser) || hop >= maxHops) throw tagAiAvailability(error, { ...found, until: earliestProviderReset(provider) } as AiAvailabilityClass, true);
       if (routed) {
-        if (chainOpen(provider, chain)) throw error;
         const target = pickProviderChrome(provider, chromeId);
         if (!target) {
+          if (chainOpen(provider, chain)) throw error;
           log?.(A.LOG.NO_CHROME(provider, A.KIND_LABEL[found.kind]));
           providerExhausted(provider);
           throw tagAiAvailability(error, { ...found, until: earliestProviderReset(provider) }, true);

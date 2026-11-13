@@ -43,7 +43,7 @@ const editableInput = async (input: Locator): Promise<boolean> => {
 const menuSnapshot = (page: Page): Promise<string> =>
   page
     .evaluate(
-      ({ selector, max, sep, overlay, model }) => {
+      ({ selector, max, sep, overlay, model, hint }) => {
         const items = Array.from(document.querySelectorAll(selector))
           .filter((node) => (node as HTMLElement).offsetParent !== null)
           .slice(0, max)
@@ -51,12 +51,12 @@ const menuSnapshot = (page: Page): Promise<string> =>
         const layer = document.querySelector(overlay) as HTMLElement | null;
         const button = document.querySelector(model);
         const pickers = Array.from(document.querySelectorAll("button"))
-          .filter((node) => node.offsetParent !== null && (node.hasAttribute("aria-haspopup") || /flash|pro|fast|thinking|tư duy|nhanh|mode|model/i.test(`${node.textContent} ${node.getAttribute("aria-label")}`)) && (node.textContent || "").trim().length < 50)
+          .filter((node) => node.offsetParent !== null && (node.hasAttribute("aria-haspopup") || new RegExp(hint.source, hint.flags).test(`${node.textContent} ${node.getAttribute("aria-label")}`)) && (node.textContent || "").trim().length < 50)
           .slice(0, 12)
           .map((node) => `${node.getAttribute("data-test-id") || node.getAttribute("data-testid") || ""}#${node.getAttribute("aria-label") || ""}#${node.getAttribute("aria-haspopup") || ""}#${node.getAttribute("aria-expanded") || ""}#${(node.textContent || "").replace(/\s+/g, " ").trim()}`);
         return [`pickers:${pickers.join(" ; ")}`, items.join(sep), `overlay:${(layer?.innerText || "").replace(/\s+/g, " ").trim()}`, `button:${button?.getAttribute("aria-expanded")}:${(button?.textContent || "").replace(/\s+/g, " ").trim()}`].join(sep);
       },
-      { selector: UI.MENU_SNAPSHOT_SELECTOR, max: UI.MENU_SNAPSHOT_MAX, sep: UI.MENU_SNAPSHOT_SEP, overlay: UI.MENU_OVERLAY_SELECTOR, model: UI.PRIMARY_MODEL_SELECTOR },
+      { selector: UI.MENU_SNAPSHOT_SELECTOR, max: UI.MENU_SNAPSHOT_MAX, sep: UI.MENU_SNAPSHOT_SEP, overlay: UI.MENU_OVERLAY_SELECTOR, model: UI.PRIMARY_MODEL_SELECTOR, hint: { source: UI.PICKER_HINT.source, flags: UI.PICKER_HINT.flags } },
     )
     .catch(() => C.EMPTY);
 const optionFor = (page: Page, name: RegExp): Locator => page.getByRole(UI.MENU_ITEM_RADIO, { name }).or(page.getByRole(UI.MENU_ITEM, { name })).or(page.getByRole(UI.OPTION, { name })).filter({ visible: true }).first();

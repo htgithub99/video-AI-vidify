@@ -3,6 +3,7 @@ import { CHROME_BACKUP as C } from "../../../../constants/chromeBackup.js";
 import { AI_AVAILABILITY as A } from "../../../../constants/aiAvailability.js";
 import { addBackupChrome, clearChromeAvailability, readChromeBackupSettings, removeBackupChrome, renameBackupChrome, saveChromeBackupSettings } from "../../../../server/services/chromeBackupService.js";
 import { checkBackupChrome, prepareBackupChrome } from "../../../../server/services/imageGeneratorService.js";
+import { refreshAiLoadSlots } from "../../../../server/services/aiLoadGate.js";
 const respond = async (res: Response, work: () => unknown) => {
   try {
     res.json(await work());
@@ -21,7 +22,10 @@ export const updateChromeBackup = (req: Request, res: Response) =>
     if (body.pinned === null || typeof body.pinned === C.STRING) patch.pinned = body.pinned === A.MAIN ? null : body.pinned;
     if (body.waitPolicy === A.WAIT_POLICY.WAIT || body.waitPolicy === A.WAIT_POLICY.STOP) patch.waitPolicy = body.waitPolicy;
     if (Array.isArray(body.fallbackChain)) patch.fallbackChain = body.fallbackChain;
-    return Object.keys(patch).length ? saveChromeBackupSettings(patch) : readChromeBackupSettings();
+    if (typeof body.lowSpec === C.BOOLEAN) patch.lowSpec = body.lowSpec;
+    const result = Object.keys(patch).length ? saveChromeBackupSettings(patch) : readChromeBackupSettings();
+    refreshAiLoadSlots();
+    return result;
   });
 export const prepareChromeBackup = (_req: Request, res: Response) => respond(res, () => prepareBackupChrome());
 export const addChrome = (req: Request, res: Response) => respond(res, () => addBackupChrome(text(req.body?.name)));
