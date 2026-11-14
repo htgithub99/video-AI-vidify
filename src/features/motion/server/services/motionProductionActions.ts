@@ -1,6 +1,6 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { planMotionHtmlScenes, createMotionHtmlSceneStreamer } from "./html/scenePipeline.js";
-import { usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
+import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
 import { runMotionScriptEditorial } from "../../../../lib/motionScriptEditorial.js";
 import { MOTION_SCENE_PACING } from "../../../../constants/motionScenePacing.js";
 import { motionHtmlChapterBudget } from "../../../../lib/motionHtmlAuthoring.js";
@@ -252,31 +252,28 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const chapterDrafts: NonNullable<MotionStoryScript["chapterDrafts"]> = structuredClone(body?.chapterDrafts || {});
       const durationRepairStates: NonNullable<MotionStoryScript["durationRepairStates"]> = structuredClone(body?.durationRepairStates || {});
       const settled = new Set<string>();
-      const checkpoint = () => ctx.partial(voiceScript({ title: analysis.title, visualSettings, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []), gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, ...(settled.size ? { readyChapterIds: [...settled] } : {}) }));
+      const checkpoint = () => ctx.partial(voiceScript({ title: analysis.title, visualSettings, language, beats: _.flatMap(chapters, (c) => byChapter[c.id] || []), gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, readyChapterIds: [...settled] }));
       const todo = _.filter(chapters, (c) => (_.isEmpty(only) || _.includes(only, c.id)) && (body?.resume !== true || !!chapterDrafts[c.id] || !byChapter[c.id]?.some((beat) => beat.narration?.trim())));
       for (const chapter of chapters) {
         if (!todo.some((item) => item.id === chapter.id) && !chapterDrafts[chapter.id] && byChapter[chapter.id]?.some((beat) => beat.narration?.trim())) {
           settled.add(chapter.id);
         }
       }
+      const editPass = (body?.editorPass !== false || body?.durationRepair === true) && (todo.length > 0 || body?.durationRepair === true || !body?.edit);
+      const streamBeats = (): MotionBeat[] => _.flatMap(chapters, (c) => (!editPass || settled.has(c.id) ? byChapter[c.id] || [] : []));
       const scope = body.productionId || body.editorialSessionId;
       const planScenes = body?.planScenes !== false;
       const canStreamHtmlScenes = planScenes && visualSettings.mode === RT_MAINTENANCE.REMOTION && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
       const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) }) : undefined;
+      const streamSettled = (): void =>
+        htmlStreamer?.push(streamBeats(), chapterDrafts, false, (remotion) => {
+          keepGen = { ...(keepGen || emptyGen()), remotion };
+          checkpoint();
+        });
       if (htmlStreamer) {
         keepGen = { ...(keepGen || emptyGen()), remotion: htmlStreamer.getState() };
         void prepareMotionContentRooms(scriptExec, ctx.signal, ctx.log).catch(_.noop);
-        if (existing.length > 0) {
-          htmlStreamer.push(
-            _.flatMap(chapters, (c) => byChapter[c.id] || []),
-            chapterDrafts,
-            false,
-            (remotion) => {
-              keepGen = { ...(keepGen || emptyGen()), remotion };
-              checkpoint();
-            },
-          );
-        }
+        if (existing.length > 0) streamSettled();
       }
       let done = 0;
       const failed: MotionChapter[] = [];
@@ -305,6 +302,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           .then((result) => {
             byChapter[chapter.id] = result.beats.filter((beat) => beat.chapterId === chapter.id);
             settled.add(chapter.id);
+            streamSettled();
             checkpoint();
             logChapterScore(chapter, MOTION_BEAT_SHEET.AFTER_EDIT);
             return result.edit;
@@ -313,6 +311,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             if (isTerminalMotionAiError(error, ctx.signal)) throw error;
             ctx.log(MR.MOTION_TEMPLATE_BO_QUA_BUOC_BIEN_TAP(_.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
             settled.add(chapter.id);
+            streamSettled();
             checkpoint();
             return undefined;
           });
@@ -349,32 +348,14 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
               if (analysis.authoringSettings && Array.isArray(draft.rows) && draft.rows.length > 0) {
                 byChapter[chapter.id] = normalizeBeats(draft.rows, chapter.id, analysis);
               }
-              if (htmlStreamer) {
-                htmlStreamer.push(
-                  _.flatMap(chapters, (c) => byChapter[c.id] || []),
-                  chapterDrafts,
-                  false,
-                  (remotion) => {
-                    keepGen = { ...(keepGen || emptyGen()), remotion };
-                    checkpoint();
-                  },
-                );
-              }
+              streamSettled();
               checkpoint();
             },
           });
           delete chapterDrafts[chapter.id];
-          if (!pipelined || idx === chapters.length - 1) settled.add(chapter.id);
+          if (!editPass) settled.add(chapter.id);
           if (htmlStreamer) {
-            htmlStreamer.push(
-              _.flatMap(chapters, (c) => byChapter[c.id] || []),
-              chapterDrafts,
-              false,
-              (remotion) => {
-                keepGen = { ...(keepGen || emptyGen()), remotion };
-                checkpoint();
-              },
-            );
+            streamSettled();
             void htmlStreamer
               .waitForChapter(chapter.id)
               .then(() => checkpoint())
@@ -435,6 +416,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
             pipelined ? new Set(chapters.filter((chapter: MotionChapter) => !chapterEdits.has(chapter.id)).map((chapter: MotionChapter) => chapter.id)) : undefined,
           );
           beats = result.beats;
+          for (const chapter of chapters) byChapter[chapter.id] = beats.filter((beat) => beat.chapterId === chapter.id);
           edit = chapterReports.reduce<NonNullable<MotionStoryScript["edit"]>>(
             (sum, part) => ({ ...sum, reviewed: sum.reviewed + part.reviewed, rewritten: sum.rewritten + part.rewritten, notes: [...part.notes, ...sum.notes], requests: (sum.requests || 0) + (part.requests || 0), extraRequests: (sum.extraRequests || 0) + (part.extraRequests || 0), dropped: (sum.dropped || 0) + (part.dropped || 0) }),
             result.edit,
@@ -444,6 +426,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           ctx.log(MR.MOTION_TEMPLATE_BO_QUA_BUOC_BIEN_TAP(_.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
         }
       }
+      if (complete) for (const chapter of chapters) settled.add(chapter.id);
       const script = voiceScript({ title: analysis.title, visualSettings, language, beats, gen: keepGen, voiceChannel: body?.voiceChannel, chapterDrafts, durationRepairStates, ...(edit ? { edit } : {}) });
       const chosenTotal = _.sumBy(analysis.chapters, (chapter) => chapter.targetSeconds || 0);
       const silentTotal = (() => {
@@ -511,6 +494,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
   const withFull = (built: MotionStoryScript): MotionStoryScript => (ready ? { ...fullScript, gen: { ...(fullScript.gen || built.gen), ...built.gen, remotion: mergeMotionRemotionState(built.gen?.remotion, fullScript.gen?.remotion) } } : built);
   const exec = drawExec(body?.aiExecution);
   const mainExec = { ...aiExec(body?.mainAiExecution || body?.aiExecution), role: MOTION_AI_ROLE.MAIN };
+  const planExec = body?.planAiExecution ? { ...aiExec(body.planAiExecution), role: MOTION_AI_ROLE.PLAN } : undefined;
   const onlyBeats: string[] = _.map(_.castArray(body?.beats || []), _.toString);
   const onlyLocations: string[] = _.map(_.castArray(body?.locations || []), _.toString);
   const note = _.truncate(_.toString(body?.note || MR.MOTION_TEXT_EMPTY), { length: 400 });
@@ -520,7 +504,11 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
     MotionStoryJobKind.SCENES,
     async (ctx) => {
       if (ready) ctx.log(MOTION_PRODUCTION.PARTIAL_SCENES(ready.ready, ready.total, missingChapters.map((chapter) => chapter.title || chapter.id).join(MOTION_PRODUCTION.SEPARATOR)));
-      const result = await buildRemotionScenes({ ...script, visualSettings }, ready ? ready.analysis : analysis, {
+      const scopedAnalysis = ready ? ready.analysis : analysis;
+      let target: MotionStoryScript = { ...script, visualSettings };
+      if (usesMotionHtml(target) && !motionHtmlPlanCurrent(target, scopedAnalysis))
+        target = await planMotionHtmlScenes(target, scopedAnalysis, { exec, mainExec, planExec, scope: body.productionId || body.editorialSessionId, signal: ctx.signal, log: ctx.log, partial: (draft: MotionStoryScript) => ctx.partial(withFull(draft)), aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) });
+      const result = await buildRemotionScenes(target, scopedAnalysis, {
         exec,
         mainExec,
         signal: ctx.signal,

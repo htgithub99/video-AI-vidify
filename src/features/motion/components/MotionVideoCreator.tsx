@@ -282,7 +282,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const builtWithKit = state.script?.gen?.remotion?.settings?.figureKit === true;
   const restyleNeeded = !!builtCount && builtWithKit !== (state.visualSettings.figureKit === true);
   const scenesBusy = busyKind === MOTION_TEXT_SCENES;
-  const sceneTotal = remotionProgress?.total || 0;
+  const sceneTotal = remotionProgress?.planned ? remotionProgress.total : 0;
   const estimateTotal = studio.compiled?.spec.duration || 0;
   const plannedSeconds = state.analysis?.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0) || 0;
   const actualAudioSeconds = state.uploadedAudio?.durationSeconds || (studio.voiceValid ? state.voice?.totalSeconds : undefined);

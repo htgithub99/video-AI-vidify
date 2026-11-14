@@ -43,7 +43,7 @@ import { motionRepairPlanRows } from "../../../../../lib/motionPlanRepair.js";
 import { MOTION_HTML_WRITING } from "../../../../../constants/motionHtmlWriting.js";
 import { motionProportionOf } from "../../../../../lib/motionDrawStyle.js";
 import { MOTION_LAYOUTS, type MotionLayoutId } from "../../../../../constants/motionLayouts/index.js";
-import { motionLayoutOf } from "../../../../../lib/motionLayout.js";
+import { motionLayoutOf, motionLayoutPlanner } from "../../../../../lib/motionLayout.js";
 type HtmlSubmission = Omit<ChatPlanningSubmission, "pending"> & { pending?: Omit<ChatPendingSubmission, "page"> & { page?: ChatPendingSubmission["page"] } };
 const htmlSubmissionSnapshot = (submission: HtmlSubmission, refreshUrl = false): NonNullable<MotionHtmlRequest["submission"]> => {
   const snapshot = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned };
@@ -445,7 +445,7 @@ const planHtmlBeatGroup = async (group: { id: string; beats: MotionBeat[]; secon
   if (!state.scenes[group.id]?.length || state.inputKeys[group.id] !== key) {
     const prompt = [
       RT_MAINTENANCE.PROMPT_3,
-      analysis.authoringSettings ? motionHtmlVisualDirection(analysis) : `${RT_MAINTENANCE.STYLE_2}${MOTION_HTML_STYLES[settings.profileId]}${RT_MAINTENANCE.NEWLINE}${motionHtmlLanguageDirection(language, { plan: true })}${RT_MAINTENANCE.NEWLINE}${MOTION_HTML.TEMPLATE}`,
+      analysis.authoringSettings ? motionHtmlVisualDirection(analysis) : [`${RT_MAINTENANCE.STYLE_2}${MOTION_HTML_STYLES[settings.profileId]}`, motionLayoutPlanner(settings), motionHtmlLanguageDirection(language, { plan: true }), MOTION_HTML.TEMPLATE].filter(Boolean).join(RT_MAINTENANCE.NEWLINE),
       motionHtmlPacingDirection(settings, group.seconds),
       opts.sfx === false ? RT_MAINTENANCE.SOUNDEVENTS_SFX_IS_DISABLED : RT_MAINTENANCE.PROMPT_4,
       MOTION_HTML_WRITING.PLAN_LINES,
@@ -524,6 +524,7 @@ export const createMotionHtmlSceneStreamer = (initialAnalysis: MotionStoryAnalys
           ...initialAnalysis.authoringSettings,
           visualProfile: settings.profileId,
           visualProportion: settings.proportion,
+          visualLayout: settings.layout,
           language,
           picturePacing: settings.pacing || initialAnalysis.authoringSettings.picturePacing,
           targetPictureSeconds: settings.pacing === RT_MAINTENANCE.FEW ? 14 : settings.pacing === RT_MAINTENANCE.MANY ? 6 : settings.pacing === RT_MAINTENANCE.MEDIUM ? 9 : initialAnalysis.authoringSettings.targetPictureSeconds,
@@ -599,6 +600,7 @@ export const planMotionHtmlScenes = async (script: MotionStoryScript, analysis: 
         ...analysis.authoringSettings,
         visualProfile: settings.profileId,
         visualProportion: settings.proportion,
+        visualLayout: settings.layout,
         language: script.language,
         picturePacing: settings.pacing || analysis.authoringSettings.picturePacing,
         targetPictureSeconds: settings.pacing === RT_MAINTENANCE.FEW ? 14 : settings.pacing === RT_MAINTENANCE.MANY ? 6 : settings.pacing === RT_MAINTENANCE.MEDIUM ? 9 : analysis.authoringSettings.targetPictureSeconds,
@@ -687,7 +689,8 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
       .flatMap((group, groupIndex) => (state.scenes[group.id] || []).map((scene) => ({ group, groupIndex, scene })))
       .filter(({ group, scene }) => (!opts.onlyBeats?.length || group.beats.some((beat) => opts.onlyBeats!.includes(beat.id))) && (!opts.onlyScenes?.length || opts.onlyScenes.includes(scene.id)) && (!opts.onlyLocations?.length || group.beats.some((beat) => opts.onlyLocations!.includes(beat.place || ""))));
     for (const { group, groupIndex, scene } of tasks) {
-      if (startedScenes.has(scene.id)) continue;
+      const taskKey = `${scene.id}${RT_MAINTENANCE.COLON}${state.inputKeys[group.id] || ""}`;
+      if (startedScenes.has(taskKey)) continue;
       totalTasks++;
       const task = (async () => {
         opts.signal?.throwIfAborted();
@@ -716,7 +719,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         save();
       })();
       task.catch(() => undefined);
-      startedScenes.set(scene.id, task);
+      startedScenes.set(taskKey, task);
     }
   };
   const canRegister = !!opts.scope && !opts.onlyBeats?.length && !opts.onlyScenes?.length && !opts.onlyLocations?.length && !opts.restart;
@@ -727,15 +730,17 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         if (opts.signal?.aborted) return false;
         const nextRemotion = nextScript.gen?.remotion;
         if (!nextRemotion || nextRemotion.renderer !== RT_MAINTENANCE.HTML_CANVAS) return false;
-        const existingIds = new Set(result.beats.map((beat) => beat.id));
+        const beatIndex = new Map(result.beats.map((beat, index) => [beat.id, index]));
         for (const beat of nextScript.beats) {
-          if (!existingIds.has(beat.id)) {
+          const index = beatIndex.get(beat.id);
+          if (index === undefined) {
+            beatIndex.set(beat.id, result.beats.length);
             result.beats.push(structuredClone(beat));
-            existingIds.add(beat.id);
-          }
+          } else result.beats[index] = structuredClone(beat);
         }
         for (const [groupId, scenes] of Object.entries(nextRemotion.scenes || {})) {
-          if (!state.scenes[groupId]?.length && scenes?.length) {
+          const replanned = !!state.scenes[groupId]?.length && !!nextRemotion.inputKeys?.[groupId] && state.inputKeys[groupId] !== nextRemotion.inputKeys[groupId];
+          if ((!state.scenes[groupId]?.length || replanned) && scenes?.length) {
             state.scenes[groupId] = structuredClone(scenes);
             if (nextRemotion.inputKeys?.[groupId]) state.inputKeys[groupId] = nextRemotion.inputKeys[groupId];
             if (nextRemotion.htmlPlanSources?.[groupId]) (state.htmlPlanSources ||= {})[groupId] = nextRemotion.htmlPlanSources[groupId];

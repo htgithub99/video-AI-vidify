@@ -27,5 +27,5 @@ export const remotionSceneProgress = (script: MotionStoryScript, busy = false, l
       return { key: scene?.id || member.id, beatId: member.id, scene, preview: readiness.preview, status, reason, narration: scene?.text || member.narration || "", score: scene?.renderer === RT_MAINTENANCE.HTML_CANVAS ? undefined : scene?.generation?.score, warnings };
     });
   });
-  return { entries, ready: entries.filter((entry) => entry.status === RT_SHARED.READY).length, total: entries.length, warned: entries.filter((entry) => entry.warnings).length, failed: entries.filter((entry) => entry.status === RT_SHARED.FAILED).length };
+  return { entries, planned: entries.some((entry) => !!entry.scene), ready: entries.filter((entry) => entry.status === RT_SHARED.READY).length, total: entries.length, warned: entries.filter((entry) => entry.warnings).length, failed: entries.filter((entry) => entry.status === RT_SHARED.FAILED).length };
 };

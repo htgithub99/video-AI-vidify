@@ -85,7 +85,7 @@ for (const t of [0, 0.5, 1, 1.5, 9]) assert.equal(compositionFrameSvg(built.asse
 assert.notEqual(compositionFrameSvg(built.asset, built.composition, 1, on, new Set()), built.asset.svg);
 assert.equal(built.composition.animations.length, 4, "Switching off playback preserves authored tracks for re-enabling");
 // One-pass prompt: motion is authored with the drawing when on; motion off asks for an empty animation list.
-for (const profile of ["history", "explainer", "horror"] as const) {
+for (const profile of ["history", "sketch", "comic", "horror"] as const) {
   const prompt = C.PROMPT({ viewBox: "0 0 1280 720", artDirection: motionIllustrationDirection(profile, "drawing"), renderBehavior: on, scene: { nodes } });
   assert.match(prompt, /COMPLETE MOTION IN THIS DRAWING RESPONSE/);
   assert.match(prompt, /no separate motion director or revision pass follows/);

@@ -65,10 +65,10 @@ try {
     throw new Error("Settings runner did not settle");
   };
   let index = 0;
-  for (const profileId of ["history", "horror", "explainer", "library"]) for (const videoGenre of ["pov", "witness", "chronicle", "verdict"]) {
+  for (const profileId of ["history", "sketch", "comic", "horror"]) for (const videoGenre of ["pov", "witness", "chronicle", "verdict"]) {
     const enabled = index % 2 === 0;
-    const visualSettings = profileId === "library" ? { version: 1, mode: "library", engine: "canvas", packId: "minimal_mask", pacing: "few" } : { version: 1, mode: "remotion", engine: "remotion", profileId, componentRevision: 1, pacing: ["few", "medium", "many"][index % 3] };
-    const input = { productionId: `matrix-${index++}`, source: { title: "Audit", text: "A messenger walks.", segments: [{ t: 0, text: "A messenger walks." }] }, visualSettings, language: enabled ? "en" : "vi", length: "12min", parts: 1, storytelling: enabled ? "lively" : "plain", renameEntities: enabled, characterMotion: enabled, asrCheck: enabled, sfx: enabled, sfxVolume: .27, subtitles: enabled, quality: "high", fps: 24, aspect: "9:16", encoder: "cpu", musicMood: enabled ? "off" : "warm", musicVolume: .19, autoExport: enabled, clearGeminiChatsBeforeExport: enabled, multiVoice: enabled, voiceChannel: "audit-channel@123", aiExecution: { provider: "gemini-chat", model: "gemini-flash", mode: "room-only", chromeHeadless: false, allowFallback: false }, sceneAiExecution: { provider: "chatgpt-ui", model: "chatgpt-auto", mode: "room-only", chromeHeadless: true, allowFallback: true }, aiReview: false, seo: false };
+    const visualSettings = profileId === "library" ? { version: 1, mode: "library", engine: "canvas", packId: "minimal_mask", pacing: "few" } : { version: 1, mode: "remotion", engine: "remotion", profileId, componentRevision: 1, pacing: ["few", "medium", "many"][index % 3], ...(index % 4 ? { layout: ["stage", "wide", "close"][index % 3] } : {}), ...(index % 5 === 1 ? { figureKit: true } : {}) };
+    const input = { productionId: `matrix-${index++}`, source: { title: "Audit", text: "A messenger walks.", segments: [{ t: 0, text: "A messenger walks." }] }, visualSettings, language: enabled ? "en" : "vi", length: "12min", parts: 1, storytelling: enabled ? "lively" : "plain", renameEntities: enabled, characterMotion: enabled, asrCheck: enabled, sfx: enabled, sfxVolume: .27, subtitles: enabled, quality: "high", fps: 24, aspect: "9:16", encoder: "cpu", musicMood: enabled ? "off" : "warm", musicVolume: .19, autoExport: enabled, clearGeminiChatsBeforeExport: enabled, multiVoice: enabled, voiceChannel: "audit-channel@123", aiExecution: { provider: "gemini-chat", model: "gemini-flash", mode: "room-only", chromeHeadless: false, allowFallback: false }, sceneAiExecution: { provider: "chatgpt-ui", model: "chatgpt-auto", mode: "room-only", chromeHeadless: true, allowFallback: true }, planAiExecution: { provider: "claude-chat", model: "claude-sonnet-5-5", mode: "room-only", chromeHeadless: false, allowFallback: false }, scriptAiExecution: { provider: "deepseek-chat", model: "deepseek-standard", mode: "room-only", chromeHeadless: false, allowFallback: false }, aiReview: false, seo: false };
     const begin = calls.length;
     service.startMotionProduction(input);
     const final = await settle(input.productionId);
@@ -83,6 +83,11 @@ try {
     }
     const sceneBody = current.find((c) => c.stage === "scenes")!.input;
     assert.deepEqual(sceneBody.mainAiExecution, input.aiExecution); assert.equal(sceneBody.autoVoice, false);
+    for (const stage of ["script", "scenes"]) {
+      const body = current.find((c) => c.stage === stage)!.input;
+      assert.deepEqual(body.planAiExecution, input.planAiExecution, `${input.productionId}/${stage}/planAiExecution`);
+      assert.deepEqual(body.scriptAiExecution, input.scriptAiExecution, `${input.productionId}/${stage}/scriptAiExecution`);
+    }
     assert.equal(current.some((c) => c.stage === "render"), enabled);
     if (enabled) {
       const options = current.find((c) => c.stage === "render")!.input.options;
@@ -117,7 +122,9 @@ try {
   const beforeVoiceRecheck = calls.length;
   service.resumeMotionProduction("matrix-12");
   assert.equal((await settle("matrix-12")).status, "completed");
-  assert.deepEqual(calls.slice(beforeVoiceRecheck).map((c) => c.stage), ["voice", "compile", "render"], "Resume rechecks unverified audio without reauthoring script or scenes");
+  const recheckStages = calls.slice(beforeVoiceRecheck).map((c) => c.stage);
+  // Mock scene fixtures are not a full HTML plan, so a Remotion record may rebuild scenes here; analysis and script must never rerun.
+  assert.deepEqual(recheckStages.filter((stage) => stage !== "scenes"), ["voice", "compile", "render"], "Resume rechecks unverified audio without reauthoring the script");
   const output = { at: new Date().toISOString(), scope: "Actual backend runner with injected AI/media dependencies; temp production store; no live AI/TTS/render", matrix: records, analyzeOnly: "analyze only", remotionGpu: "rejected", resume: "saved input retained, only clear-chat updated; completed stages reused", resumeStages: calls.slice(beforeResume, beforeVoiceRecheck).map((c) => c.stage), voiceRecheckStages: calls.slice(beforeVoiceRecheck).map((c) => c.stage), stageNames: P.STAGES };
   const out = path.resolve("scratch/motion-settings-fixes-20261106"); fs.mkdirSync(out, { recursive: true }); fs.writeFileSync(path.join(out, "runner-verification.json"), JSON.stringify(output, null, 2));
   process.stdout.write(JSON.stringify(output, null, 2) + "\n");

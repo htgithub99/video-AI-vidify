@@ -36,7 +36,7 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
   return (
     <div className={S.PANEL} {...{ [MOTION_STORY_CONFIG.BUSY_ALLOW_ATTR]: true }}>
       <div className={S.HEAD}>
-        <p className={S.COUNT}>{`${text.ready}${RT_SHARED.SYMBOL_45822F}${progress.ready}${RT_SHARED.SYMBOL_8A5EDA}${progress.total}${progress.warned ? text.warnedCount(progress.warned) : ""}`}</p>
+        <p className={S.COUNT}>{progress.planned || !progress.total ? `${text.ready}${RT_SHARED.SYMBOL_45822F}${progress.ready}${RT_SHARED.SYMBOL_8A5EDA}${progress.total}${progress.warned ? text.warnedCount(progress.warned) : ""}` : text.unplanned(progress.total)}</p>
         {onDeleteAll && progress.ready > 0 && (
           <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.DELETE} disabled={busy} onClick={() => setPendingDelete({ title: text.deleteAll })}>
             {text.deleteAll}
@@ -95,7 +95,7 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
                 </p>
               )}
               {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && entry.scene.htmlRequest && (
-                <p className={S.REASON} title={entry.scene.htmlRequest.error}>
+                <p className={S.ATTEMPT} title={entry.scene.htmlRequest.error}>
                   {lang === RT_MAINTENANCE.EN ? RT_MAINTENANCE.ATTEMPT : RT_MAINTENANCE.LUOT_TAO} {entry.scene.htmlRequest.attempt}
                   {entry.preview ? "" : entry.scene.htmlRequest.error ? `${RT_MAINTENANCE.DOT_SEPARATOR}${entry.scene.htmlRequest.error}` : ""}
                 </p>

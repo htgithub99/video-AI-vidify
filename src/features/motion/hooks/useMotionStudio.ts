@@ -975,6 +975,7 @@ export function useMotionStudio() {
               aspect: now.aspect,
               aiExecution: motionSceneAiExecution(now),
               mainAiExecution: motionMainAiExecution(now),
+              planAiExecution: motionPlanAiExecution(now),
               asrCheck: now.asrCheck === true,
               styleReferences: now.styleReferences,
               ...motionVisualRequest(now),

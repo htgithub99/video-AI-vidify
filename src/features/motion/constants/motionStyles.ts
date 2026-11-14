@@ -390,6 +390,7 @@ export const MOTION_REMOTION_STYLES = {
   PENDING_CONTENT: "absolute inset-0 min-w-0 overflow-hidden px-2 py-1 flex flex-col justify-end gap-1",
   STATUS: "min-w-0 truncate text-xs leading-4",
   REASON: "min-w-0 line-clamp-2 break-words text-[10px] leading-4",
+  ATTEMPT: "mx-2 min-w-0 line-clamp-2 break-words text-[10px] leading-4 text-slate-400",
   CAPTION: "min-w-0 px-2 py-1 text-[11px] leading-4 text-slate-300 truncate",
 } as const;
 export const MOTION_RULE_STYLES = {

@@ -39,7 +39,11 @@ export const installCrashLog = (): void => {
     const onSignal = (): void => {
       write(signal, `${C.PARENT} ${process.ppid}`);
       process.removeListener(signal, onSignal);
-      process.kill(process.pid, signal);
+      try {
+        process.kill(process.pid, signal);
+      } catch {
+        process.exit(1);
+      }
     };
     process.on(signal, onSignal);
   }
