@@ -16,8 +16,11 @@ export interface MotionStorytellingPreset {
 }
 export const MOTION_STORYTELLING = {
   DEFAULT: MOTION_STORYTELLING_MODES.LIVELY as MotionStorytellingMode,
+  CHOICES: [MOTION_STORYTELLING_MODES.PLAIN, MOTION_STORYTELLING_MODES.LIVELY] as MotionStorytellingMode[],
+  ALIASES: { gripping: MOTION_STORYTELLING_MODES.LIVELY } as Record<string, MotionStorytellingMode>,
+  SILENT_FIXED: { chapterCard: 2, emphasis: 1, chapterEnd: 1.5, videoEnd: 3 } as MotionStorytellingSilent,
   FIELD: "storytelling",
-  PRESETS: { plain: { shortSource: "strict", hooks: "light", dramaticAudio: true, texture: 0 }, lively: { shortSource: "genre", hooks: "full", dramaticAudio: true, texture: 1 }, gripping: { shortSource: "fill", hooks: "full", dramaticAudio: true, texture: 2 } } as Record<MotionStorytellingMode, MotionStorytellingPreset>,
+  PRESETS: { plain: { shortSource: "strict", hooks: "light", dramaticAudio: true, texture: 0 }, lively: { shortSource: "fill", hooks: "full", dramaticAudio: true, texture: 2 }, gripping: { shortSource: "fill", hooks: "full", dramaticAudio: true, texture: 2 } } as Record<MotionStorytellingMode, MotionStorytellingPreset>,
   EXPANSION: { genre: { pov: 2.5, witness: 2.5, chronicle: 1.2, verdict: 1.5 } as Record<string, number>, fill: { pov: 3, witness: 3, chronicle: 1.5, verdict: 2 } as Record<string, number> },
   EXPANSION_MAX_BEATS_PER_EVENT: 4,
   SOURCE_TIMESTAMP: /^\(\d+:\d{2}\)\s*/gm,
@@ -30,8 +33,8 @@ export const MOTION_STORYTELLING = {
   TEXT: {
     vi: {
       LABEL: "Cách kể",
-      HINT: "Mọi mức đều kể cuốn hút, kịch tính và có góc nhìn mới; khác nhau ở độ đậm thủ pháp giữ người xem, chi tiết sống động thêm vào và mức giãn khi nguồn ngắn hơn thời lượng chọn (Bám sát nguồn không giãn nên video có thể ngắn hơn). Không mức nào thêm sự kiện, con số hay người có thật ngoài nguồn.",
-      OPTIONS: { plain: "Bám sát nguồn", lively: "Sinh động", gripping: "Cuốn hút tối đa" },
+      HINT: "Giọng kể luôn ở mức cuốn hút nhất theo thể loại. Lựa chọn này chỉ quyết định khi nguồn ngắn hơn thời lượng đã chọn: Giữ đúng nguồn thì video có thể ngắn hơn; Đủ thời lượng thì thêm nội dung mới đúng kiểu thể loại để đủ thời lượng, không kể chậm, không kéo lê. Không lựa chọn nào thêm sự kiện, con số hay lời và việc của người có thật ngoài nguồn.",
+      OPTIONS: { plain: "Giữ đúng nguồn", lively: "Đủ thời lượng", gripping: "Đủ thời lượng" },
       CAPACITY: (sourceMinutes: number, chosenMinutes: number, factor: number, mode: string): string => (factor > 1.01 ? `Nguồn đủ cho ~${sourceMinutes} phút; đang chọn ${chosenMinutes} phút → giãn ×${factor.toFixed(1)} (${mode}).` : `Nguồn đủ cho ~${sourceMinutes} phút với ${chosenMinutes} phút đã chọn.`),
       ESTIMATE: (seconds: number, chosenSeconds: number): string => `Ước tính kịch bản ~${Math.floor(seconds / 60)} phút ${Math.round(seconds % 60)} giây theo tốc độ đọc đã đo (chọn ${Math.round(chosenSeconds / 60)} phút, đạt ${Math.round((seconds / Math.max(1, chosenSeconds)) * 100)}%).`,
       CHAPTER: (chapter: string, units: number, wanted: number): string => `Chương ${chapter}: ${units} âm tiết / yêu cầu ${wanted} (${Math.round((units / Math.max(1, wanted)) * 100)}%).`,
@@ -39,8 +42,8 @@ export const MOTION_STORYTELLING = {
     },
     en: {
       LABEL: "Storytelling",
-      HINT: "Every level tells a gripping, dramatic story from a fresh angle; they differ in how strong the retention devices are, how much lived detail is added and how far a short source is stretched toward the chosen length (Stick to the source never stretches, so the video may run shorter). No level adds events, numbers or real people absent from the source.",
-      OPTIONS: { plain: "Stick to the source", lively: "Lively", gripping: "Maximum pull" },
+      HINT: "The telling is always as gripping as the genre allows. This choice only decides what happens when the source is shorter than the chosen length: Keep to the source may give a shorter video; Fill the length adds new genre-fitting content to reach the length, never slowing down or padding. Neither choice adds events, numbers, or words and acts of real people absent from the source.",
+      OPTIONS: { plain: "Keep to the source", lively: "Fill the length", gripping: "Fill the length" },
       CAPACITY: (sourceMinutes: number, chosenMinutes: number, factor: number, mode: string): string => (factor > 1.01 ? `Source covers ~${sourceMinutes} min; ${chosenMinutes} min chosen → stretch ×${factor.toFixed(1)} (${mode}).` : `Source covers ~${sourceMinutes} min for the chosen ${chosenMinutes} min.`),
       ESTIMATE: (seconds: number, chosenSeconds: number): string => `Script estimate ~${Math.floor(seconds / 60)} min ${Math.round(seconds % 60)} s at the measured reading rate (${Math.round(chosenSeconds / 60)} min chosen, ${Math.round((seconds / Math.max(1, chosenSeconds)) * 100)}%).`,
       CHAPTER: (chapter: string, units: number, wanted: number): string => `Chapter ${chapter}: ${units} units / ${wanted} requested (${Math.round((units / Math.max(1, wanted)) * 100)}%).`,
@@ -56,7 +59,7 @@ export const MOTION_STORYTELLING = {
   VIEWER_QUESTION: /[?？]\s*$/u,
   PROMPT: {
     FLOOR: (ratio: number): string => `LENGTH FLOOR: the source is rich enough for this chapter, so deliver at least ${Math.round(ratio * 100)}% of the requested units. If the first draft runs short, tell the same events more slowly in the genre's own way (senses, objects, reactions, comparisons, weighing); never add an event, number, quote or real person the source does not supply.`,
-    FAITHFUL: (units: number): string => `SHORT SOURCE, STICK TO THE SOURCE: this chapter's transcript only supports about ${units} spoken units, so write about ${units} units (the window below is already adjusted). Tell only what the source says, in its order, without slow-telling, outside background, padding, refrains or a second telling of any event. Being shorter than the originally requested length is expected in this mode.`,
+    FAITHFUL: (units: number): string => `SHORT SOURCE, KEEP TO THE SOURCE: this chapter's transcript only supports about ${units} spoken units, so write about ${units} units (the window below is already adjusted). Cover only what the source says, in its order and in this genre's voice; add no events, outside background, padding or second telling of any event. Being shorter than the originally requested length is expected in this mode.`,
     DEPTH: (needed: number, allowed: number): string => `SHORT SOURCE, DEPTH ×${needed.toFixed(1)}: this chapter's source is about ${needed.toFixed(1)} times shorter than its requested length${allowed > 1 ? `, beyond the ×${allowed.toFixed(1)} slow-telling stretch` : ""}. Fill the rest with depth, never with repetition or padding: explain how and why each source event worked (the mechanism, the constraint, the cost, what was at stake for each side), what it changed afterwards, and why it still matters, using only facts the source states or broadly established background about the same place, period and subject. Each added beat must teach the viewer something not yet said; never invent events, numbers, quotes, deaths or real people, never restate an earlier beat in new words, and keep every added beat in this genre's voice.`,
     EXPANSION: (factor: number, rule: string): string => `SHORT SOURCE, STRETCH ×${factor.toFixed(1)}: the transcript is thinner than the requested length. Reach the requested units by telling each source event across up to four beats in this genre's slow-telling manner: ${rule} Never invent events, numbers, quotes, deaths, ceremonies or real people; repeat nothing word for word.`,
     SILENT: "Pauses, chapter cards and held pictures add to the running time; do not pad speech to fill them.",

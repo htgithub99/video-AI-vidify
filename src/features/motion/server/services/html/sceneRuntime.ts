@@ -182,6 +182,29 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
           { source: `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`, opts },
         );
       },
+      async diff(a: Buffer, b: Buffer, size: readonly [number, number], canvasTag: string, context: string): Promise<number> {
+        return page.evaluate(
+          async ({ images, size, canvasTag, context }) => {
+            const pixels = await Promise.all(
+              images.map(async (source) => {
+                const img = new Image();
+                img.src = source;
+                await img.decode();
+                const canvas = document.createElement(canvasTag) as HTMLCanvasElement;
+                canvas.width = size[0];
+                canvas.height = size[1];
+                const ctx = canvas.getContext(context) as CanvasRenderingContext2D;
+                ctx.drawImage(img, 0, 0, size[0], size[1]);
+                return ctx.getImageData(0, 0, size[0], size[1]).data;
+              }),
+            );
+            let sum = 0;
+            for (let i = 0; i < pixels[0].length; i += 4) sum += (Math.abs(pixels[0][i] - pixels[1][i]) + Math.abs(pixels[0][i + 1] - pixels[1][i + 1]) + Math.abs(pixels[0][i + 2] - pixels[1][i + 2])) / 3;
+            return sum / (pixels[0].length / 4);
+          },
+          { images: [a, b].map((image) => `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`), size, canvasTag, context },
+        );
+      },
       async close() {
         signal?.removeEventListener(RT_MAINTENANCE.ABORT, stop);
         await (owned ? browser.close() : page.close()).catch(() => undefined);

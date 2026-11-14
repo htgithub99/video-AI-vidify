@@ -202,7 +202,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       visualSettings,
       stylePreset: undefined,
       ...(analysis.authoringSettings && visualSettings.mode === RT_MAINTENANCE.REMOTION
-        ? { authoringSettings: { ...analysis.authoringSettings, language: storyLanguage(body?.language), visualProfile: visualSettings.profileId, picturePacing: visualSettings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: visualSettings.pacing ? MOTION_SCENE_PACING.SECONDS[visualSettings.pacing] : analysis.authoringSettings.targetPictureSeconds } }
+        ? { authoringSettings: { ...analysis.authoringSettings, language: storyLanguage(body?.language), visualProfile: visualSettings.profileId, visualProportion: visualSettings.proportion, visualLayout: visualSettings.layout, picturePacing: visualSettings.pacing || analysis.authoringSettings.picturePacing, targetPictureSeconds: visualSettings.pacing ? MOTION_SCENE_PACING.SECONDS[visualSettings.pacing] : analysis.authoringSettings.targetPictureSeconds } }
         : {}),
     };
   if (!source?.segments?.length || !analysis?.chapters?.length) throw new Error(MOTION_TEXT_CAN_PHAN_TICH_CAU_CHUYEN_TRUOC);
@@ -260,7 +260,8 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         }
       }
       const scope = body.productionId || body.editorialSessionId;
-      const canStreamHtmlScenes = visualSettings.mode === RT_MAINTENANCE.REMOTION && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
+      const planScenes = body?.planScenes !== false;
+      const canStreamHtmlScenes = planScenes && visualSettings.mode === RT_MAINTENANCE.REMOTION && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
       const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) }) : undefined;
       if (htmlStreamer) {
         keepGen = { ...(keepGen || emptyGen()), remotion: htmlStreamer.getState() };
@@ -297,7 +298,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
           analysis,
           language,
           source.text,
-          (current, focusIds, supplemental) => editScript(source, analysis, current, { language, exec: scriptExec, signal: ctx.signal, log: ctx.log, scope: editScope + MOTION_STORY_CONFIG.EDIT_SCOPE(chapter.id) + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
+          (current, focusIds, supplemental) => editScript(source, analysis, current, { language, speechRate, exec: scriptExec, signal: ctx.signal, log: ctx.log, scope: editScope + MOTION_STORY_CONFIG.EDIT_SCOPE(chapter.id) + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
           ctx.log,
           new Set([chapter.id]),
         )
@@ -422,14 +423,14 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       let beats = _.flatMap(chapters, (c) => byChapter[c.id] || []);
       let edit: MotionStoryScript["edit"];
       const complete = !failed.length && !Object.keys(chapterDrafts).length && _.every(chapters, (c) => byChapter[c.id]?.length);
-      if (complete && (todo.length > 0 || body?.durationRepair === true) && ((!analysis.authoringSettings && body?.editorPass !== false) || body?.durationRepair === true)) {
+      if (complete && (todo.length > 0 || body?.durationRepair === true || !body?.edit) && (body?.editorPass !== false || body?.durationRepair === true)) {
         try {
           const result = await runMotionScriptEditorial(
             beats,
             analysis,
             language,
             source.text,
-            (current, focusIds, supplemental) => editScript(source, analysis, current, { language, exec: scriptExec, signal: ctx.signal, log: ctx.log, scope: editScope + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
+            (current, focusIds, supplemental) => editScript(source, analysis, current, { language, speechRate, exec: scriptExec, signal: ctx.signal, log: ctx.log, scope: editScope + (supplemental ? MOTION_STORY_CONFIG.EDIT_SUPPLEMENTAL : ""), focusIds, supplemental }),
             ctx.log,
             pipelined ? new Set(chapters.filter((chapter: MotionChapter) => !chapterEdits.has(chapter.id)).map((chapter: MotionChapter) => chapter.id)) : undefined,
           );
@@ -454,7 +455,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       if (complete && chosenTotal > 0) ctx.log(motionStorytellingText(language).ESTIMATE(_.sumBy(beats, (beat) => speechUnits(beat.narration)) / speechRate + silentTotal, chosenTotal));
       ctx.partial(script);
       assertMotionScriptComplete(script, analysis);
-      if (visualSettings.mode === RT_MAINTENANCE.REMOTION && usesMotionHtml(script)) {
+      if (planScenes && visualSettings.mode === RT_MAINTENANCE.REMOTION && usesMotionHtml(script)) {
         const planned = htmlStreamer
           ? await htmlStreamer.finish(
               script,

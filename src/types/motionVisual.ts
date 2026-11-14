@@ -1,6 +1,7 @@
 import type { MotionSpec } from "./motionVideo.js";
 import type { MotionSceneFormat, MotionSceneView } from "../constants/motionProfiles/framing.js";
-export type MotionRemotionProfile = "history" | "horror" | "explainer";
+export type MotionRemotionProfile = keyof typeof import("../constants/motionDrawStyles/index.js").MOTION_DRAW_STYLES;
+export type { MotionStyleFamily, MotionProportionId } from "../constants/motionDrawStyles/types.js";
 export type MotionScenePacing = "few" | "medium" | "many";
 export interface MotionRenderBehavior {
   version: 1;
@@ -25,7 +26,7 @@ export interface MotionRemotionEffect {
   direction?: "up" | "ground" | "left" | "right";
   intensity?: number;
 }
-export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; figureKit?: boolean; pacing?: MotionScenePacing };
+export type MotionVisualSettings = { version: 1; mode: "remotion"; engine: "remotion"; profileId: MotionRemotionProfile; componentRevision: number; figureKit?: boolean; pacing?: MotionScenePacing; proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId; layout?: import("../constants/motionLayouts/index.js").MotionLayoutId };
 export interface MotionVectorAsset {
   key: string;
   inputKey: string;

@@ -1,4 +1,6 @@
 import "./src/server/runtimeToolsBootstrap.js";
+import { installCrashLog } from "./src/server/crashLog.js";
+installCrashLog();
 import { recoverMotionProductions } from "./src/features/motion/server/services/motionProductionService.js";
 import { recoverMotionRenderPublications } from "./src/features/motion/server/services/motionRenderPublication.js";
 import { exec } from "child_process";

@@ -1,6 +1,8 @@
 import { HISTORY_METADATA } from "./motionProfiles/history/metadata.js";
 import { HORROR_METADATA } from "./motionProfiles/horror/metadata.js";
 import { EXPLAINER_METADATA } from "./motionProfiles/explainer/metadata.js";
+import { MOTION_DRAW_STYLES } from "./motionDrawStyles/index.js";
+const FAMILY_METADATA = { history: HISTORY_METADATA, horror: HORROR_METADATA, explainer: EXPLAINER_METADATA };
 export const MOTION_VISUAL = {
   VERSION: 1,
   COMPONENT_REVISION: 1,
@@ -34,7 +36,7 @@ export const MOTION_VISUAL = {
   LEGACY_LIBRARY: "library",
   SCENES_DONE: "Đã dựng xong các cảnh",
   LEGACY_LIBRARY_PROFILE: "horror" as const,
-  PROFILES: { history: HISTORY_METADATA, horror: HORROR_METADATA, explainer: EXPLAINER_METADATA },
+  PROFILES: Object.fromEntries(Object.entries(MOTION_DRAW_STYLES).map(([id, style]) => [id, { ...FAMILY_METADATA[style.family], vi: style.label.vi, en: style.label.en, hint: style.hint, preview: style.preview }])) as Record<keyof typeof MOTION_DRAW_STYLES, (typeof FAMILY_METADATA)["history"] & { hint: { vi: string; en: string }; preview: string }>,
   TEXT: {
     vi: {
       title: "Cách dựng",
@@ -44,7 +46,7 @@ export const MOTION_VISUAL = {
       kitHint: "Giống Dựng cảnh AI: AI dựng bối cảnh, máy quay và chuyển động; người, con vật, xe cộ và cảnh vật vẽ bằng bộ vẽ chuẩn theo kiểu hình để luôn đúng style",
       remotion: "Dựng cảnh AI",
       remotionHint: "AI tạo trọn cảnh và chuyển động theo kịch bản",
-      profile: "Kiểu hình",
+      profile: "Kiểu vẽ",
       sceneHint: "AI dựng trọn bối cảnh, nhân vật và diễn biến theo mẫu cảnh; tự thử lại khi có lỗi thực thi.",
       ready: "Cảnh AI đã dựng",
       pending: "Chưa dựng cảnh Remotion",

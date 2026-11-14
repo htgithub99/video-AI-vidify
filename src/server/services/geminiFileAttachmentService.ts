@@ -2,19 +2,41 @@ import * as COMMON_RUNTIME from "../../constants/sourceText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../constants/runtime/server.js";
 import { stringifyJson } from "../../lib/jsonStringify.js";
-import { randomUUID } from "node:crypto";
-import { basename, extname } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, writeFile, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, extname, join } from "node:path";
 import type { BrowserContext, ElementHandle, FileChooser, Locator, Page } from "playwright";
 import { CINEMATIC_CHAT_PLANNING_CONFIG as CONFIG } from "../../constants/cinematicConstants.js";
 import { readPlanningUi, throwIfPlanningCancelled } from "../../lib/chatPlanningUtils.js";
 import { ChatUploadError, uploadFailure, isTerminalUploadMessage } from "./chatUploadRecovery.js";
 import { readClaudeUploadState, attachmentNamesMatch } from "./claudeUploadReadiness.js";
 import { geminiUploadPolicy } from "./geminiUploadReadiness.js";
+import { closeGeminiMenus } from "./geminiModelService.js";
 import { AsyncTaskLimiter } from "../../lib/asyncTaskLimiter.js";
 type LocalAttachment = { name: string; mimeType: string; path: string };
 type FileInputTarget = Locator | ElementHandle<Node>;
 const menuQueues = new WeakMap<BrowserContext, AsyncTaskLimiter>();
 const ACTION_TIMEOUT = 8000;
+export const geminiLocalFiles = async (files: Array<{ name: string; mimeType: string; path?: string; buffer?: Buffer }>): Promise<LocalAttachment[] | undefined> => {
+  const local: LocalAttachment[] = [];
+  for (const file of files) {
+    if (file.path) {
+      local.push({ name: file.name, mimeType: file.mimeType, path: file.path });
+      continue;
+    }
+    if (!file.buffer) return undefined;
+    const dir = join(tmpdir(), CONFIG.GEMINI_UPLOAD_TEMP_DIR, createHash(CONFIG.GEMINI_UPLOAD_HASH).update(file.buffer).digest(CONFIG.GEMINI_UPLOAD_HASH_ENCODING));
+    const path = join(dir, basename(file.name));
+    const existing = await stat(path).catch(() => undefined);
+    if (existing?.size !== file.buffer.length) {
+      await mkdir(dir, { recursive: true });
+      await writeFile(path, file.buffer);
+    }
+    local.push({ name: file.name, mimeType: file.mimeType, path });
+  }
+  return local;
+};
 export const reconcileGeminiQueuedFiles = async (page: Page, input: Locator, composer: Locator, files: LocalAttachment[]): Promise<LocalAttachment[]> => {
   const state = await readClaudeUploadState(input, geminiUploadPolicy);
   if (state.failed && isTerminalUploadMessage(state.errorMessage || state.labels.join(RT_SHARED.SYMBOL_36A9E7))) throw uploadFailure(geminiUploadPolicy.failedError, undefined, state.errorMessage || state.labels.join(RT_SHARED.SYMBOL_36A9E7));
@@ -121,6 +143,7 @@ export const setGeminiLocalFilesViaCdp = async (page: Page, input: FileInputTarg
 };
 const attachGeminiLocalFilesInternal = async (page: Page, composer: Locator, files: LocalAttachment[], signal?: AbortSignal): Promise<string> => {
   throwIfPlanningCancelled(signal);
+  await closeGeminiMenus(page).catch(() => undefined);
   if (!files.length || files.length > 10) throw new ChatUploadError(RT_SERVER.GEMINI_FILE_COUNT_INVALID_MOI_LUOT_DINH_KEM_TOI_DA, false);
   let input = await chooseInput(page, composer, files);
   if (input) {
@@ -143,7 +166,8 @@ const attachGeminiLocalFilesInternal = async (page: Page, composer: Locator, fil
       );
       return RT_SERVER.INPUT;
     }
-    const button = composer.getByRole(RT_SHARED.BUTTON, { name: CONFIG.ATTACHMENT_BUTTON_NAME_PATTERN }).or(composer.locator(CONFIG.ATTACHMENT_BUTTON_SELECTOR)).filter({ visible: true }).last();
+    const scopedButton = composer.getByRole(RT_SHARED.BUTTON, { name: CONFIG.ATTACHMENT_BUTTON_NAME_PATTERN }).or(composer.locator(CONFIG.ATTACHMENT_BUTTON_SELECTOR)).filter({ visible: true }).last();
+    const button = (await scopedButton.count().catch(() => 0)) ? scopedButton : page.getByRole(RT_SHARED.BUTTON, { name: CONFIG.ATTACHMENT_BUTTON_NAME_PATTERN }).filter({ visible: true }).last();
     let resolveChooser!: (chooser: FileChooser | undefined) => void;
     let capturedChooser: FileChooser | undefined;
     const chooserPromise = new Promise<FileChooser | undefined>((resolve) => {

@@ -169,7 +169,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     const group = sections.get(key)!;
     const ownerStatus = job?.id === source ? job.status : render?.id === source ? render.status : parentStatus;
     const stopped = ([RT_SHARED.ERROR, RT_MOTION.CANCELLED, RT_SHARED.COMPLETED] as string[]).includes(ownerStatus);
-    group.state = state.status === RT_SHARED.COMPLETED || (group.state === RT_MOTION.DONE && state.status !== RT_SHARED.ERROR) ? RT_MOTION.DONE : state.status === RT_SHARED.ERROR ? RT_SHARED.ERROR : state.status === RT_MOTION.CANCELLED || stopped ? RT_MOTION.CANCELLED : RT_MOTION.ACTIVE;
+    group.state = state.status === RT_SHARED.COMPLETED ? RT_MOTION.DONE : state.status === RT_SHARED.ERROR ? RT_SHARED.ERROR : state.status === RT_MOTION.CANCELLED || stopped ? (group.state === RT_MOTION.DONE ? RT_MOTION.DONE : RT_MOTION.CANCELLED) : RT_MOTION.ACTIVE;
     if (state.segmentAt || state.elapsedMs !== undefined) {
       const total = motionStepElapsedMs(state, group.state === RT_MOTION.ACTIVE ? Date.now() : undefined);
       if (total > 0) group.durationMs = total;

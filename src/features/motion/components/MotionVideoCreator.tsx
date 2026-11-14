@@ -23,7 +23,7 @@ import { motionDisplayedJob } from "../lib/motionDisplayedJob.js";
 import { MOTION_REFERENCE_TEXTS } from "../../../constants/motionReference.js";
 import * as MR from "../../../constants/motionRuntime.js";
 import { MOTION_VIDEO_GENRES, MOTION_VIDEO_GENRE_TEXT, motionVideoGenre, type MotionVideoGenre } from "../../../constants/motionGenre.js";
-import { MOTION_STORYTELLING_MODES, type MotionStorytellingMode } from "../../../constants/motionStorytelling.js";
+import { MOTION_STORYTELLING, type MotionStorytellingMode } from "../../../constants/motionStorytelling.js";
 import { motionStorytelling, motionStorytellingText } from "../../../lib/motionStorytelling.js";
 import { MOTION_RENAME } from "../../../constants/motionRename.js";
 import { MOTION_LANGUAGES, MOTION_LANGUAGE_CODES } from "../../../constants/motionLanguages/index.js";
@@ -473,7 +473,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     />
                   </div>
                   <MotionSelectField label={storytellingText.LABEL} value={motionStorytelling(state.storytelling)} onChange={(e) => patch({ storytelling: e.target.value as MotionStorytellingMode })} disabled={studio.storyBusy} title={storytellingText.HINT} className={cn(inputCls, MR.MOTION_TEXT_H_42PX_CURSOR_POINTER)}>
-                    {_.map(MOTION_STORYTELLING_MODES, (mode) => (
+                    {_.map(MOTION_STORYTELLING.CHOICES, (mode) => (
                       <option key={mode} value={mode}>
                         {storytellingText.OPTIONS[mode]}
                       </option>

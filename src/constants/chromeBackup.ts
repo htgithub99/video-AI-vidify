@@ -166,6 +166,8 @@ export const CHAT_ROOM_RECOVERY = {
   SAME_ROOM_RETRIES: 2,
   HUNG_PAGE: /Timeout \d+ms exceeded|chat_planning_page_unresponsive|chat_planning_ui_read_timeout|\(page_ready/,
   HUNG_LOG: "Tab AI bị treo (trang không phản hồi) – đóng tab treo và mở tab mới thay vì tải lại tại chỗ.",
+  BLOCKED_LOG: "Tab AI không thao tác được (nút bị menu hoặc hộp thoại che) – đóng tab và mở tab mới để thử lại.",
+  BLOCKED_ACTION: /locator\.\w+: Timeout \d+ms exceeded/,
   REGENERATE_LIMIT: 5,
   RETRY_CLICK_COOLDOWN_MS: 2500,
   BUTTON: "button",

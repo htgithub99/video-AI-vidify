@@ -20,6 +20,15 @@ import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionSc
 import { compileRemotionSound } from "./soundCompiler.js";
 import { motionMusicMood, motionMusicSegments } from "../motionMusicService.js";
 import type { MotionBeatLine } from "../../../../../lib/motionBeatLines.js";
+import { motionInsertChapterCards } from "./chapterCards.js";
+import { motionCompactSpecScene } from "../../../../../lib/motionHtmlKit.js";
+import { motionStorytellingSilent } from "../../../../../lib/motionStorytelling.js";
+import { MOTION_CHAPTER_CARD as CARD } from "../../../../../constants/motionChapterCard.js";
+const compactTimedScene = (scene: MotionRemotionTimedScene): MotionRemotionTimedScene => {
+  const copy = { ...scene, ...(scene.html ? { html: { ...scene.html } } : {}), ...(scene.htmlRequest ? { htmlRequest: { ...scene.htmlRequest, ...(scene.htmlRequest.submission ? { submission: { ...scene.htmlRequest.submission } } : {}) } } : {}) };
+  motionCompactSpecScene(copy);
+  return copy;
+};
 export const compileRemotionStory = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: { aspect?: string; fps?: number; durations?: number[]; voiceTrack?: MotionVoiceTrack; characterMotion?: boolean; renderBehavior?: MotionRenderBehavior; review?: boolean; subtitles?: boolean }) => {
   const behavior = normalizeMotionRenderBehavior(opts.renderBehavior ?? script.gen?.renderBehavior, opts.characterMotion ?? script.gen?.characterMotion);
   const settings = motionVisualSettingsFor({ analysis, script });
@@ -103,6 +112,8 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
   if (analysis) motionSceneOnScreen(scenes.map((scene) => ({ scene, beats: (scene.sourceBeatIds || []).map((id) => script.beats.find((beat) => beat.id === id)).filter((beat): beat is MotionBeat => !!beat) })), analysis);
+  const silent = analysis ? motionStorytellingSilent(analysis.storytelling) : undefined;
+  const timedScenes = analysis && silent && state.renderer === RT_MAINTENANCE.HTML_CANVAS ? motionInsertChapterCards(scenes, { beats: script.beats, chapters: analysis.chapters, clips: opts.voiceTrack?.clips, ends: timeline.ends, fps, chapterEnd: silent.chapterEnd, profile: settings.profileId, language: script.language, subtitles: CARD.SUBTITLE_GENRES.includes(String(analysis.videoGenre)) }) : scenes;
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
     ...(state.renderer ? { renderer: state.renderer } : {}),
@@ -119,7 +130,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     resolvedSettings: { layoutRevision: L.REVISION, effectRevision: L.EFFECT_REVISION, sceneRevision: L.SCENE_REVISION, behavior },
     profileId: settings.profileId,
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),
-    scenes,
+    scenes: timedScenes.map(compactTimedScene),
     subtitles,
     fontFamily: motionLanguage(script.language).subtitle.fontFamily,
     music: { mood: motionMusicMood(analysis), cues: [], segments: motionMusicSegments(analysis, script.beats, timeline.starts) },

@@ -24,6 +24,6 @@ export const EXPLAINER_ART_DIRECTION: MotionIllustrationProfile = {
   identity: S.identity,
   closeUps: "Choose framing for the story; a small held object normally remains visible with its owner. Use an insert when the narration needs that detail.",
   text: S.text,
-  motion: [S.motion, MOTION_PROFILE_MOTION.explainer.prompt].join("\n"),
+  motion: [S.motion, MOTION_PROFILE_MOTION.history.prompt].join("\n"),
   review: S.review,
 };

@@ -2,7 +2,7 @@ import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { motionStepElapsedMs, motionStepSegment } from "../../../../lib/motionStepTime.js";
 import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
-import { motionCompactSceneHtml } from "../../../../lib/motionHtmlKit.js";
+import { motionCompactSpecScene, motionCompactSceneHtml } from "../../../../lib/motionHtmlKit.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
@@ -82,6 +82,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
     const record = failedSnapshots.get(id) || store.read(id);
     if (record?.job) delete record.job.result;
     motionCompactSceneHtml(record?.result?.script?.gen?.remotion?.scenes);
+    if (record?.result?.compiled?.spec && isRemotionSpec(record.result.compiled.spec)) record.result.compiled.spec.scenes.forEach(motionCompactSpecScene);
     return record?.version === P.RUN_VERSION && record.job?.id === id && record.input && record.inputKey === motionInputKey(record.input) ? record : undefined;
   };
   const logFilters = new WeakMap<ProductionRecord, ReturnType<typeof createMotionLogFilter>>();

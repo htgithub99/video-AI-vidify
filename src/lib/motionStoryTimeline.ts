@@ -25,7 +25,8 @@ export const motionChapterRangesValid = (chapters: MotionChapter[], sourceSecond
   });
 };
 export const motionChapterRanges = (chapters: MotionChapter[], sourceSeconds?: number): MotionChapter[] => {
-  if (!sourceSeconds || !chapters.length || motionChapterRangesValid(chapters, sourceSeconds)) return chapters;
+  if (!sourceSeconds || !chapters.length) return chapters;
+  if (motionChapterRangesValid(chapters, sourceSeconds)) return chapters.map((chapter, index) => (index === chapters.length - 1 && (chapter.to ?? 0) < sourceSeconds ? { ...chapter, to: sourceSeconds } : chapter));
   const end = sourceSeconds;
   const count = chapters.length;
   const span = Math.min(T.RANGE.MIN_SPAN, end / (count * 2));

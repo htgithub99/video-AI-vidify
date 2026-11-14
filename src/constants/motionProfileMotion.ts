@@ -1,4 +1,5 @@
 import { MOTION_CAMERA } from "./motionCamera.js";
+import { motionStyleRecord } from "./motionDrawStyles/index.js";
 import type { MotionRemotionProfile } from "../types/motionVisual.js";
 export type MotionProfileCameraMode = "follow" | "push" | "pull" | "hold";
 export interface MotionProfileCamera {
@@ -80,4 +81,4 @@ const HORROR: MotionProfileMotion = {
   minRotate: 3,
   prompt: "MOTION IN THIS STYLE: slow and restrained; a person who reacts gets one actor track such as a mask tilt of 3-4 degrees or an arm movement around the shoulder; whole-body movement stays a slow rock around the base of the body that never leaves its support.",
 };
-export const MOTION_PROFILE_MOTION: Record<MotionRemotionProfile, MotionProfileMotion> = { history: LIVELY, explainer: LIVELY, horror: HORROR };
+export const MOTION_PROFILE_MOTION: Record<MotionRemotionProfile, MotionProfileMotion> = motionStyleRecord({ history: LIVELY, explainer: LIVELY, horror: HORROR });

@@ -1,0 +1,15 @@
+export const CRASH_LOG = {
+  FILE: "backend-crash.jsonl",
+  MONITOR: "uncaughtExceptionMonitor",
+  EXIT: "exit",
+  WARNING: "warning",
+  SIGNALS: ["SIGTERM", "SIGINT", "SIGHUP", "SIGBREAK"] as NodeJS.Signals[],
+  PARENT: "parent",
+  HEARTBEAT_FILE: "backend-heartbeat.json",
+  HEARTBEAT_MS: 10000,
+  PREVIOUS: "previous-run-last-heartbeat",
+  ENCODING: "utf8",
+  EMPTY: "",
+  NEWLINE: "\n",
+  MB: 1048576,
+} as const;

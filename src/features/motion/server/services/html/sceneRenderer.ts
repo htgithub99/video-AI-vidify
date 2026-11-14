@@ -13,6 +13,7 @@ import { motionHtmlFrame } from "../../../../../lib/motionHtmlScene.js";
 import { openMotionHtmlRuntime } from "./sceneRuntime.js";
 import { chromium, type Browser } from "playwright";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
+import { MOTION_GPU_CHROME } from "../../../../../constants/motionGpuChrome.js";
 import { generateMotionHtmlScene } from "./scenePipeline.js";
 import type { MotionRemotionSpec, MotionRemotionTimedScene } from "../../../../../types/motionVisual.js";
 export const refreshMotionHtmlArtifacts = (spec: MotionRemotionSpec): void => {
@@ -37,12 +38,39 @@ export interface HtmlRenderOptions {
   log?: (message: string) => void;
   recoverScene?: typeof generateMotionHtmlScene;
 }
+const gpuReported = new WeakSet<MotionRemotionSpec>();
+const chromeGpuRenderer = async (browser: Browser): Promise<string> => {
+  const page = await browser.newPage().catch(() => undefined);
+  if (!page) return MOTION_GPU_CHROME.UNKNOWN;
+  try {
+    return (
+      (await page.evaluate(
+        ({ webgl, ext, canvas }) => {
+          const gl = document.createElement(canvas).getContext(webgl) as WebGLRenderingContext | null;
+          const info = gl?.getExtension(ext) as unknown as { UNMASKED_RENDERER_WEBGL: number } | null | undefined;
+          return info && gl ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : null;
+        },
+        { webgl: MOTION_GPU_CHROME.WEBGL, ext: MOTION_GPU_CHROME.RENDERER_EXT, canvas: RT_MAINTENANCE.CANVAS },
+      )) || MOTION_GPU_CHROME.UNKNOWN
+    );
+  } catch {
+    return MOTION_GPU_CHROME.UNKNOWN;
+  } finally {
+    await page.close().catch(() => undefined);
+  }
+};
 export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segments: { start: number; end: number; output: string }[], opts: HtmlRenderOptions): Promise<void> => {
   let completed = 0;
   const total = segments.reduce((sum, item) => sum + item.end - item.start + 1, 0);
   let shared: Browser | undefined;
   const laneBrowser = async () => {
-    if (!shared?.isConnected()) shared = await chromium.launch({ executablePath: findNativeChrome(), headless: true });
+    if (!shared?.isConnected()) {
+      shared = await chromium.launch({ executablePath: findNativeChrome(), headless: true, args: MOTION_GPU_CHROME.ARGS(process.platform) });
+      if (!gpuReported.has(spec)) {
+        gpuReported.add(spec);
+        opts.log?.(MOTION_GPU_CHROME.LOG(await chromeGpuRenderer(shared)));
+      }
+    }
     return shared;
   };
   const closeShared = () => void shared?.close().catch(() => undefined);

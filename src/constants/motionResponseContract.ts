@@ -188,7 +188,7 @@ export const MOTION_RESPONSE_SCHEMAS: Record<string, MotionResponseSchema> = {
   "motion-folk-source-topic": object({ name: { ...text, maxLength: MOTION_RESPONSE_LIMITS.TOPIC_CHARS }, meaning: { ...text, maxLength: MOTION_RESPONSE_LIMITS.MEANING_CHARS }, aliases: { ...array({ ...text, maxLength: MOTION_RESPONSE_LIMITS.TOPIC_CHARS }, 1), maxItems: MOTION_RESPONSE_LIMITS.ALIASES_MAX }, evidence: { ...text, maxLength: MOTION_RESPONSE_LIMITS.EVIDENCE_CHARS } }),
   "motion-story-doctor": story,
   "motion-story-chapter": object({ chapterId: text, beats: array(beat, 1) }),
-  "motion-html-chapter": object({ chapterId: text, beats: array(object({ id: text, narration: text, visual: text, place: text, cast: strings(), sceneTemplateDraft: text, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }, ["narration", "visual", "sceneTemplateDraft"]), 1) }),
+  "motion-html-chapter": object({ chapterId: text, beats: array(object({ id: text, narration: text, visual: text, place: text, cast: strings(), sceneTemplateDraft: text, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }, ["narration", "visual"]), 1) }),
   "motion-html-edit": object({ edits: array(object({ id: text, narration: text, reason: text, sceneTemplateDraft: text, utterances: array(MOTION_UTTERANCE_SCHEMA, 1) }, ["id", "narration"])) }),
   "motion-story-edit": object({
     edits: array(

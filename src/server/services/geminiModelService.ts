@@ -30,11 +30,21 @@ const waitUntil = async (page: Page, test: () => Promise<boolean>, signal?: Abor
   }
   return false;
 };
-const closeMenus = async (page: Page) => {
-  await page.keyboard.press(UI.ESCAPE);
-  await page.keyboard.press(UI.ESCAPE);
-  await page.getByRole(UI.MENU).filter({ visible: true }).last().waitFor({ state: UI.HIDDEN, timeout: CONFIG.MODEL_PICKER_TIMEOUT_MS });
+const menuOpen = async (page: Page): Promise<boolean> => (await page.locator(UI.OPEN_MENU_SELECTOR).filter({ visible: true }).count().catch(() => 0)) > 0;
+export const closeGeminiMenus = async (page: Page): Promise<void> => {
+  for (let attempt = 0; attempt < UI.CLOSE_TRIES; attempt++) {
+    if (!(await menuOpen(page))) return;
+    await page.keyboard.press(UI.ESCAPE);
+    await page.waitForTimeout(UI.CLOSE_SETTLE_MS);
+  }
+  const size = page.viewportSize() || (await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })));
+  for (let attempt = 0; attempt < UI.CLOSE_TRIES && (await menuOpen(page)); attempt++) {
+    await page.mouse.click(Math.round(size.width * UI.OUTSIDE_X), Math.round(size.height * UI.OUTSIDE_Y));
+    await page.waitForTimeout(UI.CLOSE_SETTLE_MS);
+  }
+  await page.locator(UI.OPEN_MENU_SELECTOR).filter({ visible: true }).last().waitFor({ state: UI.HIDDEN, timeout: CONFIG.MODEL_PICKER_TIMEOUT_MS });
 };
+const closeMenus = closeGeminiMenus;
 const visible = (option: Locator): Promise<boolean> => option.isVisible().catch(() => false);
 const editableInput = async (input: Locator): Promise<boolean> => {
   if (!(await input.isEditable().catch(() => false))) return false;
@@ -157,6 +167,10 @@ const openThinkingMenu = async (page: Page, button: Locator, option: Locator, si
     .or(page.getByRole(UI.BUTTON, { name: CONFIG.THINKING_LEVEL_NAME_PATTERN }))
     .filter({ visible: true })
     .first();
+  if (!(await waitUntil(page, () => visible(trigger), signal, UI.REOPEN_MS))) {
+    await closeMenus(page).catch(() => undefined);
+    await clickPlanningControl(button, signal);
+  }
   if (!(await waitUntil(page, () => visible(trigger), signal))) return false;
   await trigger.hover({ force: true, timeout: CONFIG.MODEL_PICKER_TIMEOUT_MS });
   if (!(await visible(option))) await clickPlanningControl(trigger, signal);
@@ -185,11 +199,15 @@ export const selectGeminiThinkingModel = async (page: Page, model: AiPlanningCha
         phase = UI.PHASE.BASE;
         await clickPlanningControl(button, signal);
         const option = optionFor(page, baseLabel);
+        if (!(await waitUntil(page, () => visible(option), signal, UI.REOPEN_MS))) {
+          await closeMenus(page).catch(() => undefined);
+          await clickPlanningControl(button, signal);
+        }
         await assertGeminiFlashQuota(page, model);
         if (!(await waitUntil(page, () => available(option), signal))) {
           await assertGeminiFlashQuota(page, model);
           if (await disabled(option)) throw await unavailableFor(option, model);
-          throw uiError(page, phase, model);
+          throw uiError(page, phase, model, undefined, { menu: await menuSnapshot(page) });
         }
         await clickPlanningControl(option, signal);
         await closeMenus(page);

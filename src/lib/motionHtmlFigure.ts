@@ -1,2 +1,3 @@
 import { MOTION_HTML_FIGURE as F } from "../constants/motionHtmlFigure.js";
-export const motionHtmlFigureDoc = (profile: string): string => F.DOC[profile] || F.DOC.history;
+import { motionDrawStyle, motionProportionFigure } from "./motionDrawStyle.js";
+export const motionHtmlFigureDoc = (profile: string, proportion?: string): string => [F.DOC[motionDrawStyle(profile).figure] || F.DOC.history, motionProportionFigure({ profileId: profile, proportion })].filter(Boolean).join(F.JOIN);

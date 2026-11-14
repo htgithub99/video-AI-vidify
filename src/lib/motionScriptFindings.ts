@@ -8,13 +8,14 @@ import { motionBeatSheetFindings } from "./motionBeatSheet.js";
 import { motionContinuityFindings } from "./motionContinuity.js";
 import { motionRenameLeakFindings } from "./motionRename.js";
 import { motionWritingReviewAnchors } from "./motionWriting.js";
+import { motionGestureEchoFindings, motionNumberEchoFindings } from "./motionEchoFindings.js";
 import type { MotionBeat, MotionStoryAnalysis } from "../types/motionVideo.js";
 export const motionScriptFindings = (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText = "") => {
   const hooks = motionHookFindings(beats, analysis, language);
   const style = [...motionRenameLeakFindings(beats, analysis), ...motionGenreVoiceFindings(beats, language, analysis.videoGenre), ...motionGenreGrammarFindings(beats, analysis), ...motionDialogueFindings(beats, analysis, sourceText), ...hooks.findings];
   const overlap = analysis.chapters.length > 1 ? motionChapterOverlapFindings(beats, analysis) : [];
   const anchors = motionWritingReviewAnchors(analysis);
-  const repeat = motionRepetitionFindings(beats, language, anchors);
+  const repeat = [...motionRepetitionFindings(beats, language, anchors), ...motionGestureEchoFindings(beats), ...motionNumberEchoFindings(beats)];
   const stage = [...motionGenreStageFindings(beats, analysis, sourceText), ...motionBeatSheetFindings(beats, analysis), ...motionContinuityFindings(beats, analysis)];
   const echo = motionChapterEchoFindings(beats, language, anchors);
   const { findings: review, dropIds, dropRefs } = motionGenreReviewFindings(beats, analysis, language, sourceText);

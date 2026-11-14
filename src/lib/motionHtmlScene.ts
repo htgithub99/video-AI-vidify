@@ -2,7 +2,7 @@ import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { parseJson, stringifyJson } from "./jsonStringify.js";
 import type { MotionHtmlFrameInput } from "../types/motionHtmlScene.js";
 import type { MotionRemotionScene, MotionRemotionSpec } from "../types/motionVisual.js";
-import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../types/motionVideo.js";
+import type { MotionBeat, MotionChapter, MotionStoryAnalysis, MotionStoryScript } from "../types/motionVideo.js";
 import type { MotionVisualSettings } from "../types/motionVisual.js";
 import { motionVisualBeatGroups } from "./motionScenePacing.js";
 import { motionPlanSettings, motionVisualSettingsFor } from "./motionVisual.js";
@@ -13,6 +13,17 @@ export const motionHtmlIdentities = (analysis: MotionStoryAnalysis) => ({
   groups: analysis.groups?.map(({ key, name, look, origin, skin, outfit, gear, faction }) => ({ key, name, look, origin, skin, outfit, gear, faction })),
   renamed: analysis.renameEntities ? analysis.renameMap : undefined,
 });
+export const motionHtmlWritingIdentities = (analysis: MotionStoryAnalysis) => ({
+  cast: analysis.cast.map(({ key, name, alias, role, gender, age }) => ({ key, name, alias, role, gender, age })),
+  places: analysis.places.map(({ key, name }) => ({ key, name })),
+  groups: analysis.groups?.map(({ key, name, faction }) => ({ key, name, faction })),
+  renamed: analysis.renameEntities ? analysis.renameMap : undefined,
+});
+export const motionHtmlWritingChapter = (chapter: MotionChapter) => {
+  const { events: _events, ...rest } = (chapter.writing || {}) as Record<string, unknown>;
+  const writing = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== "" && value != null));
+  return chapter.writing ? { ...chapter, writing } : chapter;
+};
 export const motionHtmlPlanContext = (beats: MotionBeat[], analysis: MotionStoryAnalysis, settings: MotionVisualSettings, note?: string, sfx = true) => ({
   productionLanguage: RT_MAINTENANCE.EN,
   beats: beats.map(({ id, chapterId, narration, sceneTemplateDraft, utterances, visual, place, cast, time, weather }) => ({ id, chapterId, narration, sceneTemplateDraft, utterances: utterances?.map(({ id, text, speaker, role }) => ({ id, text, speaker, role })), visual, place, cast, time, weather })),

@@ -23,7 +23,8 @@ import { observeGeminiGeneration } from "./geminiGenerationObserver.js";
 import { STUDIO_RUNTIME as XRT } from "../../constants/studioRuntime.js";
 import { CHAT_PLANNING_RUNTIME as C, CHAT_JSON_PATTERNS as JP } from "../../constants/chatPlanningRuntime.js";
 import * as ST from "../../constants/sourceText.js";
-import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport, promptReferenceChat, promptReferenceDocs } from "../../lib/chatPlanningUtils.js";
+import { clickPlanningControl, throwIfPlanningCancelled, readPlanningUi, planningPromptTransport } from "../../lib/chatPlanningUtils.js";
+import { promptReferenceChat, promptReferenceDocs } from "./promptReferenceDocs.js";
 import { motionPromptSingleMessage } from "../../lib/motionPrompt.js";
 import { MOTION_PROMPT } from "../../constants/motionPrompt.js";
 import { MOTION_RESPONSE_SCHEMAS } from "../../constants/motionResponseContract.js";
@@ -134,7 +135,7 @@ import { delayAsync } from "../../lib/shared-utils.js";
 import { AiPlanningChatModel, AiPlanningFallbackProvider } from "../../types.js";
 import { assessChatComposerContent } from "./chatComposerValidation.js";
 import { getClaudeComposerScope, observeClaudeUploads, readClaudeUploadState, waitForClaudeUploads } from "./claudeUploadReadiness.js";
-import { attachGeminiLocalFiles, reconcileGeminiQueuedFiles } from "./geminiFileAttachmentService.js";
+import { attachGeminiLocalFiles, geminiLocalFiles, reconcileGeminiQueuedFiles } from "./geminiFileAttachmentService.js";
 import { ChatUploadError, uploadFailure } from "./chatUploadRecovery.js";
 import { AsyncTaskLimiter } from "../../lib/asyncTaskLimiter.js";
 import { SUNO_AUTOMATION_CONFIG } from "../../constants/sunoAutomation.js";
@@ -1020,10 +1021,11 @@ const attachRoomFiles = async (page: Page, attachments: ChatRoomAttachment[], ar
   const allowLocalFileFallback = Boolean(scopedComposer) || artifactType === SOURCE_TEXT_MUSIC_MIXER_RANKING;
   const localFilePaths = _.compact(_.map(attachments, SOURCE_TEXT_PATH));
   const usesOnlyLocalPaths = _.size(localFilePaths) === _.size(attachments);
-  if (usesOnlyLocalPaths && scopedComposer && removeSelector === geminiUploadPolicy.remove) {
+  const geminiFiles = scopedComposer && removeSelector === geminiUploadPolicy.remove ? await geminiLocalFiles(attachments) : undefined;
+  if (geminiFiles && scopedComposer) {
     throwIfPlanningCancelled(signal);
     const uploadStartedAt = Date.now();
-    const method = await attachGeminiLocalFiles(page, scopedComposer, attachments as Array<ChatRoomAttachment & { path: string }>, signal);
+    const method = await attachGeminiLocalFiles(page, scopedComposer, geminiFiles, signal);
     await writeMusicDiagnostic(RT_SERVER.CHAT_ATTACHMENT_TRANSPORT_COMPLETED, { stage: artifactType, attachmentCount: attachments.length, uploadMethod: method, elapsedMs: Date.now() - uploadStartedAt });
     return;
   }
@@ -2328,8 +2330,9 @@ const generatePlanningWithChatUiTask = async (request: ChatPlanningRequest): Pro
         if (recoveryAttempt >= maxRecoveryAttempts) throw Object.assign(lastError instanceof Error ? lastError : new Error(errorMessage), { [RECOVERY.COMPLETE]: true });
         const hungPage = RECOVERY.HUNG_PAGE.test(errorMessage);
         if (hungPage) {
-          request.onRecovery?.(RECOVERY.HUNG_LOG);
-          appLog(RECOVERY.HUNG_LOG);
+          const hungLog = RECOVERY.BLOCKED_ACTION.test(errorMessage) ? RECOVERY.BLOCKED_LOG : RECOVERY.HUNG_LOG;
+          request.onRecovery?.(hungLog);
+          appLog(hungLog);
           await closeChatPlanningRoom(request, true);
           roomRetryClicks = 0;
           if (request.restoreContext) request.prompt = request.restoreContext();

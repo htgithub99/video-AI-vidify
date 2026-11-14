@@ -316,6 +316,9 @@ export const CINEMATIC_CHAT_PLANNING_CONFIG = {
   CDP_INPUT_TYPE_ATTR: "type",
   CDP_INPUT_FILE_VALUE: "file",
   ATTACHMENT_MENU_ITEM_NAME_PATTERN: /upload files?|tải tệp lên|^tệp$|^files?$/i,
+  GEMINI_UPLOAD_TEMP_DIR: "vidify-gemini-upload",
+  GEMINI_UPLOAD_HASH: "sha1",
+  GEMINI_UPLOAD_HASH_ENCODING: "hex",
   ATTACHMENT_FALLBACK_ERROR_PREFIX: "Room-only AI execution could not attach the required media files to the selected chat room.",
 } as const;
 export const createCinematicArtifactRequestId = (runId: unknown, artifactType: string): string => `${String(runId ?? "").trim() || CINEMATIC_CHAT_PLANNING_CONFIG.DEFAULT_PROJECT_SCOPE}:${artifactType}`;

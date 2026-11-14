@@ -90,7 +90,7 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
             opts.log?.(T.LOG_KIT_RETRY(attempt, issue));
             continue;
           }
-          const html = motionHtmlWithKit(source, settings.profileId);
+          const html = motionHtmlWithKit(source, settings.profileId, 0, settings.proportion);
           const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
           await fs.promises.writeFile(file.replace(/\.png$/u, T.HTML_FILE_EXT), html);
           opts.log?.(T.RENDER_LOG);

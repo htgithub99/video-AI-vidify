@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { RETENTION_CRAFT, RETENTION_CRAFT_GRIPPING, RETENTION_CRAFT_PLAIN } from "./runtime/maintenance.js";
+import { RETENTION_CRAFT_GRIPPING, RETENTION_CRAFT_PLAIN } from "./runtime/maintenance.js";
 import { MOTION_STORYTELLING_MODES } from "./motionStorytelling.js";
 import { MOTION_GENRE_SPECS } from "./motionGenres/index.js";
 import type { MotionGenreSpec } from "./motionGenres/types.js";
@@ -37,7 +37,7 @@ const GENRE_TEXT = {
 export const motionVideoGenre = (value: unknown): MotionVideoGenre => (_.includes(_.values(MOTION_VIDEO_GENRES), value) ? (value as MotionVideoGenre) : MOTION_VIDEO_GENRE_DEFAULT);
 export const motionGenreSpec = (value: unknown): MotionGenreSpec => PROFILES[motionVideoGenre(value)];
 export const motionVideoGenrePackaging = (value: unknown): string => GENRE_TEXT.PACKAGING + PROFILES[motionVideoGenre(value)].PACKAGING;
-export const motionRetentionCraft = (mode: unknown): string => (mode === MOTION_STORYTELLING_MODES.PLAIN ? RETENTION_CRAFT_PLAIN : mode === MOTION_STORYTELLING_MODES.GRIPPING ? RETENTION_CRAFT_GRIPPING : RETENTION_CRAFT);
+export const motionRetentionCraft = (mode: unknown): string => (mode === MOTION_STORYTELLING_MODES.PLAIN ? RETENTION_CRAFT_PLAIN : RETENTION_CRAFT_GRIPPING);
 export const motionVideoGenreWritingProfile = (value: unknown, mode?: unknown): string => {
   const profile = PROFILES[motionVideoGenre(value)];
   return profile.PROFILE + " " + profile.TIMELINE + GENRE_TEXT.CHECK + profile.CHECK + " " + motionRetentionCraft(mode);

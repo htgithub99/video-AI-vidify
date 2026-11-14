@@ -70,5 +70,7 @@ export interface MotionAuthoringSettings {
   targetPictureSeconds: number;
   language: string;
   visualProfile: string;
+  visualProportion?: string;
+  visualLayout?: string;
   requestedParts: number;
 }

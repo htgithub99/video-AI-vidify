@@ -21,6 +21,7 @@ export const RUNTIME_TEXT = {
   MIN_100: "min(100%, ",
   VH: "vh)",
   GRID_GRID_COLS_1_SM_GRID_COLS_2_GAP_2: "grid grid-cols-1 sm:grid-cols-2 gap-2.5 items-end col-span-full min-w-0",
+  GRID_VISUAL_ROW: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 items-end col-span-full min-w-0",
   NONE: SOURCE_TEXT_NONE,
   VALUE_0: SOURCE_TEXT_0,
   PATH_D_M83_44Q87_10_124_14Q162_14_166_48L160: '<path d="M83 44Q87 10 124 14Q162 14 166 48L160 96Q126 119 88 93Z" fill="',

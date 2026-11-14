@@ -1,6 +1,7 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
 import { MOTION_WRITING as W } from "../constants/motionWriting.js";
 import { motionScriptFindings } from "./motionScriptFindings.js";
+import { motionHtmlEditorialFindings } from "./motionHtmlEditorialFindings.js";
 import { normalizeMotionSpokenBeat } from "./motionSpokenNumbers.js";
 import { motionGenreAutofix, motionGenreShotMix, motionGenreShotMixOff } from "./motionGenres/autofix.js";
 import { MOTION_GENRE_AUTOFIX as A } from "../constants/motionGenreAutofix.js";
@@ -19,11 +20,14 @@ export const motionEditorialTargets = (beats: MotionBeat[], analysis: MotionStor
 };
 export const runMotionScriptEditorial = async (beats: MotionBeat[], analysis: MotionStoryAnalysis, language: string, sourceText: string, edit: (beats: MotionBeat[], ids: string[], supplemental: boolean) => Promise<MotionEditorialResult>, log?: (line: string) => void, scope?: ReadonlySet<string>): Promise<MotionEditorialResult> => {
   if (analysis.authoringSettings) {
-    const result = await edit(
-      beats,
-      beats.filter((beat) => !scope || scope.has(beat.chapterId)).map((beat) => beat.id),
-      false,
-    );
+    const flagged = new Set(motionHtmlEditorialFindings(beats, analysis, language).map((finding) => finding.id));
+    const ids = beats.filter((beat) => flagged.has(beat.id) && (!scope || scope.has(beat.chapterId))).map((beat) => beat.id);
+    if (!ids.length) {
+      log?.(W.PASS_LOG);
+      return { beats, edit: { reviewed: 0, rewritten: 0, notes: [], requests: 0, extraRequests: 0, dropped: 0 } };
+    }
+    log?.(W.REVIEW_LOG(ids.length));
+    const result = await edit(beats, ids, false);
     const renamed = motionRenameAutofix(result.beats, analysis);
     if (renamed.replaced) log?.(N.LOG.AUTOFIX(renamed.replaced));
     return { ...result, beats: renamed.beats };

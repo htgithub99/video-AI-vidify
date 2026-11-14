@@ -1,0 +1,20 @@
+export const MOTION_CHAPTER_CARD = {
+  ID: (chapterId: string): string => `chapter-card:${chapterId}`,
+  PURPOSE: "chapter-card",
+  MIN_SECONDS: 1.2,
+  FADE_SECONDS: 0.35,
+  ROMAN: [["M", 1000], ["CM", 900], ["D", 500], ["CD", 400], ["C", 100], ["XC", 90], ["L", 50], ["XL", 40], ["X", 10], ["IX", 9], ["V", 5], ["IV", 4], ["I", 1]] as readonly (readonly [string, number])[],
+  SUBTITLE_SEP: " · ",
+  STRING: "string",
+  SUBTITLE_GENRES: ["chronicle", "witness"] as readonly string[],
+  LT: /</g,
+  LT_ESCAPED: "\\u003c",
+  PALETTE: {
+    history: { bg: "#efe3c8", edge: "#c9b48a", ink: "#3b2f22", accent: "#8c1d1d", font: "Georgia, 'Times New Roman', serif" },
+    explainer: { bg: "#f2f5f8", edge: "#c3ccd6", ink: "#1f2a37", accent: "#2563eb", font: "'Segoe UI', Arial, sans-serif" },
+    horror: { bg: "#15171c", edge: "#2c2f36", ink: "#d8d4cc", accent: "#8c1d1d", font: "Georgia, 'Times New Roman', serif" },
+  } as Record<string, { bg: string; edge: string; ink: string; accent: string; font: string }>,
+  FALLBACK_PROFILE: "history",
+  HTML: (data: string): string =>
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0}body{background:#000;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style></head><body><canvas id="motion-canvas"></canvas><script>(()=>{const D=${data};const canvas=document.getElementById('motion-canvas');const ctx=canvas.getContext('2d');const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));const ease=(x)=>{x=clamp(x,0,1);return x*x*(3-2*x)};const wrap=(text,max,size)=>{ctx.font='700 '+size+'px '+D.font;const words=String(text||'').split(/\\s+/).filter(Boolean);const lines=[];let line='';for(const w of words){const next=line?line+' '+w:w;if(line&&ctx.measureText(next).width>max){lines.push(line);line=w}else line=next}if(line)lines.push(line);return lines};const renderAt=async function(input={}){const w=Math.max(320,Number(input.width)||1280),h=Math.max(180,Number(input.height)||720);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}const dur=Math.max(0.1,Number(input.duration)||2.5);const t=clamp(Number(input.time)||0,0,dur);const fade=Math.min(D.fade,dur/3);const a=input.motionEnabled===false?1:Math.min(ease(t/fade),ease((dur-t)/fade));const s=Math.min(w/1280,h/720);ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#000';ctx.fillRect(0,0,w,h);ctx.globalAlpha=a;ctx.fillStyle=D.bg;ctx.fillRect(0,0,w,h);const g=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.2,w/2,h/2,Math.max(w,h)*0.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.28)');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);ctx.strokeStyle=D.edge;ctx.lineWidth=3*s;ctx.strokeRect(36*s,36*s,w-72*s,h-72*s);ctx.lineWidth=1.2*s;ctx.strokeRect(48*s,48*s,w-96*s,h-96*s);const lift=(1-ease(t/(fade*1.6)))*14*s;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=D.accent;ctx.font='700 '+Math.round(40*s)+'px '+D.font;ctx.fillText(D.number,w/2,h*0.34+lift);const lw=Math.min(w*0.36,420*s)*ease(t/(fade*1.4));ctx.strokeStyle=D.accent;ctx.lineWidth=2*s;ctx.beginPath();ctx.moveTo(w/2-lw/2,h*0.41+lift);ctx.lineTo(w/2+lw/2,h*0.41+lift);ctx.stroke();ctx.fillStyle=D.accent;ctx.beginPath();const r=6*s;ctx.moveTo(w/2,h*0.41-r+lift);ctx.lineTo(w/2+r,h*0.41+lift);ctx.lineTo(w/2,h*0.41+r+lift);ctx.lineTo(w/2-r,h*0.41+lift);ctx.closePath();ctx.fill();let size=Math.round(58*s);let lines=wrap(D.title,w*0.78,size);while(lines.length>2&&size>24*s){size-=4;lines=wrap(D.title,w*0.78,size)}ctx.fillStyle=D.ink;lines.slice(0,3).forEach((l,i)=>ctx.fillText(l,w/2,h*0.52+lift+i*size*1.18));if(D.subtitle){ctx.globalAlpha=a*0.8;ctx.font='italic '+Math.round(26*s)+'px '+D.font;ctx.fillText(D.subtitle,w/2,h*0.52+lift+Math.min(lines.length,3)*size*1.18+20*s)}ctx.globalAlpha=1};window.motionScene={ready:Promise.resolve(),renderAt};if(!window.__MOTION_HOST__){const t0=performance.now();const loop=(now)=>{const t=((now-t0)/1000)%2.5;renderAt({time:t,progress:t/2.5,duration:2.5,width:innerWidth||1280,height:innerHeight||720});requestAnimationFrame(loop)};requestAnimationFrame(loop)}})();</script></body></html>`,
+} as const;
