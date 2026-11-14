@@ -1333,6 +1333,8 @@ const submitPrompt = async (
       if (!receipts.matches(receiptKey)) {
         if (++generationChanges > CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_REPAIRS) throw new Error(CINEMATIC_CHAT_PLANNING_CONFIG.CONTEXT_ACK_ERROR);
         receipts.select(receiptKey);
+        // The first part's receipt was just read from the current conversation (the reset came from opening that conversation), so keep it instead of sending it twice.
+        if (index === 0) receipts.accept(1);
         index = -1;
         continue;
       }
@@ -1538,7 +1540,11 @@ const submitPrompt = async (
           {
             const configuredSendButton = page.locator(sendSelector).filter({ visible: true }).last();
             const semanticSendButton = page.getByRole(SOURCE_TEXT_BUTTON, { name: CINEMATIC_CHAT_PLANNING_CONFIG.SEMANTIC_SEND_BUTTON_NAME_PATTERN }).filter({ visible: true }).last();
-            const sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, page, busySelector);
+            let sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], _.isEmpty(attachments) ? CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_READY_TIMEOUT_MS : CINEMATIC_CHAT_PLANNING_CONFIG.ATTACHMENT_READY_TIMEOUT_MS, signal, page, busySelector);
+            if (!sendButton && _.isEmpty(attachments) && (await composerStillHolds(input, submittedPrompt, responseDirective, requestId, signal))) {
+              await writeMusicDiagnostic(CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_WAIT_DIAGNOSTIC, { runId: diagnosticRunId, stage: artifactType, waitMs: CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_RECOVERY_MS });
+              sendButton = await waitForSendButtonReady([configuredSendButton, semanticSendButton], CINEMATIC_CHAT_PLANNING_CONFIG.SEND_BUTTON_RECOVERY_MS, signal, page, busySelector);
+            }
             await writeMusicDiagnostic(SOURCE_TEXT_CHAT_SEND_BUTTON_CHECKED, { runId: diagnosticRunId, stage: artifactType, status: sendButton ? SOURCE_TEXT_READY : SOURCE_TEXT_UNAVAILABLE, attachmentCount: attachments.length });
             if (sendButton) {
               await delayAsync(CINEMATIC_CHAT_PLANNING_CONFIG.HUMAN_ACTION_SETTLE_MS);

@@ -1714,7 +1714,8 @@ router.post(ROUTER_PATHS.MUSIC_PLAN, async (req: Request, res: Response) => {
       }
       return fallbackSongs;
     };
-    const initialBatchSize = _.first(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZES)!;
+    // One chat room: fewer, larger batches so the shared context is pasted fewer times. Several rooms: smaller batches run in parallel.
+    const initialBatchSize = chatRoomLanes(currentChatPolicy()) > 1 ? MUSIC_CREATOR_CONSTANTS.PARALLEL_BATCH_SIZE : _.first(MUSIC_CREATOR_CONSTANTS.OUTPUT_BATCH_SIZES)!;
     const compositionBatches = _.map(_.range(1, requestedSongCount + 1, initialBatchSize), (startIndex) => ({ startIndex, batchCount: Math.min(initialBatchSize, requestedSongCount - startIndex + 1) }));
     for (const batch of compositionBatches) {
       const savedSongs = checkpoint.batches.get(batch.startIndex);

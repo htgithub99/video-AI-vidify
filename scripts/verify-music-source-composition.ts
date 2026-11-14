@@ -64,7 +64,8 @@ assert.match(constants, /MUSIC_ROOM_RESPONSE_ATTEMPTS: 5/);
 assert.match(constants, /MUSIC_THUMBNAIL_ATTEMPTS: 5/);
 assert.match(constants, /MUSIC_COMPOSITION_ROOM_CONCURRENCY: 3/);
 const refactorConstants = resolveSourceTextConstants(fs.readFileSync("src/constants/refactor.ts", "utf8"));
-assert.match(refactorConstants, /OUTPUT_BATCH_SIZES: \[3, 2, 1\]/);
+assert.match(refactorConstants, /OUTPUT_BATCH_SIZES: \[5, 3, 2, 1\]/);
+assert.match(refactorConstants, /PARALLEL_BATCH_SIZE: 3/);
 assert.match(controller, /isRetryableMusicRoomError/);
 assert.match(sunoAutomation, /SUNO_CREATE_ACTION_ATTEMPTS/);
 assert.match(sunoAutomation, /formatSunoCreateRetryLog/);
@@ -124,7 +125,7 @@ assert.match(chatPlanning, /if \(_\.isEqual\(request\.provider, AiPlanningFallba
 assert.match(chatPlanning, /if \(_\.isEqual\(request\.provider, AiPlanningFallbackProvider\.GrokChat\)\)/);
 assert.doesNotMatch(chatPlanning, /if \(!submissionConfirmed && _\.isEmpty\(attachments\) && sendButtonReady\)/);
 assert.match(controller, /size < batchCount/);
-assert.match(controller, /const initialBatchSize = _\.first\(MUSIC_CREATOR_CONSTANTS\.OUTPUT_BATCH_SIZES\)/);
+assert.match(controller, /const initialBatchSize = chatRoomLanes\(currentChatPolicy\(\)\) > 1 \? MUSIC_CREATOR_CONSTANTS\.PARALLEL_BATCH_SIZE : _\.first\(MUSIC_CREATOR_CONSTANTS\.OUTPUT_BATCH_SIZES\)/);
 assert.match(controller, /closeChatPlanningRoomsForProject\(\{ provider, projectId \}\)/);
 assert.match(controller, /SUNO_AUTOMATION_CONFIG\.MUSIC_THIRD_ROOM_WORKER_TYPE/);
 assert.match(controller, /await Promise\.all\(_\.map\(compositionWorkerIds, runCompositionWorker\)\)/);
