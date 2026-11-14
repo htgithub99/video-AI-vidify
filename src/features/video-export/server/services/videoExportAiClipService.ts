@@ -35,7 +35,7 @@ let activeAiClipJobId: string | null = null;
 export const getAiClipDirectory = (): string => path.join(getDataDirectory(), VIDEO_EXPORT_CONSTANTS.OUTPUT_FOLDER, VIDEO_EXPORT_CONSTANTS.EXPORT_FOLDER, VIDEO_EXPORT_AI_CLIP_CONSTANTS.FOLDER);
 const getAiClipPath = (clipId: string): string => path.join(getAiClipDirectory(), `${clipId}${VIDEO_EXPORT_AI_CLIP_CONSTANTS.EXT_MP4}`);
 export const buildAiClipPrompt = (note: string): string => {
-  const cleanNote = _.truncate(_.trim(note), { length: VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_NOTE_CHARS, omission: "" });
+  const cleanNote = _.trim(note);
   return cleanNote ? VIDEO_EXPORT_AI_CLIP_PROMPTS.WITH_NOTE(cleanNote) : VIDEO_EXPORT_AI_CLIP_PROMPTS.AUTO;
 };
 export const sanitizeAiClipInputs = (raw: unknown): VideoExportAiClipInput[] =>

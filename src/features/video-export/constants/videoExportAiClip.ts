@@ -4,7 +4,6 @@ export const VIDEO_EXPORT_AI_CLIP_CONSTANTS = {
   URL_PREFIX: "/assets/video-export/ai-clips/",
   EXT_MP4: ".mp4",
   MAX_IMAGES: 10,
-  MAX_NOTE_CHARS: 600,
   MAX_IMAGE_BYTES: 15 * 1024 * 1024,
   MAX_LOCAL_STORAGE_CHARS: 2 * 1024 * 1024,
   ATTEMPTS: 1,

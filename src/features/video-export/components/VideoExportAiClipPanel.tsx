@@ -77,7 +77,7 @@ export const VideoExportAiClipPanel: FC<VideoExportAiClipPanelProps> = ({ text, 
           <label className={CLS.LABEL}>
             <span>{text.AI_CLIP_NOTE_LABEL}</span>
           </label>
-          <textarea value={note} rows={VIDEO_EXPORT_AI_CLIP_CONSTANTS.NOTE_ROWS} maxLength={VIDEO_EXPORT_AI_CLIP_CONSTANTS.MAX_NOTE_CHARS} disabled={isLocked} placeholder={text.AI_CLIP_NOTE_PLACEHOLDER} onChange={(event) => aiClips.setNote(event.target.value)} className={CLS.NOTE} />
+          <textarea value={note} rows={VIDEO_EXPORT_AI_CLIP_CONSTANTS.NOTE_ROWS} disabled={isLocked} placeholder={text.AI_CLIP_NOTE_PLACEHOLDER} onChange={(event) => aiClips.setNote(event.target.value)} className={CLS.NOTE} />
           <div className={CLS.ACTIONS}>
             <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} disabled={isLocked || _.isEmpty(images)} onClick={() => void aiClips.generate()} className={CLS.PRIMARY}>
               {isGenerating ? <Sparkles className={CLS.SPIN_ICON} /> : <PrimaryIcon className={CLS.BUTTON_ICON} />}

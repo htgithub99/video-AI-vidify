@@ -4109,6 +4109,8 @@ async function configureGeminiModel(page: Page, visualConfig: GeminiVisualConfig
     fallbackModelRegex = GEMINI_MODEL_FLASH_FAMILY_REGEX;
   }
   const modelPickerBtn = page.locator(GeminiChatSelector.ModelPickerButton).first();
+  // A freshly launched Chrome renders the Gemini model picker after the prompt box, so wait for it instead of checking once.
+  await modelPickerBtn.waitFor({ state: SOURCE_TEXT_VISIBLE, timeout: GEMINI_MODEL_SELECTION_CONFIG.PICKER_VISIBLE_TIMEOUT_MS }).catch(() => undefined);
   if (!(await modelPickerBtn.isVisible())) {
     appLog(BACKEND_MESSAGES.GEMINI_CHAT_MODEL_PICKER_NOT_FOUND);
     return false;

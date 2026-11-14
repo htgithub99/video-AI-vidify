@@ -1940,7 +1940,7 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
   const purpose = _.isEqual(req.body?.assetPurpose, SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO) ? SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO : SOURCE_TEXT_COVER;
   const reference = _.toString(purpose === SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_PURPOSE_VIDEO ? req.body?.videoBackgroundReference : req.body?.thumbnailReference);
   const referenceMatch = reference.match(SUNO_AUTOMATION_PATTERNS.DATA_URL_BASE64);
-  if (_.isEmpty(note) || note.length > SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_MAX_CHARACTERS || (reference && (!referenceMatch || !_.startsWith(referenceMatch[1], SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PREFIX)))) {
+  if (_.isEmpty(note) || (reference && (!referenceMatch || !_.startsWith(referenceMatch[1], SUNO_AUTOMATION_CONFIG.MIME_IMAGE_PREFIX)))) {
     return res.status(HttpStatus.BAD_REQUEST).json({ success: false, error: MUSIC_CREATOR_TEXTS.vi.IMAGE_NOTE_NORMALIZE_ERROR });
   }
   const requestId = SOURCE_TEMPLATE_SYMBOL_5(SOURCE_TEMPLATE_SYMBOL_86(`${SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE}`), SOURCE_TEMPLATE_SYMBOL_86(`${randomUUID()}`));
@@ -1957,7 +1957,7 @@ router.post(ROUTER_PATHS.MUSIC_IMAGE_NOTE_NORMALIZE, async (req: Request, res: R
         const response = await generatePlanningWithChatUi({ provider, model: AiPlanningChatModel.GeminiFlash, prompt, projectId: requestId, workerId: SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_WORKER_TYPE, chromeHeadless: req.body?.chromeHeadless !== false, attachments, artifactType: SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_NOTE, requestId, signal: planningRun.signal, closeRoomOnComplete: false });
         const parsed = jsonUtils.safeParse(response.text, null);
         const normalizedNote = _.trim(_.toString(parsed?.normalizedNote));
-        if (!_.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_NOTE) || !_.isEqual(parsed?.requestId, requestId) || _.isEmpty(normalizedNote) || normalizedNote.length > SUNO_AUTOMATION_CONFIG.MUSIC_IMAGE_NOTE_MAX_CHARACTERS) {
+        if (!_.isEqual(parsed?.artifactType, SUNO_AUTOMATION_CONFIG.ARTIFACT_TYPE_IMAGE_NOTE) || !_.isEqual(parsed?.requestId, requestId) || _.isEmpty(normalizedNote)) {
           throw new Error(SUNO_AUTOMATION_TEXTS.MUSIC_IMAGE_NOTE_INVALID_ERROR);
         }
         return res.json({ success: true, normalizedNote });

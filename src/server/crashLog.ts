@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { getLogsDirectory } from "./utils/paths.js";
 import { CRASH_LOG as C } from "../constants/crashLog.js";
+import { installConsoleLog } from "./consoleLog.js";
 const write = (event: string, error?: unknown): void => {
   try {
     const memory = process.memoryUsage();
@@ -29,6 +30,7 @@ const previousRun = (): void => {
   }
 };
 export const installCrashLog = (): void => {
+  installConsoleLog();
   previousRun();
   heartbeat();
   setInterval(heartbeat, C.HEARTBEAT_MS).unref();
