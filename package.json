@@ -9,6 +9,7 @@
     "typecheck:changes": "node scripts/check-git-types.mjs",
     "test:motion-html": "tsx scripts/verify-motion-html-transport.ts && tsx scripts/verify-motion-html.ts && tsx scripts/verify-motion-html-recovery.ts && tsx scripts/verify-motion-html-stages.ts",
     "test:motion-html-export": "tsx scripts/verify-motion-html-export.ts",
+    "test:motion-config-replan": "tsx scripts/verify-motion-config-replan.mts",
     "test:motion-settings": "tsx scripts/verify-motion-settings-fixes.ts && tsx scripts/audit-motion-settings-runner.ts && tsx scripts/verify-motion-settings-chrome.ts",
     "test:motion-action-brief": "tsx scripts/verify-motion-action-brief.ts",
     "test:motion-script-intent": "tsx scripts/verify-motion-script-intent-writing.ts && tsx scripts/verify-motion-action-brief.ts",
