@@ -962,6 +962,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       onDelete={(scene) => void studio.deleteScenes([scene.id])}
                       onDeleteAll={() => void studio.deleteScenes()}
                       busy={studio.renderBusy || ((busyKind === MotionStoryJobKind.SCENES || busyKind === MotionStoryJobKind.PRODUCTION) && !storyStopping)}
+                      writing={studio.storyBusy && !storyStopping}
                       onOpen={(scene, preview, index) => setPreviewModal({ type: RT_MOTION.BEAT, id: scene.id, title: visualText.scene(index + 1), imageUrl: "", remotion: preview, narration: scene.text, beats: [scene.beatId] })}
                     />
                   </Suspense>
