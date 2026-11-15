@@ -1098,7 +1098,7 @@ ol[data-sonner-toaster] {
 label,
 .field-label,
 .section-title,
-span[class*="text-"],
+span[class*="text-"]:not([role="tooltip"]),
 h1,
 h2,
 h3,
