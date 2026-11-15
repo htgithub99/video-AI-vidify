@@ -90,7 +90,12 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
     .filter((pause) => pause.d > pause.target * N.CAP_MARGIN);
   const pauses = [...planned.pauses, ...capped].sort((a, b) => a.at - b.at);
   const clamp = (value: number) => Math.max(N.TEMPO_MIN, Math.min(N.TEMPO_MAX, value));
-  let tempo = clamp(profile.articulation / before.articulation);
+  // The reference rate was measured on one voice and language. When this clip would need more change than the limit
+  // allows (another language, a much slower or faster voice), forcing the limit on every clip only speeds everything up
+  // without making it even: the clip keeps its own rate and the caller evens the sentences against each other instead.
+  const wanted = profile.articulation / before.articulation;
+  const fits = wanted >= N.TEMPO_MIN / N.FIT_MARGIN && wanted <= N.TEMPO_MAX * N.FIT_MARGIN;
+  let tempo = fits ? clamp(wanted) : 1;
   // Even pace inside the line: a pause matched to punctuation says exactly which words lie before it, so each stretch of
   // speech between two such pauses has a known syllable count. Its own rate is brought to the line's rate, within a limit
   // that keeps the voice natural; stretches too short to measure are left alone.
@@ -154,7 +159,7 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
     let wav = await render();
     let after = inspectVoiceCadence(wav, text);
     if (!after) return;
-    if (Math.abs(after.articulation / profile.articulation - 1) > N.TOLERANCE) {
+    if (fits && Math.abs(after.articulation / profile.articulation - 1) > N.TOLERANCE) {
       const corrected = clamp((tempo * profile.articulation) / after.articulation);
       if (Math.abs(corrected - tempo) > 0.001) {
         tempo = corrected;
@@ -163,7 +168,7 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
         if (!after) return;
       }
     }
-    return { wav, cadence: { before: before.articulation, after: after.articulation, target: profile.articulation, tempo, limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA, pausesMatched: planned.pauses.length, pausesExpected: planned.expected, ...(phrases ? { phrases, phraseSpread: spreadOf(ratios), phraseSpreadAfter: spreadOf(ratios.map((ratio) => ratio / Math.max(1 - N.PHRASE_STRETCH, Math.min(1 + N.PHRASE_STRETCH, ratio)))) } : {}) } };
+    return { wav, cadence: { before: before.articulation, after: after.articulation, target: profile.articulation, tempo, limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA, pausesMatched: planned.pauses.length, pausesExpected: planned.expected, ...(fits ? {} : { unfit: true }), ...(phrases ? { phrases, phraseSpread: spreadOf(ratios), phraseSpreadAfter: spreadOf(ratios.map((ratio) => ratio / Math.max(1 - N.PHRASE_STRETCH, Math.min(1 + N.PHRASE_STRETCH, ratio)))) } : {}) } };
   } finally {
     await fs.promises.rm(output, { force: true }).catch(() => {});
   }

@@ -728,6 +728,7 @@ export interface MotionAudioDirection {
 export interface MotionVoiceCadence {
   pausesMatched?: number;
   pausesExpected?: number;
+  unfit?: boolean;
   phrases?: number;
   phraseSpread?: number;
   phraseSpreadAfter?: number;

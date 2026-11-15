@@ -50,7 +50,7 @@ import { motionRepairPlanRows } from "../../../../../lib/motionPlanRepair.js";
 import { MOTION_HTML_WRITING } from "../../../../../constants/motionHtmlWriting.js";
 import { motionProportionOf } from "../../../../../lib/motionDrawStyle.js";
 import { MOTION_LAYOUTS, type MotionLayoutId } from "../../../../../constants/motionLayouts/index.js";
-import { motionLayoutFocal, motionLayoutOf, motionLayoutOutput, motionLayoutPlanner } from "../../../../../lib/motionLayout.js";
+import { motionLayoutFocal, motionLayoutOf, motionLayoutOutput, motionLayoutPlanner, motionLayoutShares } from "../../../../../lib/motionLayout.js";
 type HtmlSubmission = Omit<ChatPlanningSubmission, "pending"> & { pending?: Omit<ChatPendingSubmission, "page"> & { page?: ChatPendingSubmission["page"] } };
 const htmlSubmissionSnapshot = (submission: HtmlSubmission, refreshUrl = false): NonNullable<MotionHtmlRequest["submission"]> => {
   const snapshot = { attempted: submission.attempted, completed: submission.completed, abandoned: submission.abandoned };
@@ -331,7 +331,7 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
     save();
   };
   const focalMin = motionLayoutFocal(settings.layout, MOTION_HTML_QUALITY.WIDE_SHOTS.includes(String(settings.shot || settings.kind || "").toLowerCase()), { focal: MOTION_HTML_QUALITY.FOCAL_MIN, wide: MOTION_HTML_QUALITY.FOCAL_MIN_WIDE });
-  const blueprint = motionSceneBlueprint(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, focalMin });
+  const blueprint = motionSceneBlueprint(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, focalMin, shares: motionLayoutShares(settings.layout) });
   const kit = settings.figureKit === true;
   const sceneRules = !kit ? MOTION_HTML_QUALITY.OUTPUT_FREE : isMap ? MOTION_HTML_QUALITY.OUTPUT.split("\n").filter((line) => !MOTION_HTML_QUALITY.MAP_OUTPUT_DROP.test(line)).join("\n") : MOTION_HTML_QUALITY.OUTPUT;
   // The layout plan, cast looks and map rules are written in the kit's units and calls, so they go only to kit scenes.
@@ -479,7 +479,10 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
         if (!prompt.includes(retry)) prompt = [prompt, retry].join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
         throw Object.assign(new Error(drawIssue), { motionHtmlExecution: true, motionHtmlDraw: true });
       }
-      const html = settings.figureKit ? motionSceneCastHtml(motionHtmlWithKit(source, settings.profile, settings.era, settings.proportion), settings.castLooks) : source;
+      // A travel distance written as "(time * speed) % length" makes the subject jump back to its start: it is turned into one move that stops at its end.
+      const steady = source.replace(MOTION_HTML_QUALITY.WRAP_TRAVEL, (_all, head: string, expr: string, length: string) => (Number(length) > MOTION_HTML_QUALITY.WRAP_MIN ? `${head}Math.min(${expr}, ${length});` : _all));
+      if (steady !== source) opts.log(MOTION_HTML_QUALITY.WRAP_LOG(scene.id));
+      const html = settings.figureKit ? motionSceneCastHtml(motionHtmlWithKit(steady, settings.profile, settings.era, settings.proportion), settings.castLooks) : steady;
       scene.html = {
         version: 1,
         html: motionHtmlKitCompact(html),

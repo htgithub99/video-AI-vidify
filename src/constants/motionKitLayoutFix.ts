@@ -485,7 +485,8 @@ export const MOTION_KIT_LAYOUT_FIX = `(function (K) {
       let index = 0;
       for (let i = 0; i < N; i++) if (p >= at[i]) index = i;
       const end = index + 1 < N ? at[index + 1] : 1;
-      return { index: index, k: end > at[index] ? Math.min(1, (p - at[index]) / (end - at[index])) : 1, count: N, at: at };
+      const of = function (i) { const a = at[i], b = i + 1 < N ? at[i + 1] : 1; return !(i >= 0 && i < N) ? 0 : p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a); };
+      return { index: index, k: end > at[index] ? Math.min(1, (p - at[index]) / (end - at[index])) : 1, count: N, at: at, of: of };
     };
     // A map names its places: the kit's rule that hides place-name text is for staged scenes, so on a map frame a label
     // or a sign with text is drawn as a readable label.

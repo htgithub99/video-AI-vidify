@@ -13,6 +13,7 @@ export const MOTION_VOICE = {
     TOLERANCE: 0.05,
     MAX_STRETCH: 0.12,
     PASSES: 2,
+    UNFIT_LOG: (sentences: number): string => `Hồ sơ tốc độ mẫu không hợp với giọng/ngôn ngữ này (${sentences} câu cần đổi tốc độ quá giới hạn): giữ tốc độ tự nhiên của giọng và chỉ cân các câu về cùng một mức.`,
     MIN_VOICED: 0.25,
     SPLIT: /(?<=[.!?\u2026]["'\u201d\u2019)\]]*)\s+/u,
     ABBREVIATION: /(?:\b(?:Mr|Mrs|Ms|Dr|St|Gen|Col|Capt|Lt|Sgt|Prof|No|vs|etc|TP|TS|Th\.S)|(?<![\p{L}\p{N}])\p{L})\.$/iu,
@@ -668,7 +669,7 @@ export const MOTION_VOICE_PACING = {
   VERSION: 12,
   // Each phrase between two punctuation pauses is brought to the line's own speaking rate (never by more than PHRASE_STRETCH).
   PHRASE_LOG: (phrases: number, before: number, after: number): string => `Cân tốc độ từng cụm: ${phrases} cụm giữa các dấu câu được đưa về tốc độ chung của câu; độ lệch lớn nhất giữa các cụm ${(before * 100).toFixed(0)}% → khoảng ${(after * 100).toFixed(0)}%.`,
-  NARRATOR_CADENCE: { PHRASE_STRETCH: 0.18, PHRASE_MIN_UNITS: 4, PHRASE_MIN_SECONDS: 0.6, LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
+  NARRATOR_CADENCE: { FIT_MARGIN: 1.12, PHRASE_STRETCH: 0.18, PHRASE_MIN_UNITS: 4, PHRASE_MIN_SECONDS: 0.6, LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
   CADENCE_LOG: (count: number, min: number, max: number, target: number, limited: number, matched = 0, expected = 0): string => `Nhịp người kể: cân tốc độ trung bình ${count} đoạn theo mẫu ${target.toFixed(2)} tiếng/giây; đo lại ${min.toFixed(2)}–${max.toFixed(2)}. Khớp ${matched}/${expected} ranh giới dấu câu bằng âm thanh; phần chưa chắc giữ nhịp tự nhiên (${limited} đoạn chạm giới hạn).`,
   CADENCE_FALLBACK: "Đoạn kể chưa đo chắc nhịp; giữ tốc độ dự phòng và tiếp tục dựng.",
   CADENCE_ERROR: (reason: string): string => `Chưa cân nhịp được đoạn kể (${reason.slice(0, 120)}); giữ tốc độ dự phòng.`,

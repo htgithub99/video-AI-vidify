@@ -1,4 +1,4 @@
-import { MOTION_LAYOUTS, MOTION_LAYOUT_DEFAULT, type MotionLayoutId } from "../constants/motionLayouts/index.js";
+import { MOTION_LAYOUTS, MOTION_LAYOUT_DEFAULT, type MotionLayoutId, type MotionLayoutSpec } from "../constants/motionLayouts/index.js";
 import { motionDrawStyle } from "./motionDrawStyle.js";
 export const motionIsLayout = (value: unknown): value is MotionLayoutId => typeof value === "string" && Object.hasOwn(MOTION_LAYOUTS, value);
 export const motionLayoutOf = (settings?: { profileId?: unknown; layout?: unknown }): MotionLayoutId => {
@@ -17,3 +17,4 @@ export const motionLayoutFocal = (layout: MotionLayoutId | undefined, wide: bool
   const spec = layout ? MOTION_LAYOUTS[layout] : undefined;
   return (wide ? spec?.focalWide : spec?.focal) ?? (wide ? fallback.wide : fallback.focal);
 };
+export const motionLayoutShares = (layout: MotionLayoutId | undefined): MotionLayoutSpec["share"] => (layout ? MOTION_LAYOUTS[layout]?.share : undefined);

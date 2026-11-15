@@ -99,7 +99,7 @@ export const motionSceneShot = (shot?: string): string => {
   const key = String(shot || "").toLowerCase();
   return B.SHOTS[key] ? key : B.SHOT_ALIAS[key] || B.DEFAULT_SHOT;
 };
-export const motionSceneBlueprint = (template: string | undefined, input: { shot?: string; kind?: string; focalMin?: number } = {}): MotionSceneBlueprint | undefined => {
+export const motionSceneBlueprint = (template: string | undefined, input: { shot?: string; kind?: string; focalMin?: number; shares?: Partial<Record<string, number>> } = {}): MotionSceneBlueprint | undefined => {
   const text = template || "";
   const list = drafts(text);
   if (!list.length) return undefined;
@@ -108,7 +108,9 @@ export const motionSceneBlueprint = (template: string | undefined, input: { shot
   const shot = motionSceneShot(input.shot);
   const { groundY } = B.SHOTS[shot];
   // The selected layout sets how tall a focal person must be; the figure size follows it so the first drawing already passes.
-  const r = Math.min(B.MAX_R, Math.max(B.SHOTS[shot].r, Math.ceil(((input.focalMin || 0) * B.WORLD.height * B.FOCAL_MARGIN) / B.PERSON_HEIGHT)));
+  const share = input.shares?.[shot];
+  // A chosen layout states how tall the main people are for this shot size; without one the shot's own size applies.
+  const r = share ? Math.min(B.MAX_R * 1.5, Math.round((share * B.WORLD.height) / B.PERSON_HEIGHT)) : Math.min(B.MAX_R, Math.max(B.SHOTS[shot].r, Math.ceil(((input.focalMin || 0) * B.WORLD.height * B.FOCAL_MARGIN) / B.PERSON_HEIGHT)));
   const pairs = pairsOf(text, new Set(list.map((item) => item.id)));
   // Without an INTERACT line, two focal people are the scene's exchange: they stand together and face each other.
   const explicit = pairs.length > 0;

@@ -73,3 +73,23 @@ assert.match(report.summary, /4 cảnh · đạt ngay 1 · có cảnh báo 1 · 
 assert.match(report.text, /scenes: 2 phút 5 giây \(thử lại 1 lần\)/);
 assert.ok(!report.text.includes("idle") && report.text.includes("x/y"));
 console.log("motion quality v2 ok");
+
+// The chosen layout sets the figure size of the layout plan, and a wrapped travel distance becomes one move.
+{
+  const { motionLayoutShares } = await import("../src/lib/motionLayout.js");
+  const template = "5. REQUIRED: king (focal): the king; guard (support): a guard\n6. MOTION: king walks in\n7. INTERACT: none";
+  const sizeOf = (layout: string, shot: string) => motionSceneBlueprint(template, { shot, focalMin: 0.18, shares: motionLayoutShares(layout as never) })!.items.find((item) => item.id === "king")!.size;
+  const share = (r: number) => (r * 4.1) / 720;
+  assert.ok(share(sizeOf("wide", "medium")) <= 0.28 && share(sizeOf("wide", "close")) <= 0.29 && share(sizeOf("wide", "establishing")) >= 0.14, "wide layout keeps people 16-28%");
+  assert.ok(share(sizeOf("close", "close")) >= 0.58 && share(sizeOf("close", "close")) <= 0.72 && share(sizeOf("medium", "medium")) >= 0.38 && share(sizeOf("medium", "medium")) <= 0.48);
+  assert.ok(share(sizeOf("stage", "medium")) >= 0.32 && share(sizeOf("stage", "medium")) <= 0.4 && share(sizeOf("cinematic", "medium")) >= 0.5 && share(sizeOf("cinematic", "medium")) <= 0.65);
+  for (const layout of ["stage", "cinematic", "wide", "medium", "close"]) for (const shot of ["establishing", "wide", "medium", "close"]) assert.ok(sizeOf(layout, shot) > 0);
+  const fixed = "const riderTravel = (time * 26) % 1400;\nconst volleyP = (time * 0.55) % 1;\nconst marchShift = (time * 28) % 320;".replace(MOTION_HTML_QUALITY.WRAP_TRAVEL, (all, head: string, expr: string, length: string) => (Number(length) > MOTION_HTML_QUALITY.WRAP_MIN ? `${head}Math.min(${expr}, ${length});` : all));
+  assert.equal(fixed, "const riderTravel = Math.min((time * 26), 1400);\nconst volleyP = (time * 0.55) % 1;\nconst marchShift = Math.min((time * 28), 320);");
+  kitPhase.cues(null);
+  const ph = kitPhase.phase(0.5, 2);
+  assert.equal(ph.of(0), 1);
+  assert.equal(ph.of(1), 0);
+  assert.ok(Math.abs(kitPhase.phase(0.75, 2).of(1) - 0.5) < 1e-9);
+  console.log("layout sizes, steady travel and phase.of ok");
+}

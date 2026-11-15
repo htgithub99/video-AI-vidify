@@ -309,7 +309,7 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   let adjusted = 0;
   // Two passes: the second corrects a sentence whose first correction still left it outside the tolerance.
   const speeds = clips.map(() => line.speed || 1);
-  if (middle && !referenceNarration(line, voiceId, paced))
+  if (middle && (!referenceNarration(line, voiceId, paced) || clips.every((clip) => clip.cadence?.unfit)))
     for (let pass = 0; pass < S.PASSES; pass++)
       for (let index = 0; index < clips.length; index++) {
         const factor = rates[index] ? middle / rates[index] : 1;
@@ -525,6 +525,8 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
         measured.reduce((sum, item) => sum + (item.pausesExpected || 0), 0),
       ),
     );
+  const unfit = cadences.filter((item) => item.unfit).length;
+  if (unfit) opts.log?.(C.SENTENCES.UNFIT_LOG(unfit));
   const shaped = cadences.filter((item) => item.phrases);
   if (shaped.length) opts.log?.(PACE.PHRASE_LOG(_.sumBy(shaped, (item) => item.phrases || 0), Math.max(...shaped.map((item) => item.phraseSpread || 0)), Math.max(...shaped.map((item) => item.phraseSpreadAfter || 0))));
   const checks = local.map((item) => item.audio.quality.status);
