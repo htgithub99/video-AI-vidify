@@ -76,20 +76,19 @@ assert.equal(motionHtmlFocalMoved(required, [{ id: "king", x: 0.4, y: 0.3, w: 0.
 const planText = MOTION_HTML.TEMPLATE;
 assert.match(planText, /5\. REQUIRED:/);
 assert.match(planText, /6\. MOTION:/);
-assert.match(MOTION_HTML.ON_SCREEN_TEXT(undefined, false, true), /names every place/);
-assert.match(MOTION_HTML.ON_SCREEN_TEXT(undefined, false, false), /no place sign/);
+assert.match(MOTION_HTML.ON_SCREEN_TEXT(undefined, true), /names every place/);
+assert.match(MOTION_HTML.ON_SCREEN_TEXT(undefined, false), /no place sign/);
 const { motionLayoutOutput, motionLayoutFocal } = await import("../src/lib/motionLayout.js");
-const { motionHtmlOutput } = await import("../src/lib/motionHtmlPrompt.js");
-for (const kit of [true, false]) {
-  const base = motionHtmlOutput(kit);
+{
+  const base = MOTION_HTML.OUTPUT;
   assert.match(base, /SCALE: size people by shot/);
   const stage = motionLayoutOutput(base, "stage");
   assert.doesNotMatch(stage, /12-17% of frame height/, "stage layout drops the generic wide-shot size rule");
-  assert.match(stage, /40-50% of the frame height/);
+  assert.match(stage, /32-40% of the frame height/);
   assert.match(stage, /One scale per depth/, "depth consistency rules stay");
   assert.equal(motionLayoutOutput(base, "auto"), base, "auto keeps the generic rule");
 }
-assert.equal(motionLayoutFocal("stage", false, { focal: 0.12, wide: 0.08 }), 0.32);
+assert.equal(motionLayoutFocal("stage", false, { focal: 0.12, wide: 0.08 }), 0.26);
 assert.equal(motionLayoutFocal("auto", true, { focal: 0.12, wide: 0.08 }), 0.08);
 const { MOTION_HTML_QUALITY: QQ } = await import("../src/constants/motionHtmlQuality.js");
 const reviewPrompt = QQ.REVIEW_PROMPT("You shove the rider off the bridge.", "protagonist (focal): You; rider (focal): Mongol rider", "rider falls into the river", "the protagonist shoves a rider off the bridge");

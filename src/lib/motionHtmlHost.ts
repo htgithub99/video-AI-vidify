@@ -1,7 +1,8 @@
 import * as RT_MAINTENANCE from "../constants/runtime/maintenance.js";
-import { motionHtmlKitRefresh } from "./motionHtmlKit.js";
-export const motionHtmlHostDocument = (raw: string, token: string): string => {
-  const html = motionHtmlKitRefresh(raw);
+import { motionHtmlFigures, type MotionFigureRender } from "./motionFigures.js";
+// render: how the scene's figures are drawn ("Dựng cảnh AI" or "Bộ vẽ chuẩn").
+export const motionHtmlHostDocument = (raw: string, token: string, render?: MotionFigureRender): string => {
+  const html = motionHtmlFigures(raw, render);
   const canvasGuard = RT_MAINTENANCE.CANVAS_GUARD_SCRIPT;
   const bridge = `${RT_MAINTENANCE.SCRIPT}${canvasGuard}${RT_MAINTENANCE.HTML_BRIDGE_PREFIX}${JSON.stringify(token)}${RT_MAINTENANCE.HTML_BRIDGE_SUFFIX}`;
   const source = /<head\b[^>]*>/i.test(html) ? html.replace(/<head\b[^>]*>/i, (head) => head + bridge) : bridge + html;

@@ -31,7 +31,8 @@ export const motionVisualSettingsFor = (input: Record<string, any>): MotionVisua
   return pacing ? { ...settings, pacing } : settings;
 };
 export const motionPlanSettings = (settings: MotionVisualSettings): MotionVisualSettings => ({ ...settings, figureKit: undefined, proportion: undefined });
-export const motionSceneKitMatches = (artifact: { figureKit?: boolean } | undefined, settings: MotionVisualSettings): boolean => (artifact?.figureKit === true) === (settings.figureKit === true);
+// A scene drawn on the figure table serves both "Cách dựng" choices; a scene from before it has to be drawn again.
+export const motionSceneCurrent = (artifact: { figures?: boolean } | undefined): boolean => artifact?.figures === true;
 export const isRemotionSpec = (spec: MotionRenderSpec | null | undefined): spec is MotionRemotionSpec => !!spec && RT_CORE.ENGINE in spec && spec.engine === RT_SHARED.REMOTION;
 export const motionVisualRequest = (input: Record<string, any>): Record<string, unknown> => {
   const visualSettings = motionVisualSettingsFor(input);

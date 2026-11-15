@@ -8,7 +8,8 @@ import { MOTION_VISUAL as V } from "../../../constants/motionVisual.js";
 import { remotionSceneReadiness } from "../../../lib/motionRemotion.js";
 import { motionVisualBeatGroups } from "../../../lib/motionScenePacing.js";
 import { MOTION_SCENE_PACING as PACING } from "../../../constants/motionScenePacing.js";
-export const remotionSceneProgress = (script: MotionStoryScript, busy = false, language: string = RT_SHARED.VI) => {
+// figures: the current "Cách dựng" choice, so scene previews follow it without new drawings.
+export const remotionSceneProgress = (script: MotionStoryScript, busy = false, language: string = RT_SHARED.VI, figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown }) => {
   const text = V.TEXT[language === RT_SHARED.EN ? RT_SHARED.EN : RT_SHARED.VI];
   const state = script.gen?.remotion;
   const groups = state?.pacingRevision === PACING.REVISION ? motionVisualBeatGroups(script, state.groupingRevision) : script.beats.map((beat) => ({ id: beat.id, beats: [beat] }));
@@ -19,7 +20,7 @@ export const remotionSceneProgress = (script: MotionStoryScript, busy = false, l
     const plans = group.beats.every((member) => covered.has(member.id)) ? stored : undefined;
     return (plans?.length ? plans : group.beats.map(() => undefined)).map((scene, index) => {
       const member = group.beats[index] || beat;
-      const readiness: ReturnType<typeof remotionSceneReadiness> = scene ? remotionSceneReadiness(scene, state) : {};
+      const readiness: ReturnType<typeof remotionSceneReadiness> = scene ? remotionSceneReadiness(scene, state, figures) : {};
       const failure = scene?.build?.status === COMMON_RUNTIME.SOURCE_TEXT_FAILED ? scene.build.error : state?.failures[beat.id];
       const reason = failure || readiness.error || (readiness.missingBackground ? text.missingBackground : readiness.missingAssets?.length ? text.missingAssets(readiness.missingAssets) : "") || (!scene ? text.scenePlanning : "");
       const status = failure ? RT_SHARED.FAILED : readiness.preview ? RT_SHARED.READY : busy ? RT_SHARED.WAITING : RT_MOTION.STOPPED;

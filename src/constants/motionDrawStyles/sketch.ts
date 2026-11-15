@@ -8,8 +8,6 @@ export const SKETCH_DRAW_STYLE: MotionDrawStyleSpec = {
   title: "VISUAL STYLE (flat cartoon):",
   look:
     "- Look: flat 2D cartoon (The Curious Stick-like). Each shape is one closed Path2D of quadraticCurveTo curves with a flat muted fill and a smooth uniform dark-navy (#16172a) stroke; at most one darker shade tone inside clip(p); no grain, hatching or gradients except light glows. People are about 4.5 heads tall with full bodies and tapered limbs; faces paper-white with dot eyes and short brows. Night scenes: navy sky with stars, dark layered pines, dark muddy ground with outlined puddles, warm fire glow.",
-  kitLookLine:
-    "- Look: flat 2D cartoon (The Curious Stick-like); the kit draws every figure, animal, building, plant, sky and effect in this look, and the few shapes you draw yourself copy it: one closed Path2D of quadraticCurveTo curves, flat muted fill, smooth uniform dark-navy stroke, at most one shade tone.",
   kitLook: "sketch",
   figure: "history",
   proportion: "balanced",

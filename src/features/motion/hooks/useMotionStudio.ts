@@ -227,7 +227,6 @@ export interface MotionScenesRequest {
   beats?: string[];
   locations?: string[];
   restart?: boolean;
-  restyle?: boolean;
   note?: string;
   retryFailed?: boolean;
 }

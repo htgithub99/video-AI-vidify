@@ -12,8 +12,10 @@ import type { MotionSeoOption, MotionStoryAnalysis, MotionStoryScript } from "..
 import type { MotionRemotionScene, MotionVisualSettings } from "../../../../types/motionVisual.js";
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import * as MR from "../../../../constants/motionRuntime.js";
-import { motionSceneKitMatches } from "../../../../lib/motionVisual.js";
+import { motionSceneCurrent } from "../../../../lib/motionVisual.js";
 import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
+import { motionProportionOf } from "../../../../lib/motionDrawStyle.js";
+import type { MotionFigureRender } from "../../../../lib/motionFigures.js";
 export const motionThumbnailStyle = (_analysis: MotionStoryAnalysis, _script: MotionStoryScript | undefined, settings: MotionVisualSettings): string => V.PROFILES[settings.profileId].direction;
 const words = (text: string): Set<string> =>
   new Set(
@@ -31,13 +33,13 @@ export const rankMotionThumbnailScenes = <T extends { text: string }>(items: T[]
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .map(({ item }) => item);
 };
-const htmlReady = (scene: MotionRemotionScene, settings: MotionVisualSettings): boolean =>
-  !!scene.html && (scene.html.status === RT_MAINTENANCE.READY || scene.html.status === RT_MAINTENANCE.RENDERED) && motionSceneKitMatches(scene.html, settings) && !!(scene.html.thumbnail || scene.html.html || scene.html.file);
+const htmlReady = (scene: MotionRemotionScene): boolean =>
+  !!scene.html && (scene.html.status === RT_MAINTENANCE.READY || scene.html.status === RT_MAINTENANCE.RENDERED) && motionSceneCurrent(scene.html) && !!(scene.html.thumbnail || scene.html.html || scene.html.file);
 const htmlSource = (scene: MotionRemotionScene): string => scene.html?.html || (scene.html?.file && fs.existsSync(scene.html.file) ? fs.readFileSync(scene.html.file, RT_MAINTENANCE.UTF8) : "");
-const renderHtmlReference = async (scene: MotionRemotionScene, signal: AbortSignal | undefined, open: typeof openMotionHtmlRuntime): Promise<string | undefined> => {
+const renderHtmlReference = async (scene: MotionRemotionScene, signal: AbortSignal | undefined, open: typeof openMotionHtmlRuntime, render: MotionFigureRender): Promise<string | undefined> => {
   const html = htmlSource(scene);
   if (!html) return scene.html?.thumbnail;
-  const runtime = await open(html, signal);
+  const runtime = await open(html, signal, true, undefined, render);
   try {
     const frame = Math.round(T.REFERENCE_PROGRESS * T.REFERENCE_SECONDS * T.REFERENCE_FPS);
     const image = await runtime.render({ time: T.REFERENCE_PROGRESS * T.REFERENCE_SECONDS, progress: T.REFERENCE_PROGRESS, frame, fps: T.REFERENCE_FPS, duration: T.REFERENCE_SECONDS, width: scene.aspect === MR.MOTION_TEXT_9_16 ? T.OUTPUT_HEIGHT : T.OUTPUT_WIDTH, height: scene.aspect === MR.MOTION_TEXT_9_16 ? T.OUTPUT_WIDTH : T.OUTPUT_HEIGHT, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: true, sceneEffectsEnabled: true, seed: scene.html?.seed || scene.id, speaking: [] } as Parameters<typeof runtime.render>[0]);
@@ -62,7 +64,7 @@ export const prepareMotionThumbnailReferences = async (analysis: MotionStoryAnal
     const candidates = rankMotionThumbnailScenes(
       Object.values(state.scenes)
         .flat()
-        .filter((scene) => (scene.composition && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED) || htmlReady(scene, settings))
+        .filter((scene) => (scene.composition && scene.build?.status !== COMMON_RUNTIME.SOURCE_TEXT_FAILED) || htmlReady(scene))
         .map((scene) => ({ scene, text: [scene.purpose, scene.text, ...(scene.nodes || []).map((node) => node.description)].join(COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_52) })),
       title,
     );
@@ -72,7 +74,7 @@ export const prepareMotionThumbnailReferences = async (analysis: MotionStoryAnal
     for (const [index, { scene }] of unique.entries()) {
       opts.signal?.throwIfAborted();
       if (!scene.composition && scene.html) {
-        const image = await renderHtmlReference(scene, opts.signal, deps.openMotionHtmlRuntime);
+        const image = await renderHtmlReference(scene, opts.signal, deps.openMotionHtmlRuntime, { kit: settings.figureKit === true, profile: settings.profileId, proportion: motionProportionOf(settings) });
         if (image) references.push(image);
         continue;
       }

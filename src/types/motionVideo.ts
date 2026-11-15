@@ -656,6 +656,8 @@ export interface MotionUtterance {
   emotion: "neutral" | "warm" | "serious" | "tense" | "surprised" | "sad" | "excited" | "scared" | "angry";
   intensity?: number;
   speed: number;
+  // Rate correction set by code when it levels sentences and lines against each other (1 = unchanged).
+  rateFix?: number;
   pauseBefore: number;
   pauseAfter: number;
   emphasis: string[];

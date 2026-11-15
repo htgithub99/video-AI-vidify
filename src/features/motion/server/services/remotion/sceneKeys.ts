@@ -4,7 +4,7 @@ import { RUNTIME_VALUES } from "../../../../../constants/runtime/values.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../../constants/runtime/server.js";
 import { stringifyJson } from "../../../../../lib/jsonStringify.js";
-import { motionPlanSettings, motionSceneKitMatches, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
+import { motionPlanSettings, motionSceneCurrent, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemotionLayout.js";
 import type { MotionBeat, MotionStoryAnalysis, MotionStoryScript } from "../../../../../types/motionVideo.js";
@@ -136,7 +136,7 @@ export const remotionStoryBuildStatus = (script: MotionStoryScript, analysis: Mo
     if (!motionHtmlPlanCurrent(script, analysis)) return RT_MAINTENANCE.OUTDATED;
     const groups = motionVisualBeatGroups(script, 1001);
     const scenes = groups.flatMap((group) => state.scenes[group.id] || []);
-    return groups.some((group) => !state.scenes[group.id]?.length) || scenes.some((scene) => !scene.html || !motionSceneKitMatches(scene.html, requested) || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status)) ? RT_MAINTENANCE.PENDING : RT_MAINTENANCE.READY;
+    return groups.some((group) => !state.scenes[group.id]?.length) || scenes.some((scene) => !scene.html || !motionSceneCurrent(scene.html) || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status)) ? RT_MAINTENANCE.PENDING : RT_MAINTENANCE.READY;
   }
   if (
     state.settings.mode !== RT_SHARED.REMOTION ||

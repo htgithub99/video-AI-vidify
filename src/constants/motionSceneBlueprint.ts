@@ -26,18 +26,8 @@ export const MOTION_SCENE_BLUEPRINT = {
   // far away (lights, a distant column) is not a pair that must stand together.
   PAIR_SIZE_RATIO: 0.5,
   GROUP_FOCAL: 0.6,
-  // Code repair of a drawing: camera zoom and pan limits, and where the repair script goes in the page.
-  FIX: { MAX_ZOOM: 1.5, MIN_ZOOM: 1.04, HEADROOM: 1.08, TOP: 0.04, EDGE: 0.04, MIN_DX: 24, GAP: 0.02, DESIGN_WIDTH: 1280 },
-  FIX_SCRIPT: (fix: unknown) => `<script data-motion-fix="1">window.__motionKitFix=${JSON.stringify(fix)};</script>`,
-  FIX_HEAD: /<head[^>]*>/i,
-  CAST_SCRIPT: (cast: unknown) => `<script data-motion-cast="1">window.__motionKitCast=${JSON.stringify(cast)};</script>`,
-  CAST_PROMPT: (rows: string[]) => `CAST LOOK (already fixed by earlier scenes; the kit applies it, so pass the same mark ids and do not redesign these people): ${rows.join("; ")}`,
-  FIX_LOG: (id: string, parts: string[]) => `Cảnh HTML ${id}: code tự chỉnh (${parts.join("; ")}) – không cần vẽ lại.`,
-  FIX_ZOOM: (zoom: number) => `phóng khung ${Math.round(zoom * 100)}% cho vật chính đủ lớn`,
-  FIX_PAN: "dời khung về phía vật chính",
-  FIX_ADD: (ids: string[]) => `vẽ bù vật phụ còn thiếu: ${ids.join(", ")}`,
+  CAST_PROMPT: (rows: string[]) => `CAST LOOK (already fixed by earlier scenes: pass exactly these person options and the same mark ids in every FIG.person call for these people and do not redesign them): ${rows.join("; ")}`,
   UNMARKED: /not drawn/,
-  FIX_LABELS: (ids: string[]) => `ghi tên lên bản đồ: ${ids.join(", ")}`,
   // Cast looks read from the analysis, so a named person wears the same colours from the first scene on.
   CAST_SEED: {
     FLAG: "_seed",
@@ -51,7 +41,6 @@ export const MOTION_SCENE_BLUEPRINT = {
     ] as readonly (readonly [string, string])[],
     NAME_MIN: 4,
   },
-  FIX_MOVE: (ids: string[]) => `dời ${ids.join(", ")} ra khỏi giữa cặp đang tương tác`,
   // A focal subject that stays outside the frame in every sampled moment is the one layout fault worth a new drawing.
   OUTSIDE: /outside the frame/,
   LEAD: "lead",
@@ -62,11 +51,17 @@ export const MOTION_SCENE_BLUEPRINT = {
   APART_ISSUE: (pairs: [string, string][]) => `đứng xa nhau dù đang tương tác: ${pairs.map(([a, b]) => `${a} và ${b}`).join(", ")}`,
   BLOCKED_ISSUE: (rows: [string, string, string][]) => `có người chen giữa cặp đang tương tác: ${rows.map(([a, b, c]) => `${c} đứng giữa ${a} và ${b}`).join(", ")}`,
   STACKED_ISSUE: (pairs: [string, string][]) => `vật lớn đè lên nhau: ${pairs.map(([a, b]) => `${a} và ${b}`).join(", ")}`,
-  APART_FEEDBACK: (pairs: [string, string][]) => `PREVIOUS DRAWING: ${pairs.map(([a, b]) => `${a} acts on ${b} but they stand far apart`).join("; ")}. Put each pair side by side (about one body width apart), facing each other, as the LAYOUT PLAN lists.`,
-  BLOCKED_FEEDBACK: (rows: [string, string, string][]) => `PREVIOUS DRAWING: ${rows.map(([a, b, c]) => `${c} stands between ${a} and ${b}`).join("; ")}. Move the third person to the outer side so the acting pair stand next to each other.`,
-  STACKED_FEEDBACK: (pairs: [string, string][]) => `PREVIOUS DRAWING: large objects overlap (${pairs.map(([a, b]) => `${a} over ${b}`).join("; ")}). Space them apart as the LAYOUT PLAN lists, or keep only one in view.`,
   // Width of one item in units of the near-rank figure size r, used to space items so nothing overlaps.
   WIDTH: { person: 2.5, crowd: 7, animal: 3.8, vehicle: 6.2, building: 6, prop: 1.6 } as Record<MotionBlueprintFn, number>,
+  // Standing height and width at rest of one item, in units of its own size (r for people, p otherwise), as the
+  // standard kit draws them: the fallback scene states each box in these units, so both renderers fill the same space.
+  BOX: {
+    person: [4.42, 2.06], animal: [5.7, 7.2], vehicle: [7.9, 13.4], building: [11.2, 12.7], prop: [2.3, 1.9],
+    horse: [5.7, 7.22], camel: [7.22, 10.06], cow: [4.62, 8.45], dog: [1.67, 2.69], elephant: [8.23, 8.6], ox: [4.92, 8.95], sheep: [2.59, 4.2], wolf: [2.33, 5.04],
+    barn: [12.19, 16.08], castle: [20.32, 20.67], church: [18.48, 14.32], house: [11.16, 12.71], hut: [8.94, 12.23], ruins: [10.08, 15.16], temple: [16.84, 24.5], tent: [6.54, 8.98], tower: [21.45, 7.18], yurt: [7.57, 11.13],
+    boat: [9, 5.25], cannon: [2.96, 7.4], car: [3.48, 8.4], catapult: [4.44, 7.52], chariot: [3.2, 8.56], plane: [7.35, 23.02], ship: [12, 16], tank: [5.95, 14.1], trebuchet: [17.51, 19.24], truck: [7.71, 20.55], wagon: [7.87, 13.39],
+    arrows: [1.26, 3.1], axe: [0.5, 2.02], bow: [0.3, 1.98], shieldProp: [2.32, 1.94], spear: [0.24, 4.58], sword: [2.6, 0.9], gate: [8.97, 16.38], wall: [7.7, 14.07], bridge: [6.45, 25.89],
+  } as Record<string, readonly [number, number]>,
   GAP: 0.7,
   MAX_SPAN: 1000,
   MIN_SCALE: 0.62,
@@ -149,13 +144,7 @@ export const MOTION_SCENE_BLUEPRINT = {
     ["dirt", /\b(dirt|dust|dusty|camp|road|yard|street)\b/i],
   ] as readonly (readonly [string, RegExp])[],
   DEFAULT_GROUND: "grass",
-  WATER_RE: /\b(river|riverbank|stream|sea|lake|shore|coast|harbou?r|ford)\b/i,
   MIST_RE: /\b(mist|fog|haze)\b/i,
-  PROMPT_HEAD: (shot: string, groundY: number) =>
-    `LAYOUT PLAN (computed for this shot and the selected layout; it already satisfies scale, spacing and frame-edge rules, so start from it): MotionKit.frame shot '${shot}', groundY ${groundY}. Use these positions and sizes (you may shift each by up to 10% to fit the action), keep every listed relation, and add the action, expressions and setting detail yourself:`,
-  PROMPT_ITEM: (text: string) => `- ${text}`,
-  PROMPT_RULES:
-    "Relations to keep: an element that acts on another stands next to it, facing it, with nobody and nothing between them; large items (vehicles, tents, buildings) keep the listed gaps so they never overlap or get cut by the frame edge; a group that travels really moves from its start x to its end x across the scene; small carried objects are held by, or lie beside, the listed owner.",
   FALLBACK_WARNING: "Cảnh dự phòng do code dựng từ bố cục chuẩn (AI vẽ lỗi nhiều lần); nên bấm vẽ lại cảnh này.",
   FALLBACK_LOG: (id: string, tries: number) => `Cảnh HTML ${id}: AI vẽ lỗi ${tries} lần liền – dùng cảnh dự phòng do code dựng từ bố cục chuẩn và đi tiếp; cảnh được đánh dấu để vẽ lại sau.`,
   TRANSPORT_ERROR: (id: string, tries: number, reason: string) => `Dựng cảnh tạm dừng: AI dựng cảnh không trả được bài cho cảnh ${id} sau ${tries} lần gửi liên tiếp (${reason}). Kiểm tra tab AI đã chọn (đăng nhập, giới hạn lượt, mạng) rồi bấm chạy tiếp; các cảnh đã dựng được giữ nguyên.`,

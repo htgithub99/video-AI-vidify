@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style></head>
+<body><canvas id="motion-canvas"></canvas>
+<script>
+const canvas = document.getElementById('motion-canvas');
+const ctx = canvas.getContext('2d');
+const INK = '#26201c';
+const shape = (p, fill) => { ctx.fillStyle = fill; ctx.fill(p); ctx.lineWidth = 2.4; ctx.strokeStyle = INK; ctx.stroke(p); };
+const ellipse = (x, y, rx, ry) => { const p = new Path2D(); p.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); return p; };
+const rect = (x, y, w, h) => { const p = new Path2D(); p.rect(x, y, w, h); return p; };
+const FIG = window.MotionFigures.use({
+  person(c, o) {
+    const r = o.h / 4.4, f = o.facing < 0 ? -1 : 1, swing = o.pose === 'walk' ? Math.sin((o.distance || 0) / (0.9 * r)) * r * 0.5 : 0;
+    shape(rect(o.x - r * 0.35 + swing, o.y - r * 1.4, r * 0.3, r * 1.4), o.pants || '#3b352e');
+    shape(rect(o.x + r * 0.05 - swing, o.y - r * 1.4, r * 0.3, r * 1.4), o.pants || '#3b352e');
+    shape(ellipse(o.x, o.y - r * 2.3, o.w / 2, r * 1.0), o.top || '#7a2e2a');
+    shape(ellipse(o.x, o.y - r * 3.4, r, r), '#f8f8f6');
+    const hand = [o.x + f * o.w * 0.45, o.y - r * 2.0];
+    shape(ellipse(hand[0], hand[1], r * 0.2, r * 0.2), '#f8f8f6');
+    return { box: { x: o.x - o.w / 2, y: o.y - o.h, w: o.w, h: o.h }, head: [o.x, o.y - r * 3.4], hand, backHand: [o.x - f * o.w * 0.45, o.y - r * 2.0] };
+  },
+  animal(c, o) {
+    shape(ellipse(o.x, o.y - o.h * 0.55, o.w * 0.4, o.h * 0.18), o.color || '#7a5233');
+    shape(rect(o.x - o.w * 0.3, o.y - o.h * 0.45, o.w * 0.06, o.h * 0.45), o.color || '#7a5233');
+    shape(rect(o.x + o.w * 0.24, o.y - o.h * 0.45, o.w * 0.06, o.h * 0.45), o.color || '#7a5233');
+    shape(ellipse(o.x + (o.facing < 0 ? -1 : 1) * o.w * 0.42, o.y - o.h * 0.85, o.w * 0.1, o.h * 0.13), o.color || '#7a5233');
+    if (o.rider) FIG_RIDER(c, o);
+    return { box: { x: o.x - o.w / 2, y: o.y - o.h, w: o.w, h: o.h }, back: [o.x, o.y - o.h * 0.7] };
+  },
+  vehicle(c, o) { shape(rect(o.x - o.w / 2, o.y - o.h * 0.8, o.w, o.h * 0.5), o.color || '#73583d'); shape(ellipse(o.x - o.w * 0.3, o.y - o.h * 0.25, o.h * 0.25, o.h * 0.25), '#3a2a1e'); shape(ellipse(o.x + o.w * 0.3, o.y - o.h * 0.25, o.h * 0.25, o.h * 0.25), '#3a2a1e'); return {}; },
+  building(c, o) { shape(rect(o.x - o.w / 2, o.y - o.h * 0.6, o.w, o.h * 0.6), o.color || '#c8b48a'); const p = new Path2D(); p.moveTo(o.x - o.w * 0.55, o.y - o.h * 0.6); p.lineTo(o.x, o.y - o.h); p.lineTo(o.x + o.w * 0.55, o.y - o.h * 0.6); p.closePath(); shape(p, o.roof || '#8a5a3a'); return {}; },
+  tree(c, o) { shape(rect(o.x - o.w * 0.08, o.y - o.h * 0.45, o.w * 0.16, o.h * 0.45), o.trunk || '#6b4a2e'); shape(ellipse(o.x, o.y - o.h * 0.68, o.w / 2, o.h * 0.32), o.color || '#4f7a3a'); return {}; },
+  prop(c, o) { shape(rect(o.x - o.w / 2, o.y - o.h, o.w, o.h), o.color || '#8a6a44'); return {}; },
+  wall(c, o) { for (let x = o.x - o.w / 2; x < o.x + o.w / 2; x += 18) shape(rect(x, o.y - o.h, 12, o.h), o.color || '#9a7a52'); return {}; },
+  bridge(c, o) { shape(rect(o.x - o.w / 2, o.y, o.w, 14), o.color || '#8a6a44'); return {}; },
+});
+function FIG_RIDER(c, o) { const rh = o.h * 0.75; FIG.person(c, Object.assign({}, o.rider, { x: o.x, y: o.y - o.h * 0.45, h: rh, w: rh * 0.45, facing: o.facing })); }
+const heroKeys = [{ at: 0, x: 180, y: 600, pose: 'walk', facing: 1 }, { at: 0.5, x: 520, y: 600, pose: 'walk' }, { at: 0.75, x: 520, y: 600, pose: 'point' }, { at: 1, x: 540, y: 600, pose: 'stand' }];
+const riderKeys = [{ at: 0, x: 1250, y: 560 }, { at: 1, x: 760, y: 560 }];
+window.motionScene = {
+  ready: Promise.resolve(),
+  renderAt: async function (input = {}) {
+    const width = Math.max(320, Number(input.width) || 1280), height = Math.max(180, Number(input.height) || 720);
+    if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+    const p = Math.max(0, Math.min(1, Number(input.progress) || 0));
+    ctx.setTransform(width / 1280, 0, 0, height / 720, 0, 0);
+    const sky = ctx.createLinearGradient(0, 0, 0, 400); sky.addColorStop(0, '#9cc4e0'); sky.addColorStop(1, '#e6efe8');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, 1280, 720);
+    ctx.fillStyle = '#8fb066'; ctx.fillRect(0, 380, 1280, 340);
+    ctx.fillStyle = '#5d8fb0'; ctx.fillRect(0, 430, 1280, 40);
+    FIG.building(ctx, { kind: 'house', x: 220, y: 400, h: 110, w: 120, color: '#d8c49a', roof: '#7a4a2a', mark: 'house' });
+    FIG.building(ctx, { kind: 'tent', x: 420, y: 405, h: 70, w: 90, color: '#e8dcc0', mark: 'tent' });
+    FIG.tree(ctx, { kind: 'oak', x: 1040, y: 400, h: 150, w: 110, color: '#4a7a35', mark: 'oak' });
+    FIG.bridge(ctx, { x: 640, y: 428, w: 260, h: 30, color: '#8a6a44', mark: 'bridge' });
+    FIG.wall(ctx, { kind: 'fence', x: 900, y: 520, h: 40, w: 240, color: '#9a7a52', mark: 'fence' });
+    FIG.prop(ctx, { kind: 'barrel', x: 330, y: 620, h: 48, w: 34, color: '#7a5233', mark: 'barrel' });
+    FIG.vehicle(ctx, { kind: 'wagon', x: 1040, y: 640, h: 90, w: 190, facing: -1, color: '#73583d', mark: 'wagon' });
+    const rider = MotionFigures.track(riderKeys, p);
+    FIG.animal(ctx, { kind: 'horse', x: rider.x, y: rider.y, h: 130, w: 170, facing: -1, pose: rider.moving ? 'walk' : 'stand', distance: rider.distance, color: '#6b442a', saddle: true, rider: { pose: 'ride', top: '#2f5d9b', head: 'kettle' }, mark: 'horse' });
+    const hero = MotionFigures.track(heroKeys, p);
+    const hand = FIG.person(ctx, { x: hero.x, y: hero.y, h: 132, w: 60, pose: hero.moving ? 'walk' : hero.pose, distance: hero.distance, facing: hero.facing, top: '#b3362e', pants: '#3b352e', head: 'kettle', expression: 'calm', mark: 'hero' }).hand;
+    ctx.fillStyle = '#c0c0c8'; ctx.beginPath(); ctx.arc(hand[0], hand[1] - 6, 6, 0, Math.PI * 2); ctx.fill();
+  },
+};
+if (!window.__MOTION_HOST__) { const t0 = performance.now(), dur = 10, loop = (now) => { const t = ((now - t0) / 1000) % dur; window.motionScene.renderAt({ time: t, progress: t / dur, width: 1280, height: 720 }); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+</script></body></html>

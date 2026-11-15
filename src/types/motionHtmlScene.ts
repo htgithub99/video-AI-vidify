@@ -12,7 +12,10 @@ export interface MotionHtmlArtifact {
   seed: string;
   duration: number;
   attempts: number;
-  figureKit?: boolean;
+  // Drawn on the figure table: shown with either "Cách dựng" choice without a new drawing. Scenes without it are redrawn.
+  figures?: boolean;
+  // The "Cách dựng" choice the thumbnail was captured with (motionFigureRenderKey).
+  render?: string;
   cast?: string;
   continuity?: string;
   status: "received" | "ready" | "rendered" | "retry_wait" | "waiting_external";
@@ -84,9 +87,12 @@ export interface MotionHtmlMark {
   y: number;
   w: number;
   h: number;
-  src?: "kit";
-  k?: number;
+  // Recorded by the figure table (FIG.<fn> with a mark), with the figure function and kind.
+  src?: "fig";
+  fn?: string;
+  kind?: string;
   look?: Record<string, string | number | boolean>;
+  // A large building, vehicle, tree, bridge or wall (unmarked ones are recorded as ~fn:kind) for the frame-cut check.
   large?: boolean;
 }
 export interface MotionHtmlChange {

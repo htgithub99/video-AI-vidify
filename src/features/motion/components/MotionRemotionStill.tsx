@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Thumbnail } from "@remotion/player";
 import { StoryComposition } from "../remotion/StoryComposition.js";
 import { motionHtmlHostDocument } from "../../../lib/motionHtmlHost.js";
-import { motionHtmlKitStale } from "../../../lib/motionHtmlKit.js";
+import { motionFigureRenderKey, motionFigureRenderOf } from "../../../lib/motionFigures.js";
 import { motionHtmlFrame } from "../../../lib/motionHtmlScene.js";
 import { MOTION_STYLES } from "../constants/motionStyles.js";
 import { MotionMediaLoading, motionAspect } from "./MotionMediaFrame.js";
@@ -14,7 +14,7 @@ const MotionHtmlLiveStill = ({ document, onReady, className }: { document: Motio
   const scene = document.scenes[0];
   const frame = useRef<HTMLIFrameElement>(null);
   const token = useMemo(() => `${RT_MAINTENANCE.MOTION}${Math.random().toString(36).slice(2)}`, [scene?.html?.hash]);
-  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token) : ""), [scene?.html?.hash, token]);
+  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token, motionFigureRenderOf(document)) : ""), [scene?.html?.hash, token, document.figureKit, document.profileId, document.proportion]);
   useEffect(() => {
     const listen = (event: MessageEvent) => {
       if (event.source === frame.current?.contentWindow && event.data?.token === token) onReady();
@@ -46,7 +46,8 @@ const MotionHtmlStill = ({ document }: { document: MotionRemotionSpec }) => {
   const fade = cn(MOTION_STYLES.MEDIA_THUMB_FILL, ready ? MOTION_STYLES.MEDIA_SHOWN : MOTION_STYLES.MEDIA_HIDDEN);
   return (
     <div className={MOTION_STYLES.MEDIA_THUMB} style={{ aspectRatio: motionAspect(document.width, document.height) }}>
-      {html && motionHtmlKitStale(html.html) ? (
+      {/* The stored picture is used while it shows the current "Cách dựng"; otherwise the scene itself is drawn. */}
+      {html && (!html.thumbnail || (html.figures === true && html.render !== motionFigureRenderKey(motionFigureRenderOf(document)))) ? (
         <MotionHtmlLiveStill document={document} onReady={done} className={fade} />
       ) : (
         <img src={html?.thumbnail} alt={document.title} onLoad={done} onError={done} className={fade} style={{ width: RT_MAINTENANCE.VALUE_100, aspectRatio: motionAspect(document.width, document.height), objectFit: RT_MAINTENANCE.CONTAIN }} />

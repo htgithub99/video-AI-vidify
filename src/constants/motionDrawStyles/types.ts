@@ -8,7 +8,6 @@ export interface MotionDrawStyleSpec {
   planner: string;
   title?: string;
   look?: string;
-  kitLookLine?: string;
   kitLook: MotionKitLook;
   figure: MotionStyleFamily;
   proportion: MotionProportionId;

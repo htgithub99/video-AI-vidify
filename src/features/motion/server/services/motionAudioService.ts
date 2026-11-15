@@ -119,7 +119,7 @@ const normalizeClip = (wav: Buffer): Buffer => {
 };
 const clipJobs = new Map<string, Promise<SpeechClipAudio>>();
 const speechClip = (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced = false, preset?: number | null): Promise<SpeechClipAudio> => {
-  const key = hash([line.text, line.speed, line.emotion, line.intensity, line.role, voiceId, language, delivery, engineDelivery(voiceId, delivery), voiceSpeedKey(voiceId), voiceClipRateLimit(line, language), referenceNarration(line, voiceId, paced), paced, preset, opts.asr === true]);
+  const key = hash([line.text, line.speed, line.rateFix, line.emotion, line.intensity, line.role, voiceId, language, delivery, engineDelivery(voiceId, delivery), voiceSpeedKey(voiceId), voiceClipRateLimit(line, language), referenceNarration(line, voiceId, paced), paced, preset, opts.asr === true]);
   const running = clipJobs.get(key);
   if (running) return running;
   const job = speechClipOnce(line, voiceId, language, opts, deps, delivery, paced, preset).finally(() => clipJobs.delete(key));
@@ -132,7 +132,7 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
   const reference = referenceNarration(line, voiceId, paced);
   const legacyRawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, legacyEngineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV;
   const rawId = C.CLIP_PREFIX + hash([C.VERSION, C.CLIP_VERSION, C.PACKAGE, language, line.text, voiceId, D.VERSION, engineDelivery(voiceId, delivery), ...(spoken !== directedBase(line) ? [spoken] : [])]) + MR.MOTION_TEXT_WAV,
-    id = C.CLIP_PREFIX + hash([rawId, C.TEMPO, line.role, line.speed, delivery.tempo, known, FX.VERSION, Q.VERSION, opts.asr === true, C.ASR.VERSION, motionVoiceFilter(line, delivery, 1), paced, reference, ...(paced ? [PACE.VERSION, PACE.DIALOGUE_RATE, voiceClipRateLimit(line, language)] : [])]) + MR.MOTION_TEXT_WAV,
+    id = C.CLIP_PREFIX + hash([rawId, C.TEMPO, line.role, line.speed, line.rateFix, delivery.tempo, known, FX.VERSION, Q.VERSION, opts.asr === true, C.ASR.VERSION, motionVoiceFilter(line, delivery, 1), paced, reference, ...(paced ? [PACE.VERSION, PACE.DIALOGUE_RATE, voiceClipRateLimit(line, language)] : [])]) + MR.MOTION_TEXT_WAV,
     file = path.join(getMotionAudioDirectory(), id),
     wordsFile = file + C.ASR.WORDS_EXT,
     checkFile = file + C.ASR.CHECK_EXT;
@@ -189,7 +189,7 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
           }
           if (failure) throw failure;
           const render = (value: number) => runMotionAudioProcess([MR.MOTION_TEXT_I, original, MR.MOTION_TEXT_AF, motionVoiceFilter(line, delivery, value), MR.MOTION_TEXT_AR, String(C.SAMPLE_RATE), MR.MOTION_TEXT_AC, MR.MOTION_TEXT_1, MR.MOTION_TEXT_C_A, MR.MOTION_TEXT_PCM_S16LE, MR.MOTION_TEXT_F, MR.MOTION_TEXT_WAV_2, temp], opts.signal);
-          const tempo = paced ? delivery.tempo : deliveryTempo(line, delivery);
+          const tempo = (paced ? delivery.tempo : deliveryTempo(line, delivery)) * (line.rateFix || 1);
           const scaled = (factor: number): number => (Math.abs(factor - 1) > MOTION_VOICE_SPEED.REPROCESS_DELTA ? _.clamp(tempo * factor, MOTION_VOICE_SPEED.MIN, MOTION_VOICE_SPEED.MAX) : tempo);
           const first = reference ? 1 : known === null ? tempo : scaled(known);
           await render(first);
@@ -293,7 +293,7 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   const S = C.SENTENCES;
   const parts = speechTokens(line.text).length >= S.MIN_WORDS ? motionSentencePieces(line.text) : [];
   if (parts.length < 2) return speechClip(line, voiceId, language, opts, deps, delivery, paced, preset);
-  const make = (text: string, speed?: number) => speechClip({ ...line, text, ...(speed ? { speed } : {}) }, voiceId, language, opts, deps, delivery, paced, preset);
+  const make = (text: string, rateFix?: number) => speechClip({ ...line, text, ...(rateFix ? { rateFix } : {}) }, voiceId, language, opts, deps, delivery, paced, preset);
   const clips: SpeechClipAudio[] = [];
   for (const text of parts) clips.push(await make(text));
   const rateOf = (clip: SpeechClipAudio, text: string): number => {
@@ -308,13 +308,13 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   const middle = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
   let adjusted = 0;
   // Two passes: the second corrects a sentence whose first correction still left it outside the tolerance.
-  const speeds = clips.map(() => line.speed || 1);
+  const speeds = clips.map(() => line.rateFix || 1);
   if (middle && (!referenceNarration(line, voiceId, paced) || clips.every((clip) => clip.cadence?.unfit)))
     for (let pass = 0; pass < S.PASSES; pass++)
       for (let index = 0; index < clips.length; index++) {
         const factor = rates[index] ? middle / rates[index] : 1;
         if (Math.abs(factor - 1) <= S.TOLERANCE) continue;
-        const speed = _.clamp(speeds[index] * factor, Math.max(C.TEMPO.SPEED_MIN, (line.speed || 1) * (1 - S.MAX_STRETCH)), Math.min(C.TEMPO.SPEED_MAX, (line.speed || 1) * (1 + S.MAX_STRETCH)));
+        const speed = _.clamp(speeds[index] * factor, (line.rateFix || 1) * (1 - S.MAX_STRETCH), (line.rateFix || 1) * (1 + S.MAX_STRETCH));
         if (Math.abs(speed - speeds[index]) < 0.005) continue;
         speeds[index] = speed;
         clips[index] = await make(parts[index], speed);
@@ -486,6 +486,33 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
     opts.onProgress?.(++done, totalLines);
     return ready;
   });
+  // A voice the reference rate does not fit keeps its own speed, so its lines are levelled against each other here:
+  // every narration line is brought to the median speaking rate of the video, within the same limit as a sentence.
+  const lineRate = (audio: SpeechClipAudio | undefined): number => {
+    const rates = (audio?.cadences || (audio?.cadence ? [audio.cadence] : [])).filter((item) => item.unfit).map((item) => item.after);
+    return rates.length ? _.mean(rates) : 0;
+  };
+  const levelled = flat.map((item, index) => ({ item, index, rate: item.narration && item.pieces.length === 1 ? lineRate(audios[index][0]) : 0 })).filter((row) => row.rate > 0);
+  if (levelled.length > 1) {
+    const S = C.SENTENCES;
+    const sorted = levelled.map((row) => row.rate).sort((a, b) => a - b);
+    const middle = sorted[Math.floor(sorted.length / 2)];
+    const spreadOf = (rates: number[]) => Math.max(...rates.map((rate) => Math.abs(rate / middle - 1)));
+    const before = spreadOf(sorted);
+    let redone = 0;
+    for (const row of levelled) {
+      const factor = middle / row.rate;
+      if (Math.abs(factor - 1) <= S.TOLERANCE) continue;
+      const line = row.item.pieces[0].line;
+      const rateFix = _.clamp(factor, 1 - S.MAX_STRETCH, 1 + S.MAX_STRETCH);
+      const again = await speechClipJoined({ ...line, rateFix }, row.item.voiceId, script.language, opts, deps, row.item.paced, !!pacing, factors[row.item.voiceId], pacing?.sentenceGap ?? C.SENTENCES.GAP);
+      row.item.pieces[0] = { ...row.item.pieces[0], line: { ...line, rateFix } };
+      audios[row.index] = [again];
+      row.rate = lineRate(again) || row.rate;
+      redone++;
+    }
+    if (redone) opts.log?.(S.LEVEL_LOG(redone, before, spreadOf(levelled.map((row) => row.rate))));
+  }
   let k = 0;
   let endSlack = 0;
   for (const beatLines of lines) {

@@ -60,9 +60,9 @@ export const motionHtmlRequired = (template: string | undefined): MotionHtmlRequ
 };
 const unionById = (marks: MotionHtmlMark[]): Map<string, MotionHtmlMark> => {
   const out = new Map<string, MotionHtmlMark>();
-  const kitIds = new Set(marks.filter((mark) => mark.src === "kit").map((mark) => motionHtmlMarkId(mark.id)));
+  const figIds = new Set(marks.filter((mark) => mark.src === "fig").map((mark) => motionHtmlMarkId(mark.id)));
   for (const mark of marks) {
-    if (/^[~!]/.test(String(mark.id)) || (kitIds.has(motionHtmlMarkId(mark.id)) && mark.src !== "kit")) continue;
+    if (/^[~!]/.test(String(mark.id)) || (figIds.has(motionHtmlMarkId(mark.id)) && mark.src !== "fig")) continue;
     if (![mark.x, mark.y, mark.w, mark.h].every(Number.isFinite)) continue;
     const id = motionHtmlMarkId(mark.id);
     const prev = out.get(id);
@@ -115,5 +115,3 @@ export const motionHtmlCutLarge = (marks: MotionHtmlMark[], maxCut: number): str
     .filter((entry) => entry.cut > maxCut)
     .map((entry) => entry.id)
     .filter((id, index, list) => list.indexOf(id) === index);
-export const motionHtmlUnknownKinds = (marks: MotionHtmlMark[]): string[] =>
-  [...new Set(marks.map((mark) => String(mark.id)).filter((id) => id.startsWith("!unknown:")).map((id) => id.slice("!unknown:".length).replace(":", " ")))];

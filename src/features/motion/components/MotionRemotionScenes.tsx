@@ -19,9 +19,9 @@ import * as MCS from "../../music/constants/musicCreatorStyles.js";
 import * as SRT from "../../../constants/sourceText.js";
 import type { MotionRemotionSpec, MotionRemotionScene, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { MotionStoryScript } from "../../../types/motionVideo.js";
-export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; busy?: boolean; writing?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void; onRetryFailed?: () => void; onDelete?: (scene: MotionRemotionScene) => void; onDeleteAll?: () => void }> = ({ script, language, renderBehavior, busy = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
+export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown }; busy?: boolean; writing?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void; onRetryFailed?: () => void; onDelete?: (scene: MotionRemotionScene) => void; onDeleteAll?: () => void }> = ({ script, language, renderBehavior, figures, busy = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
   const [page, setPage] = useState<number>(STUDIO_PAGINATION.FIRST_PAGE);
-  const progress = remotionSceneProgress(renderBehavior && script.gen?.remotion ? { ...script, gen: { ...script.gen, remotion: { ...script.gen.remotion, renderBehavior } } } : script, busy, language);
+  const progress = remotionSceneProgress(renderBehavior && script.gen?.remotion ? { ...script, gen: { ...script.gen, remotion: { ...script.gen.remotion, renderBehavior } } } : script, busy, language, figures);
   const pagination = getPagination(progress.total, page, V.SCENES_PER_PAGE);
   // Cards appear only once a real scene plan exists; before that the narration-line placeholders are hidden.
   const showCards = progress.planned;

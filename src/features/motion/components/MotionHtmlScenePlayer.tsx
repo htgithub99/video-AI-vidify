@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { StoryComposition } from "../remotion/StoryComposition.js";
 import { motionHtmlHostDocument } from "../../../lib/motionHtmlHost.js";
+import { motionFigureRenderOf } from "../../../lib/motionFigures.js";
 import { motionHtmlFrame } from "../../../lib/motionHtmlScene.js";
 import type { MotionRemotionSpec } from "../../../types/motionVisual.js";
 export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotionSpec; audioUrl?: string }) => {
@@ -19,7 +20,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     audio = useRef<HTMLAudioElement>(null),
     current = useRef<ReturnType<typeof motionHtmlFrame>>();
   const token = useMemo(() => `${RT_MAINTENANCE.MOTION}${Math.random().toString(36).slice(2)}`, [scene?.id, scene?.html?.hash]);
-  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token) : ""), [scene?.html?.hash, token]);
+  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token, motionFigureRenderOf(spec)) : ""), [scene?.html?.hash, token, spec.figureKit, spec.profileId, spec.proportion]);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     setLoaded(false);

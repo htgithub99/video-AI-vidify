@@ -12,6 +12,7 @@ import { MOTION_REMOTION_STAGING as S } from "../constants/motionRemotionStaging
 import { normalizeRemotionRelations } from "./motionRemotionStaging.js";
 import { separateRemotionSubjects } from "./motionRemotionVisibility.js";
 import { normalizeMotionRenderBehavior } from "./motionRenderBehavior.js";
+import { motionProportionOf } from "./motionDrawStyle.js";
 import { MOTION_ASPECT_BASE } from "../constants/motionVideo.js";
 import { MOTION_REMOTION_SPACE as SPACE } from "../constants/motionRemotionSpace.js";
 import { validateSceneComposition } from "./motionSceneComposition.js";
@@ -33,9 +34,11 @@ export const remotionAssetAnchors = (raw: unknown, required: string[] = []): Mot
   if (missing.length) throw new Error(V.ANCHORS_MISSING(missing));
   return anchors;
 };
-export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
+// figures: the "Cách dựng" choice to preview with (the current one in the editor); defaults to the one the scenes were built with.
+export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: MotionRemotionState, figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown }): { preview?: MotionRemotionSpec; missingBackground?: boolean; missingAssets?: string[]; error?: string } => {
   if (scene.renderer === RT_MAINTENANCE.HTML_CANVAS) {
     if (!scene.html || !([RT_MAINTENANCE.READY, RT_MAINTENANCE.RENDERED] as string[]).includes(scene.html.status) || !state || state.settings.mode !== RT_MAINTENANCE.REMOTION) return { error: scene.htmlRequest?.error };
+    if (scene.html.figures !== true) return { error: V.LEGACY_SCENE };
     const aspect = scene.aspect || RT_MAINTENANCE.VALUE_16_9;
     const { w: width, h: height } = MOTION_ASPECT_BASE[aspect] || MOTION_ASPECT_BASE[RT_MAINTENANCE.VALUE_16_9];
     const frames = Math.max(1, Math.ceil(scene.html.duration * 30));
@@ -53,6 +56,8 @@ export const remotionSceneReadiness = (scene: MotionRemotionScene, state?: Motio
         motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE,
         renderBehavior: state.renderBehavior,
         profileId: state.settings.profileId,
+        figureKit: (figures ?? state.settings).figureKit === true,
+        proportion: motionProportionOf(figures ?? state.settings),
         assets: {},
         scenes: [{ ...scene, nodes: [], startFrame: 0, endFrame: frames }],
         subtitles: [],

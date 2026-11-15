@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { motionSceneBlueprint, motionSceneBlueprintPrompt, motionSafeSceneSource } from "../src/lib/motionSceneBlueprint.js";
+import { motionSceneBlueprint, motionSafeSceneSource } from "../src/lib/motionSceneBlueprint.js";
 import { motionHtmlScriptIssue } from "../src/lib/motionHtmlQuality.js";
 import { MOTION_SCENE_BLUEPRINT as B } from "../src/constants/motionSceneBlueprint.js";
 import { MotionAiWorkerPool } from "../src/features/motion/server/services/motionAiWorkerPool.js";
@@ -28,10 +28,6 @@ assert.equal(by.tent.fn, "building");
 const large = plan.items.filter((item) => item.fn === "vehicle" || item.fn === "building");
 for (const item of large) assert.ok(item.x >= B.WORLD.left && item.x <= B.WORLD.right);
 assert.ok(Math.abs(large[0].x - large[1].x) > 300, "large items do not overlap");
-const text = motionSceneBlueprintPrompt(plan)!;
-assert.match(text, /LAYOUT PLAN/);
-assert.match(text, /refugee \(focal\): person at x \d+, y 610, r \d+/);
-assert.match(text, /stands next to protagonist and faces it/);
 // Many items shrink together instead of leaving the frame.
 const crowded = motionSceneBlueprint("5. REQUIRED: " + ["king", "queen", "bishop", "knight", "squire", "herald", "jester", "cook"].map((id) => `${id} (focal): x`).join("; "), { shot: "close" })!;
 assert.ok(crowded.items.every((item) => item.x >= B.WORLD.left && item.x <= B.WORLD.right));
@@ -41,10 +37,14 @@ assert.equal(duo.items[0].facing, -duo.items[1].facing);
 // Night, snow and mist come from the setting section.
 const night = motionSceneBlueprint("2. SETTING: pitch dark night, snow and mist by the river.\n5. REQUIRED: riders (focal): horsemen", { shot: "wide" })!;
 assert.deepEqual([night.time, night.ground, night.mist, night.items[0].fn], ["night", "snow", true, "crowd"]);
-// A map has no layout plan, and every fallback scene is valid script.
+// Every fallback scene is valid script.
 const map = motionSceneBlueprint("5. REQUIRED: army (focal): tokens; pest (support): marker", { shot: "overhead", kind: "map" })!;
-assert.equal(motionSceneBlueprintPrompt(map), undefined);
-for (const scene of [plan, crowded, duo, night, map]) assert.equal(motionHtmlScriptIssue(motionSafeSceneSource(scene)), undefined);
+for (const scene of [plan, crowded, duo, night, map]) {
+  const page = motionSafeSceneSource(scene);
+  assert.equal(motionHtmlScriptIssue(page), undefined);
+  assert.match(page, /window\.MotionFigures\.use\(own\)/, "the fallback scene is written on the figure table");
+  assert.doesNotMatch(page, /MotionKit/);
+}
 assert.equal(motionSceneBlueprint(""), undefined);
 
 // Redraws go ahead of scenes that are still waiting for their first drawing.
@@ -60,10 +60,10 @@ assert.equal(motionSceneBlueprint(""), undefined);
   console.log("motion scene blueprint ok");
 })();
 
-// Relation checks on a finished drawing use the boxes the kit recorded.
+// Relation checks on a finished drawing use the boxes the figure table recorded.
 import { motionSceneRelationIssues } from "../src/lib/motionSceneBlueprint.js";
 {
-  const kit = (id: string, x: number, w = 0.08) => ({ id, x, y: 0.5, w, h: 0.35, src: "kit" as const });
+  const kit = (id: string, x: number, w = 0.08) => ({ id, x, y: 0.5, w, h: 0.35, src: "fig" as const });
   const good = motionSceneRelationIssues(plan, [kit("refugee", 0.5), kit("protagonist", 0.4), kit("miklos", 0.62)]);
   assert.deepEqual([good.apart.length, good.blocked.length, good.stacked.length], [0, 0, 0]);
   const bad = motionSceneRelationIssues(plan, [kit("refugee", 0.7), kit("protagonist", 0.3), kit("miklos", 0.5)]);
@@ -87,33 +87,15 @@ import { motionSceneRelationIssues } from "../src/lib/motionSceneBlueprint.js";
   console.log("relations ok");
 }
 
-// Code repair: zoom for a small focal subject (never past the top edge), pan for one near the edge, move a bystander.
-import { motionSceneAutoFix, motionSceneFixHtml } from "../src/lib/motionSceneBlueprint.js";
-{
-  const m = (id: string, x: number, y: number, w: number, h: number) => ({ id, x, y, w, h, src: "kit" as const, k: 1 });
-  const small = motionSceneAutoFix({ sampled: [[m("you", 0.45, 0.6, 0.06, 0.2)]], focal: ["you"], need: 0.32, blocked: [] })!;
-  assert.ok(small.zoom! > 1.5 - 0.01 && !small.dx, "a small focal subject is zoomed up to the limit");
-  const tall = motionSceneAutoFix({ sampled: [[m("you", 0.45, 0.1, 0.06, 0.28)]], focal: ["you"], need: 0.32, blocked: [] })!;
-  assert.ok(tall.zoom! < 1.25, "zoom stops before the head leaves the top of the frame");
-  const edge = motionSceneAutoFix({ sampled: [[m("you", 0.9, 0.4, 0.2, 0.4)]], focal: ["you"], need: 0.32, blocked: [] })!;
-  assert.equal(edge.dx, 640, "a focal subject hanging off the right edge is centred");
-  const moved = motionSceneAutoFix({ sampled: [[m("a", 0.3, 0.4, 0.08, 0.4), m("b", 0.5, 0.4, 0.08, 0.4), m("c", 0.4, 0.4, 0.08, 0.4)]], focal: ["a", "b"], need: 0.3, blocked: [["a", "b", "c"]] })!;
-  assert.ok(moved.items!.c.dx > 150, "the bystander moves to the outer side of the pair");
-  assert.equal(motionSceneAutoFix({ sampled: [[m("you", 0.45, 0.4, 0.1, 0.4)]], focal: ["you"], need: 0.32, blocked: [] }), undefined);
-  assert.match(motionSceneFixHtml("<html><head><title>x</title></head></html>", small), /<head><script data-motion-fix="1">window\.__motionKitFix=\{"zoom":1\.5\};<\/script>/);
-  console.log("auto fix ok");
-}
-
-// Cast looks: learned once from the first scene, written into later scenes that mark the same person.
-import { motionSceneCastHtml, motionSceneCastLearn, motionSceneCastPrompt } from "../src/lib/motionSceneBlueprint.js";
+// Cast looks: learned once from the first scene that draws a person, then given to later scenes in the prompt.
+import { motionSceneCastLearn, motionSceneCastPrompt } from "../src/lib/motionSceneBlueprint.js";
 {
   const looks: Record<string, Record<string, string | number | boolean>> = {};
-  motionSceneCastLearn(looks, [{ id: "You", x: 0, y: 0, w: 0.1, h: 0.3, src: "kit", look: { top: "#7a2e2a", head: "kettle" } }, { id: "column", x: 0, y: 0, w: 0.3, h: 0.2, src: "kit" }]);
-  motionSceneCastLearn(looks, [{ id: "you", x: 0, y: 0, w: 0.1, h: 0.3, src: "kit", look: { top: "#00ff00" } }]);
+  motionSceneCastLearn(looks, [{ id: "You", x: 0, y: 0, w: 0.1, h: 0.3, src: "fig", look: { top: "#7a2e2a", head: "kettle" } }, { id: "column", x: 0, y: 0, w: 0.3, h: 0.2, src: "fig" }]);
+  motionSceneCastLearn(looks, [{ id: "you", x: 0, y: 0, w: 0.1, h: 0.3, src: "fig", look: { top: "#00ff00" } }]);
   assert.deepEqual(looks, { you: { top: "#7a2e2a", head: "kettle" } }, "the first scene defines a person; later scenes do not change it");
-  const page = motionSceneCastHtml("<html><head></head><body><script>stage.push({ fn: 'person', mark: 'you', x: 1 });</script></body></html>", looks);
-  assert.match(page, /<head><script data-motion-cast="1">window\.__motionKitCast=\{"you":\{"top":"#7a2e2a","head":"kettle"\}\};<\/script>/);
-  assert.equal(motionSceneCastHtml("<html><head></head><body>mark: 'miklos'</body></html>", looks).includes("data-motion-cast"), false);
+  motionSceneCastLearn(looks, [{ id: "miklos", x: 0, y: 0, w: 0.1, h: 0.3, look: { top: "#555555" } }]);
+  assert.equal(looks.miklos, undefined, "only figure-table marks teach looks");
   assert.match(motionSceneCastPrompt(looks, ["you", "miklos"])!, /CAST LOOK .*you \{"top":"#7a2e2a","head":"kettle"\}/);
   console.log("cast looks ok");
 }

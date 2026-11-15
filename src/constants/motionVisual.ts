@@ -36,14 +36,15 @@ export const MOTION_VISUAL = {
   LEGACY_LIBRARY: "library",
   SCENES_DONE: "Đã dựng xong các cảnh",
   LEGACY_LIBRARY_PROFILE: "horror" as const,
+  // A scene drawn before the figure table cannot follow "Cách dựng"; it is drawn again by the next scene build.
+  LEGACY_SCENE: "Cảnh dựng theo cách cũ – cần dựng lại.",
   PROFILES: Object.fromEntries(Object.entries(MOTION_DRAW_STYLES).map(([id, style]) => [id, { ...FAMILY_METADATA[style.family], vi: style.label.vi, en: style.label.en, hint: style.hint, preview: style.preview }])) as Record<keyof typeof MOTION_DRAW_STYLES, (typeof FAMILY_METADATA)["history"] & { hint: { vi: string; en: string }; preview: string }>,
   TEXT: {
     vi: {
       title: "Cách dựng",
       kit: "Bộ vẽ chuẩn",
-      restyleNote: (from: string, to: string) => `Cảnh đang dựng theo ${from}. Bấm “Chuyển sang ${to}” để vẽ lại hình, giữ nguyên kịch bản và phân cảnh.`,
-      restyleBtn: (to: string) => `Chuyển sang ${to}`,
-      kitHint: "Giống Dựng cảnh AI: AI dựng bối cảnh, máy quay và chuyển động; người, con vật, xe cộ và cảnh vật vẽ bằng bộ vẽ chuẩn theo kiểu hình để luôn đúng style",
+      legacyNote: (count: number) => `${count} cảnh được dựng theo cách cũ (trước khung sườn chung) – bấm dựng cảnh để vẽ lại; kịch bản và phân cảnh giữ nguyên.`,
+      kitHint: "Cùng cảnh AI đã dựng: người, con vật, xe cộ, nhà cửa, cây cối, đồ vật và biểu đồ được vẽ lại bằng bộ vẽ chuẩn theo kiểu hình, giữ đúng vị trí, kích thước và màu AI chọn; đổi qua lại không cần dựng lại cảnh",
       remotion: "Dựng cảnh AI",
       remotionHint: "AI tạo trọn cảnh và chuyển động theo kịch bản",
       profile: "Kiểu vẽ",
@@ -77,9 +78,8 @@ export const MOTION_VISUAL = {
     en: {
       title: "Video construction",
       kit: "Standard figure kit",
-      restyleNote: (from: string, to: string) => `Scenes are built with ${from}. Press “Switch to ${to}” to redraw the pictures while keeping the script and scene plan.`,
-      restyleBtn: (to: string) => `Switch to ${to}`,
-      kitHint: "Same as AI scenes: AI builds setting, camera and motion; people, animals, vehicles and scenery are drawn by the standard figure kit in the selected style",
+      legacyNote: (count: number) => `${count} scenes were built the old way (before the shared figure table) – build scenes to redraw them; the script and scene plan stay the same.`,
+      kitHint: "The same AI scenes: people, animals, vehicles, buildings, trees, props and charts are redrawn by the standard figure kit in the selected style, keeping the position, size and colours the AI chose; switching needs no new drawing",
       remotion: "AI scenes",
       remotionHint: "Generate complete scenes and motion from the script",
       profile: "Visual style",

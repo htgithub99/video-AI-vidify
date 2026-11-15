@@ -284,6 +284,9 @@ export interface MotionRemotionSpec {
   height: number;
   motion: boolean;
   profileId: MotionRemotionProfile;
+  // How the figures of scenes written against the figure contract are drawn: true = "Bộ vẽ chuẩn", otherwise the scene's own drawing.
+  figureKit?: boolean;
+  proportion?: import("../constants/motionDrawStyles/types.js").MotionProportionId;
   assets: Record<string, MotionVectorAsset>;
   scenes: MotionRemotionTimedScene[];
   subtitles: NonNullable<MotionSpec["subtitles"]>;

@@ -8,8 +8,6 @@ export const COMIC_DRAW_STYLE: MotionDrawStyleSpec = {
   title: "VISUAL STYLE (inked comic):",
   look:
     "- Look: hand-inked comic illustration (WW2 daily-life video-like). Each shape is one closed Path2D with a muted fill, a darker shade side inside clip(p) and a bold black (#15140f) stroke; add short interior ink lines for folds, seams and texture. People about 5 heads tall, paper-white faces shaded grey on one side, dot eyes; backgrounds dense with outlined leaves, dirt banks, roots and grass.",
-  kitLookLine:
-    "- Look: hand-inked comic illustration (WW2 daily-life video-like); the kit draws every figure, animal, building, plant, sky and effect in this look, and the few shapes you draw yourself copy it: one closed Path2D, muted fill, darker shade side, bold black stroke, a few interior ink lines; trench, foxhole and forest-edge backgrounds use MotionKit.terrain kind bank and bushes.",
   kitLook: "comic",
   figure: "history",
   proportion: "storybook",

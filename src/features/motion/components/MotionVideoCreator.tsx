@@ -30,7 +30,7 @@ import { MOTION_LANGUAGES, MOTION_LANGUAGE_CODES } from "../../../constants/moti
 import { motionLanguageCode } from "../../../lib/motionLanguage.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
-import { Activity, Shuffle, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, ShieldCheck, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, ShieldCheck, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
 import { FC, useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { isRemotionSpec } from "../../../lib/motionVisual.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
@@ -279,8 +279,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
     setSceneAction(key);
     void work().finally(() => setSceneAction(null));
   };
-  const builtWithKit = state.script?.gen?.remotion?.settings?.figureKit === true;
-  const restyleNeeded = !!builtCount && builtWithKit !== (state.visualSettings.figureKit === true);
+  // Scenes on the figure table follow "Cách dựng" on the spot; scenes drawn before it are redrawn by the next scene build.
+  const legacyCount = Object.values(state.script?.gen?.remotion?.scenes || {}).flat().filter((scene) => !!scene.html && scene.html.figures !== true).length;
   const scenesBusy = busyKind === MOTION_TEXT_SCENES;
   const sceneTotal = remotionProgress?.planned ? remotionProgress.total : 0;
   const estimateTotal = studio.compiled?.spec.duration || 0;
@@ -916,20 +916,20 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
             <StudioCard className={cardCls}>
               <StepHeader n={MOTION_TEXT_AI_2} icon={Box} title={text.STEP_SCENES}
                 badge={sceneTotal ? MOTION_TEMPLATE_SYMBOL_4(String(builtCount), String(sceneTotal)) : undefined}
-                hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.RESTYLE, tone: MOTION_NOTICE_IDS.INFO, text: visualText.restyleNote(builtWithKit ? visualText.kit : visualText.remotion, builtWithKit ? visualText.remotion : visualText.kit), show: restyleNeeded && !scenesBusy }]} />}
+                hint={<MotionNoticeHint notices={[{ id: MOTION_NOTICE_IDS.LEGACY, tone: MOTION_NOTICE_IDS.INFO, text: visualText.legacyNote(legacyCount), show: legacyCount > 0 && !scenesBusy }]} />}
               />
               <div className={MOTION_STYLES.SPACE_Y_3}>
                 <p className={MOTION_STYLES.TEXT_11PX_LEADING_RELAXED_TEXT_SLATE_500}>{visualText.sceneHint}</p>
                 <StudioInput value={sceneNote} onChange={(e) => setSceneNote(e.target.value)} placeholder={text.SCENES_NOTE} className={cn(inputCls, MOTION_STYLES.PY_1_5_TEXT_11PX)} disabled={studio.busy} />
                 <div className={MOTION_STYLES.SCENE_BAR}>
                   <ActionBtn
-                    icon={restyleNeeded ? Shuffle : Wand2}
+                    icon={Wand2}
                     className={MOTION_STYLES.SCENE_BAR_BUTTON}
                     busy={scenesBusy || (sceneAction === MOTION_NOTICE_IDS.CONTINUE && studio.busy)}
                     onClick={() => runSceneAction(MOTION_NOTICE_IDS.CONTINUE, () => studio.buildScenes({ note: sceneNote || undefined }))}
                     disabled={studio.busy}
                   >
-                    {scenesBusy ? text.SCENES_RUNNING : restyleNeeded ? visualText.restyleBtn(builtWithKit ? visualText.remotion : visualText.kit) : builtCount ? text.SCENES_CONTINUE : text.SCENES_BTN}
+                    {scenesBusy ? text.SCENES_RUNNING : builtCount ? text.SCENES_CONTINUE : text.SCENES_BTN}
                   </ActionBtn>
                   {scenesBusy ? (
                     <StopBtn className={MOTION_STYLES.SCENE_BAR_BUTTON} onClick={() => void studio.cancelStory()} label={storyStopping ? text.STOPPING : text.STOP_AI} stopping={storyStopping} />
@@ -956,6 +956,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     <MotionRemotionScenes
                       script={state.script}
                       renderBehavior={state.renderBehavior}
+                      figures={state.visualSettings}
                       language={currentLang}
                       onRedo={(scene) => void studio.buildScenes({ scenes: [scene.id], note: sceneNote || undefined })}
                       onRetryFailed={() => void studio.buildScenes({ retryFailed: true })}

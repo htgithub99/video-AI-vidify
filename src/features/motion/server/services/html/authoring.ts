@@ -282,8 +282,16 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   ].join(RT_MAINTENANCE.NEWLINE);
   const key = motionInputKey(prompt);
   const raw = opts.draft?.inputKey === key && opts.draft.rows.length ? { beats: opts.draft.rows } : opts.ai ? await opts.ai(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : await runMotionAi(prompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log);
-  const rows = raw.beats;
+  let rows = raw.beats;
   if (!Array.isArray(rows)) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
+  // The writer gets one counted rewrite while the text is fresh; code only trims sentences when that is still too long.
+  const written = countChapterUnits(rows);
+  if (!stretch && opts.draft?.inputKey !== key && written > maxUnits * W.OVER.TOLERANCE) {
+    opts.log?.(W.OVER.LOG(chapter.id, 1, written, maxUnits));
+    const again = [prompt, W.OVER.RULE(written, units, maxUnits, rows.length)].join(RT_MAINTENANCE.NEWLINE);
+    const shorter = await (opts.ai ? opts.ai(again, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : runMotionAi(again, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log)).catch(() => undefined);
+    if (Array.isArray(shorter?.beats) && shorter.beats.length && countChapterUnits(shorter.beats) < written) rows = shorter.beats;
+  }
   opts.onDraft?.({ inputKey: key, rows, pending: [] });
   return remember(renamedBeats(normalizeBeats(normalizeMotionChapterMetadata(fitLength(rows)), chapter.id, analysis), analysis, opts.log));
 };

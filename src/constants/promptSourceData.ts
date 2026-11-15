@@ -16,6 +16,5 @@ export const PROMPT_REFERENCE_DOC = {
   HEX: "hex",
   MIME: "text/plain",
   ENCODING: "utf8",
-  KIT_NAME: "motionkit-guide.txt",
   FIGURE_NAME: "figure-guide.txt",
 } as const;

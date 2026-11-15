@@ -3,6 +3,7 @@ import { chromium, type Browser, type Page } from "playwright";
 import { createHash, randomUUID } from "node:crypto";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { motionHtmlHostDocument } from "../../../../../lib/motionHtmlHost.js";
+import type { MotionFigureRender } from "../../../../../lib/motionFigures.js";
 import type { MotionHtmlChange, MotionHtmlFrameInput, MotionHtmlMark } from "../../../../../types/motionHtmlScene.js";
 const timedOutFrames = new Map<string, number>();
 let thumbnailBrowser: Promise<Browser> | undefined;
@@ -31,7 +32,7 @@ export const withMotionThumbnailBrowser = async <T>(idleMs: number, use: (browse
       }, idleMs);
   }
 };
-export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, headless = true, shared?: Browser) => {
+export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, headless = true, shared?: Browser, render?: MotionFigureRender) => {
   signal?.throwIfAborted();
   let owned = !shared?.isConnected();
   let browser = owned ? await chromium.launch({ executablePath: findNativeChrome(), headless }) : shared!;
@@ -46,7 +47,7 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
       const next = await browser.newPage();
       opened.push(next);
       await next.route(RT_MAINTENANCE.ALL_REQUESTS_PATTERN, (route) => route.abort());
-      await next.setContent(motionHtmlHostDocument(html, randomUUID()), { waitUntil: RT_MAINTENANCE.LOAD });
+      await next.setContent(motionHtmlHostDocument(html, randomUUID(), render), { waitUntil: RT_MAINTENANCE.LOAD });
       return next;
     };
     let page = await openPage();

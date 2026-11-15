@@ -13,6 +13,7 @@ export const MOTION_VOICE = {
     TOLERANCE: 0.05,
     MAX_STRETCH: 0.12,
     PASSES: 2,
+    LEVEL_LOG: (lines: number, before: number, after: number): string => `Cân tốc độ giữa các đoạn: ${lines} đoạn được đọc lại ở tốc độ chung; độ lệch lớn nhất giữa các đoạn ${(before * 100).toFixed(0)}% → ${(after * 100).toFixed(0)}%.`,
     UNFIT_LOG: (sentences: number): string => `Hồ sơ tốc độ mẫu không hợp với giọng/ngôn ngữ này (${sentences} câu cần đổi tốc độ quá giới hạn): giữ tốc độ tự nhiên của giọng và chỉ cân các câu về cùng một mức.`,
     MIN_VOICED: 0.25,
     SPLIT: /(?<=[.!?\u2026]["'\u201d\u2019)\]]*)\s+/u,

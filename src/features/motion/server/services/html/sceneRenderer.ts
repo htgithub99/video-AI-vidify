@@ -11,6 +11,7 @@ import { getFfmpegPath } from "../../../../../server/services/shortsPreprocessSe
 import { getMotionRootDirectory } from "../motionLibraryService.js";
 import { motionHtmlFrame } from "../../../../../lib/motionHtmlScene.js";
 import { openMotionHtmlRuntime } from "./sceneRuntime.js";
+import { motionFigureRenderOf } from "../../../../../lib/motionFigures.js";
 import { chromium, type Browser } from "playwright";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { MOTION_GPU_CHROME } from "../../../../../constants/motionGpuChrome.js";
@@ -150,7 +151,7 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
           if (!active?.html) throw new Error(RT_MAINTENANCE.THIEU_TAI_LIEU_HTML_CUA_CANH_CAN_XUAT);
           if (current !== active.html.hash) {
             await runtime?.close();
-            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser());
+            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec));
             current = active.html.hash;
           }
           const subtitle = spec.subtitles.find((item) => frame / spec.fps >= item.start && frame / spec.fps < item.end);
@@ -162,11 +163,11 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
           for (let retry = 0; retry < MOTION_HTML_QUALITY.BLANK.RETRIES && image.length < blankBytes && !blankScenes.has(active.id); retry++) {
             opts.log?.(MOTION_HTML_QUALITY.BLANK.LOG(active.id, frame, retry + 1));
             await runtime?.close();
-            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser());
+            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec));
             image = await runtime.render(input, subtitle?.text, spec.fontFamily);
             if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes && (await leaveGpu(MOTION_GPU_CHROME.CPU_REASON.BLANK))) {
               await runtime?.close();
-              runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser());
+              runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser(), motionFigureRenderOf(spec));
               image = await runtime.render(input, subtitle?.text, spec.fontFamily);
             }
             if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes) {
@@ -201,7 +202,7 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
           active.html.status = RT_MAINTENANCE.RETRY_WAIT;
           active.htmlRequest = { id: randomUUID(), attempt: artifact.attempts, status: RT_MAINTENANCE.RETRY_WAIT, error: String((error as Error).message) };
           opts.log?.(`${RT_MAINTENANCE.CANH_2}${active.id}${RT_MAINTENANCE.LOI_KHI_XUAT_TAO_LAI_TRON_CANH_TU_PROMPT_DA}`);
-          await (opts.recoverScene || generateMotionHtmlScene)(active, { width: spec.width, height: spec.height, seconds: artifact.duration, profile: spec.profileId, scope: artifact.scope, language: artifact.language, figureKit: artifact.figureKit === true, cast: artifact.cast, continuity: artifact.continuity }, { exec: artifact.execution && { ...artifact.execution, renderRecovery: true }, signal: opts.signal, log: opts.log || (() => undefined) });
+          await (opts.recoverScene || generateMotionHtmlScene)(active, { width: spec.width, height: spec.height, seconds: artifact.duration, profile: spec.profileId, scope: artifact.scope, language: artifact.language, figureKit: spec.figureKit === true, proportion: spec.proportion, cast: artifact.cast, continuity: artifact.continuity }, { exec: artifact.execution && { ...artifact.execution, renderRecovery: true }, signal: opts.signal, log: opts.log || (() => undefined) });
         } else if (/Thiếu tài liệu HTML/.test(String((error as Error).message))) throw error;
         else {
           opts.log?.(`${RT_MAINTENANCE.XUAT_CANVAS_CHAY_LAI_CUNG_HTML}${String((error as Error).message)}${RT_MAINTENANCE.SENTENCE_END}`);

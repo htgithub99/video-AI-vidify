@@ -5,6 +5,7 @@ import { stringifyJson } from "../../../../../lib/jsonStringify.js";
 import { MOTION_VISUAL as V } from "../../../../../constants/motionVisual.js";
 import { MOTION_REMOTION_LAYOUT as L } from "../../../../../constants/motionRemotionLayout.js";
 import { motionPlanSettings, motionVisualSettingsFor } from "../../../../../lib/motionVisual.js";
+import { motionProportionOf } from "../../../../../lib/motionDrawStyle.js";
 import { layoutRemotionNodes, validateRemotionSpec, remotionStateMissingScenes } from "../../../../../lib/motionRemotion.js";
 import { MOTION_SCENE_COMPOSITION as C } from "../../../../../constants/motionSceneComposition.js";
 import { motionBeatLines } from "../../../../../lib/motionBeatLines.js";
@@ -21,7 +22,7 @@ import { compileRemotionSound } from "./soundCompiler.js";
 import { motionMusicMood, motionMusicSegments } from "../motionMusicService.js";
 import type { MotionBeatLine } from "../../../../../lib/motionBeatLines.js";
 import { motionInsertChapterCards } from "./chapterCards.js";
-import { motionCompactSpecScene } from "../../../../../lib/motionHtmlKit.js";
+import { motionCompactSpecScene } from "../../../../../lib/motionHtmlScene.js";
 import { motionStorytellingSilent } from "../../../../../lib/motionStorytelling.js";
 import { MOTION_CHAPTER_CARD as CARD } from "../../../../../constants/motionChapterCard.js";
 const compactTimedScene = (scene: MotionRemotionTimedScene): MotionRemotionTimedScene => {
@@ -130,6 +131,8 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
     renderBehavior: behavior,
     resolvedSettings: { layoutRevision: L.REVISION, effectRevision: L.EFFECT_REVISION, sceneRevision: L.SCENE_REVISION, behavior },
     profileId: settings.profileId,
+    figureKit: settings.figureKit === true,
+    proportion: motionProportionOf(settings),
     assets: Object.fromEntries(Object.entries(state.assets).filter(([key]) => used.has(key))),
     scenes: timedScenes.map(compactTimedScene),
     subtitles,

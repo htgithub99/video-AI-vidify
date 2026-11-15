@@ -203,31 +203,13 @@ export const motionSceneBlueprint = (template: string | undefined, input: { shot
   const time = pick(B.TIME, setting, "day");
   return { shot, groundY, r, map, time, ground: pick(B.GROUND, setting, B.DEFAULT_GROUND), mist: B.MIST_RE.test(setting), explicit, items: list.map((item) => placed.get(item.id)!).filter(Boolean) };
 };
-export const motionSceneBlueprintPrompt = (plan: MotionSceneBlueprint | undefined): string | undefined => {
-  if (!plan || plan.map || !plan.items.length) return undefined;
-  const side = (facing: number) => (facing > 0 ? "right" : "left");
-  const lines = plan.items.map((item) =>
-    B.PROMPT_ITEM(
-      [
-        `${item.id}${item.focal ? " (focal)" : ""}: ${item.fn}${item.kind ? ` ${item.kind}` : ""} at x ${item.x}, y ${item.y}, ${item.sizeKey} ${item.size}, facing ${side(item.facing)}`,
-        item.count ? `about ${item.count} figures over ${item.spread}px` : "",
-        item.target ? `stands next to ${item.target} and faces it` : "",
-        item.owner ? `held by or lying beside ${item.owner}` : "",
-        item.travelFrom !== undefined ? `travels from x ${item.travelFrom} to x ${item.x} during the scene` : "",
-      ]
-        .filter(Boolean)
-        .join("; "),
-    ),
-  );
-  return [B.PROMPT_HEAD(plan.shot, plan.groundY), ...lines, B.PROMPT_RULES].join("\n");
-};
 const centre = (mark: MotionHtmlMark) => mark.x + mark.w / 2;
-// Checks a drawing against the blueprint's relations, from the boxes the kit recorded: an acting pair must stand together
+// Checks a drawing against the blueprint's relations, from the boxes the figure table recorded: an acting pair must stand together
 // with no other required person between them, and large objects must not sit on top of each other.
 export const motionSceneRelationIssues = (plan: MotionSceneBlueprint | undefined, marks: MotionHtmlMark[]): { apart: [string, string][]; blocked: [string, string, string][]; stacked: [string, string][] } => {
   const out = { apart: [] as [string, string][], blocked: [] as [string, string, string][], stacked: [] as [string, string][] };
   if (!plan || plan.map) return out;
-  const box = (id: string) => marks.find((mark) => String(mark.id).toLowerCase() === id && mark.src === "kit") || marks.find((mark) => String(mark.id).toLowerCase() === id);
+  const box = (id: string) => marks.find((mark) => String(mark.id).toLowerCase() === id && mark.src === "fig") || marks.find((mark) => String(mark.id).toLowerCase() === id);
   const people = plan.items.filter((item) => item.fn === "person");
   // Only two single people are held to "stand together"; groups, vehicles and places relate at a distance.
   const single = (id?: string) => plan.items.some((entry) => entry.id === id && entry.fn === "person");
@@ -254,65 +236,13 @@ export const motionSceneRelationIssues = (plan: MotionSceneBlueprint | undefined
   );
   return out;
 };
-export interface MotionSceneFix {
-  zoom?: number;
-  dx?: number;
-  items?: Record<string, { dx: number }>;
-  add?: Record<string, string | number>[];
-  labels?: { id: string; text: string }[];
-}
-// Works out a code repair from the recorded boxes: zoom so the focal subjects reach the size the layout asks for (never
-// pushing their heads out of the top), pan so they sit inside the frame, and move a bystander out from between an acting pair.
-export const motionSceneAutoFix = (input: { sampled: MotionHtmlMark[][]; focal: string[]; need: number; blocked: [string, string, string][] }): MotionSceneFix | undefined => {
-  const F = B.FIX;
-  const kit = (marks: MotionHtmlMark[], id: string) => marks.find((mark) => String(mark.id).toLowerCase() === id && mark.src === "kit");
-  const key = input.sampled[0] || [];
-  const fix: MotionSceneFix = {};
-  let zoom = 1;
-  for (const id of input.focal) {
-    const best = input.sampled.map((marks) => kit(marks, id)).filter((mark): mark is MotionHtmlMark => !!mark && mark.h > 0).sort((a, b) => b.h - a.h)[0];
-    if (!best || best.h >= input.need) continue;
-    const room = (best.y + best.h - F.TOP) / best.h;
-    zoom = Math.max(zoom, Math.min(F.MAX_ZOOM, room, (input.need * F.HEADROOM) / best.h));
-  }
-  if (zoom >= F.MIN_ZOOM) fix.zoom = Number(zoom.toFixed(3));
-  else zoom = 1;
-  const boxes = input.focal.map((id) => kit(key, id)).filter((mark): mark is MotionHtmlMark => !!mark);
-  if (boxes.length) {
-    const left = Math.min(...boxes.map((mark) => mark.x)),
-      right = Math.max(...boxes.map((mark) => mark.x + mark.w)),
-      mid = (left + right) / 2;
-    const spill = 0.5 + (left - 0.5) * zoom < F.EDGE || 0.5 + (right - 0.5) * zoom > 1 - F.EDGE;
-    const scale = boxes[0].k || 1;
-    const dx = ((mid - 0.5) * F.DESIGN_WIDTH) / scale;
-    if (spill && (right - left) * zoom <= 1 - 2 * F.EDGE && Math.abs(dx) >= F.MIN_DX) fix.dx = Math.round(dx);
-  }
-  for (const [a, b, c] of input.blocked) {
-    const first = kit(key, a),
-      second = kit(key, b),
-      third = kit(key, c);
-    if (!first || !second || !third) continue;
-    const right = Math.max(first.x + first.w, second.x + second.w),
-      left = Math.min(first.x, second.x);
-    const target = right + F.GAP + third.w / 2 <= 1 - F.EDGE ? right + F.GAP + third.w / 2 : left - F.GAP - third.w / 2;
-    (fix.items ||= {})[c] = { dx: Math.round(((target - centre(third)) * F.DESIGN_WIDTH) / (third.k || 1)) };
-  }
-  return fix.zoom || fix.dx || fix.items ? fix : undefined;
-};
-export const motionSceneFixHtml = (html: string, fix: MotionSceneFix): string => (B.FIX_HEAD.test(html) ? html.replace(B.FIX_HEAD, (head) => head + B.FIX_SCRIPT(fix)) : B.FIX_SCRIPT(fix) + html);
 export type MotionCastLooks = Record<string, Record<string, string | number | boolean>>;
-// Writes the stored looks of the people this scene marks into its page.
-export const motionSceneCastHtml = (html: string, looks: MotionCastLooks | undefined): string => {
-  const used = Object.fromEntries(Object.entries(looks || {}).filter(([id]) => new RegExp(`mark\\s*:\\s*['"\`]${id}['"\`]`, "i").test(html)));
-  if (!Object.keys(used).length) return html;
-  return B.FIX_HEAD.test(html) ? html.replace(B.FIX_HEAD, (head) => head + B.CAST_SCRIPT(used)) : B.CAST_SCRIPT(used) + html;
-};
 // Records the look of every marked person a finished scene drew, unless an earlier scene already defined that person.
 export const motionSceneCastLearn = (looks: MotionCastLooks, marks: MotionHtmlMark[]): void => {
   for (const mark of marks) {
     const id = String(mark.id).toLowerCase();
     const seed = looks[id]?.[B.CAST_SEED.FLAG] ? looks[id] : undefined;
-    if (mark.src === "kit" && mark.look && Object.keys(mark.look).length && (!looks[id] || seed)) looks[id] = { ...mark.look, ...Object.fromEntries(Object.entries(seed || {}).filter(([key]) => key !== B.CAST_SEED.FLAG)) };
+    if (mark.src === "fig" && mark.look && Object.keys(mark.look).length && (!looks[id] || seed)) looks[id] = { ...mark.look, ...Object.fromEntries(Object.entries(seed || {}).filter(([key]) => key !== B.CAST_SEED.FLAG)) };
   }
 };
 // Reads the colours a cast description states (coat, trim, trousers, hair, skin) into kit options. Only stated colours are
@@ -338,31 +268,53 @@ export const motionSceneCastPrompt = (looks: MotionCastLooks | undefined, ids: s
   const rows = ids.filter((id) => looks?.[id]).map((id) => `${id} ${JSON.stringify(looks![id])}`);
   return rows.length ? B.CAST_PROMPT(rows) : undefined;
 };
-export const motionSceneFixNotes = (fix: MotionSceneFix): string[] => [fix.zoom ? B.FIX_ZOOM(fix.zoom) : "", fix.dx ? B.FIX_PAN : "", fix.items ? B.FIX_MOVE(Object.keys(fix.items)) : "", fix.add?.length ? B.FIX_ADD(fix.add.map((item) => String(item.mark))) : "", fix.labels?.length ? B.FIX_LABELS(fix.labels.map((item) => item.text)) : ""].filter(Boolean);
 const seedOf = (id: string) => [...id].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) % 9973, 7);
-// Code-built scene from the blueprint, drawn only with the standard kit: used when the AI's own drawings keep failing.
+// Code-built scene from the blueprint, written on the figure table like any AI scene: its own plain functions draw the
+// figures in "Dựng cảnh AI", the kit draws them in "Bộ vẽ chuẩn". Used when the AI's own drawings keep failing.
+const boxOf = (item: MotionBlueprintItem): [number, number] => {
+  const unit = B.BOX[item.kind || ""] || B.BOX[item.fn === "crowd" ? "person" : item.fn] || B.BOX.prop;
+  return [Math.round(unit[0] * item.size), Math.round(unit[1] * item.size)];
+};
 export const motionSafeSceneSource = (plan: MotionSceneBlueprint): string => {
-  const data = JSON.stringify({ ...plan, items: plan.items.map((item) => ({ ...item, seed: seedOf(item.id) })) });
+  const data = JSON.stringify({ ...plan, items: plan.items.map((item) => ({ ...item, seed: seedOf(item.id), box: boxOf(item) })) }).replace(/</g, "\\u003c");
   const world = `
-    const k = smooth(0.08, 0.92, p), cam = input.cameraEnabled === false ? 0 : smooth(0.3, 1, p);
+    const k = smooth(0.08, 0.92, p), cam = input.cameraEnabled === false ? 0 : smooth(0.3, 1, p), zoom = 1 + 0.07 * cam;
     const at = (it) => (it.travelFrom === undefined ? it.x : lerp(it.travelFrom, it.x, k));
     const by = Object.fromEntries(P.items.map((it) => [it.id, it]));
-    MotionKit.frame(ctx, { x: 640, groundY: P.groundY, zoom: 1 + 0.07 * cam, shot: P.shot });
-    MotionKit.terrain(ctx, { kind: 'sky', time: P.time, x: 640, y: -260, width: 2300, height: 700, seed: 1 });
-    MotionKit.terrain(ctx, { kind: 'ground', ground: P.ground, x: 640, y: P.groundY - 3.6 * P.r, width: 2300, height: 720, dress: true, seed: 2 });
-    MotionKit.stage(ctx, P.items.map((it) => {
-      const x = at(it), moving = it.travelFrom !== undefined && k < 1, base = { fn: it.fn, mark: it.id, x, y: it.y, facing: it.facing, seed: it.seed };
+    ctx.translate(640, P.groundY); ctx.scale(zoom, zoom); ctx.translate(-640, -P.groundY);
+    const sky = SKY[P.time] || SKY.day, top = P.groundY - 3.6 * P.r;
+    let g = ctx.createLinearGradient(0, -200, 0, top); g.addColorStop(0, sky[0]); g.addColorStop(1, sky[1]);
+    ctx.fillStyle = g; ctx.fillRect(-300, -300, 1880, top + 300);
+    const land = GROUND[P.ground] || GROUND.grass;
+    g = ctx.createLinearGradient(0, top, 0, 900); g.addColorStop(0, land[0]); g.addColorStop(1, land[1]);
+    ctx.fillStyle = g; ctx.fillRect(-300, top, 1880, 1000);
+    ctx.strokeStyle = 'rgba(42,37,34,0.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-300, top); ctx.lineTo(1580, top); ctx.stroke();
+    if (P.mist) { ctx.fillStyle = 'rgba(240,240,236,0.45)'; ctx.fillRect(-300, top - 0.4 * P.r, 1880, 1.6 * P.r); }
+    const draw = (it) => {
+      const x = at(it), moving = it.travelFrom !== undefined && k < 1, walked = it.travelFrom === undefined ? undefined : Math.abs(x - it.travelFrom);
+      const base = { mark: it.id, x, y: it.y, h: it.box[0], w: it.box[1], facing: it.facing, seed: it.seed };
       const goal = it.target && by[it.target];
-      if (it.fn === 'person') return Object.assign(base, { r: it.size, pose: moving ? 'walk' : goal ? (p > 0.45 ? 'point' : 'talk') : it.focal ? 'talk' : 'stand', distance: it.travelFrom === undefined ? undefined : Math.abs(x - it.travelFrom), pointAt: goal && !moving ? [at(goal), goal.y - 1.5 * it.size] : undefined, lean: it.focal ? lerp(0, 6, cam) : 0, look: goal ? 0.8 : 0.2, talking: it.focal && Math.floor(t * 4) % 2 === 0 });
-      if (it.fn === 'crowd') return Object.assign(base, { r: it.size, count: it.count, rows: 2, spread: it.spread, pose: moving ? 'walk' : 'stand', distance: it.travelFrom === undefined ? undefined : Math.abs(x - it.travelFrom) });
-      if (it.fn === 'animal') return Object.assign(base, { kind: it.kind, p: it.size, pose: moving ? 'walk' : 'stand', distance: it.travelFrom === undefined ? undefined : Math.abs(x - it.travelFrom) });
-      if (it.fn === 'vehicle') return Object.assign(base, { kind: it.kind, p: it.size, moving, distance: it.travelFrom === undefined ? undefined : Math.abs(x - it.travelFrom) });
-      return Object.assign(base, { kind: it.kind, p: it.size });
-    }));
-    if (P.mist) MotionKit.scenery(ctx, { kind: 'mistBand', x: 640, y: P.groundY - 2.4 * P.r, r: 60, width: 2300, seed: 5 });
-    if (P.time === 'night' || P.time === 'dusk') MotionKit.effect(ctx, { kind: P.time, strength: 1 });`;
+      if (it.fn === 'person') return FIG.person(ctx, Object.assign(base, { pose: moving ? 'walk' : goal ? (p > 0.45 ? 'point' : 'talk') : it.focal ? 'talk' : 'stand', distance: walked, pointAt: goal && !moving ? [at(goal), goal.y - 0.7 * goal.box[0]] : undefined, lean: it.focal ? lerp(0, 6, cam) : 0 }));
+      if (it.fn === 'crowd') {
+        const n = Math.max(2, it.count || 6), rows = 2, cols = Math.ceil(n / rows), step = (it.spread || 6 * it.size) / cols;
+        for (let i = n - 1; i >= 0; i--) {
+          const row = i % rows, col = Math.floor(i / rows), s = row ? 0.88 : 1, mx = x - (it.spread || 0) / 2 + (col + 0.5) * step + (row ? step / 2 : 0), my = it.y - row * 0.5 * it.size;
+          FIG.person(ctx, Object.assign({}, base, { x: mx, y: my, h: it.box[0] * s, w: it.box[1] * s, seed: it.seed + i, pose: moving ? 'walk' : 'stand', distance: walked }));
+        }
+        return;
+      }
+      if (it.fn === 'animal') return FIG.animal(ctx, Object.assign(base, { kind: it.kind, pose: moving ? 'walk' : 'stand', distance: walked }));
+      if (it.fn === 'vehicle') return FIG.vehicle(ctx, Object.assign(base, { kind: it.kind, moving, distance: walked }));
+      if (it.fn === 'building') return FIG.building(ctx, Object.assign(base, { kind: it.kind }));
+      if (it.kind === 'bridge') return FIG.bridge(ctx, Object.assign(base, { y: it.y - it.box[0] }));
+      if (it.kind === 'wall' || it.kind === 'gate') return FIG.wall(ctx, Object.assign(base, { kind: it.kind }));
+      return FIG.prop(ctx, Object.assign(base, { kind: it.kind }));
+    };
+    P.items.slice().sort((a, b) => a.y - b.y).forEach(draw);
+    if (SHADE[P.time]) { ctx.fillStyle = SHADE[P.time]; ctx.fillRect(-300, -300, 1880, 1300); }`;
   const chart = `
-    MotionKit.frame(ctx, { shot: 'map', x: lerp(600, 680, smooth(0, 1, p)), y: 360, zoom: 1 + 0.06 * smooth(0.2, 1, p) });
+    const zoom = 1 + 0.06 * smooth(0.2, 1, p);
+    ctx.translate(640, 360); ctx.scale(zoom, zoom); ctx.translate(-lerp(600, 680, smooth(0, 1, p)), -360);
     ctx.fillStyle = '#e2d3b0'; ctx.fillRect(-200, -200, 1680, 1120);
     ctx.strokeStyle = 'rgba(90,70,40,0.18)'; ctx.lineWidth = 1;
     for (let g = -200; g < 1500; g += 80) { ctx.beginPath(); ctx.moveTo(g, -200); ctx.lineTo(g, 920); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-200, g * 0.6); ctx.lineTo(1480, g * 0.6); ctx.stroke(); }
@@ -375,12 +327,12 @@ export const motionSafeSceneSource = (plan: MotionSceneBlueprint): string => {
     ctx.strokeStyle = 'rgba(70,95,110,0.7)'; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(180, -200); ctx.bezierCurveTo(260, 80, 120, 260, 300, 420); ctx.bezierCurveTo(380, 500, 420, 560, 470, 610); ctx.stroke();
     ctx.strokeStyle = 'rgba(90,70,40,0.5)'; ctx.lineWidth = 3;
     for (let h = 0; h < 7; h++) { const hx = 760 + h * 62 + (h % 2) * 18, hy = 120 + (h % 3) * 34; ctx.beginPath(); ctx.moveTo(hx - 26, hy + 20); ctx.lineTo(hx, hy - 16); ctx.lineTo(hx + 26, hy + 20); ctx.stroke(); }
-    if (n > 1) MotionKit.arrow(ctx, { from: from, to: goal, curve: 0.18, width: 9, color: '#8a2f26', grow: k });
+    if (n > 1) FIG.arrow(ctx, { from: from, to: goal, curve: 0.18, width: 9, color: '#8a2f26', grow: k });
     P.items.forEach((it, i) => {
       const s = i === focal && n > 1 ? tip : spots[i], rad = it.focal ? 20 : 13;
-      ctx.beginPath(); ctx.arc(s[0], s[1], rad, 0, Math.PI * 2); ctx.fillStyle = it.focal ? '#8a2f26' : '#4d5661'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#26201c'; ctx.stroke();
+      ctx.beginPath(); ctx.arc(s[0], s[1], rad, 0, Math.PI * 2); ctx.fillStyle = it.focal ? '#8a2f26' : '#4d5661'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
       if (it.focal || i === (focal === n - 1 ? 0 : n - 1)) { const pulse = 0.5 + 0.5 * Math.sin(t * 3 + i); ctx.beginPath(); ctx.arc(s[0], s[1], rad + 8 + pulse * 10, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(138,47,38,' + (0.55 - pulse * 0.35).toFixed(2) + ')'; ctx.lineWidth = 3; ctx.stroke(); }
-      MotionKit.label(ctx, { x: s[0], y: s[1] - rad - 22, text: String(it.id).replace(/^./, (ch) => ch.toUpperCase()), size: 24 });
+      FIG.label(ctx, { x: s[0], y: s[1] - rad - 22, text: String(it.id).replace(/^./, (ch) => ch.toUpperCase()), size: 24 });
       if (window.motionMark) window.motionMark(ctx, it.id, s[0] - rad, s[1] - rad, rad * 2, rad * 2);
     });`;
   return `<!DOCTYPE html>
@@ -391,6 +343,65 @@ const canvas = document.getElementById('motion-canvas'), ctx = canvas.getContext
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, k) => a + (b - a) * clamp(k, 0, 1);
 const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+const INK = '#2a2522';
+const SKY = { day: ['#9cc3dc', '#e6eee4'], dawn: ['#c9a6c2', '#f2d9b8'], dusk: ['#d98d5e', '#f2d3a0'], night: ['#16203a', '#36486a'] };
+const GROUND = { grass: ['#8aa565', '#5f7d43'], sand: ['#d9c194', '#b99a68'], snow: ['#eef1f3', '#c9d2d8'], mud: ['#8a7353', '#5e4b34'], dirt: ['#b59c74', '#8c7352'], stone: ['#a29c8f', '#77716a'] };
+const SHADE = { night: 'rgba(16,22,48,0.35)', dusk: 'rgba(120,60,40,0.12)' };
+const shape = (c, fill, build) => { c.beginPath(); build(); c.closePath(); c.fillStyle = fill; c.fill(); c.lineWidth = 2; c.strokeStyle = INK; c.stroke(); };
+const own = {
+  person(c, o) {
+    const h = o.h, w = o.w, x = o.x, y = o.y, f = o.facing < 0 ? -1 : 1, hr = 0.13 * h, step = o.pose === 'walk' ? Math.sin((o.distance || 0) / (0.3 * h)) * 0.16 * w : 0;
+    c.lineCap = 'round'; c.lineWidth = Math.max(2, 0.07 * w); c.strokeStyle = INK;
+    [step, -step].forEach((s) => { c.beginPath(); c.moveTo(x, y - 0.42 * h); c.lineTo(x + s, y); c.stroke(); });
+    shape(c, o.top || '#6b7f99', () => { c.moveTo(x - 0.28 * w, y - 0.4 * h); c.lineTo(x - 0.22 * w, y - h + 2.1 * hr); c.lineTo(x + 0.22 * w, y - h + 2.1 * hr); c.lineTo(x + 0.28 * w, y - 0.4 * h); });
+    const hand = o.pose === 'point' || o.pose === 'raise' ? [x + f * 0.5 * w, y - 0.72 * h] : [x + f * 0.32 * w, y - 0.48 * h];
+    c.lineWidth = Math.max(2, 0.07 * w); c.beginPath(); c.moveTo(x + f * 0.18 * w, y - h + 2.4 * hr); c.lineTo(hand[0], hand[1]); c.stroke();
+    shape(c, o.skin || '#e3bf98', () => c.arc(x, y - h + hr, hr, 0, Math.PI * 2));
+    return { head: [x, y - h + hr], hand: hand };
+  },
+  animal(c, o) {
+    const h = o.h, w = o.w, x = o.x, y = o.y, f = o.facing < 0 ? -1 : 1, swing = o.pose === 'walk' ? Math.sin((o.distance || 0) / (0.25 * w)) * 0.06 * w : 0;
+    c.lineCap = 'round'; c.lineWidth = Math.max(3, 0.05 * w); c.strokeStyle = INK;
+    [-0.28, -0.18, 0.2, 0.3].forEach((d, i) => { c.beginPath(); c.moveTo(x + d * w, y - 0.45 * h); c.lineTo(x + d * w + (i % 2 ? swing : -swing), y); c.stroke(); });
+    shape(c, o.color || '#8a6a4a', () => c.ellipse(x, y - 0.55 * h, 0.36 * w, 0.17 * h, 0, 0, Math.PI * 2));
+    shape(c, o.color || '#8a6a4a', () => c.ellipse(x + f * 0.4 * w, y - 0.8 * h, 0.12 * w, 0.1 * h, f * -0.5, 0, Math.PI * 2));
+    const back = [x - f * 0.05 * w, y - 0.7 * h];
+    if (o.rider) own.person(c, Object.assign({}, o.rider, { x: back[0], y: back[1] + 0.1 * h, h: 0.62 * h, w: 0.22 * w, facing: f, pose: 'ride' }));
+    return { back: back };
+  },
+  vehicle(c, o) {
+    const h = o.h, w = o.w, x = o.x, y = o.y, wr = 0.17 * h;
+    shape(c, o.color || '#7a5236', () => c.rect(x - 0.48 * w, y - 0.75 * h, 0.96 * w, 0.45 * h));
+    shape(c, o.color2 || '#a9875d', () => c.rect(x - 0.3 * w, y - h, 0.4 * w, 0.25 * h));
+    [-0.3, 0.3].forEach((d) => shape(c, '#3b3632', () => c.arc(x + d * w, y - wr, wr, 0, Math.PI * 2)));
+  },
+  building(c, o) {
+    const h = o.h, w = o.w, x = o.x, y = o.y;
+    shape(c, o.color || '#c9b28a', () => c.rect(x - 0.42 * w, y - 0.62 * h, 0.84 * w, 0.62 * h));
+    shape(c, o.roof || '#8a4a36', () => { c.moveTo(x - 0.5 * w, y - 0.6 * h); c.lineTo(x, y - h); c.lineTo(x + 0.5 * w, y - 0.6 * h); });
+    shape(c, '#4a3a2c', () => c.rect(x - 0.08 * w, y - 0.3 * h, 0.16 * w, 0.3 * h));
+  },
+  prop(c, o) { shape(c, o.color || '#9a8466', () => c.rect(o.x - o.w / 2, o.y - o.h, o.w, o.h)); },
+  bridge(c, o) {
+    const w = o.w, x = o.x, y = o.y;
+    shape(c, o.color || '#8a6a4a', () => { c.moveTo(x - w / 2, y); c.lineTo(x + w / 2, y); c.lineTo(x + w / 2, y + 0.12 * o.h); c.quadraticCurveTo(x, y + 0.5 * o.h, x - w / 2, y + 0.12 * o.h); });
+  },
+  wall(c, o) {
+    const w = o.w, h = o.h, x = o.x, y = o.y, n = Math.max(3, Math.round(w / (0.5 * h)));
+    shape(c, o.color || '#a39a8a', () => { c.moveTo(x - w / 2, y); for (let i = 0; i <= n; i++) { const px = x - w / 2 + (w * i) / n; c.lineTo(px, y - (i % 2 ? h : 0.85 * h)); } c.lineTo(x + w / 2, y); });
+  },
+  arrow(c, o) {
+    const a = o.from, b = o.to, g = o.grow == null ? 1 : o.grow, tip = [a[0] + (b[0] - a[0]) * g, a[1] + (b[1] - a[1]) * g], ang = Math.atan2(tip[1] - a[1], tip[0] - a[0]), wd = o.width || 8;
+    c.strokeStyle = o.color || '#8a2f26'; c.fillStyle = o.color || '#8a2f26'; c.lineWidth = wd; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(tip[0], tip[1]); c.stroke();
+    c.beginPath(); c.moveTo(tip[0] + Math.cos(ang) * wd * 1.6, tip[1] + Math.sin(ang) * wd * 1.6); c.lineTo(tip[0] + Math.cos(ang + 2.5) * wd * 2.2, tip[1] + Math.sin(ang + 2.5) * wd * 2.2); c.lineTo(tip[0] + Math.cos(ang - 2.5) * wd * 2.2, tip[1] + Math.sin(ang - 2.5) * wd * 2.2); c.closePath(); c.fill();
+  },
+  label(c, o) {
+    c.font = 'bold ' + (o.size || 22) + 'px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.lineWidth = 5; c.strokeStyle = 'rgba(255,250,240,0.9)'; c.strokeText(o.text, o.x, o.y); c.fillStyle = INK; c.fillText(o.text, o.x, o.y);
+  },
+};
+const FIG = window.MotionFigures.use(own);
 window.motionScene = { ready: Promise.resolve(), renderAt: async function (input = {}) {
   const width = Math.max(320, Number(input.width) || 1280), height = Math.max(180, Number(input.height) || 720), dur = Math.max(0.1, Number(input.duration) || 10);
   if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }

@@ -26,7 +26,11 @@ import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
 import { motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
 import { motionHtmlDrawIssue, motionHtmlGraphics } from "../../../../lib/motionHtmlPrompt.js";
-import { motionHtmlKitDoc, motionHtmlKitDocFor, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../lib/motionHtmlKit.js";
+import { motionHtmlFigureDoc } from "../../../../lib/motionHtmlFigure.js";
+import { motionHtmlFigures, motionHtmlFiguresIssue } from "../../../../lib/motionFigures.js";
+import { motionProportionOf } from "../../../../lib/motionDrawStyle.js";
+import { MOTION_FIGURES } from "../../../../constants/motionFigures.js";
+import { PROMPT_REFERENCE_DOC } from "../../../../constants/promptSourceData.js";
 import { motionHtmlSource } from "../../../../lib/motionHtmlScene.js";
 import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
 const dependencies = { runMotionAi, rasterizeMotionSvgs, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
@@ -77,24 +81,26 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       };
       if (settings.figureKit === true) {
         opts.log?.(T.LOG_KIT);
+        // The thumbnail page is written against the same figure table as the scenes; the kit draws its figures when it is captured.
+        const render = { kit: true, profile: settings.profileId, proportion: motionProportionOf(settings) };
         const htmlExec: MotionAiExecution = { ...exec, outputFormat: RT_MAINTENANCE.HTML, singleResponse: true };
-        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, motionHtmlGraphics(settings.profileId, true), motionHtmlKitDocFor(motionHtmlKitDoc(settings.profileId), stringifyJson(brief), false, T.DOC_SIZE), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
+        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, motionHtmlGraphics(settings.profileId), PROMPT_REFERENCE_DOC.WRAP(PROMPT_REFERENCE_DOC.FIGURE_NAME, [motionHtmlFigureDoc(settings.profileId, settings.proportion), MOTION_FIGURES.DOC].join(RT_MAINTENANCE.NEWLINE)), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
         let reason = "";
         for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
           opts.signal?.throwIfAborted();
           const prompt = reason ? [base, T.HTML_RETRY(reason)].join(RT_MAINTENANCE.NEWLINE) : base;
           const source = motionHtmlSource(await deps.runMotionAi(prompt, T.HTML_ARTIFACT, htmlExec, opts.signal, opts.log, images));
-          const issue = motionHtmlKitIssue(source) || motionHtmlDrawIssue(source) || (T.HEADLINE_CALL.test(source) ? undefined : T.HEADLINE_MISSING);
+          const issue = motionHtmlFiguresIssue(source) || motionHtmlDrawIssue(source) || (T.HEADLINE_CALL.test(source) ? undefined : T.HEADLINE_MISSING);
           if (issue) {
             reason = issue;
             opts.log?.(T.LOG_KIT_RETRY(attempt, issue));
             continue;
           }
-          const html = motionHtmlWithKit(source, settings.profileId, 0, settings.proportion);
+          const html = source;
           const file = genPreviewDir(`${T.FILE_PREFIX}${requestId}${RT_MAINTENANCE.PNG}`);
-          await fs.promises.writeFile(file.replace(/\.png$/u, T.HTML_FILE_EXT), html);
+          await fs.promises.writeFile(file.replace(/\.png$/u, T.HTML_FILE_EXT), motionHtmlFigures(html, render));
           opts.log?.(T.RENDER_LOG);
-          const runtime = await deps.openMotionHtmlRuntime(html, opts.signal);
+          const runtime = await deps.openMotionHtmlRuntime(html, opts.signal, true, undefined, render);
           try {
             const buffer = await runtime.render({ time: 0, progress: 0, frame: 0, fps: T.REFERENCE_FPS, duration: T.REFERENCE_SECONDS, width, height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: false, sceneEffectsEnabled: true, seed: requestId, speaking: [] } as Parameters<typeof runtime.render>[0]);
             const base64 = buffer.toString(RT_MAINTENANCE.BASE64);

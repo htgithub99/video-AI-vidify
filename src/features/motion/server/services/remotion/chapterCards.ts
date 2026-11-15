@@ -58,7 +58,7 @@ export const motionInsertChapterCards = (
       nodes: [],
       startFrame,
       endFrame,
-      html: { version: 1, html, hash, prompt: "", language: args.language, seed: hash, duration: (endFrame - startFrame) / args.fps, attempts: 1, figureKit: false, status: RT_MAINTENANCE.READY },
+      html: { version: 1, html, hash, prompt: "", language: args.language, seed: hash, duration: (endFrame - startFrame) / args.fps, attempts: 1, figures: true, status: RT_MAINTENANCE.READY },
     });
   }
   return out;

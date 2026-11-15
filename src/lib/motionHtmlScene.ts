@@ -227,3 +227,19 @@ export const motionSceneOnScreen = (items: { scene: MotionRemotionScene; beats: 
     if (date) lastTime = date;
   }
 };
+// Finished scenes drop what was only needed while drawing them (the prompt, the raw answer, the pending submission).
+type CompactScene = { html?: { html?: string; prompt?: string; status?: string; thumbnail?: string }; htmlRequest?: { raw?: string; submission?: { pending?: unknown } }; build?: { status?: string } };
+export const motionCompactScene = (scene: CompactScene | undefined): void => {
+  if (!scene?.html?.html) return;
+  if ((scene.html.status !== RT_MAINTENANCE.READY && scene.html.status !== RT_MAINTENANCE.RENDERED) || scene.build?.status !== RT_MAINTENANCE.ACCEPTED) return;
+  scene.html.prompt = "";
+  if (scene.htmlRequest) delete scene.htmlRequest.raw;
+  if (scene.htmlRequest?.submission) delete scene.htmlRequest.submission.pending;
+};
+export const motionCompactSpecScene = (scene: CompactScene): void => {
+  motionCompactScene(scene);
+  if (scene.html) delete scene.html.thumbnail;
+};
+export const motionCompactSceneHtml = (scenes: Record<string, Array<CompactScene> | undefined> | undefined): void => {
+  for (const list of Object.values(scenes || {})) for (const scene of list || []) motionCompactScene(scene);
+};

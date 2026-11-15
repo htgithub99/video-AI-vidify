@@ -3,7 +3,7 @@ export const MOTION_NOTICE_IDS = {
   LANGUAGE: "language",
   PARTS: "parts",
   RESUME: "resume",
-  RESTYLE: "restyle",
+  LEGACY: "legacy",
   CONTINUE: "continue",
   RESTART: "restart",
   STALE: "stale",

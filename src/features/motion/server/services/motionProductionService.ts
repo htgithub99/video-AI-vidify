@@ -4,7 +4,7 @@ import { motionProductionReport } from "../../../../lib/motionProductionReport.j
 import { MOTION_PRODUCTION_REPORT as REPORT } from "../../../../constants/motionProductionReport.js";
 import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
-import { motionCompactSpecScene, motionCompactSceneHtml } from "../../../../lib/motionHtmlKit.js";
+import { motionCompactSpecScene, motionCompactSceneHtml } from "../../../../lib/motionHtmlScene.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SERVER } from "../../../../constants/runtime/server.js";
 import { parseJson, stringifyJson } from "../../../../lib/jsonStringify.js";
