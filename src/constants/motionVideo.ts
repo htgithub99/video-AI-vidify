@@ -107,6 +107,13 @@ export const MOTION_STORY_CONFIG = {
   TARGET_BEAT_SECONDS: 7,
   LENGTH_SAFETY: 0.92,
   LENGTH_SAFETY_MEASURED: 1,
+  LENGTH_GUARD: {
+    OVER: 1.1,
+    UNDER: 0.9,
+    LOG: (chapter: string, percent: number): string => `Chương ${chapter} dài ${percent}% so với thời lượng đã chọn – biên tập lại cho đúng độ dài trước khi lập phân cảnh.`,
+    DONE: (chapter: string, percent: number): string => `Chương ${chapter} sau khi chỉnh độ dài: ${percent}% thời lượng đã chọn.`,
+    SKIP: (chapter: string, reason: string): string => `Chương ${chapter}: không chỉnh được độ dài (${reason}) – giữ bản đã viết.`,
+  },
   SPEECH_RATE_FILE: "speech-rate-v2.json",
   SPEECH_RATE_PROFILES_MAX: 64,
   SPEECH_RATE_WEIGHT: 0.6,

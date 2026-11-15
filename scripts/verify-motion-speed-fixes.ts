@@ -69,6 +69,7 @@ assert.equal(calls[1].attempted, false, "retry is a fresh request");
 assert.notEqual(calls[1].requestId, calls[0].requestId);
 assert.ok(logs.some((l) => l.includes("bỏ lượt cũ")), logs.join("\n"));
 const { MOTION_HTML } = await import("../src/constants/motionHtmlTemplate.js");
+const { motionHtmlGraphics } = await import("../src/lib/motionHtmlPrompt.js");
 const { motionHtmlPlanSourceMatches } = await import("../src/lib/motionHtmlScene.js");
 const current = JSON.stringify({ productionLanguage: "en", beats: [{ id: "b1" }], settings: { pacing: "few" } });
 const legacy = JSON.stringify({ productionLanguage: "en", graphics: "old style text", beats: [{ id: "b1" }], settings: { pacing: "few" } });
@@ -97,9 +98,9 @@ assert.notEqual(routed[2].provider, "gemini-chat", "a scene leaves an AI that fa
 assert.ok(routeLogs.some((line) => line.includes(routed[2].provider)));
 const scenePrompt = routed[0].prompt;
 assert.ok(scenePrompt.startsWith(MOTION_HTML.OUTPUT));
-assert.equal(scenePrompt.split(MOTION_HTML.GRAPHICS).length, 2, "style rules appear once");
+assert.equal(scenePrompt.split(motionHtmlGraphics("history", false)).length, 2, "style rules appear once");
 assert.doesNotMatch(scenePrompt, /Return the complete HTML|SELECTED VIDEO LANGUAGE|kopje|cowhide|chainmail|screaming|Unconscious/i);
-assert.ok(scenePrompt.length < 9200, "scene prompt stays bounded: " + scenePrompt.length);
+assert.ok(scenePrompt.length < 18500, "scene prompt stays bounded: " + scenePrompt.length);
 const horrorCtrl = new AbortController();
 let horrorPrompt = "";
 await assert.rejects(
@@ -114,7 +115,7 @@ await assert.rejects(
     log: () => undefined,
   }),
 );
-assert.ok(horrorPrompt.includes(MOTION_HTML.PROFILE_GRAPHICS.horror), "horror scenes use their own drawing style");
+assert.ok(horrorPrompt.includes(motionHtmlGraphics("horror", false)), "horror scenes use their own drawing style");
 assert.ok(!horrorPrompt.includes(MOTION_HTML.GRAPHICS));
 const { motionHtmlWritingDirection, motionHtmlAuthoringSnapshot } = await import("../src/lib/motionHtmlAuthoring.js");
 const { motionRenameAutofix } = await import("../src/lib/motionRename.js");
@@ -166,7 +167,7 @@ await assert.rejects(
   }),
 );
 assert.ok(castPrompt.includes(cardsA) && castPrompt.indexOf(cardsA) < castPrompt.indexOf("SCENE (source data)"), "cast cards precede the scene");
-assert.match(castPrompt, /faces its direction[\s\S]*seated rider is drawn inside drawHorse/, "motion direction and the rider rule are in a riding scene");
+assert.match(castPrompt, /faces its direction[\s\S]*seated rider is drawn with the horse \(inside drawHorse\)/, "motion direction and the rider rule are in a riding scene");
 assert.doesNotMatch(scenePrompt, /COUPLED MECHANICS/, "a scene without riders, vehicles or props gets no coupled mechanics");
 const { motionHtmlMechanics } = await import("../src/lib/motionHtmlMechanics.js");
 assert.match(motionHtmlMechanics("Gunners haul the field guns forward."), /rigX/);

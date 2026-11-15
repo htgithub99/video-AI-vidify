@@ -17,6 +17,8 @@ export interface MotionHtmlArtifact {
   continuity?: string;
   status: "received" | "ready" | "rendered" | "retry_wait" | "waiting_external";
   error?: string;
+  warnings?: string[];
+  fallback?: boolean;
 }
 export interface MotionHtmlPendingSubmission {
   prompt: string;
@@ -55,10 +57,12 @@ export interface MotionHtmlFrameInput {
   mode: "preview" | "export";
   motionEnabled: boolean;
   sceneEffectsEnabled: boolean;
+  cameraEnabled?: boolean;
   seed: string;
   speaking: { entityId: string; start: number; end: number }[];
   places?: string[];
   header?: boolean;
+  cues?: number[];
 }
 export interface MotionAuthoringSettings {
   version: 1;
@@ -73,4 +77,22 @@ export interface MotionAuthoringSettings {
   visualProportion?: string;
   visualLayout?: string;
   requestedParts: number;
+}
+export interface MotionHtmlMark {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  src?: "kit";
+  k?: number;
+  look?: Record<string, string | number | boolean>;
+  large?: boolean;
+}
+export interface MotionHtmlChange {
+  mean: number;
+  changed: number;
+  cells: number[];
+  width: number;
+  height: number;
 }

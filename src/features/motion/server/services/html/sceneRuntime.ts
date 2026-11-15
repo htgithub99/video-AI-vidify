@@ -3,7 +3,7 @@ import { chromium, type Browser, type Page } from "playwright";
 import { createHash, randomUUID } from "node:crypto";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { motionHtmlHostDocument } from "../../../../../lib/motionHtmlHost.js";
-import type { MotionHtmlFrameInput } from "../../../../../types/motionHtmlScene.js";
+import type { MotionHtmlChange, MotionHtmlFrameInput, MotionHtmlMark } from "../../../../../types/motionHtmlScene.js";
 const timedOutFrames = new Map<string, number>();
 let thumbnailBrowser: Promise<Browser> | undefined;
 let thumbnailUsers = 0;
@@ -203,6 +203,37 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
             return sum / (pixels[0].length / 4);
           },
           { images: [a, b].map((image) => `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`), size, canvasTag, context },
+        );
+      },
+      async marks(): Promise<MotionHtmlMark[]> {
+        return page.evaluate(() => ((window as any).__motionLastMarks || []) as MotionHtmlMark[]);
+      },
+      async change(a: Buffer, b: Buffer, size: readonly [number, number], threshold: number, canvasTag: string, context: string): Promise<MotionHtmlChange> {
+        return page.evaluate(
+          async ({ images, size, threshold, canvasTag, context }) => {
+            const pixels = await Promise.all(
+              images.map(async (source) => {
+                const img = new Image();
+                img.src = source;
+                await img.decode();
+                const canvas = document.createElement(canvasTag) as HTMLCanvasElement;
+                canvas.width = size[0];
+                canvas.height = size[1];
+                const ctx = canvas.getContext(context) as CanvasRenderingContext2D;
+                ctx.drawImage(img, 0, 0, size[0], size[1]);
+                return ctx.getImageData(0, 0, size[0], size[1]).data;
+              }),
+            );
+            const cells: number[] = [];
+            let sum = 0;
+            for (let i = 0; i < pixels[0].length; i += 4) {
+              const delta = (Math.abs(pixels[0][i] - pixels[1][i]) + Math.abs(pixels[0][i + 1] - pixels[1][i + 1]) + Math.abs(pixels[0][i + 2] - pixels[1][i + 2])) / 3;
+              sum += delta;
+              if (delta > threshold) cells.push(i / 4);
+            }
+            return { mean: sum / (pixels[0].length / 4), changed: cells.length / (pixels[0].length / 4), cells, width: size[0], height: size[1] };
+          },
+          { images: [a, b].map((image) => `${RT_MAINTENANCE.DATA_IMAGE_PNG_BASE64}${image.toString(RT_MAINTENANCE.BASE64)}`), size, threshold, canvasTag, context },
         );
       },
       async close() {

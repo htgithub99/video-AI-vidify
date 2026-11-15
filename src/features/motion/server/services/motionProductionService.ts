@@ -1,5 +1,7 @@
 import * as RT_MAINTENANCE from "../../../../constants/runtime/maintenance.js";
 import { motionStepElapsedMs, motionStepSegment } from "../../../../lib/motionStepTime.js";
+import { motionProductionReport } from "../../../../lib/motionProductionReport.js";
+import { MOTION_PRODUCTION_REPORT as REPORT } from "../../../../constants/motionProductionReport.js";
 import { createMotionLogFilter } from "../../../../lib/motionLogText.js";
 import { motionHtmlPlanCurrent, usesMotionHtml } from "../../../../lib/motionHtmlScene.js";
 import { motionCompactSpecScene, motionCompactSceneHtml } from "../../../../lib/motionHtmlKit.js";
@@ -364,6 +366,12 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       const disk = fs.statfsSync(directory);
       if (!base.source?.segments?.length || disk.bavail * disk.bsize < P.MIN_FREE_BYTES) throw new Error(P.PREFLIGHT_FAILED);
       log(record, VISUAL.LOG_MODE(visualSettings.mode));
+      {
+        const ai = (exec?: { provider?: unknown; model?: unknown }) => (exec?.provider ? `${exec.provider}${exec.model ? `/${exec.model}` : ""}` : undefined);
+        const input = base as unknown as Record<string, any>;
+        const visual = visualSettings as unknown as Record<string, any>;
+        log(record, VISUAL.LOG_CONFIG({ genre: input.videoGenre, storytelling: input.storytelling, length: input.length, language: input.language, style: visual.profileId, layout: visual.layout, pacing: visual.pacing, kit: visual.figureKit === true, mainAi: ai(input.aiExecution), scriptAi: ai(input.scriptAiExecution || input.aiExecution), planAi: ai(input.planAiExecution || input.aiExecution), sceneAi: ai(input.sceneAiExecution || input.aiExecution), review: input.aiReview !== false, lowSpec: isLowSpecMode(), subtitles: input.subtitles !== false, music: input.musicMood, sfx: input.sfx !== false }));
+      }
       if (visualSettings.mode === RT_SHARED.REMOTION) {
         if (base.encoder === RT_SERVER.GPU) throw new Error(VISUAL.CPU_ONLY);
         await checkRemotionRuntime(signal, record.result.script?.gen?.remotion && record.result.script.gen.remotion.renderer !== RT_MAINTENANCE.HTML_CANVAS ? undefined : RT_MAINTENANCE.HTML_CANVAS);
@@ -658,6 +666,21 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         log(record, CONFORMANCE.PASSED);
       }
       signal.throwIfAborted();
+      try {
+        const report = motionProductionReport({
+          id: record.job.id,
+          input: record.input,
+          visual: result.analysis?.visualSettings as Record<string, unknown> | undefined,
+          steps: Object.fromEntries(Object.entries(record.steps).map(([name, task]) => [name, { seconds: motionStepElapsedMs(task) / 1000, retries: task.retries }])),
+          scenes: Object.values(result.script?.gen?.remotion?.scenes || {}).flat(),
+        });
+        const reportFile = path.join(directory, REPORT.FOLDER, record.job.id + REPORT.EXT);
+        fs.mkdirSync(path.dirname(reportFile), { recursive: true });
+        fs.writeFileSync(reportFile, report.text);
+        log(record, REPORT.LOG(reportFile, report.summary));
+      } catch (error) {
+        logger.warn(String(error));
+      }
       record.job.status = S.COMPLETED;
       record.job.progress = 1;
       record.job.stage = result.rendered ? P.STAGES.DONE : P.PREVIEW_DONE;

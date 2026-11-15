@@ -2,6 +2,21 @@ import { MOTION_HTML_KIT as K } from "../constants/motionHtmlKit.js";
 import { motionDrawStyle, motionProportionOf } from "./motionDrawStyle.js";
 export const motionHtmlKitStyle = (profile: string): string => motionDrawStyle(profile).kitLook;
 export const motionHtmlKitDoc = (profile: string): string => K.DOC[motionHtmlKitStyle(profile)] || K.DOC.outline;
+export const motionHtmlKitDocFor = (doc: string, scene: string, map = false, sized: boolean | string = false): string =>
+  (sized ? doc.replace(K.DOC_SIZE_TABLE, typeof sized === "string" ? sized : K.DOC_SIZE_BY_LAYOUT) : doc)
+    .split("\n")
+    .filter((line) => {
+      if (map && K.DOC_MAP_DROP.some((head) => line.startsWith(head))) return false;
+      const section = K.DOC_SECTIONS.find(([head]) => line.startsWith(head));
+      return !section || section[1].test(scene);
+    })
+    .join("\n");
+export const motionHtmlRuleLines = (rules: string, map = false): string =>
+  rules
+    .replace(K.RULE_LABELS, "\n")
+    .split("\n")
+    .filter((line) => !map || !K.RULE_MAP_DROP.test(line))
+    .join("\n");
 const bodyAfter = (html: string, from: number): string => {
   const open = html.indexOf(K.BRACE_OPEN, from);
   if (open < 0) return "";
@@ -12,10 +27,11 @@ const bodyAfter = (html: string, from: number): string => {
   }
   return html.slice(open);
 };
-export const motionHtmlKitIssue = (html: string): string | undefined => {
+// A map is drawn with tokens, arrows and labels, so it is never asked to use the kit's figures ("arrowHeadX" is not a person).
+export const motionHtmlKitIssue = (html: string, map = false): string | undefined => {
   const own = [...html.matchAll(K.OWN_FIGURE)].filter((match) => !K.CALL.test(bodyAfter(html, match.index || 0))).map((match) => match[1]);
   if (own.length) return K.OWN([...new Set(own)].join(K.SEP));
-  if (!K.CALL.test(html) && K.FIGURE_HINT.test(html)) return K.MISSING;
+  if (!map && !K.CALL.test(html) && K.FIGURE_HINT.test(html)) return K.MISSING;
   return undefined;
 };
 const eraOf = (body: string): number => Number([...body.matchAll(K.ERA_USED)].pop()?.[1] || 0);

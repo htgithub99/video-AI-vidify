@@ -532,7 +532,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                     <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{refText.motion}</span>
                     <MotionToggle checked={state.characterMotion} label={refText.motion} icon={Activity} text={state.characterMotion ? refText.on : refText.off} title={refText.motionHint} disabled={studio.storyBusy} onClick={() => patch({ characterMotion: !state.characterMotion })} />
                   </div>
-                  {state.visualSettings?.mode !== RT_SHARED.REMOTION && <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />}
+                  <MotionReviewToggle checked={state.aiReview !== false} disabled={studio.storyBusy} onChange={(aiReview) => patch({ aiReview })} currentLang={currentLang} />
                   <div className={MOTION_STYLES.STEP1_TOGGLE_WRAPPER}>
                     <span className={MOTION_STYLES.TEXT_10PX_FONT_MONO_FONT_BOLD_TEXT_SLATE_400_UPPERCASE}>{text.SUBTITLES_MODE}</span>
                     <MotionToggle checked={state.subtitles !== false} label={text.SUBTITLES_MODE} icon={Captions} text={state.subtitles !== false ? text.SUBTITLES_ON : text.SUBTITLES_OFF} title={text.SUBTITLES_HINT} onClick={() => patch({ subtitles: state.subtitles === false })} />

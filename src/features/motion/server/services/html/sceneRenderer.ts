@@ -15,6 +15,7 @@ import { chromium, type Browser } from "playwright";
 import { findNativeChrome } from "../../../../../server/services/nativeProxyBrowser.js";
 import { MOTION_GPU_CHROME } from "../../../../../constants/motionGpuChrome.js";
 import { generateMotionHtmlScene } from "./scenePipeline.js";
+import { MOTION_HTML_QUALITY } from "../../../../../constants/motionHtmlQuality.js";
 import type { MotionRemotionSpec, MotionRemotionTimedScene } from "../../../../../types/motionVisual.js";
 export const refreshMotionHtmlArtifacts = (spec: MotionRemotionSpec): void => {
   const root = path.resolve(getMotionRootDirectory(), RT_MAINTENANCE.HTML_SCENES) + path.sep;
@@ -130,6 +131,7 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
         void runtime?.close();
       };
       opts.signal.addEventListener(RT_MAINTENANCE.ABORT, stop, { once: true });
+      const blankScenes = new Set<string>();
       try {
         fs.mkdirSync(path.dirname(segment.output), { recursive: true });
         for (let frame = segment.start; frame <= segment.end; frame++) {
@@ -142,7 +144,21 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
             current = active.html.hash;
           }
           const subtitle = spec.subtitles.find((item) => frame / spec.fps >= item.start && frame / spec.fps < item.end);
-          const image = await runtime!.render(motionHtmlFrame(spec, active, frame, opts.width, opts.height, RT_MAINTENANCE.EXPORT), subtitle?.text, spec.fontFamily);
+          const input = motionHtmlFrame(spec, active, frame, opts.width, opts.height, RT_MAINTENANCE.EXPORT);
+          let image = await runtime!.render(input, subtitle?.text, spec.fontFamily);
+          // A frame that comes back as one flat colour (a tiny PNG) means the page lost its canvas, not that the scene is
+          // empty: reopen the page and draw the frame again instead of writing blank or black video.
+          const blankBytes = (opts.width || spec.width) * (opts.height || spec.height) * MOTION_HTML_QUALITY.BLANK.BYTES_PER_PIXEL;
+          for (let retry = 0; retry < MOTION_HTML_QUALITY.BLANK.RETRIES && image.length < blankBytes && !blankScenes.has(active.id); retry++) {
+            opts.log?.(MOTION_HTML_QUALITY.BLANK.LOG(active.id, frame, retry + 1));
+            await runtime?.close();
+            runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser());
+            image = await runtime.render(input, subtitle?.text, spec.fontFamily);
+            if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes) {
+              blankScenes.add(active.id);
+              opts.log?.(MOTION_HTML_QUALITY.BLANK.KEPT_LOG(active.id));
+            }
+          }
           if (!ff.stdin.write(image))
             await Promise.race([
               once(ff.stdin, RT_MAINTENANCE.DRAIN),

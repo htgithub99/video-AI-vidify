@@ -7,6 +7,7 @@ import type { MotionVisualSettings } from "../types/motionVisual.js";
 import { motionVisualBeatGroups } from "./motionScenePacing.js";
 import { motionPlanSettings, motionVisualSettingsFor } from "./motionVisual.js";
 import { MOTION_HTML, MOTION_HTML_REPAIR as R } from "../constants/motionHtmlTemplate.js";
+import { MOTION_HTML_QUALITY } from "../constants/motionHtmlQuality.js";
 export const motionHtmlIdentities = (analysis: MotionStoryAnalysis) => ({
   cast: analysis.cast.map(({ key, name, alias, role, description, look, marks, skin, carries, gender, age }) => ({ key, name, alias, role, description, look, marks, skin, carries, gender, age })),
   places: analysis.places.map(({ key, name, description, interior, time }) => ({ key, name, description, interior, time })),
@@ -192,22 +193,25 @@ export const motionHtmlSource = (raw: unknown): string => {
 export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionScene & { startFrame: number; endFrame: number }, frame: number, width = spec.width, height = spec.height, mode: "preview" | "export" = RT_MAINTENANCE.PREVIEW): MotionHtmlFrameInput => {
   const enabled = (spec.renderBehavior?.actors || (spec.motion ? RT_MAINTENANCE.SIMPLE : RT_MAINTENANCE.FIXED)) === RT_MAINTENANCE.SIMPLE;
   const duration = (scene.endFrame - scene.startFrame) / spec.fps;
-  const local = enabled ? Math.max(0, frame - scene.startFrame) : 0;
+  const span = Math.max(1, scene.endFrame - scene.startFrame - 1);
+  const local = enabled ? Math.max(0, frame - scene.startFrame) : Math.round(span * MOTION_HTML_QUALITY.KEY_PROGRESS);
   return {
     time: local / spec.fps,
-    progress: enabled ? Math.min(1, local / Math.max(1, scene.endFrame - scene.startFrame - 1)) : 0,
+    progress: enabled ? Math.min(1, local / span) : MOTION_HTML_QUALITY.KEY_PROGRESS,
     frame: local,
     fps: spec.fps,
     duration,
     width,
     height,
     mode,
-    motionEnabled: enabled,
+    motionEnabled: true,
+    cameraEnabled: enabled && spec.renderBehavior?.camera !== RT_MAINTENANCE.FIXED,
     sceneEffectsEnabled: enabled && spec.renderBehavior?.sceneEffects !== RT_MAINTENANCE.OFF,
     seed: scene.html?.seed || scene.id,
     speaking: enabled ? (scene.speaking || []).map((span) => ({ entityId: span.entityId, start: (span.startFrame - scene.startFrame) / spec.fps, end: (span.endFrame - scene.startFrame) / spec.fps })) : [],
     places: scene.places,
     header: scene.places ? !!scene.timeLabel : undefined,
+    cues: enabled ? scene.cues : undefined,
   };
 };
 export const motionSceneOnScreen = (items: { scene: MotionRemotionScene; beats: MotionBeat[] }[], analysis: MotionStoryAnalysis): void => {

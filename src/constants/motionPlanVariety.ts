@@ -5,7 +5,7 @@ export const MOTION_PLAN_VARIETY = {
   MAX_SAME_RUN: 3,
   MIN_GROUP_FOR_SHOTS: 4,
   MIN_SHOTS: 2,
-  ELSEWHERE: /\b(?:reports?|news|word (?:reaches|comes|arrives)|survivors?|refugees?|rumou?rs?|stories of|messengers?|remember\w*|recall\w*|back home|far away|meanwhile|elsewhere)\b|tin báo|tin tức|kể lại|nhớ lại|hồi tưởng|người sống sót|nạn dân|trong khi đó|ở nơi khác/iu,
+  ELSEWHERE: /\b(?:reports?|news|word (?:reaches|comes|arrives)|rumou?rs?|stories of|messengers?|remember\w*|recall\w*|back home|far away|meanwhile|elsewhere)\b|tin báo|tin tức|kể lại|nhớ lại|hồi tưởng|trong khi đó|ở nơi khác/iu,
   ACTION: /\b(?:charg\w*|attack\w*|assault\w*|bombard\w*|smash\w*|crash\w*|strik\w*|storm\w*|flee\w*|fled|run\w*|surge\w*|sweep\w*|pursu\w*|fir(?:e|es|ed|ing)|volley\w*|rain\w*|burn\w*|collaps\w*|explod\w*|gallop\w*)\b|xung phong|tấn công|pháo kích|bắn|chạy|tháo chạy|truy đuổi|đốt|cháy|sụp|nổ|phi ngựa/iu,
   SPACE: /\s+/gu,
   SPACE_ONE: " ",

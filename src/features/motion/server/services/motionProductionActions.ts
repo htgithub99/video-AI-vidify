@@ -264,7 +264,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const scope = body.productionId || body.editorialSessionId;
       const planScenes = body?.planScenes !== false;
       const canStreamHtmlScenes = planScenes && visualSettings.mode === RT_MAINTENANCE.REMOTION && !(globalThis as any).__motionHtmlStages && body?.durationRepair !== true && todo.length > 0;
-      const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body) }) : undefined;
+      const htmlStreamer = canStreamHtmlScenes ? createMotionHtmlSceneStreamer(analysis, visualSettings, language, keepGen?.remotion, { exec: sceneExec.provider ? sceneExec : exec, mainExec: exec, planExec, scope, signal: ctx.signal, log: ctx.log, aspect: body.aspect, sfx: body.sfx !== false, renderBehavior: motionRenderBehaviorFor(body), review: body?.review !== undefined ? body.review !== false : body?.aiReview !== false }) : undefined;
       const streamSettled = (): void =>
         htmlStreamer?.push(streamBeats(), chapterDrafts, false, (remotion) => {
           keepGen = { ...(keepGen || emptyGen()), remotion };
@@ -280,6 +280,10 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
       const pipelined = !analysis.authoringSettings && body?.editorPass !== false && body?.durationRepair !== true && todo.length === chapters.length && chapters.length > 1;
       const editScope = body.productionId || body.editorialSessionId || ctx.signal.toString();
       const chapterEdits = new Map<string, Promise<MotionStoryScript["edit"] | undefined>>();
+      const chapterWantedUnits = (chapter: MotionChapter, idx: number): number => {
+        const silent = motionStorytellingSilent(analysis.storytelling);
+        return analysis.authoringSettings ? motionHtmlChapterBudget(analysis, chapter, speechRate, idx === 0, idx === chapters.length - 1).units : Math.round(Math.max(15, (chapter.targetSeconds || 0) - (silent ? silent.chapterCard + silent.chapterEnd : 0)) * speechRate * (speechRateMeasured ? MOTION_STORY_CONFIG.LENGTH_SAFETY_MEASURED : MOTION_STORY_CONFIG.LENGTH_SAFETY));
+      };
       const logChapterScore = (chapter: MotionChapter, stage = "") => {
         if (analysis.authoringSettings) return;
         const silent = motionStorytellingSilent(analysis.storytelling);
@@ -352,6 +356,39 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
               checkpoint();
             },
           });
+          if (body?.durationRepair !== true && (chapter.targetSeconds || 0) > 0) {
+            const wanted = chapterWantedUnits(chapter, idx);
+            const units = _.sumBy(byChapter[chapter.id] || [], (beat: MotionBeat) => speechUnits(beat.narration));
+            const ratio = wanted > 0 ? units / wanted : 1;
+            if (ratio > MOTION_STORY_CONFIG.LENGTH_GUARD.OVER || ratio < MOTION_STORY_CONFIG.LENGTH_GUARD.UNDER) {
+              ctx.log(MOTION_STORY_CONFIG.LENGTH_GUARD.LOG(chapter.id, Math.round(ratio * 100)));
+              try {
+                byChapter[chapter.id] = await writeChapterBeats(source, analysis, chapter, {
+                  language,
+                  multiVoice,
+                  exec: scriptExec,
+                  signal: ctx.signal,
+                  log: ctx.log,
+                  previous,
+                  history,
+                  previousSummary: prevChapter?.summary,
+                  isFirst: idx === 0,
+                  isLast: idx === chapters.length - 1,
+                  speechRate,
+                  speechRateMeasured,
+                  durationRepair: true,
+                  existing: byChapter[chapter.id],
+                  onDraft: () => checkpoint(),
+                });
+                const after = _.sumBy(byChapter[chapter.id] || [], (beat: MotionBeat) => speechUnits(beat.narration));
+                ctx.log(MOTION_STORY_CONFIG.LENGTH_GUARD.DONE(chapter.id, Math.round((after / Math.max(1, wanted)) * 100)));
+              } catch (error) {
+                if (isTerminalMotionAiError(error, ctx.signal)) throw error;
+                ctx.log(MOTION_STORY_CONFIG.LENGTH_GUARD.SKIP(chapter.id, _.truncate(_.toString((error as Error)?.message || error), { length: 120 })));
+              }
+              checkpoint();
+            }
+          }
           delete chapterDrafts[chapter.id];
           if (!editPass) settled.add(chapter.id);
           if (htmlStreamer) {
@@ -370,8 +407,7 @@ export const scriptMotionStoryInput = (body: Record<string, any>) => {
         done++;
         ctx.progress(done / todo.length, chapter.id);
         ctx.log(MOTION_TEMPLATE_BEAT(String(byChapter[chapter.id].length)));
-        const silent = motionStorytellingSilent(analysis.storytelling);
-        const wantedUnits = analysis.authoringSettings ? motionHtmlChapterBudget(analysis, chapter, speechRate, idx === 0, idx === chapters.length - 1).units : Math.round(Math.max(15, (chapter.targetSeconds || 0) - (silent ? silent.chapterCard + silent.chapterEnd : 0)) * speechRate * (speechRateMeasured ? MOTION_STORY_CONFIG.LENGTH_SAFETY_MEASURED : MOTION_STORY_CONFIG.LENGTH_SAFETY));
+        const wantedUnits = chapterWantedUnits(chapter, idx);
         if (wantedUnits > 0)
           ctx.log(
             motionStorytellingText(language).CHAPTER(
@@ -527,6 +563,7 @@ export const scenesMotionStoryInput = (body: Record<string, any>) => {
         onlyScenes: _.map(_.castArray(body?.scenes || []), _.toString),
         onlyLocations,
         note: note || undefined,
+        review: body?.review !== undefined ? body.review !== false : body?.aiReview !== false,
       });
       ctx.partial(withFull(result));
       const selectedScenes = _.map(_.castArray(body?.scenes || []), _.toString);

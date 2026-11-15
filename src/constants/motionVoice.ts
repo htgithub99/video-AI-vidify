@@ -1,6 +1,23 @@
 import { MOTION_SPEECH_ATTRIBUTION } from "./motionSpeech.js";
 export const MOTION_VOICE_RANK = { REGION: 4, REGION_MISS: -3, STORY: 1, NEWS: -2 } as const;
 export const MOTION_VOICE = {
+  END_TRAILING_KEEP: 0.3,
+  // A long line is spoken one sentence per request and joined by code: short requests keep the engine's pace steady, each
+  // sentence is brought to the line's median rate, and the gaps between sentences are exact.
+  SENTENCES: {
+    VERSION: 1,
+    MIN_WORDS: 16,
+    MIN_PIECE_WORDS: 4,
+    MIN_UNITS: 6,
+    GAP: 0.32,
+    TOLERANCE: 0.05,
+    MAX_STRETCH: 0.12,
+    PASSES: 2,
+    MIN_VOICED: 0.25,
+    SPLIT: /(?<=[.!?\u2026]["'\u201d\u2019)\]]*)\s+/u,
+    ABBREVIATION: /(?:\b(?:Mr|Mrs|Ms|Dr|St|Gen|Col|Capt|Lt|Sgt|Prof|No|vs|etc|TP|TS|Th\.S)|(?<![\p{L}\p{N}])\p{L})\.$/iu,
+    LOG: (lines: number, sentences: number, adjusted: number, spread: number) => `Giọng đọc theo câu: ${lines} đoạn dài được đọc thành ${sentences} câu riêng rồi ghép lại; ${adjusted} câu được chỉnh tốc độ về mức chung; chênh lệch tốc độ lớn nhất còn lại giữa các câu trong một đoạn ${(spread * 100).toFixed(0)}%.`,
+  },
   VERSION: 5,
   PLAN_VERSION: 9,
   DIRECT_SPEECH_RE: /[:：]\s*["“«‘']?\s*\p{Lu}|["“«][^"”»]{2,}["”»]/u,
@@ -648,8 +665,8 @@ export const MOTION_VOICE_SPEED = {
   },
 } as const;
 export const MOTION_VOICE_PACING = {
-  VERSION: 10,
-  NARRATOR_CADENCE: { MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
+  VERSION: 11,
+  NARRATOR_CADENCE: { LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
   CADENCE_LOG: (count: number, min: number, max: number, target: number, limited: number, matched = 0, expected = 0): string => `Nhịp người kể: cân tốc độ trung bình ${count} đoạn theo mẫu ${target.toFixed(2)} tiếng/giây; đo lại ${min.toFixed(2)}–${max.toFixed(2)}. Khớp ${matched}/${expected} ranh giới dấu câu bằng âm thanh; phần chưa chắc giữ nhịp tự nhiên (${limited} đoạn chạm giới hạn).`,
   CADENCE_FALLBACK: "Đoạn kể chưa đo chắc nhịp; giữ tốc độ dự phòng và tiếp tục dựng.",
   CADENCE_ERROR: (reason: string): string => `Chưa cân nhịp được đoạn kể (${reason.slice(0, 120)}); giữ tốc độ dự phòng.`,

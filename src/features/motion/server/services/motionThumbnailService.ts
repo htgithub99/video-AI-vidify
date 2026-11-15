@@ -26,7 +26,7 @@ import { MOTION_RENAME as RENAME } from "../../../../constants/motionRename.js";
 import { motionRenameLeaks, motionRenameMapActive } from "../../../../lib/motionRename.js";
 import type { MotionVisualSettings } from "../../../../types/motionVisual.js";
 import { motionHtmlDrawIssue, motionHtmlGraphics } from "../../../../lib/motionHtmlPrompt.js";
-import { motionHtmlKitDoc, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../lib/motionHtmlKit.js";
+import { motionHtmlKitDoc, motionHtmlKitDocFor, motionHtmlKitIssue, motionHtmlWithKit } from "../../../../lib/motionHtmlKit.js";
 import { motionHtmlSource } from "../../../../lib/motionHtmlScene.js";
 import { openMotionHtmlRuntime } from "./html/sceneRuntime.js";
 const dependencies = { runMotionAi, rasterizeMotionSvgs, prepareMotionThumbnailReferences, openMotionHtmlRuntime };
@@ -78,13 +78,13 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
       if (settings.figureKit === true) {
         opts.log?.(T.LOG_KIT);
         const htmlExec: MotionAiExecution = { ...exec, outputFormat: RT_MAINTENANCE.HTML, singleResponse: true };
-        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, motionHtmlGraphics(settings.profileId, true), motionHtmlKitDoc(settings.profileId), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
+        const base = [T.HTML_TASK(width, height), T.LAYOUT, T.REFERENCE_RULE, T.HTML_HEADLINE, T.STYLE_RULE + style, motionHtmlGraphics(settings.profileId, true), motionHtmlKitDocFor(motionHtmlKitDoc(settings.profileId), stringifyJson(brief), false, T.DOC_SIZE), stringifyJson(brief)].join(RT_MAINTENANCE.NEWLINE);
         let reason = "";
         for (let attempt = 1; attempt <= T.DRAW_ATTEMPTS; attempt++) {
           opts.signal?.throwIfAborted();
           const prompt = reason ? [base, T.HTML_RETRY(reason)].join(RT_MAINTENANCE.NEWLINE) : base;
           const source = motionHtmlSource(await deps.runMotionAi(prompt, T.HTML_ARTIFACT, htmlExec, opts.signal, opts.log, images));
-          const issue = motionHtmlKitIssue(source) || motionHtmlDrawIssue(source);
+          const issue = motionHtmlKitIssue(source) || motionHtmlDrawIssue(source) || (T.HEADLINE_CALL.test(source) ? undefined : T.HEADLINE_MISSING);
           if (issue) {
             reason = issue;
             opts.log?.(T.LOG_KIT_RETRY(attempt, issue));
@@ -99,12 +99,13 @@ export const createMotionThumbnailService = (overrides: Partial<typeof dependenc
             const buffer = await runtime.render({ time: 0, progress: 0, frame: 0, fps: T.REFERENCE_FPS, duration: T.REFERENCE_SECONDS, width, height, mode: RT_MAINTENANCE.PREVIEW, motionEnabled: false, sceneEffectsEnabled: true, seed: requestId, speaking: [] } as Parameters<typeof runtime.render>[0]);
             const base64 = buffer.toString(RT_MAINTENANCE.BASE64);
             const dimensions = readBase64ImageDimensions(base64);
-            if (dimensions?.width === width && dimensions.height === height) {
+            const blank = buffer.length / (width * height) < T.BLANK_BYTES_PER_PIXEL;
+            if (dimensions?.width === width && dimensions.height === height && !blank) {
               await fs.promises.writeFile(file, buffer);
               opts.log?.(MR.MOTION_TEXT_THUMBNAIL_XONG);
               return { thumbnail: MR.MOTION_TEMPLATE_DATA_BASE64(MR.MOTION_TEXT_IMAGE_PNG, base64), prompt };
             }
-            reason = T.VIEWBOX_ERROR;
+            reason = blank ? T.BLANK : T.VIEWBOX_ERROR;
           } catch (error) {
             opts.signal?.throwIfAborted();
             reason = String((error as Error).message);

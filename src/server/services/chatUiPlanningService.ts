@@ -681,7 +681,12 @@ export const getChatResponseSnapshots = async (page: Page, responseSelector: str
                       const blockStyle = window.getComputedStyle(block);
                       return blockStyle.visibility !== SOURCE_TEXT_HIDDEN && blockStyle.display !== SOURCE_TEXT_NONE && block.getClientRects().length > 0;
                     })
-                    .map((block) => block.textContent || MOTION_TEXT_EMPTY)
+                    .map((block) => {
+                      const flat = block.textContent || MOTION_TEXT_EMPTY;
+                      if (flat.includes("\n") || !(block instanceof HTMLElement)) return flat;
+                      const rendered = block.innerText || MOTION_TEXT_EMPTY;
+                      return rendered.includes("\n") ? rendered : flat;
+                    })
                     .join(ST.SOURCE_TEXT_SYMBOL_56)
                 : MOTION_TEXT_EMPTY;
               const visibleText = codeText.trim() || (content instanceof HTMLElement ? content.innerText : content.textContent || MOTION_TEXT_EMPTY);

@@ -182,6 +182,7 @@ export interface MotionRemotionScene {
   writtenMotionKey?: string;
   requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
+  cues?: number[];
 }
 export interface MotionSceneLayer {
   id: string;
@@ -230,6 +231,8 @@ export interface MotionSceneDesign {
 export interface MotionRemotionState {
   renderer?: "html-canvas";
   htmlPlanSources?: Record<string, string>;
+  // Look of each named person, taken from the first scene that drew them and applied to every later scene.
+  castLooks?: Record<string, Record<string, string | number | boolean>>;
   htmlSfx?: boolean;
   version: number;
   settings: MotionVisualSettings;

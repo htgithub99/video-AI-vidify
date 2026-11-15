@@ -19,12 +19,39 @@ import { motionGenreCraft } from "../../../../../lib/motionGenreCraft.js";
 import { motionHtmlEditorialFindings } from "../../../../../lib/motionHtmlEditorialFindings.js";
 import { MOTION_GENRE_CRAFT_TEXT as CRAFT } from "../../../../../constants/motionGenreCraft.js";
 import { MOTION_HTML_WRITING as W } from "../../../../../constants/motionHtmlWriting.js";
+import { motionRecentOpenings, recordMotionOpening } from "../motionOpeningHistory.js";
 const renamedBeats = (beats: MotionBeat[], analysis: MotionStoryAnalysis, log?: (line: string) => void): MotionBeat[] => {
   const fixed = motionRenameAutofix(beats, analysis);
   if (fixed.replaced) log?.(MOTION_RENAME.LOG.AUTOFIX(fixed.replaced));
   return fixed.beats;
 };
 const countChapterUnits = (rows: any[]): number => rows.reduce((sum, row) => sum + speechUnits(String(row?.narration || "")), 0);
+// Last resort for length, with no AI call: while the text is over its limit, drop the sentence that carries the least
+// (fewest names and numbers for its length), never the first sentence of a beat and never a beat with its own utterances.
+export const motionTrimBeatsToUnits = <T extends { narration?: string; utterances?: unknown }>(beats: T[], max: number): { beats: T[]; dropped: number } => {
+  const rows = beats.map((beat) => ({ ...beat }));
+  const sentences = (text: string) => text.split(W.OVER.SENTENCE).map((part) => part.trim()).filter(Boolean);
+  let dropped = 0;
+  while (dropped < W.OVER.MAX_DROPS && countChapterUnits(rows) > max) {
+    let best: { row: number; index: number; score: number } | undefined;
+    rows.forEach((row, at) => {
+      if (typeof row.narration !== "string" || (Array.isArray(row.utterances) && row.utterances.length)) return;
+      const parts = sentences(row.narration);
+      parts.forEach((part, index) => {
+        if (!index || parts.length < 2) return;
+        const score = ((part.match(W.OVER.ANCHOR) || []).length + 1) / Math.max(1, speechUnits(part)) - parts.length * 0.01;
+        if (!best || score < best.score) best = { row: at, index, score };
+      });
+    });
+    if (!best) break;
+    const pick = best as { row: number; index: number };
+    const parts = sentences(String(rows[pick.row].narration));
+    parts.splice(pick.index, 1);
+    rows[pick.row].narration = parts.join(" ");
+    dropped++;
+  }
+  return { beats: rows, dropped };
+};
 const HTML_PART_ATOM_SPLIT = /(?<=[.!?。！？])\s+(?=[\p{L}\p{N}\p{P}])|\r?\n+/u;
 const HTML_PART_CLAUSE_SPLIT = /(?<=[,;—–:])\s+(?=[\p{L}\p{N}\p{P}])/u;
 const HTML_PART_STAMP = /\((?:(\d+):)?(\d{1,2}):(\d{2})\)|\[(?:(\d+):)?(\d{1,2}):(\d{2})\]/g;
@@ -131,12 +158,31 @@ const chapterLengthPlan = (analysis: MotionStoryAnalysis, chapter: MotionChapter
 export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis: MotionStoryAnalysis, chapter: MotionChapter, opts: MotionChapterWriteOptions): Promise<MotionBeat[]> => {
   const rate = opts.speechRate || motionLanguageRate(opts.language);
   const budget = motionHtmlChapterBudget(analysis, chapter, rate, opts.isFirst, opts.isLast);
+  const genre = analysis.authoringSettings?.videoGenre || "";
+  const recent = opts.isFirst && !opts.durationRepair && !opts.ai ? motionRecentOpenings(genre, opts.language, analysis.title) : [];
+  const fresh = [W.ACTIONS(analysis.authoringSettings?.targetPictureSeconds || 14), ...(recent.length ? [W.OPENINGS.RULE(recent)] : [])];
+  const remember = <T extends { narration?: string }[]>(beats: T): T => {
+    if (opts.isFirst && !opts.ai && beats[0]?.narration) recordMotionOpening(genre, opts.language, analysis.title, beats[0].narration);
+    if (opts.isFirst && beats[0]?.narration) {
+      const first = (beats[0].narration.match(W.OPENINGS.FIRST_SENTENCE)?.[0] || beats[0].narration).trim();
+      if (speechUnits(first) > W.OPENING_GATE.MAX_UNITS) opts.log?.(W.OPENING_GATE.LOG_LONG(speechUnits(first), W.OPENING_GATE.MAX_UNITS));
+      if (W.OPENING_GATE.GENERIC.test(first)) opts.log?.(W.OPENING_GATE.LOG_GENERIC(first.slice(0, 60)));
+    }
+    return beats;
+  };
   const slice = sourceSlice(source, chapter.from, chapter.to);
   const { seconds, units, directive: stretch } = chapterLengthPlan(analysis, chapter, slice, budget.seconds, budget.units, opts.log);
   const targetPictureSeconds = analysis.authoringSettings?.targetPictureSeconds || 14;
   const targetScenes = Math.max(1, Math.round(seconds / targetPictureSeconds));
   const minUnits = Math.max(1, Math.round(units * 0.9));
   const maxUnits = Math.max(minUnits, Math.round(units * 1.1));
+  const fitLength = <T extends { narration?: string }>(beats: T[]): T[] => {
+    const before = countChapterUnits(beats);
+    if (stretch || before <= maxUnits * W.OVER.TOLERANCE) return beats;
+    const cut = motionTrimBeatsToUnits(beats, maxUnits);
+    if (cut.dropped) opts.log?.(W.OVER.TRIM_LOG(chapter.id, cut.dropped, before, countChapterUnits(cut.beats), maxUnits));
+    return cut.beats;
+  };
   const unitsPerScene = Math.max(6, Math.round(units / targetScenes));
   const outline = analysis.chapters.length > 1 ? analysis.chapters.map(({ id, title, summary, from, to, targetSeconds }) => ({ id, title, summary, from, to, targetSeconds })) : undefined;
   const previousTail = opts.previous?.slice(-5).map((beat) => beat.narration) || opts.previousSummary;
@@ -180,6 +226,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
         RT_MAINTENANCE.PARTPROMPT,
         motionHtmlWritingDirection(analysis, opts.language),
         ...(stretch ? [stretch] : []),
+        ...(index === 0 ? fresh : fresh.slice(0, 1)),
         W.BUDGET(partSeconds, rate, partUnits, partMinUnits, partMaxUnits, partScenes, partUnitsPerScene) + (stretch ? "" : RT_MAINTENANCE.SPACE + W.SUMMARIZE),
         opts.multiVoice === false ? RT_MAINTENANCE.ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED : RT_MAINTENANCE.USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR,
         RT_MAINTENANCE.PARTPROMPT_2,
@@ -203,8 +250,16 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
         partRows = savedPart.rows;
       } else {
         opts.log?.(`${RT_MAINTENANCE.VIET_PHAN_CANH_CHUONG}${chapter.id}${RT_MAINTENANCE.PHAN}${index + 1}${RT_MAINTENANCE.SLASH}${parts.length}${RT_MAINTENANCE.APPROXIMATE_PREFIX}${partScenes}${RT_MAINTENANCE.CANH}${partUnits}${RT_MAINTENANCE.AM_TIET}`);
-        const rawPart = opts.ai ? await opts.ai(partPrompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : await runMotionAi(partPrompt, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log);
+        const askPart = (text: string) => (opts.ai ? opts.ai(text, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log) : runMotionAi(text, RT_MAINTENANCE.MOTION_STORY_CHAPTER, exec, opts.signal, opts.log));
+        let rawPart = await askPart(partPrompt);
         if (!Array.isArray(rawPart?.beats) || !rawPart.beats.length) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
+        // The writer is held to the part's length here, while the text is fresh: one counted rewrite, kept only when shorter.
+        const written = countChapterUnits(rawPart.beats);
+        if (written > partMaxUnits * W.OVER.TOLERANCE) {
+          opts.log?.(W.OVER.LOG(chapter.id, index + 1, written, partMaxUnits));
+          const shorter = await askPart([partPrompt, W.OVER.RULE(written, partUnits, partMaxUnits, rawPart.beats.length)].join(RT_MAINTENANCE.NEWLINE)).catch(() => undefined);
+          if (Array.isArray(shorter?.beats) && shorter.beats.length && countChapterUnits(shorter.beats) < written) rawPart = shorter;
+        }
         partRows = rawPart.beats.map((beat: any, beatIdx: number) => ({ ...beat, id: beat?.id || `${chapter.id}${RT_MAINTENANCE.B}${completed.length + beatIdx + 1}` }));
         drafts[String(index)] = { inputKey: partKey, rows: partRows, pending: [] };
       }
@@ -212,12 +267,13 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
       saveMultipartDraft(completed, false);
     }
     saveMultipartDraft(completed, true);
-    return renamedBeats(normalizeBeats(normalizeMotionChapterMetadata(completed), chapter.id, analysis), analysis, opts.log);
+    return remember(renamedBeats(normalizeBeats(normalizeMotionChapterMetadata(fitLength(completed)), chapter.id, analysis), analysis, opts.log));
   }
   const prompt = [
     RT_MAINTENANCE.PROMPT,
     motionHtmlWritingDirection(analysis, opts.language),
     ...(stretch ? [stretch] : []),
+    ...fresh,
     W.BUDGET(seconds, rate, units, minUnits, maxUnits, targetScenes, unitsPerScene) + (stretch ? "" : RT_MAINTENANCE.SPACE + W.SUMMARIZE),
     opts.multiVoice === false ? RT_MAINTENANCE.ONE_NARRATOR_READS_EVERYTHING_EXACTLY_ONCE_UTTERANCES_CAN_BE_OMITTED : RT_MAINTENANCE.USE_NARRATOR_FOR_NARRATION_AND_THE_SUPPLIED_CAST_KEYS_FOR,
     RT_MAINTENANCE.PARTPROMPT_2,
@@ -229,7 +285,7 @@ export const writeMotionHtmlChapter = async (source: MotionStorySource, analysis
   const rows = raw.beats;
   if (!Array.isArray(rows)) throw new Error(RT_MAINTENANCE.KHONG_DOC_DUOC_DANH_SACH_LOI_CUA_CHUONG_TU_PHAN);
   opts.onDraft?.({ inputKey: key, rows, pending: [] });
-  return renamedBeats(normalizeBeats(normalizeMotionChapterMetadata(rows), chapter.id, analysis), analysis, opts.log);
+  return remember(renamedBeats(normalizeBeats(normalizeMotionChapterMetadata(fitLength(rows)), chapter.id, analysis), analysis, opts.log));
 };
 export const editMotionHtmlScript = async (source: MotionStorySource, analysis: MotionStoryAnalysis, beats: MotionBeat[], opts: { language: string; speechRate?: number; exec: Parameters<typeof runMotionAi>[2]; signal?: AbortSignal; log?: Parameters<typeof runMotionAi>[4]; ai?: typeof runMotionAi; scope?: string; focusIds?: string[] }) => {
   const focus = !!opts.focusIds;

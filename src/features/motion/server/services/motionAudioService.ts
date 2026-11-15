@@ -31,7 +31,7 @@ import { motionLanguage, motionLanguageRate } from "../../../../lib/motionLangua
 import { hasMisassignedMotionSpeech } from "../../../../lib/motionSpeech.js";
 import type { MotionStorytellingSilent } from "../../../../constants/motionStorytelling.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
-const voiceTrackSpeedKey = (plan: MotionVoicePlan): string => hash([PACE.VERSION, cadenceProfile(), readVoiceSpeedSettings().target?.pauses, _.uniq(plan.roles.map((role) => role.voiceId)).map((voiceId) => [voiceId, voiceSpeedKey(voiceId), knownVoiceTempoFactor(voiceId)])]);
+const voiceTrackSpeedKey = (plan: MotionVoicePlan): string => hash([PACE.VERSION, C.SENTENCES.VERSION, cadenceProfile(), readVoiceSpeedSettings().target?.pauses, _.uniq(plan.roles.map((role) => role.voiceId)).map((voiceId) => [voiceId, voiceSpeedKey(voiceId), knownVoiceTempoFactor(voiceId)])]);
 const cadenceProfile = () => referenceCadenceProfile(readVoiceSpeedSettings().target, readVoiceSpeedSettings().correction);
 const referenceNarration = (line: MotionUtterance, voiceId: string, paced: boolean) => (paced && line.role === MR.MOTION_TEXT_NARRATION && voiceUsesReferenceSpeed(voiceId) ? cadenceProfile() : undefined);
 export interface MotionVoiceDependencies {
@@ -64,6 +64,9 @@ interface SpeechClipAudio {
   leading: number;
   trailing: number;
   quality: MotionVoiceClipQuality;
+  sentences?: number;
+  adjusted?: number;
+  spread?: number;
 }
 const checkClip = async (file: string, line: MotionUtterance, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<{ error: number; errorRun: number; heard: string; words: ClipWords } | null> => {
   try {
@@ -259,6 +262,95 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
   const bytes = motionWavFileInfo(file).length;
   return { id, bytes, duration: bytes / 2 / C.SAMPLE_RATE, leading: signal.leading, trailing: signal.trailing, quality, ...(cadence ? { cadence } : {}), ...(words ? { words } : {}) };
 };
+export const motionSentencePieces = (text: string): string[] => {
+  const S = C.SENTENCES;
+  const out: string[] = [];
+  let carry = "";
+  // An abbreviation ("Dr.") or a very short sentence stays with the sentence that follows it.
+  for (const part of text.split(S.SPLIT).map((item) => item.trim()).filter(Boolean)) {
+    const piece = carry ? carry + " " + part : part;
+    if (S.ABBREVIATION.test(piece) || speechTokens(piece).length < S.MIN_PIECE_WORDS) carry = piece;
+    else {
+      out.push(piece);
+      carry = "";
+    }
+  }
+  if (carry) out.length ? (out[out.length - 1] += " " + carry) : out.push(carry);
+  return out;
+};
+// One line, spoken sentence by sentence and joined into a single clip, so everything after this step still sees one clip per line.
+const speechClipJoined = async (line: MotionUtterance, voiceId: string, language: unknown, opts: MotionVoiceOptions, deps: MotionVoiceDependencies, delivery: MotionVoiceDelivery, paced: boolean, preset: number | null | undefined, gap: number): Promise<SpeechClipAudio> => {
+  const S = C.SENTENCES;
+  const parts = speechTokens(line.text).length >= S.MIN_WORDS ? motionSentencePieces(line.text) : [];
+  if (parts.length < 2) return speechClip(line, voiceId, language, opts, deps, delivery, paced, preset);
+  const make = (text: string, speed?: number) => speechClip({ ...line, text, ...(speed ? { speed } : {}) }, voiceId, language, opts, deps, delivery, paced, preset);
+  const clips: SpeechClipAudio[] = [];
+  for (const text of parts) clips.push(await make(text));
+  const rateOf = (clip: SpeechClipAudio, text: string): number => {
+    const voiced = clip.duration - clip.leading - clip.trailing;
+    return voiced >= S.MIN_VOICED && speechUnits(text) >= S.MIN_UNITS ? speechUnits(text) / voiced : 0;
+  };
+  const rates = clips.map((clip, index) => rateOf(clip, parts[index]));
+  const sorted = rates.filter((value) => value > 0).sort((a, b) => a - b);
+  const middle = sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;
+  let adjusted = 0;
+  // Two passes: the second corrects a sentence whose first correction still left it outside the tolerance.
+  const speeds = clips.map(() => line.speed || 1);
+  if (middle && !referenceNarration(line, voiceId, paced))
+    for (let pass = 0; pass < S.PASSES; pass++)
+      for (let index = 0; index < clips.length; index++) {
+        const factor = rates[index] ? middle / rates[index] : 1;
+        if (Math.abs(factor - 1) <= S.TOLERANCE) continue;
+        const speed = _.clamp(speeds[index] * factor, Math.max(C.TEMPO.SPEED_MIN, (line.speed || 1) * (1 - S.MAX_STRETCH)), Math.min(C.TEMPO.SPEED_MAX, (line.speed || 1) * (1 + S.MAX_STRETCH)));
+        if (Math.abs(speed - speeds[index]) < 0.005) continue;
+        speeds[index] = speed;
+        clips[index] = await make(parts[index], speed);
+        rates[index] = rateOf(clips[index], parts[index]);
+        if (!pass) adjusted++;
+      }
+  const measured = rates.filter((value) => value > 0);
+  const spread = measured.length > 1 ? (Math.max(...measured) - Math.min(...measured)) / (middle || Math.max(...measured)) : 0;
+  const folder = getMotionAudioDirectory();
+  const id = C.CLIP_PREFIX + hash([S.VERSION, clips.map((clip) => clip.id), gap]) + MR.MOTION_TEXT_WAV;
+  const bytesOf = (seconds: number) => Math.max(0, Math.round(seconds * C.SAMPLE_RATE)) * 2;
+  const chunks: Buffer[] = [];
+  const words: ClipWords = [];
+  let total = 0,
+    allWords = true,
+    channels = 1,
+    sampleRate: number = C.SAMPLE_RATE;
+  for (let index = 0; index < clips.length; index++) {
+    const clip = clips[index],
+      previous = clips[index - 1],
+      next = clips[index + 1];
+    const wav = await fs.promises.readFile(path.join(folder, clip.id));
+    const info = motionWavData(wav);
+    channels = info.channels;
+    sampleRate = info.sampleRate;
+    const head = previous ? Math.min(clip.leading, Math.max(0, gap - Math.min(previous.trailing, gap))) : clip.leading;
+    const tail = next ? Math.min(clip.trailing, gap) : clip.trailing;
+    const cutHead = Math.min(info.length, bytesOf(clip.leading - head)),
+      cutTail = Math.min(info.length - cutHead, bytesOf(clip.trailing - tail));
+    const pcm = wav.subarray(info.start + cutHead, info.start + info.length - cutTail);
+    if (clip.words) for (const [start, end] of clip.words) words.push([_.round(total / 2 / C.SAMPLE_RATE + start - cutHead / 2 / C.SAMPLE_RATE, 3), _.round(total / 2 / C.SAMPLE_RATE + end - cutHead / 2 / C.SAMPLE_RATE, 3)]);
+    else allWords = false;
+    chunks.push(pcm);
+    total += pcm.length;
+    if (next) {
+      const silence = Buffer.alloc(bytesOf(gap - tail - Math.min(next.leading, Math.max(0, gap - tail))));
+      chunks.push(silence);
+      total += silence.length;
+    }
+  }
+  const file = path.join(folder, id);
+  if (!fs.existsSync(file) || fs.statSync(file).size !== total + 44) {
+    const temporary = file + randomUUID();
+    await fs.promises.writeFile(temporary, Buffer.concat([motionWavHeader(total, channels, sampleRate), ...chunks]));
+    await fs.promises.rename(temporary, file);
+  }
+  const worst = clips.find((clip) => clip.quality.status === Q.STATUS.REVIEW) || clips.find((clip) => clip.quality.status === Q.STATUS.UNAVAILABLE) || clips[0];
+  return { id, bytes: total, duration: total / 2 / C.SAMPLE_RATE, leading: clips[0].leading, trailing: clips[clips.length - 1].trailing, quality: worst.quality, sentences: clips.length, adjusted, spread, ...(clips[0].cadence ? { cadence: clips[0].cadence } : {}), ...(allWords && words.length ? { words } : {}) };
+};
 type VoiceClipLayout = { beatId: string; line: MotionUtterance; voiceId: string; audio: SpeechClipAudio; t: number; delivery: MotionVoiceDelivery }[];
 const voicePlan = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<MotionVoicePlan> => directMotionVoice(script, analysis, await (deps.voices || listMotionVoices)(opts.signal, opts.log), opts);
 type Pacing = Omit<(typeof PACE)["HORROR"], "key"> & { key: string };
@@ -376,12 +468,13 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
     }
   const audios = await runClipPool(flat, C.CLIP_PARALLEL, opts.signal, async (item) => {
     const out = [];
-    for (const piece of item.pieces) out.push(speechClip(piece.line, item.voiceId, script.language, opts, deps, item.paced, !!pacing, factors[item.voiceId]));
+    for (const piece of item.pieces) out.push(speechClipJoined(piece.line, item.voiceId, script.language, opts, deps, item.paced, !!pacing, factors[item.voiceId], pacing?.sentenceGap ?? C.SENTENCES.GAP));
     const ready = await Promise.all(out);
     opts.onProgress?.(++done, totalLines);
     return ready;
   });
   let k = 0;
+  let endSlack = 0;
   for (const beatLines of lines) {
     let cursor = 0;
     for (const item of beatLines) {
@@ -391,13 +484,20 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
         local.push({ beatId: item.beatId, line: piece.line, voiceId: item.voiceId, audio: clips[p], t: cursor, delivery: item.paced });
         cursor += clips[p].duration + motionVoiceBoundaryPadding(piece.gap, clips[p].trailing, clips[p + 1]?.leading);
       });
-      cursor += motionVoiceBoundaryPadding(item.gapAfter, clips[clips.length - 1]?.trailing, audios[k]?.[0]?.leading);
+      const after = motionVoiceBoundaryPadding(item.gapAfter, clips[clips.length - 1]?.trailing, audios[k]?.[0]?.leading);
+      cursor += after;
+      endSlack = after + Math.max(0, (clips[clips.length - 1]?.trailing || 0) - C.END_TRAILING_KEEP);
     }
     durations.push(Math.max(0.6, cursor));
   }
+  // The video ends on the fixed tail only: the silence recorded after the very last spoken word and the gap that would
+  // lead into a next line are dropped, so the ending never sits on several seconds of dead air.
+  if (durations.length) durations[durations.length - 1] = Math.max(0.6, durations[durations.length - 1] - endSlack);
   if (!totalLines) throw new Error(C.EMPTY);
   opts.log?.(D.LOG(moods, ai33));
   if (pacing) opts.log?.(PACE.LOG(pacing.key, split));
+  const joined = local.filter((item) => item.audio.sentences);
+  if (joined.length) opts.log?.(C.SENTENCES.LOG(joined.length, _.sumBy(joined, (item) => item.audio.sentences || 0), _.sumBy(joined, (item) => item.audio.adjusted || 0), Math.max(...joined.map((item) => item.audio.spread || 0))));
   const measured = local.flatMap((item) => (item.audio.cadence ? [item.audio.cadence] : []));
   if (measured.length)
     opts.log?.(

@@ -106,6 +106,7 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
       startFrame: frame,
       endFrame,
       speaking,
+      cues: covered.map(({ start }) => Number(Math.max(0, Math.min(0.999, (Math.round(start * fps) - frame) / Math.max(1, endFrame - frame))).toFixed(4))),
       nodes: scene.renderer === RT_MAINTENANCE.HTML_CANVAS ? [] : scene.composition ? scene.nodes.map((node, depth) => ({ ...node, x: 0, y: 0, width: dimensions.w, height: dimensions.h, depth })) : layoutRemotionNodes(scene.nodes, state.assets, dimensions.w, dimensions.h, state.assets[scene.backgroundKey || ""]),
     });
     frame = endFrame;

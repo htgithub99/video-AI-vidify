@@ -1095,7 +1095,7 @@ export const runMotionAi = async (prompt: string, artifactType: string, exec: Mo
   const poolKey = drawing ? `${MOTION_EDITORIAL.SCENES}${workerIds.length}` : planning ? `${MOTION_STORY_CONFIG.ROOM_GROUPS.PLAN}${workerIds.length}` : lightWork ? `${MOTION_STORY_CONFIG.ROOM_GROUPS.LIGHT}${workerIds.length}` : `${MOTION_EDITORIAL.CONTENT}${workerIds.length}`;
   const workers = run.workers.get(poolKey) || new MotionAiWorkerPool(workerIds);
   run.workers.set(poolKey, workers);
-  const seat = { pin: exec.worker && (workerIds as readonly string[]).includes(exec.worker) ? exec.worker : undefined, avoid: exec.avoidWorker && workerIds.length > 1 ? exec.avoidWorker : undefined };
+  const seat = { pin: exec.worker && (workerIds as readonly string[]).includes(exec.worker) ? exec.worker : undefined, avoid: exec.avoidWorker && workerIds.length > 1 ? exec.avoidWorker : undefined, urgent: exec.urgent === true };
   const pending = (async () => {
     const linked = AbortSignal.any(_.compact([signal, run.signal]));
     const releaseSession = await motionBrowserLifecycle.acquireSession(linked, exec.renderRecovery === true);

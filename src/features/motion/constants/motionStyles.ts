@@ -7,7 +7,8 @@ export const MOTION_STYLES = {
   PRODUCTION_ACTION_BUTTON: "min-w-0 max-w-full flex-1 sm:flex-none sm:max-w-[calc(100%-7rem)]",
   ACTION_TEXT: "block min-w-0 truncate",
   ACTION_BUSY: "!opacity-100 !animate-none",
-  HINT_WRAP: "group/hint relative inline-flex shrink-0 items-center align-middle normal-case tracking-normal font-sans transition-[opacity,transform,width,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+  // The wrap is scaled, so it is its own stacking context: it needs a z-index itself or the fields below paint over its panel.
+  HINT_WRAP: "group/hint relative z-30 hover:z-50 focus-within:z-50 inline-flex shrink-0 items-center align-middle normal-case tracking-normal font-sans transition-[opacity,transform,width,margin] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
   HINT_ON: "w-5 opacity-100 scale-100 ml-1.5",
   HINT_OFF: "w-0 opacity-0 scale-50 ml-0 pointer-events-none",
   HINT_JOIN: " ",
@@ -15,7 +16,7 @@ export const MOTION_STYLES = {
   HINT_BUTTON_WARN: "text-amber-300",
   HINT_BUTTON_INFO: "text-sky-300",
   HINT_ICON: "relative h-4 w-4 shrink-0",
-  HINT_PANEL: "invisible absolute left-0 top-full z-50 mt-2 flex w-[min(20rem,calc(100vw-2rem))] -translate-x-2 translate-y-1 flex-col gap-2 rounded-xl border border-slate-700/80 bg-slate-900/95 p-3 text-[11.5px] font-normal leading-relaxed text-slate-200 opacity-0 shadow-2xl shadow-black/40 backdrop-blur-md transition-[opacity,transform,visibility] duration-200 group-hover/hint:visible group-hover/hint:translate-y-0 group-hover/hint:opacity-100 group-focus-within/hint:visible group-focus-within/hint:translate-y-0 group-focus-within/hint:opacity-100",
+  HINT_PANEL: "invisible absolute left-0 top-full z-50 mt-2 flex w-[min(20rem,calc(100vw-2rem))] -translate-x-2 translate-y-1 flex-col gap-2 rounded-xl border border-slate-700/80 bg-slate-900 p-3 text-[11.5px] font-normal leading-relaxed text-slate-200 opacity-0 shadow-2xl shadow-black/40 transition-[opacity,transform,visibility] duration-200 group-hover/hint:visible group-hover/hint:translate-y-0 group-hover/hint:opacity-100 group-focus-within/hint:visible group-focus-within/hint:translate-y-0 group-focus-within/hint:opacity-100",
   HINT_ROW: "flex items-start gap-2",
   HINT_ROW_ICON: "mt-0.5 h-3.5 w-3.5 shrink-0",
   HINT_ROW_WARN: "text-amber-300",

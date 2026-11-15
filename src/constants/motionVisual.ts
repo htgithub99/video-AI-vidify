@@ -63,6 +63,7 @@ export const MOTION_VISUAL = {
       cannotUndo: "Không thể hoàn tác.",
       cancel: "Hủy",
       sceneScore: (score: number) => `Điểm kiểm tra ${score}/100 · đã giữ bản tốt nhất`,
+      qualityWarning: (issues: string) => `Cảnh chưa đạt sau khi tạo lại: ${issues}`,
       warnedCount: (warned: number) => ` · ${warned} cảnh có cảnh báo`,
       retryFailedScenes: (failed: number) => `Vẽ lại ${failed} cảnh lỗi`,
       scenePlanning: "Chưa có phân cảnh chi tiết",
@@ -98,6 +99,7 @@ export const MOTION_VISUAL = {
       cannotUndo: "This cannot be undone.",
       cancel: "Cancel",
       sceneScore: (score: number) => `Checklist score ${score}/100 · best answer kept`,
+      qualityWarning: (issues: string) => `Below target after a retry: ${issues}`,
       warnedCount: (warned: number) => ` · ${warned} scenes with warnings`,
       retryFailedScenes: (failed: number) => `Redraw ${failed} failed scenes`,
       scenePlanning: "Detailed scene plan pending",
@@ -147,6 +149,9 @@ export const MOTION_VISUAL = {
   BUNDLE_FOLDER: "remotion",
   BUNDLE_PUBLIC_FOLDER: "empty-public",
   PROJECT_FOLDER: "remotion-projects",
+  // One line that states the configuration this run really applies, so a run can be checked against what the user chose.
+  LOG_CONFIG: (c: { genre?: string; storytelling?: string; length?: string; language?: string; style?: string; layout?: string; pacing?: string; kit?: boolean; mainAi?: string; scriptAi?: string; planAi?: string; sceneAi?: string; review: boolean; lowSpec: boolean; subtitles: boolean; music?: string; sfx: boolean }) =>
+    `Cấu hình áp dụng: thể loại ${c.genre || "-"} · cách kể ${c.storytelling || "-"} · ${c.length || "-"} · ngôn ngữ ${c.language || "-"} | kiểu vẽ ${c.style || "-"} · bố cục ${c.layout || "auto"} · nhịp đổi hình ${c.pacing || "mặc định"} · bộ vẽ chuẩn ${c.kit ? "bật" : "tắt"} | AI phân tích ${c.mainAi || "-"} · kịch bản ${c.scriptAi || "-"} · plan cảnh ${c.planAi || "-"} · dựng cảnh ${c.sceneAi || "-"} | AI duyệt ảnh ${c.review ? "bật" : "tắt"} · máy yếu ${c.lowSpec ? "bật" : "tắt"} · phụ đề ${c.subtitles ? "bật" : "tắt"} · nhạc ${c.music || "tắt"} · hiệu ứng âm ${c.sfx ? "bật" : "tắt"}.`,
   LOG_MODE: (mode: string) => `Phương thức dựng: ${mode === "remotion" ? "Remotion" : "Kho tài nguyên"}.`,
   LOG_SCENE: (i: number, total: number, id: string) => `Đọc và dựng cảnh Remotion ${i}/${total}: ${id}`,
   LOG_READY: (i: number, total: number) => `Đã dựng cảnh Remotion ${i}/${total}.`,

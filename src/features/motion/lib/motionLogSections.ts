@@ -44,6 +44,7 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
   const phase = new Map<string, string>();
   const scriptChaptersDone = new Set<string>();
   const sources = new Map<string, string>();
+  const echoes = new Map<string, string>();
   const starts = new Map<string, number>();
   const ends = new Map<string, number>();
   let order = 0;
@@ -81,6 +82,11 @@ export const motionLogSections = (entries: MotionLogEntry[], language: string = 
     const substage = key === RT_SHARED.SCENES ? scopes.filter((scope) => Object.values(P.STAGE).includes(scope as typeof P.STAGE.PLAN)).at(-1) : undefined;
     const shown = substage ? `${substage}${RT_SHARED.SYMBOL_588DA4}${display}` : display;
     const visible = failure || !technical || display !== message;
+    // A step that runs as its own job (SEO) is logged by that job and echoed by the production log: keep one copy.
+    const echo = `${time}|${shown}`;
+    const echoed = echoes.get(key + echo);
+    if (echoed && echoed !== id) continue;
+    echoes.set(key + echo, id);
     const previous = visible ? [...group.rows].reverse().find((item) => item.visible) : undefined;
     if (previous && previous.message.replace(MOTION_LOG_TEXT.REPEAT_TAIL, "") === shown) {
       previous.repeat = (previous.repeat || 1) + 1;

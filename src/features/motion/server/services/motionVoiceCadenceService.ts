@@ -80,7 +80,15 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
   if (!before || before.pauses.length > N.MAX_PAUSES) return;
   const output = file + randomUUID() + RUNTIME_VALUES.CADENCE_WAV_A51E3FA2;
   const planned = referencePausePlan(text, before.pauses, profile);
-  const pauses = planned.pauses;
+  // Pauses matched to punctuation take the reference length. Every other pause the voice model made (a breath in the middle
+  // of a phrase, a long stall, a pause at punctuation that could not be matched for certain) is only ever shortened: to the
+  // clause length, or to the sentence length when it was already that long. This keeps the rhythm even from line to line.
+  const matched = new Set(planned.pauses.map((pause) => pause.at));
+  const capped = before.pauses
+    .filter((pause) => !matched.has(pause.at))
+    .map((pause) => ({ at: pause.at, d: pause.d, target: pause.d >= profile.sentence * N.LONG_PAUSE_SHARE ? profile.sentence : profile.clause }))
+    .filter((pause) => pause.d > pause.target * N.CAP_MARGIN);
+  const pauses = [...planned.pauses, ...capped].sort((a, b) => a.at - b.at);
   const clamp = (value: number) => Math.max(N.TEMPO_MIN, Math.min(N.TEMPO_MAX, value));
   let tempo = clamp(profile.articulation / before.articulation);
   const render = async () => {
@@ -120,7 +128,7 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
         if (!after) return;
       }
     }
-    return { wav, cadence: { before: before.articulation, after: after.articulation, target: profile.articulation, tempo, limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA, pausesMatched: pauses.length, pausesExpected: planned.expected } };
+    return { wav, cadence: { before: before.articulation, after: after.articulation, target: profile.articulation, tempo, limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA, pausesMatched: planned.pauses.length, pausesExpected: planned.expected } };
   } finally {
     await fs.promises.rm(output, { force: true }).catch(() => {});
   }

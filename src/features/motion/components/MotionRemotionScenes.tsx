@@ -103,6 +103,11 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
                   {entry.preview ? "" : entry.scene.htmlRequest.error ? `${RT_MAINTENANCE.DOT_SEPARATOR}${entry.scene.htmlRequest.error}` : ""}
                 </p>
               )}
+              {entry.scene?.renderer === RT_MAINTENANCE.HTML_CANVAS && !!entry.scene.html?.warnings?.length && (
+                <p className={S.FAILURE} title={entry.scene.html.warnings.join(RT_MAINTENANCE.NEWLINE)}>
+                  {text.qualityWarning(entry.scene.html.warnings.join("; "))}
+                </p>
+              )}
               <p className={S.CAPTION} title={entry.narration || entry.scene?.purpose}>
                 {title}
                 {RT_MOTION.CAPTION_SEPARATOR}

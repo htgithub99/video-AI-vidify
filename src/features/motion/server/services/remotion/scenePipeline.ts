@@ -99,6 +99,7 @@ export interface RemotionSceneOptions {
   onlyScenes?: string[];
   onlyLocations?: string[];
   note?: string;
+  review?: boolean;
   ai?: typeof runMotionAi;
 }
 export const buildRemotionScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
