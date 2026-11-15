@@ -115,6 +115,39 @@ export const MOTION_KIT_LAYOUT_FIX = `(function (K) {
       if (o.mark) mark(c, String(o.mark), x0, y0, w, h, fn === 'person' ? { look: lookOf(o) } : null);
       if (big) { const [, ch] = dims(c); const sh = Math.abs(c.getTransform().d) * h / ch; if (sh >= LARGE) mark(c, '~' + fn + ':' + (o.kind || fn), x0, y0, w, h, { large: true }); }
     };
+    // Smoke never rises through a person the scene marks: a column whose base sits on or just in front of a marked person
+    // is moved to the nearer free side of that person.
+    const SMOKES = ['smoke', 'darkSmoke', 'smokeColumn'];
+    const clearOfFaces = (c, o) => {
+      const marks = window.__motionMarks;
+      if (SMOKES.indexOf(o.kind) < 0 || !Array.isArray(marks) || !isFinite(+o.x) || !isFinite(+o.y)) return o;
+      const p = toScreen(c, +o.x, +o.y), m = c.getTransform(), cw = dims(c)[0];
+      const hit = marks.filter((item) => item && item.src === 'kit' && item.look && item.h > 0.08 && p[0] > item.x - 0.02 && p[0] < item.x + item.w + 0.02 && p[1] > item.y && p[1] < item.y + item.h + 0.12)[0];
+      if (!hit || Math.abs(m.a) < 1e-6) return o;
+      const left = hit.x - 0.05, right = hit.x + hit.w + 0.05, target = p[0] - left < right - p[0] ? left : right;
+      return Object.assign({}, o, { x: +o.x + ((target - p[0]) * cw) / m.a });
+    };
+    // Set dressing never hides the cast: an unmarked prop, tree or building drawn nearer the camera than a marked person and
+    // covering a good part of that person is left out.
+    const BLOCKERS = ['prop', 'tree', 'building'], BLOCK_SHARE = 0.25;
+    const blocksPerson = (c, fn, o) => {
+      const marks = window.__motionMarks;
+      if (!Array.isArray(marks) || !isFinite(+o.x) || !isFinite(+o.y) || o.lying || typeof K.size !== 'function') return false;
+      const people = marks.filter((item) => item && item.src === 'kit' && item.look && item.h > 0.08);
+      if (!people.length) return false;
+      let m = null;
+      busy++;
+      try { m = K.size(fn, o); } catch (e) { m = null; } finally { busy--; }
+      if (!m || !isFinite(m.height) || m.height <= 0) return false;
+      const left = isFinite(m.left) ? m.left : m.width / 2, right = isFinite(m.right) ? m.right : m.width / 2;
+      const a = toScreen(c, +o.x - left, +o.y - m.height), b = toScreen(c, +o.x + right, +o.y);
+      const x0 = Math.min(a[0], b[0]), x1 = Math.max(a[0], b[0]), y0 = Math.min(a[1], b[1]), y1 = Math.max(a[1], b[1]);
+      return people.some((item) => {
+        if (y1 < item.y + item.h - 0.01) return false;
+        const w = Math.min(x1, item.x + item.w) - Math.max(x0, item.x), h = Math.min(y1, item.y + item.h) - Math.max(y0, item.y);
+        return w > 0 && h > 0 && (w * h) / (item.w * item.h) > BLOCK_SHARE;
+      });
+    };
     const wrap = (name) => {
       const base = K[name];
       if (typeof base !== 'function') return;
@@ -125,6 +158,8 @@ export const MOTION_KIT_LAYOUT_FIX = `(function (K) {
           if (shift && isFinite(+shift.dx) && isFinite(+args[1].x)) args[1] = Object.assign({}, args[1], { x: +args[1].x + +shift.dx });
           const cast = name === 'person' && window.__motionKitCast && args[1].mark ? window.__motionKitCast[String(args[1].mark).toLowerCase()] : null;
           if (cast && typeof cast === 'object') { const kept = {}; if (!cast._seed) LOOK_KEYS.forEach((key) => { kept[key] = undefined; }); args[1] = Object.assign({}, args[1], kept, cast); delete args[1]._seed; }
+          if (name === 'effect') args[1] = clearOfFaces(c, args[1]);
+          if (BLOCKERS.indexOf(name) >= 0 && !args[1].mark && blocksPerson(c, name, args[1])) { issue('left out a foreground ' + name + ' ' + (args[1].kind || '') + ' that covered a marked person'); return null; }
           args[1] = settle(c, name, args[1], name);
           record(c, name, args[1]);
         }
@@ -483,7 +518,7 @@ export const MOTION_KIT_LAYOUT_FIX = `(function (K) {
       if (o.mark) mark(c, String(o.mark), +o.x - R * 1.8, +o.y - R * 1.35, R * 3.6, R * 1.35);
     };
     // Long guns lean together like a stack of arms; objects with no drawing of their own use the kit's icon of that thing.
-    const GUNS = ['musket', 'rifle', 'arquebus', 'carbine', 'gun', 'bayonet', 'muskets', 'rifles'];
+    const GUNS = ['musket', 'rifle', 'arquebus', 'carbine', 'bayonet', 'muskets', 'rifles'];
     const ICON_PROPS = { crown: 'crown', skull: 'skull', bones: 'skull', clock: 'clock', watch: 'clock', globe: 'globe', phone: 'phone', telephone: 'phone', radio: 'phone', computer: 'computer', laptop: 'computer', television: 'computer', coin: 'coin', key: 'key', lock: 'lock', medal: 'medal', trophy: 'trophy', hourglass: 'hourglass', telescope: 'magnifier', microscope: 'magnifier', magnifier: 'magnifier', calendar: 'calendar', document: 'document', lightbulb: 'bulb', bulb: 'bulb', scale: 'scale', scales: 'scale' };
     const drawGuns = (c, o) => {
       const R = n(o.r, n(o.p, 30)), cnt = Math.max(1, Math.min(5, Math.round(n(o.count, 3))));
@@ -518,10 +553,9 @@ export const MOTION_KIT_LAYOUT_FIX = `(function (K) {
       batteringRam: [5, 2.6, (c, R) => { poly(c, [[-2.2 * R, -0.6 * R], [1.6 * R, -0.6 * R], [1.6 * R, -0.85 * R], [-2.2 * R, -0.85 * R]], WOOD_D); line(c, [-1.8 * R, -0.85 * R], [-0.1 * R, -2.5 * R]); line(c, [1.4 * R, -0.85 * R], [-0.1 * R, -2.5 * R]); c.strokeStyle = '#c9b48a'; line(c, [-1 * R, -1.7 * R], [-1 * R, -1.35 * R]); line(c, [0.6 * R, -1.75 * R], [0.6 * R, -1.35 * R]); c.strokeStyle = ink(); poly(c, [[-2.4 * R, -1.1 * R], [2 * R, -1.1 * R], [2 * R, -1.45 * R], [-2.4 * R, -1.45 * R]], WOOD); poly(c, [[2 * R, -1 * R], [2.5 * R, -1.27 * R], [2 * R, -1.55 * R]], IRON); ring(c, -1.5 * R, -0.4 * R, 0.4 * R, WOOD); ring(c, 1 * R, -0.4 * R, 0.4 * R, WOOD); }],
       lute: [1, 2.4, (c, R) => { c.save(); c.rotate(0.35); poly(c, [[-0.09 * R, -0.9 * R], [0.09 * R, -0.9 * R], [0.07 * R, -2.2 * R], [-0.07 * R, -2.2 * R]], WOOD_D); c.beginPath(); c.ellipse(0, -0.55 * R, 0.42 * R, 0.55 * R, 0, 0, Math.PI * 2); c.fillStyle = '#b07a45'; c.fill(); c.stroke(); ring(c, 0, -0.62 * R, 0.13 * R, '#3a2a1c'); c.restore(); }],
       blackboard: [3.2, 3.4, (c, R) => { line(c, [-1.2 * R, 0], [-0.9 * R, -1.2 * R]); line(c, [1.2 * R, 0], [0.9 * R, -1.2 * R]); poly(c, [[-1.6 * R, -1.2 * R], [1.6 * R, -1.2 * R], [1.6 * R, -3.4 * R], [-1.6 * R, -3.4 * R]], WOOD); poly(c, [[-1.45 * R, -1.35 * R], [1.45 * R, -1.35 * R], [1.45 * R, -3.25 * R], [-1.45 * R, -3.25 * R]], '#2f4a3c'); }],
-      haystack: [3, 2.4, (c, R) => { c.beginPath(); c.moveTo(-1.5 * R, 0); c.quadraticCurveTo(-1.5 * R, -2.2 * R, 0, -2.4 * R); c.quadraticCurveTo(1.5 * R, -2.2 * R, 1.5 * R, 0); c.closePath(); c.fillStyle = '#d9b84f'; c.fill(); c.stroke(); for (let i = -2; i <= 2; i++) line(c, [i * 0.45 * R, -0.3 * R], [i * 0.3 * R, -1.6 * R]); }],
       sail: [3, 5, (c, R) => { c.lineWidth *= 1.6; c.strokeStyle = WOOD_D; line(c, [0, 0], [0, -5 * R]); c.lineWidth /= 1.6; c.strokeStyle = ink(); c.beginPath(); c.moveTo(0.12 * R, -4.7 * R); c.quadraticCurveTo(1.9 * R, -3 * R, 1.4 * R, -0.8 * R); c.lineTo(0.12 * R, -0.8 * R); c.closePath(); c.fillStyle = CLOTH; c.fill(); c.stroke(); }],
     };
-    const CUSTOM_ALIAS = { pillar: 'column', columns: 'column', pillars: 'column', sarcophagus: 'tomb', violin: 'lute', guitar: 'lute', harp: 'lute', sleigh: 'sled', ram: 'batteringRam', hay: 'haystack', mast: 'sail', yoke: 'plow', archway: 'arch' };
+    const CUSTOM_ALIAS = { pillar: 'column', columns: 'column', pillars: 'column', sarcophagus: 'tomb', violin: 'lute', guitar: 'lute', harp: 'lute', sleigh: 'sled', ram: 'batteringRam', mast: 'sail', yoke: 'plow', archway: 'arch' };
     const drawCustom = (c, o) => {
       const kind = CUSTOM[o.kind] ? o.kind : CUSTOM_ALIAS[o.kind], spec = CUSTOM[kind], R = n(o.r, n(o.p, 30));
       c.save(); c.translate(+o.x, +o.y); if (n(o.facing, 1) < 0) c.scale(-1, 1);
@@ -531,9 +565,31 @@ export const MOTION_KIT_LAYOUT_FIX = `(function (K) {
       c.restore();
       if (o.mark) mark(c, String(o.mark), +o.x - (spec[0] * R) / 2, +o.y - spec[1] * R, spec[0] * R, spec[1] * R);
     };
+    const BANNERS = ['banner', 'flag', 'standard', 'pennant'], BANNER_MAX = 1.65;
     const prop1 = K.prop;
     if (typeof prop1 === 'function') K.prop = function (c, opt) {
       if (busy || !c || !opt || typeof opt !== 'object' || !isFinite(+opt.x) || !isFinite(+opt.y)) return prop1.apply(this, arguments);
+      // A banner is carried by people: beside marked people it is never taller than about one and two thirds of them.
+      if (BANNERS.indexOf(opt.kind) >= 0 && typeof K.size === 'function' && Array.isArray(window.__motionMarks)) {
+        const tallest = Math.max.apply(null, window.__motionMarks.filter((item) => item && item.src === 'kit' && item.look && item.h > 0.08).map((item) => item.h).concat([0]));
+        let m = null;
+        busy++;
+        try { m = K.size('prop', opt); } catch (e) { m = null; } finally { busy--; }
+        const tall = m && isFinite(m.height) ? (Math.abs(c.getTransform().d) * m.height) / dims(c)[1] : 0;
+        if (tallest > 0 && tall > tallest * BANNER_MAX) {
+          const k = (tallest * BANNER_MAX) / tall, o = Object.assign({}, opt);
+          if (isFinite(+o.r)) o.r = +o.r * k;
+          if (isFinite(+o.p)) o.p = +o.p * k;
+          if (isFinite(+o.width)) o.width = +o.width * k;
+          if (isFinite(+o.height)) o.height = +o.height * k;
+          return prop1.call(this, c, o);
+        }
+        return prop1.apply(this, arguments);
+      }
+      // The base kit's own items always win: this layer only draws what the kit has no drawing for.
+      let own = false;
+      try { own = typeof routeKind === 'function' && routeKind('prop', opt.kind) === null; } catch (e) { own = false; }
+      if (own) return prop1.apply(this, arguments);
       if (ARROWS.indexOf(opt.kind) >= 0) return drawArrows(c, opt);
       if (GUNS.indexOf(opt.kind) >= 0) return drawGuns(c, opt);
       if (CUSTOM[opt.kind] || CUSTOM_ALIAS[opt.kind]) return drawCustom(c, opt);
@@ -580,6 +636,7 @@ export const MOTION_KIT_LAYOUT_FIX = `(function (K) {
       steamship: ['vehicle', 'ship'], ferry: ['vehicle', 'ship'], battleship: ['vehicle', 'warship'], carrier: ['vehicle', 'warship'], zeppelin: ['vehicle', 'airship'], spaceship: ['vehicle', 'rocket'],
       sled: ['prop', 'sled'], sleigh: ['prop', 'sled'], batteringram: ['prop', 'batteringRam'], ram: ['prop', 'batteringRam'], arch: ['prop', 'arch'], archway: ['prop', 'arch'], tomb: ['prop', 'tomb'], sarcophagus: ['prop', 'tomb'], colosseum: ['building', 'ruins'], aqueduct: ['prop', 'arch'],
       whale: ['animal', 'fish'], shark: ['animal', 'fish'], dolphin: ['animal', 'fish'], bee: ['animal', 'butterfly'], rabbit: ['animal', 'rat'], crutch: ['prop', 'spear'], cane: ['prop', 'spear'], broom: ['prop', 'spear'], whip: ['prop', 'rope'], scepter: ['prop', 'torch'],
+      hay: ['prop', 'haystack'],
       prison: ['building', 'bunker'], igloo: ['building', 'hut'], stall: ['building', 'tent'], bull: ['animal', 'ox'], mouse: ['animal', 'rat'], goose: ['animal', 'duck'], rooster: ['animal', 'chicken'], raven: ['animal', 'crow'], hawk: ['animal', 'eagle'], owl: ['animal', 'eagle'], vulture: ['animal', 'eagle'],
     });
     // An alias is resolved here, at the top of the kit, so a word that maps to an item drawn by this layer (spear, axe,

@@ -40,6 +40,8 @@ export interface HtmlRenderOptions {
   recoverScene?: typeof generateMotionHtmlScene;
 }
 const gpuReported = new WeakSet<MotionRemotionSpec>();
+// Once the graphics card has failed in this process, later exports start on the CPU instead of failing the same way again.
+let gpuFailed = false;
 const chromeGpuRenderer = async (browser: Browser): Promise<string> => {
   const page = await browser.newPage().catch(() => undefined);
   if (!page) return MOTION_GPU_CHROME.UNKNOWN;
@@ -66,8 +68,8 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
   let shared: Browser | undefined;
   const laneBrowser = async () => {
     if (!shared?.isConnected()) {
-      shared = await chromium.launch({ executablePath: findNativeChrome(), headless: true, args: MOTION_GPU_CHROME.ARGS(process.platform) });
-      if (!gpuReported.has(spec)) {
+      shared = await chromium.launch({ executablePath: findNativeChrome(), headless: true, args: gpuFailed ? MOTION_GPU_CHROME.CPU_ARGS() : MOTION_GPU_CHROME.ARGS(process.platform) });
+      if (!gpuFailed && !gpuReported.has(spec)) {
         gpuReported.add(spec);
         opts.log?.(MOTION_GPU_CHROME.LOG(await chromeGpuRenderer(shared)));
       }
@@ -75,6 +77,14 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
     return shared;
   };
   const closeShared = () => void shared?.close().catch(() => undefined);
+  const leaveGpu = async (reason: string): Promise<boolean> => {
+    if (gpuFailed) return false;
+    gpuFailed = true;
+    opts.log?.(MOTION_GPU_CHROME.CPU_LOG(reason));
+    await shared?.close().catch(() => undefined);
+    shared = undefined;
+    return true;
+  };
   opts.signal.addEventListener(RT_MAINTENANCE.ABORT, closeShared, { once: true });
   try {
   for (const [index, segment] of segments.entries()) {
@@ -154,6 +164,11 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
             await runtime?.close();
             runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser());
             image = await runtime.render(input, subtitle?.text, spec.fontFamily);
+            if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes && (await leaveGpu(MOTION_GPU_CHROME.CPU_REASON.BLANK))) {
+              await runtime?.close();
+              runtime = await openMotionHtmlRuntime(active.html.html, opts.signal, true, await laneBrowser());
+              image = await runtime.render(input, subtitle?.text, spec.fontFamily);
+            }
             if (retry === MOTION_HTML_QUALITY.BLANK.RETRIES - 1 && image.length < blankBytes) {
               blankScenes.add(active.id);
               opts.log?.(MOTION_HTML_QUALITY.BLANK.KEPT_LOG(active.id));
@@ -179,6 +194,8 @@ export const renderMotionHtmlSegments = async (spec: MotionRemotionSpec, segment
         await runtime?.close();
         runtime = undefined;
         opts.signal.throwIfAborted();
+        // A frame that stalls is the graphics card's fault until the CPU has failed on it too: redraw on the CPU with the same page.
+        if (MOTION_GPU_CHROME.TIMEOUT.test(String((error as Error).message)) && (await leaveGpu(MOTION_GPU_CHROME.CPU_REASON.TIMEOUT))) continue;
         if ((error as any).motionHtmlExecution && active?.html?.execution) {
           const artifact = active.html;
           active.html.status = RT_MAINTENANCE.RETRY_WAIT;

@@ -16,7 +16,7 @@ export const MOTION_VOICE = {
     MIN_VOICED: 0.25,
     SPLIT: /(?<=[.!?\u2026]["'\u201d\u2019)\]]*)\s+/u,
     ABBREVIATION: /(?:\b(?:Mr|Mrs|Ms|Dr|St|Gen|Col|Capt|Lt|Sgt|Prof|No|vs|etc|TP|TS|Th\.S)|(?<![\p{L}\p{N}])\p{L})\.$/iu,
-    LOG: (lines: number, sentences: number, adjusted: number, spread: number) => `Giọng đọc theo câu: ${lines} đoạn dài được đọc thành ${sentences} câu riêng rồi ghép lại; ${adjusted} câu được chỉnh tốc độ về mức chung; chênh lệch tốc độ lớn nhất còn lại giữa các câu trong một đoạn ${(spread * 100).toFixed(0)}%.`,
+    LOG: (lines: number, sentences: number, adjusted: number, spread: number) => `Giọng đọc theo câu: ${lines} đoạn dài được đọc thành ${sentences} câu riêng rồi ghép lại; ${adjusted} câu được chỉnh tốc độ về mức chung; chênh lệch tốc độ nói (không tính chỗ ngừng) lớn nhất còn lại giữa các câu trong một đoạn ${(spread * 100).toFixed(0)}%.`,
   },
   VERSION: 5,
   PLAN_VERSION: 9,
@@ -665,8 +665,10 @@ export const MOTION_VOICE_SPEED = {
   },
 } as const;
 export const MOTION_VOICE_PACING = {
-  VERSION: 11,
-  NARRATOR_CADENCE: { LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
+  VERSION: 12,
+  // Each phrase between two punctuation pauses is brought to the line's own speaking rate (never by more than PHRASE_STRETCH).
+  PHRASE_LOG: (phrases: number, before: number, after: number): string => `Cân tốc độ từng cụm: ${phrases} cụm giữa các dấu câu được đưa về tốc độ chung của câu; độ lệch lớn nhất giữa các cụm ${(before * 100).toFixed(0)}% → khoảng ${(after * 100).toFixed(0)}%.`,
+  NARRATOR_CADENCE: { PHRASE_STRETCH: 0.18, PHRASE_MIN_UNITS: 4, PHRASE_MIN_SECONDS: 0.6, LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
   CADENCE_LOG: (count: number, min: number, max: number, target: number, limited: number, matched = 0, expected = 0): string => `Nhịp người kể: cân tốc độ trung bình ${count} đoạn theo mẫu ${target.toFixed(2)} tiếng/giây; đo lại ${min.toFixed(2)}–${max.toFixed(2)}. Khớp ${matched}/${expected} ranh giới dấu câu bằng âm thanh; phần chưa chắc giữ nhịp tự nhiên (${limited} đoạn chạm giới hạn).`,
   CADENCE_FALLBACK: "Đoạn kể chưa đo chắc nhịp; giữ tốc độ dự phòng và tiếp tục dựng.",
   CADENCE_ERROR: (reason: string): string => `Chưa cân nhịp được đoạn kể (${reason.slice(0, 120)}); giữ tốc độ dự phòng.`,
@@ -680,6 +682,11 @@ export const MOTION_VOICE_PACING = {
   DIALOGUE_RATE: { vi: 3.8, en: 2.6 } as Record<string, number>,
   DIALOGUE_MIN_UNITS: 4,
   DIALOGUE_RATE_MARGIN: 0.98,
+  // A reference profile taken from a slow ghost-story reading keeps its long pauses only for that kind of video. Every
+  // other genre reads in a flowing rhythm: the speaking rate of the profile stays, the pauses at commas and full stops
+  // are capped so the narration does not stop every second.
+  FLOW: { CLAUSE: 0.26, SENTENCE: 0.46, SUSPENSE: 0.6, BEAT: 0.7 },
+  FLOW_LOG: (clause: number, sentence: number): string => `Nhịp kể liền mạch cho thể loại này: nghỉ dấu phẩy tối đa ${clause.toFixed(2)} giây, nghỉ cuối câu tối đa ${sentence.toFixed(2)} giây (tốc độ nói giữ theo hồ sơ giọng).`,
   HORROR_RE: /(horror|ghost|kinh dị|truyện ma|tâm linh|ma quỷ|rùng rợn)/iu,
   SENTENCE_RE: /[^.!?…]+(?:\.\.\.|[.!?…])+["”']?|[^.!?…]+$/g,
   WORD_RE: /\s+/,

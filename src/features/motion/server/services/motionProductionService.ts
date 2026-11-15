@@ -20,6 +20,7 @@ import { MOTION_VOICE_LIBRARY } from "../../../../constants/motionVoice.js";
 import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
 import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState, type MotionStoryAnalysis, type MotionStoryScript, type MotionVoiceTrack, type MotionSeoPack, type MotionResultItem, type MotionProductionResult, type MotionProductionJobState } from "../../../../types/motionVideo.js";
 import { logger } from "../../../../lib/logger.js";
+import { closeChatBrowserIfIdle } from "../../../../server/services/chatUiPlanningService.js";
 import { checkMotionMediaTools } from "./motionMediaValidation.js";
 import { checkMotionProductionVoice } from "./motionProductionPreflight.js";
 import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.js";
@@ -520,7 +521,15 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           );
         if (media !== RT_SHARED.SCENES)
           jobs.push(
-            (isLowSpecMode() ? Promise.allSettled(jobs.slice()) : Promise.resolve()).then(() => step<MotionVoiceTrack>(
+            (isLowSpecMode()
+              ? Promise.allSettled(jobs.slice()).then(() =>
+                  // The AI steps are over: close the AI Chrome now instead of leaving an empty window open through the voice step.
+                  closeChatBrowserIfIdle()
+                    .then((closed) => void (closed && log(record, P.CHROME_CLOSED_BEFORE_VOICE)))
+                    .catch(() => undefined),
+                )
+              : Promise.resolve()
+            ).then(() => step<MotionVoiceTrack>(
               stage(P.STAGES.VOICE),
               async () => {
                 await earlyVoice?.settle();

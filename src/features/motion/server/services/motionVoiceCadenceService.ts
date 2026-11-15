@@ -58,7 +58,7 @@ export const referencePausePlan = (text: string, pauses: { at: number; d: number
   const marks = [...text.matchAll(/[,;:，；：]|\.{3}|[.!?…]+/gu)].filter((mark) => /^["”’')\]]*\s+\S/u.test(text.slice(mark.index! + mark[0].length)));
   const boundaries = marks.map((mark) => ({ progress: speechUnits(text.slice(0, mark.index! + mark[0].length)) / units, target: /[,;:，；：]/u.test(mark[0]) ? profile.clause : /…|\.{3}/u.test(mark[0]) ? profile.suspense : profile.sentence }));
   const distance = (a: number, b: number) => Math.abs(a - b) * units;
-  const chosen: { at: number; d: number; target: number }[] = [];
+  const chosen: { at: number; d: number; target: number; progress: number }[] = [];
   let last = -1;
   for (const boundary of boundaries) {
     const candidates = pauses
@@ -69,7 +69,7 @@ export const referencePausePlan = (text: string, pauses: { at: number; d: number
     if (!best || best.error > N.ALIGN_MAX_UNITS || (candidates[1] && candidates[1].error - best.error < N.ALIGN_MARGIN_UNITS)) continue;
     const neighbours = boundaries.map((item) => ({ item, error: distance(item.progress, best.pause.progress) })).sort((a, b) => a.error - b.error);
     if (neighbours[0].item !== boundary || (neighbours[1] && neighbours[1].error - neighbours[0].error < N.ALIGN_MARGIN_UNITS)) continue;
-    chosen.push({ at: best.pause.at, d: best.pause.d, target: boundary.target });
+    chosen.push({ at: best.pause.at, d: best.pause.d, target: boundary.target, progress: boundary.progress });
     last = best.index;
   }
   return { pauses: chosen, expected: boundaries.length };
@@ -86,11 +86,46 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
   const matched = new Set(planned.pauses.map((pause) => pause.at));
   const capped = before.pauses
     .filter((pause) => !matched.has(pause.at))
-    .map((pause) => ({ at: pause.at, d: pause.d, target: pause.d >= profile.sentence * N.LONG_PAUSE_SHARE ? profile.sentence : profile.clause }))
+    .map((pause) => ({ at: pause.at, d: pause.d, target: pause.d >= profile.sentence * N.LONG_PAUSE_SHARE ? profile.sentence : profile.clause, progress: undefined as number | undefined }))
     .filter((pause) => pause.d > pause.target * N.CAP_MARGIN);
   const pauses = [...planned.pauses, ...capped].sort((a, b) => a.at - b.at);
   const clamp = (value: number) => Math.max(N.TEMPO_MIN, Math.min(N.TEMPO_MAX, value));
   let tempo = clamp(profile.articulation / before.articulation);
+  // Even pace inside the line: a pause matched to punctuation says exactly which words lie before it, so each stretch of
+  // speech between two such pauses has a known syllable count. Its own rate is brought to the line's rate, within a limit
+  // that keeps the voice natural; stretches too short to measure are left alone.
+  const total = speechUnits(text);
+  const spans = Array.from({ length: pauses.length + 1 }, (_, index) => {
+    const from = index ? pauses[index - 1].at + pauses[index - 1].d : 0,
+      to = pauses[index] ? pauses[index].at : before.seconds;
+    return Math.max(0, to - from);
+  });
+  const spoken = spans.reduce((sum, value) => sum + value, 0);
+  const shape = spans.map(() => 1);
+  const ratios: number[] = [];
+  if (total > 0 && spoken > 0) {
+    let start = 0,
+      group: number[] = [];
+    for (let index = 0; index <= pauses.length; index++) {
+      group.push(index);
+      const pause = pauses[index];
+      if (pause && pause.progress === undefined) continue;
+      const end = pause?.progress ?? 1;
+      const units = (end - start) * total,
+        seconds = group.reduce((sum, at) => sum + spans[at], 0);
+      if (units >= N.PHRASE_MIN_UNITS && seconds >= N.PHRASE_MIN_SECONDS) {
+        const ratio = total / spoken / (units / seconds);
+        ratios.push(ratio);
+        const factor = Math.max(1 - N.PHRASE_STRETCH, Math.min(1 + N.PHRASE_STRETCH, ratio));
+        for (const at of group) shape[at] = factor;
+      }
+      start = end;
+      group = [];
+    }
+  }
+  const phrases = ratios.length > 1 ? ratios.length : 0;
+  if (!phrases) shape.fill(1);
+  const spreadOf = (values: number[]) => (values.length ? Math.max(...values.map((value) => Math.abs(value - 1))) : 0);
   const render = async () => {
     const filters: string[] = [],
       labels: string[] = [];
@@ -98,7 +133,7 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
     for (let i = 0; i <= pauses.length; i++) {
       const pause = pauses[i];
       const end = pause ? pause.at + N.PAUSE_GUARD : before.seconds;
-      filters.push(`${RUNTIME_VALUES.VALUE_DB0A8F0C}${from.toFixed(6)}${RUNTIME_VALUES.END_332E4C51}${end.toFixed(6)}${RUNTIME_VALUES.ASETPTS_PTS_STARTPTS_ATEMPO_36A3314D}${tempo.toFixed(6)}${RUNTIME_VALUES.S_125A9899}${i}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_45}`);
+      filters.push(`${RUNTIME_VALUES.VALUE_DB0A8F0C}${from.toFixed(6)}${RUNTIME_VALUES.END_332E4C51}${end.toFixed(6)}${RUNTIME_VALUES.ASETPTS_PTS_STARTPTS_ATEMPO_36A3314D}${(tempo * shape[i]).toFixed(6)}${RUNTIME_VALUES.S_125A9899}${i}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_45}`);
       labels.push(`${RUNTIME_VALUES.S_125A9899}${i}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_45}`);
       if (pause) {
         const quiet = Math.max(0.01, pause.target - (2 * N.PAUSE_GUARD) / tempo);
@@ -128,7 +163,7 @@ export const normalizeReferenceVoiceCadence = async (file: string, text: string,
         if (!after) return;
       }
     }
-    return { wav, cadence: { before: before.articulation, after: after.articulation, target: profile.articulation, tempo, limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA, pausesMatched: planned.pauses.length, pausesExpected: planned.expected } };
+    return { wav, cadence: { before: before.articulation, after: after.articulation, target: profile.articulation, tempo, limited: Math.abs(after.articulation / profile.articulation - 1) > N.REVIEW_DELTA, pausesMatched: planned.pauses.length, pausesExpected: planned.expected, ...(phrases ? { phrases, phraseSpread: spreadOf(ratios), phraseSpreadAfter: spreadOf(ratios.map((ratio) => ratio / Math.max(1 - N.PHRASE_STRETCH, Math.min(1 + N.PHRASE_STRETCH, ratio)))) } : {}) } };
   } finally {
     await fs.promises.rm(output, { force: true }).catch(() => {});
   }

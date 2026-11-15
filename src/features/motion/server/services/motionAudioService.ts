@@ -23,6 +23,7 @@ import { writeMotionJsonAtomic } from "./motionFileUtils.js";
 import { measureVoicePaceFile, measureVoiceCadenceFile } from "./motionVoicePaceService.js";
 import { normalizeReferenceVoiceCadence, referenceCadenceProfile } from "./motionVoiceCadenceService.js";
 import _ from "lodash";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { motionAudioHash as hash, motionWavData, motionWavFileInfo } from "./motionAudioUtils.js";
 import { motionVoiceSignal, trimMotionVoiceEdges, motionVoiceBoundaryPadding, compareMotionVoiceText, motionSupportedTranscript } from "./motionVoiceQualityService.js";
 import { speechUnits } from "./motionSpeechRateService.js";
@@ -32,7 +33,15 @@ import { hasMisassignedMotionSpeech } from "../../../../lib/motionSpeech.js";
 import type { MotionStorytellingSilent } from "../../../../constants/motionStorytelling.js";
 const active = new Map<string, Promise<MotionVoiceTrack>>();
 const voiceTrackSpeedKey = (plan: MotionVoicePlan): string => hash([PACE.VERSION, C.SENTENCES.VERSION, cadenceProfile(), readVoiceSpeedSettings().target?.pauses, _.uniq(plan.roles.map((role) => role.voiceId)).map((voiceId) => [voiceId, voiceSpeedKey(voiceId), knownVoiceTempoFactor(voiceId)])]);
-const cadenceProfile = () => referenceCadenceProfile(readVoiceSpeedSettings().target, readVoiceSpeedSettings().correction);
+// Whether the track being built reads in the flowing rhythm (every genre except horror); carried per build, not globally.
+const flowingRead = new AsyncLocalStorage<boolean>();
+const isHorror = (analysis: MotionStoryAnalysis | null): boolean => !!analysis && PACE.HORROR_RE.test([analysis.videoGenre, analysis.genre, analysis.genre2, analysis.sfxMood, analysis.musicMood].join(MR.MOTION_TEXT_SYMBOL_13));
+const flowPauses = <T extends { clause?: number; sentence: number; suspense: number; beat: number }>(pauses: T): T =>
+  flowingRead.getStore() ? { ...pauses, clause: Math.min(pauses.clause ?? pauses.sentence, PACE.FLOW.CLAUSE), sentence: Math.min(pauses.sentence, PACE.FLOW.SENTENCE), suspense: Math.min(pauses.suspense, PACE.FLOW.SUSPENSE), beat: Math.min(pauses.beat, PACE.FLOW.BEAT) } : pauses;
+const cadenceProfile = () => {
+  const profile = referenceCadenceProfile(readVoiceSpeedSettings().target, readVoiceSpeedSettings().correction);
+  return profile && flowPauses(profile);
+};
 const referenceNarration = (line: MotionUtterance, voiceId: string, paced: boolean) => (paced && line.role === MR.MOTION_TEXT_NARRATION && voiceUsesReferenceSpeed(voiceId) ? cadenceProfile() : undefined);
 export interface MotionVoiceDependencies {
   voices?: (signal?: AbortSignal, log?: (value: string) => void) => Promise<MotionVoicePreset[]>;
@@ -65,6 +74,7 @@ interface SpeechClipAudio {
   trailing: number;
   quality: MotionVoiceClipQuality;
   sentences?: number;
+  cadences?: MotionVoiceCadence[];
   adjusted?: number;
   spread?: number;
 }
@@ -287,6 +297,9 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
   const clips: SpeechClipAudio[] = [];
   for (const text of parts) clips.push(await make(text));
   const rateOf = (clip: SpeechClipAudio, text: string): number => {
+    // The cadence service measures the speaking rate without the pauses inside the sentence; prefer it when it exists,
+    // because a sentence with more commas is not a faster or slower voice.
+    if (clip.cadence?.after) return clip.cadence.after;
     const voiced = clip.duration - clip.leading - clip.trailing;
     return voiced >= S.MIN_VOICED && speechUnits(text) >= S.MIN_UNITS ? speechUnits(text) / voiced : 0;
   };
@@ -349,7 +362,7 @@ const speechClipJoined = async (line: MotionUtterance, voiceId: string, language
     await fs.promises.rename(temporary, file);
   }
   const worst = clips.find((clip) => clip.quality.status === Q.STATUS.REVIEW) || clips.find((clip) => clip.quality.status === Q.STATUS.UNAVAILABLE) || clips[0];
-  return { id, bytes: total, duration: total / 2 / C.SAMPLE_RATE, leading: clips[0].leading, trailing: clips[clips.length - 1].trailing, quality: worst.quality, sentences: clips.length, adjusted, spread, ...(clips[0].cadence ? { cadence: clips[0].cadence } : {}), ...(allWords && words.length ? { words } : {}) };
+  return { id, bytes: total, duration: total / 2 / C.SAMPLE_RATE, leading: clips[0].leading, trailing: clips[clips.length - 1].trailing, quality: worst.quality, sentences: clips.length, adjusted, spread, cadences: clips.flatMap((clip) => (clip.cadence ? [clip.cadence] : [])), ...(clips[0].cadence ? { cadence: clips[0].cadence } : {}), ...(allWords && words.length ? { words } : {}) };
 };
 type VoiceClipLayout = { beatId: string; line: MotionUtterance; voiceId: string; audio: SpeechClipAudio; t: number; delivery: MotionVoiceDelivery }[];
 const voicePlan = async (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies): Promise<MotionVoicePlan> => directMotionVoice(script, analysis, await (deps.voices || listMotionVoices)(opts.signal, opts.log), opts);
@@ -357,7 +370,7 @@ type Pacing = Omit<(typeof PACE)["HORROR"], "key"> & { key: string };
 const PACE_KIND = PACE.KIND;
 export const motionVoicePacing = (analysis: MotionStoryAnalysis | null): Pacing | null => {
   const target = readVoiceSpeedSettings().target;
-  const p = target?.pauses;
+  const p = target?.pauses && flowPauses(target.pauses as { clause?: number; sentence: number; suspense: number; beat: number });
   if (p)
     return {
       ...PACE.HORROR,
@@ -498,7 +511,8 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
   if (pacing) opts.log?.(PACE.LOG(pacing.key, split));
   const joined = local.filter((item) => item.audio.sentences);
   if (joined.length) opts.log?.(C.SENTENCES.LOG(joined.length, _.sumBy(joined, (item) => item.audio.sentences || 0), _.sumBy(joined, (item) => item.audio.adjusted || 0), Math.max(...joined.map((item) => item.audio.spread || 0))));
-  const measured = local.flatMap((item) => (item.audio.cadence ? [item.audio.cadence] : []));
+  const cadences = local.flatMap((item) => item.audio.cadences || (item.audio.cadence ? [item.audio.cadence] : []));
+  const measured = cadences;
   if (measured.length)
     opts.log?.(
       PACE.CADENCE_LOG(
@@ -511,12 +525,15 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
         measured.reduce((sum, item) => sum + (item.pausesExpected || 0), 0),
       ),
     );
+  const shaped = cadences.filter((item) => item.phrases);
+  if (shaped.length) opts.log?.(PACE.PHRASE_LOG(_.sumBy(shaped, (item) => item.phrases || 0), Math.max(...shaped.map((item) => item.phraseSpread || 0)), Math.max(...shaped.map((item) => item.phraseSpreadAfter || 0))));
   const checks = local.map((item) => item.audio.quality.status);
   if (opts.asr) opts.log?.(Q.SUMMARY(checks.filter((status) => status === Q.STATUS.REVIEW).length, checks.filter((status) => status === Q.STATUS.UNAVAILABLE).length));
   return { local, durations };
 };
 export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: MotionStoryAnalysis | null, opts: MotionVoiceOptions, deps: MotionVoiceDependencies = {}): Promise<MotionVoiceTrack> =>
-  withMotionVoiceSpeedSnapshot(async () => {
+  flowingRead.run(!isHorror(analysis), () => withMotionVoiceSpeedSnapshot(async () => {
+    if (flowingRead.getStore() && readVoiceSpeedSettings().target?.pauses) opts.log?.(PACE.FLOW_LOG(PACE.FLOW.CLAUSE, PACE.FLOW.SENTENCE));
     const rateProfile = motionSpeechRateProfile(script.voiceChannel);
     const rememberRate = (track: MotionVoiceTrack): MotionVoiceTrack => {
       if (!deps.synthesize && !opts.warmup) {
@@ -639,7 +656,7 @@ export const buildMotionVoiceTrack = (script: MotionStoryScript, analysis: Motio
     } finally {
       active.delete(id);
     }
-  });
+  }));
 export const fitUploadedVoice = (beats: MotionBeat[], estimates: number[], audioSeconds: number): number[] => {
   const { total } = computeBeatTimeline(beats, estimates),
     speech = estimates.reduce((sum, duration) => sum + duration, 0),
@@ -653,7 +670,7 @@ export const readMotionVoiceTrack = (id: unknown, script: MotionStoryScript, ana
   const file = path.join(getMotionAudioDirectory(), id as string);
   try {
     const track = parseJson(fs.readFileSync(file + MR.MOTION_TEXT_JSON, MR.MOTION_TEXT_UTF8)) as MotionVoiceTrack;
-    if (track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis, voiceChannelRef(findVoiceChannel(script.voiceChannel)) || script.voiceChannel) && motionVoiceAsrSatisfied(track, asrCheck) && (!track.plan || track.speedKey === voiceTrackSpeedKey(track.plan)) && track.audioId === id && motionVoiceTrackFilesValid(track, script)) return track;
+    if (track.provider === C.PROVIDER && track.signature === motionVoiceSignature(script, analysis, voiceChannelRef(findVoiceChannel(script.voiceChannel)) || script.voiceChannel) && motionVoiceAsrSatisfied(track, asrCheck) && (!track.plan || [true, false].some((flow) => track.speedKey === flowingRead.run(flow, () => voiceTrackSpeedKey(track.plan!)))) && track.audioId === id && motionVoiceTrackFilesValid(track, script)) return track;
   } catch {}
 };
 export const motionVoiceTrackFilesValid = (track: MotionVoiceTrack, script: MotionStoryScript): boolean => {

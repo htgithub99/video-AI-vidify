@@ -332,7 +332,10 @@ export const generateMotionHtmlScene = async (scene: MotionRemotionScene, settin
   };
   const focalMin = motionLayoutFocal(settings.layout, MOTION_HTML_QUALITY.WIDE_SHOTS.includes(String(settings.shot || settings.kind || "").toLowerCase()), { focal: MOTION_HTML_QUALITY.FOCAL_MIN, wide: MOTION_HTML_QUALITY.FOCAL_MIN_WIDE });
   const blueprint = motionSceneBlueprint(scene.sceneTemplate, { shot: settings.shot, kind: settings.kind, focalMin });
-  const extra = [isMap && settings.figureKit ? MOTION_HTML_QUALITY.MAP_RULES : undefined, motionSceneBlueprintPrompt(blueprint), motionSceneCastPrompt(settings.castLooks, (blueprint?.items || []).map((item) => item.id)), isMap ? MOTION_HTML_QUALITY.OUTPUT.split("\n").filter((line) => !MOTION_HTML_QUALITY.MAP_OUTPUT_DROP.test(line)).join("\n") : MOTION_HTML_QUALITY.OUTPUT, settings.variety].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
+  const kit = settings.figureKit === true;
+  const sceneRules = !kit ? MOTION_HTML_QUALITY.OUTPUT_FREE : isMap ? MOTION_HTML_QUALITY.OUTPUT.split("\n").filter((line) => !MOTION_HTML_QUALITY.MAP_OUTPUT_DROP.test(line)).join("\n") : MOTION_HTML_QUALITY.OUTPUT;
+  // The layout plan, cast looks and map rules are written in the kit's units and calls, so they go only to kit scenes.
+  const extra = [isMap && kit ? MOTION_HTML_QUALITY.MAP_RULES : undefined, kit ? motionSceneBlueprintPrompt(blueprint) : undefined, kit ? motionSceneCastPrompt(settings.castLooks, (blueprint?.items || []).map((item) => item.id)) : undefined, sceneRules, settings.variety].filter(Boolean).join(RT_MAINTENANCE.PARAGRAPH_SEPARATOR);
   // Last rung of the scene ladder: a scene drawn by code from the blueprint with the standard kit, so one stubborn scene never blocks the video.
   let candidate: { html: string; image: string; issues: string[]; attempt: number } | undefined;
   const finalize = (html: string, image: string, warnings: string[], tries: number, fallback: boolean) => {

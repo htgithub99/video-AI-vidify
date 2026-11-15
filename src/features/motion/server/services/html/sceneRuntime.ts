@@ -133,7 +133,7 @@ export const openMotionHtmlRuntime = async (html: string, signal?: AbortSignal, 
             const count = (timedOutFrames.get(key) || 0) + 1;
             timedOutFrames.set(key, count);
             if (timedOutFrames.size > 512) timedOutFrames.delete(timedOutFrames.keys().next().value!);
-            if (count < 2) throw error;
+            if (count < 3) throw error;
           }
           if (!page.isClosed() && !/browser.*closed|target.*closed|crash|Connection closed/i.test(reason)) throw Object.assign(new Error(reason), { motionHtmlExecution: true });
           throw error;
