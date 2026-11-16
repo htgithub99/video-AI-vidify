@@ -115,6 +115,8 @@ export const MOTION_VISUAL = {
   BUSY: "Hãy dừng tác vụ hiện tại trước khi đổi phương thức dựng video.",
   RENDER_BUSY: "Hãy dừng xuất video trước khi dựng lại cảnh.",
   DELETE_BUSY: "Hãy dừng lượt dựng cảnh hoặc xuất video trước khi xóa cảnh.",
+  REDO_LIVE: "Đang tạo lại cảnh này trong lượt tạo video; video xuất ra sẽ dùng cảnh mới.",
+  DELETE_LIVE: "Đã xóa cảnh; cảnh được dựng lại ngay như cảnh lỗi, video xuất ra sẽ dùng cảnh mới.",
   DELETED_STATUS: "retry_wait" as const,
   SCENES_DELETED: (count: number) => `Đã xóa ${count} cảnh; bấm Dựng tiếp cảnh còn thiếu để dựng lại.`,
   SETTINGS_CHANGED: "Phương thức dựng hình đã thay đổi; hãy dựng lại cảnh theo cấu hình đã chọn.",

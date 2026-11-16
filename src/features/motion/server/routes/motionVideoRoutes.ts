@@ -12,6 +12,7 @@ import {
   createMotionProduction,
   continueMotionProduction,
   deleteMotionProductionScenesHandler,
+  motionProductionSceneActionHandler,
   analyzeMotionStory,
   cancelMotionStory,
   cancelMotionVideo,
@@ -78,6 +79,7 @@ router.post(MOTION_VIDEO_API_PATHS.SAVE_VIDEO, saveMotionVideo);
 router.post(MOTION_VIDEO_API_PATHS.PRODUCTION, createMotionProduction);
 router.post(MOTION_VIDEO_API_PATHS.PRODUCTION_RESUME, continueMotionProduction);
 router.post(MOTION_VIDEO_API_PATHS.PRODUCTION_DELETE_SCENES, deleteMotionProductionScenesHandler);
+router.post(MOTION_VIDEO_API_PATHS.PRODUCTION_SCENE_ACTION, motionProductionSceneActionHandler);
 router.post(MOTION_VIDEO_API_PATHS.STORY_PARSE, parseMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_ANALYZE, analyzeMotionStory);
 router.post(MOTION_VIDEO_API_PATHS.STORY_SCRIPT, scriptMotionStory);

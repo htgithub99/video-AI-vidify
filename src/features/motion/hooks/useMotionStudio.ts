@@ -1020,8 +1020,30 @@ export function useMotionStudio() {
     },
     [inFlow, state.script, state.analysis, state.aspect, state.aiProvider, state.aiModel, state.aiMode, state.aiHeadless, state.aiFallback, state.sceneAiProvider, state.sceneAiModel, state.sceneAiHeadless, state.sceneAiFallback, state.sceneAiMultiRoom, state.planAiProvider, state.planAiModel, state.planAiHeadless, state.planAiFallback, state.planAiMultiRoom, state.scriptAiProvider, state.scriptAiModel, state.scriptAiHeadless, state.scriptAiFallback, state.scriptAiMultiRoom, state.aiMultiRoom, state.lightAiMultiRoom, state.lightAiProvider, state.lightAiModel, state.lightAiHeadless, state.lightAiFallback, state.aiReview, state.styleReferences, state.characterMotion, runStoryJob, patch, resumeAutomation, requestVoice],
   );
+  // While a one-click production runs, a scene redraw or deletion goes to the run itself (which draws the new scene and
+  // exports with it). False when no production is running, so the caller does it the usual way.
+  const productionSceneAction = useCallback(async (action: "redo" | "delete", ids: string[], note?: string): Promise<boolean> => {
+    const now = stateRef.current;
+    if (!ids.length || !now.productionId || now.activeStoryJobId !== now.productionId) return false;
+    try {
+      const reply = await motionRequest<{ live?: boolean }>(API_ROUTES.MOTION_PRODUCTION_SCENE_ACTION, { productionId: now.productionId, action, sceneIds: ids, note, language: now.language === RT_MAINTENANCE.EN ? RT_MAINTENANCE.EN : RT_MAINTENANCE.VI });
+      if (!reply?.live) return false;
+      toast.success(action === "redo" ? MOTION_VISUAL.REDO_LIVE : MOTION_VISUAL.DELETE_LIVE);
+    } catch (error) {
+      toast.error(_.toString((error as Error)?.message));
+    }
+    return true;
+  }, []);
+  const redoScene = useCallback(
+    async (id: string, note?: string) => {
+      if (await productionSceneAction("redo", [id], note)) return;
+      await buildScenes({ scenes: [id], note });
+    },
+    [productionSceneAction, buildScenes],
+  );
   const deleteScenes = useCallback(
     async (ids?: string[]): Promise<number> => {
+      if (ids?.length && (await productionSceneAction("delete", ids))) return ids.length;
       const busy = () => {
         const now = stateRef.current;
         const currentRender = visualRuntime.current.renderJob;
@@ -1481,6 +1503,7 @@ export function useMotionStudio() {
     writeScript,
     buildScenes,
     deleteScenes,
+    redoScene,
     compile,
     generateSeo,
     generateThumbnail,

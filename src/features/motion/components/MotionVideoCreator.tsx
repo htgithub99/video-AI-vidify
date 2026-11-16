@@ -975,11 +975,12 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                       renderBehavior={state.renderBehavior}
                       figures={state.visualSettings}
                       language={currentLang}
-                      onRedo={(scene) => void studio.buildScenes({ scenes: [scene.id], note: sceneNote || undefined })}
+                      onRedo={(scene) => void studio.redoScene(scene.id, sceneNote || undefined)}
                       onRetryFailed={() => void studio.buildScenes({ retryFailed: true })}
                       onDelete={(scene) => void studio.deleteScenes([scene.id])}
                       onDeleteAll={() => void studio.deleteScenes()}
-                      busy={studio.renderBusy || ((busyKind === MotionStoryJobKind.SCENES || busyKind === MotionStoryJobKind.PRODUCTION) && !storyStopping)}
+                      busy={studio.renderBusy || (busyKind === MotionStoryJobKind.SCENES && !storyStopping)}
+                      production={busyKind === MotionStoryJobKind.PRODUCTION && !storyStopping}
                       writing={studio.storyBusy && !storyStopping}
                       onOpen={(scene, preview, index) => setPreviewModal({ type: RT_MOTION.BEAT, id: scene.id, title: visualText.scene(index + 1), imageUrl: "", remotion: preview, narration: scene.text, beats: [scene.beatId] })}
                     />

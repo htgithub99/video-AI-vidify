@@ -488,10 +488,10 @@ export const MOTION_FIGURES = {
     at[0] = 0;
     var index = 0;
     for (i = 0; i < N; i++) if (p >= at[i]) index = i;
-    var end = index + 1 < N ? at[index + 1] : 1;
+    var end = index + 1 < N ? at[index + 1] : 1, k = end > at[index] ? Math.min(1, (p - at[index]) / (end - at[index])) : 1;
+    // local is the earlier name of k: scenes written against it must keep moving instead of drawing with NaN.
     return {
-      index: index, count: N, at: at,
-      k: end > at[index] ? Math.min(1, (p - at[index]) / (end - at[index])) : 1,
+      index: index, count: N, at: at, k: k, local: k,
       of: function (k) { var a = at[k], b = k + 1 < N ? at[k + 1] : 1; return !(k >= 0 && k < N) ? 0 : p <= a ? 0 : p >= b ? 1 : (p - a) / (b - a); },
     };
   };

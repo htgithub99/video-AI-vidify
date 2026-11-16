@@ -26,7 +26,7 @@ import { checkMotionMediaTools } from "./motionMediaValidation.js";
 import { checkMotionProductionVoice } from "./motionProductionPreflight.js";
 import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.js";
 import { assertMotionScriptComplete, assertMotionProductionMode, mergeMotionRemotionState, mergeMotionScriptProgress, motionScriptReadyForParallelMedia, motionDurationRepairChapters, motionEarlyHtmlSceneInput } from "../../../../lib/motionProduction.js";
-import { enqueueMotionHtmlScenes } from "./html/scenePipeline.js";
+import { enqueueMotionHtmlScenes, controlMotionHtmlScenes, type MotionHtmlSceneAction } from "./html/scenePipeline.js";
 import { speechUnits } from "./motionSpeechRateService.js";
 import { motionSeriesStart } from "../../../../lib/motionParts.js";
 import { motionVoiceSignature, withMotionVoiceMode, motionVoiceAsrSatisfied } from "../../../../lib/motionVoice.js";
@@ -60,6 +60,8 @@ const productionAiOverride = (value?: Record<string, any>): Record<string, any> 
 interface ProductionRecord {
   durationRepair?: { round: number; rate: number; chapters?: string[]; done?: boolean };
   voiceCastChapters?: string[];
+  /** Scene redraws / deletions asked for while the run was past its scene builder: done before the video is put together. */
+  sceneActions?: MotionHtmlSceneAction[];
   version: number;
   input: Record<string, any>;
   inputKey: string;
@@ -79,6 +81,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
   const store = new MotionProductionStore<ProductionRecord>(directory);
   const logs = new MotionLogStore(path.join(directory, P.LOG_FOLDER));
   const active = new Map<string, { record: ProductionRecord; controller: AbortController; owner: MotionProductionOwner }>();
+  /** Per running production: starts drawing the waiting scene actions now (false while the scene builder has not run yet). */
+  const sceneKicks = new Map<string, () => boolean>();
   const failedSnapshots = new Map<string, ProductionRecord>();
   const terminal = (status: S): boolean => [S.COMPLETED, S.CANCELLED, S.ERROR].includes(status);
   const seoMatches = (seo: any, script?: MotionStoryScript): seo is MotionSeoPack => !!script && Array.isArray(seo?.options) && seo.options.length > 0 && Array.isArray(seo.chapters) && seo.scriptKey === seoScriptKey(script);
@@ -405,6 +409,39 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       result.analysis = { ...result.analysis!, visualSettings, stylePreset: undefined };
       save();
       const sceneInput = (analysis: MotionStoryAnalysis, script: MotionStoryScript, sheetCarry: boolean) => ({ ...base, analysis, script, sheetCarry, aiExecution: base.sceneAiExecution || base.aiExecution, mainAiExecution: base.aiExecution, autoVoice: false, review: base.aiReview !== false, previews: false });
+      // Scenes the user redraws or deletes after the scene builder has finished get a scene run of their own at once, next
+      // to the voice and SEO; the video is put together only after it (an action arriving while compiling sends the run
+      // back), so the export always has the newest scenes. One runner at a time works through the waiting actions in order.
+      let fixRound = 0;
+      let fixing: Promise<void> | undefined;
+      const applySceneActions = (): Promise<void> => {
+        fixing ??= (async () => {
+          while (record.sceneActions?.length) {
+            const action = record.sceneActions.shift()!;
+            if (action.kind === "delete" && result.script) result.script = motionDeleteScenes(result.script, action.ids, action.reason, randomUUID).script;
+            delete result.compiled;
+            save();
+            await step<MotionStoryScript>(
+              P.SCENE_FIX_STEP(P.STAGES.SCENES, ++fixRound),
+              () => scenesMotionStoryInput({ ...sceneInput(result.analysis!, result.script!, true), sfx: base.sfx !== false, scenes: action.ids, note: action.note, rebuildKey: randomUUID() }),
+              (script) => {
+                result.script = { ...mergeMotionScriptProgress(result.script, script), ...(result.voice ? { voiceTrack: result.voice } : {}) };
+              },
+              record.job.progress,
+              0,
+            );
+          }
+        })().finally(() => {
+          fixing = undefined;
+        });
+        return fixing;
+      };
+      // Before the scene builder has run, actions wait and are drawn right after it.
+      sceneKicks.set(record.job.id, () => {
+        if (!record.steps[P.STAGES.SCENES]?.done) return false;
+        void applySceneActions().catch((error) => void (!signal.aborted && log(record, P.SCENE_ACTION_FAILED(String((error as Error)?.message || error)))));
+        return true;
+      });
       if (visualSettings.mode === RT_SHARED.REMOTION && !record.steps[P.STAGES.SCRIPT]?.done && !record.durationRepair && !(globalThis as any).__motionHtmlStages)
         early = createMotionEarlyScenes({
           stage: P.STAGES.SCENES,
@@ -630,6 +667,8 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
         await closeMotionStandaloneBrowser()
           .then((closed) => void (closed && log(record, P.CHROME_CLOSED_AI_DONE)))
           .catch(() => undefined);
+      do {
+      await applySceneActions();
       record.job.stage = P.STAGES.COMPILE;
       if (!result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis) || !motionVoiceAsrSatisfied(result.voice, base.asrCheck === true)) throw new Error(P.AUDIO_REQUIRED);
       result.compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice.durations, audioId: result.voice.audioId });
@@ -641,6 +680,7 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       }
       if (result.compiled.missing.length || result.compiled.voiceStale) throw new Error(P.AUDIO_REQUIRED);
       save();
+      } while (record.sceneActions?.length);
       if (base.autoExport !== false)
         await step<MotionResultItem>(
           P.STAGES.RENDER,
@@ -745,7 +785,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
           }
         }
       }
-      if (active.get(record.job.id)?.owner.token === owner.token) active.delete(record.job.id);
+      if (active.get(record.job.id)?.owner.token === owner.token) {
+          active.delete(record.job.id);
+          sceneKicks.delete(record.job.id);
+        }
     }
   };
   const launch = (record: ProductionRecord, seoOnly = false): MotionProductionJobState => {
@@ -777,7 +820,10 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       } catch (failure) {
         logger.error(P.SAVE_FAILED, failure);
       } finally {
-        if (active.get(record.job.id)?.owner.token === owner.token) active.delete(record.job.id);
+        if (active.get(record.job.id)?.owner.token === owner.token) {
+          active.delete(record.job.id);
+          sceneKicks.delete(record.job.id);
+        }
       }
       logger.error(P.SAVE_FAILED, error);
     });
@@ -945,12 +991,32 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       store.release(id, owner);
     }
   };
+  // Redraw or delete scenes while the run is going: a running scene builder takes them at once; past it, they wait in the
+  // record and are drawn before the video is put together. Not running: the caller does it the usual way.
+  const actMotionProductionScenes = (id: string, action: MotionHtmlSceneAction): { live: boolean; count?: number; queued?: boolean } => {
+    const running = active.get(id);
+    if (!running || terminal(running.record.job.status)) return { live: false };
+    const { record, owner } = running;
+    const render = record.steps[P.STAGES.RENDER];
+    if (render && !render.done) throw new Error(P.SCENE_ACTION_EXPORTING);
+    const count = controlMotionHtmlScenes(record.job.id, action);
+    if (count) {
+      log(record, P.SCENE_ACTION_LIVE(action.kind, count));
+      store.save(id, record, owner);
+      return { live: true, count };
+    }
+    (record.sceneActions ||= []).push(action);
+    const started = !!sceneKicks.get(id)?.();
+    log(record, started ? P.SCENE_ACTION_LIVE(action.kind, action.ids.length) : P.SCENE_ACTION_QUEUED(action.kind, action.ids.length));
+    store.save(id, record, owner);
+    return { live: true, queued: !started, count: action.ids.length };
+  };
   const getMotionProductionLogs = (id: string, after = 0) => {
     const record = active.get(id)?.record || read(id);
     if (!record) return undefined;
     logs.seed(id, record.job.log);
     return logs.read(id, after);
   };
-  return { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes };
+  return { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes, actMotionProductionScenes };
 };
-export const { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes } = createMotionProductionService();
+export const { startMotionProduction, getMotionProduction, resumeMotionProduction, cancelMotionProduction, recoverMotionProductions, getMotionProductionLogs, deleteMotionProductionScenes, actMotionProductionScenes } = createMotionProductionService();

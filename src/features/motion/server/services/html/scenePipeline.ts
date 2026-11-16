@@ -898,6 +898,11 @@ export const enqueueMotionHtmlScenes = (scope: string | undefined, script: Motio
   const enqueue = activeHtmlBuilders.get(scope);
   return enqueue ? enqueue(script) : false;
 };
+/** A scene action taken while the scenes are still being built: redraw now, or delete (redrawn once the others are done). */
+export type MotionHtmlSceneAction = { kind: "redo" | "delete"; ids: string[]; note?: string; reason: string };
+const activeHtmlControls = new Map<string, (action: MotionHtmlSceneAction) => number>();
+/** Hands the action to the scene builder running for this production; 0 when no builder is running (or no scene matched). */
+export const controlMotionHtmlScenes = (scope: string | undefined, action: MotionHtmlSceneAction): number => (scope && activeHtmlControls.get(scope)?.(action)) || 0;
 export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis: MotionStoryAnalysis, opts: RemotionSceneOptions): Promise<MotionStoryScript> => {
   if (!motionHtmlPlanCurrent(script, analysis)) throw new Error(RT_MAINTENANCE.PHAN_CANH_CHUA_DUOC_CHIA_DAY_DU_HOAC_DA_DOI);
   const result = structuredClone(script);
@@ -947,26 +952,72 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
           save();
         }
         if (opts.note !== undefined) scene.drawingNote = opts.note;
-        scene.aspect = aspect;
-        const seconds = Math.max(1, (group.seconds * scene.text.length) / Math.max(1, group.beats.map((beat) => beat.narration).join(RT_MAINTENANCE.SPACE).length));
-        const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
-        const cast = (scene as { kind?: string }).kind === MOTION_HTML_WRITING.MAP_KIND ? undefined : motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
-        motionSceneCastSeed((state.castLooks ||= {}), analysis.cast);
-        await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), figureKit: settings.figureKit === true, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE, kind: (scene as { kind?: string }).kind, shot: (scene as { shot?: string }).shot, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority: groupIndex + 1 }, save);
-        delete state.failures[scene.id];
-        done++;
-        opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);
-        save();
+        await drawScene(group, scene, groupIndex + 1);
       })();
       task.catch(() => undefined);
       startedScenes.set(taskKey, task);
+      sceneTasks.set(scene.id, task);
     }
   };
+  const drawScene = async (group: ReturnType<typeof motionVisualBeatGroups>[number], scene: MotionRemotionScene, priority: number) => {
+    scene.aspect = aspect;
+    const seconds = Math.max(1, (group.seconds * scene.text.length) / Math.max(1, group.beats.map((beat) => beat.narration).join(RT_MAINTENANCE.SPACE).length));
+    const sceneBeats = group.beats.filter((beat) => !scene.sourceBeatIds?.length || scene.sourceBeatIds.includes(beat.id));
+    const cast = (scene as { kind?: string }).kind === MOTION_HTML_WRITING.MAP_KIND ? undefined : motionHtmlCastCards(analysis, sceneBeats, scene.sceneTemplate || RT_MAINTENANCE.SPACE) || undefined;
+    motionSceneCastSeed((state.castLooks ||= {}), analysis.cast);
+    await generateMotionHtmlScene(scene, { width, height, seconds, profile: settings.profileId, proportion: motionProportionOf(settings), figureKit: settings.figureKit === true, scope: opts.scope, language: result.language, cast, continuity: motionHtmlContinuity(scene.continuityIn) || undefined, castLooks: (state.castLooks ||= {}), motion: state.renderBehavior?.actors === RT_MAINTENANCE.SIMPLE, kind: (scene as { kind?: string }).kind, shot: (scene as { shot?: string }).shot, variety: motionHtmlVarietyNote(state.scenes[group.id] || [], scene) }, { ...opts, pool: slots, priority }, save);
+    delete state.failures[scene.id];
+    done++;
+    opts.progress?.(done / Math.max(1, totalTasks), `${RT_MAINTENANCE.DA_DUNG}${done}${RT_MAINTENANCE.SLASH}${totalTasks}${RT_MAINTENANCE.PHAN_CANH_HTML_2}`);
+    save();
+  };
+  // A scene the user redraws or deletes mid-run is drawn again at once, ahead of the scenes not started yet (as a failed
+  // scene is): a deleted scene loses its drawing now, a redrawn one keeps it until its new draw begins; either waits for a
+  // draw already running for that scene, whose result is then replaced.
+  const sceneTasks = new Map<string, Promise<void>>();
+  let controlRound = 0;
+  const control = (action: MotionHtmlSceneAction): number => {
+    if (opts.signal?.aborted) return 0;
+    const clear = (scene: MotionRemotionScene) => {
+      const attempt = Math.max(scene.html?.attempts || 0, scene.htmlRequest?.attempt || 0) + 1;
+      delete scene.html;
+      delete scene.build;
+      delete scene.htmlRebuildKey;
+      scene.htmlRequest = { id: randomUUID(), attempt, status: RT_MAINTENANCE.RETRY_WAIT, ...(action.kind === "delete" ? { error: action.reason } : {}) };
+      if (action.note !== undefined) scene.drawingNote = action.note;
+    };
+    let count = 0;
+    motionVisualBeatGroups(result, 1001, settings.pacing).forEach((group) =>
+      (state.scenes[group.id] || []).forEach((scene) => {
+        if (!action.ids.includes(scene.id)) return;
+        count++;
+        if (action.kind === "delete") clear(scene);
+        else if (action.note !== undefined) scene.drawingNote = action.note;
+        const before = sceneTasks.get(scene.id) || Promise.resolve();
+        totalTasks++;
+        const task = (async () => {
+          await before.catch(() => undefined);
+          opts.signal?.throwIfAborted();
+          clear(scene);
+          save();
+          await drawScene(group, scene, 0);
+        })();
+        task.catch(() => undefined);
+        startedScenes.set(`${scene.id}${RT_MAINTENANCE.COLON}${action.kind}${RT_MAINTENANCE.COLON}${++controlRound}`, task);
+        sceneTasks.set(scene.id, task);
+      }),
+    );
+    if (count) save();
+    return count;
+  };
   const canRegister = !!opts.scope && !opts.onlyBeats?.length && !opts.onlyScenes?.length && !opts.onlyLocations?.length && !opts.restart;
+  const boundControl = AsyncResource.bind(control);
+  let boundBuilder: ((nextScript: MotionStoryScript) => boolean) | undefined;
   if (canRegister && opts.scope) {
+    activeHtmlControls.set(opts.scope, boundControl);
     activeHtmlBuilders.set(
       opts.scope,
-      AsyncResource.bind((nextScript: MotionStoryScript) => {
+      (boundBuilder = AsyncResource.bind((nextScript: MotionStoryScript) => {
         if (opts.signal?.aborted) return false;
         const nextRemotion = nextScript.gen?.remotion;
         if (!nextRemotion || nextRemotion.renderer !== RT_MAINTENANCE.HTML_CANVAS) return false;
@@ -990,7 +1041,7 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
         scheduleFrom(result);
         save();
         return true;
-      }),
+      })),
     );
   }
   try {
@@ -1015,6 +1066,10 @@ export const buildMotionHtmlScenes = async (script: MotionStoryScript, analysis:
       );
     return result;
   } finally {
-    if (canRegister && opts.scope) activeHtmlBuilders.delete(opts.scope);
+    // Only this run's own entries: an earlier run of the same production finishing must not unregister a later one.
+    if (canRegister && opts.scope) {
+      if (activeHtmlBuilders.get(opts.scope) === boundBuilder) activeHtmlBuilders.delete(opts.scope);
+      if (activeHtmlControls.get(opts.scope) === boundControl) activeHtmlControls.delete(opts.scope);
+    }
   }
 };

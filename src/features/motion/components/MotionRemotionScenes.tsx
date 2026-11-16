@@ -14,7 +14,7 @@ import { MotionRemotionStill } from "./MotionRemotionStill.js";
 import { ConfirmDeleteModal } from "../../../components/common/ConfirmDeleteModal";
 import type { MotionRemotionSpec, MotionRemotionScene, MotionRenderBehavior } from "../../../types/motionVisual.js";
 import type { MotionStoryScript } from "../../../types/motionVideo.js";
-export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown }; busy?: boolean; writing?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void; onRetryFailed?: () => void; onDelete?: (scene: MotionRemotionScene) => void; onDeleteAll?: () => void }> = ({ script, language, renderBehavior, figures, busy = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
+export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: string; renderBehavior?: MotionRenderBehavior; figures?: { figureKit?: boolean; profileId?: unknown; proportion?: unknown; layout?: unknown }; busy?: boolean; /** A one-click production is running: single-scene redo/delete go to it, whole-set actions wait. */ production?: boolean; writing?: boolean; onOpen?: (scene: MotionRemotionScene, preview: MotionRemotionSpec, index: number) => void; onRedo?: (scene: MotionRemotionScene) => void; onRetryFailed?: () => void; onDelete?: (scene: MotionRemotionScene) => void; onDeleteAll?: () => void }> = ({ script, language, renderBehavior, figures, busy = false, production = false, writing = false, onOpen, onRedo, onRetryFailed, onDelete, onDeleteAll }) => {
   const [page, setPage] = useState<number>(STUDIO_PAGINATION.FIRST_PAGE);
   const progress = remotionSceneProgress(renderBehavior && script.gen?.remotion ? { ...script, gen: { ...script.gen, remotion: { ...script.gen.remotion, renderBehavior } } } : script, busy, language, figures);
   const pagination = getPagination(progress.total, page, V.SCENES_PER_PAGE);
@@ -35,13 +35,13 @@ export const MotionRemotionScenes: FC<{ script: MotionStoryScript; language: str
       <div className={S.HEAD}>
         <p className={S.COUNT}>{progress.planned || !progress.total ? `${text.ready}${RT_SHARED.SYMBOL_45822F}${progress.ready}${RT_SHARED.SYMBOL_8A5EDA}${progress.total}${progress.warned ? text.warnedCount(progress.warned) : ""}` : busy || writing ? text.planningPending(progress.total) : text.unplanned(progress.total)}</p>
         {onDeleteAll && progress.ready > 0 && (
-          <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.DELETE} disabled={busy} onClick={() => setPendingDelete({ title: text.deleteAll })}>
+          <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.DELETE} disabled={busy || production} onClick={() => setPendingDelete({ title: text.deleteAll })}>
             {text.deleteAll}
           </Button>
         )}
       </div>
       {progress.failed > 0 && onRetryFailed && (
-        <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.RETRY} disabled={busy} onClick={onRetryFailed}>
+        <Button variant={STUDIO_UI.UNSTYLED} type={RT_SHARED.BUTTON} className={S.RETRY} disabled={busy || production} onClick={onRetryFailed}>
           {text.retryFailedScenes(progress.failed)}
         </Button>
       )}
