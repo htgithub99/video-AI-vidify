@@ -724,6 +724,8 @@ export interface MotionVoiceCadence {
   phrases?: number;
   phraseSpread?: number;
   phraseSpreadAfter?: number;
+  /** How the stretches were timed: "words" when the clip was transcribed, otherwise by syllable nuclei. */
+  timing?: "words";
   before: number;
   after: number;
   target: number;

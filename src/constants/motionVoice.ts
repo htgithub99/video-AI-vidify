@@ -671,12 +671,14 @@ export const MOTION_VOICE_SPEED = {
 } as const;
 export const MOTION_VOICE_PACING = {
   // 13: character lines are evened phrase by phrase like the narration.
-  VERSION: 13,
+  VERSION: 15,
   // Each phrase between two punctuation pauses is brought to the line's own speaking rate (never by more than PHRASE_STRETCH).
   PHRASE_LOG: (phrases: number, before: number, after: number): string => `Cân tốc độ từng cụm: ${phrases} cụm giữa các dấu câu được đưa về tốc độ chung của câu; độ lệch lớn nhất giữa các cụm ${(before * 100).toFixed(0)}% → khoảng ${(after * 100).toFixed(0)}%.`,
-  NARRATOR_CADENCE: { FIT_MARGIN: 1.12, PHRASE_STRETCH: 0.18, PHRASE_MIN_UNITS: 4, PHRASE_MIN_SECONDS: 0.6, LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
+  NARRATOR_CADENCE: { FIT_MARGIN: 1.12, PHRASE_STRETCH: 0.25, PHRASE_FULL_SYLLABLES: 6, WORD_STRETCH: 0.35, WORDS: { COVERAGE: 0.2, ALIGN_UNITS: 1.5, NEAR_PAUSE: 0.08, MIN_SYLLABLES: 2, MIN_SECONDS: 0.15 }, EVEN_GATE: 0.1, EVEN_RETRIES: 2, NUCLEUS: { SMOOTH_FRAMES: 5, PEAK_FRAMES: 6, VALLEY_FRAMES: 12, PROMINENCE_DB: 2.5, MIN_PER_SPAN: 3 }, LONG_PAUSE_SHARE: 0.9, CAP_MARGIN: 1.15, MIN_UNITS: 8, MIN_ACTIVE_SECONDS: 1.2, MIN_RATIO: 0.3, MAX_RATIO: 0.98, TEMPO_MIN: 0.85, TEMPO_MAX: 1.2, PAUSE_MIN: 0.12, PAUSE_GUARD: 0.03, ALIGN_MAX_UNITS: 1.25, ALIGN_MARGIN_UNITS: 0.3, MAX_PAUSES: 48, TOLERANCE: 0.015, REVIEW_DELTA: 0.05 },
   CADENCE_LOG: (count: number, min: number, max: number, target: number, limited: number, matched = 0, expected = 0): string => `Nhịp người kể: cân tốc độ trung bình ${count} đoạn theo mẫu ${target.toFixed(2)} tiếng/giây; đo lại ${min.toFixed(2)}–${max.toFixed(2)}. Khớp ${matched}/${expected} ranh giới dấu câu bằng âm thanh; phần chưa chắc giữ nhịp tự nhiên (${limited} đoạn chạm giới hạn).`,
   CADENCE_FALLBACK: "Đoạn kể chưa đo chắc nhịp; giữ tốc độ dự phòng và tiếp tục dựng.",
+  WORD_TIMING_FALLBACK: (reason: string): string => `Chưa nghe được từng chữ để đo nhịp (${reason.slice(0, 120)}); đo nhịp theo âm tiết thay thế.`,
+  EVEN_RETAKE: (text: string, spread: number): string => `Câu "${text.slice(0, 60)}${text.length > 60 ? "…" : ""}" còn lệch nhịp ${Math.round(spread * 100)}% sau khi cân; đọc lại câu này.`,
   CADENCE_ERROR: (reason: string): string => `Chưa cân nhịp được đoạn kể (${reason.slice(0, 120)}); giữ tốc độ dự phòng.`,
   REFERENCE_RATE_MARGIN: 1.05,
   CONTINUATION_SHARE: 0.6,
@@ -709,7 +711,9 @@ export const MOTION_VOICE_PACING = {
   PHRASE_MIN_WORDS: 4,
   CONJ: ["thì", "mà", "rồi", "nhưng", "và", "khi", "lúc", "để", "nên", "vì", "bỗng", "chợt", "liền", "cho đến", "and", "but", "when", "then", "while", "because", "until", "so"] as string[],
   NARRATION_SILENCE: 0.15,
-  NARRATION_TEMPERATURE: 0.76,
+  // Narration reads with little randomness so its pace stays even; character lines keep more life.
+  NARRATION_TEMPERATURE: 0.58,
+  DIALOGUE_TEMPERATURE: 0.76,
   NARRATION_STRENGTH: 0.2,
   VOICE_LEAD: 0.25,
   CHAPTER_PAUSE: 0.85,

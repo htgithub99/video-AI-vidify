@@ -31,7 +31,7 @@ import { motionLanguageCode } from "../../../lib/motionLanguage.js";
 import { MOTION_MUSIC } from "../../../constants/motionMusic.js";
 import _ from "lodash";
 import { Activity, AlertTriangle, BookOpen, Rocket, Box, Captions, Check, Clapperboard, Clock, Copy, Download, FileText, Film, FolderKanban, Image as Layers, Mic2, Monitor, PlayCircle, RefreshCw, RotateCcw, ScanSearch, ShieldCheck, Smartphone, Sparkles, Square, Trash2, Tv, Users, Volume2, Wand2 } from "lucide-react";
-import { FC, useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { FC, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { isRemotionSpec } from "../../../lib/motionVisual.js";
 import { remotionSceneProgress } from "../lib/motionRemotionProgress.js";
 import type { MotionRemotionSpec } from "../../../types/motionVisual.js";
@@ -85,7 +85,6 @@ import {
   MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC,
   MOTION_TEXT_MAX_W_MD,
   MOTION_TEXT_MODAL_2XL,
-  MOTION_TEXT_MOTION_VIDEO_MP4,
   MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH,
   MOTION_TEXT_OK,
   MOTION_TEXT_OUTPUT_MP4,
@@ -131,6 +130,7 @@ import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js"
 import { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils";
 import { MotionExportedVideo, MotionMediaPlaceholder, motionAspect } from "./MotionMediaFrame.js";
+import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
 import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { getMotionErrorMessage } from "../../../lib/motionUtils.js";
 import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../../../types/motionVideo.js";
@@ -287,9 +287,16 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   const plannedSeconds = state.analysis?.chapters.reduce((sum, chapter) => sum + (chapter.targetSeconds || 0), 0) || 0;
   const actualAudioSeconds = state.uploadedAudio?.durationSeconds || (studio.voiceValid ? state.voice?.totalSeconds : undefined);
   const htmlTiming = state.analysis?.authoringSettings;
+  // The same compilation can arrive twice (the page compiles it as soon as the scenes are built, the production sends it
+  // again when it finishes): keep the spec the player already has, so playback does not restart and reload every scene.
+  const previewSpecCache = useRef<{ key?: string; behavior?: unknown; spec: ReturnType<typeof applyMotionRenderBehavior> | null }>({ spec: null });
   const previewSpec = useMemo(() => {
     const spec = studio.compiled?.spec;
-    return spec ? applyMotionRenderBehavior(spec, state.renderBehavior) : null;
+    if (!spec) return (previewSpecCache.current = { spec: null }).spec;
+    const key = studio.compiled?.compilationKey;
+    const cached = previewSpecCache.current;
+    if (key && cached.key === key && cached.behavior === state.renderBehavior && cached.spec) return cached.spec;
+    return (previewSpecCache.current = { key, behavior: state.renderBehavior, spec: applyMotionRenderBehavior(spec, state.renderBehavior) }).spec;
   }, [studio.compiled, state.renderBehavior]);
   // An exported video is shown while it matches the scenes; once they change, the scenes play live instead.
   const showExported = !!studio.renderedVideoUrl && !(studio.renderedVideoStale && isRemotionSpec(previewSpec));
@@ -876,10 +883,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               badge={showExported ? text.EXPORTED_VIDEO_BADGE : isRemotionSpec(previewSpec) && !motionAudioUrl(studio.previewAudioId) ? text.PREVIEW_SILENT_BADGE : text.PREVIEW_REMOTION_BADGE}
               right={
                 studio.renderedVideoResult && (
-                  <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => studio.renderedVideoResult && void studio.saveResult(studio.renderedVideoResult)} title={text.SAVE_AS} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
-                    <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300_GROUP_HOVER_TEXT_WHITE} />
-                    <span>{text.SAVE_AS}</span>
-                  </Button>
+                  <StudioDownloadButton onClick={() => studio.renderedVideoResult && void studio.saveResult(studio.renderedVideoResult)} />
                 )
               }
             />
@@ -1065,10 +1069,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_LG_GROUP}>
                     <StudioVideoPlayer src={rj.result.videoUrl} aspect={motionAspect(rj.result.width, rj.result.height)} />
                     <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_Z_10}>
-                      <a href={rj.result.videoUrl} download={MOTION_TEXT_MOTION_VIDEO_MP4} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
-                        <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300} />
-                        <span>{text.SAVE_AS}</span>
-                      </a>
+                      <StudioDownloadButton onClick={() => rj.result && void studio.saveResult(rj.result)} />
                     </div>
                   </div>
                 </div>
@@ -1435,10 +1436,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
                 />
               </label>
               <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_FLEX_ITEMS_CENTER_GAP_2_Z_10}>
-                <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => void studio.saveResult(r)} title={text.SAVE_AS} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
-                  <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300_GROUP_HOVER_TEXT_WHITE} />
-                  <span>{text.SAVE_AS}</span>
-                </Button>
+                <StudioDownloadButton onClick={() => void studio.saveResult(r)} />
                 <Button variant={MR.MOTION_TEXT_UNSTYLED} onClick={() => askDelete([r])} disabled={busy || studio.renderBusy} title={text.RESULTS_DELETE} aria-label={`${text.RESULTS_DELETE}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`} className={MR.MOTION_TEXT_P_1_5_ROUNDED_LG_BG_TRANSPARENT_HOVER_BG_TRANSPARENT_TEXT_SLATE_4}>
                   <Trash2 className={MR.MOTION_TEXT_W_4_H_4} />
                 </Button>

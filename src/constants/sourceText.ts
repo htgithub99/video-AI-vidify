@@ -242,7 +242,6 @@ export const SOURCE_TEXT_15_30S = "15-30s" as const;
 export const SOURCE_TEXT_30_60S = "30-60s" as const;
 export const SOURCE_TEXT_60_90S = "60-90s" as const;
 export const SOURCE_TEXT_SYMBOL_26 = "% · " as const;
-export const SOURCE_TEXT_DANG_LUU = "Đang lưu..." as const;
 export const SOURCE_TEXT_SYMBOL_27 = ". " as const;
 export const SOURCE_TEXT_SYMBOL_28 = " ➔ " as const;
 export const SOURCE_TEXT_VOICE_ID = "voice_id" as const;

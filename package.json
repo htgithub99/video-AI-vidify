@@ -13,6 +13,7 @@
     "test:motion-scene-blueprint": "tsx scripts/verify-motion-scene-blueprint.ts",
     "test:motion-quality-v2": "tsx scripts/verify-motion-quality-v2.ts",
     "test:motion-style-switch": "tsx scripts/verify-motion-style-switch.ts",
+    "test:motion-figure-marks": "tsx scripts/verify-motion-figure-marks.ts",
     "test:motion-figures-bench": "tsx scripts/verify-motion-figures-bench.ts && node scripts/motion-figures-bench-check.mjs storage/tmp/figures-bench",
     "test:motion-html-quality": "tsx scripts/verify-motion-html-quality.ts",
     "test:motion-settings": "tsx scripts/verify-motion-settings-fixes.ts && tsx scripts/audit-motion-settings-runner.ts && tsx scripts/verify-motion-settings-chrome.ts",

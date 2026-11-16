@@ -155,3 +155,14 @@ export const STUDIO_PLAYER_STEP_SECONDS = 5;
 export const STUDIO_PLAYER_HOVER_WORDS = 3;
 // One video plays at a time across the whole app.
 export const STUDIO_PLAYER_PLAY_EVENT = "studio-player-play";
+// Shared "download video" button: one look on every screen.
+export const STUDIO_DOWNLOAD = {
+  BUTTON: "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-950/85 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 border border-slate-700/80 hover:border-purple-400 text-slate-200 hover:text-white backdrop-blur-md shadow-lg transition-all cursor-pointer group/download disabled:opacity-60 disabled:cursor-wait",
+  ICON: "w-3.5 h-3.5 shrink-0 text-purple-300 group-hover/download:text-white",
+  SPIN: "w-3.5 h-3.5 shrink-0 animate-spin",
+  WIDE: "h-10 justify-center",
+} as const;
+export const STUDIO_DOWNLOAD_TEXT = {
+  vi: { LABEL: "Tải xuống", BUSY: "Đang tải…" },
+  en: { LABEL: "Download", BUSY: "Downloading…" },
+} as const;

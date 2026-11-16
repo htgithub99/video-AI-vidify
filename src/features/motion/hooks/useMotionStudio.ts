@@ -1201,9 +1201,11 @@ export function useMotionStudio() {
       compiledSig.current = MR.MOTION_TEXT_EMPTY;
       return;
     }
-    // The preview is compiled as soon as every scene is built, with automatic export too, so the scenes can be watched
-    // before the voice and the export are ready.
-    if (!hydrated || flowCount > 0 || sceneBuildPending.current || state.visualSettingsError || (state.activeStoryJobId && state.activeStoryJobId === state.productionId)) return;
+    // The preview is compiled as soon as every scene is built, also while a one-click production or another flow is still
+    // running (voice, SEO, export), so the scenes can be watched before the voice and the export are ready. Other visual
+    // modes have no per-scene readiness to wait for, so they wait for the flow to end.
+    const running = flowCount > 0 || (!!state.activeStoryJobId && state.activeStoryJobId === state.productionId);
+    if (!hydrated || sceneBuildPending.current || state.visualSettingsError || (running && state.visualSettings.mode !== RT_SHARED.REMOTION)) return;
     if (
       state.visualSettings.mode === RT_SHARED.REMOTION &&
       (!state.script.gen?.remotion ||
@@ -1226,7 +1228,7 @@ export function useMotionStudio() {
       });
     }, 400);
     return () => clearTimeout(t);
-  }, [hydrated, flowCount, compile, state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.renderBehavior, state.sfx, state.sfxVolume, state.soundOverrides, state.subtitles, state.visualSettings, voiceValid]);
+  }, [hydrated, flowCount, state.activeStoryJobId, state.productionId, compile, state.script, state.analysis, state.aspect, state.look, state.voice, state.uploadedAudio, state.fps, state.characterMotion, state.renderBehavior, state.sfx, state.sfxVolume, state.soundOverrides, state.subtitles, state.visualSettings, voiceValid]);
   const check = useCallback(async () => {
     const c = compiled || (await compile());
     if (!c) return;

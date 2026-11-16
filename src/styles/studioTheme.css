@@ -604,8 +604,5 @@
 }
 /* Sticky band behind the Video Motion chapter bar: the card's own colour, so the beats vanish under it. */
 .motion-chapter-band {
-  background: #140f19;
-}
-:root.light .motion-chapter-band {
-  background: #fffcf5;
+  background: var(--studio-surface);
 }

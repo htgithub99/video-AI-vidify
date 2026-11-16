@@ -5,12 +5,14 @@ import { SOURCE_TEXT_A, SOURCE_TEXT_INFO, SOURCE_TEXT_PURPLE, SOURCE_TEXT_SUCCES
 import { cn } from "../../../lib/utils";
 import React, { useState, useEffect } from "react";
 import _ from "lodash";
-import { Download, Eye, ImageIcon, Mic, RefreshCw, Video } from "lucide-react";
+import { Eye, ImageIcon, Mic, RefreshCw, Video } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { REFACTOR_CONSTANTS } from "../../../constants";
 import { REGENERATION_TARGET, REGENERATION_TEXTS } from "../../../constants/config";
 import { AspectRatio, VideoProject } from "../../../types";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
+import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
+import { STUDIO_DOWNLOAD } from "../../../constants/studioTheme.js";
 import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { SceneRegenerationDialog } from "./SceneRegenerationDialog";
 interface PreviewPanelSectionProps {
@@ -78,9 +80,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({ render
       </div>
       {!_.isEmpty(renderedVideoUrl) && (
         <div className={cn(RT_VIDEO_GENERATION.GRID_GRID_COLS_2_GAP_2_PT_1)}>
-          <Button variant={SOURCE_TEXT_SUCCESS} size={REFACTOR_CONSTANTS.SIZE_MD} onClick={handleDownload} className={cn(RT_VIDEO_GENERATION.H_10_MIN_H_40PX_PX_3_FONT_BOLD_TEXT)} title={T.downloadVideoTooltip}>
-            <Download className={cn(RT_SHARED.W_4_H_4)} /> {T.downloadVideoBtn}
-          </Button>
+          <StudioDownloadButton onClick={handleDownload} title={T.downloadVideoTooltip} className={STUDIO_DOWNLOAD.WIDE} />
         </div>
       )}
       {activeCreatedProject && canRegenerate && (

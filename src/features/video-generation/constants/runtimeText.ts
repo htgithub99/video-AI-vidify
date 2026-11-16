@@ -84,7 +84,6 @@ export const RUNTIME_TEXT = {
   W_6_H_6_TEXT_SLATE_500: "w-6 h-6 text-slate-500",
   TEXT_SLATE_400_FONT_MEDIUM_TEXT_XS_LEADING_RELAXED_MAX: "text-slate-400 font-medium text-xs leading-relaxed max-w-xs block",
   GRID_GRID_COLS_2_GAP_2_PT_1: "grid grid-cols-2 gap-2 pt-1",
-  H_10_MIN_H_40PX_PX_3_FONT_BOLD_TEXT: "h-10 min-h-[40px] px-3 font-bold text-xs rounded-xl flex items-center justify-center gap-2",
   GRID_GAP_2_PT_1: "grid gap-2 pt-1",
   H_9_MIN_H_36PX_PX_2_TEXT_11PX_FONT: "h-9 min-h-[36px] px-2 text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5",
   GLASS_CARD_ROUNDED_3XL_P_5_SM_P_6_SPACE: "glass-card rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-xl relative overflow-hidden text-left w-full",

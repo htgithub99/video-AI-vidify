@@ -38,6 +38,7 @@ export const MOTION_PRODUCTION = {
   MODE_UNSUPPORTED: "Luồng tạo video từ kho minh họa hiện hỗ trợ 2D. Chế độ 3D cần spec riêng; hãy chọn 2D trước khi tạo video.",
   VOICE_CHANGED: "Hồ sơ giọng đã thay đổi. Giữ lượt cũ; chọn lại hồ sơ hiện tại cho lượt tạo mới.",
   CHROME_CLOSED_BEFORE_VOICE: "Các bước dùng AI đã xong – đóng Chrome AI trước khi tạo giọng.",
+  CHROME_CLOSED_AI_DONE: "Các bước dùng AI đã xong – đã đóng Chrome AI.",
   VOICE_UNAVAILABLE: "Chưa sẵn sàng giọng đọc trong hồ sơ đã chọn. Kiểm tra nguồn giọng trước khi tạo video.",
   MIN_FREE_BYTES: 1073741824,
   STOP_PENDING: "Đang dừng các công việc của lượt; hãy đợi hoàn tất trước khi tiếp tục.",

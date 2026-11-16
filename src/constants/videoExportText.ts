@@ -44,7 +44,6 @@ export const VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW_CANCEL = "video-export-previ
 export const VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PREVIEW = "video-export-preview" as const;
 export const VIDEO_EXPORT_TEMPLATE_SYMBOL_3 = (value0: string, value1: string): string => value0 + "_" + value1;
 export const VIDEO_EXPORT_TEMPLATE_SYMBOL_4 = (value0: string, value1: string): string => value0 + " • " + value1;
-export const VIDEO_EXPORT_TEXT_SM = "sm" as const;
 export const VIDEO_EXPORT_TEXT_VIDEO_EXPORT_CHANGE_FOLDER = "video-export-change-folder" as const;
 export const VIDEO_EXPORT_TEXT_VIDEO_EXPORT_PICK_FOLDER = "video-export-pick-folder" as const;
 export const VIDEO_EXPORT_TEXT_TEXT_PURPLE_400 = "text-purple-400" as const;

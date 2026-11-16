@@ -18,7 +18,7 @@ const PREVIEW = {
   // Frames drawn ahead before playback (re)starts.
   START_FRAMES: 8,
   // Preview frames are drawn at the size they are shown, never above the video size.
-  MAX_DPR: 2,
+  MAX_DPR: 1.5,
   // If drawing keeps falling behind, play every 2nd (then 3rd) frame so motion stays even.
   MAX_STEP: 3,
   STALL_WINDOW_MS: 3000,
@@ -150,6 +150,9 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
   // Playback clock: advances only while the frame to show is drawn; otherwise it waits (and the voice with it).
   const timeRef = useRef(time);
   timeRef.current = time;
+  // Read through a ref: a scene page finishing its load must not restart the clock (and re-prime the buffer) mid-play.
+  const loadedRef = useRef(loaded);
+  loadedRef.current = loaded;
   const step = useRef(1);
   const stalls = useRef<{ at: number; ms: number }[]>([]);
   useEffect(() => {
@@ -166,7 +169,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     const ahead = Math.round(PREVIEW.AHEAD_SECONDS * spec.fps);
     const feed = (item: HtmlScene, from: number) => {
       const token = tokenOf(item);
-      if (!loaded.has(token)) return;
+      if (!loadedRef.current.has(token)) return;
       const s = step.current;
       const end = Math.min(item.endFrame - 1, from + ahead);
       const done = queued.current.get(token) ?? -1;
@@ -237,7 +240,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     request = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(request);
     // The clock starts from the current position each time playback starts.
-  }, [playing, spec, loaded, renderWidth, renderHeight, frameAt, sceneAt, tokenOf, post]);
+  }, [playing, spec, renderWidth, renderHeight, frameAt, sceneAt, tokenOf, post]);
 
   // Hover preview: a hidden page for the hovered scene draws one small picture per request.
   const [thumbScene, setThumbScene] = useState<HtmlScene>();

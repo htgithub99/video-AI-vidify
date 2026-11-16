@@ -55,7 +55,6 @@ export const MOTION_TEXT_1_1 = "1:1" as const;
 export const MOTION_TEXT_4_5 = "4:5" as const;
 export const MOTION_TEXT_FPS = " FPS" as const;
 export const MOTION_TEMPLATE_SYMBOL_3 = (value0: string): string => value0 + "%";
-export const MOTION_TEXT_MOTION_VIDEO_MP4 = "motion_video.mp4" as const;
 export const MOTION_TEXT_MOTION_VIDEO = "motion-video" as const;
 export const MOTION_TEXT_METADATA = "metadata" as const;
 export const MOTION_TEXT_FPS_2 = "fps · " as const;
@@ -536,8 +535,6 @@ export const MOTION_TEXT_PT_2_BORDER_T_BORDER_SLATE_800 = "pt-2 border-t border-
 export const MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_LG_GROUP = "relative rounded-xl overflow-hidden bg-black shadow-lg group" as const;
 export const MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK = "w-full rounded-xl bg-black shadow-lg block" as const;
 export const MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_Z_10 = "absolute top-3 right-3 z-10" as const;
-export const MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F = "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-950/85 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 border border-slate-700/80 hover:border-purple-400 text-slate-200 hover:text-white backdrop-blur-md shadow-lg transition-all cursor-pointer" as const;
-export const MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300 = "w-3.5 h-3.5 text-purple-300" as const;
 export const MOTION_TEXT_4XL = "4xl" as const;
 export const MOTION_TEXT_FLEX_ITEMS_CENTER_GAP_2 = "flex items-center gap-2" as const;
 export const MOTION_TEXT_W_4_H_4_TEXT_PURPLE_400_SHRINK_0 = "w-4 h-4 text-purple-400 shrink-0" as const;
@@ -564,7 +561,6 @@ export const P_4_SPACE_Y_3_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_80_3FC799 = "
 export const MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD = "relative rounded-xl overflow-hidden bg-black shadow-md" as const;
 export const MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD_BLOCK = "w-full rounded-xl bg-black max-h-[380px] shadow-md block" as const;
 export const MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_FLEX_ITEMS_CENTER_GAP_2_Z_10 = "absolute top-3 right-3 flex items-center gap-2 z-10" as const;
-export const MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300_GROUP_HOVER_TEXT_WHITE = "w-3.5 h-3.5 text-purple-300 group-hover:text-white" as const;
 export const MOTION_TEXT_SPACE_Y_1 = "space-y-1" as const;
 export const MOTION_TEMPLATE_SYMBOL_43 = (value0: unknown, value1: unknown, value2: unknown, value3: unknown, value4: unknown, value5: unknown, value6: unknown, value7: unknown, value8: unknown, value9: unknown, value10: unknown, value11: unknown): string => `${value0} ${value1} (${value2} ${value3})
 ${value4}: ${value5}

@@ -21,6 +21,7 @@ import { MOTION_VIDEO_CONSTANTS } from "../../../../constants/motionVideo.js";
 import { MotionJobStatus as S, MotionStoryJobKind as K, type MotionStoryJobState, type MotionStoryAnalysis, type MotionStoryScript, type MotionVoiceTrack, type MotionSeoPack, type MotionResultItem, type MotionProductionResult, type MotionProductionJobState } from "../../../../types/motionVideo.js";
 import { logger } from "../../../../lib/logger.js";
 import { closeChatBrowserIfIdle } from "../../../../server/services/chatUiPlanningService.js";
+import { closeMotionStandaloneBrowser } from "./motionStoryService.js";
 import { checkMotionMediaTools } from "./motionMediaValidation.js";
 import { checkMotionProductionVoice } from "./motionProductionPreflight.js";
 import { findVoiceChannel, voiceChannelRef } from "./motionVoiceLibraryService.js";
@@ -623,6 +624,12 @@ export const createMotionProductionService = (dependencies: Partial<typeof produ
       log(record, `${RT_MAINTENANCE.THOI_LUONG_DA_CHON}${Math.round(selectedSeconds)}${RT_MAINTENANCE.S_TONG_PHAN_NAY_DU_KIEN}${Math.round(targetSeconds)}${RT_MAINTENANCE.S_AUDIO_THUC}${result.voice!.totalSeconds.toFixed(1)}${RT_MAINTENANCE.S_5}`);
       await finishSeo();
       signal.throwIfAborted();
+      // Every AI step is over (script, scenes, SEO); the voice is made on this machine. Without an automatic export (which
+      // takes the browser itself) nothing needs the AI Chrome any more: close it instead of leaving it open.
+      if (base.autoExport === false)
+        await closeMotionStandaloneBrowser()
+          .then((closed) => void (closed && log(record, P.CHROME_CLOSED_AI_DONE)))
+          .catch(() => undefined);
       record.job.stage = P.STAGES.COMPILE;
       if (!result.voice?.audioId || result.voice.signature !== motionVoiceSignature(result.script, result.analysis) || !motionVoiceAsrSatisfied(result.voice, base.asrCheck === true)) throw new Error(P.AUDIO_REQUIRED);
       result.compiled = await compileMotionStoryInput({ ...base, analysis: result.analysis, script: result.script, voiceTrack: result.voice, durations: result.voice.durations, audioId: result.voice.audioId });

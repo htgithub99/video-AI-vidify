@@ -166,9 +166,14 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
     if (rechecked && voiceTextPassed(rechecked)) words = rechecked.words;
   }
   let best: { wav: Buffer; result: Awaited<ReturnType<typeof checkClip>>; cadence?: MotionVoiceCadence } | undefined;
+  // The evenest take of the line so far: a take still uneven after the pace correction is read again by the voice model.
+  let evenest: { wav: Buffer; cadence: MotionVoiceCadence } | undefined;
+  let retakes = 0;
   for (let check = 0; ; check++) {
+    let rendered = false;
     try {
       if (known === null || !cachedClipValid || check > 0) {
+        rendered = true;
         const original = path.join(vieneuRoot(), MR.MOTION_TEXT_CLIPS, check ? rawId + randomUUID() + MR.MOTION_TEXT_WAV : rawId),
           temp = file + randomUUID() + MR.MOTION_TEXT_WAV;
         fs.mkdirSync(path.dirname(original), { recursive: true });
@@ -220,7 +225,16 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
           cadence = undefined;
           if (reference) {
             try {
-              const matched = await normalizeReferenceVoiceCadence(temp, line.text, reference, opts.signal);
+              const matched = await normalizeReferenceVoiceCadence(temp, line.text, reference, opts.signal, (target) =>
+                (deps.transcribe || transcribeVieneuAudio)(target, motionLanguage(language).asrCode, opts.signal, opts.log).then(
+                  (heard) => heard.words,
+                  (error) => {
+                    if (opts.signal?.aborted) throw error;
+                    opts.log?.(PACE.WORD_TIMING_FALLBACK(_.toString((error as Error)?.message || error)));
+                    return null;
+                  },
+                ),
+              );
               if (matched) {
                 rendered = matched.wav;
                 cadence = matched.cadence;
@@ -257,6 +271,19 @@ const speechClipOnce = async (line: MotionUtterance, voiceId: string, language: 
       quality = { status: Q.STATUS.REVIEW, error: best.result.error, heard: best.result.heard };
       opts.log?.(C.ASR.KEPT(line.text, best.result.error));
       break;
+    }
+    if (rendered && cadence?.phraseSpreadAfter !== undefined) {
+      const spread = cadence.phraseSpreadAfter;
+      if (!evenest || spread < evenest.cadence.phraseSpreadAfter!) evenest = { wav: await fs.promises.readFile(file), cadence };
+      if (spread > PACE.NARRATOR_CADENCE.EVEN_GATE && retakes < PACE.NARRATOR_CADENCE.EVEN_RETRIES) {
+        retakes++;
+        opts.log?.(PACE.EVEN_RETAKE(line.text, spread));
+        continue;
+      }
+      if (evenest.cadence !== cadence) {
+        await fs.promises.writeFile(file, evenest.wav);
+        cadence = evenest.cadence;
+      }
     }
     motionVoiceSignal(await fs.promises.readFile(file));
     if (!opts.asr || quality.status === Q.STATUS.PASSED || quality.status === Q.STATUS.REVIEW || (quality.status === Q.STATUS.UNAVAILABLE && !!quality.verifiedAt)) break;
@@ -449,7 +476,7 @@ const layoutMotionVoice = async (plan: MotionVoicePlan, script: MotionStoryScrip
         if (delivery.strength) moods[delivery.mood] = (moods[delivery.mood] || 0) + 1;
         if (delivery.strength && isAi33Voice(voiceId)) ai33++;
         const narration = line.role === MR.MOTION_TEXT_NARRATION;
-        const base = pacing ? { ...delivery, ...(narration ? { tempo: pacing.narrationTempo, temperature: PACE.NARRATION_TEMPERATURE, silence: PACE.NARRATION_SILENCE, pause: 1, gain: 1, strength: Math.min(delivery.strength, PACE.NARRATION_STRENGTH) } : { tempo: pacing.dialogueTempo, temperature: PACE.NARRATION_TEMPERATURE, silence: PACE.NARRATION_SILENCE }) } : delivery;
+        const base = pacing ? { ...delivery, ...(narration ? { tempo: pacing.narrationTempo, temperature: PACE.NARRATION_TEMPERATURE, silence: PACE.NARRATION_SILENCE, pause: 1, gain: 1, strength: Math.min(delivery.strength, PACE.NARRATION_STRENGTH) } : { tempo: pacing.dialogueTempo, temperature: PACE.DIALOGUE_TEMPERATURE, silence: PACE.NARRATION_SILENCE }) } : delivery;
         const paced = { ...base, tempo: base.tempo * (pacing?.key === PACE.MEASURED_KEY ? 1 : narration ? C.TEMPO.NARRATION_SCALE : C.TEMPO.DIALOGUE_SCALE) };
         const pieces = motionPacedLines(line, pacing);
         if (pieces.length > 1) split++;

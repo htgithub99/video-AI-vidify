@@ -82,7 +82,6 @@ export const RUNTIME_TEXT = {
   RELATIVE_W_FULL_H_2_BG_SLATE_700_60_HOVER: "relative w-full h-2 bg-slate-700/60 hover:h-3 rounded-full cursor-pointer overflow-hidden transition-all group/track border border-white/10",
   TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_2_MT_0: "text-[10px] text-slate-400 line-clamp-2 mt-0.5 leading-relaxed",
   TEXT_10PX_TEXT_PURPLE_400_FONT_MONO_FONT_SEMIBOLD: "text-[10px] text-purple-400 font-mono font-semibold",
-  W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE: "w-3.5 h-3.5 animate-spin text-white shrink-0",
   RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_SLATE_950_ASPECT_9_4FC152: "relative rounded-xl overflow-hidden bg-slate-950 aspect-[9/16] w-full max-h-[380px] flex items-center justify-center border border-slate-800/60 shadow-inner group/video",
   MT_3_SPACE_Y_2_TEXT_LEFT: "mt-3 space-y-2 text-left",
   TEXT_10PX_TEXT_SLATE_400_LINE_CLAMP_2_MT_0_5C32F5: "text-[10px] text-slate-400 line-clamp-2 mt-0.5",

@@ -313,6 +313,10 @@ export const MOTION_FIGURES = {
     if (fn === 'bridge' && Array.isArray(o.from) && Array.isArray(o.to)) return { x: Math.min(o.from[0], o.to[0]) - w / 2, y: Math.min(o.from[1], o.to[1]), w: Math.abs(o.to[0] - o.from[0]) + w, h: Math.abs(o.to[1] - o.from[1]) };
     if (fn === 'bridge') return { x: x - w / 2, y: y, w: w, h: h };
     if (fn === 'chart' || fn === 'meter' || fn === 'timeline') return { x: x, y: y, w: w, h: h };
+    // A map icon fills the circle of radius r; an arrow spans from..to. (Without these the box was empty and the scene
+    // check read the icon or arrow as outside the frame.)
+    if (fn === 'icon') { var r = num(+o.r, 20); return { x: x - r, y: y - r, w: 2 * r, h: 2 * r }; }
+    if (fn === 'arrow' && Array.isArray(o.from) && Array.isArray(o.to)) return { x: Math.min(o.from[0], o.to[0]), y: Math.min(o.from[1], o.to[1]), w: Math.abs(o.to[0] - o.from[0]), h: Math.abs(o.to[1] - o.from[1]) };
     return { x: x - w / 2, y: y - h, w: w, h: h };
   };
   // Measures a kit drawing once from its own pixels: drawn standing at a reference size on a hidden canvas, its painted

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html data-artifact='motion-html-scene' data-request-id='364050d4-da0f-46b0-b83f-3f8143dd3243'>
+<head>
+<meta charset="utf-8">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111;overflow:hidden}#motion-canvas{display:block;width:100vw;height:100vh}</style>
+</head>
+<body>
+<canvas id="motion-canvas"></canvas>
+<script>
+(function(){
+  const INK = '#26201c';
+  function makeRng(seedStr){
+    let h = 2166136261 >>> 0;
+    const s = String(seedStr || 'seed');
+    for(let i = 0; i < s.length; i++){
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return function(){
+      h += 0x6D2B79F5;
+      let t = Math.imul(h ^ (h >>> 15), 1 | h);
+      t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function clamp(v, lo, hi){
+    return v < lo ? lo : (v > hi ? hi : v);
+  }
+  function lerp(a, b, t){
+    return a + (b - a) * t;
+  }
+  function smoothstep(e0, e1, x){
+    const t = clamp((x - e0) / (e1 - e0 || 1), 0, 1);
+    return t * t * (3 - 2 * t);
+  }
+  function smoothPath(pts, closed){
+    const p = new Path2D();
+    if(!pts || pts.length < 2) return p;
+    if(closed){
+      const m0x = (pts[pts.length - 1][0] + pts[0][0]) * 0.5;
+      const m0y = (pts[pts.length - 1][1] + pts[0][1]) * 0.5;
+      p.moveTo(m0x, m0y);
+      for(let i = 0; i < pts.length; i++){
+        const nxt = pts[(i + 1) % pts.length];
+        const mx = (pts[i][0] + nxt[0]) * 0.5;
+        const my = (pts[i][1] + nxt[1]) * 0.5;
+        p.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+      }
+      p.closePath();
+    } else {
+      p.moveTo(pts[0][0], pts[0][1]);
+      for(let i = 1; i < pts.length - 1; i++){
+        const mx = (pts[i][0] + pts[i + 1][0]) * 0.5;
+        const my = (pts[i][1] + pts[i + 1][1]) * 0.5;
+        p.quadraticCurveTo(pts[i][0], pts[i][1], mx, my);
+      }
+      const last = pts[pts.length - 1];
+      p.lineTo(last[0], last[1]);
+    }
+    return p;
+  }
+  function shape(ctx, p, fill, shade, width, shadeOffset){
+    if(fill){
+      ctx.fillStyle = fill;
+      ctx.fill(p);
+    }
+    if(shade){
+      ctx.save();
+      ctx.clip(p);
+      ctx.fillStyle = shade;
+      const ox = shadeOffset ? shadeOffset[0] : 4;
+      const oy = shadeOffset ? shadeOffset[1] : 5;
+      ctx.translate(ox, oy);
+      ctx.fill(p);
+      ctx.restore();
+    }
+    if(width > 0){
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = width;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke(p);
+    }
+  }
+  function evalQuad(p0, p1, p2, t){
+    const u = 1 - t;
+    return [u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]];
+  }
+  function curveCtrl(from, to, curve){
+    const dx = to[0] - from[0], dy = to[1] - from[1];
+    const len = Math.hypot(dx, dy) || 1;
+    return [(from[0] + to[0]) * 0.5 + (-dy / len) * (curve || 0), (from[1] + to[1]) * 0.5 + (dx / len) * (curve || 0)];
+  }
+  if(!window.MotionFigures){
+    window.MotionFigures = {
+      use(defs){
+        return defs;
+      },
+      phase(p, n, cues){
+        const at = [];
+        for(let i = 0; i < n; i++){
+          at.push(cues && cues[i] != null ? cues[i] : i / n);
+        }
+        return { at };
+      },
+      track(keys, p){
+        if(!keys || !keys.length) return {};
+        if(p <= keys[0].at) return Object.assign({}, keys[0], { moving: false, distance: 0 });
+        if(p >= keys[keys.length - 1].at) return Object.assign({}, keys[keys.length - 1], { moving: false, distance: 0 });
+        let i = 0;
+        while(i < keys.length - 2 && p > keys[i + 1].at) i++;
+        const k0 = keys[i], k1 = keys[i + 1];
+        const t = smoothstep(k0.at, k1.at, p);
+        const out = Object.assign({}, k0);
+        for(const k in k1){
+          if(typeof k0[k] === 'number' && typeof k1[k] === 'number' && k !== 'at'){
+            out[k] = lerp(k0[k], k1[k], t);
+          }
+        }
+        out.moving = true;
+        out.distance = 0;
+        return out;
+      }
+    };
+  }
+  function markBox(ctx, id, x, y, w, h){
+    if(id && window.motionMark) window.motionMark(ctx, id, x, y, w, h);
+  }
+  const FIG = window.MotionFigures.use({
+    bridge(ctx, o){
+      const x = o.x, y = o.y, w = o.w || 78, h = o.h || 22;
+      const ang = o.angle || -0.15;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      const deck = smoothPath([[-w * 0.52, -h * 0.35], [0, -h * 0.45], [w * 0.52, -h * 0.35], [w * 0.52, h * 0.35], [0, h * 0.45], [-w * 0.52, h * 0.35]], true);
+      shape(ctx, deck, o.color || '#b88b58', '#8d6438', 2.4, [0, 3]);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 1.6;
+      for(let px = -w * 0.36; px <= w * 0.36; px += w * 0.18){
+        ctx.beginPath();
+        ctx.moveTo(px, -h * 0.36);
+        ctx.lineTo(px, h * 0.36);
+        ctx.stroke();
+      }
+      ctx.restore();
+      markBox(ctx, o.mark, x - w * 0.55, y - h * 0.6, w * 1.1, h * 1.2);
+      return { box: { x: x - w * 0.55, y: y - h * 0.6, w: w * 1.1, h: h * 1.2 } };
+    },
+    wall(ctx, o){
+      const x = o.x, y = o.y, w = o.w || 78, h = o.h || 54;
+      const r = 10;
+      const p = new Path2D();
+      p.moveTo(x - w * 0.5 + r, y - h * 0.5);
+      p.lineTo(x + w * 0.5 - r, y - h * 0.5);
+      p.quadraticCurveTo(x + w * 0.5, y - h * 0.5, x + w * 0.5, y - h * 0.5 + r);
+      p.lineTo(x + w * 0.5, y + h * 0.5 - r);
+      p.quadraticCurveTo(x + w * 0.5, y + h * 0.5, x + w * 0.5 - r, y + h * 0.5);
+      p.lineTo(x - w * 0.5 + r, y + h * 0.5);
+      p.quadraticCurveTo(x - w * 0.5, y + h * 0.5, x - w * 0.5, y + h * 0.5 - r);
+      p.lineTo(x - w * 0.5, y - h * 0.5 + r);
+      p.quadraticCurveTo(x - w * 0.5, y - h * 0.5, x - w * 0.5 + r, y - h * 0.5);
+      p.closePath();
+      shape(ctx, p, o.color || '#d5c198', '#b09a72', 2.5, [3, 4]);
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 1.7;
+      const segs = 6;
+      for(let i = 0; i < segs; i++){
+        const bx = x - w * 0.42 + (w * 0.84) * (i / (segs - 1));
+        ctx.beginPath();
+        ctx.moveTo(bx, y - h * 0.5 - 3);
+        ctx.lineTo(bx, y - h * 0.5 + 3);
+        ctx.moveTo(bx, y + h * 0.5 - 3);
+        ctx.lineTo(bx, y + h * 0.5 + 3);
+        ctx.stroke();
+      }
+      const inner = new Path2D();
+      inner.roundRect(x - w * 0.34, y - h * 0.28, w * 0.68, h * 0.56, 4);
+      ctx.strokeStyle = '#5c4a36';
+      ctx.lineWidth = 1.5;
+      ctx.stroke(inner);
+      markBox(ctx, o.mark, x - w * 0.55, y - h * 0.55, w * 1.1, h * 1.1);
+      return { box: { x: x - w * 0.55, y: y - h * 0.55, w: w * 1.1, h: h * 1.1 } };
+    },
+    icon(ctx, o){
+      const x = o.x, y = o.y, r = o.r || 18, ap = o.appear == null ? 1 : o.appear;
+      const col = o.color || '#7a2922';
+      if(o.pulse && o.pulse > 0){
+        const pr = r * (1.2 + o.pulse * 1.65);
+        ctx.save();
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = (1 - o.pulse) * 0.72;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.arc(x, y, pr, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(ap, ap);
+      if(o.kind === 'house'){
+        const base = smoothPath([[-r * 0.8, 0], [0, -r * 0.85], [r * 0.8, 0], [r * 0.65, r * 0.72], [-r * 0.65, r * 0.72]], true);
+        shape(ctx, base, col, '#8c7254', 2.2, [2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.92, 0.05 * r);
+        ctx.lineTo(0, -r * 0.92);
+        ctx.lineTo(r * 0.92, 0.05 * r);
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 2.4;
+        ctx.stroke();
+      } else if(o.kind === 'swords'){
+        const badge = new Path2D();
+        badge.arc(0, 0, r * 1.05, 0, Math.PI * 2);
+        shape(ctx, badge, '#f3e5c3', '#d4be92', 2.2, [2, 2]);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.58, -r * 0.58);
+        ctx.lineTo(r * 0.58, r * 0.58);
+        ctx.moveTo(r * 0.58, -r * 0.58);
+        ctx.lineTo(-r * 0.58, r * 0.58);
+        ctx.moveTo(-r * 0.52, -r * 0.25);
+        ctx.lineTo(-r * 0.25, -r * 0.52);
+        ctx.moveTo(r * 0.52, -r * 0.25);
+        ctx.lineTo(r * 0.25, -r * 0.52);
+        ctx.stroke();
+      } else if(o.kind === 'shield'){
+        const sh = smoothPath([[-r * 0.65, -r * 0.62], [0, -r * 0.75], [r * 0.65, -r * 0.62], [r * 0.58, r * 0.2], [0, r * 0.85], [-r * 0.58, r * 0.2]], true);
+        shape(ctx, sh, col, '#3a5436', 2.1, [2, 2]);
+      } else if(o.kind === 'flag'){
+        const b = smoothPath([[-r * 0.88, -r * 0.52], [r * 0.88, -r * 0.52], [r * 0.88, r * 0.52], [-r * 0.88, r * 0.52]], true);
+        shape(ctx, b, col, '#4e1611', 2.2, [2, 2]);
+        ctx.strokeStyle = '#efe3c8';
+        ctx.lineWidth = 1.9;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.48, -r * 0.24);
+        ctx.lineTo(r * 0.48, r * 0.24);
+        ctx.moveTo(r * 0.48, -r * 0.24);
+        ctx.lineTo(-r * 0.48, r * 0.24);
+        ctx.stroke();
+      } else {
+        const bell = smoothPath([[-r * 0.75, r * 0.35], [-r * 0.15, -r * 0.15], [r * 0.62, -r * 0.55], [r * 0.78, r * 0.52], [-r * 0.25, r * 0.42]], true);
+        shape(ctx, bell, col, '#4f1813', 2, [1, 2]);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(r * 0.85, 0, r * 0.42, -0.7, 0.7);
+        ctx.stroke();
+      }
+      ctx.restore();
+      markBox(ctx, o.mark, x - r * 1.1, y - r * 1.1, r * 2.2, r * 2.2);
+      return { box: { x: x - r * 1.1, y: y - r * 1.1, w: r * 2.2, h: r * 2.2 } };
+    },
+    arrow(ctx, o){
+      const g = clamp(o.grow == null ? 1 : o.grow, 0, 1);
+      if(g <= 0.01) return { box: { x: o.from[0], y: o.from[1], w: 0, h: 0 } };
+      const ctrl = curveCtrl(o.from, o.to, o.curve || 0);
+      const steps = 28;
+      const maxS = Math.max(1, Math.round(steps * g));
+      const pts = [];
+      for(let i = 0; i <= maxS; i++) pts.push(evalQuad(o.from, ctrl, o.to, i / steps));
+      const w = o.width || 6.5;
+      const col = o.color || '#7a2922';
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = w + 3.4;
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke();
+      const tip = pts[pts.length - 1];
+      const prev = pts[Math.max(0, pts.length - 2)];
+      const ang = Math.atan2(tip[1] - prev[1], tip[0] - prev[0]);
+      const hs = w * 2.5 * Math.min(1, g * 4);
+      ctx.translate(tip[0], tip[1]);
+      ctx.rotate(ang);
+      const head = smoothPath([[hs * 0.55, 0], [-hs * 0.65, -hs * 0.55], [-hs * 0.35, 0], [-hs * 0.65, hs * 0.55]], true);
+      shape(ctx, head, col, '#4e1712', 2.2, [0, 2]);
+      ctx.restore();
+      const minX = Math.min(o.from[0], o.to[0], ctrl[0]) - 16, minY = Math.min(o.from[1], o.to[1], ctrl[1]) - 16;
+      const maxX = Math.max(o.from[0], o.to[0], ctrl[0]) + 16, maxY = Math.max(o.from[1], o.to[1], ctrl[1]) + 16;
+      markBox(ctx, o.mark, minX, minY, maxX - minX, maxY - minY);
+      return { box: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } };
+    },
+    label(ctx, o){
+      const sz = Math.max(22, o.size || 24);
+      ctx.save();
+      ctx.font = '700 ' + sz + 'px Georgia, "Times New Roman", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const tw = ctx.measureText(o.text).width;
+      ctx.strokeStyle = '#f3e7cb';
+      ctx.lineWidth = 4.5;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(o.text, o.x, o.y);
+      ctx.fillStyle = o.color || INK;
+      ctx.fillText(o.text, o.x, o.y);
+      ctx.restore();
+      markBox(ctx, o.mark, o.x - tw * 0.55, o.y - sz * 0.6, tw * 1.1, sz * 1.2);
+      return { box: { x: o.x - tw * 0.55, y: o.y - sz * 0.6, w: tw * 1.1, h: sz * 1.2 } };
+    }
+  });
+  function drawParchment(ctx, rng){
+    const bg = ctx.createRadialGradient(640, 360, 120, 640, 360, 1180);
+    bg.addColorStop(0, '#f4ead2');
+    bg.addColorStop(0.65, '#ead9b7');
+    bg.addColorStop(1, '#d3bc92');
+    ctx.fillStyle = bg;
+    ctx.fillRect(-450, -260, 2180, 1240);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(92, 71, 56, 0.16)';
+    ctx.lineWidth = 1.3;
+    for(let i = 0; i < 14; i++){
+      const yBase = -180 + i * 86;
+      const pts = [];
+      for(let x = -450; x <= 1730; x += 220){
+        pts.push([x, yBase + (rng() - 0.5) * 34]);
+      }
+      ctx.stroke(smoothPath(pts, false));
+    }
+    ctx.restore();
+    const marshPts = [[490, 585], [512, 578], [528, 588], [662, 604], [685, 598], [712, 608], [380, 615], [405, 608]];
+    ctx.strokeStyle = 'rgba(72, 60, 46, 0.42)';
+    ctx.lineWidth = 1.4;
+    for(const m of marshPts){
+      ctx.beginPath();
+      ctx.moveTo(m[0] - 9, m[1]);
+      ctx.lineTo(m[0] + 9, m[1]);
+      ctx.moveTo(m[0] - 4, m[1]);
+      ctx.lineTo(m[0] - 7, m[1] - 6);
+      ctx.moveTo(m[0] + 3, m[1]);
+      ctx.lineTo(m[0] + 5, m[1] - 7);
+      ctx.stroke();
+    }
+    ctx.save();
+    ctx.strokeStyle = 'rgba(92, 71, 56, 0.48)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 6]);
+    ctx.stroke(smoothPath([[310, 325], [455, 290], [608, 232], [755, 195], [900, 180]], false));
+    ctx.stroke(smoothPath([[445, 445], [505, 515], [560, 555], [680, 578]], false));
+    ctx.restore();
+  }
+  function drawPeaks(ctx){
+    const backRidge = smoothPath([[780, 128], [845, 52], [905, 94], [975, 26], [1042, 76], [1115, 8], [1195, 62], [1280, -8], [1365, 58], [1430, 130]], false);
+    const frontRidge = smoothPath([[830, 172], [895, 96], [955, 134], [1025, 64], [1092, 114], [1165, 50], [1238, 102], [1325, 42], [1405, 114], [1455, 178]], false);
+    ctx.save();
+    ctx.strokeStyle = INK;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.fillStyle = '#dfcca4';
+    const backFill = smoothPath([[780, 128], [845, 52], [905, 94], [975, 26], [1042, 76], [1115, 8], [1195, 62], [1280, -8], [1365, 58], [1430, 130], [1430, 175], [780, 175]], true);
+    ctx.fill(backFill);
+    ctx.lineWidth = 2.3;
+    ctx.stroke(backRidge);
+    const frontFill = smoothPath([[830, 172], [895, 96], [955, 134], [1025, 64], [1092, 114], [1165, 50], [1238, 102], [1325, 42], [1405, 114], [1455, 178], [1455, 204], [830, 204]], true);
+    shape(ctx, frontFill, '#e6d5b2', '#cbb386', 0, [10, 8]);
+    ctx.lineWidth = 2.5;
+    ctx.stroke(frontRidge);
+    const spurs = [
+      [[845, 52], [862, 86], [872, 110]],
+      [[975, 26], [994, 62], [1008, 92]],
+      [[1115, 8], [1136, 48], [1150, 78]],
+      [[1025, 64], [1045, 102], [1060, 136]],
+      [[1165, 50], [1186, 90], [1202, 128]],
+      [[1325, 42], [1346, 84], [1364, 122]]
+    ];
+    ctx.lineWidth = 1.6;
+    for(const sp of spurs) ctx.stroke(smoothPath(sp, false));
+    ctx.restore();
+  }
+  function drawRivers(ctx, t){
+    const sajo = smoothPath([
+      [525, -260], [562, -60], [602, 110], [614, 232], [580, 358], [540, 466], [572, 576], [606, 665],
+      [536, 665], [506, 576], [480, 466], [520, 358], [556, 232], [542, 110], [500, -60], [460, -260]
+    ], true);
+    shape(ctx, sajo, '#75939e', '#597682', 2.4, [7, 0]);
+    markBox(ctx, 'sajo', 515, 85, 105, 535);
+    const tisza = smoothPath([
+      [-450, 642], [120, 635], [570, 630], [1040, 638], [1730, 648],
+      [1730, 980], [-450, 980]
+    ], true);
+    shape(ctx, tisza, '#6b8995', '#526f7b', 2.5, [0, 10]);
+    ctx.save();
+    ctx.clip(sajo);
+    ctx.strokeStyle = 'rgba(236, 244, 245, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    const drift = (t * 14) % 48;
+    for(let y = -180 + drift; y < 638; y += 48){
+      const cx = 560 + Math.sin(y * 0.012) * 32;
+      ctx.beginPath();
+      ctx.moveTo(cx - 12, y);
+      ctx.quadraticCurveTo(cx, y + 6, cx + 12, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.save();
+    ctx.clip(tisza);
+    ctx.strokeStyle = 'rgba(236, 244, 245, 0.42)';
+    ctx.lineWidth = 1.6;
+    const hDrift = (t * 18) % 90;
+    for(let x = -360 + hDrift; x < 1680; x += 90){
+      const cy = 670 + Math.cos(x * 0.01) * 5;
+      ctx.beginPath();
+      ctx.moveTo(x - 18, cy);
+      ctx.quadraticCurveTo(x, cy - 4, x + 18, cy);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  window.motionScene = {
+    ready: Promise.resolve(),
+    async renderAt(input = {}){
+      const canvas = document.getElementById('motion-canvas');
+      const w = Math.max(320, Number(input.width) || window.innerWidth || 1280);
+      const h = Math.max(180, Number(input.height) || window.innerHeight || 720);
+      if(canvas.width !== w) canvas.width = w;
+      if(canvas.height !== h) canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const motionOn = input.motionEnabled !== false;
+      const camOn = input.cameraEnabled !== false;
+      const prog = motionOn ? clamp(Number(input.progress) || 0, 0, 1) : 0;
+      const t = motionOn ? (Number(input.time) || 0) : 0;
+      const rng = makeRng(input.seed || 'preview');
+      const sc = Math.min(w / 1280, h / 720);
+      const ox = (w - 1280 * sc) * 0.5;
+      const oy = (h - 720 * sc) * 0.5;
+      const camKeys = [
+        { at: 0, x: 615, y: 375, zoom: 1.0 },
+        { at: 0.5, x: 585, y: 386, zoom: 1.07 },
+        { at: 1, x: 555, y: 398, zoom: 1.14 }
+      ];
+      const cam = camOn ? window.MotionFigures.track(camKeys, prog) : camKeys[0];
+      const ph = window.MotionFigures.phase(prog, 3, input.cues);
+      const southGrow = smoothstep(0.02, ph.at[1] + 0.06, prog);
+      const eastGrow = smoothstep(ph.at[1], ph.at[2] + 0.06, prog);
+      const bridgeGrow = smoothstep(ph.at[2], 0.96, prog);
+      ctx.save();
+      ctx.translate(ox, oy);
+      ctx.scale(sc, sc);
+      ctx.save();
+      ctx.translate(640, 360);
+      ctx.scale(cam.zoom, cam.zoom);
+      ctx.translate(-cam.x, -cam.y);
+      drawParchment(ctx, rng);
+      drawPeaks(ctx);
+      drawRivers(ctx, t);
+      FIG.bridge(ctx, { x: 586, y: 232, w: 78, h: 22, angle: -0.15, mark: 'bridge' });
+      FIG.icon(ctx, { kind: 'swords', x: 586, y: 192, r: 19, color: '#7a2922' });
+      FIG.wall(ctx, { kind: 'wagonFort', x: 438, y: 410, w: 78, h: 52, color: '#d8c59e', mark: 'camp' });
+      FIG.icon(ctx, { kind: 'house', x: 356, y: 454, r: 17, color: '#9c7e54' });
+      const hungarianMarks = [[394, 392], [418, 370], [466, 372], [400, 434]];
+      for(const hm of hungarianMarks){
+        FIG.icon(ctx, { kind: 'shield', x: hm[0], y: hm[1], r: 12, color: '#53734c' });
+      }
+      const sFrom = [682, 566], sTo = [472, 434];
+      const eFrom = [835, 384], eTo = [482, 410];
+      const bFrom = [656, 218], bTo = [458, 384];
+      FIG.arrow(ctx, { from: sFrom, to: sTo, curve: -40, width: 6.5, color: '#7a2922', grow: southGrow });
+      FIG.arrow(ctx, { from: eFrom, to: eTo, curve: 24, width: 6.5, color: '#7a2922', grow: eastGrow });
+      FIG.arrow(ctx, { from: bFrom, to: bTo, curve: -34, width: 6.5, color: '#7a2922', grow: bridgeGrow });
+      const ePos = evalQuad(eFrom, curveCtrl(eFrom, eTo, 24), eTo, eastGrow * 0.42);
+      const sPos = evalQuad(sFrom, curveCtrl(sFrom, sTo, -40), sTo, southGrow * 0.35);
+      const bPos = evalQuad(bFrom, curveCtrl(bFrom, bTo, -34), bTo, bridgeGrow * 0.35);
+      const mongolMarks = [
+        { x: bPos[0], y: bPos[1], r: 16, mark: null },
+        { x: ePos[0], y: ePos[1], r: 24, mark: 'mongol_army' },
+        { x: ePos[0] + 44, y: ePos[1] + 42, r: 16, mark: null },
+        { x: sPos[0], y: sPos[1], r: 17, mark: null },
+        { x: sPos[0] + 54, y: sPos[1] - 18, r: 15, mark: null }
+      ];
+      for(const mm of mongolMarks){
+        FIG.icon(ctx, { kind: 'flag', x: mm.x, y: mm.y, r: mm.r, color: '#7a2922', mark: mm.mark });
+      }
+      const pulsePhase = (t * 1.15) % 1;
+      const horns = [[644, 594], [790, 578], [898, 336]];
+      for(let i = 0; i < horns.length; i++){
+        const pLocal = (pulsePhase + i * 0.28) % 1;
+        FIG.icon(ctx, { kind: 'horn', x: horns[i][0], y: horns[i][1], r: 15, color: '#7a2922', pulse: pLocal });
+      }
+      FIG.label(ctx, { x: 690, y: 160, text: 'Cầu Sajó', size: 24, color: INK });
+      FIG.label(ctx, { x: 465, y: 276, text: 'Sajó', size: 25, color: '#273a42' });
+      FIG.label(ctx, { x: 286, y: 462, text: 'Mohi', size: 25, color: INK });
+      ctx.restore();
+      ctx.restore();
+    }
+  };
+  if (!window.__MOTION_HOST__) { const t0 = performance.now(), dur = 10, loop = (now) => { const t = ((now - t0) / 1000) % dur; window.motionScene.renderAt({ time: t, progress: t / dur, frame: Math.floor(t * 30), fps: 30, duration: dur, width: window.innerWidth || 1280, height: window.innerHeight || 720, mode: 'preview', motionEnabled: true, sceneEffectsEnabled: true, seed: 'preview', speaking: [] }); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+})();
+</script>
+</body>
+</html>

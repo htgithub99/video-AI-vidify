@@ -20,6 +20,9 @@ const script: any = { title: RT.VOICE_CONTINUITY, language: RT.VI, beats: lines.
 let syntheses = 0;
 const deps: any = {
   voices: async () => [voice],
+  transcribe: async () => {
+    throw new Error("Không nhận dạng giọng trong bài kiểm tra");
+  },
   synthesize: async (_text: string, _voice: string, file: string) => {
     syntheses++;
     const samples = Buffer.alloc(48000 * 2 * 2);

@@ -1,14 +1,15 @@
 import { formatMediaFileSize as formatFileSize } from "../../../lib/mediaFormat.js";
+import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
 import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { openIndexedDatabase } from "../../../lib/indexedDatabase.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SHORTS } from "../constants/runtimeText.js";
 import { StudioHeader, StudioPage, StudioInput, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard } from "../../../components/ui/Studio.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
-import { SOURCE_TEMPLATE_0, SOURCE_TEMPLATE_CLIP, SOURCE_TEMPLATE_PATH, SOURCE_TEMPLATE_SHORT, SOURCE_TEMPLATE_SHORTS_EXPORT, SOURCE_TEMPLATE_SYMBOL_24, SOURCE_TEMPLATE_SYMBOL_7, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_0, SOURCE_TEXT_15_30S, SOURCE_TEXT_16_9, SOURCE_TEXT_1_1, SOURCE_TEXT_30_60S, SOURCE_TEXT_60_90S, SOURCE_TEXT_9_16, SOURCE_TEXT_ABORTERROR, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_BUTTON, SOURCE_TEXT_COMPLETED, SOURCE_TEXT_DANG_LUU, SOURCE_TEXT_EN, SOURCE_TEXT_END, SOURCE_TEXT_ERROR, SOURCE_TEXT_FILE, SOURCE_TEXT_FPS, SOURCE_TEXT_ID, SOURCE_TEXT_IDLE, SOURCE_TEXT_POST, SOURCE_TEXT_READONLY, SOURCE_TEXT_READWRITE, SOURCE_TEXT_SM, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYMBOL_26, SOURCE_TEXT_SYMBOL_27, SOURCE_TEXT_SYMBOL_28, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_VI, SOURCE_TEXT_VIDEO, SOURCE_TEXT_X } from "../../../constants/sourceText";
+import { SOURCE_TEMPLATE_0, SOURCE_TEMPLATE_CLIP, SOURCE_TEMPLATE_PATH, SOURCE_TEMPLATE_SHORT, SOURCE_TEMPLATE_SHORTS_EXPORT, SOURCE_TEMPLATE_SYMBOL_24, SOURCE_TEMPLATE_SYMBOL_7, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_0, SOURCE_TEXT_15_30S, SOURCE_TEXT_16_9, SOURCE_TEXT_1_1, SOURCE_TEXT_30_60S, SOURCE_TEXT_60_90S, SOURCE_TEXT_9_16, SOURCE_TEXT_ABORTERROR, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_BUTTON, SOURCE_TEXT_COMPLETED, SOURCE_TEXT_EN, SOURCE_TEXT_END, SOURCE_TEXT_ERROR, SOURCE_TEXT_FILE, SOURCE_TEXT_FPS, SOURCE_TEXT_ID, SOURCE_TEXT_IDLE, SOURCE_TEXT_POST, SOURCE_TEXT_READONLY, SOURCE_TEXT_READWRITE, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYMBOL_26, SOURCE_TEXT_SYMBOL_27, SOURCE_TEXT_SYMBOL_28, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_VI, SOURCE_TEXT_VIDEO, SOURCE_TEXT_X } from "../../../constants/sourceText";
 import { ChangeEvent, DragEvent, FC, useEffect, useRef, useState } from "react";
 import _ from "lodash";
-import { Scissors, Sparkles, Download, Flame, FileVideo, Clock, Monitor, HardDrive, Upload, SlidersHorizontal, Smartphone, Tv, Square, Layers, Crop, Crosshair, FolderDown, Film } from "lucide-react";
+import { Scissors, Sparkles, Flame, FileVideo, Clock, Monitor, HardDrive, Upload, SlidersHorizontal, Smartphone, Tv, Square, Layers, Crop, Crosshair, FolderDown, Film } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../../components/ui/Button.js";
 import { Tooltip } from "../../../components/ui/Tooltip.js";
@@ -652,8 +653,6 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
                 <ShortsResultCardItem
                   key={clip.id}
                   clip={clip}
-                  downloadText={text.DOWNLOAD_CLIP}
-                  downloadingText={text.SAVING_VIDEO || SOURCE_TEXT_DANG_LUU}
                   viralSuffix={text.VIRAL_SCORE_SUFFIX}
                   isDownloading={downloadingClipId === clip.id}
                   onDownload={handleDownloadSingleVideo}
@@ -666,7 +665,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
     </StudioPage>
   );
 };
-const ShortsResultCardItem: FC<{ clip: HighlightClipItem; downloadText: string; downloadingText: string; viralSuffix: string; isDownloading: boolean; onDownload: (clip: HighlightClipItem) => void }> = ({ clip, downloadText, downloadingText, viralSuffix, isDownloading, onDownload }) => {
+const ShortsResultCardItem: FC<{ clip: HighlightClipItem; viralSuffix: string; isDownloading: boolean; onDownload: (clip: HighlightClipItem) => void }> = ({ clip, viralSuffix, isDownloading, onDownload }) => {
   return (
     <StudioCard className={cn(RT_SHORTS.GLASS_CARD_ROUNDED_2XL_P_3_SM_P_4_BORDER)}>
       {clip.videoUrl ? (
@@ -694,19 +693,7 @@ const ShortsResultCardItem: FC<{ clip: HighlightClipItem; downloadText: string; 
             {SOURCE_TEXT_SYMBOL_28}
             {formatDuration(clip.endTime)}
           </span>
-          <Button size={SOURCE_TEXT_SM} onClick={() => onDownload(clip)} disabled={isDownloading} className={cn(RT_SHARED.BG_GRADIENT_TO_R_FROM_AMBER_500_VIA_ROSE_500)}>
-            {isDownloading ? (
-              <>
-                <Sparkles className={cn(RT_SHORTS.W_3_5_H_3_5_ANIMATE_SPIN_TEXT_WHITE)} />
-                <span>{downloadingText}</span>
-              </>
-            ) : (
-              <>
-                <Download className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />
-                <span>{downloadText}</span>
-              </>
-            )}
-          </Button>
+          <StudioDownloadButton onClick={() => onDownload(clip)} busy={isDownloading} />
         </div>
       </div>
     </StudioCard>

@@ -21,6 +21,9 @@ const script: any = { title: VP.TITLE, language: VP.LANG, gen: { voiceCast: { na
 const calls: { text: string; delivery: any }[] = [];
 const deps: any = {
   voices: async () => [voice],
+  transcribe: async () => {
+    throw new Error("Không nhận dạng giọng trong bài kiểm tra");
+  },
   synthesize: async (text: string, _voice: string, file: string, _signal: unknown, _log: unknown, delivery: unknown) => {
     calls.push({ text, delivery });
     const samples = Buffer.alloc(48000 * 2 * 2);

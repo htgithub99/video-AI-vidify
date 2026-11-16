@@ -2,16 +2,17 @@ import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js"
 import { RUNTIME_TEXT as RT_VIDEO_EXPORT } from "../constants/runtimeText.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
 import { VideoExportSectionHeading } from "./VideoExportSectionHeading";
-import { VIDEO_EXPORT_TEXT_BUTTON, VIDEO_EXPORT_TEXT_SM, VIDEO_EXPORT_TEXT_SYMBOL, VIDEO_EXPORT_TEXT_SYMBOL_2, VIDEO_EXPORT_TEXT_UNSTYLED } from "../../../constants/videoExportText";
+import { VIDEO_EXPORT_TEXT_BUTTON, VIDEO_EXPORT_TEXT_SYMBOL, VIDEO_EXPORT_TEXT_SYMBOL_2, VIDEO_EXPORT_TEXT_UNSTYLED } from "../../../constants/videoExportText";
 import { FC } from "react";
 import _ from "lodash";
-import { CalendarClock, Clock, Download, Film, Flame, HardDrive, ImageIcon, Music, Sparkles, Trash2 } from "lucide-react";
+import { CalendarClock, Clock, Film, Flame, HardDrive, ImageIcon, Music, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.js";
 import { cn } from "../../../lib/utils.js";
 import { formatCleanTime } from "../../../lib/timeUtils.js";
 import { VideoExporterState } from "../hooks/useVideoExporter.js";
 import { VideoExportResultItem } from "../types/videoExport.js";
 import { formatFileSize, VideoExportTexts } from "./videoExportUtils.js";
+import { StudioDownloadButton } from "../../../components/common/StudioDownloadButton.js";
 import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { VIDEO_EXPORT_FRAME_CLASSNAMES } from "../constants/videoExport";
 type VideoExportResultListProps = { exporter: Pick<VideoExporterState, "text" | "results" | "isExporting" | "job" | "downloadingId" | "downloadResult" | "removeResult"> };
@@ -55,10 +56,7 @@ const VideoExportResultCard: FC<VideoExportResultCardProps> = ({ result, text, i
         <Button variant={VIDEO_EXPORT_TEXT_UNSTYLED} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={() => onRemove(result.id)} title={text.REMOVE_RESULT} className={cn(RT_VIDEO_EXPORT.P_2_ROUNDED_XL_TEXT_SLATE_400_HOVER_TEXT_ROSE)}>
           <Trash2 className={cn(RT_SHARED.W_3_5_H_3_5)} />
         </Button>
-        <Button size={VIDEO_EXPORT_TEXT_SM} type={VIDEO_EXPORT_TEXT_BUTTON} onClick={() => onDownload(result)} disabled={isDownloading} className={cn(RT_SHARED.BG_GRADIENT_TO_R_FROM_AMBER_500_VIA_ROSE_500)}>
-          {isDownloading ? <Sparkles className={cn(RT_VIDEO_EXPORT.W_3_5_H_3_5_ANIMATE_SPIN_SHRINK_0)} /> : <Download className={cn(RT_SHARED.W_3_5_H_3_5_SHRINK_0)} />}
-          <span>{isDownloading ? text.SAVING_VIDEO : text.DOWNLOAD_BTN}</span>
-        </Button>
+        <StudioDownloadButton onClick={() => onDownload(result)} busy={isDownloading} />
       </div>
     </div>
   </StudioCard>

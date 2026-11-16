@@ -77,7 +77,12 @@ const unionById = (marks: MotionHtmlMark[]): Map<string, MotionHtmlMark> => {
 };
 const visibleShare = (mark: MotionHtmlMark): number => {
   const area = mark.w * mark.h;
-  if (area <= 0) return 0;
+  // A box without area (a straight arrow, a label point) is judged by its centre.
+  if (area <= 0) {
+    const cx = mark.x + mark.w / 2,
+      cy = mark.y + mark.h / 2;
+    return cx >= 0 && cx <= 1 && cy >= 0 && cy <= 1 ? 1 : 0;
+  }
   const w = Math.max(0, Math.min(1, mark.x + mark.w) - Math.max(0, mark.x)),
     h = Math.max(0, Math.min(1, mark.y + mark.h) - Math.max(0, mark.y));
   return (w * h) / area;
