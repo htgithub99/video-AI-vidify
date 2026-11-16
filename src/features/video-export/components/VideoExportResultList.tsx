@@ -12,7 +12,8 @@ import { formatCleanTime } from "../../../lib/timeUtils.js";
 import { VideoExporterState } from "../hooks/useVideoExporter.js";
 import { VideoExportResultItem } from "../types/videoExport.js";
 import { formatFileSize, VideoExportTexts } from "./videoExportUtils.js";
-import { VideoExportPlayer } from "./VideoExportPlayer.js";
+import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
+import { VIDEO_EXPORT_FRAME_CLASSNAMES } from "../constants/videoExport";
 type VideoExportResultListProps = { exporter: Pick<VideoExporterState, "text" | "results" | "isExporting" | "job" | "downloadingId" | "downloadResult" | "removeResult"> };
 type VideoExportResultCardProps = { result: VideoExportResultItem; text: VideoExportTexts; isDownloading: boolean; onDownload: (result: VideoExportResultItem) => void; onRemove: (id: string) => void };
 const formatCreatedAt = (value: string): string => {
@@ -21,7 +22,7 @@ const formatCreatedAt = (value: string): string => {
 };
 const VideoExportResultCard: FC<VideoExportResultCardProps> = ({ result, text, isDownloading, onDownload, onRemove }) => (
   <StudioCard className={cn(RT_SHARED.GLASS_CARD_ROUNDED_2XL_P_3_SM_P_4_BORDER)}>
-    <VideoExportPlayer src={result.videoUrl} aspectRatio={result.aspectRatio} badgeText={result.aspectRatio} badgeIcon={Film} />
+    <StudioVideoPlayer src={result.videoUrl} className={VIDEO_EXPORT_FRAME_CLASSNAMES[result.aspectRatio]} badge={result.aspectRatio} badgeIcon={Film} />
     <div className={cn(RT_SHARED.MT_3_SPACE_Y_2_TEXT_LEFT_FLEX_1_FLEX)}>
       <div className={cn(RT_SHARED.SPACE_Y_1_5)}>
         <h4 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_LINE_CLAMP_1)} title={result.title}>

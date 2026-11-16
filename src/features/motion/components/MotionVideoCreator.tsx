@@ -84,7 +84,6 @@ import {
   MOTION_TEXT_GROUP,
   MOTION_TEXT_HANH_DONG_NAY_KHONG_THE_HOAN_TAC,
   MOTION_TEXT_MAX_W_MD,
-  MOTION_TEXT_METADATA,
   MOTION_TEXT_MODAL_2XL,
   MOTION_TEXT_MOTION_VIDEO_MP4,
   MOTION_TEXT_NHAP_NOI_DUNG_LOI_DAN_CHO_PHAN_CANH,
@@ -131,7 +130,8 @@ import { MOTION_STORY_CONFIG } from "../../../constants/motionVideo.js";
 import { useMotionStudio, type MotionStudio } from "../hooks/useMotionStudio.js";
 import { Lang } from "../../../lib/lang.js";
 import { cn } from "../../../lib/utils";
-import { MotionExportedVideo, MotionMediaPlaceholder } from "./MotionMediaFrame.js";
+import { MotionExportedVideo, MotionMediaPlaceholder, motionAspect } from "./MotionMediaFrame.js";
+import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { getMotionErrorMessage } from "../../../lib/motionUtils.js";
 import { MotionAspect, MotionEncoderPreference, MotionJobStatus, MotionQuality, MotionStoryJobKind, MotionStoryLength, MotionWorkspaceTab, type MotionBeat, type MotionResultItem } from "../../../types/motionVideo.js";
 import type { StorageJunkReport } from "../../../types/storage.js";
@@ -802,7 +802,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               <div className={MOTION_STYLES.SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                 {_.map(state.analysis.chapters, (chapter, ci) => (
                   <div key={chapter.id} className={MOTION_STYLES.SPACE_Y_3}>
-                    <div className={MOTION_STYLES.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_STICKY_TOP_0_BG_SLATE_900_95_BACKDROP_BLUR_MD}>
+                    <div className={MOTION_STYLES.CHAPTER_STICKY_HEADER}>
                       <div className={MOTION_STYLES.TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDE_FLEX_ITEMS_CENTER_GAP_2}>
                         <span className={MOTION_STYLES.W_5_H_5_ROUNDED_LG_BG_PURPLE_600_TEXT_WHITE_FLEX_ITEMS_CENTER}>{ci + 1}</span>
                         <span className={MOTION_STYLES.TEXT_PURPLE_400_FONT_EXTRABOLD}>{chapter.title}</span>
@@ -1061,7 +1061,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               {displayedJob === rj && rj?.result && (
                 <div className={MR.MOTION_TEXT_PT_2_BORDER_T_BORDER_SLATE_800}>
                   <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_LG_GROUP}>
-                    <video src={rj.result.videoUrl} controls className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_SHADOW_LG_BLOCK} />
+                    <StudioVideoPlayer src={rj.result.videoUrl} aspect={motionAspect(rj.result.width, rj.result.height)} />
                     <div className={MR.MOTION_TEXT_ABSOLUTE_TOP_3_RIGHT_3_Z_10}>
                       <a href={rj.result.videoUrl} download={MOTION_TEXT_MOTION_VIDEO_MP4} className={MR.MOTION_TEXT_INLINE_FLEX_ITEMS_CENTER_GAP_1_5_PX_3_PY_1_5_ROUNDED_XL_TEXT_XS_F}>
                         <Download className={MR.MOTION_TEXT_W_3_5_H_3_5_TEXT_PURPLE_300} />
@@ -1413,7 +1413,7 @@ const ResultsPanel: FC<{ studio: MotionStudio; text: MotionVideoTexts }> = ({ st
         {_.map(studio.results, (r) => (
           <StudioCard key={r.id} className={cn(cardCls, MR.P_4_SPACE_Y_3_BG_SLATE_900_80_BORDER_BORDER_SLATE_800_80_3FC799, picked.has(r.id) && MOTION_STYLES.RESULT_SELECTED)}>
             <div className={MR.MOTION_TEXT_RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_BLACK_SHADOW_MD}>
-              <video src={r.videoUrl} controls preload={MOTION_TEXT_METADATA} className={MR.MOTION_TEXT_W_FULL_ROUNDED_XL_BG_BLACK_MAX_H_380PX_SHADOW_MD_BLOCK} />
+              <StudioVideoPlayer src={r.videoUrl} aspect={motionAspect(r.width, r.height)} />
               <label className={MOTION_STYLES.RESULT_SELECT} title={`${text.RESULTS_SELECT_VIDEO}${COMMON_RUNTIME.SOURCE_TEXT_SYMBOL_7}${r.title}`}>
                 <StudioInput
                   type={MOTION_TEXT_CHECKBOX}

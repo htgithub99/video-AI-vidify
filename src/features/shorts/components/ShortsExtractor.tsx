@@ -1,56 +1,14 @@
 import { formatMediaFileSize as formatFileSize } from "../../../lib/mediaFormat.js";
+import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { openIndexedDatabase } from "../../../lib/indexedDatabase.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { RUNTIME_TEXT as RT_SHORTS } from "../constants/runtimeText.js";
 import { StudioHeader, StudioPage, StudioInput, StudioCanvas, StudioDisclosureButton, StudioFieldset, StudioCard } from "../../../components/ui/Studio.js";
 import { stringifyJson } from "../../../lib/jsonStringify.js";
-import {
-  SOURCE_TEMPLATE_0,
-  SOURCE_TEMPLATE_CLIP,
-  SOURCE_TEMPLATE_PATH,
-  SOURCE_TEMPLATE_SHORT,
-  SOURCE_TEMPLATE_SHORTS_EXPORT,
-  SOURCE_TEMPLATE_SYMBOL_24,
-  SOURCE_TEMPLATE_SYMBOL_7,
-  SOURCE_TEMPLATE_SYMBOL_8,
-  SOURCE_TEXT_0,
-  SOURCE_TEXT_15_30S,
-  SOURCE_TEXT_16_9,
-  SOURCE_TEXT_1_1,
-  SOURCE_TEXT_30_60S,
-  SOURCE_TEXT_60_90S,
-  SOURCE_TEXT_9_16,
-  SOURCE_TEXT_ABORTERROR,
-  SOURCE_TEXT_APPLICATION_JSON,
-  SOURCE_TEXT_BUTTON,
-  SOURCE_TEXT_COMPLETED,
-  SOURCE_TEXT_DANG_LUU,
-  SOURCE_TEXT_EN,
-  SOURCE_TEXT_END,
-  SOURCE_TEXT_ERROR,
-  SOURCE_TEXT_FILE,
-  SOURCE_TEXT_FPS,
-  SOURCE_TEXT_ID,
-  SOURCE_TEXT_IDLE,
-  SOURCE_TEXT_METADATA,
-  SOURCE_TEXT_POST,
-  SOURCE_TEXT_READONLY,
-  SOURCE_TEXT_READWRITE,
-  SOURCE_TEXT_SM,
-  SOURCE_TEXT_SYMBOL_25,
-  SOURCE_TEXT_SYMBOL_26,
-  SOURCE_TEXT_SYMBOL_27,
-  SOURCE_TEXT_SYMBOL_28,
-  SOURCE_TEXT_SYMBOL_8,
-  SOURCE_TEXT_SYMBOL_9,
-  SOURCE_TEXT_UNSTYLED,
-  SOURCE_TEXT_VI,
-  SOURCE_TEXT_VIDEO,
-  SOURCE_TEXT_X,
-} from "../../../constants/sourceText";
+import { SOURCE_TEMPLATE_0, SOURCE_TEMPLATE_CLIP, SOURCE_TEMPLATE_PATH, SOURCE_TEMPLATE_SHORT, SOURCE_TEMPLATE_SHORTS_EXPORT, SOURCE_TEMPLATE_SYMBOL_24, SOURCE_TEMPLATE_SYMBOL_7, SOURCE_TEMPLATE_SYMBOL_8, SOURCE_TEXT_0, SOURCE_TEXT_15_30S, SOURCE_TEXT_16_9, SOURCE_TEXT_1_1, SOURCE_TEXT_30_60S, SOURCE_TEXT_60_90S, SOURCE_TEXT_9_16, SOURCE_TEXT_ABORTERROR, SOURCE_TEXT_APPLICATION_JSON, SOURCE_TEXT_BUTTON, SOURCE_TEXT_COMPLETED, SOURCE_TEXT_DANG_LUU, SOURCE_TEXT_EN, SOURCE_TEXT_END, SOURCE_TEXT_ERROR, SOURCE_TEXT_FILE, SOURCE_TEXT_FPS, SOURCE_TEXT_ID, SOURCE_TEXT_IDLE, SOURCE_TEXT_POST, SOURCE_TEXT_READONLY, SOURCE_TEXT_READWRITE, SOURCE_TEXT_SM, SOURCE_TEXT_SYMBOL_25, SOURCE_TEXT_SYMBOL_26, SOURCE_TEXT_SYMBOL_27, SOURCE_TEXT_SYMBOL_28, SOURCE_TEXT_SYMBOL_8, SOURCE_TEXT_SYMBOL_9, SOURCE_TEXT_UNSTYLED, SOURCE_TEXT_VI, SOURCE_TEXT_VIDEO, SOURCE_TEXT_X } from "../../../constants/sourceText";
 import { ChangeEvent, DragEvent, FC, useEffect, useRef, useState } from "react";
 import _ from "lodash";
-import { Scissors, Sparkles, Download, Flame, FileVideo, Clock, Monitor, HardDrive, Upload, SlidersHorizontal, Smartphone, Tv, Square, Layers, Crop, Crosshair, Play, Pause, FolderDown, Film } from "lucide-react";
+import { Scissors, Sparkles, Download, Flame, FileVideo, Clock, Monitor, HardDrive, Upload, SlidersHorizontal, Smartphone, Tv, Square, Layers, Crop, Crosshair, FolderDown, Film } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../../components/ui/Button.js";
 import { Tooltip } from "../../../components/ui/Tooltip.js";
@@ -65,6 +23,7 @@ import { API_ROUTES } from "../../../constants/apiRoutes.js";
 import { SHORTS_EXTRACTOR_TEXTS } from "../../../constants/texts.js";
 import { SHORTS_CONSTANTS, SHORTS_REGEX, SHORTS_UI_CONSTANTS } from "../../../constants/shorts.js";
 import { HighlightClipItem, ShortsAspectRatio, ShortsDurationOption, ShortsProgressStage, ShortsProgressState, ShortsReframeMode, ShortsSourceMetadata } from "../../../types/shorts.js";
+const SHORTS_PLAYER_ASPECT = "9/16";
 const formatDuration = (seconds?: number): string => {
   if (!seconds || seconds <= 0) return SHORTS_UI_CONSTANTS.DEFAULT_ZERO_DURATION;
   const hrs = Math.floor(seconds / 3600);
@@ -96,8 +55,6 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [isAiConfigOpen, setIsAiConfigOpen] = useState<boolean>(false);
   const [settingsLoaded, setSettingsLoaded] = useState<boolean>(false);
-  const [activePlayingId, setActivePlayingId] = useState<string | null>(null);
-  const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
   const [progressState, setProgressState] = useState<ShortsProgressState>({ stage: ShortsProgressStage.IDLE, percent: 0, message: "" });
   const [highlightClips, setHighlightClips] = useState<HighlightClipItem[]>([]);
   const [aiProvider, setAiProvider] = useState<AiPlanningFallbackProvider>(AiPlanningFallbackProvider.GeminiChat);
@@ -145,11 +102,6 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
       })
       .catch(() => {});
   }, [highlightClips, sourceMetadata, sourceVideoPath]);
-  useEffect(() => {
-    if (activePlayingId && activePlayingId !== SHORTS_UI_CONSTANTS.SOURCE_PLAYING_ID && sourceVideoRef.current && !sourceVideoRef.current.paused) {
-      sourceVideoRef.current.pause();
-    }
-  }, [activePlayingId]);
   const inspectVideo = async (filePath: string) => {
     if (!filePath) return;
     try {
@@ -372,23 +324,13 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
               <div className={cn(RT_SHORTS.RELATIVE_W_FULL_ASPECT_VIDEO_MAX_H_340PX_MIN_H)}>
                 {hasSource ? (
                   <>
-                    <video
-                      ref={sourceVideoRef}
+                    <StudioVideoPlayer
                       key={sourceVideoPath}
                       src={sourceVideoPath.startsWith(SHORTS_UI_CONSTANTS.PROTOCOLS.BLOB) || sourceVideoPath.startsWith(SHORTS_UI_CONSTANTS.PROTOCOLS.HTTP) ? sourceVideoPath : SOURCE_TEMPLATE_PATH(`${API_ROUTES.SHORTS_STREAM_SOURCE}`, `${encodeURIComponent(sourceVideoPath)}`)}
-                      controls
-                      preload={SOURCE_TEXT_METADATA}
-                      playsInline
-                      onPlay={() => setActivePlayingId(SHORTS_UI_CONSTANTS.SOURCE_PLAYING_ID)}
-                      onPause={() => {
-                        if (activePlayingId === SHORTS_UI_CONSTANTS.SOURCE_PLAYING_ID) setActivePlayingId(null);
-                      }}
-                      className={cn(RT_SHORTS.W_FULL_H_FULL_OBJECT_CONTAIN_ROUNDED_2XL_BG_BLACK)}
+                      className="absolute inset-0 w-full h-full"
+                      badge={sourceMetadata?.fileName || sourceVideoPath}
+                      badgeIcon={Film}
                     />
-                    <div className={cn(RT_SHORTS.ABSOLUTE_TOP_3_LEFT_3_PX_3_PY_1_ROUNDED)}>
-                      <Film className={cn(RT_SHARED.W_3_5_H_3_5_TEXT_PURPLE_400_SHRINK)} />
-                      <span className={RT_SHARED.TRUNCATE}>{sourceMetadata?.fileName || sourceVideoPath}</span>
-                    </div>
                   </>
                 ) : (
                   <div
@@ -713,9 +655,7 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
                   downloadText={text.DOWNLOAD_CLIP}
                   downloadingText={text.SAVING_VIDEO || SOURCE_TEXT_DANG_LUU}
                   viralSuffix={text.VIRAL_SCORE_SUFFIX}
-                  isPlaying={activePlayingId === clip.id}
                   isDownloading={downloadingClipId === clip.id}
-                  onTogglePlay={(shouldPlay) => setActivePlayingId(shouldPlay ? clip.id : null)}
                   onDownload={handleDownloadSingleVideo}
                 />
               ))}
@@ -726,95 +666,16 @@ const ShortsExtractor: FC<{ currentLang?: Lang }> = ({ currentLang = SOURCE_TEXT
     </StudioPage>
   );
 };
-const ShortsResultCardItem: FC<{ clip: HighlightClipItem; downloadText: string; downloadingText: string; viralSuffix: string; isPlaying: boolean; isDownloading: boolean; onTogglePlay: (shouldPlay: boolean) => void; onDownload: (clip: HighlightClipItem) => void }> = ({ clip, downloadText, downloadingText, viralSuffix, isPlaying, isDownloading, onTogglePlay, onDownload }) => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(clip.duration || 0);
-  useEffect(() => {
-    if (!videoRef.current) return;
-    if (!isPlaying && !videoRef.current.paused) {
-      videoRef.current.pause();
-    }
-  }, [isPlaying]);
-  const handleTogglePlay = () => {
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-      onTogglePlay(false);
-    } else {
-      videoRef.current.play().catch(() => {});
-      onTogglePlay(true);
-    }
-  };
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-  const handleLoadedMetadata = () => {
-    if (videoRef.current && videoRef.current.duration) {
-      setDuration(videoRef.current.duration);
-    }
-  };
-  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-    const targetTime = ratio * (duration || clip.duration || 1);
-    videoRef.current.currentTime = targetTime;
-    setCurrentTime(targetTime);
-  };
-  const progressPercent = duration > 0 ? Math.min(100, Math.max(0, (currentTime / duration) * 100)) : 0;
+const ShortsResultCardItem: FC<{ clip: HighlightClipItem; downloadText: string; downloadingText: string; viralSuffix: string; isDownloading: boolean; onDownload: (clip: HighlightClipItem) => void }> = ({ clip, downloadText, downloadingText, viralSuffix, isDownloading, onDownload }) => {
   return (
     <StudioCard className={cn(RT_SHORTS.GLASS_CARD_ROUNDED_2XL_P_3_SM_P_4_BORDER)}>
-      <div className={cn(RT_SHORTS.RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_SLATE_950_ASPECT_9)}>
-        {clip.videoUrl ? (
-          <video
-            ref={videoRef}
-            src={clip.videoUrl}
-            poster={clip.thumbnailUrl}
-            preload={SOURCE_TEXT_METADATA}
-            loop
-            playsInline
-            controls={false}
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onEnded={() => {
-              setCurrentTime(0);
-              onTogglePlay(false);
-            }}
-            onPause={() => {
-              if (isPlaying) onTogglePlay(false);
-            }}
-            onPlay={() => {
-              if (!isPlaying) onTogglePlay(true);
-            }}
-            className={cn(RT_SHARED.W_FULL_H_FULL_OBJECT_COVER)}
-          />
-        ) : (
+      {clip.videoUrl ? (
+        <StudioVideoPlayer src={clip.videoUrl} poster={clip.thumbnailUrl} aspect={SHORTS_PLAYER_ASPECT} fit="cover" loop badge={`${clip.viralScore}${viralSuffix}`} badgeIcon={Flame} />
+      ) : (
+        <div className={cn(RT_SHORTS.RELATIVE_ROUNDED_XL_OVERFLOW_HIDDEN_BG_SLATE_950_ASPECT_9)}>
           <div className={cn(RT_SHORTS.TEXT_SLATE_600_TEXT_XS)}>{SHORTS_UI_CONSTANTS.LOADING_TEXT}</div>
-        )}
-        <Button variant={SOURCE_TEXT_UNSTYLED} type={SOURCE_TEXT_BUTTON} onClick={handleTogglePlay} className={cn(RT_SHORTS.ABSOLUTE_INSET_0_M_AUTO_W_12_H_12_ROUNDED, { "opacity-0 group-hover/video:opacity-100": isPlaying, "opacity-90": !isPlaying })}>
-          {isPlaying ? <Pause className={cn(RT_SHARED.W_5_H_5_TEXT_PURPLE_400)} /> : <Play className={cn(RT_SHARED.W_5_H_5_TEXT_PURPLE_400_ML_0_5)} />}
-        </Button>
-        <div className={cn(RT_SHORTS.ABSOLUTE_TOP_2_5_LEFT_2_5_PX_2_PY)}>
-          <Flame className={cn(RT_SHORTS.W_3_H_3_TEXT_AMBER_400_FILL_AMBER_400)} />
-          <span>
-            {clip.viralScore}
-            {viralSuffix}
-          </span>
         </div>
-        <div className={cn(RT_SHORTS.ABSOLUTE_BOTTOM_0_INSET_X_0_BG_GRADIENT_TO_T)}>
-          <div onClick={handleSeek} className={cn(RT_SHORTS.RELATIVE_W_FULL_H_2_BG_SLATE_700_60_HOVER)} title={SHORTS_UI_CONSTANTS.SEEK_TOOLTIP}>
-            <div className={cn(RT_SHARED.H_FULL_BG_GRADIENT_TO_R_FROM_PURPLE_500_VIA)} style={{ width: `${progressPercent}${RT_SHARED.SYMBOL}` }} />
-          </div>
-          <div className={cn(RT_SHARED.FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_TEXT_10PX_FONT_MONO_TEXT)}>
-            <span className={cn(RT_SHARED.FONT_BOLD_TEXT_PURPLE_300)}>{formatDuration(currentTime)}</span>
-            <span className={cn(RT_SHARED.TEXT_SLATE_400)}>{formatDuration(duration || clip.duration)}</span>
-          </div>
-        </div>
-      </div>
+      )}
       <div className={cn(RT_SHARED.MT_3_SPACE_Y_2_TEXT_LEFT_FLEX_1_FLEX)}>
         <div>
           <h4 className={cn(RT_SHARED.TEXT_XS_FONT_BOLD_TEXT_SLATE_100_LINE_CLAMP_1)} title={clip.title}>

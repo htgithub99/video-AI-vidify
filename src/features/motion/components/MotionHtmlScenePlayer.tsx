@@ -1,32 +1,99 @@
 import * as RT_MAINTENANCE from "../../../constants/runtime/maintenance.js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
 import { StoryComposition } from "../remotion/StoryComposition.js";
 import { motionHtmlHostDocument } from "../../../lib/motionHtmlHost.js";
 import { motionFigureRenderOf, type MotionFigureScene } from "../../../lib/motionFigures.js";
 import { motionHtmlFrame } from "../../../lib/motionHtmlScene.js";
 import type { MotionRemotionSpec } from "../../../types/motionVisual.js";
+import { StudioPlayerFrame, useSinglePlayback } from "../../../components/common/StudioPlayer.js";
+import { STUDIO_PLAYER } from "../../../constants/studioTheme.js";
+import { cn } from "../../../lib/utils.js";
+import { motionRatioLabel } from "./MotionMediaFrame.js";
+
+// Playback draws frames ahead into a buffer and plays them on a steady clock (like a video player), instead of
+// drawing each frame live: a heavy scene then waits briefly instead of stuttering.
+const PREVIEW = {
+  AHEAD_SECONDS: 1.5,
+  // Frames drawn ahead before playback (re)starts.
+  START_FRAMES: 8,
+  // Preview frames are drawn at the size they are shown, never above the video size.
+  MAX_DPR: 2,
+  // If drawing keeps falling behind, play every 2nd (then 3rd) frame so motion stays even.
+  MAX_STEP: 3,
+  STALL_WINDOW_MS: 3000,
+  STALL_SHARE: 0.2,
+  SPINNER_DELAY_MS: 250,
+  HOST_QUEUE: "motion-host-queue",
+  HOST_SHOW: "motion-host-show",
+  HOST_RESET: "motion-host-reset",
+  HOST_BUFFERED: "motion-host-buffered",
+  HOST_CLEARED: "motion-host-cleared",
+} as const;
+
+type HtmlScene = MotionRemotionSpec["scenes"][number];
+
 export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotionSpec; audioUrl?: string }) => {
   const [time, setTime] = useState(0),
     [playing, setPlaying] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [buffering, setBuffering] = useState(false);
   const [interactive, setInteractive] = useState(false),
-    [displayWidth, setDisplayWidth] = useState(spec.width);
+    [displayWidth, setDisplayWidth] = useState(0);
   const viewport = useRef<HTMLDivElement>(null),
-    legacy = useRef<PlayerRef>(null);
-  const frame = Math.min(Math.ceil(spec.duration * spec.fps) - 1, Math.floor(time * spec.fps));
-  const scene = spec.scenes.find((item) => frame >= item.startFrame && frame < item.endFrame);
-  const iframe = useRef<HTMLIFrameElement>(null),
-    audio = useRef<HTMLAudioElement>(null),
-    current = useRef<ReturnType<typeof motionHtmlFrame>>();
-  const token = useMemo(() => `${RT_MAINTENANCE.MOTION}${Math.random().toString(36).slice(2)}`, [scene?.id, scene?.html?.hash]);
-  const source = useMemo(() => (scene?.html ? motionHtmlHostDocument(scene.html.html, token, motionFigureRenderOf(spec, scene as MotionFigureScene)) : ""), [scene, token, spec.figureKit, spec.profileId, spec.proportion, spec.layout]);
-  const [loaded, setLoaded] = useState(false);
+    legacy = useRef<PlayerRef>(null),
+    audio = useRef<HTMLAudioElement>(null);
+  const totalFrames = Math.max(1, Math.ceil(spec.duration * spec.fps));
+  const frameAt = useCallback((seconds: number) => Math.max(0, Math.min(totalFrames - 1, Math.floor(seconds * spec.fps))), [totalFrames, spec.fps]);
+  const sceneAt = useCallback((at: number) => spec.scenes.find((item) => at >= item.startFrame && at < item.endFrame), [spec.scenes]);
+  const frame = frameAt(time);
+  const scene = sceneAt(frame);
+  const nextScene = scene ? spec.scenes.find((item) => item.startFrame === scene.endFrame) : undefined;
+
+  // One host page per scene, kept while it is current or next so the next scene is loaded before it starts.
+  const tokens = useRef(new Map<string, string>());
+  const sources = useRef(new Map<string, string>());
+  const tokenOf = useCallback((item: HtmlScene): string => {
+    const key = `${item.id}|${item.html?.hash}`;
+    let token = tokens.current.get(key);
+    if (!token) {
+      token = `${RT_MAINTENANCE.MOTION}${Math.random().toString(36).slice(2)}`;
+      tokens.current.set(key, token);
+    }
+    return token;
+  }, []);
+  const slots = useMemo(() => {
+    const list = [scene, nextScene].filter((item): item is HtmlScene => !!item?.html);
+    return list.map((item) => {
+      const token = tokenOf(item);
+      let source = sources.current.get(token);
+      if (!source) {
+        source = motionHtmlHostDocument(item.html!.html, token, motionFigureRenderOf(spec, item as MotionFigureScene));
+        sources.current.set(token, source);
+      }
+      return { scene: item, token, source };
+    });
+  }, [scene, nextScene, spec, tokenOf]);
   useEffect(() => {
-    setLoaded(false);
-    setError("");
-    setInteractive(false);
-  }, [source]);
+    const keep = new Set(slots.map((slot) => slot.token));
+    for (const token of [...sources.current.keys()]) if (!keep.has(token)) sources.current.delete(token);
+  }, [slots]);
+  const currentToken = scene?.html ? tokenOf(scene) : "";
+
+  const frames = useRef(new Map<string, HTMLIFrameElement>());
+  const [loaded, setLoaded] = useState<Set<string>>(() => new Set());
+  const ready = useRef(new Map<string, Set<number>>());
+  const queued = useRef(new Map<string, number>());
+  const post = useCallback((token: string, message: object) => frames.current.get(token)?.contentWindow?.postMessage({ token, ...message }, RT_MAINTENANCE.WILDCARD), []);
+  const resetBuffers = useCallback(() => {
+    for (const token of frames.current.keys()) post(token, { type: PREVIEW.HOST_RESET });
+    ready.current.clear();
+    queued.current.clear();
+  }, [post]);
+
+  // Frames are drawn at the size they are shown.
+  const renderWidth = Math.max(160, Math.min(spec.width, Math.round((displayWidth || spec.width) * Math.min(PREVIEW.MAX_DPR, window.devicePixelRatio || 1))));
+  const renderHeight = Math.round((renderWidth * spec.height) / spec.width);
   useEffect(() => {
     const node = viewport.current;
     if (!node) return;
@@ -34,131 +101,249 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
+  useEffect(() => resetBuffers(), [renderWidth, spec, resetBuffers]);
+  useEffect(() => {
+    setError("");
+    setInteractive(false);
+  }, [currentToken]);
+
   useEffect(() => {
     legacy.current?.seekTo(frame);
   }, [frame, scene?.id]);
   useEffect(() => {
-    if (loaded) iframe.current?.contentWindow?.postMessage({ type: RT_MAINTENANCE.MOTION_HOST_INTERACTION, token, enabled: interactive }, RT_MAINTENANCE.WILDCARD);
-  }, [interactive, loaded, token]);
+    if (currentToken && loaded.has(currentToken)) post(currentToken, { type: RT_MAINTENANCE.MOTION_HOST_INTERACTION, enabled: interactive });
+  }, [interactive, loaded, currentToken, post]);
+  // Paused: draw the current frame live (also hides the buffered picture).
   useEffect(() => {
-    if (!scene) return;
-    current.current = motionHtmlFrame(spec, scene, frame);
-    if (loaded && !interactive) iframe.current?.contentWindow?.postMessage({ type: RT_MAINTENANCE.MOTION_HOST_RENDER, token, input: current.current }, RT_MAINTENANCE.WILDCARD);
-  }, [frame, spec, scene, loaded, token, interactive]);
+    if (playing || !scene?.html || !loaded.has(currentToken) || interactive) return;
+    post(currentToken, { type: RT_MAINTENANCE.MOTION_HOST_RENDER, input: motionHtmlFrame(spec, scene, frame, renderWidth, renderHeight) });
+  }, [playing, frame, spec, scene, loaded, currentToken, interactive, renderWidth, renderHeight, post]);
   useEffect(() => {
     const receive = (event: MessageEvent) => {
-      if (event.source !== iframe.current?.contentWindow || event.data?.token !== token) return;
+      const token: string | undefined = event.data?.token;
+      if (!token || !frames.current.has(token) || event.source !== frames.current.get(token)?.contentWindow) return;
+      if (event.data.type === PREVIEW.HOST_BUFFERED) {
+        let set = ready.current.get(token);
+        if (!set) ready.current.set(token, (set = new Set()));
+        set.add(event.data.frame);
+        return;
+      }
+      if (event.data.type === PREVIEW.HOST_CLEARED) {
+        ready.current.delete(token);
+        queued.current.delete(token);
+        return;
+      }
       if (event.data.error) {
         setError(event.data.error);
         setPlaying(false);
-        window.dispatchEvent(new CustomEvent(RT_MAINTENANCE.MOTION_HTML_EXECUTION_ERROR, { detail: { sceneId: scene?.id, hash: scene?.html?.hash, error: event.data.error } }));
+        const failed = spec.scenes.find((item) => item.html && tokenOf(item) === token);
+        window.dispatchEvent(new CustomEvent(RT_MAINTENANCE.MOTION_HTML_EXECUTION_ERROR, { detail: { sceneId: failed?.id, hash: failed?.html?.hash, error: event.data.error } }));
       }
     };
     window.addEventListener(RT_MAINTENANCE.MESSAGE, receive);
     return () => window.removeEventListener(RT_MAINTENANCE.MESSAGE, receive);
-  }, [token, scene?.id, scene?.html?.hash]);
+  }, [spec.scenes, tokenOf]);
+
+  // Playback clock: advances only while the frame to show is drawn; otherwise it waits (and the voice with it).
+  const timeRef = useRef(time);
+  timeRef.current = time;
+  const step = useRef(1);
+  const stalls = useRef<{ at: number; ms: number }[]>([]);
   useEffect(() => {
     if (!playing) {
       audio.current?.pause();
+      setBuffering(false);
       return;
     }
-    if (audio.current) {
-      audio.current.currentTime = time;
-      void audio.current.play().catch(() => setPlaying(false));
-    }
     let last = performance.now(),
-      request = 0;
+      request = 0,
+      waitingSince = 0,
+      shown = -1,
+      clock = timeRef.current;
+    const ahead = Math.round(PREVIEW.AHEAD_SECONDS * spec.fps);
+    const feed = (item: HtmlScene, from: number) => {
+      const token = tokenOf(item);
+      if (!loaded.has(token)) return;
+      const s = step.current;
+      const end = Math.min(item.endFrame - 1, from + ahead);
+      const done = queued.current.get(token) ?? -1;
+      const items: { frame: number; input: ReturnType<typeof motionHtmlFrame> }[] = [];
+      for (let f = Math.max(from, done + 1); f <= end; f++) if ((f - item.startFrame) % s === 0) items.push({ frame: f, input: motionHtmlFrame(spec, item, f, renderWidth, renderHeight) });
+      if (items.length) {
+        queued.current.set(token, end);
+        post(token, { type: PREVIEW.HOST_QUEUE, items });
+      }
+    };
+    const resumeVoice = () => {
+      const node = audio.current;
+      if (!node || !node.paused) return;
+      node.currentTime = clock;
+      void node.play().catch(() => undefined);
+    };
     const tick = (now: number) => {
-      const delta = (now - last) / 1000;
+      const delta = Math.min(0.1, (now - last) / 1000);
       last = now;
-      setTime((value) => {
-        const next = audio.current && !audio.current.paused ? audio.current.currentTime : value + delta;
-        if (next >= spec.duration) {
-          setPlaying(false);
-          return 0;
+      const at = frameAt(clock);
+      const current = sceneAt(at);
+      if (!current?.html) {
+        // Scenes drawn by the legacy player are not buffered.
+        clock += delta;
+        resumeVoice();
+      } else {
+        const token = tokenOf(current);
+        const s = step.current;
+        const show = current.startFrame + Math.floor((at - current.startFrame) / s) * s;
+        feed(current, show);
+        const following = spec.scenes.find((item) => item.startFrame === current.endFrame);
+        if (following?.html && current.endFrame - at < ahead) feed(following, following.startFrame);
+        const have = ready.current.get(token);
+        const primed = have?.has(show) && (shown >= 0 || have.size >= Math.min(PREVIEW.START_FRAMES, Math.ceil((current.endFrame - show) / s)));
+        if (primed) {
+          if (show !== shown) {
+            post(token, { type: PREVIEW.HOST_SHOW, frame: show });
+            shown = show;
+          }
+          if (waitingSince) {
+            stalls.current.push({ at: now, ms: now - waitingSince });
+            waitingSince = 0;
+            setBuffering(false);
+          }
+          resumeVoice();
+          const voice = audio.current && !audio.current.paused ? audio.current.currentTime : undefined;
+          clock = voice !== undefined && Math.abs(voice - (clock + delta)) > 0.12 ? voice : clock + delta;
+        } else {
+          if (!waitingSince) waitingSince = now;
+          audio.current?.pause();
+          if (now - waitingSince > PREVIEW.SPINNER_DELAY_MS) setBuffering(true);
+          // Drawing keeps falling behind: play fewer frames so the motion stays even.
+          stalls.current = stalls.current.filter((stall) => now - stall.at < PREVIEW.STALL_WINDOW_MS);
+          const stalled = stalls.current.reduce((sum, stall) => sum + stall.ms, 0) + (now - waitingSince);
+          if (stalled > PREVIEW.STALL_WINDOW_MS * PREVIEW.STALL_SHARE && step.current < PREVIEW.MAX_STEP) {
+            step.current++;
+            stalls.current = [];
+          }
         }
-        return next;
-      });
+      }
+      if (clock >= spec.duration) {
+        clock = 0;
+        setPlaying(false);
+      }
+      setTime(clock);
       request = requestAnimationFrame(tick);
     };
     request = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(request);
-    // The playback clock starts at the current seek point, not on every frame update.
-  }, [playing, spec.duration]);
+    // The clock starts from the current position each time playback starts.
+  }, [playing, spec, loaded, renderWidth, renderHeight, frameAt, sceneAt, tokenOf, post]);
+
   const subtitle = spec.subtitles.find((entry) => time >= entry.start && time < entry.end);
+  const announce = useSinglePlayback(() => setPlaying(false));
+  const chapters = useMemo(() => spec.scenes.map((item) => ({ start: item.startFrame / spec.fps, title: item.purpose })), [spec.scenes, spec.fps]);
+  const [volume, setVolume] = useState(1),
+    [muted, setMuted] = useState(false);
+  useEffect(() => {
+    if (!audio.current) return;
+    audio.current.volume = volume;
+    audio.current.muted = muted;
+  }, [volume, muted, audioUrl]);
+  const toggle = () => {
+    setInteractive(false);
+    setPlaying((value) => {
+      if (!value) announce();
+      return !value;
+    });
+  };
+  const seek = (value: number) => {
+    setInteractive(false);
+    resetBuffers();
+    setTime(value);
+    if (audio.current) audio.current.currentTime = value;
+  };
   return (
     <div>
-      <div ref={viewport} style={{ position: RT_MAINTENANCE.RELATIVE, aspectRatio: `${spec.width}${RT_MAINTENANCE.SLASH}${spec.height}`, background: RT_MAINTENANCE.FFF, overflow: RT_MAINTENANCE.HIDDEN }}>
-        {source ? (
-          <iframe ref={iframe} title={scene?.purpose || RT_MAINTENANCE.CANVAS_SCENE} sandbox={RT_MAINTENANCE.ALLOW_SCRIPTS} srcDoc={source} onLoad={() => setLoaded(true)} style={{ border: 0, width: RT_MAINTENANCE.VALUE_100, height: RT_MAINTENANCE.VALUE_100 }} />
-        ) : scene && scene.renderer !== RT_MAINTENANCE.HTML_CANVAS ? (
-          <Player ref={legacy} component={StoryComposition} inputProps={{ document: { ...spec, subtitles: [] } }} durationInFrames={Math.ceil(spec.duration * spec.fps)} compositionWidth={spec.width} compositionHeight={spec.height} fps={spec.fps} style={{ width: RT_MAINTENANCE.VALUE_100, height: RT_MAINTENANCE.VALUE_100 }} />
-        ) : (
-          <p>{RT_MAINTENANCE.DANG_DUNG_CANH}</p>
-        )}
-        {subtitle && !interactive && (
-          <div
-            style={{
-              position: RT_MAINTENANCE.ABSOLUTE,
-              left: RT_MAINTENANCE.VALUE_7,
-              right: RT_MAINTENANCE.VALUE_7,
-              bottom: RT_MAINTENANCE.VALUE_4,
-              color: RT_MAINTENANCE.WHITE,
-              textAlign: RT_MAINTENANCE.CENTER,
-              font: `${RT_MAINTENANCE.BOLD}${(Math.max(20, spec.height * 0.04) * displayWidth) / spec.width}${RT_MAINTENANCE.PX}${spec.fontFamily || RT_MAINTENANCE.ARIAL}`,
-              lineHeight: 1.25,
-              textShadow: RT_MAINTENANCE.VALUE_0_2PX_3PX_000_1PX_0_2PX_000_1PX_0,
-              pointerEvents: RT_MAINTENANCE.NONE,
-            }}>
-            {subtitle.text}
-          </div>
-        )}
-      </div>
+      <StudioPlayerFrame
+        aspect={`${spec.width}${RT_MAINTENANCE.SLASH}${spec.height}`}
+        className="w-full"
+        playing={playing}
+        time={time}
+        duration={spec.duration}
+        disabled={!!error}
+        hidePlay={interactive}
+        loading={playing && buffering}
+        badge={motionRatioLabel(spec.width, spec.height)}
+        chapters={chapters}
+        volume={volume}
+        muted={muted}
+        onVolume={
+          audioUrl
+            ? (value) => {
+                setVolume(value);
+                setMuted(value === 0);
+              }
+            : undefined
+        }
+        onMute={() => setMuted((value) => !value)}
+        onToggle={toggle}
+        onSeek={seek}
+        actions={
+          currentToken ? (
+            <button
+              type={RT_MAINTENANCE.BUTTON}
+              aria-pressed={interactive}
+              className={cn(STUDIO_PLAYER.ACTION, interactive && STUDIO_PLAYER.ACTION_ON)}
+              onClick={() => {
+                setPlaying(false);
+                setInteractive((value) => !value);
+              }}>
+              {interactive ? RT_MAINTENANCE.VE_VIDEO : RT_MAINTENANCE.THU_TUONG_TAC}
+            </button>
+          ) : null
+        }>
+        <div ref={viewport} className={cn(STUDIO_PLAYER.MEDIA, "bg-black")}>
+          {slots.map((slot) => (
+            <iframe
+              key={slot.token}
+              ref={(node) => {
+                if (node) frames.current.set(slot.token, node);
+                else frames.current.delete(slot.token);
+              }}
+              title={slot.scene.purpose || RT_MAINTENANCE.CANVAS_SCENE}
+              sandbox={RT_MAINTENANCE.ALLOW_SCRIPTS}
+              srcDoc={slot.source}
+              onLoad={() => setLoaded((value) => new Set(value).add(slot.token))}
+              className={cn("absolute inset-0 w-full h-full block border-0", slot.token === currentToken ? "visible" : "invisible")}
+            />
+          ))}
+          {!currentToken && scene && scene.renderer !== RT_MAINTENANCE.HTML_CANVAS ? (
+            <Player ref={legacy} component={StoryComposition} inputProps={{ document: { ...spec, subtitles: [] } }} durationInFrames={totalFrames} compositionWidth={spec.width} compositionHeight={spec.height} fps={spec.fps} style={{ width: RT_MAINTENANCE.VALUE_100, height: RT_MAINTENANCE.VALUE_100 }} />
+          ) : !currentToken ? (
+            <p>{RT_MAINTENANCE.DANG_DUNG_CANH}</p>
+          ) : null}
+          {subtitle && !interactive && (
+            <div
+              style={{
+                position: RT_MAINTENANCE.ABSOLUTE,
+                left: RT_MAINTENANCE.VALUE_7,
+                right: RT_MAINTENANCE.VALUE_7,
+                bottom: RT_MAINTENANCE.VALUE_4,
+                color: RT_MAINTENANCE.WHITE,
+                textAlign: RT_MAINTENANCE.CENTER,
+                font: `${RT_MAINTENANCE.BOLD}${(Math.max(20, spec.height * 0.04) * (displayWidth || spec.width)) / spec.width}${RT_MAINTENANCE.PX}${spec.fontFamily || RT_MAINTENANCE.ARIAL}`,
+                lineHeight: 1.25,
+                textShadow: RT_MAINTENANCE.VALUE_0_2PX_3PX_000_1PX_0_2PX_000_1PX_0,
+                pointerEvents: RT_MAINTENANCE.NONE,
+              }}>
+              {subtitle.text}
+            </div>
+          )}
+        </div>
+      </StudioPlayerFrame>
       {audioUrl && <audio ref={audio} src={audioUrl} />}
-      <div style={{ display: RT_MAINTENANCE.FLEX, gap: 8, alignItems: RT_MAINTENANCE.CENTER, padding: 8 }}>
-        <button
-          type={RT_MAINTENANCE.BUTTON}
-          onClick={() => {
-            setInteractive(false);
-            setPlaying((value) => !value);
-          }}
-          disabled={!!error}>
-          {playing ? RT_MAINTENANCE.PAUSE_ICON : RT_MAINTENANCE.PLAY_ICON}
-        </button>
-        <input
-          aria-label={RT_MAINTENANCE.VIDEO_TIMELINE}
-          type={RT_MAINTENANCE.RANGE}
-          min={0}
-          max={spec.duration}
-          step={1 / spec.fps}
-          value={time}
-          style={{ flex: 1 }}
-          onChange={(event) => {
-            setInteractive(false);
-            const value = Number(event.target.value);
-            setTime(value);
-            if (audio.current) audio.current.currentTime = value;
-          }}
-        />
-        <span>
-          {time.toFixed(1)}
-          {RT_MAINTENANCE.SLASH_SEPARATOR}
-          {spec.duration.toFixed(1)}
-          {RT_MAINTENANCE.S_4}
-        </span>
-        {source && (
-          <button
-            type={RT_MAINTENANCE.BUTTON}
-            aria-pressed={interactive}
-            onClick={() => {
-              setPlaying(false);
-              setInteractive((value) => !value);
-            }}>
-            {interactive ? RT_MAINTENANCE.VE_VIDEO : RT_MAINTENANCE.THU_TUONG_TAC}
-          </button>
-        )}
-      </div>
-      {error && <p role={RT_MAINTENANCE.ALERT}>{error}</p>}
+      {error && (
+        <p role={RT_MAINTENANCE.ALERT} className={STUDIO_PLAYER.ERROR}>
+          {error}
+        </p>
+      )}
     </div>
   );
 };

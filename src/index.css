@@ -281,9 +281,9 @@
   --color-lime-850: oklch(45.3% 0.124 130.933);
   --color-lime-880: oklch(40.5% 0.101 131.063);
   --color-lime-955: oklch(27.4% 0.072 132.109);
-  --font-sans: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-serif: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Sriracha", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Sriracha", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Sriracha", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-logo: "Merienda", cursive, system-ui, -apple-system, sans-serif;
   --radius-xs: 0.75rem;
   --radius-sm: 0.75rem;
@@ -1208,7 +1208,8 @@ ol[data-sonner-toaster] {
   box-shadow:
     0 18px 45px -8px rgba(0, 0, 0, 0.75),
     0 6px 18px -4px rgba(0, 0, 0, 0.5) !important;
-  backdrop-filter: blur(28px) !important;
+  /* Opaque cards on a flat page: a backdrop blur costs a repaint on every change and shows nothing. */
+  backdrop-filter: none !important;
 }
 :root.light .glass-card,
 :root.light .workspace-card,
@@ -1219,7 +1220,7 @@ ol[data-sonner-toaster] {
   box-shadow:
     0 14px 38px -6px rgba(180, 120, 30, 0.16),
     0 4px 14px -2px rgba(120, 70, 10, 0.06) !important;
-  backdrop-filter: blur(28px) !important;
+  backdrop-filter: none !important;
 }
 .creation-workspace .bg-slate-955\/50,
 .creation-workspace .bg-slate-900\/60,

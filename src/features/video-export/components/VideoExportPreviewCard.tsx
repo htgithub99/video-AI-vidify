@@ -8,7 +8,7 @@ import { AlertTriangle, Eye, MonitorPlay, RefreshCw, RotateCcw, Sparkles, X } fr
 import { Button } from "../../../components/ui/Button.js";
 import { cn } from "../../../lib/utils.js";
 import { VideoExporterState } from "../hooks/useVideoExporter.js";
-import { VideoExportPlayer } from "./VideoExportPlayer.js";
+import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 type VideoExportPreviewCardProps = { exporter: Pick<VideoExporterState, "text" | "preview" | "previewError" | "isPreviewing" | "isPreviewOutdated" | "canRender" | "isExporting" | "config" | "generatePreview" | "cancelPreview"> };
 export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ exporter }) => {
   const { text, preview, previewError, isPreviewing, isPreviewOutdated, canRender, isExporting, config } = exporter;
@@ -38,7 +38,7 @@ export const VideoExportPreviewCard: FC<VideoExportPreviewCardProps> = ({ export
       </div>
       <div className={cn(RT_VIDEO_EXPORT.W_FULL_FLEX_JUSTIFY_CENTER_ITEMS_CENTER_MIN_H_280PX)}>
         {preview?.previewUrl && !isPreviewing ? (
-          <VideoExportPlayer key={VIDEO_EXPORT_TEMPLATE_SYMBOL_3(`${config.aspectRatio}`, `${preview.previewUrl}`)} src={preview.previewUrl} aspectRatio={config.aspectRatio} badgeText={VIDEO_EXPORT_TEMPLATE_SYMBOL_4(`${config.aspectRatio}`, `${text.PREVIEW_BADGE}`)} badgeIcon={Eye} />
+          <StudioVideoPlayer key={VIDEO_EXPORT_TEMPLATE_SYMBOL_3(`${config.aspectRatio}`, `${preview.previewUrl}`)} src={preview.previewUrl} className={VIDEO_EXPORT_FRAME_CLASSNAMES[config.aspectRatio]} badge={VIDEO_EXPORT_TEMPLATE_SYMBOL_4(`${config.aspectRatio}`, `${text.PREVIEW_BADGE}`)} badgeIcon={Eye} />
         ) : (
           <div className={cn(RT_VIDEO_EXPORT.RELATIVE_ROUNDED_2XL_OVERFLOW_HIDDEN_BG_SLATE_950_BORDER_BORDER_402787, VIDEO_EXPORT_FRAME_CLASSNAMES[config.aspectRatio])}>
             <div className={cn(RT_VIDEO_EXPORT.FLEX_FLEX_COL_ITEMS_CENTER_JUSTIFY_CENTER_TEXT_CENTER_P)}>

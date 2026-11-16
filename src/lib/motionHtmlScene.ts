@@ -199,7 +199,11 @@ export const motionHtmlFrame = (spec: MotionRemotionSpec, scene: MotionRemotionS
   const duration = (scene.endFrame - scene.startFrame) / spec.fps;
   const span = Math.max(1, scene.endFrame - scene.startFrame - 1);
   const local = enabled ? Math.max(0, frame - scene.startFrame) : Math.round(span * MOTION_HTML_QUALITY.KEY_PROGRESS);
+  // The chapter title runs on the real clock, so it animates even when the scene itself holds still.
+  const titleTime = (frame - scene.startFrame) / spec.fps;
+  const titleCard = scene.titleCard && titleTime >= 0 && titleTime < scene.titleCard.seconds ? { ...scene.titleCard, t: titleTime } : undefined;
   return {
+    ...(titleCard ? { titleCard } : {}),
     time: local / spec.fps,
     progress: enabled ? Math.min(1, local / span) : MOTION_HTML_QUALITY.KEY_PROGRESS,
     frame: local,

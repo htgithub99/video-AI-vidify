@@ -18,7 +18,8 @@ export const MOTION_STORYTELLING = {
   DEFAULT: MOTION_STORYTELLING_MODES.LIVELY as MotionStorytellingMode,
   CHOICES: [MOTION_STORYTELLING_MODES.PLAIN, MOTION_STORYTELLING_MODES.LIVELY] as MotionStorytellingMode[],
   ALIASES: { gripping: MOTION_STORYTELLING_MODES.LIVELY } as Record<string, MotionStorytellingMode>,
-  SILENT_FIXED: { chapterCard: 2, emphasis: 1, chapterEnd: 1.5, videoEnd: 3 } as MotionStorytellingSilent,
+  // chapterCard: no separate card any more; the chapter title sits over the new chapter's first scene.
+  SILENT_FIXED: { chapterCard: 0, emphasis: 1, chapterEnd: 1.5, videoEnd: 3 } as MotionStorytellingSilent,
   FIELD: "storytelling",
   PRESETS: { plain: { shortSource: "strict", hooks: "light", dramaticAudio: true, texture: 0 }, lively: { shortSource: "fill", hooks: "full", dramaticAudio: true, texture: 2 }, gripping: { shortSource: "fill", hooks: "full", dramaticAudio: true, texture: 2 } } as Record<MotionStorytellingMode, MotionStorytellingPreset>,
   EXPANSION: { genre: { pov: 2.5, witness: 2.5, chronicle: 1.2, verdict: 1.5 } as Record<string, number>, fill: { pov: 3, witness: 3, chronicle: 1.5, verdict: 2 } as Record<string, number> },
@@ -26,7 +27,6 @@ export const MOTION_STORYTELLING = {
   SOURCE_TIMESTAMP: /^\(\d+:\d{2}\)\s*/gm,
   THIN_TRIGGER: 1.3,
   FAITHFUL_FILL: 1.2,
-  SILENT: { genre: { chapterCard: 2.5, emphasis: 1, chapterEnd: 1.5, videoEnd: 3 }, fill: { chapterCard: 4, emphasis: 1.5, chapterEnd: 2.5, videoEnd: 4 } } as Record<string, MotionStorytellingSilent>,
   LENGTH_FLOOR_RATIO: 0.9,
   BREAK_EVERY_BEATS: 12,
   VIEWER_QUESTIONS_PER_CHAPTER: 1,

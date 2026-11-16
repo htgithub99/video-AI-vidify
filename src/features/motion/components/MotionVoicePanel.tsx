@@ -292,7 +292,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
       </StudioCard>
       <div className={S.GRID}>
         <div className={S.COL_CHANNELS}>
-          <StudioCard className={S.CARD}>
+          <StudioCard className={cn(S.CARD, S.CARD_CHANNELS)}>
             <StepHeader
               n={MR.MOTION_TEXT_EMPTY + 1}
               icon={Radio}
@@ -306,7 +306,7 @@ export const MotionVoicePanel: FC<{ studio: MotionStudio; currentLang: Lang }> =
             />
             <p className={S.HINT}>{t.CHANNELS_HINT}</p>
             {channels.length ? (
-              <div className={S.LIST}>
+              <div className={S.CHANNEL_LIST}>
                 {_.map(channels, (channel) => {
                   const isDefault = channel.id === defaultId;
                   const narrator = voiceItem(channel.narratorVoiceId);

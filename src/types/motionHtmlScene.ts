@@ -66,6 +66,8 @@ export interface MotionHtmlFrameInput {
   places?: string[];
   header?: boolean;
   cues?: number[];
+  /** Chapter title drawn over this frame by the scene host (lower third); `t` is seconds since it appeared. */
+  titleCard?: import("./motionVisual.js").MotionTitleCard & { t: number };
 }
 export interface MotionAuthoringSettings {
   version: 1;

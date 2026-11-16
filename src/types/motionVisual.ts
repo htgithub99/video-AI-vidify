@@ -183,6 +183,15 @@ export interface MotionRemotionScene {
   requestKeys?: string[];
   speaking?: { entityId: string; startFrame: number; endFrame: number }[];
   cues?: number[];
+  /** Chapter title shown over the start of the chapter's first scene (lower third). */
+  titleCard?: MotionTitleCard;
+}
+export interface MotionTitleCard {
+  kicker: string;
+  title: string;
+  subtitle?: string;
+  /** How long the title stays on screen, from the scene's start. */
+  seconds: number;
 }
 export interface MotionSceneLayer {
   id: string;

@@ -80,6 +80,10 @@ const createProjectRecord = async (project: VideoProject): Promise<VideoProject>
 export default function App() {
   useCaptchaAlert();
   const [currentLang, setLang] = useState<Lang>(COMMON_STRINGS.VI);
+  // Shared widgets (e.g. the video player) read the UI language from <html lang>.
+  useEffect(() => {
+    document.documentElement.lang = currentLang;
+  }, [currentLang]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>(() => {
     const savedTab = storageUtils.get(STORAGE_KEYS.ACTIVE_TAB);

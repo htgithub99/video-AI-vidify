@@ -22,10 +22,8 @@ import { MOTION_SCENE_PACING as PACING } from "../../../../../constants/motionSc
 import { compileRemotionSound } from "./soundCompiler.js";
 import { motionMusicMood, motionMusicSegments } from "../motionMusicService.js";
 import type { MotionBeatLine } from "../../../../../lib/motionBeatLines.js";
-import { motionInsertChapterCards } from "./chapterCards.js";
+import { motionApplyChapterTitles } from "./chapterCards.js";
 import { motionCompactSpecScene } from "../../../../../lib/motionHtmlScene.js";
-import { motionStorytellingSilent } from "../../../../../lib/motionStorytelling.js";
-import { MOTION_CHAPTER_CARD as CARD } from "../../../../../constants/motionChapterCard.js";
 const compactTimedScene = (scene: MotionRemotionTimedScene): MotionRemotionTimedScene => {
   const copy = { ...scene, ...(scene.html ? { html: { ...scene.html } } : {}), ...(scene.htmlRequest ? { htmlRequest: { ...scene.htmlRequest, ...(scene.htmlRequest.submission ? { submission: { ...scene.htmlRequest.submission } } : {}) } } : {}) };
   motionCompactSpecScene(copy);
@@ -115,8 +113,8 @@ export const compileRemotionStory = (script: MotionStoryScript, analysis: Motion
   }
   if (!scenes.length) throw new Error(V.SCENES_REQUIRED);
   if (analysis) motionSceneOnScreen(scenes.map((scene) => ({ scene, beats: (scene.sourceBeatIds || []).map((id) => script.beats.find((beat) => beat.id === id)).filter((beat): beat is MotionBeat => !!beat) })), analysis);
-  const silent = analysis ? motionStorytellingSilent(analysis.storytelling) : undefined;
-  const timedScenes = analysis && silent && state.renderer === RT_MAINTENANCE.HTML_CANVAS ? motionInsertChapterCards(scenes, { beats: script.beats, chapters: analysis.chapters, clips: opts.voiceTrack?.clips, ends: timeline.ends, fps, chapterEnd: silent.chapterEnd, profile: settings.profileId, language: script.language, subtitles: CARD.SUBTITLE_GENRES.includes(String(analysis.videoGenre)) }) : scenes;
+  // Each chapter opens with its title over the first scene.
+  const timedScenes = analysis && state.renderer === RT_MAINTENANCE.HTML_CANVAS && analysis.chapters.length > 1 ? motionApplyChapterTitles(scenes, { beats: script.beats, chapters: analysis.chapters, places: analysis.places, fps, language: script.language }) : scenes;
   const used = new Set(scenes.flatMap((scene) => (scene.composition ? [scene.composition.assetKey] : [scene.backgroundKey, ...scene.nodes.map((node) => node.assetKey)])).filter(Boolean));
   const spec: MotionRemotionSpec = {
     ...(state.renderer ? { renderer: state.renderer } : {}),

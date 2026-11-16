@@ -101,3 +101,50 @@ export const STUDIO_CONFIRM = {
   CONFIRM: "h-9 px-5 rounded-xl text-xs font-extrabold",
   MAX_WIDTH: "max-w-md",
 } as const;
+
+// Shared video player (Export, Motion, Flow, Shorts, Auto video): YouTube-style controls on every screen.
+export const STUDIO_PLAYER = {
+  FRAME: "studio-player relative rounded-2xl overflow-hidden bg-black border border-slate-800/80 flex items-center justify-center group/video select-none",
+  MEDIA: "absolute inset-0 w-full h-full",
+  VIDEO: "absolute inset-0 w-full h-full bg-black",
+  FIT_CONTAIN: "object-contain",
+  FIT_COVER: "object-cover",
+  // Click layer over the picture: a click plays or pauses.
+  SURFACE: "absolute inset-0 z-[5] cursor-pointer",
+  BIG_PLAY: "absolute inset-0 m-auto w-14 h-14 rounded-full bg-black/60 flex items-center justify-center pointer-events-none z-[6]",
+  BIG_PLAY_ICON: "w-7 h-7 text-white fill-white ml-1",
+  BADGE: "absolute top-2.5 left-2.5 max-w-[70%] px-2.5 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-bold flex items-center gap-1 pointer-events-none z-10 truncate",
+  BADGE_ICON: "w-3 h-3 shrink-0",
+  BAR: "absolute bottom-0 inset-x-0 z-10 px-3 pb-2 pt-10 bg-gradient-to-t from-black/85 via-black/45 to-transparent text-white transition-opacity duration-200",
+  TRACK: "group/track relative h-4 flex items-center cursor-pointer",
+  TRACK_DISABLED: "pointer-events-none opacity-50",
+  SEGMENTS: "absolute inset-x-0 flex gap-[3px] h-[3px] group-hover/track:h-[5px] transition-[height] duration-100",
+  SEGMENT: "relative h-full bg-white/30 overflow-hidden",
+  SEGMENT_FILL: "absolute inset-y-0 left-0 bg-red-600",
+  SEGMENT_HOVER: "absolute inset-y-0 left-0 bg-white/40",
+  THUMB: "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-[13px] h-[13px] rounded-full bg-red-600 transition-transform duration-100 pointer-events-none",
+  HOVER_TIP: "absolute bottom-5 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-white text-[11px] font-semibold whitespace-nowrap pointer-events-none",
+  CONTROLS: "mt-1 flex items-center justify-between gap-2",
+  GROUP: "flex items-center gap-1.5 min-w-0",
+  CTRL: "studio-player-ctrl",
+  CTRL_ICON: "w-5 h-5",
+  CTRL_ICON_FILL: "w-5 h-5 fill-white",
+  VOLUME: "studio-player-vol group/vol",
+  VOLUME_SLIDER: "studio-player-volume",
+  PILL: "studio-player-pill",
+  CHAPTER: "studio-player-pill studio-player-chapter",
+  CHAPTER_TEXT: "truncate max-w-[16rem]",
+  ACTION: "studio-player-pill studio-player-action",
+  ACTION_ON: "is-on",
+  LOADING: "absolute inset-0 flex items-center justify-center bg-black/50 z-[6]",
+  LOADING_ICON: "w-8 h-8 text-white animate-spin",
+  ERROR: "text-xs text-rose-400 mt-2",
+} as const;
+export const STUDIO_PLAYER_TEXT = {
+  vi: { PLAY: "Phát", PAUSE: "Tạm dừng", BACK: "Lùi", NEXT: "Tiếp", FULLSCREEN: "Toàn màn hình", EXIT_FULLSCREEN: "Thoát toàn màn hình", MUTE: "Tắt tiếng", UNMUTE: "Bật tiếng", VOLUME: "Âm lượng" },
+  en: { PLAY: "Play", PAUSE: "Pause", BACK: "Back", NEXT: "Next", FULLSCREEN: "Fullscreen", EXIT_FULLSCREEN: "Exit fullscreen", MUTE: "Mute", UNMUTE: "Unmute", VOLUME: "Volume" },
+} as const;
+// Seconds jumped by Back / Next when the video has no scene marks.
+export const STUDIO_PLAYER_STEP_SECONDS = 5;
+// One video plays at a time across the whole app.
+export const STUDIO_PLAYER_PLAY_EVENT = "studio-player-play";

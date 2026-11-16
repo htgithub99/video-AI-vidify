@@ -1,17 +1,17 @@
 import { RUNTIME_TEXT as RT_VIDEO_GENERATION } from "../constants/runtimeText.js";
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
 import { StudioCard } from "../../../components/ui/Studio.js";
-import { SOURCE_TEXT_A, SOURCE_TEXT_INFO, SOURCE_TEXT_METADATA, SOURCE_TEXT_PURPLE, SOURCE_TEXT_SUCCESS } from "../../../constants/sourceText";
+import { SOURCE_TEXT_A, SOURCE_TEXT_INFO, SOURCE_TEXT_PURPLE, SOURCE_TEXT_SUCCESS } from "../../../constants/sourceText";
 import { cn } from "../../../lib/utils";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import _ from "lodash";
 import { Download, Eye, ImageIcon, Mic, RefreshCw, Video } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { REFACTOR_CONSTANTS } from "../../../constants";
 import { REGENERATION_TARGET, REGENERATION_TEXTS } from "../../../constants/config";
-import { VideoProject } from "../../../types";
+import { AspectRatio, VideoProject } from "../../../types";
 import { getAutoVideoTexts } from "./autoVideoGeneratorUtils";
-import { usePausedVideoPreview } from "../../../hooks/usePausedVideoPreview";
+import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { SceneRegenerationDialog } from "./SceneRegenerationDialog";
 interface PreviewPanelSectionProps {
   renderedVideoUrl: string;
@@ -29,8 +29,6 @@ interface PreviewPanelSectionProps {
 export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({ renderedVideoUrl, projectName, activeCreatedProject, isProcessing, regeneratingTarget = null, handleRegenerate, T, regenerationTexts, showVoiceRegeneration = true, regenerateVideoClips = false, canRegenerate = true }) => {
   const [loadingTarget, setLoadingTarget] = useState<string | null>(null);
   const [isSceneDialogOpen, setIsSceneDialogOpen] = useState(false);
-  const previewVideoRef = useRef<HTMLVideoElement>(null);
-  usePausedVideoPreview(previewVideoRef, renderedVideoUrl);
   const onRegenerate = async (target: string, sceneId?: string) => {
     setLoadingTarget(target);
     try {
@@ -68,7 +66,7 @@ export const PreviewPanelSection: React.FC<PreviewPanelSectionProps> = ({ render
       </div>
       <div className={cn(RT_VIDEO_GENERATION.W_FULL_BG_SLATE_955_ROUNDED_2XL_OVERFLOW_HIDDEN_RELATIVE)}>
         {!_.isEmpty(renderedVideoUrl) ? (
-          <video ref={previewVideoRef} src={renderedVideoUrl} controls preload={SOURCE_TEXT_METADATA} className={cn(RT_VIDEO_GENERATION.W_FULL_H_FULL_OBJECT_CONTAIN_ROUNDED_2XL)} />
+          <StudioVideoPlayer src={renderedVideoUrl} aspect={(activeCreatedProject?.visualConfig?.aspectRatio || AspectRatio.SixteenNine).replace(":", "/")} className="w-full max-h-[70vh]" />
         ) : (
           <div className={cn(RT_VIDEO_GENERATION.TEXT_CENTER_P_6_TEXT_SLATE_400_FONT_MONO_TEXT)}>
             <div className={cn(RT_VIDEO_GENERATION.W_12_H_12_ROUNDED_2XL_BG_SLATE_900_80)}>

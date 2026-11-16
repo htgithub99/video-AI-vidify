@@ -446,14 +446,21 @@ export function useMotionStudio() {
       renderPollAbort.current?.abort();
     };
   }, []);
-  const persist = useMemo(() => _.debounce(createMotionStoryWriter(), 600), []);
+  // Saving is debounced and the snapshot is built only when the save actually runs, not on every keystroke.
+  const persist = useMemo(() => {
+    const write = createMotionStoryWriter();
+    return _.debounce((override?: object) => {
+      const now = stateRef.current;
+      write(override ?? { ...now, logHistory: logHistoryRef.current, visualDrafts: { ...now.visualDrafts, [motionVisualDraftKey(now.visualSettings)]: captureMotionVisualDraft(now, visualRuntime.current) } });
+    }, 600, { maxWait: 4000 });
+  }, []);
   useEffect(() => {
-    if (hydrated) persist({ ...state, logHistory, visualDrafts: { ...state.visualDrafts, [motionVisualDraftKey(state.visualSettings)]: captureMotionVisualDraft(state, visualRuntime.current) } });
+    if (hydrated) persist();
   }, [state, compiled, renderJob, logHistory, hydrated, persist]);
   useEffect(() => {
     const flush = () => {
       if (!hydrated) return;
-      persist({ ...stateRef.current, logHistory: logHistoryRef.current, visualDrafts: { ...stateRef.current.visualDrafts, [motionVisualDraftKey(stateRef.current.visualSettings)]: captureMotionVisualDraft(stateRef.current, visualRuntime.current) } });
+      persist();
       persist.flush();
     };
     const onHidden = () => document.visibilityState === MR.MOTION_TEXT_HIDDEN && flush();

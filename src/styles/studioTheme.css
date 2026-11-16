@@ -20,7 +20,8 @@
   border: 1px solid var(--studio-border) !important;
   border-radius: 16px !important;
   box-shadow: var(--studio-shadow) !important;
-  backdrop-filter: blur(24px);
+  /* Cards sit on a flat page: a backdrop blur would cost a repaint on every change and show nothing. */
+  backdrop-filter: none;
 }
 :root:is(.light, .dark) .studio-title,
 :root:is(.light, .dark) .studio-page :is(h1, h2, h3, h4) {
@@ -465,4 +466,139 @@
   .motion-voice-tool-grid {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
+}
+/* Shared video player in fullscreen fills the screen. */
+.studio-player:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  aspect-ratio: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+/* Player controls, YouTube style: white icons; a dark rounded backdrop appears on hover. */
+.studio-player .studio-player-ctrl {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  color: #fff !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.studio-player .studio-player-ctrl:hover:not(:disabled),
+.studio-player .studio-player-ctrl:focus-visible {
+  background: rgba(20, 20, 24, 0.72) !important;
+  color: #fff !important;
+}
+.studio-player .studio-player-ctrl:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.studio-player .studio-player-ctrl svg {
+  color: #fff !important;
+}
+.studio-player .studio-player-pill {
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  background: rgba(20, 20, 24, 0.6) !important;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
+}
+.studio-player .studio-player-chapter {
+  min-width: 0;
+  flex-shrink: 1;
+  padding-right: 8px !important;
+  cursor: pointer;
+}
+.studio-player .studio-player-action {
+  cursor: pointer;
+}
+.studio-player button.studio-player-pill:hover {
+  background: rgba(20, 20, 24, 0.85) !important;
+}
+.studio-player .studio-player-action.is-on {
+  background: #fff !important;
+  color: #000 !important;
+}
+/* Volume: the icon sits in a pill that widens on hover to show a white slider. */
+.studio-player .studio-player-vol {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  transition: background-color 0.15s ease;
+}
+.studio-player .studio-player-vol:hover,
+.studio-player .studio-player-vol:focus-within {
+  background: rgba(20, 20, 24, 0.72);
+}
+.studio-player .studio-player-vol:hover .studio-player-ctrl {
+  background: transparent !important;
+}
+/* Player volume: thin white slider that opens on hover, like YouTube (overrides the app-wide range style). */
+.studio-player input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition: width 0.15s ease, margin 0.15s ease, opacity 0.15s ease;
+}
+.studio-player .group\/vol:hover input[type="range"],
+.studio-player input[type="range"]:focus-visible {
+  width: 64px;
+  margin-right: 14px;
+  opacity: 1;
+}
+.studio-player input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  background: linear-gradient(to right, #fff var(--studio-volume, 100%), rgba(255, 255, 255, 0.35) var(--studio-volume, 100%));
+  border: 0;
+  border-radius: 9999px;
+}
+.studio-player input[type="range"]::-moz-range-track {
+  height: 3px;
+  background: linear-gradient(to right, #fff var(--studio-volume, 100%), rgba(255, 255, 255, 0.35) var(--studio-volume, 100%));
+  border: 0;
+  border-radius: 9999px;
+}
+.studio-player input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: none;
+}
+.studio-player input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: none;
 }

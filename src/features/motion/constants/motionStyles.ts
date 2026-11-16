@@ -140,7 +140,8 @@ export const MOTION_STYLES = {
   FLEX_JUSTIFY_END_PT_2_GAP_2_FLEX_WRAP: "flex justify-end pt-2 gap-2 flex-wrap",
   W_7_H_7_TEXT_PURPLE_400_ANIMATE_PULSE: "w-7 h-7 text-purple-400 animate-pulse",
   SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1: "space-y-4 max-h-[620px] overflow-y-auto custom-scrollbar pr-1",
-  FLEX_ITEMS_CENTER_JUSTIFY_BETWEEN_STICKY_TOP_0_BG_SLATE_900_95_BACKDROP_BLUR_MD: "flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-md px-3.5 py-2.5 rounded-xl border border-slate-800 z-10 shadow-sm",
+  // Chapter bar that stays on top while the beats scroll: solid, like the Video DNA header.
+  CHAPTER_STICKY_HEADER: "sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-purple-500/25 bg-slate-900 shadow-lg shadow-black/20",
   TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDE_FLEX_ITEMS_CENTER_GAP_2: "text-xs font-black uppercase tracking-wide flex items-center gap-2",
   W_5_H_5_ROUNDED_LG_BG_PURPLE_600_TEXT_WHITE_FLEX_ITEMS_CENTER: "w-5 h-5 rounded-lg bg-purple-600 text-white flex items-center justify-center text-[10px] font-mono font-black shadow-xs",
   TEXT_PURPLE_400_FONT_EXTRABOLD: "text-purple-400 font-extrabold",

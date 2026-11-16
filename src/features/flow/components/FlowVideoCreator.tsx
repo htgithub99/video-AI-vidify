@@ -1,4 +1,5 @@
 import { RUNTIME_TEXT as RT_SHARED } from "../../../constants/runtime/shared.js";
+import { StudioVideoPlayer } from "../../../components/common/StudioPlayer.js";
 import { useClipboardFeedback } from "../../../hooks/useClipboardFeedback.js";
 import { CopyButton } from "../../../components/common/CopyButton.js";
 import { CLIPBOARD_FEEDBACK } from "../../../constants/clipboardFeedback.js";
@@ -89,6 +90,14 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
   const { copiedKey: copiedAllKey, copyText: copyAll } = useClipboardFeedback({ language: currentLang });
   const isCopiedAll = copiedAllKey !== null;
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  // The preview modal pages through every finished clip with Back / Next.
+  const previewUrls = clips.flatMap((clip) => (clip.url ? [clip.url] : []));
+  const previewIndex = previewVideoUrl ? previewUrls.indexOf(previewVideoUrl) : -1;
+  const previewPosition = previewIndex >= 0 ? `${previewIndex + 1}/${previewUrls.length}` : undefined;
+  const stepPreview = (step: number) => {
+    if (!previewUrls.length) return;
+    setPreviewVideoUrl(previewUrls[(Math.max(previewIndex, 0) + step + previewUrls.length) % previewUrls.length]);
+  };
   const [clipToDelete, setClipToDelete] = useState<Clip | null>(null);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   const [characterImages, setCharacterImages] = useState<FlowVideoCharacterImage[]>([]);
@@ -652,9 +661,16 @@ export default function FlowVideoCreator({ currentLang, projects, selectedProjec
       {previewVideoUrl && (
         <Modal isOpen={Boolean(previewVideoUrl)} onClose={() => setPreviewVideoUrl(null)} title={flowTexts.PREVIEW} maxWidth={SOURCE_TEXT_XL}>
           <div className={cn(RT_FLOW.SPACE_Y_4_P_2)}>
-            <div className={cn(RT_FLOW.ASPECT_VIDEO_BG_BLACK_ROUNDED_2XL_OVERFLOW_HIDDEN_BORDER_BORDER)}>
-              <video src={previewVideoUrl} controls autoPlay className={cn(RT_FLOW.W_FULL_H_FULL_OBJECT_CONTAIN)} />
-            </div>
+            <StudioVideoPlayer
+              key={previewVideoUrl}
+              src={previewVideoUrl}
+              aspect={productionConfig.aspectRatio.replace(":", "/")}
+              className="w-full max-h-[70vh]"
+              autoPlay
+              badge={previewPosition}
+              onPrev={previewUrls.length > 1 ? () => stepPreview(-1) : undefined}
+              onNext={previewUrls.length > 1 ? () => stepPreview(1) : undefined}
+            />
             <div className={cn(RT_FLOW.FLEX_ITEMS_CENTER_JUSTIFY_END)}>
               <Button type={SOURCE_TEXT_BUTTON} variant={SOURCE_TEXT_SECONDARY} onClick={() => setPreviewVideoUrl(null)}>
                 {flowTexts.CLOSE}

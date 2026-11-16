@@ -1,65 +1,22 @@
-import * as RT_MAINTENANCE from "../../../../../constants/runtime/maintenance.js";
 import { MOTION_CHAPTER_CARD as C } from "../../../../../constants/motionChapterCard.js";
-import { motionInputKey } from "../motionFileUtils.js";
-import type { MotionBeat, MotionChapter, MotionVoiceClip } from "../../../../../types/motionVideo.js";
+import type { MotionBeat, MotionChapter, MotionPlace } from "../../../../../types/motionVideo.js";
 import type { MotionRemotionTimedScene } from "../../../../../types/motionVisual.js";
-const roman = (value: number): string => {
-  let rest = Math.max(1, Math.round(value));
-  let out = "";
-  for (const [mark, size] of C.ROMAN)
-    while (rest >= size) {
-      out += mark;
-      rest -= size;
-    }
-  return out;
-};
-const motionChapterCardHtml = (input: { number: number; title: string; subtitle?: string; profile: string }): string => {
-  const palette = C.PALETTE[input.profile] || C.PALETTE[C.FALLBACK_PROFILE];
-  const data = JSON.stringify({ ...palette, number: roman(input.number), title: input.title, subtitle: input.subtitle || "", fade: C.FADE_SECONDS }).replace(C.LT, C.LT_ESCAPED);
-  return C.HTML(data);
-};
-export const motionInsertChapterCards = (
-  scenes: MotionRemotionTimedScene[],
-  args: { beats: MotionBeat[]; chapters: MotionChapter[]; clips?: MotionVoiceClip[]; ends: number[]; fps: number; chapterEnd: number; profile: string; language: string; subtitles: boolean },
-): MotionRemotionTimedScene[] => {
-  const out = [...scenes];
-  for (let index = 0; index + 1 < args.beats.length; index++) {
-    const beat = args.beats[index],
-      next = args.beats[index + 1];
-    if (beat.chapterId === next.chapterId) continue;
-    const spoken = (args.clips || []).filter((clip) => clip.beatId === beat.id).map((clip) => clip.end);
-    const speechEnd = spoken.length ? Math.max(...spoken) : args.ends[index];
-    const at = out.findIndex((scene) => scene.sourceBeatIds?.[0] === next.id);
-    if (at < 1) continue;
-    const previous = out[at - 1];
-    const startFrame = Math.round((speechEnd + args.chapterEnd) * args.fps);
-    const endFrame = out[at].startFrame;
-    if (endFrame - startFrame < C.MIN_SECONDS * args.fps || startFrame <= previous.startFrame + args.fps) continue;
-    const chapterIndex = args.chapters.findIndex((chapter) => chapter.id === next.chapterId);
-    const chapter = args.chapters[chapterIndex];
-    if (!chapter?.title) continue;
-    const subtitle = args.subtitles ? [next.place, next.time].filter((value) => typeof value === C.STRING && value).join(C.SUBTITLE_SEP) : "";
-    const html = motionChapterCardHtml({ number: chapterIndex + 1, title: chapter.title, subtitle, profile: args.profile });
-    const hash = motionInputKey(html);
-    out[at - 1] = { ...previous, endFrame: startFrame, speaking: (previous.speaking || []).flatMap((item) => (item.startFrame < startFrame ? [{ ...item, endFrame: Math.min(item.endFrame, startFrame) }] : [])) };
-    out.splice(at, 0, {
-      id: C.ID(chapter.id),
-      renderer: RT_MAINTENANCE.HTML_CANVAS,
-      beatId: beat.id,
-      sourceBeatIds: [],
-      fromLineId: "",
-      toLineId: "",
-      purpose: C.PURPOSE,
-      text: chapter.title,
-      environment: "",
-      sourceKey: hash,
-      soundEvents: [],
-      speaking: [],
-      nodes: [],
-      startFrame,
-      endFrame,
-      html: { version: 1, html, hash, prompt: "", language: args.language, seed: hash, duration: (endFrame - startFrame) / args.fps, attempts: 1, figures: true, status: RT_MAINTENANCE.READY },
-    });
-  }
-  return out;
+
+/** Puts each chapter's title over the start of its first scene (lower third), like a documentary chapter card. */
+export const motionApplyChapterTitles = (scenes: MotionRemotionTimedScene[], args: { beats: MotionBeat[]; chapters: MotionChapter[]; places: MotionPlace[]; fps: number; language: string }): MotionRemotionTimedScene[] => {
+  const kicker = args.language === "en" ? C.KICKER.en : C.KICKER.vi;
+  const seen = new Set<string>();
+  return scenes.map((scene) => {
+    const beat = args.beats.find((item) => item.id === scene.sourceBeatIds?.[0]);
+    if (!beat?.chapterId || seen.has(beat.chapterId)) return scene;
+    seen.add(beat.chapterId);
+    const index = args.chapters.findIndex((chapter) => chapter.id === beat.chapterId);
+    const chapter = args.chapters[index];
+    const length = (scene.endFrame - scene.startFrame) / args.fps;
+    const seconds = Math.min(C.SECONDS, length - C.TAIL_SECONDS);
+    if (!chapter?.title || seconds < C.MIN_SECONDS) return scene;
+    const place = args.places.find((item) => item.key === beat.place)?.name;
+    const subtitle = [place, typeof beat.time === "string" ? beat.time.trim() : ""].filter(Boolean).join(C.SUBTITLE_SEP);
+    return { ...scene, titleCard: { kicker: kicker(index + 1), title: chapter.title, ...(subtitle ? { subtitle } : {}), seconds } };
+  });
 };
