@@ -29,6 +29,9 @@ const PREVIEW = {
   HOST_RESET: "motion-host-reset",
   HOST_BUFFERED: "motion-host-buffered",
   HOST_CLEARED: "motion-host-cleared",
+  HOST_SNAP: "motion-host-snap",
+  // Hover preview pictures are small.
+  THUMB_WIDTH: 400,
 } as const;
 
 type HtmlScene = MotionRemotionSpec["scenes"][number];
@@ -236,6 +239,54 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
     // The clock starts from the current position each time playback starts.
   }, [playing, spec, loaded, renderWidth, renderHeight, frameAt, sceneAt, tokenOf, post]);
 
+  // Hover preview: a hidden page for the hovered scene draws one small picture per request.
+  const [thumbScene, setThumbScene] = useState<HtmlScene>();
+  const thumbFrame = useRef<HTMLIFrameElement>(null);
+  const thumbToken = useMemo(() => (thumbScene ? `${tokenOf(thumbScene)}-thumb` : ""), [thumbScene, tokenOf]);
+  const thumbSource = useMemo(() => (thumbScene?.html ? motionHtmlHostDocument(thumbScene.html.html, thumbToken, motionFigureRenderOf(spec, thumbScene as MotionFigureScene)) : ""), [thumbScene, thumbToken, spec]);
+  const thumbLoaded = useRef<{ token: string; ready: Promise<void>; resolve: () => void } | null>(null);
+  const snaps = useRef(new Map<number, (bitmap: ImageBitmap | null) => void>());
+  const snapId = useRef(0);
+  const lastSnap = useRef<ImageBitmap | null>(null);
+  useEffect(() => {
+    const receive = (event: MessageEvent) => {
+      if (!thumbToken || event.data?.token !== thumbToken || event.data?.type !== PREVIEW.HOST_SNAP || event.source !== thumbFrame.current?.contentWindow) return;
+      const done = snaps.current.get(event.data.id);
+      snaps.current.delete(event.data.id);
+      done?.(event.data.bitmap || null);
+    };
+    window.addEventListener(RT_MAINTENANCE.MESSAGE, receive);
+    return () => window.removeEventListener(RT_MAINTENANCE.MESSAGE, receive);
+  }, [thumbToken]);
+  useEffect(() => () => lastSnap.current?.close(), []);
+  const thumbnail = useCallback(
+    async (seconds: number): Promise<CanvasImageSource | null> => {
+      const at = frameAt(seconds);
+      const item = sceneAt(at);
+      if (!item?.html) return null;
+      const token = `${tokenOf(item)}-thumb`;
+      if (thumbLoaded.current?.token !== token) {
+        let resolve = () => {};
+        const ready = new Promise<void>((done) => (resolve = done));
+        thumbLoaded.current = { token, ready, resolve };
+        setThumbScene(item);
+      }
+      await thumbLoaded.current.ready;
+      if (thumbLoaded.current?.token !== token) return null;
+      const id = ++snapId.current;
+      const width = Math.min(spec.width, PREVIEW.THUMB_WIDTH);
+      const bitmap = await new Promise<ImageBitmap | null>((resolve) => {
+        snaps.current.set(id, resolve);
+        thumbFrame.current?.contentWindow?.postMessage({ token, type: PREVIEW.HOST_SNAP, id, input: motionHtmlFrame(spec, item, at, width, Math.round((width * spec.height) / spec.width)) }, RT_MAINTENANCE.WILDCARD);
+      });
+      if (bitmap) {
+        lastSnap.current?.close();
+        lastSnap.current = bitmap;
+      }
+      return bitmap;
+    },
+    [frameAt, sceneAt, tokenOf, spec],
+  );
   const subtitle = spec.subtitles.find((entry) => time >= entry.start && time < entry.end);
   const announce = useSinglePlayback(() => setPlaying(false));
   const chapters = useMemo(() => spec.scenes.map((item) => ({ start: item.startFrame / spec.fps, title: item.purpose })), [spec.scenes, spec.fps]);
@@ -285,6 +336,7 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
         onMute={() => setMuted((value) => !value)}
         onToggle={toggle}
         onSeek={seek}
+        thumbnail={thumbnail}
         actions={
           currentToken ? (
             <button
@@ -314,6 +366,18 @@ export const MotionHtmlScenePlayer = ({ spec, audioUrl }: { spec: MotionRemotion
               className={cn("absolute inset-0 w-full h-full block border-0", slot.token === currentToken ? "visible" : "invisible")}
             />
           ))}
+          {thumbSource && (
+            <iframe
+              key={thumbToken}
+              ref={thumbFrame}
+              aria-hidden
+              tabIndex={-1}
+              sandbox={RT_MAINTENANCE.ALLOW_SCRIPTS}
+              srcDoc={thumbSource}
+              onLoad={() => thumbLoaded.current?.token === thumbToken && thumbLoaded.current.resolve()}
+              className="absolute w-px h-px opacity-0 pointer-events-none"
+            />
+          )}
           {!currentToken && scene && scene.renderer !== RT_MAINTENANCE.HTML_CANVAS ? (
             <Player ref={legacy} component={StoryComposition} inputProps={{ document: { ...spec, subtitles: [] } }} durationInFrames={totalFrames} compositionWidth={spec.width} compositionHeight={spec.height} fps={spec.fps} style={{ width: RT_MAINTENANCE.VALUE_100, height: RT_MAINTENANCE.VALUE_100 }} />
           ) : !currentToken ? (

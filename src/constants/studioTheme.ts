@@ -123,7 +123,12 @@ export const STUDIO_PLAYER = {
   SEGMENT_FILL: "absolute inset-y-0 left-0 bg-red-600",
   SEGMENT_HOVER: "absolute inset-y-0 left-0 bg-white/40",
   THUMB: "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-[13px] h-[13px] rounded-full bg-red-600 transition-transform duration-100 pointer-events-none",
-  HOVER_TIP: "absolute bottom-5 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-white text-[11px] font-semibold whitespace-nowrap pointer-events-none",
+  HOVER_TIP: "absolute bottom-5 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none",
+  HOVER_THUMB: "block rounded-lg border-2 border-white/90 bg-black shadow-lg",
+  HOVER_THUMB_EMPTY: "opacity-60",
+  HOVER_LABEL: "max-w-[240px] h-8 px-3 rounded-full bg-black/75 text-white text-[13px] font-bold flex items-center gap-2 whitespace-nowrap",
+  HOVER_TIME: "shrink-0",
+  HOVER_TITLE: "truncate min-w-0",
   CONTROLS: "mt-1 flex items-center justify-between gap-2",
   GROUP: "flex items-center gap-1.5 min-w-0",
   CTRL: "studio-player-ctrl",
@@ -146,5 +151,7 @@ export const STUDIO_PLAYER_TEXT = {
 } as const;
 // Seconds jumped by Back / Next when the video has no scene marks.
 export const STUDIO_PLAYER_STEP_SECONDS = 5;
+// Words of the scene name shown in the seek-bar hover label.
+export const STUDIO_PLAYER_HOVER_WORDS = 3;
 // One video plays at a time across the whole app.
 export const STUDIO_PLAYER_PLAY_EVENT = "studio-player-play";

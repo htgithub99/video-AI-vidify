@@ -1,11 +1,16 @@
-import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FC, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FC, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import _ from "lodash";
 import { ChevronRight, Eye, Loader2, Maximize, Minimize, Pause, Play, SkipBack, SkipForward, Volume1, Volume2, VolumeX, type LucideIcon } from "lucide-react";
-import { STUDIO_PLAYER as P, STUDIO_PLAYER_PLAY_EVENT, STUDIO_PLAYER_STEP_SECONDS, STUDIO_PLAYER_TEXT } from "../../constants/studioTheme.js";
+import { STUDIO_PLAYER as P, STUDIO_PLAYER_HOVER_WORDS, STUDIO_PLAYER_PLAY_EVENT, STUDIO_PLAYER_STEP_SECONDS, STUDIO_PLAYER_TEXT } from "../../constants/studioTheme.js";
 import { cn } from "../../lib/utils.js";
 
 const playerText = () => (document.documentElement.lang === "en" ? STUDIO_PLAYER_TEXT.en : STUDIO_PLAYER_TEXT.vi);
 const stopClick = (event: MouseEvent) => event.stopPropagation();
+/** Hover label: at most a few words, then "…". */
+const shortTitle = (title: string): string => {
+  const words = title.trim().split(/\s+/);
+  return words.length > STUDIO_PLAYER_HOVER_WORDS ? `${words.slice(0, STUDIO_PLAYER_HOVER_WORDS).join(" ")}…` : title.trim();
+};
 /** YouTube-style clock: 3:09, 11:07, 1:02:05. */
 const clock = (seconds: number): string => {
   const total = Math.max(0, Math.floor(seconds || 0));
@@ -48,16 +53,22 @@ interface StudioPlayerFrameProps {
   onMute?: () => void;
   /** Extra controls shown before the fullscreen button. */
   actions?: ReactNode;
+  /** Picture at a time, for the preview shown when hovering the seek bar. */
+  thumbnail?: (seconds: number) => Promise<CanvasImageSource | null>;
   children: ReactNode;
 }
 
 /** The one video player used by every screen, with YouTube-style controls. */
-export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, className, playing, time, duration, onToggle, onSeek, disabled, hidePlay, loading, badge, badgeIcon: BadgeIcon = Eye, chapters, onPrev, onNext, volume = 1, muted, onVolume, onMute, actions, children }) => {
+export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, className, playing, time, duration, onToggle, onSeek, disabled, hidePlay, loading, badge, badgeIcon: BadgeIcon = Eye, chapters, onPrev, onNext, volume = 1, muted, onVolume, onMute, actions, thumbnail, children }) => {
   const frame = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [hover, setHover] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [trackWidth, setTrackWidth] = useState(0);
+  const [hasThumb, setHasThumb] = useState(false);
+  const thumbCanvas = useRef<HTMLCanvasElement>(null);
+  const thumbAsk = useRef(0);
   const text = playerText();
   useEffect(() => {
     const sync = () => setFullscreen(document.fullscreenElement === frame.current);
@@ -83,6 +94,7 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
     onSeek(timeAt(event.clientX));
   };
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    setTrackWidth(track.current?.clientWidth || 0);
     const at = timeAt(event.clientX);
     setHover(at);
     if (dragging) onSeek(at);
@@ -106,11 +118,35 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
     if (document.fullscreenElement) void document.exitFullscreen();
     else void frame.current?.requestFullscreen().catch(() => undefined);
   };
+  // Hover preview: draw the picture at the hovered time; only the latest request is shown.
+  const hoverBucket = hover === null ? null : Math.round(hover * 4) / 4;
+  useEffect(() => {
+    if (hoverBucket === null || !thumbnail) return;
+    const ask = ++thumbAsk.current;
+    void thumbnail(hoverBucket)
+      .then((image) => {
+        const canvas = thumbCanvas.current;
+        if (ask !== thumbAsk.current || !canvas || !image) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        setHasThumb(true);
+      })
+      .catch(() => undefined);
+  }, [hoverBucket, thumbnail]);
+  useEffect(() => {
+    if (hover === null) setHasThumb(false);
+  }, [hover]);
   const percent = duration > 0 ? Math.min(100, (time / duration) * 100) : 0;
   const style: CSSProperties | undefined = aspect ? { aspectRatio: aspect } : undefined;
   const shown = !playing || dragging ? "opacity-100" : "opacity-0 group-hover/video:opacity-100 focus-within:opacity-100";
   const hoverTitle = hover !== null ? _.findLast(parts, (part) => hover >= part.start)?.title : undefined;
   const silent = muted || volume === 0;
+  // Hover preview size follows the video's shape (YouTube-like, ~200 px wide).
+  const frameRatio = frame.current && frame.current.clientHeight ? frame.current.clientWidth / frame.current.clientHeight : 16 / 9;
+  const thumbWidth = frameRatio >= 1 ? 200 : Math.round(120 * frameRatio * 1.6);
+  const thumbHeight = Math.round(thumbWidth / frameRatio);
+  const thumbHalf = Math.min(trackWidth / 2, (thumbnail ? thumbWidth : 120) / 2);
   return (
     <div ref={frame} className={cn(P.FRAME, className ?? "w-full")} style={style}>
       {children}
@@ -155,8 +191,12 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
           </div>
           <div className={cn(P.THUMB, playing && !dragging ? "scale-0 group-hover/video:scale-100" : "scale-100")} style={{ left: `${percent}%` }} />
           {hover !== null && duration > 0 && (
-            <div className={P.HOVER_TIP} style={{ left: `${(hover / duration) * 100}%` }}>
-              {hoverTitle ? `${hoverTitle} · ${clock(hover)}` : clock(hover)}
+            <div className={P.HOVER_TIP} style={{ left: Math.max(thumbHalf, Math.min(trackWidth - thumbHalf, (hover / duration) * trackWidth)) }}>
+              {thumbnail && <canvas ref={thumbCanvas} width={thumbWidth * 2} height={thumbHeight * 2} className={cn(P.HOVER_THUMB, !hasThumb && P.HOVER_THUMB_EMPTY)} style={{ width: thumbWidth, height: thumbHeight }} />}
+              <div className={P.HOVER_LABEL}>
+                <span className={P.HOVER_TIME}>{clock(hover)}</span>
+                {hoverTitle && <span className={P.HOVER_TITLE}>{shortTitle(hoverTitle)}</span>}
+              </div>
             </div>
           )}
         </div>
@@ -242,6 +282,45 @@ export const StudioVideoPlayer: FC<StudioVideoPlayerProps> = ({ src, poster, asp
   const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
   const announce = useSinglePlayback(() => video.current?.pause());
+  // Hover preview: a hidden copy of the video seeks to the hovered time (one request at a time).
+  const thumbVideo = useRef<HTMLVideoElement | null>(null);
+  const thumbChain = useRef<Promise<unknown>>(Promise.resolve());
+  useEffect(
+    () => () => {
+      if (thumbVideo.current) thumbVideo.current.src = "";
+      thumbVideo.current = null;
+    },
+    [src],
+  );
+  const thumbnail = useCallback(
+    (seconds: number): Promise<CanvasImageSource | null> => {
+      const run = async () => {
+        let node = thumbVideo.current;
+        if (!node) {
+          node = document.createElement("video");
+          node.muted = true;
+          node.preload = "auto";
+          node.playsInline = true;
+          node.src = src;
+          thumbVideo.current = node;
+          await new Promise<void>((resolve, reject) => {
+            node!.addEventListener("loadeddata", () => resolve(), { once: true });
+            node!.addEventListener("error", () => reject(new Error("thumbnail")), { once: true });
+          });
+        }
+        if (Math.abs(node.currentTime - seconds) > 0.05) {
+          const seeked = new Promise<void>((resolve) => node!.addEventListener("seeked", () => resolve(), { once: true }));
+          node.currentTime = seconds;
+          await seeked;
+        }
+        return node;
+      };
+      const next = thumbChain.current.then(run, run);
+      thumbChain.current = next.catch(() => undefined);
+      return next;
+    },
+    [src],
+  );
   useEffect(() => {
     setPlaying(false);
     setTime(0);
@@ -266,6 +345,7 @@ export const StudioVideoPlayer: FC<StudioVideoPlayerProps> = ({ src, poster, asp
       badge={badge}
       badgeIcon={badgeIcon}
       chapters={chapters}
+      thumbnail={thumbnail}
       volume={volume}
       muted={muted}
       onVolume={(value) => {
