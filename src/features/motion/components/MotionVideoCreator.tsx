@@ -308,6 +308,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
   };
   const removeBeat = (id: string) => state.script && patch({ script: { ...state.script, beats: _.reject(state.script.beats, { id }) } });
   const job = studio.storyJob;
+  // The production's own status, also when another job ran after it (a scene rebuild or a scene deletion after the run
+  // stopped): the resume button follows the production, not whichever job happens to be shown.
+  const productionStatus = job?.kind === MotionStoryJobKind.PRODUCTION && job.id === state.productionId ? job.status : studio.logHistory.find((entry) => entry.id === state.productionId)?.status;
   const rj = studio.renderJob;
   const displayedLog = studio.logHistory.at(-1);
   const displayedJob = motionDisplayedJob(job, rj, displayedLog?.id);
@@ -574,9 +577,9 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                   </div>
                 ) : (
                   <>
-                    {state.productionId && job?.kind === MotionStoryJobKind.PRODUCTION && (job.status === MotionJobStatus.ERROR || job.status === MotionJobStatus.CANCELLED || (job.status === MotionJobStatus.COMPLETED && state.script?.beats?.length && !state.seo?.options?.length)) && (
+                    {state.productionId && (productionStatus === MotionJobStatus.ERROR || productionStatus === MotionJobStatus.CANCELLED || (productionStatus === MotionJobStatus.COMPLETED && state.script?.beats?.length && !state.seo?.options?.length)) && (
                       <ActionBtn icon={Sparkles} onClick={() => void studio.resumeProduction()} disabled={studio.storyBusy}>
-                        {job.status === MotionJobStatus.COMPLETED ? MOTION_PRODUCTION.UI_RESUME_SEO : MOTION_PRODUCTION.UI_RESUME}
+                        {productionStatus === MotionJobStatus.COMPLETED ? MOTION_PRODUCTION.UI_RESUME_SEO : MOTION_PRODUCTION.UI_RESUME}
                       </ActionBtn>
                     )}
                     <ActionBtn icon={Sparkles} onClick={() => void studio.analyze()} disabled={!state.source || studio.storyBusy} className={MOTION_STYLES.PX_5_PY_2_5}>
