@@ -139,7 +139,8 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
   }, [hover]);
   const percent = duration > 0 ? Math.min(100, (time / duration) * 100) : 0;
   const style: CSSProperties | undefined = aspect ? { aspectRatio: aspect } : undefined;
-  const shown = !playing || dragging ? "opacity-100" : "opacity-0 group-hover/video:opacity-100 focus-within:opacity-100";
+  // Like YouTube: the controls show only while the pointer is over the video (or while dragging the seek bar).
+  const shown = dragging ? "opacity-100" : "opacity-0 group-hover/video:opacity-100 focus-within:opacity-100";
   const hoverTitle = hover !== null ? _.findLast(parts, (part) => hover >= part.start)?.title : undefined;
   const silent = muted || volume === 0;
   // Hover preview size follows the video's shape (YouTube-like, ~200 px wide).
@@ -189,7 +190,7 @@ export const StudioPlayerFrame: FC<StudioPlayerFrameProps> = ({ aspect, classNam
               );
             })}
           </div>
-          <div className={cn(P.THUMB, playing && !dragging ? "scale-0 group-hover/video:scale-100" : "scale-100")} style={{ left: `${percent}%` }} />
+          <div className={cn(P.THUMB, dragging ? "scale-100" : "scale-0 group-hover/video:scale-100")} style={{ left: `${percent}%` }} />
           {hover !== null && duration > 0 && (
             <div className={P.HOVER_TIP} style={{ left: Math.max(thumbHalf, Math.min(trackWidth - thumbHalf, (hover / duration) * trackWidth)) }}>
               {thumbnail && <canvas ref={thumbCanvas} width={thumbWidth * 2} height={thumbHeight * 2} className={cn(P.HOVER_THUMB, !hasThumb && P.HOVER_THUMB_EMPTY)} style={{ width: thumbWidth, height: thumbHeight }} />}

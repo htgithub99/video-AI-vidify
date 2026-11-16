@@ -801,7 +801,8 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
               )}
               <div className={MOTION_STYLES.SPACE_Y_4_MAX_H_620PX_OVERFLOW_Y_AUTO_CUSTOM_SCROLLBAR_PR_1}>
                 {_.map(state.analysis.chapters, (chapter, ci) => (
-                  <div key={chapter.id} className={MOTION_STYLES.SPACE_Y_3}>
+                  <div key={chapter.id}>
+                    <div className={MOTION_STYLES.CHAPTER_STICKY_BAND}>
                     <div className={MOTION_STYLES.CHAPTER_STICKY_HEADER}>
                       <div className={MOTION_STYLES.TEXT_XS_FONT_BLACK_UPPERCASE_TRACKING_WIDE_FLEX_ITEMS_CENTER_GAP_2}>
                         <span className={MOTION_STYLES.W_5_H_5_ROUNDED_LG_BG_PURPLE_600_TEXT_WHITE_FLEX_ITEMS_CENTER}>{ci + 1}</span>
@@ -817,6 +818,7 @@ const CreateWorkspace: FC<{ studio: MotionStudio; text: MotionVideoTexts; curren
                         {MR.MOTION_TEXT_SYMBOL_13}
                         <span>{text.SCRIPT_REGEN_CHAPTER}</span>
                       </Button>
+                    </div>
                     </div>
                     <div className={MOTION_STYLES.SPACE_Y_2_5}>
                       {_.map(beatsByChapter[chapter.id] || [], (b, bi) => (
