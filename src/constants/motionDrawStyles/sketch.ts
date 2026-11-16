@@ -6,5 +6,5 @@ export const SKETCH_DRAW_STYLE: MotionDrawStyleSpec = {
   kitLook: "sketch",
   proportion: "balanced",
   layout: "stage",
-  preview: "/motion-styles/sketch.webp?v=1114f",
+  preview: "/motion-styles/sketch.webp?v=1116",
 };

@@ -1,4 +1,4 @@
-export type MotionKitSkinId = "outline" | "sketch" | "comic" | "horror";
+export type MotionKitSkinId = "outline" | "sketch" | "stick" | "comic" | "horror";
 export type MotionKitSkinParams = Record<string, unknown>;
 export interface MotionKitSkin {
   id: MotionKitSkinId;

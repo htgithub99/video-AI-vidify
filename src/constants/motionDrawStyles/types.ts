@@ -1,5 +1,5 @@
 export type MotionStyleFamily = "history" | "horror" | "explainer";
-export type MotionKitLook = "outline" | "horror" | "sketch" | "comic";
+export type MotionKitLook = "outline" | "horror" | "sketch" | "stick" | "comic";
 export type MotionProportionId = "chibi" | "balanced" | "storybook";
 export interface MotionDrawStyleSpec {
   family: MotionStyleFamily;

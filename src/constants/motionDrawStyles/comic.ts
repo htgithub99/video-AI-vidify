@@ -6,5 +6,5 @@ export const COMIC_DRAW_STYLE: MotionDrawStyleSpec = {
   kitLook: "comic",
   proportion: "storybook",
   layout: "cinematic",
-  preview: "/motion-styles/comic.webp?v=1114f",
+  preview: "/motion-styles/comic.webp?v=1116",
 };

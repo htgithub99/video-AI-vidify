@@ -1,10 +1,11 @@
 import { MOTION_KIT_SKIN_PARTS } from "./parts/index.js";
 import { OUTLINE_SKIN } from "./outline.js";
 import { SKETCH_SKIN } from "./sketch.js";
+import { STICK_SKIN } from "./stick.js";
 import { COMIC_SKIN } from "./comic.js";
 import { HORROR_SKIN } from "./horror.js";
 import type { MotionKitSkin, MotionKitSkinId } from "./types.js";
-const MOTION_KIT_SKINS: Record<MotionKitSkinId, MotionKitSkin> = { outline: OUTLINE_SKIN, sketch: SKETCH_SKIN, comic: COMIC_SKIN, horror: HORROR_SKIN };
+const MOTION_KIT_SKINS: Record<MotionKitSkinId, MotionKitSkin> = { outline: OUTLINE_SKIN, sketch: SKETCH_SKIN, stick: STICK_SKIN, comic: COMIC_SKIN, horror: HORROR_SKIN };
 export const MOTION_KIT_SKINS_JS = JSON.stringify(Object.fromEntries(Object.values(MOTION_KIT_SKINS).map((s) => [s.id, s.params])));
 export const MOTION_KIT_SKIN_PARTS_JS = `{${Object.entries(MOTION_KIT_SKIN_PARTS).map(([k, f]) => `${JSON.stringify(k)}: ${f}`).join(", ")}}`;
 export const MOTION_KIT_SKIN_DRAW_JS = JSON.stringify(Object.fromEntries(Object.values(MOTION_KIT_SKINS).map((s) => [s.id, s.draw || {}])));

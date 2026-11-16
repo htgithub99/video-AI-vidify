@@ -1,11 +1,13 @@
 import { HISTORY_DRAW_STYLE } from "./history.js";
 import { HORROR_DRAW_STYLE } from "./horror.js";
 import { SKETCH_DRAW_STYLE } from "./sketch.js";
+import { STICK_DRAW_STYLE } from "./stick.js";
 import { COMIC_DRAW_STYLE } from "./comic.js";
 import type { MotionStyleFamily } from "./types.js";
 export const MOTION_DRAW_STYLES = {
   history: HISTORY_DRAW_STYLE,
   sketch: SKETCH_DRAW_STYLE,
+  stick: STICK_DRAW_STYLE,
   comic: COMIC_DRAW_STYLE,
   horror: HORROR_DRAW_STYLE,
 } as const;

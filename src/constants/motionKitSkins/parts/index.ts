@@ -1,4 +1,4 @@
-import { SKIN_PART_FACE_SQUARE, SKIN_PART_HELMET_MODERN, SKIN_PART_HELMET_ROMAN } from "./head.js";
+import { SKIN_PART_HELMET_MODERN, SKIN_PART_HELMET_ROMAN } from "./head.js";
 import { SKIN_PART_HORSE_REAL } from "./horse.js";
 import { SKIN_PART_TREE } from "./tree.js";
 import { SKIN_PART_QUAD } from "./quad.js";
@@ -17,4 +17,4 @@ import { SKIN_PART_EFFECT2 } from "./effect2.js";
 import { SKIN_PART_ICON } from "./icon.js";
 import { SKIN_PART_WATER } from "./water.js";
 import { SKIN_PART_PROPX } from "./propx.js";
-export const MOTION_KIT_SKIN_PARTS: Record<string, string> = { horse: SKIN_PART_HORSE_REAL, faceSquare: SKIN_PART_FACE_SQUARE, helmetRoman: SKIN_PART_HELMET_ROMAN, helmetModern: SKIN_PART_HELMET_MODERN, tree: SKIN_PART_TREE, quad: SKIN_PART_QUAD, hair: SKIN_PART_HAIR, quadView: SKIN_PART_QUAD_VIEW, cartRig: SKIN_PART_CART_RIG, building: SKIN_PART_BUILDING, vehicle: SKIN_PART_VEHICLE, effect: SKIN_PART_EFFECT, prop: SKIN_PART_PROP, scenery: SKIN_PART_SCENERY, vehicle2: SKIN_PART_VEHICLE2, prop2: SKIN_PART_PROP2, scenery2: SKIN_PART_SCENERY2, effect2: SKIN_PART_EFFECT2, icon: SKIN_PART_ICON, water: SKIN_PART_WATER, propx: SKIN_PART_PROPX };
+export const MOTION_KIT_SKIN_PARTS: Record<string, string> = { horse: SKIN_PART_HORSE_REAL, helmetRoman: SKIN_PART_HELMET_ROMAN, helmetModern: SKIN_PART_HELMET_MODERN, tree: SKIN_PART_TREE, quad: SKIN_PART_QUAD, hair: SKIN_PART_HAIR, quadView: SKIN_PART_QUAD_VIEW, cartRig: SKIN_PART_CART_RIG, building: SKIN_PART_BUILDING, vehicle: SKIN_PART_VEHICLE, effect: SKIN_PART_EFFECT, prop: SKIN_PART_PROP, scenery: SKIN_PART_SCENERY, vehicle2: SKIN_PART_VEHICLE2, prop2: SKIN_PART_PROP2, scenery2: SKIN_PART_SCENERY2, effect2: SKIN_PART_EFFECT2, icon: SKIN_PART_ICON, water: SKIN_PART_WATER, propx: SKIN_PART_PROPX };

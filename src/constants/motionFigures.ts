@@ -12,9 +12,11 @@ export const MOTION_FIGURES = {
   STYLES: {
     outline: { ink: "#26201c", inkWidth: 1.25, tone: { col: [192, 136, 80], k: 0.06, sat: 1.08, light: 0.02 } },
     sketch: { ink: "#16172a", inkWidth: 0.85, tone: { col: [58, 64, 88], k: 0.2, sat: 0.72, light: 0 } },
+    // split: dark tones lean to violet-navy, light ones to warm cream (lavender hills, sand ground, deep-navy nights).
+    stick: { ink: "#2a1f1c", inkWidth: 1.15, tone: { col: [118, 104, 150], k: 0.05, sat: 1.1, light: 0.01, split: { shadow: [70, 60, 130], highlight: [250, 226, 182], k: 0.32 } } },
     comic: { ink: "#15140f", inkWidth: 1.3, tone: { col: [90, 90, 58], k: 0.12, sat: 0.8, light: -0.02 }, finish: "grain" },
     horror: { ink: "#1c1a18", inkWidth: 1.2, tone: { col: [60, 70, 80], k: 0.3, sat: 0.45, light: -0.06 }, finish: "vignette", darkCard: true },
-  } as Record<string, { ink: string; inkWidth: number; tone: { col: number[]; k: number; sat: number; light: number }; finish?: string; darkCard?: boolean }>,
+  } as Record<string, { ink: string; inkWidth: number; tone: { col: number[]; k: number; sat: number; light: number; split?: { shadow: number[]; highlight: number[]; k: number } }; finish?: string; darkCard?: boolean }>,
   // A scene written against the figure contract (only those can switch renderer without a new drawing).
   USES: /MotionFigures\.use\s*\(/,
   // The kit is not on the page in "Dựng cảnh AI", so a scene that calls it directly cannot render there.
@@ -77,6 +79,7 @@ export const MOTION_FIGURES = {
     var c = rgba(v), out = v;
     if (c) {
       var t = S.tone, r = c[0] + (t.col[0] - c[0]) * t.k, g = c[1] + (t.col[1] - c[1]) * t.k, b = c[2] + (t.col[2] - c[2]) * t.k;
+      if (t.split) { var L = luma([r, g, b]), ws = t.split.k * Math.pow(1 - L, 1.5), wh = t.split.k * Math.pow(L, 1.5), sh = t.split.shadow, hi = t.split.highlight; r += (sh[0] - r) * ws + (hi[0] - r) * wh; g += (sh[1] - g) * ws + (hi[1] - g) * wh; b += (sh[2] - b) * ws + (hi[2] - b) * wh; }
       var x = hsl(r, g, b), o = rgb(x[0], clamp(x[1] * t.sat, 0, 1), clamp(x[2] + t.light, 0, 1));
       out = 'rgba(' + Math.round(o[0]) + ',' + Math.round(o[1]) + ',' + Math.round(o[2]) + ',' + c[3] + ')';
     }
